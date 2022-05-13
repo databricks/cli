@@ -19,7 +19,7 @@ What works:
 
 * `./bricks fs ls /`
 * `./bricks test`
-* `./bricks run test.py`
+* `./bricks launch test.py`
 
 What doesn't work:
 
