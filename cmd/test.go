@@ -13,7 +13,7 @@ var testCmd = &cobra.Command{
 	Short: "run tests for the project",
 	Long:  `This is longer description of the command`,
 	Run: func(cmd *cobra.Command, args []string) {
-		results := project.RunPythonOnDev(cmd.Context(), `print("hello, world!")`)
+		results := project.RunPythonOnDev(cmd.Context(), `return 1`)
 		if results.Failed() {
 			log.Fatal(results.Error())
 		}
