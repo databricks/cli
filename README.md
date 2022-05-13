@@ -2,7 +2,7 @@
 
 This is an early PoC at this stage!
 
-`make build` (or download artifacts)
+`make build` (or [download the latest from releases page](https://github.com/databricks/bricks/releases)).
 
 Reuses authentication from Databricks CLI. And terraform provider. See details here: https://registry.terraform.io/providers/databrickslabs/databricks/latest/docs#environment-variables
 
