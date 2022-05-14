@@ -24,3 +24,5 @@ What works:
 What doesn't work:
 
 * Everything else.
+
+This project reuses some code from Databricks Terraform Provider

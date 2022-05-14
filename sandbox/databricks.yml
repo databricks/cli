@@ -1,0 +1,5 @@
+name: dev
+profile: demo
+isolation: none
+dev_cluster:
+  cluster_name: Shared Autoscaling

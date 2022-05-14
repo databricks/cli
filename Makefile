@@ -22,6 +22,10 @@ build: vendor
 	@echo "✓ Building source code with go build ..."
 	@go build -mod vendor
 
+snapshot:
+	@echo "✓ Building dev snapshot"
+	@goreleaser build --snapshot --rm-dist --single-target
+
 vendor:
 	@echo "✓ Filling vendor folder with library code ..."
 	@go mod vendor
