@@ -1,10 +1,11 @@
-package cmd
+package launch
 
 import (
 	"fmt"
 	"log"
 	"os"
 
+	"github.com/databricks/bricks/cmd/root"
 	"github.com/databricks/bricks/project"
 	"github.com/spf13/cobra"
 )
@@ -29,5 +30,5 @@ var launchCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(launchCmd)
+	root.RootCmd.AddCommand(launchCmd)
 }

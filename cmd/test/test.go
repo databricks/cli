@@ -1,8 +1,9 @@
-package cmd
+package test
 
 import (
 	"log"
 
+	"github.com/databricks/bricks/cmd/root"
 	"github.com/databricks/bricks/project"
 	"github.com/spf13/cobra"
 )
@@ -22,7 +23,7 @@ var testCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(testCmd)
+	root.RootCmd.AddCommand(testCmd)
 
 	// Here you will define your flags and configuration settings.
 

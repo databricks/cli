@@ -1,6 +1,7 @@
-package cmd
+package fs
 
 import (
+	"github.com/databricks/bricks/cmd/root"
 	"github.com/spf13/cobra"
 )
 
@@ -12,7 +13,7 @@ var fsCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(fsCmd)
+	root.RootCmd.AddCommand(fsCmd)
 
 	// Here you will define your flags and configuration settings.
 

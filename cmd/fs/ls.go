@@ -1,4 +1,4 @@
-package cmd
+package fs
 
 import (
 	"fmt"
@@ -16,7 +16,7 @@ var lsCmd = &cobra.Command{
 	Long:  `Lists files`,
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		api := storage.NewDbfsAPI(cmd.Context(), project.ClientFromContext(cmd.Context()))
+		api := storage.NewDbfsAPI(cmd.Context(), project.Current.Client())
 		files, err := api.List(args[0], false)
 		if err != nil {
 			panic(err)

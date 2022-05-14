@@ -1,4 +1,4 @@
-package cmd
+package root
 
 import (
 	"context"
@@ -6,15 +6,20 @@ import (
 	"os"
 	"strings"
 
-	"github.com/databricks/bricks/project"
 	"github.com/spf13/cobra"
 )
 
-// rootCmd represents the base command when called without any subcommands
-var rootCmd = &cobra.Command{
+// RootCmd represents the base command when called without any subcommands
+var RootCmd = &cobra.Command{
 	Use:   "bricks",
 	Short: "Databricks project lifecycle management",
 	Long:  `Where's "data"? Secured by the unity catalog. Projects build lifecycle is secured by bricks`,
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		if Verbose {
+			logLevel = append(logLevel, "[DEBUG]")
+		}
+		log.SetOutput(&logLevel)
+	},
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 }
@@ -23,7 +28,9 @@ var rootCmd = &cobra.Command{
 type levelWriter []string
 
 var logLevel = levelWriter{"[INFO]", "[ERROR]", "[WARN]"}
-var verbose bool
+
+// Verbose means additional debug information, like API logs
+var Verbose bool
 
 func (lw *levelWriter) Write(p []byte) (n int, err error) {
 	a := string(p)
@@ -38,17 +45,14 @@ func (lw *levelWriter) Write(p []byte) (n int, err error) {
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
-	if verbose {
-		logLevel = append(logLevel, "[DEBUG]")
-	}
-	ctx := project.Authenticate(context.Background())
-	err := rootCmd.ExecuteContext(ctx)
+	// TODO: deferred panic recovery
+	ctx := context.Background()
+	err := RootCmd.ExecuteContext(ctx)
 	if err != nil {
 		os.Exit(1)
 	}
 }
 
 func init() {
-	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "print debug logs")
-	log.SetOutput(&logLevel)
+	RootCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "v", false, "print debug logs")
 }
