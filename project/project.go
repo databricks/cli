@@ -3,40 +3,97 @@ package project
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	"github.com/databrickslabs/terraform-provider-databricks/clusters"
+	"github.com/databrickslabs/terraform-provider-databricks/commands"
 	"github.com/databrickslabs/terraform-provider-databricks/common"
 	"github.com/databrickslabs/terraform-provider-databricks/scim"
 )
 
-func CurrentUser(ctx context.Context) (scim.User, error) {
-	// TODO: memoize
-	return scim.NewUsersAPI(ctx, ClientFromContext(ctx)).Me()
+// Current CLI application state
+var Current inner
+
+type inner struct {
+	mu   sync.Mutex
+	once sync.Once
+
+	project *Project
+	client  *common.DatabricksClient
+	me      *scim.User
 }
 
-func ProjectName(ctx context.Context) string {
-	return "dev" // TODO: parse from config file
+func (i *inner) init() {
+	i.mu.Lock()
+	defer i.mu.Unlock()
+	i.once.Do(func() {
+		client := common.CommonEnvironmentClient()
+		client.WithCommandExecutor(func(
+			ctx context.Context, c *common.DatabricksClient) common.CommandExecutor {
+			return commands.NewCommandsAPI(ctx, c)
+		})
+		i.client = client
+		prj, err := loadProjectConf()
+		if err != nil {
+			panic(err)
+		}
+		client.Profile = prj.Profile
+		i.project = &prj
+	})
 }
 
-func DevelopmentCluster(ctx context.Context) (cluster clusters.ClusterInfo, err error) {
-	api := clusters.NewClustersAPI(ctx, ClientFromContext(ctx)) // TODO: rewrite with normal SDK
-	me, err := CurrentUser(ctx)
+func (i *inner) Client() *common.DatabricksClient {
+	i.init()
+	return i.client
+}
+
+func (i *inner) Project() *Project {
+	i.init()
+	return i.project
+}
+
+func (i *inner) Me() *scim.User {
+	i.mu.Lock()
+	defer i.mu.Unlock()
+	if i.me != nil {
+		return i.me
+	}
+	me, err := scim.NewUsersAPI(context.Background(), i.Client()).Me()
 	if err != nil {
+		panic(err)
+	}
+	i.me = &me
+	return &me
+}
+
+func (i *inner) DevelopmentCluster(ctx context.Context) (cluster clusters.ClusterInfo, err error) {
+	api := clusters.NewClustersAPI(ctx, i.Client()) // TODO: rewrite with normal SDK
+	if i.project.DevCluster == nil {
+		i.project.DevCluster = &clusters.Cluster{}
+	}
+	dc := i.project.DevCluster
+	if i.project.Isolation == Soft {
+		if i.project.IsDevClusterJustReference() {
+			err = fmt.Errorf("projects with soft isolation cannot have named clusters")
+			return
+		}
+		me := i.Me()
+		dc.ClusterName = fmt.Sprintf("dev/%s/%s", i.project.Name, me.UserName)
+	}
+	if dc.ClusterName == "" {
+		err = fmt.Errorf("please either pick `isolation: soft` or specify a shared cluster name")
 		return
 	}
-	projectName := ProjectName(ctx)
-	devClusterName := fmt.Sprintf("dev/%s/%s", projectName, me.UserName)
-	return api.GetOrCreateRunningCluster(devClusterName)
+	return api.GetOrCreateRunningCluster(dc.ClusterName, *dc)
 }
 
 func runCommandOnDev(ctx context.Context, language, command string) common.CommandResults {
-	client := ClientFromContext(ctx)
-	exec := client.CommandExecutor(ctx)
-	cluster, err := DevelopmentCluster(ctx)
+	cluster, err := Current.DevelopmentCluster(ctx)
+	exec := Current.Client().CommandExecutor(ctx)
 	if err != nil {
 		return common.CommandResults{
 			ResultType: "error",
-			Summary: err.Error(),
+			Summary:    err.Error(),
 		}
 	}
 	return exec.Execute(cluster.ClusterID, language, command)
