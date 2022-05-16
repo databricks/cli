@@ -33,7 +33,7 @@ type Assertions struct {
 
 type Project struct {
 	Name      string    `json:"name"` // or do default from folder name?..
-	Profile   string    `json:"profile,omitempty"`
+	Profile   string    `json:"profile,omitempty"` // rename?
 	Isolation Isolation `json:"isolation,omitempty"`
 
 	// TODO: turn to pointer for the easy YAML marshalling

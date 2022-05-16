@@ -23,6 +23,7 @@ func loadCliProfiles() (profiles []Answer, err error) {
 			// invalid profile
 			continue
 		}
+		// TODO: verify these tokens to work, becaus they may be expired
 		profiles = append(profiles, Answer{
 			Value:   v.Name(),
 			Details: fmt.Sprintf(`Connecting to "%s" workspace`, host),

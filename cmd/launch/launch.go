@@ -30,5 +30,7 @@ var launchCmd = &cobra.Command{
 }
 
 func init() {
+	// TODO: detect if we can skip registering 
+	// launch command for DBSQL projects
 	root.RootCmd.AddCommand(launchCmd)
 }

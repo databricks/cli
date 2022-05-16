@@ -55,6 +55,7 @@ type Choice struct {
 }
 
 func (q Choice) Ask(res Results) (string, Answer, error) {
+	// TODO: validate and re-ask
 	prompt := promptui.Select{
 		Label: q.Label,
 		Items: q.Answers,
