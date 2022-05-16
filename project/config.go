@@ -8,6 +8,7 @@ import (
 	"os"
 	"path"
 	"reflect"
+	"strings"
 
 	"github.com/databrickslabs/terraform-provider-databricks/clusters"
 	"github.com/ghodss/yaml"
@@ -32,7 +33,7 @@ type Assertions struct {
 }
 
 type Project struct {
-	Name      string    `json:"name"` // or do default from folder name?..
+	Name      string    `json:"name"`              // or do default from folder name?..
 	Profile   string    `json:"profile,omitempty"` // rename?
 	Isolation Isolation `json:"isolation,omitempty"`
 
@@ -133,6 +134,17 @@ func getGitOrigin() (*url.URL, error) {
 		return nil, fmt.Errorf("git origin url is not defined")
 	}
 	return gitUrls.Parse(url.Value())
+}
+
+// GitRepositoryName returns repository name as last path entry from detected
+// git repository up the tree or returns error if it fails to do so.
+func GitRepositoryName() (string, error) {
+	origin, err := getGitOrigin()
+	if err != nil {
+		return "", err
+	}
+	base := path.Base(origin.Path)
+	return strings.ReplaceAll(base, ".git", ""), nil
 }
 
 func findDirWithLeaf(leaf string) (string, error) {

@@ -3,7 +3,6 @@ package project
 import (
 	"fmt"
 	"os"
-	"path"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -30,9 +29,9 @@ func TestFindProjectRootInRoot(t *testing.T) {
 }
 
 func TestGetGitOrigin(t *testing.T) {
-	origin, err := getGitOrigin()
+	this, err := GitRepositoryName()
 	assert.NoError(t, err)
-	assert.Equal(t, "bricks.git", path.Base(origin.Path))
+	assert.Equal(t, "bricks", this)
 }
 
 func TestLoadProjectConf(t *testing.T) {
