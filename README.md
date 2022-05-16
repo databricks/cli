@@ -1,10 +1,8 @@
-# Bricks!
+# Bricks CLI 🧱 [![build](https://github.com/databricks/bricks/workflows/build/badge.svg?branch=main)](https://github.com/databricks/bricks/actions?query=workflow%3Abuild+branch%3Amain)
 
-[![build](https://github.com/databricks/bricks/workflows/build/badge.svg?branch=main)](https://github.com/databricks/bricks/actions?query=workflow%3Abuild+branch%3Amain)
+_Where's "data"? Secured by the unity catalog. Projects build lifecycle is secured by `bricks` 🧱_
 
-This is an early PoC at this stage!
-
-`make build` (or [download the latest from releases page](https://github.com/databricks/bricks/releases)).
+This is an early PoC at this stage. `make build` (or [download the latest from releases page](https://github.com/databricks/bricks/releases)).
 
 Reuses authentication from Databricks CLI. And terraform provider. See details here: https://registry.terraform.io/providers/databrickslabs/databricks/latest/docs#environment-variables
 
