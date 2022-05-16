@@ -1,4 +1,4 @@
-# Bricks CLI 🧱 [![build](https://github.com/databricks/bricks/workflows/build/badge.svg?branch=main?refresh)](https://github.com/databricks/bricks/actions?query=workflow%3Abuild+branch%3Amain)
+# Bricks CLI 🧱 [![build](https://github.com/databricks/bricks/workflows/build/badge.svg?branch=main)](https://github.com/databricks/bricks/actions?query=workflow%3Abuild+branch%3Amain)
 
 _Where's "data"? Secured by the unity catalog. Projects build lifecycle is secured by `bricks` 🧱_
 
