@@ -1,5 +1,7 @@
 # Bricks!
 
+[![build](https://github.com/databricks/bricks/workflows/build/badge.svg?branch=main)](https://github.com/databricks/bricks/actions?query=workflow%3Abuild+branch%3Amain)
+
 This is an early PoC at this stage!
 
 `make build` (or [download the latest from releases page](https://github.com/databricks/bricks/releases)).

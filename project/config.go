@@ -65,7 +65,7 @@ func (p *Project) IsDevClusterJustReference() bool {
 	if p.DevCluster.ClusterName == "" {
 		return false
 	}
-	return reflect.DeepEqual(p.DevCluster, clusters.Cluster{
+	return reflect.DeepEqual(p.DevCluster, &clusters.Cluster{
 		ClusterName: p.DevCluster.ClusterName,
 	})
 }
