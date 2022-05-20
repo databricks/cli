@@ -11,4 +11,5 @@ require (
 	github.com/spf13/cobra v1.4.0 // Apache 2.0
 	github.com/stretchr/testify v1.7.1 // MIT
 	github.com/whilp/git-urls v1.0.0 // MIT
+	golang.org/x/mod v0.5.1 // BSD-3-Clause
 )

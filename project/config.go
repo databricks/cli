@@ -37,7 +37,7 @@ type Project struct {
 	Profile   string    `json:"profile,omitempty"` // rename?
 	Isolation Isolation `json:"isolation,omitempty"`
 
-	// TODO: turn to pointer for the easy YAML marshalling
+	// development-time vs deployment-time resources
 	DevCluster *clusters.Cluster `json:"dev_cluster,omitempty"`
 
 	// Assertions defines a list of configurations expected to be applied

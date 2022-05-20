@@ -18,3 +18,6 @@ dist/
 
 *.log
 coverage.txt
+
+__pycache__
+*.pyc

@@ -11,7 +11,7 @@ import (
 	"github.com/databrickslabs/terraform-provider-databricks/scim"
 )
 
-// Current CLI application state
+// Current CLI application state - fixure out
 var Current inner
 
 type inner struct {
@@ -27,7 +27,7 @@ func (i *inner) init() {
 	i.mu.Lock()
 	defer i.mu.Unlock()
 	i.once.Do(func() {
-		client := common.CommonEnvironmentClient()
+		client := &common.DatabricksClient{}
 		client.WithCommandExecutor(func(
 			ctx context.Context, c *common.DatabricksClient) common.CommandExecutor {
 			return commands.NewCommandsAPI(ctx, c)
@@ -37,7 +37,12 @@ func (i *inner) init() {
 		if err != nil {
 			panic(err)
 		}
-		client.Profile = prj.Profile
+		client.Profile = prj.Profile // Databricks CLI profile
+		err = client.Configure()
+		if err != nil {
+			panic(err)
+		}
+		
 		i.project = &prj
 	})
 }
