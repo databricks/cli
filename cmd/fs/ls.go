@@ -11,7 +11,7 @@ import (
 
 // lsCmd represents the ls command
 var lsCmd = &cobra.Command{
-	Use:   "ls",
+	Use:   "ls <dir-name>",
 	Short: "Lists files",
 	Long:  `Lists files`,
 	Args:  cobra.ExactArgs(1),
@@ -21,6 +21,7 @@ var lsCmd = &cobra.Command{
 		if err != nil {
 			panic(err)
 		}
+		// TODO: output formatting: JSON, CSV, tables and default
 		for _, v := range files {
 			fmt.Printf("[-] %s (%d, %v)\n", v.Path, v.FileSize, v.IsDir)
 		}
@@ -28,15 +29,7 @@ var lsCmd = &cobra.Command{
 }
 
 func init() {
+	// TODO: pietern: conditionally register commands
+	// fabianj: don't do it
 	fsCmd.AddCommand(lsCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// lsCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// lsCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }

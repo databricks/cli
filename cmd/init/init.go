@@ -48,6 +48,7 @@ var initCmd = &cobra.Command{
 					prj.Isolation = project.Soft
 				}},
 			}},
+			// DBR selection
 			// Choice{"cloud", "Cloud", Answers{
 			// 	{"AWS", "Amazon Web Services", nil},
 			// 	{"Azure", "Microsoft Azure Cloud", nil},

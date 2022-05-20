@@ -54,5 +54,6 @@ func Execute() {
 }
 
 func init() {
+	// flags available for every child command
 	RootCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "v", false, "print debug logs")
 }
