@@ -36,6 +36,9 @@ func TestSomething(t *testing.T) {
 		if r.Type != "databricks_job" {
 			continue
 		}
+		// TODO: validate that libraries on jobs defined in *.tf and libraries 
+		// in `install_requires` defined in setup.py are the same. Exist with 
+		// the explanatory error otherwise.
 		found = true
 		// resource "databricks_job" "this"
 		assert.Equal(t, "this", r.Name)

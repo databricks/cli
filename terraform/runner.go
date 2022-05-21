@@ -39,13 +39,118 @@ Let's see how far we can get without GRPC magic.
 package terraform
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"fmt"
+	"io"
+	"os"
 
+	"github.com/databricks/bricks/project"
+	"github.com/databrickslabs/terraform-provider-databricks/storage"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/hc-install/product"
 	"github.com/hashicorp/hc-install/releases"
 	"github.com/hashicorp/terraform-exec/tfexec"
+
+	tfjson "github.com/hashicorp/terraform-json"
 )
+
+const DeploymentStateRemoteLocation = "dbfs:/FileStore/deployment-state"
+
+type TerraformDeployer struct {
+	WorkDir string
+	CopyTfs bool
+
+	tf *tfexec.Terraform
+}
+
+func (d *TerraformDeployer) Init(ctx context.Context) error {
+	if d.CopyTfs {
+		panic("copying tf configuration files to a temporary dir not yet implemented")
+	}
+	// TODO: most likely merge the methods
+	exec, err := newTerraform(ctx, d.WorkDir, map[string]string{})
+	if err != nil {
+		return err
+	}
+	d.tf = exec
+	return nil
+}
+
+func (d *TerraformDeployer) remoteTfstateLoc() string {
+	prefix := project.Current.DeploymentIsolationPrefix()
+	return fmt.Sprintf("%s/%s/terraform.tfstate", DeploymentStateRemoteLocation, prefix)
+}
+
+func (d *TerraformDeployer) remoteState(ctx context.Context) (*tfjson.State, error) {
+	dbfs := storage.NewDbfsAPI(ctx, project.Current.Client())
+	raw, err := dbfs.Read(d.remoteTfstateLoc())
+	if err != nil {
+		return nil, err
+	}
+	return d.tfstateFromReader(bytes.NewBuffer(raw))
+}
+
+func (d *TerraformDeployer) openLocalState() (*os.File, error) {
+	return os.Open(fmt.Sprintf("%s/terraform.tfstate", d.WorkDir))
+}
+
+func (d *TerraformDeployer) localState() (*tfjson.State, error) {
+	raw, err := d.openLocalState()
+	if err != nil {
+		return nil, err
+	}
+	return d.tfstateFromReader(raw)
+}
+
+func (d *TerraformDeployer) tfstateFromReader(reader io.Reader) (*tfjson.State, error) {
+	var state tfjson.State
+	state.UseJSONNumber(true)
+	decoder := json.NewDecoder(reader)
+	decoder.UseNumber()
+	err := decoder.Decode(&state)
+	if err != nil {
+		return nil, err
+	}
+	err = state.Validate()
+	if err != nil {
+		return nil, err
+	}
+	return &state, nil
+}
+
+func (d *TerraformDeployer) uploadTfstate(ctx context.Context) error {
+	// scripts/azcli-integration/terraform.tfstate
+	dbfs := storage.NewDbfsAPI(ctx, project.Current.Client())
+	f, err := d.openLocalState()
+	if err != nil {
+		return err
+	}
+	raw, err := io.ReadAll(f)
+	if err != nil {
+		return err
+	}
+	// TODO: make sure that deployment locks are implemented
+	return dbfs.Create(d.remoteTfstateLoc(), raw, true)
+}
+
+func (d *TerraformDeployer) downloadTfstate(ctx context.Context) error {
+	remote, err := d.remoteState(ctx)
+	if err != nil {
+		return err
+	}
+	local, err := d.openLocalState()
+	if err != nil {
+		return err
+	}
+	raw, err := json.Marshal(remote)
+	if err != nil {
+		return err
+	}
+	_, err = io.Copy(local, bytes.NewBuffer(raw))
+	return err
+}
 
 // installs terraform to a temporary directory (for now)
 func installTerraform(ctx context.Context) (string, error) {

@@ -71,6 +71,17 @@ func (i *inner) Me() *scim.User {
 	return &me
 }
 
+func (i *inner) DeploymentIsolationPrefix() string {
+	if i.project.Isolation == None {
+		return i.project.Name
+	}
+	if i.project.Isolation == Soft {
+		me := i.Me()
+		return fmt.Sprintf("%s/%s", i.project.Name, me.UserName)
+	}
+	panic(fmt.Errorf("unknow project isolation: %s", i.project.Isolation))
+}
+
 func (i *inner) DevelopmentCluster(ctx context.Context) (cluster clusters.ClusterInfo, err error) {
 	api := clusters.NewClustersAPI(ctx, i.Client()) // TODO: rewrite with normal SDK
 	if i.project.DevCluster == nil {
@@ -82,8 +93,7 @@ func (i *inner) DevelopmentCluster(ctx context.Context) (cluster clusters.Cluste
 			err = fmt.Errorf("projects with soft isolation cannot have named clusters")
 			return
 		}
-		me := i.Me()
-		dc.ClusterName = fmt.Sprintf("dev/%s/%s", i.project.Name, me.UserName)
+		dc.ClusterName = fmt.Sprintf("dev/%s", i.DeploymentIsolationPrefix())
 	}
 	if dc.ClusterName == "" {
 		err = fmt.Errorf("please either pick `isolation: soft` or specify a shared cluster name")
