@@ -21,3 +21,6 @@ coverage.txt
 
 __pycache__
 *.pyc
+
+.terraform
+.terraform.lock.hcl
