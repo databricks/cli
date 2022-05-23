@@ -58,6 +58,8 @@ func DependencyFromSpec(raw string) (d Dependency) {
 	return
 }
 
+// Distribution holds part of PEP426 metadata
+// See https://peps.python.org/pep-0426/
 type Distribution struct {
 	Name            string   `json:"name"`
 	Version         string   `json:"version"`
@@ -71,6 +73,15 @@ func (d Distribution) InstallEnvironment() (env Environment) {
 		env = append(env, DependencyFromSpec(raw))
 	}
 	return
+}
+
+// NormalizedName returns PEP503-compatible Python Package Index project name.
+// As per PEP 426 the only valid characters in a name are the ASCII alphabet,
+// ASCII numbers, ., -, and _. The name should be lowercased with all runs of
+// the characters ., -, or _ replaced with a single - character.
+func (d Distribution) NormalizedName() string {
+	// TODO: implement https://peps.python.org/pep-0503/#normalized-names
+	return d.Name
 }
 
 // ReadDistribution "parses" metadata from setup.py file.
