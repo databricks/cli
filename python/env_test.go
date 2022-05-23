@@ -15,7 +15,7 @@ func TestFreeze(t *testing.T) {
 }
 
 func TestPyInlineX(t *testing.T) {
-	defer chdirAndBack("internal/test/simple-python-wheel")()
+	defer chdirAndBack("testdata/simple-python-wheel")()
 	dist, err := ReadDistribution(context.Background())
 	assert.NoError(t, err)
 	assert.Equal(t, "dummy", dist.Name)

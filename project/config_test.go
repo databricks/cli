@@ -11,12 +11,12 @@ import (
 func TestFindProjectRoot(t *testing.T) {
 	wd, _ := os.Getwd()
 	defer os.Chdir(wd)
-	err := os.Chdir("internal/test/a/b/c")
+	err := os.Chdir("testdata/a/b/c")
 	assert.NoError(t, err)
 	root, err := findProjectRoot()
 	assert.NoError(t, err)
 
-	assert.Equal(t, fmt.Sprintf("%s/internal/test", wd), root)
+	assert.Equal(t, fmt.Sprintf("%s/testdata", wd), root)
 }
 
 func TestFindProjectRootInRoot(t *testing.T) {
@@ -37,7 +37,7 @@ func TestGetGitOrigin(t *testing.T) {
 func TestLoadProjectConf(t *testing.T) {
 	wd, _ := os.Getwd()
 	defer os.Chdir(wd)
-	os.Chdir("internal/test/a/b/c")
+	os.Chdir("testdata/a/b/c")
 
 	prj, err := loadProjectConf()
 	assert.NoError(t, err)

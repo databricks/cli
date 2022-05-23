@@ -11,7 +11,7 @@ import (
 
 func TestSomething(t *testing.T) {
 	ctx := context.Background()
-	tf, err := newTerraform(ctx, "internal/test/simplest", map[string]string{
+	tf, err := newTerraform(ctx, "testdata/simplest", map[string]string{
 		"DATABRICKS_HOST":  "..",
 		"DATABRICKS_TOKEN": "..",
 	})
@@ -36,8 +36,8 @@ func TestSomething(t *testing.T) {
 		if r.Type != "databricks_job" {
 			continue
 		}
-		// TODO: validate that libraries on jobs defined in *.tf and libraries 
-		// in `install_requires` defined in setup.py are the same. Exist with 
+		// TODO: validate that libraries on jobs defined in *.tf and libraries
+		// in `install_requires` defined in setup.py are the same. Exist with
 		// the explanatory error otherwise.
 		found = true
 		// resource "databricks_job" "this"

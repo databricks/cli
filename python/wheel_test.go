@@ -9,13 +9,13 @@ import (
 )
 
 func TestWheel(t *testing.T) {
-	wheel, err := BuildWheel(context.Background(), "internal/test/simple-python-wheel")
+	wheel, err := BuildWheel(context.Background(), "testdata/simple-python-wheel")
 	assert.NoError(t, err)
-	assert.Equal(t, "internal/test/simple-python-wheel/dist/dummy-0.0.1-py3-none-any.whl", wheel)
+	assert.Equal(t, "testdata/simple-python-wheel/dist/dummy-0.0.1-py3-none-any.whl", wheel)
 
-	noFile(t, "internal/test/simple-python-wheel/dummy.egg-info")
-	noFile(t, "internal/test/simple-python-wheel/__pycache__")
-	noFile(t, "internal/test/simple-python-wheel/build")
+	noFile(t, "testdata/simple-python-wheel/dummy.egg-info")
+	noFile(t, "testdata/simple-python-wheel/__pycache__")
+	noFile(t, "testdata/simple-python-wheel/build")
 }
 
 func noFile(t *testing.T, name string) {
