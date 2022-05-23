@@ -44,6 +44,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"os"
 
 	"github.com/databricks/bricks/project"
@@ -78,56 +79,76 @@ func (d *TerraformDeployer) Init(ctx context.Context) error {
 	return nil
 }
 
+// returns location of terraform state on DBFS based on project's deployment isolation level.
 func (d *TerraformDeployer) remoteTfstateLoc() string {
 	prefix := project.Current.DeploymentIsolationPrefix()
 	return fmt.Sprintf("%s/%s/terraform.tfstate", DeploymentStateRemoteLocation, prefix)
 }
 
-func (d *TerraformDeployer) remoteState(ctx context.Context) (*tfjson.State, error) {
+// returns structured representation of terraform state on DBFS.
+func (d *TerraformDeployer) remoteState(ctx context.Context) (*tfjson.State, int, error) {
 	dbfs := storage.NewDbfsAPI(ctx, project.Current.Client())
 	raw, err := dbfs.Read(d.remoteTfstateLoc())
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	return d.tfstateFromReader(bytes.NewBuffer(raw))
 }
 
+// opens file handle for local-backend terraform state, that has to be closed in the calling
+// methods. this file alone is not the authoritative state of deployment and has to properly
+// be synced with remote counterpart.
 func (d *TerraformDeployer) openLocalState() (*os.File, error) {
 	return os.Open(fmt.Sprintf("%s/terraform.tfstate", d.WorkDir))
 }
 
-func (d *TerraformDeployer) localState() (*tfjson.State, error) {
-	raw, err := d.openLocalState()
+// returns structured representation of terraform state on local machine. as part of 
+// the optimistic concurrency control, please make sure to always compare the serial 
+// number of local and remote states before proceeding with deployment.
+func (d *TerraformDeployer) localState() (*tfjson.State, int, error) {
+	local, err := d.openLocalState()
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
-	return d.tfstateFromReader(raw)
+	defer local.Close()
+	return d.tfstateFromReader(local)
 }
 
-func (d *TerraformDeployer) tfstateFromReader(reader io.Reader) (*tfjson.State, error) {
+// converts input stream into structured representation of terraform state and deployment 
+// serial number, that helps controlling versioning and synchronisation via optimistic locking.
+func (d *TerraformDeployer) tfstateFromReader(reader io.Reader) (*tfjson.State, int, error) {
 	var state tfjson.State
 	state.UseJSONNumber(true)
 	decoder := json.NewDecoder(reader)
 	decoder.UseNumber()
 	err := decoder.Decode(&state)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	err = state.Validate()
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
-	return &state, nil
+	var serialWrapper struct {
+		Serial int `json:"serial,omitempty"`
+	}
+	// TODO: use byte buffer if this decoder fails on double reading
+	err = decoder.Decode(&serialWrapper)
+	if err != nil {
+		return nil, 0, err
+	}
+	return &state, serialWrapper.Serial, nil
 }
 
+// uploads terraform state from local directory to designated DBFS location.
 func (d *TerraformDeployer) uploadTfstate(ctx context.Context) error {
-	// scripts/azcli-integration/terraform.tfstate
 	dbfs := storage.NewDbfsAPI(ctx, project.Current.Client())
-	f, err := d.openLocalState()
+	local, err := d.openLocalState()
 	if err != nil {
 		return err
 	}
-	raw, err := io.ReadAll(f)
+	defer local.Close()
+	raw, err := io.ReadAll(local)
 	if err != nil {
 		return err
 	}
@@ -135,15 +156,18 @@ func (d *TerraformDeployer) uploadTfstate(ctx context.Context) error {
 	return dbfs.Create(d.remoteTfstateLoc(), raw, true)
 }
 
+// downloads terraform state from DBFS to local working directory.
 func (d *TerraformDeployer) downloadTfstate(ctx context.Context) error {
-	remote, err := d.remoteState(ctx)
+	remote, serialDeployed, err := d.remoteState(ctx)
 	if err != nil {
 		return err
 	}
+	log.Printf("[DEBUG] remote serial is %d", serialDeployed)
 	local, err := d.openLocalState()
 	if err != nil {
 		return err
 	}
+	defer local.Close()
 	raw, err := json.Marshal(remote)
 	if err != nil {
 		return err
