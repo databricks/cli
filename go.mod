@@ -3,7 +3,7 @@ module github.com/databricks/bricks
 go 1.16
 
 require (
-	github.com/databrickslabs/terraform-provider-databricks v0.5.8 // Apache 2.0
+	github.com/databrickslabs/terraform-provider-databricks v0.5.9 // Apache 2.0
 	github.com/ghodss/yaml v1.0.0 // MIT + NOTICE
 	github.com/hashicorp/go-version v1.5.0 // MPL 2.0
 	github.com/hashicorp/hc-install v0.3.2 // MPL 2.0
