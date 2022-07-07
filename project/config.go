@@ -1,19 +1,14 @@
 package project
 
 import (
-	"errors"
 	"fmt"
 	"io/ioutil"
-	"net/url"
 	"os"
-	"path"
 	"reflect"
-	"strings"
 
+	"github.com/databricks/bricks/folders"
 	"github.com/databrickslabs/terraform-provider-databricks/clusters"
 	"github.com/ghodss/yaml"
-	gitUrls "github.com/whilp/git-urls"
-	"gopkg.in/ini.v1"
 )
 
 type Isolation string
@@ -108,64 +103,5 @@ func validateAndApplyProjectDefaults(prj Project) (Project, error) {
 }
 
 func findProjectRoot() (string, error) {
-	return findDirWithLeaf(ConfigFile)
-}
-
-// finds the original git repository the project is cloned from, so that
-// we could automatically verify if this project is checked out in repos
-// home folder of the user according to recommended best practices. Can
-// also be used to determine a good enough default project name.
-func getGitOrigin() (*url.URL, error) {
-	root, err := findDirWithLeaf(".git")
-	if err != nil {
-		return nil, err
-	}
-	file := fmt.Sprintf("%s/.git/config", root)
-	gitConfig, err := ini.Load(file)
-	if err != nil {
-		return nil, err
-	}
-	section := gitConfig.Section(`remote "origin"`)
-	if section == nil {
-		return nil, fmt.Errorf("remote `origin` is not defined in %s", file)
-	}
-	url := section.Key("url")
-	if url == nil {
-		return nil, fmt.Errorf("git origin url is not defined")
-	}
-	return gitUrls.Parse(url.Value())
-}
-
-// GitRepositoryName returns repository name as last path entry from detected
-// git repository up the tree or returns error if it fails to do so.
-func GitRepositoryName() (string, error) {
-	origin, err := getGitOrigin()
-	if err != nil {
-		return "", err
-	}
-	base := path.Base(origin.Path)
-	return strings.ReplaceAll(base, ".git", ""), nil
-}
-
-func findDirWithLeaf(leaf string) (string, error) {
-	dir, err := os.Getwd()
-	if err != nil {
-		return "", fmt.Errorf("cannot find $PWD: %s", err)
-	}
-	for {
-		_, err = os.Stat(fmt.Sprintf("%s/%s", dir, leaf))
-		if errors.Is(err, os.ErrNotExist) {
-			// TODO: test on windows
-			next := path.Dir(dir)
-			if dir == next { // or stop at $HOME?..
-				return "", fmt.Errorf("cannot find %s anywhere", leaf)
-			}
-			dir = next
-			continue
-		}
-		if err != nil {
-			return "", err
-		}
-		return dir, nil
-	}
+	return folders.FindDirWithLeaf(ConfigFile)
 }

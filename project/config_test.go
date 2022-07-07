@@ -28,12 +28,6 @@ func TestFindProjectRootInRoot(t *testing.T) {
 	assert.EqualError(t, err, "cannot find databricks.yml anywhere")
 }
 
-func TestGetGitOrigin(t *testing.T) {
-	this, err := GitRepositoryName()
-	assert.NoError(t, err)
-	assert.Equal(t, "bricks", this)
-}
-
 func TestLoadProjectConf(t *testing.T) {
 	wd, _ := os.Getwd()
 	defer os.Chdir(wd)
