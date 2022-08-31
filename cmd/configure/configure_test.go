@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/databricks/bricks/cmd/root"
+	"github.com/databricks/bricks/tests"
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/ini.v1"
 )
@@ -24,8 +25,8 @@ func setup(t *testing.T) string {
 	if runtime.GOOS == "windows" {
 		homeEnvVar = "USERPROFILE"
 	}
-	t.Setenv(homeEnvVar, tempHomeDir)
-	t.Setenv("DATABRICKS_CONFIG_FILE", "")
+	tests.SetTestEnv(t, homeEnvVar, tempHomeDir)
+	tests.SetTestEnv(t, "DATABRICKS_CONFIG_FILE", "")
 	return tempHomeDir
 }
 
@@ -56,7 +57,7 @@ func TestConfigFileFromEnv(t *testing.T) {
 	ctx := context.Background()
 	tempHomeDir := setup(t)
 	cfgFileDir := filepath.Join(tempHomeDir, "test")
-	t.Setenv("DATABRICKS_CONFIG_FILE", cfgFileDir)
+	tests.SetTestEnv(t, "DATABRICKS_CONFIG_FILE", cfgFileDir)
 
 	root.RootCmd.SetArgs([]string{"configure", "-H", "host", "-t", "token"})
 
