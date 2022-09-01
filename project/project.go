@@ -7,11 +7,10 @@ import (
 
 	// "github.com/databrickslabs/terraform-provider-databricks/clusters"
 	"github.com/databricks/databricks-sdk-go/service/clusters"
+	"github.com/databricks/databricks-sdk-go/service/commands"
 	"github.com/databricks/databricks-sdk-go/workspaces"
-	"github.com/databrickslabs/terraform-provider-databricks/commands"
 	"github.com/databrickslabs/terraform-provider-databricks/common"
 	"github.com/databrickslabs/terraform-provider-databricks/scim"
-	"github.com/jinzhu/copier"
 )
 
 // Current CLI application state - fixure out
@@ -22,6 +21,7 @@ type inner struct {
 	once sync.Once
 
 	project *Project
+	workspaceClient *workspaces.WorkspacesClient
 	client  *common.DatabricksClient
 	me      *scim.User
 }
@@ -31,10 +31,6 @@ func (i *inner) init() {
 	defer i.mu.Unlock()
 	i.once.Do(func() {
 		client := &common.DatabricksClient{}
-		client.WithCommandExecutor(func(
-			ctx context.Context, c *common.DatabricksClient) common.CommandExecutor {
-			return commands.NewCommandsAPI(ctx, c)
-		})
 		i.client = client
 		prj, err := loadProjectConf()
 		if err != nil {
@@ -85,61 +81,55 @@ func (i *inner) DeploymentIsolationPrefix() string {
 	panic(fmt.Errorf("unknow project isolation: %s", i.project.Isolation))
 }
 
-func (i *inner) DevelopmentCluster(ctx context.Context) (cluster clusters.ClusterInfo, err error) {
-	workspacesClient := workspaces.New()
-	clustersApiClient := workspacesClient.Clusters.(*clusters.ClustersAPI)
-	if i.project.DevCluster == nil {
-		i.project.DevCluster = &clusters.ClusterInfo{}
+func getClusterIdFromClusterName(ctx context.Context,
+	workspaceClient *workspaces.WorkspacesClient, 
+	clusterName string,
+) (clusterId string, err error) {
+	clusterId = ""
+	listClustersResponse, err := workspaceClient.Clusters.ListClusters(ctx,clusters.ListClustersRequest{})
+	if err != nil {
+		return
 	}
-	dc := i.project.DevCluster
-	if i.project.Isolation == Soft {
-		if i.project.IsDevClusterJustReference() {
-			err = fmt.Errorf("projects with soft isolation cannot have named clusters")
+	for _, cluster := range listClustersResponse.Clusters {
+		if cluster.ClusterName == clusterName {
+			clusterId = cluster.ClusterId
 			return
 		}
-		dc.ClusterName = fmt.Sprintf("dev/%s", i.DeploymentIsolationPrefix())
 	}
-	if dc.ClusterName == "" {
-		err = fmt.Errorf("please either pick `isolation: soft` or specify a shared cluster name")
-		return
-	}
-	clusterCreateRequest := clusters.CreateClusterRequest{}
-	err = copier.Copy(&clusterCreateRequest, dc)
-	if err != nil {
-		return
-	}
-	clusterCreateResponse, err :=  clustersApiClient.GetOrCreateRunningCluster(ctx,
-		clusterCreateRequest.ClusterName,
-		clusterCreateRequest,
-	)
-	// Remove this once https://github.com/databricks/databricks-sdk-go/issues/53 is fixed
-	getClusterResponse, err := clustersApiClient.GetCluster(ctx,
-		clusters.GetClusterRequest{
-			ClusterId: clusterCreateResponse.ClusterId,
-		},
-	)
-	if err != nil {
-		return
-	}
-	err = copier.Copy(&cluster, getClusterResponse)
-	if err != nil {
-		return
-	}
+	err = fmt.Errorf("could not find cluster with name: %s", clusterName)
 	return
 }
 
-func runCommandOnDev(ctx context.Context, language, command string) common.CommandResults {
-	cluster, err := Current.DevelopmentCluster(ctx)
-	exec := Current.Client().CommandExecutor(ctx)
+
+// TODO: Add safe access to i.project and i.project.DevCluster that throws errors if
+// the fields are not defined properly
+func (i *inner) GetDevelopmentClusterId(ctx context.Context) (clusterId string, err error) {
+	i.init()
+	clusterId = i.project.DevCluster.ClusterId
+	clusterName := i.project.DevCluster.ClusterName
+	if (clusterId != "") {
+		return
+	} else if (clusterName != "") {
+		// Add workspaces client on init
+		return getClusterIdFromClusterName(ctx, i.workspaceClient, clusterName)
+	} else {
+		// TODO: Add the project config file location used to error message
+		err = fmt.Errorf("Please define either development cluster's cluster_id or cluster_name in your project config")
+		return
+	}
+}
+
+func runCommandOnDev(ctx context.Context, language, command string) commands.CommandResults {
+	clusterId, err := Current.GetDevelopmentClusterId(ctx)
 	if err != nil {
-		return common.CommandResults{
+		return commands.CommandResults{
 			ResultType: "error",
 			Summary:    err.Error(),
 		}
 	}
-	return exec.Execute(cluster.ClusterId, language, command)
+	return Current.workspaceClient.Commands.Execute(ctx, clusterId, language, command)
 }
 
-func RunPythonOnDev(ctx context.Context, command string) common.CommandResults {
+func RunPythonOnDev(ctx context.Context, command string) commands.CommandResults {
 	return runCommandOnDev(ctx, "python", command)
 }
