@@ -24,6 +24,8 @@ require (
 	gopkg.in/ini.v1 v1.66.6 // Apache 2.0
 )
 
+require github.com/jinzhu/copier v0.3.5
+
 require (
 	cloud.google.com/go/compute v1.6.1 // indirect
 	github.com/Azure/go-autorest v14.2.0+incompatible // indirect

@@ -5,10 +5,13 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/databrickslabs/terraform-provider-databricks/clusters"
+	// "github.com/databrickslabs/terraform-provider-databricks/clusters"
+	"github.com/databricks/databricks-sdk-go/service/clusters"
+	"github.com/databricks/databricks-sdk-go/workspaces"
 	"github.com/databrickslabs/terraform-provider-databricks/commands"
 	"github.com/databrickslabs/terraform-provider-databricks/common"
 	"github.com/databrickslabs/terraform-provider-databricks/scim"
+	"github.com/jinzhu/copier"
 )
 
 // Current CLI application state - fixure out
@@ -83,9 +86,10 @@ func (i *inner) DeploymentIsolationPrefix() string {
 }
 
 func (i *inner) DevelopmentCluster(ctx context.Context) (cluster clusters.ClusterInfo, err error) {
-	api := clusters.NewClustersAPI(ctx, i.Client()) // TODO: rewrite with normal SDK
+	workspacesClient := workspaces.New()
+	clustersApiClient := workspacesClient.Clusters.(*clusters.ClustersAPI)
 	if i.project.DevCluster == nil {
-		i.project.DevCluster = &clusters.Cluster{}
+		i.project.DevCluster = &clusters.ClusterInfo{}
 	}
 	dc := i.project.DevCluster
 	if i.project.Isolation == Soft {
@@ -99,7 +103,29 @@ func (i *inner) DevelopmentCluster(ctx context.Context) (cluster clusters.Cluste
 		err = fmt.Errorf("please either pick `isolation: soft` or specify a shared cluster name")
 		return
 	}
-	return api.GetOrCreateRunningCluster(dc.ClusterName, *dc)
+	clusterCreateRequest := clusters.CreateClusterRequest{}
+	err = copier.Copy(&clusterCreateRequest, dc)
+	if err != nil {
+		return
+	}
+	clusterCreateResponse, err :=  clustersApiClient.GetOrCreateRunningCluster(ctx,
+		clusterCreateRequest.ClusterName,
+		clusterCreateRequest,
+	)
+	// Remove this once https://github.com/databricks/databricks-sdk-go/issues/53 is fixed
+	getClusterResponse, err := clustersApiClient.GetCluster(ctx,
+		clusters.GetClusterRequest{
+			ClusterId: clusterCreateResponse.ClusterId,
+		},
+	)
+	if err != nil {
+		return
+	}
+	err = copier.Copy(&cluster, getClusterResponse)
+	if err != nil {
+		return
+	}
+	return
 }
 
 func runCommandOnDev(ctx context.Context, language, command string) common.CommandResults {
@@ -111,7 +137,7 @@ func runCommandOnDev(ctx context.Context, language, command string) common.Comma
 			Summary:    err.Error(),
 		}
 	}
-	return exec.Execute(cluster.ClusterID, language, command)
+	return exec.Execute(cluster.ClusterId, language, command)
 }
 
 func RunPythonOnDev(ctx context.Context, command string) common.CommandResults {
