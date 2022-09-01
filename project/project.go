@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"sync"
 
-	// "github.com/databrickslabs/terraform-provider-databricks/clusters"
 	"github.com/databricks/databricks-sdk-go/service/clusters"
 	"github.com/databricks/databricks-sdk-go/service/commands"
 	"github.com/databricks/databricks-sdk-go/workspaces"

@@ -1,7 +1,9 @@
 package python
 
 import (
+	"bytes"
 	"context"
+	"encoding/base64"
 	"fmt"
 	"io"
 	"log"
@@ -10,7 +12,7 @@ import (
 	"strings"
 
 	"github.com/databricks/bricks/project"
-	"github.com/databrickslabs/terraform-provider-databricks/storage"
+	"github.com/databricks/databricks-sdk-go/service/dbfs"
 )
 
 func BuildWheel(ctx context.Context, dir string) (string, error) {
@@ -63,7 +65,8 @@ func UploadWheelToDBFSWithPEP503(ctx context.Context, dir string) (string, error
 	// a driver/worker `/etc/pip.conf` with FUSE-mounted file:///dbfs/FileStore/wheels/simple/..
 	// extra index URLs. See more pointers at https://stackoverflow.com/q/30889494/277035
 	dbfsLoc := fmt.Sprintf("%s/%s/%s", DBFSWheelLocation, dist.NormalizedName(), path.Base(wheel))
-	dbfs := storage.NewDbfsAPI(ctx, project.Current.Client()) // circular dep?..
+
+	workspaceClient := project.Current.WorkspacesClient()
 	wf, err := os.Open(wheel)
 	if err != nil {
 	  return "", err
@@ -73,9 +76,35 @@ func UploadWheelToDBFSWithPEP503(ctx context.Context, dir string) (string, error
 	if err != nil {
 	  return "", err
 	}
-	err = dbfs.Create(dbfsLoc, raw, true)
+	// err = dbfs.Create(dbfsLoc, raw, true)
+	createResponse, err := workspaceClient.Dbfs.Create(ctx,
+		dbfs.CreateRequest{
+			Overwrite: true,
+			Path: dbfsLoc,
+		},
+	)
 	if err != nil {
 	  return "", err
+	}
+	// TODO: Encapsulate this into a function
+	handle := createResponse.Handle
+	buffer := bytes.NewBuffer(raw)
+	for {
+		byteChunk := buffer.Next(1e6)
+		if len(byteChunk) == 0 {
+			break
+		}
+		b64Data := base64.StdEncoding.EncodeToString(byteChunk)
+		err := workspaceClient.Dbfs.AddBlock(ctx,
+			dbfs.AddBlockRequest{
+				Data: b64Data,
+				Handle: handle,
+			},
+		)
+		if err != nil {
+			// TODO: Add some better error reporting here
+			return dbfsLoc, err
+		}
 	}
 	// TODO: maintain PEP503 compliance and update meta-files:
 	// ${DBFSWheelLocation}/index.html and ${DBFSWheelLocation}/${NormalizedName}/index.html
