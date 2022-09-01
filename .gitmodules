@@ -1,0 +1,3 @@
+[submodule "ext/databricks-sdk-go"]
+	path = ext/databricks-sdk-go
+	url = git@github.com:databricks/databricks-sdk-go.git
