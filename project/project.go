@@ -56,6 +56,13 @@ func (i *inner) Project() *Project {
 	return i.project
 }
 
+// Make sure to initialize the workspaces client on project init
+func (i *inner) WorkspacesClient() *workspaces.WorkspacesClient {
+	i.init()
+	return i.workspaceClient
+}
+
+// We can replace this with go sdk once https://github.com/databricks/databricks-sdk-go/issues/56 is fixed
 func (i *inner) Me() *scim.User {
 	i.mu.Lock()
 	defer i.mu.Unlock()

@@ -12,9 +12,10 @@ import (
 	"github.com/databricks/bricks/cmd/root"
 	"github.com/databricks/bricks/git"
 	"github.com/databricks/bricks/project"
-	"github.com/databrickslabs/terraform-provider-databricks/repos"
-	"github.com/databrickslabs/terraform-provider-databricks/workspace"
 	"github.com/spf13/cobra"
+	"github.com/databricks/databricks-sdk-go/service/repos"
+	"github.com/databricks/databricks-sdk-go/service/workspace"
+	"github.com/databricks/databricks-sdk-go/workspaces"
 )
 
 // syncCmd represents the sync command
@@ -28,11 +29,9 @@ var syncCmd = &cobra.Command{
 		}
 		log.Printf("[INFO] %s", origin)
 		ctx := cmd.Context()
-		client := project.Current.Client()
-		reposAPI := repos.NewReposAPI(ctx, client)
 
-
-		checkouts, err := reposAPI.List("/")
+		workspaceClient := project.Current.WorkspacesClient()
+		checkouts, err := GetAllRepos(ctx, workspaceClient, "/")
 		if err != nil {
 			return err
 		}
@@ -46,9 +45,13 @@ var syncCmd = &cobra.Command{
 		}
 		base := fmt.Sprintf("/Repos/%s/%s", me.UserName, repositoryName)
 		return watchForChanges(ctx, git.MustGetFileSet(), *interval, func(d diff) error {
-			wsAPI := workspace.NewNotebooksAPI(ctx, client)
 			for _, v := range d.delete {
-				err := wsAPI.Delete(path.Join(base, v), true)
+				err := workspaceClient.Workspace.Delete(ctx,
+					workspace.DeleteRequest{
+						Path: path.Join(base, v),
+						Recursive: true,
+					},
+				)
 				if err != nil {
 					return err
 				}
@@ -56,6 +59,26 @@ var syncCmd = &cobra.Command{
 			return nil
 		})
 	},
+}
+
+func GetAllRepos(ctx context.Context, workspaceClient *workspaces.WorkspacesClient, pathPrefix string) (resultRepos []repos.GetRepoResponse, err error) {
+	nextPageToken := ""
+	for {
+		listReposResponse, err := workspaceClient.Repos.ListRepos(ctx,
+			repos.ListReposRequest{
+				PathPrefix: pathPrefix,
+				NextPageToken: nextPageToken,
+			},
+		)	
+		if err != nil {
+			break
+		}
+		resultRepos = append(resultRepos, listReposResponse.Repos...)
+		if nextPageToken == "" {
+			break
+		}
+	}
+	return
 }
 
 func ImportFile(ctx context.Context, path string, content io.Reader) error {
