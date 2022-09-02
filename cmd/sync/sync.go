@@ -12,9 +12,8 @@ import (
 	"github.com/databricks/bricks/cmd/root"
 	"github.com/databricks/bricks/git"
 	"github.com/databricks/bricks/project"
-	"github.com/databricks/databricks-sdk-go/service/repos"
+	"github.com/databricks/bricks/utilities"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
-	"github.com/databricks/databricks-sdk-go/workspaces"
 	"github.com/spf13/cobra"
 )
 
@@ -31,7 +30,7 @@ var syncCmd = &cobra.Command{
 		ctx := cmd.Context()
 
 		wsc := project.Current.WorkspacesClient()
-		checkouts, err := GetAllRepos(ctx, wsc, "/")
+		checkouts, err := utilities.GetAllRepos(ctx, wsc, "/")
 		if err != nil {
 			return err
 		}
@@ -59,26 +58,6 @@ var syncCmd = &cobra.Command{
 			return nil
 		})
 	},
-}
-
-func GetAllRepos(ctx context.Context, wsc *workspaces.WorkspacesClient, pathPrefix string) (resultRepos []repos.GetRepoResponse, err error) {
-	nextPageToken := ""
-	for {
-		listReposResponse, err := wsc.Repos.ListRepos(ctx,
-			repos.ListReposRequest{
-				PathPrefix:    pathPrefix,
-				NextPageToken: nextPageToken,
-			},
-		)
-		if err != nil {
-			break
-		}
-		resultRepos = append(resultRepos, listReposResponse.Repos...)
-		if nextPageToken == "" {
-			break
-		}
-	}
-	return
 }
 
 func ImportFile(ctx context.Context, path string, content io.Reader) error {
