@@ -106,6 +106,46 @@ func getClusterIdFromClusterName(ctx context.Context,
 	return
 }
 
+// Old version of getting development cluster details with isolation implemented.
+// Kept just for reference. Remove once isolation is implemented properly
+/*
+func (i *inner) DevelopmentCluster(ctx context.Context) (cluster clusters.ClusterInfo, err error) {
+	api := clusters.NewClustersAPI(ctx, i.Client()) // TODO: rewrite with normal SDK
+	if i.project.DevCluster == nil {
+		i.project.DevCluster = &clusters.Cluster{}
+	}
+	dc := i.project.DevCluster
+	if i.project.Isolation == Soft {
+		if i.project.IsDevClusterJustReference() {
+			err = fmt.Errorf("projects with soft isolation cannot have named clusters")
+			return
+		}
+		dc.ClusterName = fmt.Sprintf("dev/%s", i.DeploymentIsolationPrefix())
+	}
+	if dc.ClusterName == "" {
+		err = fmt.Errorf("please either pick `isolation: soft` or specify a shared cluster name")
+		return
+	}
+	return api.GetOrCreateRunningCluster(dc.ClusterName, *dc)
+}
+
+func runCommandOnDev(ctx context.Context, language, command string) common.CommandResults {
+	cluster, err := Current.DevelopmentCluster(ctx)
+	exec := Current.Client().CommandExecutor(ctx)
+	if err != nil {
+		return common.CommandResults{
+			ResultType: "error",
+			Summary:    err.Error(),
+		}
+	}
+	return exec.Execute(cluster.ClusterID, language, command)
+}
+
+func RunPythonOnDev(ctx context.Context, command string) common.CommandResults {
+	return runCommandOnDev(ctx, "python", command)
+}
+*/
+
 // TODO: Add safe access to i.project and i.project.DevCluster that throws errors if
 // the fields are not defined properly
 func (i *inner) GetDevelopmentClusterId(ctx context.Context) (clusterId string, err error) {
