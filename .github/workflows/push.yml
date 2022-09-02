@@ -10,8 +10,11 @@ jobs:
   tests:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout repository and submodules
         uses: actions/checkout@v2
+        with:
+          token:  ${{ secrets.GITHUB_TOKEN }}
+          submodules: recursive
 
       - name: Unshallow
         run: git fetch --prune --unshallow
