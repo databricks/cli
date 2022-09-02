@@ -13,12 +13,12 @@ import (
 // move to go sdk / replace with utility function once
 // https://github.com/databricks/databricks-sdk-go/issues/57 is Done
 func CreateDbfsFile(ctx context.Context,
-	workspaceClient *workspaces.WorkspacesClient,
+	wsc *workspaces.WorkspacesClient,
 	path string,
 	contents []byte,
 	overwrite bool,
 ) error {
-	createResponse, err := workspaceClient.Dbfs.Create(ctx,
+	createResponse, err := wsc.Dbfs.Create(ctx,
 		dbfs.CreateRequest{
 			Overwrite: overwrite,
 			Path:      path,
@@ -35,7 +35,7 @@ func CreateDbfsFile(ctx context.Context,
 			break
 		}
 		b64Data := base64.StdEncoding.EncodeToString(byteChunk)
-		err := workspaceClient.Dbfs.AddBlock(ctx,
+		err := wsc.Dbfs.AddBlock(ctx,
 			dbfs.AddBlockRequest{
 				Data:   b64Data,
 				Handle: handle,
@@ -50,14 +50,14 @@ func CreateDbfsFile(ctx context.Context,
 }
 
 func ReadDbfsFile(ctx context.Context,
-	workspaceClient *workspaces.WorkspacesClient,
+	wsc *workspaces.WorkspacesClient,
 	path string,
 ) (content []byte, err error) {
 	fetchLoop := true
 	offSet := 0
 	length := int(1e6)
 	for fetchLoop {
-		dbfsReadReponse, err := workspaceClient.Dbfs.Read(ctx,
+		dbfsReadReponse, err := wsc.Dbfs.Read(ctx,
 			dbfs.ReadRequest{
 				Path:   path,
 				Offset: offSet,

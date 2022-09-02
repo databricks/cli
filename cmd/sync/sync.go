@@ -12,10 +12,10 @@ import (
 	"github.com/databricks/bricks/cmd/root"
 	"github.com/databricks/bricks/git"
 	"github.com/databricks/bricks/project"
-	"github.com/spf13/cobra"
 	"github.com/databricks/databricks-sdk-go/service/repos"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/databricks/databricks-sdk-go/workspaces"
+	"github.com/spf13/cobra"
 )
 
 // syncCmd represents the sync command
@@ -30,8 +30,8 @@ var syncCmd = &cobra.Command{
 		log.Printf("[INFO] %s", origin)
 		ctx := cmd.Context()
 
-		workspaceClient := project.Current.WorkspacesClient()
-		checkouts, err := GetAllRepos(ctx, workspaceClient, "/")
+		wsc := project.Current.WorkspacesClient()
+		checkouts, err := GetAllRepos(ctx, wsc, "/")
 		if err != nil {
 			return err
 		}
@@ -46,9 +46,9 @@ var syncCmd = &cobra.Command{
 		base := fmt.Sprintf("/Repos/%s/%s", me.UserName, repositoryName)
 		return watchForChanges(ctx, git.MustGetFileSet(), *interval, func(d diff) error {
 			for _, v := range d.delete {
-				err := workspaceClient.Workspace.Delete(ctx,
+				err := wsc.Workspace.Delete(ctx,
 					workspace.DeleteRequest{
-						Path: path.Join(base, v),
+						Path:      path.Join(base, v),
 						Recursive: true,
 					},
 				)
@@ -61,15 +61,15 @@ var syncCmd = &cobra.Command{
 	},
 }
 
-func GetAllRepos(ctx context.Context, workspaceClient *workspaces.WorkspacesClient, pathPrefix string) (resultRepos []repos.GetRepoResponse, err error) {
+func GetAllRepos(ctx context.Context, wsc *workspaces.WorkspacesClient, pathPrefix string) (resultRepos []repos.GetRepoResponse, err error) {
 	nextPageToken := ""
 	for {
-		listReposResponse, err := workspaceClient.Repos.ListRepos(ctx,
+		listReposResponse, err := wsc.Repos.ListRepos(ctx,
 			repos.ListReposRequest{
-				PathPrefix: pathPrefix,
+				PathPrefix:    pathPrefix,
 				NextPageToken: nextPageToken,
 			},
-		)	
+		)
 		if err != nil {
 			break
 		}

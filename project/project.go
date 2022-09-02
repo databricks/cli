@@ -20,7 +20,7 @@ type inner struct {
 	once sync.Once
 
 	project         *Project
-	workspaceClient *workspaces.WorkspacesClient
+	wsc *workspaces.WorkspacesClient
 	client          *common.DatabricksClient
 	me              *scim.User
 }
@@ -31,7 +31,7 @@ func (i *inner) init() {
 	i.once.Do(func() {
 		client := &common.DatabricksClient{}
 		i.client = client
-		i.workspaceClient = workspaces.New()
+		i.wsc = workspaces.New()
 		prj, err := loadProjectConf()
 		if err != nil {
 			panic(err)
@@ -58,7 +58,7 @@ func (i *inner) Project() *Project {
 // Make sure to initialize the workspaces client on project init
 func (i *inner) WorkspacesClient() *workspaces.WorkspacesClient {
 	i.init()
-	return i.workspaceClient
+	return i.wsc
 }
 
 // We can replace this with go sdk once https://github.com/databricks/databricks-sdk-go/issues/56 is fixed
@@ -88,11 +88,11 @@ func (i *inner) DeploymentIsolationPrefix() string {
 }
 
 func getClusterIdFromClusterName(ctx context.Context,
-	workspaceClient *workspaces.WorkspacesClient,
+	wsc *workspaces.WorkspacesClient,
 	clusterName string,
 ) (clusterId string, err error) {
 	clusterId = ""
-	listClustersResponse, err := workspaceClient.Clusters.ListClusters(ctx, clusters.ListClustersRequest{})
+	listClustersResponse, err := wsc.Clusters.ListClusters(ctx, clusters.ListClustersRequest{})
 	if err != nil {
 		return
 	}
@@ -156,7 +156,7 @@ func (i *inner) GetDevelopmentClusterId(ctx context.Context) (clusterId string, 
 		return
 	} else if clusterName != "" {
 		// Add workspaces client on init
-		return getClusterIdFromClusterName(ctx, i.workspaceClient, clusterName)
+		return getClusterIdFromClusterName(ctx, i.wsc, clusterName)
 	} else {
 		// TODO: Add the project config file location used to error message
 		err = fmt.Errorf("Please define either development cluster's cluster_id or cluster_name in your project config")
@@ -172,7 +172,7 @@ func runCommandOnDev(ctx context.Context, language, command string) commands.Com
 			Summary:    err.Error(),
 		}
 	}
-	return Current.workspaceClient.Commands.Execute(ctx, clusterId, language, command)
+	return Current.wsc.Commands.Execute(ctx, clusterId, language, command)
 }
 
 func RunPythonOnDev(ctx context.Context, command string) commands.CommandResults {

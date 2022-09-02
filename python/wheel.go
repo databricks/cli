@@ -63,7 +63,7 @@ func UploadWheelToDBFSWithPEP503(ctx context.Context, dir string) (string, error
 	// extra index URLs. See more pointers at https://stackoverflow.com/q/30889494/277035
 	dbfsLoc := fmt.Sprintf("%s/%s/%s", DBFSWheelLocation, dist.NormalizedName(), path.Base(wheel))
 
-	workspaceClient := project.Current.WorkspacesClient()
+	wsc := project.Current.WorkspacesClient()
 	wf, err := os.Open(wheel)
 	if err != nil {
 		return "", err
@@ -75,7 +75,7 @@ func UploadWheelToDBFSWithPEP503(ctx context.Context, dir string) (string, error
 	}
 	// err = dbfs.Create(dbfsLoc, raw, true)
 	err = utilities.CreateDbfsFile(ctx,
-		workspaceClient,
+		wsc,
 		dbfsLoc,
 		raw,
 		true,
