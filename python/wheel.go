@@ -1,9 +1,7 @@
 package python
 
 import (
-	"bytes"
 	"context"
-	"encoding/base64"
 	"fmt"
 	"io"
 	"log"
@@ -12,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/databricks/bricks/project"
-	"github.com/databricks/databricks-sdk-go/service/dbfs"
+	"github.com/databricks/bricks/utilities"
 )
 
 func BuildWheel(ctx context.Context, dir string) (string, error) {
@@ -21,7 +19,6 @@ func BuildWheel(ctx context.Context, dir string) (string, error) {
 	os.RemoveAll("dist")
 	// remove all other irrelevant traces
 	silentlyCleanupWheelFolder(".")
-	
 	// call simple wheel builder. we may need to pip install wheel as well
 	out, err := Py(ctx, "setup.py", "bdist_wheel")
 	if err != nil {
@@ -51,14 +48,14 @@ const DBFSWheelLocation = "dbfs:/FileStore/wheels/simple"
 func UploadWheelToDBFSWithPEP503(ctx context.Context, dir string) (string, error) {
 	wheel, err := BuildWheel(ctx, dir)
 	if err != nil {
-	  return "", err
+		return "", err
 	}
 	defer chdirAndBack(dir)()
 	dist, err := ReadDistribution(ctx)
 	if err != nil {
-	  return "", err
+		return "", err
 	}
-	// TODO: figure out wheel naming criteria for Soft project isolation to allow multiple 
+	// TODO: figure out wheel naming criteria for Soft project isolation to allow multiple
 	// people workin on the same project to upload wheels and let them be deployed as independent jobs.
 	// we should also consider multiple PEP503 index stacking: per enterprise, per project, per developer.
 	// PEP503 indexes can be rolled out to clusters via checksummed global init script, that creates
@@ -69,46 +66,23 @@ func UploadWheelToDBFSWithPEP503(ctx context.Context, dir string) (string, error
 	workspaceClient := project.Current.WorkspacesClient()
 	wf, err := os.Open(wheel)
 	if err != nil {
-	  return "", err
+		return "", err
 	}
 	defer wf.Close()
 	raw, err := io.ReadAll(wf)
 	if err != nil {
-	  return "", err
+		return "", err
 	}
 	// err = dbfs.Create(dbfsLoc, raw, true)
-	createResponse, err := workspaceClient.Dbfs.Create(ctx,
-		dbfs.CreateRequest{
-			Overwrite: true,
-			Path: dbfsLoc,
-		},
+	err = utilities.CreateDbfsFile(ctx,
+		workspaceClient,
+		dbfsLoc,
+		raw,
+		true,
 	)
-	if err != nil {
-	  return "", err
-	}
-	// TODO: Encapsulate this into a function
-	handle := createResponse.Handle
-	buffer := bytes.NewBuffer(raw)
-	for {
-		byteChunk := buffer.Next(1e6)
-		if len(byteChunk) == 0 {
-			break
-		}
-		b64Data := base64.StdEncoding.EncodeToString(byteChunk)
-		err := workspaceClient.Dbfs.AddBlock(ctx,
-			dbfs.AddBlockRequest{
-				Data: b64Data,
-				Handle: handle,
-			},
-		)
-		if err != nil {
-			// TODO: Add some better error reporting here
-			return dbfsLoc, err
-		}
-	}
 	// TODO: maintain PEP503 compliance and update meta-files:
 	// ${DBFSWheelLocation}/index.html and ${DBFSWheelLocation}/${NormalizedName}/index.html
-	return dbfsLoc, nil
+	return dbfsLoc, err
 }
 
 func silentlyCleanupWheelFolder(dir string) {
