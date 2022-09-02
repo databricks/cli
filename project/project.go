@@ -19,10 +19,10 @@ type inner struct {
 	mu   sync.Mutex
 	once sync.Once
 
-	project *Project
+	project         *Project
 	workspaceClient *workspaces.WorkspacesClient
-	client  *common.DatabricksClient
-	me      *scim.User
+	client          *common.DatabricksClient
+	me              *scim.User
 }
 
 func (i *inner) init() {
@@ -31,6 +31,7 @@ func (i *inner) init() {
 	i.once.Do(func() {
 		client := &common.DatabricksClient{}
 		i.client = client
+		i.workspaceClient = workspaces.New()
 		prj, err := loadProjectConf()
 		if err != nil {
 			panic(err)
@@ -40,7 +41,6 @@ func (i *inner) init() {
 		if err != nil {
 			panic(err)
 		}
-		
 		i.project = &prj
 	})
 }
@@ -88,11 +88,11 @@ func (i *inner) DeploymentIsolationPrefix() string {
 }
 
 func getClusterIdFromClusterName(ctx context.Context,
-	workspaceClient *workspaces.WorkspacesClient, 
+	workspaceClient *workspaces.WorkspacesClient,
 	clusterName string,
 ) (clusterId string, err error) {
 	clusterId = ""
-	listClustersResponse, err := workspaceClient.Clusters.ListClusters(ctx,clusters.ListClustersRequest{})
+	listClustersResponse, err := workspaceClient.Clusters.ListClusters(ctx, clusters.ListClustersRequest{})
 	if err != nil {
 		return
 	}
@@ -106,16 +106,15 @@ func getClusterIdFromClusterName(ctx context.Context,
 	return
 }
 
-
 // TODO: Add safe access to i.project and i.project.DevCluster that throws errors if
 // the fields are not defined properly
 func (i *inner) GetDevelopmentClusterId(ctx context.Context) (clusterId string, err error) {
 	i.init()
 	clusterId = i.project.DevCluster.ClusterId
 	clusterName := i.project.DevCluster.ClusterName
-	if (clusterId != "") {
+	if clusterId != "" {
 		return
-	} else if (clusterName != "") {
+	} else if clusterName != "" {
 		// Add workspaces client on init
 		return getClusterIdFromClusterName(ctx, i.workspaceClient, clusterName)
 	} else {
