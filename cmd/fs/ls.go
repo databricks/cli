@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
-	"github.com/databricks/databricks-sdk-go/workspaces"	
+	"github.com/databricks/bricks/project"
 	"github.com/databricks/databricks-sdk-go/service/dbfs"
 )
 
@@ -15,10 +15,8 @@ var lsCmd = &cobra.Command{
 	Long:  `Lists files`,
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		// Question (shreyas): Where does the client pick up the login creds from ? Context ?
-		// Maybe this client can be added on a higher level ?
-		// Create issue to add tests for this ? How to write those for cli ?
-		workspacesClient := workspaces.New()
+		// Question (by shreyas): Where does the client pick up the login creds from ? Context ?
+		workspacesClient := project.Current.WorkspacesClient()
 		listStatusResponse, err := workspacesClient.Dbfs.ListStatus(cmd.Context(), 
 			dbfs.ListStatusRequest{Path: args[0]},
 		)
