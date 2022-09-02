@@ -6,7 +6,6 @@ go 1.18
 require (
 	github.com/atotto/clipboard v0.1.4
 	github.com/databricks/databricks-sdk-go v0.0.0
-	// github.com/databricks/databricks-sdk-go/workspaces v0.0.0
 	github.com/databrickslabs/terraform-provider-databricks v0.5.8 // Apache 2.0
 	github.com/ghodss/yaml v1.0.0 // MIT + NOTICE
 	github.com/hashicorp/go-version v1.5.0 // MPL 2.0
@@ -96,5 +95,3 @@ require (
 )
 
 replace github.com/databricks/databricks-sdk-go v0.0.0 => ./ext/databricks-sdk-go
-
-// replace github.com/databricks/databricks-sdk-go/workspaces v0.0.0 => ./ext/databricks-sdk-go/workspaces
