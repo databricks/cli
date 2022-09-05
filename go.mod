@@ -1,6 +1,5 @@
 module github.com/databricks/bricks
 
-// go version later than 1.18 need to work with go sdk
 go 1.18
 
 require (
