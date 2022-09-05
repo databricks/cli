@@ -7,7 +7,7 @@ require (
 	github.com/databrickslabs/terraform-provider-databricks v0.5.8 // Apache 2.0
 	github.com/ghodss/yaml v1.0.0 // MIT + NOTICE
 	github.com/hashicorp/go-version v1.5.0 // MPL 2.0
-	github.com/hashicorp/hc-install v0.3.2 // MPL 2.0
+	github.com/hashicorp/hc-install v0.4.0 // MPL 2.0
 	github.com/hashicorp/terraform-exec v0.16.1 // MPL 2.0
 	github.com/hashicorp/terraform-json v0.13.0 // MPL 2.0
 	github.com/manifoldco/promptui v0.9.0 // BSD-3-Clause license
@@ -87,5 +87,5 @@ require (
 	google.golang.org/grpc v1.46.0 // indirect
 	google.golang.org/protobuf v1.28.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-	gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
