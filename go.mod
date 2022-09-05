@@ -6,10 +6,10 @@ require (
 	github.com/atotto/clipboard v0.1.4
 	github.com/databrickslabs/terraform-provider-databricks v0.5.8 // Apache 2.0
 	github.com/ghodss/yaml v1.0.0 // MIT + NOTICE
-	github.com/hashicorp/go-version v1.5.0 // MPL 2.0
-	github.com/hashicorp/hc-install v0.3.2 // MPL 2.0
-	github.com/hashicorp/terraform-exec v0.16.1 // MPL 2.0
-	github.com/hashicorp/terraform-json v0.13.0 // MPL 2.0
+	github.com/hashicorp/go-version v1.6.0 // MPL 2.0
+	github.com/hashicorp/hc-install v0.4.0 // MPL 2.0
+	github.com/hashicorp/terraform-exec v0.17.3 // MPL 2.0
+	github.com/hashicorp/terraform-json v0.14.0 // MPL 2.0
 	github.com/manifoldco/promptui v0.9.0 // BSD-3-Clause license
 	github.com/mitchellh/go-homedir v1.1.0 // MIT
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8 // BSD-2-Clause
@@ -73,7 +73,7 @@ require (
 	github.com/vmihailenco/msgpack v4.0.4+incompatible // indirect
 	github.com/vmihailenco/msgpack/v4 v4.3.12 // indirect
 	github.com/vmihailenco/tagparser v0.1.1 // indirect
-	github.com/zclconf/go-cty v1.10.0 // indirect
+	github.com/zclconf/go-cty v1.11.0 // indirect
 	go.opencensus.io v0.23.0 // indirect
 	golang.org/x/crypto v0.0.0-20211215153901-e495a2d5b3d3 // indirect
 	golang.org/x/net v0.0.0-20220425223048-2871e0cb64e4 // indirect
@@ -87,5 +87,5 @@ require (
 	google.golang.org/grpc v1.46.0 // indirect
 	google.golang.org/protobuf v1.28.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-	gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
