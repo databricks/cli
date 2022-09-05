@@ -15,7 +15,6 @@ var lsCmd = &cobra.Command{
 	Long:  `Lists files`,
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		// Question (by shreyas): Where does the client pick up the login creds from ? Context ?
 		wsc := project.Current.WorkspacesClient()
 		listStatusResponse, err := wsc.Dbfs.ListStatus(cmd.Context(),
 			dbfs.ListStatusRequest{Path: args[0]},
