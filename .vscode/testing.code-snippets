@@ -81,7 +81,7 @@
 		"description": "err :="
 	},
 	"Golang Error Wrapper": {
-		"prefix": "werr",
+		"prefix": "ifew",
 		"body": [
 			"if err != nil {",
 			"  return fmt.Errorf(\"$1: %w\", err)",
