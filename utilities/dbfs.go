@@ -19,6 +19,7 @@ func CreateDbfsFile(ctx context.Context,
 	contents []byte,
 	overwrite bool,
 ) error {
+	const WRITE_BYTE_CHUNK_SIZE = 1e6
 	createResponse, err := wsc.Dbfs.Create(ctx,
 		dbfs.CreateRequest{
 			Overwrite: overwrite,
@@ -31,7 +32,7 @@ func CreateDbfsFile(ctx context.Context,
 	handle := createResponse.Handle
 	buffer := bytes.NewBuffer(contents)
 	for {
-		byteChunk := buffer.Next(1e6)
+		byteChunk := buffer.Next(WRITE_BYTE_CHUNK_SIZE)
 		if len(byteChunk) == 0 {
 			break
 		}
@@ -54,9 +55,10 @@ func ReadDbfsFile(ctx context.Context,
 	wsc *workspaces.WorkspacesClient,
 	path string,
 ) (content []byte, err error) {
+	const READ_BYTE_CHUNK_SIZE = 1e6
 	fetchLoop := true
 	offSet := 0
-	length := int(1e6)
+	length := int(READ_BYTE_CHUNK_SIZE)
 	for fetchLoop {
 		dbfsReadReponse, err := wsc.Dbfs.Read(ctx,
 			dbfs.ReadRequest{
