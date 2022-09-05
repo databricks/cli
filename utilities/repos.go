@@ -9,6 +9,7 @@ import (
 
 // Remove once this function is in go sdk
 // https://github.com/databricks/databricks-sdk-go/issues/58
+// Tracked in : https://github.com/databricks/bricks/issues/26
 func GetAllRepos(ctx context.Context, wsc *workspaces.WorkspacesClient, pathPrefix string) (resultRepos []repos.GetRepoResponse, err error) {
 	nextPageToken := ""
 	for {

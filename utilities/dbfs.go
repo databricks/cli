@@ -12,6 +12,7 @@ import (
 
 // move to go sdk / replace with utility function once
 // https://github.com/databricks/databricks-sdk-go/issues/57 is Done
+// Tracked in https://github.com/databricks/bricks/issues/25
 func CreateDbfsFile(ctx context.Context,
 	wsc *workspaces.WorkspacesClient,
 	path string,
