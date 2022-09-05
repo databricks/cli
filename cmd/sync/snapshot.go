@@ -19,7 +19,6 @@ func (d diff) IsEmpty() bool {
 	return len(d.put) == 0 && len(d.delete) == 0
 }
 
-
 func (d diff) String() string {
 	if d.IsEmpty() {
 		return "no changes"

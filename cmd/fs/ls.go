@@ -3,9 +3,9 @@ package fs
 import (
 	"fmt"
 
-	"github.com/spf13/cobra"
 	"github.com/databricks/bricks/project"
 	"github.com/databricks/databricks-sdk-go/service/dbfs"
+	"github.com/spf13/cobra"
 )
 
 // lsCmd represents the ls command
@@ -17,7 +17,7 @@ var lsCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		// Question (by shreyas): Where does the client pick up the login creds from ? Context ?
 		wsc := project.Current.WorkspacesClient()
-		listStatusResponse, err := wsc.Dbfs.ListStatus(cmd.Context(), 
+		listStatusResponse, err := wsc.Dbfs.ListStatus(cmd.Context(),
 			dbfs.ListStatusRequest{Path: args[0]},
 		)
 		if err != nil {

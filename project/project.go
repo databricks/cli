@@ -19,10 +19,10 @@ type inner struct {
 	mu   sync.Mutex
 	once sync.Once
 
-	project         *Project
-	wsc *workspaces.WorkspacesClient
-	client          *common.DatabricksClient
-	me              *scim.User
+	project *Project
+	wsc     *workspaces.WorkspacesClient
+	client  *common.DatabricksClient
+	me      *scim.User
 }
 
 func (i *inner) init() {
