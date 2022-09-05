@@ -30,11 +30,27 @@ func setup(t *testing.T) string {
 	return tempHomeDir
 }
 
-func TestDefaultConfigure(t *testing.T) {
+func getTempFileWithContent(t *testing.T, tempHomeDir string, content string) *os.File {
+	inp, err := os.CreateTemp(tempHomeDir, "input")
+	assert.NoError(t, err)
+	_, err = inp.WriteString(content)
+	assert.NoError(t, err)
+	err = inp.Sync()
+	assert.NoError(t, err)
+	_, err = inp.Seek(0, 0)
+	assert.NoError(t, err)
+	return inp
+}
+
+func TestDefaultConfigureNoInteractive(t *testing.T) {
 	ctx := context.Background()
 	tempHomeDir := setup(t)
+	inp := getTempFileWithContent(t, tempHomeDir, "host token\n")
+	oldStdin := os.Stdin
+	defer func() { os.Stdin = oldStdin }()
+	os.Stdin = inp
 
-	root.RootCmd.SetArgs([]string{"configure", "-H", "host", "-t", "token"})
+	root.RootCmd.SetArgs([]string{"configure", "--no-interactive"})
 
 	err := root.RootCmd.ExecuteContext(ctx)
 	assert.NoError(t, err)
@@ -53,13 +69,19 @@ func TestDefaultConfigure(t *testing.T) {
 	assertKeyValueInSection(t, defaultSection, "token", "token")
 }
 
-func TestConfigFileFromEnv(t *testing.T) {
+func TestConfigFileFromEnvNoInteractive(t *testing.T) {
+	//TODO: Replace with similar test code from go SDK, once we start using it directly
 	ctx := context.Background()
 	tempHomeDir := setup(t)
 	cfgFileDir := filepath.Join(tempHomeDir, "test")
 	tests.SetTestEnv(t, "DATABRICKS_CONFIG_FILE", cfgFileDir)
 
-	root.RootCmd.SetArgs([]string{"configure", "-H", "host", "-t", "token"})
+	inp := getTempFileWithContent(t, tempHomeDir, "host token\n")
+	oldStdin := os.Stdin
+	defer func() { os.Stdin = oldStdin }()
+	os.Stdin = inp
+
+	root.RootCmd.SetArgs([]string{"configure", "--no-interactive"})
 
 	err := root.RootCmd.ExecuteContext(ctx)
 	assert.NoError(t, err)
