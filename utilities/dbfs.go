@@ -19,6 +19,7 @@ func CreateDbfsFile(ctx context.Context,
 	contents []byte,
 	overwrite bool,
 ) error {
+	// see https://docs.databricks.com/dev-tools/api/latest/dbfs.html#add-block
 	const WRITE_BYTE_CHUNK_SIZE = 1e6
 	createResponse, err := wsc.Dbfs.Create(ctx,
 		dbfs.CreateRequest{
@@ -44,8 +45,15 @@ func CreateDbfsFile(ctx context.Context,
 			},
 		)
 		if err != nil {
-			// TODO: Add some better error reporting here
-			return err
+			return fmt.Errorf("cannot add block: %w", err)
+		}
+		err = wsc.Dbfs.Close(ctx,
+			dbfs.CloseRequest{
+				Handle: handle,
+			},
+		)
+		if err != nil {
+			return fmt.Errorf("cannot close handle: %w", err)
 		}
 	}
 	return nil
@@ -55,6 +63,7 @@ func ReadDbfsFile(ctx context.Context,
 	wsc *workspaces.WorkspacesClient,
 	path string,
 ) (content []byte, err error) {
+	// see https://docs.databricks.com/dev-tools/api/latest/dbfs.html#read
 	const READ_BYTE_CHUNK_SIZE = 1e6
 	fetchLoop := true
 	offSet := 0
