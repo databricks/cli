@@ -159,7 +159,7 @@ func (i *inner) GetDevelopmentClusterId(ctx context.Context) (clusterId string, 
 		return getClusterIdFromClusterName(ctx, i.wsc, clusterName)
 	} else {
 		// TODO: Add the project config file location used to error message
-		err = fmt.Errorf("Please define either development cluster's cluster_id or cluster_name in your project config")
+		err = fmt.Errorf("please define either development cluster's cluster_id or cluster_name in your project config")
 		return
 	}
 }
