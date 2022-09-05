@@ -6,6 +6,7 @@ import (
 	"os"
 	"path"
 
+	"github.com/databricks/bricks/cmd/prompt"
 	"github.com/databricks/bricks/cmd/root"
 	"github.com/databricks/bricks/project"
 	"github.com/ghodss/yaml"
@@ -30,23 +31,44 @@ var initCmd = &cobra.Command{
 			return err
 		}
 		wd, _ := os.Getwd()
-		q := Questions{
-			Text{"name", "Project name", func(res Results) string {
-				return path.Base(wd)
-			}, func(ans Answer, prj *project.Project, res Results) {
-				prj.Name = ans.Value
-			}},
+		q := prompt.Questions{
+			prompt.Text{
+				Key:   "name",
+				Label: "Project name",
+				Default: func(res prompt.Results) string {
+					return path.Base(wd)
+				},
+				Callback: func(ans prompt.Answer, prj *project.Project, res prompt.Results) {
+					prj.Name = ans.Value
+				},
+			},
 			*profileChoice,
-			Choice{"language", "Project language", Answers{
-				{"Python", "Machine learning and data engineering focused projects", nil},
-				{"Scala", "Data engineering focused projects with strong typing", nil},
+			prompt.Choice{Key: "language", Label: "Project language", Answers: prompt.Answers{
+				{
+					Value:    "Python",
+					Details:  "Machine learning and data engineering focused projects",
+					Callback: nil,
+				},
+				{
+					Value:    "Scala",
+					Details:  "Data engineering focused projects with strong typing",
+					Callback: nil,
+				},
 			}},
-			Choice{"isolation", "Deployment isolation", Answers{
-				{"None", "Use shared Databricks workspace resources for all project team members", nil},
-				{"Soft", "Prepend prefixes to each team member's deployment", func(
-					ans Answer, prj *project.Project, res Results) {
-					prj.Isolation = project.Soft
-				}},
+			prompt.Choice{Key: "isolation", Label: "Deployment isolation", Answers: prompt.Answers{
+				{
+					Value:    "None",
+					Details:  "Use shared Databricks workspace resources for all project team members",
+					Callback: nil,
+				},
+				{
+					Value:   "Soft",
+					Details: "Prepend prefixes to each team member's deployment",
+					Callback: func(
+						ans prompt.Answer, prj *project.Project, res prompt.Results) {
+						prj.Isolation = project.Soft
+					},
+				},
 			}},
 			// DBR selection
 			// Choice{"cloud", "Cloud", Answers{
@@ -65,7 +87,7 @@ var initCmd = &cobra.Command{
 			// 	{"PyCharm", "Create project conf and other things", nil},
 			// }},
 		}
-		res := Results{}
+		res := prompt.Results{}
 		err = q.Ask(res)
 		if err != nil {
 			return err
