@@ -47,14 +47,14 @@ func CreateDbfsFile(ctx context.Context,
 		if err != nil {
 			return fmt.Errorf("cannot add block: %w", err)
 		}
-		err = wsc.Dbfs.Close(ctx,
-			dbfs.CloseRequest{
-				Handle: handle,
-			},
-		)
-		if err != nil {
-			return fmt.Errorf("cannot close handle: %w", err)
-		}
+	}
+	err = wsc.Dbfs.Close(ctx,
+		dbfs.CloseRequest{
+			Handle: handle,
+		},
+	)
+	if err != nil {
+		return fmt.Errorf("cannot close handle: %w", err)
 	}
 	return nil
 }
