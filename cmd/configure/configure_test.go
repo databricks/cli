@@ -45,12 +45,12 @@ func getTempFileWithContent(t *testing.T, tempHomeDir string, content string) *o
 func TestDefaultConfigureNoInteractive(t *testing.T) {
 	ctx := context.Background()
 	tempHomeDir := setup(t)
-	inp := getTempFileWithContent(t, tempHomeDir, "host token\n")
+	inp := getTempFileWithContent(t, tempHomeDir, "token\n")
 	oldStdin := os.Stdin
-	defer func() { os.Stdin = oldStdin }()
+	t.Cleanup(func() { os.Stdin = oldStdin })
 	os.Stdin = inp
 
-	root.RootCmd.SetArgs([]string{"configure", "--no-interactive"})
+	root.RootCmd.SetArgs([]string{"configure", "--no-interactive", "--host", "host"})
 
 	err := root.RootCmd.ExecuteContext(ctx)
 	assert.NoError(t, err)
@@ -76,12 +76,12 @@ func TestConfigFileFromEnvNoInteractive(t *testing.T) {
 	cfgFileDir := filepath.Join(tempHomeDir, "test")
 	tests.SetTestEnv(t, "DATABRICKS_CONFIG_FILE", cfgFileDir)
 
-	inp := getTempFileWithContent(t, tempHomeDir, "host token\n")
+	inp := getTempFileWithContent(t, tempHomeDir, "token\n")
 	oldStdin := os.Stdin
-	defer func() { os.Stdin = oldStdin }()
+	t.Cleanup(func() { os.Stdin = oldStdin })
 	os.Stdin = inp
 
-	root.RootCmd.SetArgs([]string{"configure", "--no-interactive"})
+	root.RootCmd.SetArgs([]string{"configure", "--no-interactive", "--host", "host"})
 
 	err := root.RootCmd.ExecuteContext(ctx)
 	assert.NoError(t, err)
