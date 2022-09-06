@@ -150,6 +150,8 @@ var configureCmd = &cobra.Command{
 		}
 
 		var buffer bytes.Buffer
+		//The ini library does not write [DEFAULT] header, so we always
+		//add the [DEFAULT] header explicitly. The section might be empty.
 		buffer.WriteString("[DEFAULT]\n")
 		_, err = ini_cfg.WriteTo(&buffer)
 		if err != nil {
