@@ -15,44 +15,68 @@ import (
 )
 
 type Configs struct {
-	Host  string `ini:"host"`
-	Token string `ini:"token"`
+	Host    string `ini:"host"`
+	Token   string `ini:"token,omitempty"`
+	Profile string `ini:"-"`
 }
 
-var noInteractive bool
+var noInteractive, tokenMode bool
 
-func (cfg *Configs) readFromStdin() error {
-	n, err := fmt.Scanf("%s %s\n", &cfg.Host, &cfg.Token)
+func (cfg *Configs) loadNonInteractive(cmd *cobra.Command) error {
+	host, err := cmd.Flags().GetString("host")
+	if err != nil || host == "" {
+		return fmt.Errorf("use --host to specify host in non interactive mode: %w", err)
+	}
+	cfg.Host = host
+
+	if !tokenMode {
+		return nil
+	}
+
+	n, err := fmt.Scanf("%s\n", &cfg.Token)
 	if err != nil {
 		return err
 	}
-	if n != 2 {
-		return fmt.Errorf("exactly 2 arguments are required")
+	if n != 1 {
+		return fmt.Errorf("exactly 1 argument required")
 	}
 	return nil
 }
 
-func (cfg *Configs) prompt() error {
+func (cfg *Configs) loadInteractive(cmd *cobra.Command) error {
 	res := prompt.Results{}
-	err := prompt.Questions{prompt.Text{
-		Key:   "host",
-		Label: "Databricks Host",
-		Default: func(res prompt.Results) string {
-			return cfg.Host
-		},
-		Callback: func(ans prompt.Answer, prj *project.Project, res prompt.Results) {
-			cfg.Host = ans.Value
-		},
-	}, prompt.Text{
-		Key:   "token",
-		Label: "Databricks Token",
-		Default: func(res prompt.Results) string {
-			return cfg.Token
-		},
-		Callback: func(ans prompt.Answer, prj *project.Project, res prompt.Results) {
-			cfg.Token = ans.Value
-		},
-	}}.Ask(res)
+	questions := prompt.Questions{}
+
+	host, err := cmd.Flags().GetString("host")
+	if err != nil || host == "" {
+		questions = append(questions, prompt.Text{
+			Key:   "host",
+			Label: "Databricks Host",
+			Default: func(res prompt.Results) string {
+				return cfg.Host
+			},
+			Callback: func(ans prompt.Answer, prj *project.Project, res prompt.Results) {
+				cfg.Host = ans.Value
+			},
+		})
+	} else {
+		cfg.Host = host
+	}
+
+	if tokenMode {
+		questions = append(questions, prompt.Text{
+			Key:   "token",
+			Label: "Databricks Token",
+			Default: func(res prompt.Results) string {
+				return cfg.Token
+			},
+			Callback: func(ans prompt.Answer, prj *project.Project, res prompt.Results) {
+				cfg.Token = ans.Value
+			},
+		})
+	}
+
+	err = questions.Ask(res)
 	if err != nil {
 		return err
 	}
@@ -70,7 +94,11 @@ var configureCmd = &cobra.Command{
 	Use:   "configure",
 	Short: "Configure authentication",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		var err error
+		profile, err := cmd.Flags().GetString("profile")
+		if err != nil {
+			return fmt.Errorf("read --profile flag: %w", err)
+		}
+
 		path := os.Getenv("DATABRICKS_CONFIG_FILE")
 		if path == "" {
 			path, err = os.UserHomeDir()
@@ -101,26 +129,31 @@ var configureCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("load config file: %w", err)
 		}
-		cfg := &Configs{"", ""}
-		err = ini_cfg.MapTo(cfg)
+		cfg := &Configs{"", "", profile}
+		err = ini_cfg.Section(profile).MapTo(cfg)
 		if err != nil {
 			return fmt.Errorf("unmarshal loaded config: %w", err)
 		}
 
 		if noInteractive {
-			err = cfg.readFromStdin()
+			err = cfg.loadNonInteractive(cmd)
 		} else {
-			err = cfg.prompt()
+			err = cfg.loadInteractive(cmd)
 		}
 		if err != nil {
 			return fmt.Errorf("reading configs: %w", err)
 		}
 
-		var buffer bytes.Buffer
-		buffer.WriteString("[DEFAULT]\n")
-		err = ini_cfg.ReflectFrom(cfg)
+		err = ini_cfg.Section(profile).ReflectFrom(cfg)
 		if err != nil {
 			return fmt.Errorf("marshall config: %w", err)
+		}
+
+		var buffer bytes.Buffer
+		if ini_cfg.Section("DEFAULT").Body() != "" {
+			//This configuration makes the ini library write the DEFAULT header explicitly.
+			//DEFAULT section might be empty
+			ini.DefaultHeader = true
 		}
 		_, err = ini_cfg.WriteTo(&buffer)
 		if err != nil {
@@ -137,5 +170,8 @@ var configureCmd = &cobra.Command{
 
 func init() {
 	root.RootCmd.AddCommand(configureCmd)
-	configureCmd.Flags().BoolVar(&noInteractive, "no-interactive", false, "Don't show interactive prompts for inputs. Read directly from stdin")
+	configureCmd.Flags().BoolVarP(&tokenMode, "token", "t", false, "Configure using Databricks Personal Access Token")
+	configureCmd.Flags().BoolVar(&noInteractive, "no-interactive", false, "Don't show interactive prompts for inputs. Read directly from stdin.")
+	configureCmd.Flags().String("host", "", "Host to connect to.")
+	configureCmd.Flags().String("profile", "DEFAULT", "CLI connection profile to use.")
 }
