@@ -50,7 +50,7 @@ func TestDefaultConfigureNoInteractive(t *testing.T) {
 	t.Cleanup(func() { os.Stdin = oldStdin })
 	os.Stdin = inp
 
-	root.RootCmd.SetArgs([]string{"configure", "--no-interactive", "--host", "host"})
+	root.RootCmd.SetArgs([]string{"configure", "--token", "--no-interactive", "--host", "host"})
 
 	err := root.RootCmd.ExecuteContext(ctx)
 	assert.NoError(t, err)
@@ -81,7 +81,7 @@ func TestConfigFileFromEnvNoInteractive(t *testing.T) {
 	t.Cleanup(func() { os.Stdin = oldStdin })
 	os.Stdin = inp
 
-	root.RootCmd.SetArgs([]string{"configure", "--no-interactive", "--host", "host"})
+	root.RootCmd.SetArgs([]string{"configure", "--token", "--no-interactive", "--host", "host"})
 
 	err := root.RootCmd.ExecuteContext(ctx)
 	assert.NoError(t, err)
@@ -94,6 +94,33 @@ func TestConfigFileFromEnvNoInteractive(t *testing.T) {
 	assert.NoError(t, err)
 
 	defaultSection, err := cfg.GetSection("DEFAULT")
+	assert.NoError(t, err)
+
+	assertKeyValueInSection(t, defaultSection, "host", "host")
+	assertKeyValueInSection(t, defaultSection, "token", "token")
+}
+
+func TestCustomProfileConfigureNoInteractive(t *testing.T) {
+	ctx := context.Background()
+	tempHomeDir := setup(t)
+	inp := getTempFileWithContent(t, tempHomeDir, "token\n")
+	oldStdin := os.Stdin
+	t.Cleanup(func() { os.Stdin = oldStdin })
+	os.Stdin = inp
+
+	root.RootCmd.SetArgs([]string{"configure", "--token", "--no-interactive", "--host", "host", "--profile", "CUSTOM"})
+
+	err := root.RootCmd.ExecuteContext(ctx)
+	assert.NoError(t, err)
+
+	cfgPath := filepath.Join(tempHomeDir, ".databrickscfg")
+	_, err = os.Stat(cfgPath)
+	assert.NoError(t, err)
+
+	cfg, err := ini.Load(cfgPath)
+	assert.NoError(t, err)
+
+	defaultSection, err := cfg.GetSection("CUSTOM")
 	assert.NoError(t, err)
 
 	assertKeyValueInSection(t, defaultSection, "host", "host")
