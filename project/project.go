@@ -92,11 +92,11 @@ func getClusterIdFromClusterName(ctx context.Context,
 	clusterName string,
 ) (clusterId string, err error) {
 	clusterId = ""
-	listClustersResponse, err := wsc.Clusters.ListClusters(ctx, clusters.ListClustersRequest{})
+	clustersList, err := wsc.Clusters.List(ctx, clusters.ListRequest{})
 	if err != nil {
 		return
 	}
-	for _, cluster := range listClustersResponse.Clusters {
+	for _, cluster := range clustersList.Clusters {
 		if cluster.ClusterName == clusterName {
 			clusterId = cluster.ClusterId
 			return

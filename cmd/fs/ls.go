@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/databricks/bricks/project"
-	"github.com/databricks/databricks-sdk-go/service/dbfs"
 	"github.com/spf13/cobra"
 )
 
@@ -16,9 +15,7 @@ var lsCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		wsc := project.Current.WorkspacesClient()
-		listStatusResponse, err := wsc.Dbfs.ListStatus(cmd.Context(),
-			dbfs.ListStatusRequest{Path: args[0]},
-		)
+		listStatusResponse, err := wsc.Dbfs.ListByPath(cmd.Context(), args[0])
 		if err != nil {
 			panic(err)
 		}
