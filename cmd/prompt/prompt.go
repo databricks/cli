@@ -1,7 +1,8 @@
-package init
+package prompt
 
 import (
 	"fmt"
+	"io"
 
 	"github.com/databricks/bricks/project"
 	"github.com/manifoldco/promptui"
@@ -27,10 +28,11 @@ func (qq Questions) Ask(res Results) error {
 }
 
 type Text struct {
-	key      string
+	Key      string
 	Label    string
 	Default  func(res Results) string
 	Callback AnswerCallback
+	Stdin    io.ReadCloser
 }
 
 func (t Text) Ask(res Results) (string, Answer, error) {
@@ -41,17 +43,19 @@ func (t Text) Ask(res Results) (string, Answer, error) {
 	v, err := (&promptui.Prompt{
 		Label:   t.Label,
 		Default: def,
+		Stdin:   t.Stdin,
 	}).Run()
-	return t.key, Answer{
+	return t.Key, Answer{
 		Value:    v,
 		Callback: t.Callback,
 	}, err
 }
 
 type Choice struct {
-	key     string
+	Key     string
 	Label   string
 	Answers []Answer
+	Stdin   io.ReadCloser
 }
 
 func (q Choice) Ask(res Results) (string, Answer, error) {
@@ -64,9 +68,10 @@ func (q Choice) Ask(res Results) (string, Answer, error) {
 			Details:  `{{ .Details | green }}`,
 			Selected: fmt.Sprintf(`{{ "%s" | faint }}: {{ .Value | bold }}`, q.Label),
 		},
+		Stdin: q.Stdin,
 	}
 	i, _, err := prompt.Run()
-	return q.key, q.Answers[i], err
+	return q.Key, q.Answers[i], err
 }
 
 type Answers []Answer
