@@ -3,7 +3,6 @@ package git
 import (
 	"fmt"
 	"io/fs"
-	"io/ioutil"
 	"os"
 	"path"
 	"strings"
@@ -45,7 +44,7 @@ func MustGetFileSet() FileSet {
 
 func New(root string) FileSet {
 	lines := []string{".git"}
-	rawIgnore, err := ioutil.ReadFile(fmt.Sprintf("%s/.gitignore", root))
+	rawIgnore, err := os.ReadFile(fmt.Sprintf("%s/.gitignore", root))
 	if err == nil {
 		// add entries from .gitignore if the file exists (did read correctly)
 		for _, line := range strings.Split(string(rawIgnore), "\n") {
