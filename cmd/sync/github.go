@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"net/url"
@@ -28,7 +28,7 @@ func githubGetPAT(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	raw, err := ioutil.ReadAll(response.Body)
+	raw, err := io.ReadAll(response.Body)
 	if err != nil {
 		return "", err
 	}
@@ -58,7 +58,7 @@ func githubGetPAT(ctx context.Context) (string, error) {
 		if err != nil {
 			return retries.Halt(err)
 		}
-		raw, err := ioutil.ReadAll(response.Body)
+		raw, err := io.ReadAll(response.Body)
 		if err != nil {
 			return retries.Continuef("failed to read body: %w", err)
 		}
@@ -100,7 +100,7 @@ func githubGetPAT(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	raw, _ = ioutil.ReadAll(response.Body)
+	raw, _ = io.ReadAll(response.Body)
 	log.Printf("[INFO] %s", raw)
 	// TODO: convert to PAT
 	return bearer, nil

@@ -2,7 +2,7 @@ package project
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"reflect"
 
@@ -83,7 +83,7 @@ func loadProjectConf() (prj Project, err error) {
 	if err != nil {
 		return
 	}
-	raw, err := ioutil.ReadAll(config)
+	raw, err := io.ReadAll(config)
 	if err != nil {
 		return
 	}
