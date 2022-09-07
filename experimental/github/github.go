@@ -1,4 +1,4 @@
-package sync
+package github
 
 import (
 	"bytes"
@@ -20,7 +20,7 @@ import (
 // Bricks CLI GitHub OAuth App Client ID
 const githubOauthClientID = "b91230382436c4592741"
 
-func githubGetPAT(ctx context.Context) (string, error) {
+func GithubGetPAT(ctx context.Context) (string, error) {
 	deviceRequest := url.Values{}
 	deviceRequest.Set("client_id", githubOauthClientID)
 	// TODO: scope
