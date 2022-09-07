@@ -85,8 +85,8 @@ func githubGetPAT(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("failed to acquire access token: %w", err)
 	}
 	raw, err = json.Marshal(struct {
-		note   string
-		scopes []string
+		Note   string   `json:"note"`
+		Scopes []string `json:"scopes"`
 	}{"test token", []string{}})
 	if err != nil {
 		return "", err
