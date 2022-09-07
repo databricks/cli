@@ -7,7 +7,8 @@ import (
 	"reflect"
 
 	"github.com/databricks/bricks/folders"
-	"github.com/databrickslabs/terraform-provider-databricks/clusters"
+	"github.com/databricks/databricks-sdk-go/service/clusters"
+
 	"github.com/ghodss/yaml"
 )
 
@@ -33,7 +34,7 @@ type Project struct {
 	Isolation Isolation `json:"isolation,omitempty"`
 
 	// development-time vs deployment-time resources
-	DevCluster *clusters.Cluster `json:"dev_cluster,omitempty"`
+	DevCluster *clusters.ClusterInfo `json:"dev_cluster,omitempty"`
 
 	// Assertions defines a list of configurations expected to be applied
 	// to the workspace by a higher-privileged user (or service principal)
@@ -61,7 +62,7 @@ func (p *Project) IsDevClusterJustReference() bool {
 	if p.DevCluster.ClusterName == "" {
 		return false
 	}
-	return reflect.DeepEqual(p.DevCluster, &clusters.Cluster{
+	return reflect.DeepEqual(p.DevCluster, &clusters.ClusterInfo{
 		ClusterName: p.DevCluster.ClusterName,
 	})
 }
@@ -94,7 +95,7 @@ func loadProjectConf() (prj Project, err error) {
 }
 
 func validateAndApplyProjectDefaults(prj Project) (Project, error) {
-	// defaultCluster := clusters.Cluster{
+	// defaultCluster := clusters.ClusterInfo{
 	// 	NodeTypeID: "smallest",
 	// 	SparkVersion: "latest",
 	// 	AutoterminationMinutes: 30,

@@ -72,7 +72,7 @@ func githubGetPAT(ctx context.Context) (string, error) {
 		}
 		if result.Get("error") == "slow_down" {
 			t, _ := strconv.Atoi(result.Get("interval"))
-			time.Sleep(time.Duration(t)*time.Second)
+			time.Sleep(time.Duration(t) * time.Second)
 			log.Printf("[WARN] Rate limited, sleeping for %d seconds", t)
 		}
 		reason := result.Get("error_description")

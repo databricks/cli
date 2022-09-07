@@ -61,6 +61,7 @@ func toTheRootAndBack() func() {
 }
 
 var _ Flavor = PythonNotebooks{}
+
 type PythonNotebooks struct{}
 
 func (n PythonNotebooks) Name() (string, string) {
@@ -71,7 +72,7 @@ func (n PythonNotebooks) Name() (string, string) {
 func (n PythonNotebooks) Detected() bool {
 	// TODO: Steps:
 	// - get all filenames
-	// - read first X bytes from random 10 files and check 
+	// - read first X bytes from random 10 files and check
 	// if they're "Databricks Notebook Source"
 	return false
 }

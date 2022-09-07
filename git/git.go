@@ -46,13 +46,13 @@ func Origin() (*url.URL, error) {
 func HttpsOrigin() (string, error) {
 	origin, err := Origin()
 	if err != nil {
-	  return "", err
+		return "", err
 	}
 	// if current repo is checked out with a SSH key
 	if origin.Scheme != "https" {
 		origin.Scheme = "https"
 	}
-	// `git@` is not required for HTTPS, as Databricks Repos are checked 
+	// `git@` is not required for HTTPS, as Databricks Repos are checked
 	// out using an API token instead of username. But does it hold true
 	// for all of the git implementations?
 	if origin.User != nil {

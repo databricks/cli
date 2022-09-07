@@ -12,8 +12,8 @@ import (
 	"github.com/databricks/bricks/cmd/root"
 	"github.com/databricks/bricks/git"
 	"github.com/databricks/bricks/project"
-	"github.com/databrickslabs/terraform-provider-databricks/repos"
-	"github.com/databrickslabs/terraform-provider-databricks/workspace"
+	"github.com/databricks/bricks/utilities"
+	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/spf13/cobra"
 )
 
@@ -28,11 +28,9 @@ var syncCmd = &cobra.Command{
 		}
 		log.Printf("[INFO] %s", origin)
 		ctx := cmd.Context()
-		client := project.Current.Client()
-		reposAPI := repos.NewReposAPI(ctx, client)
 
-
-		checkouts, err := reposAPI.List("/")
+		wsc := project.Current.WorkspacesClient()
+		checkouts, err := utilities.GetAllRepos(ctx, wsc, "/")
 		if err != nil {
 			return err
 		}
@@ -46,9 +44,13 @@ var syncCmd = &cobra.Command{
 		}
 		base := fmt.Sprintf("/Repos/%s/%s", me.UserName, repositoryName)
 		return watchForChanges(ctx, git.MustGetFileSet(), *interval, func(d diff) error {
-			wsAPI := workspace.NewNotebooksAPI(ctx, client)
 			for _, v := range d.delete {
-				err := wsAPI.Delete(path.Join(base, v), true)
+				err := wsc.Workspace.Delete(ctx,
+					workspace.DeleteRequest{
+						Path:      path.Join(base, v),
+						Recursive: true,
+					},
+				)
 				if err != nil {
 					return err
 				}

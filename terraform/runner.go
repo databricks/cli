@@ -48,7 +48,7 @@ import (
 	"os"
 
 	"github.com/databricks/bricks/project"
-	"github.com/databrickslabs/terraform-provider-databricks/storage"
+	"github.com/databricks/bricks/utilities"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/hc-install/product"
 	"github.com/hashicorp/hc-install/releases"
@@ -87,8 +87,10 @@ func (d *TerraformDeployer) remoteTfstateLoc() string {
 
 // returns structured representation of terraform state on DBFS.
 func (d *TerraformDeployer) remoteState(ctx context.Context) (*tfjson.State, int, error) {
-	dbfs := storage.NewDbfsAPI(ctx, project.Current.Client())
-	raw, err := dbfs.Read(d.remoteTfstateLoc())
+	raw, err := utilities.ReadDbfsFile(ctx,
+		project.Current.WorkspacesClient(),
+		d.remoteTfstateLoc(),
+	)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -102,8 +104,8 @@ func (d *TerraformDeployer) openLocalState() (*os.File, error) {
 	return os.Open(fmt.Sprintf("%s/terraform.tfstate", d.WorkDir))
 }
 
-// returns structured representation of terraform state on local machine. as part of 
-// the optimistic concurrency control, please make sure to always compare the serial 
+// returns structured representation of terraform state on local machine. as part of
+// the optimistic concurrency control, please make sure to always compare the serial
 // number of local and remote states before proceeding with deployment.
 func (d *TerraformDeployer) localState() (*tfjson.State, int, error) {
 	local, err := d.openLocalState()
@@ -114,7 +116,7 @@ func (d *TerraformDeployer) localState() (*tfjson.State, int, error) {
 	return d.tfstateFromReader(local)
 }
 
-// converts input stream into structured representation of terraform state and deployment 
+// converts input stream into structured representation of terraform state and deployment
 // serial number, that helps controlling versioning and synchronisation via optimistic locking.
 func (d *TerraformDeployer) tfstateFromReader(reader io.Reader) (*tfjson.State, int, error) {
 	var state tfjson.State
@@ -142,7 +144,6 @@ func (d *TerraformDeployer) tfstateFromReader(reader io.Reader) (*tfjson.State, 
 
 // uploads terraform state from local directory to designated DBFS location.
 func (d *TerraformDeployer) uploadTfstate(ctx context.Context) error {
-	dbfs := storage.NewDbfsAPI(ctx, project.Current.Client())
 	local, err := d.openLocalState()
 	if err != nil {
 		return err
@@ -153,7 +154,12 @@ func (d *TerraformDeployer) uploadTfstate(ctx context.Context) error {
 		return err
 	}
 	// TODO: make sure that deployment locks are implemented
-	return dbfs.Create(d.remoteTfstateLoc(), raw, true)
+	return utilities.CreateDbfsFile(ctx,
+		project.Current.WorkspacesClient(),
+		d.remoteTfstateLoc(),
+		raw,
+		true,
+	)
 }
 
 // downloads terraform state from DBFS to local working directory.
