@@ -10,13 +10,14 @@ Solve the following adoption slowers:
 - users won't have to copy-paste these into their configs:
 
 ```hcl
-terraform {
-  required_providers {
-    databricks = {
-      source  = "databrickslabs/databricks"
-    }
-  }
-}
+
+	terraform {
+	  required_providers {
+	    databricks = {
+	      source  = "databrickslabs/databricks"
+	    }
+	  }
+	}
 
 provider "databricks" {
 }
@@ -25,12 +26,12 @@ provider "databricks" {
 Terraform Plugin SDK v2 is using similar techniques for testing providers. One may find
 details in github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource/plugin.go. In short:
 
-- init provider isntance
-- start terraform plugin GRPC server
-- "reattach" providers and specify the `tfexec.Reattach` options, which essentially
-  forward GRPC address to terraform subprocess.
-- this can be done by either adding a source depenency on Databricks provider
-  or adding a special launch mode to it.
+  - init provider isntance
+  - start terraform plugin GRPC server
+  - "reattach" providers and specify the `tfexec.Reattach` options, which essentially
+    forward GRPC address to terraform subprocess.
+  - this can be done by either adding a source depenency on Databricks provider
+    or adding a special launch mode to it.
 
 For now
 ---

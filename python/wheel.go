@@ -42,9 +42,9 @@ const DBFSWheelLocation = "dbfs:/FileStore/wheels/simple"
 // or do we bypass the environment variable into terraform deployer. And make a decision.
 //
 // Whatever this method gets refactored to is intended to be used for two purposes:
-// - uploading project's wheel archives: one per project or one per project/developer, depending on isolation
-// - synchronising enterprise artifactories, jfrogs, azdo feeds, so that we fix the gap of private code artifact
-//   repository integration.
+//   - uploading project's wheel archives: one per project or one per project/developer, depending on isolation
+//   - synchronising enterprise artifactories, jfrogs, azdo feeds, so that we fix the gap of private code artifact
+//     repository integration.
 func UploadWheelToDBFSWithPEP503(ctx context.Context, dir string) (string, error) {
 	wheel, err := BuildWheel(ctx, dir)
 	if err != nil {

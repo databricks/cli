@@ -48,3 +48,24 @@ jobs:
 
       - name: Run tests
         run: make test
+
+  fmt:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: actions/setup-go@v1
+        with:
+          go-version: 1.18.x
+
+      - name: Run gofmt
+        run: |
+          # -l: list files that were reformatted
+          # -w: write back formatted files to disk
+          gofmt -l -w ./
+
+      - name: Fail on differences
+        run: |
+          # Exit with status code 1 if there are differences (i.e. unformatted files)
+          git diff --exit-code
