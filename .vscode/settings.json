@@ -1,0 +1,6 @@
+{
+    "[go]": {
+        "editor.insertSpaces": false,
+        "editor.formatOnSave": true
+    }
+}
