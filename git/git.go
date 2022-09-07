@@ -58,6 +58,8 @@ func HttpsOrigin() (string, error) {
 	if origin.User != nil {
 		origin.User = nil
 	}
+	// Remove `.git` suffix, if present.
+	origin.Path = strings.TrimSuffix(origin.Path, ".git")
 	return origin.String(), nil
 }
 
