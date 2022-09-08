@@ -7,8 +7,8 @@ import (
 
 	"github.com/databricks/databricks-sdk-go/service/clusters"
 	"github.com/databricks/databricks-sdk-go/service/commands"
-	"github.com/databricks/databricks-sdk-go/workspaces"
 	"github.com/databricks/databricks-sdk-go/service/scim"
+	"github.com/databricks/databricks-sdk-go/workspaces"
 )
 
 // Current CLI application state - fixure out
