@@ -1,9 +1,6 @@
 package sync
 
 import (
-	// "context"
-	// "io"
-	// "strings"
 	"fmt"
 	"log"
 	"path"
