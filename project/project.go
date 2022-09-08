@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/databricks/databricks-sdk-go/databricks"
 	"github.com/databricks/databricks-sdk-go/service/clusters"
 	"github.com/databricks/databricks-sdk-go/service/commands"
+	"github.com/databricks/databricks-sdk-go/service/scim"
 	"github.com/databricks/databricks-sdk-go/workspaces"
-	"github.com/databrickslabs/terraform-provider-databricks/common"
-	"github.com/databrickslabs/terraform-provider-databricks/scim"
 )
 
 // Current CLI application state - fixure out
@@ -21,7 +21,6 @@ type inner struct {
 
 	project *Project
 	wsc     *workspaces.WorkspacesClient
-	client  *common.DatabricksClient
 	me      *scim.User
 }
 
@@ -29,25 +28,16 @@ func (i *inner) init() {
 	i.mu.Lock()
 	defer i.mu.Unlock()
 	i.once.Do(func() {
-		client := &common.DatabricksClient{}
-		i.client = client
-		i.wsc = workspaces.New()
 		prj, err := loadProjectConf()
+		i.wsc = workspaces.New(&databricks.Config{Profile: prj.Profile})
 		if err != nil {
 			panic(err)
 		}
-		client.Profile = prj.Profile // Databricks CLI profile
-		err = client.Configure()
 		if err != nil {
 			panic(err)
 		}
 		i.project = &prj
 	})
-}
-
-func (i *inner) Client() *common.DatabricksClient {
-	i.init()
-	return i.client
 }
 
 func (i *inner) Project() *Project {
@@ -68,12 +58,12 @@ func (i *inner) Me() *scim.User {
 	if i.me != nil {
 		return i.me
 	}
-	me, err := scim.NewUsersAPI(context.Background(), i.Client()).Me()
+	me, err := i.wsc.CurrentUser.Me(context.Background())
 	if err != nil {
 		panic(err)
 	}
-	i.me = &me
-	return &me
+	i.me = me
+	return me
 }
 
 func (i *inner) DeploymentIsolationPrefix() string {
