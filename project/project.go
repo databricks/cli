@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/databricks/databricks-sdk-go/databricks"
 	"github.com/databricks/databricks-sdk-go/service/clusters"
 	"github.com/databricks/databricks-sdk-go/service/commands"
 	"github.com/databricks/databricks-sdk-go/service/scim"
@@ -27,8 +28,8 @@ func (i *inner) init() {
 	i.mu.Lock()
 	defer i.mu.Unlock()
 	i.once.Do(func() {
-		i.wsc = workspaces.New()
 		prj, err := loadProjectConf()
+		i.wsc = workspaces.New(&databricks.Config{Profile: prj.Profile})
 		if err != nil {
 			panic(err)
 		}
@@ -58,7 +59,6 @@ func (i *inner) Me() *scim.User {
 		return i.me
 	}
 	me, err := i.wsc.CurrentUser.Me(context.Background())
-	// me, err := scim.NewUsersAPI(context.Background(), i.Client()).Me()
 	if err != nil {
 		panic(err)
 	}
