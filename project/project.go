@@ -8,7 +8,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/clusters"
 	"github.com/databricks/databricks-sdk-go/service/commands"
 	"github.com/databricks/databricks-sdk-go/workspaces"
-	"github.com/databrickslabs/terraform-provider-databricks/common"
 	"github.com/databricks/databricks-sdk-go/service/scim"
 )
 
@@ -28,14 +27,11 @@ func (i *inner) init() {
 	i.mu.Lock()
 	defer i.mu.Unlock()
 	i.once.Do(func() {
-		client := &common.DatabricksClient{}
 		i.wsc = workspaces.New()
 		prj, err := loadProjectConf()
 		if err != nil {
 			panic(err)
 		}
-		client.Profile = prj.Profile // Databricks CLI profile
-		err = client.Configure()
 		if err != nil {
 			panic(err)
 		}
