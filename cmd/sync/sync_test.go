@@ -2,6 +2,9 @@ package sync
 
 import (
 	"testing"
+	// "context"
+	// "github.com/databricks/bricks/cmd/root"
+	// "github.com/stretchr/testify/assert"
 )
 
 func TestItSyncs(t *testing.T) {

@@ -1,12 +1,12 @@
 package sync
 
 import (
-	"context"
+	// "context"
+	// "io"
+	// "strings"
 	"fmt"
-	"io"
 	"log"
 	"path"
-	"strings"
 	"time"
 
 	"github.com/databricks/bricks/cmd/root"
@@ -60,14 +60,14 @@ var syncCmd = &cobra.Command{
 	},
 }
 
-func ImportFile(ctx context.Context, path string, content io.Reader) error {
-	client := project.Current.Client()
-	apiPath := fmt.Sprintf(
-		"/workspace-files/import-file/%s?overwrite=true",
-		strings.TrimLeft(path, "/"))
-	// TODO: change upstream client to support io.Reader as body
-	return client.Post(ctx, apiPath, content, nil)
-}
+// func ImportFile(ctx context.Context, path string, content io.Reader) error {
+// 	client := project.Current.Client()
+// 	apiPath := fmt.Sprintf(
+// 		"/workspace-files/import-file/%s?overwrite=true",
+// 		strings.TrimLeft(path, "/"))
+// 	// TODO: change upstream client to support io.Reader as body
+// 	return client.Post(ctx, apiPath, content, nil)
+// }
 
 // project files polling interval
 var interval *time.Duration
