@@ -32,17 +32,14 @@ type FileSet struct {
 	ignore *ignore.GitIgnore
 }
 
-// MustGetFileSet retrieves FileSet from Git repository checkout root
+// GetFileSet retrieves FileSet from Git repository checkout root
 // or panics if no root is detected.
-func MustGetFileSet() FileSet {
+func GetFileSet() (FileSet, error) {
 	root, err := Root()
-	if err != nil {
-		panic(err)
-	}
-	return New(root)
+	return NewFileSet(root), err
 }
 
-func New(root string) FileSet {
+func NewFileSet(root string) FileSet {
 	lines := []string{".git"}
 	rawIgnore, err := os.ReadFile(fmt.Sprintf("%s/.gitignore", root))
 	if err == nil {
