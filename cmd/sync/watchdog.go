@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -25,8 +26,13 @@ type watchdog struct {
 	failure error // data race? make channel?
 }
 
-func uploadFile(ctx context.Context, path string, content io.Reader) error {
+func putFile(ctx context.Context, path string, content io.Reader) error {
 	wsc := project.Current.WorkspacesClient()
+	// workspace mkdirs is idempotent
+	err := wsc.Workspace.MkdirsByPath(ctx, filepath.Dir(path))
+	if err != nil {
+		return fmt.Errorf("could not mkdir to put file: %s", err)
+	}
 	apiClient := client.New(wsc.Config)
 	apiPath := fmt.Sprintf(
 		"/api/2.0/workspace-files/import-file/%s?overwrite=true",
@@ -36,32 +42,32 @@ func uploadFile(ctx context.Context, path string, content io.Reader) error {
 
 func getRemoteSyncCallback(ctx context.Context, remoteDir string, wsc *workspaces.WorkspacesClient) func(localDiff diff) error {
 	return func(d diff) error {
-		for _, fileName := range d.delete {
+		for _, filePath := range d.delete {
 			err := wsc.Workspace.Delete(ctx,
 				workspace.DeleteRequest{
-					Path:      path.Join(remoteDir, fileName),
+					Path:      path.Join(remoteDir, filePath),
 					Recursive: true,
 				},
 			)
 			if err != nil {
 				return err
 			}
-			log.Printf("[INFO] Deleted %s", fileName)
+			log.Printf("[INFO] Deleted %s", filePath)
 		}
-		for _, fileName := range d.put {
-			fd, err := os.Open(fileName)
+		for _, filePath := range d.put {
+			f, err := os.Open(filePath)
 			if err != nil {
 				return err
 			}
-			err = uploadFile(ctx, path.Join(remoteDir, fileName), fd)
+			err = putFile(ctx, path.Join(remoteDir, filePath), f)
+			if err != nil {
+				return fmt.Errorf("failed to upload file: %s", err) // TODO: fmt.Errorf
+			}
+			err = f.Close()
 			if err != nil {
 				return err // TODO: fmt.Errorf
 			}
-			err = fd.Close()
-			if err != nil {
-				return err // TODO: fmt.Errorf
-			}
-			log.Printf("[INFO] Uploaded %s", fileName)
+			log.Printf("[INFO] Uploaded %s", filePath)
 		}
 		return nil
 	}
@@ -87,6 +93,8 @@ func (w *watchdog) main(ctx context.Context, applyDiff func(diff) error) {
 	defer w.wg.Done()
 	// load from json or sync it every time there's an action
 	state := snapshot{}
+	root, _ := git.Root()
+	loadSnapshot(&state, root)
 	for {
 		select {
 		case <-ctx.Done():
@@ -108,6 +116,7 @@ func (w *watchdog) main(ctx context.Context, applyDiff func(diff) error) {
 				w.failure = err
 				return
 			}
+			storeSnapshot(&state, root)
 		}
 	}
 }

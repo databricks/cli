@@ -1,7 +1,11 @@
 package sync
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -17,6 +21,63 @@ type snapshot map[string]time.Time
 type diff struct {
 	put    []string
 	delete []string
+}
+
+const SYNC_SNAPSHOT_FILENAME = "repo_snapshot.json"
+const LOCAL_STATE_DIR = ".bricks"
+
+func storeSnapshot(s *snapshot, root string) error {
+	bytes, err := json.MarshalIndent(s, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to json marshal in-memory snapshot: %s", err)
+	}
+	configDir := filepath.Join(root, LOCAL_STATE_DIR)
+	if _, err := os.Stat(configDir); os.IsNotExist(err) {
+		err = os.Mkdir(configDir, os.ModeDir|os.ModePerm)
+		if err != nil {
+			return fmt.Errorf("failed to create config directory: %s", err)
+		}
+	}
+	persistedSnapshotPath := filepath.Join(configDir, SYNC_SNAPSHOT_FILENAME)
+	f, err := os.OpenFile(persistedSnapshotPath, os.O_CREATE|os.O_WRONLY, 0755)
+	if err != nil {
+		return fmt.Errorf("failed to create/open persisted sync snapshot file: %s", err)
+	}
+	defer f.Close()
+
+	// _, err = io.WriteString(f, string(bytes))
+
+	err = os.Truncate(persistedSnapshotPath, 0)
+	if err != nil {
+		return fmt.Errorf("failed to empty contents of %s", persistedSnapshotPath)
+	}
+
+	_, err = f.Write(bytes)
+	if err != nil {
+		return fmt.Errorf("failed to write sync snapshot to disk: %s", err)
+	}
+	return nil
+}
+
+// TODO: make sure this command works for this repo (seems like there is issue opening the go.mod file)
+func loadSnapshot(s *snapshot, root string) error {
+	persistedSnapshotPath := filepath.Join(root, LOCAL_STATE_DIR, SYNC_SNAPSHOT_FILENAME)
+	f, err := os.OpenFile(persistedSnapshotPath, os.O_CREATE|os.O_RDONLY, 0755)
+	if err != nil {
+		return fmt.Errorf("failed to create/open persisted sync snapshot file: %s", err)
+	}
+	defer f.Close()
+
+	bytes, err := io.ReadAll(f)
+	if err != nil {
+		// clean up these error messages a bit
+		return fmt.Errorf("failed to read sync snapshot from disk: %s", err)
+	}
+	err = json.Unmarshal(bytes, s)
+	if err != nil {
+		return fmt.Errorf("failed to json unmarshal persisted snapshot: %s", err)
+	}
+	return nil
 }
 
 func (d diff) IsEmpty() bool {
@@ -36,6 +97,9 @@ func (d diff) String() string {
 	}
 	return strings.Join(changes, ", ")
 }
+
+// TODO: Add a bricks clean command to delete local history
+// TODO: rename sync_snapshot to repo_
 
 func (s snapshot) diff(all []git.File) (change diff) {
 	currentFilenames := map[string]bool{}
@@ -57,8 +121,10 @@ func (s snapshot) diff(all []git.File) (change diff) {
 		if exists {
 			continue
 		}
-		// and add them to a delete batch
+		// add them to a delete batch
 		change.delete = append(change.delete, relative)
+		// remove the file from snapshot
+		delete(s, relative)
 	}
 	// and remove them from the snapshot
 	for _, v := range change.delete {

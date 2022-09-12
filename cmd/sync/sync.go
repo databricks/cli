@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/bricks/cmd/root"
 	"github.com/databricks/bricks/git"
 	"github.com/databricks/bricks/project"
+	"github.com/databricks/bricks/utilities"
 	"github.com/spf13/cobra"
 )
 
@@ -27,15 +28,27 @@ var syncCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		databricksRepoDir := fmt.Sprintf("/Repos/%s/%s", me.UserName, repositoryName)
-		log.Printf("[INFO] Remote file sync location: %v", databricksRepoDir)
+		repoPath := fmt.Sprintf("/Repos/%s/%s", me.UserName, repositoryName)
+		log.Printf("[INFO] Remote file sync location: %v", repoPath)
+
+		repos, err := utilities.GetAllRepos(ctx, wsc, repoPath)
+		if err != nil {
+			return fmt.Errorf("could not get repos: %s", err)
+		}
+		if len(repos) == 0 {
+			return fmt.Errorf("no matching repo found, please ensure %s exists", repoPath)
+		}
+		if len(repos) > 1 {
+			// TODO: maybe test this case out
+			return fmt.Errorf("multiple repos found matching prefix: %s", repoPath)
+		}
 
 		fileSet, err := git.GetFileSet()
 		if err != nil {
 			return err
 		}
 
-		syncCallback := getRemoteSyncCallback(ctx, databricksRepoDir, wsc)
+		syncCallback := getRemoteSyncCallback(ctx, repoPath, wsc)
 		err = spawnSyncRoutine(ctx, fileSet, *interval, syncCallback)
 		return err
 	},

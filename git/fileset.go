@@ -25,8 +25,14 @@ func (f File) Modified() (ts time.Time) {
 	return info.ModTime()
 }
 
-// FileSet facilitates fast recursive file listing with
-// respect to patterns defined in `.gitignore` file
+// TODO: File system it seems can be mocked in golang
+
+// FileSet facilitates fast recursive tracked file listing
+// with respect to patterns defined in `.gitignore` file
+//
+// root:   Root of the git repository
+// ignore: List of patterns defined in `.gitignore`.
+//  	   We do not sync files that match this pattern
 type FileSet struct {
 	root   string
 	ignore *ignore.GitIgnore
@@ -39,8 +45,9 @@ func GetFileSet() (FileSet, error) {
 	return NewFileSet(root), err
 }
 
+// Retuns FileSet for the repository located at `root`
 func NewFileSet(root string) FileSet {
-	lines := []string{".git"}
+	lines := []string{".git", ".bricks"}
 	rawIgnore, err := os.ReadFile(fmt.Sprintf("%s/.gitignore", root))
 	if err == nil {
 		// add entries from .gitignore if the file exists (did read correctly)
@@ -56,11 +63,15 @@ func NewFileSet(root string) FileSet {
 	}
 }
 
+// Return all tracked files for Repo
 func (w *FileSet) All() ([]File, error) {
-	return w.RecursiveChildren(w.root)
+	return w.RecursiveListTrackedFiles(w.root)
 }
 
-func (w *FileSet) RecursiveChildren(dir string) (found []File, err error) {
+// Recursively traverses dir in a depth first manner and returns a list of all files
+// that are being tracked in the FileSet (ie not being ignored for matching one of the
+// patterns in w.ignore)
+func (w *FileSet) RecursiveListTrackedFiles(dir string) (fileList []File, err error) {
 	queue, err := readDir(dir, w.root)
 	if err != nil {
 		return nil, err
@@ -72,7 +83,7 @@ func (w *FileSet) RecursiveChildren(dir string) (found []File, err error) {
 			continue
 		}
 		if !current.IsDir() {
-			found = append(found, current)
+			fileList = append(fileList, current)
 			continue
 		}
 		children, err := readDir(current.Absolute, w.root)
@@ -81,7 +92,7 @@ func (w *FileSet) RecursiveChildren(dir string) (found []File, err error) {
 		}
 		queue = append(queue, children...)
 	}
-	return found, nil
+	return fileList, nil
 }
 
 func readDir(dir, root string) (queue []File, err error) {
