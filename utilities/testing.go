@@ -1,7 +1,6 @@
 package utilities
 
 import (
-	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -21,7 +20,7 @@ func GetTestProject(t *testing.T, root string) string {
 	assert.NoError(t, err)
 
 	// Initialize the databrick.yml config
-	content := []byte(fmt.Sprintf("name: test-project\nprofile: DEFAULT"))
+	content := []byte("name: test-project\nprofile: DEFAULT")
 	f, err := os.Create(filepath.Join(projectDir, "databricks.yml"))
 	assert.NoError(t, err)
 	defer f.Close()
