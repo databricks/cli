@@ -63,13 +63,13 @@ func NewFileSet(root string) FileSet {
 
 // Return all tracked files for Repo
 func (w *FileSet) All() ([]File, error) {
-	return w.RecursiveListTrackedFiles(w.root)
+	return w.RecursiveListFiles(w.root)
 }
 
 // Recursively traverses dir in a depth first manner and returns a list of all files
 // that are being tracked in the FileSet (ie not being ignored for matching one of the
 // patterns in w.ignore)
-func (w *FileSet) RecursiveListTrackedFiles(dir string) (fileList []File, err error) {
+func (w *FileSet) RecursiveListFiles(dir string) (fileList []File, err error) {
 	queue, err := readDir(dir, w.root)
 	if err != nil {
 		return nil, err

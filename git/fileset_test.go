@@ -12,10 +12,7 @@ import (
 func TestRecusiveListFile(t *testing.T) {
 	root, err := Root()
 	assert.NoError(t, err)
-	projectName := "test-fileset-recursive-list"
-	projectDir := filepath.Join(root, "tmp", projectName)
-	utilities.CreateTestProject(t, root, projectName)
-	defer utilities.DeleteTestProject(t, root, projectName)
+	projectDir := utilities.GetTestProject(t, root)
 	f3, err := os.Create(filepath.Join(projectDir, ".gitignore"))
 	assert.NoError(t, err)
 	defer f3.Close()
@@ -23,7 +20,7 @@ func TestRecusiveListFile(t *testing.T) {
 
 	// Check the config file is being tracked
 	fileSet := NewFileSet(projectDir)
-	files, err := fileSet.RecursiveListTrackedFiles(projectDir)
+	files, err := fileSet.RecursiveListFiles(projectDir)
 	assert.NoError(t, err)
 	assert.Len(t, files, 1)
 	assert.Equal(t, "databricks.yml", files[0].Relative)
@@ -44,7 +41,7 @@ func TestRecusiveListFile(t *testing.T) {
 	defer f2.Close()
 	assert.NoError(t, err)
 
-	files, err = fileSet.RecursiveListTrackedFiles(projectDir)
+	files, err = fileSet.RecursiveListFiles(projectDir)
 	assert.NoError(t, err)
 	assert.Len(t, files, 2)
 	assert.Equal(t, "databricks.yml", files[0].Relative)

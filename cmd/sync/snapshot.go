@@ -22,7 +22,7 @@ type diff struct {
 const SYNC_SNAPSHOT_FILENAME = "repo_snapshot.json"
 const LOCAL_STATE_DIR = ".bricks"
 
-func storeSnapshot(s *snapshot, root string) error {
+func (s snapshot) storeSnapshot(root string) error {
 	bytes, err := json.MarshalIndent(s, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to json marshal in-memory snapshot: %s", err)
@@ -53,8 +53,7 @@ func storeSnapshot(s *snapshot, root string) error {
 	return nil
 }
 
-// TODO: make sure this command works for bricks repo (seems like there is issue opening the go.mod file)
-func loadSnapshot(s *snapshot, root string) error {
+func (s snapshot) loadSnapshot(root string) error {
 	persistedSnapshotPath := filepath.Join(root, LOCAL_STATE_DIR, SYNC_SNAPSHOT_FILENAME)
 	f, err := os.OpenFile(persistedSnapshotPath, os.O_CREATE|os.O_RDONLY, 0755)
 	if err != nil {

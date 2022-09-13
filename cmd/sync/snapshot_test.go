@@ -13,10 +13,7 @@ import (
 func TestDiff(t *testing.T) {
 	root, err := git.Root()
 	assert.NoError(t, err)
-	projectName := "test-snapshot-diff"
-	projectDir := filepath.Join(root, "tmp", projectName)
-	utilities.CreateTestProject(t, root, projectName)
-	defer utilities.DeleteTestProject(t, root, projectName)
+	projectDir := utilities.GetTestProject(t, root)
 
 	f1, err := os.Create(filepath.Join(projectDir, "hello.txt"))
 	assert.NoError(t, err)

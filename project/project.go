@@ -70,7 +70,10 @@ func (i *inner) DeploymentIsolationPrefix() string {
 		return i.project.Name
 	}
 	if i.project.Isolation == Soft {
-		me, _ := i.Me()
+		me, err := i.Me()
+		if err != nil {
+			panic(err)
+		}
 		return fmt.Sprintf("%s/%s", i.project.Name, me.UserName)
 	}
 	panic(fmt.Errorf("unknow project isolation: %s", i.project.Isolation))

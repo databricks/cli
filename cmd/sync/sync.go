@@ -38,6 +38,8 @@ var syncCmd = &cobra.Command{
 		if len(repos) == 0 {
 			return fmt.Errorf("no matching repo found, please ensure %s exists", repoPath)
 		}
+		// TODO: remove this error check by comparing the entire repo name instead
+		// of just the prefix. https://github.com/databricks/bricks/issues/53
 		if len(repos) > 1 {
 			return fmt.Errorf("multiple repos found matching prefix: %s", repoPath)
 		}

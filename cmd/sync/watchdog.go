@@ -94,7 +94,7 @@ func (w *watchdog) main(ctx context.Context, applyDiff func(diff) error) {
 	// load from json or sync it every time there's an action
 	state := snapshot{}
 	root, _ := git.Root()
-	loadSnapshot(&state, root)
+	state.loadSnapshot(root)
 	for {
 		select {
 		case <-ctx.Done():
@@ -116,7 +116,7 @@ func (w *watchdog) main(ctx context.Context, applyDiff func(diff) error) {
 				w.failure = err
 				return
 			}
-			storeSnapshot(&state, root)
+			state.storeSnapshot(root)
 		}
 	}
 }
