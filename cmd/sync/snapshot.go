@@ -12,10 +12,6 @@ import (
 	"github.com/databricks/bricks/git"
 )
 
-// TODO: persist snapshot locally / or fetch remote snapshot and see the drift
-// See how dbx sync handles it
-// Do we plan to store this in a local file system ?
-// We should not have to reupload the files on reboots
 type snapshot map[string]time.Time
 
 type diff struct {
@@ -45,8 +41,6 @@ func storeSnapshot(s *snapshot, root string) error {
 	}
 	defer f.Close()
 
-	// _, err = io.WriteString(f, string(bytes))
-
 	err = os.Truncate(persistedSnapshotPath, 0)
 	if err != nil {
 		return fmt.Errorf("failed to empty contents of %s", persistedSnapshotPath)
@@ -59,7 +53,7 @@ func storeSnapshot(s *snapshot, root string) error {
 	return nil
 }
 
-// TODO: make sure this command works for this repo (seems like there is issue opening the go.mod file)
+// TODO: make sure this command works for bricks repo (seems like there is issue opening the go.mod file)
 func loadSnapshot(s *snapshot, root string) error {
 	persistedSnapshotPath := filepath.Join(root, LOCAL_STATE_DIR, SYNC_SNAPSHOT_FILENAME)
 	f, err := os.OpenFile(persistedSnapshotPath, os.O_CREATE|os.O_RDONLY, 0755)
@@ -99,7 +93,6 @@ func (d diff) String() string {
 }
 
 // TODO: Add a bricks clean command to delete local history
-// TODO: rename sync_snapshot to repo_
 
 func (s snapshot) diff(all []git.File) (change diff) {
 	currentFilenames := map[string]bool{}
