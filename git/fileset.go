@@ -25,8 +25,6 @@ func (f File) Modified() (ts time.Time) {
 	return info.ModTime()
 }
 
-// TODO: File system it seems can be mocked in golang
-
 // FileSet facilitates fast recursive tracked file listing
 // with respect to patterns defined in `.gitignore` file
 //

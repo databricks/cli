@@ -39,7 +39,6 @@ var syncCmd = &cobra.Command{
 			return fmt.Errorf("no matching repo found, please ensure %s exists", repoPath)
 		}
 		if len(repos) > 1 {
-			// TODO: maybe test this case out
 			return fmt.Errorf("multiple repos found matching prefix: %s", repoPath)
 		}
 
