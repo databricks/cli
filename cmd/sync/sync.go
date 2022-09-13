@@ -24,24 +24,26 @@ var syncCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		repositoryName, err := git.RepositoryName()
-		if err != nil {
-			return err
+		if *remotePath == "" {
+			repositoryName, err := git.RepositoryName()
+			if err != nil {
+				return err
+			}
+			*remotePath = fmt.Sprintf("/Repos/%s/%s", me.UserName, repositoryName)
 		}
-		repoPath := fmt.Sprintf("/Repos/%s/%s", me.UserName, repositoryName)
-		log.Printf("[INFO] Remote file sync location: %v", repoPath)
 
-		repos, err := utilities.GetAllRepos(ctx, wsc, repoPath)
+		log.Printf("[INFO] Remote file sync location: %v", *remotePath)
+		repos, err := utilities.GetAllRepos(ctx, wsc, *remotePath)
 		if err != nil {
 			return fmt.Errorf("could not get repos: %s", err)
 		}
 		if len(repos) == 0 {
-			return fmt.Errorf("no matching repo found, please ensure %s exists", repoPath)
+			return fmt.Errorf("no matching repo found, please ensure %s exists", *remotePath)
 		}
 		// TODO: remove this error check by comparing the entire repo name instead
 		// of just the prefix. https://github.com/databricks/bricks/issues/53
 		if len(repos) > 1 {
-			return fmt.Errorf("multiple repos found matching prefix: %s", repoPath)
+			return fmt.Errorf("multiple repos found matching prefix: %s", *remotePath)
 		}
 
 		fileSet, err := git.GetFileSet()
@@ -49,7 +51,7 @@ var syncCmd = &cobra.Command{
 			return err
 		}
 
-		syncCallback := getRemoteSyncCallback(ctx, repoPath, wsc)
+		syncCallback := getRemoteSyncCallback(ctx, *remotePath, wsc)
 		err = spawnSyncRoutine(ctx, fileSet, *interval, syncCallback)
 		return err
 	},
@@ -58,7 +60,10 @@ var syncCmd = &cobra.Command{
 // project files polling interval
 var interval *time.Duration
 
+var remotePath *string
+
 func init() {
 	root.RootCmd.AddCommand(syncCmd)
 	interval = syncCmd.Flags().Duration("interval", 1*time.Second, "project files polling interval")
+	remotePath = syncCmd.Flags().String("remote-path", "", "remote path to store repo in. eg: /Repos/me@example.com/test-repo")
 }
