@@ -15,7 +15,18 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// GetEnvOrSkipTest proceeds with test only with that env variable
+func GetEnvOrSkipTest(t *testing.T, name string) string {
+	value := os.Getenv(name)
+	if value == "" {
+		t.Skipf("Environment variable %s is missing", name)
+	}
+	return value
+}
+
 func TestAccSync(t *testing.T) {
+	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+
 	wsc := workspaces.New()
 	ctx := context.Background()
 	me, err := wsc.CurrentUser.Me(ctx)
