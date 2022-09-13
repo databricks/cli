@@ -1,6 +1,7 @@
 {
 	// https://snippet-generator.app/
 	"Test case": {
+		"scope": "go",
 		"prefix": "te",
 		"body": [
 			"func Test$1(t *testing.T) {",
@@ -10,6 +11,7 @@
 		"description": "Test case"
 	},
 	"Assert len": {
+		"scope": "go",
 		"prefix": "al",
 		"body": [
 			"assert.Len(t, $1, $2)"
@@ -17,6 +19,7 @@
 		"description": "Assert len"
 	},
 	"Method with single error result": {
+		"scope": "go",
 		"prefix": "me",
 		"body": [
 			"func (a $1) $2() error {",
@@ -26,6 +29,7 @@
 		"description": "Method with single error result"
 	},
 	"if err != nil return err": {
+		"scope": "go",
 		"prefix": "ife",
 		"body": [
 			"if err != nil {",
@@ -35,6 +39,7 @@
 		"description": "if err != nil return err"
 	},
 	"if _ == nil return fmt.Errorf()": {
+		"scope": "go",
 		"prefix": "ifne",
 		"body": [
 			"if $1 == nil {",
@@ -44,6 +49,7 @@
 		"description": "if _ == nil return fmt.Errorf()"
 	},
 	"if err != nil return ``, err": {
+		"scope": "go",
 		"prefix": "iferrs",
 		"body": [
 			"if err != nil {",
@@ -53,6 +59,7 @@
 		"description": "if err != nil return ``, err"
 	},
 	"assert.EqualError": {
+		"scope": "go",
 		"prefix": "aee",
 		"body": [
 			"assert.EqualError(t, err, \"..\")"
@@ -60,6 +67,7 @@
 		"description": "assert.EqualError"
 	},
 	"assert.Equal": {
+		"scope": "go",
 		"prefix": "ae",
 		"body": [
 			"assert.Equal(t, \"..\", $1)"
@@ -67,6 +75,7 @@
 		"description": "assert.Equal"
 	},
 	"assert.NoError": {
+		"scope": "go",
 		"prefix": "anoe",
 		"body": [
 			"assert.NoError(t, err)"
@@ -74,6 +83,7 @@
 		"description": "assert.NoError"
 	},
 	"err :=": {
+		"scope": "go",
 		"prefix": "e",
 		"body": [
 			"err := "
@@ -81,6 +91,7 @@
 		"description": "err :="
 	},
 	"Golang Error Wrapper": {
+		"scope": "go",
 		"prefix": "ifew",
 		"body": [
 			"if err != nil {",
