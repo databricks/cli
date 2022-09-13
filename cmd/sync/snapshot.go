@@ -22,11 +22,8 @@ type diff struct {
 const SYNC_SNAPSHOT_FILENAME = "repo_snapshot.json"
 const LOCAL_STATE_DIR = ".bricks"
 
-func (s snapshot) storeSnapshot(root string) error {
-	bytes, err := json.MarshalIndent(s, "", "  ")
-	if err != nil {
-		return fmt.Errorf("failed to json marshal in-memory snapshot: %s", err)
-	}
+func (s *snapshot) storeSnapshot(root string) error {
+	// create snapshot file
 	configDir := filepath.Join(root, LOCAL_STATE_DIR)
 	if _, err := os.Stat(configDir); os.IsNotExist(err) {
 		err = os.Mkdir(configDir, os.ModeDir|os.ModePerm)
@@ -35,17 +32,17 @@ func (s snapshot) storeSnapshot(root string) error {
 		}
 	}
 	persistedSnapshotPath := filepath.Join(configDir, SYNC_SNAPSHOT_FILENAME)
-	f, err := os.OpenFile(persistedSnapshotPath, os.O_CREATE|os.O_WRONLY, 0755)
+	f, err := os.OpenFile(persistedSnapshotPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0755)
 	if err != nil {
 		return fmt.Errorf("failed to create/open persisted sync snapshot file: %s", err)
 	}
 	defer f.Close()
 
-	err = os.Truncate(persistedSnapshotPath, 0)
+	// persist snapshot to disk
+	bytes, err := json.MarshalIndent(s, "", "  ")
 	if err != nil {
-		return fmt.Errorf("failed to empty contents of %s", persistedSnapshotPath)
+		return fmt.Errorf("failed to json marshal in-memory snapshot: %s", err)
 	}
-
 	_, err = f.Write(bytes)
 	if err != nil {
 		return fmt.Errorf("failed to write sync snapshot to disk: %s", err)
@@ -53,11 +50,15 @@ func (s snapshot) storeSnapshot(root string) error {
 	return nil
 }
 
-func (s snapshot) loadSnapshot(root string) error {
+func (s *snapshot) loadSnapshot(root string) error {
 	persistedSnapshotPath := filepath.Join(root, LOCAL_STATE_DIR, SYNC_SNAPSHOT_FILENAME)
-	f, err := os.OpenFile(persistedSnapshotPath, os.O_CREATE|os.O_RDONLY, 0755)
+	if _, err := os.Stat(persistedSnapshotPath); os.IsNotExist(err) {
+		return nil
+	}
+
+	f, err := os.Open(persistedSnapshotPath)
 	if err != nil {
-		return fmt.Errorf("failed to create/open persisted sync snapshot file: %s", err)
+		return fmt.Errorf("failed to open persisted sync snapshot file: %s", err)
 	}
 	defer f.Close()
 

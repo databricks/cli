@@ -94,7 +94,13 @@ func (w *watchdog) main(ctx context.Context, applyDiff func(diff) error) {
 	// load from json or sync it every time there's an action
 	state := snapshot{}
 	root, _ := git.Root()
-	state.loadSnapshot(root)
+	err := state.loadSnapshot(root)
+	if err != nil {
+		log.Printf("[ERROR] cannot load snapshot: %s", err)
+		w.failure = err
+		return
+	}
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -116,7 +122,12 @@ func (w *watchdog) main(ctx context.Context, applyDiff func(diff) error) {
 				w.failure = err
 				return
 			}
-			state.storeSnapshot(root)
+			err = state.storeSnapshot(root)
+			if err != nil {
+				log.Printf("[ERROR] cannot store snapshot: %s", err)
+				w.failure = err
+				return
+			}
 		}
 	}
 }
