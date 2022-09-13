@@ -92,8 +92,6 @@ func (d diff) String() string {
 	return strings.Join(changes, ", ")
 }
 
-// TODO: Add a bricks clean command to delete local history
-
 func (s snapshot) diff(all []git.File) (change diff) {
 	currentFilenames := map[string]bool{}
 	for _, f := range all {
