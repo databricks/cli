@@ -72,12 +72,13 @@ func TestAccSync(t *testing.T) {
 		Path: repoPath,
 	})
 	assert.NoError(t, err)
-	var files []string
+	var files1 []string
 	for _, v := range repoContent.Objects {
-		files = append(files, filepath.Base(v.Path))
+		files1 = append(files1, filepath.Base(v.Path))
 	}
-	assert.Contains(t, files, "databricks.yml")
-	assert.Contains(t, files, ".gitkeep")
+	assert.Len(t, files1, 2)
+	assert.Contains(t, files1, "databricks.yml")
+	assert.Contains(t, files1, ".gitkeep")
 
 	// Create new files and assert
 	os.Create(filepath.Join(projectDir, "hello.txt"))
@@ -93,13 +94,15 @@ func TestAccSync(t *testing.T) {
 		Path: repoPath,
 	})
 	assert.NoError(t, err)
+	var files2 []string
 	for _, v := range repoContent.Objects {
-		files = append(files, filepath.Base(v.Path))
+		files2 = append(files2, filepath.Base(v.Path))
 	}
-	assert.Contains(t, files, "databricks.yml")
-	assert.Contains(t, files, ".gitkeep")
-	assert.Contains(t, files, "hello.txt")
-	assert.Contains(t, files, "world.txt")
+	assert.Len(t, files2, 4)
+	assert.Contains(t, files2, "databricks.yml")
+	assert.Contains(t, files2, ".gitkeep")
+	assert.Contains(t, files2, "hello.txt")
+	assert.Contains(t, files2, "world.txt")
 
 	// delete a file and assert
 	os.Remove(filepath.Join(projectDir, "hello.txt"))
@@ -114,10 +117,12 @@ func TestAccSync(t *testing.T) {
 		Path: repoPath,
 	})
 	assert.NoError(t, err)
+	var files3 []string
 	for _, v := range repoContent.Objects {
-		files = append(files, filepath.Base(v.Path))
+		files3 = append(files3, filepath.Base(v.Path))
 	}
-	assert.Contains(t, files, "databricks.yml")
-	assert.Contains(t, files, ".gitkeep")
-	assert.Contains(t, files, "world.txt")
+	assert.Len(t, files3, 3)
+	assert.Contains(t, files3, "databricks.yml")
+	assert.Contains(t, files3, ".gitkeep")
+	assert.Contains(t, files3, "world.txt")
 }
