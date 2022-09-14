@@ -19,19 +19,19 @@ type diff struct {
 	delete []string
 }
 
-const SYNC_SNAPSHOT_FILENAME = "repo_snapshot.json"
-const LOCAL_STATE_DIR = ".bricks"
+const SyncSnapshotFile = "repo_snapshot.json"
+const BricksDir = ".bricks"
 
 func (s *snapshot) storeSnapshot(root string) error {
 	// create snapshot file
-	configDir := filepath.Join(root, LOCAL_STATE_DIR)
+	configDir := filepath.Join(root, BricksDir)
 	if _, err := os.Stat(configDir); os.IsNotExist(err) {
 		err = os.Mkdir(configDir, os.ModeDir|os.ModePerm)
 		if err != nil {
 			return fmt.Errorf("failed to create config directory: %s", err)
 		}
 	}
-	persistedSnapshotPath := filepath.Join(configDir, SYNC_SNAPSHOT_FILENAME)
+	persistedSnapshotPath := filepath.Join(configDir, SyncSnapshotFile)
 	f, err := os.OpenFile(persistedSnapshotPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0755)
 	if err != nil {
 		return fmt.Errorf("failed to create/open persisted sync snapshot file: %s", err)
@@ -51,7 +51,7 @@ func (s *snapshot) storeSnapshot(root string) error {
 }
 
 func (s *snapshot) loadSnapshot(root string) error {
-	persistedSnapshotPath := filepath.Join(root, LOCAL_STATE_DIR, SYNC_SNAPSHOT_FILENAME)
+	persistedSnapshotPath := filepath.Join(root, BricksDir, SyncSnapshotFile)
 	if _, err := os.Stat(persistedSnapshotPath); os.IsNotExist(err) {
 		return nil
 	}
