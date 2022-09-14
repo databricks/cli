@@ -51,19 +51,18 @@ func (i *inner) WorkspacesClient() *workspaces.WorkspacesClient {
 	return i.wsc
 }
 
-// We can replace this with go sdk once https://github.com/databricks/databricks-sdk-go/issues/56 is fixed
-func (i *inner) Me() *scim.User {
+func (i *inner) Me() (*scim.User, error) {
 	i.mu.Lock()
 	defer i.mu.Unlock()
 	if i.me != nil {
-		return i.me
+		return i.me, nil
 	}
 	me, err := i.wsc.CurrentUser.Me(context.Background())
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	i.me = me
-	return me
+	return me, nil
 }
 
 func (i *inner) DeploymentIsolationPrefix() string {
@@ -71,7 +70,10 @@ func (i *inner) DeploymentIsolationPrefix() string {
 		return i.project.Name
 	}
 	if i.project.Isolation == Soft {
-		me := i.Me()
+		me, err := i.Me()
+		if err != nil {
+			panic(err)
+		}
 		return fmt.Sprintf("%s/%s", i.project.Name, me.UserName)
 	}
 	panic(fmt.Errorf("unknow project isolation: %s", i.project.Isolation))

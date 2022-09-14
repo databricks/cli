@@ -1,6 +1,7 @@
 package git
 
 import (
+	"context"
 	"fmt"
 	"net/url"
 	"os"
@@ -8,6 +9,8 @@ import (
 	"strings"
 
 	"github.com/databricks/bricks/folders"
+	"github.com/databricks/bricks/utilities"
+	"github.com/databricks/databricks-sdk-go/workspaces"
 	giturls "github.com/whilp/git-urls"
 	"gopkg.in/ini.v1"
 )
@@ -77,4 +80,19 @@ func RepositoryName() (string, error) {
 	}
 	base := path.Base(origin.Path)
 	return strings.TrimSuffix(base, ".git"), nil
+}
+
+func RepoExists(remotePath string, ctx context.Context, wsc *workspaces.WorkspacesClient) (bool, error) {
+	repos, err := utilities.GetAllRepos(ctx, wsc, remotePath)
+	if err != nil {
+		return false, fmt.Errorf("could not get repos: %s", err)
+	}
+	foundRepo := false
+	for _, repo := range repos {
+		if repo.Path == remotePath {
+			foundRepo = true
+			break
+		}
+	}
+	return foundRepo, nil
 }

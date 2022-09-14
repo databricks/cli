@@ -25,25 +25,27 @@ func (f File) Modified() (ts time.Time) {
 	return info.ModTime()
 }
 
-// FileSet facilitates fast recursive file listing with
-// respect to patterns defined in `.gitignore` file
+// FileSet facilitates fast recursive tracked file listing
+// with respect to patterns defined in `.gitignore` file
+//
+// root:   Root of the git repository
+// ignore: List of patterns defined in `.gitignore`.
+//  	   We do not sync files that match this pattern
 type FileSet struct {
 	root   string
 	ignore *ignore.GitIgnore
 }
 
-// MustGetFileSet retrieves FileSet from Git repository checkout root
+// GetFileSet retrieves FileSet from Git repository checkout root
 // or panics if no root is detected.
-func MustGetFileSet() FileSet {
+func GetFileSet() (FileSet, error) {
 	root, err := Root()
-	if err != nil {
-		panic(err)
-	}
-	return New(root)
+	return NewFileSet(root), err
 }
 
-func New(root string) FileSet {
-	lines := []string{".git"}
+// Retuns FileSet for the repository located at `root`
+func NewFileSet(root string) FileSet {
+	lines := []string{".git", ".bricks"}
 	rawIgnore, err := os.ReadFile(fmt.Sprintf("%s/.gitignore", root))
 	if err == nil {
 		// add entries from .gitignore if the file exists (did read correctly)
@@ -59,11 +61,15 @@ func New(root string) FileSet {
 	}
 }
 
+// Return all tracked files for Repo
 func (w *FileSet) All() ([]File, error) {
-	return w.RecursiveChildren(w.root)
+	return w.RecursiveListFiles(w.root)
 }
 
-func (w *FileSet) RecursiveChildren(dir string) (found []File, err error) {
+// Recursively traverses dir in a depth first manner and returns a list of all files
+// that are being tracked in the FileSet (ie not being ignored for matching one of the
+// patterns in w.ignore)
+func (w *FileSet) RecursiveListFiles(dir string) (fileList []File, err error) {
 	queue, err := readDir(dir, w.root)
 	if err != nil {
 		return nil, err
@@ -75,7 +81,7 @@ func (w *FileSet) RecursiveChildren(dir string) (found []File, err error) {
 			continue
 		}
 		if !current.IsDir() {
-			found = append(found, current)
+			fileList = append(fileList, current)
 			continue
 		}
 		children, err := readDir(current.Absolute, w.root)
@@ -84,7 +90,7 @@ func (w *FileSet) RecursiveChildren(dir string) (found []File, err error) {
 		}
 		queue = append(queue, children...)
 	}
-	return found, nil
+	return fileList, nil
 }
 
 func readDir(dir, root string) (queue []File, err error) {
