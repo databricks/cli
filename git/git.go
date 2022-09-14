@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"os"
 	"path"
 	"strings"
 
@@ -15,7 +16,11 @@ import (
 )
 
 func Root() (string, error) {
-	return folders.FindDirWithLeaf(".git")
+	wd, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+	return folders.FindDirWithLeaf(wd, ".git")
 }
 
 // Origin finds the git repository the project is cloned from, so that

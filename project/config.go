@@ -1,6 +1,7 @@
 package project
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -104,5 +105,15 @@ func validateAndApplyProjectDefaults(prj Project) (Project, error) {
 }
 
 func findProjectRoot() (string, error) {
-	return folders.FindDirWithLeaf(ConfigFile)
+	wd, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+	dir, err := folders.FindDirWithLeaf(wd, ConfigFile)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return "", fmt.Errorf("cannot find %s anywhere", ConfigFile)
+		}
+	}
+	return dir, nil
 }
