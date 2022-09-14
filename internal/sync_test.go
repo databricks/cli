@@ -15,15 +15,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// GetEnvOrSkipTest proceeds with test only with that env variable
-func GetEnvOrSkipTest(t *testing.T, name string) string {
-	value := os.Getenv(name)
-	if value == "" {
-		t.Skipf("Environment variable %s is missing", name)
-	}
-	return value
-}
-
 func TestAccSync(t *testing.T) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
@@ -32,7 +23,7 @@ func TestAccSync(t *testing.T) {
 	me, err := wsc.CurrentUser.Me(ctx)
 	assert.NoError(t, err)
 	repoUrl := "https://github.com/shreyas-goenka/empty-repo.git"
-	repoPath := fmt.Sprintf("/Repos/%s/empty-repo", me.UserName)
+	repoPath := fmt.Sprintf("/Repos/%s/%s", me.UserName, RandomName("empty-repo-sync-integration-"))
 
 	repoInfo, err := wsc.Repos.Create(ctx, repos.CreateRepo{
 		Path:     repoPath,
@@ -63,7 +54,7 @@ func TestAccSync(t *testing.T) {
 	assert.NoError(t, err)
 
 	// start bricks sync process
-	cmd = exec.Command("bricks", "sync")
+	cmd = exec.Command("bricks", "sync", "--remote-path", repoPath)
 	cmd.Dir = projectDir
 	err = cmd.Start()
 	assert.NoError(t, err)
