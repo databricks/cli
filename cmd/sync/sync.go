@@ -8,7 +8,6 @@ import (
 	"github.com/databricks/bricks/cmd/root"
 	"github.com/databricks/bricks/git"
 	"github.com/databricks/bricks/project"
-	"github.com/databricks/bricks/utilities"
 	"github.com/spf13/cobra"
 )
 
@@ -20,11 +19,11 @@ var syncCmd = &cobra.Command{
 		ctx := cmd.Context()
 		wsc := project.Current.WorkspacesClient()
 
-		me, err := project.Current.Me()
-		if err != nil {
-			return err
-		}
 		if *remotePath == "" {
+			me, err := project.Current.Me()
+			if err != nil {
+				return err
+			}
 			repositoryName, err := git.RepositoryName()
 			if err != nil {
 				return err
@@ -33,24 +32,18 @@ var syncCmd = &cobra.Command{
 		}
 
 		log.Printf("[INFO] Remote file sync location: %v", *remotePath)
-		repos, err := utilities.GetAllRepos(ctx, wsc, *remotePath)
+		repoExists, err := git.RepoExists(*remotePath, ctx, wsc)
 		if err != nil {
-			return fmt.Errorf("could not get repos: %s", err)
+			return err
 		}
-		if len(repos) == 0 {
-			return fmt.Errorf("no matching repo found, please ensure %s exists", *remotePath)
-		}
-		// TODO: remove this error check by comparing the entire repo name instead
-		// of just the prefix. https://github.com/databricks/bricks/issues/53
-		if len(repos) > 1 {
-			return fmt.Errorf("multiple repos found matching prefix: %s", *remotePath)
+		if !repoExists {
+			return fmt.Errorf("repo not found, please ensure %s exists", *remotePath)
 		}
 
 		fileSet, err := git.GetFileSet()
 		if err != nil {
 			return err
 		}
-
 		syncCallback := getRemoteSyncCallback(ctx, *remotePath, wsc)
 		err = spawnSyncRoutine(ctx, fileSet, *interval, syncCallback)
 		return err
