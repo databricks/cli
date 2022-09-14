@@ -6,14 +6,12 @@ import (
 	"testing"
 
 	"github.com/databricks/bricks/git"
-	"github.com/databricks/bricks/utilities"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestDiff(t *testing.T) {
-	root, err := git.Root()
-	assert.NoError(t, err)
-	projectDir := utilities.GetTestProject(t, root)
+	// Create temp project dir
+	projectDir := t.TempDir()
 
 	f1, err := os.Create(filepath.Join(projectDir, "hello.txt"))
 	assert.NoError(t, err)
@@ -30,10 +28,9 @@ func TestDiff(t *testing.T) {
 
 	// New files are added to put
 	assert.Len(t, change.delete, 0)
-	assert.Len(t, change.put, 3)
+	assert.Len(t, change.put, 2)
 	assert.Contains(t, change.put, "hello.txt")
 	assert.Contains(t, change.put, "world.txt")
-	assert.Contains(t, change.put, "databricks.yml")
 
 	// Edited files are added to put
 	_, err = f2.WriteString("I like clis")
