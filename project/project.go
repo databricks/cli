@@ -19,30 +19,25 @@ type inner struct {
 	mu   sync.Mutex
 	once sync.Once
 
-	project *Project
-	wsc     *workspaces.WorkspacesClient
-	me      *scim.User
+	config *Config
+	wsc    *workspaces.WorkspacesClient
+	me     *scim.User
 }
 
 func (i *inner) init() {
 	i.mu.Lock()
 	defer i.mu.Unlock()
 	i.once.Do(func() {
-		prj, err := loadProjectConf()
-		i.wsc = workspaces.New(&databricks.Config{Profile: prj.Profile})
+		config, err := loadProjectConf()
+		i.wsc = workspaces.New(&databricks.Config{Profile: config.Profile})
 		if err != nil {
 			panic(err)
 		}
 		if err != nil {
 			panic(err)
 		}
-		i.project = &prj
+		i.config = &config
 	})
-}
-
-func (i *inner) Project() *Project {
-	i.init()
-	return i.project
 }
 
 // Make sure to initialize the workspaces client on project init
@@ -66,17 +61,17 @@ func (i *inner) Me() (*scim.User, error) {
 }
 
 func (i *inner) DeploymentIsolationPrefix() string {
-	if i.project.Isolation == None {
-		return i.project.Name
+	if i.config.Isolation == None {
+		return i.config.Name
 	}
-	if i.project.Isolation == Soft {
+	if i.config.Isolation == Soft {
 		me, err := i.Me()
 		if err != nil {
 			panic(err)
 		}
-		return fmt.Sprintf("%s/%s", i.project.Name, me.UserName)
+		return fmt.Sprintf("%s/%s", i.config.Name, me.UserName)
 	}
-	panic(fmt.Errorf("unknow project isolation: %s", i.project.Isolation))
+	panic(fmt.Errorf("unknow project isolation: %s", i.config.Isolation))
 }
 
 func getClusterIdFromClusterName(ctx context.Context,
@@ -142,8 +137,8 @@ func RunPythonOnDev(ctx context.Context, command string) common.CommandResults {
 // the fields are not defined properly
 func (i *inner) GetDevelopmentClusterId(ctx context.Context) (clusterId string, err error) {
 	i.init()
-	clusterId = i.project.DevCluster.ClusterId
-	clusterName := i.project.DevCluster.ClusterName
+	clusterId = i.config.DevCluster.ClusterId
+	clusterName := i.config.DevCluster.ClusterName
 	if clusterId != "" {
 		return
 	} else if clusterName != "" {

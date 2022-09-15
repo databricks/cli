@@ -28,8 +28,8 @@ func loadCliProfiles() (profiles []prompt.Answer, err error) {
 		profiles = append(profiles, prompt.Answer{
 			Value:   v.Name(),
 			Details: fmt.Sprintf(`Connecting to "%s" workspace`, host),
-			Callback: func(ans prompt.Answer, prj *project.Project, _ prompt.Results) {
-				prj.Profile = ans.Value
+			Callback: func(ans prompt.Answer, config *project.Config, _ prompt.Results) {
+				config.Profile = ans.Value
 			},
 		})
 	}

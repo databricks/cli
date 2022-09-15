@@ -76,7 +76,7 @@ func (q Choice) Ask(res Results) (string, Answer, error) {
 
 type Answers []Answer
 
-type AnswerCallback func(ans Answer, prj *project.Project, res Results)
+type AnswerCallback func(ans Answer, config *project.Config, res Results)
 
 type Answer struct {
 	Value    string

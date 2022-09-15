@@ -55,7 +55,7 @@ func (cfg *Configs) loadInteractive(cmd *cobra.Command) error {
 			Default: func(res prompt.Results) string {
 				return cfg.Host
 			},
-			Callback: func(ans prompt.Answer, prj *project.Project, res prompt.Results) {
+			Callback: func(ans prompt.Answer, config *project.Config, res prompt.Results) {
 				cfg.Host = ans.Value
 			},
 		})
@@ -70,7 +70,7 @@ func (cfg *Configs) loadInteractive(cmd *cobra.Command) error {
 			Default: func(res prompt.Results) string {
 				return cfg.Token
 			},
-			Callback: func(ans prompt.Answer, prj *project.Project, res prompt.Results) {
+			Callback: func(ans prompt.Answer, config *project.Config, res prompt.Results) {
 				cfg.Token = ans.Value
 			},
 		})
