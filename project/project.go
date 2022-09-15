@@ -10,39 +10,67 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/commands"
 	"github.com/databricks/databricks-sdk-go/service/scim"
 	"github.com/databricks/databricks-sdk-go/workspaces"
+	"github.com/spf13/cobra"
 )
 
-// Current CLI application state - fixure out
-var Current project
-
 type project struct {
-	mu   sync.Mutex
-	once sync.Once
+	mu sync.Mutex
 
 	config *Config
 	wsc    *workspaces.WorkspacesClient
 	me     *scim.User
 }
 
-func (p *project) init() {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	p.once.Do(func() {
-		config, err := loadProjectConf()
-		p.wsc = workspaces.New(&databricks.Config{Profile: config.Profile})
-		if err != nil {
-			panic(err)
-		}
-		if err != nil {
-			panic(err)
-		}
-		p.config = &config
-	})
+// Configure is used as a PreRunE function for all commands that
+// require a project to be configured. If a project could successfully
+// be found and loaded, it is set on the command's context object.
+func Configure(cmd *cobra.Command, args []string) error {
+	root, err := getRoot()
+	if err != nil {
+		return err
+	}
+
+	ctx, err := Initialize(cmd.Context(), root)
+	if err != nil {
+		return err
+	}
+
+	cmd.SetContext(ctx)
+	return nil
+}
+
+// Placeholder to use as unique key in context.Context.
+var projectKey int
+
+// Initialize loads a project configuration given a root.
+// It stores the project on a new context.
+// The project is available through the `Get()` function.
+func Initialize(ctx context.Context, root string) (context.Context, error) {
+	config, err := loadProjectConf(root)
+	if err != nil {
+		return nil, err
+	}
+
+	p := project{
+		config: &config,
+	}
+
+	p.wsc = workspaces.New(&databricks.Config{Profile: config.Profile})
+	return context.WithValue(ctx, &projectKey, &p), nil
+}
+
+// Get returns the project as configured on the context.
+// It panics if it isn't configured.
+func Get(ctx context.Context) *project {
+	project, ok := ctx.Value(&projectKey).(*project)
+	if !ok {
+		panic(`context not configured with project`)
+	}
+	return project
 }
 
 // Make sure to initialize the workspaces client on project init
 func (p *project) WorkspacesClient() *workspaces.WorkspacesClient {
-	p.init()
 	return p.wsc
 }
 
@@ -136,7 +164,6 @@ func RunPythonOnDev(ctx context.Context, command string) common.CommandResults {
 // TODO: Add safe access to p.project and p.project.DevCluster that throws errors if
 // the fields are not defined properly
 func (p *project) GetDevelopmentClusterId(ctx context.Context) (clusterId string, err error) {
-	p.init()
 	clusterId = p.config.DevCluster.ClusterId
 	clusterName := p.config.DevCluster.ClusterName
 	if clusterId != "" {
@@ -152,14 +179,14 @@ func (p *project) GetDevelopmentClusterId(ctx context.Context) (clusterId string
 }
 
 func runCommandOnDev(ctx context.Context, language, command string) commands.CommandResults {
-	clusterId, err := Current.GetDevelopmentClusterId(ctx)
+	clusterId, err := Get(ctx).GetDevelopmentClusterId(ctx)
 	if err != nil {
 		return commands.CommandResults{
 			ResultType: "error",
 			Summary:    err.Error(),
 		}
 	}
-	return Current.wsc.Commands.Execute(ctx, clusterId, language, command)
+	return Get(ctx).wsc.Commands.Execute(ctx, clusterId, language, command)
 }
 
 func RunPythonOnDev(ctx context.Context, command string) commands.CommandResults {

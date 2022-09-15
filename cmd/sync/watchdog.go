@@ -27,7 +27,7 @@ type watchdog struct {
 }
 
 func putFile(ctx context.Context, path string, content io.Reader) error {
-	wsc := project.Current.WorkspacesClient()
+	wsc := project.Get(ctx).WorkspacesClient()
 	// workspace mkdirs is idempotent
 	err := wsc.Workspace.MkdirsByPath(ctx, filepath.Dir(path))
 	if err != nil {

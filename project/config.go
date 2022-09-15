@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"reflect"
 
 	"github.com/databricks/bricks/folders"
@@ -75,12 +76,8 @@ func IsDatabricksProject() bool {
 	return err == nil
 }
 
-func loadProjectConf() (c Config, err error) {
-	root, err := findProjectRoot()
-	if err != nil {
-		return
-	}
-	config, err := os.Open(fmt.Sprintf("%s/%s", root, ConfigFile))
+func loadProjectConf(root string) (c Config, err error) {
+	config, err := os.Open(filepath.Join(root, ConfigFile))
 	if err != nil {
 		return
 	}
