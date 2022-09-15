@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/databricks/bricks/git"
 	"github.com/stretchr/testify/assert"
@@ -16,7 +17,8 @@ func TestDiff(t *testing.T) {
 	f1, err := os.Create(filepath.Join(projectDir, "hello.txt"))
 	assert.NoError(t, err)
 	defer f1.Close()
-	f2, err := os.Create(filepath.Join(projectDir, "world.txt"))
+	worldFilePath := filepath.Join(projectDir, "world.txt")
+	f2, err := os.Create(worldFilePath)
 	assert.NoError(t, err)
 	defer f2.Close()
 
@@ -32,8 +34,16 @@ func TestDiff(t *testing.T) {
 	assert.Contains(t, change.put, "hello.txt")
 	assert.Contains(t, change.put, "world.txt")
 
-	// Edited files are added to put
-	_, err = f2.WriteString("I like clis")
+	// Edited files are added to put.
+	// File system in the github actions env does not update
+	// mtime on writes to a file. So we are manually editting it
+	// instead of writing to world.txt
+	worldFileInfo, err := os.Stat(worldFilePath)
+	assert.NoError(t, err)
+	os.Chtimes(worldFilePath,
+		worldFileInfo.ModTime().Add(time.Nanosecond),
+		worldFileInfo.ModTime().Add(time.Nanosecond))
+
 	assert.NoError(t, err)
 	files, err = fileSet.All()
 	assert.NoError(t, err)
