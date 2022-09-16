@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
-	"path"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -104,8 +104,11 @@ func readDir(dir, root string) (queue []File, err error) {
 		return
 	}
 	for _, v := range dirs {
-		absolute := path.Join(dir, v.Name())
-		relative := strings.TrimLeft(strings.Replace(absolute, root, "", 1), "/")
+		absolute := filepath.Join(dir, v.Name())
+		relative, err := filepath.Rel(root, absolute)
+		if err != nil {
+			return nil, err
+		}
 		queue = append(queue, File{v, absolute, relative})
 	}
 	return

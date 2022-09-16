@@ -3,9 +3,11 @@ package git
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestRecusiveListFile(t *testing.T) {
@@ -54,4 +56,25 @@ func TestRecusiveListFile(t *testing.T) {
 	}
 	assert.Contains(t, fileNames, "databricks.yml")
 	assert.Contains(t, fileNames, "a/b/c/hello.txt")
+}
+
+func TestFileSetNonCleanRoot(t *testing.T) {
+	// Test what happens if the root directory can be simplified.
+	// Path simplification is done by most filepath functions.
+	root := "./../git"
+	require.NotEqual(t, root, filepath.Clean(root))
+	fs := NewFileSet(root)
+	files, err := fs.All()
+	require.NoError(t, err)
+
+	found := false
+	for _, f := range files {
+		if strings.Contains(f.Relative, "fileset_test") {
+			assert.Equal(t, "fileset_test.go", f.Relative)
+			assert.Equal(t, "../git/fileset_test.go", f.Absolute)
+			found = true
+		}
+	}
+
+	assert.True(t, found)
 }
