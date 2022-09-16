@@ -43,11 +43,12 @@ var syncCmd = &cobra.Command{
 			return fmt.Errorf("repo not found, please ensure %s exists", *remotePath)
 		}
 
-		fileSet := git.NewFileSet(prj.Root())
+		root := prj.Root()
+		fileSet := git.NewFileSet(root)
 		if err != nil {
 			return err
 		}
-		syncCallback := getRemoteSyncCallback(ctx, *remotePath, wsc)
+		syncCallback := getRemoteSyncCallback(ctx, root, *remotePath, wsc)
 		err = spawnSyncRoutine(ctx, fileSet, *interval, syncCallback)
 		return err
 	},

@@ -40,7 +40,7 @@ func putFile(ctx context.Context, path string, content io.Reader) error {
 	return apiClient.Post(ctx, apiPath, content, nil)
 }
 
-func getRemoteSyncCallback(ctx context.Context, remoteDir string, wsc *workspaces.WorkspacesClient) func(localDiff diff) error {
+func getRemoteSyncCallback(ctx context.Context, root, remoteDir string, wsc *workspaces.WorkspacesClient) func(localDiff diff) error {
 	return func(d diff) error {
 		for _, filePath := range d.delete {
 			err := wsc.Workspace.Delete(ctx,
@@ -55,7 +55,7 @@ func getRemoteSyncCallback(ctx context.Context, remoteDir string, wsc *workspace
 			log.Printf("[INFO] Deleted %s", filePath)
 		}
 		for _, filePath := range d.put {
-			f, err := os.Open(filePath)
+			f, err := os.Open(filepath.Join(root, filePath))
 			if err != nil {
 				return err
 			}
