@@ -40,7 +40,7 @@ func putFile(ctx context.Context, path string, content io.Reader) error {
 	return apiClient.Post(ctx, apiPath, content, nil)
 }
 
-func getRemoteSyncCallback(ctx context.Context, remoteDir string, wsc *workspaces.WorkspacesClient) func(localDiff diff) error {
+func getRemoteSyncCallback(ctx context.Context, root, remoteDir string, wsc *workspaces.WorkspacesClient) func(localDiff diff) error {
 	return func(d diff) error {
 		for _, filePath := range d.delete {
 			err := wsc.Workspace.Delete(ctx,
@@ -55,7 +55,7 @@ func getRemoteSyncCallback(ctx context.Context, remoteDir string, wsc *workspace
 			log.Printf("[INFO] Deleted %s", filePath)
 		}
 		for _, filePath := range d.put {
-			f, err := os.Open(filePath)
+			f, err := os.Open(filepath.Join(root, filePath))
 			if err != nil {
 				return err
 			}
@@ -93,13 +93,8 @@ func (w *watchdog) main(ctx context.Context, applyDiff func(diff) error) {
 	defer w.wg.Done()
 	// load from json or sync it every time there's an action
 	state := snapshot{}
-	root, err := git.Root()
-	if err != nil {
-		log.Printf("[ERROR] cannot find project root: %s", err)
-		w.failure = err
-		return
-	}
-	err = state.loadSnapshot(root)
+	root := w.files.Root()
+	err := state.loadSnapshot(root)
 	if err != nil {
 		log.Printf("[ERROR] cannot load snapshot: %s", err)
 		w.failure = err

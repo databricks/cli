@@ -16,6 +16,8 @@ import (
 type project struct {
 	mu sync.Mutex
 
+	root string
+
 	config *Config
 	wsc    *workspaces.WorkspacesClient
 	me     *scim.User
@@ -52,6 +54,7 @@ func Initialize(ctx context.Context, root string) (context.Context, error) {
 	}
 
 	p := project{
+		root:   root,
 		config: &config,
 	}
 
@@ -72,6 +75,10 @@ func Get(ctx context.Context) *project {
 // Make sure to initialize the workspaces client on project init
 func (p *project) WorkspacesClient() *workspaces.WorkspacesClient {
 	return p.wsc
+}
+
+func (p *project) Root() string {
+	return p.root
 }
 
 func (p *project) Me() (*scim.User, error) {
