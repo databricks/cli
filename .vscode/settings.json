@@ -2,5 +2,8 @@
     "[go]": {
         "editor.insertSpaces": false,
         "editor.formatOnSave": true
+    },
+    "yaml.schemas": {
+        "file:///Users/pieter.noordhuis/dev/bricks/experimental/tf2jsonschema/example/schema.json": "file:///Users/pieter.noordhuis/dev/bricks/experimental/tf2jsonschema/example/resources.yml"
     }
 }

@@ -30,7 +30,8 @@ func (f File) Modified() (ts time.Time) {
 //
 // root:   Root of the git repository
 // ignore: List of patterns defined in `.gitignore`.
-//  	   We do not sync files that match this pattern
+//
+//	We do not sync files that match this pattern
 type FileSet struct {
 	root   string
 	ignore *ignore.GitIgnore
@@ -45,7 +46,7 @@ func GetFileSet() (FileSet, error) {
 
 // Retuns FileSet for the repository located at `root`
 func NewFileSet(root string) FileSet {
-	lines := []string{".git", ".bricks"}
+	lines := []string{".git", ".bricks", ".terraform", "dist"}
 	rawIgnore, err := os.ReadFile(fmt.Sprintf("%s/.gitignore", root))
 	if err == nil {
 		// add entries from .gitignore if the file exists (did read correctly)

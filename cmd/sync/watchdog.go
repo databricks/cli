@@ -31,7 +31,6 @@ func putFile(ctx context.Context, path string, content io.Reader) error {
 	// workspace mkdirs is idempotent
 	err := wsc.Workspace.MkdirsByPath(ctx, filepath.Dir(path))
 	if err != nil {
-		return fmt.Errorf("could not mkdir to put file: %s", err)
 	}
 	apiClient := client.New(wsc.Config)
 	apiPath := fmt.Sprintf(
