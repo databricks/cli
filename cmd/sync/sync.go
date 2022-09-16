@@ -19,10 +19,11 @@ var syncCmd = &cobra.Command{
 	PreRunE: project.Configure,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		wsc := project.Get(ctx).WorkspacesClient()
+		prj := project.Get(ctx)
+		wsc := prj.WorkspacesClient()
 
 		if *remotePath == "" {
-			me, err := project.Get(ctx).Me()
+			me, err := prj.Me()
 			if err != nil {
 				return err
 			}
@@ -42,7 +43,7 @@ var syncCmd = &cobra.Command{
 			return fmt.Errorf("repo not found, please ensure %s exists", *remotePath)
 		}
 
-		fileSet, err := git.GetFileSet()
+		fileSet := git.NewFileSet(prj.Root())
 		if err != nil {
 			return err
 		}

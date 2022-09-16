@@ -93,13 +93,8 @@ func (w *watchdog) main(ctx context.Context, applyDiff func(diff) error) {
 	defer w.wg.Done()
 	// load from json or sync it every time there's an action
 	state := snapshot{}
-	root, err := git.Root()
-	if err != nil {
-		log.Printf("[ERROR] cannot find project root: %s", err)
-		w.failure = err
-		return
-	}
-	err = state.loadSnapshot(root)
+	root := w.files.Root()
+	err := state.loadSnapshot(root)
 	if err != nil {
 		log.Printf("[ERROR] cannot load snapshot: %s", err)
 		w.failure = err

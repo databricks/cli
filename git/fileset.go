@@ -61,6 +61,11 @@ func NewFileSet(root string) FileSet {
 	}
 }
 
+// Return root for fileset.
+func (w *FileSet) Root() string {
+	return w.root
+}
+
 // Return all tracked files for Repo
 func (w *FileSet) All() ([]File, error) {
 	return w.RecursiveListFiles(w.root)
