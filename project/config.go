@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"reflect"
 
 	"github.com/databricks/bricks/folders"
@@ -29,7 +30,7 @@ type Assertions struct {
 	ServicePrincipals []string `json:"service_principals,omitempty"`
 }
 
-type Project struct {
+type Config struct {
 	Name      string    `json:"name"`              // or do default from folder name?..
 	Profile   string    `json:"profile,omitempty"` // rename?
 	Isolation Isolation `json:"isolation,omitempty"`
@@ -51,20 +52,20 @@ type Project struct {
 	Assertions *Assertions `json:"assertions,omitempty"`
 }
 
-func (p Project) IsDevClusterDefined() bool {
-	return reflect.ValueOf(p.DevCluster).IsZero()
+func (c Config) IsDevClusterDefined() bool {
+	return reflect.ValueOf(c.DevCluster).IsZero()
 }
 
 // IsDevClusterJustReference denotes reference-only clusters.
 // This conflicts with Soft isolation. Happens for cost-restricted projects,
 // where there's only a single Shared Autoscaling cluster per workspace and
 // general users have no ability to create other iteractive clusters.
-func (p *Project) IsDevClusterJustReference() bool {
-	if p.DevCluster.ClusterName == "" {
+func (c *Config) IsDevClusterJustReference() bool {
+	if c.DevCluster.ClusterName == "" {
 		return false
 	}
-	return reflect.DeepEqual(p.DevCluster, &clusters.ClusterInfo{
-		ClusterName: p.DevCluster.ClusterName,
+	return reflect.DeepEqual(c.DevCluster, &clusters.ClusterInfo{
+		ClusterName: c.DevCluster.ClusterName,
 	})
 }
 
@@ -75,12 +76,8 @@ func IsDatabricksProject() bool {
 	return err == nil
 }
 
-func loadProjectConf() (prj Project, err error) {
-	root, err := findProjectRoot()
-	if err != nil {
-		return
-	}
-	config, err := os.Open(fmt.Sprintf("%s/%s", root, ConfigFile))
+func loadProjectConf(root string) (c Config, err error) {
+	config, err := os.Open(filepath.Join(root, ConfigFile))
 	if err != nil {
 		return
 	}
@@ -88,20 +85,20 @@ func loadProjectConf() (prj Project, err error) {
 	if err != nil {
 		return
 	}
-	err = yaml.Unmarshal(raw, &prj)
+	err = yaml.Unmarshal(raw, &c)
 	if err != nil {
 		return
 	}
-	return validateAndApplyProjectDefaults(prj)
+	return validateAndApplyProjectDefaults(c)
 }
 
-func validateAndApplyProjectDefaults(prj Project) (Project, error) {
+func validateAndApplyProjectDefaults(c Config) (Config, error) {
 	// defaultCluster := clusters.ClusterInfo{
 	// 	NodeTypeID: "smallest",
 	// 	SparkVersion: "latest",
 	// 	AutoterminationMinutes: 30,
 	// }
-	return prj, nil
+	return c, nil
 }
 
 func findProjectRoot() (string, error) {

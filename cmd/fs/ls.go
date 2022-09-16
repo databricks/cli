@@ -13,8 +13,10 @@ var lsCmd = &cobra.Command{
 	Short: "Lists files",
 	Long:  `Lists files`,
 	Args:  cobra.ExactArgs(1),
+
+	PreRunE: project.Configure,
 	Run: func(cmd *cobra.Command, args []string) {
-		wsc := project.Current.WorkspacesClient()
+		wsc := project.Get(cmd.Context()).WorkspacesClient()
 		listStatusResponse, err := wsc.Dbfs.ListByPath(cmd.Context(), args[0])
 		if err != nil {
 			panic(err)

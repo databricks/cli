@@ -10,7 +10,7 @@ require (
 	github.com/mitchellh/go-homedir v1.1.0 // MIT
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8 // BSD-2-Clause
 	github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06 // MIT
-	github.com/spf13/cobra v1.4.0 // Apache 2.0
+	github.com/spf13/cobra v1.5.0 // Apache 2.0
 	github.com/stretchr/testify v1.8.0 // MIT
 	github.com/whilp/git-urls v1.0.0 // MIT
 	golang.org/x/mod v0.6.0-dev.0.20220106191415-9b9b3d81d5e3 // BSD-3-Clause

@@ -15,12 +15,14 @@ import (
 var syncCmd = &cobra.Command{
 	Use:   "sync",
 	Short: "run syncs for the project",
+
+	PreRunE: project.Configure,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		wsc := project.Current.WorkspacesClient()
+		wsc := project.Get(ctx).WorkspacesClient()
 
 		if *remotePath == "" {
-			me, err := project.Current.Me()
+			me, err := project.Get(ctx).Me()
 			if err != nil {
 				return err
 			}

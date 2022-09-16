@@ -10,73 +10,96 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/commands"
 	"github.com/databricks/databricks-sdk-go/service/scim"
 	"github.com/databricks/databricks-sdk-go/workspaces"
+	"github.com/spf13/cobra"
 )
 
-// Current CLI application state - fixure out
-var Current inner
+type project struct {
+	mu sync.Mutex
 
-type inner struct {
-	mu   sync.Mutex
-	once sync.Once
-
-	project *Project
-	wsc     *workspaces.WorkspacesClient
-	me      *scim.User
+	config *Config
+	wsc    *workspaces.WorkspacesClient
+	me     *scim.User
 }
 
-func (i *inner) init() {
-	i.mu.Lock()
-	defer i.mu.Unlock()
-	i.once.Do(func() {
-		prj, err := loadProjectConf()
-		i.wsc = workspaces.New(&databricks.Config{Profile: prj.Profile})
-		if err != nil {
-			panic(err)
-		}
-		if err != nil {
-			panic(err)
-		}
-		i.project = &prj
-	})
-}
-
-func (i *inner) Project() *Project {
-	i.init()
-	return i.project
-}
-
-// Make sure to initialize the workspaces client on project init
-func (i *inner) WorkspacesClient() *workspaces.WorkspacesClient {
-	i.init()
-	return i.wsc
-}
-
-func (i *inner) Me() (*scim.User, error) {
-	i.mu.Lock()
-	defer i.mu.Unlock()
-	if i.me != nil {
-		return i.me, nil
+// Configure is used as a PreRunE function for all commands that
+// require a project to be configured. If a project could successfully
+// be found and loaded, it is set on the command's context object.
+func Configure(cmd *cobra.Command, args []string) error {
+	root, err := getRoot()
+	if err != nil {
+		return err
 	}
-	me, err := i.wsc.CurrentUser.Me(context.Background())
+
+	ctx, err := Initialize(cmd.Context(), root)
+	if err != nil {
+		return err
+	}
+
+	cmd.SetContext(ctx)
+	return nil
+}
+
+// Placeholder to use as unique key in context.Context.
+var projectKey int
+
+// Initialize loads a project configuration given a root.
+// It stores the project on a new context.
+// The project is available through the `Get()` function.
+func Initialize(ctx context.Context, root string) (context.Context, error) {
+	config, err := loadProjectConf(root)
 	if err != nil {
 		return nil, err
 	}
-	i.me = me
+
+	p := project{
+		config: &config,
+	}
+
+	p.wsc = workspaces.New(&databricks.Config{Profile: config.Profile})
+	return context.WithValue(ctx, &projectKey, &p), nil
+}
+
+// Get returns the project as configured on the context.
+// It panics if it isn't configured.
+func Get(ctx context.Context) *project {
+	project, ok := ctx.Value(&projectKey).(*project)
+	if !ok {
+		panic(`context not configured with project`)
+	}
+	return project
+}
+
+// Make sure to initialize the workspaces client on project init
+func (p *project) WorkspacesClient() *workspaces.WorkspacesClient {
+	return p.wsc
+}
+
+func (p *project) Me() (*scim.User, error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if p.me != nil {
+		return p.me, nil
+	}
+	me, err := p.wsc.CurrentUser.Me(context.Background())
+	if err != nil {
+		return nil, err
+	}
+	p.me = me
 	return me, nil
 }
 
-func (i *inner) DeploymentIsolationPrefix() string {
-	if i.project.Isolation == None {
-		return i.project.Name
+func (p *project) DeploymentIsolationPrefix() string {
+	if p.config.Isolation == None {
+		return p.config.Name
 	}
-	if i.project.Isolation == Soft {
-		me, err := i.Me()
+	if p.config.Isolation == Soft {
+		me, err := p.Me()
 		if err != nil {
 			panic(err)
 		}
-		return fmt.Sprintf("%s/%s", i.project.Name, me.UserName)
+		return fmt.Sprintf("%s/%s", p.config.Name, me.UserName)
 	}
-	panic(fmt.Errorf("unknow project isolation: %s", i.project.Isolation))
+	panic(fmt.Errorf("unknow project isolation: %s", p.config.Isolation))
 }
 
 func getClusterIdFromClusterName(ctx context.Context,
@@ -101,24 +124,24 @@ func getClusterIdFromClusterName(ctx context.Context,
 // Old version of getting development cluster details with isolation implemented.
 // Kept just for reference. Remove once isolation is implemented properly
 /*
-func (i *inner) DevelopmentCluster(ctx context.Context) (cluster clusters.ClusterInfo, err error) {
-	api := clusters.NewClustersAPI(ctx, i.Client()) // TODO: rewrite with normal SDK
-	if i.project.DevCluster == nil {
-		i.project.DevCluster = &clusters.Cluster{}
+func (p *project) DevelopmentCluster(ctx context.Context) (cluster clusters.ClusterInfo, err error) {
+	api := clusters.NewClustersAPI(ctx, p.Client()) // TODO: rewrite with normal SDK
+	if p.project.DevCluster == nil {
+		p.project.DevCluster = &clusters.Cluster{}
 	}
-	dc := i.project.DevCluster
-	if i.project.Isolation == Soft {
-		if i.project.IsDevClusterJustReference() {
+	dc := p.project.DevCluster
+	if p.project.Isolation == Soft {
+		if p.project.IsDevClusterJustReference() {
 			err = fmt.Errorf("projects with soft isolation cannot have named clusters")
 			return
 		}
-		dc.ClusterName = fmt.Sprintf("dev/%s", i.DeploymentIsolationPrefix())
+		dc.ClusterName = fmt.Sprintf("dev/%s", p.DeploymentIsolationPrefix())
 	}
 	if dc.ClusterName == "" {
 		err = fmt.Errorf("please either pick `isolation: soft` or specify a shared cluster name")
 		return
 	}
-	return api.GetOrCreateRunningCluster(dc.ClusterName, *dc)
+	return app.GetOrCreateRunningCluster(dc.ClusterName, *dc)
 }
 
 func runCommandOnDev(ctx context.Context, language, command string) common.CommandResults {
@@ -138,17 +161,16 @@ func RunPythonOnDev(ctx context.Context, command string) common.CommandResults {
 }
 */
 
-// TODO: Add safe access to i.project and i.project.DevCluster that throws errors if
+// TODO: Add safe access to p.project and p.project.DevCluster that throws errors if
 // the fields are not defined properly
-func (i *inner) GetDevelopmentClusterId(ctx context.Context) (clusterId string, err error) {
-	i.init()
-	clusterId = i.project.DevCluster.ClusterId
-	clusterName := i.project.DevCluster.ClusterName
+func (p *project) GetDevelopmentClusterId(ctx context.Context) (clusterId string, err error) {
+	clusterId = p.config.DevCluster.ClusterId
+	clusterName := p.config.DevCluster.ClusterName
 	if clusterId != "" {
 		return
 	} else if clusterName != "" {
 		// Add workspaces client on init
-		return getClusterIdFromClusterName(ctx, i.wsc, clusterName)
+		return getClusterIdFromClusterName(ctx, p.wsc, clusterName)
 	} else {
 		// TODO: Add the project config file location used to error message
 		err = fmt.Errorf("please define either development cluster's cluster_id or cluster_name in your project config")
@@ -157,14 +179,14 @@ func (i *inner) GetDevelopmentClusterId(ctx context.Context) (clusterId string, 
 }
 
 func runCommandOnDev(ctx context.Context, language, command string) commands.CommandResults {
-	clusterId, err := Current.GetDevelopmentClusterId(ctx)
+	clusterId, err := Get(ctx).GetDevelopmentClusterId(ctx)
 	if err != nil {
 		return commands.CommandResults{
 			ResultType: "error",
 			Summary:    err.Error(),
 		}
 	}
-	return Current.wsc.Commands.Execute(ctx, clusterId, language, command)
+	return Get(ctx).wsc.Commands.Execute(ctx, clusterId, language, command)
 }
 
 func RunPythonOnDev(ctx context.Context, command string) commands.CommandResults {

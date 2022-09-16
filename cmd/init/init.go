@@ -38,8 +38,8 @@ var initCmd = &cobra.Command{
 				Default: func(res prompt.Results) string {
 					return path.Base(wd)
 				},
-				Callback: func(ans prompt.Answer, prj *project.Project, res prompt.Results) {
-					prj.Name = ans.Value
+				Callback: func(ans prompt.Answer, config *project.Config, res prompt.Results) {
+					config.Name = ans.Value
 				},
 			},
 			*profileChoice,
@@ -65,8 +65,8 @@ var initCmd = &cobra.Command{
 					Value:   "Soft",
 					Details: "Prepend prefixes to each team member's deployment",
 					Callback: func(
-						ans prompt.Answer, prj *project.Project, res prompt.Results) {
-						prj.Isolation = project.Soft
+						ans prompt.Answer, config *project.Config, res prompt.Results) {
+						config.Isolation = project.Soft
 					},
 				},
 			}},
@@ -92,14 +92,14 @@ var initCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		var prj project.Project
+		var config project.Config
 		for _, ans := range res {
 			if ans.Callback == nil {
 				continue
 			}
-			ans.Callback(ans, &prj, res)
+			ans.Callback(ans, &config, res)
 		}
-		raw, err := yaml.Marshal(prj)
+		raw, err := yaml.Marshal(config)
 		if err != nil {
 			return err
 		}
