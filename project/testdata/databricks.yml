@@ -2,3 +2,6 @@ name: dev
 profile: demo
 dev_cluster:
   cluster_name: Shared Autoscaling
+
+environments:
+  development:

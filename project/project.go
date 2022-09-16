@@ -17,10 +17,12 @@ type project struct {
 	mu sync.Mutex
 
 	root string
+	env  string
 
-	config *Config
-	wsc    *workspaces.WorkspacesClient
-	me     *scim.User
+	config      *Config
+	environment *Environment
+	wsc         *workspaces.WorkspacesClient
+	me          *scim.User
 }
 
 // Configure is used as a PreRunE function for all commands that
@@ -32,7 +34,7 @@ func Configure(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	ctx, err := Initialize(cmd.Context(), root)
+	ctx, err := Initialize(cmd.Context(), root, getEnvironment(cmd))
 	if err != nil {
 		return err
 	}
@@ -44,21 +46,30 @@ func Configure(cmd *cobra.Command, args []string) error {
 // Placeholder to use as unique key in context.Context.
 var projectKey int
 
-// Initialize loads a project configuration given a root.
+// Initialize loads a project configuration given a root and environment.
 // It stores the project on a new context.
 // The project is available through the `Get()` function.
-func Initialize(ctx context.Context, root string) (context.Context, error) {
+func Initialize(ctx context.Context, root, env string) (context.Context, error) {
 	config, err := loadProjectConf(root)
 	if err != nil {
 		return nil, err
 	}
 
-	p := project{
-		root:   root,
-		config: &config,
+	// Confirm that the specified environment is valid.
+	environment, ok := config.Environments[env]
+	if !ok {
+		return nil, fmt.Errorf("environment [%s] not defined", env)
 	}
 
-	p.wsc = workspaces.New(&databricks.Config{Profile: config.Profile})
+	p := project{
+		root: root,
+		env:  env,
+
+		config:      &config,
+		environment: &environment,
+	}
+
+	p.wsc = workspaces.New(&databricks.Config{Profile: environment.Workspace.Profile})
 	return context.WithValue(ctx, &projectKey, &p), nil
 }
 
@@ -79,6 +90,14 @@ func (p *project) WorkspacesClient() *workspaces.WorkspacesClient {
 
 func (p *project) Root() string {
 	return p.root
+}
+
+func (p *project) Config() Config {
+	return *p.config
+}
+
+func (p *project) Environment() Environment {
+	return *p.environment
 }
 
 func (p *project) Me() (*scim.User, error) {

@@ -50,6 +50,12 @@ type Config struct {
 	// created by administrator users or admin-level automation, like Terraform
 	// and/or SCIM provisioning.
 	Assertions *Assertions `json:"assertions,omitempty"`
+
+	// Environments contain this project's defined environments.
+	// They can be used to differentiate settings and resources between
+	// development, staging, production, etc.
+	// The project assumes an environment named "development" is always defined.
+	Environments map[string]Environment `json:"environments"`
 }
 
 func (c Config) IsDevClusterDefined() bool {
