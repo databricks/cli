@@ -34,5 +34,5 @@ func TestEnvironmentDefault(t *testing.T) {
 	t.Setenv(bricksEnv, "")
 
 	value := getEnvironment(&cmd)
-	assert.Equal(t, defaultEnvironment, value)
+	assert.Equal(t, DefaultEnvironment, value)
 }

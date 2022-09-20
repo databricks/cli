@@ -9,7 +9,7 @@ import (
 )
 
 func TestProjectInitialize(t *testing.T) {
-	ctx, err := Initialize(context.Background(), "./testdata", defaultEnvironment)
+	ctx, err := Initialize(context.Background(), "./testdata", DefaultEnvironment)
 	require.NoError(t, err)
 	assert.Equal(t, Get(ctx).config.Name, "dev")
 }

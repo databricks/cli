@@ -8,7 +8,7 @@ import (
 
 const bricksEnv = "BRICKS_ENV"
 
-const defaultEnvironment = "development"
+const DefaultEnvironment = "development"
 
 // Workspace defines configurables at the workspace level.
 type Workspace struct {
@@ -37,5 +37,5 @@ func getEnvironment(cmd *cobra.Command) (value string) {
 		return
 	}
 
-	return defaultEnvironment
+	return DefaultEnvironment
 }
