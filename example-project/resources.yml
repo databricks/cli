@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=./.bricks/schema.json
+
+resources:
+  job:
+    my_first_job:
+      spark_python_task:
+        python_file: "./my_first_job.py"
+        parameters:
+          - "hello"
+          - "world"
+      tags:
+        key: value
+
+
+environments:
+  development:
+    resources:
+      job:
+        my_first_job:
+          name: "[development] my first job"
+
+          # Use autoscaling on e2-dogfood.
+          existing_cluster_id: "0923-164208-meows279"
+
+  staging:
+    resources:
+      job:
+        my_first_job:
+          name: "[staging] my first job"
+          new_cluster:
+            spark_version: 10.4.x-scala2.12
+            node_type_id: "i3.xlarge"
+            num_workers: 2
+
+  production:
+    resources:
+      job:
+        my_first_job:
+          name: "[production] my first job"
+          new_cluster:
+            spark_version: 10.4.x-scala2.12
+            node_type_id: "i3.xlarge"
+            autoscale:
+              min_workers: 4
+              max_workers: 8

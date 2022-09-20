@@ -43,7 +43,10 @@ var deployCmd = &cobra.Command{
 			return err
 		}
 
-		env := "dev"
+		env := cmd.Flag("environment").Value.String()
+		if env == "" {
+			env = "development"
+		}
 
 		var out = map[string]interface{}{
 			"terraform": map[string]interface{}{
@@ -113,11 +116,18 @@ var deployCmd = &cobra.Command{
 				panic(err)
 			}
 
+			for _, job := range out["resource"].(map[string]interface{})["databricks_job"].(map[string]interface{}) {
+				spark_python_task := job.(map[string]interface{})["spark_python_task"].(map[string]interface{})
+				python_file := spark_python_task["python_file"].(string)
+				spark_python_task["python_file"] = filepath.Join(prj.Environment().Workspace.Root, python_file)
+			}
 		}
 
 		// Perform any string interpolation / string templating
 
 		// TODO Make sure dist/env exists...
+
+		os.MkdirAll(filepath.Join(prj.Root(), "dist", env), 0755)
 
 		f, err := os.Create(filepath.Join(prj.Root(), "dist", env, "main.tf.json"))
 		if err != nil {
@@ -143,7 +153,7 @@ var deployCmd = &cobra.Command{
 		runtf := true
 		if runtf {
 			execPath := "/opt/homebrew/bin/terraform"
-			log.Printf("[INFO] tf exec path: %s", execPath)
+			// log.Printf("[INFO] tf exec path: %s", execPath)
 
 			workingDir := filepath.Join(prj.Root(), "dist", env)
 			tf, err := tfexec.NewTerraform(workingDir, execPath)

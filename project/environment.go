@@ -13,6 +13,7 @@ const defaultEnvironment = "development"
 // Workspace defines configurables at the workspace level.
 type Workspace struct {
 	Profile string `json:"profile,omitempty"`
+	Root    string `json:"root,omitempty"`
 }
 
 // Environment defines all configurables for a single environment.

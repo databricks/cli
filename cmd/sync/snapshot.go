@@ -1,11 +1,7 @@
 package sync
 
 import (
-	"encoding/json"
 	"fmt"
-	"io"
-	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -23,54 +19,54 @@ const SyncSnapshotFile = "repo_snapshot.json"
 const BricksDir = ".bricks"
 
 func (s *snapshot) storeSnapshot(root string) error {
-	// create snapshot file
-	configDir := filepath.Join(root, BricksDir)
-	if _, err := os.Stat(configDir); os.IsNotExist(err) {
-		err = os.Mkdir(configDir, os.ModeDir|os.ModePerm)
-		if err != nil {
-			return fmt.Errorf("failed to create config directory: %s", err)
-		}
-	}
-	persistedSnapshotPath := filepath.Join(configDir, SyncSnapshotFile)
-	f, err := os.OpenFile(persistedSnapshotPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0755)
-	if err != nil {
-		return fmt.Errorf("failed to create/open persisted sync snapshot file: %s", err)
-	}
-	defer f.Close()
+	// // create snapshot file
+	// configDir := filepath.Join(root, BricksDir)
+	// if _, err := os.Stat(configDir); os.IsNotExist(err) {
+	// 	err = os.Mkdir(configDir, os.ModeDir|os.ModePerm)
+	// 	if err != nil {
+	// 		return fmt.Errorf("failed to create config directory: %s", err)
+	// 	}
+	// }
+	// persistedSnapshotPath := filepath.Join(configDir, SyncSnapshotFile)
+	// f, err := os.OpenFile(persistedSnapshotPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0755)
+	// if err != nil {
+	// 	return fmt.Errorf("failed to create/open persisted sync snapshot file: %s", err)
+	// }
+	// defer f.Close()
 
-	// persist snapshot to disk
-	bytes, err := json.MarshalIndent(s, "", "  ")
-	if err != nil {
-		return fmt.Errorf("failed to json marshal in-memory snapshot: %s", err)
-	}
-	_, err = f.Write(bytes)
-	if err != nil {
-		return fmt.Errorf("failed to write sync snapshot to disk: %s", err)
-	}
+	// // persist snapshot to disk
+	// bytes, err := json.MarshalIndent(s, "", "  ")
+	// if err != nil {
+	// 	return fmt.Errorf("failed to json marshal in-memory snapshot: %s", err)
+	// }
+	// _, err = f.Write(bytes)
+	// if err != nil {
+	// 	return fmt.Errorf("failed to write sync snapshot to disk: %s", err)
+	// }
 	return nil
 }
 
 func (s *snapshot) loadSnapshot(root string) error {
-	persistedSnapshotPath := filepath.Join(root, BricksDir, SyncSnapshotFile)
-	if _, err := os.Stat(persistedSnapshotPath); os.IsNotExist(err) {
-		return nil
-	}
+	// persistedSnapshotPath := filepath.Join(root, BricksDir, SyncSnapshotFile)
+	// if _, err := os.Stat(persistedSnapshotPath); os.IsNotExist(err) {
+	// 	return nil
+	// }
 
-	f, err := os.Open(persistedSnapshotPath)
-	if err != nil {
-		return fmt.Errorf("failed to open persisted sync snapshot file: %s", err)
-	}
-	defer f.Close()
+	// f, err := os.Open(persistedSnapshotPath)
+	// if err != nil {
+	// 	return fmt.Errorf("failed to open persisted sync snapshot file: %s", err)
+	// }
+	// defer f.Close()
 
-	bytes, err := io.ReadAll(f)
-	if err != nil {
-		// clean up these error messages a bit
-		return fmt.Errorf("failed to read sync snapshot from disk: %s", err)
-	}
-	err = json.Unmarshal(bytes, s)
-	if err != nil {
-		return fmt.Errorf("failed to json unmarshal persisted snapshot: %s", err)
-	}
+	// bytes, err := io.ReadAll(f)
+	// if err != nil {
+	// 	// clean up these error messages a bit
+	// 	return fmt.Errorf("failed to read sync snapshot from disk: %s", err)
+	// }
+	// err = json.Unmarshal(bytes, s)
+	// if err != nil {
+	// 	return fmt.Errorf("failed to json unmarshal persisted snapshot: %s", err)
+	// }
 	return nil
 }
 

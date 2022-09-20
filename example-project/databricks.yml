@@ -1,0 +1,17 @@
+name: example-project
+
+environments:
+  development:
+    workspace:
+      profile: e2-dogfood
+      root: /Repos/pieter.noordhuis@databricks.com/bricks-demos/development
+
+  staging:
+    workspace:
+      profile: e2-dogfood
+      root: /Repos/pieter.noordhuis@databricks.com/bricks-demos/staging
+
+  production:
+    workspace:
+      profile: e2-dogfood
+      root: /Repos/pieter.noordhuis@databricks.com/bricks-demos/production

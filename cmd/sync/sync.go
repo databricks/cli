@@ -2,7 +2,6 @@ package sync
 
 import (
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/databricks/bricks/cmd/root"
@@ -22,6 +21,10 @@ var syncCmd = &cobra.Command{
 		prj := project.Get(ctx)
 		wsc := prj.WorkspacesClient()
 
+		if prj.Environment().Workspace.Root != "" {
+			*remotePath = prj.Environment().Workspace.Root
+		}
+
 		if *remotePath == "" {
 			me, err := prj.Me()
 			if err != nil {
@@ -33,15 +36,15 @@ var syncCmd = &cobra.Command{
 			}
 			*remotePath = fmt.Sprintf("/Repos/%s/%s", me.UserName, repositoryName)
 		}
-
-		log.Printf("[INFO] Remote file sync location: %v", *remotePath)
-		repoExists, err := git.RepoExists(*remotePath, ctx, wsc)
-		if err != nil {
-			return err
-		}
-		if !repoExists {
-			return fmt.Errorf("repo not found, please ensure %s exists", *remotePath)
-		}
+		var err error
+		// log.Printf("[INFO] Remote file sync location: %v", *remotePath)
+		// repoExists, err := git.RepoExists(*remotePath, ctx, wsc)
+		// if err != nil {
+		// 	return err
+		// }
+		// if !repoExists {
+		// 	return fmt.Errorf("repo not found, please ensure %s exists", *remotePath)
+		// }
 
 		root := prj.Root()
 		fileSet := git.NewFileSet(root)
@@ -64,5 +67,4 @@ func init() {
 	interval = syncCmd.Flags().Duration("interval", 1*time.Second, "project files polling interval")
 	remotePath = syncCmd.Flags().String("remote-path", "", "remote path to store repo in. eg: /Repos/me@example.com/test-repo")
 	syncCmd.Flags().StringP("environment", "e", "", "Environment to use")
-
 }
