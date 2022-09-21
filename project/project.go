@@ -58,7 +58,15 @@ func Initialize(ctx context.Context, root string) (context.Context, error) {
 		config: &config,
 	}
 
-	p.wsc = workspaces.New(&databricks.Config{Profile: config.Profile})
+	if config.Profile == "" {
+		// The go sdk will pick up the profile from DATABRICKS_CONFIG_PROFILE
+		// env variable. If DATABRICKS_CONFIG_PROFILE is unset, the SDK defaults
+		// to [DEFAULT]
+		p.wsc = workspaces.New()
+	} else {
+		p.wsc = workspaces.New(&databricks.Config{Profile: config.Profile})
+	}
+
 	return context.WithValue(ctx, &projectKey, &p), nil
 }
 

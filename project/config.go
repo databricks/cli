@@ -21,8 +21,6 @@ const (
 	Soft Isolation = "soft"
 )
 
-const databricksConfigProfile = "DATABRICKS_CONFIG_PROFILE"
-
 // ConfigFile is the name of project configuration file
 const ConfigFile = "databricks.yml"
 
@@ -83,13 +81,9 @@ func loadProjectConf(root string) (c Config, err error) {
 
 	if _, err := os.Stat(configFilePath); errors.Is(err, os.ErrNotExist) {
 		baseDir := filepath.Base(root)
-		profile, ok := os.LookupEnv(databricksConfigProfile)
-		if !ok {
-			return Config{}, fmt.Errorf("profile env var %s is required if bricks config file %s is missing",
-				databricksConfigProfile, configFilePath)
-
-		}
-		return Config{Name: baseDir, Profile: profile}, nil
+		// If bricks config file is missing we assume the project root dir name
+		// as the name of the project
+		return Config{Name: baseDir}, nil
 	}
 
 	config, err := os.Open(configFilePath)
