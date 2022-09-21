@@ -77,7 +77,16 @@ func IsDatabricksProject() bool {
 }
 
 func loadProjectConf(root string) (c Config, err error) {
-	config, err := os.Open(filepath.Join(root, ConfigFile))
+	configFilePath := filepath.Join(root, ConfigFile)
+
+	if _, err := os.Stat(configFilePath); errors.Is(err, os.ErrNotExist) {
+		baseDir := filepath.Base(root)
+		// If bricks config file is missing we assume the project root dir name
+		// as the name of the project
+		return Config{Name: baseDir}, nil
+	}
+
+	config, err := os.Open(configFilePath)
 	if err != nil {
 		return
 	}
