@@ -54,7 +54,8 @@ type Config struct {
 	// Environments contain this project's defined environments.
 	// They can be used to differentiate settings and resources between
 	// development, staging, production, etc.
-	// The project assumes an environment named "development" is always defined.
+	// If not specified, the code below initializes this field with a
+	// single default-initialized environment called "development".
 	Environments map[string]Environment `json:"environments"`
 }
 
@@ -89,7 +90,7 @@ func loadProjectConf(root string) (c Config, err error) {
 		baseDir := filepath.Base(root)
 		// If bricks config file is missing we assume the project root dir name
 		// as the name of the project
-		return Config{Name: baseDir}, nil
+		return validateAndApplyProjectDefaults(Config{Name: baseDir})
 	}
 
 	config, err := os.Open(configFilePath)
@@ -108,6 +109,11 @@ func loadProjectConf(root string) (c Config, err error) {
 }
 
 func validateAndApplyProjectDefaults(c Config) (Config, error) {
+	// If no environments are specified, define default environment under default name.
+	if c.Environments == nil {
+		c.Environments = make(map[string]Environment)
+		c.Environments[DefaultEnvironment] = Environment{}
+	}
 	// defaultCluster := clusters.ClusterInfo{
 	// 	NodeTypeID: "smallest",
 	// 	SparkVersion: "latest",
