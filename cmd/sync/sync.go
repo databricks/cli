@@ -59,8 +59,11 @@ var interval *time.Duration
 
 var remotePath *string
 
+var persistSnapshot *bool
+
 func init() {
 	root.RootCmd.AddCommand(syncCmd)
 	interval = syncCmd.Flags().Duration("interval", 1*time.Second, "project files polling interval")
 	remotePath = syncCmd.Flags().String("remote-path", "", "remote path to store repo in. eg: /Repos/me@example.com/test-repo")
+	persistSnapshot = syncCmd.Flags().Bool("persist-snapshot", true, "whether to store local snapshots of sync state")
 }

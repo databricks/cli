@@ -69,7 +69,16 @@ func Initialize(ctx context.Context, root, env string) (context.Context, error) 
 		environment: &environment,
 	}
 
-	p.wsc = workspaces.New(&databricks.Config{Profile: environment.Workspace.Profile})
+	if environment.Workspace.Profile == "" {
+		// Bricks config doesn't define the profile to use, so go sdk will figure
+		// out the auth credentials based on the enviroment.
+		// eg. DATABRICKS_CONFIG_PROFILE can be used to select which profile to use or
+		// DATABRICKS_HOST and DATABRICKS_TOKEN can be used to set the workspace auth creds
+		p.wsc = workspaces.New()
+	} else {
+		p.wsc = workspaces.New(&databricks.Config{Profile: environment.Workspace.Profile})
+	}
+
 	return context.WithValue(ctx, &projectKey, &p), nil
 }
 
