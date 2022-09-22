@@ -17,10 +17,12 @@ type project struct {
 	mu sync.Mutex
 
 	root string
+	env  string
 
-	config *Config
-	wsc    *workspaces.WorkspacesClient
-	me     *scim.User
+	config      *Config
+	environment *Environment
+	wsc         *workspaces.WorkspacesClient
+	me          *scim.User
 }
 
 // Configure is used as a PreRunE function for all commands that
@@ -32,7 +34,7 @@ func Configure(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	ctx, err := Initialize(cmd.Context(), root)
+	ctx, err := Initialize(cmd.Context(), root, getEnvironment(cmd))
 	if err != nil {
 		return err
 	}
@@ -44,31 +46,44 @@ func Configure(cmd *cobra.Command, args []string) error {
 // Placeholder to use as unique key in context.Context.
 var projectKey int
 
-// Initialize loads a project configuration given a root.
+// Initialize loads a project configuration given a root and environment.
 // It stores the project on a new context.
 // The project is available through the `Get()` function.
-func Initialize(ctx context.Context, root string) (context.Context, error) {
+func Initialize(ctx context.Context, root, env string) (context.Context, error) {
 	config, err := loadProjectConf(root)
 	if err != nil {
 		return nil, err
 	}
 
+	// Confirm that the specified environment is valid.
+	environment, ok := config.Environments[env]
+	if !ok {
+		return nil, fmt.Errorf("environment [%s] not defined", env)
+	}
+
 	p := project{
-		root:   root,
-		config: &config,
+		root: root,
+		env:  env,
+
+		config:      &config,
+		environment: &environment,
 	}
 
-	if config.Profile == "" {
-		// Bricks config doesn't define the profile to use, so go sdk will figure
-		// out the auth credentials based on the enviroment.
-		// eg. DATABRICKS_CONFIG_PROFILE can be used to select which profile to use or
-		// DATABRICKS_HOST and DATABRICKS_TOKEN can be used to set the workspace auth creds
-		p.wsc = workspaces.New()
-	} else {
-		p.wsc = workspaces.New(&databricks.Config{Profile: config.Profile})
-	}
-
+	p.initializeWorkspacesClient(ctx)
 	return context.WithValue(ctx, &projectKey, &p), nil
+}
+
+func (p *project) initializeWorkspacesClient(ctx context.Context) {
+	var config databricks.Config
+
+	// If the config specifies a profile, or other authentication related properties,
+	// pass them along to the SDK here. If nothing is defined, the SDK will figure
+	// out which autentication mechanism to use using enviroment variables.
+	if p.environment.Workspace.Profile != "" {
+		config.Profile = p.environment.Workspace.Profile
+	}
+
+	p.wsc = workspaces.New(&config)
 }
 
 // Get returns the project as configured on the context.
@@ -88,6 +103,14 @@ func (p *project) WorkspacesClient() *workspaces.WorkspacesClient {
 
 func (p *project) Root() string {
 	return p.root
+}
+
+func (p *project) Config() Config {
+	return *p.config
+}
+
+func (p *project) Environment() Environment {
+	return *p.environment
 }
 
 func (p *project) Me() (*scim.User, error) {
