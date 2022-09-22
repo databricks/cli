@@ -23,16 +23,15 @@ func getRoot() (string, error) {
 		if err != nil {
 			return "", fmt.Errorf(`invalid project root %s="%s": %w`, bricksRoot, path, err)
 		}
-	} else {
-		wd, err := os.Getwd()
-		if err != nil {
-			return "", err
-		}
-		path, err = folders.FindDirWithLeaf(wd, ConfigFile)
-		if err != nil {
-			return "", fmt.Errorf(`unable to locate project root`)
-		}
+		return path, nil
 	}
-
+	wd, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+	path, err = folders.FindDirWithLeaf(wd, ConfigFile)
+	if err != nil {
+		return "", fmt.Errorf(`unable to locate project root`)
+	}
 	return path, nil
 }
