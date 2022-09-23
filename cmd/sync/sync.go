@@ -22,6 +22,8 @@ var syncCmd = &cobra.Command{
 		prj := project.Get(ctx)
 		wsc := prj.WorkspacesClient()
 
+		fmt.Println("[INFO] sync string array: ", *syncInclude)
+
 		if *remotePath == "" {
 			me, err := prj.Me()
 			if err != nil {
@@ -44,7 +46,7 @@ var syncCmd = &cobra.Command{
 		}
 
 		root := prj.Root()
-		fileSet := git.NewFileSet(root)
+		fileSet := git.NewFileSet(root, syncInclude)
 		if err != nil {
 			return err
 		}
@@ -61,9 +63,12 @@ var remotePath *string
 
 var persistSnapshot *bool
 
+var syncInclude *[]string
+
 func init() {
 	root.RootCmd.AddCommand(syncCmd)
 	interval = syncCmd.Flags().Duration("interval", 1*time.Second, "project files polling interval")
 	remotePath = syncCmd.Flags().String("remote-path", "", "remote path to store repo in. eg: /Repos/me@example.com/test-repo")
 	persistSnapshot = syncCmd.Flags().Bool("persist-snapshot", true, "whether to store local snapshots of sync state")
+	syncInclude = syncCmd.Flags().StringArray("sync-include", []string{}, "list of regex patterns for which files to sync. Overrides .gitignore")
 }

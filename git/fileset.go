@@ -34,17 +34,25 @@ func (f File) Modified() (ts time.Time) {
 type FileSet struct {
 	root   string
 	ignore *ignore.GitIgnore
+	// if include is not nil, it will override ignore
+	include *ignore.GitIgnore
 }
 
 // GetFileSet retrieves FileSet from Git repository checkout root
 // or panics if no root is detected.
 func GetFileSet() (FileSet, error) {
 	root, err := Root()
-	return NewFileSet(root), err
+	return NewFileSet(root, nil), err
 }
 
 // Retuns FileSet for the repository located at `root`
-func NewFileSet(root string) FileSet {
+func NewFileSet(root string, syncInclude *[]string) FileSet {
+	if syncInclude != nil {
+		return FileSet{
+			root: root,
+			include: ignore.CompileIgnoreLines(*syncInclude...),
+		}
+	}
 	lines := []string{".git", ".bricks"}
 	rawIgnore, err := os.ReadFile(fmt.Sprintf("%s/.gitignore", root))
 	if err == nil {
@@ -82,9 +90,23 @@ func (w *FileSet) RecursiveListFiles(dir string) (fileList []File, err error) {
 	for len(queue) > 0 {
 		current := queue[0]
 		queue = queue[1:]
-		if w.ignore.MatchesPath(current.Relative) {
+		// If w.include is empty and the current file matches one of the
+		// patterns in w.ignore then we do not list the file
+		if w.include == nil && w.ignore.MatchesPath(current.Relative) {
 			continue
 		}
+
+		// if w.include is not empty and current file does not match any
+		// patterns in w.include then we do not list the file
+		if w.include != nil && !w.include.MatchesPath(current.Relative) {
+			continue
+		}
+
+		// we list the file if one of the following holds true
+		// 1. w.include is empty and current file does not match any of the
+		// patterns in w.ignore
+		// 2. w.include is not empty and current file matches any one of the
+		// patters in w.include
 		if !current.IsDir() {
 			fileList = append(fileList, current)
 			continue

@@ -93,6 +93,9 @@ func (d diff) String() string {
 }
 
 func (s snapshot) diff(all []git.File) (change diff) {
+
+	fmt.Println("[INFO] all files: ", all)
+
 	currentFilenames := map[string]bool{}
 	for _, f := range all {
 		// create set of current files to figure out if removals are needed

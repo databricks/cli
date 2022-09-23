@@ -22,7 +22,7 @@ func TestDiff(t *testing.T) {
 	assert.NoError(t, err)
 	defer f2.Close()
 
-	fileSet := git.NewFileSet(projectDir)
+	fileSet := git.NewFileSet(projectDir, nil)
 	files, err := fileSet.All()
 	assert.NoError(t, err)
 	state := snapshot{}
