@@ -44,7 +44,7 @@ func getRemoteSyncCallback(ctx context.Context, root, remoteDir string, wsc *wor
 	return func(d diff) error {
 		for _, filePath := range d.delete {
 			err := wsc.Workspace.Delete(ctx,
-				workspace.DeleteRequest{
+				workspace.Delete{
 					Path:      path.Join(remoteDir, filePath),
 					Recursive: true,
 				},
