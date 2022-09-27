@@ -33,7 +33,7 @@ func TestAccSync(t *testing.T) {
 	assert.NoError(t, err)
 
 	t.Cleanup(func() {
-		err := wsc.Repos.DeleteByRepoId(ctx, fmt.Sprint(repoInfo.Id))
+		err := wsc.Repos.DeleteByRepoId(ctx, repoInfo.Id)
 		assert.NoError(t, err)
 	})
 

@@ -22,7 +22,7 @@ func CreateDbfsFile(ctx context.Context,
 	// see https://docs.databricks.com/dev-tools/api/latest/dbfs.html#add-block
 	const WRITE_BYTE_CHUNK_SIZE = 1e6
 	createResponse, err := wsc.Dbfs.Create(ctx,
-		dbfs.CreateRequest{
+		dbfs.Create{
 			Overwrite: overwrite,
 			Path:      path,
 		},
@@ -39,7 +39,7 @@ func CreateDbfsFile(ctx context.Context,
 		}
 		b64Data := base64.StdEncoding.EncodeToString(byteChunk)
 		err := wsc.Dbfs.AddBlock(ctx,
-			dbfs.AddBlockRequest{
+			dbfs.AddBlock{
 				Data:   b64Data,
 				Handle: handle,
 			},
@@ -49,7 +49,7 @@ func CreateDbfsFile(ctx context.Context,
 		}
 	}
 	err = wsc.Dbfs.Close(ctx,
-		dbfs.CloseRequest{
+		dbfs.Close{
 			Handle: handle,
 		},
 	)

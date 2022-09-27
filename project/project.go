@@ -217,17 +217,17 @@ func (p *project) GetDevelopmentClusterId(ctx context.Context) (clusterId string
 	}
 }
 
-func runCommandOnDev(ctx context.Context, language, command string) commands.CommandResults {
+func runCommandOnDev(ctx context.Context, language, command string) commands.Results {
 	clusterId, err := Get(ctx).GetDevelopmentClusterId(ctx)
 	if err != nil {
-		return commands.CommandResults{
+		return commands.Results{
 			ResultType: "error",
 			Summary:    err.Error(),
 		}
 	}
-	return Get(ctx).wsc.Commands.Execute(ctx, clusterId, language, command)
+	return Get(ctx).wsc.CommandExecutor.Execute(ctx, clusterId, language, command)
 }
 
-func RunPythonOnDev(ctx context.Context, command string) commands.CommandResults {
+func RunPythonOnDev(ctx context.Context, command string) commands.Results {
 	return runCommandOnDev(ctx, "python", command)
 }
