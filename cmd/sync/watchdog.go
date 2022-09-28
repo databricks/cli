@@ -17,6 +17,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/databricks/client"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/databricks/databricks-sdk-go/workspaces"
+	"golang.org/x/sync/errgroup"
 )
 
 type watchdog struct {
@@ -40,34 +41,101 @@ func putFile(ctx context.Context, path string, content io.Reader) error {
 	return apiClient.Post(ctx, apiPath, content, nil)
 }
 
+func deleteFilesInParallel(ctx context.Context, paths []string, numParallelRequests int, remoteRoot string) error {
+	// Outer loop, deletes numParallelRequests in parallel
+	for i := 0; i < len(paths); i += numParallelRequests {
+		// select min of len(paths)-i, numParallelRequests
+		var numFilesToDeleteInParallel int
+		if len(paths)-i < numParallelRequests {
+			numFilesToDeleteInParallel = len(paths) - i
+		} else {
+			numFilesToDeleteInParallel = numParallelRequests
+		}
+
+		// Abstraction over wait groups which allows you to get the errors
+		// returned in goroutines
+		var g errgroup.Group
+		// Inner loop, spawns goroutines to delete a single file
+		for j := 0; j < numFilesToDeleteInParallel; j++ {
+			fileName := paths[i+j]
+			g.Go(func() error {
+				wsc := project.Get(ctx).WorkspacesClient()
+				err := wsc.Workspace.Delete(ctx,
+					workspace.Delete{
+						Path:      path.Join(remoteRoot, fileName),
+						Recursive: true,
+					},
+				)
+				if err != nil {
+					return err
+				}
+				log.Printf("[INFO] Deleted %s", fileName)
+				return nil
+			})
+		}
+
+		// wait for goroutines to finish and return first non-nil error return
+		// if any
+		if err := g.Wait(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func putFilesInParallel(ctx context.Context, paths []string, numParallelRequests int, localRoot string, remoteRoot string) error {
+	// Outer loop, uploads numParallelRequests in parallel
+	for i := 0; i < len(paths); i += numParallelRequests {
+		// select min of len(paths)-i, numParallelRequests
+		var numFilesToUploadInParallel int
+		if len(paths)-i < numParallelRequests {
+			numFilesToUploadInParallel = len(paths) - i
+		} else {
+			numFilesToUploadInParallel = numParallelRequests
+		}
+
+		// Abstraction over wait groups which allows you to get the errors
+		// returned in goroutines
+		var g errgroup.Group
+		// Inner loop, spawns goroutines to upload a single file
+		for j := 0; j < numFilesToUploadInParallel; j++ {
+			fileName := paths[i+j]
+			g.Go(func() error {
+				f, err := os.Open(filepath.Join(localRoot, fileName))
+				if err != nil {
+					return err
+				}
+				err = putFile(ctx, path.Join(remoteRoot, fileName), f)
+				if err != nil {
+					return fmt.Errorf("failed to upload file: %s", err)
+				}
+				err = f.Close()
+				if err != nil {
+					return err // TODO: fmt.Errorf
+				}
+				log.Printf("[INFO] Uploaded %s", fileName)
+				return nil
+			})
+		}
+
+		// wait for goroutines to finish and return first non-nil error return
+		// if any
+		if err := g.Wait(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func getRemoteSyncCallback(ctx context.Context, root, remoteDir string, wsc *workspaces.WorkspacesClient) func(localDiff diff) error {
 	return func(d diff) error {
-		for _, filePath := range d.delete {
-			err := wsc.Workspace.Delete(ctx,
-				workspace.Delete{
-					Path:      path.Join(remoteDir, filePath),
-					Recursive: true,
-				},
-			)
-			if err != nil {
-				return err
-			}
-			log.Printf("[INFO] Deleted %s", filePath)
+		err := deleteFilesInParallel(ctx, d.delete, 25, remoteDir)
+		if err != nil {
+			return fmt.Errorf("failed to delete files: %s", err)
 		}
-		for _, filePath := range d.put {
-			f, err := os.Open(filepath.Join(root, filePath))
-			if err != nil {
-				return err
-			}
-			err = putFile(ctx, path.Join(remoteDir, filePath), f)
-			if err != nil {
-				return fmt.Errorf("failed to upload file: %s", err) // TODO: fmt.Errorf
-			}
-			err = f.Close()
-			if err != nil {
-				return err // TODO: fmt.Errorf
-			}
-			log.Printf("[INFO] Uploaded %s", filePath)
+		err = putFilesInParallel(ctx, d.put, 25, root, remoteDir)
+		if err != nil {
+			return fmt.Errorf("failed to upload files: %s", err)
 		}
 		return nil
 	}

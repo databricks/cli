@@ -17,6 +17,8 @@ require (
 	gopkg.in/ini.v1 v1.67.0 // Apache 2.0
 )
 
+require golang.org/x/sync v0.0.0-20220513210516-0976fa681c29
+
 require (
 	cloud.google.com/go/compute v1.6.1 // indirect
 	github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e // indirect
