@@ -18,6 +18,24 @@ var apiCmd = &cobra.Command{
 	Short: "Perform Databricks API call",
 }
 
+func requestBody(arg string) (any, error) {
+	if arg == "" {
+		return nil, nil
+	}
+
+	// Load request from file if it starts with '@' (like curl).
+	if arg[0] == '@' {
+		path := arg[1:]
+		buf, err := os.ReadFile(path)
+		if err != nil {
+			return nil, fmt.Errorf("error reading %s: %w", path, err)
+		}
+		return buf, nil
+	}
+
+	return arg, nil
+}
+
 func makeCommand(method string) *cobra.Command {
 	var body string
 
@@ -26,26 +44,16 @@ func makeCommand(method string) *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		Short: fmt.Sprintf("Perform %s request", method),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			var request any
-			var err error
-			if body != "" {
-				// Load request from file if it starts with '@' (like curl).
-				if body[0] == '@' {
-					path := body[1:]
-					f, err := os.Open(path)
-					if err != nil {
-						return fmt.Errorf("error opening %s: %w", path, err)
-					}
-					defer f.Close()
-					request = f
-				} else {
-					request = body
-				}
+			var path = args[0]
+			var response any
+
+			request, err := requestBody(body)
+			if err != nil {
+				return err
 			}
 
-			var response any
 			api := client.New(&databricks.Config{})
-			err = api.Do(cmd.Context(), method, args[0], request, &response)
+			err = api.Do(cmd.Context(), method, path, request, &response)
 			if err != nil {
 				return err
 			}
