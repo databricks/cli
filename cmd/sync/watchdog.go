@@ -27,7 +27,7 @@ type watchdog struct {
 	failure error // data race? make channel?
 }
 
-const MaxRequestLimit = 30
+const MaxRequestsInFlight = 30
 
 func putFile(ctx context.Context, path string, content io.Reader) error {
 	wsc := project.Get(ctx).WorkspacesClient()
@@ -51,7 +51,7 @@ func getRemoteSyncCallback(ctx context.Context, root, remoteDir string, wsc *wor
 		var g errgroup.Group
 
 		// Allow MaxRequestLimit maxiumum concurrent api calls
-		g.SetLimit(MaxRequestLimit)
+		g.SetLimit(MaxRequestsInFlight)
 
 		for _, fileName := range d.delete {
 			// Copy of fileName created to make this safe for concurrent use.
@@ -60,7 +60,6 @@ func getRemoteSyncCallback(ctx context.Context, root, remoteDir string, wsc *wor
 			// is evaluated
 			localFileName := fileName
 			g.Go(func() error {
-				wsc := project.Get(ctx).WorkspacesClient()
 				err := wsc.Workspace.Delete(ctx,
 					workspace.Delete{
 						Path:      path.Join(remoteDir, localFileName),
