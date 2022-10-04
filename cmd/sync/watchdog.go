@@ -50,7 +50,7 @@ func getRemoteSyncCallback(ctx context.Context, root, remoteDir string, wsc *wor
 		// returned in goroutines
 		var g errgroup.Group
 
-		// Allow MaxRequestLimit maxumim concurrent api calls
+		// Allow MaxRequestLimit maxiumum concurrent api calls
 		g.SetLimit(MaxRequestLimit)
 
 		for _, fileName := range d.delete {
