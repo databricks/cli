@@ -89,15 +89,15 @@ func TestAccFullSync(t *testing.T) {
 		// terminate the bricks sync process
 		cmd.Process.Kill()
 		// Print the stdout and stderr logs from the bricks sync process
-		fmt.Println("[INFO] bricks sync logs: ")
+		t.Log("[INFO] bricks sync logs: ")
 		if err != nil {
-			fmt.Printf("error in bricks sync process: %s\n", err)
+			t.Logf("error in bricks sync process: %s\n", err)
 		}
 		for _, line := range strings.Split(strings.TrimSuffix(cmdOut.String(), "\n"), "\n") {
-			fmt.Println("[bricks sync stdout]", line)
+			t.Log("[bricks sync stdout]", line)
 		}
 		for _, line := range strings.Split(strings.TrimSuffix(cmdErr.String(), "\n"), "\n") {
-			fmt.Println("[bricks sync stderr]", line)
+			t.Log("[bricks sync stderr]", line)
 		}
 	})
 
