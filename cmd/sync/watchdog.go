@@ -27,7 +27,9 @@ type watchdog struct {
 	failure error // data race? make channel?
 }
 
-const MaxRequestsInFlight = 30
+// See https://docs.databricks.com/resources/limits.html#limits-api-rate-limits for per api
+// rate limits
+const MaxRequestsInFlight = 20
 
 func putFile(ctx context.Context, path string, content io.Reader) error {
 	wsc := project.Get(ctx).WorkspacesClient()
