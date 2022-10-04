@@ -79,7 +79,7 @@ func TestAccFullSync(t *testing.T) {
 	cmd.Stderr = &cmdErr
 	cmd.Dir = bricksRepo
 	// bricks sync command will inherit the env vars from process
-	os.Setenv("BRICKS_ROOT", projectDir)
+	t.Setenv("BRICKS_ROOT", projectDir)
 	err = cmd.Start()
 	assert.NoError(t, err)
 	t.Cleanup(func() {
