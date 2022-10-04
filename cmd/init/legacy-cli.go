@@ -29,7 +29,14 @@ func loadCliProfiles() (profiles []prompt.Answer, err error) {
 			Value:   v.Name(),
 			Details: fmt.Sprintf(`Connecting to "%s" workspace`, host),
 			Callback: func(ans prompt.Answer, config *project.Config, _ prompt.Results) {
-				config.Profile = ans.Value
+				if config.Environments == nil {
+					config.Environments = make(map[string]project.Environment)
+				}
+				config.Environments[project.DefaultEnvironment] = project.Environment{
+					Workspace: project.Workspace{
+						Profile: ans.Value,
+					},
+				}
 			},
 		})
 	}
