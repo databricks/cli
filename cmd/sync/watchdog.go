@@ -17,6 +17,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/databricks/client"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/databricks/databricks-sdk-go/workspaces"
+	"golang.org/x/sync/errgroup"
 )
 
 type watchdog struct {
@@ -25,6 +26,10 @@ type watchdog struct {
 	wg      sync.WaitGroup
 	failure error // data race? make channel?
 }
+
+// See https://docs.databricks.com/resources/limits.html#limits-api-rate-limits for per api
+// rate limits
+const MaxRequestsInFlight = 20
 
 func putFile(ctx context.Context, path string, content io.Reader) error {
 	wsc := project.Get(ctx).WorkspacesClient()
@@ -42,32 +47,57 @@ func putFile(ctx context.Context, path string, content io.Reader) error {
 
 func getRemoteSyncCallback(ctx context.Context, root, remoteDir string, wsc *workspaces.WorkspacesClient) func(localDiff diff) error {
 	return func(d diff) error {
-		for _, filePath := range d.delete {
-			err := wsc.Workspace.Delete(ctx,
-				workspace.Delete{
-					Path:      path.Join(remoteDir, filePath),
-					Recursive: true,
-				},
-			)
-			if err != nil {
-				return err
-			}
-			log.Printf("[INFO] Deleted %s", filePath)
+
+		// Abstraction over wait groups which allows you to get the errors
+		// returned in goroutines
+		var g errgroup.Group
+
+		// Allow MaxRequestLimit maxiumum concurrent api calls
+		g.SetLimit(MaxRequestsInFlight)
+
+		for _, fileName := range d.delete {
+			// Copy of fileName created to make this safe for concurrent use.
+			// directly using fileName can cause race conditions since the loop
+			// might iterate over to the next fileName before the go routine function
+			// is evaluated
+			localFileName := fileName
+			g.Go(func() error {
+				err := wsc.Workspace.Delete(ctx,
+					workspace.Delete{
+						Path:      path.Join(remoteDir, localFileName),
+						Recursive: true,
+					},
+				)
+				if err != nil {
+					return err
+				}
+				log.Printf("[INFO] Deleted %s", localFileName)
+				return nil
+			})
 		}
-		for _, filePath := range d.put {
-			f, err := os.Open(filepath.Join(root, filePath))
-			if err != nil {
-				return err
-			}
-			err = putFile(ctx, path.Join(remoteDir, filePath), f)
-			if err != nil {
-				return fmt.Errorf("failed to upload file: %s", err) // TODO: fmt.Errorf
-			}
-			err = f.Close()
-			if err != nil {
-				return err // TODO: fmt.Errorf
-			}
-			log.Printf("[INFO] Uploaded %s", filePath)
+		for _, fileName := range d.put {
+			localFileName := fileName
+			g.Go(func() error {
+				f, err := os.Open(filepath.Join(root, localFileName))
+				if err != nil {
+					return err
+				}
+				err = putFile(ctx, path.Join(remoteDir, localFileName), f)
+				if err != nil {
+					return fmt.Errorf("failed to upload file: %s", err)
+				}
+				err = f.Close()
+				if err != nil {
+					return err
+				}
+				log.Printf("[INFO] Uploaded %s", localFileName)
+				return nil
+			})
+		}
+		// wait for goroutines to finish and return first non-nil error return
+		// if any
+		if err := g.Wait(); err != nil {
+			return err
 		}
 		return nil
 	}
