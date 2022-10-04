@@ -37,7 +37,7 @@ func requestBody(arg string) (any, error) {
 }
 
 func makeCommand(method string) *cobra.Command {
-	var body string
+	var bodyArgument string
 
 	command := &cobra.Command{
 		Use:   strings.ToLower(method),
@@ -47,7 +47,7 @@ func makeCommand(method string) *cobra.Command {
 			var path = args[0]
 			var response any
 
-			request, err := requestBody(body)
+			request, err := requestBody(bodyArgument)
 			if err != nil {
 				return err
 			}
@@ -68,7 +68,7 @@ func makeCommand(method string) *cobra.Command {
 		},
 	}
 
-	command.Flags().StringVar(&body, "body", "", "Request body")
+	command.Flags().StringVar(&bodyArgument, "body", "", "Request body")
 	return command
 }
 

@@ -36,7 +36,7 @@ func (lw *levelWriter) Write(p []byte) (n int, err error) {
 	a := string(p)
 	for _, l := range *lw {
 		if strings.Contains(a, l) {
-			return os.Stdout.Write(p)
+			return os.Stderr.Write(p)
 		}
 	}
 	return
