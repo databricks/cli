@@ -30,7 +30,8 @@ func requestBody(arg string) (any, error) {
 		if err != nil {
 			return nil, fmt.Errorf("error reading %s: %w", path, err)
 		}
-		return buf, nil
+		// TODO: This can be a []byte once https://github.com/databricks/databricks-sdk-go/pull/105 is merged.
+		return string(buf), nil
 	}
 
 	return arg, nil
@@ -59,7 +60,7 @@ func makeCommand(method string) *cobra.Command {
 			}
 
 			if response != nil {
-				enc := json.NewEncoder(os.Stdout)
+				enc := json.NewEncoder(cmd.OutOrStdout())
 				enc.SetIndent("", "  ")
 				enc.Encode(response)
 			}

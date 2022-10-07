@@ -1,16 +1,16 @@
 package internal
 
 import (
+	"bytes"
 	"fmt"
 	"math/rand"
 	"os"
-	"os/exec"
-	"path"
 	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/databricks/bricks/cmd/root"
 	"github.com/stretchr/testify/require"
 )
 
@@ -39,24 +39,28 @@ func RandomName(prefix ...string) string {
 	return string(b)
 }
 
-func BuildBinary(t *testing.T) string {
-	// Absolute path to project root.
-	abs, err := filepath.Abs("..")
-	require.NoError(t, err)
-
-	// Build binary and store it in temporary directory.
-	dir := t.TempDir()
-	bricksPath := path.Join(dir, "bricks")
-	cmd := exec.Command("go", "build", "-o", bricksPath, "main.go")
-	cmd.Dir = abs
-	out, err := cmd.CombinedOutput()
-	t.Log(string(out))
-	require.NoError(t, err)
-
-	return bricksPath
+func run(t *testing.T, args ...string) (bytes.Buffer, bytes.Buffer, error) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	root := root.RootCmd
+	root.SetOut(&stdout)
+	root.SetErr(&stderr)
+	root.SetArgs(args)
+	_, err := root.ExecuteC()
+	if stdout.Len() > 0 {
+		t.Logf("[stdout]: %s", stdout.String())
+	}
+	if stderr.Len() > 0 {
+		t.Logf("[stderr]: %s", stderr.String())
+	}
+	return stdout, stderr, err
 }
 
-func run(t *testing.T, args ...string) ([]byte, error) {
-	cmd := exec.Command(BuildBinary(t), args...)
-	return cmd.Output()
+func writeFile(t *testing.T, name string, body string) string {
+	f, err := os.Create(filepath.Join(t.TempDir(), name))
+	require.NoError(t, err)
+	_, err = f.WriteString(body)
+	require.NoError(t, err)
+	f.Close()
+	return f.Name()
 }
