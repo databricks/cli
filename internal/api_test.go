@@ -29,7 +29,11 @@ func TestAccApiGet(t *testing.T) {
 }
 
 func TestAccApiPost(t *testing.T) {
-	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+	env := GetEnvOrSkipTest(t, "CLOUD_ENV")
+	t.Log(env)
+	if env == "gcp" {
+		t.Skip("DBFS REST API is disabled on gcp")
+	}
 
 	dbfsPath := filepath.Join("/tmp/bricks/integration", RandomName("api-post"))
 	requestPath := writeFile(t, "body.json", fmt.Sprintf(`{
