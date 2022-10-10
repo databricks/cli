@@ -36,5 +36,5 @@ func TestRequestBodyFile(t *testing.T) {
 
 	out, err := requestBody(fmt.Sprintf("@%s", fpath))
 	require.NoError(t, err)
-	assert.Equal(t, string(payload), out)
+	assert.Equal(t, payload, out)
 }

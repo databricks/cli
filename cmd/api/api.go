@@ -30,8 +30,7 @@ func requestBody(arg string) (any, error) {
 		if err != nil {
 			return nil, fmt.Errorf("error reading %s: %w", path, err)
 		}
-		// TODO: This can be a []byte once https://github.com/databricks/databricks-sdk-go/pull/105 is merged.
-		return string(buf), nil
+		return buf, nil
 	}
 
 	return arg, nil
