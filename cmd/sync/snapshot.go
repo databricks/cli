@@ -17,13 +17,15 @@ import (
 	"github.com/databricks/bricks/project"
 )
 
-// type snapshot map[string]time.Time
-
-// TODO: add comments here
 type snapshot struct {
-	Host              string               `json:"host"`
-	UserName          string               `json:"user_name"`
-	LastModifiedTimes map[string]time.Time `json:"last_modified_times"`
+	// host url of the workspace the snapshot is for
+	Host string `json:"host"`
+	// username of user the snapshot is for
+	UserName string `json:"user_name"`
+	// Map of all files present in the remote repo with the:
+	// key: relative file path from project root
+	// value: last time the remote instance of this file was updated
+	LastUpdatedTimes map[string]time.Time `json:"last_modified_times"`
 }
 
 type diff struct {
@@ -78,9 +80,9 @@ func newSnapshot(ctx context.Context) (snapshot, error) {
 	}
 
 	return snapshot{
-		Host:              host,
-		UserName:          userName,
-		LastModifiedTimes: make(map[string]time.Time),
+		Host:             host,
+		UserName:         userName,
+		LastUpdatedTimes: make(map[string]time.Time),
 	}, nil
 }
 
@@ -96,7 +98,7 @@ func (s *snapshot) storeSnapshot(ctx context.Context) error {
 	defer f.Close()
 
 	// persist snapshot to disk
-	bytes, err := json.MarshalIndent(s.LastModifiedTimes, "", "  ")
+	bytes, err := json.MarshalIndent(s, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to json marshal in-memory snapshot: %s", err)
 	}
@@ -127,7 +129,7 @@ func (s *snapshot) loadSnapshot(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to read sync snapshot from disk: %s", err)
 	}
-	err = json.Unmarshal(bytes, &s.LastModifiedTimes)
+	err = json.Unmarshal(bytes, &s)
 	if err != nil {
 		return fmt.Errorf("failed to json unmarshal persisted snapshot: %s", err)
 	}
@@ -154,7 +156,7 @@ func (d diff) String() string {
 
 func (s snapshot) diff(all []git.File) (change diff) {
 	currentFilenames := map[string]bool{}
-	lastModifiedTimes := s.LastModifiedTimes
+	lastModifiedTimes := s.LastUpdatedTimes
 	for _, f := range all {
 		// create set of current files to figure out if removals are needed
 		currentFilenames[f.Relative] = true

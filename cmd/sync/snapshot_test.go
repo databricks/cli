@@ -26,7 +26,7 @@ func TestDiff(t *testing.T) {
 	files, err := fileSet.All()
 	assert.NoError(t, err)
 	state := snapshot{
-		LastModifiedTimes: make(map[string]time.Time),
+		LastUpdatedTimes: make(map[string]time.Time),
 	}
 	change := state.diff(files)
 
