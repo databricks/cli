@@ -31,10 +31,6 @@ type project struct {
 	fileSet     *git.FileSet
 }
 
-// TODO: make sure to know what the timestamps are!
-// TODO: note the host and profile in the sync snapshots. Make the syncs single line because why not
-// Add host, user and last sync timestamp / date and time maybe ?
-
 // Configure is used as a PreRunE function for all commands that
 // require a project to be configured. If a project could successfully
 // be found and loaded, it is set on the command's context object.
@@ -65,8 +61,6 @@ func Initialize(ctx context.Context, root, env string) (context.Context, error) 
 		return nil, err
 	}
 
-	fmt.Println("[AAAA] initialize project config: ", config)
-
 	// Confirm that the specified environment is valid.
 	environment, ok := config.Environments[env]
 	if !ok {
@@ -90,8 +84,6 @@ func Initialize(ctx context.Context, root, env string) (context.Context, error) 
 
 func (p *project) initializeWorkspacesClient(ctx context.Context) {
 	var config databricks.Config
-
-	fmt.Println("[AAAA] initial workspace client project: ", ctx)
 
 	// TODO: ask pieter whether removing this was intentional, and should we force users
 	// to define profiles in environments
