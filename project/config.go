@@ -105,6 +105,7 @@ func loadProjectConf(root string) (c Config, err error) {
 	if err != nil {
 		return
 	}
+	fmt.Println("[INFO] c: ", c)
 	return validateAndApplyProjectDefaults(c)
 }
 

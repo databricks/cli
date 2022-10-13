@@ -12,7 +12,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/databricks/bricks/git"
 	"github.com/databricks/bricks/project"
 	"github.com/databricks/databricks-sdk-go/databricks/client"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
@@ -20,8 +19,8 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+// TODO: add .databricks to .gitignore on bricks init
 type watchdog struct {
-	files   git.FileSet
 	ticker  *time.Ticker
 	wg      sync.WaitGroup
 	failure error // data race? make channel?
@@ -104,11 +103,9 @@ func getRemoteSyncCallback(ctx context.Context, root, remoteDir string, wsc *wor
 }
 
 func spawnSyncRoutine(ctx context.Context,
-	files git.FileSet,
 	interval time.Duration,
 	applyDiff func(diff) error) error {
 	w := &watchdog{
-		files:  files,
 		ticker: time.NewTicker(interval),
 	}
 	w.wg.Add(1)
@@ -121,11 +118,14 @@ func spawnSyncRoutine(ctx context.Context,
 // https://github.com/gorakhargosh/watchdog/blob/master/src/watchdog/observers/kqueue.py#L394-L418
 func (w *watchdog) main(ctx context.Context, applyDiff func(diff) error) {
 	defer w.wg.Done()
-	// load from json or sync it every time there's an action
-	state := snapshot{}
-	root := w.files.Root()
+	snapshot, err := newSnapshot(ctx)
+	if err != nil {
+		log.Printf("[ERROR] cannot create snapshot: %s", err)
+		w.failure = err
+		return
+	}
 	if *persistSnapshot {
-		err := state.loadSnapshot(root)
+		err := snapshot.loadSnapshot(ctx)
 		if err != nil {
 			log.Printf("[ERROR] cannot load snapshot: %s", err)
 			w.failure = err
@@ -137,13 +137,14 @@ func (w *watchdog) main(ctx context.Context, applyDiff func(diff) error) {
 		case <-ctx.Done():
 			return
 		case <-w.ticker.C:
-			all, err := w.files.All()
+			prj := project.Get(ctx)
+			all, err := prj.GetFileSet().All()
 			if err != nil {
 				log.Printf("[ERROR] cannot list files: %s", err)
 				w.failure = err
 				return
 			}
-			change := state.diff(all)
+			change := snapshot.diff(all)
 			if change.IsEmpty() {
 				continue
 			}
@@ -154,7 +155,7 @@ func (w *watchdog) main(ctx context.Context, applyDiff func(diff) error) {
 				return
 			}
 			if *persistSnapshot {
-				err = state.storeSnapshot(root)
+				err = snapshot.storeSnapshot(ctx)
 				if err != nil {
 					log.Printf("[ERROR] cannot store snapshot: %s", err)
 					w.failure = err

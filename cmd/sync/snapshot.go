@@ -1,6 +1,7 @@
 package sync
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -9,37 +10,93 @@ import (
 	"strings"
 	"time"
 
+	"crypto/md5"
+	"encoding/hex"
+
 	"github.com/databricks/bricks/git"
+	"github.com/databricks/bricks/project"
 )
 
-type snapshot map[string]time.Time
+// type snapshot map[string]time.Time
+
+// TODO: add comments here
+type snapshot struct {
+	Host              string               `json:"host"`
+	UserName          string               `json:"user_name"`
+	LastModifiedTimes map[string]time.Time `json:"last_modified_times"`
+}
 
 type diff struct {
 	put    []string
 	delete []string
 }
 
-const SyncSnapshotFile = "repo_snapshot.json"
-const BricksDir = ".bricks"
+const syncSnapshotDirName = "sync-snapshots"
 
-func (s *snapshot) storeSnapshot(root string) error {
-	// create snapshot file
-	configDir := filepath.Join(root, BricksDir)
-	if _, err := os.Stat(configDir); os.IsNotExist(err) {
-		err = os.Mkdir(configDir, os.ModeDir|os.ModePerm)
+// Compute path of the snapshot file on the local machine
+// The file name for unique for a tuple of (host, username)
+// precisely it's the first 8 characters of md5(concat(host, username))
+func (s *snapshot) getPath(ctx context.Context) (string, error) {
+	prj := project.Get(ctx)
+	cacheDir, err := prj.CacheDir()
+	if err != nil {
+		return "", err
+	}
+	snapshotDir := filepath.Join(cacheDir, syncSnapshotDirName)
+	if _, err := os.Stat(snapshotDir); os.IsNotExist(err) {
+		err = os.Mkdir(snapshotDir, os.ModeDir|os.ModePerm)
 		if err != nil {
-			return fmt.Errorf("failed to create config directory: %s", err)
+			return "", fmt.Errorf("failed to create config directory: %s", err)
 		}
 	}
-	persistedSnapshotPath := filepath.Join(configDir, SyncSnapshotFile)
-	f, err := os.OpenFile(persistedSnapshotPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0755)
+	hash := md5.Sum([]byte(s.Host + s.UserName))
+	hashString := hex.EncodeToString(hash[:])
+	return filepath.Join(snapshotDir, "sync-"+hashString[:8]+".json"), nil
+}
+
+func newSnapshot(ctx context.Context) (snapshot, error) {
+	prj := project.Get(ctx)
+
+	// Get host this snapshot is for
+	wsc := prj.WorkspacesClient()
+	if wsc == nil {
+		return snapshot{}, fmt.Errorf("failed to resolve workspaces client for project")
+	}
+	host := wsc.Config.Host
+	if host == "" {
+		return snapshot{}, fmt.Errorf("failed to resolve host for snapshot")
+	}
+
+	// Get username this snapshot
+	me, err := prj.Me()
+	if err != nil {
+		return snapshot{}, err
+	}
+	userName := me.UserName
+	if userName == "" {
+		return snapshot{}, fmt.Errorf("failed to resolve user name for snapshot")
+	}
+
+	return snapshot{
+		Host:              host,
+		UserName:          userName,
+		LastModifiedTimes: make(map[string]time.Time),
+	}, nil
+}
+
+func (s *snapshot) storeSnapshot(ctx context.Context) error {
+	snapshotPath, err := s.getPath(ctx)
+	if err != nil {
+		return err
+	}
+	f, err := os.OpenFile(snapshotPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0755)
 	if err != nil {
 		return fmt.Errorf("failed to create/open persisted sync snapshot file: %s", err)
 	}
 	defer f.Close()
 
 	// persist snapshot to disk
-	bytes, err := json.MarshalIndent(s, "", "  ")
+	bytes, err := json.MarshalIndent(s.LastModifiedTimes, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to json marshal in-memory snapshot: %s", err)
 	}
@@ -50,13 +107,17 @@ func (s *snapshot) storeSnapshot(root string) error {
 	return nil
 }
 
-func (s *snapshot) loadSnapshot(root string) error {
-	persistedSnapshotPath := filepath.Join(root, BricksDir, SyncSnapshotFile)
-	if _, err := os.Stat(persistedSnapshotPath); os.IsNotExist(err) {
+func (s *snapshot) loadSnapshot(ctx context.Context) error {
+	snapshotPath, err := s.getPath(ctx)
+	if err != nil {
+		return err
+	}
+	// Snapshot file not found. We do not load anything
+	if _, err := os.Stat(snapshotPath); os.IsNotExist(err) {
 		return nil
 	}
 
-	f, err := os.Open(persistedSnapshotPath)
+	f, err := os.Open(snapshotPath)
 	if err != nil {
 		return fmt.Errorf("failed to open persisted sync snapshot file: %s", err)
 	}
@@ -64,10 +125,9 @@ func (s *snapshot) loadSnapshot(root string) error {
 
 	bytes, err := io.ReadAll(f)
 	if err != nil {
-		// clean up these error messages a bit
 		return fmt.Errorf("failed to read sync snapshot from disk: %s", err)
 	}
-	err = json.Unmarshal(bytes, s)
+	err = json.Unmarshal(bytes, &s.LastModifiedTimes)
 	if err != nil {
 		return fmt.Errorf("failed to json unmarshal persisted snapshot: %s", err)
 	}
@@ -94,20 +154,21 @@ func (d diff) String() string {
 
 func (s snapshot) diff(all []git.File) (change diff) {
 	currentFilenames := map[string]bool{}
+	lastModifiedTimes := s.LastModifiedTimes
 	for _, f := range all {
 		// create set of current files to figure out if removals are needed
 		currentFilenames[f.Relative] = true
 		// get current modified timestamp
 		modified := f.Modified()
-		lastSeenModified, seen := s[f.Relative]
+		lastSeenModified, seen := lastModifiedTimes[f.Relative]
 
 		if !seen || modified.After(lastSeenModified) {
 			change.put = append(change.put, f.Relative)
-			s[f.Relative] = modified
+			lastModifiedTimes[f.Relative] = modified
 		}
 	}
 	// figure out files in the snapshot, but not on local filesystem
-	for relative := range s {
+	for relative := range lastModifiedTimes {
 		_, exists := currentFilenames[relative]
 		if exists {
 			continue
@@ -115,11 +176,11 @@ func (s snapshot) diff(all []git.File) (change diff) {
 		// add them to a delete batch
 		change.delete = append(change.delete, relative)
 		// remove the file from snapshot
-		delete(s, relative)
+		delete(lastModifiedTimes, relative)
 	}
 	// and remove them from the snapshot
 	for _, v := range change.delete {
-		delete(s, v)
+		delete(lastModifiedTimes, v)
 	}
 	return
 }

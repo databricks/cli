@@ -3,8 +3,11 @@ package project
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
 	"sync"
 
+	"github.com/databricks/bricks/git"
 	"github.com/databricks/databricks-sdk-go/databricks"
 	"github.com/databricks/databricks-sdk-go/service/clusters"
 	"github.com/databricks/databricks-sdk-go/service/commands"
@@ -12,6 +15,8 @@ import (
 	"github.com/databricks/databricks-sdk-go/workspaces"
 	"github.com/spf13/cobra"
 )
+
+const CacheDirName = ".databricks"
 
 type project struct {
 	mu sync.Mutex
@@ -23,7 +28,12 @@ type project struct {
 	environment *Environment
 	wsc         *workspaces.WorkspacesClient
 	me          *scim.User
+	fileSet     *git.FileSet
 }
+
+// TODO: make sure to know what the timestamps are!
+// TODO: note the host and profile in the sync snapshots. Make the syncs single line because why not
+// Add host, user and last sync timestamp / date and time maybe ?
 
 // Configure is used as a PreRunE function for all commands that
 // require a project to be configured. If a project could successfully
@@ -55,11 +65,15 @@ func Initialize(ctx context.Context, root, env string) (context.Context, error) 
 		return nil, err
 	}
 
+	fmt.Println("[AAAA] initialize project config: ", config)
+
 	// Confirm that the specified environment is valid.
 	environment, ok := config.Environments[env]
 	if !ok {
 		return nil, fmt.Errorf("environment [%s] not defined", env)
 	}
+
+	fileSet := git.NewFileSet(root)
 
 	p := project{
 		root: root,
@@ -67,6 +81,7 @@ func Initialize(ctx context.Context, root, env string) (context.Context, error) 
 
 		config:      &config,
 		environment: &environment,
+		fileSet:     &fileSet,
 	}
 
 	p.initializeWorkspacesClient(ctx)
@@ -75,6 +90,14 @@ func Initialize(ctx context.Context, root, env string) (context.Context, error) 
 
 func (p *project) initializeWorkspacesClient(ctx context.Context) {
 	var config databricks.Config
+
+	fmt.Println("[AAAA] initial workspace client project: ", ctx)
+
+	// TODO: ask pieter whether removing this was intentional, and should we force users
+	// to define profiles in environments
+	if p.config.Profile != "" {
+		config.Profile = p.config.Profile
+	}
 
 	// If the config specifies a profile, or other authentication related properties,
 	// pass them along to the SDK here. If nothing is defined, the SDK will figure
@@ -103,6 +126,33 @@ func (p *project) WorkspacesClient() *workspaces.WorkspacesClient {
 
 func (p *project) Root() string {
 	return p.root
+}
+
+func (p *project) GetFileSet() *git.FileSet {
+	return p.fileSet
+}
+
+// This cache dir will contain any state, state overrides (per user overrides
+// to the project config) or any generated artifacts (eg: sync snapshots)
+//
+// We enfore that cache dir (.databricks) is added to .gitignore
+// because it contains per-user overrides that we do not want users to
+// accidentally check into git
+func (p *project) CacheDir() (string, error) {
+	// assert cache dir is present in git ignore
+	if !p.fileSet.IsGitIgnored(fmt.Sprintf("/%s/", CacheDirName)) {
+		return "", fmt.Errorf("please add /%s/ to .gitignore", CacheDirName)
+	}
+
+	cacheDirPath := filepath.Join(p.root, CacheDirName)
+	// create cache dir if it does not exist
+	if _, err := os.Stat(cacheDirPath); os.IsNotExist(err) {
+		err = os.Mkdir(cacheDirPath, os.ModeDir|os.ModePerm)
+		if err != nil {
+			return "", fmt.Errorf("failed to create cache directory %s with error: %s", cacheDirPath, err)
+		}
+	}
+	return cacheDirPath, nil
 }
 
 func (p *project) Config() Config {

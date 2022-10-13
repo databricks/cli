@@ -61,6 +61,21 @@ func NewFileSet(root string) FileSet {
 	}
 }
 
+// func (w *FileSet) GetCacheDir() (string, error) {
+// 	// TODO add a constant for .databricks
+// 	if !w.ignore.MatchesPath(".databricks") {
+// 		return "", fmt.Errorf("please make sure .databricks is present in .gitignore")
+// 	}
+// 	cacheDirPath := filepath.Join(w.root, ".databricks")
+// 	if _, err := os.Stat(cacheDirPath); os.IsNotExist(err) {
+// 		err = os.Mkdir(cacheDirPath, os.ModeDir|os.ModePerm)
+// 		if err != nil {
+// 			return "", fmt.Errorf("failed to create cache directory %s with error: %s", cacheDirPath, err)
+// 		}
+// 	}
+// 	return cacheDirPath, nil
+// }
+
 // Return root for fileset.
 func (w *FileSet) Root() string {
 	return w.root
@@ -69,6 +84,10 @@ func (w *FileSet) Root() string {
 // Return all tracked files for Repo
 func (w *FileSet) All() ([]File, error) {
 	return w.RecursiveListFiles(w.root)
+}
+
+func (w *FileSet) IsGitIgnored(pattern string) bool {
+	return w.ignore.MatchesPath(pattern)
 }
 
 // Recursively traverses dir in a depth first manner and returns a list of all files

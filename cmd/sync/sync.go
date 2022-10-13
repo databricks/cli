@@ -44,12 +44,8 @@ var syncCmd = &cobra.Command{
 		}
 
 		root := prj.Root()
-		fileSet := git.NewFileSet(root)
-		if err != nil {
-			return err
-		}
 		syncCallback := getRemoteSyncCallback(ctx, root, *remotePath, wsc)
-		err = spawnSyncRoutine(ctx, fileSet, *interval, syncCallback)
+		err = spawnSyncRoutine(ctx, *interval, syncCallback)
 		return err
 	},
 }

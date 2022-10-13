@@ -25,7 +25,9 @@ func TestDiff(t *testing.T) {
 	fileSet := git.NewFileSet(projectDir)
 	files, err := fileSet.All()
 	assert.NoError(t, err)
-	state := snapshot{}
+	state := snapshot{
+		LastModifiedTimes: make(map[string]time.Time),
+	}
 	change := state.diff(files)
 
 	// New files are added to put
