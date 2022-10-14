@@ -20,8 +20,8 @@ import (
 type snapshot struct {
 	// host url of the workspace the snapshot is for
 	Host string `json:"host"`
-	// username of user the snapshot is for
-	UserName string `json:"user_name"`
+	// Path in workspace for project repo
+	RemotePath string `json:"remote_path"`
 	// Map of all files present in the remote repo with the:
 	// key: relative file path from project root
 	// value: last time the remote instance of this file was updated
@@ -51,12 +51,12 @@ func (s *snapshot) getPath(ctx context.Context) (string, error) {
 			return "", fmt.Errorf("failed to create config directory: %s", err)
 		}
 	}
-	hash := md5.Sum([]byte(s.Host + s.UserName))
+	hash := md5.Sum([]byte(s.Host + s.RemotePath))
 	hashString := hex.EncodeToString(hash[:])
 	return filepath.Join(snapshotDir, "sync-"+hashString[:8]+".json"), nil
 }
 
-func newSnapshot(ctx context.Context) (snapshot, error) {
+func newSnapshot(ctx context.Context, remotePath string) (snapshot, error) {
 	prj := project.Get(ctx)
 
 	// Get host this snapshot is for
@@ -69,19 +69,9 @@ func newSnapshot(ctx context.Context) (snapshot, error) {
 		return snapshot{}, fmt.Errorf("failed to resolve host for snapshot")
 	}
 
-	// Get username this snapshot
-	me, err := prj.Me()
-	if err != nil {
-		return snapshot{}, err
-	}
-	userName := me.UserName
-	if userName == "" {
-		return snapshot{}, fmt.Errorf("failed to resolve user name for snapshot")
-	}
-
 	return snapshot{
 		Host:             host,
-		UserName:         userName,
+		RemotePath:       remotePath,
 		LastUpdatedTimes: make(map[string]time.Time),
 	}, nil
 }

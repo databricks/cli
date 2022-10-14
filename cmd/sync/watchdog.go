@@ -104,21 +104,22 @@ func getRemoteSyncCallback(ctx context.Context, root, remoteDir string, wsc *wor
 
 func spawnSyncRoutine(ctx context.Context,
 	interval time.Duration,
-	applyDiff func(diff) error) error {
+	applyDiff func(diff) error,
+	remotePath string) error {
 	w := &watchdog{
 		ticker: time.NewTicker(interval),
 	}
 	w.wg.Add(1)
-	go w.main(ctx, applyDiff)
+	go w.main(ctx, applyDiff, remotePath)
 	w.wg.Wait()
 	return w.failure
 }
 
 // tradeoff: doing portable monitoring only due to macOS max descriptor manual ulimit setting requirement
 // https://github.com/gorakhargosh/watchdog/blob/master/src/watchdog/observers/kqueue.py#L394-L418
-func (w *watchdog) main(ctx context.Context, applyDiff func(diff) error) {
+func (w *watchdog) main(ctx context.Context, applyDiff func(diff) error, remotePath string) {
 	defer w.wg.Done()
-	snapshot, err := newSnapshot(ctx)
+	snapshot, err := newSnapshot(ctx, remotePath)
 	if err != nil {
 		log.Printf("[ERROR] cannot create snapshot: %s", err)
 		w.failure = err
