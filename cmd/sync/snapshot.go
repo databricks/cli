@@ -37,7 +37,7 @@ const syncSnapshotDirName = "sync-snapshots"
 
 // Compute path of the snapshot file on the local machine
 // The file name for unique for a tuple of (host, username)
-// precisely it's the first 8 characters of md5(concat(host, username))
+// precisely it's the first 8 characters of md5(concat(host, remotePath))
 func (s *snapshot) getPath(ctx context.Context) (string, error) {
 	prj := project.Get(ctx)
 	cacheDir, err := prj.CacheDir()
