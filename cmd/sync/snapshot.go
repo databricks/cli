@@ -17,7 +17,7 @@ import (
 	"github.com/databricks/bricks/project"
 )
 
-type snapshot struct {
+type Snapshot struct {
 	// host url of the workspace the snapshot is for
 	Host string `json:"host"`
 	// Path in workspace for project repo
@@ -38,7 +38,7 @@ const syncSnapshotDirName = "sync-snapshots"
 // Compute path of the snapshot file on the local machine
 // The file name for unique for a tuple of (host, remotePath)
 // precisely it's the first 8 characters of md5(concat(host, remotePath))
-func (s *snapshot) getPath(ctx context.Context) (string, error) {
+func (s *Snapshot) getPath(ctx context.Context) (string, error) {
 	prj := project.Get(ctx)
 	cacheDir, err := prj.CacheDir()
 	if err != nil {
@@ -56,27 +56,27 @@ func (s *snapshot) getPath(ctx context.Context) (string, error) {
 	return filepath.Join(snapshotDir, "sync-"+hashString[:8]+".json"), nil
 }
 
-func newSnapshot(ctx context.Context, remotePath string) (snapshot, error) {
+func newSnapshot(ctx context.Context, remotePath string) (Snapshot, error) {
 	prj := project.Get(ctx)
 
 	// Get host this snapshot is for
 	wsc := prj.WorkspacesClient()
 	if wsc == nil {
-		return snapshot{}, fmt.Errorf("failed to resolve workspaces client for project")
+		return Snapshot{}, fmt.Errorf("failed to resolve workspaces client for project")
 	}
 	host := wsc.Config.Host
 	if host == "" {
-		return snapshot{}, fmt.Errorf("failed to resolve host for snapshot")
+		return Snapshot{}, fmt.Errorf("failed to resolve host for snapshot")
 	}
 
-	return snapshot{
+	return Snapshot{
 		Host:             host,
 		RemotePath:       remotePath,
 		LastUpdatedTimes: make(map[string]time.Time),
 	}, nil
 }
 
-func (s *snapshot) storeSnapshot(ctx context.Context) error {
+func (s *Snapshot) storeSnapshot(ctx context.Context) error {
 	snapshotPath, err := s.getPath(ctx)
 	if err != nil {
 		return err
@@ -99,7 +99,7 @@ func (s *snapshot) storeSnapshot(ctx context.Context) error {
 	return nil
 }
 
-func (s *snapshot) loadSnapshot(ctx context.Context) error {
+func (s *Snapshot) loadSnapshot(ctx context.Context) error {
 	snapshotPath, err := s.getPath(ctx)
 	if err != nil {
 		return err
@@ -144,7 +144,7 @@ func (d diff) String() string {
 	return strings.Join(changes, ", ")
 }
 
-func (s snapshot) diff(all []git.File) (change diff) {
+func (s Snapshot) diff(all []git.File) (change diff) {
 	currentFilenames := map[string]bool{}
 	lastModifiedTimes := s.LastUpdatedTimes
 	for _, f := range all {
