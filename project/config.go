@@ -24,6 +24,13 @@ const (
 // ConfigFile is the name of project configuration file
 const ConfigFile = "databricks.yml"
 
+// Cache Dir is the name of the directory with all the state overrides,
+// cached artifacts and per-user state
+const CacheDir = ".databricks"
+
+// Name of the file with regexes that are not to be checked into git
+const GitIgnoreFile = ".gitignore"
+
 type Assertions struct {
 	Groups            []string `json:"groups,omitempty"`
 	Secrets           []string `json:"secrets,omitempty"`

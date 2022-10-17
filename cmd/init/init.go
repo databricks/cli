@@ -111,6 +111,21 @@ var initCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+
+		// Create .gitignore if absent
+		gitIgnoreFile, err := os.OpenFile(fmt.Sprintf("%s/%s", wd, project.GitIgnoreFile),
+			os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+		if err != nil {
+			return err
+		}
+		defer gitIgnoreFile.Close()
+
+		// Append .databricks to the end of .gitignore file
+		_, err = gitIgnoreFile.WriteString("\n/.databricks/")
+		if err != nil {
+			return err
+		}
+
 		d, err := templates.ReadDir(".")
 		if err != nil {
 			return err
