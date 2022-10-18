@@ -74,7 +74,7 @@ func TestAccFullSync(t *testing.T) {
 	defer f.Close()
 
 	// start bricks sync process
-	cmd = exec.Command("go", "run", "main.go", "sync", "--remote-path", repoPath, "--persist-snapshot", "false")
+	cmd = exec.Command("go", "run", "main.go", "sync", "--remote-path", repoPath, "--persist-snapshot=false")
 
 	var cmdOut, cmdErr bytes.Buffer
 	cmd.Stdout = &cmdOut
@@ -91,8 +91,8 @@ func TestAccFullSync(t *testing.T) {
 		// terminate the bricks sync process
 		cmd.Process.Kill()
 		// Print the stdout and stderr logs from the bricks sync process
-		t.Log("\n\n\\n\n\n\n")
-		t.Log("bricks sync logs: ")
+		t.Log("\n\n\n\n\n\n")
+		t.Logf("bricks sync logs for command: %s", cmd.String())
 		if err != nil {
 			t.Logf("error in bricks sync process: %s\n", err)
 		}
@@ -252,7 +252,7 @@ func TestAccIncrementalSync(t *testing.T) {
 	assert.NoError(t, err)
 
 	// start bricks sync process
-	cmd = exec.Command("go", "run", "main.go", "sync", "--remote-path", repoPath, "--persist-snapshot", "true")
+	cmd = exec.Command("go", "run", "main.go", "sync", "--remote-path", repoPath, "--persist-snapshot=true")
 
 	var cmdOut, cmdErr bytes.Buffer
 	cmd.Stdout = &cmdOut
