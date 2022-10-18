@@ -177,7 +177,7 @@ func calcMd5(s string) string {
 }
 
 func assertSnapshotContents(t *testing.T, host, repoPath, projectDir string, listOfSyncedFiles []string) {
-	snapshotPath := filepath.Join(projectDir, ".databricks/sync-snapshots", "sync-"+calcMd5(host + repoPath)[:8]+".json")
+	snapshotPath := filepath.Join(projectDir, ".databricks/sync-snapshots", calcMd5(host + repoPath)[:16]+".json")
 	assert.FileExists(t, snapshotPath)
 
 	var s *sync.Snapshot
