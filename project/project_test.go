@@ -65,7 +65,7 @@ func TestProjectCacheDir(t *testing.T) {
 	content := []byte("/.databricks/")
 	_, err = f2.Write(content)
 	assert.NoError(t, err)
-	
+
 	ctx, err := Initialize(context.Background(), projectDir, DefaultEnvironment)
 	assert.NoError(t, err)
 
