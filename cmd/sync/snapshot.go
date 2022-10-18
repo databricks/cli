@@ -17,8 +17,20 @@ import (
 	"github.com/databricks/bricks/project"
 )
 
+// A snapshot is a persistant store of knowledge bricks cli has about state of files
+// in the remote repo. We use the last modified times (mtime) of files to determine
+// whether a files need to be updated in the remote repo.
+//
+// 1. Any stale files in the remote repo are updated. That is if the last modified
+// time recorded in the snapshot is less than the actual last modified time of the file
+//
+// 2. Any files present in snapshot but absent locally are deleted from remote path
+//
+// Changing either the databricks workspace (ie Host) or the remote path (ie RemotePath)
+// local files are being synced to will make bricks cli switch to a different
+// snapshot for persisting/loading sync state
 type Snapshot struct {
-	// host url of the workspace the snapshot is for
+	// hostname of the workspace this snapshot is for
 	Host string `json:"host"`
 	// Path in workspace for project repo
 	RemotePath string `json:"remote_path"`
