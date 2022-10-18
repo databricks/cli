@@ -120,6 +120,7 @@ func (p *project) GetFileSet() *git.FileSet {
 
 // This cache dir will contain any state, state overrides (per user overrides
 // to the project config) or any generated artifacts (eg: sync snapshots)
+// that should never be checked into Git.
 //
 // We enfore that cache dir (.databricks) is added to .gitignore
 // because it contains per-user overrides that we do not want users to

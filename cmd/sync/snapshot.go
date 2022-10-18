@@ -47,6 +47,12 @@ type diff struct {
 
 const syncSnapshotDirName = "sync-snapshots"
 
+func GetFileName(host, remotePath string) string {
+	hash := md5.Sum([]byte(host + remotePath))
+	hashString := hex.EncodeToString(hash[:])
+	return hashString[:16] + ".json"
+}
+
 // Compute path of the snapshot file on the local machine
 // The file name for unique for a tuple of (host, remotePath)
 // precisely it's the first 16 characters of md5(concat(host, remotePath))
@@ -63,9 +69,8 @@ func (s *Snapshot) getPath(ctx context.Context) (string, error) {
 			return "", fmt.Errorf("failed to create config directory: %s", err)
 		}
 	}
-	hash := md5.Sum([]byte(s.Host + s.RemotePath))
-	hashString := hex.EncodeToString(hash[:])
-	return filepath.Join(snapshotDir, hashString[:16]+".json"), nil
+	fileName := GetFileName(s.Host, s.RemotePath)
+	return filepath.Join(snapshotDir, fileName), nil
 }
 
 func newSnapshot(ctx context.Context, remotePath string) (*Snapshot, error) {
@@ -73,9 +78,6 @@ func newSnapshot(ctx context.Context, remotePath string) (*Snapshot, error) {
 
 	// Get host this snapshot is for
 	wsc := prj.WorkspacesClient()
-	if wsc == nil {
-		return nil, fmt.Errorf("failed to resolve workspaces client for project")
-	}
 
 	// TODO: The host may be late-initialized in certain Azure setups where we
 	// specify the workspace by its resource ID. tracked in: https://databricks.atlassian.net/browse/DECO-194

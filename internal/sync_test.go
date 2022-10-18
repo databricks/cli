@@ -3,8 +3,6 @@ package internal
 import (
 	"bytes"
 	"context"
-	"crypto/md5"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -171,13 +169,8 @@ func TestAccFullSync(t *testing.T) {
 	assert.Contains(t, files3, "world.txt")
 }
 
-func calcMd5(s string) string {
-	hash := md5.Sum([]byte(s))
-	return hex.EncodeToString(hash[:])
-}
-
 func assertSnapshotContents(t *testing.T, host, repoPath, projectDir string, listOfSyncedFiles []string) {
-	snapshotPath := filepath.Join(projectDir, ".databricks/sync-snapshots", calcMd5(host + repoPath)[:16]+".json")
+	snapshotPath := filepath.Join(projectDir, ".databricks/sync-snapshots", sync.GetFileName(host, repoPath))
 	assert.FileExists(t, snapshotPath)
 
 	var s *sync.Snapshot

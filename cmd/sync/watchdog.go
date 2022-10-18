@@ -133,12 +133,12 @@ func (w *watchdog) main(ctx context.Context, applyDiff func(diff) error, remoteP
 			return
 		}
 	}
+	prj := project.Get(ctx)
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case <-w.ticker.C:
-			prj := project.Get(ctx)
 			all, err := prj.GetFileSet().All()
 			if err != nil {
 				log.Printf("[ERROR] cannot list files: %s", err)
