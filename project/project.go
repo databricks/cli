@@ -85,12 +85,6 @@ func Initialize(ctx context.Context, root, env string) (context.Context, error) 
 func (p *project) initializeWorkspacesClient(ctx context.Context) {
 	var config databricks.Config
 
-	// TODO: ask pieter whether removing this was intentional, and should we force users
-	// to define profiles in environments
-	if p.config.Profile != "" {
-		config.Profile = p.config.Profile
-	}
-
 	// If the config specifies a profile, or other authentication related properties,
 	// pass them along to the SDK here. If nothing is defined, the SDK will figure
 	// out which autentication mechanism to use using enviroment variables.
