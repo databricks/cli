@@ -81,7 +81,7 @@ func (s *Snapshot) storeSnapshot(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	f, err := os.OpenFile(snapshotPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0755)
+	f, err := os.OpenFile(snapshotPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 	if err != nil {
 		return fmt.Errorf("failed to create/open persisted sync snapshot file: %s", err)
 	}
