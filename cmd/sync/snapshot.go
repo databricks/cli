@@ -37,7 +37,7 @@ const syncSnapshotDirName = "sync-snapshots"
 
 // Compute path of the snapshot file on the local machine
 // The file name for unique for a tuple of (host, remotePath)
-// precisely it's the first 8 characters of md5(concat(host, remotePath))
+// precisely it's the first 16 characters of md5(concat(host, remotePath))
 func (s *Snapshot) getPath(ctx context.Context) (string, error) {
 	prj := project.Get(ctx)
 	cacheDir, err := prj.CacheDir()
@@ -53,23 +53,23 @@ func (s *Snapshot) getPath(ctx context.Context) (string, error) {
 	}
 	hash := md5.Sum([]byte(s.Host + s.RemotePath))
 	hashString := hex.EncodeToString(hash[:])
-	return filepath.Join(snapshotDir, "sync-"+hashString[:8]+".json"), nil
+	return filepath.Join(snapshotDir, hashString[:16]+".json"), nil
 }
 
-func newSnapshot(ctx context.Context, remotePath string) (Snapshot, error) {
+func newSnapshot(ctx context.Context, remotePath string) (*Snapshot, error) {
 	prj := project.Get(ctx)
 
 	// Get host this snapshot is for
 	wsc := prj.WorkspacesClient()
 	if wsc == nil {
-		return Snapshot{}, fmt.Errorf("failed to resolve workspaces client for project")
+		return nil, fmt.Errorf("failed to resolve workspaces client for project")
 	}
 	host := wsc.Config.Host
 	if host == "" {
-		return Snapshot{}, fmt.Errorf("failed to resolve host for snapshot")
+		return nil, fmt.Errorf("failed to resolve host for snapshot")
 	}
 
-	return Snapshot{
+	return &Snapshot{
 		Host:             host,
 		RemotePath:       remotePath,
 		LastUpdatedTimes: make(map[string]time.Time),
