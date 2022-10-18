@@ -270,7 +270,7 @@ func TestAccIncrementalSync(t *testing.T) {
 		cmd.Process.Kill()
 		// Print the stdout and stderr logs from the bricks sync process
 		// TODO: modify logs to suit multiple sync processes
-		t.Log("\n\n\\n\n\n\n")
+		t.Log("\n\n\n\n\n\n")
 		t.Logf("bricks sync logs for command: %s", cmd.String())
 		if err != nil {
 			t.Logf("error in bricks sync process: %s\n", err)
