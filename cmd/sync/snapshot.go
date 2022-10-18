@@ -76,6 +76,9 @@ func newSnapshot(ctx context.Context, remotePath string) (*Snapshot, error) {
 	if wsc == nil {
 		return nil, fmt.Errorf("failed to resolve workspaces client for project")
 	}
+
+	// TODO: The host may be late-initialized in certain Azure setups where we
+	// specify the workspace by its resource ID. tracked in: https://databricks.atlassian.net/browse/DECO-194
 	host := wsc.Config.Host
 	if host == "" {
 		return nil, fmt.Errorf("failed to resolve host for snapshot")
