@@ -3,8 +3,11 @@ package project
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
 	"sync"
 
+	"github.com/databricks/bricks/git"
 	"github.com/databricks/databricks-sdk-go/databricks"
 	"github.com/databricks/databricks-sdk-go/service/clusters"
 	"github.com/databricks/databricks-sdk-go/service/commands"
@@ -12,6 +15,8 @@ import (
 	"github.com/databricks/databricks-sdk-go/workspaces"
 	"github.com/spf13/cobra"
 )
+
+const CacheDirName = ".databricks"
 
 type project struct {
 	mu sync.Mutex
@@ -23,6 +28,7 @@ type project struct {
 	environment *Environment
 	wsc         *workspaces.WorkspacesClient
 	me          *scim.User
+	fileSet     *git.FileSet
 }
 
 // Configure is used as a PreRunE function for all commands that
@@ -61,12 +67,15 @@ func Initialize(ctx context.Context, root, env string) (context.Context, error) 
 		return nil, fmt.Errorf("environment [%s] not defined", env)
 	}
 
+	fileSet := git.NewFileSet(root)
+
 	p := project{
 		root: root,
 		env:  env,
 
 		config:      &config,
 		environment: &environment,
+		fileSet:     &fileSet,
 	}
 
 	p.initializeWorkspacesClient(ctx)
@@ -103,6 +112,34 @@ func (p *project) WorkspacesClient() *workspaces.WorkspacesClient {
 
 func (p *project) Root() string {
 	return p.root
+}
+
+func (p *project) GetFileSet() *git.FileSet {
+	return p.fileSet
+}
+
+// This cache dir will contain any state, state overrides (per user overrides
+// to the project config) or any generated artifacts (eg: sync snapshots)
+// that should never be checked into Git.
+//
+// We enfore that cache dir (.databricks) is added to .gitignore
+// because it contains per-user overrides that we do not want users to
+// accidentally check into git
+func (p *project) CacheDir() (string, error) {
+	// assert cache dir is present in git ignore
+	if !p.fileSet.IsGitIgnored(fmt.Sprintf("/%s/", CacheDirName)) {
+		return "", fmt.Errorf("please add /%s/ to .gitignore", CacheDirName)
+	}
+
+	cacheDirPath := filepath.Join(p.root, CacheDirName)
+	// create cache dir if it does not exist
+	if _, err := os.Stat(cacheDirPath); os.IsNotExist(err) {
+		err = os.Mkdir(cacheDirPath, os.ModeDir|os.ModePerm)
+		if err != nil {
+			return "", fmt.Errorf("failed to create cache directory %s with error: %s", cacheDirPath, err)
+		}
+	}
+	return cacheDirPath, nil
 }
 
 func (p *project) Config() Config {

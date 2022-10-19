@@ -71,6 +71,10 @@ func (w *FileSet) All() ([]File, error) {
 	return w.RecursiveListFiles(w.root)
 }
 
+func (w *FileSet) IsGitIgnored(pattern string) bool {
+	return w.ignore.MatchesPath(pattern)
+}
+
 // Recursively traverses dir in a depth first manner and returns a list of all files
 // that are being tracked in the FileSet (ie not being ignored for matching one of the
 // patterns in w.ignore)

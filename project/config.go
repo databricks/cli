@@ -31,8 +31,7 @@ type Assertions struct {
 }
 
 type Config struct {
-	Name      string    `json:"name"`              // or do default from folder name?..
-	Profile   string    `json:"profile,omitempty"` // rename?
+	Name      string    `json:"name"` // or do default from folder name?..
 	Isolation Isolation `json:"isolation,omitempty"`
 
 	// development-time vs deployment-time resources
