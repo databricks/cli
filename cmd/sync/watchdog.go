@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/databricks/bricks/project"
+	"github.com/databricks/databricks-sdk-go/databricks/apierr"
 	"github.com/databricks/databricks-sdk-go/databricks/client"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/databricks/databricks-sdk-go/workspaces"
@@ -44,6 +45,23 @@ func putFile(ctx context.Context, path string, content io.Reader) error {
 	return apiClient.Post(ctx, apiPath, content, nil)
 }
 
+func deleteFile(ctx context.Context, path string, wsc *workspaces.WorkspacesClient) error {
+	err := wsc.Workspace.Delete(ctx,
+		workspace.Delete{
+			Path:      path,
+			Recursive: true,
+		},
+	)
+	// We explictly ignore RESOURCE_DOES_NOT_EXIST errors for deletion of files
+	// This makes deletion operation idempotent and allows us to not crash syncing on
+	// edge cases for eg: this api fails to delete notebooks, and returns a
+	// RESOURCE_DOES_NOT_EXIST error instead
+	if val, ok := err.(apierr.APIError); ok && val.ErrorCode == "RESOURCE_DOES_NOT_EXIST" {
+		return nil
+	}
+	return err
+}
+
 func getRemoteSyncCallback(ctx context.Context, root, remoteDir string, wsc *workspaces.WorkspacesClient) func(localDiff diff) error {
 	return func(d diff) error {
 
@@ -61,12 +79,7 @@ func getRemoteSyncCallback(ctx context.Context, root, remoteDir string, wsc *wor
 			// is evaluated
 			localFileName := fileName
 			g.Go(func() error {
-				err := wsc.Workspace.Delete(ctx,
-					workspace.Delete{
-						Path:      path.Join(remoteDir, localFileName),
-						Recursive: true,
-					},
-				)
+				err := deleteFile(ctx, path.Join(remoteDir, localFileName), wsc)
 				if err != nil {
 					return err
 				}
