@@ -45,8 +45,7 @@ func putFile(ctx context.Context, path string, content io.Reader) error {
 	return apiClient.Post(ctx, apiPath, content, nil)
 }
 
-func deleteFile(ctx context.Context, path string) error {
-	wsc := project.Get(ctx).WorkspacesClient()
+func deleteFile(ctx context.Context, path string, wsc *workspaces.WorkspacesClient) error {
 	err := wsc.Workspace.Delete(ctx,
 		workspace.Delete{
 			Path:      path,
@@ -80,7 +79,7 @@ func getRemoteSyncCallback(ctx context.Context, root, remoteDir string, wsc *wor
 			// is evaluated
 			localFileName := fileName
 			g.Go(func() error {
-				err := deleteFile(ctx, path.Join(remoteDir, localFileName))
+				err := deleteFile(ctx, path.Join(remoteDir, localFileName), wsc)
 				if err != nil {
 					return err
 				}
