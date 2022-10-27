@@ -134,6 +134,7 @@ func (w *watchdog) main(ctx context.Context, applyDiff func(diff) error, remoteP
 		}
 	}
 	prj := project.Get(ctx)
+	var onlyOnceInitLog sync.Once
 	for {
 		select {
 		case <-ctx.Done():
@@ -147,6 +148,9 @@ func (w *watchdog) main(ctx context.Context, applyDiff func(diff) error, remoteP
 			}
 			change := snapshot.diff(all)
 			if change.IsEmpty() {
+				onlyOnceInitLog.Do(func() {
+					log.Printf("[INFO] Initial Sync Complete")
+				})
 				continue
 			}
 			log.Printf("[INFO] Action: %v", change)
@@ -163,6 +167,9 @@ func (w *watchdog) main(ctx context.Context, applyDiff func(diff) error, remoteP
 					return
 				}
 			}
+			onlyOnceInitLog.Do(func() {
+				log.Printf("[INFO] Initial Sync Complete")
+			})
 		}
 	}
 }
