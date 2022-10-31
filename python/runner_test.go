@@ -6,13 +6,9 @@ import (
 	"os"
 	"testing"
 
+	"github.com/databricks/bricks/lib/spawn"
 	"github.com/stretchr/testify/assert"
 )
-
-func TestExecAndPassError(t *testing.T) {
-	_, err := execAndPassErr(context.Background(), "which", "__non_existing__")
-	assert.EqualError(t, err, "exit status 1")
-}
 
 func TestDetectPython(t *testing.T) {
 	pyExec = ""
@@ -30,35 +26,23 @@ func TestDetectPythonCache(t *testing.T) {
 }
 
 func TestDetectVirtualEnvFalse(t *testing.T) {
-	venvDir, err := detectVirtualEnv()
+	wd, err := os.Getwd()
+	assert.NoError(t, err)
+	venvDir, err := detectVirtualEnv(wd)
 	assert.NoError(t, err)
 	assert.Equal(t, "", venvDir)
 }
 
 func TestMakeDetectableVenv(t *testing.T) {
-	var temp string
-	defer testTempdir(t, &temp)()
+	temp := t.TempDir()
+	ctx := spawn.WithRoot(context.Background(), temp)
 
-	// TODO: rewrite with t.TempDir() and arguments
-	err := createVirtualEnv(context.Background())
+	err := createVirtualEnv(ctx)
 	assert.NoError(t, err)
 
-	venv, err := detectVirtualEnv()
+	venv, err := detectVirtualEnv(temp)
 	assert.NoError(t, err)
 	assert.Equal(t, fmt.Sprintf("%s/.venv", temp), venv)
-}
-
-func testTempdir(t *testing.T, dir *string) func() {
-	wd, _ := os.Getwd()
-	temp, err := os.MkdirTemp(os.TempDir(), "brickstest")
-	assert.NoError(t, err)
-	os.Chdir(temp)
-	wd2, _ := os.Getwd()
-	*dir = wd2
-	return func() {
-		os.Chdir(wd)
-		os.RemoveAll(temp)
-	}
 }
 
 func TestPyError(t *testing.T) {

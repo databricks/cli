@@ -3,8 +3,15 @@ package project
 import (
 	"context"
 	"fmt"
+	"os"
 	"sync"
 
+	"github.com/databricks/bricks/lib/flavor"
+	"github.com/databricks/bricks/lib/flavor/mvn"
+	"github.com/databricks/bricks/lib/flavor/notebooks"
+	"github.com/databricks/bricks/lib/flavor/py"
+	"github.com/databricks/bricks/lib/flavor/script"
+	"github.com/databricks/bricks/lib/spawn"
 	"github.com/databricks/databricks-sdk-go/databricks"
 	"github.com/databricks/databricks-sdk-go/service/clusters"
 	"github.com/databricks/databricks-sdk-go/service/commands"
@@ -23,6 +30,9 @@ type project struct {
 	environment *Environment
 	wsc         *workspaces.WorkspacesClient
 	me          *scim.User
+
+	artifacts flavor.Artifacts
+	flavors   []flavor.Flavor
 }
 
 // Configure is used as a PreRunE function for all commands that
@@ -60,16 +70,37 @@ func Initialize(ctx context.Context, root, env string) (context.Context, error) 
 	if !ok {
 		return nil, fmt.Errorf("environment [%s] not defined", env)
 	}
-
+	// TODO: maybe we do Flavor#Detect here
+	if config.Maven == nil {
+		config.Maven = &mvn.Maven{}
+	}
+	if config.SetupPy == nil {
+		config.SetupPy = &py.SetupDotPy{}
+	}
+	if config.Script == nil {
+		config.Script = &script.Script{}
+	}
+	if config.Notebooks == nil {
+		config.Notebooks = &notebooks.Notebooks{}
+	}
 	p := project{
 		root: root,
 		env:  env,
 
 		config:      &config,
 		environment: &environment,
+		flavors: []flavor.Flavor{
+			config.Maven,
+			config.SetupPy,
+			config.Script,
+			config.Notebooks,
+		},
 	}
 
 	p.initializeWorkspacesClient(ctx)
+	// make all spawn.ExecAndPassErr executed in project root
+	// TODO: pass verbosity flag from somewhere
+	ctx = spawn.WithRoot(ctx, root)
 	return context.WithValue(ctx, &projectKey, &p), nil
 }
 
@@ -131,6 +162,7 @@ func (p *project) DeploymentIsolationPrefix() string {
 	if p.config.Isolation == None {
 		return p.config.Name
 	}
+	// TODO: git branch
 	if p.config.Isolation == Soft {
 		me, err := p.Me()
 		if err != nil {
@@ -200,11 +232,16 @@ func RunPythonOnDev(ctx context.Context, command string) common.CommandResults {
 }
 */
 
+const bricksClusterId = "BRICKS_CLUSTER_ID"
+
 // TODO: Add safe access to p.project and p.project.DevCluster that throws errors if
 // the fields are not defined properly
 func (p *project) GetDevelopmentClusterId(ctx context.Context) (clusterId string, err error) {
 	clusterId = p.config.DevCluster.ClusterId
 	clusterName := p.config.DevCluster.ClusterName
+	if clusterId == "" {
+		clusterId = os.Getenv(bricksClusterId)
+	}
 	if clusterId != "" {
 		return
 	} else if clusterName != "" {

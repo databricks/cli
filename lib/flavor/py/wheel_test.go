@@ -1,4 +1,4 @@
-package python
+package py
 
 import (
 	"context"

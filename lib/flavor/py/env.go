@@ -1,12 +1,14 @@
-package python
+package py
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
 	"log"
+	"regexp"
 	"strings"
 
+	"github.com/databricks/bricks/python"
 	"golang.org/x/mod/semver"
 )
 
@@ -14,7 +16,11 @@ type Dependency struct {
 	Name     string
 	Operator string
 	Version  string
-	Location string // @ file:///usr/loca
+	Location string // @ file:///usr/local
+}
+
+func (d Dependency) NormalizedName() string {
+	return strings.ToLower(d.Name)
 }
 
 func (d Dependency) CanonicalVersion() string {
@@ -24,33 +30,25 @@ func (d Dependency) CanonicalVersion() string {
 type Environment []Dependency
 
 func (e Environment) Has(name string) bool {
+	dep := DependencyFromSpec(name)
 	for _, d := range e {
-		if d.Name == name {
+		if d.NormalizedName() == dep.NormalizedName() {
 			return true
 		}
 	}
 	return false
 }
 
-func Freeze(ctx context.Context) (Environment, error) {
-	out, err := Py(ctx, "-m", "pip", "freeze")
-	if err != nil {
-		return nil, err
-	}
-	env := Environment{}
-	deps := strings.Split(out, "\n")
-	for _, raw := range deps {
-		env = append(env, DependencyFromSpec(raw))
-	}
-	return env, nil
-}
-
 func DependencyFromSpec(raw string) (d Dependency) {
+	raw = strings.ToLower(strings.TrimSpace(raw))
 	// TODO: write a normal parser for this
+	// see https://peps.python.org/pep-0508/#grammar
 	rawSplit := strings.Split(raw, "==")
 	if len(rawSplit) != 2 {
 		log.Printf("[DEBUG] Skipping invalid dep: %s", raw)
-		return
+		return Dependency{
+			Name: raw,
+		}
 	}
 	d.Name = rawSplit[0]
 	d.Operator = "=="
@@ -65,6 +63,7 @@ type Distribution struct {
 	Version         string   `json:"version"`
 	Packages        []string `json:"packages"`
 	InstallRequires []string `json:"install_requires,omitempty"`
+	TestsRequire    []string `json:"tests_require,omitempty"`
 }
 
 // InstallEnvironment returns only direct install dependencies
@@ -75,18 +74,30 @@ func (d Distribution) InstallEnvironment() (env Environment) {
 	return
 }
 
+// See: ttps://peps.python.org/pep-0503/#normalized-names
+var pep503 = regexp.MustCompile(`[-_.]+`)
+
 // NormalizedName returns PEP503-compatible Python Package Index project name.
 // As per PEP 426 the only valid characters in a name are the ASCII alphabet,
 // ASCII numbers, ., -, and _. The name should be lowercased with all runs of
 // the characters ., -, or _ replaced with a single - character.
 func (d Distribution) NormalizedName() string {
-	// TODO: implement https://peps.python.org/pep-0503/#normalized-names
-	return d.Name
+	return pep503.ReplaceAllString(d.Name, "-")
+}
+
+// See: https://peps.python.org/pep-0491/#escaping-and-unicode
+var pep491 = regexp.MustCompile(`[^\w\d.]+`)
+
+func (d Distribution) WheelName() string {
+	// Each component of the filename is escaped by replacing runs
+	// of non-alphanumeric characters with an underscore _
+	distName := pep491.ReplaceAllString(d.NormalizedName(), "_")
+	return fmt.Sprintf("%s-%s-py3-none-any.whl", distName, d.Version)
 }
 
 // ReadDistribution "parses" metadata from setup.py file.
 func ReadDistribution(ctx context.Context) (d Distribution, err error) {
-	out, err := PyInline(ctx, `
+	out, err := python.PyInline(ctx, `
 	import setuptools, json, sys
 	setup_config = {} # actual args for setuptools.dist.Distribution
 	def capture(**kwargs): global setup_config; setup_config = kwargs

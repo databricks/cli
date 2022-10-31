@@ -1,26 +1,23 @@
-package python
+package py
 
 import (
 	"context"
 	"fmt"
-	"io"
 	"log"
 	"os"
 	"path"
 	"strings"
 
-	"github.com/databricks/bricks/project"
-	"github.com/databricks/bricks/utilities"
+	"github.com/databricks/bricks/python"
 )
 
 func BuildWheel(ctx context.Context, dir string) (string, error) {
-	defer chdirAndBack(dir)()
 	// remove previous dist leak
 	os.RemoveAll("dist")
 	// remove all other irrelevant traces
 	silentlyCleanupWheelFolder(".")
 	// call simple wheel builder. we may need to pip install wheel as well
-	out, err := Py(ctx, "setup.py", "bdist_wheel")
+	out, err := python.Py(ctx, "setup.py", "bdist_wheel")
 	if err != nil {
 		return "", err
 	}
@@ -50,7 +47,6 @@ func UploadWheelToDBFSWithPEP503(ctx context.Context, dir string) (string, error
 	if err != nil {
 		return "", err
 	}
-	defer chdirAndBack(dir)()
 	dist, err := ReadDistribution(ctx)
 	if err != nil {
 		return "", err
@@ -61,28 +57,29 @@ func UploadWheelToDBFSWithPEP503(ctx context.Context, dir string) (string, error
 	// PEP503 indexes can be rolled out to clusters via checksummed global init script, that creates
 	// a driver/worker `/etc/pip.conf` with FUSE-mounted file:///dbfs/FileStore/wheels/simple/..
 	// extra index URLs. See more pointers at https://stackoverflow.com/q/30889494/277035
-	dbfsLoc := fmt.Sprintf("%s/%s/%s", DBFSWheelLocation, dist.NormalizedName(), path.Base(wheel))
+	_ = fmt.Sprintf("%s/%s/%s", DBFSWheelLocation, dist.NormalizedName(), path.Base(wheel))
+	return "", err
 
-	wsc := project.Get(ctx).WorkspacesClient()
-	wf, err := os.Open(wheel)
-	if err != nil {
-		return "", err
-	}
-	defer wf.Close()
-	raw, err := io.ReadAll(wf)
-	if err != nil {
-		return "", err
-	}
-	// err = dbfs.Create(dbfsLoc, raw, true)
-	err = utilities.CreateDbfsFile(ctx,
-		wsc,
-		dbfsLoc,
-		raw,
-		true,
-	)
-	// TODO: maintain PEP503 compliance and update meta-files:
-	// ${DBFSWheelLocation}/index.html and ${DBFSWheelLocation}/${NormalizedName}/index.html
-	return dbfsLoc, err
+	// wsc := project.Get(ctx).WorkspacesClient()
+	// wf, err := os.Open(wheel)
+	// if err != nil {
+	// 	return "", err
+	// }
+	// defer wf.Close()
+	// raw, err := io.ReadAll(wf)
+	// if err != nil {
+	// 	return "", err
+	// }
+	// // err = dbfs.Create(dbfsLoc, raw, true)
+	// err = utilities.CreateDbfsFile(ctx,
+	// 	wsc,
+	// 	dbfsLoc,
+	// 	raw,
+	// 	true,
+	// )
+	// // TODO: maintain PEP503 compliance and update meta-files:
+	// // ${DBFSWheelLocation}/index.html and ${DBFSWheelLocation}/${NormalizedName}/index.html
+	// return dbfsLoc, err
 }
 
 func silentlyCleanupWheelFolder(dir string) {
@@ -115,12 +112,4 @@ func silentChildWithSuffix(dir, suffix string) string {
 		return path.Join(dir, child.Name())
 	}
 	return ""
-}
-
-func chdirAndBack(dir string) func() {
-	wd, _ := os.Getwd()
-	os.Chdir(dir)
-	return func() {
-		os.Chdir(wd)
-	}
 }

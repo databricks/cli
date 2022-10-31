@@ -9,6 +9,10 @@ import (
 	"reflect"
 
 	"github.com/databricks/bricks/folders"
+	"github.com/databricks/bricks/lib/flavor/mvn"
+	"github.com/databricks/bricks/lib/flavor/notebooks"
+	"github.com/databricks/bricks/lib/flavor/py"
+	"github.com/databricks/bricks/lib/flavor/script"
 	"github.com/databricks/databricks-sdk-go/service/clusters"
 
 	"github.com/ghodss/yaml"
@@ -37,6 +41,11 @@ type Config struct {
 
 	// development-time vs deployment-time resources
 	DevCluster *clusters.ClusterInfo `json:"dev_cluster,omitempty"`
+
+	Maven     *mvn.Maven           `json:"mvn,omitempty"`
+	SetupPy   *py.SetupDotPy       `json:"python,omitempty"`
+	Script    *script.Script       `json:"script,omitempty"`
+	Notebooks *notebooks.Notebooks `json:"notebooks,omitempty"`
 
 	// Assertions defines a list of configurations expected to be applied
 	// to the workspace by a higher-privileged user (or service principal)

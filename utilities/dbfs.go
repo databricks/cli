@@ -13,6 +13,8 @@ import (
 // move to go sdk / replace with utility function once
 // https://github.com/databricks/databricks-sdk-go/issues/57 is Done
 // Tracked in https://github.com/databricks/bricks/issues/25
+//
+// Deprecated: use w.Dbfs.Overwrite
 func CreateDbfsFile(ctx context.Context,
 	wsc *workspaces.WorkspacesClient,
 	path string,
@@ -59,6 +61,7 @@ func CreateDbfsFile(ctx context.Context,
 	return nil
 }
 
+// Deprecated: use w.Dbfs.Open
 func ReadDbfsFile(ctx context.Context,
 	wsc *workspaces.WorkspacesClient,
 	path string,
