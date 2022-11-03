@@ -1,6 +1,7 @@
 package git
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -26,7 +27,8 @@ func TestRecusiveListFile(t *testing.T) {
 
 	// config file is returned
 	// .gitignore is not because we explictly ignore it in .gitignore
-	fileSet := NewFileSet(projectDir)
+	fileSet, err := NewFileSet(projectDir, false)
+	assert.NoError(t, err)
 	files, err := fileSet.RecursiveListFiles(projectDir)
 	assert.NoError(t, err)
 	assert.Len(t, files, 1)
@@ -63,7 +65,8 @@ func TestFileSetNonCleanRoot(t *testing.T) {
 	// Path simplification is done by most filepath functions.
 	root := "./../git"
 	require.NotEqual(t, root, filepath.Clean(root))
-	fs := NewFileSet(root)
+	fs, err := NewFileSet(root, false)
+	assert.NoError(t, err)
 	files, err := fs.All()
 	require.NoError(t, err)
 
