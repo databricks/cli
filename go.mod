@@ -13,11 +13,14 @@ require (
 	github.com/spf13/cobra v1.5.0 // Apache 2.0
 	github.com/stretchr/testify v1.8.0 // MIT
 	github.com/whilp/git-urls v1.0.0 // MIT
-	golang.org/x/mod v0.6.0-dev.0.20220106191415-9b9b3d81d5e3 // BSD-3-Clause
+	golang.org/x/mod v0.6.0 // BSD-3-Clause
 	gopkg.in/ini.v1 v1.67.0 // Apache 2.0
 )
 
-require golang.org/x/sync v0.0.0-20220513210516-0976fa681c29
+require (
+	golang.org/x/exp v0.0.0-20221031165847-c99f073a8326
+	golang.org/x/sync v0.0.0-20220513210516-0976fa681c29
+)
 
 require (
 	cloud.google.com/go/compute v1.6.1 // indirect
@@ -33,7 +36,7 @@ require (
 	go.opencensus.io v0.23.0 // indirect
 	golang.org/x/net v0.0.0-20220526153639-5463443f8c37 // indirect
 	golang.org/x/oauth2 v0.0.0-20220628200809-02e64fa58f26 // indirect
-	golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a // indirect
+	golang.org/x/sys v0.1.0 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/time v0.0.0-20210723032227-1f47c861a9ac // indirect
 	google.golang.org/api v0.82.0 // indirect
