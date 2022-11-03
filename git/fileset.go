@@ -9,7 +9,6 @@ import (
 	"time"
 
 	ignore "github.com/sabhiram/go-gitignore"
-	"golang.org/x/exp/slices"
 )
 
 type File struct {
@@ -37,39 +36,29 @@ type FileSet struct {
 	ignore *ignore.GitIgnore
 }
 
-// Retuns FileSet for the repository located at `root`
-func NewFileSet(root string, isProjectRoot bool) (*FileSet, error) {
-	gitIgnoreMatchers := []string{}
-	gitIgnorePath := fmt.Sprintf("%s/.gitignore", root)
-	rawIgnore, err := os.ReadFile(gitIgnorePath)
+// GetFileSet retrieves FileSet from Git repository checkout root
+// or panics if no root is detected.
+func GetFileSet() (FileSet, error) {
+	root, err := Root()
+	return NewFileSet(root), err
+}
 
+// Retuns FileSet for the repository located at `root`
+func NewFileSet(root string) FileSet {
+	lines := []string{".git", ".bricks"}
+	rawIgnore, err := os.ReadFile(fmt.Sprintf("%s/.gitignore", root))
 	if err == nil {
 		// add entries from .gitignore if the file exists (did read correctly)
 		for _, line := range strings.Split(string(rawIgnore), "\n") {
 			// underlying library doesn't behave well with Rule 5 of .gitignore,
 			// hence this workaround
-			gitIgnoreMatchers = append(gitIgnoreMatchers, strings.Trim(line, "/"))
+			lines = append(lines, strings.Trim(line, "/"))
 		}
 	}
-
-	if isProjectRoot && !slices.Contains(gitIgnoreMatchers, ".databricks") {
-		f, err := os.OpenFile(gitIgnorePath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
-		if err != nil {
-			return nil, err
-		}
-		_, err = f.WriteString("\n/.databricks/")
-		if err != nil {
-			return nil, err
-		}
-		gitIgnoreMatchers = append(gitIgnoreMatchers, ".databricks")
-	}
-
-	syncIgnoreMatchers := []string{".git"}
-
-	return &FileSet{
+	return FileSet{
 		root:   root,
-		ignore: ignore.CompileIgnoreLines(append(gitIgnoreMatchers, syncIgnoreMatchers...)...),
-	}, nil
+		ignore: ignore.CompileIgnoreLines(lines...),
+	}
 }
 
 // Return root for fileset.

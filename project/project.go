@@ -67,10 +67,7 @@ func Initialize(ctx context.Context, root, env string) (context.Context, error) 
 		return nil, fmt.Errorf("environment [%s] not defined", env)
 	}
 
-	fileSet, err := git.NewFileSet(root, true)
-	if err != nil {
-		return ctx, err
-	}
+	fileSet := git.NewFileSet(root)
 
 	p := project{
 		root: root,
@@ -78,7 +75,7 @@ func Initialize(ctx context.Context, root, env string) (context.Context, error) 
 
 		config:      &config,
 		environment: &environment,
-		fileSet:     fileSet,
+		fileSet:     &fileSet,
 	}
 
 	p.initializeWorkspacesClient(ctx)

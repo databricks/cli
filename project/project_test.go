@@ -4,7 +4,6 @@ import (
 	"context"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -17,7 +16,7 @@ func TestProjectInitialize(t *testing.T) {
 	assert.Equal(t, Get(ctx).config.Name, "dev")
 }
 
-func TestProjectInitializationCreatesGitIgnoreIfAbsent(t *testing.T) {
+func TestProjectCacheDirErrorsIfNoGitIgnoreFile(t *testing.T) {
 	// create project root with databricks.yml
 	projectDir := t.TempDir()
 	f1, err := os.Create(filepath.Join(projectDir, "databricks.yml"))
@@ -27,60 +26,29 @@ func TestProjectInitializationCreatesGitIgnoreIfAbsent(t *testing.T) {
 	ctx, err := Initialize(context.Background(), projectDir, DefaultEnvironment)
 	assert.NoError(t, err)
 
-	gitIgnorePath := filepath.Join(projectDir, ".gitignore")
-	assert.FileExists(t, gitIgnorePath)
-	fileBytes, err := os.ReadFile(gitIgnorePath)
-	assert.NoError(t, err)
-	assert.Contains(t, string(fileBytes), ".databricks")
-
 	prj := Get(ctx)
 	_, err = prj.CacheDir()
-	assert.NoError(t, err)
+	assert.Error(t, err, "please add /.databricks/ to .gitignore")
 }
 
-func TestProjectInitializationAddsCacheDirToGitIgnore(t *testing.T) {
+func TestProjectCacheDirErrorsIfGitIgnoreEntryAbsent(t *testing.T) {
 	// create project root with databricks.yml
 	projectDir := t.TempDir()
 	f1, err := os.Create(filepath.Join(projectDir, "databricks.yml"))
 	assert.NoError(t, err)
 	defer f1.Close()
 
-	gitIgnorePath := filepath.Join(projectDir, ".gitignore")
-	f2, err := os.Create(gitIgnorePath)
+	// create empty .gitignore
+	f2, err := os.Create(filepath.Join(projectDir, ".gitignore"))
 	assert.NoError(t, err)
 	defer f2.Close()
 
 	ctx, err := Initialize(context.Background(), projectDir, DefaultEnvironment)
 	assert.NoError(t, err)
 
-	fileBytes, err := os.ReadFile(gitIgnorePath)
-	assert.NoError(t, err)
-	assert.Contains(t, string(fileBytes), ".databricks")
-
 	prj := Get(ctx)
 	_, err = prj.CacheDir()
-	assert.NoError(t, err)
-}
-
-func TestProjectInitializationDoesNotAddCacheDirToGitIgnoreIfAlreadyPresent(t *testing.T) {
-	// create project root with databricks.yml
-	projectDir := t.TempDir()
-	f1, err := os.Create(filepath.Join(projectDir, "databricks.yml"))
-	assert.NoError(t, err)
-	defer f1.Close()
-
-	gitIgnorePath := filepath.Join(projectDir, ".gitignore")
-
-	err = os.WriteFile(gitIgnorePath, []byte("/.databricks/"), 0o644)
-	assert.NoError(t, err)
-
-	_, err = Initialize(context.Background(), projectDir, DefaultEnvironment)
-	assert.NoError(t, err)
-
-	fileBytes, err := os.ReadFile(gitIgnorePath)
-	assert.NoError(t, err)
-
-	assert.Equal(t, 1, strings.Count(string(fileBytes), ".databricks"))
+	assert.Error(t, err, "please add /.databricks/ to .gitignore")
 }
 
 func TestProjectCacheDir(t *testing.T) {
