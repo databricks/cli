@@ -57,7 +57,8 @@ func NewFileSet(root string, isProjectRoot bool) (*FileSet, error) {
 		if err != nil {
 			return nil, err
 		}
-		_, err = f.WriteString("\n/.databricks/")
+		defer f.Close()
+		_, err = f.WriteString("\n.databricks\n")
 		if err != nil {
 			return nil, err
 		}
