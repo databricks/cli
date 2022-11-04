@@ -67,9 +67,10 @@ func Initialize(ctx context.Context, root, env string) (context.Context, error) 
 		return nil, fmt.Errorf("environment [%s] not defined", env)
 	}
 
-	fileSet, err := git.NewFileSet(root, true)
+	fileSet := git.NewFileSet(root)
+	err = fileSet.EnsureValidGitIgnoreExists()
 	if err != nil {
-		return ctx, err
+		return ctx, nil
 	}
 
 	p := project{
