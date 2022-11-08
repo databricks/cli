@@ -9,6 +9,7 @@ import (
 	"time"
 
 	ignore "github.com/sabhiram/go-gitignore"
+	"golang.org/x/exp/slices"
 )
 
 type File struct {
@@ -36,29 +37,57 @@ type FileSet struct {
 	ignore *ignore.GitIgnore
 }
 
-// GetFileSet retrieves FileSet from Git repository checkout root
-// or panics if no root is detected.
-func GetFileSet() (FileSet, error) {
-	root, err := Root()
-	return NewFileSet(root), err
+// Retuns FileSet for the git repo located at `root`
+func NewFileSet(root string) *FileSet {
+	syncIgnoreLines := append(getGitIgnoreLines(root), getSyncIgnoreLines()...)
+	return &FileSet{
+		root:   root,
+		ignore: ignore.CompileIgnoreLines(syncIgnoreLines...),
+	}
 }
 
-// Retuns FileSet for the repository located at `root`
-func NewFileSet(root string) FileSet {
-	lines := []string{".git", ".bricks"}
-	rawIgnore, err := os.ReadFile(fmt.Sprintf("%s/.gitignore", root))
+func getGitIgnoreLines(root string) []string {
+	gitIgnoreLines := []string{}
+	gitIgnorePath := fmt.Sprintf("%s/.gitignore", root)
+	rawIgnore, err := os.ReadFile(gitIgnorePath)
+
 	if err == nil {
 		// add entries from .gitignore if the file exists (did read correctly)
 		for _, line := range strings.Split(string(rawIgnore), "\n") {
 			// underlying library doesn't behave well with Rule 5 of .gitignore,
 			// hence this workaround
-			lines = append(lines, strings.Trim(line, "/"))
+			gitIgnoreLines = append(gitIgnoreLines, strings.Trim(line, "/"))
 		}
 	}
-	return FileSet{
-		root:   root,
-		ignore: ignore.CompileIgnoreLines(lines...),
+	return gitIgnoreLines
+}
+
+// This contains additional files/dirs to be ignored while syncing that are
+// not mentioned in .gitignore
+func getSyncIgnoreLines() []string {
+	return []string{".git"}
+}
+
+// Only call this function for a bricks project root
+// since it will create a .gitignore file if missing
+func (w *FileSet) EnsureValidGitIgnoreExists() error {
+	gitIgnoreLines := getGitIgnoreLines(w.root)
+	gitIgnorePath := fmt.Sprintf("%s/.gitignore", w.root)
+	if slices.Contains(gitIgnoreLines, ".databricks") {
+		return nil
 	}
+	f, err := os.OpenFile(gitIgnorePath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	_, err = f.WriteString("\n.databricks\n")
+	if err != nil {
+		return err
+	}
+	gitIgnoreLines = append(gitIgnoreLines, ".databricks")
+	w.ignore = ignore.CompileIgnoreLines(append(gitIgnoreLines, getSyncIgnoreLines()...)...)
+	return nil
 }
 
 // Return root for fileset.

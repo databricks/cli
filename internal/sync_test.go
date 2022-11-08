@@ -108,7 +108,7 @@ func TestAccFullSync(t *testing.T) {
 			Path: repoPath,
 		})
 		assert.NoError(t, err)
-		return len(repoContent.Objects) == 2
+		return len(repoContent.Objects) == 3
 	}, 30*time.Second, 5*time.Second)
 	repoContent, err := wsc.Workspace.List(ctx, workspace.ListRequest{
 		Path: repoPath,
@@ -118,13 +118,38 @@ func TestAccFullSync(t *testing.T) {
 	for _, v := range repoContent.Objects {
 		files1 = append(files1, filepath.Base(v.Path))
 	}
-	assert.Len(t, files1, 2)
+	assert.Len(t, files1, 3)
 	assert.Contains(t, files1, "amsterdam.txt")
 	assert.Contains(t, files1, ".gitkeep")
+	assert.Contains(t, files1, ".gitignore")
 
 	// Create new files and assert
 	os.Create(filepath.Join(projectDir, "hello.txt"))
 	os.Create(filepath.Join(projectDir, "world.txt"))
+	assert.Eventually(t, func() bool {
+		repoContent, err := wsc.Workspace.List(ctx, workspace.ListRequest{
+			Path: repoPath,
+		})
+		assert.NoError(t, err)
+		return len(repoContent.Objects) == 5
+	}, 30*time.Second, 5*time.Second)
+	repoContent, err = wsc.Workspace.List(ctx, workspace.ListRequest{
+		Path: repoPath,
+	})
+	assert.NoError(t, err)
+	var files2 []string
+	for _, v := range repoContent.Objects {
+		files2 = append(files2, filepath.Base(v.Path))
+	}
+	assert.Len(t, files2, 5)
+	assert.Contains(t, files2, "amsterdam.txt")
+	assert.Contains(t, files2, ".gitkeep")
+	assert.Contains(t, files2, "hello.txt")
+	assert.Contains(t, files2, "world.txt")
+	assert.Contains(t, files2, ".gitignore")
+
+	// delete a file and assert
+	os.Remove(filepath.Join(projectDir, "hello.txt"))
 	assert.Eventually(t, func() bool {
 		repoContent, err := wsc.Workspace.List(ctx, workspace.ListRequest{
 			Path: repoPath,
@@ -136,37 +161,15 @@ func TestAccFullSync(t *testing.T) {
 		Path: repoPath,
 	})
 	assert.NoError(t, err)
-	var files2 []string
-	for _, v := range repoContent.Objects {
-		files2 = append(files2, filepath.Base(v.Path))
-	}
-	assert.Len(t, files2, 4)
-	assert.Contains(t, files2, "amsterdam.txt")
-	assert.Contains(t, files2, ".gitkeep")
-	assert.Contains(t, files2, "hello.txt")
-	assert.Contains(t, files2, "world.txt")
-
-	// delete a file and assert
-	os.Remove(filepath.Join(projectDir, "hello.txt"))
-	assert.Eventually(t, func() bool {
-		repoContent, err := wsc.Workspace.List(ctx, workspace.ListRequest{
-			Path: repoPath,
-		})
-		assert.NoError(t, err)
-		return len(repoContent.Objects) == 3
-	}, 30*time.Second, 5*time.Second)
-	repoContent, err = wsc.Workspace.List(ctx, workspace.ListRequest{
-		Path: repoPath,
-	})
-	assert.NoError(t, err)
 	var files3 []string
 	for _, v := range repoContent.Objects {
 		files3 = append(files3, filepath.Base(v.Path))
 	}
-	assert.Len(t, files3, 3)
+	assert.Len(t, files3, 4)
 	assert.Contains(t, files3, "amsterdam.txt")
 	assert.Contains(t, files3, ".gitkeep")
 	assert.Contains(t, files3, "world.txt")
+	assert.Contains(t, files3, ".gitignore")
 }
 
 func assertSnapshotContents(t *testing.T, host, repoPath, projectDir string, listOfSyncedFiles []string) {

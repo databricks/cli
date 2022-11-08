@@ -68,6 +68,10 @@ func Initialize(ctx context.Context, root, env string) (context.Context, error) 
 	}
 
 	fileSet := git.NewFileSet(root)
+	err = fileSet.EnsureValidGitIgnoreExists()
+	if err != nil {
+		return ctx, nil
+	}
 
 	p := project{
 		root: root,
@@ -75,7 +79,7 @@ func Initialize(ctx context.Context, root, env string) (context.Context, error) 
 
 		config:      &config,
 		environment: &environment,
-		fileSet:     &fileSet,
+		fileSet:     fileSet,
 	}
 
 	p.initializeWorkspacesClient(ctx)
