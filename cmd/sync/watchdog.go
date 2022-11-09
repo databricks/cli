@@ -38,7 +38,10 @@ func putFile(ctx context.Context, path string, content io.Reader) error {
 	if err != nil {
 		return fmt.Errorf("could not mkdir to put file: %s", err)
 	}
-	apiClient := client.New(wsc.Config)
+	apiClient, err := client.New(wsc.Config)
+	if err != nil {
+		return err
+	}
 	apiPath := fmt.Sprintf(
 		"/api/2.0/workspace-files/import-file/%s?overwrite=true",
 		strings.TrimLeft(path, "/"))
