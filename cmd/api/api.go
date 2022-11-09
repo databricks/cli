@@ -52,7 +52,10 @@ func makeCommand(method string) *cobra.Command {
 				return err
 			}
 
-			api := client.New(&databricks.Config{})
+			api, err := client.New(&databricks.Config{})
+			if err != nil {
+				return err
+			}
 			err = api.Do(cmd.Context(), method, path, request, &response)
 			if err != nil {
 				return err
