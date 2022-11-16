@@ -45,7 +45,7 @@ var syncCmd = &cobra.Command{
 
 		root := prj.Root()
 		syncCallback := getRemoteSyncCallback(ctx, root, *remotePath, wsc)
-		
+
 		err = spawnSyncRoutine(ctx, *interval, syncCallback, *remotePath)
 		return err
 	},

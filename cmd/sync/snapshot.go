@@ -41,7 +41,7 @@ type Snapshot struct {
 	// This map maps local file names of notebooks to their remote names
 	// eg. notebook named "foo.py" locally would be stored as "foo", thus this
 	// map will contain an entry "foo.py" -> "foo"
-	// 
+	//
 	// Contains all databricks notebooks that have been synced atleast once
 	NotebookLocalToRemoteNames map[string]string `json:"notebook_local_to_remote_names"`
 }
