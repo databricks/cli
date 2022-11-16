@@ -155,7 +155,6 @@ func (p *project) Environment() Environment {
 }
 
 func (p *project) Me() (*scim.User, error) {
-	// QQ: Why is there a lock here?
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	if p.me != nil {

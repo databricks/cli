@@ -3,7 +3,6 @@ package main
 import (
 	_ "github.com/databricks/bricks/cmd/api"
 	_ "github.com/databricks/bricks/cmd/configure"
-	_ "github.com/databricks/bricks/cmd/deploy"
 	_ "github.com/databricks/bricks/cmd/fs"
 	_ "github.com/databricks/bricks/cmd/init"
 	_ "github.com/databricks/bricks/cmd/launch"
