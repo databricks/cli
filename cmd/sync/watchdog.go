@@ -1,6 +1,7 @@
 package sync
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"io"
@@ -8,6 +9,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -65,8 +67,73 @@ func deleteFile(ctx context.Context, path string, wsc *workspaces.WorkspacesClie
 	return err
 }
 
-func getRemoteSyncCallback(ctx context.Context, root, remoteDir string, wsc *workspaces.WorkspacesClient) func(localDiff diff) error {
-	return func(d diff) error {
+// Python notebooks when imported to a workspace filetree strip “.py” from the
+// file name which causes our APIs to have unexpected behavior. If you import a
+// notebook called `foo.py`, it will be referred to as `foo` in the workspace file
+// tree. This causes the following inconsistent behaviors:
+//
+// a. Consider you have a python notebook foo.py. If you query “PUT foo.py” then
+//    “DELETE foo.py” will return a RESOURCE_DOES_NOT_EXIST error.
+//    You would need  “DELETE foo” to delete the notebook
+//
+// b. Consider you have a python notebook foo.py and a file foo. If you query “PUT foo.py”
+//    and “PUT foo” then one of the PUT queries will fail with a file already exists error
+//
+// This functions does 4 things
+//
+// 1. Errors out if a file with the same name (without .py) exists as the
+//    notebook (to deal with problem b)
+// 2. Tracks all python files that are notebooks. This is later used to safely
+//    delete notebooks without duplication
+// 3. Delete the remote python file if a notebook -> python file
+// 4. Delete the remote notebook if a python file -> notebook
+func dedupDatabricksNotebook(ctx context.Context, localRoot, localFileName, remoteRoot string, snapshot *Snapshot, wsc *workspaces.WorkspacesClient) error {
+	f, err := os.Open(filepath.Join(localRoot, localFileName))
+	if err != nil {
+		return err
+	}
+	scanner := bufio.NewScanner(f)
+	scanner.Scan()
+	// A python file is a notebook if it contains the following magic string
+	isNotebook := strings.Contains(scanner.Text(), "# Databricks notebook source")
+	_, isKnownNotebook := snapshot.NotebookLocalToRemoteNames[localFileName]
+	_, hasBeenSyncedOnce := snapshot.LastUpdatedTimes[localFileName]
+
+	// File names of databricks source notebooks when uploaded
+	// are stripped of their .py suffix in the remote workspace filetree
+	remoteFileName := strings.TrimSuffix(localFileName, `.py`)
+
+	// Notebook has the same name as a file
+	if _, ok := snapshot.LastUpdatedTimes[remoteFileName]; ok {
+		return fmt.Errorf("file %s and notebook %s simulatanesly reside in project. Please remove one of them", remoteFileName, localFileName)
+	}
+	// track new databricks notebook
+	if isNotebook && !isKnownNotebook && !hasBeenSyncedOnce {
+		snapshot.NotebookLocalToRemoteNames[localFileName] = remoteFileName
+	}
+	// A python file that has been converted to a databricks notebook
+	if isNotebook && !isKnownNotebook && hasBeenSyncedOnce {
+		snapshot.NotebookLocalToRemoteNames[localFileName] = remoteFileName
+		// delete remote python file
+		err := deleteFile(ctx, path.Join(remoteRoot, localFileName), wsc)
+		if err != nil {
+			return err
+		}
+	}
+	// A local databricks notebook has been converted to a python file
+	if !isNotebook && isKnownNotebook {
+		delete(snapshot.NotebookLocalToRemoteNames, localFileName)
+		// delete remote notebook
+		err := deleteFile(ctx, path.Join(remoteRoot, remoteFileName), wsc)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func getRemoteSyncCallback(ctx context.Context, root, remoteDir string, wsc *workspaces.WorkspacesClient) func(localDiff diff, s *Snapshot) error {
+	return func(d diff, snapshot *Snapshot) error {
 
 		// Abstraction over wait groups which allows you to get the errors
 		// returned in goroutines
@@ -82,7 +149,13 @@ func getRemoteSyncCallback(ctx context.Context, root, remoteDir string, wsc *wor
 			// is evaluated
 			localFileName := fileName
 			g.Go(func() error {
-				err := deleteFile(ctx, path.Join(remoteDir, localFileName), wsc)
+				remoteFileName, isNotebook := snapshot.NotebookLocalToRemoteNames[localFileName]
+				if isNotebook {
+					delete(snapshot.NotebookLocalToRemoteNames, localFileName)
+				} else {
+					remoteFileName = localFileName
+				}
+				err := deleteFile(ctx, path.Join(remoteDir, remoteFileName), wsc)
 				if err != nil {
 					return err
 				}
@@ -97,6 +170,21 @@ func getRemoteSyncCallback(ctx context.Context, root, remoteDir string, wsc *wor
 				if err != nil {
 					return err
 				}
+				isPythonFile, err := regexp.Match(`\.py$`, []byte(localFileName))
+				if err != nil {
+					return err
+				}
+				if isPythonFile {
+					err = dedupDatabricksNotebook(ctx, root, localFileName, remoteDir, snapshot, wsc)
+					if err != nil {
+						return err
+					}
+				} else {
+					if _, ok := snapshot.NotebookLocalToRemoteNames[localFileName+".py"]; ok {
+						return fmt.Errorf("file %s and notebook %s simulatanesly reside in project. Please remove one of them", localFileName, localFileName+".py")
+					}
+				}
+
 				err = putFile(ctx, path.Join(remoteDir, localFileName), f)
 				if err != nil {
 					return fmt.Errorf("failed to upload file: %s", err)
@@ -120,7 +208,7 @@ func getRemoteSyncCallback(ctx context.Context, root, remoteDir string, wsc *wor
 
 func spawnSyncRoutine(ctx context.Context,
 	interval time.Duration,
-	applyDiff func(diff) error,
+	applyDiff func(diff, *Snapshot) error,
 	remotePath string) error {
 	w := &watchdog{
 		ticker: time.NewTicker(interval),
@@ -133,7 +221,7 @@ func spawnSyncRoutine(ctx context.Context,
 
 // tradeoff: doing portable monitoring only due to macOS max descriptor manual ulimit setting requirement
 // https://github.com/gorakhargosh/watchdog/blob/master/src/watchdog/observers/kqueue.py#L394-L418
-func (w *watchdog) main(ctx context.Context, applyDiff func(diff) error, remotePath string) {
+func (w *watchdog) main(ctx context.Context, applyDiff func(diff, *Snapshot) error, remotePath string) {
 	defer w.wg.Done()
 	snapshot, err := newSnapshot(ctx, remotePath)
 	if err != nil {
@@ -170,7 +258,7 @@ func (w *watchdog) main(ctx context.Context, applyDiff func(diff) error, remoteP
 				continue
 			}
 			log.Printf("[INFO] Action: %v", change)
-			err = applyDiff(change)
+			err = applyDiff(change, snapshot)
 			if err != nil {
 				w.failure = err
 				return

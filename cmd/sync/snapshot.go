@@ -38,6 +38,12 @@ type Snapshot struct {
 	// key: relative file path from project root
 	// value: last time the remote instance of this file was updated
 	LastUpdatedTimes map[string]time.Time `json:"last_modified_times"`
+	// This map maps local file names of notebooks to their remote names
+	// eg. notebook named "foo.py" locally would be stored as "foo", thus this
+	// map will contain an entry "foo.py" -> "foo"
+	// 
+	// Contains all databricks notebooks that have been synced atleast once
+	NotebookLocalToRemoteNames map[string]string `json:"notebook_local_to_remote_names"`
 }
 
 type diff struct {
@@ -87,9 +93,10 @@ func newSnapshot(ctx context.Context, remotePath string) (*Snapshot, error) {
 	}
 
 	return &Snapshot{
-		Host:             host,
-		RemotePath:       remotePath,
-		LastUpdatedTimes: make(map[string]time.Time),
+		Host:                       host,
+		RemotePath:                 remotePath,
+		LastUpdatedTimes:           make(map[string]time.Time),
+		NotebookLocalToRemoteNames: make(map[string]string),
 	}, nil
 }
 
