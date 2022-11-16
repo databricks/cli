@@ -1,0 +1,4 @@
+resources:
+  jobs:
+    my_second_job:
+      id: 2

@@ -1,0 +1,14 @@
+bundle:
+  name: environment_overrides
+
+workspace:
+  host: https://acme.cloud.databricks.com/
+
+environments:
+  development:
+    workspace:
+      host: https://development.acme.cloud.databricks.com/
+
+  staging:
+    workspace:
+      host: https://staging.acme.cloud.databricks.com/
