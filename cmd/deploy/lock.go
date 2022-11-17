@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"path/filepath"
 	"strings"
 	"time"
@@ -21,16 +22,56 @@ type Mutex interface {
 }
 
 type DeployMutex struct {
-	User string
-	// Remove if we do not need this and its enoguh to assert that AcquireLock did not return an error
+	Id              string
+	User            string
 	AcquisitionTime time.Time
-	// TODO: Add a timestamp demostrating the time of lock acquisition
-	IsForced    bool
-	ProjectRoot string
+	IsForced        bool
+	ProjectRoot     string
 }
 
-// TODO: Consider makeing aquire lock a blocking operation with a timeout. Incase of a race conflict, all lower priority
-// lock claims would delete themselves and still one person would end up with the lock
+// Context:
+// 1. Test lock and unlock
+// 2. create a function to get a new deploy mutex
+// 3. make sure ID generated is unique
+// 4. then there is the integration test
+// 5. stretch: look for opportunities for unit tests
+func generateRandomId(length int) string {
+	var letters = []rune("abcdefghijklmnopqrstuvwxyz1234567890")
+	rand.Seed(time.Now().UnixNano())
+	b := make([]rune, length)
+	for i := range b {
+		b[i] = letters[rand.Intn(len(letters))]
+	}
+	return string(b)
+}
+
+func getRemoteLock(ctx context.Context, lockFilePath string, apiClient *client.DatabricksClient) (*DeployMutex, error) {
+	expectApiPath := fmt.Sprintf(
+		"/api/2.0/workspace-files/%s",
+		strings.TrimLeft(lockFilePath, "/"))
+
+	var res interface{}
+
+	err := apiClient.Get(ctx, expectApiPath, nil, &res)
+	// TODO: handle the race condition when the file gets deleted before you can read
+	// it.
+	// NOTE: https://databricks.atlassian.net/browse/ES-510449
+	// Do some error parsing maybe, add on previos error for more context and
+	// add on suggestion for the user to retry deployment
+	if err != nil {
+		return nil, err
+	}
+	lockJson, err := json.Marshal(res)
+	if err != nil {
+		return nil, err
+	}
+	remoteLock := DeployMutex{}
+	err = json.Unmarshal(lockJson, &remoteLock)
+	if err != nil {
+		return nil, err
+	}
+	return &remoteLock, nil
+}
 
 // TODO: Lets keep a history of all the deployments made.
 // 1. When waiting for lock, we can also show that from whom are we waiting to gain a lock from and when they accesses the lock
@@ -66,41 +107,30 @@ func (mu *DeployMutex) Lock(ctx context.Context) error {
 	err = apiClient.Post(ctx, importApiPath, mutexMetadataReader, nil)
 
 	if err != nil && strings.Contains(err.Error(), fmt.Sprintf("%s already exists", lockFilePath)) {
-		expectApiPath := fmt.Sprintf(
-			"/api/2.0/workspace-files/%s",
-			strings.TrimLeft(lockFilePath, "/"))
-
-		var res interface{}
-
-		err = apiClient.Get(ctx, expectApiPath, nil, &res)
-		// TODO: handle the race condition when the file gets deleted before you can read
-		// it.
-		// NOTE: https://databricks.atlassian.net/browse/ES-510449
-		// Do some error parsing maybe, add on previos error for more context and
-		// add on suggestion for the user to retry deployment
-		if err != nil {
-			return err
-		}
-		lockJson, err := json.Marshal(res)
-		if err != nil {
-			return err
-		}
-		ownerMutex := DeployMutex{}
-		err = json.Unmarshal(lockJson, &ownerMutex)
+		remoteLock, err := getRemoteLock(ctx, lockFilePath, apiClient)
 		if err != nil {
 			return err
 		}
 		// TODO: add isForce to message here and convert timestamp to human readable format
-		return fmt.Errorf("cannot deploy. %s has been deploying since %v. Use --force to forcibly deploy your bundle", ownerMutex.User, ownerMutex.AcquisitionTime)
+		return fmt.Errorf("cannot deploy. %s has been deploying since %v. Use --force to forcibly deploy your bundle", remoteLock.User, remoteLock.AcquisitionTime)
 	}
 	return nil
 }
 
+// TODO: Check you own the lock before deleting it!
 func (mu *DeployMutex) Unlock(ctx context.Context) error {
 	prj := project.Get(ctx)
 	wsc := prj.WorkspacesClient()
 	lockFilePath := filepath.Join(mu.ProjectRoot, ".bundle/deploy.lock")
-	err := wsc.Workspace.Delete(ctx,
+	apiClient, err := client.New(wsc.Config)
+	if err != nil {
+		return err
+	}
+	remoteLock, err := getRemoteLock(ctx, lockFilePath, apiClient)
+	if err != nil {
+		return err
+	}
+	err = wsc.Workspace.Delete(ctx,
 		workspace.Delete{
 			Path:      lockFilePath,
 			Recursive: false,
