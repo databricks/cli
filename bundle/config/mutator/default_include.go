@@ -9,6 +9,7 @@ type defineDefaultInclude struct {
 	include []string
 }
 
+// DefineDefaultInclude sets the list of includes to a default if it hasn't been set.
 func DefineDefaultInclude() Mutator {
 	return &defineDefaultInclude{
 		// When we support globstar we can collapse below into a single line.

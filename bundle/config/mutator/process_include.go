@@ -11,6 +11,7 @@ type processInclude struct {
 	relPath  string
 }
 
+// ProcessInclude loads the configuration at [fullPath] and merges it into the configuration.
 func ProcessInclude(fullPath, relPath string) Mutator {
 	return &processInclude{
 		fullPath: fullPath,

@@ -11,6 +11,8 @@ import (
 
 type processRootIncludes struct{}
 
+// ProcessRootIncludes expands the patterns in the configuration's include list
+// into a list of mutators for each matching file.
 func ProcessRootIncludes() Mutator {
 	return &processRootIncludes{}
 }

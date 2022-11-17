@@ -10,6 +10,8 @@ type defineDefaultEnvironment struct {
 	name string
 }
 
+// DefineDefaultEnvironment adds an environment named "default"
+// to the configuration if none have been defined.
 func DefineDefaultEnvironment() Mutator {
 	return &defineDefaultEnvironment{
 		name: "default",

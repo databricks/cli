@@ -10,6 +10,7 @@ type selectEnvironment struct {
 	name string
 }
 
+// SelectEnvironment merges the specified environment into the root configuration.
 func SelectEnvironment(name string) Mutator {
 	return &selectEnvironment{
 		name: name,

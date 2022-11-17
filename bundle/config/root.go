@@ -12,14 +12,28 @@ import (
 const FileName = "bundle.yml"
 
 type Root struct {
+	// Path contains the directory path to the root of the bundle.
+	// It is set when loading `bundle.yml`.
 	Path string `json:"-"`
 
+	// Bundle contains details about this bundle, such as its name,
+	// version of the spec (TODO), default cluster, default warehouse, etc.
 	Bundle Bundle `json:"bundle"`
 
+	// Include specifies a list of patterns of file names to load and
+	// merge into the this configuration. If not set in `bundle.yml`,
+	// it defaults to loading `*.yml` and `*/*.yml`.
+	//
+	// Also see [mutator.DefineDefaultInclude].
+	//
 	Include []string `json:"include,omitempty"`
 
+	// Workspace contains details about the workspace to connect to
+	// and paths in the workspace tree to use for this bundle.
 	Workspace Workspace `json:"workspace"`
 
+	// Resources contains a description of all Databricks resources
+	// to deploy in this bundle (e.g. jobs, pipelines, etc.).
 	Resources Resources `json:"resources"`
 
 	// Environments can be used to differentiate settings and resources between
