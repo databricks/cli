@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/databricks/bricks/bundle"
 	"github.com/databricks/bricks/bundle/config"
 	"golang.org/x/exp/slices"
 )
@@ -26,7 +25,7 @@ func (m *processRootIncludes) Apply(root *config.Root) ([]Mutator, error) {
 
 	// Map with files we've already seen to avoid loading them twice.
 	var seen = map[string]bool{
-		bundle.ConfigFile: true,
+		config.FileName: true,
 	}
 
 	// For each glob, find all files to load.

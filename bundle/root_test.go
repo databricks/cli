@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/databricks/bricks/bundle/config"
 	"github.com/stretchr/testify/require"
 )
 
@@ -76,7 +77,7 @@ func TestRootLookup(t *testing.T) {
 	chdir(t, t.TempDir())
 
 	// Create bundle.yml file.
-	f, err := os.Create(ConfigFile)
+	f, err := os.Create(config.FileName)
 	require.NoError(t, err)
 	defer f.Close()
 

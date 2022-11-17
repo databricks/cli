@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/databricks/bricks/bundle/config"
 	"github.com/databricks/bricks/folders"
 )
 
@@ -29,7 +30,7 @@ func getRoot() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	path, err = folders.FindDirWithLeaf(wd, ConfigFile)
+	path, err = folders.FindDirWithLeaf(wd, config.FileName)
 	if err != nil {
 		return "", fmt.Errorf(`unable to locate bundle root`)
 	}
