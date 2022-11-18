@@ -99,7 +99,7 @@ func (r *Root) MergeEnvironment(env *Environment) error {
 	}
 
 	if env.Resources != nil {
-		err = mergo.MergeWithOverwrite(&r.Resources, env.Resources)
+		err = mergo.Merge(&r.Resources, env.Resources, mergo.WithAppendSlice)
 		if err != nil {
 			return err
 		}
