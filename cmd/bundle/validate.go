@@ -7,7 +7,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var validate = &cobra.Command{
+var validateCmd = &cobra.Command{
 	Use:   "validate",
 	Short: "Validate configuration",
 
@@ -24,5 +24,5 @@ var validate = &cobra.Command{
 }
 
 func init() {
-	AddCommand(validate)
+	AddCommand(validateCmd)
 }
