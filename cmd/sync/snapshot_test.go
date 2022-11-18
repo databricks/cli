@@ -26,9 +26,12 @@ func TestDiff(t *testing.T) {
 	files, err := fileSet.All()
 	assert.NoError(t, err)
 	state := Snapshot{
-		LastUpdatedTimes: make(map[string]time.Time),
+		LastUpdatedTimes:   make(map[string]time.Time),
+		LocalToRemoteNames: make(map[string]string),
+		RemoteToLocalNames: make(map[string]string),
 	}
-	change := state.diff(files)
+	change, err := state.diff(files)
+	assert.NoError(t, err)
 
 	// New files are added to put
 	assert.Len(t, change.delete, 0)
@@ -49,7 +52,8 @@ func TestDiff(t *testing.T) {
 	assert.NoError(t, err)
 	files, err = fileSet.All()
 	assert.NoError(t, err)
-	change = state.diff(files)
+	change, err = state.diff(files)
+	assert.NoError(t, err)
 	assert.Len(t, change.delete, 0)
 	assert.Len(t, change.put, 1)
 	assert.Contains(t, change.put, "world.txt")
@@ -59,7 +63,8 @@ func TestDiff(t *testing.T) {
 	assert.NoError(t, err)
 	files, err = fileSet.All()
 	assert.NoError(t, err)
-	change = state.diff(files)
+	change, err = state.diff(files)
+	assert.NoError(t, err)
 	assert.Len(t, change.delete, 1)
 	assert.Len(t, change.put, 0)
 	assert.Contains(t, change.delete, "hello.txt")
