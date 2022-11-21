@@ -121,6 +121,12 @@ func TestDiff(t *testing.T) {
 // 	assert.NoError(t, err)
 // }
 
+// func TestDebug(t *testing.T) {
+// 	// Create temp project dir
+// 	projectDir := t.TempDir()
+
+// }
+
 func TestPythonNotebookDiff(t *testing.T) {
 	// Create temp project dir
 	projectDir := t.TempDir()
@@ -174,10 +180,6 @@ func TestPythonNotebookDiff(t *testing.T) {
 	assert.Equal(t, map[string]string{"foo.py": "foo.py"}, state.LocalToRemoteNames)
 	assert.Equal(t, map[string]string{"foo.py": "foo.py"}, state.RemoteToLocalNames)
 
-	// Case 3: Python script foo.py is converted to a databricks notebook
-	// by adding magic keyword
-	f.Write([]byte("# Databricks notebook source\nprint(\"def\")"))
-
 	// assert.Eventually(t, func() bool {
 	// 	content, err := os.ReadFile(fooPath)
 	// 	assert.NoError(t, err)
@@ -188,12 +190,17 @@ func TestPythonNotebookDiff(t *testing.T) {
 	assert.NoError(t, err)
 	t.Logf("[CASE 3] before foo contents: %s", content)
 	t.Logf("[CASE 3] before state: %+v", state)
+	t.Logf("[CASE 3] fooPath: ", fooPath)
 
+	// Case 3: Python script foo.py is converted to a databricks notebook
+	// by adding magic keyword
+	f.Write([]byte("# Databricks notebook source\nprint(\"def\")"))
 	fooInfo, err = os.Stat(fooPath)
 	assert.NoError(t, err)
 	os.Chtimes(fooPath,
 		fooInfo.ModTime().Add(time.Minute),
 		fooInfo.ModTime().Add(time.Minute))
+
 	files, err = fileSet.All()
 	assert.NoError(t, err)
 	change, err = state.diff(files)
