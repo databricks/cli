@@ -3,6 +3,7 @@ package sync
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -132,6 +133,12 @@ func TestPythonNotebookDiff(t *testing.T) {
 	err = os.Truncate(filepath.Join(projectDir, "foo.py"), 0)
 	assert.NoError(t, err)
 
+	assert.Eventually(t, func() bool {
+		content, err := os.ReadFile(filepath.Join(projectDir, "foo.py"))
+		assert.NoError(t, err)
+		return !strings.Contains(string(content), "# Databricks notebook source")
+	}, 3*time.Second, 1*time.Second)
+
 	files, err = fileSet.All()
 	assert.NoError(t, err)
 	change, err = state.diff(files)
@@ -155,6 +162,11 @@ func TestPythonNotebookDiff(t *testing.T) {
 	os.Chtimes("foo.py",
 		fooInfo.ModTime().Add(time.Nanosecond),
 		fooInfo.ModTime().Add(time.Nanosecond))
+	assert.Eventually(t, func() bool {
+		content, err := os.ReadFile(filepath.Join(projectDir, "foo.py"))
+		assert.NoError(t, err)
+		return strings.Contains(string(content), "# Databricks notebook source")
+	}, 3*time.Second, 1*time.Second)
 
 	files, err = fileSet.All()
 	assert.NoError(t, err)
