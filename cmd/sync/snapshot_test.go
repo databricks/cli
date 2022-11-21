@@ -156,8 +156,8 @@ func TestPythonNotebookDiff(t *testing.T) {
 	fooInfo, err = os.Stat(filepath.Join(projectDir, "foo.py"))
 	assert.NoError(t, err)
 	os.Chtimes(filepath.Join(projectDir, "foo.py"),
-		fooInfo.ModTime().Add(time.Minute),
-		fooInfo.ModTime().Add(time.Minute))
+		fooInfo.ModTime().Add(time.Nanosecond),
+		fooInfo.ModTime().Add(time.Nanosecond))
 
 	content, _ = os.ReadFile(filepath.Join(projectDir, "foo.py"))
 	t.Log("[AAAA] contents before truncation: " + string(content))
