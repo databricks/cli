@@ -3,6 +3,7 @@ package sync
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -180,28 +181,28 @@ func TestPythonNotebookDiff(t *testing.T) {
 
 	assert.True(t, false)
 
-	// err = os.Truncate(filepath.Join(projectDir, "foo.py"), 0)
-	// assert.NoError(t, err)
+	err = os.Truncate(filepath.Join(projectDir, "foo.py"), 0)
+	assert.NoError(t, err)
 
-	// assert.Eventually(t, func() bool {
-	// 	content, err := os.ReadFile(filepath.Join(projectDir, "foo.py"))
-	// 	assert.NoError(t, err)
-	// 	return !strings.Contains(string(content), "# Databricks notebook source")
-	// }, 3*time.Second, 1*time.Second)
+	assert.Eventually(t, func() bool {
+		content, err := os.ReadFile(filepath.Join(projectDir, "foo.py"))
+		assert.NoError(t, err)
+		return !strings.Contains(string(content), "# Databricks notebook source")
+	}, 3*time.Second, 1*time.Second)
 
-	// files, err = fileSet.All()
-	// assert.NoError(t, err)
-	// change, err = state.diff(files)
-	// assert.NoError(t, err)
+	files, err = fileSet.All()
+	assert.NoError(t, err)
+	change, err = state.diff(files)
+	assert.NoError(t, err)
 
-	// content, _ = os.ReadFile(filepath.Join(projectDir, "foo.py"))
-	// t.Log("[AAAA] contents after truncation: " + string(content))
-	// t.Logf("[AAAA] state %+v: ", state)
-	// t.Logf("[AAAA] files %+v: ", files)
-	// t.Logf("[AAAA] files[0].Modified() %+v: ", files[0].Modified())
-	// fooInfo, err = os.Stat(filepath.Join(projectDir, "foo.py"))
-	// assert.NoError(t, err)
-	// t.Logf("[AAAA] fooInfo.ModTime() %+v: ", fooInfo.ModTime())
+	content, _ = os.ReadFile(filepath.Join(projectDir, "foo.py"))
+	t.Log("[AAAA] contents after truncation: " + string(content))
+	t.Logf("[AAAA] state %+v: ", state)
+	t.Logf("[AAAA] files %+v: ", files)
+	t.Logf("[AAAA] files[0].Modified() %+v: ", files[0].Modified())
+	fooInfo, err = os.Stat(filepath.Join(projectDir, "foo.py"))
+	assert.NoError(t, err)
+	t.Logf("[AAAA] fooInfo.ModTime() %+v: ", fooInfo.ModTime())
 
 	// assert.Len(t, change.delete, 1)
 	// assert.Len(t, change.put, 1)
