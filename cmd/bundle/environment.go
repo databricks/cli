@@ -6,7 +6,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const envName = "BUNDLE_ENV"
+const envName = "DATABRICKS_BUNDLE_ENV"
 
 const defaultEnvironment = "default"
 

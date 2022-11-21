@@ -25,13 +25,12 @@ func ConfigureBundle(cmd *cobra.Command, args []string) error {
 }
 
 func AddCommand(cmd *cobra.Command) {
-	// Most commands take an "environment" parameter, but init doesn't.
-	// That's why it is NOT defined as a persistent flag on the root command.
-	cmd.Flags().StringP("environment", "e", "", "Environment to use")
 	rootCmd.AddCommand(cmd)
 }
 
 func init() {
+	// All bundle commands take an "environment" parameter.
+	rootCmd.PersistentFlags().StringP("environment", "e", "", "Environment to use")
 	// Add to top level root.
 	root.RootCmd.AddCommand(rootCmd)
 }
