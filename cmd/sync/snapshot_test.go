@@ -112,7 +112,7 @@ func TestPythonNotebookDiff(t *testing.T) {
 	change, err := state.diff(files)
 	assert.NoError(t, err)
 
-	// PUT foo.py
+	// notebook is uploaded with its local name
 	assert.Len(t, change.delete, 0)
 	assert.Len(t, change.put, 1)
 	assert.Contains(t, change.put, "foo.py")
@@ -123,7 +123,6 @@ func TestPythonNotebookDiff(t *testing.T) {
 	// convert notebook -> python script
 	// File system in the github actions env does not update
 	// mtime on writes to a file. So we are manually editting it
-	// instead of writing to world.txt
 	fooInfo, err := os.Stat(filepath.Join(projectDir, "foo.py"))
 	assert.NoError(t, err)
 	os.Chtimes("foo.py",
@@ -149,7 +148,6 @@ func TestPythonNotebookDiff(t *testing.T) {
 	// convert python script -> notebook
 	// File system in the github actions env does not update
 	// mtime on writes to a file. So we are manually editting it
-	// instead of writing to world.txt
 	f2, err := os.Open(filepath.Join(projectDir, "foo.py"))
 	assert.NoError(t, err)
 	defer f2.Close()
@@ -171,7 +169,7 @@ func TestPythonNotebookDiff(t *testing.T) {
 	assert.Equal(t, map[string]string{"foo.py": "foo"}, state.LocalToRemoteNames)
 	assert.Equal(t, map[string]string{"foo": "foo.py"}, state.RemoteToLocalNames)
 
-	// Removed files are added to delete
+	// Removed notebook are added to delete with remote name
 	err = os.Remove(filepath.Join(projectDir, "foo.py"))
 	assert.NoError(t, err)
 	files, err = fileSet.All()
