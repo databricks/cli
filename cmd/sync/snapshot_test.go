@@ -155,7 +155,7 @@ func TestPythonNotebookDiff(t *testing.T) {
 	// mtime on writes to a file. So we are manually editting it
 	fooInfo, err = os.Stat(filepath.Join(projectDir, "foo.py"))
 	assert.NoError(t, err)
-	os.Chtimes("foo.py",
+	os.Chtimes(filepath.Join(projectDir, "foo.py"),
 		fooInfo.ModTime().Add(time.Minute),
 		fooInfo.ModTime().Add(time.Minute))
 
