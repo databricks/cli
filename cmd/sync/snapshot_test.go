@@ -136,8 +136,8 @@ func TestPythonNotebookDiff(t *testing.T) {
 	fooInfo, err = os.Stat(filepath.Join(projectDir, "foo.py"))
 	assert.NoError(t, err)
 	os.Chtimes("foo.py",
-		fooInfo.ModTime().Add(time.Nanosecond),
-		fooInfo.ModTime().Add(time.Nanosecond))
+		fooInfo.ModTime().Add(time.Minute),
+		fooInfo.ModTime().Add(time.Minute))
 
 	err = os.Truncate(filepath.Join(projectDir, "foo.py"), 0)
 	assert.NoError(t, err)
