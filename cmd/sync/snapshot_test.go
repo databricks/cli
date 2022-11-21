@@ -204,6 +204,25 @@ func TestPythonNotebookDiff(t *testing.T) {
 	assert.NoError(t, err)
 	t.Logf("[AAAA] fooInfo.ModTime() %+v: ", fooInfo.ModTime())
 
+	// --
+	fooInfo, err = os.Stat(filepath.Join(projectDir, "foo.py"))
+	assert.NoError(t, err)
+	os.Chtimes(filepath.Join(projectDir, "foo.py"),
+		fooInfo.ModTime().Add(time.Minute),
+		fooInfo.ModTime().Add(time.Minute))
+
+	content, _ = os.ReadFile(filepath.Join(projectDir, "foo.py"))
+	t.Log("[AAAA] contents post truncation post chmod: " + string(content))
+	t.Logf("[AAAA] state %+v: ", state)
+	t.Logf("[AAAA] files %+v: ", files)
+	t.Logf("[AAAA] files[0].Modified() %+v: ", files[0].Modified())
+	fooInfo, err = os.Stat(filepath.Join(projectDir, "foo.py"))
+	assert.NoError(t, err)
+	t.Logf("[AAAA] fooInfo.ModTime() %+v: ", fooInfo.ModTime())
+	// --
+
+	assert.True(t, false)
+
 	// assert.Len(t, change.delete, 1)
 	// assert.Len(t, change.put, 1)
 	// assert.Contains(t, change.put, "foo.py")
