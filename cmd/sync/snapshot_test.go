@@ -59,13 +59,11 @@ func (f *testFile) remove(t *testing.T) {
 
 func assertKeysOfMap(t *testing.T, m map[string]time.Time, expectedKeys []string) {
 	keys := make([]string, len(m))
-
 	i := 0
 	for k := range m {
 		keys[i] = k
 		i++
 	}
-
 	assert.ElementsMatch(t, expectedKeys, keys)
 }
 
