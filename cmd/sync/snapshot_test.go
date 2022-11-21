@@ -164,8 +164,6 @@ func TestPythonNotebookDiff(t *testing.T) {
 	// convert notebook -> python script
 	// File system in the github actions env does not update
 	// mtime on writes to a file. So we are manually editting it
-	fooInfo, err = os.Stat(filepath.Join(projectDir, "foo.py"))
-	assert.NoError(t, err)
 
 	content, _ = os.ReadFile(filepath.Join(projectDir, "foo.py"))
 	t.Log("[AAAA] contents before truncation: " + string(content))
@@ -179,6 +177,9 @@ func TestPythonNotebookDiff(t *testing.T) {
 	assert.True(t, false)
 
 	err = os.Truncate(filepath.Join(projectDir, "foo.py"), 0)
+	assert.NoError(t, err)
+
+	fooInfo, err = os.Stat(filepath.Join(projectDir, "foo.py"))
 	assert.NoError(t, err)
 	os.Chtimes(filepath.Join(projectDir, "foo.py"),
 		fooInfo.ModTime().Add(time.Minute),
