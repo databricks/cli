@@ -107,7 +107,7 @@ func TestDiff(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, change.delete, 1)
 	assert.Len(t, change.put, 0)
-	assert.Contains(t, change.delete, "hello.tt")
+	assert.Contains(t, change.delete, "hello.txt")
 	assertKeysOfMap(t, state.LastUpdatedTimes, []string{"world.txt"})
 	assert.Equal(t, map[string]string{"world.txt": "world.txt"}, state.LocalToRemoteNames)
 	assert.Equal(t, map[string]string{"world.txt": "world.txt"}, state.RemoteToLocalNames)
@@ -128,7 +128,8 @@ func TestPythonNotebookDiff(t *testing.T) {
 	// Create temp project dir
 	projectDir := t.TempDir()
 
-	f, err := os.Create(filepath.Join(projectDir, "foo.py"))
+	fooPath := filepath.Join(projectDir, "foo.py")
+	f, err := os.Create(fooPath)
 	assert.NoError(t, err)
 	defer f.Close()
 
@@ -156,11 +157,11 @@ func TestPythonNotebookDiff(t *testing.T) {
 	// convert notebook -> python script
 	// File system in the github actions env does not update
 	// mtime on writes to a file. So we are manually editting it
-	err = os.Truncate(filepath.Join(projectDir, "foo.py"), 0)
+	err = os.Truncate(fooPath, 0)
 	assert.NoError(t, err)
-	fooInfo, err := os.Stat(filepath.Join(projectDir, "foo.py"))
+	fooInfo, err := os.Stat(fooPath)
 	assert.NoError(t, err)
-	os.Chtimes(filepath.Join(projectDir, "foo.py"),
+	os.Chtimes(fooPath,
 		fooInfo.ModTime().Add(time.Minute),
 		fooInfo.ModTime().Add(time.Minute))
 
@@ -168,7 +169,7 @@ func TestPythonNotebookDiff(t *testing.T) {
 	assert.Eventually(t, func() bool {
 		t.Logf("[AAAA] eventuall count %v", i)
 		i += 1
-		content, err := os.ReadFile(filepath.Join(projectDir, "foo.py"))
+		content, err := os.ReadFile(fooPath)
 		assert.NoError(t, err)
 		return !strings.Contains(string(content), "# Databricks notebook source")
 	}, 3*time.Second, 1*time.Second)
@@ -185,22 +186,24 @@ func TestPythonNotebookDiff(t *testing.T) {
 	assertKeysOfMap(t, state.LastUpdatedTimes, []string{"foo.py"})
 	assert.Equal(t, map[string]string{"foo.py": "foo.py"}, state.LocalToRemoteNames)
 	assert.Equal(t, map[string]string{"foo.py": "foo.py"}, state.RemoteToLocalNames)
-	
-	// // convert python script -> notebook
-	// // File system in the github actions env does not update
-	// // mtime on writes to a file. So we are manually editting it
-	// f2, err := os.Open(filepath.Join(projectDir, "foo.py"))
-	// assert.NoError(t, err)
-	// defer f2.Close()
-	// f.Write([]byte("# Databricks notebook source\nprint(\"def\")"))
-	// os.Chtimes("foo.py",
-	// 	fooInfo.ModTime().Add(time.Nanosecond),
-	// 	fooInfo.ModTime().Add(time.Nanosecond))
-	// assert.Eventually(t, func() bool {
-	// 	content, err := os.ReadFile(filepath.Join(projectDir, "foo.py"))
-	// 	assert.NoError(t, err)
-	// 	return strings.Contains(string(content), "# Databricks notebook source")
-	// }, 3*time.Second, 1*time.Second)
+
+	// convert python script -> notebook
+	// File system in the github actions env does not update
+	// mtime on writes to a file. So we are manually editting it
+	f2, err := os.Open(fooPath)
+	assert.NoError(t, err)
+	defer f2.Close()
+	f.Write([]byte("# Databricks notebook source\nprint(\"def\")"))
+	os.Chtimes(fooPath,
+		fooInfo.ModTime().Add(time.Minute),
+		fooInfo.ModTime().Add(time.Minute))
+	assert.Eventually(t, func() bool {
+		content, err := os.ReadFile(fooPath)
+		assert.NoError(t, err)
+		return strings.Contains(string(content), "# Databricks notebook source")
+	}, 3*time.Second, 1*time.Second)
+
+	assert.True(t, false)
 
 	// files, err = fileSet.All()
 	// assert.NoError(t, err)
@@ -216,7 +219,7 @@ func TestPythonNotebookDiff(t *testing.T) {
 	// assert.Equal(t, map[string]string{"foo": "foo.py"}, state.RemoteToLocalNames)
 
 	// // Removed notebook are added to delete with remote name
-	// err = os.Remove(filepath.Join(projectDir, "foo.py"))
+	// err = os.Remove(filePath)
 	// assert.NoError(t, err)
 	// files, err = fileSet.All()
 	// assert.NoError(t, err)
