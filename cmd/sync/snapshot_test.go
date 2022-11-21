@@ -107,7 +107,7 @@ func TestDiff(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, change.delete, 1)
 	assert.Len(t, change.put, 0)
-	assert.Contains(t, change.delete, "hello.tt")
+	assert.Contains(t, change.delete, "hello.txt")
 	assertKeysOfMap(t, state.LastUpdatedTimes, []string{"world.txt"})
 	assert.Equal(t, map[string]string{"world.txt": "world.txt"}, state.LocalToRemoteNames)
 	assert.Equal(t, map[string]string{"world.txt": "world.txt"}, state.RemoteToLocalNames)
@@ -159,6 +159,15 @@ func TestPythonNotebookDiff(t *testing.T) {
 	os.Chtimes("foo.py",
 		fooInfo.ModTime().Add(time.Minute),
 		fooInfo.ModTime().Add(time.Minute))
+
+	content, _ = os.ReadFile(filepath.Join(projectDir, "foo.py"))
+	t.Log("[AAAA] contents before truncation: " + string(content))
+	t.Logf("[AAAA] state %+v: ", state)
+	t.Logf("[AAAA] files %+v: ", files)
+	t.Logf("[AAAA] files[0].Modified() %+v: ", files[0].Modified())
+	fooInfo, err = os.Stat(filepath.Join(projectDir, "foo.py"))
+	assert.NoError(t, err)
+	t.Logf("[AAAA] fooInfo.ModTime() %+v: ", fooInfo.ModTime())
 
 	err = os.Truncate(filepath.Join(projectDir, "foo.py"), 0)
 	assert.NoError(t, err)
