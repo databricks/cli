@@ -55,6 +55,16 @@ func TestDiff(t *testing.T) {
 	assert.Equal(t, map[string]string{"hello.txt": "hello.txt", "world.txt": "world.txt"}, state.LocalToRemoteNames)
 	assert.Equal(t, map[string]string{"hello.txt": "hello.txt", "world.txt": "world.txt"}, state.RemoteToLocalNames)
 
+	t.Logf("[AAAA] state %+v: ", state)
+	t.Logf("[AAAA] files %+v: ", files)
+	t.Logf("[AAAA] files[0].Modified() %+v: ", files[0].Modified())
+	helloInfo, err := os.Stat(filepath.Join(projectDir, "hello.txt"))
+	assert.NoError(t, err)
+	t.Logf("[AAAA] helloInfo.ModTime() %+v: ", helloInfo.ModTime())
+	worldInfo, err := os.Stat(filepath.Join(projectDir, "world.txt"))
+	assert.NoError(t, err)
+	t.Logf("[AAAA] worldInfo.ModTime() %+v: ", worldInfo.ModTime())
+
 	// Edited files are added to put.
 	// File system in the github actions env does not update
 	// mtime on writes to a file. So we are manually editting it
@@ -70,6 +80,17 @@ func TestDiff(t *testing.T) {
 	assert.NoError(t, err)
 	change, err = state.diff(files)
 	assert.NoError(t, err)
+
+	t.Logf("[AAAA] state %+v: ", state)
+	t.Logf("[AAAA] files %+v: ", files)
+	t.Logf("[AAAA] files[0].Modified() %+v: ", files[0].Modified())
+	helloInfo, err = os.Stat(filepath.Join(projectDir, "hello.txt"))
+	assert.NoError(t, err)
+	t.Logf("[AAAA] helloInfo.ModTime() %+v: ", helloInfo.ModTime())
+	worldInfo, err = os.Stat(filepath.Join(projectDir, "world.txt"))
+	assert.NoError(t, err)
+	t.Logf("[AAAA] worldInfo.ModTime() %+v: ", worldInfo.ModTime())
+
 	assert.Len(t, change.delete, 0)
 	assert.Len(t, change.put, 1)
 	assert.Contains(t, change.put, "world.txt")
@@ -86,7 +107,7 @@ func TestDiff(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, change.delete, 1)
 	assert.Len(t, change.put, 0)
-	assert.Contains(t, change.delete, "hello.txt")
+	assert.Contains(t, change.delete, "hello.tt")
 	assertKeysOfMap(t, state.LastUpdatedTimes, []string{"world.txt"})
 	assert.Equal(t, map[string]string{"world.txt": "world.txt"}, state.LocalToRemoteNames)
 	assert.Equal(t, map[string]string{"world.txt": "world.txt"}, state.RemoteToLocalNames)
