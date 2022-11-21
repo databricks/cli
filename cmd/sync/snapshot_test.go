@@ -92,6 +92,35 @@ func TestDiff(t *testing.T) {
 	assert.Equal(t, map[string]string{"world.txt": "world.txt"}, state.RemoteToLocalNames)
 }
 
+// func TestFilesWithSameRemoteNameNotAllowed(t *testing.T) {
+// 	// Create temp project dir
+// 	projectDir := t.TempDir()
+
+// 	// Create notebook
+// 	fooPath := filepath.Join(projectDir, "foo.py")
+// 	f, err := os.Create(fooPath)
+// 	assert.NoError(t, err)
+// 	defer f.Close()
+
+// 	// Create vanilla foo file
+// 	foo2Path := filepath.Join(projectDir, "foo")
+// 	f2, err := os.Create(foo2Path)
+// 	assert.NoError(t, err)
+// 	defer f2.Close()
+
+// 	f.Write([]byte("# Databricks notebook source\nprint(\"abc\")"))
+// 	fileSet := git.NewFileSet(projectDir)
+// 	files, err := fileSet.All()
+// 	assert.NoError(t, err)
+// 	state := Snapshot{
+// 		LastUpdatedTimes:   make(map[string]time.Time),
+// 		LocalToRemoteNames: make(map[string]string),
+// 		RemoteToLocalNames: make(map[string]string),
+// 	}
+// 	change, err := state.diff(files)
+// 	assert.NoError(t, err)
+// }
+
 func TestPythonNotebookDiff(t *testing.T) {
 	// Create temp project dir
 	projectDir := t.TempDir()
@@ -147,10 +176,14 @@ func TestPythonNotebookDiff(t *testing.T) {
 
 	// Case 3: Python script foo.py is converted to a databricks notebook
 	// by adding magic keyword
-	f2, err := os.Open(fooPath)
-	assert.NoError(t, err)
-	defer f2.Close()
 	f.Write([]byte("# Databricks notebook source\nprint(\"def\")"))
+
+	// assert.Eventually(t, func() bool {
+	// 	content, err := os.ReadFile(fooPath)
+	// 	assert.NoError(t, err)
+	// 	return strings.Contains(string(content), "# Databricks notebook source")
+	// }, 3*time.Second, time.Second)
+
 	fooInfo, err = os.Stat(fooPath)
 	assert.NoError(t, err)
 	os.Chtimes(fooPath,
