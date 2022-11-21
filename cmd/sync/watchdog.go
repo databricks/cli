@@ -32,6 +32,17 @@ type watchdog struct {
 const MaxRequestsInFlight = 20
 
 // path: The local path of the file in the local file system
+//
+// The API calls for a python script foo.py would be
+// `PUT foo.py`
+// `DELETE foo.py`
+//
+// The API calls for a python notebook foo.py would be
+// `PUT foo.py`
+// `DELETE foo`
+//
+// The workspace file system backend strips .py from the file name if the python
+// file is a notebook
 func putFile(ctx context.Context, path string, content io.Reader) error {
 	wsc := project.Get(ctx).WorkspacesClient()
 	// workspace mkdirs is idempotent
