@@ -113,6 +113,9 @@ func TestPythonNotebookDiff(t *testing.T) {
 	change, err := state.diff(files)
 	assert.NoError(t, err)
 
+	content, _ := os.ReadFile(filepath.Join(projectDir, "foo.py"))
+	assert.Equal(t, string(content), "hahaha2")
+
 	// notebook is uploaded with its local name
 	assert.Len(t, change.delete, 0)
 	assert.Len(t, change.put, 1)
