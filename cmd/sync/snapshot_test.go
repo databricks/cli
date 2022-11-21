@@ -139,6 +139,8 @@ func TestPythonNotebookDiff(t *testing.T) {
 		return !strings.Contains(string(content), "# Databricks notebook source")
 	}, 3*time.Second, 1*time.Second)
 
+	content, _ := os.ReadFile(filepath.Join(projectDir, "foo.py"))
+	assert.Equal(t, string(content), "hahaha")
 	files, err = fileSet.All()
 	assert.NoError(t, err)
 	change, err = state.diff(files)
