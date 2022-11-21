@@ -116,6 +116,7 @@ func TestPythonNotebookDiff(t *testing.T) {
 	content, _ := os.ReadFile(filepath.Join(projectDir, "foo.py"))
 	t.Log("[AAAA] contents inital: " + string(content))
 	t.Logf("[AAAA] state %+v: ", state)
+	t.Logf("[AAAA] files %+v: ", files)
 
 	// notebook is uploaded with its local name
 	assert.Len(t, change.delete, 0)
@@ -143,14 +144,15 @@ func TestPythonNotebookDiff(t *testing.T) {
 		return !strings.Contains(string(content), "# Databricks notebook source")
 	}, 3*time.Second, 1*time.Second)
 
-	content, _ = os.ReadFile(filepath.Join(projectDir, "foo.py"))
-	t.Log("[AAAA] contents after truncation: " + string(content))
-	t.Logf("[AAAA] state %+v: ", state)
-
 	files, err = fileSet.All()
 	assert.NoError(t, err)
 	change, err = state.diff(files)
 	assert.NoError(t, err)
+
+	content, _ = os.ReadFile(filepath.Join(projectDir, "foo.py"))
+	t.Log("[AAAA] contents after truncation: " + string(content))
+	t.Logf("[AAAA] state %+v: ", state)
+	t.Logf("[AAAA] files %+v: ", files)
 
 	assert.Len(t, change.delete, 1)
 	assert.Len(t, change.put, 1)
