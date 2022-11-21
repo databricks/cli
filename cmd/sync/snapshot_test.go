@@ -117,6 +117,10 @@ func TestPythonNotebookDiff(t *testing.T) {
 	t.Log("[AAAA] contents inital: " + string(content))
 	t.Logf("[AAAA] state %+v: ", state)
 	t.Logf("[AAAA] files %+v: ", files)
+	t.Logf("[AAAA] files[0].Modified() %+v: ", files[0].Modified())
+	fooInfo, err := os.Stat(filepath.Join(projectDir, "foo.py"))
+	assert.NoError(t, err)
+	t.Logf("[AAAA] fooInfo.ModTime() %+v: ", fooInfo.ModTime())
 
 	// notebook is uploaded with its local name
 	assert.Len(t, change.delete, 0)
@@ -129,7 +133,7 @@ func TestPythonNotebookDiff(t *testing.T) {
 	// convert notebook -> python script
 	// File system in the github actions env does not update
 	// mtime on writes to a file. So we are manually editting it
-	fooInfo, err := os.Stat(filepath.Join(projectDir, "foo.py"))
+	fooInfo, err = os.Stat(filepath.Join(projectDir, "foo.py"))
 	assert.NoError(t, err)
 	os.Chtimes("foo.py",
 		fooInfo.ModTime().Add(time.Nanosecond),
@@ -153,6 +157,10 @@ func TestPythonNotebookDiff(t *testing.T) {
 	t.Log("[AAAA] contents after truncation: " + string(content))
 	t.Logf("[AAAA] state %+v: ", state)
 	t.Logf("[AAAA] files %+v: ", files)
+	t.Logf("[AAAA] files[0].Modified() %+v: ", files[0].Modified())
+	fooInfo, err = os.Stat(filepath.Join(projectDir, "foo.py"))
+	assert.NoError(t, err)
+	t.Logf("[AAAA] fooInfo.ModTime() %+v: ", fooInfo.ModTime())
 
 	assert.Len(t, change.delete, 1)
 	assert.Len(t, change.put, 1)
