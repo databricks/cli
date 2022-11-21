@@ -3,7 +3,6 @@ package sync
 import (
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 	"time"
 
@@ -179,11 +178,16 @@ func TestPythonNotebookDiff(t *testing.T) {
 	// by adding magic keyword
 	f.Write([]byte("# Databricks notebook source\nprint(\"def\")"))
 
-	assert.Eventually(t, func() bool {
-		content, err := os.ReadFile(fooPath)
-		assert.NoError(t, err)
-		return strings.Contains(string(content), "# Databricks notebook source")
-	}, 3*time.Second, time.Second)
+	// assert.Eventually(t, func() bool {
+	// 	content, err := os.ReadFile(fooPath)
+	// 	assert.NoError(t, err)
+	// 	return strings.Contains(string(content), "# Databricks notebook source")
+	// }, 3*time.Second, time.Second)
+
+	content, err := os.ReadFile(fooPath)
+	assert.NoError(t, err)
+	t.Logf("[CASE 3] before foo contents: %s", content)
+	t.Logf("[CASE 3] before state: %+v", state)
 
 	fooInfo, err = os.Stat(fooPath)
 	assert.NoError(t, err)
@@ -194,6 +198,9 @@ func TestPythonNotebookDiff(t *testing.T) {
 	assert.NoError(t, err)
 	change, err = state.diff(files)
 	assert.NoError(t, err)
+
+	t.Logf("[CASE 3] after foo contents: %s", content)
+	t.Logf("[CASE 3] after state: %+v", state)
 
 	assert.Len(t, change.delete, 1)
 	assert.Len(t, change.put, 1)
