@@ -77,29 +77,30 @@ func getRemoteSyncCallback(ctx context.Context, root, remoteDir string, wsc *wor
 		// Allow MaxRequestLimit maxiumum concurrent api calls
 		g.SetLimit(MaxRequestsInFlight)
 
-		for _, fileHandle := range d.delete {
-			// Copy of fileName created to make this safe for concurrent use.
-			// directly using fileName can cause race conditions since the loop
-			// might iterate over to the next fileName before the go routine function
+		for _, remoteName := range d.delete {
+			// Copy of remoteName created to make this safe for concurrent use.
+			// directly using remoteName can cause race conditions since the loop
+			// might iterate over to the next remoteName before the go routine function
 			// is evaluated
-			remoteFileName := fileHandle
+			remoteNameCopy := remoteName
 			g.Go(func() error {
-				err := deleteFile(ctx, path.Join(remoteDir, remoteFileName), wsc)
+				err := deleteFile(ctx, path.Join(remoteDir, remoteNameCopy), wsc)
 				if err != nil {
 					return err
 				}
-				log.Printf("[INFO] Deleted %s", remoteFileName)
+				log.Printf("[INFO] Deleted %s", remoteNameCopy)
 				return nil
 			})
 		}
-		for _, fileName := range d.put {
-			localFileName := fileName
+		for _, localName := range d.put {
+			// Copy of localName created to make this safe for concurrent use.
+			localNameCopy := localName
 			g.Go(func() error {
-				f, err := os.Open(filepath.Join(root, localFileName))
+				f, err := os.Open(filepath.Join(root, localNameCopy))
 				if err != nil {
 					return err
 				}
-				err = putFile(ctx, path.Join(remoteDir, localFileName), f)
+				err = putFile(ctx, path.Join(remoteDir, localNameCopy), f)
 				if err != nil {
 					return fmt.Errorf("failed to upload file: %s", err)
 				}
@@ -107,7 +108,7 @@ func getRemoteSyncCallback(ctx context.Context, root, remoteDir string, wsc *wor
 				if err != nil {
 					return err
 				}
-				log.Printf("[INFO] Uploaded %s", localFileName)
+				log.Printf("[INFO] Uploaded %s", localNameCopy)
 				return nil
 			})
 		}
