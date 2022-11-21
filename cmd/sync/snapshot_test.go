@@ -115,6 +115,7 @@ func TestPythonNotebookDiff(t *testing.T) {
 
 	content, _ := os.ReadFile(filepath.Join(projectDir, "foo.py"))
 	t.Log("[AAAA] contents inital: " + string(content))
+	t.Logf("[AAAA] state %+v: ", state)
 
 	// notebook is uploaded with its local name
 	assert.Len(t, change.delete, 0)
@@ -144,6 +145,7 @@ func TestPythonNotebookDiff(t *testing.T) {
 
 	content, _ = os.ReadFile(filepath.Join(projectDir, "foo.py"))
 	t.Log("[AAAA] contents after truncation: " + string(content))
+	t.Logf("[AAAA] state %+v: ", state)
 
 	files, err = fileSet.All()
 	assert.NoError(t, err)
