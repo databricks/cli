@@ -3,7 +3,6 @@ package sync
 import (
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 	"time"
 
@@ -169,77 +168,79 @@ func TestPythonNotebookDiff(t *testing.T) {
 	assert.NoError(t, err)
 	t.Logf("[AAAA] fooInfo.ModTime() %+v: ", fooInfo.ModTime())
 
-	err = os.Truncate(filepath.Join(projectDir, "foo.py"), 0)
-	assert.NoError(t, err)
+	assert.True(t, false)
 
-	assert.Eventually(t, func() bool {
-		content, err := os.ReadFile(filepath.Join(projectDir, "foo.py"))
-		assert.NoError(t, err)
-		return !strings.Contains(string(content), "# Databricks notebook source")
-	}, 3*time.Second, 1*time.Second)
+	// err = os.Truncate(filepath.Join(projectDir, "foo.py"), 0)
+	// assert.NoError(t, err)
 
-	files, err = fileSet.All()
-	assert.NoError(t, err)
-	change, err = state.diff(files)
-	assert.NoError(t, err)
+	// assert.Eventually(t, func() bool {
+	// 	content, err := os.ReadFile(filepath.Join(projectDir, "foo.py"))
+	// 	assert.NoError(t, err)
+	// 	return !strings.Contains(string(content), "# Databricks notebook source")
+	// }, 3*time.Second, 1*time.Second)
 
-	content, _ = os.ReadFile(filepath.Join(projectDir, "foo.py"))
-	t.Log("[AAAA] contents after truncation: " + string(content))
-	t.Logf("[AAAA] state %+v: ", state)
-	t.Logf("[AAAA] files %+v: ", files)
-	t.Logf("[AAAA] files[0].Modified() %+v: ", files[0].Modified())
-	fooInfo, err = os.Stat(filepath.Join(projectDir, "foo.py"))
-	assert.NoError(t, err)
-	t.Logf("[AAAA] fooInfo.ModTime() %+v: ", fooInfo.ModTime())
+	// files, err = fileSet.All()
+	// assert.NoError(t, err)
+	// change, err = state.diff(files)
+	// assert.NoError(t, err)
 
-	assert.Len(t, change.delete, 1)
-	assert.Len(t, change.put, 1)
-	assert.Contains(t, change.put, "foo.py")
-	assert.Contains(t, change.delete, "foo")
-	assertKeysOfMap(t, state.LastUpdatedTimes, []string{"foo.py"})
-	assert.Equal(t, map[string]string{"foo.py": "foo.py"}, state.LocalToRemoteNames)
-	assert.Equal(t, map[string]string{"foo.py": "foo.py"}, state.RemoteToLocalNames)
+	// content, _ = os.ReadFile(filepath.Join(projectDir, "foo.py"))
+	// t.Log("[AAAA] contents after truncation: " + string(content))
+	// t.Logf("[AAAA] state %+v: ", state)
+	// t.Logf("[AAAA] files %+v: ", files)
+	// t.Logf("[AAAA] files[0].Modified() %+v: ", files[0].Modified())
+	// fooInfo, err = os.Stat(filepath.Join(projectDir, "foo.py"))
+	// assert.NoError(t, err)
+	// t.Logf("[AAAA] fooInfo.ModTime() %+v: ", fooInfo.ModTime())
 
-	// convert python script -> notebook
-	// File system in the github actions env does not update
-	// mtime on writes to a file. So we are manually editting it
-	f2, err := os.Open(filepath.Join(projectDir, "foo.py"))
-	assert.NoError(t, err)
-	defer f2.Close()
-	f.Write([]byte("# Databricks notebook source\nprint(\"def\")"))
-	os.Chtimes("foo.py",
-		fooInfo.ModTime().Add(time.Nanosecond),
-		fooInfo.ModTime().Add(time.Nanosecond))
-	assert.Eventually(t, func() bool {
-		content, err := os.ReadFile(filepath.Join(projectDir, "foo.py"))
-		assert.NoError(t, err)
-		return strings.Contains(string(content), "# Databricks notebook source")
-	}, 3*time.Second, 1*time.Second)
+	// assert.Len(t, change.delete, 1)
+	// assert.Len(t, change.put, 1)
+	// assert.Contains(t, change.put, "foo.py")
+	// assert.Contains(t, change.delete, "foo")
+	// assertKeysOfMap(t, state.LastUpdatedTimes, []string{"foo.py"})
+	// assert.Equal(t, map[string]string{"foo.py": "foo.py"}, state.LocalToRemoteNames)
+	// assert.Equal(t, map[string]string{"foo.py": "foo.py"}, state.RemoteToLocalNames)
 
-	files, err = fileSet.All()
-	assert.NoError(t, err)
-	change, err = state.diff(files)
-	assert.NoError(t, err)
-	assert.Len(t, change.delete, 1)
-	assert.Len(t, change.put, 1)
+	// // convert python script -> notebook
+	// // File system in the github actions env does not update
+	// // mtime on writes to a file. So we are manually editting it
+	// f2, err := os.Open(filepath.Join(projectDir, "foo.py"))
+	// assert.NoError(t, err)
+	// defer f2.Close()
+	// f.Write([]byte("# Databricks notebook source\nprint(\"def\")"))
+	// os.Chtimes("foo.py",
+	// 	fooInfo.ModTime().Add(time.Nanosecond),
+	// 	fooInfo.ModTime().Add(time.Nanosecond))
+	// assert.Eventually(t, func() bool {
+	// 	content, err := os.ReadFile(filepath.Join(projectDir, "foo.py"))
+	// 	assert.NoError(t, err)
+	// 	return strings.Contains(string(content), "# Databricks notebook source")
+	// }, 3*time.Second, 1*time.Second)
 
-	assert.Contains(t, change.put, "foo.py")
-	assert.Contains(t, change.delete, "foo.py")
-	assertKeysOfMap(t, state.LastUpdatedTimes, []string{"foo.py"})
-	assert.Equal(t, map[string]string{"foo.py": "foo"}, state.LocalToRemoteNames)
-	assert.Equal(t, map[string]string{"foo": "foo.py"}, state.RemoteToLocalNames)
+	// files, err = fileSet.All()
+	// assert.NoError(t, err)
+	// change, err = state.diff(files)
+	// assert.NoError(t, err)
+	// assert.Len(t, change.delete, 1)
+	// assert.Len(t, change.put, 1)
 
-	// Removed notebook are added to delete with remote name
-	err = os.Remove(filepath.Join(projectDir, "foo.py"))
-	assert.NoError(t, err)
-	files, err = fileSet.All()
-	assert.NoError(t, err)
-	change, err = state.diff(files)
-	assert.NoError(t, err)
-	assert.Len(t, change.delete, 1)
-	assert.Len(t, change.put, 0)
-	assert.Contains(t, change.delete, "foo")
-	assert.Len(t, state.LastUpdatedTimes, 0)
-	assert.Equal(t, map[string]string{}, state.LocalToRemoteNames)
-	assert.Equal(t, map[string]string{}, state.RemoteToLocalNames)
+	// assert.Contains(t, change.put, "foo.py")
+	// assert.Contains(t, change.delete, "foo.py")
+	// assertKeysOfMap(t, state.LastUpdatedTimes, []string{"foo.py"})
+	// assert.Equal(t, map[string]string{"foo.py": "foo"}, state.LocalToRemoteNames)
+	// assert.Equal(t, map[string]string{"foo": "foo.py"}, state.RemoteToLocalNames)
+
+	// // Removed notebook are added to delete with remote name
+	// err = os.Remove(filepath.Join(projectDir, "foo.py"))
+	// assert.NoError(t, err)
+	// files, err = fileSet.All()
+	// assert.NoError(t, err)
+	// change, err = state.diff(files)
+	// assert.NoError(t, err)
+	// assert.Len(t, change.delete, 1)
+	// assert.Len(t, change.put, 0)
+	// assert.Contains(t, change.delete, "foo")
+	// assert.Len(t, state.LastUpdatedTimes, 0)
+	// assert.Equal(t, map[string]string{}, state.LocalToRemoteNames)
+	// assert.Equal(t, map[string]string{}, state.RemoteToLocalNames)
 }
