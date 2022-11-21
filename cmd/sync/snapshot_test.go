@@ -46,7 +46,7 @@ func (f *testFile) overwrite(t *testing.T, s string) {
 	assert.NoError(t, err)
 
 	// We manually update mtime after write because github actions file
-	// system does not
+	// system does not :')
 	err = os.Chtimes(f.path, f.mtime.Add(time.Minute), f.mtime.Add(time.Minute))
 	assert.NoError(t, err)
 	f.mtime = f.mtime.Add(time.Minute)
