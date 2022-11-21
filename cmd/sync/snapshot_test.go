@@ -121,13 +121,27 @@ func TestDiff(t *testing.T) {
 // 	assert.NoError(t, err)
 // }
 
+// Does writing update mtime?
 // func TestDebug(t *testing.T) {
 // 	// Create temp project dir
 // 	projectDir := t.TempDir()
 
+// 	fooPath := filepath.Join(projectDir, "foo")
+// 	f, err := os.Create(fooPath)
+// 	assert.NoError(t, err)
+
+// 	f.WriteString()
+
 // }
 
+func getFDOffset(t *testing.T, f *os.File) int64 {
+	offset, err := f.Seek(0, 1)
+	assert.NoError(t, err)
+	return offset
+}
+
 func TestPythonNotebookDiff(t *testing.T) {
+	assert.True(t, false)
 	// Create temp project dir
 	projectDir := t.TempDir()
 
@@ -136,7 +150,10 @@ func TestPythonNotebookDiff(t *testing.T) {
 	f, err := os.Create(fooPath)
 	assert.NoError(t, err)
 	defer f.Close()
+
+	t.Logf("[AAAA] f offset before write: %v", getFDOffset(t, f))
 	f.Write([]byte("# Databricks notebook source\nprint(\"abc\")"))
+	t.Logf("[AAAA] f offset after write: %v", getFDOffset(t, f))
 	fileSet := git.NewFileSet(projectDir)
 	files, err := fileSet.All()
 	assert.NoError(t, err)
@@ -159,7 +176,9 @@ func TestPythonNotebookDiff(t *testing.T) {
 	// Case 2: notebook foo.py is converted to python script by removing
 	// magic keyword
 	// We manually update mtime after write because github file system does not
+	t.Logf("[AAAA] f offset before truncate: %v", getFDOffset(t, f))
 	err = os.Truncate(fooPath, 0)
+	t.Logf("[AAAA] f offset after truncate: %v", getFDOffset(t, f))
 	assert.NoError(t, err)
 	fooInfo, err := os.Stat(fooPath)
 	assert.NoError(t, err)
@@ -190,11 +209,17 @@ func TestPythonNotebookDiff(t *testing.T) {
 	assert.NoError(t, err)
 	t.Logf("[CASE 3] before foo contents: %s", content)
 	t.Logf("[CASE 3] before state: %+v", state)
-	t.Logf("[CASE 3] fooPath: ", fooPath)
+	t.Logf("[CASE 3] fooPath: %s", fooPath)
 
 	// Case 3: Python script foo.py is converted to a databricks notebook
 	// by adding magic keyword
+	t.Logf("[AAAA] f offset before write2: %v", getFDOffset(t, f))
+	_, err = f.Seek(0, 0)
+	assert.NoError(t, err)
+	t.Logf("[AAAA] f offset after seek reset: %v", getFDOffset(t, f))
 	f.Write([]byte("# Databricks notebook source\nprint(\"def\")"))
+	t.Logf("[AAAA] f offset after write2: %v", getFDOffset(t, f))
+
 	fooInfo, err = os.Stat(fooPath)
 	assert.NoError(t, err)
 	os.Chtimes(fooPath,
@@ -206,6 +231,8 @@ func TestPythonNotebookDiff(t *testing.T) {
 	change, err = state.diff(files)
 	assert.NoError(t, err)
 
+	content, err = os.ReadFile(fooPath)
+	assert.NoError(t, err)
 	t.Logf("[CASE 3] after foo contents: %s", content)
 	t.Logf("[CASE 3] after state: %+v", state)
 
