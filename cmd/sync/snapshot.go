@@ -185,9 +185,13 @@ func getNotebookDetails(path string) (isNotebook bool, typeOfNotebook string, er
 		if err != nil {
 			return false, "", err
 		}
+		defer f.Close()
 		scanner := bufio.NewScanner(f)
-		scanner.Scan()
-		// A python file is a notebook if it contains the following magic string
+		ok := scanner.Scan()
+		if !ok {
+			return false, "", scanner.Err()
+		}
+		// A python file is a notebook if it starts with the following magic string
 		isNotebook = strings.Contains(scanner.Text(), "# Databricks notebook source")
 		return isNotebook, "PYTHON", nil
 	}
@@ -197,6 +201,8 @@ func getNotebookDetails(path string) (isNotebook bool, typeOfNotebook string, er
 func (s Snapshot) diff(all []git.File) (change diff, err error) {
 	currentFilenames := map[string]bool{}
 	lastModifiedTimes := s.LastUpdatedTimes
+	remoteToLocalNames := s.RemoteToLocalNames
+	localToRemoteNames := s.LocalToRemoteNames
 	for _, f := range all {
 		// create set of current files to figure out if removals are needed
 		currentFilenames[f.Relative] = true
@@ -222,19 +228,19 @@ func (s Snapshot) diff(all []git.File) (change diff, err error) {
 			// remote version of that file to avoid duplicates.
 			// This can happen if a python notebook is converted to a python
 			// script or vice versa
-			oldRemoteName, ok := s.LocalToRemoteNames[f.Relative]
+			oldRemoteName, ok := localToRemoteNames[f.Relative]
 			if ok && oldRemoteName != remoteName {
 				change.delete = append(change.delete, oldRemoteName)
-				delete(s.RemoteToLocalNames, oldRemoteName)
+				delete(remoteToLocalNames, oldRemoteName)
 			}
 			// We cannot allow two local files in the project to point to the same
 			// remote path
-			oldLocalName, ok := s.RemoteToLocalNames[remoteName]
+			oldLocalName, ok := remoteToLocalNames[remoteName]
 			if ok && oldLocalName != f.Relative {
 				return change, fmt.Errorf("both %s and %s point to the same remote file location %s. Please remove one of them from your local project", oldLocalName, f.Relative, remoteName)
 			}
-			s.LocalToRemoteNames[f.Relative] = remoteName
-			s.RemoteToLocalNames[remoteName] = f.Relative
+			localToRemoteNames[f.Relative] = remoteName
+			remoteToLocalNames[remoteName] = f.Relative
 		}
 	}
 	// figure out files in the snapshot.lastModifiedTimes, but not on local
@@ -245,10 +251,10 @@ func (s Snapshot) diff(all []git.File) (change diff, err error) {
 			continue
 		}
 		// add them to a delete batch
-		change.delete = append(change.delete, s.LocalToRemoteNames[relative])
+		change.delete = append(change.delete, localToRemoteNames[relative])
 		// remove the file from snapshot
 		delete(lastModifiedTimes, relative)
-		delete(s.RemoteToLocalNames, s.LocalToRemoteNames[relative])
+		delete(remoteToLocalNames, localToRemoteNames[relative])
 		delete(s.LocalToRemoteNames, relative)
 	}
 	// and remove them from the snapshot

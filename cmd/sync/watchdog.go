@@ -31,6 +31,7 @@ type watchdog struct {
 // rate limits
 const MaxRequestsInFlight = 20
 
+// path: The local path of the file in the local file system
 func putFile(ctx context.Context, path string, content io.Reader) error {
 	wsc := project.Get(ctx).WorkspacesClient()
 	// workspace mkdirs is idempotent
@@ -48,6 +49,7 @@ func putFile(ctx context.Context, path string, content io.Reader) error {
 	return apiClient.Post(ctx, apiPath, content, nil)
 }
 
+// path: The remote path of the file in the workspace
 func deleteFile(ctx context.Context, path string, wsc *workspaces.WorkspacesClient) error {
 	err := wsc.Workspace.Delete(ctx,
 		workspace.Delete{
@@ -75,12 +77,12 @@ func getRemoteSyncCallback(ctx context.Context, root, remoteDir string, wsc *wor
 		// Allow MaxRequestLimit maxiumum concurrent api calls
 		g.SetLimit(MaxRequestsInFlight)
 
-		for _, fileName := range d.delete {
+		for _, fileHandle := range d.delete {
 			// Copy of fileName created to make this safe for concurrent use.
 			// directly using fileName can cause race conditions since the loop
 			// might iterate over to the next fileName before the go routine function
 			// is evaluated
-			remoteFileName := fileName
+			remoteFileName := fileHandle
 			g.Go(func() error {
 				err := deleteFile(ctx, path.Join(remoteDir, remoteFileName), wsc)
 				if err != nil {
