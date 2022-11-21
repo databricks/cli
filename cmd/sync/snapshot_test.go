@@ -72,27 +72,24 @@ func assertKeysOfMap(t *testing.T, m map[string]time.Time, expectedKeys []string
 func TestDiff(t *testing.T) {
 	// Create temp project dir
 	projectDir := t.TempDir()
-
-	f1, err := os.Create(filepath.Join(projectDir, "hello.txt"))
-	assert.NoError(t, err)
-	defer f1.Close()
-	worldFilePath := filepath.Join(projectDir, "world.txt")
-	f2, err := os.Create(worldFilePath)
-	assert.NoError(t, err)
-	defer f2.Close()
-
 	fileSet := git.NewFileSet(projectDir)
-	files, err := fileSet.All()
-	assert.NoError(t, err)
 	state := Snapshot{
 		LastUpdatedTimes:   make(map[string]time.Time),
 		LocalToRemoteNames: make(map[string]string),
 		RemoteToLocalNames: make(map[string]string),
 	}
+
+	f1 := createFile(t, filepath.Join(projectDir, "hello.txt"))
+	defer f1.close(t)
+	worldFilePath := filepath.Join(projectDir, "world.txt")
+	f2 := createFile(t, worldFilePath)
+	defer f2.close(t)
+
+	// New files are put
+	files, err := fileSet.All()
+	assert.NoError(t, err)
 	change, err := state.diff(files)
 	assert.NoError(t, err)
-
-	// New files are added to put
 	assert.Len(t, change.delete, 0)
 	assert.Len(t, change.put, 2)
 	assert.Contains(t, change.put, "hello.txt")
@@ -101,16 +98,8 @@ func TestDiff(t *testing.T) {
 	assert.Equal(t, map[string]string{"hello.txt": "hello.txt", "world.txt": "world.txt"}, state.LocalToRemoteNames)
 	assert.Equal(t, map[string]string{"hello.txt": "hello.txt", "world.txt": "world.txt"}, state.RemoteToLocalNames)
 
-	// Edited files are added to put.
-	// File system in the github actions env does not update
-	// mtime on writes to a file. So we are manually editting it
-	// instead of writing to world.txt
-	worldFileInfo, err := os.Stat(worldFilePath)
-	assert.NoError(t, err)
-	os.Chtimes(worldFilePath,
-		worldFileInfo.ModTime().Add(time.Nanosecond),
-		worldFileInfo.ModTime().Add(time.Nanosecond))
-
+	// world.txt is editted
+	f2.overwrite(t, "bunnies are cute.")
 	assert.NoError(t, err)
 	files, err = fileSet.All()
 	assert.NoError(t, err)
@@ -124,8 +113,8 @@ func TestDiff(t *testing.T) {
 	assert.Equal(t, map[string]string{"hello.txt": "hello.txt", "world.txt": "world.txt"}, state.LocalToRemoteNames)
 	assert.Equal(t, map[string]string{"hello.txt": "hello.txt", "world.txt": "world.txt"}, state.RemoteToLocalNames)
 
-	// Removed files are added to delete
-	err = os.Remove(filepath.Join(projectDir, "hello.txt"))
+	// hello.txt is deleted
+	f1.remove(t)
 	assert.NoError(t, err)
 	files, err = fileSet.All()
 	assert.NoError(t, err)
@@ -219,6 +208,7 @@ func TestErrorWhenIdenticalRemoteName(t *testing.T) {
 		RemoteToLocalNames: make(map[string]string),
 	}
 
+	// upload should work since they point to different destinations
 	pythonFoo := createFile(t, filepath.Join(projectDir, "foo.py"))
 	defer pythonFoo.close(t)
 	vanillaFoo := createFile(t, filepath.Join(projectDir, "foo"))
@@ -232,6 +222,7 @@ func TestErrorWhenIdenticalRemoteName(t *testing.T) {
 	assert.Contains(t, change.put, "foo.py")
 	assert.Contains(t, change.put, "foo")
 
+	// errors out because they point to the same destination
 	pythonFoo.overwrite(t, "# Databricks notebook source\nprint(\"def\")")
 	files, err = fileSet.All()
 	assert.NoError(t, err)
