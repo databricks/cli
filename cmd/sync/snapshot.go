@@ -245,21 +245,20 @@ func (s Snapshot) diff(all []git.File) (change diff, err error) {
 	}
 	// figure out files in the snapshot.lastModifiedTimes, but not on local
 	// filesystem. These will be deleted
-	for relative := range lastModifiedTimes {
-		_, exists := currentFilenames[relative]
+	for localName := range lastModifiedTimes {
+		_, exists := currentFilenames[localName]
 		if exists {
 			continue
 		}
 		// add them to a delete batch
-		change.delete = append(change.delete, localToRemoteNames[relative])
-		// remove the file from snapshot
-		delete(lastModifiedTimes, relative)
-		delete(remoteToLocalNames, localToRemoteNames[relative])
-		delete(s.LocalToRemoteNames, relative)
+		change.delete = append(change.delete, localToRemoteNames[localName])
 	}
 	// and remove them from the snapshot
-	for _, v := range change.delete {
-		delete(lastModifiedTimes, v)
+	for _, remoteName := range change.delete {
+		localName := remoteToLocalNames[remoteName]
+		delete(lastModifiedTimes, localName)
+		delete(remoteToLocalNames, remoteName)
+		delete(localToRemoteNames, localName)
 	}
 	return
 }
