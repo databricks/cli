@@ -123,6 +123,7 @@ func TestIncrementTimestamp(t *testing.T) {
 
 }
 
+// TODO: create fooPath variable
 func TestPythonNotebookDiff(t *testing.T) {
 	// Create temp project dir
 	projectDir := t.TempDir()
@@ -144,15 +145,6 @@ func TestPythonNotebookDiff(t *testing.T) {
 	change, err := state.diff(files)
 	assert.NoError(t, err)
 
-	content, _ := os.ReadFile(filepath.Join(projectDir, "foo.py"))
-	t.Log("[AAAA] contents inital: " + string(content))
-	t.Logf("[AAAA] state %+v: ", state)
-	t.Logf("[AAAA] files %+v: ", files)
-	t.Logf("[AAAA] files[0].Modified() %+v: ", files[0].Modified())
-	fooInfo, err := os.Stat(filepath.Join(projectDir, "foo.py"))
-	assert.NoError(t, err)
-	t.Logf("[AAAA] fooInfo.ModTime() %+v: ", fooInfo.ModTime())
-
 	// notebook is uploaded with its local name
 	assert.Len(t, change.delete, 0)
 	assert.Len(t, change.put, 1)
@@ -164,28 +156,18 @@ func TestPythonNotebookDiff(t *testing.T) {
 	// convert notebook -> python script
 	// File system in the github actions env does not update
 	// mtime on writes to a file. So we are manually editting it
-
-	content, _ = os.ReadFile(filepath.Join(projectDir, "foo.py"))
-	t.Log("[AAAA] contents before truncation: " + string(content))
-	t.Logf("[AAAA] state %+v: ", state)
-	t.Logf("[AAAA] files %+v: ", files)
-	t.Logf("[AAAA] files[0].Modified() %+v: ", files[0].Modified())
-	fooInfo, err = os.Stat(filepath.Join(projectDir, "foo.py"))
-	assert.NoError(t, err)
-	t.Logf("[AAAA] fooInfo.ModTime() %+v: ", fooInfo.ModTime())
-
-	assert.True(t, false)
-
 	err = os.Truncate(filepath.Join(projectDir, "foo.py"), 0)
 	assert.NoError(t, err)
-
-	fooInfo, err = os.Stat(filepath.Join(projectDir, "foo.py"))
+	fooInfo, err := os.Stat(filepath.Join(projectDir, "foo.py"))
 	assert.NoError(t, err)
 	os.Chtimes(filepath.Join(projectDir, "foo.py"),
 		fooInfo.ModTime().Add(time.Minute),
 		fooInfo.ModTime().Add(time.Minute))
 
+	i := 0
 	assert.Eventually(t, func() bool {
+		t.Logf("[AAAA] eventuall count %v", i)
+		i += 1
 		content, err := os.ReadFile(filepath.Join(projectDir, "foo.py"))
 		assert.NoError(t, err)
 		return !strings.Contains(string(content), "# Databricks notebook source")
@@ -196,15 +178,6 @@ func TestPythonNotebookDiff(t *testing.T) {
 	change, err = state.diff(files)
 	assert.NoError(t, err)
 
-	content, _ = os.ReadFile(filepath.Join(projectDir, "foo.py"))
-	t.Log("[AAAA] contents after truncation: " + string(content))
-	t.Logf("[AAAA] state %+v: ", state)
-	t.Logf("[AAAA] files %+v: ", files)
-	t.Logf("[AAAA] files[0].Modified() %+v: ", files[0].Modified())
-	fooInfo, err = os.Stat(filepath.Join(projectDir, "foo.py"))
-	assert.NoError(t, err)
-	t.Logf("[AAAA] fooInfo.ModTime() %+v: ", fooInfo.ModTime())
-
 	assert.Len(t, change.delete, 1)
 	assert.Len(t, change.put, 1)
 	assert.Contains(t, change.put, "foo.py")
@@ -212,8 +185,7 @@ func TestPythonNotebookDiff(t *testing.T) {
 	assertKeysOfMap(t, state.LastUpdatedTimes, []string{"foo.py"})
 	assert.Equal(t, map[string]string{"foo.py": "foo.py"}, state.LocalToRemoteNames)
 	assert.Equal(t, map[string]string{"foo.py": "foo.py"}, state.RemoteToLocalNames)
-	assert.True(t, false)
-
+	
 	// // convert python script -> notebook
 	// // File system in the github actions env does not update
 	// // mtime on writes to a file. So we are manually editting it
