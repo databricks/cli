@@ -165,15 +165,6 @@ func TestPythonNotebookDiff(t *testing.T) {
 		fooInfo.ModTime().Add(time.Minute),
 		fooInfo.ModTime().Add(time.Minute))
 
-	i := 0
-	assert.Eventually(t, func() bool {
-		t.Logf("[AAAA] eventuall count %v", i)
-		i += 1
-		content, err := os.ReadFile(fooPath)
-		assert.NoError(t, err)
-		return !strings.Contains(string(content), "# Databricks notebook source")
-	}, 3*time.Second, 1*time.Second)
-
 	files, err = fileSet.All()
 	assert.NoError(t, err)
 	change, err = state.diff(files)
@@ -197,26 +188,19 @@ func TestPythonNotebookDiff(t *testing.T) {
 	os.Chtimes(fooPath,
 		fooInfo.ModTime().Add(time.Minute),
 		fooInfo.ModTime().Add(time.Minute))
-	assert.Eventually(t, func() bool {
-		content, err := os.ReadFile(fooPath)
-		assert.NoError(t, err)
-		return strings.Contains(string(content), "# Databricks notebook source")
-	}, 3*time.Second, 1*time.Second)
 
-	assert.True(t, false)
+	files, err = fileSet.All()
+	assert.NoError(t, err)
+	change, err = state.diff(files)
+	assert.NoError(t, err)
+	assert.Len(t, change.delete, 1)
+	assert.Len(t, change.put, 1)
 
-	// files, err = fileSet.All()
-	// assert.NoError(t, err)
-	// change, err = state.diff(files)
-	// assert.NoError(t, err)
-	// assert.Len(t, change.delete, 1)
-	// assert.Len(t, change.put, 1)
-
-	// assert.Contains(t, change.put, "foo.py")
-	// assert.Contains(t, change.delete, "foo.py")
-	// assertKeysOfMap(t, state.LastUpdatedTimes, []string{"foo.py"})
-	// assert.Equal(t, map[string]string{"foo.py": "foo"}, state.LocalToRemoteNames)
-	// assert.Equal(t, map[string]string{"foo": "foo.py"}, state.RemoteToLocalNames)
+	assert.Contains(t, change.put, "foo.py")
+	assert.Contains(t, change.delete, "foo.py")
+	assertKeysOfMap(t, state.LastUpdatedTimes, []string{"foo.py"})
+	assert.Equal(t, map[string]string{"foo.py": "foo"}, state.LocalToRemoteNames)
+	assert.Equal(t, map[string]string{"foo": "foo.py"}, state.RemoteToLocalNames)
 
 	// // Removed notebook are added to delete with remote name
 	// err = os.Remove(filePath)
