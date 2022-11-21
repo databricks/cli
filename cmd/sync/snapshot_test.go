@@ -71,8 +71,8 @@ func TestDiff(t *testing.T) {
 	worldFileInfo, err := os.Stat(worldFilePath)
 	assert.NoError(t, err)
 	os.Chtimes(worldFilePath,
-		worldFileInfo.ModTime().Add(time.Nanosecond),
-		worldFileInfo.ModTime().Add(time.Nanosecond))
+		worldFileInfo.ModTime().Add(time.Minute),
+		worldFileInfo.ModTime().Add(time.Minute))
 
 	assert.NoError(t, err)
 	files, err = fileSet.All()
@@ -106,10 +106,20 @@ func TestDiff(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, change.delete, 1)
 	assert.Len(t, change.put, 0)
-	assert.Contains(t, change.delete, "hello.txt")
+	assert.Contains(t, change.delete, "hello.tt")
 	assertKeysOfMap(t, state.LastUpdatedTimes, []string{"world.txt"})
 	assert.Equal(t, map[string]string{"world.txt": "world.txt"}, state.LocalToRemoteNames)
 	assert.Equal(t, map[string]string{"world.txt": "world.txt"}, state.RemoteToLocalNames)
+}
+
+func TestIncrementTimestamp(t *testing.T) {
+	// Create temp project dir
+	projectDir := t.TempDir()
+
+	f1, err := os.Create(filepath.Join(projectDir, "hello.txt"))
+	assert.NoError(t, err)
+	defer f1.Close()
+
 }
 
 func TestPythonNotebookDiff(t *testing.T) {
@@ -156,8 +166,8 @@ func TestPythonNotebookDiff(t *testing.T) {
 	fooInfo, err = os.Stat(filepath.Join(projectDir, "foo.py"))
 	assert.NoError(t, err)
 	os.Chtimes(filepath.Join(projectDir, "foo.py"),
-		fooInfo.ModTime().Add(time.Nanosecond),
-		fooInfo.ModTime().Add(time.Nanosecond))
+		fooInfo.ModTime().Add(time.Minute),
+		fooInfo.ModTime().Add(time.Minute))
 
 	content, _ = os.ReadFile(filepath.Join(projectDir, "foo.py"))
 	t.Log("[AAAA] contents before truncation: " + string(content))
