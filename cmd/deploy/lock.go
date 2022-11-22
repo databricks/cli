@@ -15,37 +15,16 @@ import (
 	"github.com/google/uuid"
 )
 
-// TODO: create a mutex for dbfs too
-type Mutex interface {
-	Lock(ctx context.Context) error
-	Unlock(ctx context.Context) error
-}
-
 type DeployLocker struct {
 	Id              uuid.UUID
 	User            string
 	AcquisitionTime time.Time
 	IsForced        bool
 	TargetDir       string
+	Active          bool
 }
 
-// Context:
-// 1. Test lock and unlock
-// 2. create a function to get a new deploy mutex
-// 3. make sure ID generated is unique
-// 4. then there is the integration test
-// 5. stretch: look for opportunities for unit tests
-// func generateRandomId(length int) string {
-// 	var letters = []rune("abcdefghijklmnopqrstuvwxyz1234567890")
-// 	rand.Seed(time.Now().UnixNano())
-// 	b := make([]rune, length)
-// 	for i := range b {
-// 		b[i] = letters[rand.Intn(len(letters))]
-// 	}
-// 	return string(b)
-// }
-
-func getRemoteLocker(ctx context.Context, lockFilePath string) (*DeployLocker, error) {
+func GetRemoteLocker(ctx context.Context, lockFilePath string) (*DeployLocker, error) {
 	wsc := project.Get(ctx).WorkspacesClient()
 	apiClient, err := client.New(wsc.Config)
 	if err != nil {
@@ -58,11 +37,9 @@ func getRemoteLocker(ctx context.Context, lockFilePath string) (*DeployLocker, e
 	var res interface{}
 
 	err = apiClient.Get(ctx, expectApiPath, nil, &res)
-	// TODO: handle the race condition when the file gets deleted before you can read
-	// it.
-	// NOTE: https://databricks.atlassian.net/browse/ES-510449
-	// Do some error parsing maybe, add on previos error for more context and
-	// add on suggestion for the user to retry deployment
+
+	// NOTE: azure workspaces return misleading messages when a file does not exist
+	// see: https://databricks.atlassian.net/browse/ES-510449
 	if err != nil {
 		return nil, err
 	}
@@ -82,6 +59,9 @@ func postFile(ctx context.Context, path string, content []byte) error {
 	contentReader := bytes.NewReader(content)
 	wsc := project.Get(ctx).WorkspacesClient()
 	apiClient, err := client.New(wsc.Config)
+	if err != nil {
+		return err
+	}
 	err = wsc.Workspace.MkdirsByPath(ctx, filepath.Dir(path))
 	if err != nil {
 		return fmt.Errorf("could not mkdir to put file: %s", err)
@@ -104,18 +84,20 @@ func (locker *DeployLocker) postLockFile(ctx context.Context) error {
 	return postFile(ctx, locker.remotePath(), lockerContent)
 }
 
-// Test what happens if two simulataenous requests to create a file go out
-
 func (locker *DeployLocker) Lock(ctx context.Context) error {
+	if locker.Active {
+		return fmt.Errorf("locker already active")
+	}
 	err := locker.postLockFile(ctx)
 	if err != nil && strings.Contains(err.Error(), fmt.Sprintf("%s already exists", locker.remotePath())) {
-		remoteLocker, err := getRemoteLocker(ctx, locker.remotePath())
+		remoteLocker, err := GetRemoteLocker(ctx, locker.remotePath())
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to get remote lock file: %s", err)
 		}
 		// TODO: add isForce to message here and convert timestamp to human readable format
-		return fmt.Errorf("cannot deploy. %s has been deploying since %v. Use --force to forcibly deploy your bundle", remoteLocker.User, remoteLocker.AcquisitionTime)
+		return fmt.Errorf("cannot deploy. %s has been deploying since %v. Use --force to forcibly deploy your bundle. Complete active locker metadata: %+v", remoteLocker.User, remoteLocker.AcquisitionTime, remoteLocker)
 	}
+	locker.Active = true
 	return nil
 }
 
@@ -135,13 +117,17 @@ func CreateLocker(ctx context.Context, isForced bool, targetDir string) (*Deploy
 		IsForced:  isForced,
 		TargetDir: targetDir,
 		User:      user.UserName,
+		Active:    false,
 	}, nil
 }
 
-// TODO: Check you own the lock before deleting it!
 func (locker *DeployLocker) Unlock(ctx context.Context) error {
+	if !locker.Active {
+		return fmt.Errorf("only active lockers can be unlocked")
+	}
+
 	wsc := project.Get(ctx).WorkspacesClient()
-	remoteLocker, err := getRemoteLocker(ctx, locker.remotePath())
+	remoteLocker, err := GetRemoteLocker(ctx, locker.remotePath())
 	if err != nil {
 		return err
 	}
@@ -152,8 +138,10 @@ func (locker *DeployLocker) Unlock(ctx context.Context) error {
 				Recursive: false,
 			},
 		)
+		locker.Active = false
 	} else {
-		err = fmt.Errorf("tried to unlock unacquired locker: %+v. Current owner locker of target: %+v. ", locker, remoteLocker)
+		err = fmt.Errorf("unexpected deploy lock loss. This locker: %+v \n. Current lock ownder of target dir : %+v", locker, remoteLocker)
+		locker.Active = false
 	}
 	return err
 }

@@ -28,6 +28,8 @@ var syncCmd = &cobra.Command{
 				return err
 			}
 			*remotePath = prjRemotePath
+		} else {
+			prj.OverrideRemoteRoot(*remotePath)
 		}
 
 		log.Printf("[INFO] Remote file sync location: %v", *remotePath)
