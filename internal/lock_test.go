@@ -64,6 +64,7 @@ func TestAccLock(t *testing.T) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 	ctx := createLocalTestProject(t)
 	remoteProjectRoot := createRemoteTestProject(t, ctx, "lock-acc-")
+	// 50 lockers try to acquire a lock at the same time
 	numConcurrentLocks := 50
 
 	var err error
@@ -75,7 +76,6 @@ func TestAccLock(t *testing.T) {
 		assert.NoError(t, err)
 	}
 
-	// 50 lockers try to acquire a lock at the same time
 	var wg sync.WaitGroup
 	for i := 0; i < numConcurrentLocks; i++ {
 		wg.Add(1)

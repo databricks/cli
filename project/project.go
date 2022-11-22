@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sync"
 
 	"github.com/databricks/bricks/git"
 	"github.com/databricks/databricks-sdk-go/databricks"
@@ -20,8 +19,6 @@ import (
 const CacheDirName = ".databricks"
 
 type project struct {
-	mu sync.Mutex
-
 	localRoot  string
 	remoteRoot string
 	env        string
@@ -47,7 +44,6 @@ func Configure(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	// TODO(personal): checkout what set context does here and follow the ctx flow
 	cmd.SetContext(ctx)
 	return nil
 }
@@ -197,9 +193,6 @@ func (p *project) Environment() Environment {
 }
 
 func (p *project) Me() (*scim.User, error) {
-	// QQ: Why is there a lock here?
-	p.mu.Lock()
-	defer p.mu.Unlock()
 	if p.me != nil {
 		return p.me, nil
 	}

@@ -41,7 +41,7 @@ func GetRemoteLocker(ctx context.Context, lockFilePath string) (*DeployLocker, e
 	// NOTE: azure workspaces return misleading messages when a file does not exist
 	// see: https://databricks.atlassian.net/browse/ES-510449
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to fetch remote deployment lock file: %s", err)
 	}
 	lockJson, err := json.Marshal(res)
 	if err != nil {
@@ -94,8 +94,12 @@ func (locker *DeployLocker) Lock(ctx context.Context) error {
 		if err != nil {
 			return fmt.Errorf("failed to get remote lock file: %s", err)
 		}
-		// TODO: add isForce to message here and convert timestamp to human readable format
-		return fmt.Errorf("cannot deploy. %s has been deploying since %v. Use --force to forcibly deploy your bundle. Complete active locker metadata: %+v", remoteLocker.User, remoteLocker.AcquisitionTime, remoteLocker)
+		// TODO: convert timestamp to human readable format
+		if remoteLocker.IsForced {
+			return fmt.Errorf("ongoing forced deployment by %s since %v. Use --force to override current forced deployment", remoteLocker.User, remoteLocker.AcquisitionTime)
+		} else {
+			return fmt.Errorf("ongoing deployment by %s since %v. Use --force to forcibly deploy your bundle", remoteLocker.User, remoteLocker.AcquisitionTime)
+		}
 	}
 	locker.Active = true
 	return nil
@@ -140,7 +144,7 @@ func (locker *DeployLocker) Unlock(ctx context.Context) error {
 		)
 		locker.Active = false
 	} else {
-		err = fmt.Errorf("unexpected deploy lock loss. This locker: %+v \n. Current lock ownder of target dir : %+v", locker, remoteLocker)
+		err = fmt.Errorf("this deployment does not hold lock on workspace project dir. Current active deployment lock was acquired by %s at %v", remoteLocker.User, remoteLocker.AcquisitionTime)
 		locker.Active = false
 	}
 	return err
