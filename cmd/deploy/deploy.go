@@ -9,9 +9,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// WIP: will add integration test and develop this command
-// NOTE: WIP, needed to add sync for
-// launchCmd represents the launch command
+// WIP: will add integration test and develop this command for terraform state sync
 var deployCmd = &cobra.Command{
 	Use:   "deploy",
 	Short: "deploys a DAB",
