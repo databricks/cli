@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/databricks/bricks/cmd/sync"
 	"github.com/databricks/bricks/project"
 	"github.com/databricks/databricks-sdk-go/databricks/client"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
@@ -40,23 +41,9 @@ type DeployLocker struct {
 }
 
 func GetRemoteLocker(ctx context.Context, lockFilePath string) (*DeployLocker, error) {
-	wsc := project.Get(ctx).WorkspacesClient()
-	apiClient, err := client.New(wsc.Config)
+	res, err := GetFile(ctx, lockFilePath)
 	if err != nil {
 		return nil, err
-	}
-	exportApiPath := fmt.Sprintf(
-		"/api/2.0/workspace-files/%s",
-		strings.TrimLeft(lockFilePath, "/"))
-
-	var res interface{}
-
-	err = apiClient.Get(ctx, exportApiPath, nil, &res)
-
-	// NOTE: azure workspaces return misleading messages when a file does not exist
-	// see: https://databricks.atlassian.net/browse/ES-510449
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch remote deployment lock file: %s", err)
 	}
 	lockJson, err := json.Marshal(res)
 	if err != nil {
@@ -68,6 +55,43 @@ func GetRemoteLocker(ctx context.Context, lockFilePath string) (*DeployLocker, e
 		return nil, err
 	}
 	return &remoteLock, nil
+}
+
+// idempotent
+func (locker *DeployLocker) safePutFile(ctx context.Context, path string, content []byte) error {
+	contentReader := bytes.NewReader(content)
+	// TODO: Consider reading the remote locker file to ensure we hold the lock
+	// This hedges against race conditions during forced deployment
+	if !locker.Active {
+		return fmt.Errorf("failed to put file. Lock not held to safely mutate workspace files")
+	}
+
+	err := sync.PutFile(ctx, path, contentReader)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func GetFile(ctx context.Context, path string) (interface{}, error) {
+	wsc := project.Get(ctx).WorkspacesClient()
+	apiClient, err := client.New(wsc.Config)
+	if err != nil {
+		return nil, err
+	}
+	exportApiPath := fmt.Sprintf(
+		"/api/2.0/workspace-files/%s",
+		strings.TrimLeft(path, "/"))
+
+	var res interface{}
+
+	// NOTE: azure workspaces return misleading messages when a file does not exist
+	// see: https://databricks.atlassian.net/browse/ES-510449
+	err = apiClient.Get(ctx, exportApiPath, nil, &res)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch file %s: %s", path, err)
+	}
+	return res, nil
 }
 
 // not idempotent. errors out if file exists

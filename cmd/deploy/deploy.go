@@ -2,7 +2,6 @@ package deploy
 
 import (
 	"log"
-	"time"
 
 	"github.com/databricks/bricks/cmd/root"
 	"github.com/databricks/bricks/project"
@@ -36,13 +35,41 @@ var deployCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		time.Sleep(5 * time.Second)
-		err = locker.Unlock(ctx)
+		defer func() {
+			err = locker.Unlock(ctx)
+			if err != nil {
+				log.Printf("[ERROR] %s", err)
+			}
+		}()
+		// time.Sleep(5 * time.Second)
+
+		remoteTfState, err := readRemoteTfStateFile(ctx)
+		if err != nil {
+			return err
+		}
+
+		localTfState, err := readLocalTfStateFile(ctx)
+		if err != nil {
+			return err
+		}
+
+		combinedTfState := tfStateSchema{
+			DeploymentNumber: remoteTfState.DeploymentNumber + 1,
+			Name:             localTfState.Name,
+		}
+
+		err = safeWriteRemoteTfStateFile(ctx, combinedTfState, locker)
+		if err != nil {
+			return err
+		}
+
+		err = writeLocalTfStateFile(ctx, combinedTfState)
 		if err != nil {
 			return err
 		}
 
 		log.Printf("[INFO] deploy completed. congrats!!")
+		// TODO: Unlock lock even in case of an error (put in defer block)
 		return nil
 	},
 }
