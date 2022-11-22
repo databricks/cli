@@ -1,6 +1,9 @@
 package deploy
 
 import (
+	"log"
+	"time"
+
 	"github.com/databricks/bricks/cmd/root"
 	"github.com/databricks/bricks/project"
 	"github.com/spf13/cobra"
@@ -33,8 +36,17 @@ var deployCmd = &cobra.Command{
 			return err
 		}
 
-		locker.Lock(ctx)
-		defer locker.Unlock(ctx)
+		err = locker.Lock(ctx)
+		if err != nil {
+			return err
+		}
+		time.Sleep(5 * time.Second)
+		err = locker.Unlock(ctx)
+		if err != nil {
+			return err
+		}
+
+		log.Printf("[INFO] deploy completed. congrats!!")
 		return nil
 	},
 }
