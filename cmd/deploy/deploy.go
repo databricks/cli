@@ -15,12 +15,12 @@ var deployCmd = &cobra.Command{
 	PreRunE: project.Configure,
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := cmd.Context()
-		deployMutex := &DeployMutex{
+		deployMutex := &DeployLocker{
 			User: "shreyas.goenka@databricks.com",
 			// TODO: Adjust this using a command line arguement
 			IsForced: false,
 			// TODO: pass through cmd line arg
-			ProjectRoot: "/Repos/shreyas.goenka@databricks.com/test-dbx",
+			TargetDir: "/Repos/shreyas.goenka@databricks.com/test-dbx",
 		}
 		deployMutex.Lock(ctx)
 		defer deployMutex.Unlock(ctx)
