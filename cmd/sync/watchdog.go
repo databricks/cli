@@ -31,6 +31,18 @@ type watchdog struct {
 // rate limits
 const MaxRequestsInFlight = 20
 
+// path: The local path of the file in the local file system
+//
+// The API calls for a python script foo.py would be
+// `PUT foo.py`
+// `DELETE foo.py`
+//
+// The API calls for a python notebook foo.py would be
+// `PUT foo.py`
+// `DELETE foo`
+//
+// The workspace file system backend strips .py from the file name if the python
+// file is a notebook
 func putFile(ctx context.Context, path string, content io.Reader) error {
 	wsc := project.Get(ctx).WorkspacesClient()
 	// workspace mkdirs is idempotent
@@ -48,6 +60,7 @@ func putFile(ctx context.Context, path string, content io.Reader) error {
 	return apiClient.Post(ctx, apiPath, content, nil)
 }
 
+// path: The remote path of the file in the workspace
 func deleteFile(ctx context.Context, path string, wsc *workspaces.WorkspacesClient) error {
 	err := wsc.Workspace.Delete(ctx,
 		workspace.Delete{
@@ -75,29 +88,30 @@ func getRemoteSyncCallback(ctx context.Context, root, remoteDir string, wsc *wor
 		// Allow MaxRequestLimit maxiumum concurrent api calls
 		g.SetLimit(MaxRequestsInFlight)
 
-		for _, fileName := range d.delete {
-			// Copy of fileName created to make this safe for concurrent use.
-			// directly using fileName can cause race conditions since the loop
-			// might iterate over to the next fileName before the go routine function
+		for _, remoteName := range d.delete {
+			// Copy of remoteName created to make this safe for concurrent use.
+			// directly using remoteName can cause race conditions since the loop
+			// might iterate over to the next remoteName before the go routine function
 			// is evaluated
-			localFileName := fileName
+			remoteNameCopy := remoteName
 			g.Go(func() error {
-				err := deleteFile(ctx, path.Join(remoteDir, localFileName), wsc)
+				err := deleteFile(ctx, path.Join(remoteDir, remoteNameCopy), wsc)
 				if err != nil {
 					return err
 				}
-				log.Printf("[INFO] Deleted %s", localFileName)
+				log.Printf("[INFO] Deleted %s", remoteNameCopy)
 				return nil
 			})
 		}
-		for _, fileName := range d.put {
-			localFileName := fileName
+		for _, localName := range d.put {
+			// Copy of localName created to make this safe for concurrent use.
+			localNameCopy := localName
 			g.Go(func() error {
-				f, err := os.Open(filepath.Join(root, localFileName))
+				f, err := os.Open(filepath.Join(root, localNameCopy))
 				if err != nil {
 					return err
 				}
-				err = putFile(ctx, path.Join(remoteDir, localFileName), f)
+				err = putFile(ctx, path.Join(remoteDir, localNameCopy), f)
 				if err != nil {
 					return fmt.Errorf("failed to upload file: %s", err)
 				}
@@ -105,7 +119,7 @@ func getRemoteSyncCallback(ctx context.Context, root, remoteDir string, wsc *wor
 				if err != nil {
 					return err
 				}
-				log.Printf("[INFO] Uploaded %s", localFileName)
+				log.Printf("[INFO] Uploaded %s", localNameCopy)
 				return nil
 			})
 		}
@@ -162,7 +176,11 @@ func (w *watchdog) main(ctx context.Context, applyDiff func(diff) error, remoteP
 				w.failure = err
 				return
 			}
-			change := snapshot.diff(all)
+			change, err := snapshot.diff(all)
+			if err != nil {
+				w.failure = err
+				return
+			}
 			if change.IsEmpty() {
 				onlyOnceInitLog.Do(func() {
 					log.Printf("[INFO] Initial Sync Complete")

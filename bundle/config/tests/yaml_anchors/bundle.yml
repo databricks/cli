@@ -1,0 +1,13 @@
+bundle:
+  name: yaml_anchors
+
+resources:
+  jobs:
+    my_job:
+      _: &common_cluster
+        spark_version: "10.4.x-scala2.12"
+      tasks:
+        - task_key: "t1"
+          new_cluster: *common_cluster
+        - task_key: "t2"
+          new_cluster: *common_cluster

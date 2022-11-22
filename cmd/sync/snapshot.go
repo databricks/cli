@@ -1,12 +1,14 @@
 package sync
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -38,6 +40,13 @@ type Snapshot struct {
 	// key: relative file path from project root
 	// value: last time the remote instance of this file was updated
 	LastUpdatedTimes map[string]time.Time `json:"last_modified_times"`
+	// This map maps local file names to their remote names
+	// eg. notebook named "foo.py" locally would be stored as "foo", thus this
+	// map will contain an entry "foo.py" -> "foo"
+	LocalToRemoteNames map[string]string `json:"local_to_remote_names"`
+	// Inverse of localToRemoteNames. Together the form a bijective mapping (ie
+	// there is a 1:1 unique mapping between local and remote name)
+	RemoteToLocalNames map[string]string `json:"remote_to_local_names"`
 }
 
 type diff struct {
@@ -87,9 +96,11 @@ func newSnapshot(ctx context.Context, remotePath string) (*Snapshot, error) {
 	}
 
 	return &Snapshot{
-		Host:             host,
-		RemotePath:       remotePath,
-		LastUpdatedTimes: make(map[string]time.Time),
+		Host:               host,
+		RemotePath:         remotePath,
+		LastUpdatedTimes:   make(map[string]time.Time),
+		LocalToRemoteNames: make(map[string]string),
+		RemoteToLocalNames: make(map[string]string),
 	}, nil
 }
 
@@ -161,9 +172,37 @@ func (d diff) String() string {
 	return strings.Join(changes, ", ")
 }
 
-func (s Snapshot) diff(all []git.File) (change diff) {
+func getNotebookDetails(path string) (isNotebook bool, typeOfNotebook string, err error) {
+	isNotebook = false
+	typeOfNotebook = ""
+
+	isPythonFile, err := regexp.Match(`\.py$`, []byte(path))
+	if err != nil {
+		return
+	}
+	if isPythonFile {
+		f, err := os.Open(path)
+		if err != nil {
+			return false, "", err
+		}
+		defer f.Close()
+		scanner := bufio.NewScanner(f)
+		ok := scanner.Scan()
+		if !ok {
+			return false, "", scanner.Err()
+		}
+		// A python file is a notebook if it starts with the following magic string
+		isNotebook = strings.Contains(scanner.Text(), "# Databricks notebook source")
+		return isNotebook, "PYTHON", nil
+	}
+	return false, "", nil
+}
+
+func (s Snapshot) diff(all []git.File) (change diff, err error) {
 	currentFilenames := map[string]bool{}
 	lastModifiedTimes := s.LastUpdatedTimes
+	remoteToLocalNames := s.RemoteToLocalNames
+	localToRemoteNames := s.LocalToRemoteNames
 	for _, f := range all {
 		// create set of current files to figure out if removals are needed
 		currentFilenames[f.Relative] = true
@@ -174,22 +213,52 @@ func (s Snapshot) diff(all []git.File) (change diff) {
 		if !seen || modified.After(lastSeenModified) {
 			change.put = append(change.put, f.Relative)
 			lastModifiedTimes[f.Relative] = modified
+
+			// Keep track of remote names of local files so we can delete them later
+			isNotebook, typeOfNotebook, err := getNotebookDetails(f.Absolute)
+			if err != nil {
+				return change, err
+			}
+			remoteName := f.Relative
+			if isNotebook && typeOfNotebook == "PYTHON" {
+				remoteName = strings.TrimSuffix(f.Relative, `.py`)
+			}
+
+			// If the remote handle of a file changes, we want to delete the old
+			// remote version of that file to avoid duplicates.
+			// This can happen if a python notebook is converted to a python
+			// script or vice versa
+			oldRemoteName, ok := localToRemoteNames[f.Relative]
+			if ok && oldRemoteName != remoteName {
+				change.delete = append(change.delete, oldRemoteName)
+				delete(remoteToLocalNames, oldRemoteName)
+			}
+			// We cannot allow two local files in the project to point to the same
+			// remote path
+			oldLocalName, ok := remoteToLocalNames[remoteName]
+			if ok && oldLocalName != f.Relative {
+				return change, fmt.Errorf("both %s and %s point to the same remote file location %s. Please remove one of them from your local project", oldLocalName, f.Relative, remoteName)
+			}
+			localToRemoteNames[f.Relative] = remoteName
+			remoteToLocalNames[remoteName] = f.Relative
 		}
 	}
-	// figure out files in the snapshot, but not on local filesystem
-	for relative := range lastModifiedTimes {
-		_, exists := currentFilenames[relative]
+	// figure out files in the snapshot.lastModifiedTimes, but not on local
+	// filesystem. These will be deleted
+	for localName := range lastModifiedTimes {
+		_, exists := currentFilenames[localName]
 		if exists {
 			continue
 		}
 		// add them to a delete batch
-		change.delete = append(change.delete, relative)
-		// remove the file from snapshot
-		delete(lastModifiedTimes, relative)
+		change.delete = append(change.delete, localToRemoteNames[localName])
 	}
 	// and remove them from the snapshot
-	for _, v := range change.delete {
-		delete(lastModifiedTimes, v)
+	for _, remoteName := range change.delete {
+		localName := remoteToLocalNames[remoteName]
+		delete(lastModifiedTimes, localName)
+		delete(remoteToLocalNames, remoteName)
+		delete(localToRemoteNames, localName)
 	}
 	return
 }
