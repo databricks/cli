@@ -15,13 +15,28 @@ import (
 	"github.com/google/uuid"
 )
 
+// a mutux on a specified directory in workspace file system.
+//
+// Only one  DeployLocker can be "active" on a workspace directory. This
+// enables exclusive access to the workspace for deployment purposes
+//
+// users need to acquire this lock before deploying a DAB using
+// `bricks bundle deploy`
 type DeployLocker struct {
-	Id              uuid.UUID
-	User            string
+	// unique id for the locker
+	Id uuid.UUID
+	// creator of this locker
+	User string
+	// timestamp when this locker became "active" on the the target directory
 	AcquisitionTime time.Time
-	IsForced        bool
-	TargetDir       string
-	Active          bool
+	// forced lockers can override any existing lockers (including other forced ones)
+	// on the target directory
+	IsForced bool
+	// remote root of the project, for which this locker is scoped
+	TargetDir string
+	// If true, the holder of this locker has exclusive access to target directory
+	// to deploy their DAB
+	Active bool
 }
 
 func GetRemoteLocker(ctx context.Context, lockFilePath string) (*DeployLocker, error) {
@@ -30,13 +45,13 @@ func GetRemoteLocker(ctx context.Context, lockFilePath string) (*DeployLocker, e
 	if err != nil {
 		return nil, err
 	}
-	expectApiPath := fmt.Sprintf(
+	exportApiPath := fmt.Sprintf(
 		"/api/2.0/workspace-files/%s",
 		strings.TrimLeft(lockFilePath, "/"))
 
 	var res interface{}
 
-	err = apiClient.Get(ctx, expectApiPath, nil, &res)
+	err = apiClient.Get(ctx, exportApiPath, nil, &res)
 
 	// NOTE: azure workspaces return misleading messages when a file does not exist
 	// see: https://databricks.atlassian.net/browse/ES-510449
@@ -55,6 +70,7 @@ func GetRemoteLocker(ctx context.Context, lockFilePath string) (*DeployLocker, e
 	return &remoteLock, nil
 }
 
+// not idempotent. errors out if file exists
 func postFile(ctx context.Context, path string, content []byte) error {
 	contentReader := bytes.NewReader(content)
 	wsc := project.Get(ctx).WorkspacesClient()
