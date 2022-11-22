@@ -21,8 +21,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-
-
 // This test needs auth env vars to run.
 // Please run using the deco env test or deco env shell
 func TestAccFullSync(t *testing.T) {

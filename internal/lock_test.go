@@ -61,7 +61,7 @@ func createLocalTestProject(t *testing.T) context.Context {
 }
 
 func TestAccLock(t *testing.T) {
-	// t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 	ctx := createLocalTestProject(t)
 	remoteProjectRoot := createRemoteTestProject(t, ctx, "lock-acc-")
 	numConcurrentLocks := 50
