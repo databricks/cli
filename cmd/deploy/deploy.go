@@ -11,10 +11,8 @@ import (
 
 // WIP: will add integration test and develop this command for terraform state sync
 var deployCmd = &cobra.Command{
-	Use:   "deploy",
-	Short: "deploys a DAB",
-	// Long:  `Reads a file and executes it on dev cluster`,
-	// Args:  cobra.ExactArgs(1),
+	Use:     "deploy",
+	Short:   "deploys a DAB",
 	PreRunE: project.Configure,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()

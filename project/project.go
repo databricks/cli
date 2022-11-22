@@ -137,6 +137,10 @@ func (p *project) RemoteRoot() (string, error) {
 	return p.remoteRoot, nil
 }
 
+// helper function useful for debugging
+// TODO: recursively make api queries to get entire directory structure of project
+// TODO: We can later leverage this to clean up empty directories that does not happen
+// right now on bricks sync
 func (p *project) ListRemoteFiles(ctx context.Context) ([]string, error) {
 	remoteRoot, err := p.RemoteRoot()
 	if err != nil {

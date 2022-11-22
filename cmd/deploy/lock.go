@@ -81,7 +81,7 @@ func (locker *DeployLocker) postLockFile(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	return postFile(ctx, locker.remotePath(), lockerContent)
+	return postFile(ctx, locker.RemotePath(), lockerContent)
 }
 
 func (locker *DeployLocker) Lock(ctx context.Context) error {
@@ -89,8 +89,8 @@ func (locker *DeployLocker) Lock(ctx context.Context) error {
 		return fmt.Errorf("locker already active")
 	}
 	err := locker.postLockFile(ctx)
-	if err != nil && strings.Contains(err.Error(), fmt.Sprintf("%s already exists", locker.remotePath())) {
-		remoteLocker, err := GetRemoteLocker(ctx, locker.remotePath())
+	if err != nil && strings.Contains(err.Error(), fmt.Sprintf("%s already exists", locker.RemotePath())) {
+		remoteLocker, err := GetRemoteLocker(ctx, locker.RemotePath())
 		if err != nil {
 			return fmt.Errorf("failed to get remote lock file: %s", err)
 		}
@@ -105,7 +105,7 @@ func (locker *DeployLocker) Lock(ctx context.Context) error {
 	return nil
 }
 
-func (locker *DeployLocker) remotePath() string {
+func (locker *DeployLocker) RemotePath() string {
 	return filepath.Join(locker.TargetDir, ".bundle/deploy.lock")
 }
 
@@ -131,14 +131,14 @@ func (locker *DeployLocker) Unlock(ctx context.Context) error {
 	}
 
 	wsc := project.Get(ctx).WorkspacesClient()
-	remoteLocker, err := GetRemoteLocker(ctx, locker.remotePath())
+	remoteLocker, err := GetRemoteLocker(ctx, locker.RemotePath())
 	if err != nil {
 		return err
 	}
 	if remoteLocker.Id == locker.Id {
 		err = wsc.Workspace.Delete(ctx,
 			workspace.Delete{
-				Path:      locker.remotePath(),
+				Path:      locker.RemotePath(),
 				Recursive: false,
 			},
 		)

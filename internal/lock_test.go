@@ -100,14 +100,14 @@ func TestAccLock(t *testing.T) {
 			if indexOfAnInactiveLocker == -1 {
 				indexOfAnInactiveLocker = i
 			}
-			assert.ErrorContains(t, lockerErrs[i], "cannot deploy")
+			assert.ErrorContains(t, lockerErrs[i], "ongoing deployment")
 			assert.ErrorContains(t, lockerErrs[i], "Use --force to forcibly deploy your bundle")
 		}
 	}
-	assert.Equal(t, 1, countActive, "Exactly one locker should acquire the lock")
+	assert.Equal(t, 1, countActive, "Exactly one locker should successfull acquire the lock")
 
 	// test remote lock matches active lock
-	remoteLocker, err := deploy.GetRemoteLocker(ctx, filepath.Join(lockers[indexOfActiveLocker].TargetDir, ".bundle/deploy.lock"))
+	remoteLocker, err := deploy.GetRemoteLocker(ctx, lockers[indexOfActiveLocker].RemotePath())
 	assert.NoError(t, err)
 	assert.Equal(t, remoteLocker.Id, lockers[indexOfActiveLocker].Id, "remote locker id does not match active locker")
 	assert.True(t, remoteLocker.AcquisitionTime.Equal(lockers[indexOfActiveLocker].AcquisitionTime), "remote locker acquisition time does not match active locker")
@@ -125,7 +125,7 @@ func TestAccLock(t *testing.T) {
 	// Unlock active lock and check it becomes inactive
 	err = lockers[indexOfActiveLocker].Unlock(ctx)
 	assert.NoError(t, err)
-	remoteLocker, err = deploy.GetRemoteLocker(ctx, filepath.Join(lockers[indexOfActiveLocker].TargetDir, ".bundle/deploy.lock"))
+	remoteLocker, err = deploy.GetRemoteLocker(ctx, lockers[indexOfActiveLocker].RemotePath())
 	assert.ErrorContains(t, err, "File not found.", "remote lock file not deleted on unlock")
 	assert.Nil(t, remoteLocker)
 	assert.False(t, lockers[indexOfActiveLocker].Active)
