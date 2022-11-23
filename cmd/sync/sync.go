@@ -23,15 +23,13 @@ var syncCmd = &cobra.Command{
 		wsc := prj.WorkspacesClient()
 
 		if *remotePath == "" {
-			me, err := prj.Me()
+			prjRemotePath, err := prj.RemoteRoot()
 			if err != nil {
 				return err
 			}
-			repositoryName, err := git.RepositoryName()
-			if err != nil {
-				return err
-			}
-			*remotePath = fmt.Sprintf("/Repos/%s/%s", me.UserName, repositoryName)
+			*remotePath = prjRemotePath
+		} else {
+			prj.OverrideRemoteRoot(*remotePath)
 		}
 
 		log.Printf("[INFO] Remote file sync location: %v", *remotePath)
@@ -43,7 +41,7 @@ var syncCmd = &cobra.Command{
 			return fmt.Errorf("repo not found, please ensure %s exists", *remotePath)
 		}
 
-		root := prj.Root()
+		root := prj.LocalRoot()
 		syncCallback := getRemoteSyncCallback(ctx, root, *remotePath, wsc)
 		err = spawnSyncRoutine(ctx, *interval, syncCallback, *remotePath)
 		return err
