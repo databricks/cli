@@ -1,4 +1,4 @@
-package deploy
+package bundle
 
 import (
 	"bytes"
@@ -9,10 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/databricks/bricks/cmd/sync"
-	"github.com/databricks/bricks/project"
 	"github.com/databricks/databricks-sdk-go/databricks/client"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
+	"github.com/databricks/databricks-sdk-go/workspaces"
 	"github.com/google/uuid"
 )
 
@@ -40,8 +39,8 @@ type DeployLocker struct {
 	Active bool
 }
 
-func GetRemoteLocker(ctx context.Context, lockFilePath string) (*DeployLocker, error) {
-	res, err := GetFile(ctx, lockFilePath)
+func GetRemoteLocker(ctx context.Context, wsc *workspaces.WorkspacesClient, lockFilePath string) (*DeployLocker, error) {
+	res, err := GetFileContent(ctx, wsc, lockFilePath)
 	if err != nil {
 		return nil, err
 	}
@@ -58,23 +57,29 @@ func GetRemoteLocker(ctx context.Context, lockFilePath string) (*DeployLocker, e
 }
 
 // idempotent
-func (locker *DeployLocker) safePutFile(ctx context.Context, path string, content []byte) error {
+func (locker *DeployLocker) safePutFile(ctx context.Context, wsc *workspaces.WorkspacesClient, path string, content []byte) error {
 	contentReader := bytes.NewReader(content)
 	// TODO: Consider reading the remote locker file to ensure we hold the lock
 	// This hedges against race conditions during forced deployment
 	if !locker.Active {
 		return fmt.Errorf("failed to put file. Lock not held to safely mutate workspace files")
 	}
-
-	err := sync.PutFile(ctx, path, contentReader)
+	// workspace mkdirs is idempotent
+	err := wsc.Workspace.MkdirsByPath(ctx, filepath.Dir(path))
+	if err != nil {
+		return fmt.Errorf("could not mkdir to put file: %s", err)
+	}
+	apiClient, err := client.New(wsc.Config)
 	if err != nil {
 		return err
 	}
-	return nil
+	apiPath := fmt.Sprintf(
+		"/api/2.0/workspace-files/import-file/%s?overwrite=true",
+		strings.TrimLeft(path, "/"))
+	return apiClient.Post(ctx, apiPath, contentReader, nil)
 }
 
-func GetFile(ctx context.Context, path string) (interface{}, error) {
-	wsc := project.Get(ctx).WorkspacesClient()
+func GetFileContent(ctx context.Context, wsc *workspaces.WorkspacesClient, path string) (interface{}, error) {
 	apiClient, err := client.New(wsc.Config)
 	if err != nil {
 		return nil, err
@@ -95,9 +100,8 @@ func GetFile(ctx context.Context, path string) (interface{}, error) {
 }
 
 // not idempotent. errors out if file exists
-func postFile(ctx context.Context, path string, content []byte) error {
+func postFile(ctx context.Context, wsc *workspaces.WorkspacesClient, path string, content []byte) error {
 	contentReader := bytes.NewReader(content)
-	wsc := project.Get(ctx).WorkspacesClient()
 	apiClient, err := client.New(wsc.Config)
 	if err != nil {
 		return err
@@ -115,22 +119,22 @@ func postFile(ctx context.Context, path string, content []byte) error {
 	return apiClient.Post(ctx, importApiPath, contentReader, nil)
 }
 
-func (locker *DeployLocker) postLockFile(ctx context.Context) error {
+func (locker *DeployLocker) postLockFile(ctx context.Context, wsc *workspaces.WorkspacesClient) error {
 	locker.AcquisitionTime = time.Now()
 	lockerContent, err := json.Marshal(*locker)
 	if err != nil {
 		return err
 	}
-	return postFile(ctx, locker.RemotePath(), lockerContent)
+	return postFile(ctx, wsc, locker.RemotePath(), lockerContent)
 }
 
-func (locker *DeployLocker) Lock(ctx context.Context) error {
+func (locker *DeployLocker) Lock(ctx context.Context, wsc *workspaces.WorkspacesClient) error {
 	if locker.Active {
 		return fmt.Errorf("locker already active")
 	}
-	err := locker.postLockFile(ctx)
+	err := locker.postLockFile(ctx, wsc)
 	if err != nil && strings.Contains(err.Error(), fmt.Sprintf("%s already exists", locker.RemotePath())) {
-		remoteLocker, err := GetRemoteLocker(ctx, locker.RemotePath())
+		remoteLocker, err := GetRemoteLocker(ctx, wsc, locker.RemotePath())
 		if err != nil {
 			return fmt.Errorf("failed to get remote lock file: %s", err)
 		}
@@ -149,29 +153,22 @@ func (locker *DeployLocker) RemotePath() string {
 	return filepath.Join(locker.TargetDir, ".bundle/deploy.lock")
 }
 
-func CreateLocker(ctx context.Context, isForced bool, targetDir string) (*DeployLocker, error) {
-	prj := project.Get(ctx)
-	user, err := prj.Me()
-	if err != nil {
-		return nil, err
-	}
-
+func CreateLocker(user string, isForced bool, targetDir string) (*DeployLocker, error) {
 	return &DeployLocker{
 		Id:        uuid.New(),
 		IsForced:  isForced,
 		TargetDir: targetDir,
-		User:      user.UserName,
+		User:      user,
 		Active:    false,
 	}, nil
 }
 
-func (locker *DeployLocker) Unlock(ctx context.Context) error {
+func (locker *DeployLocker) Unlock(ctx context.Context, wsc *workspaces.WorkspacesClient) error {
 	if !locker.Active {
 		return fmt.Errorf("only active lockers can be unlocked")
 	}
 
-	wsc := project.Get(ctx).WorkspacesClient()
-	remoteLocker, err := GetRemoteLocker(ctx, locker.RemotePath())
+	remoteLocker, err := GetRemoteLocker(ctx, wsc, locker.RemotePath())
 	if err != nil {
 		return err
 	}
