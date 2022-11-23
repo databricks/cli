@@ -1,4 +1,4 @@
-package bundle
+package lock
 
 import (
 	"bytes"
@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/databricks/bricks/utilities"
 	"github.com/databricks/databricks-sdk-go/databricks/client"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/databricks/databricks-sdk-go/workspaces"
@@ -40,7 +41,7 @@ type DeployLocker struct {
 }
 
 func GetRemoteLocker(ctx context.Context, wsc *workspaces.WorkspacesClient, lockFilePath string) (*DeployLocker, error) {
-	res, err := GetFileContent(ctx, wsc, lockFilePath)
+	res, err := utilities.GetFileContent(ctx, wsc, lockFilePath)
 	if err != nil {
 		return nil, err
 	}
@@ -57,7 +58,7 @@ func GetRemoteLocker(ctx context.Context, wsc *workspaces.WorkspacesClient, lock
 }
 
 // idempotent
-func (locker *DeployLocker) safePutFile(ctx context.Context, wsc *workspaces.WorkspacesClient, path string, content []byte) error {
+func (locker *DeployLocker) SafePutFile(ctx context.Context, wsc *workspaces.WorkspacesClient, path string, content []byte) error {
 	contentReader := bytes.NewReader(content)
 	// TODO: Consider reading the remote locker file to ensure we hold the lock
 	// This hedges against race conditions during forced deployment
@@ -79,53 +80,13 @@ func (locker *DeployLocker) safePutFile(ctx context.Context, wsc *workspaces.Wor
 	return apiClient.Post(ctx, apiPath, contentReader, nil)
 }
 
-func GetFileContent(ctx context.Context, wsc *workspaces.WorkspacesClient, path string) (interface{}, error) {
-	apiClient, err := client.New(wsc.Config)
-	if err != nil {
-		return nil, err
-	}
-	exportApiPath := fmt.Sprintf(
-		"/api/2.0/workspace-files/%s",
-		strings.TrimLeft(path, "/"))
-
-	var res interface{}
-
-	// NOTE: azure workspaces return misleading messages when a file does not exist
-	// see: https://databricks.atlassian.net/browse/ES-510449
-	err = apiClient.Get(ctx, exportApiPath, nil, &res)
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch file %s: %s", path, err)
-	}
-	return res, nil
-}
-
-// not idempotent. errors out if file exists
-func postFile(ctx context.Context, wsc *workspaces.WorkspacesClient, path string, content []byte) error {
-	contentReader := bytes.NewReader(content)
-	apiClient, err := client.New(wsc.Config)
-	if err != nil {
-		return err
-	}
-	err = wsc.Workspace.MkdirsByPath(ctx, filepath.Dir(path))
-	if err != nil {
-		return fmt.Errorf("could not mkdir to put file: %s", err)
-	}
-	if err != nil {
-		return err
-	}
-	importApiPath := fmt.Sprintf(
-		"/api/2.0/workspace-files/import-file/%s?overwrite=false",
-		strings.TrimLeft(path, "/"))
-	return apiClient.Post(ctx, importApiPath, contentReader, nil)
-}
-
 func (locker *DeployLocker) postLockFile(ctx context.Context, wsc *workspaces.WorkspacesClient) error {
 	locker.AcquisitionTime = time.Now()
 	lockerContent, err := json.Marshal(*locker)
 	if err != nil {
 		return err
 	}
-	return postFile(ctx, wsc, locker.RemotePath(), lockerContent)
+	return utilities.PostFile(ctx, wsc, locker.RemotePath(), lockerContent)
 }
 
 func (locker *DeployLocker) Lock(ctx context.Context, wsc *workspaces.WorkspacesClient) error {

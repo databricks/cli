@@ -1,10 +1,11 @@
-package bundle
+package deploy
 
 import (
 	"log"
 	"os"
 
-	"github.com/databricks/bricks/cmd/root"
+	"github.com/databricks/bricks/bundle"
+	parent "github.com/databricks/bricks/cmd/bundle"
 	"github.com/spf13/cobra"
 )
 
@@ -15,7 +16,9 @@ import (
 // Add ability to read logs from deploy
 
 // WIP: will add integration test and develop this command for terraform state sync
-// Files in workspace is not available every workspace
+// Files in workspace is not available every workspace\
+
+// TODO: place the command under bundle
 var deployCmd = &cobra.Command{
 	Use:   "deploy",
 	Short: "deploys a DAB",
@@ -31,8 +34,8 @@ var deployCmd = &cobra.Command{
 			*localRoot = cwd
 		}
 
-		bundle := CreateBundle(*env, *localRoot, *remoteRoot)
-		err := bundle.exportTerraformState(ctx)
+		bundle := bundle.CreateBundle(*env, *localRoot, *remoteRoot)
+		err := bundle.ExportTerraformState(ctx)
 		if err != nil {
 			return err
 		}
@@ -49,7 +52,7 @@ var deployCmd = &cobra.Command{
 			}
 		}()
 		// TODO: terraform apply here
-		err = bundle.importTerraformState(ctx)
+		err = bundle.ImportTerraformState(ctx)
 		if err != nil {
 			return err
 		}
@@ -118,9 +121,10 @@ var localRoot *string
 var env *string
 
 func init() {
-	root.RootCmd.AddCommand(deployCmd)
+	// root.RootCmd.AddCommand(deployCmd)
 	remoteRoot = deployCmd.Flags().String("remote-root", "", "workspace root of the project eg: /Repos/me@example.com/test-repo")
 	localRoot = deployCmd.Flags().String("local-root", "", "path to the root directory of the DAB project. default: current working dir")
 	env = deployCmd.Flags().String("env", "development", "environment to deploy on. default: development")
 	deployCmd.MarkFlagRequired("remote-root")
+	parent.AddCommand(deployCmd)
 }

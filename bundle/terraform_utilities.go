@@ -7,28 +7,19 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/databricks/databricks-sdk-go/workspaces"
+	"github.com/databricks/bricks/lock"
+	"github.com/databricks/bricks/utilities"
 )
 
-type bundleByShreyas struct {
-	workspacesClient *workspaces.WorkspacesClient
-	localRoot        string
-	remoteRoot       string
-	env              string
-	locker           *DeployLocker
-	user             string
-}
-
-func CreateBundle(env, localRoot, remoteRoot string) *bundleByShreyas {
-	return &bundleByShreyas{
-		workspacesClient: workspaces.New(),
-		localRoot:        localRoot,
-		remoteRoot:       remoteRoot,
-		env:              env,
+func CreateBundle(env, localRoot, remoteRoot string) *Bundle {
+	return &Bundle{
+		localRoot:  localRoot,
+		remoteRoot: remoteRoot,
+		env:        env,
 	}
 }
 
-func (b *bundleByShreyas) Locker() (*DeployLocker, error) {
+func (b *Bundle) Locker() (*lock.DeployLocker, error) {
 	if b.locker != nil {
 		return b.locker, nil
 	}
@@ -36,7 +27,7 @@ func (b *bundleByShreyas) Locker() (*DeployLocker, error) {
 	if err != nil {
 		return nil, err
 	}
-	newLocker, err := CreateLocker(user, false, b.remoteRoot)
+	newLocker, err := lock.CreateLocker(user, false, b.remoteRoot)
 	if err != nil {
 		return nil, err
 	}
@@ -44,11 +35,11 @@ func (b *bundleByShreyas) Locker() (*DeployLocker, error) {
 	return b.locker, nil
 }
 
-func (b *bundleByShreyas) User() (string, error) {
+func (b *Bundle) User() (string, error) {
 	if b.user != "" {
 		return b.user, nil
 	}
-	user, err := b.workspacesClient.CurrentUser.Me(context.Background())
+	user, err := b.WorkspaceClient().CurrentUser.Me(context.Background())
 	if err != nil {
 		return "", err
 	}
@@ -56,24 +47,24 @@ func (b *bundleByShreyas) User() (string, error) {
 	return b.user, nil
 }
 
-func (b *bundleByShreyas) cacheDir() string {
+func (b *Bundle) cacheDir() string {
 	return filepath.Join(b.localRoot, ".databricks/bundle")
 }
 
-func (b *bundleByShreyas) tfHclPath() string {
-	return filepath.Join(b.cacheDir(), b.env, "main.tf")
-}
+// func (b *Bundle) tfHclPath() string {
+// 	return filepath.Join(b.cacheDir(), b.env, "main.tf")
+// }
 
-func (b *bundleByShreyas) tfStateRemotePath() string {
+func (b *Bundle) tfStateRemotePath() string {
 	return filepath.Join(b.remoteRoot, ".bundle", "terraform.tfstate")
 }
 
-func (b *bundleByShreyas) tfStateLocalPath() string {
+func (b *Bundle) tfStateLocalPath() string {
 	return filepath.Join(b.cacheDir(), b.env, "terraform.tfstate")
 }
 
-func (b *bundleByShreyas) exportTerraformState(ctx context.Context) error {
-	res, err := GetFileContent(ctx, b.workspacesClient, b.tfStateRemotePath())
+func (b *Bundle) ExportTerraformState(ctx context.Context) error {
+	res, err := utilities.GetFileContent(ctx, b.WorkspaceClient(), b.tfStateRemotePath())
 	if err != nil && strings.Contains(err.Error(), "File not found.") {
 		return nil
 	}
@@ -100,7 +91,7 @@ func (b *bundleByShreyas) exportTerraformState(ctx context.Context) error {
 	return err
 }
 
-func (b *bundleByShreyas) importTerraformState(ctx context.Context) error {
+func (b *Bundle) ImportTerraformState(ctx context.Context) error {
 	l, err := b.Locker()
 	if err != nil {
 		return err
@@ -111,21 +102,21 @@ func (b *bundleByShreyas) importTerraformState(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	return l.safePutFile(ctx, b.workspacesClient, b.tfStateRemotePath(), bytes)
+	return l.SafePutFile(ctx, b.WorkspaceClient(), b.tfStateRemotePath(), bytes)
 }
 
-func (b *bundleByShreyas) Lock(ctx context.Context) error {
+func (b *Bundle) Lock(ctx context.Context) error {
 	l, err := b.Locker()
 	if err != nil {
 		return err
 	}
-	return l.Lock(ctx, b.workspacesClient)
+	return l.Lock(ctx, b.WorkspaceClient())
 }
 
-func (b *bundleByShreyas) Unlock(ctx context.Context) error {
+func (b *Bundle) Unlock(ctx context.Context) error {
 	l, err := b.Locker()
 	if err != nil {
 		return err
 	}
-	return l.Unlock(ctx, b.workspacesClient)
+	return l.Unlock(ctx, b.WorkspaceClient())
 }

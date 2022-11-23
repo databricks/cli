@@ -7,6 +7,7 @@ import (
 
 	"github.com/databricks/bricks/bundle/config"
 	"github.com/databricks/bricks/bundle/config/mutator"
+	"github.com/databricks/bricks/lock"
 	"github.com/databricks/databricks-sdk-go/workspaces"
 )
 
@@ -17,6 +18,12 @@ type Bundle struct {
 	// It can be initialized on demand after loading the configuration.
 	clientOnce sync.Once
 	client     *workspaces.WorkspacesClient
+
+	localRoot  string
+	remoteRoot string
+	env        string
+	locker     *lock.DeployLocker
+	user       string
 }
 
 func (b *Bundle) MutateForEnvironment(env string) error {

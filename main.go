@@ -4,6 +4,7 @@ import (
 	_ "github.com/databricks/bricks/cmd/api"
 	_ "github.com/databricks/bricks/cmd/bundle"
 	_ "github.com/databricks/bricks/cmd/bundle/debug"
+	_ "github.com/databricks/bricks/cmd/bundle/deploy"
 	_ "github.com/databricks/bricks/cmd/configure"
 	_ "github.com/databricks/bricks/cmd/fs"
 	_ "github.com/databricks/bricks/cmd/init"
