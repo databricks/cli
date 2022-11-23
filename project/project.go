@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 
 	"github.com/databricks/bricks/git"
 	"github.com/databricks/databricks-sdk-go/databricks"
 	"github.com/databricks/databricks-sdk-go/service/clusters"
 	"github.com/databricks/databricks-sdk-go/service/commands"
 	"github.com/databricks/databricks-sdk-go/service/scim"
-	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/databricks/databricks-sdk-go/workspaces"
 	"github.com/spf13/cobra"
 )
@@ -19,9 +19,10 @@ import (
 const CacheDirName = ".databricks"
 
 type project struct {
-	localRoot  string
-	remoteRoot string
-	env        string
+	mu sync.Mutex
+
+	root string
+	env  string
 
 	config      *Config
 	environment *Environment
@@ -73,8 +74,8 @@ func Initialize(ctx context.Context, root, env string) (context.Context, error) 
 	}
 
 	p := project{
-		localRoot: root,
-		env:       env,
+		root: root,
+		env:  env,
 
 		config:      &config,
 		environment: &environment,
@@ -113,51 +114,8 @@ func (p *project) WorkspacesClient() *workspaces.WorkspacesClient {
 	return p.wsc
 }
 
-func (p *project) LocalRoot() string {
-	return p.localRoot
-}
-
-func (p *project) OverrideRemoteRoot(newRemoteRoot string) {
-	p.remoteRoot = newRemoteRoot
-}
-
-func (p *project) RemoteRoot() (string, error) {
-	if p.remoteRoot != "" {
-		return p.remoteRoot, nil
-	}
-	me, err := p.Me()
-	if err != nil {
-		return "", err
-	}
-	repositoryName, err := git.RepositoryName()
-	if err != nil {
-		return "", err
-	}
-	p.remoteRoot = fmt.Sprintf("/Repos/%s/%s", me.UserName, repositoryName)
-	return p.remoteRoot, nil
-}
-
-// helper function useful for debugging
-// TODO: recursively make api queries to get entire directory structure of project
-// TODO: We can later leverage this to clean up empty directories that does not happen
-// right now on bricks sync
-func (p *project) ListRemoteFiles(ctx context.Context) ([]string, error) {
-	remoteRoot, err := p.RemoteRoot()
-	if err != nil {
-		return []string{}, err
-	}
-	wsc := p.WorkspacesClient()
-	files, err := wsc.Workspace.ListAll(ctx, workspace.ListRequest{
-		Path: remoteRoot,
-	})
-	if err != nil {
-		return []string{}, nil
-	}
-	filePaths := make([]string, len(files))
-	for i, file := range files {
-		filePaths[i] = file.Path
-	}
-	return filePaths, nil
+func (p *project) Root() string {
+	return p.root
 }
 
 func (p *project) GetFileSet() *git.FileSet {
@@ -177,7 +135,7 @@ func (p *project) CacheDir() (string, error) {
 		return "", fmt.Errorf("please add /%s/ to .gitignore", CacheDirName)
 	}
 
-	cacheDirPath := filepath.Join(p.localRoot, CacheDirName)
+	cacheDirPath := filepath.Join(p.root, CacheDirName)
 	// create cache dir if it does not exist
 	if _, err := os.Stat(cacheDirPath); os.IsNotExist(err) {
 		err = os.Mkdir(cacheDirPath, os.ModeDir|os.ModePerm)
@@ -197,6 +155,8 @@ func (p *project) Environment() Environment {
 }
 
 func (p *project) Me() (*scim.User, error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
 	if p.me != nil {
 		return p.me, nil
 	}
