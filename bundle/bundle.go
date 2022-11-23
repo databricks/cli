@@ -19,11 +19,12 @@ type Bundle struct {
 	clientOnce sync.Once
 	client     *workspaces.WorkspacesClient
 
-	localRoot  string
-	remoteRoot string
-	env        string
-	locker     *lock.DeployLocker
-	user       string
+	localRoot           string
+	remoteRoot          string
+	env                 string
+	locker              *lock.DeployLocker
+	user                string
+	terraformBinaryPath string
 }
 
 func (b *Bundle) MutateForEnvironment(env string) error {

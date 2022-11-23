@@ -16,7 +16,7 @@ import (
 	"github.com/google/uuid"
 )
 
-// a mutux on a specified directory in workspace file system.
+// a mutex on a specified directory in workspace file system.
 //
 // Only one  DeployLocker can be "active" on a workspace directory. This
 // enables exclusive access to the workspace for deployment purposes

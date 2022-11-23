@@ -1,6 +1,7 @@
 package deploy
 
 import (
+	"fmt"
 	"log"
 	"os"
 
@@ -9,16 +10,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// TODO: move to bundle directory these codes
 // TODO: smoke test all flag configurations
 
-// Q: Why do we pass the context object everywhere?
-// Add ability to read logs from deploy
-
-// WIP: will add integration test and develop this command for terraform state sync
-// Files in workspace is not available every workspace\
-
-// TODO: place the command under bundle
+// WIP: will add integration test and develop this command
 var deployCmd = &cobra.Command{
 	Use:   "deploy",
 	Short: "deploys a DAB",
@@ -34,7 +28,7 @@ var deployCmd = &cobra.Command{
 			*localRoot = cwd
 		}
 
-		bundle := bundle.CreateBundle(*env, *localRoot, *remoteRoot)
+		bundle := bundle.CreateBundle(*env, *localRoot, *remoteRoot, *terraformBinaryPath)
 		err := bundle.ExportTerraformState(ctx)
 		if err != nil {
 			return err
@@ -47,72 +41,29 @@ var deployCmd = &cobra.Command{
 		defer func() {
 			err = bundle.Unlock(ctx)
 			if err != nil {
-				// TODO: confirm that this error is actually printed
 				log.Printf("[ERROR] %s", err)
 			}
 		}()
-		// TODO: terraform apply here
-		err = bundle.ImportTerraformState(ctx)
+		tf, err := bundle.GetTerraformHandle(ctx)
+		nonEmptyPlan, err := tf.Plan(ctx)
 		if err != nil {
 			return err
 		}
-
+		if !nonEmptyPlan {
+			log.Printf("[INFO] state diff is empty. No changes applied")
+			return nil
+		}
+		err = tf.Apply(ctx)
+		// upload state even if apply fails to handle partial deployments
+		err2 := bundle.ImportTerraformState(ctx)
+		if err != nil {
+			return fmt.Errorf("deploymented failed: %s", err)
+		}
+		if err2 != nil {
+			return fmt.Errorf("failed to upload updated tfstate file: %s", err2)
+		}
+		log.Printf("[INFO] deployment complete")
 		return nil
-
-		// if *remotePath != "" {
-		// 	prj.OverrideRemoteRoot(*remotePath)
-		// }
-
-		// targetDir, err := prj.RemoteRoot()
-		// if err != nil {
-		// 	return err
-		// }
-
-		// locker, err := CreateLocker(ctx, false, targetDir)
-		// if err != nil {
-		// 	return err
-		// }
-
-		// err = locker.Lock(ctx)
-		// if err != nil {
-		// 	return err
-		// }
-		// defer func() {
-		// 	err = locker.Unlock(ctx)
-		// 	if err != nil {
-		// 		log.Printf("[ERROR] %s", err)
-		// 	}
-		// }()
-		// // time.Sleep(5 * time.Second)
-
-		// remoteTfState, err := readRemoteTfStateFile(ctx)
-		// if err != nil {
-		// 	return err
-		// }
-
-		// localTfState, err := readLocalTfStateFile(ctx)
-		// if err != nil {
-		// 	return err
-		// }
-
-		// combinedTfState := tfStateSchema{
-		// 	DeploymentNumber: remoteTfState.DeploymentNumber + 1,
-		// 	Name:             localTfState.Name,
-		// }
-
-		// err = safeWriteRemoteTfStateFile(ctx, combinedTfState, locker)
-		// if err != nil {
-		// 	return err
-		// }
-
-		// err = writeLocalTfStateFile(ctx, combinedTfState)
-		// if err != nil {
-		// 	return err
-		// }
-
-		// log.Printf("[INFO] deploy completed. congrats!!")
-		// // TODO: Unlock lock even in case of an error (put in defer block)
-		// return nil
 	},
 }
 
@@ -120,11 +71,16 @@ var remoteRoot *string
 var localRoot *string
 var env *string
 
+// TODO: remove this arguement once we package a terraform binary with the bricks cli
+var terraformBinaryPath *string
+
 func init() {
 	// root.RootCmd.AddCommand(deployCmd)
 	remoteRoot = deployCmd.Flags().String("remote-root", "", "workspace root of the project eg: /Repos/me@example.com/test-repo")
 	localRoot = deployCmd.Flags().String("local-root", "", "path to the root directory of the DAB project. default: current working dir")
+	terraformBinaryPath = deployCmd.Flags().String("tf-path", "", "path to a terraform executable binary")
 	env = deployCmd.Flags().String("env", "development", "environment to deploy on. default: development")
 	deployCmd.MarkFlagRequired("remote-root")
+	deployCmd.MarkFlagRequired("tf-path")
 	parent.AddCommand(deployCmd)
 }

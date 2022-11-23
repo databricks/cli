@@ -24,6 +24,13 @@ require (
 )
 
 require (
+	github.com/hashicorp/go-version v1.6.0 // indirect
+	github.com/hashicorp/terraform-exec v0.17.3 // indirect
+	github.com/hashicorp/terraform-json v0.14.0 // indirect
+	github.com/zclconf/go-cty v1.11.0 // indirect
+)
+
+require (
 	cloud.google.com/go/compute v1.12.1 // indirect
 	cloud.google.com/go/compute/metadata v0.2.1 // indirect
 	github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e // indirect

@@ -9,13 +9,15 @@ import (
 
 	"github.com/databricks/bricks/lock"
 	"github.com/databricks/bricks/utilities"
+	"github.com/hashicorp/terraform-exec/tfexec"
 )
 
-func CreateBundle(env, localRoot, remoteRoot string) *Bundle {
+func CreateBundle(env, localRoot, remoteRoot, terraformBinaryPath string) *Bundle {
 	return &Bundle{
-		localRoot:  localRoot,
-		remoteRoot: remoteRoot,
-		env:        env,
+		localRoot:           localRoot,
+		remoteRoot:          remoteRoot,
+		env:                 env,
+		terraformBinaryPath: terraformBinaryPath,
 	}
 }
 
@@ -51,9 +53,9 @@ func (b *Bundle) cacheDir() string {
 	return filepath.Join(b.localRoot, ".databricks/bundle")
 }
 
-// func (b *Bundle) tfHclPath() string {
-// 	return filepath.Join(b.cacheDir(), b.env, "main.tf")
-// }
+func (b *Bundle) tfHclPath() string {
+	return filepath.Join(b.cacheDir(), b.env, "main.tf")
+}
 
 func (b *Bundle) tfStateRemotePath() string {
 	return filepath.Join(b.remoteRoot, ".bundle", "terraform.tfstate")
@@ -119,4 +121,12 @@ func (b *Bundle) Unlock(ctx context.Context) error {
 		return err
 	}
 	return l.Unlock(ctx, b.WorkspaceClient())
+}
+
+func (b *Bundle) GetTerraformHandle(ctx context.Context) (*tfexec.Terraform, error) {
+	tf, err := tfexec.NewTerraform(filepath.Dir(b.tfHclPath()), b.terraformBinaryPath)
+	if err != nil {
+		return nil, err
+	}
+	return tf, nil
 }
