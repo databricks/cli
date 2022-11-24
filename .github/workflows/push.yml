@@ -8,11 +8,11 @@ on:
 
 jobs:
   tests:
-    runs-on: matrix.os
+    runs-on: ubuntu-latest
 
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
+    # strategy:
+    #   matrix:
+    #     os: [ubuntu-latest]
 
     steps:
       - name: Checkout repository and submodules
