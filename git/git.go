@@ -9,8 +9,8 @@ import (
 	"strings"
 
 	"github.com/databricks/bricks/folders"
-	"github.com/databricks/bricks/utilities"
-	"github.com/databricks/databricks-sdk-go/workspaces"
+	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/service/repos"
 	giturls "github.com/whilp/git-urls"
 	"gopkg.in/ini.v1"
 )
@@ -82,8 +82,8 @@ func RepositoryName() (string, error) {
 	return strings.TrimSuffix(base, ".git"), nil
 }
 
-func RepoExists(remotePath string, ctx context.Context, wsc *workspaces.WorkspacesClient) (bool, error) {
-	repos, err := utilities.GetAllRepos(ctx, wsc, remotePath)
+func RepoExists(remotePath string, ctx context.Context, w *databricks.WorkspaceClient) (bool, error) {
+	repos, err := w.Repos.ListAll(ctx, repos.ListRequest{})
 	if err != nil {
 		return false, fmt.Errorf("could not get repos: %s", err)
 	}
