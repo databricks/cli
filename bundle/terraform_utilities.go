@@ -128,9 +128,5 @@ func (b *Bundle) Unlock(ctx context.Context) error {
 }
 
 func (b *Bundle) GetTerraformHandle(ctx context.Context) (*tfexec.Terraform, error) {
-	tf, err := tfexec.NewTerraform(filepath.Dir(b.tfHclPath()), b.terraformBinaryPath)
-	if err != nil {
-		return nil, err
-	}
-	return tf, nil
+	return tfexec.NewTerraform(filepath.Dir(b.tfHclPath()), b.terraformBinaryPath)
 }

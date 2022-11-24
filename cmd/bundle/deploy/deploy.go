@@ -10,9 +10,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// TODO: smoke test all flag configurations
-
-// WIP: will add integration test and develop this command
+// TODO: will add integration test once terraform binary is bundled here
 var deployCmd = &cobra.Command{
 	Use:   "deploy",
 	Short: "deploys a DAB",
@@ -41,7 +39,7 @@ var deployCmd = &cobra.Command{
 		defer func() {
 			err = bundle.Unlock(ctx)
 			if err != nil {
-				log.Printf("[ERROR] %s", err)
+				log.Printf("[ERROR] failed to unlock deployment mutex: %s", err)
 			}
 		}()
 		tf, err := bundle.GetTerraformHandle(ctx)

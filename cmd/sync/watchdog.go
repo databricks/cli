@@ -43,7 +43,7 @@ const MaxRequestsInFlight = 20
 //
 // The workspace file system backend strips .py from the file name if the python
 // file is a notebook
-func PutFile(ctx context.Context, path string, content io.Reader) error {
+func putFile(ctx context.Context, path string, content io.Reader) error {
 	wsc := project.Get(ctx).WorkspacesClient()
 	// workspace mkdirs is idempotent
 	err := wsc.Workspace.MkdirsByPath(ctx, filepath.Dir(path))
@@ -111,7 +111,7 @@ func getRemoteSyncCallback(ctx context.Context, root, remoteDir string, wsc *wor
 				if err != nil {
 					return err
 				}
-				err = PutFile(ctx, path.Join(remoteDir, localNameCopy), f)
+				err = putFile(ctx, path.Join(remoteDir, localNameCopy), f)
 				if err != nil {
 					return fmt.Errorf("failed to upload file: %s", err)
 				}
