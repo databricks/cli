@@ -15,9 +15,9 @@ import (
 
 	"github.com/databricks/bricks/cmd/sync"
 	"github.com/databricks/bricks/folders"
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/repos"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
-	"github.com/databricks/databricks-sdk-go/workspaces"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -39,7 +39,7 @@ func TestAccFullSync(t *testing.T) {
 	t.Log("bricks repo location: : ", bricksRepo)
 	assert.Equal(t, "bricks", filepath.Base(bricksRepo))
 
-	wsc := workspaces.New()
+	wsc := databricks.Must(databricks.NewWorkspaceClient())
 	ctx := context.Background()
 	me, err := wsc.CurrentUser.Me(ctx)
 	assert.NoError(t, err)
@@ -104,18 +104,18 @@ func TestAccFullSync(t *testing.T) {
 
 	// First upload assertion
 	assert.Eventually(t, func() bool {
-		repoContent, err := wsc.Workspace.List(ctx, workspace.ListRequest{
+		objects, err := wsc.Workspace.ListAll(ctx, workspace.ListRequest{
 			Path: repoPath,
 		})
 		assert.NoError(t, err)
-		return len(repoContent.Objects) == 3
+		return len(objects) == 3
 	}, 30*time.Second, 5*time.Second)
-	repoContent, err := wsc.Workspace.List(ctx, workspace.ListRequest{
+	objects, err := wsc.Workspace.ListAll(ctx, workspace.ListRequest{
 		Path: repoPath,
 	})
 	assert.NoError(t, err)
 	var files1 []string
-	for _, v := range repoContent.Objects {
+	for _, v := range objects {
 		files1 = append(files1, filepath.Base(v.Path))
 	}
 	assert.Len(t, files1, 3)
@@ -127,18 +127,18 @@ func TestAccFullSync(t *testing.T) {
 	os.Create(filepath.Join(projectDir, "hello.txt"))
 	os.Create(filepath.Join(projectDir, "world.txt"))
 	assert.Eventually(t, func() bool {
-		repoContent, err := wsc.Workspace.List(ctx, workspace.ListRequest{
+		objects, err := wsc.Workspace.ListAll(ctx, workspace.ListRequest{
 			Path: repoPath,
 		})
 		assert.NoError(t, err)
-		return len(repoContent.Objects) == 5
+		return len(objects) == 5
 	}, 30*time.Second, 5*time.Second)
-	repoContent, err = wsc.Workspace.List(ctx, workspace.ListRequest{
+	objects, err = wsc.Workspace.ListAll(ctx, workspace.ListRequest{
 		Path: repoPath,
 	})
 	assert.NoError(t, err)
 	var files2 []string
-	for _, v := range repoContent.Objects {
+	for _, v := range objects {
 		files2 = append(files2, filepath.Base(v.Path))
 	}
 	assert.Len(t, files2, 5)
@@ -151,18 +151,18 @@ func TestAccFullSync(t *testing.T) {
 	// delete a file and assert
 	os.Remove(filepath.Join(projectDir, "hello.txt"))
 	assert.Eventually(t, func() bool {
-		repoContent, err := wsc.Workspace.List(ctx, workspace.ListRequest{
+		objects, err := wsc.Workspace.ListAll(ctx, workspace.ListRequest{
 			Path: repoPath,
 		})
 		assert.NoError(t, err)
-		return len(repoContent.Objects) == 4
+		return len(objects) == 4
 	}, 30*time.Second, 5*time.Second)
-	repoContent, err = wsc.Workspace.List(ctx, workspace.ListRequest{
+	objects, err = wsc.Workspace.ListAll(ctx, workspace.ListRequest{
 		Path: repoPath,
 	})
 	assert.NoError(t, err)
 	var files3 []string
-	for _, v := range repoContent.Objects {
+	for _, v := range objects {
 		files3 = append(files3, filepath.Base(v.Path))
 	}
 	assert.Len(t, files3, 4)
@@ -211,7 +211,7 @@ func TestAccIncrementalSync(t *testing.T) {
 	t.Log("bricks repo location: : ", bricksRepo)
 	assert.Equal(t, "bricks", filepath.Base(bricksRepo))
 
-	wsc := workspaces.New()
+	wsc := databricks.Must(databricks.NewWorkspaceClient())
 	ctx := context.Background()
 	me, err := wsc.CurrentUser.Me(ctx)
 	assert.NoError(t, err)
@@ -281,18 +281,18 @@ func TestAccIncrementalSync(t *testing.T) {
 
 	// First upload assertion
 	assert.Eventually(t, func() bool {
-		repoContent, err := wsc.Workspace.List(ctx, workspace.ListRequest{
+		objects, err := wsc.Workspace.ListAll(ctx, workspace.ListRequest{
 			Path: repoPath,
 		})
 		assert.NoError(t, err)
-		return len(repoContent.Objects) == 2
+		return len(objects) == 2
 	}, 30*time.Second, 5*time.Second)
-	repoContent, err := wsc.Workspace.List(ctx, workspace.ListRequest{
+	objects, err := wsc.Workspace.ListAll(ctx, workspace.ListRequest{
 		Path: repoPath,
 	})
 	assert.NoError(t, err)
 	var files1 []string
-	for _, v := range repoContent.Objects {
+	for _, v := range objects {
 		files1 = append(files1, filepath.Base(v.Path))
 	}
 	assert.Len(t, files1, 2)
@@ -307,18 +307,18 @@ func TestAccIncrementalSync(t *testing.T) {
 
 	// new file upload assertion
 	assert.Eventually(t, func() bool {
-		repoContent, err := wsc.Workspace.List(ctx, workspace.ListRequest{
+		objects, err := wsc.Workspace.ListAll(ctx, workspace.ListRequest{
 			Path: repoPath,
 		})
 		assert.NoError(t, err)
-		return len(repoContent.Objects) == 3
+		return len(objects) == 3
 	}, 30*time.Second, 5*time.Second)
-	repoContent, err = wsc.Workspace.List(ctx, workspace.ListRequest{
+	objects, err = wsc.Workspace.ListAll(ctx, workspace.ListRequest{
 		Path: repoPath,
 	})
 	assert.NoError(t, err)
 	var files2 []string
-	for _, v := range repoContent.Objects {
+	for _, v := range objects {
 		files2 = append(files2, filepath.Base(v.Path))
 	}
 	assert.Len(t, files2, 3)
@@ -330,18 +330,18 @@ func TestAccIncrementalSync(t *testing.T) {
 	// delete a file and assert
 	os.Remove(filepath.Join(projectDir, ".gitkeep"))
 	assert.Eventually(t, func() bool {
-		repoContent, err := wsc.Workspace.List(ctx, workspace.ListRequest{
+		objects, err := wsc.Workspace.ListAll(ctx, workspace.ListRequest{
 			Path: repoPath,
 		})
 		assert.NoError(t, err)
-		return len(repoContent.Objects) == 2
+		return len(objects) == 2
 	}, 30*time.Second, 5*time.Second)
-	repoContent, err = wsc.Workspace.List(ctx, workspace.ListRequest{
+	objects, err = wsc.Workspace.ListAll(ctx, workspace.ListRequest{
 		Path: repoPath,
 	})
 	assert.NoError(t, err)
 	var files3 []string
-	for _, v := range repoContent.Objects {
+	for _, v := range objects {
 		files3 = append(files3, filepath.Base(v.Path))
 	}
 	assert.Len(t, files3, 2)

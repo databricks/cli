@@ -6,22 +6,22 @@ import (
 	"encoding/base64"
 	"fmt"
 
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/dbfs"
-	"github.com/databricks/databricks-sdk-go/workspaces"
 )
 
 // move to go sdk / replace with utility function once
 // https://github.com/databricks/databricks-sdk-go/issues/57 is Done
 // Tracked in https://github.com/databricks/bricks/issues/25
 func CreateDbfsFile(ctx context.Context,
-	wsc *workspaces.WorkspacesClient,
+	w *databricks.WorkspaceClient,
 	path string,
 	contents []byte,
 	overwrite bool,
 ) error {
 	// see https://docs.databricks.com/dev-tools/api/latest/dbfs.html#add-block
 	const WRITE_BYTE_CHUNK_SIZE = 1e6
-	createResponse, err := wsc.Dbfs.Create(ctx,
+	createResponse, err := w.Dbfs.Create(ctx,
 		dbfs.Create{
 			Overwrite: overwrite,
 			Path:      path,
@@ -38,7 +38,7 @@ func CreateDbfsFile(ctx context.Context,
 			break
 		}
 		b64Data := base64.StdEncoding.EncodeToString(byteChunk)
-		err := wsc.Dbfs.AddBlock(ctx,
+		err := w.Dbfs.AddBlock(ctx,
 			dbfs.AddBlock{
 				Data:   b64Data,
 				Handle: handle,
@@ -48,7 +48,7 @@ func CreateDbfsFile(ctx context.Context,
 			return fmt.Errorf("cannot add block: %w", err)
 		}
 	}
-	err = wsc.Dbfs.Close(ctx,
+	err = w.Dbfs.Close(ctx,
 		dbfs.Close{
 			Handle: handle,
 		},
@@ -60,7 +60,7 @@ func CreateDbfsFile(ctx context.Context,
 }
 
 func ReadDbfsFile(ctx context.Context,
-	wsc *workspaces.WorkspacesClient,
+	w *databricks.WorkspaceClient,
 	path string,
 ) (content []byte, err error) {
 	// see https://docs.databricks.com/dev-tools/api/latest/dbfs.html#read
@@ -69,7 +69,7 @@ func ReadDbfsFile(ctx context.Context,
 	offSet := 0
 	length := int(READ_BYTE_CHUNK_SIZE)
 	for fetchLoop {
-		dbfsReadReponse, err := wsc.Dbfs.Read(ctx,
+		dbfsReadReponse, err := w.Dbfs.Read(ctx,
 			dbfs.ReadRequest{
 				Path:   path,
 				Offset: offSet,

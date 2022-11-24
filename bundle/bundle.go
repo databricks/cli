@@ -7,7 +7,7 @@ import (
 
 	"github.com/databricks/bricks/bundle/config"
 	"github.com/databricks/bricks/bundle/config/mutator"
-	"github.com/databricks/databricks-sdk-go/workspaces"
+	"github.com/databricks/databricks-sdk-go"
 )
 
 type Bundle struct {
@@ -16,7 +16,7 @@ type Bundle struct {
 	// Store a pointer to the workspace client.
 	// It can be initialized on demand after loading the configuration.
 	clientOnce sync.Once
-	client     *workspaces.WorkspacesClient
+	client     *databricks.WorkspaceClient
 }
 
 func (b *Bundle) MutateForEnvironment(env string) error {
@@ -59,9 +59,13 @@ func ConfigureForEnvironment(ctx context.Context, env string) (context.Context, 
 	return Context(ctx, b), nil
 }
 
-func (b *Bundle) WorkspaceClient() *workspaces.WorkspacesClient {
+func (b *Bundle) WorkspaceClient() *databricks.WorkspaceClient {
 	b.clientOnce.Do(func() {
-		b.client = b.Config.Workspace.Client()
+		var err error
+		b.client, err = b.Config.Workspace.Client()
+		if err != nil {
+			panic(err)
+		}
 	})
 	return b.client
 }
