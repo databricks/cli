@@ -3,6 +3,7 @@ package bundle
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -67,11 +68,14 @@ func (b *Bundle) tfStateLocalPath() string {
 
 func (b *Bundle) ExportTerraformState(ctx context.Context) error {
 	res, err := utilities.GetFileContent(ctx, b.WorkspaceClient(), b.tfStateRemotePath())
-	if err != nil && strings.Contains(err.Error(), "File not found.") {
-		return nil
-	}
 	if err != nil {
+		// remote tf state is the source of truth. If its absent, we delete the
+		// local state too and start from a clean slate
 		if strings.Contains(err.Error(), "File not found.") {
+			err := os.Remove(b.tfStateLocalPath())
+			if err != nil && !os.IsNotExist(err) {
+				return fmt.Errorf("failed to delete local tf state: %s", err)
+			}
 			return nil
 		} else {
 			return err

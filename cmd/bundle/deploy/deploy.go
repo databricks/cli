@@ -53,6 +53,8 @@ var deployCmd = &cobra.Command{
 			log.Printf("[INFO] state diff is empty. No changes applied")
 			return nil
 		}
+
+		// TODO: display logs from terraform to update users on deployment progress
 		err = tf.Apply(ctx)
 		// upload state even if apply fails to handle partial deployments
 		err2 := bundle.ImportTerraformState(ctx)
