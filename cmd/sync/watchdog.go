@@ -43,10 +43,10 @@ const MaxRequestsInFlight = 20
 //
 // The workspace file system backend strips .py from the file name if the python
 // file is a notebook
-func putFile(ctx context.Context, path string, content io.Reader) error {
+func putFile(ctx context.Context, remotePath string, content io.Reader) error {
 	wsc := project.Get(ctx).WorkspacesClient()
 	// workspace mkdirs is idempotent
-	err := wsc.Workspace.MkdirsByPath(ctx, filepath.Dir(path))
+	err := wsc.Workspace.MkdirsByPath(ctx, path.Dir(remotePath))
 	if err != nil {
 		return fmt.Errorf("could not mkdir to put file: %s", err)
 	}
@@ -56,7 +56,7 @@ func putFile(ctx context.Context, path string, content io.Reader) error {
 	}
 	apiPath := fmt.Sprintf(
 		"/api/2.0/workspace-files/import-file/%s?overwrite=true",
-		strings.TrimLeft(path, "/"))
+		strings.TrimLeft(remotePath, "/"))
 	return apiClient.Post(ctx, apiPath, content, nil)
 }
 
