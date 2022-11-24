@@ -8,8 +8,8 @@ import (
 	"strings"
 
 	"github.com/databricks/bricks/cmd/root"
-	"github.com/databricks/databricks-sdk-go/databricks"
-	"github.com/databricks/databricks-sdk-go/databricks/client"
+	"github.com/databricks/databricks-sdk-go/client"
+	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
 )
 
@@ -52,7 +52,7 @@ func makeCommand(method string) *cobra.Command {
 				return err
 			}
 
-			api, err := client.New(&databricks.Config{})
+			api, err := client.New(&config.Config{})
 			if err != nil {
 				return err
 			}
