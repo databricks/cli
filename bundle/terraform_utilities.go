@@ -103,8 +103,6 @@ func (b *Bundle) ImportTerraformState(ctx context.Context) error {
 		return err
 	}
 	bytes, err := os.ReadFile(b.tfStateLocalPath())
-	// TODO: does every terraform apply create a state file?
-	// ie. should we throw and error ignore if a state file is missing
 	if err != nil {
 		return err
 	}

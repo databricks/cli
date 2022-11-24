@@ -10,7 +10,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// TODO: will add integration test once terraform binary is bundled here
+// TODO: will add integration test once terraform binary is bundled with bricks
 var deployCmd = &cobra.Command{
 	Use:   "deploy",
 	Short: "deploys a DAB",
