@@ -32,6 +32,7 @@ func createFile(t *testing.T, path string) *testFile {
 
 func (f *testFile) close(t *testing.T) {
 	err := f.fd.Close()
+	t.Logf("closing file %s now", f.path)
 	assert.NoError(t, err)
 }
 
@@ -54,6 +55,7 @@ func (f *testFile) overwrite(t *testing.T, s string) {
 
 func (f *testFile) remove(t *testing.T) {
 	err := os.Remove(f.path)
+	t.Logf("removing file %s now", f.path)
 	assert.NoError(t, err)
 }
 
@@ -65,6 +67,13 @@ func assertKeysOfMap(t *testing.T, m map[string]time.Time, expectedKeys []string
 		i++
 	}
 	assert.ElementsMatch(t, expectedKeys, keys)
+}
+
+func TestDeleteFile(t *testing.T) {
+	projectDir := t.TempDir()
+	f1 := createFile(t, filepath.Join(projectDir, "hello.txt"))
+	defer f1.close(t)
+	f1.remove(t)
 }
 
 func TestDiff(t *testing.T) {
