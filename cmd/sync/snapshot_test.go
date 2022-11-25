@@ -14,6 +14,8 @@ type testFile struct {
 	mtime time.Time
 	fd    *os.File
 	path  string
+	// to make close idempotent
+	isOpen bool
 }
 
 func createFile(t *testing.T, path string) *testFile {
@@ -24,16 +26,19 @@ func createFile(t *testing.T, path string) *testFile {
 	assert.NoError(t, err)
 
 	return &testFile{
-		path:  path,
-		fd:    f,
-		mtime: fileInfo.ModTime(),
+		path:   path,
+		fd:     f,
+		mtime:  fileInfo.ModTime(),
+		isOpen: true,
 	}
 }
 
 func (f *testFile) close(t *testing.T) {
-	err := f.fd.Close()
-	t.Logf("closing file %s now", f.path)
-	assert.NoError(t, err)
+	if f.isOpen {
+		err := f.fd.Close()
+		t.Logf("closing file %s now", f.path)
+		assert.NoError(t, err)
+	}
 }
 
 func (f *testFile) overwrite(t *testing.T, s string) {
@@ -54,8 +59,9 @@ func (f *testFile) overwrite(t *testing.T, s string) {
 }
 
 func (f *testFile) remove(t *testing.T) {
-	// we close before remo
+	// we close before removal
 	f.close(t)
+	f.isOpen = false
 	err := os.Remove(f.path)
 	t.Logf("removing file %s now", f.path)
 	assert.NoError(t, err)
