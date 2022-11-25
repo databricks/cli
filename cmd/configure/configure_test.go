@@ -103,6 +103,7 @@ func TestCustomProfileConfigureNoInteractive(t *testing.T) {
 	ctx := context.Background()
 	tempHomeDir := setup(t)
 	inp := getTempFileWithContent(t, tempHomeDir, "token\n")
+	defer inp.Close()
 	oldStdin := os.Stdin
 	t.Cleanup(func() { os.Stdin = oldStdin })
 	os.Stdin = inp
