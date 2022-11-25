@@ -54,6 +54,8 @@ func (f *testFile) overwrite(t *testing.T, s string) {
 }
 
 func (f *testFile) remove(t *testing.T) {
+	// we close before remo
+	f.close(t)
 	err := os.Remove(f.path)
 	t.Logf("removing file %s now", f.path)
 	assert.NoError(t, err)
