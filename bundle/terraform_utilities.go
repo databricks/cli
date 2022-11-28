@@ -68,7 +68,7 @@ func (b *Bundle) tfStateLocalPath() string {
 func (b *Bundle) ExportTerraformState(ctx context.Context) error {
 	res, err := utilities.GetFileContent(ctx, b.WorkspaceClient(), b.tfStateRemotePath())
 	if err != nil {
-		// remote tf state is the source of truth. If its absent, we delete the
+		// remote tf state is the source of truth. If it's absent, we delete the
 		// local state too and start from a clean slate
 		if strings.Contains(err.Error(), "File not found.") {
 			err := os.Remove(b.tfStateLocalPath())
