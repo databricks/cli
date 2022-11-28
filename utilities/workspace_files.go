@@ -41,10 +41,7 @@ func PostFile(ctx context.Context, wsc *databricks.WorkspaceClient, path string,
 	}
 	err = wsc.Workspace.MkdirsByPath(ctx, filepath.Dir(path))
 	if err != nil {
-		return fmt.Errorf("could not mkdir to put file: %s", err)
-	}
-	if err != nil {
-		return err
+		return fmt.Errorf("could not mkdir to post file: %s", err)
 	}
 	importApiPath := fmt.Sprintf(
 		"/api/2.0/workspace-files/import-file/%s?overwrite=false",
