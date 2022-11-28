@@ -65,7 +65,7 @@ func (b *Bundle) tfStateLocalPath() string {
 	return filepath.Join(b.cacheDir(), b.env, "terraform.tfstate")
 }
 
-func (b *Bundle) ExportTerraformState(ctx context.Context) error {
+func (b *Bundle) LoadTerraformState(ctx context.Context) error {
 	res, err := utilities.GetFileContent(ctx, b.WorkspaceClient(), b.tfStateRemotePath())
 	if err != nil {
 		// remote tf state is the source of truth. If it's absent, we delete the
@@ -96,7 +96,7 @@ func (b *Bundle) ExportTerraformState(ctx context.Context) error {
 	return err
 }
 
-func (b *Bundle) ImportTerraformState(ctx context.Context) error {
+func (b *Bundle) SaveTerraformState(ctx context.Context) error {
 	l, err := b.Locker(ctx)
 	if err != nil {
 		return err

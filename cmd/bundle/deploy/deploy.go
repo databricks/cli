@@ -27,7 +27,7 @@ var deployCmd = &cobra.Command{
 		}
 
 		bundle := bundle.CreateBundle(*env, *localRoot, *remoteRoot, *terraformBinaryPath)
-		err := bundle.ExportTerraformState(ctx)
+		err := bundle.LoadTerraformState(ctx)
 		if err != nil {
 			return err
 		}
@@ -55,7 +55,7 @@ var deployCmd = &cobra.Command{
 		// TODO: display logs from terraform to update users on deployment progress
 		err = tf.Apply(ctx)
 		// upload state even if apply fails to handle partial deployments
-		err2 := bundle.ImportTerraformState(ctx)
+		err2 := bundle.SaveTerraformState(ctx)
 		if err != nil {
 			return fmt.Errorf("deploymented failed: %s", err)
 		}
