@@ -10,4 +10,7 @@ type Bundle struct {
 	// TODO
 	// Default warehouse to run SQL on.
 	// DefaultWarehouse string `json:"default_warehouse,omitempty"`
+
+	// Environment is set by the mutator that selects the environment.
+	Environment string `json:"environment,omitempty"`
 }
