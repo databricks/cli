@@ -1,8 +1,10 @@
 package mutator
 
 import (
+	"context"
 	"fmt"
 
+	"github.com/databricks/bricks/bundle"
 	"github.com/databricks/bricks/bundle/config"
 )
 
@@ -12,7 +14,7 @@ type processInclude struct {
 }
 
 // ProcessInclude loads the configuration at [fullPath] and merges it into the configuration.
-func ProcessInclude(fullPath, relPath string) Mutator {
+func ProcessInclude(fullPath, relPath string) bundle.Mutator {
 	return &processInclude{
 		fullPath: fullPath,
 		relPath:  relPath,
@@ -23,10 +25,10 @@ func (m *processInclude) Name() string {
 	return fmt.Sprintf("ProcessInclude(%s)", m.relPath)
 }
 
-func (m *processInclude) Apply(root *config.Root) ([]Mutator, error) {
+func (m *processInclude) Apply(_ context.Context, b *bundle.Bundle) ([]bundle.Mutator, error) {
 	this, err := config.Load(m.fullPath)
 	if err != nil {
 		return nil, err
 	}
-	return nil, root.Merge(this)
+	return nil, b.Config.Merge(this)
 }

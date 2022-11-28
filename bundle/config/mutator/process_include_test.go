@@ -1,11 +1,13 @@
 package mutator_test
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
 
+	"github.com/databricks/bricks/bundle"
 	"github.com/databricks/bricks/bundle/config"
 	"github.com/databricks/bricks/bundle/config/mutator"
 	"github.com/stretchr/testify/assert"
@@ -13,22 +15,24 @@ import (
 )
 
 func TestProcessInclude(t *testing.T) {
-	root := &config.Root{
-		Path: t.TempDir(),
-		Workspace: config.Workspace{
-			Host: "foo",
+	bundle := &bundle.Bundle{
+		Config: config.Root{
+			Path: t.TempDir(),
+			Workspace: config.Workspace{
+				Host: "foo",
+			},
 		},
 	}
 
 	relPath := "./file.yml"
-	fullPath := filepath.Join(root.Path, relPath)
+	fullPath := filepath.Join(bundle.Config.Path, relPath)
 	f, err := os.Create(fullPath)
 	require.NoError(t, err)
 	fmt.Fprint(f, "workspace:\n  host: bar\n")
 	f.Close()
 
-	assert.Equal(t, "foo", root.Workspace.Host)
-	_, err = mutator.ProcessInclude(fullPath, relPath).Apply(root)
+	assert.Equal(t, "foo", bundle.Config.Workspace.Host)
+	_, err = mutator.ProcessInclude(fullPath, relPath).Apply(context.Background(), bundle)
 	require.NoError(t, err)
-	assert.Equal(t, "bar", root.Workspace.Host)
+	assert.Equal(t, "bar", bundle.Config.Workspace.Host)
 }
