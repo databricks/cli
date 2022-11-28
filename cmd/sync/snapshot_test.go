@@ -36,7 +36,6 @@ func createFile(t *testing.T, path string) *testFile {
 func (f *testFile) close(t *testing.T) {
 	if f.isOpen {
 		err := f.fd.Close()
-		t.Logf("closing file %s now", f.path)
 		assert.NoError(t, err)
 	}
 }
@@ -63,7 +62,6 @@ func (f *testFile) remove(t *testing.T) {
 	f.close(t)
 	f.isOpen = false
 	err := os.Remove(f.path)
-	t.Logf("removing file %s now", f.path)
 	assert.NoError(t, err)
 }
 
