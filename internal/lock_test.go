@@ -11,7 +11,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/databricks/bricks/lock"
 	"github.com/databricks/databricks-sdk-go/service/repos"
 	"github.com/databricks/databricks-sdk-go/workspaces"
 	"github.com/stretchr/testify/assert"
@@ -67,7 +66,7 @@ func TestAccLock(t *testing.T) {
 
 	var err error
 	lockerErrs := make([]error, numConcurrentLocks)
-	lockers := make([]*lock.DeployLocker, numConcurrentLocks)
+	lockers := make([]*bundle.DeployLocker, numConcurrentLocks)
 
 	for i := 0; i < numConcurrentLocks; i++ {
 		lockers[i], err = lock.CreateLocker("humpty.dumpty@databricks.com", false, remoteProjectRoot)

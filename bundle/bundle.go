@@ -5,7 +5,6 @@ import (
 	"sync"
 
 	"github.com/databricks/bricks/bundle/config"
-	"github.com/databricks/bricks/lock"
 	"github.com/databricks/databricks-sdk-go"
 )
 
@@ -15,15 +14,15 @@ type Bundle struct {
 	// Store a pointer to the workspace client.
 	// It can be initialized on demand after loading the configuration.
 	clientOnce sync.Once
-	
+
 	localRoot           string
 	remoteRoot          string
 	env                 string
-	locker              *lock.DeployLocker
+	locker              *DeployLocker
 	user                string
 	terraformBinaryPath string
 
-	client     *databricks.WorkspaceClient
+	client *databricks.WorkspaceClient
 }
 
 func Load(path string) (*Bundle, error) {

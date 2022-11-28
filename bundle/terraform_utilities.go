@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/databricks/bricks/lock"
 	"github.com/databricks/bricks/utilities"
 	"github.com/hashicorp/terraform-exec/tfexec"
 )
@@ -22,7 +21,7 @@ func CreateBundle(env, localRoot, remoteRoot, terraformBinaryPath string) *Bundl
 	}
 }
 
-func (b *Bundle) Locker() (*lock.DeployLocker, error) {
+func (b *Bundle) Locker() (*bundle.DeployLocker, error) {
 	if b.locker != nil {
 		return b.locker, nil
 	}
