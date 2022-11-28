@@ -14,7 +14,7 @@ type testFile struct {
 	mtime time.Time
 	fd    *os.File
 	path  string
-	// to make close idempotent
+	// to make close idempotent and work with remove
 	isOpen bool
 }
 
@@ -37,6 +37,7 @@ func (f *testFile) close(t *testing.T) {
 	if f.isOpen {
 		err := f.fd.Close()
 		assert.NoError(t, err)
+		f.isOpen = false
 	}
 }
 
@@ -73,13 +74,6 @@ func assertKeysOfMap(t *testing.T, m map[string]time.Time, expectedKeys []string
 		i++
 	}
 	assert.ElementsMatch(t, expectedKeys, keys)
-}
-
-func TestDeleteFile(t *testing.T) {
-	projectDir := t.TempDir()
-	f1 := createFile(t, filepath.Join(projectDir, "hello.txt"))
-	defer f1.close(t)
-	f1.remove(t)
 }
 
 func TestDiff(t *testing.T) {
