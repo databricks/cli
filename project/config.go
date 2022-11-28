@@ -96,6 +96,7 @@ func loadProjectConf(root string) (c Config, err error) {
 	if err != nil {
 		return
 	}
+	defer config.Close()
 	raw, err := io.ReadAll(config)
 	if err != nil {
 		return
