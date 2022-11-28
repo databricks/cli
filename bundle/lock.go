@@ -1,18 +1,19 @@
-package lock
+package bundle
 
 import (
 	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/databricks/bricks/utilities"
-	"github.com/databricks/databricks-sdk-go/databricks/client"
+	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
-	"github.com/databricks/databricks-sdk-go/workspaces"
 	"github.com/google/uuid"
 )
 
@@ -40,7 +41,7 @@ type DeployLocker struct {
 	Active bool
 }
 
-func GetRemoteLocker(ctx context.Context, wsc *workspaces.WorkspacesClient, lockFilePath string) (*DeployLocker, error) {
+func GetRemoteLocker(ctx context.Context, wsc *databricks.WorkspaceClient, lockFilePath string) (*DeployLocker, error) {
 	res, err := utilities.GetFileContent(ctx, wsc, lockFilePath)
 	if err != nil {
 		return nil, err
@@ -58,7 +59,7 @@ func GetRemoteLocker(ctx context.Context, wsc *workspaces.WorkspacesClient, lock
 }
 
 // idempotent
-func (locker *DeployLocker) SafePutFile(ctx context.Context, wsc *workspaces.WorkspacesClient, path string, content []byte) error {
+func (locker *DeployLocker) SafePutFile(ctx context.Context, wsc *databricks.WorkspaceClient, path string, content []byte) error {
 	contentReader := bytes.NewReader(content)
 	// TODO: Consider reading the remote locker file to ensure we hold the lock
 	// This hedges against race conditions during forced deployment
@@ -77,10 +78,10 @@ func (locker *DeployLocker) SafePutFile(ctx context.Context, wsc *workspaces.Wor
 	apiPath := fmt.Sprintf(
 		"/api/2.0/workspace-files/import-file/%s?overwrite=true",
 		strings.TrimLeft(path, "/"))
-	return apiClient.Post(ctx, apiPath, contentReader, nil)
+	return apiClient.Do(ctx, http.MethodPost, apiPath, contentReader, nil)
 }
 
-func (locker *DeployLocker) postLockFile(ctx context.Context, wsc *workspaces.WorkspacesClient) error {
+func (locker *DeployLocker) postLockFile(ctx context.Context, wsc *databricks.WorkspaceClient) error {
 	locker.AcquisitionTime = time.Now()
 	lockerContent, err := json.Marshal(*locker)
 	if err != nil {
@@ -89,7 +90,7 @@ func (locker *DeployLocker) postLockFile(ctx context.Context, wsc *workspaces.Wo
 	return utilities.PostFile(ctx, wsc, locker.RemotePath(), lockerContent)
 }
 
-func (locker *DeployLocker) Lock(ctx context.Context, wsc *workspaces.WorkspacesClient) error {
+func (locker *DeployLocker) Lock(ctx context.Context, wsc *databricks.WorkspaceClient) error {
 	if locker.Active {
 		return fmt.Errorf("locker already active")
 	}
@@ -124,7 +125,7 @@ func CreateLocker(user string, isForced bool, targetDir string) (*DeployLocker, 
 	}, nil
 }
 
-func (locker *DeployLocker) Unlock(ctx context.Context, wsc *workspaces.WorkspacesClient) error {
+func (locker *DeployLocker) Unlock(ctx context.Context, wsc *databricks.WorkspaceClient) error {
 	if !locker.Active {
 		return fmt.Errorf("only active lockers can be unlocked")
 	}

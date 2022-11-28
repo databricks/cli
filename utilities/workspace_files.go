@@ -4,14 +4,15 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"net/http"
 	"path/filepath"
 	"strings"
 
-	"github.com/databricks/databricks-sdk-go/databricks/client"
-	"github.com/databricks/databricks-sdk-go/workspaces"
+	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/client"
 )
 
-func GetFileContent(ctx context.Context, wsc *workspaces.WorkspacesClient, path string) (interface{}, error) {
+func GetFileContent(ctx context.Context, wsc *databricks.WorkspaceClient, path string) (interface{}, error) {
 	apiClient, err := client.New(wsc.Config)
 	if err != nil {
 		return nil, err
@@ -24,7 +25,7 @@ func GetFileContent(ctx context.Context, wsc *workspaces.WorkspacesClient, path 
 
 	// NOTE: azure workspaces return misleading messages when a file does not exist
 	// see: https://databricks.atlassian.net/browse/ES-510449
-	err = apiClient.Get(ctx, exportApiPath, nil, &res)
+	err = apiClient.Do(ctx, http.MethodGet, exportApiPath, nil, &res)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch file %s: %s", path, err)
 	}
@@ -32,7 +33,7 @@ func GetFileContent(ctx context.Context, wsc *workspaces.WorkspacesClient, path 
 }
 
 // not idempotent. errors out if file exists
-func PostFile(ctx context.Context, wsc *workspaces.WorkspacesClient, path string, content []byte) error {
+func PostFile(ctx context.Context, wsc *databricks.WorkspaceClient, path string, content []byte) error {
 	contentReader := bytes.NewReader(content)
 	apiClient, err := client.New(wsc.Config)
 	if err != nil {
@@ -48,5 +49,5 @@ func PostFile(ctx context.Context, wsc *workspaces.WorkspacesClient, path string
 	importApiPath := fmt.Sprintf(
 		"/api/2.0/workspace-files/import-file/%s?overwrite=false",
 		strings.TrimLeft(path, "/"))
-	return apiClient.Post(ctx, importApiPath, contentReader, nil)
+	return apiClient.Do(ctx, http.MethodPost, importApiPath, contentReader, nil)
 }

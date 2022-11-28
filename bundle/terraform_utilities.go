@@ -21,7 +21,7 @@ func CreateBundle(env, localRoot, remoteRoot, terraformBinaryPath string) *Bundl
 	}
 }
 
-func (b *Bundle) Locker() (*bundle.DeployLocker, error) {
+func (b *Bundle) Locker() (*DeployLocker, error) {
 	if b.locker != nil {
 		return b.locker, nil
 	}
@@ -29,7 +29,7 @@ func (b *Bundle) Locker() (*bundle.DeployLocker, error) {
 	if err != nil {
 		return nil, err
 	}
-	newLocker, err := lock.CreateLocker(user, false, b.remoteRoot)
+	newLocker, err := CreateLocker(user, false, b.remoteRoot)
 	if err != nil {
 		return nil, err
 	}

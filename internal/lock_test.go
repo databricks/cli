@@ -11,8 +11,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/databricks/bricks/bundle"
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/repos"
-	"github.com/databricks/databricks-sdk-go/workspaces"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -20,7 +21,7 @@ import (
 
 const EmptyRepoUrl = "https://github.com/shreyas-goenka/empty-repo.git"
 
-func createRemoteTestProject(t *testing.T, projectNamePrefix string, wsc *workspaces.WorkspacesClient) string {
+func createRemoteTestProject(t *testing.T, projectNamePrefix string, wsc *databricks.WorkspaceClient) string {
 	ctx := context.TODO()
 	me, err := wsc.CurrentUser.Me(ctx)
 	assert.NoError(t, err)
@@ -57,7 +58,7 @@ func createLocalTestProject(t *testing.T) string {
 func TestAccLock(t *testing.T) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 	ctx := context.TODO()
-	wsc := workspaces.New()
+	wsc := databricks.Must(databricks.NewWorkspaceClient())
 	createLocalTestProject(t)
 	remoteProjectRoot := createRemoteTestProject(t, "lock-acc-", wsc)
 
@@ -69,7 +70,7 @@ func TestAccLock(t *testing.T) {
 	lockers := make([]*bundle.DeployLocker, numConcurrentLocks)
 
 	for i := 0; i < numConcurrentLocks; i++ {
-		lockers[i], err = lock.CreateLocker("humpty.dumpty@databricks.com", false, remoteProjectRoot)
+		lockers[i], err = bundle.CreateLocker("humpty.dumpty@databricks.com", false, remoteProjectRoot)
 		assert.NoError(t, err)
 	}
 
@@ -104,7 +105,7 @@ func TestAccLock(t *testing.T) {
 	assert.Equal(t, 1, countActive, "Exactly one locker should successfull acquire the lock")
 
 	// test remote lock matches active lock
-	remoteLocker, err := lock.GetRemoteLocker(ctx, wsc, lockers[indexOfActiveLocker].RemotePath())
+	remoteLocker, err := bundle.GetRemoteLocker(ctx, wsc, lockers[indexOfActiveLocker].RemotePath())
 	assert.NoError(t, err)
 	assert.Equal(t, remoteLocker.Id, lockers[indexOfActiveLocker].Id, "remote locker id does not match active locker")
 	assert.True(t, remoteLocker.AcquisitionTime.Equal(lockers[indexOfActiveLocker].AcquisitionTime), "remote locker acquisition time does not match active locker")
@@ -122,7 +123,7 @@ func TestAccLock(t *testing.T) {
 	// Unlock active lock and check it becomes inactive
 	err = lockers[indexOfActiveLocker].Unlock(ctx, wsc)
 	assert.NoError(t, err)
-	remoteLocker, err = lock.GetRemoteLocker(ctx, wsc, lockers[indexOfActiveLocker].RemotePath())
+	remoteLocker, err = bundle.GetRemoteLocker(ctx, wsc, lockers[indexOfActiveLocker].RemotePath())
 	assert.ErrorContains(t, err, "File not found.", "remote lock file not deleted on unlock")
 	assert.Nil(t, remoteLocker)
 	assert.False(t, lockers[indexOfActiveLocker].Active)
