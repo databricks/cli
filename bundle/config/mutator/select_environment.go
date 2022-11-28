@@ -38,6 +38,9 @@ func (m *selectEnvironment) Apply(root *config.Root) ([]Mutator, error) {
 		return nil, err
 	}
 
+	// Store specified environment in configuration for reference.
+	root.Bundle.Environment = m.name
+
 	// Clear environments after loading.
 	root.Environments = nil
 	return nil, nil
