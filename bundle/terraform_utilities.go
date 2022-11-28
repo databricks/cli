@@ -21,11 +21,11 @@ func CreateBundle(env, localRoot, remoteRoot, terraformBinaryPath string) *Bundl
 	}
 }
 
-func (b *Bundle) Locker() (*DeployLocker, error) {
+func (b *Bundle) Locker(ctx context.Context) (*DeployLocker, error) {
 	if b.locker != nil {
 		return b.locker, nil
 	}
-	user, err := b.User()
+	user, err := b.User(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -37,11 +37,11 @@ func (b *Bundle) Locker() (*DeployLocker, error) {
 	return b.locker, nil
 }
 
-func (b *Bundle) User() (string, error) {
+func (b *Bundle) User(ctx context.Context) (string, error) {
 	if b.user != "" {
 		return b.user, nil
 	}
-	user, err := b.WorkspaceClient().CurrentUser.Me(context.Background())
+	user, err := b.WorkspaceClient().CurrentUser.Me(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -97,7 +97,7 @@ func (b *Bundle) ExportTerraformState(ctx context.Context) error {
 }
 
 func (b *Bundle) ImportTerraformState(ctx context.Context) error {
-	l, err := b.Locker()
+	l, err := b.Locker(ctx)
 	if err != nil {
 		return err
 	}
@@ -109,7 +109,7 @@ func (b *Bundle) ImportTerraformState(ctx context.Context) error {
 }
 
 func (b *Bundle) Lock(ctx context.Context) error {
-	l, err := b.Locker()
+	l, err := b.Locker(ctx)
 	if err != nil {
 		return err
 	}
@@ -117,7 +117,7 @@ func (b *Bundle) Lock(ctx context.Context) error {
 }
 
 func (b *Bundle) Unlock(ctx context.Context) error {
-	l, err := b.Locker()
+	l, err := b.Locker(ctx)
 	if err != nil {
 		return err
 	}
