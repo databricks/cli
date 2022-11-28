@@ -8,11 +8,11 @@ import (
 )
 
 func TestJobAndPipelineDevelopment(t *testing.T) {
-	root := loadEnvironment(t, "./job_and_pipeline", "development")
-	assert.Len(t, root.Resources.Jobs, 0)
-	assert.Len(t, root.Resources.Pipelines, 1)
+	b := loadEnvironment(t, "./job_and_pipeline", "development")
+	assert.Len(t, b.Config.Resources.Jobs, 0)
+	assert.Len(t, b.Config.Resources.Pipelines, 1)
 
-	p := root.Resources.Pipelines["nyc_taxi_pipeline"]
+	p := b.Config.Resources.Pipelines["nyc_taxi_pipeline"]
 	assert.True(t, p.Development)
 	require.Len(t, p.Libraries, 1)
 	assert.Equal(t, "./dlt/nyc_taxi_loader", p.Libraries[0].Notebook.Path)
@@ -20,11 +20,11 @@ func TestJobAndPipelineDevelopment(t *testing.T) {
 }
 
 func TestJobAndPipelineStaging(t *testing.T) {
-	root := loadEnvironment(t, "./job_and_pipeline", "staging")
-	assert.Len(t, root.Resources.Jobs, 0)
-	assert.Len(t, root.Resources.Pipelines, 1)
+	b := loadEnvironment(t, "./job_and_pipeline", "staging")
+	assert.Len(t, b.Config.Resources.Jobs, 0)
+	assert.Len(t, b.Config.Resources.Pipelines, 1)
 
-	p := root.Resources.Pipelines["nyc_taxi_pipeline"]
+	p := b.Config.Resources.Pipelines["nyc_taxi_pipeline"]
 	assert.False(t, p.Development)
 	require.Len(t, p.Libraries, 1)
 	assert.Equal(t, "./dlt/nyc_taxi_loader", p.Libraries[0].Notebook.Path)
@@ -32,17 +32,17 @@ func TestJobAndPipelineStaging(t *testing.T) {
 }
 
 func TestJobAndPipelineProduction(t *testing.T) {
-	root := loadEnvironment(t, "./job_and_pipeline", "production")
-	assert.Len(t, root.Resources.Jobs, 1)
-	assert.Len(t, root.Resources.Pipelines, 1)
+	b := loadEnvironment(t, "./job_and_pipeline", "production")
+	assert.Len(t, b.Config.Resources.Jobs, 1)
+	assert.Len(t, b.Config.Resources.Pipelines, 1)
 
-	p := root.Resources.Pipelines["nyc_taxi_pipeline"]
+	p := b.Config.Resources.Pipelines["nyc_taxi_pipeline"]
 	assert.False(t, p.Development)
 	require.Len(t, p.Libraries, 1)
 	assert.Equal(t, "./dlt/nyc_taxi_loader", p.Libraries[0].Notebook.Path)
 	assert.Equal(t, "nyc_taxi_production", p.Target)
 
-	j := root.Resources.Jobs["pipeline_schedule"]
+	j := b.Config.Resources.Jobs["pipeline_schedule"]
 	assert.Equal(t, "Daily refresh of production pipeline", j.Name)
 	require.Len(t, j.Tasks, 1)
 	assert.NotEmpty(t, j.Tasks[0].PipelineTask.PipelineId)

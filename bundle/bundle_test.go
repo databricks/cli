@@ -15,7 +15,7 @@ func TestLoadNotExists(t *testing.T) {
 }
 
 func TestLoadExists(t *testing.T) {
-	b, err := Load("./config/tests/basic")
+	b, err := Load("./tests/basic")
 	require.Nil(t, err)
 	assert.Equal(t, "basic", b.Config.Bundle.Name)
 }
