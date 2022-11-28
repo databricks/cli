@@ -46,7 +46,10 @@ func TestDefaultConfigureNoInteractive(t *testing.T) {
 	tempHomeDir := setup(t)
 	inp := getTempFileWithContent(t, tempHomeDir, "token\n")
 	oldStdin := os.Stdin
-	t.Cleanup(func() { os.Stdin = oldStdin })
+	defer inp.Close()
+	t.Cleanup(func() {
+		os.Stdin = oldStdin
+	})
 	os.Stdin = inp
 
 	root.RootCmd.SetArgs([]string{"configure", "--token", "--no-interactive", "--host", "host"})
@@ -76,6 +79,7 @@ func TestConfigFileFromEnvNoInteractive(t *testing.T) {
 	t.Setenv("DATABRICKS_CONFIG_FILE", cfgFileDir)
 
 	inp := getTempFileWithContent(t, tempHomeDir, "token\n")
+	defer inp.Close()
 	oldStdin := os.Stdin
 	t.Cleanup(func() { os.Stdin = oldStdin })
 	os.Stdin = inp
@@ -103,6 +107,7 @@ func TestCustomProfileConfigureNoInteractive(t *testing.T) {
 	ctx := context.Background()
 	tempHomeDir := setup(t)
 	inp := getTempFileWithContent(t, tempHomeDir, "token\n")
+	defer inp.Close()
 	oldStdin := os.Stdin
 	t.Cleanup(func() { os.Stdin = oldStdin })
 	os.Stdin = inp

@@ -43,12 +43,12 @@ func TestProjectInitializationAddsCacheDirToGitIgnore(t *testing.T) {
 	projectDir := t.TempDir()
 	f1, err := os.Create(filepath.Join(projectDir, "databricks.yml"))
 	assert.NoError(t, err)
-	defer f1.Close()
+	f1.Close()
 
 	gitIgnorePath := filepath.Join(projectDir, ".gitignore")
 	f2, err := os.Create(gitIgnorePath)
 	assert.NoError(t, err)
-	defer f2.Close()
+	f2.Close()
 
 	ctx, err := Initialize(context.Background(), projectDir, DefaultEnvironment)
 	assert.NoError(t, err)
@@ -67,7 +67,7 @@ func TestProjectInitializationDoesNotAddCacheDirToGitIgnoreIfAlreadyPresent(t *t
 	projectDir := t.TempDir()
 	f1, err := os.Create(filepath.Join(projectDir, "databricks.yml"))
 	assert.NoError(t, err)
-	defer f1.Close()
+	f1.Close()
 
 	gitIgnorePath := filepath.Join(projectDir, ".gitignore")
 
@@ -88,15 +88,15 @@ func TestProjectCacheDir(t *testing.T) {
 	projectDir := t.TempDir()
 	f1, err := os.Create(filepath.Join(projectDir, "databricks.yml"))
 	assert.NoError(t, err)
-	defer f1.Close()
+	f1.Close()
 
 	// create .gitignore with the .databricks dir in it
 	f2, err := os.Create(filepath.Join(projectDir, ".gitignore"))
 	assert.NoError(t, err)
-	defer f2.Close()
 	content := []byte("/.databricks/")
 	_, err = f2.Write(content)
 	assert.NoError(t, err)
+	f2.Close()
 
 	ctx, err := Initialize(context.Background(), projectDir, DefaultEnvironment)
 	assert.NoError(t, err)
