@@ -14,7 +14,7 @@ type testFile struct {
 	mtime time.Time
 	fd    *os.File
 	path  string
-	// to make close idempotent and work with remove
+	// to make close idempotent
 	isOpen bool
 }
 
@@ -59,9 +59,7 @@ func (f *testFile) overwrite(t *testing.T, s string) {
 }
 
 func (f *testFile) remove(t *testing.T) {
-	// we close before removal
 	f.close(t)
-	f.isOpen = false
 	err := os.Remove(f.path)
 	assert.NoError(t, err)
 }
