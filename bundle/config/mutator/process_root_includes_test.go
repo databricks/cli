@@ -27,6 +27,7 @@ func TestProcessRootIncludesEmpty(t *testing.T) {
 func TestProcessRootIncludesAbs(t *testing.T) {
 
 	// remove this once equivalent tests for windows have been set up
+	// or this test has been fixed for windows
 	// date: 28 Nov 2022
 	if runtime.GOOS == "windows" {
 		t.Skip("skipping temperorilty to make windows unit tests green")

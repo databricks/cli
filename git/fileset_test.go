@@ -66,6 +66,7 @@ func TestFileSetNonCleanRoot(t *testing.T) {
 	// Path simplification is done by most filepath functions.
 
 	// remove this once equivalent tests for windows have been set up
+	// or this test has been fixed for windows
 	// date: 28 Nov 2022
 	if runtime.GOOS == "windows" {
 		t.Skip("skipping temperorilty to make windows unit tests green")
