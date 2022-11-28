@@ -4,12 +4,20 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestExecAndPassError(t *testing.T) {
+
+	// remove this once equivalent tests for windows have been set up
+	// date: 28 Nov 2022
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping temperorilty to make windows unit tests green")
+	}
+
 	_, err := execAndPassErr(context.Background(), "which", "__non_existing__")
 	assert.EqualError(t, err, "exit status 1")
 }

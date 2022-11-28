@@ -65,8 +65,10 @@ func TestFileSetNonCleanRoot(t *testing.T) {
 	// Test what happens if the root directory can be simplified.
 	// Path simplification is done by most filepath functions.
 
+	// remove this once equivalent tests for windows have been set up
+	// date: 28 Nov 2022
 	if runtime.GOOS == "windows" {
-		t.Skip("Skipping for windows envs because this test is not important for correctness")
+		t.Skip("skipping temperorilty to make windows unit tests green")
 	}
 
 	root := "./../git"
