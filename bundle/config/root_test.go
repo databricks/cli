@@ -25,7 +25,7 @@ func TestRootMarshalUnmarshal(t *testing.T) {
 
 func TestRootLoad(t *testing.T) {
 	root := &Root{}
-	err := root.Load("./tests/basic/bundle.yml")
+	err := root.Load("../tests/basic/bundle.yml")
 	require.NoError(t, err)
 	assert.Equal(t, "basic", root.Bundle.Name)
 }

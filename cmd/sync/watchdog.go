@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net/http"
 	"os"
 	"path"
 	"path/filepath"
@@ -13,10 +14,10 @@ import (
 	"time"
 
 	"github.com/databricks/bricks/project"
-	"github.com/databricks/databricks-sdk-go/databricks/apierr"
-	"github.com/databricks/databricks-sdk-go/databricks/client"
+	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
-	"github.com/databricks/databricks-sdk-go/workspaces"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -43,10 +44,10 @@ const MaxRequestsInFlight = 20
 //
 // The workspace file system backend strips .py from the file name if the python
 // file is a notebook
-func putFile(ctx context.Context, path string, content io.Reader) error {
+func putFile(ctx context.Context, remotePath string, content io.Reader) error {
 	wsc := project.Get(ctx).WorkspacesClient()
 	// workspace mkdirs is idempotent
-	err := wsc.Workspace.MkdirsByPath(ctx, filepath.Dir(path))
+	err := wsc.Workspace.MkdirsByPath(ctx, path.Dir(remotePath))
 	if err != nil {
 		return fmt.Errorf("could not mkdir to put file: %s", err)
 	}
@@ -56,13 +57,13 @@ func putFile(ctx context.Context, path string, content io.Reader) error {
 	}
 	apiPath := fmt.Sprintf(
 		"/api/2.0/workspace-files/import-file/%s?overwrite=true",
-		strings.TrimLeft(path, "/"))
-	return apiClient.Post(ctx, apiPath, content, nil)
+		strings.TrimLeft(remotePath, "/"))
+	return apiClient.Do(ctx, http.MethodPost, apiPath, content, nil)
 }
 
 // path: The remote path of the file in the workspace
-func deleteFile(ctx context.Context, path string, wsc *workspaces.WorkspacesClient) error {
-	err := wsc.Workspace.Delete(ctx,
+func deleteFile(ctx context.Context, path string, w *databricks.WorkspaceClient) error {
+	err := w.Workspace.Delete(ctx,
 		workspace.Delete{
 			Path:      path,
 			Recursive: true,
@@ -78,7 +79,7 @@ func deleteFile(ctx context.Context, path string, wsc *workspaces.WorkspacesClie
 	return err
 }
 
-func getRemoteSyncCallback(ctx context.Context, root, remoteDir string, wsc *workspaces.WorkspacesClient) func(localDiff diff) error {
+func getRemoteSyncCallback(ctx context.Context, root, remoteDir string, w *databricks.WorkspaceClient) func(localDiff diff) error {
 	return func(d diff) error {
 
 		// Abstraction over wait groups which allows you to get the errors
@@ -95,7 +96,7 @@ func getRemoteSyncCallback(ctx context.Context, root, remoteDir string, wsc *wor
 			// is evaluated
 			remoteNameCopy := remoteName
 			g.Go(func() error {
-				err := deleteFile(ctx, path.Join(remoteDir, remoteNameCopy), wsc)
+				err := deleteFile(ctx, path.Join(remoteDir, remoteNameCopy), w)
 				if err != nil {
 					return err
 				}

@@ -7,6 +7,6 @@ import (
 )
 
 func TestIncludeOverride(t *testing.T) {
-	root := load(t, "./include_override")
-	assert.Empty(t, root.Resources.Jobs)
+	b := load(t, "./include_override")
+	assert.Empty(t, b.Config.Resources.Jobs)
 }

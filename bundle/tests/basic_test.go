@@ -7,6 +7,6 @@ import (
 )
 
 func TestBasic(t *testing.T) {
-	root := load(t, "./basic")
-	assert.Equal(t, "basic", root.Bundle.Name)
+	b := load(t, "./basic")
+	assert.Equal(t, "basic", b.Config.Bundle.Name)
 }

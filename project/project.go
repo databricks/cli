@@ -8,11 +8,9 @@ import (
 	"sync"
 
 	"github.com/databricks/bricks/git"
-	"github.com/databricks/databricks-sdk-go/databricks"
-	"github.com/databricks/databricks-sdk-go/service/clusters"
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/commands"
 	"github.com/databricks/databricks-sdk-go/service/scim"
-	"github.com/databricks/databricks-sdk-go/workspaces"
 	"github.com/spf13/cobra"
 )
 
@@ -26,7 +24,7 @@ type project struct {
 
 	config      *Config
 	environment *Environment
-	wsc         *workspaces.WorkspacesClient
+	wsc         *databricks.WorkspaceClient
 	me          *scim.User
 	fileSet     *git.FileSet
 }
@@ -96,7 +94,7 @@ func (p *project) initializeWorkspacesClient(ctx context.Context) {
 		config.Profile = p.environment.Workspace.Profile
 	}
 
-	p.wsc = workspaces.New(&config)
+	p.wsc = databricks.Must(databricks.NewWorkspaceClient(&config))
 }
 
 // Get returns the project as configured on the context.
@@ -110,7 +108,7 @@ func Get(ctx context.Context) *project {
 }
 
 // Make sure to initialize the workspaces client on project init
-func (p *project) WorkspacesClient() *workspaces.WorkspacesClient {
+func (p *project) WorkspacesClient() *databricks.WorkspaceClient {
 	return p.wsc
 }
 
@@ -183,22 +181,14 @@ func (p *project) DeploymentIsolationPrefix() string {
 }
 
 func getClusterIdFromClusterName(ctx context.Context,
-	wsc *workspaces.WorkspacesClient,
+	wsc *databricks.WorkspaceClient,
 	clusterName string,
 ) (clusterId string, err error) {
-	clusterId = ""
-	clustersList, err := wsc.Clusters.List(ctx, clusters.ListRequest{})
+	clusterInfo, err := wsc.Clusters.GetClusterInfoByClusterName(ctx, clusterName)
 	if err != nil {
-		return
+		return "", err
 	}
-	for _, cluster := range clustersList.Clusters {
-		if cluster.ClusterName == clusterName {
-			clusterId = cluster.ClusterId
-			return
-		}
-	}
-	err = fmt.Errorf("could not find cluster with name: %s", clusterName)
-	return
+	return clusterInfo.ClusterId, nil
 }
 
 // Old version of getting development cluster details with isolation implemented.

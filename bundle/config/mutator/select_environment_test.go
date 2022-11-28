@@ -1,8 +1,10 @@
 package mutator_test
 
 import (
+	"context"
 	"testing"
 
+	"github.com/databricks/bricks/bundle"
 	"github.com/databricks/bricks/bundle/config"
 	"github.com/databricks/bricks/bundle/config/mutator"
 	"github.com/stretchr/testify/assert"
@@ -10,29 +12,33 @@ import (
 )
 
 func TestSelectEnvironment(t *testing.T) {
-	root := &config.Root{
-		Workspace: config.Workspace{
-			Host: "foo",
-		},
-		Environments: map[string]*config.Environment{
-			"default": {
-				Workspace: &config.Workspace{
-					Host: "bar",
+	bundle := &bundle.Bundle{
+		Config: config.Root{
+			Workspace: config.Workspace{
+				Host: "foo",
+			},
+			Environments: map[string]*config.Environment{
+				"default": {
+					Workspace: &config.Workspace{
+						Host: "bar",
+					},
 				},
 			},
 		},
 	}
-	_, err := mutator.SelectEnvironment("default").Apply(root)
+	_, err := mutator.SelectEnvironment("default").Apply(context.Background(), bundle)
 	require.NoError(t, err)
-	assert.Equal(t, "bar", root.Workspace.Host)
+	assert.Equal(t, "bar", bundle.Config.Workspace.Host)
 }
 
 func TestSelectEnvironmentNotFound(t *testing.T) {
-	root := &config.Root{
-		Environments: map[string]*config.Environment{
-			"default": {},
+	bundle := &bundle.Bundle{
+		Config: config.Root{
+			Environments: map[string]*config.Environment{
+				"default": {},
+			},
 		},
 	}
-	_, err := mutator.SelectEnvironment("doesnt-exist").Apply(root)
+	_, err := mutator.SelectEnvironment("doesnt-exist").Apply(context.Background(), bundle)
 	require.Error(t, err, "no environments defined")
 }

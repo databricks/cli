@@ -1,7 +1,7 @@
 package bundle
 
 import (
-	"github.com/databricks/bricks/bundle"
+	"github.com/databricks/bricks/bundle/loader"
 	"github.com/databricks/bricks/cmd/root"
 	"github.com/spf13/cobra"
 )
@@ -15,7 +15,7 @@ var rootCmd = &cobra.Command{
 // ConfigureBundle loads the bundle configuration
 // and configures it on the command's context.
 func ConfigureBundle(cmd *cobra.Command, args []string) error {
-	ctx, err := bundle.ConfigureForEnvironment(cmd.Context(), getEnvironment(cmd))
+	ctx, err := loader.ConfigureForEnvironment(cmd.Context(), getEnvironment(cmd))
 	if err != nil {
 		return err
 	}

@@ -1,8 +1,7 @@
 package config
 
 import (
-	"github.com/databricks/databricks-sdk-go/databricks"
-	"github.com/databricks/databricks-sdk-go/workspaces"
+	"github.com/databricks/databricks-sdk-go"
 )
 
 // Workspace defines configurables at the workspace level.
@@ -31,7 +30,7 @@ type Workspace struct {
 	AzureLoginAppID  string `json:"azure_login_app_id,omitempty"`
 }
 
-func (w *Workspace) Client() *workspaces.WorkspacesClient {
+func (w *Workspace) Client() (*databricks.WorkspaceClient, error) {
 	config := databricks.Config{
 		// Generic
 		Host:    w.Host,
@@ -49,5 +48,5 @@ func (w *Workspace) Client() *workspaces.WorkspacesClient {
 		AzureLoginAppID:  w.AzureLoginAppID,
 	}
 
-	return workspaces.New(&config)
+	return databricks.NewWorkspaceClient(&config)
 }
