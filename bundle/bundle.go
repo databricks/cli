@@ -14,15 +14,7 @@ type Bundle struct {
 	// Store a pointer to the workspace client.
 	// It can be initialized on demand after loading the configuration.
 	clientOnce sync.Once
-
-	localRoot           string
-	remoteRoot          string
-	env                 string
-	locker              *DeployLocker
-	user                string
-	terraformBinaryPath string
-
-	client *databricks.WorkspaceClient
+	client     *databricks.WorkspaceClient
 }
 
 func Load(path string) (*Bundle, error) {

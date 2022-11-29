@@ -1,4 +1,4 @@
-package bundle
+package deployer
 
 import (
 	"bytes"
@@ -19,12 +19,12 @@ import (
 
 // a mutex on a specified directory in workspace file system.
 //
-// Only one  DeployLocker can be "active" on a workspace directory. This
+// Only one  Locker can be "active" on a workspace directory. This
 // enables exclusive access to the workspace for deployment purposes
 //
 // users need to acquire this lock before deploying a DAB using
 // `bricks bundle deploy`
-type DeployLocker struct {
+type Locker struct {
 	// unique id for the locker
 	Id uuid.UUID
 	// creator of this locker
@@ -41,8 +41,8 @@ type DeployLocker struct {
 	Active bool
 }
 
-func GetRemoteLocker(ctx context.Context, wsc *databricks.WorkspaceClient, lockFilePath string) (*DeployLocker, error) {
-	res, err := utilities.GetFileContent(ctx, wsc, lockFilePath)
+func GetRemoteLocker(ctx context.Context, wsc *databricks.WorkspaceClient, lockFilePath string) (*Locker, error) {
+	res, err := utilities.GetFile(ctx, wsc, lockFilePath)
 	if err != nil {
 		return nil, err
 	}
@@ -50,7 +50,7 @@ func GetRemoteLocker(ctx context.Context, wsc *databricks.WorkspaceClient, lockF
 	if err != nil {
 		return nil, err
 	}
-	remoteLock := DeployLocker{}
+	remoteLock := Locker{}
 	err = json.Unmarshal(lockJson, &remoteLock)
 	if err != nil {
 		return nil, err
@@ -59,7 +59,7 @@ func GetRemoteLocker(ctx context.Context, wsc *databricks.WorkspaceClient, lockF
 }
 
 // idempotent
-func (locker *DeployLocker) SafePutFile(ctx context.Context, wsc *databricks.WorkspaceClient, path string, content []byte) error {
+func (locker *Locker) SafePutFile(ctx context.Context, wsc *databricks.WorkspaceClient, path string, content []byte) error {
 	contentReader := bytes.NewReader(content)
 	// TODO: Consider reading the remote locker file to ensure we hold the lock
 	// This hedges against race conditions during forced deployment
@@ -81,7 +81,7 @@ func (locker *DeployLocker) SafePutFile(ctx context.Context, wsc *databricks.Wor
 	return apiClient.Do(ctx, http.MethodPost, apiPath, contentReader, nil)
 }
 
-func (locker *DeployLocker) postLockFile(ctx context.Context, wsc *databricks.WorkspaceClient) error {
+func (locker *Locker) postLockFile(ctx context.Context, wsc *databricks.WorkspaceClient) error {
 	locker.AcquisitionTime = time.Now()
 	lockerContent, err := json.Marshal(*locker)
 	if err != nil {
@@ -90,7 +90,7 @@ func (locker *DeployLocker) postLockFile(ctx context.Context, wsc *databricks.Wo
 	return utilities.PostFile(ctx, wsc, locker.RemotePath(), lockerContent)
 }
 
-func (locker *DeployLocker) Lock(ctx context.Context, wsc *databricks.WorkspaceClient) error {
+func (locker *Locker) Lock(ctx context.Context, wsc *databricks.WorkspaceClient) error {
 	if locker.Active {
 		return fmt.Errorf("locker already active")
 	}
@@ -111,12 +111,12 @@ func (locker *DeployLocker) Lock(ctx context.Context, wsc *databricks.WorkspaceC
 	return nil
 }
 
-func (locker *DeployLocker) RemotePath() string {
+func (locker *Locker) RemotePath() string {
 	return filepath.Join(locker.TargetDir, ".bundle/deploy.lock")
 }
 
-func CreateLocker(user string, isForced bool, targetDir string) (*DeployLocker, error) {
-	return &DeployLocker{
+func CreateLocker(user string, isForced bool, targetDir string) (*Locker, error) {
+	return &Locker{
 		Id:        uuid.New(),
 		IsForced:  isForced,
 		TargetDir: targetDir,
@@ -125,7 +125,7 @@ func CreateLocker(user string, isForced bool, targetDir string) (*DeployLocker, 
 	}, nil
 }
 
-func (locker *DeployLocker) Unlock(ctx context.Context, wsc *databricks.WorkspaceClient) error {
+func (locker *Locker) Unlock(ctx context.Context, wsc *databricks.WorkspaceClient) error {
 	if !locker.Active {
 		return fmt.Errorf("only active lockers can be unlocked")
 	}

@@ -10,6 +10,10 @@ var debugCmd = &cobra.Command{
 	Use: "debug",
 }
 
+func AddCommand(cmd *cobra.Command) {
+	debugCmd.AddCommand(cmd)
+}
+
 func init() {
 	parent.AddCommand(debugCmd)
 }

@@ -12,7 +12,12 @@ import (
 	"github.com/databricks/databricks-sdk-go/client"
 )
 
-func GetFileContent(ctx context.Context, wsc *databricks.WorkspaceClient, path string) (interface{}, error) {
+// TODO: This returns
+// 1. an error if the file contents are not json
+// 2. an map[string]interface{} if the contents are json
+//
+// Make changes to read workspace files whose content body is not json
+func GetFile(ctx context.Context, wsc *databricks.WorkspaceClient, path string) (interface{}, error) {
 	apiClient, err := client.New(wsc.Config)
 	if err != nil {
 		return nil, err
