@@ -17,6 +17,9 @@ import (
 // 2. an map[string]interface{} if the contents are json
 //
 // Make changes to read workspace files whose content body is not json
+
+// NOTE: This API is only available for files in /Repos if a workspace has repos
+// in workspace enabled and files in workspace not enabled
 func GetFile(ctx context.Context, wsc *databricks.WorkspaceClient, path string) (interface{}, error) {
 	apiClient, err := client.New(wsc.Config)
 	if err != nil {
@@ -28,8 +31,6 @@ func GetFile(ctx context.Context, wsc *databricks.WorkspaceClient, path string) 
 
 	var res interface{}
 
-	// NOTE: azure workspaces return misleading messages when a file does not exist
-	// see: https://databricks.atlassian.net/browse/ES-510449
 	err = apiClient.Do(ctx, http.MethodGet, exportApiPath, nil, &res)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch file %s: %s", path, err)
