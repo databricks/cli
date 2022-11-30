@@ -3,6 +3,7 @@ package utilities
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"path/filepath"
@@ -13,17 +14,16 @@ import (
 	"github.com/databricks/databricks-sdk-go/client"
 )
 
-
 // NOTE: This API is only available for files in /Repos if a workspace has repos
 // in workspace enabled and files in workspace not enabled
 //
-// Right now the GET workspace-file api returns the raw file content as the
-// reponse body which then the go-sdk unmarshals in apiClient.Do
+// Get the file contents of a json file in workspace
+// TODO(Nov 2022): add method in go sdk to get the raw bytes from response of an API
 //
-// The consequences of this?
-// 1. Using this function on workspace files that are not json formatted will error out
-// 2. The expected runtime type of the returned result is map[string]interface{}
-func GetJsonFileContent(ctx context.Context, wsc *databricks.WorkspaceClient, path string) (interface{}, error) {
+// TODO(Nov 2022): talk to eng-files team about what the response structure would look like.
+//       This function would have to be modfified probably in the future once this
+//       API goes to public preview
+func GetFileContentJson(ctx context.Context, wsc *databricks.WorkspaceClient, path string) ([]byte, error) {
 	apiClient, err := client.New(wsc.Config)
 	if err != nil {
 		return nil, err
@@ -32,7 +32,7 @@ func GetJsonFileContent(ctx context.Context, wsc *databricks.WorkspaceClient, pa
 		"/api/2.0/workspace-files/%s",
 		strings.TrimLeft(path, "/"))
 
-	var res interface{}
+	var res json.RawMessage
 
 	err = apiClient.Do(ctx, http.MethodGet, exportApiPath, nil, &res)
 	if err != nil {

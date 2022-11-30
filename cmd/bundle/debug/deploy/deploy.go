@@ -79,6 +79,6 @@ func init() {
 	terraformRoot = deployTerraformCmd.Flags().String("terraform-root", "", "path to the terraform config file from project root")
 
 	deployTerraformCmd.MarkFlagRequired("remote-root")
-	deployTerraformCmd.MarkFlagRequired("terrform-cli-path")
+	deployTerraformCmd.MarkFlagRequired("terraform-cli-binary")
 	debug.AddCommand(deployTerraformCmd)
 }

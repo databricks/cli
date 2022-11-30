@@ -66,11 +66,7 @@ type LockState struct {
 // TODO: test what happens if there is no active locker
 // only file you are allowed to read without holding the mutex is the lock state
 func GetActiveLockerState(ctx context.Context, wsc *databricks.WorkspaceClient, path string) (*LockState, error) {
-	res, err := utilities.GetJsonFileContent(ctx, wsc, path)
-	if err != nil {
-		return nil, err
-	}
-	bytes, err := json.Marshal(res)
+	bytes, err := utilities.GetFileContentJson(ctx, wsc, path)
 	if err != nil {
 		return nil, err
 	}
