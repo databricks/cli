@@ -48,10 +48,10 @@ type Locker struct {
 	Active bool
 	// if locker is active, this information about the locker is uploaded onto
 	// the workspace so as to let other clients details about the active locker
-	State *LockerState
+	State *LockState
 }
 
-type LockerState struct {
+type LockState struct {
 	// unique identifier for the locker
 	ID uuid.UUID
 	// last timestamp when locker was active
@@ -65,7 +65,7 @@ type LockerState struct {
 
 // TODO: test what happens if there is no active locker
 // only file you are allowed to read without holding the mutex is the lock state
-func GetActiveLockerState(ctx context.Context, wsc *databricks.WorkspaceClient, path string) (*LockerState, error) {
+func GetActiveLockerState(ctx context.Context, wsc *databricks.WorkspaceClient, path string) (*LockState, error) {
 	res, err := utilities.GetJsonFileContent(ctx, wsc, path)
 	if err != nil {
 		return nil, err
@@ -74,7 +74,7 @@ func GetActiveLockerState(ctx context.Context, wsc *databricks.WorkspaceClient, 
 	if err != nil {
 		return nil, err
 	}
-	remoteLock := LockerState{}
+	remoteLock := LockState{}
 	err = json.Unmarshal(bytes, &remoteLock)
 	if err != nil {
 		return nil, err
@@ -158,7 +158,7 @@ func (locker *Locker) GetJsonFileContent(ctx context.Context, wsc *databricks.Wo
 }
 
 func (locker *Locker) Lock(ctx context.Context, wsc *databricks.WorkspaceClient, isForced bool) error {
-	newLockerState := LockerState{
+	newLockerState := LockState{
 		ID:              locker.State.ID,
 		AcquisitionTime: time.Now(),
 		IsForced:        isForced,
@@ -211,7 +211,7 @@ func CreateLocker(user string, targetDir string) (*Locker, error) {
 	return &Locker{
 		TargetDir: targetDir,
 		Active:    false,
-		State: &LockerState{
+		State: &LockState{
 			ID:   uuid.New(),
 			User: user,
 		},
