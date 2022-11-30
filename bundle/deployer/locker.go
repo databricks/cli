@@ -62,8 +62,7 @@ type LockState struct {
 	User string
 }
 
-// TODO: test what happens if there is no active locker
-// only file you are allowed to read without holding the mutex is the lock state
+// don't need to hold lock on TargetDir to read locker state
 func GetActiveLockerState(ctx context.Context, wsc *databricks.WorkspaceClient, path string) (*LockState, error) {
 	bytes, err := utilities.GetRawJsonFileContent(ctx, wsc, path)
 	if err != nil {
@@ -77,6 +76,8 @@ func GetActiveLockerState(ctx context.Context, wsc *databricks.WorkspaceClient, 
 	return &remoteLock, nil
 }
 
+// asserts whether lock is held by locker. Returns descriptive error with current
+// holder details if locker does not hold the lock
 func (locker *Locker) assertLockHeld(ctx context.Context, wsc *databricks.WorkspaceClient) error {
 	activeLockerState, err := GetActiveLockerState(ctx, wsc, locker.RemotePath())
 	if err != nil && strings.Contains(err.Error(), "File not found.") {
