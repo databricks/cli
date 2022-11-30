@@ -66,7 +66,7 @@ func deleteFile(ctx context.Context, path string, w *databricks.WorkspaceClient)
 	err := w.Workspace.Delete(ctx,
 		workspace.Delete{
 			Path:      path,
-			Recursive: true,
+			Recursive: false,
 		},
 	)
 	// We explictly ignore RESOURCE_DOES_NOT_EXIST errors for deletion of files
