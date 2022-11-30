@@ -43,7 +43,6 @@ func GetFileContentJson(ctx context.Context, wsc *databricks.WorkspaceClient, pa
 
 // not idempotent. errors out if file exists
 func WriteFile(ctx context.Context, wsc *databricks.WorkspaceClient, path string, content []byte, overwrite bool) error {
-	contentReader := bytes.NewReader(content)
 	apiClient, err := client.New(wsc.Config)
 	if err != nil {
 		return err
@@ -57,5 +56,5 @@ func WriteFile(ctx context.Context, wsc *databricks.WorkspaceClient, path string
 		"/api/2.0/workspace-files/import-file/%s?overwrite=%s",
 		strings.TrimLeft(path, "/"), strconv.FormatBool(overwrite))
 
-	return apiClient.Do(ctx, http.MethodPost, importApiPath, contentReader, nil)
+	return apiClient.Do(ctx, http.MethodPost, importApiPath, bytes.NewReader(content), nil)
 }

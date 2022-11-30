@@ -100,8 +100,6 @@ func (locker *Locker) PutFile(ctx context.Context, wsc *databricks.WorkspaceClie
 	if !locker.Active {
 		return fmt.Errorf("failed to put file. deploy lock not held")
 	}
-
-	contentReader := bytes.NewReader(content)
 	apiClient, err := client.New(wsc.Config)
 	if err != nil {
 		return err
@@ -110,7 +108,7 @@ func (locker *Locker) PutFile(ctx context.Context, wsc *databricks.WorkspaceClie
 		"/api/2.0/workspace-files/import-file/%s?overwrite=true",
 		strings.TrimLeft(pathToFile, "/"))
 
-	err = apiClient.Do(ctx, http.MethodPost, apiPath, contentReader, nil)
+	err = apiClient.Do(ctx, http.MethodPost, apiPath, bytes.NewReader(content), nil)
 	// TODO: test this regex parsing is correct if dirs dont exist
 	if err != nil && strings.Contains(err.Error(), "File not found") {
 		// retry after creating parent dirs
@@ -118,7 +116,7 @@ func (locker *Locker) PutFile(ctx context.Context, wsc *databricks.WorkspaceClie
 		if err != nil {
 			return fmt.Errorf("could not mkdir to put file: %s", err)
 		}
-		err = apiClient.Do(ctx, http.MethodPost, apiPath, contentReader, nil)
+		err = apiClient.Do(ctx, http.MethodPost, apiPath, bytes.NewReader(content), nil)
 	}
 	return err
 }
