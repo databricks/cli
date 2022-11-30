@@ -15,6 +15,7 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/repos"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TODO: create a utility function to create an empty test repo for tests and refactor sync_test integration test
@@ -71,7 +72,6 @@ func TestAccLock(t *testing.T) {
 
 	for i := 0; i < numConcurrentLocks; i++ {
 		lockers[i] = deployer.CreateLocker("humpty.dumpty@databricks.com", remoteProjectRoot)
-		assert.NoError(t, err)
 	}
 
 	var wg sync.WaitGroup
@@ -106,7 +106,7 @@ func TestAccLock(t *testing.T) {
 
 	// test remote lock matches active lock
 	remoteLocker, err := deployer.GetActiveLockerState(ctx, wsc, lockers[indexOfActiveLocker].RemotePath())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, remoteLocker.ID, lockers[indexOfActiveLocker].State.ID, "remote locker id does not match active locker")
 	assert.True(t, remoteLocker.AcquisitionTime.Equal(lockers[indexOfActiveLocker].State.AcquisitionTime), "remote locker acquisition time does not match active locker")
 
