@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"path/filepath"
+	"path"
 	"strings"
 	"time"
 
@@ -100,7 +100,7 @@ func (locker *Locker) assertLockHeld(ctx context.Context, wsc *databricks.Worksp
 }
 
 // idempotent function since overright is set to true
-func (locker *Locker) PutFile(ctx context.Context, wsc *databricks.WorkspaceClient, path string, content []byte) error {
+func (locker *Locker) PutFile(ctx context.Context, wsc *databricks.WorkspaceClient, pathToFile string, content []byte) error {
 	if !locker.Active {
 		return fmt.Errorf("failed to put file. deploy lock not held")
 	}
@@ -112,13 +112,13 @@ func (locker *Locker) PutFile(ctx context.Context, wsc *databricks.WorkspaceClie
 	}
 	apiPath := fmt.Sprintf(
 		"/api/2.0/workspace-files/import-file/%s?overwrite=true",
-		strings.TrimLeft(path, "/"))
+		strings.TrimLeft(pathToFile, "/"))
 
 	err = apiClient.Do(ctx, http.MethodPost, apiPath, contentReader, nil)
 	// TODO: test this regex parsing is correct if dirs dont exist
 	if err != nil && strings.Contains(err.Error(), "File not found") {
 		// retry after creating parent dirs
-		err = wsc.Workspace.MkdirsByPath(ctx, filepath.Dir(path))
+		err = wsc.Workspace.MkdirsByPath(ctx, path.Dir(pathToFile))
 		if err != nil {
 			return fmt.Errorf("could not mkdir to put file: %s", err)
 		}
@@ -204,10 +204,10 @@ func (locker *Locker) Unlock(ctx context.Context, wsc *databricks.WorkspaceClien
 }
 
 func (locker *Locker) RemotePath() string {
-	return filepath.Join(locker.TargetDir, ".bundle/deploy.lock")
+	return path.Join(locker.TargetDir, ".bundle/deploy.lock")
 }
 
-func CreateLocker(user string, targetDir string) (*Locker) {
+func CreateLocker(user string, targetDir string) *Locker {
 	return &Locker{
 		TargetDir: targetDir,
 		Active:    false,

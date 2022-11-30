@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/databricks/bricks/utilities"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/hashicorp/terraform-exec/tfexec"
 )
@@ -62,7 +61,7 @@ func (b *Deployer) tfStateLocalPath() string {
 }
 
 func (b *Deployer) LoadTerraformState(ctx context.Context) error {
-	res, err := utilities.GetJsonFileContent(ctx, b.wsc, b.tfStateRemotePath())
+	res, err := b.locker.GetJsonFileContent(ctx, b.wsc, b.tfStateRemotePath())
 	if err != nil {
 		// If remote tf state is absent, use local tf state
 		if strings.Contains(err.Error(), "File not found.") {
