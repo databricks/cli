@@ -91,10 +91,10 @@ func (locker *Locker) assertLockHeld(ctx context.Context, wsc *databricks.Worksp
 		return err
 	}
 	if activeLockerState.ID != locker.State.ID && !activeLockerState.IsForced {
-		return fmt.Errorf("lock held by %s since %v. Use --force to override", activeLockerState.User, activeLockerState.AcquisitionTime)
+		return fmt.Errorf("deploy lock held by %s since %v. Use --force to override", activeLockerState.User, activeLockerState.AcquisitionTime)
 	}
 	if activeLockerState.ID != locker.State.ID && activeLockerState.IsForced {
-		return fmt.Errorf("lock force acquired by %s since %v. Use --force to override", activeLockerState.User, activeLockerState.AcquisitionTime)
+		return fmt.Errorf("deploy lock force acquired by %s since %v. Use --force to override", activeLockerState.User, activeLockerState.AcquisitionTime)
 	}
 	return nil
 }
