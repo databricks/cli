@@ -66,7 +66,7 @@ func deleteFile(ctx context.Context, path string, w *databricks.WorkspaceClient)
 	err := w.Workspace.Delete(ctx,
 		workspace.Delete{
 			Path:      path,
-			Recursive: true,
+			Recursive: false,
 		},
 	)
 	// We explictly ignore RESOURCE_DOES_NOT_EXIST errors for deletion of files
@@ -97,7 +97,6 @@ func getRemoteSyncCallback(ctx context.Context, root, remoteDir string, w *datab
 			remoteNameCopy := remoteName
 			g.Go(func() error {
 				err := deleteFile(ctx, path.Join(remoteDir, remoteNameCopy), w)
-				err = deleteFile(ctx, path.Join(remoteDir, ""), w)
 				if err != nil {
 					return err
 				}
