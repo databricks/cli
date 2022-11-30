@@ -49,7 +49,7 @@ func Create(ctx context.Context, env, localRoot, remoteRoot string, wsc *databri
 	}, nil
 }
 
-func (b *Deployer) DefaultTerrformRoot() string {
+func (b *Deployer) DefaultTerraformRoot() string {
 	return filepath.Join(b.localRoot, ".databricks/bundle", b.env)
 }
 
@@ -58,7 +58,7 @@ func (b *Deployer) tfStateRemotePath() string {
 }
 
 func (b *Deployer) tfStateLocalPath() string {
-	return filepath.Join(b.DefaultTerrformRoot(), "terraform.tfstate")
+	return filepath.Join(b.DefaultTerraformRoot(), "terraform.tfstate")
 }
 
 func (b *Deployer) LoadTerraformState(ctx context.Context) error {
@@ -80,7 +80,7 @@ func (b *Deployer) LoadTerraformState(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	err = os.MkdirAll(b.DefaultTerrformRoot(), os.ModeDir)
+	err = os.MkdirAll(b.DefaultTerraformRoot(), os.ModeDir)
 	if err != nil {
 		return err
 	}

@@ -40,7 +40,7 @@ var deployTerraformCmd = &cobra.Command{
 		}
 
 		if *terraformRoot == "" {
-			*terraformRoot = filepath.Join(d.DefaultTerrformRoot())
+			*terraformRoot = filepath.Join(d.DefaultTerraformRoot())
 		}
 
 		status, err := d.ApplyTerraformConfig(ctx, *terraformRoot, *terraformBinaryPath)
