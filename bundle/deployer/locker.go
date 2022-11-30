@@ -109,8 +109,7 @@ func (locker *Locker) PutFile(ctx context.Context, wsc *databricks.WorkspaceClie
 		strings.TrimLeft(pathToFile, "/"))
 
 	err = apiClient.Do(ctx, http.MethodPost, apiPath, bytes.NewReader(content), nil)
-	// TODO: test this regex parsing is correct if dirs dont exist
-	if err != nil && strings.Contains(err.Error(), "File not found") {
+	if err != nil {
 		// retry after creating parent dirs
 		err = wsc.Workspace.MkdirsByPath(ctx, path.Dir(pathToFile))
 		if err != nil {
