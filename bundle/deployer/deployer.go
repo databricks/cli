@@ -16,11 +16,23 @@ import (
 type DeploymentStatus int
 
 const (
+	// Empty plan produced on terraform plan. No changes need to be applied
 	NoChanges DeploymentStatus = iota
+	// Deployment failed. No databricks assets were deployed
 	Failed
+	// Deployment failed/partially suceeeded. failed to update remote terraform
+	// state file.
+	// The partially deployed resources are thus untracked and in most cases
+	// will need to be cleaned up manually
 	PartialButUntracked
+	// Deployment failed/partially suceeeded. Remote terraform state file is
+	// updated with any partially deployed resources
 	Partial
+	// Deployment suceeeded however the remote terraform state was not updated.
+	// The deployed resources are thus untracked and in most cases will need to
+	// be cleaned up manually
 	CompleteButUntracked
+	// Deployment succeeeded with remote terraform state file updated
 	Complete
 )
 
