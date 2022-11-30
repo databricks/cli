@@ -64,13 +64,8 @@ func (b *Deployer) tfStateLocalPath() string {
 func (b *Deployer) LoadTerraformState(ctx context.Context) error {
 	res, err := utilities.GetJsonFileContent(ctx, b.wsc, b.tfStateRemotePath())
 	if err != nil {
-		// remote tf state is the source of truth. If it's absent, we delete the
-		// local state too and start from a clean slate
+		// If remote tf state is absent, use local tf state
 		if strings.Contains(err.Error(), "File not found.") {
-			err := os.Remove(b.tfStateLocalPath())
-			if err != nil && !os.IsNotExist(err) {
-				return fmt.Errorf("failed to delete local tf state: %s", err)
-			}
 			return nil
 		} else {
 			return err
