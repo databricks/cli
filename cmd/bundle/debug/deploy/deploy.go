@@ -39,11 +39,11 @@ var deployTerraformCmd = &cobra.Command{
 			return err
 		}
 
-		if *terraformRoot == "" {
-			*terraformRoot = filepath.Join(d.DefaultTerraformRoot())
+		if *terraformHcl == "" {
+			*terraformHcl = filepath.Join(d.DefaultTerraformRoot())
 		}
 
-		status, err := d.ApplyTerraformConfig(ctx, *terraformRoot, *terraformBinaryPath)
+		status, err := d.ApplyTerraformConfig(ctx, *terraformHcl, *terraformBinaryPath)
 		switch status {
 		case deployer.Failed:
 			log.Printf("[ERROR] failed to initiate deployment")
@@ -66,8 +66,7 @@ var remoteRoot *string
 var localRoot *string
 var env *string
 
-// todo test if this works with terraform json file
-var terraformRoot *string
+var terraformHcl *string
 
 // TODO: remove this arguement once we package a terraform binary with the bricks cli
 var terraformBinaryPath *string
@@ -79,8 +78,7 @@ func init() {
 	terraformBinaryPath = deployTerraformCmd.Flags().String("terraform-cli-binary", "", "path to a terraform CLI executable binary")
 	env = deployTerraformCmd.Flags().String("env", "development", "environment to deploy on. default: development")
 
-	// TODO: test whether this command works with json terraform config?
-	terraformRoot = deployTerraformCmd.Flags().String("terraform-root", "", "path to the terraform config file from project root")
+	terraformHcl = deployTerraformCmd.Flags().String("terraform-hcl", "", "path to the terraform config file from project root")
 
 	deployTerraformCmd.MarkFlagRequired("remote-root")
 	deployTerraformCmd.MarkFlagRequired("terraform-cli-binary")
