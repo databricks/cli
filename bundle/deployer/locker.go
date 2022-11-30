@@ -207,7 +207,7 @@ func (locker *Locker) RemotePath() string {
 	return filepath.Join(locker.TargetDir, ".bundle/deploy.lock")
 }
 
-func CreateLocker(user string, targetDir string) (*Locker, error) {
+func CreateLocker(user string, targetDir string) (*Locker) {
 	return &Locker{
 		TargetDir: targetDir,
 		Active:    false,
@@ -215,5 +215,5 @@ func CreateLocker(user string, targetDir string) (*Locker, error) {
 			ID:   uuid.New(),
 			User: user,
 		},
-	}, nil
+	}
 }

@@ -70,7 +70,7 @@ func TestAccLock(t *testing.T) {
 	lockers := make([]*deployer.Locker, numConcurrentLocks)
 
 	for i := 0; i < numConcurrentLocks; i++ {
-		lockers[i], err = deployer.CreateLocker("humpty.dumpty@databricks.com", remoteProjectRoot)
+		lockers[i] = deployer.CreateLocker("humpty.dumpty@databricks.com", remoteProjectRoot)
 		assert.NoError(t, err)
 	}
 

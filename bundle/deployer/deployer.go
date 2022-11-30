@@ -36,7 +36,7 @@ func Create(ctx context.Context, env, localRoot, remoteRoot string, wsc *databri
 	if err != nil {
 		return nil, err
 	}
-	newLocker, err := CreateLocker(user.UserName, remoteRoot)
+	newLocker := CreateLocker(user.UserName, remoteRoot)
 	if err != nil {
 		return nil, err
 	}
