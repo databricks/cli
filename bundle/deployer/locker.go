@@ -43,7 +43,6 @@ import (
 type Locker struct {
 	// scope of the locker
 	TargetDir string
-	// TODO: probably can remove a local state tracking given pessimistic protocol
 	// Active == true implies exclusive access to TargetDir for the client
 	Active bool
 	// if locker is active, this information about the locker is uploaded onto
@@ -66,7 +65,7 @@ type LockState struct {
 // TODO: test what happens if there is no active locker
 // only file you are allowed to read without holding the mutex is the lock state
 func GetActiveLockerState(ctx context.Context, wsc *databricks.WorkspaceClient, path string) (*LockState, error) {
-	bytes, err := utilities.GetFileContentJson(ctx, wsc, path)
+	bytes, err := utilities.GetRawJsonFileContent(ctx, wsc, path)
 	if err != nil {
 		return nil, err
 	}
@@ -95,7 +94,7 @@ func (locker *Locker) assertLockHeld(ctx context.Context, wsc *databricks.Worksp
 	return nil
 }
 
-// idempotent function since overright is set to true
+// idempotent function since overwrite is set to true
 func (locker *Locker) PutFile(ctx context.Context, wsc *databricks.WorkspaceClient, pathToFile string, content []byte) error {
 	if !locker.Active {
 		return fmt.Errorf("failed to put file. deploy lock not held")

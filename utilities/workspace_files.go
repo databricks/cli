@@ -23,7 +23,7 @@ import (
 // TODO(Nov 2022): talk to eng-files team about what the response structure would look like.
 //       This function would have to be modfified probably in the future once this
 //       API goes to public preview
-func GetFileContentJson(ctx context.Context, wsc *databricks.WorkspaceClient, path string) ([]byte, error) {
+func GetRawJsonFileContent(ctx context.Context, wsc *databricks.WorkspaceClient, path string) ([]byte, error) {
 	apiClient, err := client.New(wsc.Config)
 	if err != nil {
 		return nil, err
@@ -41,7 +41,6 @@ func GetFileContentJson(ctx context.Context, wsc *databricks.WorkspaceClient, pa
 	return res, nil
 }
 
-// not idempotent. errors out if file exists
 func WriteFile(ctx context.Context, wsc *databricks.WorkspaceClient, path string, content []byte, overwrite bool) error {
 	apiClient, err := client.New(wsc.Config)
 	if err != nil {
