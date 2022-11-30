@@ -4,6 +4,14 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 )
 
+type PathLike struct {
+	// Workspace contains a WSFS path.
+	Workspace *string `json:"workspace,omitempty"`
+
+	// DBFS contains a DBFS path.
+	DBFS *string `json:"dbfs,omitempty"`
+}
+
 // Workspace defines configurables at the workspace level.
 type Workspace struct {
 	// Unified authentication attributes.
@@ -28,6 +36,12 @@ type Workspace struct {
 	AzureTenantID    string `json:"azure_tenant_id,omitempty"`
 	AzureEnvironment string `json:"azure_environment,omitempty"`
 	AzureLoginAppID  string `json:"azure_login_app_id,omitempty"`
+
+	// Remote path for artifacts.
+	// This can specify a workspace path, a DBFS path, or both.
+	// Some artifacts must be stored in the workspace (e.g. notebooks).
+	// Some artifacts must be stored on DBFS (e.g. wheels, JARs).
+	ArtifactPath PathLike `json:"artifact_path"`
 }
 
 func (w *Workspace) Client() (*databricks.WorkspaceClient, error) {

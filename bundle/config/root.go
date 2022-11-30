@@ -32,6 +32,9 @@ type Root struct {
 	// and paths in the workspace tree to use for this bundle.
 	Workspace Workspace `json:"workspace"`
 
+	// Artifacts contains a description of all code artifacts in this bundle.
+	Artifacts map[string]*Artifact `json:"artifacts,omitempty"`
+
 	// Resources contains a description of all Databricks resources
 	// to deploy in this bundle (e.g. jobs, pipelines, etc.).
 	Resources Resources `json:"resources"`
@@ -93,6 +96,13 @@ func (r *Root) MergeEnvironment(env *Environment) error {
 
 	if env.Workspace != nil {
 		err = mergo.MergeWithOverwrite(&r.Workspace, env.Workspace)
+		if err != nil {
+			return err
+		}
+	}
+
+	if env.Artifacts != nil {
+		err = mergo.Merge(&r.Artifacts, env.Artifacts, mergo.WithAppendSlice)
 		if err != nil {
 			return err
 		}
