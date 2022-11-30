@@ -98,7 +98,7 @@ func TestAccLock(t *testing.T) {
 			if indexOfAnInactiveLocker == -1 {
 				indexOfAnInactiveLocker = i
 			}
-			assert.ErrorContains(t, lockerErrs[i], "lock held by")
+			assert.ErrorContains(t, lockerErrs[i], "lock acquired by")
 			assert.ErrorContains(t, lockerErrs[i], "Use --force to override")
 		}
 	}
