@@ -51,7 +51,11 @@ var deployTerraformCmd = &cobra.Command{
 			log.Printf("[INFO] no changes detected")
 		case deployer.Partial:
 			log.Printf("[ERROR] started deployment, but failed to complete")
-		case deployer.Success:
+		case deployer.PartialButUntracked:
+			log.Printf("[ERROR] started deployment, but failed to complete. Any partially deployed resources in this run are untracked in the databricks workspace and might not be cleaned up on future deployments")
+		case deployer.CompleteButUntracked:
+			log.Printf("[ERROR] deployment complete. Failed to track deployed resources. Any deployed resources in this run are untracked in the databricks workspace and might not be cleaned up on future deployments")
+		case deployer.Complete:
 			log.Printf("[INFO] deployment complete")
 		}
 		return err

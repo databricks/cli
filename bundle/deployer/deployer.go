@@ -18,8 +18,10 @@ type DeploymentStatus int
 const (
 	NoChanges DeploymentStatus = iota
 	Failed
+	PartialButUntracked
 	Partial
-	Success
+	CompleteButUntracked
+	Complete
 )
 
 type Deployer struct {
@@ -112,33 +114,43 @@ func (d *Deployer) ApplyTerraformConfig(ctx context.Context, configPath, terrafo
 
 	err = d.LoadTerraformState(ctx)
 	if err != nil {
+		log.Printf("[DEBUG] failed to load terraform state from workspace: %s", err)
 		return Failed, err
 	}
 
 	tf, err := tfexec.NewTerraform(configPath, terraformBinaryPath)
 	if err != nil {
+		log.Printf("[DEBUG] failed to construct terraform object: %s", err)
 		return Failed, err
 	}
 
 	isPlanNotEmpty, err := tf.Plan(ctx)
 	if err != nil {
+		log.Printf("[DEBUG] failed to compute terraform plan: %s", err)
 		return Failed, err
 	}
 
 	if !isPlanNotEmpty {
-		// log.Printf("[INFO] state diff is empty. No changes applied")
+		log.Printf("[DEBUG] terraform plan returned a empty diff")
 		return NoChanges, nil
 	}
 
 	err = tf.Apply(ctx)
 	// upload state even if apply fails to handle partial deployments
 	err2 := d.SaveTerraformState(ctx)
+
+	if err != nil && err2 != nil {
+		log.Printf("[ERROR] terraform apply failed: %s", err)
+		log.Printf("[ERROR] failed to upload terraform state after partial terraform apply: %s", err2)
+		return PartialButUntracked, fmt.Errorf("deploymented failed: %s", err)
+	}
 	if err != nil {
+		log.Printf("[ERROR] terraform apply failed: %s", err)
 		return Partial, fmt.Errorf("deploymented failed: %s", err)
 	}
 	if err2 != nil {
-		return Partial, fmt.Errorf("failed to upload updated tfstate file: %s", err2)
+		log.Printf("[ERROR] failed to upload terraform state after completing terraform apply: %s", err2)
+		return CompleteButUntracked, fmt.Errorf("failed to upload terraform state file: %s", err2)
 	}
-	return Success, nil
-
+	return Complete, nil
 }
