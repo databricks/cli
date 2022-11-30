@@ -36,6 +36,23 @@ const (
 	Complete
 )
 
+// Deployer is a struct to deploy a DAB to a databricks workspace
+//
+// Here's a high level description of what a deploy looks like:
+//
+// 1. Client compiles the bundle configuration to a terraform HCL config file
+//
+// 2. Client tries to acquire a lock on the remote root of the project.
+//  	-- If FAIL: print details about current holder of the deployment lock on
+//					remote root and terminate deployment
+//
+// 3. Client reads terraform state from remote root
+//
+// 4. Client applies the diff in terraform config to the databricks workspace
+//
+// 5. Client updates terraform state file in remote root
+//
+// 6. Client releases the deploy lock on remote root
 type Deployer struct {
 	localRoot  string
 	remoteRoot string
