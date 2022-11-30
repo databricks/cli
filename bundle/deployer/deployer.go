@@ -36,7 +36,7 @@ func Create(ctx context.Context, env, localRoot, remoteRoot string, wsc *databri
 	if err != nil {
 		return nil, err
 	}
-	newLocker, err := CreateLocker(user.UserName, false, remoteRoot)
+	newLocker, err := CreateLocker(user.UserName, remoteRoot)
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +62,7 @@ func (b *Deployer) tfStateLocalPath() string {
 }
 
 func (b *Deployer) LoadTerraformState(ctx context.Context) error {
-	res, err := utilities.GetFile(ctx, b.wsc, b.tfStateRemotePath())
+	res, err := utilities.GetJsonFileContent(ctx, b.wsc, b.tfStateRemotePath())
 	if err != nil {
 		// remote tf state is the source of truth. If it's absent, we delete the
 		// local state too and start from a clean slate
@@ -97,19 +97,19 @@ func (b *Deployer) SaveTerraformState(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	return b.locker.SafePutFile(ctx, b.wsc, b.tfStateRemotePath(), bytes)
+	return b.locker.PutFile(ctx, b.wsc, b.tfStateRemotePath(), bytes)
 }
 
-func (b *Deployer) Lock(ctx context.Context, wsc *databricks.WorkspaceClient) error {
-	return b.locker.Lock(ctx, wsc)
+func (b *Deployer) Lock(ctx context.Context) error {
+	return b.locker.Lock(ctx, b.wsc, false)
 }
 
-func (b *Deployer) Unlock(ctx context.Context, wsc *databricks.WorkspaceClient) error {
-	return b.locker.Unlock(ctx, wsc)
+func (b *Deployer) Unlock(ctx context.Context) error {
+	return b.locker.Unlock(ctx, b.wsc)
 }
 
 func (d *Deployer) ApplyTerraformConfig(ctx context.Context, configPath, terraformBinaryPath string) (DeploymentStatus, error) {
-	err := d.locker.Lock(ctx, d.wsc)
+	err := d.locker.Lock(ctx, d.wsc, false)
 	if err != nil {
 		return Failed, err
 	}

@@ -70,7 +70,7 @@ func TestAccLock(t *testing.T) {
 	lockers := make([]*deployer.Locker, numConcurrentLocks)
 
 	for i := 0; i < numConcurrentLocks; i++ {
-		lockers[i], err = deployer.CreateLocker("humpty.dumpty@databricks.com", false, remoteProjectRoot)
+		lockers[i], err = deployer.CreateLocker("humpty.dumpty@databricks.com", remoteProjectRoot)
 		assert.NoError(t, err)
 	}
 
@@ -81,7 +81,7 @@ func TestAccLock(t *testing.T) {
 		go func() {
 			defer wg.Done()
 			time.Sleep(time.Duration(rand.Intn(100)) * time.Millisecond)
-			lockerErrs[currentIndex] = lockers[currentIndex].Lock(ctx, wsc)
+			lockerErrs[currentIndex] = lockers[currentIndex].Lock(ctx, wsc, false)
 		}()
 	}
 	wg.Wait()
@@ -98,39 +98,39 @@ func TestAccLock(t *testing.T) {
 			if indexOfAnInactiveLocker == -1 {
 				indexOfAnInactiveLocker = i
 			}
-			assert.ErrorContains(t, lockerErrs[i], "ongoing deployment")
-			assert.ErrorContains(t, lockerErrs[i], "Use --force to forcibly deploy your bundle")
+			assert.ErrorContains(t, lockerErrs[i], "lock held by")
+			assert.ErrorContains(t, lockerErrs[i], "Use --force to override")
 		}
 	}
 	assert.Equal(t, 1, countActive, "Exactly one locker should successfull acquire the lock")
 
 	// test remote lock matches active lock
-	remoteLocker, err := deployer.GetRemoteLocker(ctx, wsc, lockers[indexOfActiveLocker].RemotePath())
+	remoteLocker, err := deployer.GetActiveLockerState(ctx, wsc, lockers[indexOfActiveLocker].RemotePath())
 	assert.NoError(t, err)
-	assert.Equal(t, remoteLocker.Id, lockers[indexOfActiveLocker].Id, "remote locker id does not match active locker")
-	assert.True(t, remoteLocker.AcquisitionTime.Equal(lockers[indexOfActiveLocker].AcquisitionTime), "remote locker acquisition time does not match active locker")
+	assert.Equal(t, remoteLocker.ID, lockers[indexOfActiveLocker].State.ID, "remote locker id does not match active locker")
+	assert.True(t, remoteLocker.AcquisitionTime.Equal(lockers[indexOfActiveLocker].State.AcquisitionTime), "remote locker acquisition time does not match active locker")
 
 	// test all other locks (inactive ones) do not match the remote lock and Unlock fails
 	for i := 0; i < numConcurrentLocks; i++ {
 		if i == indexOfActiveLocker {
 			continue
 		}
-		assert.NotEqual(t, remoteLocker.Id, lockers[i].Id)
+		assert.NotEqual(t, remoteLocker.ID, lockers[i].State.ID)
 		err := lockers[i].Unlock(ctx, wsc)
-		assert.ErrorContains(t, err, "only active lockers can be unlocked")
+		assert.ErrorContains(t, err, "unlock called when lock is not held")
 	}
 
 	// Unlock active lock and check it becomes inactive
 	err = lockers[indexOfActiveLocker].Unlock(ctx, wsc)
 	assert.NoError(t, err)
-	remoteLocker, err = deployer.GetRemoteLocker(ctx, wsc, lockers[indexOfActiveLocker].RemotePath())
+	remoteLocker, err = deployer.GetActiveLockerState(ctx, wsc, lockers[indexOfActiveLocker].RemotePath())
 	assert.ErrorContains(t, err, "File not found.", "remote lock file not deleted on unlock")
 	assert.Nil(t, remoteLocker)
 	assert.False(t, lockers[indexOfActiveLocker].Active)
 
 	// A locker that failed to acquire the lock should now be able to acquire it
 	assert.False(t, lockers[indexOfAnInactiveLocker].Active)
-	err = lockers[indexOfAnInactiveLocker].Lock(ctx, wsc)
+	err = lockers[indexOfAnInactiveLocker].Lock(ctx, wsc, false)
 	assert.NoError(t, err)
 	assert.True(t, lockers[indexOfAnInactiveLocker].Active)
 }

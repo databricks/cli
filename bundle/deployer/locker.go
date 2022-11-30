@@ -17,60 +17,95 @@ import (
 	"github.com/google/uuid"
 )
 
-// a mutex on a specified directory in workspace file system.
+// Locker object enables exclusive access to TargetDir's scope for a client. This
+// enables multiple clients to deploy to the same scope (ie TargetDir) in an atomic
+// manner
 //
-// Only one  Locker can be "active" on a workspace directory. This
-// enables exclusive access to the workspace for deployment purposes
+// Here is the detials of the locking protocol used here:
 //
-// users need to acquire this lock before deploying a DAB using
-// `bricks bundle deploy`
+// 1. Potentially multiple clients race to create a deploy.lock file in
+//    TargetDir/.bundle directory with unique ID. The deploy.lock file
+//    is a json file containing the State from the locker
+//
+// 2. Clients read the remote deploy.lock file and if it's ID matches, the client
+//    assumes it has the lock on TargetDir. The client is now free to read/write code
+//    asserts and deploy databricks assets scoped under TargetDir
+//
+// 3. To sidestep clients failing to relinquish a lock during a failed deploy attempt
+//    we allow clients to forcefully acquire a lock on TargetDir. However forcefully acquired
+//    locks come with the following caveats:
+//
+//       a.  a forcefully acquired lock does not guarentee exclusive access to
+//           TargetDir's scope
+//       b.  forcefully acquiring a lock(s) on TargetDir can break the assumption
+//           of exclusive access that other clients with non forcefully acquired
+//           locks might have
 type Locker struct {
-	// unique id for the locker
-	Id uuid.UUID
-	// creator of this locker
-	User string
-	// timestamp when this locker became "active" on the the target directory
-	AcquisitionTime time.Time
-	// forced lockers can override any existing lockers (including other forced ones)
-	// on the target directory
-	IsForced bool
-	// remote root of the project, for which this locker is scoped
+	// scope of the locker
 	TargetDir string
-	// If true, the holder of this locker has exclusive access to target directory
-	// to deploy their DAB
+	// TODO: probably can remove a local state tracking given pessimistic protocol
+	// Active == true implies exclusive access to TargetDir for the client
 	Active bool
+	// if locker is active, this information about the locker is uploaded onto
+	// the workspace so as to let other clients details about the active locker
+	State *LockerState
 }
 
-func GetRemoteLocker(ctx context.Context, wsc *databricks.WorkspaceClient, lockFilePath string) (*Locker, error) {
-	res, err := utilities.GetFile(ctx, wsc, lockFilePath)
+type LockerState struct {
+	// unique identifier for the locker
+	ID uuid.UUID
+	// last timestamp when locker was active
+	AcquisitionTime time.Time
+	// Only relevant for active lockers
+	// IsForced == true implies the lock was acquired forcefully
+	IsForced bool
+	// creator of this locker
+	User string
+}
+
+// TODO: test what happens if there is no active locker
+// only file you are allowed to read without holding the mutex is the lock state
+func GetActiveLockerState(ctx context.Context, wsc *databricks.WorkspaceClient, path string) (*LockerState, error) {
+	res, err := utilities.GetJsonFileContent(ctx, wsc, path)
 	if err != nil {
 		return nil, err
 	}
-	lockJson, err := json.Marshal(res)
+	bytes, err := json.Marshal(res)
 	if err != nil {
 		return nil, err
 	}
-	remoteLock := Locker{}
-	err = json.Unmarshal(lockJson, &remoteLock)
+	remoteLock := LockerState{}
+	err = json.Unmarshal(bytes, &remoteLock)
 	if err != nil {
 		return nil, err
 	}
 	return &remoteLock, nil
 }
 
-// idempotent
-func (locker *Locker) SafePutFile(ctx context.Context, wsc *databricks.WorkspaceClient, path string, content []byte) error {
-	contentReader := bytes.NewReader(content)
-	// TODO: Consider reading the remote locker file to ensure we hold the lock
-	// This hedges against race conditions during forced deployment
-	if !locker.Active {
-		return fmt.Errorf("failed to put file. Lock not held to safely mutate workspace files")
+func (locker *Locker) assertLockHeld(ctx context.Context, wsc *databricks.WorkspaceClient) error {
+	activeLockerState, err := GetActiveLockerState(ctx, wsc, locker.RemotePath())
+	if err != nil && strings.Contains(err.Error(), "File not found.") {
+		return fmt.Errorf("no active lock on target dir: %s", err)
 	}
-	// workspace mkdirs is idempotent
-	err := wsc.Workspace.MkdirsByPath(ctx, filepath.Dir(path))
 	if err != nil {
-		return fmt.Errorf("could not mkdir to put file: %s", err)
+		return err
 	}
+	if activeLockerState.ID != locker.State.ID && !activeLockerState.IsForced {
+		return fmt.Errorf("lock held by %s since %v. Use --force to override", activeLockerState.User, activeLockerState.AcquisitionTime)
+	}
+	if activeLockerState.ID != locker.State.ID && activeLockerState.IsForced {
+		return fmt.Errorf("lock force acquired by %s since %v. Use --force to override", activeLockerState.User, activeLockerState.AcquisitionTime)
+	}
+	return nil
+}
+
+// idempotent function since overright is set to true
+func (locker *Locker) PutFile(ctx context.Context, wsc *databricks.WorkspaceClient, path string, content []byte) error {
+	if !locker.Active {
+		return fmt.Errorf("failed to put file. deploy lock not held")
+	}
+
+	contentReader := bytes.NewReader(content)
 	apiClient, err := client.New(wsc.Config)
 	if err != nil {
 		return err
@@ -78,36 +113,93 @@ func (locker *Locker) SafePutFile(ctx context.Context, wsc *databricks.Workspace
 	apiPath := fmt.Sprintf(
 		"/api/2.0/workspace-files/import-file/%s?overwrite=true",
 		strings.TrimLeft(path, "/"))
-	return apiClient.Do(ctx, http.MethodPost, apiPath, contentReader, nil)
+
+	err = apiClient.Do(ctx, http.MethodPost, apiPath, contentReader, nil)
+	// TODO: test this regex parsing is correct if dirs dont exist
+	if err != nil && strings.Contains(err.Error(), "File not found") {
+		// retry after creating parent dirs
+		err = wsc.Workspace.MkdirsByPath(ctx, filepath.Dir(path))
+		if err != nil {
+			return fmt.Errorf("could not mkdir to put file: %s", err)
+		}
+		err = apiClient.Do(ctx, http.MethodPost, apiPath, contentReader, nil)
+	}
+	return err
 }
 
-func (locker *Locker) postLockFile(ctx context.Context, wsc *databricks.WorkspaceClient) error {
-	locker.AcquisitionTime = time.Now()
-	lockerContent, err := json.Marshal(*locker)
+// Right now the GET workspace-file api returns the raw file content as the
+// reponse body which then the go-sdk unmarshals in apiClient.Do
+//
+// The consequences of this?
+// 1. Using this function on workspace files that are not json formatted will error out
+// 2. The expected runtime type of the returned result is map[string]interface{}
+//
+// GET workspace-files API is in private preview and this behavior will likely change (Or I hope so it does)
+func (locker *Locker) GetJsonFileContent(ctx context.Context, wsc *databricks.WorkspaceClient, path string) (interface{}, error) {
+	if !locker.Active {
+		return nil, fmt.Errorf("failed to get file. deploy lock not held")
+	}
+
+	apiClient, err := client.New(wsc.Config)
+	if err != nil {
+		return nil, err
+	}
+	exportApiPath := fmt.Sprintf(
+		"/api/2.0/workspace-files/%s",
+		strings.TrimLeft(path, "/"))
+
+	var res interface{}
+
+	err = apiClient.Do(ctx, http.MethodGet, exportApiPath, nil, &res)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch file %s: %s", path, err)
+	}
+	return res, nil
+}
+
+func (locker *Locker) Lock(ctx context.Context, wsc *databricks.WorkspaceClient, isForced bool) error {
+	newLockerState := LockerState{
+		ID:              locker.State.ID,
+		AcquisitionTime: time.Now(),
+		IsForced:        isForced,
+		User:            locker.State.User,
+	}
+	bytes, err := json.Marshal(newLockerState)
 	if err != nil {
 		return err
 	}
-	return utilities.PostFile(ctx, wsc, locker.RemotePath(), lockerContent)
+	err = utilities.WriteFile(ctx, wsc, locker.RemotePath(), bytes, isForced)
+	if err != nil && !strings.Contains(err.Error(), fmt.Sprintf("%s already exists", locker.RemotePath())) {
+		return err
+	}
+	err = locker.assertLockHeld(ctx, wsc)
+	if err != nil {
+		return err
+	}
+
+	locker.State = &newLockerState
+	locker.Active = true
+	return nil
 }
 
-func (locker *Locker) Lock(ctx context.Context, wsc *databricks.WorkspaceClient) error {
-	if locker.Active {
-		return fmt.Errorf("locker already active")
+func (locker *Locker) Unlock(ctx context.Context, wsc *databricks.WorkspaceClient) error {
+	if !locker.Active {
+		return fmt.Errorf("unlock called when lock is not held")
 	}
-	err := locker.postLockFile(ctx, wsc)
-	if err != nil && strings.Contains(err.Error(), fmt.Sprintf("%s already exists", locker.RemotePath())) {
-		remoteLocker, err := GetRemoteLocker(ctx, wsc, locker.RemotePath())
-		if err != nil {
-			return fmt.Errorf("failed to get remote lock file: %s", err)
-		}
-		// TODO: convert timestamp to human readable format
-		if remoteLocker.IsForced {
-			return fmt.Errorf("ongoing forced deployment by %s since %v. Use --force to override current forced deployment", remoteLocker.User, remoteLocker.AcquisitionTime)
-		} else {
-			return fmt.Errorf("ongoing deployment by %s since %v. Use --force to forcibly deploy your bundle", remoteLocker.User, remoteLocker.AcquisitionTime)
-		}
+	err := locker.assertLockHeld(ctx, wsc)
+	if err != nil {
+		return fmt.Errorf("unlock called when lock is not held: %s", err)
 	}
-	locker.Active = true
+	err = wsc.Workspace.Delete(ctx,
+		workspace.Delete{
+			Path:      locker.RemotePath(),
+			Recursive: false,
+		},
+	)
+	if err != nil {
+		return err
+	}
+	locker.Active = false
 	return nil
 }
 
@@ -115,36 +207,13 @@ func (locker *Locker) RemotePath() string {
 	return filepath.Join(locker.TargetDir, ".bundle/deploy.lock")
 }
 
-func CreateLocker(user string, isForced bool, targetDir string) (*Locker, error) {
+func CreateLocker(user string, targetDir string) (*Locker, error) {
 	return &Locker{
-		Id:        uuid.New(),
-		IsForced:  isForced,
 		TargetDir: targetDir,
-		User:      user,
 		Active:    false,
+		State: &LockerState{
+			ID:   uuid.New(),
+			User: user,
+		},
 	}, nil
-}
-
-func (locker *Locker) Unlock(ctx context.Context, wsc *databricks.WorkspaceClient) error {
-	if !locker.Active {
-		return fmt.Errorf("only active lockers can be unlocked")
-	}
-
-	remoteLocker, err := GetRemoteLocker(ctx, wsc, locker.RemotePath())
-	if err != nil {
-		return err
-	}
-	if remoteLocker.Id == locker.Id {
-		err = wsc.Workspace.Delete(ctx,
-			workspace.Delete{
-				Path:      locker.RemotePath(),
-				Recursive: false,
-			},
-		)
-		locker.Active = false
-	} else {
-		err = fmt.Errorf("this deployment does not hold lock on workspace project dir. Current active deployment lock was acquired by %s at %v", remoteLocker.User, remoteLocker.AcquisitionTime)
-		locker.Active = false
-	}
-	return err
 }

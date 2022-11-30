@@ -6,21 +6,24 @@ import (
 	"fmt"
 	"net/http"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/client"
 )
 
-// TODO: This returns
-// 1. an error if the file contents are not json
-// 2. an map[string]interface{} if the contents are json
-//
-// Make changes to read workspace files whose content body is not json
 
 // NOTE: This API is only available for files in /Repos if a workspace has repos
 // in workspace enabled and files in workspace not enabled
-func GetFile(ctx context.Context, wsc *databricks.WorkspaceClient, path string) (interface{}, error) {
+//
+// Right now the GET workspace-file api returns the raw file content as the
+// reponse body which then the go-sdk unmarshals in apiClient.Do
+//
+// The consequences of this?
+// 1. Using this function on workspace files that are not json formatted will error out
+// 2. The expected runtime type of the returned result is map[string]interface{}
+func GetJsonFileContent(ctx context.Context, wsc *databricks.WorkspaceClient, path string) (interface{}, error) {
 	apiClient, err := client.New(wsc.Config)
 	if err != nil {
 		return nil, err
@@ -39,7 +42,7 @@ func GetFile(ctx context.Context, wsc *databricks.WorkspaceClient, path string) 
 }
 
 // not idempotent. errors out if file exists
-func PostFile(ctx context.Context, wsc *databricks.WorkspaceClient, path string, content []byte) error {
+func WriteFile(ctx context.Context, wsc *databricks.WorkspaceClient, path string, content []byte, overwrite bool) error {
 	contentReader := bytes.NewReader(content)
 	apiClient, err := client.New(wsc.Config)
 	if err != nil {
@@ -49,8 +52,10 @@ func PostFile(ctx context.Context, wsc *databricks.WorkspaceClient, path string,
 	if err != nil {
 		return fmt.Errorf("could not mkdir to post file: %s", err)
 	}
+
 	importApiPath := fmt.Sprintf(
-		"/api/2.0/workspace-files/import-file/%s?overwrite=false",
-		strings.TrimLeft(path, "/"))
+		"/api/2.0/workspace-files/import-file/%s?overwrite=%s",
+		strings.TrimLeft(path, "/"), strconv.FormatBool(overwrite))
+
 	return apiClient.Do(ctx, http.MethodPost, importApiPath, contentReader, nil)
 }
