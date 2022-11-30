@@ -79,11 +79,7 @@ func (b *Deployer) LoadTerraformState(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	f, err := os.OpenFile(b.tfStateLocalPath(), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, os.ModePerm)
-	if err != nil {
-		return err
-	}
-	_, err = f.Write(bytes)
+	err = os.WriteFile(b.tfStateLocalPath(), bytes, os.ModePerm)
 	return err
 }
 
