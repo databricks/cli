@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/atotto/clipboard v0.1.4
-	github.com/databricks/databricks-sdk-go v0.0.0
+	github.com/databricks/databricks-sdk-go v0.1.0
 	github.com/ghodss/yaml v1.0.0 // MIT + NOTICE
 	github.com/manifoldco/promptui v0.9.0 // BSD-3-Clause license
 	github.com/mitchellh/go-homedir v1.1.0 // MIT
@@ -51,5 +51,3 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-replace github.com/databricks/databricks-sdk-go v0.0.0 => ./ext/databricks-sdk-go

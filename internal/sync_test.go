@@ -104,13 +104,13 @@ func TestAccFullSync(t *testing.T) {
 
 	// First upload assertion
 	assert.Eventually(t, func() bool {
-		objects, err := wsc.Workspace.ListAll(ctx, workspace.ListRequest{
+		objects, err := wsc.Workspace.ListAll(ctx, workspace.List{
 			Path: repoPath,
 		})
 		assert.NoError(t, err)
 		return len(objects) == 3
 	}, 30*time.Second, 5*time.Second)
-	objects, err := wsc.Workspace.ListAll(ctx, workspace.ListRequest{
+	objects, err := wsc.Workspace.ListAll(ctx, workspace.List{
 		Path: repoPath,
 	})
 	assert.NoError(t, err)
@@ -127,13 +127,13 @@ func TestAccFullSync(t *testing.T) {
 	os.Create(filepath.Join(projectDir, "hello.txt"))
 	os.Create(filepath.Join(projectDir, "world.txt"))
 	assert.Eventually(t, func() bool {
-		objects, err := wsc.Workspace.ListAll(ctx, workspace.ListRequest{
+		objects, err := wsc.Workspace.ListAll(ctx, workspace.List{
 			Path: repoPath,
 		})
 		assert.NoError(t, err)
 		return len(objects) == 5
 	}, 30*time.Second, 5*time.Second)
-	objects, err = wsc.Workspace.ListAll(ctx, workspace.ListRequest{
+	objects, err = wsc.Workspace.ListAll(ctx, workspace.List{
 		Path: repoPath,
 	})
 	assert.NoError(t, err)
@@ -151,13 +151,13 @@ func TestAccFullSync(t *testing.T) {
 	// delete a file and assert
 	os.Remove(filepath.Join(projectDir, "hello.txt"))
 	assert.Eventually(t, func() bool {
-		objects, err := wsc.Workspace.ListAll(ctx, workspace.ListRequest{
+		objects, err := wsc.Workspace.ListAll(ctx, workspace.List{
 			Path: repoPath,
 		})
 		assert.NoError(t, err)
 		return len(objects) == 4
 	}, 30*time.Second, 5*time.Second)
-	objects, err = wsc.Workspace.ListAll(ctx, workspace.ListRequest{
+	objects, err = wsc.Workspace.ListAll(ctx, workspace.List{
 		Path: repoPath,
 	})
 	assert.NoError(t, err)
@@ -281,13 +281,13 @@ func TestAccIncrementalSync(t *testing.T) {
 
 	// First upload assertion
 	assert.Eventually(t, func() bool {
-		objects, err := wsc.Workspace.ListAll(ctx, workspace.ListRequest{
+		objects, err := wsc.Workspace.ListAll(ctx, workspace.List{
 			Path: repoPath,
 		})
 		assert.NoError(t, err)
 		return len(objects) == 2
 	}, 30*time.Second, 5*time.Second)
-	objects, err := wsc.Workspace.ListAll(ctx, workspace.ListRequest{
+	objects, err := wsc.Workspace.ListAll(ctx, workspace.List{
 		Path: repoPath,
 	})
 	assert.NoError(t, err)
@@ -307,13 +307,13 @@ func TestAccIncrementalSync(t *testing.T) {
 
 	// new file upload assertion
 	assert.Eventually(t, func() bool {
-		objects, err := wsc.Workspace.ListAll(ctx, workspace.ListRequest{
+		objects, err := wsc.Workspace.ListAll(ctx, workspace.List{
 			Path: repoPath,
 		})
 		assert.NoError(t, err)
 		return len(objects) == 3
 	}, 30*time.Second, 5*time.Second)
-	objects, err = wsc.Workspace.ListAll(ctx, workspace.ListRequest{
+	objects, err = wsc.Workspace.ListAll(ctx, workspace.List{
 		Path: repoPath,
 	})
 	assert.NoError(t, err)
@@ -330,13 +330,13 @@ func TestAccIncrementalSync(t *testing.T) {
 	// delete a file and assert
 	os.Remove(filepath.Join(projectDir, ".gitkeep"))
 	assert.Eventually(t, func() bool {
-		objects, err := wsc.Workspace.ListAll(ctx, workspace.ListRequest{
+		objects, err := wsc.Workspace.ListAll(ctx, workspace.List{
 			Path: repoPath,
 		})
 		assert.NoError(t, err)
 		return len(objects) == 2
 	}, 30*time.Second, 5*time.Second)
-	objects, err = wsc.Workspace.ListAll(ctx, workspace.ListRequest{
+	objects, err = wsc.Workspace.ListAll(ctx, workspace.List{
 		Path: repoPath,
 	})
 	assert.NoError(t, err)
