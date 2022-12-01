@@ -56,16 +56,18 @@ type accumulator struct {
 	strings map[string]*stringField
 }
 
-func jsonFieldName(sf reflect.StructField) *string {
+// jsonFieldName returns the name in a field's `json` tag.
+// Returns the empty string if it isn't set.
+func jsonFieldName(sf reflect.StructField) string {
 	tag, ok := sf.Tag.Lookup("json")
 	if !ok {
-		return nil
+		return ""
 	}
 	parts := strings.Split(tag, ",")
 	if parts[0] == "-" {
-		return nil
+		return ""
 	}
-	return &parts[0]
+	return parts[0]
 }
 
 func (a *accumulator) walkStruct(scope []string, rv reflect.Value) {
@@ -80,13 +82,13 @@ func (a *accumulator) walkStruct(scope []string, rv reflect.Value) {
 			continue
 		}
 
-		// Skip fields without a JSON tag.
-		name := jsonFieldName(rv.Type().Field(i))
-		if name == nil {
+		// Skip unnamed fields.
+		fieldName := jsonFieldName(rv.Type().Field(i))
+		if fieldName == "" {
 			continue
 		}
 
-		a.walk(append(scope, *name), f, anySetter{f})
+		a.walk(append(scope, fieldName), f, anySetter{f})
 	}
 }
 
