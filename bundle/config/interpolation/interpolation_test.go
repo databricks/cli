@@ -28,6 +28,12 @@ type foo struct {
 	F map[string]string `json:"f"`
 }
 
+func expand(v any) error {
+	a := accumulator{}
+	a.start(v)
+	return a.expand(DefaultLookup)
+}
+
 func TestInterpolationVariables(t *testing.T) {
 	f := foo{
 		A: "a",

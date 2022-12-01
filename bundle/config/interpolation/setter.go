@@ -34,3 +34,15 @@ type mapSetter struct {
 func (s mapSetter) Set(str string) {
 	s.m.SetMapIndex(s.k, reflect.ValueOf(str))
 }
+
+type getter interface {
+	Get() string
+}
+
+type anyGetter struct {
+	rv reflect.Value
+}
+
+func (g anyGetter) Get() string {
+	return g.rv.String()
+}
