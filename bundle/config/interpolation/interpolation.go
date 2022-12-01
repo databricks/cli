@@ -147,7 +147,7 @@ func (a *accumulator) gather(paths []string) (map[string]string, error) {
 	return out, nil
 }
 
-func expand(v any) {
+func expand(v any) error {
 	rv := reflect.ValueOf(v)
 	if rv.Type().Kind() != reflect.Pointer {
 		panic("expect pointer")
@@ -170,11 +170,13 @@ func expand(v any) {
 		// Create map to be used for interpolation
 		m, err := acc.gather(ds)
 		if err != nil {
-			panic(fmt.Errorf("cannot interpolate %s: %w", path, err))
+			return fmt.Errorf("cannot interpolate %s: %w", path, err)
 		}
 
 		v.interpolate(m)
 	}
+
+	return nil
 }
 
 type interpolate struct{}
@@ -188,6 +190,6 @@ func (m *interpolate) Name() string {
 }
 
 func (m *interpolate) Apply(_ context.Context, b *bundle.Bundle) ([]bundle.Mutator, error) {
-	expand(&b.Config)
-	return nil, nil
+	err := expand(&b.Config)
+	return nil, err
 }

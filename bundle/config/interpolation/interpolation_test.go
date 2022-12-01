@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type nest struct {
@@ -34,7 +35,8 @@ func TestInterpolationVariables(t *testing.T) {
 		C: "${a}",
 	}
 
-	expand(&f)
+	err := expand(&f)
+	require.NoError(t, err)
 
 	assert.Equal(t, "a", f.A)
 	assert.Equal(t, "a", f.B)
@@ -48,7 +50,8 @@ func TestInterpolationWithPointers(t *testing.T) {
 		D: &fd,
 	}
 
-	expand(&f)
+	err := expand(&f)
+	require.NoError(t, err)
 
 	assert.Equal(t, "a", f.A)
 	assert.Equal(t, "a", *f.D)
@@ -64,7 +67,8 @@ func TestInterpolationWithStruct(t *testing.T) {
 		},
 	}
 
-	expand(&f)
+	err := expand(&f)
+	require.NoError(t, err)
 
 	assert.Equal(t, "x", f.A)
 	assert.Equal(t, "x", f.E.X)
@@ -80,7 +84,8 @@ func TestInterpolationWithMap(t *testing.T) {
 		},
 	}
 
-	expand(&f)
+	err := expand(&f)
+	require.NoError(t, err)
 
 	assert.Equal(t, "a", f.A)
 	assert.Equal(t, "a", f.F["a"])
