@@ -65,13 +65,13 @@ func (m *build) Apply(_ context.Context, b *bundle.Bundle) ([]bundle.Mutator, er
 
 	// Check that an artifact path is defined.
 	remotePath := b.Config.Workspace.ArtifactPath.Workspace
-	if remotePath == nil {
+	if remotePath == "" {
 		return nil, fmt.Errorf("remote artifact path not configured")
 	}
 
 	// Store absolute paths.
 	artifact.LocalPath = filepath.Join(b.Config.Path, artifact.Path)
-	artifact.RemotePath = path.Join(*remotePath, stripExtension(artifact.Path))
+	artifact.RemotePath = path.Join(remotePath, stripExtension(artifact.Path))
 	return nil, nil
 }
 
