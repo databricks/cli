@@ -1,4 +1,4 @@
 resources:
   workflows:
-    this_workflow_isnt_defined:
+    my_first_workflow:
       id: 1

@@ -11,10 +11,10 @@ import (
 func TestIncludeDefault(t *testing.T) {
 	b := load(t, "./include_default")
 
-	// Test that both jobs were loaded.
-	keys := maps.Keys(b.Config.Resources.Jobs)
+	// Test that both workflows were loaded.
+	keys := maps.Keys(b.Config.Resources.Workflows)
 	sort.Strings(keys)
-	assert.Equal(t, []string{"my_first_job", "my_second_job"}, keys)
-	assert.Equal(t, "1", b.Config.Resources.Jobs["my_first_job"].ID)
-	assert.Equal(t, "2", b.Config.Resources.Jobs["my_second_job"].ID)
+	assert.Equal(t, []string{"my_first_workflow", "my_second_workflow"}, keys)
+	assert.Equal(t, "1", b.Config.Resources.Workflows["my_first_workflow"].ID)
+	assert.Equal(t, "2", b.Config.Resources.Workflows["my_second_workflow"].ID)
 }

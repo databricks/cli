@@ -2,8 +2,8 @@ bundle:
   name: yaml_anchors
 
 resources:
-  jobs:
-    my_job:
+  workflows:
+    my_workflow:
       _: &common_cluster
         spark_version: "10.4.x-scala2.12"
       tasks:

@@ -4,6 +4,6 @@ import "github.com/databricks/bricks/bundle/config/resources"
 
 // Resources defines Databricks resources associated with the bundle.
 type Resources struct {
-	Jobs      map[string]resources.Job      `json:"jobs,omitempty"`
+	Workflows map[string]resources.Workflow `json:"workflows,omitempty"`
 	Pipelines map[string]resources.Pipeline `json:"pipelines,omitempty"`
 }
