@@ -2,14 +2,20 @@ package config
 
 import (
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/service/scim"
 )
 
 type PathLike struct {
 	// Workspace contains a WSFS path.
-	Workspace *string `json:"workspace,omitempty"`
+	Workspace string `json:"workspace,omitempty"`
 
 	// DBFS contains a DBFS path.
-	DBFS *string `json:"dbfs,omitempty"`
+	DBFS string `json:"dbfs,omitempty"`
+}
+
+// IsSet returns whether either path is non-nil.
+func (p PathLike) IsSet() bool {
+	return p.Workspace != "" || p.DBFS != ""
 }
 
 // Workspace defines configurables at the workspace level.
@@ -36,6 +42,10 @@ type Workspace struct {
 	AzureTenantID    string `json:"azure_tenant_id,omitempty"`
 	AzureEnvironment string `json:"azure_environment,omitempty"`
 	AzureLoginAppID  string `json:"azure_login_app_id,omitempty"`
+
+	// CurrentUser holds the current user.
+	// This is set after configuration initialization.
+	CurrentUser *scim.User `json:"current_user,omitempty"`
 
 	// Remote path for artifacts.
 	// This can specify a workspace path, a DBFS path, or both.
