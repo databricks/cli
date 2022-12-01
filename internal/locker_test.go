@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"sync"
 	"testing"
@@ -118,6 +119,34 @@ func TestAccLock(t *testing.T) {
 		assert.NotEqual(t, remoteLocker.ID, lockers[i].State.ID)
 		err := lockers[i].Unlock(ctx, wsc)
 		assert.ErrorContains(t, err, "unlock called when lock is not held")
+	}
+
+	// test inactive locks fail to write a file
+	for i := 0; i < numConcurrentLocks; i++ {
+		if i == indexOfActiveLocker {
+			continue
+		}
+		err := lockers[i].PutFile(ctx, wsc, path.Join(remoteProjectRoot, "foo.json"), []byte(`'{"surname":"Khan", "name":"Shah Rukh"}`))
+		assert.ErrorContains(t, err, "failed to put file. deploy lock not held")
+	}
+
+	// active locker file write succeeds
+	err = lockers[indexOfActiveLocker].PutFile(ctx, wsc, path.Join(remoteProjectRoot, "foo.json"), []byte(`{"surname":"Khan", "name":"Shah Rukh"}`))
+	assert.NoError(t, err)
+
+	// active locker file read succeeds with expected results
+	res, err := lockers[indexOfActiveLocker].GetJsonFileContent(ctx, wsc, path.Join(remoteProjectRoot, "foo.json"))
+	assert.NoError(t, err)
+	assert.Equal(t, "Khan", res.(map[string]interface{})["surname"])
+	assert.Equal(t, "Shah Rukh", res.(map[string]interface{})["name"])
+
+	// inactive locker file reads fail
+	for i := 0; i < numConcurrentLocks; i++ {
+		if i == indexOfActiveLocker {
+			continue
+		}
+		_, err = lockers[i].GetJsonFileContent(ctx, wsc, path.Join(remoteProjectRoot, "foo.json"))
+		assert.ErrorContains(t, err, "failed to get file. deploy lock not held")
 	}
 
 	// Unlock active lock and check it becomes inactive
