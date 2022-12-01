@@ -9,9 +9,9 @@ import (
 
 func TestYAMLAnchors(t *testing.T) {
 	b := load(t, "./yaml_anchors")
-	assert.Len(t, b.Config.Resources.Workflows, 1)
+	assert.Len(t, b.Config.Resources.Jobs, 1)
 
-	j := b.Config.Resources.Workflows["my_workflow"]
+	j := b.Config.Resources.Jobs["my_job"]
 	require.Len(t, j.Tasks, 2)
 
 	t0 := j.Tasks[0]

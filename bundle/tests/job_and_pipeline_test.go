@@ -8,8 +8,8 @@ import (
 )
 
 func TestJobAndPipelineDevelopment(t *testing.T) {
-	b := loadEnvironment(t, "./workflow_and_pipeline", "development")
-	assert.Len(t, b.Config.Resources.Workflows, 0)
+	b := loadEnvironment(t, "./job_and_pipeline", "development")
+	assert.Len(t, b.Config.Resources.Jobs, 0)
 	assert.Len(t, b.Config.Resources.Pipelines, 1)
 
 	p := b.Config.Resources.Pipelines["nyc_taxi_pipeline"]
@@ -20,8 +20,8 @@ func TestJobAndPipelineDevelopment(t *testing.T) {
 }
 
 func TestJobAndPipelineStaging(t *testing.T) {
-	b := loadEnvironment(t, "./workflow_and_pipeline", "staging")
-	assert.Len(t, b.Config.Resources.Workflows, 0)
+	b := loadEnvironment(t, "./job_and_pipeline", "staging")
+	assert.Len(t, b.Config.Resources.Jobs, 0)
 	assert.Len(t, b.Config.Resources.Pipelines, 1)
 
 	p := b.Config.Resources.Pipelines["nyc_taxi_pipeline"]
@@ -32,8 +32,8 @@ func TestJobAndPipelineStaging(t *testing.T) {
 }
 
 func TestJobAndPipelineProduction(t *testing.T) {
-	b := loadEnvironment(t, "./workflow_and_pipeline", "production")
-	assert.Len(t, b.Config.Resources.Workflows, 1)
+	b := loadEnvironment(t, "./job_and_pipeline", "production")
+	assert.Len(t, b.Config.Resources.Jobs, 1)
 	assert.Len(t, b.Config.Resources.Pipelines, 1)
 
 	p := b.Config.Resources.Pipelines["nyc_taxi_pipeline"]
@@ -42,7 +42,7 @@ func TestJobAndPipelineProduction(t *testing.T) {
 	assert.Equal(t, "./dlt/nyc_taxi_loader", p.Libraries[0].Notebook.Path)
 	assert.Equal(t, "nyc_taxi_production", p.Target)
 
-	j := b.Config.Resources.Workflows["pipeline_schedule"]
+	j := b.Config.Resources.Jobs["pipeline_schedule"]
 	assert.Equal(t, "Daily refresh of production pipeline", j.Name)
 	require.Len(t, j.Tasks, 1)
 	assert.NotEmpty(t, j.Tasks[0].PipelineTask.PipelineId)
