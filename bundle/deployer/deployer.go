@@ -122,16 +122,8 @@ func (b *Deployer) SaveTerraformState(ctx context.Context) error {
 	return b.locker.PutFile(ctx, b.wsc, b.tfStateRemotePath(), bytes)
 }
 
-func (b *Deployer) Lock(ctx context.Context) error {
-	return b.locker.Lock(ctx, b.wsc, false)
-}
-
-func (b *Deployer) Unlock(ctx context.Context) error {
-	return b.locker.Unlock(ctx, b.wsc)
-}
-
-func (d *Deployer) ApplyTerraformConfig(ctx context.Context, configPath, terraformBinaryPath string) (DeploymentStatus, error) {
-	err := d.locker.Lock(ctx, d.wsc, false)
+func (d *Deployer) ApplyTerraformConfig(ctx context.Context, configPath, terraformBinaryPath string, isForced bool) (DeploymentStatus, error) {
+	err := d.locker.Lock(ctx, d.wsc, isForced)
 	if err != nil {
 		return Failed, err
 	}

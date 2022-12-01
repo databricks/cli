@@ -8,6 +8,9 @@ import (
 	"github.com/databricks/bricks/bundle/deployer"
 	"github.com/databricks/bricks/cmd/bundle/debug"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/hashicorp/go-version"
+	"github.com/hashicorp/hc-install/product"
+	"github.com/hashicorp/hc-install/releases"
 	"github.com/spf13/cobra"
 )
 
@@ -27,6 +30,19 @@ var deployTerraformCmd = &cobra.Command{
 			*localRoot = cwd
 		}
 
+		if *terraformBinaryPath == "" {
+			installer := releases.ExactVersion{
+				Product: product.Terraform,
+				Version: version.Must(version.NewVersion("1.2.4")),
+			}
+			execPath, err := installer.Install(ctx)
+			if err != nil {
+				log.Printf("[ERROR] error installing Terraform: %s", err)
+			}
+			*terraformBinaryPath = execPath
+			defer installer.Remove(ctx)
+		}
+
 		// TODO: load bundle and get the workspace client from there once bundles
 		// are stable
 		wsc, err := databricks.NewWorkspaceClient()
@@ -43,7 +59,7 @@ var deployTerraformCmd = &cobra.Command{
 			*terraformHcl = filepath.Join(d.DefaultTerraformRoot())
 		}
 
-		status, err := d.ApplyTerraformConfig(ctx, *terraformHcl, *terraformBinaryPath)
+		status, err := d.ApplyTerraformConfig(ctx, *terraformHcl, *terraformBinaryPath, *isForced)
 		switch status {
 		case deployer.Failed:
 			log.Printf("[ERROR] failed to initiate deployment")
@@ -65,6 +81,7 @@ var deployTerraformCmd = &cobra.Command{
 var remoteRoot *string
 var localRoot *string
 var env *string
+var isForced *bool
 
 var terraformHcl *string
 
@@ -76,10 +93,9 @@ func init() {
 	localRoot = deployTerraformCmd.Flags().String("local-root", "", "path to the root directory of the DAB project. default: current working dir")
 	terraformBinaryPath = deployTerraformCmd.Flags().String("terraform-cli-binary", "", "path to a terraform CLI executable binary")
 	env = deployTerraformCmd.Flags().String("env", "development", "environment to deploy on. default: development")
-
+	isForced = deployTerraformCmd.Flags().Bool("force", false, "force deploy your DAB to the workspace. default: false")
 	terraformHcl = deployTerraformCmd.Flags().String("terraform-hcl", "", "path to the terraform config file from project root")
 
 	deployTerraformCmd.MarkFlagRequired("remote-root")
-	deployTerraformCmd.MarkFlagRequired("terraform-cli-binary")
 	debug.AddCommand(deployTerraformCmd)
 }
