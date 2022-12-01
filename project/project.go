@@ -184,7 +184,7 @@ func getClusterIdFromClusterName(ctx context.Context,
 	wsc *databricks.WorkspaceClient,
 	clusterName string,
 ) (clusterId string, err error) {
-	clusterInfo, err := wsc.Clusters.GetClusterInfoByClusterName(ctx, clusterName)
+	clusterInfo, err := wsc.Clusters.GetByClusterName(ctx, clusterName)
 	if err != nil {
 		return "", err
 	}
