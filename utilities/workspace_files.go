@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"path/filepath"
+	"path"
 	"strconv"
 	"strings"
 
@@ -41,19 +41,19 @@ func GetRawJsonFileContent(ctx context.Context, wsc *databricks.WorkspaceClient,
 	return res, nil
 }
 
-func WriteFile(ctx context.Context, wsc *databricks.WorkspaceClient, path string, content []byte, overwrite bool) error {
+func WriteFile(ctx context.Context, wsc *databricks.WorkspaceClient, pathToFile string, content []byte, overwrite bool) error {
 	apiClient, err := client.New(wsc.Config)
 	if err != nil {
 		return err
 	}
-	err = wsc.Workspace.MkdirsByPath(ctx, filepath.Dir(path))
+	err = wsc.Workspace.MkdirsByPath(ctx, path.Dir(pathToFile))
 	if err != nil {
 		return fmt.Errorf("could not mkdir to post file: %s", err)
 	}
 
 	importApiPath := fmt.Sprintf(
 		"/api/2.0/workspace-files/import-file/%s?overwrite=%s",
-		strings.TrimLeft(path, "/"), strconv.FormatBool(overwrite))
+		strings.TrimLeft(pathToFile, "/"), strconv.FormatBool(overwrite))
 
 	return apiClient.Do(ctx, http.MethodPost, importApiPath, bytes.NewReader(content), nil)
 }

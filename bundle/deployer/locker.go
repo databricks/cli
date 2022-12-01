@@ -21,7 +21,7 @@ import (
 // enables multiple clients to deploy to the same scope (ie TargetDir) in an atomic
 // manner
 //
-// Here is the detials of the locking protocol used here:
+// Here are some of the details of the locking protocol used here:
 //
 // 1. Potentially multiple clients race to create a deploy.lock file in
 //    TargetDir/.bundle directory with unique ID. The deploy.lock file
@@ -43,7 +43,8 @@ import (
 type Locker struct {
 	// scope of the locker
 	TargetDir string
-	// Active == true implies exclusive access to TargetDir for the client
+	// Active == true implies exclusive access to TargetDir for the client.
+	// This implication break down if locks are forcefully acquired by a user
 	Active bool
 	// if locker is active, this information about the locker is uploaded onto
 	// the workspace so as to let other clients details about the active locker

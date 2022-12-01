@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -84,7 +85,7 @@ func (b *Deployer) DefaultTerraformRoot() string {
 }
 
 func (b *Deployer) tfStateRemotePath() string {
-	return filepath.Join(b.remoteRoot, ".bundle", "terraform.tfstate")
+	return path.Join(b.remoteRoot, ".bundle", "terraform.tfstate")
 }
 
 func (b *Deployer) tfStateLocalPath() string {

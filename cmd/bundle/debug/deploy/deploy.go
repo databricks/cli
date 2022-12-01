@@ -72,7 +72,6 @@ var terraformHcl *string
 var terraformBinaryPath *string
 
 func init() {
-	// root.RootCmd.AddCommand(deployCmd)
 	remoteRoot = deployTerraformCmd.Flags().String("remote-root", "", "workspace root of the project eg: /Repos/me@example.com/test-repo")
 	localRoot = deployTerraformCmd.Flags().String("local-root", "", "path to the root directory of the DAB project. default: current working dir")
 	terraformBinaryPath = deployTerraformCmd.Flags().String("terraform-cli-binary", "", "path to a terraform CLI executable binary")
