@@ -36,7 +36,7 @@ type Root struct {
 	Artifacts map[string]*Artifact `json:"artifacts,omitempty"`
 
 	// Resources contains a description of all Databricks resources
-	// to deploy in this bundle (e.g. workflows, pipelines, etc.).
+	// to deploy in this bundle (e.g. jobs, pipelines, etc.).
 	Resources Resources `json:"resources"`
 
 	// Environments can be used to differentiate settings and resources between

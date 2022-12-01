@@ -8,5 +8,5 @@ import (
 
 func TestIncludeOverride(t *testing.T) {
 	b := load(t, "./include_override")
-	assert.Empty(t, b.Config.Resources.Workflows)
+	assert.Empty(t, b.Config.Resources.Jobs)
 }

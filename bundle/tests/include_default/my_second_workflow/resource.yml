@@ -1,4 +1,0 @@
-resources:
-  workflows:
-    my_second_workflow:
-      id: 2
