@@ -29,7 +29,7 @@ environments:
           development: false
           photon: true
 
-      jobs:
+      workflows:
         pipeline_schedule:
           name: Daily refresh of production pipeline
 
