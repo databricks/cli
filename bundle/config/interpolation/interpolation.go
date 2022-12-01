@@ -10,46 +10,48 @@ import (
 	"github.com/databricks/bricks/bundle"
 )
 
+const Delimiter = "."
+
 var re = regexp.MustCompile(`\$\{(\w+(\.\w+)*)\}`)
 
 type stringField struct {
-	rv reflect.Value
-	s  setter
+	path string
+
+	getter
+	setter
 }
 
-func newStringField(path string, rv reflect.Value, s setter) *stringField {
+func newStringField(path string, g getter, s setter) *stringField {
 	return &stringField{
-		rv: rv,
-		s:  s,
-	}
-}
+		path: path,
 
-func (s *stringField) String() string {
-	return s.rv.String()
+		getter: g,
+		setter: s,
+	}
 }
 
 func (s *stringField) dependsOn() []string {
 	var out []string
-	m := re.FindAllStringSubmatch(s.String(), -1)
+	m := re.FindAllStringSubmatch(s.Get(), -1)
 	for i := range m {
 		out = append(out, m[i][1])
 	}
 	return out
 }
 
-func (s *stringField) interpolate(lookup map[string]string) {
-	out := re.ReplaceAllStringFunc(s.String(), func(s string) string {
+func (s *stringField) interpolate(fn LookupFunction, lookup map[string]string) {
+	out := re.ReplaceAllStringFunc(s.Get(), func(s string) string {
 		// Turn the whole match into the submatch.
 		match := re.FindStringSubmatch(s)
-		path := match[1]
-		v, ok := lookup[path]
-		if !ok {
-			panic(fmt.Sprintf("expected to find value for path: %s", path))
+		v, err := fn(match[1], lookup)
+		if err != nil {
+			panic(err)
 		}
+
 		return v
 	})
 
-	s.s.Set(out)
+	s.Set(out)
 }
 
 type accumulator struct {
@@ -105,8 +107,8 @@ func (a *accumulator) walk(scope []string, rv reflect.Value, s setter) {
 
 	switch rv.Type().Kind() {
 	case reflect.String:
-		path := strings.Join(scope, ".")
-		a.strings[path] = newStringField(path, rv, s)
+		path := strings.Join(scope, Delimiter)
+		a.strings[path] = newStringField(path, anyGetter{rv}, s)
 	case reflect.Struct:
 		a.walkStruct(scope, rv)
 	case reflect.Map:
@@ -142,12 +144,12 @@ func (a *accumulator) gather(paths []string) (map[string]string, error) {
 		if len(deps) > 0 {
 			return nil, fmt.Errorf("%s depends on %s", path, strings.Join(deps, ", "))
 		}
-		out[path] = f.rv.String()
+		out[path] = f.Get()
 	}
 	return out, nil
 }
 
-func expand(v any) error {
+func (a *accumulator) start(v any) {
 	rv := reflect.ValueOf(v)
 	if rv.Type().Kind() != reflect.Pointer {
 		panic("expect pointer")
@@ -156,33 +158,42 @@ func expand(v any) error {
 	if rv.Type().Kind() != reflect.Struct {
 		panic("expect struct")
 	}
-	acc := &accumulator{
-		strings: make(map[string]*stringField),
-	}
-	acc.walk([]string{}, rv, nilSetter{})
 
-	for path, v := range acc.strings {
+	a.strings = make(map[string]*stringField)
+	a.walk([]string{}, rv, nilSetter{})
+}
+
+func (a *accumulator) expand(fn LookupFunction) error {
+	for path, v := range a.strings {
 		ds := v.dependsOn()
 		if len(ds) == 0 {
 			continue
 		}
 
 		// Create map to be used for interpolation
-		m, err := acc.gather(ds)
+		m, err := a.gather(ds)
 		if err != nil {
 			return fmt.Errorf("cannot interpolate %s: %w", path, err)
 		}
 
-		v.interpolate(m)
+		v.interpolate(fn, m)
 	}
 
 	return nil
 }
 
-type interpolate struct{}
+type interpolate struct {
+	fn LookupFunction
+}
 
-func Interpolate() bundle.Mutator {
-	return &interpolate{}
+func (m *interpolate) expand(v any) error {
+	a := accumulator{}
+	a.start(v)
+	return a.expand(m.fn)
+}
+
+func Interpolate(fn LookupFunction) bundle.Mutator {
+	return &interpolate{fn: fn}
 }
 
 func (m *interpolate) Name() string {
@@ -190,6 +201,5 @@ func (m *interpolate) Name() string {
 }
 
 func (m *interpolate) Apply(_ context.Context, b *bundle.Bundle) ([]bundle.Mutator, error) {
-	err := expand(&b.Config)
-	return nil, err
+	return nil, m.expand(&b.Config)
 }
