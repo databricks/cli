@@ -30,10 +30,6 @@ func newStringField(path string, g getter, s setter) *stringField {
 	}
 }
 
-func (s *stringField) String() string {
-	return s.Get()
-}
-
 func (s *stringField) dependsOn() []string {
 	var out []string
 	m := re.FindAllStringSubmatch(s.Get(), -1)
