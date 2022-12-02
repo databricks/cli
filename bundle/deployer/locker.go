@@ -64,7 +64,7 @@ type LockState struct {
 }
 
 // don't need to hold lock on TargetDir to read locker state
-func GetActiveLockerState(ctx context.Context, wsc *databricks.WorkspaceClient, path string) (*LockState, error) {
+func GetActiveLockState(ctx context.Context, wsc *databricks.WorkspaceClient, path string) (*LockState, error) {
 	bytes, err := utilities.GetRawJsonFileContent(ctx, wsc, path)
 	if err != nil {
 		return nil, err
@@ -80,18 +80,18 @@ func GetActiveLockerState(ctx context.Context, wsc *databricks.WorkspaceClient, 
 // asserts whether lock is held by locker. Returns descriptive error with current
 // holder details if locker does not hold the lock
 func (locker *Locker) assertLockHeld(ctx context.Context, wsc *databricks.WorkspaceClient) error {
-	activeLockerState, err := GetActiveLockerState(ctx, wsc, locker.RemotePath())
+	activeLockState, err := GetActiveLockState(ctx, wsc, locker.RemotePath())
 	if err != nil && strings.Contains(err.Error(), "File not found.") {
 		return fmt.Errorf("no active lock on target dir: %s", err)
 	}
 	if err != nil {
 		return err
 	}
-	if activeLockerState.ID != locker.State.ID && !activeLockerState.IsForced {
-		return fmt.Errorf("deploy lock acquired by %s at %v. Use --force to override", activeLockerState.User, activeLockerState.AcquisitionTime)
+	if activeLockState.ID != locker.State.ID && !activeLockState.IsForced {
+		return fmt.Errorf("deploy lock acquired by %s at %v. Use --force to override", activeLockState.User, activeLockState.AcquisitionTime)
 	}
-	if activeLockerState.ID != locker.State.ID && activeLockerState.IsForced {
-		return fmt.Errorf("deploy lock force acquired by %s at %v. Use --force to override", activeLockerState.User, activeLockerState.AcquisitionTime)
+	if activeLockState.ID != locker.State.ID && activeLockState.IsForced {
+		return fmt.Errorf("deploy lock force acquired by %s at %v. Use --force to override", activeLockState.User, activeLockState.AcquisitionTime)
 	}
 	return nil
 }

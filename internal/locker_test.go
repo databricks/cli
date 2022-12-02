@@ -106,7 +106,7 @@ func TestAccLock(t *testing.T) {
 	assert.Equal(t, 1, countActive, "Exactly one locker should successfull acquire the lock")
 
 	// test remote lock matches active lock
-	remoteLocker, err := deployer.GetActiveLockerState(ctx, wsc, lockers[indexOfActiveLocker].RemotePath())
+	remoteLocker, err := deployer.GetActiveLockState(ctx, wsc, lockers[indexOfActiveLocker].RemotePath())
 	require.NoError(t, err)
 	assert.Equal(t, remoteLocker.ID, lockers[indexOfActiveLocker].State.ID, "remote locker id does not match active locker")
 	assert.True(t, remoteLocker.AcquisitionTime.Equal(lockers[indexOfActiveLocker].State.AcquisitionTime), "remote locker acquisition time does not match active locker")
@@ -152,7 +152,7 @@ func TestAccLock(t *testing.T) {
 	// Unlock active lock and check it becomes inactive
 	err = lockers[indexOfActiveLocker].Unlock(ctx, wsc)
 	assert.NoError(t, err)
-	remoteLocker, err = deployer.GetActiveLockerState(ctx, wsc, lockers[indexOfActiveLocker].RemotePath())
+	remoteLocker, err = deployer.GetActiveLockState(ctx, wsc, lockers[indexOfActiveLocker].RemotePath())
 	assert.ErrorContains(t, err, "File not found.", "remote lock file not deleted on unlock")
 	assert.Nil(t, remoteLocker)
 	assert.False(t, lockers[indexOfActiveLocker].Active)
