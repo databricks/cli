@@ -49,6 +49,8 @@ type Snapshot struct {
 	RemoteToLocalNames map[string]string `json:"remote_to_local_names"`
 }
 
+// TODO: check if the new snapshot schema was really not backward compatible?
+
 type diff struct {
 	put    []string
 	delete []string
