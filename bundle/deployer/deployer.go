@@ -2,7 +2,6 @@ package deployer
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -98,7 +97,7 @@ func (b *Deployer) tfStateLocalPath() string {
 }
 
 func (b *Deployer) LoadTerraformState(ctx context.Context) error {
-	res, err := b.locker.GetJsonFileContent(ctx, b.wsc, b.tfStateRemotePath())
+	bytes, err := b.locker.GetRawJsonFileContent(ctx, b.wsc, b.tfStateRemotePath())
 	if err != nil {
 		// If remote tf state is absent, use local tf state
 		if strings.Contains(err.Error(), "File not found.") {
@@ -106,10 +105,6 @@ func (b *Deployer) LoadTerraformState(ctx context.Context) error {
 		} else {
 			return err
 		}
-	}
-	bytes, err := json.MarshalIndent(res, "", "  ")
-	if err != nil {
-		return err
 	}
 	err = os.MkdirAll(b.DefaultTerraformRoot(), os.ModeDir)
 	if err != nil {

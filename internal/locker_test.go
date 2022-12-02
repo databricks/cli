@@ -2,6 +2,7 @@ package internal
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"math/rand"
 	"os"
@@ -135,17 +136,19 @@ func TestAccLock(t *testing.T) {
 	assert.NoError(t, err)
 
 	// active locker file read succeeds with expected results
-	res, err := lockers[indexOfActiveLocker].GetJsonFileContent(ctx, wsc, path.Join(remoteProjectRoot, "foo.json"))
+	bytes, err := lockers[indexOfActiveLocker].GetRawJsonFileContent(ctx, wsc, path.Join(remoteProjectRoot, "foo.json"))
+	var res map[string]string
+	json.Unmarshal(bytes, &res)
 	assert.NoError(t, err)
-	assert.Equal(t, "Khan", res.(map[string]interface{})["surname"])
-	assert.Equal(t, "Shah Rukh", res.(map[string]interface{})["name"])
+	assert.Equal(t, "Khan", res["surname"])
+	assert.Equal(t, "Shah Rukh", res["name"])
 
 	// inactive locker file reads fail
 	for i := 0; i < numConcurrentLocks; i++ {
 		if i == indexOfActiveLocker {
 			continue
 		}
-		_, err = lockers[i].GetJsonFileContent(ctx, wsc, path.Join(remoteProjectRoot, "foo.json"))
+		_, err = lockers[i].GetRawJsonFileContent(ctx, wsc, path.Join(remoteProjectRoot, "foo.json"))
 		assert.ErrorContains(t, err, "failed to get file. deploy lock not held")
 	}
 
