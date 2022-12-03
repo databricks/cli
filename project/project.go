@@ -25,6 +25,7 @@ type project struct {
 	config      *Config
 	environment *Environment
 	wsc         *databricks.WorkspaceClient
+	ac          *databricks.AccountClient // TODO: move
 	me          *scim.User
 	fileSet     *git.FileSet
 }
@@ -80,11 +81,15 @@ func Initialize(ctx context.Context, root, env string) (context.Context, error) 
 		fileSet:     fileSet,
 	}
 
-	p.initializeWorkspacesClient(ctx)
+	err = p.initializeWorkspacesClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	return context.WithValue(ctx, &projectKey, &p), nil
 }
 
-func (p *project) initializeWorkspacesClient(ctx context.Context) {
+func (p *project) initializeWorkspacesClient(ctx context.Context) error {
 	var config databricks.Config
 
 	// If the config specifies a profile, or other authentication related properties,
@@ -94,7 +99,17 @@ func (p *project) initializeWorkspacesClient(ctx context.Context) {
 		config.Profile = p.environment.Workspace.Profile
 	}
 
-	p.wsc = databricks.Must(databricks.NewWorkspaceClient(&config))
+	w, err := databricks.NewWorkspaceClient(&config)
+	if err != nil {
+		return err
+	}
+	p.wsc = w
+	a, err := databricks.NewAccountClient(&config)
+	if err != nil {
+		return err
+	}
+	p.ac = a
+	return nil
 }
 
 // Get returns the project as configured on the context.
@@ -110,6 +125,10 @@ func Get(ctx context.Context) *project {
 // Make sure to initialize the workspaces client on project init
 func (p *project) WorkspacesClient() *databricks.WorkspaceClient {
 	return p.wsc
+}
+
+func (p *project) AccountClient() *databricks.AccountClient {
+	return p.ac
 }
 
 func (p *project) Root() string {

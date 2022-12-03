@@ -1,0 +1,87 @@
+package {{.SnakeName}}
+
+import (
+    "github.com/databricks/bricks/lib/ui"
+	"github.com/databricks/bricks/project"
+	"github.com/databricks/databricks-sdk-go/service/{{.Package.Name}}"
+	"github.com/spf13/cobra"
+)
+
+var Cmd = &cobra.Command{
+	Use:   "{{.KebabName}}",
+    {{if .Description -}}
+    Short: `{{.FirstSentence | without "`"}}`, // TODO: fix FirstSentence logic and append dot to summary
+    {{- end}}
+}
+
+{{- if not (eq .Name "CommandExecution") -}}
+{{range .Methods}}
+
+{{if .Request}}var {{.CamelName}}Req {{.Service.Package.Name}}.{{.Request.PascalName}}{{end}}
+
+func init() {
+    Cmd.AddCommand({{.CamelName}}Cmd)
+    {{if .Request}}// TODO: short flags
+    {{$method := .}}
+    {{range .Request.Fields -}}
+        {{if .Entity.IsString }}{{$method.CamelName}}Cmd.Flags().{{template "arg-type" .Entity}}(&{{$method.CamelName}}Req.{{.PascalName}}, "{{.KebabName}}", {{template "type-default" .Entity}}, `{{.FirstSentence | without "`"}}`)
+        {{else if .Entity.IsBool}}{{$method.CamelName}}Cmd.Flags().{{template "arg-type" .Entity}}(&{{$method.CamelName}}Req.{{.PascalName}}, "{{.KebabName}}", {{template "type-default" .Entity}}, `{{.FirstSentence | without "`"}}`)
+        {{else if .Entity.IsInt64}}{{$method.CamelName}}Cmd.Flags().{{template "arg-type" .Entity}}(&{{$method.CamelName}}Req.{{.PascalName}}, "{{.KebabName}}", {{template "type-default" .Entity}}, `{{.FirstSentence | without "`"}}`)
+        {{else if .Entity.IsFloat64}}{{$method.CamelName}}Cmd.Flags().{{template "arg-type" .Entity}}(&{{$method.CamelName}}Req.{{.PascalName}}, "{{.KebabName}}", {{template "type-default" .Entity}}, `{{.FirstSentence | without "`"}}`)
+        {{else if .Entity.IsInt}}{{$method.CamelName}}Cmd.Flags().{{template "arg-type" .Entity}}(&{{$method.CamelName}}Req.{{.PascalName}}, "{{.KebabName}}", {{template "type-default" .Entity}}, `{{.FirstSentence | without "`"}}`)
+        {{else}}// TODO: complex arg: {{.Name}}
+        {{end}}    
+    {{- end}}
+    {{end}}
+}
+
+var {{.CamelName}}Cmd = &cobra.Command{
+	Use: "{{.KebabName}}",
+	{{if .Description -}}
+    Short: `{{.FirstSentence | without "`"}}`, // TODO: fix logic
+    {{end}}
+	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	RunE: func(cmd *cobra.Command, args []string) error {
+		ctx := cmd.Context()
+		{{if .Service.IsAccounts}}a{{else}}w{{end}} := project.Get(ctx).{{if .Service.IsAccounts}}AccountClient{{else}}WorkspacesClient{{end}}()
+		{{if .Response}}response, {{end}}err := {{if .Service.IsAccounts}}a{{else}}w{{end}}.{{if eq .Service.Package.Name "scim" -}}
+			{{trim_prefix .Service.PascalName "Account"}} 
+		{{- else}}{{.Service.PascalName}}{{end}}.{{.PascalName}}{{if .Pagination}}All{{end}}(ctx{{if .Request}}, {{.CamelName}}Req{{end}})
+		if err != nil {
+			return err
+		}
+        {{if .Response}}
+		pretty, err := ui.MarshalJSON(response)
+		if err != nil {
+			return err
+		}
+		cmd.OutOrStdout().Write(pretty)
+        {{end}}
+		return nil
+	},
+}
+
+{{end}}
+{{end}}
+
+{{- define "arg-type" -}}
+	{{- if .IsString}}StringVar
+	{{- else if .IsBool}}BoolVar
+	{{- else if .IsInt64}}Int64Var
+	{{- else if .IsFloat64}}Float64Var
+	{{- else if .IsInt}}IntVar
+	{{- else if .Enum }}StringVar
+	{{- else}}/* NOT PRIMITIVE */
+	{{- end -}}
+{{- end -}}
+
+{{- define "type-default" -}}
+	{{- if .IsString}}""
+	{{- else if .IsBool}}false
+	{{- else if .IsInt64}}0
+	{{- else if .IsFloat64}}0
+	{{- else if .IsInt}}0
+	{{- else if .Enum }}""
+	{{- else}}/* NOT PRIMITIVE DEFAULT */
+	{{- end -}}
+{{- end -}}

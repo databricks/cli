@@ -1,0 +1,16 @@
+package {{.Name}}
+
+import (
+    {{range .Services}}
+	"github.com/databricks/bricks/cmd/{{.Package.Name}}/{{.KebabName}}"{{end}}
+	"github.com/spf13/cobra"
+)
+
+var Cmd = &cobra.Command{
+	Use:   "{{.Name}}",
+}
+
+func init() {
+    {{range .Services}}
+    Cmd.AddCommand({{.SnakeName}}.Cmd){{end}}
+}

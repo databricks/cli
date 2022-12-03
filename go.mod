@@ -18,6 +18,8 @@ require (
 )
 
 require (
+	github.com/fatih/color v1.13.0
+	github.com/nwidger/jsoncolor v0.3.1
 	github.com/google/uuid v1.3.0
 	github.com/hashicorp/go-version v1.6.0
 	github.com/hashicorp/hc-install v0.4.0
@@ -25,6 +27,11 @@ require (
 	github.com/hashicorp/terraform-json v0.14.0
 	golang.org/x/exp v0.0.0-20221031165847-c99f073a8326
 	golang.org/x/sync v0.1.0
+)
+
+require (
+	github.com/mattn/go-colorable v0.1.9 // indirect
+	github.com/mattn/go-isatty v0.0.14 // indirect
 )
 
 require (

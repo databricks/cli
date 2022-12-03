@@ -27,4 +27,9 @@ __pycache__
 .terraform
 .terraform.lock.hcl
 
+# bricks CLI bundle config
+databricks.yml
+.databricks
+
+
 .vscode/launch.json
