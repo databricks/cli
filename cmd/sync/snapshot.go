@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -156,13 +155,8 @@ func (s *Snapshot) loadSnapshot(ctx context.Context) error {
 	}
 
 	snapshotCopy := Snapshot{}
-	f, err := os.Open(snapshotPath)
-	if err != nil {
-		return fmt.Errorf("failed to open persisted sync snapshot file: %s", err)
-	}
-	defer f.Close()
 
-	bytes, err := io.ReadAll(f)
+	bytes, err := os.ReadFile(snapshotPath)
 	if err != nil {
 		return fmt.Errorf("failed to read sync snapshot from disk: %s", err)
 	}
