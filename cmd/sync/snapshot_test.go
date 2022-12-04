@@ -2,6 +2,7 @@ package sync
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -257,15 +258,75 @@ func TestNewSnapshotDefaults(t *testing.T) {
 	assert.Empty(t, snapshot.LocalToRemoteNames)
 }
 
-// func TestLoadSnapshotInvalidatesOldVersions
+func TestSnapshotVersionInvalidation(t *testing.T) {
+	oldVersionSnapshot := `{
+			"version": "v0",
+			"host": "www.foobar.com",
+			"remote_path": "/Repos/foo/bar",
+			"last_modified_times": {},
+			"local_to_remote_names": {},
+			"remote_to_local_names": {}
+	}`
+	noVersionSnapshot := `{
+			"host": "www.foobar.com",
+			"remote_path": "/Repos/foo/bar",
+			"last_modified_times": {},
+			"local_to_remote_names": {},
+			"remote_to_local_names": {}
+	}`
+	latestVersionSnapshot := fmt.Sprintf(`{
+			"version": "%s",
+			"host": "www.foobar.com",
+			"remote_path": "/Repos/foo/bar",
+			"last_modified_times": {},
+			"local_to_remote_names": {},
+			"remote_to_local_names": {}
+	}`, LatestSnapshotVersion)
 
-// func TestOldSchemaVersionsAreInvalidated(t *testing.T) {
-// 	// Create temp project dir
-// 	projectDir := t.TempDir()
-// 	fileSet := git.NewFileSet(projectDir)
-// 	state := Snapshot{
-// 		LastUpdatedTimes:   make(map[string]time.Time),
-// 		LocalToRemoteNames: make(map[string]string),
-// 		RemoteToLocalNames: make(map[string]string),
-// 	}
-// }
+	// Create temp project dir
+	projectDir := t.TempDir()
+	ctx := context.TODO()
+	err := os.Setenv("DATABRICKS_HOST", "www.foobar.com")
+	assert.NoError(t, err)
+	ctx, err = project.Initialize(ctx, projectDir, "development")
+	assert.NoError(t, err)
+	emptySnapshot := Snapshot{
+		LastUpdatedTimes:   make(map[string]time.Time),
+		LocalToRemoteNames: make(map[string]string),
+		RemoteToLocalNames: make(map[string]string),
+	}
+	snapshotPath, err := emptySnapshot.getPath(ctx)
+	assert.NoError(t, err)
+
+	// case: old version snapshot
+	err = os.WriteFile(snapshotPath, []byte(oldVersionSnapshot), os.ModePerm)
+	assert.NoError(t, err)
+	assert.FileExists(t, snapshotPath)
+	snapshot := emptySnapshot
+	err = snapshot.loadSnapshot(ctx)
+	assert.NoError(t, err)
+	// snapshot invalidated
+	assert.NoFileExists(t, snapshotPath)
+	assert.Equal(t, emptySnapshot, snapshot)
+
+	// case: no version snapshot
+	err = os.WriteFile(snapshotPath, []byte(noVersionSnapshot), os.ModePerm)
+	assert.NoError(t, err)
+	assert.FileExists(t, snapshotPath)
+	snapshot = emptySnapshot
+	err = snapshot.loadSnapshot(ctx)
+	assert.NoError(t, err)
+	// snapshot invalidated
+	assert.NoFileExists(t, snapshotPath)
+	assert.Equal(t, emptySnapshot, snapshot)
+
+	// case: latest version snapshot
+	err = os.WriteFile(snapshotPath, []byte(latestVersionSnapshot), os.ModePerm)
+	assert.NoError(t, err)
+	assert.FileExists(t, snapshotPath)
+	err = snapshot.loadSnapshot(ctx)
+	// snapshot not invalidated
+	assert.FileExists(t, snapshotPath)
+	assert.NoError(t, err)
+	assert.NotEqual(t, emptySnapshot, snapshot)
+}

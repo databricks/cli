@@ -21,7 +21,7 @@ import (
 )
 
 // Bump it up everything a potentially breaking change is made to the snapshot schema
-const LatestSnapshotVersion = "v0"
+const LatestSnapshotVersion = "v1"
 
 // A snapshot is a persistant store of knowledge bricks cli has about state of files
 // in the remote repo. We use the last modified times (mtime) of files to determine
@@ -155,6 +155,7 @@ func (s *Snapshot) loadSnapshot(ctx context.Context) error {
 		return nil
 	}
 
+	snapshotCopy := Snapshot{}
 	f, err := os.Open(snapshotPath)
 	if err != nil {
 		return fmt.Errorf("failed to open persisted sync snapshot file: %s", err)
@@ -165,10 +166,12 @@ func (s *Snapshot) loadSnapshot(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to read sync snapshot from disk: %s", err)
 	}
-	err = json.Unmarshal(bytes, &s)
-
+	err = json.Unmarshal(bytes, &snapshotCopy)
+	if err != nil {
+		return fmt.Errorf("failed to json unmarshal persisted snapshot: %s", err)
+	}
 	// invalidate old snapshot with schema versions
-	if s.Version != LatestSnapshotVersion {
+	if snapshotCopy.Version != LatestSnapshotVersion {
 		err := os.Remove(snapshotPath)
 		if err != nil {
 			return err
@@ -176,10 +179,7 @@ func (s *Snapshot) loadSnapshot(ctx context.Context) error {
 		log.Printf("invalidating sync snapshot because it's schema version is: %s. Latest schema version: %s", s.Version, LatestSnapshotVersion)
 		return nil
 	}
-
-	if err != nil {
-		return fmt.Errorf("failed to json unmarshal persisted snapshot: %s", err)
-	}
+	*s = snapshotCopy
 	return nil
 }
 
