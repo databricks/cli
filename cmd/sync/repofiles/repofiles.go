@@ -30,16 +30,19 @@ func Create(repoRoot, localRoot string, workspaceClient *databricks.WorkspaceCli
 }
 
 // TODO add tests for bad relative paths and symlinks
-func (r *RepoFiles) cleanPath(relativePath string) (string, error) {
+func cleanPath(relativePath string) (string, error) {
 	cleanRelativePath := path.Clean(relativePath)
 	if strings.Contains(cleanRelativePath, `..`) {
 		return "", fmt.Errorf(`file relative path %s contains forbidden pattern ".."`, relativePath)
+	}
+	if cleanRelativePath == "" || cleanRelativePath == "/" || cleanRelativePath == "." {
+		return "", fmt.Errorf("file path relative to repo root cannot be empty: %s", relativePath)
 	}
 	return cleanRelativePath, nil
 }
 
 func (r *RepoFiles) remotePath(relativePath string) (string, error) {
-	cleanRelativePath, err := r.cleanPath(relativePath)
+	cleanRelativePath, err := cleanPath(relativePath)
 	if err != nil {
 		return "", err
 	}
@@ -47,7 +50,7 @@ func (r *RepoFiles) remotePath(relativePath string) (string, error) {
 }
 
 func (r *RepoFiles) localPath(relativePath string) (string, error) {
-	cleanRelativePath, err := r.cleanPath(relativePath)
+	cleanRelativePath, err := cleanPath(relativePath)
 	if err != nil {
 		return "", err
 	}
