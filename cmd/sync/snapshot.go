@@ -66,8 +66,9 @@ type Snapshot struct {
 // TODO: check if the new snapshot schema was really not backward compatible?
 
 type diff struct {
-	put    []string
-	delete []string
+	put             []string
+	delete          []string
+	ignoredSymlinks []string
 }
 
 const syncSnapshotDirName = "sync-snapshots"
@@ -249,6 +250,7 @@ func (s *Snapshot) diff(all []git.File) (change diff, err error) {
 			return change, err
 		}
 		if isSymLink {
+			change.ignoredSymlinks = append(change.ignoredSymlinks, f.Relative)
 			continue
 		}
 
@@ -309,10 +311,9 @@ func (s *Snapshot) diff(all []git.File) (change diff, err error) {
 	}
 	// and remove them from the snapshot
 	for _, remoteName := range change.delete {
-		localName, ok := remoteToLocalNames[remoteName]
-		if !ok {
-			return change, fmt.Errorf("missing local path for remote path: %s. Please try syncing again after deleting .databricks/sync-snapshots dir from your project root", remoteName)
-		}
+		// we do note assert that remoteName exists in remoteToLocalNames since it
+		// will be missing for files with remote name changed
+		localName := remoteToLocalNames[remoteName]
 
 		delete(lastModifiedTimes, localName)
 		delete(remoteToLocalNames, remoteName)

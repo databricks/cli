@@ -237,7 +237,7 @@ func TestErrorWhenIdenticalRemoteName(t *testing.T) {
 	assert.ErrorContains(t, err, "both foo and foo.py point to the same remote file location foo. Please remove one of them from your local project")
 }
 
-func TestSnapshotsArePersistedWithLatestSchemaVersion(t *testing.T) {
+func TestNewSnapshotDefaults(t *testing.T) {
 	// Create temp project dir
 	projectDir := t.TempDir()
 	ctx := context.TODO()
@@ -256,6 +256,8 @@ func TestSnapshotsArePersistedWithLatestSchemaVersion(t *testing.T) {
 	assert.Empty(t, snapshot.RemoteToLocalNames)
 	assert.Empty(t, snapshot.LocalToRemoteNames)
 }
+
+// func TestLoadSnapshotInvalidatesOldVersions
 
 // func TestOldSchemaVersionsAreInvalidated(t *testing.T) {
 // 	// Create temp project dir
