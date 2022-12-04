@@ -1,6 +1,8 @@
 package repofiles
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -77,11 +79,11 @@ func TestRepoFilesLocalPath(t *testing.T) {
 
 	remotePath, err := repoFiles.localPath("a/b/c")
 	assert.NoError(t, err)
-	assert.Equal(t, "/doraemon/foo/bar/a/b/c", remotePath)
+	assert.Equal(t, filepath.Join("/doraemon/foo/bar/a/b", "c"), remotePath)
 
 	remotePath, err = repoFiles.localPath("a/b/../d")
 	assert.NoError(t, err)
-	assert.Equal(t, "/doraemon/foo/bar/a/d", remotePath)
+	assert.Equal(t, filepath.Join("/doraemon/foo/bar/a", "d"), remotePath)
 
 	_, err = repoFiles.localPath("a/b/../..")
 	assert.ErrorContains(t, err, "file path relative to repo root cannot be empty")
@@ -94,4 +96,16 @@ func TestRepoFilesLocalPath(t *testing.T) {
 
 	_, err = repoFiles.localPath("../..")
 	assert.ErrorContains(t, err, `contains forbidden pattern ".."`)
+}
+
+func TestRepoReadLocal(t *testing.T) {
+	tempDir := t.TempDir()
+	helloPath := filepath.Join(tempDir, "hello.txt")
+	err := os.WriteFile(helloPath, []byte("my name is doraemon :P"), os.ModePerm)
+	assert.NoError(t, err)
+
+	repoFiles := Create("/Repos/doraemon/bar", tempDir, nil)
+	bytes, err := repoFiles.readLocal("./a/../hello.txt")
+	assert.NoError(t, err)
+	assert.Equal(t, "my name is doraemon :P", string(bytes))
 }

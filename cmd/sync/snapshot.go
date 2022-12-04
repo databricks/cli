@@ -243,6 +243,7 @@ func (s *Snapshot) diff(all []git.File) (change diff, err error) {
 		if err != nil {
 			return change, err
 		}
+		// TODO: log ignored files
 		if isSymLink {
 			change.ignoredSymlinks = append(change.ignoredSymlinks, f.Relative)
 			continue
