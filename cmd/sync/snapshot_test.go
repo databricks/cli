@@ -299,7 +299,10 @@ func TestSnapshotVersionInvalidation(t *testing.T) {
 	assert.NoError(t, err)
 
 	// case: old version snapshot
-	err = os.WriteFile(snapshotPath, []byte(oldVersionSnapshot), os.ModePerm)
+	snapshotFile := createFile(t, snapshotPath)
+	snapshotFile.overwrite(t, oldVersionSnapshot)
+	snapshotFile.close(t)
+
 	assert.NoError(t, err)
 	assert.FileExists(t, snapshotPath)
 	snapshot := emptySnapshot
@@ -310,7 +313,10 @@ func TestSnapshotVersionInvalidation(t *testing.T) {
 	assert.Equal(t, emptySnapshot, snapshot)
 
 	// case: no version snapshot
-	err = os.WriteFile(snapshotPath, []byte(noVersionSnapshot), os.ModePerm)
+	snapshotFile = createFile(t, snapshotPath)
+	snapshotFile.overwrite(t, noVersionSnapshot)
+	snapshotFile.close(t)
+
 	assert.NoError(t, err)
 	assert.FileExists(t, snapshotPath)
 	snapshot = emptySnapshot
@@ -321,7 +327,10 @@ func TestSnapshotVersionInvalidation(t *testing.T) {
 	assert.Equal(t, emptySnapshot, snapshot)
 
 	// case: latest version snapshot
-	err = os.WriteFile(snapshotPath, []byte(latestVersionSnapshot), os.ModePerm)
+	snapshotFile = createFile(t, snapshotPath)
+	snapshotFile.overwrite(t, latestVersionSnapshot)
+	snapshotFile.close(t)
+
 	assert.NoError(t, err)
 	assert.FileExists(t, snapshotPath)
 	err = snapshot.loadSnapshot(ctx)
