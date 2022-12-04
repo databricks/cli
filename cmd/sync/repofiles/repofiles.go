@@ -15,6 +15,10 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
+// TODO: add a comment about this class, how it only sanitizes relative paths and
+// has no checks for repo roots
+//
+// Should we add these checks?
 type RepoFiles struct {
 	repoRoot        string
 	localRoot       string
