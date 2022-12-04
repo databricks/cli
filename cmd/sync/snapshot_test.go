@@ -241,7 +241,9 @@ func TestSnapshotsArePersistedWithLatestSchemaVersion(t *testing.T) {
 	// Create temp project dir
 	projectDir := t.TempDir()
 	ctx := context.TODO()
-	ctx, err := project.Initialize(ctx, projectDir, "development")
+	err := os.Setenv("DATABRICKS_HOST", "www.foobar.com")
+	assert.NoError(t, err)
+	ctx, err = project.Initialize(ctx, projectDir, "development")
 	assert.NoError(t, err)
 	snapshot, err := newSnapshot(ctx, "/Repos/foo/bar")
 	prj := project.Get(ctx)
