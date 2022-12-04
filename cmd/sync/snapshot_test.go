@@ -1,12 +1,14 @@
 package sync
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/databricks/bricks/git"
+	"github.com/databricks/bricks/project"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -234,3 +236,32 @@ func TestErrorWhenIdenticalRemoteName(t *testing.T) {
 	change, err = state.diff(files)
 	assert.ErrorContains(t, err, "both foo and foo.py point to the same remote file location foo. Please remove one of them from your local project")
 }
+
+func TestSnapshotsArePersistedWithLatestSchemaVersion(t *testing.T) {
+	// Create temp project dir
+	projectDir := t.TempDir()
+	ctx := context.TODO()
+	ctx, err := project.Initialize(ctx, projectDir, "development")
+	assert.NoError(t, err)
+	snapshot, err := newSnapshot(ctx, "/Repos/foo/bar")
+	prj := project.Get(ctx)
+	assert.NoError(t, err)
+
+	assert.Equal(t, LatestSnapshotVersion, snapshot.Version)
+	assert.Equal(t, "/Repos/foo/bar", snapshot.RemotePath)
+	assert.Equal(t, prj.WorkspacesClient().Config.Host, snapshot.Host)
+	assert.Empty(t, snapshot.LastUpdatedTimes)
+	assert.Empty(t, snapshot.RemoteToLocalNames)
+	assert.Empty(t, snapshot.LocalToRemoteNames)
+}
+
+// func TestOldSchemaVersionsAreInvalidated(t *testing.T) {
+// 	// Create temp project dir
+// 	projectDir := t.TempDir()
+// 	fileSet := git.NewFileSet(projectDir)
+// 	state := Snapshot{
+// 		LastUpdatedTimes:   make(map[string]time.Time),
+// 		LocalToRemoteNames: make(map[string]string),
+// 		RemoteToLocalNames: make(map[string]string),
+// 	}
+// }

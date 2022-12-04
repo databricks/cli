@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -18,6 +19,9 @@ import (
 	"github.com/databricks/bricks/git"
 	"github.com/databricks/bricks/project"
 )
+
+// Bump it up everything a potentially breaking change is made to the snapshot schema
+const LatestSnapshotVersion = "v0"
 
 // A snapshot is a persistant store of knowledge bricks cli has about state of files
 // in the remote repo. We use the last modified times (mtime) of files to determine
@@ -32,18 +36,28 @@ import (
 // local files are being synced to will make bricks cli switch to a different
 // snapshot for persisting/loading sync state
 type Snapshot struct {
+	// version for snapshot schema. Only snapshots matching the latest snapshot
+	// schema version are used and older ones are invalidated (by deleting them)
+
+	// test whether this adding a version is backward compatible
+	Version string `json:"version"`
+
 	// hostname of the workspace this snapshot is for
 	Host string `json:"host"`
+
 	// Path in workspace for project repo
 	RemotePath string `json:"remote_path"`
+
 	// Map of all files present in the remote repo with the:
 	// key: relative file path from project root
 	// value: last time the remote instance of this file was updated
 	LastUpdatedTimes map[string]time.Time `json:"last_modified_times"`
+
 	// This map maps local file names to their remote names
 	// eg. notebook named "foo.py" locally would be stored as "foo", thus this
 	// map will contain an entry "foo.py" -> "foo"
 	LocalToRemoteNames map[string]string `json:"local_to_remote_names"`
+
 	// Inverse of localToRemoteNames. Together the form a bijective mapping (ie
 	// there is a 1:1 unique mapping between local and remote name)
 	RemoteToLocalNames map[string]string `json:"remote_to_local_names"`
@@ -98,6 +112,7 @@ func newSnapshot(ctx context.Context, remotePath string) (*Snapshot, error) {
 	}
 
 	return &Snapshot{
+		Version:            LatestSnapshotVersion,
 		Host:               host,
 		RemotePath:         remotePath,
 		LastUpdatedTimes:   make(map[string]time.Time),
@@ -150,6 +165,17 @@ func (s *Snapshot) loadSnapshot(ctx context.Context) error {
 		return fmt.Errorf("failed to read sync snapshot from disk: %s", err)
 	}
 	err = json.Unmarshal(bytes, &s)
+
+	// invalidate old snapshot with schema versions
+	if s.Version != LatestSnapshotVersion {
+		err := os.Remove(snapshotPath)
+		if err != nil {
+			return err
+		}
+		log.Printf("invalidating sync snapshot because it's schema version is: %s. Latest schema version: %s", s.Version, LatestSnapshotVersion)
+		return nil
+	}
+
 	if err != nil {
 		return fmt.Errorf("failed to json unmarshal persisted snapshot: %s", err)
 	}
@@ -200,12 +226,32 @@ func getNotebookDetails(path string) (isNotebook bool, typeOfNotebook string, er
 	return false, "", nil
 }
 
-func (s Snapshot) diff(all []git.File) (change diff, err error) {
+// we ignore symlinks for syncing
+// write test and test it our on windows
+func isSymLink(path string) (bool, error) {
+	fileInfo, err := os.Stat(path)
+	if err != nil {
+		return false, err
+	}
+	return fileInfo.Mode() == os.ModeSymlink, nil
+}
+
+func (s *Snapshot) diff(all []git.File) (change diff, err error) {
 	currentFilenames := map[string]bool{}
 	lastModifiedTimes := s.LastUpdatedTimes
 	remoteToLocalNames := s.RemoteToLocalNames
 	localToRemoteNames := s.LocalToRemoteNames
 	for _, f := range all {
+
+		// We do not track sym links
+		isSymLink, err := isSymLink(f.Absolute)
+		if err != nil {
+			return change, err
+		}
+		if isSymLink {
+			continue
+		}
+
 		// create set of current files to figure out if removals are needed
 		currentFilenames[f.Relative] = true
 		// get current modified timestamp
@@ -252,12 +298,22 @@ func (s Snapshot) diff(all []git.File) (change diff, err error) {
 		if exists {
 			continue
 		}
+
+		remoteName, ok := localToRemoteNames[localName]
+		if !ok {
+			return change, fmt.Errorf("missing remote path for local path: %s. Please try syncing again after deleting .databricks/sync-snapshots dir from your project root", localName)
+		}
+
 		// add them to a delete batch
-		change.delete = append(change.delete, localToRemoteNames[localName])
+		change.delete = append(change.delete, remoteName)
 	}
 	// and remove them from the snapshot
 	for _, remoteName := range change.delete {
-		localName := remoteToLocalNames[remoteName]
+		localName, ok := remoteToLocalNames[remoteName]
+		if !ok {
+			return change, fmt.Errorf("missing local path for remote path: %s. Please try syncing again after deleting .databricks/sync-snapshots dir from your project root", remoteName)
+		}
+
 		delete(lastModifiedTimes, localName)
 		delete(remoteToLocalNames, remoteName)
 		delete(localToRemoteNames, localName)
