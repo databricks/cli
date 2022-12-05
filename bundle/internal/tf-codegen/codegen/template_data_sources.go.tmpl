@@ -1,0 +1,17 @@
+// Generated from Databricks Terraform provider schema. DO NOT EDIT.
+
+package tf
+
+type DataSources struct {
+	{{- range .Blocks }}
+	{{ .FieldName }} map[string]*{{ .TypeName }} `json:"{{ .TerraformName }},omitempty"`
+	{{- end }}
+}
+
+func NewDataSources() *DataSources {
+	return &DataSources{
+		{{- range .Blocks }}
+		{{ .FieldName }}: make(map[string]*{{ .TypeName }}),
+		{{- end }}
+	}
+}
