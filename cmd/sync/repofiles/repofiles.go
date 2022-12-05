@@ -19,9 +19,6 @@ import (
 //
 // This class comes with safeguards to prevent accidental deletion of repos
 // and more robust methods to overwrite workspace files
-//
-// TODO: we have no checks for remote root, should we add safeguards to assert
-// that the repo root is narrow enough in scope (i.e. atleast at or below /Repos/email/...)
 type RepoFiles struct {
 	repoRoot        string
 	localRoot       string
