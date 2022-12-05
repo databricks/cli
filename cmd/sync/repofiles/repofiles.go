@@ -33,7 +33,6 @@ func Create(repoRoot, localRoot string, workspaceClient *databricks.WorkspaceCli
 	}
 }
 
-// TODO add tests for bad relative paths and symlinks
 func cleanPath(relativePath string) (string, error) {
 	cleanRelativePath := path.Clean(relativePath)
 	if strings.Contains(cleanRelativePath, `..`) {
@@ -82,19 +81,43 @@ func (r *RepoFiles) writeRemote(ctx context.Context, relativePath string, conten
 		"/api/2.0/workspace-files/import-file/%s?overwrite=true",
 		strings.TrimLeft(remotePath, "/"))
 
-	// TODO: This might fail if the content is not io.reader (and bytes instead)
-	// test and if it fails then change this
 	err = apiClient.Do(ctx, http.MethodPost, apiPath, content, nil)
 
-	// TODO: check if the error returned here is generic or mentions that directory
-	// creation failed
-	// Attempt file creation again this time also creating intermidiate dirs
-	// incase they were missing
+	// Handling some edge cases when an upload might fail
+	//
+	// We cannot do more precise error scoping here because the API does not
+	// provide descriptive errors yet
+	//
+	// TODO: narrow down the error condition scope of this "if" block to only
+	// trigger for the specific edge cases instead of all errors
 	if err != nil {
-		err := r.workspaceClient.Workspace.MkdirsByPath(ctx, path.Dir(remotePath))
+		// Delete any artifact files incase non overwriteable by the current file
+		// type and thus are failing the PUT request.
+		// files, folders and notebooks might not have been cleaned up and they
+		// can't overwrite each other. If a folder `foo` exists, then attempts to
+		// PUT a file `foo` will fail
+		err := r.workspaceClient.Workspace.Delete(ctx,
+			workspace.Delete{
+				Path:      remotePath,
+				Recursive: true,
+			},
+		)
+		// ignore RESOURCE_DOES_NOT_EXIST here incase nothing existed at remotePath
+		if val, ok := err.(apierr.APIError); ok && val.ErrorCode == "RESOURCE_DOES_NOT_EXIST" {
+			err = nil
+		}
+		if err != nil {
+			return err
+		}
+
+		// Mkdir parent dirs incase they are what's causing the PUT request to
+		// fail
+		err = r.workspaceClient.Workspace.MkdirsByPath(ctx, path.Dir(remotePath))
 		if err != nil {
 			return fmt.Errorf("could not mkdir to put file: %s", err)
 		}
+
+		// Attempt to upload file again after cleanup/setup
 		err = apiClient.Do(ctx, http.MethodPost, apiPath, content, nil)
 		if err != nil {
 			return err
