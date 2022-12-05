@@ -15,10 +15,13 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
-// TODO: add a comment about this class, how it only sanitizes relative paths and
-// has no checks for repo roots
+// Use this class to do file upload/delete on a workspace repo
 //
-// Should we add these checks?
+// This class comes with safeguards to prevent accidental deletion of repos
+// and more robust methods to overwrite workspace files
+//
+// TODO: we have no checks for remote root, should we add safeguards to assert
+// that the repo root is narrow enough in scope (i.e. atleast at or below /Repos/email/...)
 type RepoFiles struct {
 	repoRoot        string
 	localRoot       string

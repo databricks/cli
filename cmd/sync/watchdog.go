@@ -51,10 +51,6 @@ func syncCallback(ctx context.Context, repoFiles *repofiles.RepoFiles) func(loca
 			localRelativePathCopy := localRelativePath
 			g.Go(func() error {
 				err := repoFiles.PutFile(ctx, localRelativePathCopy)
-				// if err == repofiles.ErrorFileIsIgnored {
-				// 	log.Printf("[INFO] Ignored for upload %s", localRelativePathCopy)
-				// 	return nil
-				// }
 				if err != nil {
 					return err
 				}
