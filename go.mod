@@ -18,8 +18,19 @@ require (
 )
 
 require (
+	github.com/google/uuid v1.3.0
+	github.com/hashicorp/go-version v1.6.0
+	github.com/hashicorp/hc-install v0.4.0
+	github.com/hashicorp/terraform-exec v0.17.3
 	golang.org/x/exp v0.0.0-20221031165847-c99f073a8326
 	golang.org/x/sync v0.1.0
+)
+
+require (
+	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
+	github.com/hashicorp/terraform-json v0.14.0 // indirect
+	github.com/zclconf/go-cty v1.11.0 // indirect
+	golang.org/x/crypto v0.1.0 // indirect
 )
 
 require (
@@ -33,11 +44,10 @@ require (
 	github.com/googleapis/enterprise-certificate-proxy v0.2.0 // indirect
 	github.com/imdario/mergo v0.3.13
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
-	github.com/kr/text v0.2.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	golang.org/x/net v0.0.0-20221014081412-f15817d10f9b // indirect
+	golang.org/x/net v0.1.0 // indirect
 	golang.org/x/oauth2 v0.0.0-20221014153046-6fdb5e3db783 // indirect
 	golang.org/x/sys v0.1.0 // indirect
 	golang.org/x/text v0.4.0 // indirect
@@ -47,7 +57,6 @@ require (
 	google.golang.org/genproto v0.0.0-20221027153422-115e99e71e1c // indirect
 	google.golang.org/grpc v1.50.1 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
-	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
