@@ -361,13 +361,13 @@ func TestAccIncrementalSync(t *testing.T) {
 	assert.NoError(t, err)
 	defer f.Close()
 	assert.Eventually(t, func() bool {
-		objects, err := wsc.Workspace.ListAll(ctx, workspace.ListRequest{
+		objects, err := wsc.Workspace.ListAll(ctx, workspace.List{
 			Path: repoPath,
 		})
 		assert.NoError(t, err)
 		return len(objects) == 3
 	}, 30*time.Second, 5*time.Second)
-	objects, err = wsc.Workspace.ListAll(ctx, workspace.ListRequest{
+	objects, err = wsc.Workspace.ListAll(ctx, workspace.List{
 		Path: repoPath,
 	})
 	assert.NoError(t, err)
@@ -385,13 +385,13 @@ func TestAccIncrementalSync(t *testing.T) {
 	err = os.RemoveAll(filepath.Dir(fooPath))
 	assert.NoError(t, err)
 	assert.Eventually(t, func() bool {
-		objects, err := wsc.Workspace.ListAll(ctx, workspace.ListRequest{
+		objects, err := wsc.Workspace.ListAll(ctx, workspace.List{
 			Path: repoPath,
 		})
 		assert.NoError(t, err)
 		return len(objects) == 3
 	}, 30*time.Second, 5*time.Second)
-	objects, err = wsc.Workspace.ListAll(ctx, workspace.ListRequest{
+	objects, err = wsc.Workspace.ListAll(ctx, workspace.List{
 		Path: repoPath,
 	})
 	assert.NoError(t, err)
@@ -413,13 +413,13 @@ func TestAccIncrementalSync(t *testing.T) {
 	err = os.WriteFile(filepath.Join(projectDir, "bar"), []byte("Kal ho na ho is a cool movie"), os.ModePerm)
 	assert.NoError(t, err)
 	assert.Eventually(t, func() bool {
-		objects, err := wsc.Workspace.ListAll(ctx, workspace.ListRequest{
+		objects, err := wsc.Workspace.ListAll(ctx, workspace.List{
 			Path: repoPath,
 		})
 		assert.NoError(t, err)
 		return len(objects) == 3
 	}, 30*time.Second, 5*time.Second)
-	objects, err = wsc.Workspace.ListAll(ctx, workspace.ListRequest{
+	objects, err = wsc.Workspace.ListAll(ctx, workspace.List{
 		Path: repoPath,
 	})
 	assert.NoError(t, err)
