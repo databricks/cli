@@ -21,7 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// TODO: these tests are horrible, refactor these, and make write down tests for
+// TODO: these tests are bloated, refactor these, and make write down tests for
 // all edge cases with interop between files, directory and notebooks during syncing
 // https://databricks.atlassian.net/browse/DECO-416
 
