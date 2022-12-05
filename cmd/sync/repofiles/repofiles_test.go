@@ -74,30 +74,6 @@ func TestRepoFilesRemotePath(t *testing.T) {
 	assert.ErrorContains(t, err, `contains forbidden pattern ".."`)
 }
 
-func TestRepoFilesLocalPath(t *testing.T) {
-	repoFiles := Create("/Repos/doraemon/bar", "/doraemon/foo/bar", nil)
-
-	remotePath, err := repoFiles.localPath("a/b/c")
-	assert.NoError(t, err)
-	assert.Equal(t, filepath.Join("/doraemon/foo/bar/a/b", "c"), remotePath)
-
-	remotePath, err = repoFiles.localPath("a/b/../d")
-	assert.NoError(t, err)
-	assert.Equal(t, filepath.Join("/doraemon/foo/bar/a", "d"), remotePath)
-
-	_, err = repoFiles.localPath("a/b/../..")
-	assert.ErrorContains(t, err, "file path relative to repo root cannot be empty")
-
-	_, err = repoFiles.localPath("")
-	assert.ErrorContains(t, err, "file path relative to repo root cannot be empty")
-
-	_, err = repoFiles.localPath(".")
-	assert.ErrorContains(t, err, "file path relative to repo root cannot be empty")
-
-	_, err = repoFiles.localPath("../..")
-	assert.ErrorContains(t, err, `contains forbidden pattern ".."`)
-}
-
 func TestRepoReadLocal(t *testing.T) {
 	tempDir := t.TempDir()
 	helloPath := filepath.Join(tempDir, "hello.txt")

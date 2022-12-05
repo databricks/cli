@@ -17,8 +17,8 @@ import (
 
 // Use this class to do file upload/delete on a workspace repo
 //
-// This class comes with safeguards to prevent accidental deletion of repos
-// and more robust methods to overwrite workspace files
+// This class comes with safeguards when mutating remote files to prevent
+// accidental deletion of repos and more robust methods to overwrite workspace files
 type RepoFiles struct {
 	repoRoot        string
 	localRoot       string
@@ -52,19 +52,8 @@ func (r *RepoFiles) remotePath(relativePath string) (string, error) {
 	return path.Join(r.repoRoot, cleanRelativePath), nil
 }
 
-func (r *RepoFiles) localPath(relativePath string) (string, error) {
-	cleanRelativePath, err := cleanPath(relativePath)
-	if err != nil {
-		return "", err
-	}
-	return filepath.Join(r.localRoot, cleanRelativePath), nil
-}
-
 func (r *RepoFiles) readLocal(relativePath string) ([]byte, error) {
-	localPath, err := r.localPath(relativePath)
-	if err != nil {
-		return nil, err
-	}
+	localPath := filepath.Join(r.localRoot, relativePath)
 	return os.ReadFile(localPath)
 }
 
