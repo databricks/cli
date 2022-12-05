@@ -109,3 +109,5 @@ func TestRepoReadLocal(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "my name is doraemon :P", string(bytes))
 }
+
+// TODO: setup mocking of api calls for bricks with gomock

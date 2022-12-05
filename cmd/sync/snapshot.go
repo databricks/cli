@@ -65,9 +65,8 @@ type Snapshot struct {
 // TODO: check if the new snapshot schema was really not backward compatible?
 
 type diff struct {
-	put             []string
-	delete          []string
-	ignoredSymlinks []string
+	put    []string
+	delete []string
 }
 
 const syncSnapshotDirName = "sync-snapshots"
@@ -221,34 +220,12 @@ func getNotebookDetails(path string) (isNotebook bool, typeOfNotebook string, er
 	return false, "", nil
 }
 
-// we ignore symlinks for syncing
-// write test and test it our on windows
-func isSymLink(path string) (bool, error) {
-	fileInfo, err := os.Stat(path)
-	if err != nil {
-		return false, err
-	}
-	return fileInfo.Mode() == os.ModeSymlink, nil
-}
-
 func (s *Snapshot) diff(all []git.File) (change diff, err error) {
 	currentFilenames := map[string]bool{}
 	lastModifiedTimes := s.LastUpdatedTimes
 	remoteToLocalNames := s.RemoteToLocalNames
 	localToRemoteNames := s.LocalToRemoteNames
 	for _, f := range all {
-
-		// We do not track sym links
-		isSymLink, err := isSymLink(f.Absolute)
-		if err != nil {
-			return change, err
-		}
-		// TODO: log ignored files
-		if isSymLink {
-			change.ignoredSymlinks = append(change.ignoredSymlinks, f.Relative)
-			continue
-		}
-
 		// create set of current files to figure out if removals are needed
 		currentFilenames[f.Relative] = true
 		// get current modified timestamp
