@@ -92,7 +92,8 @@ func (r *RepoFiles) writeRemote(ctx context.Context, relativePath string, conten
 	// provide descriptive errors yet
 	//
 	// TODO: narrow down the error condition scope of this "if" block to only
-	// trigger for the specific edge cases instead of all errors
+	// trigger for the specific edge cases instead of all errors once the API
+	// implements them
 	if err != nil {
 		// Delete any artifact files incase non overwriteable by the current file
 		// type and thus are failing the PUT request.

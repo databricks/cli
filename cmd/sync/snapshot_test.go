@@ -338,4 +338,7 @@ func TestSnapshotVersionInvalidation(t *testing.T) {
 	assert.FileExists(t, snapshotPath)
 	assert.NoError(t, err)
 	assert.NotEqual(t, emptySnapshot, snapshot)
+	assert.Equal(t, LatestSnapshotVersion, snapshot.Version)
+	assert.Equal(t, "www.foobar.com", snapshot.Host)
+	assert.Equal(t, "/Repos/foo/bar", snapshot.RemotePath)
 }
