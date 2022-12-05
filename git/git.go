@@ -83,7 +83,7 @@ func RepositoryName() (string, error) {
 }
 
 func RepoExists(remotePath string, ctx context.Context, w *databricks.WorkspaceClient) (bool, error) {
-	repos, err := w.Repos.ListAll(ctx, repos.ListRequest{})
+	repos, err := w.Repos.ListAll(ctx, repos.List{})
 	if err != nil {
 		return false, fmt.Errorf("could not get repos: %s", err)
 	}

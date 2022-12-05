@@ -1,6 +1,7 @@
 package bundle
 
 import (
+	"os"
 	"path/filepath"
 	"sync"
 
@@ -48,4 +49,23 @@ func (b *Bundle) WorkspaceClient() *databricks.WorkspaceClient {
 		}
 	})
 	return b.client
+}
+
+var cacheDirName = filepath.Join(".databricks", "bundle")
+
+// CacheDir returns directory to use for temporary files for this bundle.
+// Scoped to the bundle's environment.
+func (b *Bundle) CacheDir() (string, error) {
+	if b.Config.Bundle.Environment == "" {
+		panic("environment not set")
+	}
+
+	// Make directory if it doesn't exist yet.
+	dir := filepath.Join(b.Config.Path, cacheDirName, b.Config.Bundle.Environment)
+	err := os.MkdirAll(dir, 0700)
+	if err != nil {
+		return "", err
+	}
+
+	return dir, nil
 }
