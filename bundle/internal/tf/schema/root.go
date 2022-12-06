@@ -28,9 +28,5 @@ func NewRoot() *Root {
 				},
 			},
 		},
-
-		Provider: NewProviders(),
-		Data:     NewDataSources(),
-		Resource: NewResources(),
 	}
 }
