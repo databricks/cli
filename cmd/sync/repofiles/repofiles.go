@@ -36,7 +36,7 @@ func Create(repoRoot, localRoot string, workspaceClient *databricks.WorkspaceCli
 func cleanPath(relativePath string) (string, error) {
 	cleanRelativePath := path.Clean(relativePath)
 	if strings.Contains(cleanRelativePath, `..`) {
-		return "", fmt.Errorf(`file relative path %s contains forbidden pattern ".."`, relativePath)
+		return "", fmt.Errorf(`path must not refer to parent directory: %s`, relativePath)
 	}
 	if cleanRelativePath == "" || cleanRelativePath == "/" || cleanRelativePath == "." {
 		return "", fmt.Errorf("file path relative to repo root cannot be empty: %s", relativePath)
