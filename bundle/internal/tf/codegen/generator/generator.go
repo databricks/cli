@@ -1,4 +1,4 @@
-package codegen
+package generator
 
 import (
 	"context"
@@ -21,7 +21,7 @@ type collection struct {
 }
 
 func (c *collection) Generate(path string) error {
-	tmpl := template.Must(template.ParseFiles(fmt.Sprintf("./codegen/template_%s.tmpl", c.OutputFile)))
+	tmpl := template.Must(template.ParseFiles(fmt.Sprintf("./templates/%s.tmpl", c.OutputFile)))
 	f, err := os.Create(filepath.Join(path, c.OutputFile))
 	if err != nil {
 		return err

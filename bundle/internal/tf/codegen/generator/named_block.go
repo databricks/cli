@@ -1,4 +1,4 @@
-package codegen
+package generator
 
 import (
 	"fmt"
@@ -55,6 +55,6 @@ func (b *namedBlock) Generate(path string) error {
 
 	defer f.Close()
 
-	tmpl := template.Must(template.ParseFiles("./codegen/template_block.go.tmpl"))
+	tmpl := template.Must(template.ParseFiles("./templates/block.go.tmpl"))
 	return tmpl.Execute(f, w)
 }

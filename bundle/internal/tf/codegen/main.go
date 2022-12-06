@@ -4,8 +4,8 @@ import (
 	"context"
 	"log"
 
-	"github.com/databricks/bricks/bundle/internal/tf-codegen/codegen"
-	"github.com/databricks/bricks/bundle/internal/tf-codegen/schema"
+	"github.com/databricks/bricks/bundle/internal/tf/codegen/generator"
+	"github.com/databricks/bricks/bundle/internal/tf/codegen/schema"
 )
 
 func main() {
@@ -16,7 +16,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	err = codegen.Run(ctx, schema, "../tf")
+	err = generator.Run(ctx, schema, "../schema")
 	if err != nil {
 		log.Fatal(err)
 	}
