@@ -1,6 +1,6 @@
 // Generated from Databricks Terraform provider schema. DO NOT EDIT.
 
-package tf
+package schema
 
 type ResourceGroupMember struct {
 	GroupId  string `json:"group_id"`

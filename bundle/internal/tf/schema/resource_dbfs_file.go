@@ -1,6 +1,6 @@
 // Generated from Databricks Terraform provider schema. DO NOT EDIT.
 
-package tf
+package schema
 
 type ResourceDbfsFile struct {
 	ContentBase64 string `json:"content_base64,omitempty"`

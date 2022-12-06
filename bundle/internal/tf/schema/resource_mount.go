@@ -1,6 +1,6 @@
 // Generated from Databricks Terraform provider schema. DO NOT EDIT.
 
-package tf
+package schema
 
 type ResourceMountAbfs struct {
 	ClientId             string `json:"client_id"`

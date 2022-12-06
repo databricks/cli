@@ -1,6 +1,6 @@
 // Generated from Databricks Terraform provider schema. DO NOT EDIT.
 
-package tf
+package schema
 
 type ResourceSqlWidgetParameter struct {
 	MapTo  string   `json:"map_to,omitempty"`

@@ -1,6 +1,6 @@
 // Generated from Databricks Terraform provider schema. DO NOT EDIT.
 
-package tf
+package schema
 
 type ResourcePermissionsAccessControl struct {
 	GroupName            string `json:"group_name,omitempty"`

@@ -1,6 +1,6 @@
 // Generated from Databricks Terraform provider schema. DO NOT EDIT.
 
-package tf
+package schema
 
 type Resources struct {
 	AwsS3Mount               map[string]*ResourceAwsS3Mount               `json:"databricks_aws_s3_mount,omitempty"`

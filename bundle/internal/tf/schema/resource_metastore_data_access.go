@@ -1,6 +1,6 @@
 // Generated from Databricks Terraform provider schema. DO NOT EDIT.
 
-package tf
+package schema
 
 type ResourceMetastoreDataAccessAwsIamRole struct {
 	RoleArn string `json:"role_arn"`

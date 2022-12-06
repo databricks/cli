@@ -1,6 +1,6 @@
 // Generated from Databricks Terraform provider schema. DO NOT EDIT.
 
-package tf
+package schema
 
 type ResourceAwsS3Mount struct {
 	ClusterId       string `json:"cluster_id,omitempty"`

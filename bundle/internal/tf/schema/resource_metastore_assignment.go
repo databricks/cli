@@ -1,6 +1,6 @@
 // Generated from Databricks Terraform provider schema. DO NOT EDIT.
 
-package tf
+package schema
 
 type ResourceMetastoreAssignment struct {
 	DefaultCatalogName string `json:"default_catalog_name,omitempty"`

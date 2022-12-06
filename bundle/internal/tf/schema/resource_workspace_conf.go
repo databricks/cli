@@ -1,6 +1,6 @@
 // Generated from Databricks Terraform provider schema. DO NOT EDIT.
 
-package tf
+package schema
 
 type ResourceWorkspaceConf struct {
 	CustomConfig map[string]string `json:"custom_config,omitempty"`

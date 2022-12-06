@@ -1,6 +1,6 @@
 // Generated from Databricks Terraform provider schema. DO NOT EDIT.
 
-package tf
+package schema
 
 type DataSourceAwsAssumeRolePolicy struct {
 	DatabricksAccountId string `json:"databricks_account_id,omitempty"`

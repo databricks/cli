@@ -1,4 +1,4 @@
-package tf
+package schema
 
 type Providers struct {
 	Databricks *Config `json:"databricks,omitempty"`

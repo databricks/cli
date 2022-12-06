@@ -1,6 +1,6 @@
 // Generated from Databricks Terraform provider schema. DO NOT EDIT.
 
-package tf
+package schema
 
 type DataSourceShareObject struct {
 	AddedAt        int    `json:"added_at,omitempty"`

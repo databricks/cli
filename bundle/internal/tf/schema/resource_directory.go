@@ -1,6 +1,6 @@
 // Generated from Databricks Terraform provider schema. DO NOT EDIT.
 
-package tf
+package schema
 
 type ResourceDirectory struct {
 	DeleteRecursive bool   `json:"delete_recursive,omitempty"`

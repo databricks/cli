@@ -1,6 +1,6 @@
 // Generated from Databricks Terraform provider schema. DO NOT EDIT.
 
-package tf
+package schema
 
 type DataSourceNotebookPaths struct {
 	Id               string `json:"id,omitempty"`

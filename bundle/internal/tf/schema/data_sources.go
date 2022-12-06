@@ -1,6 +1,6 @@
 // Generated from Databricks Terraform provider schema. DO NOT EDIT.
 
-package tf
+package schema
 
 type DataSources struct {
 	AwsAssumeRolePolicy   map[string]*DataSourceAwsAssumeRolePolicy   `json:"databricks_aws_assume_role_policy,omitempty"`

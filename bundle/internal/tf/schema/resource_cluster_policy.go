@@ -1,6 +1,6 @@
 // Generated from Databricks Terraform provider schema. DO NOT EDIT.
 
-package tf
+package schema
 
 type ResourceClusterPolicy struct {
 	Definition string `json:"definition,omitempty"`

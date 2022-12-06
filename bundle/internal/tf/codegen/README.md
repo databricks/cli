@@ -4,7 +4,7 @@ Use this tool to generate equivalent Go types from Terraform provider schema.
 
 The entry point for this tool is `.`.
 
-It uses `./tmp` a temporary data directory and `../tf` as output directory.
+It uses `./tmp` a temporary data directory and `../schema` as output directory.
 
 It automatically installs the Terraform binary as well as the Databricks Terraform provider.
 

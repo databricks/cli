@@ -1,6 +1,6 @@
 // Generated from Databricks Terraform provider schema. DO NOT EDIT.
 
-package tf
+package schema
 
 type ResourceGroup struct {
 	AllowClusterCreate      bool   `json:"allow_cluster_create,omitempty"`

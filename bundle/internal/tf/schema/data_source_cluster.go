@@ -1,6 +1,6 @@
 // Generated from Databricks Terraform provider schema. DO NOT EDIT.
 
-package tf
+package schema
 
 type DataSourceClusterClusterInfoAutoscale struct {
 	MaxWorkers int `json:"max_workers,omitempty"`

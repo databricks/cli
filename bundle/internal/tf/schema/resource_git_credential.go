@@ -1,6 +1,6 @@
 // Generated from Databricks Terraform provider schema. DO NOT EDIT.
 
-package tf
+package schema
 
 type ResourceGitCredential struct {
 	Force               bool   `json:"force,omitempty"`
