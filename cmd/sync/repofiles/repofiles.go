@@ -33,23 +33,16 @@ func Create(repoRoot, localRoot string, workspaceClient *databricks.WorkspaceCli
 	}
 }
 
-func cleanPath(relativePath string) (string, error) {
-	cleanRelativePath := path.Clean(relativePath)
-	if strings.Contains(cleanRelativePath, `..`) {
-		return "", fmt.Errorf(`path must not refer to parent directory: %s`, relativePath)
-	}
-	if cleanRelativePath == "" || cleanRelativePath == "/" || cleanRelativePath == "." {
+func (r *RepoFiles) remotePath(relativePath string) (string, error) {
+	fullPath := path.Join(r.repoRoot, relativePath)
+	cleanFullPath := path.Clean(fullPath)
+	if cleanFullPath == r.repoRoot {
 		return "", fmt.Errorf("file path relative to repo root cannot be empty: %s", relativePath)
 	}
-	return cleanRelativePath, nil
-}
-
-func (r *RepoFiles) remotePath(relativePath string) (string, error) {
-	cleanRelativePath, err := cleanPath(relativePath)
-	if err != nil {
-		return "", err
+	if !strings.HasPrefix(cleanFullPath, r.repoRoot) {
+		return "", fmt.Errorf("relative file path is not inside repo root: %s", relativePath)
 	}
-	return path.Join(r.repoRoot, cleanRelativePath), nil
+	return cleanFullPath, nil
 }
 
 func (r *RepoFiles) readLocal(relativePath string) ([]byte, error) {
