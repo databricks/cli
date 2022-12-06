@@ -17,7 +17,7 @@ import (
 
 // Use this class to do file upload/delete on a workspace repo
 //
-// This class comes with safeguards when mutating remote files to prevent
+// RepoFiles wraps reading and writing into a remote repo with safeguards to prevent
 // accidental deletion of repos and more robust methods to overwrite workspace files
 type RepoFiles struct {
 	repoRoot        string
