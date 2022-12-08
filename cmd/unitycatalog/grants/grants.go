@@ -53,7 +53,7 @@ func init() {
 	Cmd.AddCommand(updateCmd)
 	// TODO: short flags
 
-	// TODO: complex arg: changes
+	// TODO: array: changes
 	updateCmd.Flags().StringVar(&updateReq.FullName, "full-name", "", `Required.`)
 	updateCmd.Flags().StringVar(&updateReq.Principal, "principal", "", `Optional.`)
 	updateCmd.Flags().StringVar(&updateReq.SecurableType, "securable-type", "", `Required.`)

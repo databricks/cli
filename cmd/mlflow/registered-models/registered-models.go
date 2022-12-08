@@ -19,7 +19,7 @@ func init() {
 
 	createCmd.Flags().StringVar(&createReq.Description, "description", "", `Optional description for registered model.`)
 	createCmd.Flags().StringVar(&createReq.Name, "name", "", `Register models under this name.`)
-	// TODO: complex arg: tags
+	// TODO: array: tags
 
 }
 
@@ -141,7 +141,7 @@ func init() {
 	// TODO: short flags
 
 	getLatestVersionsCmd.Flags().StringVar(&getLatestVersionsReq.Name, "name", "", `Registered model unique name identifier.`)
-	// TODO: complex arg: stages
+	// TODO: array: stages
 
 }
 
@@ -244,7 +244,7 @@ func init() {
 
 	searchCmd.Flags().StringVar(&searchReq.Filter, "filter", "", `String filter condition, like "name LIKE 'my-model-name'".`)
 	searchCmd.Flags().IntVar(&searchReq.MaxResults, "max-results", 0, `Maximum number of models desired.`)
-	// TODO: complex arg: order_by
+	// TODO: array: order_by
 	searchCmd.Flags().StringVar(&searchReq.PageToken, "page-token", "", `Pagination token to go to the next page based on a previous search query.`)
 
 }

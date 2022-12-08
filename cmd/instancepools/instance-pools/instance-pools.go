@@ -20,7 +20,7 @@ func init() {
 
 	// TODO: complex arg: aws_attributes
 	// TODO: complex arg: azure_attributes
-	// TODO: complex arg: custom_tags
+	// TODO: map via StringToStringVar: custom_tags
 	// TODO: complex arg: disk_spec
 	createCmd.Flags().BoolVar(&createReq.EnableElasticDisk, "enable-elastic-disk", false, `Autoscaling Local Storage: when enabled, this instances in this pool will dynamically acquire additional disk space when its Spark workers are running low on disk space.`)
 	createCmd.Flags().IntVar(&createReq.IdleInstanceAutoterminationMinutes, "idle-instance-autotermination-minutes", 0, `Automatically terminates the extra instances in the pool cache after they are inactive for this time in minutes if min_idle_instances requirement is already met.`)
@@ -29,8 +29,8 @@ func init() {
 	createCmd.Flags().IntVar(&createReq.MaxCapacity, "max-capacity", 0, `Maximum number of outstanding instances to keep in the pool, including both instances used by clusters and idle instances.`)
 	createCmd.Flags().IntVar(&createReq.MinIdleInstances, "min-idle-instances", 0, `Minimum number of idle instances to keep in the instance pool.`)
 	createCmd.Flags().StringVar(&createReq.NodeTypeId, "node-type-id", "", `This field encodes, through a single value, the resources available to each of the Spark nodes in this cluster.`)
-	// TODO: complex arg: preloaded_docker_images
-	// TODO: complex arg: preloaded_spark_versions
+	// TODO: array: preloaded_docker_images
+	// TODO: array: preloaded_spark_versions
 
 }
 
@@ -92,7 +92,7 @@ func init() {
 
 	// TODO: complex arg: aws_attributes
 	// TODO: complex arg: azure_attributes
-	// TODO: complex arg: custom_tags
+	// TODO: map via StringToStringVar: custom_tags
 	// TODO: complex arg: disk_spec
 	editCmd.Flags().BoolVar(&editReq.EnableElasticDisk, "enable-elastic-disk", false, `Autoscaling Local Storage: when enabled, this instances in this pool will dynamically acquire additional disk space when its Spark workers are running low on disk space.`)
 	editCmd.Flags().IntVar(&editReq.IdleInstanceAutoterminationMinutes, "idle-instance-autotermination-minutes", 0, `Automatically terminates the extra instances in the pool cache after they are inactive for this time in minutes if min_idle_instances requirement is already met.`)
@@ -101,8 +101,8 @@ func init() {
 	editCmd.Flags().IntVar(&editReq.MaxCapacity, "max-capacity", 0, `Maximum number of outstanding instances to keep in the pool, including both instances used by clusters and idle ones.`)
 	editCmd.Flags().IntVar(&editReq.MinIdleInstances, "min-idle-instances", 0, `Minimum number of idle instances to keep in the instance pool.`)
 	editCmd.Flags().StringVar(&editReq.NodeTypeId, "node-type-id", "", `This field encodes, through a single value, the resources available to each of the Spark nodes in this cluster.`)
-	// TODO: complex arg: preloaded_docker_images
-	// TODO: complex arg: preloaded_spark_versions
+	// TODO: array: preloaded_docker_images
+	// TODO: array: preloaded_spark_versions
 
 }
 

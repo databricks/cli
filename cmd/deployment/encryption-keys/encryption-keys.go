@@ -19,7 +19,7 @@ func init() {
 	// TODO: short flags
 
 	// TODO: complex arg: aws_key_info
-	// TODO: complex arg: use_cases
+	// TODO: array: use_cases
 
 }
 

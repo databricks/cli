@@ -21,15 +21,15 @@ func init() {
 	createPipelineCmd.Flags().BoolVar(&createPipelineReq.AllowDuplicateNames, "allow-duplicate-names", false, `If false, deployment will fail if name conflicts with that of another pipeline.`)
 	createPipelineCmd.Flags().StringVar(&createPipelineReq.Catalog, "catalog", "", `Catalog in UC to add tables to.`)
 	createPipelineCmd.Flags().StringVar(&createPipelineReq.Channel, "channel", "", `DLT Release Channel that specifies which version to use.`)
-	// TODO: complex arg: clusters
-	// TODO: complex arg: configuration
+	// TODO: array: clusters
+	// TODO: map via StringToStringVar: configuration
 	createPipelineCmd.Flags().BoolVar(&createPipelineReq.Continuous, "continuous", false, `Whether the pipeline is continuous or triggered.`)
 	createPipelineCmd.Flags().BoolVar(&createPipelineReq.Development, "development", false, `Whether the pipeline is in Development mode.`)
 	createPipelineCmd.Flags().BoolVar(&createPipelineReq.DryRun, "dry-run", false, ``)
 	createPipelineCmd.Flags().StringVar(&createPipelineReq.Edition, "edition", "", `Pipeline product edition.`)
 	// TODO: complex arg: filters
 	createPipelineCmd.Flags().StringVar(&createPipelineReq.Id, "id", "", `Unique identifier for this pipeline.`)
-	// TODO: complex arg: libraries
+	// TODO: array: libraries
 	createPipelineCmd.Flags().StringVar(&createPipelineReq.Name, "name", "", `Friendly identifier for this pipeline.`)
 	createPipelineCmd.Flags().BoolVar(&createPipelineReq.Photon, "photon", false, `Whether Photon is enabled for this pipeline.`)
 	createPipelineCmd.Flags().StringVar(&createPipelineReq.Storage, "storage", "", `DBFS root directory for storing checkpoints and tables.`)
@@ -163,7 +163,7 @@ func init() {
 
 	listPipelinesCmd.Flags().StringVar(&listPipelinesReq.Filter, "filter", "", `Select a subset of results based on the specified criteria.`)
 	listPipelinesCmd.Flags().IntVar(&listPipelinesReq.MaxResults, "max-results", 0, `The maximum number of entries to return in a single page.`)
-	// TODO: complex arg: order_by
+	// TODO: array: order_by
 	listPipelinesCmd.Flags().StringVar(&listPipelinesReq.PageToken, "page-token", "", `Page token returned by previous call.`)
 
 }
@@ -260,11 +260,11 @@ func init() {
 	Cmd.AddCommand(startUpdateCmd)
 	// TODO: short flags
 
-	// TODO: complex arg: cause
+	startUpdateCmd.Flags().Var(&startUpdateReq.Cause, "cause", ``)
 	startUpdateCmd.Flags().BoolVar(&startUpdateReq.FullRefresh, "full-refresh", false, `If true, this update will reset all tables before running.`)
-	// TODO: complex arg: full_refresh_selection
+	// TODO: array: full_refresh_selection
 	startUpdateCmd.Flags().StringVar(&startUpdateReq.PipelineId, "pipeline-id", "", ``)
-	// TODO: complex arg: refresh_selection
+	// TODO: array: refresh_selection
 
 }
 
@@ -327,15 +327,15 @@ func init() {
 	updatePipelineCmd.Flags().BoolVar(&updatePipelineReq.AllowDuplicateNames, "allow-duplicate-names", false, `If false, deployment will fail if name has changed and conflicts the name of another pipeline.`)
 	updatePipelineCmd.Flags().StringVar(&updatePipelineReq.Catalog, "catalog", "", `Catalog in UC to add tables to.`)
 	updatePipelineCmd.Flags().StringVar(&updatePipelineReq.Channel, "channel", "", `DLT Release Channel that specifies which version to use.`)
-	// TODO: complex arg: clusters
-	// TODO: complex arg: configuration
+	// TODO: array: clusters
+	// TODO: map via StringToStringVar: configuration
 	updatePipelineCmd.Flags().BoolVar(&updatePipelineReq.Continuous, "continuous", false, `Whether the pipeline is continuous or triggered.`)
 	updatePipelineCmd.Flags().BoolVar(&updatePipelineReq.Development, "development", false, `Whether the pipeline is in Development mode.`)
 	updatePipelineCmd.Flags().StringVar(&updatePipelineReq.Edition, "edition", "", `Pipeline product edition.`)
 	updatePipelineCmd.Flags().Int64Var(&updatePipelineReq.ExpectedLastModified, "expected-last-modified", 0, `If present, the last-modified time of the pipeline settings before the edit.`)
 	// TODO: complex arg: filters
 	updatePipelineCmd.Flags().StringVar(&updatePipelineReq.Id, "id", "", `Unique identifier for this pipeline.`)
-	// TODO: complex arg: libraries
+	// TODO: array: libraries
 	updatePipelineCmd.Flags().StringVar(&updatePipelineReq.Name, "name", "", `Friendly identifier for this pipeline.`)
 	updatePipelineCmd.Flags().BoolVar(&updatePipelineReq.Photon, "photon", false, `Whether Photon is enabled for this pipeline.`)
 	updatePipelineCmd.Flags().StringVar(&updatePipelineReq.PipelineId, "pipeline-id", "", `Unique identifier for this pipeline.`)

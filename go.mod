@@ -17,6 +17,8 @@ require (
 	gopkg.in/ini.v1 v1.67.0 // Apache 2.0
 )
 
+replace github.com/databricks/databricks-sdk-go v0.2.0 => ../databricks-sdk-go
+
 require (
 	github.com/fatih/color v1.13.0
 	github.com/nwidger/jsoncolor v0.3.1
@@ -57,9 +59,9 @@ require (
 	golang.org/x/net v0.1.0 // indirect
 	golang.org/x/oauth2 v0.0.0-20221014153046-6fdb5e3db783
 	golang.org/x/sys v0.1.0 // indirect
-	golang.org/x/text v0.6.0
+	golang.org/x/text v0.4.0 // indirect
 	golang.org/x/time v0.0.0-20210723032227-1f47c861a9ac // indirect
-	google.golang.org/api v0.105.0 // indirect
+	google.golang.org/api v0.103.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20221206210731-b1a01be3a5f6 // indirect
 	google.golang.org/grpc v1.51.0 // indirect

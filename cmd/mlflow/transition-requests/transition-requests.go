@@ -20,7 +20,7 @@ func init() {
 	approveCmd.Flags().BoolVar(&approveReq.ArchiveExistingVersions, "archive-existing-versions", false, `Specifies whether to archive all current model versions in the target stage.`)
 	approveCmd.Flags().StringVar(&approveReq.Comment, "comment", "", `User-provided comment on the action.`)
 	approveCmd.Flags().StringVar(&approveReq.Name, "name", "", `Name of the model.`)
-	// TODO: complex arg: stage
+	approveCmd.Flags().Var(&approveReq.Stage, "stage", `Target stage of the transition.`)
 	approveCmd.Flags().StringVar(&approveReq.Version, "version", "", `Version of the model.`)
 
 }
@@ -56,7 +56,7 @@ func init() {
 
 	createCmd.Flags().StringVar(&createReq.Comment, "comment", "", `User-provided comment on the action.`)
 	createCmd.Flags().StringVar(&createReq.Name, "name", "", `Name of the model.`)
-	// TODO: complex arg: stage
+	createCmd.Flags().Var(&createReq.Stage, "stage", `Target stage of the transition.`)
 	createCmd.Flags().StringVar(&createReq.Version, "version", "", `Version of the model.`)
 
 }
@@ -157,7 +157,7 @@ func init() {
 
 	rejectCmd.Flags().StringVar(&rejectReq.Comment, "comment", "", `User-provided comment on the action.`)
 	rejectCmd.Flags().StringVar(&rejectReq.Name, "name", "", `Name of the model.`)
-	// TODO: complex arg: stage
+	rejectCmd.Flags().Var(&rejectReq.Stage, "stage", `Target stage of the transition.`)
 	rejectCmd.Flags().StringVar(&rejectReq.Version, "version", "", `Version of the model.`)
 
 }

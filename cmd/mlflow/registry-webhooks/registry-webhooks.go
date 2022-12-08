@@ -18,11 +18,11 @@ func init() {
 	// TODO: short flags
 
 	createCmd.Flags().StringVar(&createReq.Description, "description", "", `User-specified description for the webhook.`)
-	// TODO: complex arg: events
+	// TODO: array: events
 	// TODO: complex arg: http_url_spec
 	// TODO: complex arg: job_spec
 	createCmd.Flags().StringVar(&createReq.ModelName, "model-name", "", `Name of the model whose events would trigger this webhook.`)
-	// TODO: complex arg: status
+	createCmd.Flags().Var(&createReq.Status, "status", `This describes an enum.`)
 
 }
 
@@ -82,7 +82,7 @@ func init() {
 	Cmd.AddCommand(listCmd)
 	// TODO: short flags
 
-	// TODO: complex arg: events
+	// TODO: array: events
 	listCmd.Flags().StringVar(&listReq.ModelName, "model-name", "", `If not specified, all webhooks associated with the specified events are listed, regardless of their associated model.`)
 	listCmd.Flags().StringVar(&listReq.PageToken, "page-token", "", `Token indicating the page of artifact results to fetch.`)
 
@@ -117,7 +117,7 @@ func init() {
 	Cmd.AddCommand(testCmd)
 	// TODO: short flags
 
-	// TODO: complex arg: event
+	testCmd.Flags().Var(&testReq.Event, "event", `If event is specified, the test trigger uses the specified event.`)
 	testCmd.Flags().StringVar(&testReq.Id, "id", "", `Webhook ID.`)
 
 }
@@ -152,11 +152,11 @@ func init() {
 	// TODO: short flags
 
 	updateCmd.Flags().StringVar(&updateReq.Description, "description", "", `User-specified description for the webhook.`)
-	// TODO: complex arg: events
+	// TODO: array: events
 	// TODO: complex arg: http_url_spec
 	updateCmd.Flags().StringVar(&updateReq.Id, "id", "", `Webhook ID.`)
 	// TODO: complex arg: job_spec
-	// TODO: complex arg: status
+	updateCmd.Flags().Var(&updateReq.Status, "status", `This describes an enum.`)
 
 }
 

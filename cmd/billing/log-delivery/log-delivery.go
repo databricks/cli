@@ -85,7 +85,7 @@ func init() {
 	// TODO: short flags
 
 	listCmd.Flags().StringVar(&listReq.CredentialsId, "credentials-id", "", `Filter by credential configuration ID.`)
-	// TODO: complex arg: status
+	listCmd.Flags().Var(&listReq.Status, "status", `Filter by status ENABLED or DISABLED.`)
 	listCmd.Flags().StringVar(&listReq.StorageConfigurationId, "storage-configuration-id", "", `Filter by storage configuration ID.`)
 
 }
@@ -120,7 +120,7 @@ func init() {
 	// TODO: short flags
 
 	patchStatusCmd.Flags().StringVar(&patchStatusReq.LogDeliveryConfigurationId, "log-delivery-configuration-id", "", `Databricks log delivery configuration ID.`)
-	// TODO: complex arg: status
+	patchStatusCmd.Flags().Var(&patchStatusReq.Status, "status", `Status of log delivery configuration.`)
 
 }
 

@@ -54,7 +54,7 @@ func init() {
 	transitionStageCmd.Flags().BoolVar(&transitionStageReq.ArchiveExistingVersions, "archive-existing-versions", false, `Specifies whether to archive all current model versions in the target stage.`)
 	transitionStageCmd.Flags().StringVar(&transitionStageReq.Comment, "comment", "", `User-provided comment on the action.`)
 	transitionStageCmd.Flags().StringVar(&transitionStageReq.Name, "name", "", `Name of the model.`)
-	// TODO: complex arg: stage
+	transitionStageCmd.Flags().Var(&transitionStageReq.Stage, "stage", `Target stage of the transition.`)
 	transitionStageCmd.Flags().StringVar(&transitionStageReq.Version, "version", "", `Version of the model.`)
 
 }

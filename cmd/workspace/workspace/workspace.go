@@ -47,7 +47,7 @@ func init() {
 	// TODO: short flags
 
 	exportCmd.Flags().BoolVar(&exportReq.DirectDownload, "direct-download", false, `Flag to enable direct download.`)
-	// TODO: complex arg: format
+	exportCmd.Flags().Var(&exportReq.Format, "format", `This specifies the format of the exported file.`)
 	exportCmd.Flags().StringVar(&exportReq.Path, "path", "", `The absolute path of the notebook or directory.`)
 
 }
@@ -115,8 +115,8 @@ func init() {
 	// TODO: short flags
 
 	importCmd.Flags().StringVar(&importReq.Content, "content", "", `The base64-encoded content.`)
-	// TODO: complex arg: format
-	// TODO: complex arg: language
+	importCmd.Flags().Var(&importReq.Format, "format", `This specifies the format of the file to be imported.`)
+	importCmd.Flags().Var(&importReq.Language, "language", `The language of the object.`)
 	importCmd.Flags().BoolVar(&importReq.Overwrite, "overwrite", false, `The flag that specifies whether to overwrite existing object.`)
 	importCmd.Flags().StringVar(&importReq.Path, "path", "", `The absolute path of the notebook or directory.`)
 

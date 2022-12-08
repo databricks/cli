@@ -20,14 +20,14 @@ func init() {
 
 	createCmd.Flags().BoolVar(&createReq.Activated, "activated", false, `[Create:IGN,Update:IGN] A boolean status field showing whether the Recipient's activation URL has been exercised or not.`)
 	createCmd.Flags().StringVar(&createReq.ActivationUrl, "activation-url", "", `[Create:IGN,Update:IGN] Full activation url to retrieve the access token.`)
-	// TODO: complex arg: authentication_type
+	createCmd.Flags().Var(&createReq.AuthenticationType, "authentication-type", `[Create:REQ,Update:IGN] The delta sharing authentication type.`)
 	createCmd.Flags().StringVar(&createReq.Comment, "comment", "", `[Create:OPT,Update:OPT] Description about the recipient.`)
 	createCmd.Flags().Int64Var(&createReq.CreatedAt, "created-at", 0, `[Create:IGN,Update:IGN] Time at which this recipient was created, in epoch milliseconds.`)
 	createCmd.Flags().StringVar(&createReq.CreatedBy, "created-by", "", `[Create:IGN,Update:IGN] Username of recipient creator.`)
 	// TODO: complex arg: ip_access_list
 	createCmd.Flags().StringVar(&createReq.Name, "name", "", `[Create:REQ,Update:OPT] Name of Recipient.`)
 	createCmd.Flags().StringVar(&createReq.SharingCode, "sharing-code", "", `[Create:OPT,Update:IGN] The one-time sharing code provided by the data recipient.`)
-	// TODO: complex arg: tokens
+	// TODO: array: tokens
 	createCmd.Flags().Int64Var(&createReq.UpdatedAt, "updated-at", 0, `[Create:IGN,Update:IGN] Time at which the recipient was updated, in epoch milliseconds.`)
 	createCmd.Flags().StringVar(&createReq.UpdatedBy, "updated-by", "", `[Create:IGN,Update:IGN] Username of recipient updater.`)
 
@@ -224,14 +224,14 @@ func init() {
 
 	updateCmd.Flags().BoolVar(&updateReq.Activated, "activated", false, `[Create:IGN,Update:IGN] A boolean status field showing whether the Recipient's activation URL has been exercised or not.`)
 	updateCmd.Flags().StringVar(&updateReq.ActivationUrl, "activation-url", "", `[Create:IGN,Update:IGN] Full activation url to retrieve the access token.`)
-	// TODO: complex arg: authentication_type
+	updateCmd.Flags().Var(&updateReq.AuthenticationType, "authentication-type", `[Create:REQ,Update:IGN] The delta sharing authentication type.`)
 	updateCmd.Flags().StringVar(&updateReq.Comment, "comment", "", `[Create:OPT,Update:OPT] Description about the recipient.`)
 	updateCmd.Flags().Int64Var(&updateReq.CreatedAt, "created-at", 0, `[Create:IGN,Update:IGN] Time at which this recipient was created, in epoch milliseconds.`)
 	updateCmd.Flags().StringVar(&updateReq.CreatedBy, "created-by", "", `[Create:IGN,Update:IGN] Username of recipient creator.`)
 	// TODO: complex arg: ip_access_list
 	updateCmd.Flags().StringVar(&updateReq.Name, "name", "", `[Create:REQ,Update:OPT] Name of Recipient.`)
 	updateCmd.Flags().StringVar(&updateReq.SharingCode, "sharing-code", "", `[Create:OPT,Update:IGN] The one-time sharing code provided by the data recipient.`)
-	// TODO: complex arg: tokens
+	// TODO: array: tokens
 	updateCmd.Flags().Int64Var(&updateReq.UpdatedAt, "updated-at", 0, `[Create:IGN,Update:IGN] Time at which the recipient was updated, in epoch milliseconds.`)
 	updateCmd.Flags().StringVar(&updateReq.UpdatedBy, "updated-by", "", `[Create:IGN,Update:IGN] Username of recipient updater.`)
 

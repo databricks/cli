@@ -27,7 +27,7 @@ func init() {
 	createCmd.Flags().StringVar(&createReq.ManagedServicesCustomerManagedKeyId, "managed-services-customer-managed-key-id", "", `The ID of the workspace's managed services encryption key configuration object.`)
 	// TODO: complex arg: network
 	createCmd.Flags().StringVar(&createReq.NetworkId, "network-id", "", `The ID of the workspace's network configuration object.`)
-	// TODO: complex arg: pricing_tier
+	createCmd.Flags().Var(&createReq.PricingTier, "pricing-tier", `The pricing tier of the workspace.`)
 	createCmd.Flags().StringVar(&createReq.PrivateAccessSettingsId, "private-access-settings-id", "", `ID of the workspace's private access settings object.`)
 	createCmd.Flags().StringVar(&createReq.StorageConfigurationId, "storage-configuration-id", "", `The ID of the workspace's storage configuration object.`)
 	createCmd.Flags().StringVar(&createReq.StorageCustomerManagedKeyId, "storage-customer-managed-key-id", "", `The ID of the workspace's storage encryption key configuration object.`)

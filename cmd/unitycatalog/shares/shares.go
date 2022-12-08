@@ -22,7 +22,7 @@ func init() {
 	createCmd.Flags().Int64Var(&createReq.CreatedAt, "created-at", 0, `[Create:IGN] Time at which this Share was created, in epoch milliseconds.`)
 	createCmd.Flags().StringVar(&createReq.CreatedBy, "created-by", "", `[Create:IGN] Username of Share creator.`)
 	createCmd.Flags().StringVar(&createReq.Name, "name", "", `[Create:REQ] Name of the Share.`)
-	// TODO: complex arg: objects
+	// TODO: array: objects
 
 }
 
@@ -178,7 +178,7 @@ func init() {
 	// TODO: short flags
 
 	updateCmd.Flags().StringVar(&updateReq.Name, "name", "", `The name of the share.`)
-	// TODO: complex arg: updates
+	// TODO: array: updates
 
 }
 
@@ -205,7 +205,7 @@ func init() {
 	Cmd.AddCommand(updatePermissionsCmd)
 	// TODO: short flags
 
-	// TODO: complex arg: changes
+	// TODO: array: changes
 	updatePermissionsCmd.Flags().StringVar(&updatePermissionsReq.Name, "name", "", `Required.`)
 
 }

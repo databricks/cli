@@ -20,7 +20,7 @@ func init() {
 
 	createOboTokenCmd.Flags().StringVar(&createOboTokenReq.ApplicationId, "application-id", "", `Application ID of the service principal.`)
 	createOboTokenCmd.Flags().StringVar(&createOboTokenReq.Comment, "comment", "", `Comment that describes the purpose of the token.`)
-	// TODO: complex arg: lifetime_seconds
+	createOboTokenCmd.Flags().Int64Var(&createOboTokenReq.LifetimeSeconds, "lifetime-seconds", 0, `The number of seconds before the token expires.`)
 
 }
 

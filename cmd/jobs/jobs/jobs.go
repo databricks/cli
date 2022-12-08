@@ -72,17 +72,18 @@ func init() {
 	Cmd.AddCommand(createCmd)
 	// TODO: short flags
 
-	// TODO: complex arg: access_control_list
+	// TODO: array: access_control_list
 	// TODO: complex arg: email_notifications
-	// TODO: complex arg: format
+	createCmd.Flags().Var(&createReq.Format, "format", `Used to tell what is the format of the job.`)
 	// TODO: complex arg: git_source
-	// TODO: complex arg: job_clusters
+	// TODO: array: job_clusters
 	createCmd.Flags().IntVar(&createReq.MaxConcurrentRuns, "max-concurrent-runs", 0, `An optional maximum allowed number of concurrent runs of the job.`)
 	createCmd.Flags().StringVar(&createReq.Name, "name", "", `An optional name for the job.`)
 	// TODO: complex arg: schedule
-	// TODO: complex arg: tags
-	// TODO: complex arg: tasks
+	// TODO: map via StringToStringVar: tags
+	// TODO: array: tasks
 	createCmd.Flags().IntVar(&createReq.TimeoutSeconds, "timeout-seconds", 0, `An optional timeout applied to each run of this job.`)
+	// TODO: complex arg: webhook_notifications
 
 }
 
@@ -170,7 +171,7 @@ func init() {
 	// TODO: short flags
 
 	exportRunCmd.Flags().Int64Var(&exportRunReq.RunId, "run-id", 0, `The canonical identifier for the run.`)
-	// TODO: complex arg: views_to_export
+	exportRunCmd.Flags().Var(&exportRunReq.ViewsToExport, "views-to-export", `Which views to export (CODE, DASHBOARDS, or ALL).`)
 
 }
 
@@ -345,7 +346,7 @@ func init() {
 	listRunsCmd.Flags().Int64Var(&listRunsReq.JobId, "job-id", 0, `The job for which to list runs.`)
 	listRunsCmd.Flags().IntVar(&listRunsReq.Limit, "limit", 0, `The number of runs to return.`)
 	listRunsCmd.Flags().IntVar(&listRunsReq.Offset, "offset", 0, `The offset of the first run to return, relative to the most recent run.`)
-	// TODO: complex arg: run_type
+	listRunsCmd.Flags().Var(&listRunsReq.RunType, "run-type", `The type of runs to return.`)
 	listRunsCmd.Flags().IntVar(&listRunsReq.StartTimeFrom, "start-time-from", 0, `Show runs that started _at or after_ this value.`)
 	listRunsCmd.Flags().IntVar(&listRunsReq.StartTimeTo, "start-time-to", 0, `Show runs that started _at or before_ this value.`)
 
@@ -380,18 +381,18 @@ func init() {
 	Cmd.AddCommand(repairRunCmd)
 	// TODO: short flags
 
-	// TODO: complex arg: dbt_commands
-	// TODO: complex arg: jar_params
+	// TODO: array: dbt_commands
+	// TODO: array: jar_params
 	repairRunCmd.Flags().Int64Var(&repairRunReq.LatestRepairId, "latest-repair-id", 0, `The ID of the latest repair.`)
-	// TODO: complex arg: notebook_params
+	// TODO: map via StringToStringVar: notebook_params
 	// TODO: complex arg: pipeline_params
-	// TODO: complex arg: python_named_params
-	// TODO: complex arg: python_params
+	// TODO: map via StringToStringVar: python_named_params
+	// TODO: array: python_params
 	repairRunCmd.Flags().BoolVar(&repairRunReq.RerunAllFailedTasks, "rerun-all-failed-tasks", false, `If true, repair all failed tasks.`)
-	// TODO: complex arg: rerun_tasks
+	// TODO: array: rerun_tasks
 	repairRunCmd.Flags().Int64Var(&repairRunReq.RunId, "run-id", 0, `The job run ID of the run to repair.`)
-	// TODO: complex arg: spark_submit_params
-	// TODO: complex arg: sql_params
+	// TODO: array: spark_submit_params
+	// TODO: map via StringToStringVar: sql_params
 
 }
 
@@ -452,16 +453,16 @@ func init() {
 	Cmd.AddCommand(runNowCmd)
 	// TODO: short flags
 
-	// TODO: complex arg: dbt_commands
+	// TODO: array: dbt_commands
 	runNowCmd.Flags().StringVar(&runNowReq.IdempotencyToken, "idempotency-token", "", `An optional token to guarantee the idempotency of job run requests.`)
-	// TODO: complex arg: jar_params
+	// TODO: array: jar_params
 	runNowCmd.Flags().Int64Var(&runNowReq.JobId, "job-id", 0, `The ID of the job to be executed.`)
-	// TODO: complex arg: notebook_params
+	// TODO: map via StringToStringVar: notebook_params
 	// TODO: complex arg: pipeline_params
-	// TODO: complex arg: python_named_params
-	// TODO: complex arg: python_params
-	// TODO: complex arg: spark_submit_params
-	// TODO: complex arg: sql_params
+	// TODO: map via StringToStringVar: python_named_params
+	// TODO: array: python_params
+	// TODO: array: spark_submit_params
+	// TODO: map via StringToStringVar: sql_params
 
 }
 
@@ -494,12 +495,13 @@ func init() {
 	Cmd.AddCommand(submitCmd)
 	// TODO: short flags
 
-	// TODO: complex arg: access_control_list
+	// TODO: array: access_control_list
 	// TODO: complex arg: git_source
 	submitCmd.Flags().StringVar(&submitReq.IdempotencyToken, "idempotency-token", "", `An optional token that can be used to guarantee the idempotency of job run requests.`)
 	submitCmd.Flags().StringVar(&submitReq.RunName, "run-name", "", `An optional name for the run.`)
-	// TODO: complex arg: tasks
+	// TODO: array: tasks
 	submitCmd.Flags().IntVar(&submitReq.TimeoutSeconds, "timeout-seconds", 0, `An optional timeout applied to each run of this job.`)
+	// TODO: complex arg: webhook_notifications
 
 }
 
@@ -532,7 +534,7 @@ func init() {
 	Cmd.AddCommand(updateCmd)
 	// TODO: short flags
 
-	// TODO: complex arg: fields_to_remove
+	// TODO: array: fields_to_remove
 	updateCmd.Flags().Int64Var(&updateReq.JobId, "job-id", 0, `The canonical identifier of the job to update.`)
 	// TODO: complex arg: new_settings
 

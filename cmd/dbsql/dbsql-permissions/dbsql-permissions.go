@@ -19,7 +19,7 @@ func init() {
 	// TODO: short flags
 
 	getPermissionsCmd.Flags().StringVar(&getPermissionsReq.ObjectId, "object-id", "", `Object ID.`)
-	// TODO: complex arg: objectType
+	getPermissionsCmd.Flags().Var(&getPermissionsReq.ObjectType, "object-type", `The type of object permissions to check.`)
 
 }
 
@@ -52,9 +52,9 @@ func init() {
 	Cmd.AddCommand(setPermissionsCmd)
 	// TODO: short flags
 
-	// TODO: complex arg: access_control_list
+	// TODO: array: access_control_list
 	setPermissionsCmd.Flags().StringVar(&setPermissionsReq.ObjectId, "object-id", "", `Object ID.`)
-	// TODO: complex arg: objectType
+	setPermissionsCmd.Flags().Var(&setPermissionsReq.ObjectType, "object-type", `The type of object permission to set.`)
 
 }
 
@@ -89,7 +89,7 @@ func init() {
 
 	transferOwnershipCmd.Flags().StringVar(&transferOwnershipReq.NewOwner, "new-owner", "", `Email address for the new owner, who must exist in the workspace.`)
 	// TODO: complex arg: objectId
-	// TODO: complex arg: objectType
+	transferOwnershipCmd.Flags().Var(&transferOwnershipReq.ObjectType, "object-type", `The type of object on which to change ownership.`)
 
 }
 

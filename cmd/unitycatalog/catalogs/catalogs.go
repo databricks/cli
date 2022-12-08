@@ -20,7 +20,7 @@ func init() {
 
 	createCmd.Flags().StringVar(&createReq.Comment, "comment", "", `User-provided free-form text description.`)
 	createCmd.Flags().StringVar(&createReq.Name, "name", "", `Name of Catalog.`)
-	// TODO: complex arg: properties
+	// TODO: array: properties
 	createCmd.Flags().StringVar(&createReq.ProviderName, "provider-name", "", `Delta Sharing Catalog specific fields.`)
 	createCmd.Flags().StringVar(&createReq.ShareName, "share-name", "", `The name of the share under the share provider.`)
 
@@ -143,15 +143,15 @@ func init() {
 	Cmd.AddCommand(updateCmd)
 	// TODO: short flags
 
-	// TODO: complex arg: catalog_type
+	updateCmd.Flags().Var(&updateReq.CatalogType, "catalog-type", `[Create,Update:IGN] The type of the catalog.`)
 	updateCmd.Flags().StringVar(&updateReq.Comment, "comment", "", `[Create,Update:OPT] User-provided free-form text description.`)
 	updateCmd.Flags().Int64Var(&updateReq.CreatedAt, "created-at", 0, `[Create,Update:IGN] Time at which this Catalog was created, in epoch milliseconds.`)
 	updateCmd.Flags().StringVar(&updateReq.CreatedBy, "created-by", "", `[Create,Update:IGN] Username of Catalog creator.`)
 	updateCmd.Flags().StringVar(&updateReq.MetastoreId, "metastore-id", "", `[Create,Update:IGN] Unique identifier of parent Metastore.`)
 	updateCmd.Flags().StringVar(&updateReq.Name, "name", "", `[Create:REQ Update:OPT] Name of Catalog.`)
 	updateCmd.Flags().StringVar(&updateReq.Owner, "owner", "", `[Create:IGN,Update:OPT] Username of current owner of Catalog.`)
-	// TODO: complex arg: privileges
-	// TODO: complex arg: properties
+	// TODO: array: privileges
+	// TODO: array: properties
 	updateCmd.Flags().StringVar(&updateReq.ProviderName, "provider-name", "", `Delta Sharing Catalog specific fields.`)
 	updateCmd.Flags().StringVar(&updateReq.ShareName, "share-name", "", `[Create:OPT,Update: IGN] The name of the share under the share provider.`)
 	updateCmd.Flags().Int64Var(&updateReq.UpdatedAt, "updated-at", 0, `[Create,Update:IGN] Time at which this Catalog was last modified, in epoch milliseconds.`)

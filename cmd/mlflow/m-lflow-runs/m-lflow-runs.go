@@ -19,7 +19,7 @@ func init() {
 
 	createCmd.Flags().StringVar(&createReq.ExperimentId, "experiment-id", "", `ID of the associated experiment.`)
 	createCmd.Flags().Int64Var(&createReq.StartTime, "start-time", 0, `Unix timestamp in milliseconds of when the run started.`)
-	// TODO: complex arg: tags
+	// TODO: array: tags
 	createCmd.Flags().StringVar(&createReq.UserId, "user-id", "", `ID of the user executing the run.`)
 
 }
@@ -142,10 +142,10 @@ func init() {
 	Cmd.AddCommand(logBatchCmd)
 	// TODO: short flags
 
-	// TODO: complex arg: metrics
-	// TODO: complex arg: params
+	// TODO: array: metrics
+	// TODO: array: params
 	logBatchCmd.Flags().StringVar(&logBatchReq.RunId, "run-id", "", `ID of the run to log under.`)
-	// TODO: complex arg: tags
+	// TODO: array: tags
 
 }
 
@@ -289,12 +289,12 @@ func init() {
 	Cmd.AddCommand(searchCmd)
 	// TODO: short flags
 
-	// TODO: complex arg: experiment_ids
+	// TODO: array: experiment_ids
 	searchCmd.Flags().StringVar(&searchReq.Filter, "filter", "", `A filter expression over params, metrics, and tags, that allows returning a subset of runs.`)
 	searchCmd.Flags().IntVar(&searchReq.MaxResults, "max-results", 0, `Maximum number of runs desired.`)
-	// TODO: complex arg: order_by
+	// TODO: array: order_by
 	searchCmd.Flags().StringVar(&searchReq.PageToken, "page-token", "", `Token for the current page of runs.`)
-	// TODO: complex arg: run_view_type
+	searchCmd.Flags().Var(&searchReq.RunViewType, "run-view-type", `Whether to display only active, only deleted, or all runs.`)
 
 }
 
@@ -360,7 +360,7 @@ func init() {
 	updateCmd.Flags().Int64Var(&updateReq.EndTime, "end-time", 0, `Unix timestamp in milliseconds of when the run ended.`)
 	updateCmd.Flags().StringVar(&updateReq.RunId, "run-id", "", `ID of the run to update.`)
 	updateCmd.Flags().StringVar(&updateReq.RunUuid, "run-uuid", "", `[Deprecated, use run_id instead] ID of the run to update.`)
-	// TODO: complex arg: status
+	updateCmd.Flags().Var(&updateReq.Status, "status", `Updated status of the run.`)
 
 }
 

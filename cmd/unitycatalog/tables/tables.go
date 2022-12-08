@@ -19,24 +19,24 @@ func init() {
 	// TODO: short flags
 
 	createCmd.Flags().StringVar(&createReq.CatalogName, "catalog-name", "", `[Create:REQ Update:IGN] Name of parent Catalog.`)
-	// TODO: complex arg: columns
+	// TODO: array: columns
 	createCmd.Flags().StringVar(&createReq.Comment, "comment", "", `[Create,Update:OPT] User-provided free-form text description.`)
 	createCmd.Flags().Int64Var(&createReq.CreatedAt, "created-at", 0, `[Create,Update:IGN] Time at which this Table was created, in epoch milliseconds.`)
 	createCmd.Flags().StringVar(&createReq.CreatedBy, "created-by", "", `[Create,Update:IGN] Username of Table creator.`)
 	createCmd.Flags().StringVar(&createReq.DataAccessConfigurationId, "data-access-configuration-id", "", `[Create,Update:IGN] Unique ID of the data_access_configuration to use.`)
-	// TODO: complex arg: data_source_format
+	createCmd.Flags().Var(&createReq.DataSourceFormat, "data-source-format", `[Create:REQ Update:OPT] Data source format ("DELTA", "CSV", etc.).`)
 	createCmd.Flags().StringVar(&createReq.FullName, "full-name", "", `[Create,Update:IGN] Full name of Table, in form of <catalog_name>.<schema_name>.<table_name>.`)
 	createCmd.Flags().StringVar(&createReq.MetastoreId, "metastore-id", "", `[Create,Update:IGN] Unique identifier of parent Metastore.`)
 	createCmd.Flags().StringVar(&createReq.Name, "name", "", `[Create:REQ Update:OPT] Name of Table, relative to parent Schema.`)
 	createCmd.Flags().StringVar(&createReq.Owner, "owner", "", `[Create: IGN Update:OPT] Username of current owner of Table.`)
-	// TODO: complex arg: privileges
-	// TODO: complex arg: properties
+	// TODO: array: privileges
+	// TODO: array: properties
 	createCmd.Flags().StringVar(&createReq.SchemaName, "schema-name", "", `[Create:REQ Update:IGN] Name of parent Schema relative to its parent Catalog.`)
 	createCmd.Flags().StringVar(&createReq.SqlPath, "sql-path", "", `[Create,Update:OPT] List of schemes whose objects can be referenced without qualification.`)
 	createCmd.Flags().StringVar(&createReq.StorageCredentialName, "storage-credential-name", "", `[Create:OPT Update:IGN] Name of the storage credential this table used.`)
 	createCmd.Flags().StringVar(&createReq.StorageLocation, "storage-location", "", `[Create:REQ Update:OPT] Storage root URL for table (for MANAGED, EXTERNAL tables).`)
 	createCmd.Flags().StringVar(&createReq.TableId, "table-id", "", `[Create:IGN Update:IGN] Name of Table, relative to parent Schema.`)
-	// TODO: complex arg: table_type
+	createCmd.Flags().Var(&createReq.TableType, "table-type", `[Create:REQ Update:OPT] Table type ("MANAGED", "EXTERNAL", "VIEW").`)
 	createCmd.Flags().Int64Var(&createReq.UpdatedAt, "updated-at", 0, `[Create,Update:IGN] Time at which this Table was last modified, in epoch milliseconds.`)
 	createCmd.Flags().StringVar(&createReq.UpdatedBy, "updated-by", "", `[Create,Update:IGN] Username of user who last modified the Table.`)
 	createCmd.Flags().StringVar(&createReq.ViewDefinition, "view-definition", "", `[Create,Update:OPT] View definition SQL (when table_type == "VIEW").`)
@@ -241,24 +241,24 @@ func init() {
 	// TODO: short flags
 
 	updateCmd.Flags().StringVar(&updateReq.CatalogName, "catalog-name", "", `[Create:REQ Update:IGN] Name of parent Catalog.`)
-	// TODO: complex arg: columns
+	// TODO: array: columns
 	updateCmd.Flags().StringVar(&updateReq.Comment, "comment", "", `[Create,Update:OPT] User-provided free-form text description.`)
 	updateCmd.Flags().Int64Var(&updateReq.CreatedAt, "created-at", 0, `[Create,Update:IGN] Time at which this Table was created, in epoch milliseconds.`)
 	updateCmd.Flags().StringVar(&updateReq.CreatedBy, "created-by", "", `[Create,Update:IGN] Username of Table creator.`)
 	updateCmd.Flags().StringVar(&updateReq.DataAccessConfigurationId, "data-access-configuration-id", "", `[Create,Update:IGN] Unique ID of the data_access_configuration to use.`)
-	// TODO: complex arg: data_source_format
+	updateCmd.Flags().Var(&updateReq.DataSourceFormat, "data-source-format", `[Create:REQ Update:OPT] Data source format ("DELTA", "CSV", etc.).`)
 	updateCmd.Flags().StringVar(&updateReq.FullName, "full-name", "", `[Create,Update:IGN] Full name of Table, in form of <catalog_name>.<schema_name>.<table_name>.`)
 	updateCmd.Flags().StringVar(&updateReq.MetastoreId, "metastore-id", "", `[Create,Update:IGN] Unique identifier of parent Metastore.`)
 	updateCmd.Flags().StringVar(&updateReq.Name, "name", "", `[Create:REQ Update:OPT] Name of Table, relative to parent Schema.`)
 	updateCmd.Flags().StringVar(&updateReq.Owner, "owner", "", `[Create: IGN Update:OPT] Username of current owner of Table.`)
-	// TODO: complex arg: privileges
-	// TODO: complex arg: properties
+	// TODO: array: privileges
+	// TODO: array: properties
 	updateCmd.Flags().StringVar(&updateReq.SchemaName, "schema-name", "", `[Create:REQ Update:IGN] Name of parent Schema relative to its parent Catalog.`)
 	updateCmd.Flags().StringVar(&updateReq.SqlPath, "sql-path", "", `[Create,Update:OPT] List of schemes whose objects can be referenced without qualification.`)
 	updateCmd.Flags().StringVar(&updateReq.StorageCredentialName, "storage-credential-name", "", `[Create:OPT Update:IGN] Name of the storage credential this table used.`)
 	updateCmd.Flags().StringVar(&updateReq.StorageLocation, "storage-location", "", `[Create:REQ Update:OPT] Storage root URL for table (for MANAGED, EXTERNAL tables).`)
 	updateCmd.Flags().StringVar(&updateReq.TableId, "table-id", "", `[Create:IGN Update:IGN] Name of Table, relative to parent Schema.`)
-	// TODO: complex arg: table_type
+	updateCmd.Flags().Var(&updateReq.TableType, "table-type", `[Create:REQ Update:OPT] Table type ("MANAGED", "EXTERNAL", "VIEW").`)
 	updateCmd.Flags().Int64Var(&updateReq.UpdatedAt, "updated-at", 0, `[Create,Update:IGN] Time at which this Table was last modified, in epoch milliseconds.`)
 	updateCmd.Flags().StringVar(&updateReq.UpdatedBy, "updated-by", "", `[Create,Update:IGN] Username of user who last modified the Table.`)
 	updateCmd.Flags().StringVar(&updateReq.ViewDefinition, "view-definition", "", `[Create,Update:OPT] View definition SQL (when table_type == "VIEW").`)

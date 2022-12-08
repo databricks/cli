@@ -28,9 +28,9 @@ func init() {
 	createWarehouseCmd.Flags().IntVar(&createWarehouseReq.MaxNumClusters, "max-num-clusters", 0, `Maximum number of clusters that the autoscaler will create to handle concurrent queries.`)
 	createWarehouseCmd.Flags().IntVar(&createWarehouseReq.MinNumClusters, "min-num-clusters", 0, `Minimum number of available clusters that will be maintained for this SQL Endpoint.`)
 	createWarehouseCmd.Flags().StringVar(&createWarehouseReq.Name, "name", "", `Logical name for the cluster.`)
-	// TODO: complex arg: spot_instance_policy
+	createWarehouseCmd.Flags().Var(&createWarehouseReq.SpotInstancePolicy, "spot-instance-policy", `Configurations whether the endpoint should use spot instances.`)
 	// TODO: complex arg: tags
-	// TODO: complex arg: warehouse_type
+	createWarehouseCmd.Flags().Var(&createWarehouseReq.WarehouseType, "warehouse-type", `Warehouse type (Classic/Pro).`)
 
 }
 
@@ -93,7 +93,6 @@ func init() {
 	editWarehouseCmd.Flags().IntVar(&editWarehouseReq.AutoStopMins, "auto-stop-mins", 0, `The amount of time in minutes that a SQL Endpoint must be idle (i.e., no RUNNING queries) before it is automatically stopped.`)
 	// TODO: complex arg: channel
 	editWarehouseCmd.Flags().StringVar(&editWarehouseReq.ClusterSize, "cluster-size", "", `Size of the clusters allocated for this endpoint.`)
-	// TODO: complex arg: confs
 	editWarehouseCmd.Flags().StringVar(&editWarehouseReq.CreatorName, "creator-name", "", `endpoint creator name.`)
 	editWarehouseCmd.Flags().BoolVar(&editWarehouseReq.EnableDatabricksCompute, "enable-databricks-compute", false, `Configures whether the endpoint should use Databricks Compute (aka Nephos) Deprecated: Use enable_serverless_compute TODO(SC-79930): Remove the field once clients are updated.`)
 	editWarehouseCmd.Flags().BoolVar(&editWarehouseReq.EnablePhoton, "enable-photon", false, `Configures whether the endpoint should use Photon optimized clusters.`)
@@ -103,9 +102,9 @@ func init() {
 	editWarehouseCmd.Flags().IntVar(&editWarehouseReq.MaxNumClusters, "max-num-clusters", 0, `Maximum number of clusters that the autoscaler will create to handle concurrent queries.`)
 	editWarehouseCmd.Flags().IntVar(&editWarehouseReq.MinNumClusters, "min-num-clusters", 0, `Minimum number of available clusters that will be maintained for this SQL Endpoint.`)
 	editWarehouseCmd.Flags().StringVar(&editWarehouseReq.Name, "name", "", `Logical name for the cluster.`)
-	// TODO: complex arg: spot_instance_policy
+	editWarehouseCmd.Flags().Var(&editWarehouseReq.SpotInstancePolicy, "spot-instance-policy", `Configurations whether the endpoint should use spot instances.`)
 	// TODO: complex arg: tags
-	// TODO: complex arg: warehouse_type
+	editWarehouseCmd.Flags().Var(&editWarehouseReq.WarehouseType, "warehouse-type", `Warehouse type (Classic/Pro).`)
 
 }
 
@@ -228,14 +227,14 @@ func init() {
 
 	// TODO: complex arg: channel
 	// TODO: complex arg: config_param
-	// TODO: complex arg: data_access_config
+	// TODO: array: data_access_config
 	setWorkspaceWarehouseConfigCmd.Flags().BoolVar(&setWorkspaceWarehouseConfigReq.EnableDatabricksCompute, "enable-databricks-compute", false, `Enable Serverless compute for SQL Endpoints Deprecated: Use enable_serverless_compute TODO(SC-79930): Remove the field once clients are updated.`)
 	setWorkspaceWarehouseConfigCmd.Flags().BoolVar(&setWorkspaceWarehouseConfigReq.EnableServerlessCompute, "enable-serverless-compute", false, `Enable Serverless compute for SQL Endpoints.`)
-	// TODO: complex arg: enabled_warehouse_types
+	// TODO: array: enabled_warehouse_types
 	// TODO: complex arg: global_param
 	setWorkspaceWarehouseConfigCmd.Flags().StringVar(&setWorkspaceWarehouseConfigReq.GoogleServiceAccount, "google-service-account", "", `GCP only: Google Service Account used to pass to cluster to access Google Cloud Storage.`)
 	setWorkspaceWarehouseConfigCmd.Flags().StringVar(&setWorkspaceWarehouseConfigReq.InstanceProfileArn, "instance-profile-arn", "", `AWS Only: Instance profile used to pass IAM role to the cluster.`)
-	// TODO: complex arg: security_policy
+	setWorkspaceWarehouseConfigCmd.Flags().Var(&setWorkspaceWarehouseConfigReq.SecurityPolicy, "security-policy", `Security policy for endpoints.`)
 	setWorkspaceWarehouseConfigCmd.Flags().BoolVar(&setWorkspaceWarehouseConfigReq.ServerlessAgreement, "serverless-agreement", false, `Internal.`)
 	// TODO: complex arg: sql_configuration_parameters
 

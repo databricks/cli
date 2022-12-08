@@ -21,7 +21,7 @@ func init() {
 	createQueryCmd.Flags().StringVar(&createQueryReq.DataSourceId, "data-source-id", "", `The ID of the data source / SQL warehouse where this query will run.`)
 	createQueryCmd.Flags().StringVar(&createQueryReq.Description, "description", "", `General description that can convey additional information about this query such as usage notes.`)
 	createQueryCmd.Flags().StringVar(&createQueryReq.Name, "name", "", `The name or title of this query to display in list views.`)
-	// TODO: complex arg: options
+	// TODO: any: options
 	createQueryCmd.Flags().StringVar(&createQueryReq.Query, "query", "", `The text of the query.`)
 	createQueryCmd.Flags().StringVar(&createQueryReq.QueryId, "query-id", "", ``)
 	// TODO: complex arg: schedule
@@ -183,7 +183,7 @@ func init() {
 	updateQueryCmd.Flags().StringVar(&updateQueryReq.DataSourceId, "data-source-id", "", `The ID of the data source / SQL warehouse where this query will run.`)
 	updateQueryCmd.Flags().StringVar(&updateQueryReq.Description, "description", "", `General description that can convey additional information about this query such as usage notes.`)
 	updateQueryCmd.Flags().StringVar(&updateQueryReq.Name, "name", "", `The name or title of this query to display in list views.`)
-	// TODO: complex arg: options
+	// TODO: any: options
 	updateQueryCmd.Flags().StringVar(&updateQueryReq.Query, "query", "", `The text of the query.`)
 	updateQueryCmd.Flags().StringVar(&updateQueryReq.QueryId, "query-id", "", ``)
 	// TODO: complex arg: schedule

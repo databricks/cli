@@ -20,8 +20,8 @@ func init() {
 
 	// TODO: complex arg: gcp_network_info
 	createCmd.Flags().StringVar(&createReq.NetworkName, "network-name", "", `The human-readable name of the network configuration.`)
-	// TODO: complex arg: security_group_ids
-	// TODO: complex arg: subnet_ids
+	// TODO: array: security_group_ids
+	// TODO: array: subnet_ids
 	// TODO: complex arg: vpc_endpoints
 	createCmd.Flags().StringVar(&createReq.VpcId, "vpc-id", "", `The ID of the VPC associated with this network.`)
 

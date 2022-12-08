@@ -21,7 +21,7 @@ func init() {
 	createScopeCmd.Flags().StringVar(&createScopeReq.InitialManagePrincipal, "initial-manage-principal", "", `The principal that is initially granted MANAGE permission to the created scope.`)
 	// TODO: complex arg: keyvault_metadata
 	createScopeCmd.Flags().StringVar(&createScopeReq.Scope, "scope", "", `Scope name requested by the user.`)
-	// TODO: complex arg: scope_backend_type
+	createScopeCmd.Flags().Var(&createScopeReq.ScopeBackendType, "scope-backend-type", `The backend type the scope will be created with.`)
 
 }
 
@@ -259,7 +259,7 @@ func init() {
 	Cmd.AddCommand(putAclCmd)
 	// TODO: short flags
 
-	// TODO: complex arg: permission
+	putAclCmd.Flags().Var(&putAclReq.Permission, "permission", `The permission level applied to the principal.`)
 	putAclCmd.Flags().StringVar(&putAclReq.Principal, "principal", "", `The principal in which the permission is applied.`)
 	putAclCmd.Flags().StringVar(&putAclReq.Scope, "scope", "", `The name of the scope to apply permissions to.`)
 

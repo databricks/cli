@@ -26,8 +26,8 @@ func init() {
 	createCmd.Flags().StringVar(&createReq.MetastoreId, "metastore-id", "", `[Create,Update:IGN] Unique identifier of parent Metastore.`)
 	createCmd.Flags().StringVar(&createReq.Name, "name", "", `[Create:REQ Update:OPT] Name of Schema, relative to parent Catalog.`)
 	createCmd.Flags().StringVar(&createReq.Owner, "owner", "", `[Create:IGN Update:OPT] Username of current owner of Schema.`)
-	// TODO: complex arg: privileges
-	// TODO: complex arg: properties
+	// TODO: array: privileges
+	// TODO: array: properties
 	createCmd.Flags().Int64Var(&createReq.UpdatedAt, "updated-at", 0, `[Create,Update:IGN] Time at which this Schema was created, in epoch milliseconds.`)
 	createCmd.Flags().StringVar(&createReq.UpdatedBy, "updated-by", "", `[Create,Update:IGN] Username of user who last modified Schema.`)
 
@@ -163,8 +163,8 @@ func init() {
 	updateCmd.Flags().StringVar(&updateReq.MetastoreId, "metastore-id", "", `[Create,Update:IGN] Unique identifier of parent Metastore.`)
 	updateCmd.Flags().StringVar(&updateReq.Name, "name", "", `[Create:REQ Update:OPT] Name of Schema, relative to parent Catalog.`)
 	updateCmd.Flags().StringVar(&updateReq.Owner, "owner", "", `[Create:IGN Update:OPT] Username of current owner of Schema.`)
-	// TODO: complex arg: privileges
-	// TODO: complex arg: properties
+	// TODO: array: privileges
+	// TODO: array: properties
 	updateCmd.Flags().Int64Var(&updateReq.UpdatedAt, "updated-at", 0, `[Create,Update:IGN] Time at which this Schema was created, in epoch milliseconds.`)
 	updateCmd.Flags().StringVar(&updateReq.UpdatedBy, "updated-by", "", `[Create,Update:IGN] Username of user who last modified Schema.`)
 

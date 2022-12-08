@@ -19,7 +19,7 @@ func init() {
 
 	createCmd.Flags().StringVar(&createReq.ArtifactLocation, "artifact-location", "", `Location where all artifacts for the experiment are stored.`)
 	createCmd.Flags().StringVar(&createReq.Name, "name", "", `Experiment name.`)
-	// TODO: complex arg: tags
+	// TODO: array: tags
 
 }
 
@@ -209,9 +209,9 @@ func init() {
 
 	searchCmd.Flags().StringVar(&searchReq.Filter, "filter", "", `String representing a SQL filter condition (e.g.`)
 	searchCmd.Flags().Int64Var(&searchReq.MaxResults, "max-results", 0, `Maximum number of experiments desired.`)
-	// TODO: complex arg: order_by
+	// TODO: array: order_by
 	searchCmd.Flags().StringVar(&searchReq.PageToken, "page-token", "", `Token indicating the page of experiments to fetch.`)
-	// TODO: complex arg: view_type
+	searchCmd.Flags().Var(&searchReq.ViewType, "view-type", `Qualifier for type of experiments to be returned.`)
 
 }
 

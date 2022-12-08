@@ -24,12 +24,12 @@ func init() {
     {{if .Request}}// TODO: short flags
     {{$method := .}}
     {{range .Request.Fields -}}
-        {{if .Entity.IsString }}{{$method.CamelName}}Cmd.Flags().{{template "arg-type" .Entity}}(&{{$method.CamelName}}Req.{{.PascalName}}, "{{.KebabName}}", {{template "type-default" .Entity}}, `{{.Summary | without "`"}}`)
-        {{else if .Entity.IsBool}}{{$method.CamelName}}Cmd.Flags().{{template "arg-type" .Entity}}(&{{$method.CamelName}}Req.{{.PascalName}}, "{{.KebabName}}", {{template "type-default" .Entity}}, `{{.Summary | without "`"}}`)
-        {{else if .Entity.IsInt64}}{{$method.CamelName}}Cmd.Flags().{{template "arg-type" .Entity}}(&{{$method.CamelName}}Req.{{.PascalName}}, "{{.KebabName}}", {{template "type-default" .Entity}}, `{{.Summary | without "`"}}`)
-        {{else if .Entity.IsFloat64}}{{$method.CamelName}}Cmd.Flags().{{template "arg-type" .Entity}}(&{{$method.CamelName}}Req.{{.PascalName}}, "{{.KebabName}}", {{template "type-default" .Entity}}, `{{.Summary | without "`"}}`)
-        {{else if .Entity.IsInt}}{{$method.CamelName}}Cmd.Flags().{{template "arg-type" .Entity}}(&{{$method.CamelName}}Req.{{.PascalName}}, "{{.KebabName}}", {{template "type-default" .Entity}}, `{{.Summary | without "`"}}`)
-        {{else}}// TODO: complex arg: {{.Name}}
+		{{if .Entity.IsObject }}// TODO: complex arg: {{.Name}}
+		{{else if .Entity.IsAny }}// TODO: any: {{.Name}}
+		{{else if .Entity.ArrayValue }}// TODO: array: {{.Name}}
+		{{else if .Entity.MapValue }}// TODO: map via StringToStringVar: {{.Name}}
+		{{else if .Entity.Enum }}{{$method.CamelName}}Cmd.Flags().Var(&{{$method.CamelName}}Req.{{.PascalName}}, "{{.KebabName}}", `{{.Summary | without "`"}}`)
+		{{else}}{{$method.CamelName}}Cmd.Flags().{{template "arg-type" .Entity}}(&{{$method.CamelName}}Req.{{.PascalName}}, "{{.KebabName}}", {{template "type-default" .Entity}}, `{{.Summary | without "`"}}`)
         {{end}}    
     {{- end}}
     {{end}}

@@ -86,7 +86,7 @@ func init() {
 	Cmd.AddCommand(setCmd)
 	// TODO: short flags
 
-	// TODO: complex arg: access_control_list
+	// TODO: array: access_control_list
 	setCmd.Flags().StringVar(&setReq.RequestObjectId, "request-object-id", "", ``)
 	setCmd.Flags().StringVar(&setReq.RequestObjectType, "request-object-type", "", `<needs content>.`)
 
@@ -115,7 +115,7 @@ func init() {
 	Cmd.AddCommand(updateCmd)
 	// TODO: short flags
 
-	// TODO: complex arg: access_control_list
+	// TODO: array: access_control_list
 	updateCmd.Flags().StringVar(&updateReq.RequestObjectId, "request-object-id", "", ``)
 	updateCmd.Flags().StringVar(&updateReq.RequestObjectType, "request-object-type", "", `<needs content>.`)
 

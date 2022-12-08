@@ -19,7 +19,7 @@ func init() {
 	// TODO: short flags
 
 	createCmd.Flags().BoolVar(&createReq.ActivatedByProvider, "activated-by-provider", false, `[Create,Update:IGN] Whether this provider is successfully activated by the data provider.`)
-	// TODO: complex arg: authentication_type
+	createCmd.Flags().Var(&createReq.AuthenticationType, "authentication-type", `[Create:REQ,Update:IGN] The delta sharing authentication type.`)
 	createCmd.Flags().StringVar(&createReq.Comment, "comment", "", `[Create,Update:OPT] Description about the provider.`)
 	createCmd.Flags().Int64Var(&createReq.CreatedAt, "created-at", 0, `[Create,Update:IGN] Time at which this Provider was created, in epoch milliseconds.`)
 	createCmd.Flags().StringVar(&createReq.CreatedBy, "created-by", "", `[Create,Update:IGN] Username of Provider creator.`)
@@ -188,7 +188,7 @@ func init() {
 	// TODO: short flags
 
 	updateCmd.Flags().BoolVar(&updateReq.ActivatedByProvider, "activated-by-provider", false, `[Create,Update:IGN] Whether this provider is successfully activated by the data provider.`)
-	// TODO: complex arg: authentication_type
+	updateCmd.Flags().Var(&updateReq.AuthenticationType, "authentication-type", `[Create:REQ,Update:IGN] The delta sharing authentication type.`)
 	updateCmd.Flags().StringVar(&updateReq.Comment, "comment", "", `[Create,Update:OPT] Description about the provider.`)
 	updateCmd.Flags().Int64Var(&updateReq.CreatedAt, "created-at", 0, `[Create,Update:IGN] Time at which this Provider was created, in epoch milliseconds.`)
 	updateCmd.Flags().StringVar(&updateReq.CreatedBy, "created-by", "", `[Create,Update:IGN] Username of Provider creator.`)

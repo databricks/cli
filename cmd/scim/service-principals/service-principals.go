@@ -21,11 +21,11 @@ func init() {
 	createCmd.Flags().BoolVar(&createReq.Active, "active", false, `If this user is active.`)
 	createCmd.Flags().StringVar(&createReq.ApplicationId, "application-id", "", `UUID relating to the service principal.`)
 	createCmd.Flags().StringVar(&createReq.DisplayName, "display-name", "", `String that represents a concatenation of given and family names.`)
-	// TODO: complex arg: entitlements
+	// TODO: array: entitlements
 	createCmd.Flags().StringVar(&createReq.ExternalId, "external-id", "", ``)
-	// TODO: complex arg: groups
+	// TODO: array: groups
 	createCmd.Flags().StringVar(&createReq.Id, "id", "", `Databricks service principal ID.`)
-	// TODO: complex arg: roles
+	// TODO: array: roles
 
 }
 
@@ -123,7 +123,7 @@ func init() {
 	listCmd.Flags().StringVar(&listReq.ExcludedAttributes, "excluded-attributes", "", `Comma-separated list of attributes to exclude in response.`)
 	listCmd.Flags().StringVar(&listReq.Filter, "filter", "", `Query by which the results have to be filtered.`)
 	listCmd.Flags().StringVar(&listReq.SortBy, "sort-by", "", `Attribute to sort the results.`)
-	// TODO: complex arg: sortOrder
+	listCmd.Flags().Var(&listReq.SortOrder, "sort-order", `The order to sort the results.`)
 	listCmd.Flags().IntVar(&listReq.StartIndex, "start-index", 0, `Specifies the index of the first result.`)
 
 }
@@ -158,7 +158,7 @@ func init() {
 	// TODO: short flags
 
 	patchCmd.Flags().StringVar(&patchReq.Id, "id", "", `Unique ID for a group in the Databricks Account.`)
-	// TODO: complex arg: operations
+	// TODO: array: operations
 
 }
 
@@ -188,11 +188,11 @@ func init() {
 	updateCmd.Flags().BoolVar(&updateReq.Active, "active", false, `If this user is active.`)
 	updateCmd.Flags().StringVar(&updateReq.ApplicationId, "application-id", "", `UUID relating to the service principal.`)
 	updateCmd.Flags().StringVar(&updateReq.DisplayName, "display-name", "", `String that represents a concatenation of given and family names.`)
-	// TODO: complex arg: entitlements
+	// TODO: array: entitlements
 	updateCmd.Flags().StringVar(&updateReq.ExternalId, "external-id", "", ``)
-	// TODO: complex arg: groups
+	// TODO: array: groups
 	updateCmd.Flags().StringVar(&updateReq.Id, "id", "", `Databricks service principal ID.`)
-	// TODO: complex arg: roles
+	// TODO: array: roles
 
 }
 

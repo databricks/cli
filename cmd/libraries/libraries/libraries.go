@@ -80,7 +80,7 @@ func init() {
 	// TODO: short flags
 
 	installCmd.Flags().StringVar(&installReq.ClusterId, "cluster-id", "", `Unique identifier for the cluster on which to install these libraries.`)
-	// TODO: complex arg: libraries
+	// TODO: array: libraries
 
 }
 
@@ -108,7 +108,7 @@ func init() {
 	// TODO: short flags
 
 	uninstallCmd.Flags().StringVar(&uninstallReq.ClusterId, "cluster-id", "", `Unique identifier for the cluster on which to uninstall these libraries.`)
-	// TODO: complex arg: libraries
+	// TODO: array: libraries
 
 }
 

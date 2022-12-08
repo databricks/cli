@@ -18,8 +18,8 @@ func init() {
 	Cmd.AddCommand(createCmd)
 	// TODO: short flags
 
-	// TODO: complex arg: allowed_vpc_endpoint_ids
-	// TODO: complex arg: private_access_level
+	// TODO: array: allowed_vpc_endpoint_ids
+	createCmd.Flags().Var(&createReq.PrivateAccessLevel, "private-access-level", `The private access level controls which VPC endpoints can connect to the UI or API of any workspace that attaches this private access settings object.`)
 	createCmd.Flags().StringVar(&createReq.PrivateAccessSettingsId, "private-access-settings-id", "", `Databricks Account API private access settings ID.`)
 	createCmd.Flags().StringVar(&createReq.PrivateAccessSettingsName, "private-access-settings-name", "", `The human-readable name of the private access settings object.`)
 	createCmd.Flags().BoolVar(&createReq.PublicAccessEnabled, "public-access-enabled", false, `Determines if the workspace can be accessed over public internet.`)
@@ -144,8 +144,8 @@ func init() {
 	Cmd.AddCommand(replaceCmd)
 	// TODO: short flags
 
-	// TODO: complex arg: allowed_vpc_endpoint_ids
-	// TODO: complex arg: private_access_level
+	// TODO: array: allowed_vpc_endpoint_ids
+	replaceCmd.Flags().Var(&replaceReq.PrivateAccessLevel, "private-access-level", `The private access level controls which VPC endpoints can connect to the UI or API of any workspace that attaches this private access settings object.`)
 	replaceCmd.Flags().StringVar(&replaceReq.PrivateAccessSettingsId, "private-access-settings-id", "", `Databricks Account API private access settings ID.`)
 	replaceCmd.Flags().StringVar(&replaceReq.PrivateAccessSettingsName, "private-access-settings-name", "", `The human-readable name of the private access settings object.`)
 	replaceCmd.Flags().BoolVar(&replaceReq.PublicAccessEnabled, "public-access-enabled", false, `Determines if the workspace can be accessed over public internet.`)

@@ -18,7 +18,7 @@ func init() {
 	Cmd.AddCommand(createCmd)
 	// TODO: short flags
 
-	// TODO: complex arg: permission_assignments
+	// TODO: array: permission_assignments
 	createCmd.Flags().Int64Var(&createReq.WorkspaceId, "workspace-id", 0, `The workspace ID for the account.`)
 
 }
@@ -146,7 +146,7 @@ func init() {
 	Cmd.AddCommand(updateCmd)
 	// TODO: short flags
 
-	// TODO: complex arg: permissions
+	// TODO: array: permissions
 	updateCmd.Flags().Int64Var(&updateReq.PrincipalId, "principal-id", 0, `The ID of the service principal.`)
 	updateCmd.Flags().Int64Var(&updateReq.WorkspaceId, "workspace-id", 0, `The workspace ID.`)
 

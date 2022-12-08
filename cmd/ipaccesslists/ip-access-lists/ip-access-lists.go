@@ -18,9 +18,9 @@ func init() {
 	Cmd.AddCommand(createCmd)
 	// TODO: short flags
 
-	// TODO: complex arg: ip_addresses
+	// TODO: array: ip_addresses
 	createCmd.Flags().StringVar(&createReq.Label, "label", "", `Label for the IP access list.`)
-	// TODO: complex arg: list_type
+	createCmd.Flags().Var(&createReq.ListType, "list-type", `This describes an enum.`)
 
 }
 
@@ -143,10 +143,10 @@ func init() {
 
 	replaceCmd.Flags().BoolVar(&replaceReq.Enabled, "enabled", false, `Specifies whether this IP access list is enabled.`)
 	replaceCmd.Flags().StringVar(&replaceReq.IpAccessListId, "ip-access-list-id", "", `The ID for the corresponding IP access list to modify.`)
-	// TODO: complex arg: ip_addresses
+	// TODO: array: ip_addresses
 	replaceCmd.Flags().StringVar(&replaceReq.Label, "label", "", `Label for the IP access list.`)
 	replaceCmd.Flags().StringVar(&replaceReq.ListId, "list-id", "", `Universally unique identifier(UUID) of the IP access list.`)
-	// TODO: complex arg: list_type
+	replaceCmd.Flags().Var(&replaceReq.ListType, "list-type", `This describes an enum.`)
 
 }
 
@@ -175,10 +175,10 @@ func init() {
 
 	updateCmd.Flags().BoolVar(&updateReq.Enabled, "enabled", false, `Specifies whether this IP access list is enabled.`)
 	updateCmd.Flags().StringVar(&updateReq.IpAccessListId, "ip-access-list-id", "", `The ID for the corresponding IP access list to modify.`)
-	// TODO: complex arg: ip_addresses
+	// TODO: array: ip_addresses
 	updateCmd.Flags().StringVar(&updateReq.Label, "label", "", `Label for the IP access list.`)
 	updateCmd.Flags().StringVar(&updateReq.ListId, "list-id", "", `Universally unique identifier(UUID) of the IP access list.`)
-	// TODO: complex arg: list_type
+	updateCmd.Flags().Var(&updateReq.ListType, "list-type", `This describes an enum.`)
 
 }
 

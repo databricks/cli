@@ -55,7 +55,7 @@ func init() {
 	createCmd.Flags().StringVar(&createReq.MetastoreId, "metastore-id", "", `[Create,Update:IGN] Unique identifier of Metastore.`)
 	createCmd.Flags().StringVar(&createReq.Name, "name", "", `[Create:REQ Update:OPT] Name of Metastore.`)
 	createCmd.Flags().StringVar(&createReq.Owner, "owner", "", `[Create:IGN Update:OPT] The owner of the metastore.`)
-	// TODO: complex arg: privileges
+	// TODO: array: privileges
 	createCmd.Flags().StringVar(&createReq.Region, "region", "", `The region this metastore has an afinity to.`)
 	createCmd.Flags().StringVar(&createReq.StorageRoot, "storage-root", "", `[Create:REQ Update:ERR] Storage root URL for Metastore.`)
 	createCmd.Flags().StringVar(&createReq.StorageRootCredentialId, "storage-root-credential-id", "", `[Create:IGN Update:OPT] UUID of storage credential to access storage_root.`)
@@ -247,7 +247,7 @@ func init() {
 	updateCmd.Flags().StringVar(&updateReq.MetastoreId, "metastore-id", "", `[Create,Update:IGN] Unique identifier of Metastore.`)
 	updateCmd.Flags().StringVar(&updateReq.Name, "name", "", `[Create:REQ Update:OPT] Name of Metastore.`)
 	updateCmd.Flags().StringVar(&updateReq.Owner, "owner", "", `[Create:IGN Update:OPT] The owner of the metastore.`)
-	// TODO: complex arg: privileges
+	// TODO: array: privileges
 	updateCmd.Flags().StringVar(&updateReq.Region, "region", "", `The region this metastore has an afinity to.`)
 	updateCmd.Flags().StringVar(&updateReq.StorageRoot, "storage-root", "", `[Create:REQ Update:ERR] Storage root URL for Metastore.`)
 	updateCmd.Flags().StringVar(&updateReq.StorageRootCredentialId, "storage-root-credential-id", "", `[Create:IGN Update:OPT] UUID of storage credential to access storage_root.`)

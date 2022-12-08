@@ -22,8 +22,8 @@ func init() {
 	createDashboardCmd.Flags().BoolVar(&createDashboardReq.IsDraft, "is-draft", false, `Draft dashboards only appear in list views for their owners.`)
 	createDashboardCmd.Flags().BoolVar(&createDashboardReq.IsTrashed, "is-trashed", false, `Indicates whether the dashboard is trashed.`)
 	createDashboardCmd.Flags().StringVar(&createDashboardReq.Name, "name", "", `The title of this dashboard that appears in list views and at the top of the dashboard page.`)
-	// TODO: complex arg: tags
-	// TODO: complex arg: widgets
+	// TODO: array: tags
+	// TODO: array: widgets
 
 }
 
@@ -116,7 +116,7 @@ func init() {
 	Cmd.AddCommand(listDashboardsCmd)
 	// TODO: short flags
 
-	// TODO: complex arg: order
+	listDashboardsCmd.Flags().Var(&listDashboardsReq.Order, "order", `Name of dashboard attribute to order by.`)
 	listDashboardsCmd.Flags().IntVar(&listDashboardsReq.Page, "page", 0, `Page number to retrieve.`)
 	listDashboardsCmd.Flags().IntVar(&listDashboardsReq.PageSize, "page-size", 0, `Number of dashboards to return per page.`)
 	listDashboardsCmd.Flags().StringVar(&listDashboardsReq.Q, "q", "", `Full text search term.`)

@@ -53,8 +53,8 @@ func init() {
 	// TODO: complex arg: azure_attributes
 	// TODO: complex arg: cluster_log_conf
 	createCmd.Flags().StringVar(&createReq.ClusterName, "cluster-name", "", `Cluster name requested by the user.`)
-	// TODO: complex arg: cluster_source
-	// TODO: complex arg: custom_tags
+	createCmd.Flags().Var(&createReq.ClusterSource, "cluster-source", `Determines whether the cluster was created by a user through the UI, created by the Databricks Jobs Scheduler, or through an API request.`)
+	// TODO: map via StringToStringVar: custom_tags
 	createCmd.Flags().StringVar(&createReq.DriverInstancePoolId, "driver-instance-pool-id", "", `The optional ID of the instance pool for the driver of the cluster belongs.`)
 	createCmd.Flags().StringVar(&createReq.DriverNodeTypeId, "driver-node-type-id", "", `The node type of the Spark driver.`)
 	createCmd.Flags().StringVar(&createReq.EffectiveSparkVersion, "effective-spark-version", "", `The key of the spark version running in the dataplane.`)
@@ -65,11 +65,11 @@ func init() {
 	createCmd.Flags().StringVar(&createReq.NodeTypeId, "node-type-id", "", `This field encodes, through a single value, the resources available to each of the Spark nodes in this cluster.`)
 	createCmd.Flags().IntVar(&createReq.NumWorkers, "num-workers", 0, `Number of worker nodes that this cluster should have.`)
 	createCmd.Flags().StringVar(&createReq.PolicyId, "policy-id", "", `The ID of the cluster policy used to create the cluster if applicable.`)
-	// TODO: complex arg: runtime_engine
-	// TODO: complex arg: spark_conf
-	// TODO: complex arg: spark_env_vars
+	createCmd.Flags().Var(&createReq.RuntimeEngine, "runtime-engine", `Decides which runtime engine to be use, e.g.`)
+	// TODO: map via StringToStringVar: spark_conf
+	// TODO: map via StringToStringVar: spark_env_vars
 	createCmd.Flags().StringVar(&createReq.SparkVersion, "spark-version", "", `The Spark version of the cluster, e.g.`)
-	// TODO: complex arg: ssh_public_keys
+	// TODO: array: ssh_public_keys
 	// TODO: complex arg: workload_type
 
 }
@@ -138,8 +138,8 @@ func init() {
 	editCmd.Flags().StringVar(&editReq.ClusterId, "cluster-id", "", `<needs content added>.`)
 	// TODO: complex arg: cluster_log_conf
 	editCmd.Flags().StringVar(&editReq.ClusterName, "cluster-name", "", `Cluster name requested by the user.`)
-	// TODO: complex arg: cluster_source
-	// TODO: complex arg: custom_tags
+	editCmd.Flags().Var(&editReq.ClusterSource, "cluster-source", `Determines whether the cluster was created by a user through the UI, created by the Databricks Jobs Scheduler, or through an API request.`)
+	// TODO: map via StringToStringVar: custom_tags
 	editCmd.Flags().StringVar(&editReq.DriverInstancePoolId, "driver-instance-pool-id", "", `The optional ID of the instance pool for the driver of the cluster belongs.`)
 	editCmd.Flags().StringVar(&editReq.DriverNodeTypeId, "driver-node-type-id", "", `The node type of the Spark driver.`)
 	editCmd.Flags().StringVar(&editReq.EffectiveSparkVersion, "effective-spark-version", "", `The key of the spark version running in the dataplane.`)
@@ -150,11 +150,11 @@ func init() {
 	editCmd.Flags().StringVar(&editReq.NodeTypeId, "node-type-id", "", `This field encodes, through a single value, the resources available to each of the Spark nodes in this cluster.`)
 	editCmd.Flags().IntVar(&editReq.NumWorkers, "num-workers", 0, `Number of worker nodes that this cluster should have.`)
 	editCmd.Flags().StringVar(&editReq.PolicyId, "policy-id", "", `The ID of the cluster policy used to create the cluster if applicable.`)
-	// TODO: complex arg: runtime_engine
-	// TODO: complex arg: spark_conf
-	// TODO: complex arg: spark_env_vars
+	editCmd.Flags().Var(&editReq.RuntimeEngine, "runtime-engine", `Decides which runtime engine to be use, e.g.`)
+	// TODO: map via StringToStringVar: spark_conf
+	// TODO: map via StringToStringVar: spark_env_vars
 	editCmd.Flags().StringVar(&editReq.SparkVersion, "spark-version", "", `The Spark version of the cluster, e.g.`)
-	// TODO: complex arg: ssh_public_keys
+	// TODO: array: ssh_public_keys
 	// TODO: complex arg: workload_type
 
 }
@@ -184,10 +184,10 @@ func init() {
 
 	eventsCmd.Flags().StringVar(&eventsReq.ClusterId, "cluster-id", "", `The ID of the cluster to retrieve events about.`)
 	eventsCmd.Flags().Int64Var(&eventsReq.EndTime, "end-time", 0, `The end time in epoch milliseconds.`)
-	// TODO: complex arg: event_types
+	// TODO: array: event_types
 	eventsCmd.Flags().Int64Var(&eventsReq.Limit, "limit", 0, `The maximum number of events to include in a page of events.`)
 	eventsCmd.Flags().Int64Var(&eventsReq.Offset, "offset", 0, `The offset in the result set.`)
-	// TODO: complex arg: order
+	eventsCmd.Flags().Var(&eventsReq.Order, "order", `The order to list events in; either "ASC" or "DESC".`)
 	eventsCmd.Flags().Int64Var(&eventsReq.StartTime, "start-time", 0, `The start time in epoch milliseconds.`)
 
 }

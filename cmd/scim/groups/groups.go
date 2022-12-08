@@ -19,12 +19,12 @@ func init() {
 	// TODO: short flags
 
 	createCmd.Flags().StringVar(&createReq.DisplayName, "display-name", "", `String that represents a human-readable group name.`)
-	// TODO: complex arg: entitlements
+	// TODO: array: entitlements
 	createCmd.Flags().StringVar(&createReq.ExternalId, "external-id", "", ``)
-	// TODO: complex arg: groups
+	// TODO: array: groups
 	createCmd.Flags().StringVar(&createReq.Id, "id", "", `Databricks group ID.`)
-	// TODO: complex arg: members
-	// TODO: complex arg: roles
+	// TODO: array: members
+	// TODO: array: roles
 
 }
 
@@ -122,7 +122,7 @@ func init() {
 	listCmd.Flags().StringVar(&listReq.ExcludedAttributes, "excluded-attributes", "", `Comma-separated list of attributes to exclude in response.`)
 	listCmd.Flags().StringVar(&listReq.Filter, "filter", "", `Query by which the results have to be filtered.`)
 	listCmd.Flags().StringVar(&listReq.SortBy, "sort-by", "", `Attribute to sort the results.`)
-	// TODO: complex arg: sortOrder
+	listCmd.Flags().Var(&listReq.SortOrder, "sort-order", `The order to sort the results.`)
 	listCmd.Flags().IntVar(&listReq.StartIndex, "start-index", 0, `Specifies the index of the first result.`)
 
 }
@@ -157,7 +157,7 @@ func init() {
 	// TODO: short flags
 
 	patchCmd.Flags().StringVar(&patchReq.Id, "id", "", `Unique ID for a group in the Databricks Account.`)
-	// TODO: complex arg: operations
+	// TODO: array: operations
 
 }
 
@@ -185,12 +185,12 @@ func init() {
 	// TODO: short flags
 
 	updateCmd.Flags().StringVar(&updateReq.DisplayName, "display-name", "", `String that represents a human-readable group name.`)
-	// TODO: complex arg: entitlements
+	// TODO: array: entitlements
 	updateCmd.Flags().StringVar(&updateReq.ExternalId, "external-id", "", ``)
-	// TODO: complex arg: groups
+	// TODO: array: groups
 	updateCmd.Flags().StringVar(&updateReq.Id, "id", "", `Databricks group ID.`)
-	// TODO: complex arg: members
-	// TODO: complex arg: roles
+	// TODO: array: members
+	// TODO: array: roles
 
 }
 
