@@ -1,6 +1,7 @@
 package sdk
 
 import (
+	"context"
 	"errors"
 	"os"
 
@@ -10,7 +11,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/service/scim"
 	"github.com/spf13/cobra"
-	"golang.org/x/net/context"
 )
 
 // Placeholders to use as unique keys in context.Context.
