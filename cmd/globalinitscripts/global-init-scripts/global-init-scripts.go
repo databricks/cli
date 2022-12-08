@@ -9,7 +9,7 @@ import (
 
 var Cmd = &cobra.Command{
 	Use:   "global-init-scripts",
-	Short: `The Global Init Scripts API enables Workspace administrators to configure global initialization scripts for their workspace.`, // TODO: fix FirstSentence logic and append dot to summary
+	Short: `The Global Init Scripts API enables Workspace administrators to configure global initialization scripts for their workspace.`,
 }
 
 var createScriptReq globalinitscripts.GlobalInitScriptCreateRequest
@@ -27,7 +27,7 @@ func init() {
 
 var createScriptCmd = &cobra.Command{
 	Use:   "create-script",
-	Short: `Create init script Creates a new global init script in this workspace.`, // TODO: fix logic
+	Short: `Create init script.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -60,7 +60,7 @@ func init() {
 
 var deleteScriptCmd = &cobra.Command{
 	Use:   "delete-script",
-	Short: `Delete init script Deletes a global init script.`, // TODO: fix logic
+	Short: `Delete init script.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -87,7 +87,7 @@ func init() {
 
 var getScriptCmd = &cobra.Command{
 	Use:   "get-script",
-	Short: `Get an init script Gets all the details of a script, including its Base64-encoded contents.`, // TODO: fix logic
+	Short: `Get an init script.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -115,7 +115,7 @@ func init() {
 
 var listScriptsCmd = &cobra.Command{
 	Use:   "list-scripts",
-	Short: `Get init scripts "Get a list of all global init scripts for this workspace.`, // TODO: fix logic
+	Short: `Get init scripts.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -152,7 +152,7 @@ func init() {
 
 var updateScriptCmd = &cobra.Command{
 	Use:   "update-script",
-	Short: `Update init script Updates a global init script, specifying only the fields to change.`, // TODO: fix logic
+	Short: `Update init script.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {

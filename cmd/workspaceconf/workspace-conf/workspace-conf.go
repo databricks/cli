@@ -9,7 +9,7 @@ import (
 
 var Cmd = &cobra.Command{
 	Use:   "workspace-conf",
-	Short: `This API allows updating known workspace settings for advanced users.`, // TODO: fix FirstSentence logic and append dot to summary
+	Short: `This API allows updating known workspace settings for advanced users.`,
 }
 
 var getStatusReq workspaceconf.GetStatus
@@ -24,7 +24,7 @@ func init() {
 
 var getStatusCmd = &cobra.Command{
 	Use:   "get-status",
-	Short: `Check configuration status Gets the configuration status for a workspace.`, // TODO: fix logic
+	Short: `Check configuration status.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -55,7 +55,7 @@ func init() {
 
 var setStatusCmd = &cobra.Command{
 	Use:   "set-status",
-	Short: `Enable/disable features Sets the configuration status for a workspace, including enabling or disabling it.`, // TODO: fix logic
+	Short: `Enable/disable features.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {

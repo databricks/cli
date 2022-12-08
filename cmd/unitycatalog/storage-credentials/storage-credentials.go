@@ -9,7 +9,7 @@ import (
 
 var Cmd = &cobra.Command{
 	Use:   "storage-credentials",
-	Short: `A storage credential represents an authentication and authorization mechanism for accessing data stored on your cloud tenant, using an IAM role.`, // TODO: fix FirstSentence logic and append dot to summary
+	Short: `A storage credential represents an authentication and authorization mechanism for accessing data stored on your cloud tenant, using an IAM role.`,
 }
 
 var createReq unitycatalog.CreateStorageCredential
@@ -36,7 +36,7 @@ func init() {
 
 var createCmd = &cobra.Command{
 	Use:   "create",
-	Short: `Create credentials Creates a new storage credential.`, // TODO: fix logic
+	Short: `Create credentials.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -70,7 +70,7 @@ func init() {
 
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
-	Short: `Delete a credential Deletes a storage credential from the Metastore.`, // TODO: fix logic
+	Short: `Delete a credential.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -97,7 +97,7 @@ func init() {
 
 var getCmd = &cobra.Command{
 	Use:   "get",
-	Short: `Get a credential Gets a storage credential from the Metastore.`, // TODO: fix logic
+	Short: `Get a credential.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -125,7 +125,7 @@ func init() {
 
 var listCmd = &cobra.Command{
 	Use:   "list",
-	Short: `List credentials Gets an array of storage credentials (as StorageCredentialInfo objects).`, // TODO: fix logic
+	Short: `List credentials.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -170,7 +170,7 @@ func init() {
 
 var updateCmd = &cobra.Command{
 	Use:   "update",
-	Short: `Update a credential Updates a storage credential on the Metastore.`, // TODO: fix logic
+	Short: `Update a credential.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {

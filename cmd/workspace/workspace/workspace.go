@@ -9,7 +9,7 @@ import (
 
 var Cmd = &cobra.Command{
 	Use:   "workspace",
-	Short: `The Workspace API allows you to list, import, export, and delete notebooks and folders.`, // TODO: fix FirstSentence logic and append dot to summary
+	Short: `The Workspace API allows you to list, import, export, and delete notebooks and folders.`,
 }
 
 var deleteReq workspace.Delete
@@ -25,7 +25,7 @@ func init() {
 
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
-	Short: `Delete a workspace object Deletes an object or a directory (and optionally recursively deletes all objects in the directory).`, // TODO: fix logic
+	Short: `Delete a workspace object.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -54,7 +54,7 @@ func init() {
 
 var exportCmd = &cobra.Command{
 	Use:   "export",
-	Short: `Export a notebook Exports a notebook or the contents of an entire directory.`, // TODO: fix logic
+	Short: `Export a notebook.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -87,7 +87,7 @@ func init() {
 
 var getStatusCmd = &cobra.Command{
 	Use:   "get-status",
-	Short: `Get status Gets the status of an object or a directory.`, // TODO: fix logic
+	Short: `Get status.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -124,7 +124,7 @@ func init() {
 
 var importCmd = &cobra.Command{
 	Use:   "import",
-	Short: `Import a notebook Imports a notebook or the contents of an entire directory.`, // TODO: fix logic
+	Short: `Import a notebook.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -152,7 +152,7 @@ func init() {
 
 var listCmd = &cobra.Command{
 	Use:   "list",
-	Short: `List contents Lists the contents of a directory, or the object if it is not a directory.If the input path does not exist, this call returns an error RESOURCE_DOES_NOT_EXIST.`, // TODO: fix logic
+	Short: `List contents.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -185,7 +185,7 @@ func init() {
 
 var mkdirsCmd = &cobra.Command{
 	Use:   "mkdirs",
-	Short: `Create a directory Creates the specified directory (and necessary parent directories if they do not exist).`, // TODO: fix logic
+	Short: `Create a directory.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {

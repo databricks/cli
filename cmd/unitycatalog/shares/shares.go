@@ -9,7 +9,7 @@ import (
 
 var Cmd = &cobra.Command{
 	Use:   "shares",
-	Short: `Databricks Delta Sharing: Shares REST API.`, // TODO: fix FirstSentence logic and append dot to summary
+	Short: `Databricks Delta Sharing: Shares REST API.`,
 }
 
 var createReq unitycatalog.CreateShare
@@ -28,7 +28,7 @@ func init() {
 
 var createCmd = &cobra.Command{
 	Use:   "create",
-	Short: `Create a share Creates a new share for data objects.`, // TODO: fix logic
+	Short: `Create a share.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -61,7 +61,7 @@ func init() {
 
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
-	Short: `Delete a share Deletes a data object share from the Metastore.`, // TODO: fix logic
+	Short: `Delete a share.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -89,7 +89,7 @@ func init() {
 
 var getCmd = &cobra.Command{
 	Use:   "get",
-	Short: `Get a share Gets a data object share from the Metastore.`, // TODO: fix logic
+	Short: `Get a share.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -117,7 +117,7 @@ func init() {
 
 var listCmd = &cobra.Command{
 	Use:   "list",
-	Short: `List shares Gets an array of data object shares from the Metastore.`, // TODO: fix logic
+	Short: `List shares.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -150,7 +150,7 @@ func init() {
 
 var sharePermissionsCmd = &cobra.Command{
 	Use:   "share-permissions",
-	Short: `Get permissions Gets the permissions for a data share from the Metastore.`, // TODO: fix logic
+	Short: `Get permissions.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -184,7 +184,7 @@ func init() {
 
 var updateCmd = &cobra.Command{
 	Use:   "update",
-	Short: `Update a share Updates the share with the changes and data objects in the request.`, // TODO: fix logic
+	Short: `Update a share.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -212,7 +212,7 @@ func init() {
 
 var updatePermissionsCmd = &cobra.Command{
 	Use:   "update-permissions",
-	Short: `Update permissions Updates the permissions for a data share in the Metastore.`, // TODO: fix logic
+	Short: `Update permissions.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {

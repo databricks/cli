@@ -9,7 +9,7 @@ import (
 
 var Cmd = &cobra.Command{
 	Use:   "account-groups",
-	Short: `Groups simplify identity management, making it easier to assign access to Databricks Account, data, and other securable objects.`, // TODO: fix FirstSentence logic and append dot to summary
+	Short: `Groups simplify identity management, making it easier to assign access to Databricks Account, data, and other securable objects.`,
 }
 
 var createReq scim.Group
@@ -30,7 +30,7 @@ func init() {
 
 var createCmd = &cobra.Command{
 	Use:   "create",
-	Short: `Create a new group Creates a group in the Databricks Account with a unique name, using the supplied group details.`, // TODO: fix logic
+	Short: `Create a new group.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -63,7 +63,7 @@ func init() {
 
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
-	Short: `Delete a group Deletes a group from the Databricks Account.`, // TODO: fix logic
+	Short: `Delete a group.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -90,7 +90,7 @@ func init() {
 
 var getCmd = &cobra.Command{
 	Use:   "get",
-	Short: `Get group details Gets the information for a specific group in the Databricks Account.`, // TODO: fix logic
+	Short: `Get group details.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -129,7 +129,7 @@ func init() {
 
 var listCmd = &cobra.Command{
 	Use:   "list",
-	Short: `List group details Gets all details of the groups associated with the Databricks Account.`, // TODO: fix logic
+	Short: `List group details.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -163,7 +163,7 @@ func init() {
 
 var patchCmd = &cobra.Command{
 	Use:   "patch",
-	Short: `Update group details Partially updates the details of a group.`, // TODO: fix logic
+	Short: `Update group details.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -196,7 +196,7 @@ func init() {
 
 var updateCmd = &cobra.Command{
 	Use:   "update",
-	Short: `Replace a group Updates the details of a group by replacing the entire group entity.`, // TODO: fix logic
+	Short: `Replace a group.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {

@@ -9,7 +9,7 @@ import (
 
 var Cmd = &cobra.Command{
 	Use:   "token-management",
-	Short: `Enables administrators to get all tokens and delete tokens for other users.`, // TODO: fix FirstSentence logic and append dot to summary
+	Short: `Enables administrators to get all tokens and delete tokens for other users.`,
 }
 
 var createOboTokenReq tokenmanagement.CreateOboTokenRequest
@@ -26,7 +26,7 @@ func init() {
 
 var createOboTokenCmd = &cobra.Command{
 	Use:   "create-obo-token",
-	Short: `Create on-behalf token Creates a token on behalf of a service principal.`, // TODO: fix logic
+	Short: `Create on-behalf token.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -59,7 +59,7 @@ func init() {
 
 var deleteTokenCmd = &cobra.Command{
 	Use:   "delete-token",
-	Short: `Delete a token Deletes a token, specified by its ID.`, // TODO: fix logic
+	Short: `Delete a token.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -86,7 +86,7 @@ func init() {
 
 var getTokenInfoCmd = &cobra.Command{
 	Use:   "get-token-info",
-	Short: `Get token info Gets information about a token, specified by its ID.`, // TODO: fix logic
+	Short: `Get token info.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -120,7 +120,7 @@ func init() {
 
 var listTokensCmd = &cobra.Command{
 	Use:   "list-tokens",
-	Short: `List all tokens Lists all tokens associated with the specified workspace or user.`, // TODO: fix logic
+	Short: `List all tokens.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {

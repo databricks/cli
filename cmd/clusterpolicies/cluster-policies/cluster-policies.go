@@ -9,7 +9,7 @@ import (
 
 var Cmd = &cobra.Command{
 	Use:   "cluster-policies",
-	Short: `Cluster policy limits the ability to configure clusters based on a set of rules.`, // TODO: fix FirstSentence logic and append dot to summary
+	Short: `Cluster policy limits the ability to configure clusters based on a set of rules.`,
 }
 
 var createReq clusterpolicies.CreatePolicy
@@ -25,7 +25,7 @@ func init() {
 
 var createCmd = &cobra.Command{
 	Use:   "create",
-	Short: `Create a new policy Creates a new policy with prescribed settings.`, // TODO: fix logic
+	Short: `Create a new policy.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -58,7 +58,7 @@ func init() {
 
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
-	Short: `Delete a cluster policy Delete a policy for a cluster.`, // TODO: fix logic
+	Short: `Delete a cluster policy.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -87,7 +87,7 @@ func init() {
 
 var editCmd = &cobra.Command{
 	Use:   "edit",
-	Short: `Update a cluster policy Update an existing policy for cluster.`, // TODO: fix logic
+	Short: `Update a cluster policy.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -114,7 +114,7 @@ func init() {
 
 var getCmd = &cobra.Command{
 	Use:   "get",
-	Short: `Get entity Get a cluster policy entity.`, // TODO: fix logic
+	Short: `Get entity.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -142,7 +142,7 @@ func init() {
 
 var listCmd = &cobra.Command{
 	Use:   "list",
-	Short: `Get a cluster policy Returns a list of policies accessible by the requesting user.`, // TODO: fix logic
+	Short: `Get a cluster policy.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {

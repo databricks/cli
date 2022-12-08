@@ -8,7 +8,7 @@ import (
 
 var Cmd = &cobra.Command{
 	Use:   "current-user",
-	Short: `This API allows retrieving information about currently authenticated user or service principal.`, // TODO: fix FirstSentence logic and append dot to summary
+	Short: `This API allows retrieving information about currently authenticated user or service principal.`,
 }
 
 func init() {
@@ -18,7 +18,7 @@ func init() {
 
 var meCmd = &cobra.Command{
 	Use:   "me",
-	Short: `Get current user info Get details about the current method caller's identity.`, // TODO: fix logic
+	Short: `Get current user info.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {

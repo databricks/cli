@@ -9,7 +9,7 @@ import (
 
 var Cmd = &cobra.Command{
 	Use:   "storage",
-	Short: `These APIs manage storage configurations for this workspace.`, // TODO: fix FirstSentence logic and append dot to summary
+	Short: `These APIs manage storage configurations for this workspace.`,
 }
 
 var createReq deployment.CreateStorageConfigurationRequest
@@ -25,7 +25,7 @@ func init() {
 
 var createCmd = &cobra.Command{
 	Use:   "create",
-	Short: `Create new storage configuration Creates new storage configuration for an account, specified by ID.`, // TODO: fix logic
+	Short: `Create new storage configuration.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -58,7 +58,7 @@ func init() {
 
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
-	Short: `Delete storage configuration Deletes a Databricks storage configuration.`, // TODO: fix logic
+	Short: `Delete storage configuration.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -85,7 +85,7 @@ func init() {
 
 var getCmd = &cobra.Command{
 	Use:   "get",
-	Short: `Get storage configuration Gets a Databricks storage configuration for an account, both specified by ID.`, // TODO: fix logic
+	Short: `Get storage configuration.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -113,7 +113,7 @@ func init() {
 
 var listCmd = &cobra.Command{
 	Use:   "list",
-	Short: `Get all storage configurations Gets a list of all Databricks storage configurations for your account, specified by ID.`, // TODO: fix logic
+	Short: `Get all storage configurations.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {

@@ -9,7 +9,7 @@ import (
 
 var Cmd = &cobra.Command{
 	Use:   "dbfs",
-	Short: `DBFS API makes it simple to interact with various data sources without having to include a users credentials every time to read a file.`, // TODO: fix FirstSentence logic and append dot to summary
+	Short: `DBFS API makes it simple to interact with various data sources without having to include a users credentials every time to read a file.`,
 }
 
 var addBlockReq dbfs.AddBlock
@@ -25,7 +25,7 @@ func init() {
 
 var addBlockCmd = &cobra.Command{
 	Use:   "add-block",
-	Short: `Append data block Appends a block of data to the stream specified by the input handle.`, // TODO: fix logic
+	Short: `Append data block.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -52,7 +52,7 @@ func init() {
 
 var closeCmd = &cobra.Command{
 	Use:   "close",
-	Short: `Close the stream Closes the stream specified by the input handle.`, // TODO: fix logic
+	Short: `Close the stream.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -80,7 +80,7 @@ func init() {
 
 var createCmd = &cobra.Command{
 	Use:   "create",
-	Short: `Open a stream "Opens a stream to write to a file and returns a handle to this stream.`, // TODO: fix logic
+	Short: `Open a stream.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -114,7 +114,7 @@ func init() {
 
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
-	Short: `Delete a file/directory Delete the file or directory (optionally recursively delete all files in the directory).`, // TODO: fix logic
+	Short: `Delete a file/directory.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -141,7 +141,7 @@ func init() {
 
 var getStatusCmd = &cobra.Command{
 	Use:   "get-status",
-	Short: `Get the information of a file or directory Gets the file information for a file or directory.`, // TODO: fix logic
+	Short: `Get the information of a file or directory.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -174,7 +174,7 @@ func init() {
 
 var listCmd = &cobra.Command{
 	Use:   "list",
-	Short: `List directory contents or file details List the contents of a directory, or details of the file.`, // TODO: fix logic
+	Short: `List directory contents or file details.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -207,7 +207,7 @@ func init() {
 
 var mkdirsCmd = &cobra.Command{
 	Use:   "mkdirs",
-	Short: `Create a directory Creates the given directory and necessary parent directories if they do not exist.`, // TODO: fix logic
+	Short: `Create a directory.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -235,7 +235,7 @@ func init() {
 
 var moveCmd = &cobra.Command{
 	Use:   "move",
-	Short: `Move a file Moves a file from one location to another location within DBFS.`, // TODO: fix logic
+	Short: `Move a file.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -264,7 +264,7 @@ func init() {
 
 var putCmd = &cobra.Command{
 	Use:   "put",
-	Short: `Upload a file Uploads a file through the use of multipart form post.`, // TODO: fix logic
+	Short: `Upload a file.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -293,7 +293,7 @@ func init() {
 
 var readCmd = &cobra.Command{
 	Use:   "read",
-	Short: `Get the contents of a file "Returns the contents of a file.`, // TODO: fix logic
+	Short: `Get the contents of a file.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {

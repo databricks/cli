@@ -9,7 +9,7 @@ import (
 
 var Cmd = &cobra.Command{
 	Use:   "external-locations",
-	Short: `An external location is an object that combines a cloud storage path with a storage credential that authorizes access to the cloud storage path.`, // TODO: fix FirstSentence logic and append dot to summary
+	Short: `An external location is an object that combines a cloud storage path with a storage credential that authorizes access to the cloud storage path.`,
 }
 
 var createReq unitycatalog.CreateExternalLocation
@@ -34,7 +34,7 @@ func init() {
 
 var createCmd = &cobra.Command{
 	Use:   "create",
-	Short: `Create an external location Creates a new External Location entry in the Metastore.`, // TODO: fix logic
+	Short: `Create an external location.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -68,7 +68,7 @@ func init() {
 
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
-	Short: `Delete an external location Deletes the specified external location from the Metastore.`, // TODO: fix logic
+	Short: `Delete an external location.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -95,7 +95,7 @@ func init() {
 
 var getCmd = &cobra.Command{
 	Use:   "get",
-	Short: `Get an external location Gets an external location from the Metastore.`, // TODO: fix logic
+	Short: `Get an external location.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -123,7 +123,7 @@ func init() {
 
 var listCmd = &cobra.Command{
 	Use:   "list",
-	Short: `List external locations Gets an array of External Locations (ExternalLocationInfo objects) from the Metastore.`, // TODO: fix logic
+	Short: `List external locations.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -167,7 +167,7 @@ func init() {
 
 var updateCmd = &cobra.Command{
 	Use:   "update",
-	Short: `Update an external location Updates an external location in the Metastore.`, // TODO: fix logic
+	Short: `Update an external location.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {

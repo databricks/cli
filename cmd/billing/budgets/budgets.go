@@ -9,7 +9,7 @@ import (
 
 var Cmd = &cobra.Command{
 	Use:   "budgets",
-	Short: `These APIs manage budget configuration including notifications for exceeding a budget for a period.`, // TODO: fix FirstSentence logic and append dot to summary
+	Short: `These APIs manage budget configuration including notifications for exceeding a budget for a period.`,
 }
 
 var createReq billing.WrappedBudget
@@ -25,7 +25,7 @@ func init() {
 
 var createCmd = &cobra.Command{
 	Use:   "create",
-	Short: `Create a new budget Creates a new budget in the specified account.`, // TODO: fix logic
+	Short: `Create a new budget.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -58,7 +58,7 @@ func init() {
 
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
-	Short: `Delete budget Deletes the budget specified by its UUID.`, // TODO: fix logic
+	Short: `Delete budget.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -85,7 +85,7 @@ func init() {
 
 var getCmd = &cobra.Command{
 	Use:   "get",
-	Short: `Get budget and its status Gets the budget specified by its UUID, including noncumulative status for each day that the budget is configured to include.`, // TODO: fix logic
+	Short: `Get budget and its status.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -113,7 +113,7 @@ func init() {
 
 var listCmd = &cobra.Command{
 	Use:   "list",
-	Short: `Get all budgets Gets all budgets associated with this account, including noncumulative status for each day that the budget is configured to include.`, // TODO: fix logic
+	Short: `Get all budgets.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -147,7 +147,7 @@ func init() {
 
 var updateCmd = &cobra.Command{
 	Use:   "update",
-	Short: `Modify budget Modifies a budget in this account.`, // TODO: fix logic
+	Short: `Modify budget.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {

@@ -9,7 +9,7 @@ import (
 
 var Cmd = &cobra.Command{
 	Use:   "query-history",
-	Short: `Access the history of queries through SQL warehouses.`, // TODO: fix FirstSentence logic and append dot to summary
+	Short: `Access the history of queries through SQL warehouses.`,
 }
 
 var listQueriesReq warehouses.ListQueriesRequest
@@ -27,7 +27,7 @@ func init() {
 
 var listQueriesCmd = &cobra.Command{
 	Use:   "list-queries",
-	Short: `List List the history of queries through SQL warehouses.`, // TODO: fix logic
+	Short: `List.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {

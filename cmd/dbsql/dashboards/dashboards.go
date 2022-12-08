@@ -9,7 +9,7 @@ import (
 
 var Cmd = &cobra.Command{
 	Use:   "dashboards",
-	Short: `In general, there is little need to modify dashboards using the API.`, // TODO: fix FirstSentence logic and append dot to summary
+	Short: `In general, there is little need to modify dashboards using the API.`,
 }
 
 var createDashboardReq dbsql.CreateDashboardRequest
@@ -29,7 +29,7 @@ func init() {
 
 var createDashboardCmd = &cobra.Command{
 	Use:   "create-dashboard",
-	Short: `Create a dashboard object.`, // TODO: fix logic
+	Short: `Create a dashboard object.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -62,7 +62,7 @@ func init() {
 
 var deleteDashboardCmd = &cobra.Command{
 	Use:   "delete-dashboard",
-	Short: `Remove a dashboard Moves a dashboard to the trash.`, // TODO: fix logic
+	Short: `Remove a dashboard.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -89,7 +89,7 @@ func init() {
 
 var getDashboardCmd = &cobra.Command{
 	Use:   "get-dashboard",
-	Short: `Retrieve a definition Returns a JSON representation of a dashboard object, including its visualization and query objects.`, // TODO: fix logic
+	Short: `Retrieve a definition.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -125,7 +125,7 @@ func init() {
 
 var listDashboardsCmd = &cobra.Command{
 	Use:   "list-dashboards",
-	Short: `Get dashboard objects Fetch a paginated list of dashboard objects.`, // TODO: fix logic
+	Short: `Get dashboard objects.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -158,7 +158,7 @@ func init() {
 
 var restoreDashboardCmd = &cobra.Command{
 	Use:   "restore-dashboard",
-	Short: `Restore a dashboard A restored dashboard appears in list views and searches and can be shared.`, // TODO: fix logic
+	Short: `Restore a dashboard.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {

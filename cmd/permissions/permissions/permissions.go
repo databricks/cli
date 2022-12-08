@@ -9,7 +9,7 @@ import (
 
 var Cmd = &cobra.Command{
 	Use:   "permissions",
-	Short: `Permissions API are used to create read, write, edit, update and manage access for various users on different objects and endpoints.`, // TODO: fix FirstSentence logic and append dot to summary
+	Short: `Permissions API are used to create read, write, edit, update and manage access for various users on different objects and endpoints.`,
 }
 
 var getReq permissions.Get
@@ -25,7 +25,7 @@ func init() {
 
 var getCmd = &cobra.Command{
 	Use:   "get",
-	Short: `Get object permissions Gets the permission of an object.`, // TODO: fix logic
+	Short: `Get object permissions.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -59,7 +59,7 @@ func init() {
 
 var getPermissionLevelsCmd = &cobra.Command{
 	Use:   "get-permission-levels",
-	Short: `Get permission levels Gets the permission levels that a user can have on an object.`, // TODO: fix logic
+	Short: `Get permission levels.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -94,7 +94,7 @@ func init() {
 
 var setCmd = &cobra.Command{
 	Use:   "set",
-	Short: `Set permissions Sets permissions on object.`, // TODO: fix logic
+	Short: `Set permissions.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -123,7 +123,7 @@ func init() {
 
 var updateCmd = &cobra.Command{
 	Use:   "update",
-	Short: `Update permission Updates the permissions on an object.`, // TODO: fix logic
+	Short: `Update permission.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {

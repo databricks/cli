@@ -9,7 +9,7 @@ import (
 
 var Cmd = &cobra.Command{
 	Use:   "jobs",
-	Short: `The Jobs API allows you to create, edit, and delete jobs.`, // TODO: fix FirstSentence logic and append dot to summary
+	Short: `The Jobs API allows you to create, edit, and delete jobs.`,
 }
 
 var cancelAllRunsReq jobs.CancelAllRuns
@@ -24,7 +24,7 @@ func init() {
 
 var cancelAllRunsCmd = &cobra.Command{
 	Use:   "cancel-all-runs",
-	Short: `Cancel all runs of a job Cancels all active runs of a job.`, // TODO: fix logic
+	Short: `Cancel all runs of a job.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -51,7 +51,7 @@ func init() {
 
 var cancelRunCmd = &cobra.Command{
 	Use:   "cancel-run",
-	Short: `Cancel a job run Cancels a job run.`, // TODO: fix logic
+	Short: `Cancel a job run.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -88,7 +88,7 @@ func init() {
 
 var createCmd = &cobra.Command{
 	Use:   "create",
-	Short: `Create a new job Create a new job.`, // TODO: fix logic
+	Short: `Create a new job.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -121,7 +121,7 @@ func init() {
 
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
-	Short: `Delete a job Deletes a job.`, // TODO: fix logic
+	Short: `Delete a job.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -148,7 +148,7 @@ func init() {
 
 var deleteRunCmd = &cobra.Command{
 	Use:   "delete-run",
-	Short: `Delete a job run Deletes a non-active run.`, // TODO: fix logic
+	Short: `Delete a job run.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -176,7 +176,7 @@ func init() {
 
 var exportRunCmd = &cobra.Command{
 	Use:   "export-run",
-	Short: `Export and retrieve a job run Export and retrieve the job run task.`, // TODO: fix logic
+	Short: `Export and retrieve a job run.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -209,7 +209,7 @@ func init() {
 
 var getCmd = &cobra.Command{
 	Use:   "get",
-	Short: `Get a single job Retrieves the details for a single job.`, // TODO: fix logic
+	Short: `Get a single job.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -243,7 +243,7 @@ func init() {
 
 var getRunCmd = &cobra.Command{
 	Use:   "get-run",
-	Short: `Get a single job run Retrieve the metadata of a run.`, // TODO: fix logic
+	Short: `Get a single job run.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -276,7 +276,7 @@ func init() {
 
 var getRunOutputCmd = &cobra.Command{
 	Use:   "get-run-output",
-	Short: `Get the output for a single run Retrieve the output and metadata of a single task run.`, // TODO: fix logic
+	Short: `Get the output for a single run.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -312,7 +312,7 @@ func init() {
 
 var listCmd = &cobra.Command{
 	Use:   "list",
-	Short: `List all jobs Retrieves a list of jobs.`, // TODO: fix logic
+	Short: `List all jobs.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -353,7 +353,7 @@ func init() {
 
 var listRunsCmd = &cobra.Command{
 	Use:   "list-runs",
-	Short: `List runs for a job List runs in descending order by start time.`, // TODO: fix logic
+	Short: `List runs for a job.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -397,7 +397,7 @@ func init() {
 
 var repairRunCmd = &cobra.Command{
 	Use:   "repair-run",
-	Short: `Repair a job run Re-run one or more tasks.`, // TODO: fix logic
+	Short: `Repair a job run.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -431,7 +431,7 @@ func init() {
 
 var resetCmd = &cobra.Command{
 	Use:   "reset",
-	Short: `Overwrites all settings for a job Overwrites all the settings for a specific job.`, // TODO: fix logic
+	Short: `Overwrites all settings for a job.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -467,7 +467,7 @@ func init() {
 
 var runNowCmd = &cobra.Command{
 	Use:   "run-now",
-	Short: `Trigger a new job run Run a job and return the run_id of the triggered run.`, // TODO: fix logic
+	Short: `Trigger a new job run.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -505,7 +505,7 @@ func init() {
 
 var submitCmd = &cobra.Command{
 	Use:   "submit",
-	Short: `Create and trigger a one-time run Submit a one-time run.`, // TODO: fix logic
+	Short: `Create and trigger a one-time run.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -540,7 +540,7 @@ func init() {
 
 var updateCmd = &cobra.Command{
 	Use:   "update",
-	Short: `Partially updates a job Add, update, or remove specific settings of an existing job.`, // TODO: fix logic
+	Short: `Partially updates a job.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {

@@ -9,7 +9,7 @@ import (
 
 var Cmd = &cobra.Command{
 	Use:   "log-delivery",
-	Short: `These APIs manage log delivery configurations for this account.`, // TODO: fix FirstSentence logic and append dot to summary
+	Short: `These APIs manage log delivery configurations for this account.`,
 }
 
 var createReq billing.WrappedCreateLogDeliveryConfiguration
@@ -24,7 +24,7 @@ func init() {
 
 var createCmd = &cobra.Command{
 	Use:   "create",
-	Short: `Create a new log delivery configuration Creates a new Databricks log delivery configuration to enable delivery of the specified type of logs to your storage location.`, // TODO: fix logic
+	Short: `Create a new log delivery configuration.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -57,7 +57,7 @@ func init() {
 
 var getCmd = &cobra.Command{
 	Use:   "get",
-	Short: `Get log delivery configuration Gets a Databricks log delivery configuration object for an account, both specified by ID.`, // TODO: fix logic
+	Short: `Get log delivery configuration.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -92,7 +92,7 @@ func init() {
 
 var listCmd = &cobra.Command{
 	Use:   "list",
-	Short: `Get all log delivery configurations Gets all Databricks log delivery configurations associated with an account specified by ID.`, // TODO: fix logic
+	Short: `Get all log delivery configurations.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -126,7 +126,7 @@ func init() {
 
 var patchStatusCmd = &cobra.Command{
 	Use:   "patch-status",
-	Short: `Enable or disable log delivery configuration Enables or disables a log delivery configuration.`, // TODO: fix logic
+	Short: `Enable or disable log delivery configuration.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {

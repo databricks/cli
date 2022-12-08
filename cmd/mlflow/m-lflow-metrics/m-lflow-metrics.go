@@ -25,7 +25,7 @@ func init() {
 
 var getHistoryCmd = &cobra.Command{
 	Use:   "get-history",
-	Short: `Get all history Gets a list of all values for the specified metric for a given run.`, // TODO: fix logic
+	Short: `Get all history.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {

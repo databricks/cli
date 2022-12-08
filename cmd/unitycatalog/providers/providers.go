@@ -9,7 +9,7 @@ import (
 
 var Cmd = &cobra.Command{
 	Use:   "providers",
-	Short: `Databricks Delta Sharing: Providers REST API.`, // TODO: fix FirstSentence logic and append dot to summary
+	Short: `Databricks Delta Sharing: Providers REST API.`,
 }
 
 var createReq unitycatalog.CreateProvider
@@ -34,7 +34,7 @@ func init() {
 
 var createCmd = &cobra.Command{
 	Use:   "create",
-	Short: `Create an auth provider Creates a new authentication provider minimally based on a name and authentication type.`, // TODO: fix logic
+	Short: `Create an auth provider.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -67,7 +67,7 @@ func init() {
 
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
-	Short: `Delete a provider Deletes an authentication provider, if the caller is a Metastore admin or is the owner of the provider.`, // TODO: fix logic
+	Short: `Delete a provider.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -94,7 +94,7 @@ func init() {
 
 var getCmd = &cobra.Command{
 	Use:   "get",
-	Short: `Get a provider Gets a specific authentication provider.`, // TODO: fix logic
+	Short: `Get a provider.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -127,7 +127,7 @@ func init() {
 
 var listCmd = &cobra.Command{
 	Use:   "list",
-	Short: `List providers Gets an array of available authentication providers.`, // TODO: fix logic
+	Short: `List providers.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -160,7 +160,7 @@ func init() {
 
 var listSharesCmd = &cobra.Command{
 	Use:   "list-shares",
-	Short: `List shares Gets an array of all shares within the Metastore where: * the caller is a Metastore admin, or * the caller is the owner.`, // TODO: fix logic
+	Short: `List shares.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -203,7 +203,7 @@ func init() {
 
 var updateCmd = &cobra.Command{
 	Use:   "update",
-	Short: `Update a provider Updates the information for an authentication provider, if the caller is a Metastore admin or is the owner of the provider.`, // TODO: fix logic
+	Short: `Update a provider.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {

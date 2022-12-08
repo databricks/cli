@@ -9,7 +9,7 @@ import (
 
 var Cmd = &cobra.Command{
 	Use:   "warehouses",
-	Short: `A SQL warehouse is a compute resource that lets you run SQL commands on data objects within Databricks SQL.`, // TODO: fix FirstSentence logic and append dot to summary
+	Short: `A SQL warehouse is a compute resource that lets you run SQL commands on data objects within Databricks SQL.`,
 }
 
 var createWarehouseReq warehouses.CreateWarehouseRequest
@@ -36,7 +36,7 @@ func init() {
 
 var createWarehouseCmd = &cobra.Command{
 	Use:   "create-warehouse",
-	Short: `Create a warehouse Creates a new SQL warehouse.`, // TODO: fix logic
+	Short: `Create a warehouse.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -69,7 +69,7 @@ func init() {
 
 var deleteWarehouseCmd = &cobra.Command{
 	Use:   "delete-warehouse",
-	Short: `Delete a warehouse Deletes a SQL warehouse.`, // TODO: fix logic
+	Short: `Delete a warehouse.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -111,7 +111,7 @@ func init() {
 
 var editWarehouseCmd = &cobra.Command{
 	Use:   "edit-warehouse",
-	Short: `Update a warehouse Updates the configuration for a SQL warehouse.`, // TODO: fix logic
+	Short: `Update a warehouse.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -138,7 +138,7 @@ func init() {
 
 var getWarehouseCmd = &cobra.Command{
 	Use:   "get-warehouse",
-	Short: `Get warehouse info Gets the information for a single SQL warehouse.`, // TODO: fix logic
+	Short: `Get warehouse info.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -166,7 +166,7 @@ func init() {
 
 var getWorkspaceWarehouseConfigCmd = &cobra.Command{
 	Use:   "get-workspace-warehouse-config",
-	Short: `Get the workspace configuration Gets the workspace level configuration that is shared by all SQL warehouses in a workspace.`, // TODO: fix logic
+	Short: `Get the workspace configuration.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -199,7 +199,7 @@ func init() {
 
 var listWarehousesCmd = &cobra.Command{
 	Use:   "list-warehouses",
-	Short: `List warehouses Lists all SQL warehouses that a user has manager permissions on.`, // TODO: fix logic
+	Short: `List warehouses.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -243,7 +243,7 @@ func init() {
 
 var setWorkspaceWarehouseConfigCmd = &cobra.Command{
 	Use:   "set-workspace-warehouse-config",
-	Short: `Set the workspace configuration Sets the workspace level configuration that is shared by all SQL warehouses in a workspace.`, // TODO: fix logic
+	Short: `Set the workspace configuration.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -270,7 +270,7 @@ func init() {
 
 var startWarehouseCmd = &cobra.Command{
 	Use:   "start-warehouse",
-	Short: `Start a warehouse Starts a SQL warehouse.`, // TODO: fix logic
+	Short: `Start a warehouse.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -297,7 +297,7 @@ func init() {
 
 var stopWarehouseCmd = &cobra.Command{
 	Use:   "stop-warehouse",
-	Short: `Stop a warehouse Stops a SQL warehouse.`, // TODO: fix logic
+	Short: `Stop a warehouse.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {

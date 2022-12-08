@@ -9,7 +9,7 @@ import (
 
 var Cmd = &cobra.Command{
 	Use:   "recipient-activation",
-	Short: `Databricks Delta Sharing: Recipient Activation REST API.`, // TODO: fix FirstSentence logic and append dot to summary
+	Short: `Databricks Delta Sharing: Recipient Activation REST API.`,
 }
 
 var getActivationUrlInfoReq unitycatalog.GetActivationUrlInfoRequest
@@ -24,7 +24,7 @@ func init() {
 
 var getActivationUrlInfoCmd = &cobra.Command{
 	Use:   "get-activation-url-info",
-	Short: `Get a share activation URL Gets information about an Activation URL.`, // TODO: fix logic
+	Short: `Get a share activation URL.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -51,7 +51,7 @@ func init() {
 
 var retrieveTokenCmd = &cobra.Command{
 	Use:   "retrieve-token",
-	Short: `Get an access token RPC to retrieve access token with an activation token.`, // TODO: fix logic
+	Short: `Get an access token.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {

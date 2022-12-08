@@ -26,7 +26,7 @@ func init() {
 
 var listCmd = &cobra.Command{
 	Use:   "list",
-	Short: `Get all artifacts List artifacts for a run.`, // TODO: fix logic
+	Short: `Get all artifacts.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {

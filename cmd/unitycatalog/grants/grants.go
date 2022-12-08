@@ -9,7 +9,7 @@ import (
 
 var Cmd = &cobra.Command{
 	Use:   "grants",
-	Short: `In Unity Catalog, data is secure by default.`, // TODO: fix FirstSentence logic and append dot to summary
+	Short: `In Unity Catalog, data is secure by default.`,
 }
 
 var getReq unitycatalog.GetGrantRequest
@@ -26,7 +26,7 @@ func init() {
 
 var getCmd = &cobra.Command{
 	Use:   "get",
-	Short: `Get permissions Gets the permissions for a Securable type.`, // TODO: fix logic
+	Short: `Get permissions.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -62,7 +62,7 @@ func init() {
 
 var updateCmd = &cobra.Command{
 	Use:   "update",
-	Short: `Update permissions Updates the permissions for a Securable type.`, // TODO: fix logic
+	Short: `Update permissions.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {

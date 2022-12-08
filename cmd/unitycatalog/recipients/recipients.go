@@ -9,7 +9,7 @@ import (
 
 var Cmd = &cobra.Command{
 	Use:   "recipients",
-	Short: `Databricks Delta Sharing: Recipients REST API.`, // TODO: fix FirstSentence logic and append dot to summary
+	Short: `Databricks Delta Sharing: Recipients REST API.`,
 }
 
 var createReq unitycatalog.CreateRecipient
@@ -35,7 +35,7 @@ func init() {
 
 var createCmd = &cobra.Command{
 	Use:   "create",
-	Short: `Create a share recipient Creates a new recipient with the delta sharing authentication type in the Metastore.`, // TODO: fix logic
+	Short: `Create a share recipient.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -68,7 +68,7 @@ func init() {
 
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
-	Short: `Delete a share recipient Deletes the specified recipient from the Metastore.`, // TODO: fix logic
+	Short: `Delete a share recipient.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -95,7 +95,7 @@ func init() {
 
 var getCmd = &cobra.Command{
 	Use:   "get",
-	Short: `Get a share recipient Gets a share recipient from the Metastore if: * the caller is the owner of the share recipient, or: * is a Metastore admin.`, // TODO: fix logic
+	Short: `Get a share recipient.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -128,7 +128,7 @@ func init() {
 
 var listCmd = &cobra.Command{
 	Use:   "list",
-	Short: `List share recipients Gets an array of all share recipients within the current Metastore where: * the caller is a Metastore admin, or * the caller is the owner.`, // TODO: fix logic
+	Short: `List share recipients.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -162,7 +162,7 @@ func init() {
 
 var rotateTokenCmd = &cobra.Command{
 	Use:   "rotate-token",
-	Short: `Rotate a token Refreshes the specified recipient's delta sharing authentication token with the provided token info.`, // TODO: fix logic
+	Short: `Rotate a token.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -195,7 +195,7 @@ func init() {
 
 var sharePermissionsCmd = &cobra.Command{
 	Use:   "share-permissions",
-	Short: `Get share permissions Gets the share permissions for the specified Recipient.`, // TODO: fix logic
+	Short: `Get share permissions.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -239,7 +239,7 @@ func init() {
 
 var updateCmd = &cobra.Command{
 	Use:   "update",
-	Short: `Update a share recipient Updates an existing recipient in the Metastore.`, // TODO: fix logic
+	Short: `Update a share recipient.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {

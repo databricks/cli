@@ -9,7 +9,7 @@ import (
 
 var Cmd = &cobra.Command{
 	Use:   "instance-pools",
-	Short: `Instance Pools API are used to create, edit, delete and list instance pools by using ready-to-use cloud instances which reduces a cluster start and auto-scaling times.`, // TODO: fix FirstSentence logic and append dot to summary
+	Short: `Instance Pools API are used to create, edit, delete and list instance pools by using ready-to-use cloud instances which reduces a cluster start and auto-scaling times.`,
 }
 
 var createReq instancepools.CreateInstancePool
@@ -36,7 +36,7 @@ func init() {
 
 var createCmd = &cobra.Command{
 	Use:   "create",
-	Short: `Create a new instance pool Creates a new instance pool using idle and ready-to-use cloud instances.`, // TODO: fix logic
+	Short: `Create a new instance pool.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -69,7 +69,7 @@ func init() {
 
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
-	Short: `Delete an instance pool Deletes the instance pool permanently.`, // TODO: fix logic
+	Short: `Delete an instance pool.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -108,7 +108,7 @@ func init() {
 
 var editCmd = &cobra.Command{
 	Use:   "edit",
-	Short: `Edit an existing instance pool Modifies the configuration of an existing instance pool.`, // TODO: fix logic
+	Short: `Edit an existing instance pool.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -135,7 +135,7 @@ func init() {
 
 var getCmd = &cobra.Command{
 	Use:   "get",
-	Short: `Get instance pool information Retrieve the information for an instance pool based on its identifier.`, // TODO: fix logic
+	Short: `Get instance pool information.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -163,7 +163,7 @@ func init() {
 
 var listCmd = &cobra.Command{
 	Use:   "list",
-	Short: `List instance pool info Gets a list of instance pools with their statistics.`, // TODO: fix logic
+	Short: `List instance pool info.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {

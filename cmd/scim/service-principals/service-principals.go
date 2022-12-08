@@ -9,7 +9,7 @@ import (
 
 var Cmd = &cobra.Command{
 	Use:   "service-principals",
-	Short: `Identities for use with jobs, automated tools, and systems such as scripts, apps, and CI/CD platforms.`, // TODO: fix FirstSentence logic and append dot to summary
+	Short: `Identities for use with jobs, automated tools, and systems such as scripts, apps, and CI/CD platforms.`,
 }
 
 var createReq scim.ServicePrincipal
@@ -31,7 +31,7 @@ func init() {
 
 var createCmd = &cobra.Command{
 	Use:   "create",
-	Short: `Create a service principal Creates a new service principal in the Databricks Workspace.`, // TODO: fix logic
+	Short: `Create a service principal.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -64,7 +64,7 @@ func init() {
 
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
-	Short: `Delete a service principal Delete a single service principal in the Databricks Workspace.`, // TODO: fix logic
+	Short: `Delete a service principal.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -91,7 +91,7 @@ func init() {
 
 var getCmd = &cobra.Command{
 	Use:   "get",
-	Short: `Get service principal details Gets the details for a single service principal define in the Databricks Workspace.`, // TODO: fix logic
+	Short: `Get service principal details.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -130,7 +130,7 @@ func init() {
 
 var listCmd = &cobra.Command{
 	Use:   "list",
-	Short: `List service principals Gets the set of service principals associated with a Databricks Workspace.`, // TODO: fix logic
+	Short: `List service principals.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -164,7 +164,7 @@ func init() {
 
 var patchCmd = &cobra.Command{
 	Use:   "patch",
-	Short: `Update service principal details Partially updates the details of a single service principal in the Databricks Workspace.`, // TODO: fix logic
+	Short: `Update service principal details.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -198,7 +198,7 @@ func init() {
 
 var updateCmd = &cobra.Command{
 	Use:   "update",
-	Short: `Replace service principal Updates the details of a single service principal.`, // TODO: fix logic
+	Short: `Replace service principal.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {

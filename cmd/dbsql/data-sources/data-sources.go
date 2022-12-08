@@ -8,7 +8,7 @@ import (
 
 var Cmd = &cobra.Command{
 	Use:   "data-sources",
-	Short: `This API is provided to assist you in making new query objects.`, // TODO: fix FirstSentence logic and append dot to summary
+	Short: `This API is provided to assist you in making new query objects.`,
 }
 
 func init() {
@@ -18,7 +18,7 @@ func init() {
 
 var listDataSourcesCmd = &cobra.Command{
 	Use:   "list-data-sources",
-	Short: `Get a list of SQL warehouses Retrieves a full list of SQL warehouses available in this workspace.`, // TODO: fix logic
+	Short: `Get a list of SQL warehouses.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {

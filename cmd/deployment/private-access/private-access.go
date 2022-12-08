@@ -9,7 +9,7 @@ import (
 
 var Cmd = &cobra.Command{
 	Use:   "private-access",
-	Short: `These APIs manage private access settings for this account.`, // TODO: fix FirstSentence logic and append dot to summary
+	Short: `These APIs manage private access settings for this account.`,
 }
 
 var createReq deployment.UpsertPrivateAccessSettingsRequest
@@ -29,7 +29,7 @@ func init() {
 
 var createCmd = &cobra.Command{
 	Use:   "create",
-	Short: `Create private access settings Creates a private access settings object, which specifies how your workspace is accessed over [AWS PrivateLink](https://aws.amazon.com/privatelink).`, // TODO: fix logic
+	Short: `Create private access settings.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -62,7 +62,7 @@ func init() {
 
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
-	Short: `Delete a private access settings object Deletes a private access settings object, which determines how your workspace is accessed over [AWS PrivateLink](https://aws.amazon.com/privatelink).`, // TODO: fix logic
+	Short: `Delete a private access settings object.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -89,7 +89,7 @@ func init() {
 
 var getCmd = &cobra.Command{
 	Use:   "get",
-	Short: `Get a private access settings object Gets a private access settings object, which specifies how your workspace is accessed over [AWS PrivateLink](https://aws.amazon.com/privatelink).`, // TODO: fix logic
+	Short: `Get a private access settings object.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -117,7 +117,7 @@ func init() {
 
 var listCmd = &cobra.Command{
 	Use:   "list",
-	Short: `Get all private access settings objects Gets a list of all private access settings objects for an account, specified by ID.`, // TODO: fix logic
+	Short: `Get all private access settings objects.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -155,7 +155,7 @@ func init() {
 
 var replaceCmd = &cobra.Command{
 	Use:   "replace",
-	Short: `Replace private access settings Updates an existing private access settings object, which specifies how your workspace is accessed over [AWS PrivateLink](https://aws.amazon.com/privatelink).`, // TODO: fix logic
+	Short: `Replace private access settings.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {

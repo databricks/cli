@@ -9,7 +9,7 @@ import (
 
 var Cmd = &cobra.Command{
 	Use:   "catalogs",
-	Short: `A catalog is the first layer of Unity Catalog’s three-level namespace.`, // TODO: fix FirstSentence logic and append dot to summary
+	Short: `A catalog is the first layer of Unity Catalog’s three-level namespace.`,
 }
 
 var createReq unitycatalog.CreateCatalog
@@ -28,7 +28,7 @@ func init() {
 
 var createCmd = &cobra.Command{
 	Use:   "create",
-	Short: `Create a catalog Creates a new catalog instance in the parent Metastore if the caller is a Metastore admin or has the CREATE CATALOG privilege.`, // TODO: fix logic
+	Short: `Create a catalog.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -61,7 +61,7 @@ func init() {
 
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
-	Short: `Delete a catalog Deletes the catalog that matches the supplied name.`, // TODO: fix logic
+	Short: `Delete a catalog.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -88,7 +88,7 @@ func init() {
 
 var getCmd = &cobra.Command{
 	Use:   "get",
-	Short: `Get a catalog Gets an array of all catalogs in the current Metastore for which the user is an admin or Catalog owner, or has the USAGE privilege set for their account.`, // TODO: fix logic
+	Short: `Get a catalog.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -116,7 +116,7 @@ func init() {
 
 var listCmd = &cobra.Command{
 	Use:   "list",
-	Short: `List catalogs Gets an array of External Locations (ExternalLocationInfo objects) from the Metastore.`, // TODO: fix logic
+	Short: `List catalogs.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -161,7 +161,7 @@ func init() {
 
 var updateCmd = &cobra.Command{
 	Use:   "update",
-	Short: `Update a catalog Updates the catalog that matches the supplied name.`, // TODO: fix logic
+	Short: `Update a catalog.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {

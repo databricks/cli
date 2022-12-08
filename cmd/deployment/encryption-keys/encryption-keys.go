@@ -9,7 +9,7 @@ import (
 
 var Cmd = &cobra.Command{
 	Use:   "encryption-keys",
-	Short: `These APIs manage encryption key configurations for this workspace (optional).`, // TODO: fix FirstSentence logic and append dot to summary
+	Short: `These APIs manage encryption key configurations for this workspace (optional).`,
 }
 
 var createReq deployment.CreateCustomerManagedKeyRequest
@@ -25,7 +25,7 @@ func init() {
 
 var createCmd = &cobra.Command{
 	Use:   "create",
-	Short: `Create encryption key configuration Creates a customer-managed key configuration object for an account, specified by ID.`, // TODO: fix logic
+	Short: `Create encryption key configuration.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -58,7 +58,7 @@ func init() {
 
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
-	Short: `Delete encryption key configuration Deletes a customer-managed key configuration object for an account.`, // TODO: fix logic
+	Short: `Delete encryption key configuration.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -85,7 +85,7 @@ func init() {
 
 var getCmd = &cobra.Command{
 	Use:   "get",
-	Short: `Get encryption key configuration Gets a customer-managed key configuration object for an account, specified by ID.`, // TODO: fix logic
+	Short: `Get encryption key configuration.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -113,7 +113,7 @@ func init() {
 
 var getKeyWorkspaceHistoryCmd = &cobra.Command{
 	Use:   "get-key-workspace-history",
-	Short: `Get history of a key's associations with workspaces Gets a list of records that show how key configurations are associated with workspaces.`, // TODO: fix logic
+	Short: `Get history of a key's associations with workspaces.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -141,7 +141,7 @@ func init() {
 
 var listCmd = &cobra.Command{
 	Use:   "list",
-	Short: `Get all encryption key configurations Gets all customer-managed key configuration objects for an account.`, // TODO: fix logic
+	Short: `Get all encryption key configurations.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {

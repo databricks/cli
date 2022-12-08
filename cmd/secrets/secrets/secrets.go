@@ -9,7 +9,7 @@ import (
 
 var Cmd = &cobra.Command{
 	Use:   "secrets",
-	Short: `The Secrets API allows you to manage secrets, secret scopes, and access permissions.`, // TODO: fix FirstSentence logic and append dot to summary
+	Short: `The Secrets API allows you to manage secrets, secret scopes, and access permissions.`,
 }
 
 var createScopeReq secrets.CreateScope
@@ -27,7 +27,7 @@ func init() {
 
 var createScopeCmd = &cobra.Command{
 	Use:   "create-scope",
-	Short: `Create a new secret scope The scope name must consist of alphanumeric characters, dashes, underscores, and periods, and may not exceed 128 characters.`, // TODO: fix logic
+	Short: `Create a new secret scope.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -55,7 +55,7 @@ func init() {
 
 var deleteAclCmd = &cobra.Command{
 	Use:   "delete-acl",
-	Short: `Delete an ACL Deletes the given ACL on the given scope.`, // TODO: fix logic
+	Short: `Delete an ACL.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -82,7 +82,7 @@ func init() {
 
 var deleteScopeCmd = &cobra.Command{
 	Use:   "delete-scope",
-	Short: `Delete a secret scope Deletes a secret scope.`, // TODO: fix logic
+	Short: `Delete a secret scope.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -110,7 +110,7 @@ func init() {
 
 var deleteSecretCmd = &cobra.Command{
 	Use:   "delete-secret",
-	Short: `Delete a secret Deletes the secret stored in this secret scope.`, // TODO: fix logic
+	Short: `Delete a secret.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -138,7 +138,7 @@ func init() {
 
 var getAclCmd = &cobra.Command{
 	Use:   "get-acl",
-	Short: `Get secret ACL details Gets the details about the given ACL, such as the group and permission.`, // TODO: fix logic
+	Short: `Get secret ACL details.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -171,7 +171,7 @@ func init() {
 
 var listAclsCmd = &cobra.Command{
 	Use:   "list-acls",
-	Short: `Lists ACLs List the ACLs for a given secret scope.`, // TODO: fix logic
+	Short: `Lists ACLs.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -199,7 +199,7 @@ func init() {
 
 var listScopesCmd = &cobra.Command{
 	Use:   "list-scopes",
-	Short: `List all scopes Lists all secret scopes available in the workspace.`, // TODO: fix logic
+	Short: `List all scopes.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -232,7 +232,7 @@ func init() {
 
 var listSecretsCmd = &cobra.Command{
 	Use:   "list-secrets",
-	Short: `List secret keys Lists the secret keys that are stored at this scope.`, // TODO: fix logic
+	Short: `List secret keys.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -267,7 +267,7 @@ func init() {
 
 var putAclCmd = &cobra.Command{
 	Use:   "put-acl",
-	Short: `Create/update an ACL Creates or overwrites the Access Control List (ACL) associated with the given principal (user or group) on the specified scope point.`, // TODO: fix logic
+	Short: `Create/update an ACL.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -297,7 +297,7 @@ func init() {
 
 var putSecretCmd = &cobra.Command{
 	Use:   "put-secret",
-	Short: `Add a secret Inserts a secret under the provided scope with the given name.`, // TODO: fix logic
+	Short: `Add a secret.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {

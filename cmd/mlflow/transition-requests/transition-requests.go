@@ -27,7 +27,7 @@ func init() {
 
 var approveCmd = &cobra.Command{
 	Use:   "approve",
-	Short: `Approve transition requests Approves a model version stage transition request.`, // TODO: fix logic
+	Short: `Approve transition requests.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -63,7 +63,7 @@ func init() {
 
 var createCmd = &cobra.Command{
 	Use:   "create",
-	Short: `Make a transition request Creates a model version stage transition request.`, // TODO: fix logic
+	Short: `Make a transition request.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -100,7 +100,7 @@ func init() {
 
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
-	Short: `Delete a ransition request Cancels a model version stage transition request.`, // TODO: fix logic
+	Short: `Delete a ransition request.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -128,7 +128,7 @@ func init() {
 
 var listCmd = &cobra.Command{
 	Use:   "list",
-	Short: `List transition requests Gets a list of all open stage transition requests for the model version.`, // TODO: fix logic
+	Short: `List transition requests.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -164,7 +164,7 @@ func init() {
 
 var rejectCmd = &cobra.Command{
 	Use:   "reject",
-	Short: `Reject a transition request Rejects a model version stage transition request.`, // TODO: fix logic
+	Short: `Reject a transition request.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {

@@ -28,7 +28,7 @@ func init() {
 
 var createCmd = &cobra.Command{
 	Use:   "create",
-	Short: `Create a model version Creates a model version.`, // TODO: fix logic
+	Short: `Create a model version.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -62,7 +62,7 @@ func init() {
 
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
-	Short: `Delete a model version.`, // TODO: fix logic
+	Short: `Delete a model version.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -91,7 +91,7 @@ func init() {
 
 var deleteTagCmd = &cobra.Command{
 	Use:   "delete-tag",
-	Short: `Delete a model version tag Deletes a model version tag.`, // TODO: fix logic
+	Short: `Delete a model version tag.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -119,7 +119,7 @@ func init() {
 
 var getCmd = &cobra.Command{
 	Use:   "get",
-	Short: `Get a model version Get a model version.`, // TODO: fix logic
+	Short: `Get a model version.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -153,7 +153,7 @@ func init() {
 
 var getDownloadUriCmd = &cobra.Command{
 	Use:   "get-download-uri",
-	Short: `Get a model version URI Gets a URI to download the model version.`, // TODO: fix logic
+	Short: `Get a model version URI.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -189,7 +189,7 @@ func init() {
 
 var searchCmd = &cobra.Command{
 	Use:   "search",
-	Short: `Searches model versions Searches for specific model versions based on the supplied __filter__.`, // TODO: fix logic
+	Short: `Searches model versions.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -225,7 +225,7 @@ func init() {
 
 var setTagCmd = &cobra.Command{
 	Use:   "set-tag",
-	Short: `Set a version tag Sets a model version tag.`, // TODO: fix logic
+	Short: `Set a version tag.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -255,7 +255,7 @@ func init() {
 
 var transitionStageCmd = &cobra.Command{
 	Use:   "transition-stage",
-	Short: `Transition a stage Transition to the next model stage.`, // TODO: fix logic
+	Short: `Transition a stage.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -290,7 +290,7 @@ func init() {
 
 var updateCmd = &cobra.Command{
 	Use:   "update",
-	Short: `Update model version Updates the model version.`, // TODO: fix logic
+	Short: `Update model version.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {

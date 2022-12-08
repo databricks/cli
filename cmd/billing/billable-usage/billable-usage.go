@@ -8,7 +8,7 @@ import (
 
 var Cmd = &cobra.Command{
 	Use:   "billable-usage",
-	Short: `This API allows you to download billable usage logs for the specified account and date range.`, // TODO: fix FirstSentence logic and append dot to summary
+	Short: `This API allows you to download billable usage logs for the specified account and date range.`,
 }
 
 var downloadReq billing.DownloadRequest
@@ -25,7 +25,7 @@ func init() {
 
 var downloadCmd = &cobra.Command{
 	Use:   "download",
-	Short: `Return billable usage logs Returns billable usage logs in CSV format for the specified account and date range.`, // TODO: fix logic
+	Short: `Return billable usage logs.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {

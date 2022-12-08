@@ -9,7 +9,7 @@ import (
 
 var Cmd = &cobra.Command{
 	Use:   "dbsql-permissions",
-	Short: `The SQL Permissions API is similar to the endpoints of the :method:permissions/setobjectpermissions.`, // TODO: fix FirstSentence logic and append dot to summary
+	Short: `The SQL Permissions API is similar to the endpoints of the :method:permissions/setobjectpermissions.`,
 }
 
 var getPermissionsReq dbsql.GetPermissionsRequest
@@ -25,7 +25,7 @@ func init() {
 
 var getPermissionsCmd = &cobra.Command{
 	Use:   "get-permissions",
-	Short: `Get object ACL Gets a JSON representation of the access control list (ACL) for a specified object.`, // TODO: fix logic
+	Short: `Get object ACL.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -60,7 +60,7 @@ func init() {
 
 var setPermissionsCmd = &cobra.Command{
 	Use:   "set-permissions",
-	Short: `Set object ACL Sets the access control list (ACL) for a specified object.`, // TODO: fix logic
+	Short: `Set object ACL.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -95,7 +95,7 @@ func init() {
 
 var transferOwnershipCmd = &cobra.Command{
 	Use:   "transfer-ownership",
-	Short: `Transfer object ownership Transfers ownership of a dashboard, query, or alert to an active user.`, // TODO: fix logic
+	Short: `Transfer object ownership.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {

@@ -9,7 +9,7 @@ import (
 
 var Cmd = &cobra.Command{
 	Use:   "metastores",
-	Short: `A metastore is the top-level container of objects in Unity Catalog.`, // TODO: fix FirstSentence logic and append dot to summary
+	Short: `A metastore is the top-level container of objects in Unity Catalog.`,
 }
 
 var assignReq unitycatalog.CreateMetastoreAssignment
@@ -26,7 +26,7 @@ func init() {
 
 var assignCmd = &cobra.Command{
 	Use:   "assign",
-	Short: `Create an assignment Creates a new Metastore assignment.`, // TODO: fix logic
+	Short: `Create an assignment.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -66,7 +66,7 @@ func init() {
 
 var createCmd = &cobra.Command{
 	Use:   "create",
-	Short: `Create a Metastore Creates a new Metastore based on a provided name and storage root path.`, // TODO: fix logic
+	Short: `Create a Metastore.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -100,7 +100,7 @@ func init() {
 
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
-	Short: `Delete a Metastore Deletes a Metastore.`, // TODO: fix logic
+	Short: `Delete a Metastore.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -127,7 +127,7 @@ func init() {
 
 var getCmd = &cobra.Command{
 	Use:   "get",
-	Short: `Get a Metastore Gets a Metastore that matches the supplied ID.`, // TODO: fix logic
+	Short: `Get a Metastore.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -155,7 +155,7 @@ func init() {
 
 var listCmd = &cobra.Command{
 	Use:   "list",
-	Short: `List Metastores Gets an array of the available Metastores (as MetastoreInfo objects).`, // TODO: fix logic
+	Short: `List Metastores.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -183,7 +183,7 @@ func init() {
 
 var summaryCmd = &cobra.Command{
 	Use:   "summary",
-	Short: `Get a summary Gets information about a Metastore.`, // TODO: fix logic
+	Short: `Get a summary.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -217,7 +217,7 @@ func init() {
 
 var unassignCmd = &cobra.Command{
 	Use:   "unassign",
-	Short: `Delete an assignment Deletes a Metastore assignment.`, // TODO: fix logic
+	Short: `Delete an assignment.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -258,7 +258,7 @@ func init() {
 
 var updateCmd = &cobra.Command{
 	Use:   "update",
-	Short: `Update a Metastore Updates information for a specific Metastore.`, // TODO: fix logic
+	Short: `Update a Metastore.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -287,7 +287,7 @@ func init() {
 
 var updateAssignmentCmd = &cobra.Command{
 	Use:   "update-assignment",
-	Short: `Update an assignment Updates a Metastore assignment.`, // TODO: fix logic
+	Short: `Update an assignment.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {

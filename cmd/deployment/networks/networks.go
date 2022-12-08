@@ -9,7 +9,7 @@ import (
 
 var Cmd = &cobra.Command{
 	Use:   "networks",
-	Short: `These APIs manage network configurations for customer-managed VPCs (optional).`, // TODO: fix FirstSentence logic and append dot to summary
+	Short: `These APIs manage network configurations for customer-managed VPCs (optional).`,
 }
 
 var createReq deployment.CreateNetworkRequest
@@ -29,7 +29,7 @@ func init() {
 
 var createCmd = &cobra.Command{
 	Use:   "create",
-	Short: `Create network configuration Creates a Databricks network configuration that represents an AWS VPC and its resources.`, // TODO: fix logic
+	Short: `Create network configuration.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -62,7 +62,7 @@ func init() {
 
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
-	Short: `Delete network configuration Deletes a Databricks network configuration, which represents an AWS VPC and its resources.`, // TODO: fix logic
+	Short: `Delete network configuration.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -89,7 +89,7 @@ func init() {
 
 var getCmd = &cobra.Command{
 	Use:   "get",
-	Short: `Get a network configuration Gets a Databricks network configuration, which represents an AWS VPC and its resources.`, // TODO: fix logic
+	Short: `Get a network configuration.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -117,7 +117,7 @@ func init() {
 
 var listCmd = &cobra.Command{
 	Use:   "list",
-	Short: `Get all network configurations Gets a list of all Databricks network configurations for an account, specified by ID.`, // TODO: fix logic
+	Short: `Get all network configurations.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {

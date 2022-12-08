@@ -9,7 +9,7 @@ import (
 
 var Cmd = &cobra.Command{
 	Use:   "pipelines",
-	Short: `The Delta Live Tables API allows you to create, edit, delete, start, and view details about pipelines.`, // TODO: fix FirstSentence logic and append dot to summary
+	Short: `The Delta Live Tables API allows you to create, edit, delete, start, and view details about pipelines.`,
 }
 
 var createPipelineReq pipelines.CreatePipeline
@@ -40,7 +40,7 @@ func init() {
 
 var createPipelineCmd = &cobra.Command{
 	Use:   "create-pipeline",
-	Short: `Create a pipeline Creates a new data processing pipeline based on the requested configuration.`, // TODO: fix logic
+	Short: `Create a pipeline.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -73,7 +73,7 @@ func init() {
 
 var deletePipelineCmd = &cobra.Command{
 	Use:   "delete-pipeline",
-	Short: `Delete a pipeline Deletes a pipeline.`, // TODO: fix logic
+	Short: `Delete a pipeline.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -100,7 +100,7 @@ func init() {
 
 var getPipelineCmd = &cobra.Command{
 	Use:   "get-pipeline",
-	Short: `Get a pipeline.`, // TODO: fix logic
+	Short: `Get a pipeline.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -134,7 +134,7 @@ func init() {
 
 var getUpdateCmd = &cobra.Command{
 	Use:   "get-update",
-	Short: `Get a pipeline update Gets an update from an active pipeline.`, // TODO: fix logic
+	Short: `Get a pipeline update.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -170,7 +170,7 @@ func init() {
 
 var listPipelinesCmd = &cobra.Command{
 	Use:   "list-pipelines",
-	Short: `List pipelines Lists pipelines defined in the Delta Live Tables system.`, // TODO: fix logic
+	Short: `List pipelines.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -206,7 +206,7 @@ func init() {
 
 var listUpdatesCmd = &cobra.Command{
 	Use:   "list-updates",
-	Short: `List pipeline updates List updates for an active pipeline.`, // TODO: fix logic
+	Short: `List pipeline updates.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -239,7 +239,7 @@ func init() {
 
 var resetPipelineCmd = &cobra.Command{
 	Use:   "reset-pipeline",
-	Short: `Reset a pipeline Resets a pipeline.`, // TODO: fix logic
+	Short: `Reset a pipeline.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -270,7 +270,7 @@ func init() {
 
 var startUpdateCmd = &cobra.Command{
 	Use:   "start-update",
-	Short: `Queue a pipeline update Starts or queues a pipeline update.`, // TODO: fix logic
+	Short: `Queue a pipeline update.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -303,7 +303,7 @@ func init() {
 
 var stopPipelineCmd = &cobra.Command{
 	Use:   "stop-pipeline",
-	Short: `Stop a pipeline Stops a pipeline.`, // TODO: fix logic
+	Short: `Stop a pipeline.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -347,7 +347,7 @@ func init() {
 
 var updatePipelineCmd = &cobra.Command{
 	Use:   "update-pipeline",
-	Short: `Edit a pipeline Updates a pipeline with the supplied configuration.`, // TODO: fix logic
+	Short: `Edit a pipeline.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {

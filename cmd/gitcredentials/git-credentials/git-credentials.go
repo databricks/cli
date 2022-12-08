@@ -9,7 +9,7 @@ import (
 
 var Cmd = &cobra.Command{
 	Use:   "git-credentials",
-	Short: `Registers personal access token for Databricks to do operations on behalf of the user.`, // TODO: fix FirstSentence logic and append dot to summary
+	Short: `Registers personal access token for Databricks to do operations on behalf of the user.`,
 }
 
 var createReq gitcredentials.CreateCredentials
@@ -26,7 +26,7 @@ func init() {
 
 var createCmd = &cobra.Command{
 	Use:   "create",
-	Short: `Create a credential entry Creates a Git credential entry for the user.`, // TODO: fix logic
+	Short: `Create a credential entry.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -59,7 +59,7 @@ func init() {
 
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
-	Short: `Delete a credential Deletes the specified Git credential.`, // TODO: fix logic
+	Short: `Delete a credential.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -86,7 +86,7 @@ func init() {
 
 var getCmd = &cobra.Command{
 	Use:   "get",
-	Short: `Get a credential entry Gets the Git credential with the specified credential ID.`, // TODO: fix logic
+	Short: `Get a credential entry.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -114,7 +114,7 @@ func init() {
 
 var listCmd = &cobra.Command{
 	Use:   "list",
-	Short: `Get Git credentials Lists the calling user's Git credentials.`, // TODO: fix logic
+	Short: `Get Git credentials.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -150,7 +150,7 @@ func init() {
 
 var updateCmd = &cobra.Command{
 	Use:   "update",
-	Short: `Update a credential Updates the specified Git credential.`, // TODO: fix logic
+	Short: `Update a credential.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {

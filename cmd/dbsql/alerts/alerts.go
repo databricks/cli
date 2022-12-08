@@ -9,7 +9,7 @@ import (
 
 var Cmd = &cobra.Command{
 	Use:   "alerts",
-	Short: `The alerts API can be used to perform CRUD operations on alerts.`, // TODO: fix FirstSentence logic and append dot to summary
+	Short: `The alerts API can be used to perform CRUD operations on alerts.`,
 }
 
 var createAlertReq dbsql.EditAlert
@@ -28,7 +28,7 @@ func init() {
 
 var createAlertCmd = &cobra.Command{
 	Use:   "create-alert",
-	Short: `Create an alert Creates an alert.`, // TODO: fix logic
+	Short: `Create an alert.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -63,7 +63,7 @@ func init() {
 
 var createScheduleCmd = &cobra.Command{
 	Use:   "create-schedule",
-	Short: `Create a refresh schedule Creates a new refresh schedule for an alert.`, // TODO: fix logic
+	Short: `Create a refresh schedule.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -96,7 +96,7 @@ func init() {
 
 var deleteAlertCmd = &cobra.Command{
 	Use:   "delete-alert",
-	Short: `Delete an alert Deletes an alert.`, // TODO: fix logic
+	Short: `Delete an alert.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -124,7 +124,7 @@ func init() {
 
 var deleteScheduleCmd = &cobra.Command{
 	Use:   "delete-schedule",
-	Short: `Delete a refresh schedule Deletes an alert's refresh schedule.`, // TODO: fix logic
+	Short: `Delete a refresh schedule.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -151,7 +151,7 @@ func init() {
 
 var getAlertCmd = &cobra.Command{
 	Use:   "get-alert",
-	Short: `Get an alert Gets an alert.`, // TODO: fix logic
+	Short: `Get an alert.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -184,7 +184,7 @@ func init() {
 
 var getSubscriptionsCmd = &cobra.Command{
 	Use:   "get-subscriptions",
-	Short: `Get an alert's subscriptions Get the subscriptions for an alert.`, // TODO: fix logic
+	Short: `Get an alert's subscriptions.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -212,7 +212,7 @@ func init() {
 
 var listAlertsCmd = &cobra.Command{
 	Use:   "list-alerts",
-	Short: `Get alerts Gets a list of alerts.`, // TODO: fix logic
+	Short: `Get alerts.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -245,7 +245,7 @@ func init() {
 
 var listSchedulesCmd = &cobra.Command{
 	Use:   "list-schedules",
-	Short: `Get refresh schedules Gets the refresh schedules for the specified alert.`, // TODO: fix logic
+	Short: `Get refresh schedules.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -280,7 +280,7 @@ func init() {
 
 var subscribeCmd = &cobra.Command{
 	Use:   "subscribe",
-	Short: `Subscribe to an alert.`, // TODO: fix logic
+	Short: `Subscribe to an alert.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -314,7 +314,7 @@ func init() {
 
 var unsubscribeCmd = &cobra.Command{
 	Use:   "unsubscribe",
-	Short: `Unsubscribe to an alert Unsubscribes a user or a destination to an alert.`, // TODO: fix logic
+	Short: `Unsubscribe to an alert.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -345,7 +345,7 @@ func init() {
 
 var updateAlertCmd = &cobra.Command{
 	Use:   "update-alert",
-	Short: `Update an alert Updates an alert.`, // TODO: fix logic
+	Short: `Update an alert.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {

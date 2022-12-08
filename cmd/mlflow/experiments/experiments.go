@@ -25,7 +25,7 @@ func init() {
 
 var createCmd = &cobra.Command{
 	Use:   "create",
-	Short: `Create experiment Creates an experiment with a name.`, // TODO: fix logic
+	Short: `Create experiment.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -58,7 +58,7 @@ func init() {
 
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
-	Short: `Delete an experiment Marks an experiment and associated metadata, runs, metrics, params, and tags for deletion.`, // TODO: fix logic
+	Short: `Delete an experiment.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -85,7 +85,7 @@ func init() {
 
 var getCmd = &cobra.Command{
 	Use:   "get",
-	Short: `Get an experiment Gets metadata for an experiment.`, // TODO: fix logic
+	Short: `Get an experiment.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -118,7 +118,7 @@ func init() {
 
 var getByNameCmd = &cobra.Command{
 	Use:   "get-by-name",
-	Short: `Get metadata "Gets metadata for an experiment.`, // TODO: fix logic
+	Short: `Get metadata.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -153,7 +153,7 @@ func init() {
 
 var listCmd = &cobra.Command{
 	Use:   "list",
-	Short: `List experiments Gets a list of all experiments.`, // TODO: fix logic
+	Short: `List experiments.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -186,7 +186,7 @@ func init() {
 
 var restoreCmd = &cobra.Command{
 	Use:   "restore",
-	Short: `Restores an experiment "Restore an experiment marked for deletion.`, // TODO: fix logic
+	Short: `Restores an experiment.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -217,7 +217,7 @@ func init() {
 
 var searchCmd = &cobra.Command{
 	Use:   "search",
-	Short: `Search experiments Searches for experiments that satisfy specified search criteria.`, // TODO: fix logic
+	Short: `Search experiments.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -252,7 +252,7 @@ func init() {
 
 var setExperimentTagCmd = &cobra.Command{
 	Use:   "set-experiment-tag",
-	Short: `Set a tag Sets a tag on an experiment.`, // TODO: fix logic
+	Short: `Set a tag.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -280,7 +280,7 @@ func init() {
 
 var updateCmd = &cobra.Command{
 	Use:   "update",
-	Short: `Update an experiment Updates experiment metadata.`, // TODO: fix logic
+	Short: `Update an experiment.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {

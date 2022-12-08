@@ -9,7 +9,7 @@ import (
 
 var Cmd = &cobra.Command{
 	Use:   "libraries",
-	Short: `The Libraries API allows you to install and uninstall libraries and get the status of libraries on a cluster.`, // TODO: fix FirstSentence logic and append dot to summary
+	Short: `The Libraries API allows you to install and uninstall libraries and get the status of libraries on a cluster.`,
 }
 
 func init() {
@@ -19,7 +19,7 @@ func init() {
 
 var allClusterStatusesCmd = &cobra.Command{
 	Use:   "all-cluster-statuses",
-	Short: `Get all statuses Get the status of all libraries on all clusters.`, // TODO: fix logic
+	Short: `Get all statuses.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -52,7 +52,7 @@ func init() {
 
 var clusterStatusCmd = &cobra.Command{
 	Use:   "cluster-status",
-	Short: `Get status Get the status of libraries on a cluster.`, // TODO: fix logic
+	Short: `Get status.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -86,7 +86,7 @@ func init() {
 
 var installCmd = &cobra.Command{
 	Use:   "install",
-	Short: `Add a library Add libraries to be installed on a cluster.`, // TODO: fix logic
+	Short: `Add a library.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -114,7 +114,7 @@ func init() {
 
 var uninstallCmd = &cobra.Command{
 	Use:   "uninstall",
-	Short: `Uninstall libraries Set libraries to be uninstalled on a cluster.`, // TODO: fix logic
+	Short: `Uninstall libraries.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {

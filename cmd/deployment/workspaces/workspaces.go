@@ -9,7 +9,7 @@ import (
 
 var Cmd = &cobra.Command{
 	Use:   "workspaces",
-	Short: `These APIs manage workspaces for this account.`, // TODO: fix FirstSentence logic and append dot to summary
+	Short: `These APIs manage workspaces for this account.`,
 }
 
 var createReq deployment.CreateWorkspaceRequest
@@ -37,7 +37,7 @@ func init() {
 
 var createCmd = &cobra.Command{
 	Use:   "create",
-	Short: `Create a new workspace Creates a new workspace using a credential configuration and a storage configuration, an optional network configuration (if using a customer-managed VPC), an optional managed services key configuration (if using customer-managed keys for managed services), and an optional storage key configuration (if using customer-managed keys for storage).`, // TODO: fix logic
+	Short: `Create a new workspace.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -70,7 +70,7 @@ func init() {
 
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
-	Short: `Delete workspace Terminates and deletes a Databricks workspace.`, // TODO: fix logic
+	Short: `Delete workspace.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -97,7 +97,7 @@ func init() {
 
 var getCmd = &cobra.Command{
 	Use:   "get",
-	Short: `Get workspace Gets information including status for a Databricks workspace, specified by ID.`, // TODO: fix logic
+	Short: `Get workspace.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -130,7 +130,7 @@ func init() {
 
 var getWorkspaceKeyHistoryCmd = &cobra.Command{
 	Use:   "get-workspace-key-history",
-	Short: `Get the history of a workspace's associations with keys Gets a list of all associations with key configuration objects for the specified workspace that encapsulate customer-managed keys that encrypt managed services, workspace storage, or in some cases both.`, // TODO: fix logic
+	Short: `Get the history of a workspace's associations with keys.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -158,7 +158,7 @@ func init() {
 
 var listCmd = &cobra.Command{
 	Use:   "list",
-	Short: `Get all workspaces Gets a list of all workspaces associated with an account, specified by ID.`, // TODO: fix logic
+	Short: `Get all workspaces.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -197,7 +197,7 @@ func init() {
 
 var updateCmd = &cobra.Command{
 	Use:   "update",
-	Short: `Update workspace configuration Updates a workspace configuration for either a running workspace or a failed workspace.`, // TODO: fix logic
+	Short: `Update workspace configuration.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {

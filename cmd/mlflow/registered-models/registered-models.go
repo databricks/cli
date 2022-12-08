@@ -25,7 +25,7 @@ func init() {
 
 var createCmd = &cobra.Command{
 	Use:   "create",
-	Short: `Create a model Creates a new registered model with the name specified in the request body.`, // TODO: fix logic
+	Short: `Create a model.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -58,7 +58,7 @@ func init() {
 
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
-	Short: `Delete a model Deletes a registered model.`, // TODO: fix logic
+	Short: `Delete a model.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -86,7 +86,7 @@ func init() {
 
 var deleteTagCmd = &cobra.Command{
 	Use:   "delete-tag",
-	Short: `Delete a model tag Deletes the tag for a registered model.`, // TODO: fix logic
+	Short: `Delete a model tag.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -113,7 +113,7 @@ func init() {
 
 var getCmd = &cobra.Command{
 	Use:   "get",
-	Short: `Get a model Gets the registered model that matches the specified ID.`, // TODO: fix logic
+	Short: `Get a model.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -147,7 +147,7 @@ func init() {
 
 var getLatestVersionsCmd = &cobra.Command{
 	Use:   "get-latest-versions",
-	Short: `Get the latest version Gets the latest version of a registered model.`, // TODO: fix logic
+	Short: `Get the latest version.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -181,7 +181,7 @@ func init() {
 
 var listCmd = &cobra.Command{
 	Use:   "list",
-	Short: `List models Lists all available registered models, up to the limit specified in __max_results__.`, // TODO: fix logic
+	Short: `List models.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -215,7 +215,7 @@ func init() {
 
 var renameCmd = &cobra.Command{
 	Use:   "rename",
-	Short: `Rename a model Renames a registered model.`, // TODO: fix logic
+	Short: `Rename a model.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -251,7 +251,7 @@ func init() {
 
 var searchCmd = &cobra.Command{
 	Use:   "search",
-	Short: `Search models Search for registered models based on the specified __filter__.`, // TODO: fix logic
+	Short: `Search models.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -286,7 +286,7 @@ func init() {
 
 var setTagCmd = &cobra.Command{
 	Use:   "set-tag",
-	Short: `Set a tag Sets a tag on a registered model.`, // TODO: fix logic
+	Short: `Set a tag.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -314,7 +314,7 @@ func init() {
 
 var updateCmd = &cobra.Command{
 	Use:   "update",
-	Short: `Update model Updates a registered model.`, // TODO: fix logic
+	Short: `Update model.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {

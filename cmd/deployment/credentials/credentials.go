@@ -9,7 +9,7 @@ import (
 
 var Cmd = &cobra.Command{
 	Use:   "credentials",
-	Short: `These APIs manage credential configurations for this workspace.`, // TODO: fix FirstSentence logic and append dot to summary
+	Short: `These APIs manage credential configurations for this workspace.`,
 }
 
 var createReq deployment.CreateCredentialRequest
@@ -25,7 +25,7 @@ func init() {
 
 var createCmd = &cobra.Command{
 	Use:   "create",
-	Short: `Create credential configuration Creates a Databricks credential configuration that represents cloud cross-account credentials for a specified account.`, // TODO: fix logic
+	Short: `Create credential configuration.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -58,7 +58,7 @@ func init() {
 
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
-	Short: `Delete credential configuration Deletes a Databricks credential configuration object for an account, both specified by ID.`, // TODO: fix logic
+	Short: `Delete credential configuration.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -85,7 +85,7 @@ func init() {
 
 var getCmd = &cobra.Command{
 	Use:   "get",
-	Short: `Get credential configuration Gets a Databricks credential configuration object for an account, both specified by ID.`, // TODO: fix logic
+	Short: `Get credential configuration.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -113,7 +113,7 @@ func init() {
 
 var listCmd = &cobra.Command{
 	Use:   "list",
-	Short: `Get all credential configurations Gets all Databricks credential configurations associated with an account specified by ID.`, // TODO: fix logic
+	Short: `Get all credential configurations.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {

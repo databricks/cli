@@ -26,7 +26,7 @@ func init() {
 
 var createCmd = &cobra.Command{
 	Use:   "create",
-	Short: `Create a run Creates a new run within an experiment.`, // TODO: fix logic
+	Short: `Create a run.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -59,7 +59,7 @@ func init() {
 
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
-	Short: `Delete a run Marks a run for deletion.`, // TODO: fix logic
+	Short: `Delete a run.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -87,7 +87,7 @@ func init() {
 
 var deleteTagCmd = &cobra.Command{
 	Use:   "delete-tag",
-	Short: `Delete a tag Deletes a tag on a run.`, // TODO: fix logic
+	Short: `Delete a tag.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -115,7 +115,7 @@ func init() {
 
 var getCmd = &cobra.Command{
 	Use:   "get",
-	Short: `Get a run "Gets the metadata, metrics, params, and tags for a run.`, // TODO: fix logic
+	Short: `Get a run.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -151,7 +151,7 @@ func init() {
 
 var logBatchCmd = &cobra.Command{
 	Use:   "log-batch",
-	Short: `Log a batch Logs a batch of metrics, params, and tags for a run.`, // TODO: fix logic
+	Short: `Log a batch.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -183,7 +183,7 @@ func init() {
 
 var logMetricCmd = &cobra.Command{
 	Use:   "log-metric",
-	Short: `Log a metric Logs a metric for a run.`, // TODO: fix logic
+	Short: `Log a metric.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -211,7 +211,7 @@ func init() {
 
 var logModelCmd = &cobra.Command{
 	Use:   "log-model",
-	Short: `Log a model **NOTE:** Experimental: This API may change or be removed in a future release without warning.`, // TODO: fix logic
+	Short: `Log a model.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -241,7 +241,7 @@ func init() {
 
 var logParameterCmd = &cobra.Command{
 	Use:   "log-parameter",
-	Short: `Log a param Logs a param used for a run.`, // TODO: fix logic
+	Short: `Log a param.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -268,7 +268,7 @@ func init() {
 
 var restoreCmd = &cobra.Command{
 	Use:   "restore",
-	Short: `Restore a run Restores a deleted run.`, // TODO: fix logic
+	Short: `Restore a run.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -300,7 +300,7 @@ func init() {
 
 var searchCmd = &cobra.Command{
 	Use:   "search",
-	Short: `Search for runs Searches for runs that satisfy expressions.`, // TODO: fix logic
+	Short: `Search for runs.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -336,7 +336,7 @@ func init() {
 
 var setTagCmd = &cobra.Command{
 	Use:   "set-tag",
-	Short: `Set a tag Sets a tag on a run.`, // TODO: fix logic
+	Short: `Set a tag.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -366,7 +366,7 @@ func init() {
 
 var updateCmd = &cobra.Command{
 	Use:   "update",
-	Short: `Update a run Updates run metadata.`, // TODO: fix logic
+	Short: `Update a run.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {

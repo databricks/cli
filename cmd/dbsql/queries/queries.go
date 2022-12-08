@@ -9,7 +9,7 @@ import (
 
 var Cmd = &cobra.Command{
 	Use:   "queries",
-	Short: `These endpoints are used for CRUD operations on query definitions.`, // TODO: fix FirstSentence logic and append dot to summary
+	Short: `These endpoints are used for CRUD operations on query definitions.`,
 }
 
 var createQueryReq dbsql.QueryPostContent
@@ -30,7 +30,7 @@ func init() {
 
 var createQueryCmd = &cobra.Command{
 	Use:   "create-query",
-	Short: `Create a new query definition Creates a new query definition.`, // TODO: fix logic
+	Short: `Create a new query definition.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -63,7 +63,7 @@ func init() {
 
 var deleteQueryCmd = &cobra.Command{
 	Use:   "delete-query",
-	Short: `Delete a query Moves a query to the trash.`, // TODO: fix logic
+	Short: `Delete a query.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -90,7 +90,7 @@ func init() {
 
 var getQueryCmd = &cobra.Command{
 	Use:   "get-query",
-	Short: `Get a query definition.`, // TODO: fix logic
+	Short: `Get a query definition.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -126,7 +126,7 @@ func init() {
 
 var listQueriesCmd = &cobra.Command{
 	Use:   "list-queries",
-	Short: `Get a list of queries Gets a list of queries.`, // TODO: fix logic
+	Short: `Get a list of queries.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -159,7 +159,7 @@ func init() {
 
 var restoreQueryCmd = &cobra.Command{
 	Use:   "restore-query",
-	Short: `Restore a query Restore a query that has been moved to the trash.`, // TODO: fix logic
+	Short: `Restore a query.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -192,7 +192,7 @@ func init() {
 
 var updateQueryCmd = &cobra.Command{
 	Use:   "update-query",
-	Short: `Change a query definition Modify this query definition.`, // TODO: fix logic
+	Short: `Change a query definition.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {

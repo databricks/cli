@@ -9,7 +9,7 @@ import (
 
 var Cmd = &cobra.Command{
 	Use:   "m-lflow-databricks",
-	Short: `These endpoints are modified versions of the MLflow API that accept additional input parameters or return additional information.`, // TODO: fix FirstSentence logic and append dot to summary
+	Short: `These endpoints are modified versions of the MLflow API that accept additional input parameters or return additional information.`,
 }
 
 var getReq mlflow.GetMLflowDatabrickRequest
@@ -24,7 +24,7 @@ func init() {
 
 var getCmd = &cobra.Command{
 	Use:   "get",
-	Short: `Get model Get the details of a model.`, // TODO: fix logic
+	Short: `Get model.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -61,7 +61,7 @@ func init() {
 
 var transitionStageCmd = &cobra.Command{
 	Use:   "transition-stage",
-	Short: `Transition a stage Transition a model version's stage.`, // TODO: fix logic
+	Short: `Transition a stage.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {

@@ -9,7 +9,7 @@ import (
 
 var Cmd = &cobra.Command{
 	Use:   "vpc-endpoints",
-	Short: `These APIs manage VPC endpoint configurations for this account.`, // TODO: fix FirstSentence logic and append dot to summary
+	Short: `These APIs manage VPC endpoint configurations for this account.`,
 }
 
 var createReq deployment.CreateVpcEndpointRequest
@@ -26,7 +26,7 @@ func init() {
 
 var createCmd = &cobra.Command{
 	Use:   "create",
-	Short: `Create VPC endpoint configuration Creates a VPC endpoint configuration, which represents a [VPC endpoint](https://docs.aws.amazon.com/vpc/latest/privatelink/vpc-endpoints.html) object in AWS used to communicate privately with Databricks over [AWS PrivateLink](https://aws.amazon.com/privatelink).`, // TODO: fix logic
+	Short: `Create VPC endpoint configuration.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -59,7 +59,7 @@ func init() {
 
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
-	Short: `Delete VPC endpoint configuration Deletes a VPC endpoint configuration, which represents an [AWS VPC endpoint](https://docs.aws.amazon.com/vpc/latest/privatelink/concepts.html) that can communicate privately with Databricks over [AWS PrivateLink](https://aws.amazon.com/privatelink).`, // TODO: fix logic
+	Short: `Delete VPC endpoint configuration.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -86,7 +86,7 @@ func init() {
 
 var getCmd = &cobra.Command{
 	Use:   "get",
-	Short: `Get a VPC endpoint configuration Gets a VPC endpoint configuration, which represents a [VPC endpoint](https://docs.aws.amazon.com/vpc/latest/privatelink/concepts.html) object in AWS used to communicate privately with Databricks over [AWS PrivateLink](https://aws.amazon.com/privatelink).`, // TODO: fix logic
+	Short: `Get a VPC endpoint configuration.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -114,7 +114,7 @@ func init() {
 
 var listCmd = &cobra.Command{
 	Use:   "list",
-	Short: `Get all VPC endpoint configurations Gets a list of all VPC endpoints for an account, specified by ID.`, // TODO: fix logic
+	Short: `Get all VPC endpoint configurations.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {

@@ -9,7 +9,7 @@ import (
 
 var Cmd = &cobra.Command{
 	Use:   "instance-profiles",
-	Short: `The Instance Profiles API allows admins to add, list, and remove instance profiles that users can launch clusters with.`, // TODO: fix FirstSentence logic and append dot to summary
+	Short: `The Instance Profiles API allows admins to add, list, and remove instance profiles that users can launch clusters with.`,
 }
 
 var addReq clusters.AddInstanceProfile
@@ -27,7 +27,7 @@ func init() {
 
 var addCmd = &cobra.Command{
 	Use:   "add",
-	Short: `Register an instance profile In the UI, you can select the instance profile when launching clusters.`, // TODO: fix logic
+	Short: `Register an instance profile.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -56,7 +56,7 @@ func init() {
 
 var editCmd = &cobra.Command{
 	Use:   "edit",
-	Short: `Edit an instance profile The only supported field to change is the optional IAM role ARN associated with the instance profile.`, // TODO: fix logic
+	Short: `Edit an instance profile.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -78,7 +78,7 @@ func init() {
 
 var listCmd = &cobra.Command{
 	Use:   "list",
-	Short: `List available instance profiles List the instance profiles that the calling user can use to launch a cluster.`, // TODO: fix logic
+	Short: `List available instance profiles.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -111,7 +111,7 @@ func init() {
 
 var removeCmd = &cobra.Command{
 	Use:   "remove",
-	Short: `Remove the instance profile Remove the instance profile with the provided ARN.`, // TODO: fix logic
+	Short: `Remove the instance profile.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {

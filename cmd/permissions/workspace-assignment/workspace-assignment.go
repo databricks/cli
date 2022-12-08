@@ -9,7 +9,7 @@ import (
 
 var Cmd = &cobra.Command{
 	Use:   "workspace-assignment",
-	Short: `Databricks Workspace Assignment REST API.`, // TODO: fix FirstSentence logic and append dot to summary
+	Short: `Databricks Workspace Assignment REST API.`,
 }
 
 var createReq permissions.CreateWorkspaceAssignments
@@ -25,7 +25,7 @@ func init() {
 
 var createCmd = &cobra.Command{
 	Use:   "create",
-	Short: `Create permission assignments Create new permission assignments for the specified account and workspace.`, // TODO: fix logic
+	Short: `Create permission assignments.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -59,7 +59,7 @@ func init() {
 
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
-	Short: `Delete permissions assignment Deletes the workspace permissions assignment for a given account and workspace using the specified service principal.`, // TODO: fix logic
+	Short: `Delete permissions assignment.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -86,7 +86,7 @@ func init() {
 
 var getCmd = &cobra.Command{
 	Use:   "get",
-	Short: `List workspace permissions Get an array of workspace permissions for the specified account and workspace.`, // TODO: fix logic
+	Short: `List workspace permissions.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -119,7 +119,7 @@ func init() {
 
 var listCmd = &cobra.Command{
 	Use:   "list",
-	Short: `Get permission assignments Get the permission assignments for the specified Databricks Account and Databricks Workspace.`, // TODO: fix logic
+	Short: `Get permission assignments.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -154,7 +154,7 @@ func init() {
 
 var updateCmd = &cobra.Command{
 	Use:   "update",
-	Short: `Update permissions assignment Updates the workspace permissions assignment for a given account and workspace using the specified service principal.`, // TODO: fix logic
+	Short: `Update permissions assignment.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {

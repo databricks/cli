@@ -9,7 +9,7 @@ import (
 
 var Cmd = &cobra.Command{
 	Use:   "ip-access-lists",
-	Short: `The IP Access List API enables Databricks admins to configure IP access lists for a workspace.`, // TODO: fix FirstSentence logic and append dot to summary
+	Short: `The IP Access List API enables Databricks admins to configure IP access lists for a workspace.`,
 }
 
 var createReq ipaccesslists.CreateIpAccessList
@@ -26,7 +26,7 @@ func init() {
 
 var createCmd = &cobra.Command{
 	Use:   "create",
-	Short: `Create access list Creates an IP access list for this workspace.`, // TODO: fix logic
+	Short: `Create access list.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -59,7 +59,7 @@ func init() {
 
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
-	Short: `Delete access list Deletes an IP access list, specified by its list ID.`, // TODO: fix logic
+	Short: `Delete access list.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -86,7 +86,7 @@ func init() {
 
 var getCmd = &cobra.Command{
 	Use:   "get",
-	Short: `Get access list Gets an IP access list, specified by its list ID.`, // TODO: fix logic
+	Short: `Get access list.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -114,7 +114,7 @@ func init() {
 
 var listCmd = &cobra.Command{
 	Use:   "list",
-	Short: `Get access lists Gets all IP access lists for the specified workspace.`, // TODO: fix logic
+	Short: `Get access lists.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -152,7 +152,7 @@ func init() {
 
 var replaceCmd = &cobra.Command{
 	Use:   "replace",
-	Short: `Replace access list Replaces an IP access list, specified by its ID.`, // TODO: fix logic
+	Short: `Replace access list.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -184,7 +184,7 @@ func init() {
 
 var updateCmd = &cobra.Command{
 	Use:   "update",
-	Short: `Update access list Updates an existing IP access list, specified by its ID.`, // TODO: fix logic
+	Short: `Update access list.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {

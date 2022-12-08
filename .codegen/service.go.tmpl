@@ -10,7 +10,7 @@ import (
 var Cmd = &cobra.Command{
 	Use:   "{{.KebabName}}",
     {{if .Description -}}
-    Short: `{{.FirstSentence | without "`"}}`, // TODO: fix FirstSentence logic and append dot to summary
+    Short: `{{.Summary | without "`"}}`,
     {{- end}}
 }
 
@@ -24,11 +24,11 @@ func init() {
     {{if .Request}}// TODO: short flags
     {{$method := .}}
     {{range .Request.Fields -}}
-        {{if .Entity.IsString }}{{$method.CamelName}}Cmd.Flags().{{template "arg-type" .Entity}}(&{{$method.CamelName}}Req.{{.PascalName}}, "{{.KebabName}}", {{template "type-default" .Entity}}, `{{.FirstSentence | without "`"}}`)
-        {{else if .Entity.IsBool}}{{$method.CamelName}}Cmd.Flags().{{template "arg-type" .Entity}}(&{{$method.CamelName}}Req.{{.PascalName}}, "{{.KebabName}}", {{template "type-default" .Entity}}, `{{.FirstSentence | without "`"}}`)
-        {{else if .Entity.IsInt64}}{{$method.CamelName}}Cmd.Flags().{{template "arg-type" .Entity}}(&{{$method.CamelName}}Req.{{.PascalName}}, "{{.KebabName}}", {{template "type-default" .Entity}}, `{{.FirstSentence | without "`"}}`)
-        {{else if .Entity.IsFloat64}}{{$method.CamelName}}Cmd.Flags().{{template "arg-type" .Entity}}(&{{$method.CamelName}}Req.{{.PascalName}}, "{{.KebabName}}", {{template "type-default" .Entity}}, `{{.FirstSentence | without "`"}}`)
-        {{else if .Entity.IsInt}}{{$method.CamelName}}Cmd.Flags().{{template "arg-type" .Entity}}(&{{$method.CamelName}}Req.{{.PascalName}}, "{{.KebabName}}", {{template "type-default" .Entity}}, `{{.FirstSentence | without "`"}}`)
+        {{if .Entity.IsString }}{{$method.CamelName}}Cmd.Flags().{{template "arg-type" .Entity}}(&{{$method.CamelName}}Req.{{.PascalName}}, "{{.KebabName}}", {{template "type-default" .Entity}}, `{{.Summary | without "`"}}`)
+        {{else if .Entity.IsBool}}{{$method.CamelName}}Cmd.Flags().{{template "arg-type" .Entity}}(&{{$method.CamelName}}Req.{{.PascalName}}, "{{.KebabName}}", {{template "type-default" .Entity}}, `{{.Summary | without "`"}}`)
+        {{else if .Entity.IsInt64}}{{$method.CamelName}}Cmd.Flags().{{template "arg-type" .Entity}}(&{{$method.CamelName}}Req.{{.PascalName}}, "{{.KebabName}}", {{template "type-default" .Entity}}, `{{.Summary | without "`"}}`)
+        {{else if .Entity.IsFloat64}}{{$method.CamelName}}Cmd.Flags().{{template "arg-type" .Entity}}(&{{$method.CamelName}}Req.{{.PascalName}}, "{{.KebabName}}", {{template "type-default" .Entity}}, `{{.Summary | without "`"}}`)
+        {{else if .Entity.IsInt}}{{$method.CamelName}}Cmd.Flags().{{template "arg-type" .Entity}}(&{{$method.CamelName}}Req.{{.PascalName}}, "{{.KebabName}}", {{template "type-default" .Entity}}, `{{.Summary | without "`"}}`)
         {{else}}// TODO: complex arg: {{.Name}}
         {{end}}    
     {{- end}}
@@ -38,7 +38,7 @@ func init() {
 var {{.CamelName}}Cmd = &cobra.Command{
 	Use: "{{.KebabName}}",
 	{{if .Description -}}
-    Short: `{{.FirstSentence | without "`"}}`, // TODO: fix logic
+    Short: `{{.Summary | without "`"}}`,
     {{end}}
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {

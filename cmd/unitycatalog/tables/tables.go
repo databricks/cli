@@ -9,7 +9,7 @@ import (
 
 var Cmd = &cobra.Command{
 	Use:   "tables",
-	Short: `A table resides in the third layer of Unity Catalog’s three-level namespace.`, // TODO: fix FirstSentence logic and append dot to summary
+	Short: `A table resides in the third layer of Unity Catalog’s three-level namespace.`,
 }
 
 var createReq unitycatalog.CreateTable
@@ -45,7 +45,7 @@ func init() {
 
 var createCmd = &cobra.Command{
 	Use:   "create",
-	Short: `Create a table Creates a new table in the Metastore for a specific catalog and schema.`, // TODO: fix logic
+	Short: `Create a table.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -82,7 +82,7 @@ func init() {
 
 var createStagingTableCmd = &cobra.Command{
 	Use:   "create-staging-table",
-	Short: `Create a staging table Creates a new staging table for a schema.`, // TODO: fix logic
+	Short: `Create a staging table.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -115,7 +115,7 @@ func init() {
 
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
-	Short: `Delete a table Deletes a table from the specified parent catalog and schema.`, // TODO: fix logic
+	Short: `Delete a table.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -142,7 +142,7 @@ func init() {
 
 var getCmd = &cobra.Command{
 	Use:   "get",
-	Short: `Get a table Gets a table from the Metastore for a specific catalog and schema.`, // TODO: fix logic
+	Short: `Get a table.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -176,7 +176,7 @@ func init() {
 
 var listCmd = &cobra.Command{
 	Use:   "list",
-	Short: `List tables Gets an array of all tables for the current Metastore under the parent catalog and schema.`, // TODO: fix logic
+	Short: `List tables.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -213,7 +213,7 @@ func init() {
 
 var tableSummariesCmd = &cobra.Command{
 	Use:   "table-summaries",
-	Short: `List table summaries Gets an array of summaries for tables for a schema and catalog within the Metastore.`, // TODO: fix logic
+	Short: `List table summaries.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -267,7 +267,7 @@ func init() {
 
 var updateCmd = &cobra.Command{
 	Use:   "update",
-	Short: `Update a table Updates a table in the specified catalog and schema.`, // TODO: fix logic
+	Short: `Update a table.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {

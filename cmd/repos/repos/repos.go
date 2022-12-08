@@ -9,7 +9,7 @@ import (
 
 var Cmd = &cobra.Command{
 	Use:   "repos",
-	Short: `The Repos API allows users to manage their git repos.`, // TODO: fix FirstSentence logic and append dot to summary
+	Short: `The Repos API allows users to manage their git repos.`,
 }
 
 var createReq repos.CreateRepo
@@ -26,7 +26,7 @@ func init() {
 
 var createCmd = &cobra.Command{
 	Use:   "create",
-	Short: `Create a repo Creates a repo in the workspace and links it to the remote Git repo specified.`, // TODO: fix logic
+	Short: `Create a repo.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -59,7 +59,7 @@ func init() {
 
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
-	Short: `Delete a repo Deletes the specified repo.`, // TODO: fix logic
+	Short: `Delete a repo.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -86,7 +86,7 @@ func init() {
 
 var getCmd = &cobra.Command{
 	Use:   "get",
-	Short: `Get a repo Returns the repo with the given repo ID.`, // TODO: fix logic
+	Short: `Get a repo.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -120,7 +120,7 @@ func init() {
 
 var listCmd = &cobra.Command{
 	Use:   "list",
-	Short: `Get repos Returns repos that the calling user has Manage permissions on.`, // TODO: fix logic
+	Short: `Get repos.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -155,7 +155,7 @@ func init() {
 
 var updateCmd = &cobra.Command{
 	Use:   "update",
-	Short: `Update a repo Updates the repo to a different branch or tag, or updates the repo to the latest commit on the same branch.`, // TODO: fix logic
+	Short: `Update a repo.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {

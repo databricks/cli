@@ -9,7 +9,7 @@ import (
 
 var Cmd = &cobra.Command{
 	Use:   "schemas",
-	Short: `A schema (also called a database) is the second layer of Unity Catalog’s three-level namespace.`, // TODO: fix FirstSentence logic and append dot to summary
+	Short: `A schema (also called a database) is the second layer of Unity Catalog’s three-level namespace.`,
 }
 
 var createReq unitycatalog.CreateSchema
@@ -35,7 +35,7 @@ func init() {
 
 var createCmd = &cobra.Command{
 	Use:   "create",
-	Short: `Create a schema Creates a new schema for catalog in the Metatastore.`, // TODO: fix logic
+	Short: `Create a schema.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -68,7 +68,7 @@ func init() {
 
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
-	Short: `Delete a schema Deletes the specified schema from the parent catalog.`, // TODO: fix logic
+	Short: `Delete a schema.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -95,7 +95,7 @@ func init() {
 
 var getCmd = &cobra.Command{
 	Use:   "get",
-	Short: `Get a schema Gets the specified schema for a catalog in the Metastore.`, // TODO: fix logic
+	Short: `Get a schema.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -128,7 +128,7 @@ func init() {
 
 var listCmd = &cobra.Command{
 	Use:   "list",
-	Short: `List schemas Gets an array of schemas for catalog in the Metastore.`, // TODO: fix logic
+	Short: `List schemas.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -172,7 +172,7 @@ func init() {
 
 var updateCmd = &cobra.Command{
 	Use:   "update",
-	Short: `Update a schema Updates a schema for a catalog.`, // TODO: fix logic
+	Short: `Update a schema.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {

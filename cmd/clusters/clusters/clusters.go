@@ -9,7 +9,7 @@ import (
 
 var Cmd = &cobra.Command{
 	Use:   "clusters",
-	Short: `The Clusters API allows you to create, start, edit, list, terminate, and delete clusters.`, // TODO: fix FirstSentence logic and append dot to summary
+	Short: `The Clusters API allows you to create, start, edit, list, terminate, and delete clusters.`,
 }
 
 var changeOwnerReq clusters.ChangeClusterOwner
@@ -25,7 +25,7 @@ func init() {
 
 var changeOwnerCmd = &cobra.Command{
 	Use:   "change-owner",
-	Short: `Change cluster owner Change the owner of the cluster.`, // TODO: fix logic
+	Short: `Change cluster owner.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -76,7 +76,7 @@ func init() {
 
 var createCmd = &cobra.Command{
 	Use:   "create",
-	Short: `Create new cluster Creates a new Spark cluster.`, // TODO: fix logic
+	Short: `Create new cluster.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -109,7 +109,7 @@ func init() {
 
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
-	Short: `Terminate cluster Terminates the Spark cluster with the specified ID.`, // TODO: fix logic
+	Short: `Terminate cluster.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -161,7 +161,7 @@ func init() {
 
 var editCmd = &cobra.Command{
 	Use:   "edit",
-	Short: `Update cluster configuration Updates the configuration of a cluster to match the provided attributes and size.`, // TODO: fix logic
+	Short: `Update cluster configuration.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -194,7 +194,7 @@ func init() {
 
 var eventsCmd = &cobra.Command{
 	Use:   "events",
-	Short: `List cluster activity events Retrieves a list of events about the activity of a cluster.`, // TODO: fix logic
+	Short: `List cluster activity events.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -227,7 +227,7 @@ func init() {
 
 var getCmd = &cobra.Command{
 	Use:   "get",
-	Short: `Get cluster info "Retrieves the information for a cluster given its identifier.`, // TODO: fix logic
+	Short: `Get cluster info.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -260,7 +260,7 @@ func init() {
 
 var listCmd = &cobra.Command{
 	Use:   "list",
-	Short: `List all clusters Returns information about all pinned clusters, currently active clusters, up to 70 of the most recently terminated interactive clusters in the past 7 days, and up to 30 of the most recently terminated job clusters in the past 7 days.`, // TODO: fix logic
+	Short: `List all clusters.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -288,7 +288,7 @@ func init() {
 
 var listNodeTypesCmd = &cobra.Command{
 	Use:   "list-node-types",
-	Short: `List node types Returns a list of supported Spark node types.`, // TODO: fix logic
+	Short: `List node types.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -316,7 +316,7 @@ func init() {
 
 var listZonesCmd = &cobra.Command{
 	Use:   "list-zones",
-	Short: `List availability zones Returns a list of availability zones where clusters can be created in (For example, us-west-2a).`, // TODO: fix logic
+	Short: `List availability zones.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -349,7 +349,7 @@ func init() {
 
 var permanentDeleteCmd = &cobra.Command{
 	Use:   "permanent-delete",
-	Short: `Permanently delete cluster Permanently deletes a Spark cluster.`, // TODO: fix logic
+	Short: `Permanently delete cluster.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -376,7 +376,7 @@ func init() {
 
 var pinCmd = &cobra.Command{
 	Use:   "pin",
-	Short: `Pin cluster Pinning a cluster ensures that the cluster will always be returned by the ListClusters API.`, // TODO: fix logic
+	Short: `Pin cluster.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -405,7 +405,7 @@ func init() {
 
 var resizeCmd = &cobra.Command{
 	Use:   "resize",
-	Short: `Resize cluster Resizes a cluster to have a desired number of workers.`, // TODO: fix logic
+	Short: `Resize cluster.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -433,7 +433,7 @@ func init() {
 
 var restartCmd = &cobra.Command{
 	Use:   "restart",
-	Short: `Restart cluster Restarts a Spark cluster with the supplied ID.`, // TODO: fix logic
+	Short: `Restart cluster.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -455,7 +455,7 @@ func init() {
 
 var sparkVersionsCmd = &cobra.Command{
 	Use:   "spark-versions",
-	Short: `List available Spark versions Returns the list of available Spark versions.`, // TODO: fix logic
+	Short: `List available Spark versions.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -488,7 +488,7 @@ func init() {
 
 var startCmd = &cobra.Command{
 	Use:   "start",
-	Short: `Start terminated cluster Starts a terminated Spark cluster with the supplied ID.`, // TODO: fix logic
+	Short: `Start terminated cluster.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -515,7 +515,7 @@ func init() {
 
 var unpinCmd = &cobra.Command{
 	Use:   "unpin",
-	Short: `Unpin cluster Unpinning a cluster will allow the cluster to eventually be removed from the ListClusters API.`, // TODO: fix logic
+	Short: `Unpin cluster.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {

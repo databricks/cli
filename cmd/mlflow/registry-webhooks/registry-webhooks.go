@@ -28,7 +28,7 @@ func init() {
 
 var createCmd = &cobra.Command{
 	Use:   "create",
-	Short: `Create a webhook **NOTE**: This endpoint is in Public Preview.`, // TODO: fix logic
+	Short: `Create a webhook.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -61,7 +61,7 @@ func init() {
 
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
-	Short: `Delete a webhook **NOTE:** This endpoint is in Public Preview.`, // TODO: fix logic
+	Short: `Delete a webhook.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -90,7 +90,7 @@ func init() {
 
 var listCmd = &cobra.Command{
 	Use:   "list",
-	Short: `List registry webhooks **NOTE:** This endpoint is in Public Preview.`, // TODO: fix logic
+	Short: `List registry webhooks.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -124,7 +124,7 @@ func init() {
 
 var testCmd = &cobra.Command{
 	Use:   "test",
-	Short: `Test a webhook **NOTE:** This endpoint is in Public Preview.`, // TODO: fix logic
+	Short: `Test a webhook.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -162,7 +162,7 @@ func init() {
 
 var updateCmd = &cobra.Command{
 	Use:   "update",
-	Short: `Update a webhook **NOTE:** This endpoint is in Public Preview.`, // TODO: fix logic
+	Short: `Update a webhook.`,
 
 	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
 	RunE: func(cmd *cobra.Command, args []string) error {
