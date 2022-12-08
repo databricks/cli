@@ -1,8 +1,8 @@
 package query_history
 
 import (
+	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
-	"github.com/databricks/bricks/project"
 	"github.com/databricks/databricks-sdk-go/service/warehouses"
 	"github.com/spf13/cobra"
 )
@@ -28,11 +28,16 @@ func init() {
 var listQueriesCmd = &cobra.Command{
 	Use:   "list-queries",
 	Short: `List.`,
+	Long: `List.
+  
+  List the history of queries through SQL warehouses.
+  
+  You can filter by user ID, warehouse ID, status, and time range.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.QueryHistory.ListQueriesAll(ctx, listQueriesReq)
 		if err != nil {
 			return err

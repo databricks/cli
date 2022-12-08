@@ -1,8 +1,8 @@
 package storage
 
 import (
+	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
-	"github.com/databricks/bricks/project"
 	"github.com/databricks/databricks-sdk-go/service/deployment"
 	"github.com/spf13/cobra"
 )
@@ -26,11 +26,23 @@ func init() {
 var createCmd = &cobra.Command{
 	Use:   "create",
 	Short: `Create new storage configuration.`,
+	Long: `Create new storage configuration.
+  
+  Creates new storage configuration for an account, specified by ID. Uploads a
+  storage configuration object that represents the root AWS S3 bucket in your
+  account. Databricks stores related workspace assets including DBFS, cluster
+  logs, and job results. For the AWS S3 bucket, you need to configure the
+  required bucket policy.
+  
+  For information about how to create a new workspace with this API, see [Create
+  a new workspace using the Account API]
+  
+  [Create a new workspace using the Account API]: http://docs.databricks.com/administration-guide/account-api/new-workspace.html`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		a := project.Get(ctx).AccountClient()
+		a := sdk.AccountClient(ctx)
 		response, err := a.Storage.Create(ctx, createReq)
 		if err != nil {
 			return err
@@ -59,11 +71,15 @@ func init() {
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
 	Short: `Delete storage configuration.`,
+	Long: `Delete storage configuration.
+  
+  Deletes a Databricks storage configuration. You cannot delete a storage
+  configuration that is associated with any workspace.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		a := project.Get(ctx).AccountClient()
+		a := sdk.AccountClient(ctx)
 		err := a.Storage.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
@@ -86,11 +102,14 @@ func init() {
 var getCmd = &cobra.Command{
 	Use:   "get",
 	Short: `Get storage configuration.`,
+	Long: `Get storage configuration.
+  
+  Gets a Databricks storage configuration for an account, both specified by ID.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		a := project.Get(ctx).AccountClient()
+		a := sdk.AccountClient(ctx)
 		response, err := a.Storage.Get(ctx, getReq)
 		if err != nil {
 			return err
@@ -114,11 +133,15 @@ func init() {
 var listCmd = &cobra.Command{
 	Use:   "list",
 	Short: `Get all storage configurations.`,
+	Long: `Get all storage configurations.
+  
+  Gets a list of all Databricks storage configurations for your account,
+  specified by ID.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		a := project.Get(ctx).AccountClient()
+		a := sdk.AccountClient(ctx)
 		response, err := a.Storage.List(ctx)
 		if err != nil {
 			return err

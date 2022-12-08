@@ -1,8 +1,8 @@
 package storage_credentials
 
 import (
+	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
-	"github.com/databricks/bricks/project"
 	"github.com/databricks/databricks-sdk-go/service/unitycatalog"
 	"github.com/spf13/cobra"
 )
@@ -37,11 +37,20 @@ func init() {
 var createCmd = &cobra.Command{
 	Use:   "create",
 	Short: `Create credentials.`,
+	Long: `Create credentials.
+  
+  Creates a new storage credential. The request object is specific to the cloud:
+  
+  * **AwsIamRole** for AWS credentials * **AzureServicePrincipal** for Azure
+  credentials * **GcpServiceAcountKey** for GCP credentials.
+  
+  The caller must be a Metastore admin and have the CREATE STORAGE CREDENTIAL
+  privilege on the Metastore.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.StorageCredentials.Create(ctx, createReq)
 		if err != nil {
 			return err
@@ -71,11 +80,15 @@ func init() {
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
 	Short: `Delete a credential.`,
+	Long: `Delete a credential.
+  
+  Deletes a storage credential from the Metastore. The caller must be an owner
+  of the storage credential.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.StorageCredentials.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
@@ -98,11 +111,16 @@ func init() {
 var getCmd = &cobra.Command{
 	Use:   "get",
 	Short: `Get a credential.`,
+	Long: `Get a credential.
+  
+  Gets a storage credential from the Metastore. The caller must be a Metastore
+  admin, the owner of the storage credential, or have a level of privilege on
+  the storage credential.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.StorageCredentials.Get(ctx, getReq)
 		if err != nil {
 			return err
@@ -126,11 +144,17 @@ func init() {
 var listCmd = &cobra.Command{
 	Use:   "list",
 	Short: `List credentials.`,
+	Long: `List credentials.
+  
+  Gets an array of storage credentials (as StorageCredentialInfo objects). The
+  array is limited to only those storage credentials the caller has the
+  privilege level to access. If the caller is a Metastore admin, all storage
+  credentials will be retrieved.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.StorageCredentials.ListAll(ctx)
 		if err != nil {
 			return err
@@ -171,11 +195,16 @@ func init() {
 var updateCmd = &cobra.Command{
 	Use:   "update",
 	Short: `Update a credential.`,
+	Long: `Update a credential.
+  
+  Updates a storage credential on the Metastore. The caller must be the owner of
+  the storage credential. If the caller is a Metastore admin, only the __owner__
+  credential can be changed.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.StorageCredentials.Update(ctx, updateReq)
 		if err != nil {
 			return err

@@ -1,8 +1,8 @@
 package git_credentials
 
 import (
+	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
-	"github.com/databricks/bricks/project"
 	"github.com/databricks/databricks-sdk-go/service/gitcredentials"
 	"github.com/spf13/cobra"
 )
@@ -27,11 +27,17 @@ func init() {
 var createCmd = &cobra.Command{
 	Use:   "create",
 	Short: `Create a credential entry.`,
+	Long: `Create a credential entry.
+  
+  Creates a Git credential entry for the user. Only one Git credential per user
+  is supported, so any attempts to create credentials if an entry already exists
+  will fail. Use the PATCH endpoint to update existing credentials, or the
+  DELETE endpoint to delete existing credentials.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.GitCredentials.Create(ctx, createReq)
 		if err != nil {
 			return err
@@ -60,11 +66,14 @@ func init() {
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
 	Short: `Delete a credential.`,
+	Long: `Delete a credential.
+  
+  Deletes the specified Git credential.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.GitCredentials.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
@@ -87,11 +96,14 @@ func init() {
 var getCmd = &cobra.Command{
 	Use:   "get",
 	Short: `Get a credential entry.`,
+	Long: `Get a credential entry.
+  
+  Gets the Git credential with the specified credential ID.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.GitCredentials.Get(ctx, getReq)
 		if err != nil {
 			return err
@@ -115,11 +127,15 @@ func init() {
 var listCmd = &cobra.Command{
 	Use:   "list",
 	Short: `Get Git credentials.`,
+	Long: `Get Git credentials.
+  
+  Lists the calling user's Git credentials. One credential per user is
+  supported.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.GitCredentials.ListAll(ctx)
 		if err != nil {
 			return err
@@ -151,11 +167,14 @@ func init() {
 var updateCmd = &cobra.Command{
 	Use:   "update",
 	Short: `Update a credential.`,
+	Long: `Update a credential.
+  
+  Updates the specified Git credential.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.GitCredentials.Update(ctx, updateReq)
 		if err != nil {
 			return err

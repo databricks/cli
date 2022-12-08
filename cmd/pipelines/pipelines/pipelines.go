@@ -1,8 +1,8 @@
 package pipelines
 
 import (
+	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
-	"github.com/databricks/bricks/project"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/spf13/cobra"
 )
@@ -41,11 +41,15 @@ func init() {
 var createPipelineCmd = &cobra.Command{
 	Use:   "create-pipeline",
 	Short: `Create a pipeline.`,
+	Long: `Create a pipeline.
+  
+  Creates a new data processing pipeline based on the requested configuration.
+  If successful, this method returns the ID of the new pipeline.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Pipelines.CreatePipeline(ctx, createPipelineReq)
 		if err != nil {
 			return err
@@ -74,11 +78,14 @@ func init() {
 var deletePipelineCmd = &cobra.Command{
 	Use:   "delete-pipeline",
 	Short: `Delete a pipeline.`,
+	Long: `Delete a pipeline.
+  
+  Deletes a pipeline.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.Pipelines.DeletePipeline(ctx, deletePipelineReq)
 		if err != nil {
 			return err
@@ -101,11 +108,12 @@ func init() {
 var getPipelineCmd = &cobra.Command{
 	Use:   "get-pipeline",
 	Short: `Get a pipeline.`,
+	Long:  `Get a pipeline.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Pipelines.GetPipeline(ctx, getPipelineReq)
 		if err != nil {
 			return err
@@ -135,11 +143,14 @@ func init() {
 var getUpdateCmd = &cobra.Command{
 	Use:   "get-update",
 	Short: `Get a pipeline update.`,
+	Long: `Get a pipeline update.
+  
+  Gets an update from an active pipeline.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Pipelines.GetUpdate(ctx, getUpdateReq)
 		if err != nil {
 			return err
@@ -171,11 +182,14 @@ func init() {
 var listPipelinesCmd = &cobra.Command{
 	Use:   "list-pipelines",
 	Short: `List pipelines.`,
+	Long: `List pipelines.
+  
+  Lists pipelines defined in the Delta Live Tables system.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Pipelines.ListPipelinesAll(ctx, listPipelinesReq)
 		if err != nil {
 			return err
@@ -207,11 +221,14 @@ func init() {
 var listUpdatesCmd = &cobra.Command{
 	Use:   "list-updates",
 	Short: `List pipeline updates.`,
+	Long: `List pipeline updates.
+  
+  List updates for an active pipeline.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Pipelines.ListUpdates(ctx, listUpdatesReq)
 		if err != nil {
 			return err
@@ -240,11 +257,14 @@ func init() {
 var resetPipelineCmd = &cobra.Command{
 	Use:   "reset-pipeline",
 	Short: `Reset a pipeline.`,
+	Long: `Reset a pipeline.
+  
+  Resets a pipeline.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.Pipelines.ResetPipeline(ctx, resetPipelineReq)
 		if err != nil {
 			return err
@@ -271,11 +291,14 @@ func init() {
 var startUpdateCmd = &cobra.Command{
 	Use:   "start-update",
 	Short: `Queue a pipeline update.`,
+	Long: `Queue a pipeline update.
+  
+  Starts or queues a pipeline update.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Pipelines.StartUpdate(ctx, startUpdateReq)
 		if err != nil {
 			return err
@@ -304,11 +327,14 @@ func init() {
 var stopPipelineCmd = &cobra.Command{
 	Use:   "stop-pipeline",
 	Short: `Stop a pipeline.`,
+	Long: `Stop a pipeline.
+  
+  Stops a pipeline.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.Pipelines.StopPipeline(ctx, stopPipelineReq)
 		if err != nil {
 			return err
@@ -348,11 +374,14 @@ func init() {
 var updatePipelineCmd = &cobra.Command{
 	Use:   "update-pipeline",
 	Short: `Edit a pipeline.`,
+	Long: `Edit a pipeline.
+  
+  Updates a pipeline with the supplied configuration.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.Pipelines.UpdatePipeline(ctx, updatePipelineReq)
 		if err != nil {
 			return err

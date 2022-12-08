@@ -1,8 +1,8 @@
 package registry_webhooks
 
 import (
+	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
-	"github.com/databricks/bricks/project"
 	"github.com/databricks/databricks-sdk-go/service/mlflow"
 	"github.com/spf13/cobra"
 )
@@ -29,11 +29,16 @@ func init() {
 var createCmd = &cobra.Command{
 	Use:   "create",
 	Short: `Create a webhook.`,
+	Long: `Create a webhook.
+  
+  **NOTE**: This endpoint is in Public Preview.
+  
+  Creates a registry webhook.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.RegistryWebhooks.Create(ctx, createReq)
 		if err != nil {
 			return err
@@ -62,11 +67,16 @@ func init() {
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
 	Short: `Delete a webhook.`,
+	Long: `Delete a webhook.
+  
+  **NOTE:** This endpoint is in Public Preview.
+  
+  Deletes a registry webhook.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.RegistryWebhooks.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
@@ -91,11 +101,16 @@ func init() {
 var listCmd = &cobra.Command{
 	Use:   "list",
 	Short: `List registry webhooks.`,
+	Long: `List registry webhooks.
+  
+  **NOTE:** This endpoint is in Public Preview.
+  
+  Lists all registry webhooks.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.RegistryWebhooks.ListAll(ctx, listReq)
 		if err != nil {
 			return err
@@ -125,11 +140,16 @@ func init() {
 var testCmd = &cobra.Command{
 	Use:   "test",
 	Short: `Test a webhook.`,
+	Long: `Test a webhook.
+  
+  **NOTE:** This endpoint is in Public Preview.
+  
+  Tests a registry webhook.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.RegistryWebhooks.Test(ctx, testReq)
 		if err != nil {
 			return err
@@ -163,11 +183,16 @@ func init() {
 var updateCmd = &cobra.Command{
 	Use:   "update",
 	Short: `Update a webhook.`,
+	Long: `Update a webhook.
+  
+  **NOTE:** This endpoint is in Public Preview.
+  
+  Updates a registry webhook.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.RegistryWebhooks.Update(ctx, updateReq)
 		if err != nil {
 			return err

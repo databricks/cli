@@ -1,8 +1,8 @@
 package recipients
 
 import (
+	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
-	"github.com/databricks/bricks/project"
 	"github.com/databricks/databricks-sdk-go/service/unitycatalog"
 	"github.com/spf13/cobra"
 )
@@ -36,11 +36,16 @@ func init() {
 var createCmd = &cobra.Command{
 	Use:   "create",
 	Short: `Create a share recipient.`,
+	Long: `Create a share recipient.
+  
+  Creates a new recipient with the delta sharing authentication type in the
+  Metastore. The caller must be a Metastore admin or has the CREATE RECIPIENT
+  privilege on the Metastore.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Recipients.Create(ctx, createReq)
 		if err != nil {
 			return err
@@ -69,11 +74,15 @@ func init() {
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
 	Short: `Delete a share recipient.`,
+	Long: `Delete a share recipient.
+  
+  Deletes the specified recipient from the Metastore. The caller must be the
+  owner of the recipient.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.Recipients.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
@@ -96,11 +105,16 @@ func init() {
 var getCmd = &cobra.Command{
 	Use:   "get",
 	Short: `Get a share recipient.`,
+	Long: `Get a share recipient.
+  
+  Gets a share recipient from the Metastore if:
+  
+  * the caller is the owner of the share recipient, or: * is a Metastore admin`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Recipients.Get(ctx, getReq)
 		if err != nil {
 			return err
@@ -129,11 +143,16 @@ func init() {
 var listCmd = &cobra.Command{
 	Use:   "list",
 	Short: `List share recipients.`,
+	Long: `List share recipients.
+  
+  Gets an array of all share recipients within the current Metastore where:
+  
+  * the caller is a Metastore admin, or * the caller is the owner.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Recipients.ListAll(ctx, listReq)
 		if err != nil {
 			return err
@@ -163,11 +182,15 @@ func init() {
 var rotateTokenCmd = &cobra.Command{
 	Use:   "rotate-token",
 	Short: `Rotate a token.`,
+	Long: `Rotate a token.
+  
+  Refreshes the specified recipient's delta sharing authentication token with
+  the provided token info. The caller must be the owner of the recipient.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Recipients.RotateToken(ctx, rotateTokenReq)
 		if err != nil {
 			return err
@@ -196,11 +219,15 @@ func init() {
 var sharePermissionsCmd = &cobra.Command{
 	Use:   "share-permissions",
 	Short: `Get share permissions.`,
+	Long: `Get share permissions.
+  
+  Gets the share permissions for the specified Recipient. The caller must be a
+  Metastore admin or the owner of the Recipient.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Recipients.SharePermissions(ctx, sharePermissionsReq)
 		if err != nil {
 			return err
@@ -240,11 +267,16 @@ func init() {
 var updateCmd = &cobra.Command{
 	Use:   "update",
 	Short: `Update a share recipient.`,
+	Long: `Update a share recipient.
+  
+  Updates an existing recipient in the Metastore. The caller must be a Metastore
+  admin or the owner of the recipient. If the recipient name will be updated,
+  the user must be both a Metastore admin and the owner of the recipient.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.Recipients.Update(ctx, updateReq)
 		if err != nil {
 			return err

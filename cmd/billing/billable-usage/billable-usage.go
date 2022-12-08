@@ -1,7 +1,7 @@
 package billable_usage
 
 import (
-	"github.com/databricks/bricks/project"
+	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/databricks-sdk-go/service/billing"
 	"github.com/spf13/cobra"
 )
@@ -26,11 +26,18 @@ func init() {
 var downloadCmd = &cobra.Command{
 	Use:   "download",
 	Short: `Return billable usage logs.`,
+	Long: `Return billable usage logs.
+  
+  Returns billable usage logs in CSV format for the specified account and date
+  range. For the data schema, see [CSV file schema]. Note that this method might
+  take multiple seconds to complete.
+  
+  [CSV file schema]: https://docs.databricks.com/administration-guide/account-settings/usage-analysis.html#schema`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		a := project.Get(ctx).AccountClient()
+		a := sdk.AccountClient(ctx)
 		err := a.BillableUsage.Download(ctx, downloadReq)
 		if err != nil {
 			return err

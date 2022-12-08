@@ -1,8 +1,8 @@
 package model_versions
 
 import (
+	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
-	"github.com/databricks/bricks/project"
 	"github.com/databricks/databricks-sdk-go/service/mlflow"
 	"github.com/spf13/cobra"
 )
@@ -29,11 +29,14 @@ func init() {
 var createCmd = &cobra.Command{
 	Use:   "create",
 	Short: `Create a model version.`,
+	Long: `Create a model version.
+  
+  Creates a model version.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.ModelVersions.Create(ctx, createReq)
 		if err != nil {
 			return err
@@ -63,11 +66,14 @@ func init() {
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
 	Short: `Delete a model version.`,
+	Long: `Delete a model version.
+  
+  Deletes a model version.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.ModelVersions.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
@@ -92,11 +98,14 @@ func init() {
 var deleteTagCmd = &cobra.Command{
 	Use:   "delete-tag",
 	Short: `Delete a model version tag.`,
+	Long: `Delete a model version tag.
+  
+  Deletes a model version tag.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.ModelVersions.DeleteTag(ctx, deleteTagReq)
 		if err != nil {
 			return err
@@ -120,11 +129,14 @@ func init() {
 var getCmd = &cobra.Command{
 	Use:   "get",
 	Short: `Get a model version.`,
+	Long: `Get a model version.
+  
+  Get a model version.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.ModelVersions.Get(ctx, getReq)
 		if err != nil {
 			return err
@@ -154,11 +166,14 @@ func init() {
 var getDownloadUriCmd = &cobra.Command{
 	Use:   "get-download-uri",
 	Short: `Get a model version URI.`,
+	Long: `Get a model version URI.
+  
+  Gets a URI to download the model version.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.ModelVersions.GetDownloadUri(ctx, getDownloadUriReq)
 		if err != nil {
 			return err
@@ -190,11 +205,14 @@ func init() {
 var searchCmd = &cobra.Command{
 	Use:   "search",
 	Short: `Searches model versions.`,
+	Long: `Searches model versions.
+  
+  Searches for specific model versions based on the supplied __filter__.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.ModelVersions.SearchAll(ctx, searchReq)
 		if err != nil {
 			return err
@@ -226,11 +244,14 @@ func init() {
 var setTagCmd = &cobra.Command{
 	Use:   "set-tag",
 	Short: `Set a version tag.`,
+	Long: `Set a version tag.
+  
+  Sets a model version tag.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.ModelVersions.SetTag(ctx, setTagReq)
 		if err != nil {
 			return err
@@ -256,11 +277,14 @@ func init() {
 var transitionStageCmd = &cobra.Command{
 	Use:   "transition-stage",
 	Short: `Transition a stage.`,
+	Long: `Transition a stage.
+  
+  Transition to the next model stage.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.ModelVersions.TransitionStage(ctx, transitionStageReq)
 		if err != nil {
 			return err
@@ -291,11 +315,14 @@ func init() {
 var updateCmd = &cobra.Command{
 	Use:   "update",
 	Short: `Update model version.`,
+	Long: `Update model version.
+  
+  Updates the model version.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.ModelVersions.Update(ctx, updateReq)
 		if err != nil {
 			return err

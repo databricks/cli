@@ -1,8 +1,8 @@
 package grants
 
 import (
+	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
-	"github.com/databricks/bricks/project"
 	"github.com/databricks/databricks-sdk-go/service/unitycatalog"
 	"github.com/spf13/cobra"
 )
@@ -27,11 +27,14 @@ func init() {
 var getCmd = &cobra.Command{
 	Use:   "get",
 	Short: `Get permissions.`,
+	Long: `Get permissions.
+  
+  Gets the permissions for a Securable type.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Grants.Get(ctx, getReq)
 		if err != nil {
 			return err
@@ -63,11 +66,14 @@ func init() {
 var updateCmd = &cobra.Command{
 	Use:   "update",
 	Short: `Update permissions.`,
+	Long: `Update permissions.
+  
+  Updates the permissions for a Securable type.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.Grants.Update(ctx, updateReq)
 		if err != nil {
 			return err

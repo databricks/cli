@@ -1,8 +1,8 @@
 package external_locations
 
 import (
+	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
-	"github.com/databricks/bricks/project"
 	"github.com/databricks/databricks-sdk-go/service/unitycatalog"
 	"github.com/spf13/cobra"
 )
@@ -35,11 +35,16 @@ func init() {
 var createCmd = &cobra.Command{
 	Use:   "create",
 	Short: `Create an external location.`,
+	Long: `Create an external location.
+  
+  Creates a new External Location entry in the Metastore. The caller must be a
+  Metastore admin or have the CREATE EXTERNAL LOCATION privilege on the
+  Metastore.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.ExternalLocations.Create(ctx, createReq)
 		if err != nil {
 			return err
@@ -69,11 +74,15 @@ func init() {
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
 	Short: `Delete an external location.`,
+	Long: `Delete an external location.
+  
+  Deletes the specified external location from the Metastore. The caller must be
+  the owner of the external location.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.ExternalLocations.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
@@ -96,11 +105,16 @@ func init() {
 var getCmd = &cobra.Command{
 	Use:   "get",
 	Short: `Get an external location.`,
+	Long: `Get an external location.
+  
+  Gets an external location from the Metastore. The caller must be either a
+  Metastore admin, the owner of the external location, or has an appropriate
+  privilege level on the Metastore.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.ExternalLocations.Get(ctx, getReq)
 		if err != nil {
 			return err
@@ -124,11 +138,16 @@ func init() {
 var listCmd = &cobra.Command{
 	Use:   "list",
 	Short: `List external locations.`,
+	Long: `List external locations.
+  
+  Gets an array of External Locations (ExternalLocationInfo objects) from the
+  Metastore. The caller must be a Metastore admin, is the owner of the external
+  location, or has privileges to access the external location.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.ExternalLocations.ListAll(ctx)
 		if err != nil {
 			return err
@@ -168,11 +187,16 @@ func init() {
 var updateCmd = &cobra.Command{
 	Use:   "update",
 	Short: `Update an external location.`,
+	Long: `Update an external location.
+  
+  Updates an external location in the Metastore. The caller must be the owner of
+  the externa location, or be a Metastore admin. In the second case, the admin
+  can only update the name of the external location.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.ExternalLocations.Update(ctx, updateReq)
 		if err != nil {
 			return err

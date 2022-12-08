@@ -1,8 +1,8 @@
 package clusters
 
 import (
+	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
-	"github.com/databricks/bricks/project"
 	"github.com/databricks/databricks-sdk-go/service/clusters"
 	"github.com/spf13/cobra"
 )
@@ -26,11 +26,15 @@ func init() {
 var changeOwnerCmd = &cobra.Command{
 	Use:   "change-owner",
 	Short: `Change cluster owner.`,
+	Long: `Change cluster owner.
+  
+  Change the owner of the cluster. You must be an admin to perform this
+  operation.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.Clusters.ChangeOwner(ctx, changeOwnerReq)
 		if err != nil {
 			return err
@@ -77,11 +81,26 @@ func init() {
 var createCmd = &cobra.Command{
 	Use:   "create",
 	Short: `Create new cluster.`,
+	Long: `Create new cluster.
+  
+  Creates a new Spark cluster. This method will acquire new instances from the
+  cloud provider if necessary. This method is asynchronous; the returned
+  cluster_id can be used to poll the cluster status. When this method returns,
+  the cluster will be in\na PENDING state. The cluster will be usable once it
+  enters a RUNNING state.
+  
+  Note: Databricks may not be able to acquire some of the requested nodes, due
+  to cloud provider limitations (account limits, spot price, etc.) or transient
+  network issues.
+  
+  If Databricks acquires at least 85% of the requested on-demand nodes, cluster
+  creation will succeed. Otherwise the cluster will terminate with an
+  informative error message.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Clusters.Create(ctx, createReq)
 		if err != nil {
 			return err
@@ -110,11 +129,17 @@ func init() {
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
 	Short: `Terminate cluster.`,
+	Long: `Terminate cluster.
+  
+  Terminates the Spark cluster with the specified ID. The cluster is removed
+  asynchronously. Once the termination has completed, the cluster will be in a
+  TERMINATED state. If the cluster is already in a TERMINATING or
+  TERMINATED state, nothing will happen.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.Clusters.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
@@ -162,11 +187,25 @@ func init() {
 var editCmd = &cobra.Command{
 	Use:   "edit",
 	Short: `Update cluster configuration.`,
+	Long: `Update cluster configuration.
+  
+  Updates the configuration of a cluster to match the provided attributes and
+  size. A cluster can be updated if it is in a RUNNING or TERMINATED state.
+  
+  If a cluster is updated while in a RUNNING state, it will be restarted so
+  that the new attributes can take effect.
+  
+  If a cluster is updated while in a TERMINATED state, it will remain
+  TERMINATED. The next time it is started using the clusters/start API, the
+  new attributes will take effect. Any attempt to update a cluster in any other
+  state will be rejected with an INVALID_STATE error code.
+  
+  Clusters created by the Databricks Jobs service cannot be edited.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.Clusters.Edit(ctx, editReq)
 		if err != nil {
 			return err
@@ -195,11 +234,16 @@ func init() {
 var eventsCmd = &cobra.Command{
 	Use:   "events",
 	Short: `List cluster activity events.`,
+	Long: `List cluster activity events.
+  
+  Retrieves a list of events about the activity of a cluster. This API is
+  paginated. If there are more events to read, the response includes all the
+  nparameters necessary to request the next page of events.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Clusters.EventsAll(ctx, eventsReq)
 		if err != nil {
 			return err
@@ -228,11 +272,15 @@ func init() {
 var getCmd = &cobra.Command{
 	Use:   "get",
 	Short: `Get cluster info.`,
+	Long: `Get cluster info.
+  
+  "Retrieves the information for a cluster given its identifier. Clusters can be
+  described while they are running, or up to 60 days after they are terminated.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Clusters.Get(ctx, getReq)
 		if err != nil {
 			return err
@@ -261,11 +309,22 @@ func init() {
 var listCmd = &cobra.Command{
 	Use:   "list",
 	Short: `List all clusters.`,
+	Long: `List all clusters.
+  
+  Returns information about all pinned clusters, currently active clusters, up
+  to 70 of the most recently terminated interactive clusters in the past 7 days,
+  and up to 30 of the most recently terminated job clusters in the past 7 days.
+  
+  For example, if there is 1 pinned cluster, 4 active clusters, 45 terminated
+  interactive clusters in the past 7 days, and 50 terminated job clusters\nin
+  the past 7 days, then this API returns the 1 pinned cluster, 4 active
+  clusters, all 45 terminated interactive clusters, and the 30 most recently
+  terminated job clusters.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Clusters.ListAll(ctx, listReq)
 		if err != nil {
 			return err
@@ -289,11 +348,15 @@ func init() {
 var listNodeTypesCmd = &cobra.Command{
 	Use:   "list-node-types",
 	Short: `List node types.`,
+	Long: `List node types.
+  
+  Returns a list of supported Spark node types. These node types can be used to
+  launch a cluster.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Clusters.ListNodeTypes(ctx)
 		if err != nil {
 			return err
@@ -317,11 +380,15 @@ func init() {
 var listZonesCmd = &cobra.Command{
 	Use:   "list-zones",
 	Short: `List availability zones.`,
+	Long: `List availability zones.
+  
+  Returns a list of availability zones where clusters can be created in (For
+  example, us-west-2a). These zones can be used to launch a cluster.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Clusters.ListZones(ctx)
 		if err != nil {
 			return err
@@ -350,11 +417,19 @@ func init() {
 var permanentDeleteCmd = &cobra.Command{
 	Use:   "permanent-delete",
 	Short: `Permanently delete cluster.`,
+	Long: `Permanently delete cluster.
+  
+  Permanently deletes a Spark cluster. This cluster is terminated and resources
+  are asynchronously removed.
+  
+  In addition, users will no longer see permanently deleted clusters in the
+  cluster list, and API users can no longer perform any action on permanently
+  deleted clusters.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.Clusters.PermanentDelete(ctx, permanentDeleteReq)
 		if err != nil {
 			return err
@@ -377,11 +452,16 @@ func init() {
 var pinCmd = &cobra.Command{
 	Use:   "pin",
 	Short: `Pin cluster.`,
+	Long: `Pin cluster.
+  
+  Pinning a cluster ensures that the cluster will always be returned by the
+  ListClusters API. Pinning a cluster that is already pinned will have no
+  effect. This API can only be called by workspace admins.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.Clusters.Pin(ctx, pinReq)
 		if err != nil {
 			return err
@@ -406,11 +486,15 @@ func init() {
 var resizeCmd = &cobra.Command{
 	Use:   "resize",
 	Short: `Resize cluster.`,
+	Long: `Resize cluster.
+  
+  Resizes a cluster to have a desired number of workers. This will fail unless
+  the cluster is in a RUNNING state.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.Clusters.Resize(ctx, resizeReq)
 		if err != nil {
 			return err
@@ -434,11 +518,15 @@ func init() {
 var restartCmd = &cobra.Command{
 	Use:   "restart",
 	Short: `Restart cluster.`,
+	Long: `Restart cluster.
+  
+  Restarts a Spark cluster with the supplied ID. If the cluster is not currently
+  in a RUNNING state, nothing will happen.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.Clusters.Restart(ctx, restartReq)
 		if err != nil {
 			return err
@@ -456,11 +544,15 @@ func init() {
 var sparkVersionsCmd = &cobra.Command{
 	Use:   "spark-versions",
 	Short: `List available Spark versions.`,
+	Long: `List available Spark versions.
+  
+  Returns the list of available Spark versions. These versions can be used to
+  launch a cluster.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Clusters.SparkVersions(ctx)
 		if err != nil {
 			return err
@@ -489,11 +581,21 @@ func init() {
 var startCmd = &cobra.Command{
 	Use:   "start",
 	Short: `Start terminated cluster.`,
+	Long: `Start terminated cluster.
+  
+  Starts a terminated Spark cluster with the supplied ID. This works similar to
+  createCluster except:
+  
+  * The previous cluster id and attributes are preserved. * The cluster starts
+  with the last specified cluster size. * If the previous cluster was an
+  autoscaling cluster, the current cluster starts with the minimum number of
+  nodes. * If the cluster is not currently in a TERMINATED state, nothing will
+  happen. * Clusters launched to run a job cannot be started.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.Clusters.Start(ctx, startReq)
 		if err != nil {
 			return err
@@ -516,11 +618,16 @@ func init() {
 var unpinCmd = &cobra.Command{
 	Use:   "unpin",
 	Short: `Unpin cluster.`,
+	Long: `Unpin cluster.
+  
+  Unpinning a cluster will allow the cluster to eventually be removed from the
+  ListClusters API. Unpinning a cluster that is not pinned will have no effect.
+  This API can only be called by workspace admins.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.Clusters.Unpin(ctx, unpinReq)
 		if err != nil {
 			return err

@@ -1,8 +1,8 @@
 package catalogs
 
 import (
+	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
-	"github.com/databricks/bricks/project"
 	"github.com/databricks/databricks-sdk-go/service/unitycatalog"
 	"github.com/spf13/cobra"
 )
@@ -29,11 +29,15 @@ func init() {
 var createCmd = &cobra.Command{
 	Use:   "create",
 	Short: `Create a catalog.`,
+	Long: `Create a catalog.
+  
+  Creates a new catalog instance in the parent Metastore if the caller is a
+  Metastore admin or has the CREATE CATALOG privilege.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Catalogs.Create(ctx, createReq)
 		if err != nil {
 			return err
@@ -62,11 +66,15 @@ func init() {
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
 	Short: `Delete a catalog.`,
+	Long: `Delete a catalog.
+  
+  Deletes the catalog that matches the supplied name. The caller must be a
+  Metastore admin or the owner of the catalog.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.Catalogs.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
@@ -89,11 +97,15 @@ func init() {
 var getCmd = &cobra.Command{
 	Use:   "get",
 	Short: `Get a catalog.`,
+	Long: `Get a catalog.
+  
+  Gets an array of all catalogs in the current Metastore for which the user is
+  an admin or Catalog owner, or has the USAGE privilege set for their account.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Catalogs.Get(ctx, getReq)
 		if err != nil {
 			return err
@@ -117,11 +129,16 @@ func init() {
 var listCmd = &cobra.Command{
 	Use:   "list",
 	Short: `List catalogs.`,
+	Long: `List catalogs.
+  
+  Gets an array of External Locations (ExternalLocationInfo objects) from the
+  Metastore. The caller must be a Metastore admin, is the owner of the External
+  Location, or has privileges to access the External Location.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Catalogs.ListAll(ctx)
 		if err != nil {
 			return err
@@ -162,11 +179,16 @@ func init() {
 var updateCmd = &cobra.Command{
 	Use:   "update",
 	Short: `Update a catalog.`,
+	Long: `Update a catalog.
+  
+  Updates the catalog that matches the supplied name. The caller must be either
+  the owner of the catalog, or a Metastore admin (when changing the owner field
+  of the catalog).`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.Catalogs.Update(ctx, updateReq)
 		if err != nil {
 			return err

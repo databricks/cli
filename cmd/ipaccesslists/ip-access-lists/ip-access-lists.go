@@ -1,8 +1,8 @@
 package ip_access_lists
 
 import (
+	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
-	"github.com/databricks/bricks/project"
 	"github.com/databricks/databricks-sdk-go/service/ipaccesslists"
 	"github.com/spf13/cobra"
 )
@@ -27,11 +27,28 @@ func init() {
 var createCmd = &cobra.Command{
 	Use:   "create",
 	Short: `Create access list.`,
+	Long: `Create access list.
+  
+  Creates an IP access list for this workspace. A list can be an allow list or a
+  block list. See the top of this file for a description of how the server
+  treats allow lists and block lists at runtime.
+  
+  When creating or updating an IP access list:
+  
+  * For all allow lists and block lists combined, the API supports a maximum of
+  1000 IP/CIDR values, where one CIDR counts as a single value. Attempts to
+  exceed that number return error 400 with error_code value QUOTA_EXCEEDED.
+  * If the new list would block the calling user's current IP, error 400 is
+  returned with error_code value INVALID_STATE.
+  
+  It can take a few minutes for the changes to take effect. **Note**: Your new
+  IP access list has no effect until you enable the feature. See
+  [/workspace-conf](#operation/set-status).`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.IpAccessLists.Create(ctx, createReq)
 		if err != nil {
 			return err
@@ -60,11 +77,14 @@ func init() {
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
 	Short: `Delete access list.`,
+	Long: `Delete access list.
+  
+  Deletes an IP access list, specified by its list ID.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.IpAccessLists.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
@@ -87,11 +107,14 @@ func init() {
 var getCmd = &cobra.Command{
 	Use:   "get",
 	Short: `Get access list.`,
+	Long: `Get access list.
+  
+  Gets an IP access list, specified by its list ID.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.IpAccessLists.Get(ctx, getReq)
 		if err != nil {
 			return err
@@ -115,11 +138,14 @@ func init() {
 var listCmd = &cobra.Command{
 	Use:   "list",
 	Short: `Get access lists.`,
+	Long: `Get access lists.
+  
+  Gets all IP access lists for the specified workspace.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.IpAccessLists.ListAll(ctx)
 		if err != nil {
 			return err
@@ -153,11 +179,24 @@ func init() {
 var replaceCmd = &cobra.Command{
 	Use:   "replace",
 	Short: `Replace access list.`,
+	Long: `Replace access list.
+  
+  Replaces an IP access list, specified by its ID. A list can include allow
+  lists and block lists. See the top of this file for a description of how the
+  server treats allow lists and block lists at run time. When replacing an IP
+  access list: * For all allow lists and block lists combined, the API supports
+  a maximum of 1000 IP/CIDR values, where one CIDR counts as a single value.
+  Attempts to exceed that number return error 400 with error_code value
+  QUOTA_EXCEEDED. * If the resulting list would block the calling user's
+  current IP, error 400 is returned with error_code value INVALID_STATE. It
+  can take a few minutes for the changes to take effect. Note that your
+  resulting IP access list has no effect until you enable the feature. See
+  :method:workspaceconf/setStatus.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.IpAccessLists.Replace(ctx, replaceReq)
 		if err != nil {
 			return err
@@ -185,11 +224,28 @@ func init() {
 var updateCmd = &cobra.Command{
 	Use:   "update",
 	Short: `Update access list.`,
+	Long: `Update access list.
+  
+  Updates an existing IP access list, specified by its ID. A list can include
+  allow lists and block lists. See the top of this file for a description of how
+  the server treats allow lists and block lists at run time.
+  
+  When updating an IP access list:
+  
+  * For all allow lists and block lists combined, the API supports a maximum of
+  1000 IP/CIDR values, where one CIDR counts as a single value. Attempts to
+  exceed that number return error 400 with error_code value QUOTA_EXCEEDED.
+  * If the updated list would block the calling user's current IP, error 400 is
+  returned with error_code value INVALID_STATE.
+  
+  It can take a few minutes for the changes to take effect. Note that your
+  resulting IP access list has no effect until you enable the feature. See
+  :method:workspaceconf/setStatus.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.IpAccessLists.Update(ctx, updateReq)
 		if err != nil {
 			return err

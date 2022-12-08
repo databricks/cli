@@ -1,8 +1,8 @@
 package providers
 
 import (
+	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
-	"github.com/databricks/bricks/project"
 	"github.com/databricks/databricks-sdk-go/service/unitycatalog"
 	"github.com/spf13/cobra"
 )
@@ -35,11 +35,15 @@ func init() {
 var createCmd = &cobra.Command{
 	Use:   "create",
 	Short: `Create an auth provider.`,
+	Long: `Create an auth provider.
+  
+  Creates a new authentication provider minimally based on a name and
+  authentication type. The caller must be an admin on the Metastore.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Providers.Create(ctx, createReq)
 		if err != nil {
 			return err
@@ -68,11 +72,15 @@ func init() {
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
 	Short: `Delete a provider.`,
+	Long: `Delete a provider.
+  
+  Deletes an authentication provider, if the caller is a Metastore admin or is
+  the owner of the provider.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.Providers.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
@@ -95,11 +103,16 @@ func init() {
 var getCmd = &cobra.Command{
 	Use:   "get",
 	Short: `Get a provider.`,
+	Long: `Get a provider.
+  
+  Gets a specific authentication provider. The caller must supply the name of
+  the provider, and must either be a Metastore admin or the owner of the
+  provider.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Providers.Get(ctx, getReq)
 		if err != nil {
 			return err
@@ -128,11 +141,16 @@ func init() {
 var listCmd = &cobra.Command{
 	Use:   "list",
 	Short: `List providers.`,
+	Long: `List providers.
+  
+  Gets an array of available authentication providers. The caller must either be
+  a Metastore admin or the owner of the providers. Providers not owned by the
+  caller are not included in the response.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Providers.ListAll(ctx, listReq)
 		if err != nil {
 			return err
@@ -161,11 +179,16 @@ func init() {
 var listSharesCmd = &cobra.Command{
 	Use:   "list-shares",
 	Short: `List shares.`,
+	Long: `List shares.
+  
+  Gets an array of all shares within the Metastore where:
+  
+  * the caller is a Metastore admin, or * the caller is the owner.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Providers.ListShares(ctx, listSharesReq)
 		if err != nil {
 			return err
@@ -204,11 +227,17 @@ func init() {
 var updateCmd = &cobra.Command{
 	Use:   "update",
 	Short: `Update a provider.`,
+	Long: `Update a provider.
+  
+  Updates the information for an authentication provider, if the caller is a
+  Metastore admin or is the owner of the provider. If the update changes the
+  provider name, the caller must be both a Metastore admin and the owner of the
+  provider.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.Providers.Update(ctx, updateReq)
 		if err != nil {
 			return err

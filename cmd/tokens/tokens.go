@@ -10,6 +10,7 @@ var Cmd = &cobra.Command{
 }
 
 func init() {
+	Cmd.PersistentFlags().String("profile", "", "~/.databrickscfg profile")
 
 	Cmd.AddCommand(tokens.Cmd)
 }

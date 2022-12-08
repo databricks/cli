@@ -1,8 +1,8 @@
 package users
 
 import (
+	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
-	"github.com/databricks/bricks/project"
 	"github.com/databricks/databricks-sdk-go/service/scim"
 	"github.com/spf13/cobra"
 )
@@ -34,11 +34,15 @@ func init() {
 var createCmd = &cobra.Command{
 	Use:   "create",
 	Short: `Create a new user.`,
+	Long: `Create a new user.
+  
+  Creates a new user in the Databricks Workspace. This new user will also be
+  added to the Databricks account.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Users.Create(ctx, createReq)
 		if err != nil {
 			return err
@@ -67,11 +71,15 @@ func init() {
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
 	Short: `Delete a user.`,
+	Long: `Delete a user.
+  
+  Deletes a user. Deleting a user from a Databricks Workspace also removes
+  objects associated with the user.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.Users.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
@@ -94,11 +102,14 @@ func init() {
 var getCmd = &cobra.Command{
 	Use:   "get",
 	Short: `Get user details.`,
+	Long: `Get user details.
+  
+  Gets information for a specific user in Databricks Workspace.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Users.Get(ctx, getReq)
 		if err != nil {
 			return err
@@ -133,11 +144,14 @@ func init() {
 var listCmd = &cobra.Command{
 	Use:   "list",
 	Short: `List users.`,
+	Long: `List users.
+  
+  Gets details for all the users associated with a Databricks Workspace.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Users.ListAll(ctx, listReq)
 		if err != nil {
 			return err
@@ -167,11 +181,15 @@ func init() {
 var patchCmd = &cobra.Command{
 	Use:   "patch",
 	Short: `Update user details.`,
+	Long: `Update user details.
+  
+  Partially updates a user resource by applying the supplied operations on
+  specific user attributes.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.Users.Patch(ctx, patchReq)
 		if err != nil {
 			return err
@@ -203,11 +221,14 @@ func init() {
 var updateCmd = &cobra.Command{
 	Use:   "update",
 	Short: `Replace a user.`,
+	Long: `Replace a user.
+  
+  Replaces a user's information with the data supplied in request.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.Users.Update(ctx, updateReq)
 		if err != nil {
 			return err

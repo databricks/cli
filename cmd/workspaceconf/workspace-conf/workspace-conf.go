@@ -1,8 +1,8 @@
 package workspace_conf
 
 import (
+	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
-	"github.com/databricks/bricks/project"
 	"github.com/databricks/databricks-sdk-go/service/workspaceconf"
 	"github.com/spf13/cobra"
 )
@@ -25,11 +25,14 @@ func init() {
 var getStatusCmd = &cobra.Command{
 	Use:   "get-status",
 	Short: `Check configuration status.`,
+	Long: `Check configuration status.
+  
+  Gets the configuration status for a workspace.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.WorkspaceConf.GetStatus(ctx, getStatusReq)
 		if err != nil {
 			return err
@@ -56,11 +59,15 @@ func init() {
 var setStatusCmd = &cobra.Command{
 	Use:   "set-status",
 	Short: `Enable/disable features.`,
+	Long: `Enable/disable features.
+  
+  Sets the configuration status for a workspace, including enabling or disabling
+  it.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.WorkspaceConf.SetStatus(ctx, setStatusReq)
 		if err != nil {
 			return err

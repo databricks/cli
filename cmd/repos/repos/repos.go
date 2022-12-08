@@ -1,8 +1,8 @@
 package repos
 
 import (
+	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
-	"github.com/databricks/bricks/project"
 	"github.com/databricks/databricks-sdk-go/service/repos"
 	"github.com/spf13/cobra"
 )
@@ -27,11 +27,16 @@ func init() {
 var createCmd = &cobra.Command{
 	Use:   "create",
 	Short: `Create a repo.`,
+	Long: `Create a repo.
+  
+  Creates a repo in the workspace and links it to the remote Git repo specified.
+  Note that repos created programmatically must be linked to a remote Git repo,
+  unlike repos created in the browser.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Repos.Create(ctx, createReq)
 		if err != nil {
 			return err
@@ -60,11 +65,14 @@ func init() {
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
 	Short: `Delete a repo.`,
+	Long: `Delete a repo.
+  
+  Deletes the specified repo.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.Repos.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
@@ -87,11 +95,14 @@ func init() {
 var getCmd = &cobra.Command{
 	Use:   "get",
 	Short: `Get a repo.`,
+	Long: `Get a repo.
+  
+  Returns the repo with the given repo ID.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Repos.Get(ctx, getReq)
 		if err != nil {
 			return err
@@ -121,11 +132,15 @@ func init() {
 var listCmd = &cobra.Command{
 	Use:   "list",
 	Short: `Get repos.`,
+	Long: `Get repos.
+  
+  Returns repos that the calling user has Manage permissions on. Results are
+  paginated with each page containing twenty repos.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Repos.ListAll(ctx, listReq)
 		if err != nil {
 			return err
@@ -156,11 +171,15 @@ func init() {
 var updateCmd = &cobra.Command{
 	Use:   "update",
 	Short: `Update a repo.`,
+	Long: `Update a repo.
+  
+  Updates the repo to a different branch or tag, or updates the repo to the
+  latest commit on the same branch.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.Repos.Update(ctx, updateReq)
 		if err != nil {
 			return err

@@ -1,8 +1,8 @@
 package metastores
 
 import (
+	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
-	"github.com/databricks/bricks/project"
 	"github.com/databricks/databricks-sdk-go/service/unitycatalog"
 	"github.com/spf13/cobra"
 )
@@ -27,11 +27,16 @@ func init() {
 var assignCmd = &cobra.Command{
 	Use:   "assign",
 	Short: `Create an assignment.`,
+	Long: `Create an assignment.
+  
+  Creates a new Metastore assignment. If an assignment for the same
+  __workspace_id__ exists, it will be overwritten by the new __metastore_id__
+  and __default_catalog_name__. The caller must be an account admin.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.Metastores.Assign(ctx, assignReq)
 		if err != nil {
 			return err
@@ -67,11 +72,14 @@ func init() {
 var createCmd = &cobra.Command{
 	Use:   "create",
 	Short: `Create a Metastore.`,
+	Long: `Create a Metastore.
+  
+  Creates a new Metastore based on a provided name and storage root path.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Metastores.Create(ctx, createReq)
 		if err != nil {
 			return err
@@ -101,11 +109,14 @@ func init() {
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
 	Short: `Delete a Metastore.`,
+	Long: `Delete a Metastore.
+  
+  Deletes a Metastore. The caller must be a Metastore admin.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.Metastores.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
@@ -128,11 +139,15 @@ func init() {
 var getCmd = &cobra.Command{
 	Use:   "get",
 	Short: `Get a Metastore.`,
+	Long: `Get a Metastore.
+  
+  Gets a Metastore that matches the supplied ID. The caller must be a Metastore
+  admin to retrieve this info.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Metastores.Get(ctx, getReq)
 		if err != nil {
 			return err
@@ -156,11 +171,15 @@ func init() {
 var listCmd = &cobra.Command{
 	Use:   "list",
 	Short: `List Metastores.`,
+	Long: `List Metastores.
+  
+  Gets an array of the available Metastores (as MetastoreInfo objects). The
+  caller must be an admin to retrieve this info.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Metastores.ListAll(ctx)
 		if err != nil {
 			return err
@@ -184,11 +203,15 @@ func init() {
 var summaryCmd = &cobra.Command{
 	Use:   "summary",
 	Short: `Get a summary.`,
+	Long: `Get a summary.
+  
+  Gets information about a Metastore. This summary includes the storage
+  credential, the cloud vendor, the cloud region, and the global Metastore ID.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Metastores.Summary(ctx)
 		if err != nil {
 			return err
@@ -218,11 +241,14 @@ func init() {
 var unassignCmd = &cobra.Command{
 	Use:   "unassign",
 	Short: `Delete an assignment.`,
+	Long: `Delete an assignment.
+  
+  Deletes a Metastore assignment. The caller must be an account administrator.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.Metastores.Unassign(ctx, unassignReq)
 		if err != nil {
 			return err
@@ -259,11 +285,15 @@ func init() {
 var updateCmd = &cobra.Command{
 	Use:   "update",
 	Short: `Update a Metastore.`,
+	Long: `Update a Metastore.
+  
+  Updates information for a specific Metastore. The caller must be a Metastore
+  admin.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.Metastores.Update(ctx, updateReq)
 		if err != nil {
 			return err
@@ -288,11 +318,17 @@ func init() {
 var updateAssignmentCmd = &cobra.Command{
 	Use:   "update-assignment",
 	Short: `Update an assignment.`,
+	Long: `Update an assignment.
+  
+  Updates a Metastore assignment. This operation can be used to update
+  __metastore_id__ or __default_catalog_name__ for a specified Workspace, if the
+  Workspace is already assigned a Metastore. The caller must be an account admin
+  to update __metastore_id__; otherwise, the caller can be a Workspace admin.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.Metastores.UpdateAssignment(ctx, updateAssignmentReq)
 		if err != nil {
 			return err

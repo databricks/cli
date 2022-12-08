@@ -16,6 +16,7 @@ var Cmd = &cobra.Command{
 }
 
 func init() {
+	Cmd.PersistentFlags().String("profile", "", "~/.databrickscfg profile")
 
 	Cmd.AddCommand(credentials.Cmd)
 	Cmd.AddCommand(encryption_keys.Cmd)

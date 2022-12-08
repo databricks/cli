@@ -1,8 +1,8 @@
 package data_sources
 
 import (
+	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
-	"github.com/databricks/bricks/project"
 	"github.com/spf13/cobra"
 )
 
@@ -19,11 +19,16 @@ func init() {
 var listDataSourcesCmd = &cobra.Command{
 	Use:   "list-data-sources",
 	Short: `Get a list of SQL warehouses.`,
+	Long: `Get a list of SQL warehouses.
+  
+  Retrieves a full list of SQL warehouses available in this workspace. All
+  fields that appear in this API response are enumerated for clarity. However,
+  you need only a SQL warehouse's id to create new queries against it.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.DataSources.ListDataSources(ctx)
 		if err != nil {
 			return err

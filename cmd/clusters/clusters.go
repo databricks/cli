@@ -11,6 +11,7 @@ var Cmd = &cobra.Command{
 }
 
 func init() {
+	Cmd.PersistentFlags().String("profile", "", "~/.databrickscfg profile")
 
 	Cmd.AddCommand(clusters.Cmd)
 	Cmd.AddCommand(instance_profiles.Cmd)

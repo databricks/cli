@@ -39,11 +39,12 @@ var {{.CamelName}}Cmd = &cobra.Command{
 	Use: "{{.KebabName}}",
 	{{if .Description -}}
     Short: `{{.Summary | without "`"}}`,
+	Long: `{{.Comment  "  " 80 | without "`"}}`,
     {{end}}
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.{{if .Service.IsAccounts}}PreAccountClient{{else}}PreWorkspaceClient{{end}},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		{{if .Service.IsAccounts}}a{{else}}w{{end}} := project.Get(ctx).{{if .Service.IsAccounts}}AccountClient{{else}}WorkspacesClient{{end}}()
+		{{if .Service.IsAccounts}}a := sdk.AccountClient(ctx){{else}}w := sdk.WorkspaceClient(ctx){{end}}
 		{{if .Response}}response, {{end}}err := {{if .Service.IsAccounts}}a{{else}}w{{end}}.{{if eq .Service.Package.Name "scim" -}}
 			{{trim_prefix .Service.PascalName "Account"}} 
 		{{- else}}{{.Service.PascalName}}{{end}}.{{.PascalName}}{{if .Pagination}}All{{end}}(ctx{{if .Request}}, {{.CamelName}}Req{{end}})
@@ -60,7 +61,6 @@ var {{.CamelName}}Cmd = &cobra.Command{
 		return nil
 	},
 }
-
 {{end}}
 {{end}}
 

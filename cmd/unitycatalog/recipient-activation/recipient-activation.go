@@ -1,8 +1,8 @@
 package recipient_activation
 
 import (
+	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
-	"github.com/databricks/bricks/project"
 	"github.com/databricks/databricks-sdk-go/service/unitycatalog"
 	"github.com/spf13/cobra"
 )
@@ -25,11 +25,14 @@ func init() {
 var getActivationUrlInfoCmd = &cobra.Command{
 	Use:   "get-activation-url-info",
 	Short: `Get a share activation URL.`,
+	Long: `Get a share activation URL.
+  
+  Gets information about an Activation URL.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.RecipientActivation.GetActivationUrlInfo(ctx, getActivationUrlInfoReq)
 		if err != nil {
 			return err
@@ -52,11 +55,15 @@ func init() {
 var retrieveTokenCmd = &cobra.Command{
 	Use:   "retrieve-token",
 	Short: `Get an access token.`,
+	Long: `Get an access token.
+  
+  RPC to retrieve access token with an activation token. This is a public API
+  without any authentication.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.RecipientActivation.RetrieveToken(ctx, retrieveTokenReq)
 		if err != nil {
 			return err

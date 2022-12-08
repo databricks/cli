@@ -1,8 +1,8 @@
 package transition_requests
 
 import (
+	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
-	"github.com/databricks/bricks/project"
 	"github.com/databricks/databricks-sdk-go/service/mlflow"
 	"github.com/spf13/cobra"
 )
@@ -28,11 +28,14 @@ func init() {
 var approveCmd = &cobra.Command{
 	Use:   "approve",
 	Short: `Approve transition requests.`,
+	Long: `Approve transition requests.
+  
+  Approves a model version stage transition request.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.TransitionRequests.Approve(ctx, approveReq)
 		if err != nil {
 			return err
@@ -64,11 +67,14 @@ func init() {
 var createCmd = &cobra.Command{
 	Use:   "create",
 	Short: `Make a transition request.`,
+	Long: `Make a transition request.
+  
+  Creates a model version stage transition request.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.TransitionRequests.Create(ctx, createReq)
 		if err != nil {
 			return err
@@ -101,11 +107,14 @@ func init() {
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
 	Short: `Delete a ransition request.`,
+	Long: `Delete a ransition request.
+  
+  Cancels a model version stage transition request.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.TransitionRequests.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
@@ -129,11 +138,14 @@ func init() {
 var listCmd = &cobra.Command{
 	Use:   "list",
 	Short: `List transition requests.`,
+	Long: `List transition requests.
+  
+  Gets a list of all open stage transition requests for the model version.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.TransitionRequests.ListAll(ctx, listReq)
 		if err != nil {
 			return err
@@ -165,11 +177,14 @@ func init() {
 var rejectCmd = &cobra.Command{
 	Use:   "reject",
 	Short: `Reject a transition request.`,
+	Long: `Reject a transition request.
+  
+  Rejects a model version stage transition request.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.TransitionRequests.Reject(ctx, rejectReq)
 		if err != nil {
 			return err

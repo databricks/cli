@@ -1,8 +1,8 @@
 package workspace_assignment
 
 import (
+	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
-	"github.com/databricks/bricks/project"
 	"github.com/databricks/databricks-sdk-go/service/permissions"
 	"github.com/spf13/cobra"
 )
@@ -26,11 +26,14 @@ func init() {
 var createCmd = &cobra.Command{
 	Use:   "create",
 	Short: `Create permission assignments.`,
+	Long: `Create permission assignments.
+  
+  Create new permission assignments for the specified account and workspace.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		a := project.Get(ctx).AccountClient()
+		a := sdk.AccountClient(ctx)
 		response, err := a.WorkspaceAssignment.Create(ctx, createReq)
 		if err != nil {
 			return err
@@ -60,11 +63,15 @@ func init() {
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
 	Short: `Delete permissions assignment.`,
+	Long: `Delete permissions assignment.
+  
+  Deletes the workspace permissions assignment for a given account and workspace
+  using the specified service principal.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		a := project.Get(ctx).AccountClient()
+		a := sdk.AccountClient(ctx)
 		err := a.WorkspaceAssignment.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
@@ -87,11 +94,14 @@ func init() {
 var getCmd = &cobra.Command{
 	Use:   "get",
 	Short: `List workspace permissions.`,
+	Long: `List workspace permissions.
+  
+  Get an array of workspace permissions for the specified account and workspace.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		a := project.Get(ctx).AccountClient()
+		a := sdk.AccountClient(ctx)
 		response, err := a.WorkspaceAssignment.Get(ctx, getReq)
 		if err != nil {
 			return err
@@ -120,11 +130,15 @@ func init() {
 var listCmd = &cobra.Command{
 	Use:   "list",
 	Short: `Get permission assignments.`,
+	Long: `Get permission assignments.
+  
+  Get the permission assignments for the specified Databricks Account and
+  Databricks Workspace.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		a := project.Get(ctx).AccountClient()
+		a := sdk.AccountClient(ctx)
 		response, err := a.WorkspaceAssignment.ListAll(ctx, listReq)
 		if err != nil {
 			return err
@@ -155,11 +169,15 @@ func init() {
 var updateCmd = &cobra.Command{
 	Use:   "update",
 	Short: `Update permissions assignment.`,
+	Long: `Update permissions assignment.
+  
+  Updates the workspace permissions assignment for a given account and workspace
+  using the specified service principal.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		a := project.Get(ctx).AccountClient()
+		a := sdk.AccountClient(ctx)
 		err := a.WorkspaceAssignment.Update(ctx, updateReq)
 		if err != nil {
 			return err

@@ -1,8 +1,8 @@
 package schemas
 
 import (
+	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
-	"github.com/databricks/bricks/project"
 	"github.com/databricks/databricks-sdk-go/service/unitycatalog"
 	"github.com/spf13/cobra"
 )
@@ -36,11 +36,15 @@ func init() {
 var createCmd = &cobra.Command{
 	Use:   "create",
 	Short: `Create a schema.`,
+	Long: `Create a schema.
+  
+  Creates a new schema for catalog in the Metatastore. The caller must be a
+  Metastore admin, or have the CREATE privilege in the parentcatalog.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Schemas.Create(ctx, createReq)
 		if err != nil {
 			return err
@@ -69,11 +73,15 @@ func init() {
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
 	Short: `Delete a schema.`,
+	Long: `Delete a schema.
+  
+  Deletes the specified schema from the parent catalog. The caller must be the
+  owner of the schema or an owner of the parent catalog.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.Schemas.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
@@ -96,11 +104,16 @@ func init() {
 var getCmd = &cobra.Command{
 	Use:   "get",
 	Short: `Get a schema.`,
+	Long: `Get a schema.
+  
+  Gets the specified schema for a catalog in the Metastore. The caller must be a
+  Metastore admin, the owner of the schema, or a user that has the USAGE
+  privilege on the schema.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Schemas.Get(ctx, getReq)
 		if err != nil {
 			return err
@@ -129,11 +142,17 @@ func init() {
 var listCmd = &cobra.Command{
 	Use:   "list",
 	Short: `List schemas.`,
+	Long: `List schemas.
+  
+  Gets an array of schemas for catalog in the Metastore. If the caller is the
+  Metastore admin or the owner of the parent catalog, all schemas for the
+  catalog will be retrieved. Otherwise, only schemas owned by the caller (or for
+  which the caller has the USAGE privilege) will be retrieved.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Schemas.ListAll(ctx, listReq)
 		if err != nil {
 			return err
@@ -173,11 +192,17 @@ func init() {
 var updateCmd = &cobra.Command{
 	Use:   "update",
 	Short: `Update a schema.`,
+	Long: `Update a schema.
+  
+  Updates a schema for a catalog. The caller must be the owner of the schema. If
+  the caller is a Metastore admin, only the __owner__ field can be changed in
+  the update. If the __name__ field must be updated, the caller must be a
+  Metastore admin or have the CREATE privilege on the parent catalog.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.Schemas.Update(ctx, updateReq)
 		if err != nil {
 			return err

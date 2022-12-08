@@ -1,8 +1,8 @@
 package experiments
 
 import (
+	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
-	"github.com/databricks/bricks/project"
 	"github.com/databricks/databricks-sdk-go/service/mlflow"
 	"github.com/spf13/cobra"
 )
@@ -26,11 +26,19 @@ func init() {
 var createCmd = &cobra.Command{
 	Use:   "create",
 	Short: `Create experiment.`,
+	Long: `Create experiment.
+  
+  Creates an experiment with a name. Returns the ID of the newly created
+  experiment. Validates that another experiment with the same name does not
+  already exist and fails if another experiment with the same name already
+  exists.
+  
+  Throws RESOURCE_ALREADY_EXISTS if a experiment with the given name exists.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Experiments.Create(ctx, createReq)
 		if err != nil {
 			return err
@@ -59,11 +67,16 @@ func init() {
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
 	Short: `Delete an experiment.`,
+	Long: `Delete an experiment.
+  
+  Marks an experiment and associated metadata, runs, metrics, params, and tags
+  for deletion. If the experiment uses FileStore, artifacts associated with
+  experiment are also deleted.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.Experiments.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
@@ -86,11 +99,14 @@ func init() {
 var getCmd = &cobra.Command{
 	Use:   "get",
 	Short: `Get an experiment.`,
+	Long: `Get an experiment.
+  
+  Gets metadata for an experiment. This method works on deleted experiments.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Experiments.Get(ctx, getReq)
 		if err != nil {
 			return err
@@ -119,11 +135,22 @@ func init() {
 var getByNameCmd = &cobra.Command{
 	Use:   "get-by-name",
 	Short: `Get metadata.`,
+	Long: `Get metadata.
+  
+  "Gets metadata for an experiment.
+  
+  This endpoint will return deleted experiments, but prefers the active
+  experiment if an active and deleted experiment share the same name. If
+  multiple deleted\nexperiments share the same name, the API will return one of
+  them.
+  
+  Throws RESOURCE_DOES_NOT_EXIST if no experiment with the specified name
+  exists.S`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Experiments.GetByName(ctx, getByNameReq)
 		if err != nil {
 			return err
@@ -154,11 +181,14 @@ func init() {
 var listCmd = &cobra.Command{
 	Use:   "list",
 	Short: `List experiments.`,
+	Long: `List experiments.
+  
+  Gets a list of all experiments.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Experiments.ListAll(ctx, listReq)
 		if err != nil {
 			return err
@@ -187,11 +217,18 @@ func init() {
 var restoreCmd = &cobra.Command{
 	Use:   "restore",
 	Short: `Restores an experiment.`,
+	Long: `Restores an experiment.
+  
+  "Restore an experiment marked for deletion. This also restores\nassociated
+  metadata, runs, metrics, params, and tags. If experiment uses FileStore,
+  underlying\nartifacts associated with experiment are also restored.\n\nThrows
+  RESOURCE_DOES_NOT_EXIST if experiment was never created or was permanently
+  deleted.",`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.Experiments.Restore(ctx, restoreReq)
 		if err != nil {
 			return err
@@ -218,11 +255,14 @@ func init() {
 var searchCmd = &cobra.Command{
 	Use:   "search",
 	Short: `Search experiments.`,
+	Long: `Search experiments.
+  
+  Searches for experiments that satisfy specified search criteria.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Experiments.SearchAll(ctx, searchReq)
 		if err != nil {
 			return err
@@ -253,11 +293,14 @@ func init() {
 var setExperimentTagCmd = &cobra.Command{
 	Use:   "set-experiment-tag",
 	Short: `Set a tag.`,
+	Long: `Set a tag.
+  
+  Sets a tag on an experiment. Experiment tags are metadata that can be updated.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.Experiments.SetExperimentTag(ctx, setExperimentTagReq)
 		if err != nil {
 			return err
@@ -281,11 +324,14 @@ func init() {
 var updateCmd = &cobra.Command{
 	Use:   "update",
 	Short: `Update an experiment.`,
+	Long: `Update an experiment.
+  
+  Updates experiment metadata.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.Experiments.Update(ctx, updateReq)
 		if err != nil {
 			return err

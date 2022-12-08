@@ -1,8 +1,8 @@
 package account_groups
 
 import (
+	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
-	"github.com/databricks/bricks/project"
 	"github.com/databricks/databricks-sdk-go/service/scim"
 	"github.com/spf13/cobra"
 )
@@ -31,11 +31,15 @@ func init() {
 var createCmd = &cobra.Command{
 	Use:   "create",
 	Short: `Create a new group.`,
+	Long: `Create a new group.
+  
+  Creates a group in the Databricks Account with a unique name, using the
+  supplied group details.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		a := project.Get(ctx).AccountClient()
+		a := sdk.AccountClient(ctx)
 		response, err := a.Groups.Create(ctx, createReq)
 		if err != nil {
 			return err
@@ -64,11 +68,14 @@ func init() {
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
 	Short: `Delete a group.`,
+	Long: `Delete a group.
+  
+  Deletes a group from the Databricks Account.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		a := project.Get(ctx).AccountClient()
+		a := sdk.AccountClient(ctx)
 		err := a.Groups.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
@@ -91,11 +98,14 @@ func init() {
 var getCmd = &cobra.Command{
 	Use:   "get",
 	Short: `Get group details.`,
+	Long: `Get group details.
+  
+  Gets the information for a specific group in the Databricks Account.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		a := project.Get(ctx).AccountClient()
+		a := sdk.AccountClient(ctx)
 		response, err := a.Groups.Get(ctx, getReq)
 		if err != nil {
 			return err
@@ -130,11 +140,14 @@ func init() {
 var listCmd = &cobra.Command{
 	Use:   "list",
 	Short: `List group details.`,
+	Long: `List group details.
+  
+  Gets all details of the groups associated with the Databricks Account.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		a := project.Get(ctx).AccountClient()
+		a := sdk.AccountClient(ctx)
 		response, err := a.Groups.ListAll(ctx, listReq)
 		if err != nil {
 			return err
@@ -164,11 +177,14 @@ func init() {
 var patchCmd = &cobra.Command{
 	Use:   "patch",
 	Short: `Update group details.`,
+	Long: `Update group details.
+  
+  Partially updates the details of a group.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		a := project.Get(ctx).AccountClient()
+		a := sdk.AccountClient(ctx)
 		err := a.Groups.Patch(ctx, patchReq)
 		if err != nil {
 			return err
@@ -197,11 +213,14 @@ func init() {
 var updateCmd = &cobra.Command{
 	Use:   "update",
 	Short: `Replace a group.`,
+	Long: `Replace a group.
+  
+  Updates the details of a group by replacing the entire group entity.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		a := project.Get(ctx).AccountClient()
+		a := sdk.AccountClient(ctx)
 		err := a.Groups.Update(ctx, updateReq)
 		if err != nil {
 			return err

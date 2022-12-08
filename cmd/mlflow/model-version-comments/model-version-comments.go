@@ -1,8 +1,8 @@
 package model_version_comments
 
 import (
+	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
-	"github.com/databricks/bricks/project"
 	"github.com/databricks/databricks-sdk-go/service/mlflow"
 	"github.com/spf13/cobra"
 )
@@ -26,11 +26,16 @@ func init() {
 var createCmd = &cobra.Command{
 	Use:   "create",
 	Short: `Post a comment.`,
+	Long: `Post a comment.
+  
+  Posts a comment on a model version. A comment can be submitted either by a
+  user or programmatically to display relevant information about the model. For
+  example, test results or deployment errors.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.ModelVersionComments.Create(ctx, createReq)
 		if err != nil {
 			return err
@@ -59,11 +64,14 @@ func init() {
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
 	Short: `Delete a comment.`,
+	Long: `Delete a comment.
+  
+  Deletes a comment on a model version.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.ModelVersionComments.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
@@ -87,11 +95,14 @@ func init() {
 var updateCmd = &cobra.Command{
 	Use:   "update",
 	Short: `Update a comment.`,
+	Long: `Update a comment.
+  
+  Post an edit to a comment on a model version.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.ModelVersionComments.Update(ctx, updateReq)
 		if err != nil {
 			return err

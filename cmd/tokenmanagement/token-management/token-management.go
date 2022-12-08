@@ -1,8 +1,8 @@
 package token_management
 
 import (
+	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
-	"github.com/databricks/bricks/project"
 	"github.com/databricks/databricks-sdk-go/service/tokenmanagement"
 	"github.com/spf13/cobra"
 )
@@ -27,11 +27,14 @@ func init() {
 var createOboTokenCmd = &cobra.Command{
 	Use:   "create-obo-token",
 	Short: `Create on-behalf token.`,
+	Long: `Create on-behalf token.
+  
+  Creates a token on behalf of a service principal.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.TokenManagement.CreateOboToken(ctx, createOboTokenReq)
 		if err != nil {
 			return err
@@ -60,11 +63,14 @@ func init() {
 var deleteTokenCmd = &cobra.Command{
 	Use:   "delete-token",
 	Short: `Delete a token.`,
+	Long: `Delete a token.
+  
+  Deletes a token, specified by its ID.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.TokenManagement.DeleteToken(ctx, deleteTokenReq)
 		if err != nil {
 			return err
@@ -87,11 +93,14 @@ func init() {
 var getTokenInfoCmd = &cobra.Command{
 	Use:   "get-token-info",
 	Short: `Get token info.`,
+	Long: `Get token info.
+  
+  Gets information about a token, specified by its ID.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.TokenManagement.GetTokenInfo(ctx, getTokenInfoReq)
 		if err != nil {
 			return err
@@ -121,11 +130,14 @@ func init() {
 var listTokensCmd = &cobra.Command{
 	Use:   "list-tokens",
 	Short: `List all tokens.`,
+	Long: `List all tokens.
+  
+  Lists all tokens associated with the specified workspace or user.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.TokenManagement.ListTokensAll(ctx, listTokensReq)
 		if err != nil {
 			return err

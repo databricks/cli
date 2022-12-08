@@ -1,8 +1,8 @@
 package m_lflow_artifacts
 
 import (
+	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
-	"github.com/databricks/bricks/project"
 	"github.com/databricks/databricks-sdk-go/service/mlflow"
 	"github.com/spf13/cobra"
 )
@@ -27,11 +27,15 @@ func init() {
 var listCmd = &cobra.Command{
 	Use:   "list",
 	Short: `Get all artifacts.`,
+	Long: `Get all artifacts.
+  
+  List artifacts for a run. Takes an optional artifact_path prefix. If it is
+  specified, the response contains only artifacts with the specified prefix.",`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.MLflowArtifacts.ListAll(ctx, listReq)
 		if err != nil {
 			return err

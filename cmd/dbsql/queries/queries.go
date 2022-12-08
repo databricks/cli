@@ -1,8 +1,8 @@
 package queries
 
 import (
+	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
-	"github.com/databricks/bricks/project"
 	"github.com/databricks/databricks-sdk-go/service/dbsql"
 	"github.com/spf13/cobra"
 )
@@ -31,11 +31,22 @@ func init() {
 var createQueryCmd = &cobra.Command{
 	Use:   "create-query",
 	Short: `Create a new query definition.`,
+	Long: `Create a new query definition.
+  
+  Creates a new query definition. Queries created with this endpoint belong to
+  the authenticated user making the request.
+  
+  The data_source_id field specifies the ID of the SQL warehouse to run this
+  query against. You can use the Data Sources API to see a complete list of
+  available SQL warehouses. Or you can copy the data_source_id from an
+  existing query.
+  
+  **Note**: You cannot add a visualization until you create the query.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Queries.CreateQuery(ctx, createQueryReq)
 		if err != nil {
 			return err
@@ -64,11 +75,16 @@ func init() {
 var deleteQueryCmd = &cobra.Command{
 	Use:   "delete-query",
 	Short: `Delete a query.`,
+	Long: `Delete a query.
+  
+  Moves a query to the trash. Trashed queries immediately disappear from
+  searches and list views, and they cannot be used for alerts. The trash is
+  deleted after 30 days.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.Queries.DeleteQuery(ctx, deleteQueryReq)
 		if err != nil {
 			return err
@@ -91,11 +107,15 @@ func init() {
 var getQueryCmd = &cobra.Command{
 	Use:   "get-query",
 	Short: `Get a query definition.`,
+	Long: `Get a query definition.
+  
+  Retrieve a query object definition along with contextual permissions
+  information about the currently authenticated user.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Queries.GetQuery(ctx, getQueryReq)
 		if err != nil {
 			return err
@@ -127,11 +147,15 @@ func init() {
 var listQueriesCmd = &cobra.Command{
 	Use:   "list-queries",
 	Short: `Get a list of queries.`,
+	Long: `Get a list of queries.
+  
+  Gets a list of queries. Optionally, this list can be filtered by a search
+  term.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Queries.ListQueriesAll(ctx, listQueriesReq)
 		if err != nil {
 			return err
@@ -160,11 +184,15 @@ func init() {
 var restoreQueryCmd = &cobra.Command{
 	Use:   "restore-query",
 	Short: `Restore a query.`,
+	Long: `Restore a query.
+  
+  Restore a query that has been moved to the trash. A restored query appears in
+  list views and searches. You can use restored queries for alerts.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.Queries.RestoreQuery(ctx, restoreQueryReq)
 		if err != nil {
 			return err
@@ -193,11 +221,16 @@ func init() {
 var updateQueryCmd = &cobra.Command{
 	Use:   "update-query",
 	Short: `Change a query definition.`,
+	Long: `Change a query definition.
+  
+  Modify this query definition.
+  
+  **Note**: You cannot undo this operation.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Queries.UpdateQuery(ctx, updateQueryReq)
 		if err != nil {
 			return err

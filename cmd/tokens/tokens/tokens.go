@@ -1,8 +1,8 @@
 package tokens
 
 import (
+	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
-	"github.com/databricks/bricks/project"
 	"github.com/databricks/databricks-sdk-go/service/tokens"
 	"github.com/spf13/cobra"
 )
@@ -26,11 +26,17 @@ func init() {
 var createCmd = &cobra.Command{
 	Use:   "create",
 	Short: `Create a user token.`,
+	Long: `Create a user token.
+  
+  Creates and returns a token for a user. If this call is made through token
+  authentication, it creates a token with the same client ID as the
+  authenticated token. If the user's token quota is exceeded, this call returns
+  an error **QUOTA_EXCEEDED**.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Tokens.Create(ctx, createReq)
 		if err != nil {
 			return err
@@ -59,11 +65,17 @@ func init() {
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
 	Short: `Revoke token.`,
+	Long: `Revoke token.
+  
+  Revokes an access token.
+  
+  If a token with the specified ID is not valid, this call returns an error
+  **RESOURCE_DOES_NOT_EXIST**.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.Tokens.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
@@ -81,11 +93,14 @@ func init() {
 var listCmd = &cobra.Command{
 	Use:   "list",
 	Short: `List tokens.`,
+	Long: `List tokens.
+  
+  Lists all the valid tokens for a user-workspace pair.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Tokens.ListAll(ctx)
 		if err != nil {
 			return err

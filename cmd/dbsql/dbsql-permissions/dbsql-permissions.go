@@ -1,8 +1,8 @@
 package dbsql_permissions
 
 import (
+	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
-	"github.com/databricks/bricks/project"
 	"github.com/databricks/databricks-sdk-go/service/dbsql"
 	"github.com/spf13/cobra"
 )
@@ -26,11 +26,15 @@ func init() {
 var getPermissionsCmd = &cobra.Command{
 	Use:   "get-permissions",
 	Short: `Get object ACL.`,
+	Long: `Get object ACL.
+  
+  Gets a JSON representation of the access control list (ACL) for a specified
+  object.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.DbsqlPermissions.GetPermissions(ctx, getPermissionsReq)
 		if err != nil {
 			return err
@@ -61,11 +65,15 @@ func init() {
 var setPermissionsCmd = &cobra.Command{
 	Use:   "set-permissions",
 	Short: `Set object ACL.`,
+	Long: `Set object ACL.
+  
+  Sets the access control list (ACL) for a specified object. This operation will
+  complete rewrite the ACL.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.DbsqlPermissions.SetPermissions(ctx, setPermissionsReq)
 		if err != nil {
 			return err
@@ -96,11 +104,15 @@ func init() {
 var transferOwnershipCmd = &cobra.Command{
 	Use:   "transfer-ownership",
 	Short: `Transfer object ownership.`,
+	Long: `Transfer object ownership.
+  
+  Transfers ownership of a dashboard, query, or alert to an active user.
+  Requires an admin API key.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.DbsqlPermissions.TransferOwnership(ctx, transferOwnershipReq)
 		if err != nil {
 			return err

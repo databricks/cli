@@ -1,8 +1,8 @@
 package dashboards
 
 import (
+	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
-	"github.com/databricks/bricks/project"
 	"github.com/databricks/databricks-sdk-go/service/dbsql"
 	"github.com/spf13/cobra"
 )
@@ -30,11 +30,12 @@ func init() {
 var createDashboardCmd = &cobra.Command{
 	Use:   "create-dashboard",
 	Short: `Create a dashboard object.`,
+	Long:  `Create a dashboard object.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Dashboards.CreateDashboard(ctx, createDashboardReq)
 		if err != nil {
 			return err
@@ -63,11 +64,15 @@ func init() {
 var deleteDashboardCmd = &cobra.Command{
 	Use:   "delete-dashboard",
 	Short: `Remove a dashboard.`,
+	Long: `Remove a dashboard.
+  
+  Moves a dashboard to the trash. Trashed dashboards do not appear in list views
+  or searches, and cannot be shared.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.Dashboards.DeleteDashboard(ctx, deleteDashboardReq)
 		if err != nil {
 			return err
@@ -90,11 +95,15 @@ func init() {
 var getDashboardCmd = &cobra.Command{
 	Use:   "get-dashboard",
 	Short: `Retrieve a definition.`,
+	Long: `Retrieve a definition.
+  
+  Returns a JSON representation of a dashboard object, including its
+  visualization and query objects.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Dashboards.GetDashboard(ctx, getDashboardReq)
 		if err != nil {
 			return err
@@ -126,11 +135,14 @@ func init() {
 var listDashboardsCmd = &cobra.Command{
 	Use:   "list-dashboards",
 	Short: `Get dashboard objects.`,
+	Long: `Get dashboard objects.
+  
+  Fetch a paginated list of dashboard objects.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Dashboards.ListDashboardsAll(ctx, listDashboardsReq)
 		if err != nil {
 			return err
@@ -159,11 +171,14 @@ func init() {
 var restoreDashboardCmd = &cobra.Command{
 	Use:   "restore-dashboard",
 	Short: `Restore a dashboard.`,
+	Long: `Restore a dashboard.
+  
+  A restored dashboard appears in list views and searches and can be shared.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.Dashboards.RestoreDashboard(ctx, restoreDashboardReq)
 		if err != nil {
 			return err

@@ -1,8 +1,8 @@
 package current_user
 
 import (
+	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
-	"github.com/databricks/bricks/project"
 	"github.com/spf13/cobra"
 )
 
@@ -19,11 +19,14 @@ func init() {
 var meCmd = &cobra.Command{
 	Use:   "me",
 	Short: `Get current user info.`,
+	Long: `Get current user info.
+  
+  Get details about the current method caller's identity.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.CurrentUser.Me(ctx)
 		if err != nil {
 			return err

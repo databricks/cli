@@ -1,8 +1,8 @@
 package permissions
 
 import (
+	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
-	"github.com/databricks/bricks/project"
 	"github.com/databricks/databricks-sdk-go/service/permissions"
 	"github.com/spf13/cobra"
 )
@@ -26,11 +26,15 @@ func init() {
 var getCmd = &cobra.Command{
 	Use:   "get",
 	Short: `Get object permissions.`,
+	Long: `Get object permissions.
+  
+  Gets the permission of an object. Objects can inherit permissions from their
+  parent objects or root objects.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Permissions.Get(ctx, getReq)
 		if err != nil {
 			return err
@@ -60,11 +64,14 @@ func init() {
 var getPermissionLevelsCmd = &cobra.Command{
 	Use:   "get-permission-levels",
 	Short: `Get permission levels.`,
+	Long: `Get permission levels.
+  
+  Gets the permission levels that a user can have on an object.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Permissions.GetPermissionLevels(ctx, getPermissionLevelsReq)
 		if err != nil {
 			return err
@@ -95,11 +102,15 @@ func init() {
 var setCmd = &cobra.Command{
 	Use:   "set",
 	Short: `Set permissions.`,
+	Long: `Set permissions.
+  
+  Sets permissions on object. Objects can inherit permissions from their parent
+  objects and root objects.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.Permissions.Set(ctx, setReq)
 		if err != nil {
 			return err
@@ -124,11 +135,14 @@ func init() {
 var updateCmd = &cobra.Command{
 	Use:   "update",
 	Short: `Update permission.`,
+	Long: `Update permission.
+  
+  Updates the permissions on an object.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.Permissions.Update(ctx, updateReq)
 		if err != nil {
 			return err

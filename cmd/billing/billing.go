@@ -12,6 +12,7 @@ var Cmd = &cobra.Command{
 }
 
 func init() {
+	Cmd.PersistentFlags().String("profile", "", "~/.databrickscfg profile")
 
 	Cmd.AddCommand(billable_usage.Cmd)
 	Cmd.AddCommand(budgets.Cmd)

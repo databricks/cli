@@ -1,8 +1,8 @@
 package global_init_scripts
 
 import (
+	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
-	"github.com/databricks/bricks/project"
 	"github.com/databricks/databricks-sdk-go/service/globalinitscripts"
 	"github.com/spf13/cobra"
 )
@@ -28,11 +28,14 @@ func init() {
 var createScriptCmd = &cobra.Command{
 	Use:   "create-script",
 	Short: `Create init script.`,
+	Long: `Create init script.
+  
+  Creates a new global init script in this workspace.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.GlobalInitScripts.CreateScript(ctx, createScriptReq)
 		if err != nil {
 			return err
@@ -61,11 +64,14 @@ func init() {
 var deleteScriptCmd = &cobra.Command{
 	Use:   "delete-script",
 	Short: `Delete init script.`,
+	Long: `Delete init script.
+  
+  Deletes a global init script.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.GlobalInitScripts.DeleteScript(ctx, deleteScriptReq)
 		if err != nil {
 			return err
@@ -88,11 +94,14 @@ func init() {
 var getScriptCmd = &cobra.Command{
 	Use:   "get-script",
 	Short: `Get an init script.`,
+	Long: `Get an init script.
+  
+  Gets all the details of a script, including its Base64-encoded contents.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.GlobalInitScripts.GetScript(ctx, getScriptReq)
 		if err != nil {
 			return err
@@ -116,11 +125,17 @@ func init() {
 var listScriptsCmd = &cobra.Command{
 	Use:   "list-scripts",
 	Short: `Get init scripts.`,
+	Long: `Get init scripts.
+  
+  "Get a list of all global init scripts for this workspace. This returns all
+  properties for each script but **not** the script contents. To retrieve the
+  contents of a script, use the [get a global init
+  script](#operation/get-script) operation.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.GlobalInitScripts.ListScriptsAll(ctx)
 		if err != nil {
 			return err
@@ -153,11 +168,15 @@ func init() {
 var updateScriptCmd = &cobra.Command{
 	Use:   "update-script",
 	Short: `Update init script.`,
+	Long: `Update init script.
+  
+  Updates a global init script, specifying only the fields to change. All fields
+  are optional. Unspecified fields retain their current value.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.GlobalInitScripts.UpdateScript(ctx, updateScriptReq)
 		if err != nil {
 			return err

@@ -1,8 +1,8 @@
 package jobs
 
 import (
+	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
-	"github.com/databricks/bricks/project"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/spf13/cobra"
 )
@@ -25,11 +25,15 @@ func init() {
 var cancelAllRunsCmd = &cobra.Command{
 	Use:   "cancel-all-runs",
 	Short: `Cancel all runs of a job.`,
+	Long: `Cancel all runs of a job.
+  
+  Cancels all active runs of a job. The runs are canceled asynchronously, so it
+  doesn't prevent new runs from being started.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.Jobs.CancelAllRuns(ctx, cancelAllRunsReq)
 		if err != nil {
 			return err
@@ -52,11 +56,15 @@ func init() {
 var cancelRunCmd = &cobra.Command{
 	Use:   "cancel-run",
 	Short: `Cancel a job run.`,
+	Long: `Cancel a job run.
+  
+  Cancels a job run. The run is canceled asynchronously, so it may still be
+  running when this request completes.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.Jobs.CancelRun(ctx, cancelRunReq)
 		if err != nil {
 			return err
@@ -90,11 +98,14 @@ func init() {
 var createCmd = &cobra.Command{
 	Use:   "create",
 	Short: `Create a new job.`,
+	Long: `Create a new job.
+  
+  Create a new job.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Jobs.Create(ctx, createReq)
 		if err != nil {
 			return err
@@ -123,11 +134,14 @@ func init() {
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
 	Short: `Delete a job.`,
+	Long: `Delete a job.
+  
+  Deletes a job.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.Jobs.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
@@ -150,11 +164,14 @@ func init() {
 var deleteRunCmd = &cobra.Command{
 	Use:   "delete-run",
 	Short: `Delete a job run.`,
+	Long: `Delete a job run.
+  
+  Deletes a non-active run. Returns an error if the run is active.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.Jobs.DeleteRun(ctx, deleteRunReq)
 		if err != nil {
 			return err
@@ -178,11 +195,14 @@ func init() {
 var exportRunCmd = &cobra.Command{
 	Use:   "export-run",
 	Short: `Export and retrieve a job run.`,
+	Long: `Export and retrieve a job run.
+  
+  Export and retrieve the job run task.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Jobs.ExportRun(ctx, exportRunReq)
 		if err != nil {
 			return err
@@ -211,11 +231,14 @@ func init() {
 var getCmd = &cobra.Command{
 	Use:   "get",
 	Short: `Get a single job.`,
+	Long: `Get a single job.
+  
+  Retrieves the details for a single job.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Jobs.Get(ctx, getReq)
 		if err != nil {
 			return err
@@ -245,11 +268,14 @@ func init() {
 var getRunCmd = &cobra.Command{
 	Use:   "get-run",
 	Short: `Get a single job run.`,
+	Long: `Get a single job run.
+  
+  Retrieve the metadata of a run.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Jobs.GetRun(ctx, getRunReq)
 		if err != nil {
 			return err
@@ -278,11 +304,23 @@ func init() {
 var getRunOutputCmd = &cobra.Command{
 	Use:   "get-run-output",
 	Short: `Get the output for a single run.`,
+	Long: `Get the output for a single run.
+  
+  Retrieve the output and metadata of a single task run. When a notebook task
+  returns a value through the dbutils.notebook.exit() call, you can use this
+  endpoint to retrieve that value. Databricks restricts this API to returning
+  the first 5 MB of the output. To return a larger result, you can store job
+  results in a cloud storage service.
+  
+  This endpoint validates that the __run_id__ parameter is valid and returns an
+  HTTP status code 400 if the __run_id__ parameter is invalid. Runs are
+  automatically removed after 60 days. If you to want to reference them beyond
+  60 days, you must save old run results before they expire.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Jobs.GetRunOutput(ctx, getRunOutputReq)
 		if err != nil {
 			return err
@@ -314,11 +352,14 @@ func init() {
 var listCmd = &cobra.Command{
 	Use:   "list",
 	Short: `List all jobs.`,
+	Long: `List all jobs.
+  
+  Retrieves a list of jobs.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Jobs.ListAll(ctx, listReq)
 		if err != nil {
 			return err
@@ -355,11 +396,14 @@ func init() {
 var listRunsCmd = &cobra.Command{
 	Use:   "list-runs",
 	Short: `List runs for a job.`,
+	Long: `List runs for a job.
+  
+  List runs in descending order by start time.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Jobs.ListRunsAll(ctx, listRunsReq)
 		if err != nil {
 			return err
@@ -399,11 +443,16 @@ func init() {
 var repairRunCmd = &cobra.Command{
 	Use:   "repair-run",
 	Short: `Repair a job run.`,
+	Long: `Repair a job run.
+  
+  Re-run one or more tasks. Tasks are re-run as part of the original job run.
+  They use the current job and task settings, and can be viewed in the history
+  for the original job run.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Jobs.RepairRun(ctx, repairRunReq)
 		if err != nil {
 			return err
@@ -433,11 +482,15 @@ func init() {
 var resetCmd = &cobra.Command{
 	Use:   "reset",
 	Short: `Overwrites all settings for a job.`,
+	Long: `Overwrites all settings for a job.
+  
+  Overwrites all the settings for a specific job. Use the Update endpoint to
+  update job settings partially.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.Jobs.Reset(ctx, resetReq)
 		if err != nil {
 			return err
@@ -469,11 +522,14 @@ func init() {
 var runNowCmd = &cobra.Command{
 	Use:   "run-now",
 	Short: `Trigger a new job run.`,
+	Long: `Trigger a new job run.
+  
+  Run a job and return the run_id of the triggered run.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Jobs.RunNow(ctx, runNowReq)
 		if err != nil {
 			return err
@@ -508,11 +564,17 @@ func init() {
 var submitCmd = &cobra.Command{
 	Use:   "submit",
 	Short: `Create and trigger a one-time run.`,
+	Long: `Create and trigger a one-time run.
+  
+  Submit a one-time run. This endpoint allows you to submit a workload directly
+  without creating a job. Runs submitted using this endpoint don’t display in
+  the UI. Use the jobs/runs/get API to check the run state after the job is
+  submitted.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Jobs.Submit(ctx, submitReq)
 		if err != nil {
 			return err
@@ -543,11 +605,15 @@ func init() {
 var updateCmd = &cobra.Command{
 	Use:   "update",
 	Short: `Partially updates a job.`,
+	Long: `Partially updates a job.
+  
+  Add, update, or remove specific settings of an existing job. Use the ResetJob
+  to overwrite all job settings.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.Jobs.Update(ctx, updateReq)
 		if err != nil {
 			return err

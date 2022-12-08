@@ -1,8 +1,8 @@
 package budgets
 
 import (
+	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
-	"github.com/databricks/bricks/project"
 	"github.com/databricks/databricks-sdk-go/service/billing"
 	"github.com/spf13/cobra"
 )
@@ -26,11 +26,14 @@ func init() {
 var createCmd = &cobra.Command{
 	Use:   "create",
 	Short: `Create a new budget.`,
+	Long: `Create a new budget.
+  
+  Creates a new budget in the specified account.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		a := project.Get(ctx).AccountClient()
+		a := sdk.AccountClient(ctx)
 		response, err := a.Budgets.Create(ctx, createReq)
 		if err != nil {
 			return err
@@ -59,11 +62,14 @@ func init() {
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
 	Short: `Delete budget.`,
+	Long: `Delete budget.
+  
+  Deletes the budget specified by its UUID.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		a := project.Get(ctx).AccountClient()
+		a := sdk.AccountClient(ctx)
 		err := a.Budgets.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
@@ -86,11 +92,15 @@ func init() {
 var getCmd = &cobra.Command{
 	Use:   "get",
 	Short: `Get budget and its status.`,
+	Long: `Get budget and its status.
+  
+  Gets the budget specified by its UUID, including noncumulative status for each
+  day that the budget is configured to include.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		a := project.Get(ctx).AccountClient()
+		a := sdk.AccountClient(ctx)
 		response, err := a.Budgets.Get(ctx, getReq)
 		if err != nil {
 			return err
@@ -114,11 +124,15 @@ func init() {
 var listCmd = &cobra.Command{
 	Use:   "list",
 	Short: `Get all budgets.`,
+	Long: `Get all budgets.
+  
+  Gets all budgets associated with this account, including noncumulative status
+  for each day that the budget is configured to include.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		a := project.Get(ctx).AccountClient()
+		a := sdk.AccountClient(ctx)
 		response, err := a.Budgets.ListAll(ctx)
 		if err != nil {
 			return err
@@ -148,11 +162,15 @@ func init() {
 var updateCmd = &cobra.Command{
 	Use:   "update",
 	Short: `Modify budget.`,
+	Long: `Modify budget.
+  
+  Modifies a budget in this account. Budget properties are completely
+  overwritten.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		a := project.Get(ctx).AccountClient()
+		a := sdk.AccountClient(ctx)
 		err := a.Budgets.Update(ctx, updateReq)
 		if err != nil {
 			return err

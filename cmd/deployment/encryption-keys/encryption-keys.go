@@ -1,8 +1,8 @@
 package encryption_keys
 
 import (
+	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
-	"github.com/databricks/bricks/project"
 	"github.com/databricks/databricks-sdk-go/service/deployment"
 	"github.com/spf13/cobra"
 )
@@ -26,11 +26,29 @@ func init() {
 var createCmd = &cobra.Command{
 	Use:   "create",
 	Short: `Create encryption key configuration.`,
+	Long: `Create encryption key configuration.
+  
+  Creates a customer-managed key configuration object for an account, specified
+  by ID. This operation uploads a reference to a customer-managed key to
+  Databricks. If the key is assigned as a workspace's customer-managed key for
+  managed services, Databricks uses the key to encrypt the workspaces notebooks
+  and secrets in the control plane, in addition to Databricks SQL queries and
+  query history. If it is specified as a workspace's customer-managed key for
+  workspace storage, the key encrypts the workspace's root S3 bucket (which
+  contains the workspace's root DBFS and system data) and, optionally, cluster
+  EBS volume data.
+  
+  **Important**: Customer-managed keys are supported only for some deployment
+  types, subscription types, and AWS regions.
+  
+  This operation is available only if your account is on the E2 version of the
+  platform or on a select custom plan that allows multiple workspaces per
+  account.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		a := project.Get(ctx).AccountClient()
+		a := sdk.AccountClient(ctx)
 		response, err := a.EncryptionKeys.Create(ctx, createReq)
 		if err != nil {
 			return err
@@ -59,11 +77,15 @@ func init() {
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
 	Short: `Delete encryption key configuration.`,
+	Long: `Delete encryption key configuration.
+  
+  Deletes a customer-managed key configuration object for an account. You cannot
+  delete a configuration that is associated with a running workspace.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		a := project.Get(ctx).AccountClient()
+		a := sdk.AccountClient(ctx)
 		err := a.EncryptionKeys.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
@@ -86,11 +108,28 @@ func init() {
 var getCmd = &cobra.Command{
 	Use:   "get",
 	Short: `Get encryption key configuration.`,
+	Long: `Get encryption key configuration.
+  
+  Gets a customer-managed key configuration object for an account, specified by
+  ID. This operation uploads a reference to a customer-managed key to
+  Databricks. If assigned as a workspace's customer-managed key for managed
+  services, Databricks uses the key to encrypt the workspaces notebooks and
+  secrets in the control plane, in addition to Databricks SQL queries and query
+  history. If it is specified as a workspace's customer-managed key for storage,
+  the key encrypts the workspace's root S3 bucket (which contains the
+  workspace's root DBFS and system data) and, optionally, cluster EBS volume
+  data.
+  
+  **Important**: Customer-managed keys are supported only for some deployment
+  types, subscription types, and AWS regions.
+  
+  This operation is available only if your account is on the E2 version of the
+  platform.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		a := project.Get(ctx).AccountClient()
+		a := sdk.AccountClient(ctx)
 		response, err := a.EncryptionKeys.Get(ctx, getReq)
 		if err != nil {
 			return err
@@ -114,11 +153,21 @@ func init() {
 var getKeyWorkspaceHistoryCmd = &cobra.Command{
 	Use:   "get-key-workspace-history",
 	Short: `Get history of a key's associations with workspaces.`,
+	Long: `Get history of a key's associations with workspaces.
+  
+  Gets a list of records that show how key configurations are associated with
+  workspaces.
+  
+  **Important**: Customer-managed keys are supported only for some deployment
+  types, subscription types, and AWS regions.
+  
+  This operation is available only if your account is on the E2 version of the
+  platform.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		a := project.Get(ctx).AccountClient()
+		a := sdk.AccountClient(ctx)
 		response, err := a.EncryptionKeys.GetKeyWorkspaceHistory(ctx)
 		if err != nil {
 			return err
@@ -142,11 +191,26 @@ func init() {
 var listCmd = &cobra.Command{
 	Use:   "list",
 	Short: `Get all encryption key configurations.`,
+	Long: `Get all encryption key configurations.
+  
+  Gets all customer-managed key configuration objects for an account. If the key
+  is specified as a workspace's managed services customer-managed key,
+  Databricks uses the key to encrypt the workspace's notebooks and secrets in
+  the control plane, in addition to Databricks SQL queries and query history. If
+  the key is specified as a workspace's storage customer-managed key, the key is
+  used to encrypt the workspace's root S3 bucket and optionally can encrypt
+  cluster EBS volumes data in the data plane.
+  
+  **Important**: Customer-managed keys are supported only for some deployment
+  types, subscription types, and AWS regions.
+  
+  This operation is available only if your account is on the E2 version of the
+  platform.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		a := project.Get(ctx).AccountClient()
+		a := sdk.AccountClient(ctx)
 		response, err := a.EncryptionKeys.List(ctx)
 		if err != nil {
 			return err

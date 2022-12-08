@@ -1,8 +1,8 @@
 package private_access
 
 import (
+	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
-	"github.com/databricks/bricks/project"
 	"github.com/databricks/databricks-sdk-go/service/deployment"
 	"github.com/spf13/cobra"
 )
@@ -30,11 +30,33 @@ func init() {
 var createCmd = &cobra.Command{
 	Use:   "create",
 	Short: `Create private access settings.`,
+	Long: `Create private access settings.
+  
+  Creates a private access settings object, which specifies how your workspace
+  is accessed over [AWS PrivateLink]. To use AWS PrivateLink, a workspace must
+  have a private access settings object referenced by ID in the workspace's
+  private_access_settings_id property.
+  
+  You can share one private access settings with multiple workspaces in a single
+  account. However, private access settings are specific to AWS regions, so only
+  workspaces in the same AWS region can use a given private access settings
+  object.
+  
+  Before configuring PrivateLink, read the [Databricks article about
+  PrivateLink].
+  
+  This operation is available only if your account is on the E2 version of the
+  platform and your Databricks account is enabled for PrivateLink (Public
+  Preview). Contact your Databricks representative to enable your account for
+  PrivateLink.
+  
+  [AWS PrivateLink]: https://aws.amazon.com/privatelink
+  [Databricks article about PrivateLink]: https://docs.databricks.com/administration-guide/cloud-configurations/aws/privatelink.html`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		a := project.Get(ctx).AccountClient()
+		a := sdk.AccountClient(ctx)
 		response, err := a.PrivateAccess.Create(ctx, createReq)
 		if err != nil {
 			return err
@@ -63,11 +85,26 @@ func init() {
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
 	Short: `Delete a private access settings object.`,
+	Long: `Delete a private access settings object.
+  
+  Deletes a private access settings object, which determines how your workspace
+  is accessed over [AWS PrivateLink].
+  
+  Before configuring PrivateLink, read the [Databricks article about
+  PrivateLink].
+  
+  This operation is available only if your account is on the E2 version of the
+  platform and your Databricks account is enabled for PrivateLink (Public
+  Preview). Contact your Databricks representative to enable your account for
+  PrivateLink.
+  
+  [AWS PrivateLink]: https://aws.amazon.com/privatelink
+  [Databricks article about PrivateLink]: https://docs.databricks.com/administration-guide/cloud-configurations/aws/privatelink.html`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		a := project.Get(ctx).AccountClient()
+		a := sdk.AccountClient(ctx)
 		err := a.PrivateAccess.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
@@ -90,11 +127,26 @@ func init() {
 var getCmd = &cobra.Command{
 	Use:   "get",
 	Short: `Get a private access settings object.`,
+	Long: `Get a private access settings object.
+  
+  Gets a private access settings object, which specifies how your workspace is
+  accessed over [AWS PrivateLink].
+  
+  Before configuring PrivateLink, read the [Databricks article about
+  PrivateLink].
+  
+  This operation is available only if your account is on the E2 version of the
+  platform and your Databricks account is enabled for PrivateLink (Public
+  Preview). Contact your Databricks representative to enable your account for
+  PrivateLink.
+  
+  [AWS PrivateLink]: https://aws.amazon.com/privatelink
+  [Databricks article about PrivateLink]: https://docs.databricks.com/administration-guide/cloud-configurations/aws/privatelink.html`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		a := project.Get(ctx).AccountClient()
+		a := sdk.AccountClient(ctx)
 		response, err := a.PrivateAccess.Get(ctx, getReq)
 		if err != nil {
 			return err
@@ -118,11 +170,20 @@ func init() {
 var listCmd = &cobra.Command{
 	Use:   "list",
 	Short: `Get all private access settings objects.`,
+	Long: `Get all private access settings objects.
+  
+  Gets a list of all private access settings objects for an account, specified
+  by ID.
+  
+  This operation is available only if your account is on the E2 version of the
+  platform and your Databricks account is enabled for AWS PrivateLink (Public
+  Preview). Contact your Databricks representative to enable your account for
+  PrivateLink.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		a := project.Get(ctx).AccountClient()
+		a := sdk.AccountClient(ctx)
 		response, err := a.PrivateAccess.List(ctx)
 		if err != nil {
 			return err
@@ -156,11 +217,38 @@ func init() {
 var replaceCmd = &cobra.Command{
 	Use:   "replace",
 	Short: `Replace private access settings.`,
+	Long: `Replace private access settings.
+  
+  Updates an existing private access settings object, which specifies how your
+  workspace is accessed over [AWS PrivateLink]. To use AWS PrivateLink, a
+  workspace must have a private access settings object referenced by ID in the
+  workspace's private_access_settings_id property.
+  
+  This operation completely overwrites your existing private access settings
+  object attached to your workspaces. All workspaces attached to the private
+  access settings are affected by any change. If public_access_enabled,
+  private_access_level, or allowed_vpc_endpoint_ids are updated, effects of
+  these changes might take several minutes to propagate to the workspace API.
+  You can share one private access settings object with multiple workspaces in a
+  single account. However, private access settings are specific to AWS regions,
+  so only workspaces in the same AWS region can use a given private access
+  settings object.
+  
+  Before configuring PrivateLink, read the [Databricks article about
+  PrivateLink].
+  
+  This operation is available only if your account is on the E2 version of the
+  platform and your Databricks account is enabled for PrivateLink (Public
+  Preview). Contact your Databricks representative to enable your account for
+  PrivateLink.
+  
+  [AWS PrivateLink]: https://aws.amazon.com/privatelink
+  [Databricks article about PrivateLink]: https://docs.databricks.com/administration-guide/cloud-configurations/aws/privatelink.html`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		a := project.Get(ctx).AccountClient()
+		a := sdk.AccountClient(ctx)
 		err := a.PrivateAccess.Replace(ctx, replaceReq)
 		if err != nil {
 			return err

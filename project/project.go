@@ -104,11 +104,6 @@ func (p *project) initializeWorkspacesClient(ctx context.Context) error {
 		return err
 	}
 	p.wsc = w
-	a, err := databricks.NewAccountClient(&config)
-	if err != nil {
-		return err
-	}
-	p.ac = a
 	return nil
 }
 

@@ -1,8 +1,8 @@
 package instance_profiles
 
 import (
+	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
-	"github.com/databricks/bricks/project"
 	"github.com/databricks/databricks-sdk-go/service/clusters"
 	"github.com/spf13/cobra"
 )
@@ -28,11 +28,15 @@ func init() {
 var addCmd = &cobra.Command{
 	Use:   "add",
 	Short: `Register an instance profile.`,
+	Long: `Register an instance profile.
+  
+  In the UI, you can select the instance profile when launching clusters. This
+  API is only available to admin users.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.InstanceProfiles.Add(ctx, addReq)
 		if err != nil {
 			return err
@@ -57,11 +61,28 @@ func init() {
 var editCmd = &cobra.Command{
 	Use:   "edit",
 	Short: `Edit an instance profile.`,
+	Long: `Edit an instance profile.
+  
+  The only supported field to change is the optional IAM role ARN associated
+  with the instance profile. It is required to specify the IAM role ARN if both
+  of the following are true:
+  
+  * Your role name and instance profile name do not match. The name is the part
+  after the last slash in each ARN. * You want to use the instance profile with
+  [Databricks SQL Serverless].
+  
+  To understand where these fields are in the AWS console, see [Enable
+  serverless SQL warehouses].
+  
+  This API is only available to admin users.
+  
+  [Databricks SQL Serverless]: https://docs.databricks.com/sql/admin/serverless.html
+  [Enable serverless SQL warehouses]: https://docs.databricks.com/sql/admin/serverless.html`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.InstanceProfiles.Edit(ctx, editReq)
 		if err != nil {
 			return err
@@ -79,11 +100,16 @@ func init() {
 var listCmd = &cobra.Command{
 	Use:   "list",
 	Short: `List available instance profiles.`,
+	Long: `List available instance profiles.
+  
+  List the instance profiles that the calling user can use to launch a cluster.
+  
+  This API is available to all users.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.InstanceProfiles.ListAll(ctx)
 		if err != nil {
 			return err
@@ -112,11 +138,17 @@ func init() {
 var removeCmd = &cobra.Command{
 	Use:   "remove",
 	Short: `Remove the instance profile.`,
+	Long: `Remove the instance profile.
+  
+  Remove the instance profile with the provided ARN. Existing clusters with this
+  instance profile will continue to function.
+  
+  This API is only accessible to admin users.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.InstanceProfiles.Remove(ctx, removeReq)
 		if err != nil {
 			return err

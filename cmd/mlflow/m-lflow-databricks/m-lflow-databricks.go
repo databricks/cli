@@ -1,8 +1,8 @@
 package m_lflow_databricks
 
 import (
+	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
-	"github.com/databricks/bricks/project"
 	"github.com/databricks/databricks-sdk-go/service/mlflow"
 	"github.com/spf13/cobra"
 )
@@ -25,11 +25,18 @@ func init() {
 var getCmd = &cobra.Command{
 	Use:   "get",
 	Short: `Get model.`,
+	Long: `Get model.
+  
+  Get the details of a model. This is a Databricks Workspace version of the
+  [MLflow endpoint] that also returns the model's Databricks Workspace ID and
+  the permission level of the requesting user on the model.
+  
+  [MLflow endpoint]: https://www.mlflow.org/docs/latest/rest-api.html#get-registeredmodel`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.MLflowDatabricks.Get(ctx, getReq)
 		if err != nil {
 			return err
@@ -62,11 +69,18 @@ func init() {
 var transitionStageCmd = &cobra.Command{
 	Use:   "transition-stage",
 	Short: `Transition a stage.`,
+	Long: `Transition a stage.
+  
+  Transition a model version's stage. This is a Databricks Workspace version of
+  the [MLflow endpoint] that also accepts a comment associated with the
+  transition to be recorded.",
+  
+  [MLflow endpoint]: https://www.mlflow.org/docs/latest/rest-api.html#transition-modelversion-stage`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.MLflowDatabricks.TransitionStage(ctx, transitionStageReq)
 		if err != nil {
 			return err

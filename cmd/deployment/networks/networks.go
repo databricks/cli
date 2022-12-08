@@ -1,8 +1,8 @@
 package networks
 
 import (
+	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
-	"github.com/databricks/bricks/project"
 	"github.com/databricks/databricks-sdk-go/service/deployment"
 	"github.com/spf13/cobra"
 )
@@ -30,11 +30,33 @@ func init() {
 var createCmd = &cobra.Command{
 	Use:   "create",
 	Short: `Create network configuration.`,
+	Long: `Create network configuration.
+  
+  Creates a Databricks network configuration that represents an AWS VPC and its
+  resources. The VPC will be used for new Databricks clusters. This requires a
+  pre-existing VPC and subnets. For VPC requirements, see [Customer-managed
+  VPC].
+  
+  **Important**: You can share one customer-managed VPC with multiple workspaces
+  in a single account. Therefore, you can share one VPC across multiple Account
+  API network configurations. However, you **cannot** reuse subnets or Security
+  Groups between workspaces. Because a Databricks Account API network
+  configuration encapsulates this information, you cannot reuse a Databricks
+  Account API network configuration across workspaces. If you plan to share one
+  VPC with multiple workspaces, make sure you size your VPC and subnets
+  accordingly. For information about how to create a new workspace with this
+  API, see [Create a new workspace using the Account API].
+  
+  This operation is available only if your account is on the E2 version of the
+  platform.
+  
+  [Create a new workspace using the Account API]: http://docs.databricks.com/administration-guide/account-api/new-workspace.html
+  [Customer-managed VPC]: http://docs.databricks.com/administration-guide/cloud-configurations/aws/customer-managed-vpc.html`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		a := project.Get(ctx).AccountClient()
+		a := sdk.AccountClient(ctx)
 		response, err := a.Networks.Create(ctx, createReq)
 		if err != nil {
 			return err
@@ -63,11 +85,19 @@ func init() {
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
 	Short: `Delete network configuration.`,
+	Long: `Delete network configuration.
+  
+  Deletes a Databricks network configuration, which represents an AWS VPC and
+  its resources. You cannot delete a network that is associated with a
+  workspace.
+  
+  This operation is available only if your account is on the E2 version of the
+  platform.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		a := project.Get(ctx).AccountClient()
+		a := sdk.AccountClient(ctx)
 		err := a.Networks.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
@@ -90,11 +120,21 @@ func init() {
 var getCmd = &cobra.Command{
 	Use:   "get",
 	Short: `Get a network configuration.`,
+	Long: `Get a network configuration.
+  
+  Gets a Databricks network configuration, which represents an AWS VPC and its
+  resources. This requires a pre-existing VPC and subnets. For VPC requirements,
+  see [Customer-managed VPC].
+  
+  This operation is available only if your account is on the E2 version of the
+  platform.
+  
+  [Customer-managed VPC]: http://docs.databricks.com/administration-guide/cloud-configurations/aws/customer-managed-vpc.html`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		a := project.Get(ctx).AccountClient()
+		a := sdk.AccountClient(ctx)
 		response, err := a.Networks.Get(ctx, getReq)
 		if err != nil {
 			return err
@@ -118,11 +158,18 @@ func init() {
 var listCmd = &cobra.Command{
 	Use:   "list",
 	Short: `Get all network configurations.`,
+	Long: `Get all network configurations.
+  
+  Gets a list of all Databricks network configurations for an account, specified
+  by ID.
+  
+  This operation is available only if your account is on the E2 version of the
+  platform.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		a := project.Get(ctx).AccountClient()
+		a := sdk.AccountClient(ctx)
 		response, err := a.Networks.List(ctx)
 		if err != nil {
 			return err

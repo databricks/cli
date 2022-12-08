@@ -1,8 +1,8 @@
 package warehouses
 
 import (
+	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
-	"github.com/databricks/bricks/project"
 	"github.com/databricks/databricks-sdk-go/service/warehouses"
 	"github.com/spf13/cobra"
 )
@@ -37,11 +37,14 @@ func init() {
 var createWarehouseCmd = &cobra.Command{
 	Use:   "create-warehouse",
 	Short: `Create a warehouse.`,
+	Long: `Create a warehouse.
+  
+  Creates a new SQL warehouse.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Warehouses.CreateWarehouse(ctx, createWarehouseReq)
 		if err != nil {
 			return err
@@ -70,11 +73,14 @@ func init() {
 var deleteWarehouseCmd = &cobra.Command{
 	Use:   "delete-warehouse",
 	Short: `Delete a warehouse.`,
+	Long: `Delete a warehouse.
+  
+  Deletes a SQL warehouse.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.Warehouses.DeleteWarehouse(ctx, deleteWarehouseReq)
 		if err != nil {
 			return err
@@ -111,11 +117,14 @@ func init() {
 var editWarehouseCmd = &cobra.Command{
 	Use:   "edit-warehouse",
 	Short: `Update a warehouse.`,
+	Long: `Update a warehouse.
+  
+  Updates the configuration for a SQL warehouse.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.Warehouses.EditWarehouse(ctx, editWarehouseReq)
 		if err != nil {
 			return err
@@ -138,11 +147,14 @@ func init() {
 var getWarehouseCmd = &cobra.Command{
 	Use:   "get-warehouse",
 	Short: `Get warehouse info.`,
+	Long: `Get warehouse info.
+  
+  Gets the information for a single SQL warehouse.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Warehouses.GetWarehouse(ctx, getWarehouseReq)
 		if err != nil {
 			return err
@@ -166,11 +178,15 @@ func init() {
 var getWorkspaceWarehouseConfigCmd = &cobra.Command{
 	Use:   "get-workspace-warehouse-config",
 	Short: `Get the workspace configuration.`,
+	Long: `Get the workspace configuration.
+  
+  Gets the workspace level configuration that is shared by all SQL warehouses in
+  a workspace.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Warehouses.GetWorkspaceWarehouseConfig(ctx)
 		if err != nil {
 			return err
@@ -199,11 +215,14 @@ func init() {
 var listWarehousesCmd = &cobra.Command{
 	Use:   "list-warehouses",
 	Short: `List warehouses.`,
+	Long: `List warehouses.
+  
+  Lists all SQL warehouses that a user has manager permissions on.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Warehouses.ListWarehousesAll(ctx, listWarehousesReq)
 		if err != nil {
 			return err
@@ -243,11 +262,15 @@ func init() {
 var setWorkspaceWarehouseConfigCmd = &cobra.Command{
 	Use:   "set-workspace-warehouse-config",
 	Short: `Set the workspace configuration.`,
+	Long: `Set the workspace configuration.
+  
+  Sets the workspace level configuration that is shared by all SQL warehouses in
+  a workspace.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.Warehouses.SetWorkspaceWarehouseConfig(ctx, setWorkspaceWarehouseConfigReq)
 		if err != nil {
 			return err
@@ -270,11 +293,14 @@ func init() {
 var startWarehouseCmd = &cobra.Command{
 	Use:   "start-warehouse",
 	Short: `Start a warehouse.`,
+	Long: `Start a warehouse.
+  
+  Starts a SQL warehouse.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.Warehouses.StartWarehouse(ctx, startWarehouseReq)
 		if err != nil {
 			return err
@@ -297,11 +323,14 @@ func init() {
 var stopWarehouseCmd = &cobra.Command{
 	Use:   "stop-warehouse",
 	Short: `Stop a warehouse.`,
+	Long: `Stop a warehouse.
+  
+  Stops a SQL warehouse.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.Warehouses.StopWarehouse(ctx, stopWarehouseReq)
 		if err != nil {
 			return err

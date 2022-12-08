@@ -1,8 +1,8 @@
 package m_lflow_metrics
 
 import (
+	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
-	"github.com/databricks/bricks/project"
 	"github.com/databricks/databricks-sdk-go/service/mlflow"
 	"github.com/spf13/cobra"
 )
@@ -26,11 +26,14 @@ func init() {
 var getHistoryCmd = &cobra.Command{
 	Use:   "get-history",
 	Short: `Get all history.`,
+	Long: `Get all history.
+  
+  Gets a list of all values for the specified metric for a given run.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.MLflowMetrics.GetHistory(ctx, getHistoryReq)
 		if err != nil {
 			return err

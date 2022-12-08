@@ -1,8 +1,8 @@
 package account_service_principals
 
 import (
+	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
-	"github.com/databricks/bricks/project"
 	"github.com/databricks/databricks-sdk-go/service/scim"
 	"github.com/spf13/cobra"
 )
@@ -32,11 +32,14 @@ func init() {
 var createCmd = &cobra.Command{
 	Use:   "create",
 	Short: `Create a service principal.`,
+	Long: `Create a service principal.
+  
+  Creates a new service principal in the Databricks Account.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		a := project.Get(ctx).AccountClient()
+		a := sdk.AccountClient(ctx)
 		response, err := a.ServicePrincipals.Create(ctx, createReq)
 		if err != nil {
 			return err
@@ -65,11 +68,14 @@ func init() {
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
 	Short: `Delete a service principal.`,
+	Long: `Delete a service principal.
+  
+  Delete a single service principal in the Databricks Account.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		a := project.Get(ctx).AccountClient()
+		a := sdk.AccountClient(ctx)
 		err := a.ServicePrincipals.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
@@ -92,11 +98,15 @@ func init() {
 var getCmd = &cobra.Command{
 	Use:   "get",
 	Short: `Get service principal details.`,
+	Long: `Get service principal details.
+  
+  Gets the details for a single service principal define in the Databricks
+  Account.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		a := project.Get(ctx).AccountClient()
+		a := sdk.AccountClient(ctx)
 		response, err := a.ServicePrincipals.Get(ctx, getReq)
 		if err != nil {
 			return err
@@ -131,11 +141,14 @@ func init() {
 var listCmd = &cobra.Command{
 	Use:   "list",
 	Short: `List service principals.`,
+	Long: `List service principals.
+  
+  Gets the set of service principals associated with a Databricks Account.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		a := project.Get(ctx).AccountClient()
+		a := sdk.AccountClient(ctx)
 		response, err := a.ServicePrincipals.ListAll(ctx, listReq)
 		if err != nil {
 			return err
@@ -165,11 +178,15 @@ func init() {
 var patchCmd = &cobra.Command{
 	Use:   "patch",
 	Short: `Update service principal details.`,
+	Long: `Update service principal details.
+  
+  Partially updates the details of a single service principal in the Databricks
+  Account.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		a := project.Get(ctx).AccountClient()
+		a := sdk.AccountClient(ctx)
 		err := a.ServicePrincipals.Patch(ctx, patchReq)
 		if err != nil {
 			return err
@@ -199,11 +216,16 @@ func init() {
 var updateCmd = &cobra.Command{
 	Use:   "update",
 	Short: `Replace service principal.`,
+	Long: `Replace service principal.
+  
+  Updates the details of a single service principal.
+  
+  This action replaces the existing service principal with the same name.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		a := project.Get(ctx).AccountClient()
+		a := sdk.AccountClient(ctx)
 		err := a.ServicePrincipals.Update(ctx, updateReq)
 		if err != nil {
 			return err

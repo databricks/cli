@@ -1,8 +1,8 @@
 package instance_pools
 
 import (
+	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
-	"github.com/databricks/bricks/project"
 	"github.com/databricks/databricks-sdk-go/service/instancepools"
 	"github.com/spf13/cobra"
 )
@@ -37,11 +37,14 @@ func init() {
 var createCmd = &cobra.Command{
 	Use:   "create",
 	Short: `Create a new instance pool.`,
+	Long: `Create a new instance pool.
+  
+  Creates a new instance pool using idle and ready-to-use cloud instances.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.InstancePools.Create(ctx, createReq)
 		if err != nil {
 			return err
@@ -70,11 +73,15 @@ func init() {
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
 	Short: `Delete an instance pool.`,
+	Long: `Delete an instance pool.
+  
+  Deletes the instance pool permanently. The idle instances in the pool are
+  terminated asynchronously.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.InstancePools.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
@@ -109,11 +116,14 @@ func init() {
 var editCmd = &cobra.Command{
 	Use:   "edit",
 	Short: `Edit an existing instance pool.`,
+	Long: `Edit an existing instance pool.
+  
+  Modifies the configuration of an existing instance pool.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.InstancePools.Edit(ctx, editReq)
 		if err != nil {
 			return err
@@ -136,11 +146,14 @@ func init() {
 var getCmd = &cobra.Command{
 	Use:   "get",
 	Short: `Get instance pool information.`,
+	Long: `Get instance pool information.
+  
+  Retrieve the information for an instance pool based on its identifier.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.InstancePools.Get(ctx, getReq)
 		if err != nil {
 			return err
@@ -164,11 +177,14 @@ func init() {
 var listCmd = &cobra.Command{
 	Use:   "list",
 	Short: `List instance pool info.`,
+	Long: `List instance pool info.
+  
+  Gets a list of instance pools with their statistics.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.InstancePools.ListAll(ctx)
 		if err != nil {
 			return err

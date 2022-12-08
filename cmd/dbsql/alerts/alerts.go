@@ -1,8 +1,8 @@
 package alerts
 
 import (
+	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
-	"github.com/databricks/bricks/project"
 	"github.com/databricks/databricks-sdk-go/service/dbsql"
 	"github.com/spf13/cobra"
 )
@@ -29,11 +29,16 @@ func init() {
 var createAlertCmd = &cobra.Command{
 	Use:   "create-alert",
 	Short: `Create an alert.`,
+	Long: `Create an alert.
+  
+  Creates an alert. An alert is a Databricks SQL object that periodically runs a
+  query, evaluates a condition of its result, and notifies users or alert
+  destinations if the condition was met.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Alerts.CreateAlert(ctx, createAlertReq)
 		if err != nil {
 			return err
@@ -64,11 +69,16 @@ func init() {
 var createScheduleCmd = &cobra.Command{
 	Use:   "create-schedule",
 	Short: `Create a refresh schedule.`,
+	Long: `Create a refresh schedule.
+  
+  Creates a new refresh schedule for an alert.
+  
+  **Note:** The structure of refresh schedules is subject to change.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Alerts.CreateSchedule(ctx, createScheduleReq)
 		if err != nil {
 			return err
@@ -97,11 +107,16 @@ func init() {
 var deleteAlertCmd = &cobra.Command{
 	Use:   "delete-alert",
 	Short: `Delete an alert.`,
+	Long: `Delete an alert.
+  
+  Deletes an alert. Deleted alerts are no longer accessible and cannot be
+  restored. **Note:** Unlike queries and dashboards, alerts cannot be moved to
+  the trash.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.Alerts.DeleteAlert(ctx, deleteAlertReq)
 		if err != nil {
 			return err
@@ -125,11 +140,15 @@ func init() {
 var deleteScheduleCmd = &cobra.Command{
 	Use:   "delete-schedule",
 	Short: `Delete a refresh schedule.`,
+	Long: `Delete a refresh schedule.
+  
+  Deletes an alert's refresh schedule. The refresh schedule specifies when to
+  refresh and evaluate the associated query result.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.Alerts.DeleteSchedule(ctx, deleteScheduleReq)
 		if err != nil {
 			return err
@@ -152,11 +171,14 @@ func init() {
 var getAlertCmd = &cobra.Command{
 	Use:   "get-alert",
 	Short: `Get an alert.`,
+	Long: `Get an alert.
+  
+  Gets an alert.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Alerts.GetAlert(ctx, getAlertReq)
 		if err != nil {
 			return err
@@ -185,11 +207,17 @@ func init() {
 var getSubscriptionsCmd = &cobra.Command{
 	Use:   "get-subscriptions",
 	Short: `Get an alert's subscriptions.`,
+	Long: `Get an alert's subscriptions.
+  
+  Get the subscriptions for an alert. An alert subscription represents exactly
+  one recipient being notified whenever the alert is triggered. The alert
+  recipient is specified by either the user field or the destination field.
+  The user field is ignored if destination is non-null.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Alerts.GetSubscriptions(ctx, getSubscriptionsReq)
 		if err != nil {
 			return err
@@ -213,11 +241,14 @@ func init() {
 var listAlertsCmd = &cobra.Command{
 	Use:   "list-alerts",
 	Short: `Get alerts.`,
+	Long: `Get alerts.
+  
+  Gets a list of alerts.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Alerts.ListAlerts(ctx)
 		if err != nil {
 			return err
@@ -246,11 +277,20 @@ func init() {
 var listSchedulesCmd = &cobra.Command{
 	Use:   "list-schedules",
 	Short: `Get refresh schedules.`,
+	Long: `Get refresh schedules.
+  
+  Gets the refresh schedules for the specified alert. Alerts can have refresh
+  schedules that specify when to refresh and evaluate the associated query
+  result.
+  
+  **Note:** Although refresh schedules are returned in a list, only one refresh
+  schedule per alert is currently supported. The structure of refresh schedules
+  is subject to change.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Alerts.ListSchedules(ctx, listSchedulesReq)
 		if err != nil {
 			return err
@@ -281,11 +321,12 @@ func init() {
 var subscribeCmd = &cobra.Command{
 	Use:   "subscribe",
 	Short: `Subscribe to an alert.`,
+	Long:  `Subscribe to an alert.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Alerts.Subscribe(ctx, subscribeReq)
 		if err != nil {
 			return err
@@ -315,11 +356,14 @@ func init() {
 var unsubscribeCmd = &cobra.Command{
 	Use:   "unsubscribe",
 	Short: `Unsubscribe to an alert.`,
+	Long: `Unsubscribe to an alert.
+  
+  Unsubscribes a user or a destination to an alert.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.Alerts.Unsubscribe(ctx, unsubscribeReq)
 		if err != nil {
 			return err
@@ -346,11 +390,14 @@ func init() {
 var updateAlertCmd = &cobra.Command{
 	Use:   "update-alert",
 	Short: `Update an alert.`,
+	Long: `Update an alert.
+  
+  Updates an alert.`,
 
-	PreRunE: project.Configure, // TODO: improve logic for bundle/non-bundle invocations
+	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := project.Get(ctx).WorkspacesClient()
+		w := sdk.WorkspaceClient(ctx)
 		err := w.Alerts.UpdateAlert(ctx, updateAlertReq)
 		if err != nil {
 			return err
