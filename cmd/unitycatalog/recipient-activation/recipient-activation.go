@@ -10,6 +10,7 @@ import (
 var Cmd = &cobra.Command{
 	Use:   "recipient-activation",
 	Short: `Databricks Delta Sharing: Recipient Activation REST API.`,
+	Long:  `Databricks Delta Sharing: Recipient Activation REST API`,
 }
 
 var getActivationUrlInfoReq unitycatalog.GetActivationUrlInfoRequest

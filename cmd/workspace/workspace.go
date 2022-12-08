@@ -6,7 +6,10 @@ import (
 )
 
 var Cmd = &cobra.Command{
-	Use: "workspace",
+	Use:   "workspace",
+	Short: `The Workspace API allows you to list, import, export, and delete notebooks and folders.`,
+	Long: `The Workspace API allows you to list, import, export, and delete notebooks and
+  folders.`,
 }
 
 func init() {

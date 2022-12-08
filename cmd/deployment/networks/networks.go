@@ -10,6 +10,10 @@ import (
 var Cmd = &cobra.Command{
 	Use:   "networks",
 	Short: `These APIs manage network configurations for customer-managed VPCs (optional).`,
+	Long: `These APIs manage network configurations for customer-managed VPCs (optional).
+  A network configuration encapsulates the IDs for AWS VPCs, subnets, and
+  security groups. Its ID is used when creating a new workspace if you use
+  customer-managed VPCs.`,
 }
 
 var createReq deployment.CreateNetworkRequest

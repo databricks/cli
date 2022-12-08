@@ -6,7 +6,9 @@ import (
 )
 
 var Cmd = &cobra.Command{
-	Use: "jobs",
+	Use:   "jobs",
+	Short: `The Jobs API allows you to create, edit, and delete jobs.`,
+	Long:  `The Jobs API allows you to create, edit, and delete jobs.`,
 }
 
 func init() {

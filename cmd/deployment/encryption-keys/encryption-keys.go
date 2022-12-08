@@ -10,6 +10,22 @@ import (
 var Cmd = &cobra.Command{
 	Use:   "encryption-keys",
 	Short: `These APIs manage encryption key configurations for this workspace (optional).`,
+	Long: `These APIs manage encryption key configurations for this workspace (optional).
+  A key configuration encapsulates the AWS KMS key information and some
+  information about how the key configuration can be used. There are two
+  possible uses for key configurations:
+  
+  * Managed services: A key configuration can be used to encrypt a workspace's
+  notebook and secret data in the control plane, as well as Databricks SQL
+  queries and query history. * Storage: A key configuration can be used to
+  encrypt a workspace's DBFS and EBS data in the data plane.
+  
+  In both of these cases, the key configuration's ID is used when creating a new
+  workspace. This Preview feature is available if your account is on the E2
+  version of the platform. Updating a running workspace with workspace storage
+  encryption requires that the workspace is on the E2 version of the platform.
+  If you have an older workspace, it might not be on the E2 version of the
+  platform. If you are not sure, contact your Databricks reprsentative.`,
 }
 
 var createReq deployment.CreateCustomerManagedKeyRequest

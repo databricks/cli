@@ -10,6 +10,15 @@ import (
 var Cmd = &cobra.Command{
 	Use:   "private-access",
 	Short: `These APIs manage private access settings for this account.`,
+	Long: `These APIs manage private access settings for this account. A private access
+  settings object specifies how your workspace is accessed using AWS
+  PrivateLink. Each workspace that has any PrivateLink connections must include
+  the ID for a private access settings object is in its workspace configuration
+  object. Your account must be enabled for PrivateLink to use these APIs. Before
+  configuring PrivateLink, it is important to read the [Databricks article about
+  PrivateLink].
+  
+  [Databricks article about PrivateLink]: https://docs.databricks.com/administration-guide/cloud-configurations/aws/privatelink.html`,
 }
 
 var createReq deployment.UpsertPrivateAccessSettingsRequest

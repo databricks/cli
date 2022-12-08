@@ -10,6 +10,20 @@ import (
 var Cmd = &cobra.Command{
 	Use:   "storage-credentials",
 	Short: `A storage credential represents an authentication and authorization mechanism for accessing data stored on your cloud tenant, using an IAM role.`,
+	Long: `A storage credential represents an authentication and authorization mechanism
+  for accessing data stored on your cloud tenant, using an IAM role. Each
+  storage credential is subject to Unity Catalog access-control policies that
+  control which users and groups can access the credential. If a user does not
+  have access to a storage credential in Unity Catalog, the request fails and
+  Unity Catalog does not attempt to authenticate to your cloud tenant on the
+  user’s behalf.
+  
+  Databricks recommends using external locations rather than using storage
+  credentials directly.
+  
+  To create storage credentials, you must be a Databricks account admin. The
+  account admin who creates the storage credential can delegate ownership to
+  another user or group to manage permissions on it.`,
 }
 
 var createReq unitycatalog.CreateStorageCredential

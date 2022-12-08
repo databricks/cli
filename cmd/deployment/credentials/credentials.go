@@ -10,6 +10,11 @@ import (
 var Cmd = &cobra.Command{
 	Use:   "credentials",
 	Short: `These APIs manage credential configurations for this workspace.`,
+	Long: `These APIs manage credential configurations for this workspace. Databricks
+  needs access to a cross-account service IAM role in your AWS account so that
+  Databricks can deploy clusters in the appropriate VPC for the new workspace. A
+  credential configuration encapsulates this role information, and its ID is
+  used when creating a new workspace.`,
 }
 
 var createReq deployment.CreateCredentialRequest

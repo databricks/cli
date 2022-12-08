@@ -10,6 +10,18 @@ import (
 var Cmd = &cobra.Command{
 	Use:   "secrets",
 	Short: `The Secrets API allows you to manage secrets, secret scopes, and access permissions.`,
+	Long: `The Secrets API allows you to manage secrets, secret scopes, and access
+  permissions.
+  
+  Sometimes accessing data requires that you authenticate to external data
+  sources through JDBC. Instead of directly entering your credentials into a
+  notebook, use Databricks secrets to store your credentials and reference them
+  in notebooks and jobs.
+  
+  Administrators, secret creators, and users granted permission can read
+  Databricks secrets. While Databricks makes an effort to redact secret values
+  that might be displayed in notebooks, it is not possible to prevent such users
+  from reading secrets.`,
 }
 
 var createScopeReq secrets.CreateScope

@@ -10,6 +10,17 @@ import (
 var Cmd = &cobra.Command{
 	Use:   "account-users",
 	Short: `User identities recognized by Databricks and represented by email addresses.`,
+	Long: `User identities recognized by Databricks and represented by email addresses.
+  
+  Databricks recommends using SCIM provisioning to sync users and groups
+  automatically from your identity provider to your Databricks Account. SCIM
+  streamlines onboarding a new employee or team by using your identity provider
+  to create users and groups in Databricks Account and give them the proper
+  level of access. When a user leaves your organization or no longer needs
+  access to Databricks Account, admins can terminate the user in your identity
+  provider and that user’s account will also be removed from Databricks
+  Account. This ensures a consistent offboarding process and prevents
+  unauthorized users from accessing sensitive data.`,
 }
 
 var createReq scim.User

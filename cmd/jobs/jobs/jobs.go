@@ -10,6 +10,23 @@ import (
 var Cmd = &cobra.Command{
 	Use:   "jobs",
 	Short: `The Jobs API allows you to create, edit, and delete jobs.`,
+	Long: `The Jobs API allows you to create, edit, and delete jobs.
+  
+  You can use a Databricks job to run a data processing or data analysis task in
+  a Databricks cluster with scalable resources. Your job can consist of a single
+  task or can be a large, multi-task workflow with complex dependencies.
+  Databricks manages the task orchestration, cluster management, monitoring, and
+  error reporting for all of your jobs. You can run your jobs immediately or
+  periodically through an easy-to-use scheduling system. You can implement job
+  tasks using notebooks, JARS, Delta Live Tables pipelines, or Python, Scala,
+  Spark submit, and Java applications.
+  
+  You should never hard code secrets or store them in plain text. Use the
+  :service:secrets to manage secrets in the [Databricks CLI]. Use the [Secrets
+  utility] to reference secrets in notebooks and jobs.
+  
+  [Databricks CLI]: https://docs.databricks.com/dev-tools/cli/index.html
+  [Secrets utility]: https://docs.databricks.com/dev-tools/databricks-utils.html#dbutils-secrets`,
 }
 
 var cancelAllRunsReq jobs.CancelAllRuns

@@ -10,6 +10,28 @@ import (
 var Cmd = &cobra.Command{
 	Use:   "ip-access-lists",
 	Short: `The IP Access List API enables Databricks admins to configure IP access lists for a workspace.`,
+	Long: `The IP Access List API enables Databricks admins to configure IP access lists
+  for a workspace.
+  
+  IP access lists affect web application access and REST API access to this
+  workspace only. If the feature is disabled for a workspace, all access is
+  allowed for this workspace. There is support for allow lists (inclusion) and
+  block lists (exclusion).
+  
+  When a connection is attempted: 1. **First, all block lists are checked.** If
+  the connection IP address matches any block list, the connection is rejected.
+  2. **If the connection was not rejected by block lists**, the IP address is
+  compared with the allow lists.
+  
+  If there is at least one allow list for the workspace, the connection is
+  allowed only if the IP address matches an allow list. If there are no allow
+  lists for the workspace, all IP addresses are allowed.
+  
+  For all allow lists and block lists combined, the workspace supports a maximum
+  of 1000 IP/CIDR values, where one CIDR counts as a single value.
+  
+  After changes to the IP access list feature, it can take a few minutes for
+  changes to take effect.`,
 }
 
 var createReq ipaccesslists.CreateIpAccessList

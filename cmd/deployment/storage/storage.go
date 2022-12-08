@@ -10,6 +10,12 @@ import (
 var Cmd = &cobra.Command{
 	Use:   "storage",
 	Short: `These APIs manage storage configurations for this workspace.`,
+	Long: `These APIs manage storage configurations for this workspace. A root storage S3
+  bucket in your account is required to store objects like cluster logs,
+  notebook revisions, and job results. You can also use the root storage S3
+  bucket for storage of non-production DBFS data. A storage configuration
+  encapsulates this bucket information, and its ID is used when creating a new
+  workspace.`,
 }
 
 var createReq deployment.CreateStorageConfigurationRequest

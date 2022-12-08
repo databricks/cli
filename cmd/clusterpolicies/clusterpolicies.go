@@ -6,7 +6,10 @@ import (
 )
 
 var Cmd = &cobra.Command{
-	Use: "clusterpolicies",
+	Use:   "clusterpolicies",
+	Short: `Cluster policy limits the ability to configure clusters based on a set of rules.`,
+	Long: `Cluster policy limits the ability to configure clusters based on a set of
+  rules.`,
 }
 
 func init() {

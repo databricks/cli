@@ -10,6 +10,7 @@ import (
 var Cmd = &cobra.Command{
 	Use:   "recipients",
 	Short: `Databricks Delta Sharing: Recipients REST API.`,
+	Long:  `Databricks Delta Sharing: Recipients REST API`,
 }
 
 var createReq unitycatalog.CreateRecipient

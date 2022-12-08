@@ -10,6 +10,9 @@ import (
 var Cmd = &cobra.Command{
 	Use:   "queries",
 	Short: `These endpoints are used for CRUD operations on query definitions.`,
+	Long: `These endpoints are used for CRUD operations on query definitions. Query
+  definitions include the target SQL warehouse, query text, name, description,
+  tags, execution schedule, parameters, and visualizations.`,
 }
 
 var createQueryReq dbsql.QueryPostContent

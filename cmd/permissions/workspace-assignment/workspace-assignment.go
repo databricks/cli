@@ -10,6 +10,7 @@ import (
 var Cmd = &cobra.Command{
 	Use:   "workspace-assignment",
 	Short: `Databricks Workspace Assignment REST API.`,
+	Long:  `Databricks Workspace Assignment REST API`,
 }
 
 var createReq permissions.CreateWorkspaceAssignments

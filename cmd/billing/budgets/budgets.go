@@ -10,6 +10,8 @@ import (
 var Cmd = &cobra.Command{
 	Use:   "budgets",
 	Short: `These APIs manage budget configuration including notifications for exceeding a budget for a period.`,
+	Long: `These APIs manage budget configuration including notifications for exceeding a
+  budget for a period. They can also retrieve the status of each budget.`,
 }
 
 var createReq billing.WrappedBudget

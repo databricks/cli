@@ -6,7 +6,9 @@ import (
 )
 
 var Cmd = &cobra.Command{
-	Use: "workspaceconf",
+	Use:   "workspaceconf",
+	Short: `This API allows updating known workspace settings for advanced users.`,
+	Long:  `This API allows updating known workspace settings for advanced users.`,
 }
 
 func init() {

@@ -10,6 +10,19 @@ import (
 var Cmd = &cobra.Command{
 	Use:   "dbsql-permissions",
 	Short: `The SQL Permissions API is similar to the endpoints of the :method:permissions/setobjectpermissions.`,
+	Long: `The SQL Permissions API is similar to the endpoints of the
+  :method:permissions/setobjectpermissions. However, this exposes only one
+  endpoint, which gets the Access Control List for a given object. You cannot
+  modify any permissions using this API.
+  
+  There are three levels of permission:
+  
+  - CAN_VIEW: Allows read-only access
+  
+  - CAN_RUN: Allows read access and run access (superset of CAN_VIEW)
+  
+  - CAN_MANAGE: Allows all actions: read, run, edit, delete, modify
+  permissions (superset of CAN_RUN)`,
 }
 
 var getPermissionsReq dbsql.GetPermissionsRequest

@@ -10,6 +10,8 @@ import (
 var Cmd = &cobra.Command{
 	Use:   "m-lflow-databricks",
 	Short: `These endpoints are modified versions of the MLflow API that accept additional input parameters or return additional information.`,
+	Long: `These endpoints are modified versions of the MLflow API that accept additional
+  input parameters or return additional information.`,
 }
 
 var getReq mlflow.GetMLflowDatabrickRequest

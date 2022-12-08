@@ -10,6 +10,16 @@ import (
 var Cmd = &cobra.Command{
 	Use:   "vpc-endpoints",
 	Short: `These APIs manage VPC endpoint configurations for this account.`,
+	Long: `These APIs manage VPC endpoint configurations for this account. This object
+  registers an AWS VPC endpoint in your Databricks account so your workspace can
+  use it with AWS PrivateLink. Your VPC endpoint connects to one of two VPC
+  endpoint services -- one for workspace (both for front-end connection and for
+  back-end connection to REST APIs) and one for the back-end secure cluster
+  connectivity relay from the data plane. Your account must be enabled for
+  PrivateLink to use these APIs. Before configuring PrivateLink, it is important
+  to read the [Databricks article about PrivateLink].
+  
+  [Databricks article about PrivateLink]: https://docs.databricks.com/administration-guide/cloud-configurations/aws/privatelink.html`,
 }
 
 var createReq deployment.CreateVpcEndpointRequest

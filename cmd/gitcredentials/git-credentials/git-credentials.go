@@ -10,6 +10,12 @@ import (
 var Cmd = &cobra.Command{
 	Use:   "git-credentials",
 	Short: `Registers personal access token for Databricks to do operations on behalf of the user.`,
+	Long: `Registers personal access token for Databricks to do operations on behalf of
+  the user.
+  
+  See [more info].
+  
+  [more info]: https://docs.databricks.com/repos/get-access-tokens-from-git-provider.html`,
 }
 
 var createReq gitcredentials.CreateCredentials

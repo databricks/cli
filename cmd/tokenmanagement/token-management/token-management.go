@@ -10,6 +10,9 @@ import (
 var Cmd = &cobra.Command{
 	Use:   "token-management",
 	Short: `Enables administrators to get all tokens and delete tokens for other users.`,
+	Long: `Enables administrators to get all tokens and delete tokens for other users.
+  Admins can either get every token, get a specific token by ID, or get all
+  tokens for a particular user.`,
 }
 
 var createOboTokenReq tokenmanagement.CreateOboTokenRequest

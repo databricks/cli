@@ -10,6 +10,21 @@ import (
 var Cmd = &cobra.Command{
 	Use:   "grants",
 	Short: `In Unity Catalog, data is secure by default.`,
+	Long: `In Unity Catalog, data is secure by default. Initially, users have no access
+  to data in a metastore. Access can be granted by either a metastore admin, the
+  owner of an object, or the owner of the catalog or schema that contains the
+  object. Securable objects in Unity Catalog are hierarchical and privileges are
+  inherited downward.
+  
+  Initially, users have no access to data in a metastore. Access can be granted
+  by either a metastore admin, the owner of an object, or the owner of the
+  catalog or schema that contains the object.
+  
+  Securable objects in Unity Catalog are hierarchical and privileges are
+  inherited downward. This means that granting a privilege on the catalog
+  automatically grants the privilege to all current and future objects within
+  the catalog. Similarly, privileges granted on a schema are inherited by all
+  current and future objects within that schema.`,
 }
 
 var getReq unitycatalog.GetGrantRequest

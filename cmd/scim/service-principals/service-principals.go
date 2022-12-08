@@ -10,6 +10,12 @@ import (
 var Cmd = &cobra.Command{
 	Use:   "service-principals",
 	Short: `Identities for use with jobs, automated tools, and systems such as scripts, apps, and CI/CD platforms.`,
+	Long: `Identities for use with jobs, automated tools, and systems such as scripts,
+  apps, and CI/CD platforms. Databricks recommends creating service principals
+  to run production jobs or modify production data. If all processes that act on
+  production data run with service principals, interactive users do not need any
+  write, delete, or modify privileges in production. This eliminates the risk of
+  a user overwriting production data by accident.`,
 }
 
 var createReq scim.ServicePrincipal

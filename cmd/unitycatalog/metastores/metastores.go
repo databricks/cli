@@ -10,6 +10,19 @@ import (
 var Cmd = &cobra.Command{
 	Use:   "metastores",
 	Short: `A metastore is the top-level container of objects in Unity Catalog.`,
+	Long: `A metastore is the top-level container of objects in Unity Catalog. It stores
+  data assets (tables and views) and the permissions that govern access to them.
+  Databricks account admins can create metastores and assign them to Databricks
+  workspaces to control which workloads use each metastore. For a workspace to
+  use Unity Catalog, it must have a Unity Catalog metastore attached.
+  
+  Each metastore is configured with a root storage location in a cloud storage
+  account. This storage location is used for metadata and managed tables data.
+  
+  NOTE: This metastore is distinct from the metastore included in Databricks
+  workspaces created before Unity Catalog was released. If your workspace
+  includes a legacy Hive metastore, the data in that metastore is available in
+  Unity Catalog in a catalog named hive_metastore.`,
 }
 
 var assignReq unitycatalog.CreateMetastoreAssignment

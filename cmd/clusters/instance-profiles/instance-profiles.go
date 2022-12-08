@@ -10,6 +10,12 @@ import (
 var Cmd = &cobra.Command{
 	Use:   "instance-profiles",
 	Short: `The Instance Profiles API allows admins to add, list, and remove instance profiles that users can launch clusters with.`,
+	Long: `The Instance Profiles API allows admins to add, list, and remove instance
+  profiles that users can launch clusters with. Regular users can list the
+  instance profiles available to them. See [Secure access to S3 buckets] using
+  instance profiles for more information.
+  
+  [Secure access to S3 buckets]: https://docs.databricks.com/administration-guide/cloud-configurations/aws/instance-profiles.html`,
 }
 
 var addReq clusters.AddInstanceProfile

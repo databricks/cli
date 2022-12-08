@@ -6,7 +6,10 @@ import (
 )
 
 var Cmd = &cobra.Command{
-	Use: "ipaccesslists",
+	Use:   "ipaccesslists",
+	Short: `The IP Access List API enables Databricks admins to configure IP access lists for a workspace.`,
+	Long: `The IP Access List API enables Databricks admins to configure IP access lists
+  for a workspace.`,
 }
 
 func init() {

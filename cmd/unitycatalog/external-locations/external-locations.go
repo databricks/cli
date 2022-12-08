@@ -10,6 +10,19 @@ import (
 var Cmd = &cobra.Command{
 	Use:   "external-locations",
 	Short: `An external location is an object that combines a cloud storage path with a storage credential that authorizes access to the cloud storage path.`,
+	Long: `An external location is an object that combines a cloud storage path with a
+  storage credential that authorizes access to the cloud storage path. Each
+  storage location is subject to Unity Catalog access-control policies that
+  control which users and groups can access the credential. If a user does not
+  have access to a storage location in Unity Catalog, the request fails and
+  Unity Catalog does not attempt to authenticate to your cloud tenant on the
+  user’s behalf.
+  
+  Databricks recommends using external locations rather than using storage
+  credentials directly.
+  
+  To create external locations, you must be a metastore admin or a user with the
+  CREATE EXTERNAL LOCATION privilege.`,
 }
 
 var createReq unitycatalog.CreateExternalLocation

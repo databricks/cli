@@ -10,6 +10,7 @@ import (
 var Cmd = &cobra.Command{
 	Use:   "query-history",
 	Short: `Access the history of queries through SQL warehouses.`,
+	Long:  `Access the history of queries through SQL warehouses.`,
 }
 
 var listQueriesReq warehouses.ListQueriesRequest

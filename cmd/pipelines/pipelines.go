@@ -6,7 +6,10 @@ import (
 )
 
 var Cmd = &cobra.Command{
-	Use: "pipelines",
+	Use:   "pipelines",
+	Short: `The Delta Live Tables API allows you to create, edit, delete, start, and view details about pipelines.`,
+	Long: `The Delta Live Tables API allows you to create, edit, delete, start, and view
+  details about pipelines.`,
 }
 
 func init() {

@@ -10,6 +10,13 @@ import (
 var Cmd = &cobra.Command{
 	Use:   "account-groups",
 	Short: `Groups simplify identity management, making it easier to assign access to Databricks Account, data, and other securable objects.`,
+	Long: `Groups simplify identity management, making it easier to assign access to
+  Databricks Account, data, and other securable objects.
+  
+  It is best practice to assign access to workspaces and access-control policies
+  in Unity Catalog to groups, instead of to users individually. All Databricks
+  Account identities can be assigned as members of groups, and members inherit
+  permissions that are assigned to their group.`,
 }
 
 var createReq scim.Group

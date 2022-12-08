@@ -6,7 +6,10 @@ import (
 )
 
 var Cmd = &cobra.Command{
-	Use: "globalinitscripts",
+	Use:   "globalinitscripts",
+	Short: `The Global Init Scripts API enables Workspace administrators to configure global initialization scripts for their workspace.`,
+	Long: `The Global Init Scripts API enables Workspace administrators to configure
+  global initialization scripts for their workspace.`,
 }
 
 func init() {

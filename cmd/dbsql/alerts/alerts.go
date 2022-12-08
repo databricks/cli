@@ -10,6 +10,10 @@ import (
 var Cmd = &cobra.Command{
 	Use:   "alerts",
 	Short: `The alerts API can be used to perform CRUD operations on alerts.`,
+	Long: `The alerts API can be used to perform CRUD operations on alerts. An alert is a
+  Databricks SQL object that periodically runs a query, evaluates a condition of
+  its result, and notifies one or more users and/or alert destinations if the
+  condition was met.`,
 }
 
 var createAlertReq dbsql.EditAlert

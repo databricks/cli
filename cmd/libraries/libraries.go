@@ -6,7 +6,10 @@ import (
 )
 
 var Cmd = &cobra.Command{
-	Use: "libraries",
+	Use:   "libraries",
+	Short: `The Libraries API allows you to install and uninstall libraries and get the status of libraries on a cluster.`,
+	Long: `The Libraries API allows you to install and uninstall libraries and get the
+  status of libraries on a cluster.`,
 }
 
 func init() {

@@ -10,6 +10,7 @@ import (
 var Cmd = &cobra.Command{
 	Use:   "workspace-conf",
 	Short: `This API allows updating known workspace settings for advanced users.`,
+	Long:  `This API allows updating known workspace settings for advanced users.`,
 }
 
 var getStatusReq workspaceconf.GetStatus

@@ -8,6 +8,10 @@ import (
 
 var Cmd = &cobra.Command{
 	Use:   "{{.Name}}",
+    {{if .Description -}}
+    Short: `{{.Summary | without "`"}}`,
+	Long: `{{.Comment  "  " 80 | without "`"}}`,
+    {{- end}}
 }
 
 func init() {

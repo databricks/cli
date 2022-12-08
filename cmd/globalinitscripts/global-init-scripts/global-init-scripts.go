@@ -10,6 +10,15 @@ import (
 var Cmd = &cobra.Command{
 	Use:   "global-init-scripts",
 	Short: `The Global Init Scripts API enables Workspace administrators to configure global initialization scripts for their workspace.`,
+	Long: `The Global Init Scripts API enables Workspace administrators to configure
+  global initialization scripts for their workspace. These scripts run on every
+  node in every cluster in the workspace.
+  
+  **Important:** Existing clusters must be restarted to pick up any changes made
+  to global init scripts. Global init scripts are run in order. If the init
+  script returns with a bad exit code, the Apache Spark container fails to
+  launch and init scripts with later position are skipped. If enough containers
+  fail, the entire cluster fails with a GLOBAL_INIT_SCRIPT_FAILURE error code.`,
 }
 
 var createScriptReq globalinitscripts.GlobalInitScriptCreateRequest

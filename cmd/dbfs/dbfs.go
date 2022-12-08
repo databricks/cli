@@ -6,7 +6,10 @@ import (
 )
 
 var Cmd = &cobra.Command{
-	Use: "dbfs",
+	Use:   "dbfs",
+	Short: `DBFS API makes it simple to interact with various data sources without having to include a users credentials every time to read a file.`,
+	Long: `DBFS API makes it simple to interact with various data sources without having
+  to include a users credentials every time to read a file.`,
 }
 
 func init() {

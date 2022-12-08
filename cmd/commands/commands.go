@@ -6,7 +6,10 @@ import (
 )
 
 var Cmd = &cobra.Command{
-	Use: "commands",
+	Use:   "commands",
+	Short: `This API allows execution of Python, Scala, SQL, or R commands on running Databricks Clusters.`,
+	Long: `This API allows execution of Python, Scala, SQL, or R commands on running
+  Databricks Clusters.`,
 }
 
 func init() {

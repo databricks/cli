@@ -10,6 +10,8 @@ import (
 var Cmd = &cobra.Command{
 	Use:   "permissions",
 	Short: `Permissions API are used to create read, write, edit, update and manage access for various users on different objects and endpoints.`,
+	Long: `Permissions API are used to create read, write, edit, update and manage access
+  for various users on different objects and endpoints.`,
 }
 
 var getReq permissions.Get

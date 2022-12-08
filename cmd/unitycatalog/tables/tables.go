@@ -10,6 +10,14 @@ import (
 var Cmd = &cobra.Command{
 	Use:   "tables",
 	Short: `A table resides in the third layer of Unity Catalog’s three-level namespace.`,
+	Long: `A table resides in the third layer of Unity Catalog’s three-level namespace.
+  It contains rows of data. To create a table, users must have CREATE and USAGE
+  permissions on the schema, and they must have the USAGE permission on its
+  parent catalog. To query a table, users must have the SELECT permission on the
+  table, and they must have the USAGE permission on its parent schema and
+  catalog.
+  
+  A table can be managed or external.`,
 }
 
 var createReq unitycatalog.CreateTable

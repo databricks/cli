@@ -6,7 +6,10 @@ import (
 )
 
 var Cmd = &cobra.Command{
-	Use: "gitcredentials",
+	Use:   "gitcredentials",
+	Short: `Registers personal access token for Databricks to do operations on behalf of the user.`,
+	Long: `Registers personal access token for Databricks to do operations on behalf of
+  the user.`,
 }
 
 func init() {

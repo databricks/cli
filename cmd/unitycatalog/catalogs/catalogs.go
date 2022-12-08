@@ -10,6 +10,14 @@ import (
 var Cmd = &cobra.Command{
 	Use:   "catalogs",
 	Short: `A catalog is the first layer of Unity Catalog’s three-level namespace.`,
+	Long: `A catalog is the first layer of Unity Catalog’s three-level namespace.
+  It’s used to organize your data assets. Users can see all catalogs on which
+  they have been assigned the USAGE data permission.
+  
+  In Unity Catalog, admins and data stewards manage users and their access to
+  data centrally across all of the workspaces in a Databricks account. Users in
+  different workspaces can share access to the same data, depending on
+  privileges granted centrally in Unity Catalog.`,
 }
 
 var createReq unitycatalog.CreateCatalog

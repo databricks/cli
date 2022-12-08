@@ -10,6 +10,8 @@ import (
 var Cmd = &cobra.Command{
 	Use:   "tokens",
 	Short: `The Token API allows you to create, list, and revoke tokens that can be used to authenticate and access Databricks REST APIs.`,
+	Long: `The Token API allows you to create, list, and revoke tokens that can be used
+  to authenticate and access Databricks REST APIs.`,
 }
 
 var createReq tokens.CreateTokenRequest

@@ -10,6 +10,14 @@ import (
 var Cmd = &cobra.Command{
 	Use:   "workspaces",
 	Short: `These APIs manage workspaces for this account.`,
+	Long: `These APIs manage workspaces for this account. A Databricks workspace is an
+  environment for accessing all of your Databricks assets. The workspace
+  organizes objects (notebooks, libraries, and experiments) into folders, and
+  provides access to data and computational resources such as clusters and jobs.
+  
+  These endpoints are available if your account is on the E2 version of the
+  platform or on a select custom plan that allows multiple workspaces per
+  account.`,
 }
 
 var createReq deployment.CreateWorkspaceRequest

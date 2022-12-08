@@ -9,6 +9,8 @@ import (
 var Cmd = &cobra.Command{
 	Use:   "current-user",
 	Short: `This API allows retrieving information about currently authenticated user or service principal.`,
+	Long: `This API allows retrieving information about currently authenticated user or
+  service principal.`,
 }
 
 func init() {
