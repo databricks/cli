@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -9,35 +10,100 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 	"testing"
 	"time"
 
+	"github.com/databricks/bricks/cmd/root"
 	"github.com/databricks/bricks/cmd/sync"
-	"github.com/databricks/bricks/folders"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/repos"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
+
+type syncTestHarness struct {
+	*testing.T
+
+	errch <-chan error
+}
+
+// Run CLI in-process and asynchronously by invoking [RootCmd] directly.
+// Upon termination, either a nil or an error is sent to [errch] and the channel is closed.
+func (s *syncTestHarness) run(args ...string) {
+	ctx, cancel := context.WithCancel(context.Background())
+
+	cmd := root.RootCmd
+	cmd.SetArgs(args)
+
+	// Consolidate stdout and stderr in single buffer.
+	var outerr bytes.Buffer
+	cmd.SetOut(&outerr)
+	cmd.SetErr(&outerr)
+
+	errch := make(chan error)
+
+	// Run sync command in background.
+	go func() {
+		err := cmd.ExecuteContext(ctx)
+		if err != nil {
+			s.Logf("Error running command: %s", err)
+		}
+
+		// Log everything printed by the command.
+		scanner := bufio.NewScanner(&outerr)
+		for scanner.Scan() {
+			s.Logf("[bricks output]: %s", scanner.Text())
+		}
+
+		// Make caller aware of error.
+		errch <- err
+		close(errch)
+	}()
+
+	// Terminate command (if necessary).
+	s.Cleanup(func() {
+		// Signal termination of command.
+		cancel()
+		// Wait for goroutine to finish.
+		<-errch
+	})
+
+	s.errch = errch
+}
+
+// Like [s.eventually] but errors if the underlying command has failed.
+func (s *syncTestHarness) eventually(condition func() bool, waitFor time.Duration, tick time.Duration, msgAndArgs ...interface{}) bool {
+	ch := make(chan bool, 1)
+
+	timer := time.NewTimer(waitFor)
+	defer timer.Stop()
+
+	ticker := time.NewTicker(tick)
+	defer ticker.Stop()
+
+	for tick := ticker.C; ; {
+		select {
+		case err := <-s.errch:
+			require.Fail(s, "Command failed", err)
+		case <-timer.C:
+			require.Fail(s, "Condition never satisfied", msgAndArgs...)
+		case <-tick:
+			tick = nil
+			go func() { ch <- condition() }()
+		case v := <-ch:
+			if v {
+				return true
+			}
+			tick = ticker.C
+		}
+	}
+}
 
 // This test needs auth env vars to run.
 // Please run using the deco env test or deco env shell
 func TestAccFullSync(t *testing.T) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
-
-	// We assume cwd is in the bricks repo
-	wd, err := os.Getwd()
-	if err != nil {
-		t.Log("[WARN] error fetching current working dir: ", err)
-	}
-	t.Log("test run dir: ", wd)
-	bricksRepo, err := folders.FindDirWithLeaf(wd, ".git")
-	if err != nil {
-		t.Log("[ERROR] error finding git repo root in : ", wd)
-	}
-	t.Log("bricks repo location: : ", bricksRepo)
-	assert.Equal(t, "bricks", filepath.Base(bricksRepo))
 
 	wsc := databricks.Must(databricks.NewWorkspaceClient())
 	ctx := context.Background()
@@ -71,39 +137,13 @@ func TestAccFullSync(t *testing.T) {
 	assert.NoError(t, err)
 	defer f.Close()
 
-	// start bricks sync process
-	cmd = exec.Command("go", "run", "main.go", "sync", "--remote-path", repoPath, "--persist-snapshot=false")
-
-	var cmdOut, cmdErr bytes.Buffer
-	cmd.Stdout = &cmdOut
-	cmd.Stderr = &cmdErr
-	cmd.Dir = bricksRepo
-	// bricks sync command will inherit the env vars from process
+	// Run `bricks sync` in the background.
 	t.Setenv("BRICKS_ROOT", projectDir)
-	err = cmd.Start()
-	assert.NoError(t, err)
-	t.Cleanup(func() {
-		// We wait three seconds to allow the bricks sync process flush its
-		// stdout buffer
-		time.Sleep(3 * time.Second)
-		// terminate the bricks sync process
-		cmd.Process.Kill()
-		// Print the stdout and stderr logs from the bricks sync process
-		t.Log("\n\n\n\n\n\n")
-		t.Logf("bricks sync logs for command: %s", cmd.String())
-		if err != nil {
-			t.Logf("error in bricks sync process: %s\n", err)
-		}
-		for _, line := range strings.Split(strings.TrimSuffix(cmdOut.String(), "\n"), "\n") {
-			t.Log("[bricks sync stdout]", line)
-		}
-		for _, line := range strings.Split(strings.TrimSuffix(cmdErr.String(), "\n"), "\n") {
-			t.Log("[bricks sync stderr]", line)
-		}
-	})
+	s := &syncTestHarness{T: t}
+	s.run("sync", "--remote-path", repoPath, "--persist-snapshot=false")
 
 	// First upload assertion
-	assert.Eventually(t, func() bool {
+	s.eventually(func() bool {
 		objects, err := wsc.Workspace.ListAll(ctx, workspace.List{
 			Path: repoPath,
 		})
@@ -126,7 +166,7 @@ func TestAccFullSync(t *testing.T) {
 	// Create new files and assert
 	os.Create(filepath.Join(projectDir, "hello.txt"))
 	os.Create(filepath.Join(projectDir, "world.txt"))
-	assert.Eventually(t, func() bool {
+	s.eventually(func() bool {
 		objects, err := wsc.Workspace.ListAll(ctx, workspace.List{
 			Path: repoPath,
 		})
@@ -150,7 +190,7 @@ func TestAccFullSync(t *testing.T) {
 
 	// delete a file and assert
 	os.Remove(filepath.Join(projectDir, "hello.txt"))
-	assert.Eventually(t, func() bool {
+	s.eventually(func() bool {
 		objects, err := wsc.Workspace.ListAll(ctx, workspace.List{
 			Path: repoPath,
 		})
@@ -198,19 +238,6 @@ func assertSnapshotContents(t *testing.T, host, repoPath, projectDir string, lis
 func TestAccIncrementalSync(t *testing.T) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
-	// We assume cwd is in the bricks repo
-	wd, err := os.Getwd()
-	if err != nil {
-		t.Log("[WARN] error fetching current working dir: ", err)
-	}
-	t.Log("test run dir: ", wd)
-	bricksRepo, err := folders.FindDirWithLeaf(wd, ".git")
-	if err != nil {
-		t.Log("[ERROR] error finding git repo root in : ", wd)
-	}
-	t.Log("bricks repo location: : ", bricksRepo)
-	assert.Equal(t, "bricks", filepath.Base(bricksRepo))
-
 	wsc := databricks.Must(databricks.NewWorkspaceClient())
 	ctx := context.Background()
 	me, err := wsc.CurrentUser.Me(ctx)
@@ -247,40 +274,13 @@ func TestAccIncrementalSync(t *testing.T) {
 	_, err = f2.Write(content)
 	assert.NoError(t, err)
 
-	// start bricks sync process
-	cmd = exec.Command("go", "run", "main.go", "sync", "--remote-path", repoPath, "--persist-snapshot=true")
-
-	var cmdOut, cmdErr bytes.Buffer
-	cmd.Stdout = &cmdOut
-	cmd.Stderr = &cmdErr
-	cmd.Dir = bricksRepo
-	// bricks sync command will inherit the env vars from process
+	// Run `bricks sync` in the background.
 	t.Setenv("BRICKS_ROOT", projectDir)
-	err = cmd.Start()
-	assert.NoError(t, err)
-	t.Cleanup(func() {
-		// We wait three seconds to allow the bricks sync process flush its
-		// stdout buffer
-		time.Sleep(3 * time.Second)
-		// terminate the bricks sync process
-		cmd.Process.Kill()
-		// Print the stdout and stderr logs from the bricks sync process
-		// TODO: modify logs to suit multiple sync processes
-		t.Log("\n\n\n\n\n\n")
-		t.Logf("bricks sync logs for command: %s", cmd.String())
-		if err != nil {
-			t.Logf("error in bricks sync process: %s\n", err)
-		}
-		for _, line := range strings.Split(strings.TrimSuffix(cmdOut.String(), "\n"), "\n") {
-			t.Log("[bricks sync stdout]", line)
-		}
-		for _, line := range strings.Split(strings.TrimSuffix(cmdErr.String(), "\n"), "\n") {
-			t.Log("[bricks sync stderr]", line)
-		}
-	})
+	s := &syncTestHarness{T: t}
+	s.run("sync", "--remote-path", repoPath, "--persist-snapshot=true")
 
 	// First upload assertion
-	assert.Eventually(t, func() bool {
+	s.eventually(func() bool {
 		objects, err := wsc.Workspace.ListAll(ctx, workspace.List{
 			Path: repoPath,
 		})
@@ -306,7 +306,7 @@ func TestAccIncrementalSync(t *testing.T) {
 	defer f.Close()
 
 	// new file upload assertion
-	assert.Eventually(t, func() bool {
+	s.eventually(func() bool {
 		objects, err := wsc.Workspace.ListAll(ctx, workspace.List{
 			Path: repoPath,
 		})
@@ -329,7 +329,7 @@ func TestAccIncrementalSync(t *testing.T) {
 
 	// delete a file and assert
 	os.Remove(filepath.Join(projectDir, ".gitkeep"))
-	assert.Eventually(t, func() bool {
+	s.eventually(func() bool {
 		objects, err := wsc.Workspace.ListAll(ctx, workspace.List{
 			Path: repoPath,
 		})
