@@ -55,17 +55,17 @@ type cobraTestRunner struct {
 }
 
 func (t *cobraTestRunner) RunBackground() {
-	cmd := root.RootCmd
-	cmd.SetOut(&t.stdout)
-	cmd.SetErr(&t.stderr)
-	cmd.SetArgs(t.args)
+	root := root.RootCmd
+	root.SetOut(&t.stdout)
+	root.SetErr(&t.stderr)
+	root.SetArgs(t.args)
 
 	errch := make(chan error)
 	ctx, cancel := context.WithCancel(context.Background())
 
 	// Run command in background.
 	go func() {
-		err := cmd.ExecuteContext(ctx)
+		cmd, err := root.ExecuteContextC(ctx)
 		if err != nil {
 			t.Logf("Error running command: %s", err)
 		}
@@ -85,6 +85,12 @@ func (t *cobraTestRunner) RunBackground() {
 				t.Logf("[bricks stderr]: %s", scanner.Text())
 			}
 		}
+
+		// Reset context on command for the next test.
+		// These commands are globals so we have to clean up to the best of our ability after each run.
+		// See https://github.com/spf13/cobra/blob/a6f198b635c4b18fff81930c40d464904e55b161/command.go#L1062-L1066
+		//lint:ignore SA1012 cobra sets the context and doesn't clear it
+		cmd.SetContext(nil)
 
 		// Make caller aware of error.
 		errch <- err
