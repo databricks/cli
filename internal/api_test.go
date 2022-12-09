@@ -15,7 +15,8 @@ import (
 func TestAccApiGet(t *testing.T) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
-	stdout, _, err := run(t, "api", "get", "/api/2.0/preview/scim/v2/Me")
+	c := NewCobraTestRunner(t, "api", "get", "/api/2.0/preview/scim/v2/Me")
+	stdout, _, err := c.Run()
 	require.NoError(t, err)
 
 	// Deserialize SCIM API response.
@@ -42,13 +43,15 @@ func TestAccApiPost(t *testing.T) {
 
 	// Post to mkdir
 	{
-		_, _, err := run(t, "api", "post", "--body=@"+requestPath, "/api/2.0/dbfs/mkdirs")
+		c := NewCobraTestRunner(t, "api", "post", "--body=@"+requestPath, "/api/2.0/dbfs/mkdirs")
+		_, _, err := c.Run()
 		require.NoError(t, err)
 	}
 
 	// Post to delete
 	{
-		_, _, err := run(t, "api", "post", "--body=@"+requestPath, "/api/2.0/dbfs/delete")
+		c := NewCobraTestRunner(t, "api", "post", "--body=@"+requestPath, "/api/2.0/dbfs/delete")
+		_, _, err := c.Run()
 		require.NoError(t, err)
 	}
 }

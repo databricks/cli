@@ -1,8 +1,6 @@
 package internal
 
 import (
-	"bufio"
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -13,92 +11,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/databricks/bricks/cmd/root"
 	"github.com/databricks/bricks/cmd/sync"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/repos"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
-
-type syncTestHarness struct {
-	*testing.T
-
-	errch <-chan error
-}
-
-// Run CLI in-process and asynchronously by invoking [RootCmd] directly.
-// Upon termination, either a nil or an error is sent to [errch] and the channel is closed.
-func (s *syncTestHarness) run(args ...string) {
-	ctx, cancel := context.WithCancel(context.Background())
-
-	cmd := root.RootCmd
-	cmd.SetArgs(args)
-
-	// Consolidate stdout and stderr in single buffer.
-	var outerr bytes.Buffer
-	cmd.SetOut(&outerr)
-	cmd.SetErr(&outerr)
-
-	errch := make(chan error)
-
-	// Run sync command in background.
-	go func() {
-		err := cmd.ExecuteContext(ctx)
-		if err != nil {
-			s.Logf("Error running command: %s", err)
-		}
-
-		// Log everything printed by the command.
-		scanner := bufio.NewScanner(&outerr)
-		for scanner.Scan() {
-			s.Logf("[bricks output]: %s", scanner.Text())
-		}
-
-		// Make caller aware of error.
-		errch <- err
-		close(errch)
-	}()
-
-	// Terminate command (if necessary).
-	s.Cleanup(func() {
-		// Signal termination of command.
-		cancel()
-		// Wait for goroutine to finish.
-		<-errch
-	})
-
-	s.errch = errch
-}
-
-// Like [s.eventually] but errors if the underlying command has failed.
-func (s *syncTestHarness) eventually(condition func() bool, waitFor time.Duration, tick time.Duration, msgAndArgs ...interface{}) bool {
-	ch := make(chan bool, 1)
-
-	timer := time.NewTimer(waitFor)
-	defer timer.Stop()
-
-	ticker := time.NewTicker(tick)
-	defer ticker.Stop()
-
-	for tick := ticker.C; ; {
-		select {
-		case err := <-s.errch:
-			require.Fail(s, "Command failed", err)
-		case <-timer.C:
-			require.Fail(s, "Condition never satisfied", msgAndArgs...)
-		case <-tick:
-			tick = nil
-			go func() { ch <- condition() }()
-		case v := <-ch:
-			if v {
-				return true
-			}
-			tick = ticker.C
-		}
-	}
-}
 
 // This test needs auth env vars to run.
 // Please run using the deco env test or deco env shell
@@ -139,11 +57,11 @@ func TestAccFullSync(t *testing.T) {
 
 	// Run `bricks sync` in the background.
 	t.Setenv("BRICKS_ROOT", projectDir)
-	s := &syncTestHarness{T: t}
-	s.run("sync", "--remote-path", repoPath, "--persist-snapshot=false")
+	c := NewCobraTestRunner(t, "sync", "--remote-path", repoPath, "--persist-snapshot=false")
+	c.RunBackground()
 
 	// First upload assertion
-	s.eventually(func() bool {
+	c.Eventually(func() bool {
 		objects, err := wsc.Workspace.ListAll(ctx, workspace.List{
 			Path: repoPath,
 		})
@@ -166,7 +84,7 @@ func TestAccFullSync(t *testing.T) {
 	// Create new files and assert
 	os.Create(filepath.Join(projectDir, "hello.txt"))
 	os.Create(filepath.Join(projectDir, "world.txt"))
-	s.eventually(func() bool {
+	c.Eventually(func() bool {
 		objects, err := wsc.Workspace.ListAll(ctx, workspace.List{
 			Path: repoPath,
 		})
@@ -190,7 +108,7 @@ func TestAccFullSync(t *testing.T) {
 
 	// delete a file and assert
 	os.Remove(filepath.Join(projectDir, "hello.txt"))
-	s.eventually(func() bool {
+	c.Eventually(func() bool {
 		objects, err := wsc.Workspace.ListAll(ctx, workspace.List{
 			Path: repoPath,
 		})
@@ -276,11 +194,11 @@ func TestAccIncrementalSync(t *testing.T) {
 
 	// Run `bricks sync` in the background.
 	t.Setenv("BRICKS_ROOT", projectDir)
-	s := &syncTestHarness{T: t}
-	s.run("sync", "--remote-path", repoPath, "--persist-snapshot=true")
+	c := NewCobraTestRunner(t, "sync", "--remote-path", repoPath, "--persist-snapshot=true")
+	c.RunBackground()
 
 	// First upload assertion
-	s.eventually(func() bool {
+	c.Eventually(func() bool {
 		objects, err := wsc.Workspace.ListAll(ctx, workspace.List{
 			Path: repoPath,
 		})
@@ -306,7 +224,7 @@ func TestAccIncrementalSync(t *testing.T) {
 	defer f.Close()
 
 	// new file upload assertion
-	s.eventually(func() bool {
+	c.Eventually(func() bool {
 		objects, err := wsc.Workspace.ListAll(ctx, workspace.List{
 			Path: repoPath,
 		})
@@ -329,7 +247,7 @@ func TestAccIncrementalSync(t *testing.T) {
 
 	// delete a file and assert
 	os.Remove(filepath.Join(projectDir, ".gitkeep"))
-	s.eventually(func() bool {
+	c.Eventually(func() bool {
 		objects, err := wsc.Workspace.ListAll(ctx, workspace.List{
 			Path: repoPath,
 		})
