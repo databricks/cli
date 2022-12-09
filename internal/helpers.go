@@ -1,7 +1,9 @@
 package internal
 
 import (
+	"bufio"
 	"bytes"
+	"context"
 	"fmt"
 	"math/rand"
 	"os"
@@ -39,21 +41,114 @@ func RandomName(prefix ...string) string {
 	return string(b)
 }
 
-func run(t *testing.T, args ...string) (bytes.Buffer, bytes.Buffer, error) {
-	var stdout bytes.Buffer
-	var stderr bytes.Buffer
+// Helper for running the bricks root command in the background.
+// It ensures that the background goroutine terminates upon
+// test completion through cancelling the command context.
+type cobraTestRunner struct {
+	*testing.T
+
+	args   []string
+	stdout bytes.Buffer
+	stderr bytes.Buffer
+
+	errch <-chan error
+}
+
+func (t *cobraTestRunner) RunBackground() {
 	root := root.RootCmd
-	root.SetOut(&stdout)
-	root.SetErr(&stderr)
-	root.SetArgs(args)
-	_, err := root.ExecuteC()
-	if stdout.Len() > 0 {
-		t.Logf("[stdout]: %s", stdout.String())
+	root.SetOut(&t.stdout)
+	root.SetErr(&t.stderr)
+	root.SetArgs(t.args)
+
+	errch := make(chan error)
+	ctx, cancel := context.WithCancel(context.Background())
+
+	// Run command in background.
+	go func() {
+		cmd, err := root.ExecuteContextC(ctx)
+		if err != nil {
+			t.Logf("Error running command: %s", err)
+		}
+
+		if t.stdout.Len() > 0 {
+			// Make a copy of the buffer such that it remains "unread".
+			scanner := bufio.NewScanner(bytes.NewBuffer(t.stdout.Bytes()))
+			for scanner.Scan() {
+				t.Logf("[bricks stdout]: %s", scanner.Text())
+			}
+		}
+
+		if t.stderr.Len() > 0 {
+			// Make a copy of the buffer such that it remains "unread".
+			scanner := bufio.NewScanner(bytes.NewBuffer(t.stderr.Bytes()))
+			for scanner.Scan() {
+				t.Logf("[bricks stderr]: %s", scanner.Text())
+			}
+		}
+
+		// Reset context on command for the next test.
+		// These commands are globals so we have to clean up to the best of our ability after each run.
+		// See https://github.com/spf13/cobra/blob/a6f198b635c4b18fff81930c40d464904e55b161/command.go#L1062-L1066
+		//lint:ignore SA1012 cobra sets the context and doesn't clear it
+		cmd.SetContext(nil)
+
+		// Make caller aware of error.
+		errch <- err
+		close(errch)
+	}()
+
+	// Ensure command terminates upon test completion (success or failure).
+	t.Cleanup(func() {
+		// Signal termination of command.
+		cancel()
+		// Wait for goroutine to finish.
+		<-errch
+	})
+
+	t.errch = errch
+}
+
+func (t *cobraTestRunner) Run() (bytes.Buffer, bytes.Buffer, error) {
+	t.RunBackground()
+	err := <-t.errch
+	return t.stdout, t.stderr, err
+}
+
+// Like [require.Eventually] but errors if the underlying command has failed.
+func (c *cobraTestRunner) Eventually(condition func() bool, waitFor time.Duration, tick time.Duration, msgAndArgs ...interface{}) {
+	ch := make(chan bool, 1)
+
+	timer := time.NewTimer(waitFor)
+	defer timer.Stop()
+
+	ticker := time.NewTicker(tick)
+	defer ticker.Stop()
+
+	for tick := ticker.C; ; {
+		select {
+		case err := <-c.errch:
+			require.Fail(c, "Command failed", err)
+			return
+		case <-timer.C:
+			require.Fail(c, "Condition never satisfied", msgAndArgs...)
+			return
+		case <-tick:
+			tick = nil
+			go func() { ch <- condition() }()
+		case v := <-ch:
+			if v {
+				return
+			}
+			tick = ticker.C
+		}
 	}
-	if stderr.Len() > 0 {
-		t.Logf("[stderr]: %s", stderr.String())
+}
+
+func NewCobraTestRunner(t *testing.T, args ...string) *cobraTestRunner {
+	return &cobraTestRunner{
+		T:    t,
+		args: args,
 	}
-	return stdout, stderr, err
 }
 
 func writeFile(t *testing.T, name string, body string) string {

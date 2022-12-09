@@ -1,7 +1,6 @@
 package internal
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -9,12 +8,10 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 	"testing"
 	"time"
 
 	"github.com/databricks/bricks/cmd/sync"
-	"github.com/databricks/bricks/folders"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/repos"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
@@ -25,19 +22,6 @@ import (
 // Please run using the deco env test or deco env shell
 func TestAccFullSync(t *testing.T) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
-
-	// We assume cwd is in the bricks repo
-	wd, err := os.Getwd()
-	if err != nil {
-		t.Log("[WARN] error fetching current working dir: ", err)
-	}
-	t.Log("test run dir: ", wd)
-	bricksRepo, err := folders.FindDirWithLeaf(wd, ".git")
-	if err != nil {
-		t.Log("[ERROR] error finding git repo root in : ", wd)
-	}
-	t.Log("bricks repo location: : ", bricksRepo)
-	assert.Equal(t, "bricks", filepath.Base(bricksRepo))
 
 	wsc := databricks.Must(databricks.NewWorkspaceClient())
 	ctx := context.Background()
@@ -71,39 +55,13 @@ func TestAccFullSync(t *testing.T) {
 	assert.NoError(t, err)
 	defer f.Close()
 
-	// start bricks sync process
-	cmd = exec.Command("go", "run", "main.go", "sync", "--remote-path", repoPath, "--persist-snapshot=false")
-
-	var cmdOut, cmdErr bytes.Buffer
-	cmd.Stdout = &cmdOut
-	cmd.Stderr = &cmdErr
-	cmd.Dir = bricksRepo
-	// bricks sync command will inherit the env vars from process
+	// Run `bricks sync` in the background.
 	t.Setenv("BRICKS_ROOT", projectDir)
-	err = cmd.Start()
-	assert.NoError(t, err)
-	t.Cleanup(func() {
-		// We wait three seconds to allow the bricks sync process flush its
-		// stdout buffer
-		time.Sleep(3 * time.Second)
-		// terminate the bricks sync process
-		cmd.Process.Kill()
-		// Print the stdout and stderr logs from the bricks sync process
-		t.Log("\n\n\n\n\n\n")
-		t.Logf("bricks sync logs for command: %s", cmd.String())
-		if err != nil {
-			t.Logf("error in bricks sync process: %s\n", err)
-		}
-		for _, line := range strings.Split(strings.TrimSuffix(cmdOut.String(), "\n"), "\n") {
-			t.Log("[bricks sync stdout]", line)
-		}
-		for _, line := range strings.Split(strings.TrimSuffix(cmdErr.String(), "\n"), "\n") {
-			t.Log("[bricks sync stderr]", line)
-		}
-	})
+	c := NewCobraTestRunner(t, "sync", "--remote-path", repoPath, "--persist-snapshot=false")
+	c.RunBackground()
 
 	// First upload assertion
-	assert.Eventually(t, func() bool {
+	c.Eventually(func() bool {
 		objects, err := wsc.Workspace.ListAll(ctx, workspace.List{
 			Path: repoPath,
 		})
@@ -126,7 +84,7 @@ func TestAccFullSync(t *testing.T) {
 	// Create new files and assert
 	os.Create(filepath.Join(projectDir, "hello.txt"))
 	os.Create(filepath.Join(projectDir, "world.txt"))
-	assert.Eventually(t, func() bool {
+	c.Eventually(func() bool {
 		objects, err := wsc.Workspace.ListAll(ctx, workspace.List{
 			Path: repoPath,
 		})
@@ -150,7 +108,7 @@ func TestAccFullSync(t *testing.T) {
 
 	// delete a file and assert
 	os.Remove(filepath.Join(projectDir, "hello.txt"))
-	assert.Eventually(t, func() bool {
+	c.Eventually(func() bool {
 		objects, err := wsc.Workspace.ListAll(ctx, workspace.List{
 			Path: repoPath,
 		})
@@ -198,19 +156,6 @@ func assertSnapshotContents(t *testing.T, host, repoPath, projectDir string, lis
 func TestAccIncrementalSync(t *testing.T) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
-	// We assume cwd is in the bricks repo
-	wd, err := os.Getwd()
-	if err != nil {
-		t.Log("[WARN] error fetching current working dir: ", err)
-	}
-	t.Log("test run dir: ", wd)
-	bricksRepo, err := folders.FindDirWithLeaf(wd, ".git")
-	if err != nil {
-		t.Log("[ERROR] error finding git repo root in : ", wd)
-	}
-	t.Log("bricks repo location: : ", bricksRepo)
-	assert.Equal(t, "bricks", filepath.Base(bricksRepo))
-
 	wsc := databricks.Must(databricks.NewWorkspaceClient())
 	ctx := context.Background()
 	me, err := wsc.CurrentUser.Me(ctx)
@@ -247,40 +192,13 @@ func TestAccIncrementalSync(t *testing.T) {
 	_, err = f2.Write(content)
 	assert.NoError(t, err)
 
-	// start bricks sync process
-	cmd = exec.Command("go", "run", "main.go", "sync", "--remote-path", repoPath, "--persist-snapshot=true")
-
-	var cmdOut, cmdErr bytes.Buffer
-	cmd.Stdout = &cmdOut
-	cmd.Stderr = &cmdErr
-	cmd.Dir = bricksRepo
-	// bricks sync command will inherit the env vars from process
+	// Run `bricks sync` in the background.
 	t.Setenv("BRICKS_ROOT", projectDir)
-	err = cmd.Start()
-	assert.NoError(t, err)
-	t.Cleanup(func() {
-		// We wait three seconds to allow the bricks sync process flush its
-		// stdout buffer
-		time.Sleep(3 * time.Second)
-		// terminate the bricks sync process
-		cmd.Process.Kill()
-		// Print the stdout and stderr logs from the bricks sync process
-		// TODO: modify logs to suit multiple sync processes
-		t.Log("\n\n\n\n\n\n")
-		t.Logf("bricks sync logs for command: %s", cmd.String())
-		if err != nil {
-			t.Logf("error in bricks sync process: %s\n", err)
-		}
-		for _, line := range strings.Split(strings.TrimSuffix(cmdOut.String(), "\n"), "\n") {
-			t.Log("[bricks sync stdout]", line)
-		}
-		for _, line := range strings.Split(strings.TrimSuffix(cmdErr.String(), "\n"), "\n") {
-			t.Log("[bricks sync stderr]", line)
-		}
-	})
+	c := NewCobraTestRunner(t, "sync", "--remote-path", repoPath, "--persist-snapshot=true")
+	c.RunBackground()
 
 	// First upload assertion
-	assert.Eventually(t, func() bool {
+	c.Eventually(func() bool {
 		objects, err := wsc.Workspace.ListAll(ctx, workspace.List{
 			Path: repoPath,
 		})
@@ -306,7 +224,7 @@ func TestAccIncrementalSync(t *testing.T) {
 	defer f.Close()
 
 	// new file upload assertion
-	assert.Eventually(t, func() bool {
+	c.Eventually(func() bool {
 		objects, err := wsc.Workspace.ListAll(ctx, workspace.List{
 			Path: repoPath,
 		})
@@ -329,7 +247,7 @@ func TestAccIncrementalSync(t *testing.T) {
 
 	// delete a file and assert
 	os.Remove(filepath.Join(projectDir, ".gitkeep"))
-	assert.Eventually(t, func() bool {
+	c.Eventually(func() bool {
 		objects, err := wsc.Workspace.ListAll(ctx, workspace.List{
 			Path: repoPath,
 		})
