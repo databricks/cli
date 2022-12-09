@@ -3,6 +3,7 @@ package pipelines
 import (
 	"time"
 
+	"github.com/databricks/bricks/lib/jsonflag"
 	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
 	"github.com/databricks/databricks-sdk-go/retries"
@@ -29,11 +30,15 @@ var Cmd = &cobra.Command{
   expectations.`,
 }
 
+// start create command
+
 var createReq pipelines.CreatePipeline
+var createJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(createCmd)
 	// TODO: short flags
+	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	createCmd.Flags().BoolVar(&createReq.AllowDuplicateNames, "allow-duplicate-names", createReq.AllowDuplicateNames, `If false, deployment will fail if name conflicts with that of another pipeline.`)
 	createCmd.Flags().StringVar(&createReq.Catalog, "catalog", createReq.Catalog, `Catalog in UC to add tables to.`)
@@ -64,7 +69,11 @@ var createCmd = &cobra.Command{
   If successful, this method returns the ID of the new pipeline.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = createJson.Unmarshall(&createReq)
+		if err != nil {
+			return err
+		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Pipelines.Create(ctx, createReq)
@@ -74,6 +83,8 @@ var createCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start delete command
 
 var deleteReq pipelines.Delete
 
@@ -93,10 +104,10 @@ var deleteCmd = &cobra.Command{
   Deletes a pipeline.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.Pipelines.Delete(ctx, deleteReq)
+		err = w.Pipelines.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
@@ -104,7 +115,10 @@ var deleteCmd = &cobra.Command{
 	},
 }
 
+// start get command
+
 var getReq pipelines.Get
+
 var getNoWait bool
 var getTimeout time.Duration
 
@@ -125,7 +139,7 @@ var getCmd = &cobra.Command{
 	Long:  `Get a pipeline.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		if !getNoWait {
@@ -149,6 +163,8 @@ var getCmd = &cobra.Command{
 	},
 }
 
+// start get-update command
+
 var getUpdateReq pipelines.GetUpdate
 
 func init() {
@@ -168,7 +184,7 @@ var getUpdateCmd = &cobra.Command{
   Gets an update from an active pipeline.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Pipelines.GetUpdate(ctx, getUpdateReq)
@@ -179,11 +195,15 @@ var getUpdateCmd = &cobra.Command{
 	},
 }
 
+// start list-pipelines command
+
 var listPipelinesReq pipelines.ListPipelines
+var listPipelinesJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(listPipelinesCmd)
 	// TODO: short flags
+	listPipelinesCmd.Flags().Var(&listPipelinesJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	listPipelinesCmd.Flags().StringVar(&listPipelinesReq.Filter, "filter", listPipelinesReq.Filter, `Select a subset of results based on the specified criteria.`)
 	listPipelinesCmd.Flags().IntVar(&listPipelinesReq.MaxResults, "max-results", listPipelinesReq.MaxResults, `The maximum number of entries to return in a single page.`)
@@ -200,7 +220,11 @@ var listPipelinesCmd = &cobra.Command{
   Lists pipelines defined in the Delta Live Tables system.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = listPipelinesJson.Unmarshall(&listPipelinesReq)
+		if err != nil {
+			return err
+		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Pipelines.ListPipelinesAll(ctx, listPipelinesReq)
@@ -210,6 +234,8 @@ var listPipelinesCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start list-updates command
 
 var listUpdatesReq pipelines.ListUpdates
 
@@ -232,7 +258,7 @@ var listUpdatesCmd = &cobra.Command{
   List updates for an active pipeline.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Pipelines.ListUpdates(ctx, listUpdatesReq)
@@ -243,7 +269,10 @@ var listUpdatesCmd = &cobra.Command{
 	},
 }
 
+// start reset command
+
 var resetReq pipelines.Reset
+
 var resetNoWait bool
 var resetTimeout time.Duration
 
@@ -266,7 +295,7 @@ var resetCmd = &cobra.Command{
   Resets a pipeline.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		if !resetNoWait {
@@ -282,7 +311,7 @@ var resetCmd = &cobra.Command{
 			}
 			return ui.Render(cmd, info)
 		}
-		err := w.Pipelines.Reset(ctx, resetReq)
+		err = w.Pipelines.Reset(ctx, resetReq)
 		if err != nil {
 			return err
 		}
@@ -290,11 +319,15 @@ var resetCmd = &cobra.Command{
 	},
 }
 
+// start start-update command
+
 var startUpdateReq pipelines.StartUpdate
+var startUpdateJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(startUpdateCmd)
 	// TODO: short flags
+	startUpdateCmd.Flags().Var(&startUpdateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	startUpdateCmd.Flags().Var(&startUpdateReq.Cause, "cause", ``)
 	startUpdateCmd.Flags().BoolVar(&startUpdateReq.FullRefresh, "full-refresh", startUpdateReq.FullRefresh, `If true, this update will reset all tables before running.`)
@@ -312,7 +345,11 @@ var startUpdateCmd = &cobra.Command{
   Starts or queues a pipeline update.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = startUpdateJson.Unmarshall(&startUpdateReq)
+		if err != nil {
+			return err
+		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Pipelines.StartUpdate(ctx, startUpdateReq)
@@ -323,7 +360,10 @@ var startUpdateCmd = &cobra.Command{
 	},
 }
 
+// start stop command
+
 var stopReq pipelines.Stop
+
 var stopNoWait bool
 var stopTimeout time.Duration
 
@@ -346,7 +386,7 @@ var stopCmd = &cobra.Command{
   Stops a pipeline.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		if !stopNoWait {
@@ -362,7 +402,7 @@ var stopCmd = &cobra.Command{
 			}
 			return ui.Render(cmd, info)
 		}
-		err := w.Pipelines.Stop(ctx, stopReq)
+		err = w.Pipelines.Stop(ctx, stopReq)
 		if err != nil {
 			return err
 		}
@@ -370,11 +410,15 @@ var stopCmd = &cobra.Command{
 	},
 }
 
+// start update command
+
 var updateReq pipelines.EditPipeline
+var updateJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(updateCmd)
 	// TODO: short flags
+	updateCmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	updateCmd.Flags().BoolVar(&updateReq.AllowDuplicateNames, "allow-duplicate-names", updateReq.AllowDuplicateNames, `If false, deployment will fail if name has changed and conflicts the name of another pipeline.`)
 	updateCmd.Flags().StringVar(&updateReq.Catalog, "catalog", updateReq.Catalog, `Catalog in UC to add tables to.`)
@@ -405,10 +449,14 @@ var updateCmd = &cobra.Command{
   Updates a pipeline with the supplied configuration.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = updateJson.Unmarshall(&updateReq)
+		if err != nil {
+			return err
+		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.Pipelines.Update(ctx, updateReq)
+		err = w.Pipelines.Update(ctx, updateReq)
 		if err != nil {
 			return err
 		}

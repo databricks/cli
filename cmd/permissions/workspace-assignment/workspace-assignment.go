@@ -1,6 +1,7 @@
 package workspace_assignment
 
 import (
+	"github.com/databricks/bricks/lib/jsonflag"
 	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
 	"github.com/databricks/databricks-sdk-go/service/permissions"
@@ -13,11 +14,15 @@ var Cmd = &cobra.Command{
 	Long:  `Databricks Workspace Assignment REST API`,
 }
 
+// start create command
+
 var createReq permissions.CreateWorkspaceAssignments
+var createJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(createCmd)
 	// TODO: short flags
+	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: permission_assignments
 	createCmd.Flags().Int64Var(&createReq.WorkspaceId, "workspace-id", createReq.WorkspaceId, `The workspace ID for the account.`)
@@ -32,7 +37,11 @@ var createCmd = &cobra.Command{
   Create new permission assignments for the specified account and workspace.`,
 
 	PreRunE: sdk.PreAccountClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = createJson.Unmarshall(&createReq)
+		if err != nil {
+			return err
+		}
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
 		response, err := a.WorkspaceAssignment.Create(ctx, createReq)
@@ -42,6 +51,8 @@ var createCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start delete command
 
 var deleteReq permissions.DeleteWorkspaceAssignmentRequest
 
@@ -63,16 +74,18 @@ var deleteCmd = &cobra.Command{
   using the specified service principal.`,
 
 	PreRunE: sdk.PreAccountClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
-		err := a.WorkspaceAssignment.Delete(ctx, deleteReq)
+		err = a.WorkspaceAssignment.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
 		return nil
 	},
 }
+
+// start get command
 
 var getReq permissions.GetWorkspaceAssignmentRequest
 
@@ -92,7 +105,7 @@ var getCmd = &cobra.Command{
   Get an array of workspace permissions for the specified account and workspace.`,
 
 	PreRunE: sdk.PreAccountClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
 		response, err := a.WorkspaceAssignment.Get(ctx, getReq)
@@ -102,6 +115,8 @@ var getCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start list command
 
 var listReq permissions.ListWorkspaceAssignmentRequest
 
@@ -122,7 +137,7 @@ var listCmd = &cobra.Command{
   Databricks Workspace.`,
 
 	PreRunE: sdk.PreAccountClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
 		response, err := a.WorkspaceAssignment.ListAll(ctx, listReq)
@@ -133,11 +148,15 @@ var listCmd = &cobra.Command{
 	},
 }
 
+// start update command
+
 var updateReq permissions.UpdateWorkspaceAssignments
+var updateJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(updateCmd)
 	// TODO: short flags
+	updateCmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: permissions
 	updateCmd.Flags().Int64Var(&updateReq.PrincipalId, "principal-id", updateReq.PrincipalId, `The ID of the service principal.`)
@@ -154,10 +173,14 @@ var updateCmd = &cobra.Command{
   using the specified service principal.`,
 
 	PreRunE: sdk.PreAccountClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = updateJson.Unmarshall(&updateReq)
+		if err != nil {
+			return err
+		}
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
-		err := a.WorkspaceAssignment.Update(ctx, updateReq)
+		err = a.WorkspaceAssignment.Update(ctx, updateReq)
 		if err != nil {
 			return err
 		}

@@ -1,6 +1,7 @@
 package workspace
 
 import (
+	"github.com/databricks/bricks/lib/jsonflag"
 	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
@@ -16,6 +17,8 @@ var Cmd = &cobra.Command{
   A notebook is a web-based interface to a document that contains runnable code,
   visualizations, and explanatory text.`,
 }
+
+// start delete command
 
 var deleteReq workspace.Delete
 
@@ -43,10 +46,10 @@ var deleteCmd = &cobra.Command{
   atomic.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.Workspace.Delete(ctx, deleteReq)
+		err = w.Workspace.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
@@ -54,11 +57,15 @@ var deleteCmd = &cobra.Command{
 	},
 }
 
+// start export command
+
 var exportReq workspace.Export
+var exportJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(exportCmd)
 	// TODO: short flags
+	exportCmd.Flags().Var(&exportJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	exportCmd.Flags().BoolVar(&exportReq.DirectDownload, "direct-download", exportReq.DirectDownload, `Flag to enable direct download.`)
 	exportCmd.Flags().Var(&exportReq.Format, "format", `This specifies the format of the exported file.`)
@@ -81,7 +88,11 @@ var exportCmd = &cobra.Command{
   this API does not support exporting a library.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = exportJson.Unmarshall(&exportReq)
+		if err != nil {
+			return err
+		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Workspace.Export(ctx, exportReq)
@@ -91,6 +102,8 @@ var exportCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start get-status command
 
 var getStatusReq workspace.GetStatus
 
@@ -111,7 +124,7 @@ var getStatusCmd = &cobra.Command{
   call returns an error RESOURCE_DOES_NOT_EXIST.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Workspace.GetStatus(ctx, getStatusReq)
@@ -122,11 +135,15 @@ var getStatusCmd = &cobra.Command{
 	},
 }
 
+// start import command
+
 var importReq workspace.Import
+var importJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(importCmd)
 	// TODO: short flags
+	importCmd.Flags().Var(&importJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	importCmd.Flags().StringVar(&importReq.Content, "content", importReq.Content, `The base64-encoded content.`)
 	importCmd.Flags().Var(&importReq.Format, "format", `This specifies the format of the file to be imported.`)
@@ -147,16 +164,22 @@ var importCmd = &cobra.Command{
   directory.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = importJson.Unmarshall(&importReq)
+		if err != nil {
+			return err
+		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.Workspace.Import(ctx, importReq)
+		err = w.Workspace.Import(ctx, importReq)
 		if err != nil {
 			return err
 		}
 		return nil
 	},
 }
+
+// start list command
 
 var listReq workspace.List
 
@@ -179,7 +202,7 @@ var listCmd = &cobra.Command{
   RESOURCE_DOES_NOT_EXIST.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Workspace.ListAll(ctx, listReq)
@@ -189,6 +212,8 @@ var listCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start mkdirs command
 
 var mkdirsReq workspace.Mkdirs
 
@@ -213,10 +238,10 @@ var mkdirsCmd = &cobra.Command{
   the necessary\nparrent directories.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.Workspace.Mkdirs(ctx, mkdirsReq)
+		err = w.Workspace.Mkdirs(ctx, mkdirsReq)
 		if err != nil {
 			return err
 		}

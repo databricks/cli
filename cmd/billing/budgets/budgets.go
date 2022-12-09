@@ -1,6 +1,7 @@
 package budgets
 
 import (
+	"github.com/databricks/bricks/lib/jsonflag"
 	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
 	"github.com/databricks/databricks-sdk-go/service/billing"
@@ -14,11 +15,15 @@ var Cmd = &cobra.Command{
   budget for a period. They can also retrieve the status of each budget.`,
 }
 
+// start create command
+
 var createReq billing.WrappedBudget
+var createJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(createCmd)
 	// TODO: short flags
+	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: budget
 	createCmd.Flags().StringVar(&createReq.BudgetId, "budget-id", createReq.BudgetId, `Budget ID.`)
@@ -33,7 +38,11 @@ var createCmd = &cobra.Command{
   Creates a new budget in the specified account.`,
 
 	PreRunE: sdk.PreAccountClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = createJson.Unmarshall(&createReq)
+		if err != nil {
+			return err
+		}
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
 		response, err := a.Budgets.Create(ctx, createReq)
@@ -43,6 +52,8 @@ var createCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start delete command
 
 var deleteReq billing.DeleteBudgetRequest
 
@@ -62,16 +73,18 @@ var deleteCmd = &cobra.Command{
   Deletes the budget specified by its UUID.`,
 
 	PreRunE: sdk.PreAccountClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
-		err := a.Budgets.Delete(ctx, deleteReq)
+		err = a.Budgets.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
 		return nil
 	},
 }
+
+// start get command
 
 var getReq billing.GetBudgetRequest
 
@@ -92,7 +105,7 @@ var getCmd = &cobra.Command{
   day that the budget is configured to include.`,
 
 	PreRunE: sdk.PreAccountClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
 		response, err := a.Budgets.Get(ctx, getReq)
@@ -102,6 +115,8 @@ var getCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start list command
 
 func init() {
 	Cmd.AddCommand(listCmd)
@@ -117,7 +132,7 @@ var listCmd = &cobra.Command{
   for each day that the budget is configured to include.`,
 
 	PreRunE: sdk.PreAccountClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
 		response, err := a.Budgets.ListAll(ctx)
@@ -128,11 +143,15 @@ var listCmd = &cobra.Command{
 	},
 }
 
+// start update command
+
 var updateReq billing.WrappedBudget
+var updateJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(updateCmd)
 	// TODO: short flags
+	updateCmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: budget
 	updateCmd.Flags().StringVar(&updateReq.BudgetId, "budget-id", updateReq.BudgetId, `Budget ID.`)
@@ -148,10 +167,14 @@ var updateCmd = &cobra.Command{
   overwritten.`,
 
 	PreRunE: sdk.PreAccountClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = updateJson.Unmarshall(&updateReq)
+		if err != nil {
+			return err
+		}
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
-		err := a.Budgets.Update(ctx, updateReq)
+		err = a.Budgets.Update(ctx, updateReq)
 		if err != nil {
 			return err
 		}

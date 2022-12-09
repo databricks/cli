@@ -21,6 +21,8 @@ var Cmd = &cobra.Command{
   as it appears in Databricks SQL.`,
 }
 
+// start list command
+
 func init() {
 	Cmd.AddCommand(listCmd)
 
@@ -36,7 +38,7 @@ var listCmd = &cobra.Command{
   you need only a SQL warehouse's id to create new queries against it.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.DataSources.List(ctx)

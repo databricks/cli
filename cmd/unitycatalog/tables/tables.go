@@ -20,6 +20,8 @@ var Cmd = &cobra.Command{
   A table can be managed or external.`,
 }
 
+// start delete command
+
 var deleteReq unitycatalog.DeleteTableRequest
 
 func init() {
@@ -41,16 +43,18 @@ var deleteCmd = &cobra.Command{
   and have the USAGE privilege on both the parent catalog and schema.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.Tables.Delete(ctx, deleteReq)
+		err = w.Tables.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
 		return nil
 	},
 }
+
+// start get command
 
 var getReq unitycatalog.GetTableRequest
 
@@ -73,7 +77,7 @@ var getCmd = &cobra.Command{
   and have the SELECT privilege on it as well.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Tables.Get(ctx, getReq)
@@ -83,6 +87,8 @@ var getCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start list command
 
 var listReq unitycatalog.ListTablesRequest
 
@@ -106,7 +112,7 @@ var listCmd = &cobra.Command{
   the owner or have the USAGE privilege on the parent catalog and schema.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Tables.ListAll(ctx, listReq)
@@ -116,6 +122,8 @@ var listCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start table-summaries command
 
 var tableSummariesReq unitycatalog.TableSummariesRequest
 
@@ -147,7 +155,7 @@ var tableSummariesCmd = &cobra.Command{
   the USAGE privilege on the parent Catalog`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Tables.TableSummaries(ctx, tableSummariesReq)

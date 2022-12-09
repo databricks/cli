@@ -24,10 +24,13 @@ var Cmd = &cobra.Command{
 
 {{- if not (eq .Name "CommandExecution") -}}
 {{range .Methods}}
+// start {{.KebabName}} command
 
-{{if .Request}}var {{.CamelName}}Req {{.Service.Package.Name}}.{{.Request.PascalName}}{{end}}
-{{if .Wait}}var {{.CamelName}}NoWait bool{{end}}
-{{if .Wait}}var {{.CamelName}}Timeout time.Duration{{end}}
+{{if .Request}}var {{.CamelName}}Req {{.Service.Package.Name}}.{{.Request.PascalName}}
+{{if not .Request.IsOnlyPrimitiveFields}}var {{.CamelName}}Json jsonflag.JsonFlag{{end}}
+{{- end}}
+{{if .Wait}}var {{.CamelName}}NoWait bool
+var {{.CamelName}}Timeout time.Duration{{end}}
 
 func init() {
     Cmd.AddCommand({{.CamelName}}Cmd)
@@ -36,6 +39,7 @@ func init() {
 	{{.CamelName}}Cmd.Flags().DurationVar(&{{.CamelName}}Timeout, "timeout", {{.Wait.Timeout}}*time.Minute, `maximum amount of time to reach {{range $i, $e := .Wait.Success}}{{if $i}} or {{end}}{{.Content}}{{end}} state`)
 	{{end -}}
     {{if .Request}}// TODO: short flags
+	{{if not .Request.IsOnlyPrimitiveFields}}{{.CamelName}}Cmd.Flags().Var(&{{.CamelName}}Json, "json", `either inline JSON string or @path/to/file.json with request body`){{end}}
     {{$method := .}}
     {{range .Request.Fields -}}
 		{{if .Entity.IsObject }}// TODO: complex arg: {{.Name}}
@@ -56,7 +60,13 @@ var {{.CamelName}}Cmd = &cobra.Command{
 	Long: `{{.Comment  "  " 80 | without "`"}}`,
     {{end}}
 	PreRunE: sdk.{{if .Service.IsAccounts}}PreAccountClient{{else}}PreWorkspaceClient{{end}},
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		{{- if .Request}}{{if not .Request.IsOnlyPrimitiveFields -}}
+		err = {{.CamelName}}Json.Unmarshall(&{{.CamelName}}Req)
+		if err != nil {
+			return err
+		}
+		{{- end}}{{end}}
 		ctx := cmd.Context()
 		{{if .Service.IsAccounts}}a := sdk.AccountClient(ctx){{else}}w := sdk.WorkspaceClient(ctx){{end}}
 		{{if .Wait -}}
@@ -74,7 +84,7 @@ var {{.CamelName}}Cmd = &cobra.Command{
 			return ui.Render(cmd, info)
 		}
 		{{end -}}
-		{{if .Response}}response, {{end}}err := {{if .Service.IsAccounts}}a{{else}}w{{end}}.{{if eq .Service.Package.Name "scim" -}}
+		{{if .Response}}response, err :={{else}}err ={{end}} {{if .Service.IsAccounts}}a{{else}}w{{end}}.{{if eq .Service.Package.Name "scim" -}}
 			{{trim_prefix .Service.PascalName "Account"}} 
 		{{- else}}{{.Service.PascalName}}{{end}}.{{.PascalName}}{{if .Pagination}}All{{end}}(ctx{{if .Request}}, {{.CamelName}}Req{{end}})
 		if err != nil {

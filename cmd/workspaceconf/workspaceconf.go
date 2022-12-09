@@ -13,6 +13,8 @@ var Cmd = &cobra.Command{
 	Long:  `This API allows updating known workspace settings for advanced users.`,
 }
 
+// start get-status command
+
 var getStatusReq workspaceconf.GetStatus
 
 func init() {
@@ -31,7 +33,7 @@ var getStatusCmd = &cobra.Command{
   Gets the configuration status for a workspace.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.WorkspaceConf.GetStatus(ctx, getStatusReq)
@@ -41,6 +43,8 @@ var getStatusCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start set-status command
 
 var setStatusReq workspaceconf.WorkspaceConf
 
@@ -59,10 +63,10 @@ var setStatusCmd = &cobra.Command{
   it.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.WorkspaceConf.SetStatus(ctx, setStatusReq)
+		err = w.WorkspaceConf.SetStatus(ctx, setStatusReq)
 		if err != nil {
 			return err
 		}

@@ -1,6 +1,7 @@
 package providers
 
 import (
+	"github.com/databricks/bricks/lib/jsonflag"
 	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
 	"github.com/databricks/databricks-sdk-go/service/unitycatalog"
@@ -13,11 +14,15 @@ var Cmd = &cobra.Command{
 	Long:  `Databricks Delta Sharing: Providers REST API`,
 }
 
+// start create command
+
 var createReq unitycatalog.CreateProvider
+var createJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(createCmd)
 	// TODO: short flags
+	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	createCmd.Flags().Var(&createReq.AuthenticationType, "authentication-type", `The delta sharing authentication type.`)
 	createCmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `Description about the provider.`)
@@ -37,7 +42,11 @@ var createCmd = &cobra.Command{
   authentication type. The caller must be an admin on the Metastore.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = createJson.Unmarshall(&createReq)
+		if err != nil {
+			return err
+		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Providers.Create(ctx, createReq)
@@ -47,6 +56,8 @@ var createCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start delete command
 
 var deleteReq unitycatalog.DeleteProviderRequest
 
@@ -67,16 +78,18 @@ var deleteCmd = &cobra.Command{
   the owner of the provider.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.Providers.Delete(ctx, deleteReq)
+		err = w.Providers.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
 		return nil
 	},
 }
+
+// start get command
 
 var getReq unitycatalog.GetProviderRequest
 
@@ -98,7 +111,7 @@ var getCmd = &cobra.Command{
   provider.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Providers.Get(ctx, getReq)
@@ -108,6 +121,8 @@ var getCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start list command
 
 var listReq unitycatalog.ListProvidersRequest
 
@@ -129,7 +144,7 @@ var listCmd = &cobra.Command{
   caller are not included in the response.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Providers.ListAll(ctx, listReq)
@@ -139,6 +154,8 @@ var listCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start list-shares command
 
 var listSharesReq unitycatalog.ListSharesRequest
 
@@ -160,7 +177,7 @@ var listSharesCmd = &cobra.Command{
   * the caller is a Metastore admin, or * the caller is the owner.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Providers.ListShares(ctx, listSharesReq)
@@ -171,11 +188,15 @@ var listSharesCmd = &cobra.Command{
 	},
 }
 
+// start update command
+
 var updateReq unitycatalog.UpdateProvider
+var updateJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(updateCmd)
 	// TODO: short flags
+	updateCmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	updateCmd.Flags().Var(&updateReq.AuthenticationType, "authentication-type", `The delta sharing authentication type.`)
 	updateCmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `Description about the provider.`)
@@ -197,10 +218,14 @@ var updateCmd = &cobra.Command{
   provider.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = updateJson.Unmarshall(&updateReq)
+		if err != nil {
+			return err
+		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.Providers.Update(ctx, updateReq)
+		err = w.Providers.Update(ctx, updateReq)
 		if err != nil {
 			return err
 		}

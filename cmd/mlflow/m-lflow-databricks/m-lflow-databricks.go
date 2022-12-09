@@ -1,6 +1,7 @@
 package m_lflow_databricks
 
 import (
+	"github.com/databricks/bricks/lib/jsonflag"
 	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
 	"github.com/databricks/databricks-sdk-go/service/mlflow"
@@ -13,6 +14,8 @@ var Cmd = &cobra.Command{
 	Long: `These endpoints are modified versions of the MLflow API that accept additional
   input parameters or return additional information.`,
 }
+
+// start get command
 
 var getReq mlflow.GetMLflowDatabrickRequest
 
@@ -36,7 +39,7 @@ var getCmd = &cobra.Command{
   [MLflow endpoint]: https://www.mlflow.org/docs/latest/rest-api.html#get-registeredmodel`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.MLflowDatabricks.Get(ctx, getReq)
@@ -47,11 +50,15 @@ var getCmd = &cobra.Command{
 	},
 }
 
+// start transition-stage command
+
 var transitionStageReq mlflow.TransitionModelVersionStageDatabricks
+var transitionStageJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(transitionStageCmd)
 	// TODO: short flags
+	transitionStageCmd.Flags().Var(&transitionStageJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	transitionStageCmd.Flags().BoolVar(&transitionStageReq.ArchiveExistingVersions, "archive-existing-versions", transitionStageReq.ArchiveExistingVersions, `Specifies whether to archive all current model versions in the target stage.`)
 	transitionStageCmd.Flags().StringVar(&transitionStageReq.Comment, "comment", transitionStageReq.Comment, `User-provided comment on the action.`)
@@ -73,7 +80,11 @@ var transitionStageCmd = &cobra.Command{
   [MLflow endpoint]: https://www.mlflow.org/docs/latest/rest-api.html#transition-modelversion-stage`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = transitionStageJson.Unmarshall(&transitionStageReq)
+		if err != nil {
+			return err
+		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.MLflowDatabricks.TransitionStage(ctx, transitionStageReq)

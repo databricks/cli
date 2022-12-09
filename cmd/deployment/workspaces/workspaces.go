@@ -3,6 +3,7 @@ package workspaces
 import (
 	"time"
 
+	"github.com/databricks/bricks/lib/jsonflag"
 	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
 	"github.com/databricks/databricks-sdk-go/retries"
@@ -23,7 +24,10 @@ var Cmd = &cobra.Command{
   account.`,
 }
 
+// start create command
+
 var createReq deployment.CreateWorkspaceRequest
+var createJson jsonflag.JsonFlag
 var createNoWait bool
 var createTimeout time.Duration
 
@@ -33,6 +37,7 @@ func init() {
 	createCmd.Flags().BoolVar(&createNoWait, "no-wait", createNoWait, `do not wait to reach RUNNING state`)
 	createCmd.Flags().DurationVar(&createTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
 	// TODO: short flags
+	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	createCmd.Flags().StringVar(&createReq.AwsRegion, "aws-region", createReq.AwsRegion, `The AWS region of the workspace's data plane.`)
 	createCmd.Flags().StringVar(&createReq.Cloud, "cloud", createReq.Cloud, `The cloud provider which the workspace uses.`)
@@ -92,7 +97,11 @@ var createCmd = &cobra.Command{
   [Create a new workspace using the Account API]: http://docs.databricks.com/administration-guide/account-api/new-workspace.html`,
 
 	PreRunE: sdk.PreAccountClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = createJson.Unmarshall(&createReq)
+		if err != nil {
+			return err
+		}
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
 		if !createNoWait {
@@ -115,6 +124,8 @@ var createCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start delete command
 
 var deleteReq deployment.DeleteWorkspaceRequest
 
@@ -141,16 +152,18 @@ var deleteCmd = &cobra.Command{
   account.`,
 
 	PreRunE: sdk.PreAccountClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
-		err := a.Workspaces.Delete(ctx, deleteReq)
+		err = a.Workspaces.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
 		return nil
 	},
 }
+
+// start get command
 
 var getReq deployment.GetWorkspaceRequest
 
@@ -183,7 +196,7 @@ var getCmd = &cobra.Command{
   [Create a new workspace using the Account API]: http://docs.databricks.com/administration-guide/account-api/new-workspace.html`,
 
 	PreRunE: sdk.PreAccountClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
 		response, err := a.Workspaces.Get(ctx, getReq)
@@ -193,6 +206,8 @@ var getCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start list command
 
 func init() {
 	Cmd.AddCommand(listCmd)
@@ -211,7 +226,7 @@ var listCmd = &cobra.Command{
   account.`,
 
 	PreRunE: sdk.PreAccountClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
 		response, err := a.Workspaces.List(ctx)
@@ -222,7 +237,10 @@ var listCmd = &cobra.Command{
 	},
 }
 
+// start update command
+
 var updateReq deployment.UpdateWorkspaceRequest
+
 var updateNoWait bool
 var updateTimeout time.Duration
 
@@ -352,7 +370,7 @@ var updateCmd = &cobra.Command{
   [Create a new workspace using the Account API]: http://docs.databricks.com/administration-guide/account-api/new-workspace.html`,
 
 	PreRunE: sdk.PreAccountClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
 		if !updateNoWait {
@@ -368,7 +386,7 @@ var updateCmd = &cobra.Command{
 			}
 			return ui.Render(cmd, info)
 		}
-		err := a.Workspaces.Update(ctx, updateReq)
+		err = a.Workspaces.Update(ctx, updateReq)
 		if err != nil {
 			return err
 		}

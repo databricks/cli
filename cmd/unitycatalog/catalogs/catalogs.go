@@ -1,6 +1,7 @@
 package catalogs
 
 import (
+	"github.com/databricks/bricks/lib/jsonflag"
 	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
 	"github.com/databricks/databricks-sdk-go/service/unitycatalog"
@@ -20,11 +21,15 @@ var Cmd = &cobra.Command{
   privileges granted centrally in Unity Catalog.`,
 }
 
+// start create command
+
 var createReq unitycatalog.CreateCatalog
+var createJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(createCmd)
 	// TODO: short flags
+	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	createCmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `User-provided free-form text description.`)
 	createCmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `Name of Catalog.`)
@@ -43,7 +48,11 @@ var createCmd = &cobra.Command{
   Metastore admin or has the CREATE CATALOG privilege.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = createJson.Unmarshall(&createReq)
+		if err != nil {
+			return err
+		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Catalogs.Create(ctx, createReq)
@@ -53,6 +62,8 @@ var createCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start delete command
 
 var deleteReq unitycatalog.DeleteCatalogRequest
 
@@ -73,16 +84,18 @@ var deleteCmd = &cobra.Command{
   Metastore admin or the owner of the catalog.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.Catalogs.Delete(ctx, deleteReq)
+		err = w.Catalogs.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
 		return nil
 	},
 }
+
+// start get command
 
 var getReq unitycatalog.GetCatalogRequest
 
@@ -103,7 +116,7 @@ var getCmd = &cobra.Command{
   an admin or Catalog owner, or has the USAGE privilege set for their account.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Catalogs.Get(ctx, getReq)
@@ -113,6 +126,8 @@ var getCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start list command
 
 func init() {
 	Cmd.AddCommand(listCmd)
@@ -129,7 +144,7 @@ var listCmd = &cobra.Command{
   Location, or has privileges to access the External Location.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Catalogs.ListAll(ctx)
@@ -140,11 +155,15 @@ var listCmd = &cobra.Command{
 	},
 }
 
+// start update command
+
 var updateReq unitycatalog.UpdateCatalog
+var updateJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(updateCmd)
 	// TODO: short flags
+	updateCmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	updateCmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `User-provided free-form text description.`)
 	updateCmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `Name of Catalog.`)
@@ -163,10 +182,14 @@ var updateCmd = &cobra.Command{
   of the catalog).`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = updateJson.Unmarshall(&updateReq)
+		if err != nil {
+			return err
+		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.Catalogs.Update(ctx, updateReq)
+		err = w.Catalogs.Update(ctx, updateReq)
 		if err != nil {
 			return err
 		}

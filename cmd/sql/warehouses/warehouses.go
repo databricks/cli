@@ -3,6 +3,7 @@ package warehouses
 import (
 	"time"
 
+	"github.com/databricks/bricks/lib/jsonflag"
 	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
 	"github.com/databricks/databricks-sdk-go/retries"
@@ -18,7 +19,10 @@ var Cmd = &cobra.Command{
   that provide processing capabilities in the cloud.`,
 }
 
+// start create command
+
 var createReq sql.CreateWarehouseRequest
+var createJson jsonflag.JsonFlag
 var createNoWait bool
 var createTimeout time.Duration
 
@@ -28,6 +32,7 @@ func init() {
 	createCmd.Flags().BoolVar(&createNoWait, "no-wait", createNoWait, `do not wait to reach RUNNING state`)
 	createCmd.Flags().DurationVar(&createTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
 	// TODO: short flags
+	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	createCmd.Flags().IntVar(&createReq.AutoStopMins, "auto-stop-mins", createReq.AutoStopMins, `The amount of time in minutes that a SQL Endpoint must be idle (i.e., no RUNNING queries) before it is automatically stopped.`)
 	// TODO: complex arg: channel
@@ -53,7 +58,11 @@ var createCmd = &cobra.Command{
   Creates a new SQL warehouse.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = createJson.Unmarshall(&createReq)
+		if err != nil {
+			return err
+		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		if !createNoWait {
@@ -77,7 +86,10 @@ var createCmd = &cobra.Command{
 	},
 }
 
+// start delete command
+
 var deleteReq sql.DeleteWarehouseRequest
+
 var deleteNoWait bool
 var deleteTimeout time.Duration
 
@@ -100,7 +112,7 @@ var deleteCmd = &cobra.Command{
   Deletes a SQL warehouse.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		if !deleteNoWait {
@@ -116,7 +128,7 @@ var deleteCmd = &cobra.Command{
 			}
 			return ui.Render(cmd, info)
 		}
-		err := w.Warehouses.Delete(ctx, deleteReq)
+		err = w.Warehouses.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
@@ -124,7 +136,10 @@ var deleteCmd = &cobra.Command{
 	},
 }
 
+// start edit command
+
 var editReq sql.EditWarehouseRequest
+var editJson jsonflag.JsonFlag
 var editNoWait bool
 var editTimeout time.Duration
 
@@ -134,6 +149,7 @@ func init() {
 	editCmd.Flags().BoolVar(&editNoWait, "no-wait", editNoWait, `do not wait to reach RUNNING state`)
 	editCmd.Flags().DurationVar(&editTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
 	// TODO: short flags
+	editCmd.Flags().Var(&editJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	editCmd.Flags().IntVar(&editReq.AutoStopMins, "auto-stop-mins", editReq.AutoStopMins, `The amount of time in minutes that a SQL Endpoint must be idle (i.e., no RUNNING queries) before it is automatically stopped.`)
 	// TODO: complex arg: channel
@@ -161,7 +177,11 @@ var editCmd = &cobra.Command{
   Updates the configuration for a SQL warehouse.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = editJson.Unmarshall(&editReq)
+		if err != nil {
+			return err
+		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		if !editNoWait {
@@ -177,7 +197,7 @@ var editCmd = &cobra.Command{
 			}
 			return ui.Render(cmd, info)
 		}
-		err := w.Warehouses.Edit(ctx, editReq)
+		err = w.Warehouses.Edit(ctx, editReq)
 		if err != nil {
 			return err
 		}
@@ -185,7 +205,10 @@ var editCmd = &cobra.Command{
 	},
 }
 
+// start get command
+
 var getReq sql.GetWarehouseRequest
+
 var getNoWait bool
 var getTimeout time.Duration
 
@@ -208,7 +231,7 @@ var getCmd = &cobra.Command{
   Gets the information for a single SQL warehouse.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		if !getNoWait {
@@ -232,6 +255,8 @@ var getCmd = &cobra.Command{
 	},
 }
 
+// start get-workspace-warehouse-config command
+
 func init() {
 	Cmd.AddCommand(getWorkspaceWarehouseConfigCmd)
 
@@ -246,7 +271,7 @@ var getWorkspaceWarehouseConfigCmd = &cobra.Command{
   a workspace.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Warehouses.GetWorkspaceWarehouseConfig(ctx)
@@ -256,6 +281,8 @@ var getWorkspaceWarehouseConfigCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start list command
 
 var listReq sql.ListWarehousesRequest
 
@@ -275,7 +302,7 @@ var listCmd = &cobra.Command{
   Lists all SQL warehouses that a user has manager permissions on.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Warehouses.ListAll(ctx, listReq)
@@ -286,11 +313,15 @@ var listCmd = &cobra.Command{
 	},
 }
 
+// start set-workspace-warehouse-config command
+
 var setWorkspaceWarehouseConfigReq sql.SetWorkspaceWarehouseConfigRequest
+var setWorkspaceWarehouseConfigJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(setWorkspaceWarehouseConfigCmd)
 	// TODO: short flags
+	setWorkspaceWarehouseConfigCmd.Flags().Var(&setWorkspaceWarehouseConfigJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: channel
 	// TODO: complex arg: config_param
@@ -316,10 +347,14 @@ var setWorkspaceWarehouseConfigCmd = &cobra.Command{
   a workspace.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = setWorkspaceWarehouseConfigJson.Unmarshall(&setWorkspaceWarehouseConfigReq)
+		if err != nil {
+			return err
+		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.Warehouses.SetWorkspaceWarehouseConfig(ctx, setWorkspaceWarehouseConfigReq)
+		err = w.Warehouses.SetWorkspaceWarehouseConfig(ctx, setWorkspaceWarehouseConfigReq)
 		if err != nil {
 			return err
 		}
@@ -327,7 +362,10 @@ var setWorkspaceWarehouseConfigCmd = &cobra.Command{
 	},
 }
 
+// start start command
+
 var startReq sql.StartRequest
+
 var startNoWait bool
 var startTimeout time.Duration
 
@@ -350,7 +388,7 @@ var startCmd = &cobra.Command{
   Starts a SQL warehouse.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		if !startNoWait {
@@ -366,7 +404,7 @@ var startCmd = &cobra.Command{
 			}
 			return ui.Render(cmd, info)
 		}
-		err := w.Warehouses.Start(ctx, startReq)
+		err = w.Warehouses.Start(ctx, startReq)
 		if err != nil {
 			return err
 		}
@@ -374,7 +412,10 @@ var startCmd = &cobra.Command{
 	},
 }
 
+// start stop command
+
 var stopReq sql.StopRequest
+
 var stopNoWait bool
 var stopTimeout time.Duration
 
@@ -397,7 +438,7 @@ var stopCmd = &cobra.Command{
   Stops a SQL warehouse.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		if !stopNoWait {
@@ -413,7 +454,7 @@ var stopCmd = &cobra.Command{
 			}
 			return ui.Render(cmd, info)
 		}
-		err := w.Warehouses.Stop(ctx, stopReq)
+		err = w.Warehouses.Stop(ctx, stopReq)
 		if err != nil {
 			return err
 		}

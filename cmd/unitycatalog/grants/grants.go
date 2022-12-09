@@ -1,6 +1,7 @@
 package grants
 
 import (
+	"github.com/databricks/bricks/lib/jsonflag"
 	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
 	"github.com/databricks/databricks-sdk-go/service/unitycatalog"
@@ -27,6 +28,8 @@ var Cmd = &cobra.Command{
   current and future objects within that schema.`,
 }
 
+// start get command
+
 var getReq unitycatalog.GetGrantRequest
 
 func init() {
@@ -47,7 +50,7 @@ var getCmd = &cobra.Command{
   Gets the permissions for a Securable type.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Grants.Get(ctx, getReq)
@@ -58,11 +61,15 @@ var getCmd = &cobra.Command{
 	},
 }
 
+// start update command
+
 var updateReq unitycatalog.UpdatePermissions
+var updateJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(updateCmd)
 	// TODO: short flags
+	updateCmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: changes
 	updateCmd.Flags().StringVar(&updateReq.FullName, "full-name", updateReq.FullName, `Required.`)
@@ -79,10 +86,14 @@ var updateCmd = &cobra.Command{
   Updates the permissions for a Securable type.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = updateJson.Unmarshall(&updateReq)
+		if err != nil {
+			return err
+		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.Grants.Update(ctx, updateReq)
+		err = w.Grants.Update(ctx, updateReq)
 		if err != nil {
 			return err
 		}

@@ -1,6 +1,7 @@
 package private_access
 
 import (
+	"github.com/databricks/bricks/lib/jsonflag"
 	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
 	"github.com/databricks/databricks-sdk-go/service/deployment"
@@ -21,11 +22,15 @@ var Cmd = &cobra.Command{
   [Databricks article about PrivateLink]: https://docs.databricks.com/administration-guide/cloud-configurations/aws/privatelink.html`,
 }
 
+// start create command
+
 var createReq deployment.UpsertPrivateAccessSettingsRequest
+var createJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(createCmd)
 	// TODO: short flags
+	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: allowed_vpc_endpoint_ids
 	createCmd.Flags().Var(&createReq.PrivateAccessLevel, "private-access-level", `The private access level controls which VPC endpoints can connect to the UI or API of any workspace that attaches this private access settings object.`)
@@ -63,7 +68,11 @@ var createCmd = &cobra.Command{
   [Databricks article about PrivateLink]: https://docs.databricks.com/administration-guide/cloud-configurations/aws/privatelink.html`,
 
 	PreRunE: sdk.PreAccountClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = createJson.Unmarshall(&createReq)
+		if err != nil {
+			return err
+		}
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
 		response, err := a.PrivateAccess.Create(ctx, createReq)
@@ -73,6 +82,8 @@ var createCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start delete command
 
 var deleteReq deployment.DeletePrivateAccesRequest
 
@@ -104,16 +115,18 @@ var deleteCmd = &cobra.Command{
   [Databricks article about PrivateLink]: https://docs.databricks.com/administration-guide/cloud-configurations/aws/privatelink.html`,
 
 	PreRunE: sdk.PreAccountClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
-		err := a.PrivateAccess.Delete(ctx, deleteReq)
+		err = a.PrivateAccess.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
 		return nil
 	},
 }
+
+// start get command
 
 var getReq deployment.GetPrivateAccesRequest
 
@@ -145,7 +158,7 @@ var getCmd = &cobra.Command{
   [Databricks article about PrivateLink]: https://docs.databricks.com/administration-guide/cloud-configurations/aws/privatelink.html`,
 
 	PreRunE: sdk.PreAccountClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
 		response, err := a.PrivateAccess.Get(ctx, getReq)
@@ -155,6 +168,8 @@ var getCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start list command
 
 func init() {
 	Cmd.AddCommand(listCmd)
@@ -175,7 +190,7 @@ var listCmd = &cobra.Command{
   PrivateLink.`,
 
 	PreRunE: sdk.PreAccountClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
 		response, err := a.PrivateAccess.List(ctx)
@@ -186,11 +201,15 @@ var listCmd = &cobra.Command{
 	},
 }
 
+// start replace command
+
 var replaceReq deployment.UpsertPrivateAccessSettingsRequest
+var replaceJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(replaceCmd)
 	// TODO: short flags
+	replaceCmd.Flags().Var(&replaceJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: allowed_vpc_endpoint_ids
 	replaceCmd.Flags().Var(&replaceReq.PrivateAccessLevel, "private-access-level", `The private access level controls which VPC endpoints can connect to the UI or API of any workspace that attaches this private access settings object.`)
@@ -233,10 +252,14 @@ var replaceCmd = &cobra.Command{
   [Databricks article about PrivateLink]: https://docs.databricks.com/administration-guide/cloud-configurations/aws/privatelink.html`,
 
 	PreRunE: sdk.PreAccountClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = replaceJson.Unmarshall(&replaceReq)
+		if err != nil {
+			return err
+		}
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
-		err := a.PrivateAccess.Replace(ctx, replaceReq)
+		err = a.PrivateAccess.Replace(ctx, replaceReq)
 		if err != nil {
 			return err
 		}

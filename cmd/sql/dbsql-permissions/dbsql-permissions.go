@@ -1,6 +1,7 @@
 package dbsql_permissions
 
 import (
+	"github.com/databricks/bricks/lib/jsonflag"
 	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
 	"github.com/databricks/databricks-sdk-go/service/sql"
@@ -25,11 +26,15 @@ var Cmd = &cobra.Command{
   permissions (superset of CAN_RUN)`,
 }
 
+// start get command
+
 var getReq sql.GetDbsqlPermissionRequest
+var getJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
+	getCmd.Flags().Var(&getJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	getCmd.Flags().StringVar(&getReq.ObjectId, "object-id", getReq.ObjectId, `Object ID.`)
 	getCmd.Flags().Var(&getReq.ObjectType, "object-type", `The type of object permissions to check.`)
@@ -45,7 +50,11 @@ var getCmd = &cobra.Command{
   object.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = getJson.Unmarshall(&getReq)
+		if err != nil {
+			return err
+		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.DbsqlPermissions.Get(ctx, getReq)
@@ -56,11 +65,15 @@ var getCmd = &cobra.Command{
 	},
 }
 
+// start set command
+
 var setReq sql.SetRequest
+var setJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(setCmd)
 	// TODO: short flags
+	setCmd.Flags().Var(&setJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: access_control_list
 	setCmd.Flags().StringVar(&setReq.ObjectId, "object-id", setReq.ObjectId, `Object ID.`)
@@ -77,7 +90,11 @@ var setCmd = &cobra.Command{
   complete rewrite the ACL.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = setJson.Unmarshall(&setReq)
+		if err != nil {
+			return err
+		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.DbsqlPermissions.Set(ctx, setReq)
@@ -88,11 +105,15 @@ var setCmd = &cobra.Command{
 	},
 }
 
+// start transfer-ownership command
+
 var transferOwnershipReq sql.TransferOwnershipRequest
+var transferOwnershipJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(transferOwnershipCmd)
 	// TODO: short flags
+	transferOwnershipCmd.Flags().Var(&transferOwnershipJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	transferOwnershipCmd.Flags().StringVar(&transferOwnershipReq.NewOwner, "new-owner", transferOwnershipReq.NewOwner, `Email address for the new owner, who must exist in the workspace.`)
 	// TODO: complex arg: objectId
@@ -109,7 +130,11 @@ var transferOwnershipCmd = &cobra.Command{
   Requires an admin API key.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = transferOwnershipJson.Unmarshall(&transferOwnershipReq)
+		if err != nil {
+			return err
+		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.DbsqlPermissions.TransferOwnership(ctx, transferOwnershipReq)

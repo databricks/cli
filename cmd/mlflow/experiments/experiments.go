@@ -1,6 +1,7 @@
 package experiments
 
 import (
+	"github.com/databricks/bricks/lib/jsonflag"
 	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
 	"github.com/databricks/databricks-sdk-go/service/mlflow"
@@ -11,11 +12,15 @@ var Cmd = &cobra.Command{
 	Use: "experiments",
 }
 
+// start create command
+
 var createReq mlflow.CreateExperiment
+var createJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(createCmd)
 	// TODO: short flags
+	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	createCmd.Flags().StringVar(&createReq.ArtifactLocation, "artifact-location", createReq.ArtifactLocation, `Location where all artifacts for the experiment are stored.`)
 	createCmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `Experiment name.`)
@@ -36,7 +41,11 @@ var createCmd = &cobra.Command{
   Throws RESOURCE_ALREADY_EXISTS if a experiment with the given name exists.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = createJson.Unmarshall(&createReq)
+		if err != nil {
+			return err
+		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Experiments.Create(ctx, createReq)
@@ -46,6 +55,8 @@ var createCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start delete command
 
 var deleteReq mlflow.DeleteExperiment
 
@@ -67,16 +78,18 @@ var deleteCmd = &cobra.Command{
   experiment are also deleted.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.Experiments.Delete(ctx, deleteReq)
+		err = w.Experiments.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
 		return nil
 	},
 }
+
+// start get command
 
 var getReq mlflow.GetExperimentRequest
 
@@ -96,7 +109,7 @@ var getCmd = &cobra.Command{
   Gets metadata for an experiment. This method works on deleted experiments.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Experiments.Get(ctx, getReq)
@@ -106,6 +119,8 @@ var getCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start get-by-name command
 
 var getByNameReq mlflow.GetByNameRequest
 
@@ -133,7 +148,7 @@ var getByNameCmd = &cobra.Command{
   exists.S`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Experiments.GetByName(ctx, getByNameReq)
@@ -143,6 +158,8 @@ var getByNameCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start list command
 
 var listReq mlflow.ListExperimentsRequest
 
@@ -164,7 +181,7 @@ var listCmd = &cobra.Command{
   Gets a list of all experiments.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Experiments.ListAll(ctx, listReq)
@@ -174,6 +191,8 @@ var listCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start restore command
 
 var restoreReq mlflow.RestoreExperiment
 
@@ -197,10 +216,10 @@ var restoreCmd = &cobra.Command{
   deleted.",`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.Experiments.Restore(ctx, restoreReq)
+		err = w.Experiments.Restore(ctx, restoreReq)
 		if err != nil {
 			return err
 		}
@@ -208,11 +227,15 @@ var restoreCmd = &cobra.Command{
 	},
 }
 
+// start search command
+
 var searchReq mlflow.SearchExperiments
+var searchJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(searchCmd)
 	// TODO: short flags
+	searchCmd.Flags().Var(&searchJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	searchCmd.Flags().StringVar(&searchReq.Filter, "filter", searchReq.Filter, `String representing a SQL filter condition (e.g.`)
 	searchCmd.Flags().Int64Var(&searchReq.MaxResults, "max-results", searchReq.MaxResults, `Maximum number of experiments desired.`)
@@ -230,7 +253,11 @@ var searchCmd = &cobra.Command{
   Searches for experiments that satisfy specified search criteria.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = searchJson.Unmarshall(&searchReq)
+		if err != nil {
+			return err
+		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Experiments.SearchAll(ctx, searchReq)
@@ -240,6 +267,8 @@ var searchCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start set-experiment-tag command
 
 var setExperimentTagReq mlflow.SetExperimentTag
 
@@ -261,16 +290,18 @@ var setExperimentTagCmd = &cobra.Command{
   Sets a tag on an experiment. Experiment tags are metadata that can be updated.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.Experiments.SetExperimentTag(ctx, setExperimentTagReq)
+		err = w.Experiments.SetExperimentTag(ctx, setExperimentTagReq)
 		if err != nil {
 			return err
 		}
 		return nil
 	},
 }
+
+// start update command
 
 var updateReq mlflow.UpdateExperiment
 
@@ -291,10 +322,10 @@ var updateCmd = &cobra.Command{
   Updates experiment metadata.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.Experiments.Update(ctx, updateReq)
+		err = w.Experiments.Update(ctx, updateReq)
 		if err != nil {
 			return err
 		}

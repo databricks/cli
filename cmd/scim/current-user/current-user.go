@@ -13,6 +13,8 @@ var Cmd = &cobra.Command{
   service principal.`,
 }
 
+// start me command
+
 func init() {
 	Cmd.AddCommand(meCmd)
 
@@ -26,7 +28,7 @@ var meCmd = &cobra.Command{
   Get details about the current method caller's identity.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.CurrentUser.Me(ctx)

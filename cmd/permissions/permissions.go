@@ -2,6 +2,7 @@ package permissions
 
 import (
 	workspace_assignment "github.com/databricks/bricks/cmd/permissions/workspace-assignment"
+	"github.com/databricks/bricks/lib/jsonflag"
 	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
 	"github.com/databricks/databricks-sdk-go/service/permissions"
@@ -14,6 +15,8 @@ var Cmd = &cobra.Command{
 	Long: `Permissions API are used to create read, write, edit, update and manage access
   for various users on different objects and endpoints.`,
 }
+
+// start get command
 
 var getReq permissions.Get
 
@@ -35,7 +38,7 @@ var getCmd = &cobra.Command{
   parent objects or root objects.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Permissions.Get(ctx, getReq)
@@ -45,6 +48,8 @@ var getCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start get-permission-levels command
 
 var getPermissionLevelsReq permissions.GetPermissionLevels
 
@@ -65,7 +70,7 @@ var getPermissionLevelsCmd = &cobra.Command{
   Gets the permission levels that a user can have on an object.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Permissions.GetPermissionLevels(ctx, getPermissionLevelsReq)
@@ -76,11 +81,15 @@ var getPermissionLevelsCmd = &cobra.Command{
 	},
 }
 
+// start set command
+
 var setReq permissions.PermissionsRequest
+var setJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(setCmd)
 	// TODO: short flags
+	setCmd.Flags().Var(&setJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: access_control_list
 	setCmd.Flags().StringVar(&setReq.RequestObjectId, "request-object-id", setReq.RequestObjectId, ``)
@@ -97,10 +106,14 @@ var setCmd = &cobra.Command{
   objects and root objects.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = setJson.Unmarshall(&setReq)
+		if err != nil {
+			return err
+		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.Permissions.Set(ctx, setReq)
+		err = w.Permissions.Set(ctx, setReq)
 		if err != nil {
 			return err
 		}
@@ -108,11 +121,15 @@ var setCmd = &cobra.Command{
 	},
 }
 
+// start update command
+
 var updateReq permissions.PermissionsRequest
+var updateJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(updateCmd)
 	// TODO: short flags
+	updateCmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: access_control_list
 	updateCmd.Flags().StringVar(&updateReq.RequestObjectId, "request-object-id", updateReq.RequestObjectId, ``)
@@ -128,10 +145,14 @@ var updateCmd = &cobra.Command{
   Updates the permissions on an object.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = updateJson.Unmarshall(&updateReq)
+		if err != nil {
+			return err
+		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.Permissions.Update(ctx, updateReq)
+		err = w.Permissions.Update(ctx, updateReq)
 		if err != nil {
 			return err
 		}

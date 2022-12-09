@@ -13,6 +13,8 @@ var Cmd = &cobra.Command{
 	Long:  `Databricks Delta Sharing: Recipient Activation REST API`,
 }
 
+// start get-activation-url-info command
+
 var getActivationUrlInfoReq unitycatalog.GetActivationUrlInfoRequest
 
 func init() {
@@ -31,16 +33,18 @@ var getActivationUrlInfoCmd = &cobra.Command{
   Gets information about an Activation URL.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.RecipientActivation.GetActivationUrlInfo(ctx, getActivationUrlInfoReq)
+		err = w.RecipientActivation.GetActivationUrlInfo(ctx, getActivationUrlInfoReq)
 		if err != nil {
 			return err
 		}
 		return nil
 	},
 }
+
+// start retrieve-token command
 
 var retrieveTokenReq unitycatalog.RetrieveTokenRequest
 
@@ -61,7 +65,7 @@ var retrieveTokenCmd = &cobra.Command{
   without any authentication.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.RecipientActivation.RetrieveToken(ctx, retrieveTokenReq)

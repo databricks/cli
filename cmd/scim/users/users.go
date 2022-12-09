@@ -1,6 +1,7 @@
 package users
 
 import (
+	"github.com/databricks/bricks/lib/jsonflag"
 	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
 	"github.com/databricks/databricks-sdk-go/service/scim"
@@ -23,11 +24,15 @@ var Cmd = &cobra.Command{
   unauthorized users from accessing sensitive data.`,
 }
 
+// start create command
+
 var createReq scim.User
+var createJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(createCmd)
 	// TODO: short flags
+	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	createCmd.Flags().BoolVar(&createReq.Active, "active", createReq.Active, `If this user is active.`)
 	createCmd.Flags().StringVar(&createReq.DisplayName, "display-name", createReq.DisplayName, `String that represents a concatenation of given and family names.`)
@@ -51,7 +56,11 @@ var createCmd = &cobra.Command{
   added to the Databricks account.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = createJson.Unmarshall(&createReq)
+		if err != nil {
+			return err
+		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Users.Create(ctx, createReq)
@@ -61,6 +70,8 @@ var createCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start delete command
 
 var deleteReq scim.DeleteUserRequest
 
@@ -81,16 +92,18 @@ var deleteCmd = &cobra.Command{
   objects associated with the user.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.Users.Delete(ctx, deleteReq)
+		err = w.Users.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
 		return nil
 	},
 }
+
+// start get command
 
 var getReq scim.GetUserRequest
 
@@ -110,7 +123,7 @@ var getCmd = &cobra.Command{
   Gets information for a specific user in Databricks Workspace.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Users.Get(ctx, getReq)
@@ -121,11 +134,15 @@ var getCmd = &cobra.Command{
 	},
 }
 
+// start list command
+
 var listReq scim.ListUsersRequest
+var listJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(listCmd)
 	// TODO: short flags
+	listCmd.Flags().Var(&listJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	listCmd.Flags().StringVar(&listReq.Attributes, "attributes", listReq.Attributes, `Comma-separated list of attributes to return in response.`)
 	listCmd.Flags().IntVar(&listReq.Count, "count", listReq.Count, `Desired number of results per page.`)
@@ -145,7 +162,11 @@ var listCmd = &cobra.Command{
   Gets details for all the users associated with a Databricks Workspace.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = listJson.Unmarshall(&listReq)
+		if err != nil {
+			return err
+		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Users.ListAll(ctx, listReq)
@@ -156,11 +177,15 @@ var listCmd = &cobra.Command{
 	},
 }
 
+// start patch command
+
 var patchReq scim.PartialUpdate
+var patchJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(patchCmd)
 	// TODO: short flags
+	patchCmd.Flags().Var(&patchJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	patchCmd.Flags().StringVar(&patchReq.Id, "id", patchReq.Id, `Unique ID for a group in the Databricks Account.`)
 	// TODO: array: operations
@@ -176,10 +201,14 @@ var patchCmd = &cobra.Command{
   specific user attributes.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = patchJson.Unmarshall(&patchReq)
+		if err != nil {
+			return err
+		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.Users.Patch(ctx, patchReq)
+		err = w.Users.Patch(ctx, patchReq)
 		if err != nil {
 			return err
 		}
@@ -187,11 +216,15 @@ var patchCmd = &cobra.Command{
 	},
 }
 
+// start update command
+
 var updateReq scim.User
+var updateJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(updateCmd)
 	// TODO: short flags
+	updateCmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	updateCmd.Flags().BoolVar(&updateReq.Active, "active", updateReq.Active, `If this user is active.`)
 	updateCmd.Flags().StringVar(&updateReq.DisplayName, "display-name", updateReq.DisplayName, `String that represents a concatenation of given and family names.`)
@@ -214,10 +247,14 @@ var updateCmd = &cobra.Command{
   Replaces a user's information with the data supplied in request.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = updateJson.Unmarshall(&updateReq)
+		if err != nil {
+			return err
+		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.Users.Update(ctx, updateReq)
+		err = w.Users.Update(ctx, updateReq)
 		if err != nil {
 			return err
 		}

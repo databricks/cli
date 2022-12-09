@@ -11,6 +11,8 @@ var Cmd = &cobra.Command{
 	Use: "m-lflow-metrics",
 }
 
+// start get-history command
+
 var getHistoryReq mlflow.GetHistoryRequest
 
 func init() {
@@ -31,7 +33,7 @@ var getHistoryCmd = &cobra.Command{
   Gets a list of all values for the specified metric for a given run.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.MLflowMetrics.GetHistory(ctx, getHistoryReq)

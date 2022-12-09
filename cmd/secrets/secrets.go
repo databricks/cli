@@ -1,6 +1,7 @@
 package secrets
 
 import (
+	"github.com/databricks/bricks/lib/jsonflag"
 	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
 	"github.com/databricks/databricks-sdk-go/service/secrets"
@@ -24,11 +25,15 @@ var Cmd = &cobra.Command{
   from reading secrets.`,
 }
 
+// start create-scope command
+
 var createScopeReq secrets.CreateScope
+var createScopeJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(createScopeCmd)
 	// TODO: short flags
+	createScopeCmd.Flags().Var(&createScopeJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	createScopeCmd.Flags().StringVar(&createScopeReq.InitialManagePrincipal, "initial-manage-principal", createScopeReq.InitialManagePrincipal, `The principal that is initially granted MANAGE permission to the created scope.`)
 	// TODO: complex arg: keyvault_metadata
@@ -47,16 +52,22 @@ var createScopeCmd = &cobra.Command{
   in a workspace is 100.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = createScopeJson.Unmarshall(&createScopeReq)
+		if err != nil {
+			return err
+		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.Secrets.CreateScope(ctx, createScopeReq)
+		err = w.Secrets.CreateScope(ctx, createScopeReq)
 		if err != nil {
 			return err
 		}
 		return nil
 	},
 }
+
+// start delete-acl command
 
 var deleteAclReq secrets.DeleteAcl
 
@@ -82,16 +93,18 @@ var deleteAclCmd = &cobra.Command{
   API call.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.Secrets.DeleteAcl(ctx, deleteAclReq)
+		err = w.Secrets.DeleteAcl(ctx, deleteAclReq)
 		if err != nil {
 			return err
 		}
 		return nil
 	},
 }
+
+// start delete-scope command
 
 var deleteScopeReq secrets.DeleteScope
 
@@ -115,16 +128,18 @@ var deleteScopeCmd = &cobra.Command{
   call.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.Secrets.DeleteScope(ctx, deleteScopeReq)
+		err = w.Secrets.DeleteScope(ctx, deleteScopeReq)
 		if err != nil {
 			return err
 		}
 		return nil
 	},
 }
+
+// start delete-secret command
 
 var deleteSecretReq secrets.DeleteSecret
 
@@ -150,16 +165,18 @@ var deleteSecretCmd = &cobra.Command{
   API call.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.Secrets.DeleteSecret(ctx, deleteSecretReq)
+		err = w.Secrets.DeleteSecret(ctx, deleteSecretReq)
 		if err != nil {
 			return err
 		}
 		return nil
 	},
 }
+
+// start get-acl command
 
 var getAclReq secrets.GetAcl
 
@@ -185,7 +202,7 @@ var getAclCmd = &cobra.Command{
   call.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Secrets.GetAcl(ctx, getAclReq)
@@ -195,6 +212,8 @@ var getAclCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start list-acls command
 
 var listAclsReq secrets.ListAcls
 
@@ -219,7 +238,7 @@ var listAclsCmd = &cobra.Command{
   call.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Secrets.ListAclsAll(ctx, listAclsReq)
@@ -229,6 +248,8 @@ var listAclsCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start list-scopes command
 
 func init() {
 	Cmd.AddCommand(listScopesCmd)
@@ -246,7 +267,7 @@ var listScopesCmd = &cobra.Command{
   API call.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Secrets.ListScopesAll(ctx)
@@ -256,6 +277,8 @@ var listScopesCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start list-secrets command
 
 var listSecretsReq secrets.ListSecrets
 
@@ -282,7 +305,7 @@ var listSecretsCmd = &cobra.Command{
   call.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Secrets.ListSecretsAll(ctx, listSecretsReq)
@@ -293,11 +316,15 @@ var listSecretsCmd = &cobra.Command{
 	},
 }
 
+// start put-acl command
+
 var putAclReq secrets.PutAcl
+var putAclJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(putAclCmd)
 	// TODO: short flags
+	putAclCmd.Flags().Var(&putAclJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	putAclCmd.Flags().Var(&putAclReq.Permission, "permission", `The permission level applied to the principal.`)
 	putAclCmd.Flags().StringVar(&putAclReq.Principal, "principal", putAclReq.Principal, `The principal in which the permission is applied.`)
@@ -338,16 +365,22 @@ var putAclCmd = &cobra.Command{
   call.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = putAclJson.Unmarshall(&putAclReq)
+		if err != nil {
+			return err
+		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.Secrets.PutAcl(ctx, putAclReq)
+		err = w.Secrets.PutAcl(ctx, putAclReq)
 		if err != nil {
 			return err
 		}
 		return nil
 	},
 }
+
+// start put-secret command
 
 var putSecretReq secrets.PutSecret
 
@@ -388,10 +421,10 @@ var putSecretCmd = &cobra.Command{
   API call.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.Secrets.PutSecret(ctx, putSecretReq)
+		err = w.Secrets.PutSecret(ctx, putSecretReq)
 		if err != nil {
 			return err
 		}

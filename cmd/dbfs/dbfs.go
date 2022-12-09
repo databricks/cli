@@ -14,6 +14,8 @@ var Cmd = &cobra.Command{
   to include a users credentials every time to read a file.`,
 }
 
+// start add-block command
+
 var addBlockReq dbfs.AddBlock
 
 func init() {
@@ -38,16 +40,18 @@ var addBlockCmd = &cobra.Command{
   MAX_BLOCK_SIZE_EXCEEDED.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.Dbfs.AddBlock(ctx, addBlockReq)
+		err = w.Dbfs.AddBlock(ctx, addBlockReq)
 		if err != nil {
 			return err
 		}
 		return nil
 	},
 }
+
+// start close command
 
 var closeReq dbfs.Close
 
@@ -68,16 +72,18 @@ var closeCmd = &cobra.Command{
   this call throws an exception with RESOURCE_DOES_NOT_EXIST.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.Dbfs.Close(ctx, closeReq)
+		err = w.Dbfs.Close(ctx, closeReq)
 		if err != nil {
 			return err
 		}
 		return nil
 	},
 }
+
+// start create command
 
 var createReq dbfs.Create
 
@@ -107,7 +113,7 @@ var createCmd = &cobra.Command{
   have.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Dbfs.Create(ctx, createReq)
@@ -117,6 +123,8 @@ var createCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start delete command
 
 var deleteReq dbfs.Delete
 
@@ -154,16 +162,18 @@ var deleteCmd = &cobra.Command{
   jobs.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.Dbfs.Delete(ctx, deleteReq)
+		err = w.Dbfs.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
 		return nil
 	},
 }
+
+// start get-status command
 
 var getStatusReq dbfs.GetStatus
 
@@ -184,7 +194,7 @@ var getStatusCmd = &cobra.Command{
   does not exist, this call throws an exception with RESOURCE_DOES_NOT_EXIST.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Dbfs.GetStatus(ctx, getStatusReq)
@@ -194,6 +204,8 @@ var getStatusCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start list command
 
 var listReq dbfs.List
 
@@ -223,7 +235,7 @@ var listCmd = &cobra.Command{
   provides the same functionality without timing out.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Dbfs.ListAll(ctx, listReq)
@@ -233,6 +245,8 @@ var listCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start mkdirs command
 
 var mkdirsReq dbfs.MkDirs
 
@@ -256,16 +270,18 @@ var mkdirsCmd = &cobra.Command{
   necessary parent directories.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.Dbfs.Mkdirs(ctx, mkdirsReq)
+		err = w.Dbfs.Mkdirs(ctx, mkdirsReq)
 		if err != nil {
 			return err
 		}
 		return nil
 	},
 }
+
+// start move command
 
 var moveReq dbfs.Move
 
@@ -290,16 +306,18 @@ var moveCmd = &cobra.Command{
   source path is a directory, this call always recursively moves all files.",`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.Dbfs.Move(ctx, moveReq)
+		err = w.Dbfs.Move(ctx, moveReq)
 		if err != nil {
 			return err
 		}
 		return nil
 	},
 }
+
+// start put command
 
 var putReq dbfs.Put
 
@@ -332,16 +350,18 @@ var putCmd = &cobra.Command{
   :method:create, :method:addBlock, :method:close.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.Dbfs.Put(ctx, putReq)
+		err = w.Dbfs.Put(ctx, putReq)
 		if err != nil {
 			return err
 		}
 		return nil
 	},
 }
+
+// start read command
 
 var readReq dbfs.Read
 
@@ -370,7 +390,7 @@ var readCmd = &cobra.Command{
   contents until the end of file.",`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Dbfs.Read(ctx, readReq)

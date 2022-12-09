@@ -1,6 +1,7 @@
 package account_groups
 
 import (
+	"github.com/databricks/bricks/lib/jsonflag"
 	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
 	"github.com/databricks/databricks-sdk-go/service/scim"
@@ -19,11 +20,15 @@ var Cmd = &cobra.Command{
   permissions that are assigned to their group.`,
 }
 
+// start create command
+
 var createReq scim.Group
+var createJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(createCmd)
 	// TODO: short flags
+	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	createCmd.Flags().StringVar(&createReq.DisplayName, "display-name", createReq.DisplayName, `String that represents a human-readable group name.`)
 	// TODO: array: entitlements
@@ -44,7 +49,11 @@ var createCmd = &cobra.Command{
   supplied group details.`,
 
 	PreRunE: sdk.PreAccountClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = createJson.Unmarshall(&createReq)
+		if err != nil {
+			return err
+		}
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
 		response, err := a.Groups.Create(ctx, createReq)
@@ -54,6 +63,8 @@ var createCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start delete command
 
 var deleteReq scim.DeleteGroupRequest
 
@@ -73,16 +84,18 @@ var deleteCmd = &cobra.Command{
   Deletes a group from the Databricks Account.`,
 
 	PreRunE: sdk.PreAccountClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
-		err := a.Groups.Delete(ctx, deleteReq)
+		err = a.Groups.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
 		return nil
 	},
 }
+
+// start get command
 
 var getReq scim.GetGroupRequest
 
@@ -102,7 +115,7 @@ var getCmd = &cobra.Command{
   Gets the information for a specific group in the Databricks Account.`,
 
 	PreRunE: sdk.PreAccountClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
 		response, err := a.Groups.Get(ctx, getReq)
@@ -113,11 +126,15 @@ var getCmd = &cobra.Command{
 	},
 }
 
+// start list command
+
 var listReq scim.ListGroupsRequest
+var listJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(listCmd)
 	// TODO: short flags
+	listCmd.Flags().Var(&listJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	listCmd.Flags().StringVar(&listReq.Attributes, "attributes", listReq.Attributes, `Comma-separated list of attributes to return in response.`)
 	listCmd.Flags().IntVar(&listReq.Count, "count", listReq.Count, `Desired number of results per page.`)
@@ -137,7 +154,11 @@ var listCmd = &cobra.Command{
   Gets all details of the groups associated with the Databricks Account.`,
 
 	PreRunE: sdk.PreAccountClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = listJson.Unmarshall(&listReq)
+		if err != nil {
+			return err
+		}
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
 		response, err := a.Groups.ListAll(ctx, listReq)
@@ -148,11 +169,15 @@ var listCmd = &cobra.Command{
 	},
 }
 
+// start patch command
+
 var patchReq scim.PartialUpdate
+var patchJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(patchCmd)
 	// TODO: short flags
+	patchCmd.Flags().Var(&patchJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	patchCmd.Flags().StringVar(&patchReq.Id, "id", patchReq.Id, `Unique ID for a group in the Databricks Account.`)
 	// TODO: array: operations
@@ -167,10 +192,14 @@ var patchCmd = &cobra.Command{
   Partially updates the details of a group.`,
 
 	PreRunE: sdk.PreAccountClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = patchJson.Unmarshall(&patchReq)
+		if err != nil {
+			return err
+		}
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
-		err := a.Groups.Patch(ctx, patchReq)
+		err = a.Groups.Patch(ctx, patchReq)
 		if err != nil {
 			return err
 		}
@@ -178,11 +207,15 @@ var patchCmd = &cobra.Command{
 	},
 }
 
+// start update command
+
 var updateReq scim.Group
+var updateJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(updateCmd)
 	// TODO: short flags
+	updateCmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	updateCmd.Flags().StringVar(&updateReq.DisplayName, "display-name", updateReq.DisplayName, `String that represents a human-readable group name.`)
 	// TODO: array: entitlements
@@ -202,10 +235,14 @@ var updateCmd = &cobra.Command{
   Updates the details of a group by replacing the entire group entity.`,
 
 	PreRunE: sdk.PreAccountClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = updateJson.Unmarshall(&updateReq)
+		if err != nil {
+			return err
+		}
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
-		err := a.Groups.Update(ctx, updateReq)
+		err = a.Groups.Update(ctx, updateReq)
 		if err != nil {
 			return err
 		}

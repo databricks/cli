@@ -1,6 +1,7 @@
 package recipients
 
 import (
+	"github.com/databricks/bricks/lib/jsonflag"
 	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
 	"github.com/databricks/databricks-sdk-go/service/unitycatalog"
@@ -13,11 +14,15 @@ var Cmd = &cobra.Command{
 	Long:  `Databricks Delta Sharing: Recipients REST API`,
 }
 
+// start create command
+
 var createReq unitycatalog.CreateRecipient
+var createJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(createCmd)
 	// TODO: short flags
+	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	createCmd.Flags().Var(&createReq.AuthenticationType, "authentication-type", `The delta sharing authentication type.`)
 	createCmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `Description about the recipient.`)
@@ -37,7 +42,11 @@ var createCmd = &cobra.Command{
   privilege on the Metastore.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = createJson.Unmarshall(&createReq)
+		if err != nil {
+			return err
+		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Recipients.Create(ctx, createReq)
@@ -47,6 +56,8 @@ var createCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start delete command
 
 var deleteReq unitycatalog.DeleteRecipientRequest
 
@@ -67,16 +78,18 @@ var deleteCmd = &cobra.Command{
   owner of the recipient.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.Recipients.Delete(ctx, deleteReq)
+		err = w.Recipients.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
 		return nil
 	},
 }
+
+// start get command
 
 var getReq unitycatalog.GetRecipientRequest
 
@@ -98,7 +111,7 @@ var getCmd = &cobra.Command{
   * the caller is the owner of the share recipient, or: * is a Metastore admin`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Recipients.Get(ctx, getReq)
@@ -108,6 +121,8 @@ var getCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start list command
 
 var listReq unitycatalog.ListRecipientsRequest
 
@@ -129,7 +144,7 @@ var listCmd = &cobra.Command{
   * the caller is a Metastore admin, or * the caller is the owner.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Recipients.ListAll(ctx, listReq)
@@ -139,6 +154,8 @@ var listCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start rotate-token command
 
 var rotateTokenReq unitycatalog.RotateRecipientToken
 
@@ -160,7 +177,7 @@ var rotateTokenCmd = &cobra.Command{
   the provided token info. The caller must be the owner of the recipient.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Recipients.RotateToken(ctx, rotateTokenReq)
@@ -170,6 +187,8 @@ var rotateTokenCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start share-permissions command
 
 var sharePermissionsReq unitycatalog.SharePermissionsRequest
 
@@ -190,7 +209,7 @@ var sharePermissionsCmd = &cobra.Command{
   Metastore admin or the owner of the Recipient.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Recipients.SharePermissions(ctx, sharePermissionsReq)
@@ -201,11 +220,15 @@ var sharePermissionsCmd = &cobra.Command{
 	},
 }
 
+// start update command
+
 var updateReq unitycatalog.UpdateRecipient
+var updateJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(updateCmd)
 	// TODO: short flags
+	updateCmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	updateCmd.Flags().Var(&updateReq.AuthenticationType, "authentication-type", `The delta sharing authentication type.`)
 	updateCmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `Description about the recipient.`)
@@ -224,10 +247,14 @@ var updateCmd = &cobra.Command{
   the user must be both a Metastore admin and the owner of the recipient.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = updateJson.Unmarshall(&updateReq)
+		if err != nil {
+			return err
+		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.Recipients.Update(ctx, updateReq)
+		err = w.Recipients.Update(ctx, updateReq)
 		if err != nil {
 			return err
 		}

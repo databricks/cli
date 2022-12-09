@@ -4,6 +4,7 @@ import (
 	"time"
 
 	instance_profiles "github.com/databricks/bricks/cmd/clusters/instance-profiles"
+	"github.com/databricks/bricks/lib/jsonflag"
 	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
 	"github.com/databricks/databricks-sdk-go/retries"
@@ -43,6 +44,8 @@ var Cmd = &cobra.Command{
   administrator can pin a cluster to the cluster list.`,
 }
 
+// start change-owner command
+
 var changeOwnerReq clusters.ChangeClusterOwner
 
 func init() {
@@ -63,10 +66,10 @@ var changeOwnerCmd = &cobra.Command{
   operation.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.Clusters.ChangeOwner(ctx, changeOwnerReq)
+		err = w.Clusters.ChangeOwner(ctx, changeOwnerReq)
 		if err != nil {
 			return err
 		}
@@ -74,7 +77,10 @@ var changeOwnerCmd = &cobra.Command{
 	},
 }
 
+// start create command
+
 var createReq clusters.CreateCluster
+var createJson jsonflag.JsonFlag
 var createNoWait bool
 var createTimeout time.Duration
 
@@ -84,6 +90,7 @@ func init() {
 	createCmd.Flags().BoolVar(&createNoWait, "no-wait", createNoWait, `do not wait to reach RUNNING state`)
 	createCmd.Flags().DurationVar(&createTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
 	// TODO: short flags
+	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	createCmd.Flags().BoolVar(&createReq.ApplyPolicyDefaultValues, "apply-policy-default-values", createReq.ApplyPolicyDefaultValues, `Note: This field won't be true for webapp requests.`)
 	// TODO: complex arg: autoscale
@@ -132,7 +139,11 @@ var createCmd = &cobra.Command{
   informative error message.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = createJson.Unmarshall(&createReq)
+		if err != nil {
+			return err
+		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		if !createNoWait {
@@ -156,7 +167,10 @@ var createCmd = &cobra.Command{
 	},
 }
 
+// start delete command
+
 var deleteReq clusters.DeleteCluster
+
 var deleteNoWait bool
 var deleteTimeout time.Duration
 
@@ -182,7 +196,7 @@ var deleteCmd = &cobra.Command{
   TERMINATED state, nothing will happen.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		if !deleteNoWait {
@@ -198,7 +212,7 @@ var deleteCmd = &cobra.Command{
 			}
 			return ui.Render(cmd, info)
 		}
-		err := w.Clusters.Delete(ctx, deleteReq)
+		err = w.Clusters.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
@@ -206,7 +220,10 @@ var deleteCmd = &cobra.Command{
 	},
 }
 
+// start edit command
+
 var editReq clusters.EditCluster
+var editJson jsonflag.JsonFlag
 var editNoWait bool
 var editTimeout time.Duration
 
@@ -216,6 +233,7 @@ func init() {
 	editCmd.Flags().BoolVar(&editNoWait, "no-wait", editNoWait, `do not wait to reach RUNNING state`)
 	editCmd.Flags().DurationVar(&editTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
 	// TODO: short flags
+	editCmd.Flags().Var(&editJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	editCmd.Flags().BoolVar(&editReq.ApplyPolicyDefaultValues, "apply-policy-default-values", editReq.ApplyPolicyDefaultValues, `Note: This field won't be true for webapp requests.`)
 	// TODO: complex arg: autoscale
@@ -264,7 +282,11 @@ var editCmd = &cobra.Command{
   Clusters created by the Databricks Jobs service cannot be edited.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = editJson.Unmarshall(&editReq)
+		if err != nil {
+			return err
+		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		if !editNoWait {
@@ -280,7 +302,7 @@ var editCmd = &cobra.Command{
 			}
 			return ui.Render(cmd, info)
 		}
-		err := w.Clusters.Edit(ctx, editReq)
+		err = w.Clusters.Edit(ctx, editReq)
 		if err != nil {
 			return err
 		}
@@ -288,11 +310,15 @@ var editCmd = &cobra.Command{
 	},
 }
 
+// start events command
+
 var eventsReq clusters.GetEvents
+var eventsJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(eventsCmd)
 	// TODO: short flags
+	eventsCmd.Flags().Var(&eventsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	eventsCmd.Flags().StringVar(&eventsReq.ClusterId, "cluster-id", eventsReq.ClusterId, `The ID of the cluster to retrieve events about.`)
 	eventsCmd.Flags().Int64Var(&eventsReq.EndTime, "end-time", eventsReq.EndTime, `The end time in epoch milliseconds.`)
@@ -314,7 +340,11 @@ var eventsCmd = &cobra.Command{
   nparameters necessary to request the next page of events.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = eventsJson.Unmarshall(&eventsReq)
+		if err != nil {
+			return err
+		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Clusters.EventsAll(ctx, eventsReq)
@@ -325,7 +355,10 @@ var eventsCmd = &cobra.Command{
 	},
 }
 
+// start get command
+
 var getReq clusters.Get
+
 var getNoWait bool
 var getTimeout time.Duration
 
@@ -349,7 +382,7 @@ var getCmd = &cobra.Command{
   described while they are running, or up to 60 days after they are terminated.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		if !getNoWait {
@@ -372,6 +405,8 @@ var getCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start list command
 
 var listReq clusters.List
 
@@ -399,7 +434,7 @@ var listCmd = &cobra.Command{
   terminated job clusters.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Clusters.ListAll(ctx, listReq)
@@ -409,6 +444,8 @@ var listCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start list-node-types command
 
 func init() {
 	Cmd.AddCommand(listNodeTypesCmd)
@@ -424,7 +461,7 @@ var listNodeTypesCmd = &cobra.Command{
   launch a cluster.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Clusters.ListNodeTypes(ctx)
@@ -434,6 +471,8 @@ var listNodeTypesCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start list-zones command
 
 func init() {
 	Cmd.AddCommand(listZonesCmd)
@@ -449,7 +488,7 @@ var listZonesCmd = &cobra.Command{
   example, us-west-2a). These zones can be used to launch a cluster.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Clusters.ListZones(ctx)
@@ -459,6 +498,8 @@ var listZonesCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start permanent-delete command
 
 var permanentDeleteReq clusters.PermanentDeleteCluster
 
@@ -483,16 +524,18 @@ var permanentDeleteCmd = &cobra.Command{
   deleted clusters.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.Clusters.PermanentDelete(ctx, permanentDeleteReq)
+		err = w.Clusters.PermanentDelete(ctx, permanentDeleteReq)
 		if err != nil {
 			return err
 		}
 		return nil
 	},
 }
+
+// start pin command
 
 var pinReq clusters.PinCluster
 
@@ -514,10 +557,10 @@ var pinCmd = &cobra.Command{
   effect. This API can only be called by workspace admins.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.Clusters.Pin(ctx, pinReq)
+		err = w.Clusters.Pin(ctx, pinReq)
 		if err != nil {
 			return err
 		}
@@ -525,7 +568,10 @@ var pinCmd = &cobra.Command{
 	},
 }
 
+// start resize command
+
 var resizeReq clusters.ResizeCluster
+var resizeJson jsonflag.JsonFlag
 var resizeNoWait bool
 var resizeTimeout time.Duration
 
@@ -535,6 +581,7 @@ func init() {
 	resizeCmd.Flags().BoolVar(&resizeNoWait, "no-wait", resizeNoWait, `do not wait to reach RUNNING state`)
 	resizeCmd.Flags().DurationVar(&resizeTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
 	// TODO: short flags
+	resizeCmd.Flags().Var(&resizeJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: autoscale
 	resizeCmd.Flags().StringVar(&resizeReq.ClusterId, "cluster-id", resizeReq.ClusterId, `The cluster to be resized.`)
@@ -551,7 +598,11 @@ var resizeCmd = &cobra.Command{
   the cluster is in a RUNNING state.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = resizeJson.Unmarshall(&resizeReq)
+		if err != nil {
+			return err
+		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		if !resizeNoWait {
@@ -567,7 +618,7 @@ var resizeCmd = &cobra.Command{
 			}
 			return ui.Render(cmd, info)
 		}
-		err := w.Clusters.Resize(ctx, resizeReq)
+		err = w.Clusters.Resize(ctx, resizeReq)
 		if err != nil {
 			return err
 		}
@@ -575,7 +626,10 @@ var resizeCmd = &cobra.Command{
 	},
 }
 
+// start restart command
+
 var restartReq clusters.RestartCluster
+
 var restartNoWait bool
 var restartTimeout time.Duration
 
@@ -600,7 +654,7 @@ var restartCmd = &cobra.Command{
   in a RUNNING state, nothing will happen.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		if !restartNoWait {
@@ -616,13 +670,15 @@ var restartCmd = &cobra.Command{
 			}
 			return ui.Render(cmd, info)
 		}
-		err := w.Clusters.Restart(ctx, restartReq)
+		err = w.Clusters.Restart(ctx, restartReq)
 		if err != nil {
 			return err
 		}
 		return nil
 	},
 }
+
+// start spark-versions command
 
 func init() {
 	Cmd.AddCommand(sparkVersionsCmd)
@@ -638,7 +694,7 @@ var sparkVersionsCmd = &cobra.Command{
   launch a cluster.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Clusters.SparkVersions(ctx)
@@ -649,7 +705,10 @@ var sparkVersionsCmd = &cobra.Command{
 	},
 }
 
+// start start command
+
 var startReq clusters.StartCluster
+
 var startNoWait bool
 var startTimeout time.Duration
 
@@ -679,7 +738,7 @@ var startCmd = &cobra.Command{
   happen. * Clusters launched to run a job cannot be started.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		if !startNoWait {
@@ -695,13 +754,15 @@ var startCmd = &cobra.Command{
 			}
 			return ui.Render(cmd, info)
 		}
-		err := w.Clusters.Start(ctx, startReq)
+		err = w.Clusters.Start(ctx, startReq)
 		if err != nil {
 			return err
 		}
 		return nil
 	},
 }
+
+// start unpin command
 
 var unpinReq clusters.UnpinCluster
 
@@ -723,10 +784,10 @@ var unpinCmd = &cobra.Command{
   This API can only be called by workspace admins.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.Clusters.Unpin(ctx, unpinReq)
+		err = w.Clusters.Unpin(ctx, unpinReq)
 		if err != nil {
 			return err
 		}

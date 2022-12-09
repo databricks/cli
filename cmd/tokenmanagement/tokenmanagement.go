@@ -15,6 +15,8 @@ var Cmd = &cobra.Command{
   tokens for a particular user.`,
 }
 
+// start create-obo-token command
+
 var createOboTokenReq tokenmanagement.CreateOboTokenRequest
 
 func init() {
@@ -35,7 +37,7 @@ var createOboTokenCmd = &cobra.Command{
   Creates a token on behalf of a service principal.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.TokenManagement.CreateOboToken(ctx, createOboTokenReq)
@@ -45,6 +47,8 @@ var createOboTokenCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start delete-token command
 
 var deleteTokenReq tokenmanagement.DeleteToken
 
@@ -64,16 +68,18 @@ var deleteTokenCmd = &cobra.Command{
   Deletes a token, specified by its ID.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.TokenManagement.DeleteToken(ctx, deleteTokenReq)
+		err = w.TokenManagement.DeleteToken(ctx, deleteTokenReq)
 		if err != nil {
 			return err
 		}
 		return nil
 	},
 }
+
+// start get-token-info command
 
 var getTokenInfoReq tokenmanagement.GetTokenInfo
 
@@ -93,7 +99,7 @@ var getTokenInfoCmd = &cobra.Command{
   Gets information about a token, specified by its ID.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.TokenManagement.GetTokenInfo(ctx, getTokenInfoReq)
@@ -103,6 +109,8 @@ var getTokenInfoCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start list-tokens command
 
 var listTokensReq tokenmanagement.ListTokens
 
@@ -123,7 +131,7 @@ var listTokensCmd = &cobra.Command{
   Lists all tokens associated with the specified workspace or user.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.TokenManagement.ListTokensAll(ctx, listTokensReq)

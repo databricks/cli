@@ -21,6 +21,8 @@ var Cmd = &cobra.Command{
   fail, the entire cluster fails with a GLOBAL_INIT_SCRIPT_FAILURE error code.`,
 }
 
+// start create command
+
 var createReq globalinitscripts.GlobalInitScriptCreateRequest
 
 func init() {
@@ -42,7 +44,7 @@ var createCmd = &cobra.Command{
   Creates a new global init script in this workspace.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.GlobalInitScripts.Create(ctx, createReq)
@@ -52,6 +54,8 @@ var createCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start delete command
 
 var deleteReq globalinitscripts.Delete
 
@@ -71,16 +75,18 @@ var deleteCmd = &cobra.Command{
   Deletes a global init script.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.GlobalInitScripts.Delete(ctx, deleteReq)
+		err = w.GlobalInitScripts.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
 		return nil
 	},
 }
+
+// start get command
 
 var getReq globalinitscripts.Get
 
@@ -100,7 +106,7 @@ var getCmd = &cobra.Command{
   Gets all the details of a script, including its Base64-encoded contents.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.GlobalInitScripts.Get(ctx, getReq)
@@ -110,6 +116,8 @@ var getCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start list command
 
 func init() {
 	Cmd.AddCommand(listCmd)
@@ -127,7 +135,7 @@ var listCmd = &cobra.Command{
   script](#operation/get-script) operation.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.GlobalInitScripts.ListAll(ctx)
@@ -137,6 +145,8 @@ var listCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start update command
 
 var updateReq globalinitscripts.GlobalInitScriptUpdateRequest
 
@@ -161,10 +171,10 @@ var updateCmd = &cobra.Command{
   are optional. Unspecified fields retain their current value.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.GlobalInitScripts.Update(ctx, updateReq)
+		err = w.GlobalInitScripts.Update(ctx, updateReq)
 		if err != nil {
 			return err
 		}

@@ -22,6 +22,8 @@ var Cmd = &cobra.Command{
   control, collaboration, and CI/CD.`,
 }
 
+// start create command
+
 var createReq repos.CreateRepo
 
 func init() {
@@ -44,7 +46,7 @@ var createCmd = &cobra.Command{
   unlike repos created in the browser.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Repos.Create(ctx, createReq)
@@ -54,6 +56,8 @@ var createCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start delete command
 
 var deleteReq repos.Delete
 
@@ -73,16 +77,18 @@ var deleteCmd = &cobra.Command{
   Deletes the specified repo.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.Repos.Delete(ctx, deleteReq)
+		err = w.Repos.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
 		return nil
 	},
 }
+
+// start get command
 
 var getReq repos.Get
 
@@ -102,7 +108,7 @@ var getCmd = &cobra.Command{
   Returns the repo with the given repo ID.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Repos.Get(ctx, getReq)
@@ -112,6 +118,8 @@ var getCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start list command
 
 var listReq repos.List
 
@@ -133,7 +141,7 @@ var listCmd = &cobra.Command{
   paginated with each page containing twenty repos.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Repos.ListAll(ctx, listReq)
@@ -143,6 +151,8 @@ var listCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start update command
 
 var updateReq repos.UpdateRepo
 
@@ -165,10 +175,10 @@ var updateCmd = &cobra.Command{
   latest commit on the same branch.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.Repos.Update(ctx, updateReq)
+		err = w.Repos.Update(ctx, updateReq)
 		if err != nil {
 			return err
 		}

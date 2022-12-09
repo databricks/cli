@@ -1,6 +1,7 @@
 package model_versions
 
 import (
+	"github.com/databricks/bricks/lib/jsonflag"
 	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
 	"github.com/databricks/databricks-sdk-go/service/mlflow"
@@ -11,11 +12,15 @@ var Cmd = &cobra.Command{
 	Use: "model-versions",
 }
 
+// start create command
+
 var createReq mlflow.CreateModelVersionRequest
+var createJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(createCmd)
 	// TODO: short flags
+	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	createCmd.Flags().StringVar(&createReq.Description, "description", createReq.Description, `Optional description for model version.`)
 	createCmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `Register model under this name.`)
@@ -34,7 +39,11 @@ var createCmd = &cobra.Command{
   Creates a model version.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = createJson.Unmarshall(&createReq)
+		if err != nil {
+			return err
+		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.ModelVersions.Create(ctx, createReq)
@@ -44,6 +53,8 @@ var createCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start delete command
 
 var deleteReq mlflow.DeleteModelVersionRequest
 
@@ -64,16 +75,18 @@ var deleteCmd = &cobra.Command{
   Deletes a model version.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.ModelVersions.Delete(ctx, deleteReq)
+		err = w.ModelVersions.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
 		return nil
 	},
 }
+
+// start delete-tag command
 
 var deleteTagReq mlflow.DeleteModelVersionTagRequest
 
@@ -95,16 +108,18 @@ var deleteTagCmd = &cobra.Command{
   Deletes a model version tag.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.ModelVersions.DeleteTag(ctx, deleteTagReq)
+		err = w.ModelVersions.DeleteTag(ctx, deleteTagReq)
 		if err != nil {
 			return err
 		}
 		return nil
 	},
 }
+
+// start get command
 
 var getReq mlflow.GetModelVersionRequest
 
@@ -125,7 +140,7 @@ var getCmd = &cobra.Command{
   Get a model version.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.ModelVersions.Get(ctx, getReq)
@@ -135,6 +150,8 @@ var getCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start get-download-uri command
 
 var getDownloadUriReq mlflow.GetModelVersionDownloadUriRequest
 
@@ -155,7 +172,7 @@ var getDownloadUriCmd = &cobra.Command{
   Gets a URI to download the model version.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.ModelVersions.GetDownloadUri(ctx, getDownloadUriReq)
@@ -166,11 +183,15 @@ var getDownloadUriCmd = &cobra.Command{
 	},
 }
 
+// start search command
+
 var searchReq mlflow.SearchModelVersionsRequest
+var searchJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(searchCmd)
 	// TODO: short flags
+	searchCmd.Flags().Var(&searchJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	searchCmd.Flags().StringVar(&searchReq.Filter, "filter", searchReq.Filter, `String filter condition, like "name='my-model-name'".`)
 	searchCmd.Flags().IntVar(&searchReq.MaxResults, "max-results", searchReq.MaxResults, `Maximum number of models desired.`)
@@ -187,7 +208,11 @@ var searchCmd = &cobra.Command{
   Searches for specific model versions based on the supplied __filter__.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = searchJson.Unmarshall(&searchReq)
+		if err != nil {
+			return err
+		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.ModelVersions.SearchAll(ctx, searchReq)
@@ -197,6 +222,8 @@ var searchCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start set-tag command
 
 var setTagReq mlflow.SetModelVersionTagRequest
 
@@ -219,16 +246,18 @@ var setTagCmd = &cobra.Command{
   Sets a model version tag.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.ModelVersions.SetTag(ctx, setTagReq)
+		err = w.ModelVersions.SetTag(ctx, setTagReq)
 		if err != nil {
 			return err
 		}
 		return nil
 	},
 }
+
+// start transition-stage command
 
 var transitionStageReq mlflow.TransitionModelVersionStage
 
@@ -251,7 +280,7 @@ var transitionStageCmd = &cobra.Command{
   Transition to the next model stage.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.ModelVersions.TransitionStage(ctx, transitionStageReq)
@@ -261,6 +290,8 @@ var transitionStageCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start update command
 
 var updateReq mlflow.UpdateModelVersionRequest
 
@@ -282,10 +313,10 @@ var updateCmd = &cobra.Command{
   Updates the model version.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.ModelVersions.Update(ctx, updateReq)
+		err = w.ModelVersions.Update(ctx, updateReq)
 		if err != nil {
 			return err
 		}

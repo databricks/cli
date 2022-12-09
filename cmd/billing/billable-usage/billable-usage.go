@@ -13,6 +13,8 @@ var Cmd = &cobra.Command{
   and date range. This feature works with all account types.`,
 }
 
+// start download command
+
 var downloadReq billing.DownloadRequest
 
 func init() {
@@ -37,10 +39,10 @@ var downloadCmd = &cobra.Command{
   [CSV file schema]: https://docs.databricks.com/administration-guide/account-settings/usage-analysis.html#schema`,
 
 	PreRunE: sdk.PreAccountClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
-		err := a.BillableUsage.Download(ctx, downloadReq)
+		err = a.BillableUsage.Download(ctx, downloadReq)
 		if err != nil {
 			return err
 		}

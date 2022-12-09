@@ -1,6 +1,7 @@
 package instancepools
 
 import (
+	"github.com/databricks/bricks/lib/jsonflag"
 	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
 	"github.com/databricks/databricks-sdk-go/service/instancepools"
@@ -30,11 +31,15 @@ var Cmd = &cobra.Command{
   provider billing does apply. See pricing.`,
 }
 
+// start create command
+
 var createReq instancepools.CreateInstancePool
+var createJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(createCmd)
 	// TODO: short flags
+	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: aws_attributes
 	// TODO: complex arg: azure_attributes
@@ -60,7 +65,11 @@ var createCmd = &cobra.Command{
   Creates a new instance pool using idle and ready-to-use cloud instances.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = createJson.Unmarshall(&createReq)
+		if err != nil {
+			return err
+		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.InstancePools.Create(ctx, createReq)
@@ -70,6 +79,8 @@ var createCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start delete command
 
 var deleteReq instancepools.DeleteInstancePool
 
@@ -90,10 +101,10 @@ var deleteCmd = &cobra.Command{
   terminated asynchronously.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.InstancePools.Delete(ctx, deleteReq)
+		err = w.InstancePools.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
@@ -101,11 +112,15 @@ var deleteCmd = &cobra.Command{
 	},
 }
 
+// start edit command
+
 var editReq instancepools.EditInstancePool
+var editJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(editCmd)
 	// TODO: short flags
+	editCmd.Flags().Var(&editJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: aws_attributes
 	// TODO: complex arg: azure_attributes
@@ -132,16 +147,22 @@ var editCmd = &cobra.Command{
   Modifies the configuration of an existing instance pool.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = editJson.Unmarshall(&editReq)
+		if err != nil {
+			return err
+		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.InstancePools.Edit(ctx, editReq)
+		err = w.InstancePools.Edit(ctx, editReq)
 		if err != nil {
 			return err
 		}
 		return nil
 	},
 }
+
+// start get command
 
 var getReq instancepools.Get
 
@@ -161,7 +182,7 @@ var getCmd = &cobra.Command{
   Retrieve the information for an instance pool based on its identifier.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.InstancePools.Get(ctx, getReq)
@@ -171,6 +192,8 @@ var getCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start list command
 
 func init() {
 	Cmd.AddCommand(listCmd)
@@ -185,7 +208,7 @@ var listCmd = &cobra.Command{
   Gets a list of instance pools with their statistics.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.InstancePools.ListAll(ctx)

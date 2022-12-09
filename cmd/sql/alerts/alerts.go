@@ -1,6 +1,7 @@
 package alerts
 
 import (
+	"github.com/databricks/bricks/lib/jsonflag"
 	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
 	"github.com/databricks/databricks-sdk-go/service/sql"
@@ -16,11 +17,15 @@ var Cmd = &cobra.Command{
   condition was met.`,
 }
 
+// start create command
+
 var createReq sql.EditAlert
+var createJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(createCmd)
 	// TODO: short flags
+	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	createCmd.Flags().StringVar(&createReq.AlertId, "alert-id", createReq.AlertId, ``)
 	createCmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `Name of the alert.`)
@@ -40,7 +45,11 @@ var createCmd = &cobra.Command{
   destinations if the condition was met.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = createJson.Unmarshall(&createReq)
+		if err != nil {
+			return err
+		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Alerts.Create(ctx, createReq)
@@ -50,6 +59,8 @@ var createCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start create-schedule command
 
 var createScheduleReq sql.CreateRefreshSchedule
 
@@ -73,7 +84,7 @@ var createScheduleCmd = &cobra.Command{
   **Note:** The structure of refresh schedules is subject to change.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Alerts.CreateSchedule(ctx, createScheduleReq)
@@ -83,6 +94,8 @@ var createScheduleCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start delete command
 
 var deleteReq sql.DeleteAlertRequest
 
@@ -104,16 +117,18 @@ var deleteCmd = &cobra.Command{
   the trash.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.Alerts.Delete(ctx, deleteReq)
+		err = w.Alerts.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
 		return nil
 	},
 }
+
+// start delete-schedule command
 
 var deleteScheduleReq sql.DeleteScheduleRequest
 
@@ -135,16 +150,18 @@ var deleteScheduleCmd = &cobra.Command{
   refresh and evaluate the associated query result.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.Alerts.DeleteSchedule(ctx, deleteScheduleReq)
+		err = w.Alerts.DeleteSchedule(ctx, deleteScheduleReq)
 		if err != nil {
 			return err
 		}
 		return nil
 	},
 }
+
+// start get command
 
 var getReq sql.GetAlertRequest
 
@@ -164,7 +181,7 @@ var getCmd = &cobra.Command{
   Gets an alert.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Alerts.Get(ctx, getReq)
@@ -174,6 +191,8 @@ var getCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start get-subscriptions command
 
 var getSubscriptionsReq sql.GetSubscriptionsRequest
 
@@ -196,7 +215,7 @@ var getSubscriptionsCmd = &cobra.Command{
   The user field is ignored if destination is non-null.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Alerts.GetSubscriptions(ctx, getSubscriptionsReq)
@@ -206,6 +225,8 @@ var getSubscriptionsCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start list command
 
 func init() {
 	Cmd.AddCommand(listCmd)
@@ -220,7 +241,7 @@ var listCmd = &cobra.Command{
   Gets a list of alerts.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Alerts.List(ctx)
@@ -230,6 +251,8 @@ var listCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start list-schedules command
 
 var listSchedulesReq sql.ListSchedulesRequest
 
@@ -255,7 +278,7 @@ var listSchedulesCmd = &cobra.Command{
   is subject to change.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Alerts.ListSchedules(ctx, listSchedulesReq)
@@ -265,6 +288,8 @@ var listSchedulesCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start subscribe command
 
 var subscribeReq sql.CreateSubscription
 
@@ -284,7 +309,7 @@ var subscribeCmd = &cobra.Command{
 	Long:  `Subscribe to an alert.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Alerts.Subscribe(ctx, subscribeReq)
@@ -294,6 +319,8 @@ var subscribeCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start unsubscribe command
 
 var unsubscribeReq sql.UnsubscribeRequest
 
@@ -314,10 +341,10 @@ var unsubscribeCmd = &cobra.Command{
   Unsubscribes a user or a destination to an alert.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.Alerts.Unsubscribe(ctx, unsubscribeReq)
+		err = w.Alerts.Unsubscribe(ctx, unsubscribeReq)
 		if err != nil {
 			return err
 		}
@@ -325,11 +352,15 @@ var unsubscribeCmd = &cobra.Command{
 	},
 }
 
+// start update command
+
 var updateReq sql.EditAlert
+var updateJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(updateCmd)
 	// TODO: short flags
+	updateCmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	updateCmd.Flags().StringVar(&updateReq.AlertId, "alert-id", updateReq.AlertId, ``)
 	updateCmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `Name of the alert.`)
@@ -347,10 +378,14 @@ var updateCmd = &cobra.Command{
   Updates an alert.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = updateJson.Unmarshall(&updateReq)
+		if err != nil {
+			return err
+		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.Alerts.Update(ctx, updateReq)
+		err = w.Alerts.Update(ctx, updateReq)
 		if err != nil {
 			return err
 		}

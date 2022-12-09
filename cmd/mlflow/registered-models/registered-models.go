@@ -1,6 +1,7 @@
 package registered_models
 
 import (
+	"github.com/databricks/bricks/lib/jsonflag"
 	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
 	"github.com/databricks/databricks-sdk-go/service/mlflow"
@@ -11,11 +12,15 @@ var Cmd = &cobra.Command{
 	Use: "registered-models",
 }
 
+// start create command
+
 var createReq mlflow.CreateRegisteredModelRequest
+var createJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(createCmd)
 	// TODO: short flags
+	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	createCmd.Flags().StringVar(&createReq.Description, "description", createReq.Description, `Optional description for registered model.`)
 	createCmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `Register models under this name.`)
@@ -34,7 +39,11 @@ var createCmd = &cobra.Command{
   exists.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = createJson.Unmarshall(&createReq)
+		if err != nil {
+			return err
+		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.RegisteredModels.Create(ctx, createReq)
@@ -44,6 +53,8 @@ var createCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start delete command
 
 var deleteReq mlflow.DeleteRegisteredModelRequest
 
@@ -63,16 +74,18 @@ var deleteCmd = &cobra.Command{
   Deletes a registered model.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.RegisteredModels.Delete(ctx, deleteReq)
+		err = w.RegisteredModels.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
 		return nil
 	},
 }
+
+// start delete-tag command
 
 var deleteTagReq mlflow.DeleteRegisteredModelTagRequest
 
@@ -93,16 +106,18 @@ var deleteTagCmd = &cobra.Command{
   Deletes the tag for a registered model.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.RegisteredModels.DeleteTag(ctx, deleteTagReq)
+		err = w.RegisteredModels.DeleteTag(ctx, deleteTagReq)
 		if err != nil {
 			return err
 		}
 		return nil
 	},
 }
+
+// start get command
 
 var getReq mlflow.GetRegisteredModelRequest
 
@@ -122,7 +137,7 @@ var getCmd = &cobra.Command{
   Gets the registered model that matches the specified ID.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.RegisteredModels.Get(ctx, getReq)
@@ -133,11 +148,15 @@ var getCmd = &cobra.Command{
 	},
 }
 
+// start get-latest-versions command
+
 var getLatestVersionsReq mlflow.GetLatestVersionsRequest
+var getLatestVersionsJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(getLatestVersionsCmd)
 	// TODO: short flags
+	getLatestVersionsCmd.Flags().Var(&getLatestVersionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	getLatestVersionsCmd.Flags().StringVar(&getLatestVersionsReq.Name, "name", getLatestVersionsReq.Name, `Registered model unique name identifier.`)
 	// TODO: array: stages
@@ -152,7 +171,11 @@ var getLatestVersionsCmd = &cobra.Command{
   Gets the latest version of a registered model.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = getLatestVersionsJson.Unmarshall(&getLatestVersionsReq)
+		if err != nil {
+			return err
+		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.RegisteredModels.GetLatestVersionsAll(ctx, getLatestVersionsReq)
@@ -162,6 +185,8 @@ var getLatestVersionsCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start list command
 
 var listReq mlflow.ListRegisteredModelsRequest
 
@@ -183,7 +208,7 @@ var listCmd = &cobra.Command{
   __max_results__.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.RegisteredModels.ListAll(ctx, listReq)
@@ -193,6 +218,8 @@ var listCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start rename command
 
 var renameReq mlflow.RenameRegisteredModelRequest
 
@@ -213,7 +240,7 @@ var renameCmd = &cobra.Command{
   Renames a registered model.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.RegisteredModels.Rename(ctx, renameReq)
@@ -224,11 +251,15 @@ var renameCmd = &cobra.Command{
 	},
 }
 
+// start search command
+
 var searchReq mlflow.SearchRegisteredModelsRequest
+var searchJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(searchCmd)
 	// TODO: short flags
+	searchCmd.Flags().Var(&searchJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	searchCmd.Flags().StringVar(&searchReq.Filter, "filter", searchReq.Filter, `String filter condition, like "name LIKE 'my-model-name'".`)
 	searchCmd.Flags().IntVar(&searchReq.MaxResults, "max-results", searchReq.MaxResults, `Maximum number of models desired.`)
@@ -245,7 +276,11 @@ var searchCmd = &cobra.Command{
   Search for registered models based on the specified __filter__.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = searchJson.Unmarshall(&searchReq)
+		if err != nil {
+			return err
+		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.RegisteredModels.SearchAll(ctx, searchReq)
@@ -255,6 +290,8 @@ var searchCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start set-tag command
 
 var setTagReq mlflow.SetRegisteredModelTagRequest
 
@@ -276,16 +313,18 @@ var setTagCmd = &cobra.Command{
   Sets a tag on a registered model.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.RegisteredModels.SetTag(ctx, setTagReq)
+		err = w.RegisteredModels.SetTag(ctx, setTagReq)
 		if err != nil {
 			return err
 		}
 		return nil
 	},
 }
+
+// start update command
 
 var updateReq mlflow.UpdateRegisteredModelRequest
 
@@ -306,10 +345,10 @@ var updateCmd = &cobra.Command{
   Updates a registered model.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.RegisteredModels.Update(ctx, updateReq)
+		err = w.RegisteredModels.Update(ctx, updateReq)
 		if err != nil {
 			return err
 		}

@@ -25,6 +25,8 @@ var Cmd = &cobra.Command{
   CREATE EXTERNAL LOCATION privilege.`,
 }
 
+// start create command
+
 var createReq unitycatalog.CreateExternalLocation
 
 func init() {
@@ -48,7 +50,7 @@ var createCmd = &cobra.Command{
   Metastore.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.ExternalLocations.Create(ctx, createReq)
@@ -58,6 +60,8 @@ var createCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start delete command
 
 var deleteReq unitycatalog.DeleteExternalLocationRequest
 
@@ -79,16 +83,18 @@ var deleteCmd = &cobra.Command{
   the owner of the external location.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.ExternalLocations.Delete(ctx, deleteReq)
+		err = w.ExternalLocations.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
 		return nil
 	},
 }
+
+// start get command
 
 var getReq unitycatalog.GetExternalLocationRequest
 
@@ -110,7 +116,7 @@ var getCmd = &cobra.Command{
   privilege level on the Metastore.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.ExternalLocations.Get(ctx, getReq)
@@ -120,6 +126,8 @@ var getCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start list command
 
 func init() {
 	Cmd.AddCommand(listCmd)
@@ -136,7 +144,7 @@ var listCmd = &cobra.Command{
   location, or has privileges to access the external location.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.ExternalLocations.ListAll(ctx)
@@ -146,6 +154,8 @@ var listCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start update command
 
 var updateReq unitycatalog.UpdateExternalLocation
 
@@ -172,10 +182,10 @@ var updateCmd = &cobra.Command{
   can only update the name of the external location.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.ExternalLocations.Update(ctx, updateReq)
+		err = w.ExternalLocations.Update(ctx, updateReq)
 		if err != nil {
 			return err
 		}

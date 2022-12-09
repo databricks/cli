@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"github.com/databricks/bricks/lib/jsonflag"
 	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
 	"github.com/databricks/databricks-sdk-go/service/deployment"
@@ -18,11 +19,15 @@ var Cmd = &cobra.Command{
   workspace.`,
 }
 
+// start create command
+
 var createReq deployment.CreateStorageConfigurationRequest
+var createJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(createCmd)
 	// TODO: short flags
+	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: root_bucket_info
 	createCmd.Flags().StringVar(&createReq.StorageConfigurationName, "storage-configuration-name", createReq.StorageConfigurationName, `The human-readable name of the storage configuration.`)
@@ -46,7 +51,11 @@ var createCmd = &cobra.Command{
   [Create a new workspace using the Account API]: http://docs.databricks.com/administration-guide/account-api/new-workspace.html`,
 
 	PreRunE: sdk.PreAccountClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = createJson.Unmarshall(&createReq)
+		if err != nil {
+			return err
+		}
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
 		response, err := a.Storage.Create(ctx, createReq)
@@ -56,6 +65,8 @@ var createCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start delete command
 
 var deleteReq deployment.DeleteStorageRequest
 
@@ -76,16 +87,18 @@ var deleteCmd = &cobra.Command{
   configuration that is associated with any workspace.`,
 
 	PreRunE: sdk.PreAccountClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
-		err := a.Storage.Delete(ctx, deleteReq)
+		err = a.Storage.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
 		return nil
 	},
 }
+
+// start get command
 
 var getReq deployment.GetStorageRequest
 
@@ -105,7 +118,7 @@ var getCmd = &cobra.Command{
   Gets a Databricks storage configuration for an account, both specified by ID.`,
 
 	PreRunE: sdk.PreAccountClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
 		response, err := a.Storage.Get(ctx, getReq)
@@ -115,6 +128,8 @@ var getCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start list command
 
 func init() {
 	Cmd.AddCommand(listCmd)
@@ -130,7 +145,7 @@ var listCmd = &cobra.Command{
   specified by ID.`,
 
 	PreRunE: sdk.PreAccountClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
 		response, err := a.Storage.List(ctx)

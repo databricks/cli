@@ -1,6 +1,7 @@
 package transition_requests
 
 import (
+	"github.com/databricks/bricks/lib/jsonflag"
 	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
 	"github.com/databricks/databricks-sdk-go/service/mlflow"
@@ -11,11 +12,15 @@ var Cmd = &cobra.Command{
 	Use: "transition-requests",
 }
 
+// start approve command
+
 var approveReq mlflow.ApproveTransitionRequest
+var approveJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(approveCmd)
 	// TODO: short flags
+	approveCmd.Flags().Var(&approveJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	approveCmd.Flags().BoolVar(&approveReq.ArchiveExistingVersions, "archive-existing-versions", approveReq.ArchiveExistingVersions, `Specifies whether to archive all current model versions in the target stage.`)
 	approveCmd.Flags().StringVar(&approveReq.Comment, "comment", approveReq.Comment, `User-provided comment on the action.`)
@@ -33,7 +38,11 @@ var approveCmd = &cobra.Command{
   Approves a model version stage transition request.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = approveJson.Unmarshall(&approveReq)
+		if err != nil {
+			return err
+		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.TransitionRequests.Approve(ctx, approveReq)
@@ -44,11 +53,15 @@ var approveCmd = &cobra.Command{
 	},
 }
 
+// start create command
+
 var createReq mlflow.CreateTransitionRequest
+var createJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(createCmd)
 	// TODO: short flags
+	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	createCmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `User-provided comment on the action.`)
 	createCmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `Name of the model.`)
@@ -65,7 +78,11 @@ var createCmd = &cobra.Command{
   Creates a model version stage transition request.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = createJson.Unmarshall(&createReq)
+		if err != nil {
+			return err
+		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.TransitionRequests.Create(ctx, createReq)
@@ -75,6 +92,8 @@ var createCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start delete command
 
 var deleteReq mlflow.DeleteTransitionRequestRequest
 
@@ -98,16 +117,18 @@ var deleteCmd = &cobra.Command{
   Cancels a model version stage transition request.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.TransitionRequests.Delete(ctx, deleteReq)
+		err = w.TransitionRequests.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
 		return nil
 	},
 }
+
+// start list command
 
 var listReq mlflow.ListTransitionRequestsRequest
 
@@ -128,7 +149,7 @@ var listCmd = &cobra.Command{
   Gets a list of all open stage transition requests for the model version.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.TransitionRequests.ListAll(ctx, listReq)
@@ -139,11 +160,15 @@ var listCmd = &cobra.Command{
 	},
 }
 
+// start reject command
+
 var rejectReq mlflow.RejectTransitionRequest
+var rejectJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(rejectCmd)
 	// TODO: short flags
+	rejectCmd.Flags().Var(&rejectJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	rejectCmd.Flags().StringVar(&rejectReq.Comment, "comment", rejectReq.Comment, `User-provided comment on the action.`)
 	rejectCmd.Flags().StringVar(&rejectReq.Name, "name", rejectReq.Name, `Name of the model.`)
@@ -160,7 +185,11 @@ var rejectCmd = &cobra.Command{
   Rejects a model version stage transition request.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = rejectJson.Unmarshall(&rejectReq)
+		if err != nil {
+			return err
+		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.TransitionRequests.Reject(ctx, rejectReq)

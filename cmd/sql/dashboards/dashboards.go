@@ -1,6 +1,7 @@
 package dashboards
 
 import (
+	"github.com/databricks/bricks/lib/jsonflag"
 	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
 	"github.com/databricks/databricks-sdk-go/service/sql"
@@ -17,11 +18,15 @@ var Cmd = &cobra.Command{
   to create a new one.`,
 }
 
+// start create command
+
 var createReq sql.CreateDashboardRequest
+var createJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(createCmd)
 	// TODO: short flags
+	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	createCmd.Flags().BoolVar(&createReq.DashboardFiltersEnabled, "dashboard-filters-enabled", createReq.DashboardFiltersEnabled, `In the web application, query filters that share a name are coupled to a single selection box if this value is true.`)
 	createCmd.Flags().BoolVar(&createReq.IsDraft, "is-draft", createReq.IsDraft, `Draft dashboards only appear in list views for their owners.`)
@@ -38,7 +43,11 @@ var createCmd = &cobra.Command{
 	Long:  `Create a dashboard object.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = createJson.Unmarshall(&createReq)
+		if err != nil {
+			return err
+		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Dashboards.Create(ctx, createReq)
@@ -48,6 +57,8 @@ var createCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start delete command
 
 var deleteReq sql.DeleteDashboardRequest
 
@@ -68,16 +79,18 @@ var deleteCmd = &cobra.Command{
   or searches, and cannot be shared.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.Dashboards.Delete(ctx, deleteReq)
+		err = w.Dashboards.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
 		return nil
 	},
 }
+
+// start get command
 
 var getReq sql.GetDashboardRequest
 
@@ -98,7 +111,7 @@ var getCmd = &cobra.Command{
   visualization and query objects.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Dashboards.Get(ctx, getReq)
@@ -109,11 +122,15 @@ var getCmd = &cobra.Command{
 	},
 }
 
+// start list command
+
 var listReq sql.ListDashboardsRequest
+var listJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(listCmd)
 	// TODO: short flags
+	listCmd.Flags().Var(&listJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	listCmd.Flags().Var(&listReq.Order, "order", `Name of dashboard attribute to order by.`)
 	listCmd.Flags().IntVar(&listReq.Page, "page", listReq.Page, `Page number to retrieve.`)
@@ -130,7 +147,11 @@ var listCmd = &cobra.Command{
   Fetch a paginated list of dashboard objects.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = listJson.Unmarshall(&listReq)
+		if err != nil {
+			return err
+		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Dashboards.ListAll(ctx, listReq)
@@ -140,6 +161,8 @@ var listCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start restore command
 
 var restoreReq sql.RestoreDashboardRequest
 
@@ -159,10 +182,10 @@ var restoreCmd = &cobra.Command{
   A restored dashboard appears in list views and searches and can be shared.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.Dashboards.Restore(ctx, restoreReq)
+		err = w.Dashboards.Restore(ctx, restoreReq)
 		if err != nil {
 			return err
 		}

@@ -36,6 +36,8 @@ var Cmd = &cobra.Command{
   access to all policies.`,
 }
 
+// start create command
+
 var createReq clusterpolicies.CreatePolicy
 
 func init() {
@@ -55,7 +57,7 @@ var createCmd = &cobra.Command{
   Creates a new policy with prescribed settings.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.ClusterPolicies.Create(ctx, createReq)
@@ -65,6 +67,8 @@ var createCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start delete command
 
 var deleteReq clusterpolicies.DeletePolicy
 
@@ -85,16 +89,18 @@ var deleteCmd = &cobra.Command{
   but cannot be edited.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.ClusterPolicies.Delete(ctx, deleteReq)
+		err = w.ClusterPolicies.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
 		return nil
 	},
 }
+
+// start edit command
 
 var editReq clusterpolicies.EditPolicy
 
@@ -117,16 +123,18 @@ var editCmd = &cobra.Command{
   governed by the previous policy invalid.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.ClusterPolicies.Edit(ctx, editReq)
+		err = w.ClusterPolicies.Edit(ctx, editReq)
 		if err != nil {
 			return err
 		}
 		return nil
 	},
 }
+
+// start get command
 
 var getReq clusterpolicies.Get
 
@@ -146,7 +154,7 @@ var getCmd = &cobra.Command{
   Get a cluster policy entity. Creation and editing is available to admins only.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.ClusterPolicies.Get(ctx, getReq)
@@ -156,6 +164,8 @@ var getCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start list command
 
 func init() {
 	Cmd.AddCommand(listCmd)
@@ -170,7 +180,7 @@ var listCmd = &cobra.Command{
   Returns a list of policies accessible by the requesting user.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.ClusterPolicies.ListAll(ctx)

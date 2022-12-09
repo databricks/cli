@@ -1,6 +1,7 @@
 package log_delivery
 
 import (
+	"github.com/databricks/bricks/lib/jsonflag"
 	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
 	"github.com/databricks/databricks-sdk-go/service/billing"
@@ -72,11 +73,15 @@ var Cmd = &cobra.Command{
   [create a new AWS S3 bucket]: https://docs.databricks.com/administration-guide/account-api/aws-storage.html`,
 }
 
+// start create command
+
 var createReq billing.WrappedCreateLogDeliveryConfiguration
+var createJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(createCmd)
 	// TODO: short flags
+	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: log_delivery_configuration
 
@@ -115,7 +120,11 @@ var createCmd = &cobra.Command{
   [Deliver and access billable usage logs]: https://docs.databricks.com/administration-guide/account-settings/billable-usage-delivery.html`,
 
 	PreRunE: sdk.PreAccountClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = createJson.Unmarshall(&createReq)
+		if err != nil {
+			return err
+		}
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
 		response, err := a.LogDelivery.Create(ctx, createReq)
@@ -125,6 +134,8 @@ var createCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start get command
 
 var getReq billing.GetLogDeliveryRequest
 
@@ -145,7 +156,7 @@ var getCmd = &cobra.Command{
   specified by ID.`,
 
 	PreRunE: sdk.PreAccountClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
 		response, err := a.LogDelivery.Get(ctx, getReq)
@@ -156,11 +167,15 @@ var getCmd = &cobra.Command{
 	},
 }
 
+// start list command
+
 var listReq billing.ListLogDeliveryRequest
+var listJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(listCmd)
 	// TODO: short flags
+	listCmd.Flags().Var(&listJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	listCmd.Flags().StringVar(&listReq.CredentialsId, "credentials-id", listReq.CredentialsId, `Filter by credential configuration ID.`)
 	listCmd.Flags().Var(&listReq.Status, "status", `Filter by status ENABLED or DISABLED.`)
@@ -177,7 +192,11 @@ var listCmd = &cobra.Command{
   specified by ID.`,
 
 	PreRunE: sdk.PreAccountClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = listJson.Unmarshall(&listReq)
+		if err != nil {
+			return err
+		}
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
 		response, err := a.LogDelivery.ListAll(ctx, listReq)
@@ -188,11 +207,15 @@ var listCmd = &cobra.Command{
 	},
 }
 
+// start patch-status command
+
 var patchStatusReq billing.UpdateLogDeliveryConfigurationStatusRequest
+var patchStatusJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(patchStatusCmd)
 	// TODO: short flags
+	patchStatusCmd.Flags().Var(&patchStatusJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	patchStatusCmd.Flags().StringVar(&patchStatusReq.LogDeliveryConfigurationId, "log-delivery-configuration-id", patchStatusReq.LogDeliveryConfigurationId, `Databricks log delivery configuration ID.`)
 	patchStatusCmd.Flags().Var(&patchStatusReq.Status, "status", `Status of log delivery configuration.`)
@@ -211,10 +234,14 @@ var patchStatusCmd = &cobra.Command{
   [Create log delivery](#operation/create-log-delivery-config).`,
 
 	PreRunE: sdk.PreAccountClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = patchStatusJson.Unmarshall(&patchStatusReq)
+		if err != nil {
+			return err
+		}
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
-		err := a.LogDelivery.PatchStatus(ctx, patchStatusReq)
+		err = a.LogDelivery.PatchStatus(ctx, patchStatusReq)
 		if err != nil {
 			return err
 		}

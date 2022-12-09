@@ -25,6 +25,8 @@ var Cmd = &cobra.Command{
   Unity Catalog in a catalog named hive_metastore.`,
 }
 
+// start assign command
+
 var assignReq unitycatalog.CreateMetastoreAssignment
 
 func init() {
@@ -47,16 +49,18 @@ var assignCmd = &cobra.Command{
   and __default_catalog_name__. The caller must be an account admin.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.Metastores.Assign(ctx, assignReq)
+		err = w.Metastores.Assign(ctx, assignReq)
 		if err != nil {
 			return err
 		}
 		return nil
 	},
 }
+
+// start create command
 
 var createReq unitycatalog.CreateMetastore
 
@@ -77,7 +81,7 @@ var createCmd = &cobra.Command{
   Creates a new Metastore based on a provided name and storage root path.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Metastores.Create(ctx, createReq)
@@ -87,6 +91,8 @@ var createCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start delete command
 
 var deleteReq unitycatalog.DeleteMetastoreRequest
 
@@ -107,16 +113,18 @@ var deleteCmd = &cobra.Command{
   Deletes a Metastore. The caller must be a Metastore admin.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.Metastores.Delete(ctx, deleteReq)
+		err = w.Metastores.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
 		return nil
 	},
 }
+
+// start get command
 
 var getReq unitycatalog.GetMetastoreRequest
 
@@ -137,7 +145,7 @@ var getCmd = &cobra.Command{
   admin to retrieve this info.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Metastores.Get(ctx, getReq)
@@ -147,6 +155,8 @@ var getCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start list command
 
 func init() {
 	Cmd.AddCommand(listCmd)
@@ -162,7 +172,7 @@ var listCmd = &cobra.Command{
   caller must be an admin to retrieve this info.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Metastores.ListAll(ctx)
@@ -172,6 +182,8 @@ var listCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start summary command
 
 func init() {
 	Cmd.AddCommand(summaryCmd)
@@ -187,7 +199,7 @@ var summaryCmd = &cobra.Command{
   credential, the cloud vendor, the cloud region, and the global Metastore ID.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Metastores.Summary(ctx)
@@ -197,6 +209,8 @@ var summaryCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start unassign command
 
 var unassignReq unitycatalog.UnassignRequest
 
@@ -217,16 +231,18 @@ var unassignCmd = &cobra.Command{
   Deletes a Metastore assignment. The caller must be an account administrator.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.Metastores.Unassign(ctx, unassignReq)
+		err = w.Metastores.Unassign(ctx, unassignReq)
 		if err != nil {
 			return err
 		}
 		return nil
 	},
 }
+
+// start update command
 
 var updateReq unitycatalog.UpdateMetastore
 
@@ -253,16 +269,18 @@ var updateCmd = &cobra.Command{
   admin.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.Metastores.Update(ctx, updateReq)
+		err = w.Metastores.Update(ctx, updateReq)
 		if err != nil {
 			return err
 		}
 		return nil
 	},
 }
+
+// start update-assignment command
 
 var updateAssignmentReq unitycatalog.UpdateMetastoreAssignment
 
@@ -287,10 +305,10 @@ var updateAssignmentCmd = &cobra.Command{
   to update __metastore_id__; otherwise, the caller can be a Workspace admin.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.Metastores.UpdateAssignment(ctx, updateAssignmentReq)
+		err = w.Metastores.UpdateAssignment(ctx, updateAssignmentReq)
 		if err != nil {
 			return err
 		}

@@ -1,6 +1,7 @@
 package query_history
 
 import (
+	"github.com/databricks/bricks/lib/jsonflag"
 	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
 	"github.com/databricks/databricks-sdk-go/service/sql"
@@ -13,11 +14,15 @@ var Cmd = &cobra.Command{
 	Long:  `Access the history of queries through SQL warehouses.`,
 }
 
+// start list command
+
 var listReq sql.ListQueryHistoryRequest
+var listJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(listCmd)
 	// TODO: short flags
+	listCmd.Flags().Var(&listJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: filter_by
 	listCmd.Flags().BoolVar(&listReq.IncludeMetrics, "include-metrics", listReq.IncludeMetrics, `Whether to include metrics about query.`)
@@ -36,7 +41,11 @@ var listCmd = &cobra.Command{
   You can filter by user ID, warehouse ID, status, and time range.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = listJson.Unmarshall(&listReq)
+		if err != nil {
+			return err
+		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.QueryHistory.ListAll(ctx, listReq)

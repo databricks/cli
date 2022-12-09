@@ -18,6 +18,8 @@ var Cmd = &cobra.Command{
   [Secure access to S3 buckets]: https://docs.databricks.com/administration-guide/cloud-configurations/aws/instance-profiles.html`,
 }
 
+// start add command
+
 var addReq clusters.AddInstanceProfile
 
 func init() {
@@ -40,16 +42,18 @@ var addCmd = &cobra.Command{
   API is only available to admin users.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.InstanceProfiles.Add(ctx, addReq)
+		err = w.InstanceProfiles.Add(ctx, addReq)
 		if err != nil {
 			return err
 		}
 		return nil
 	},
 }
+
+// start edit command
 
 var editReq clusters.InstanceProfile
 
@@ -85,16 +89,18 @@ var editCmd = &cobra.Command{
   [Enable serverless SQL warehouses]: https://docs.databricks.com/sql/admin/serverless.html`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.InstanceProfiles.Edit(ctx, editReq)
+		err = w.InstanceProfiles.Edit(ctx, editReq)
 		if err != nil {
 			return err
 		}
 		return nil
 	},
 }
+
+// start list command
 
 func init() {
 	Cmd.AddCommand(listCmd)
@@ -111,7 +117,7 @@ var listCmd = &cobra.Command{
   This API is available to all users.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.InstanceProfiles.ListAll(ctx)
@@ -121,6 +127,8 @@ var listCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start remove command
 
 var removeReq clusters.RemoveInstanceProfile
 
@@ -143,10 +151,10 @@ var removeCmd = &cobra.Command{
   This API is only accessible to admin users.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.InstanceProfiles.Remove(ctx, removeReq)
+		err = w.InstanceProfiles.Remove(ctx, removeReq)
 		if err != nil {
 			return err
 		}

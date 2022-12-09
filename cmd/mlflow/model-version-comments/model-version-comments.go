@@ -11,6 +11,8 @@ var Cmd = &cobra.Command{
 	Use: "model-version-comments",
 }
 
+// start create command
+
 var createReq mlflow.CreateComment
 
 func init() {
@@ -33,7 +35,7 @@ var createCmd = &cobra.Command{
   example, test results or deployment errors.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.ModelVersionComments.Create(ctx, createReq)
@@ -43,6 +45,8 @@ var createCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start delete command
 
 var deleteReq mlflow.DeleteModelVersionCommentRequest
 
@@ -62,16 +66,18 @@ var deleteCmd = &cobra.Command{
   Deletes a comment on a model version.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.ModelVersionComments.Delete(ctx, deleteReq)
+		err = w.ModelVersionComments.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
 		return nil
 	},
 }
+
+// start update command
 
 var updateReq mlflow.UpdateComment
 
@@ -92,7 +98,7 @@ var updateCmd = &cobra.Command{
   Post an edit to a comment on a model version.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.ModelVersionComments.Update(ctx, updateReq)

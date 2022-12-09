@@ -11,6 +11,8 @@ var Cmd = &cobra.Command{
 	Use: "m-lflow-artifacts",
 }
 
+// start list command
+
 var listReq mlflow.ListArtifactsRequest
 
 func init() {
@@ -33,7 +35,7 @@ var listCmd = &cobra.Command{
   specified, the response contains only artifacts with the specified prefix.",`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.MLflowArtifacts.ListAll(ctx, listReq)

@@ -18,6 +18,8 @@ var Cmd = &cobra.Command{
   [more info]: https://docs.databricks.com/repos/get-access-tokens-from-git-provider.html`,
 }
 
+// start create command
+
 var createReq gitcredentials.CreateCredentials
 
 func init() {
@@ -41,7 +43,7 @@ var createCmd = &cobra.Command{
   DELETE endpoint to delete existing credentials.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.GitCredentials.Create(ctx, createReq)
@@ -51,6 +53,8 @@ var createCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start delete command
 
 var deleteReq gitcredentials.Delete
 
@@ -70,16 +74,18 @@ var deleteCmd = &cobra.Command{
   Deletes the specified Git credential.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.GitCredentials.Delete(ctx, deleteReq)
+		err = w.GitCredentials.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
 		return nil
 	},
 }
+
+// start get command
 
 var getReq gitcredentials.Get
 
@@ -99,7 +105,7 @@ var getCmd = &cobra.Command{
   Gets the Git credential with the specified credential ID.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.GitCredentials.Get(ctx, getReq)
@@ -109,6 +115,8 @@ var getCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start list command
 
 func init() {
 	Cmd.AddCommand(listCmd)
@@ -124,7 +132,7 @@ var listCmd = &cobra.Command{
   supported.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.GitCredentials.ListAll(ctx)
@@ -134,6 +142,8 @@ var listCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start update command
 
 var updateReq gitcredentials.UpdateCredentials
 
@@ -156,10 +166,10 @@ var updateCmd = &cobra.Command{
   Updates the specified Git credential.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.GitCredentials.Update(ctx, updateReq)
+		err = w.GitCredentials.Update(ctx, updateReq)
 		if err != nil {
 			return err
 		}

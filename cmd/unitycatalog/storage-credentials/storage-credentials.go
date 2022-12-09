@@ -1,6 +1,7 @@
 package storage_credentials
 
 import (
+	"github.com/databricks/bricks/lib/jsonflag"
 	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
 	"github.com/databricks/databricks-sdk-go/service/unitycatalog"
@@ -26,11 +27,15 @@ var Cmd = &cobra.Command{
   another user or group to manage permissions on it.`,
 }
 
+// start create command
+
 var createReq unitycatalog.CreateStorageCredential
+var createJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(createCmd)
 	// TODO: short flags
+	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: aws_iam_role
 	// TODO: complex arg: azure_service_principal
@@ -55,7 +60,11 @@ var createCmd = &cobra.Command{
   privilege on the Metastore.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = createJson.Unmarshall(&createReq)
+		if err != nil {
+			return err
+		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.StorageCredentials.Create(ctx, createReq)
@@ -65,6 +74,8 @@ var createCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start delete command
 
 var deleteReq unitycatalog.DeleteStorageCredentialRequest
 
@@ -86,16 +97,18 @@ var deleteCmd = &cobra.Command{
   of the storage credential.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.StorageCredentials.Delete(ctx, deleteReq)
+		err = w.StorageCredentials.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
 		return nil
 	},
 }
+
+// start get command
 
 var getReq unitycatalog.GetStorageCredentialRequest
 
@@ -117,7 +130,7 @@ var getCmd = &cobra.Command{
   the storage credential.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.StorageCredentials.Get(ctx, getReq)
@@ -127,6 +140,8 @@ var getCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start list command
 
 func init() {
 	Cmd.AddCommand(listCmd)
@@ -144,7 +159,7 @@ var listCmd = &cobra.Command{
   credentials will be retrieved.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.StorageCredentials.ListAll(ctx)
@@ -155,11 +170,15 @@ var listCmd = &cobra.Command{
 	},
 }
 
+// start update command
+
 var updateReq unitycatalog.UpdateStorageCredential
+var updateJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(updateCmd)
 	// TODO: short flags
+	updateCmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: aws_iam_role
 	// TODO: complex arg: azure_service_principal
@@ -180,10 +199,14 @@ var updateCmd = &cobra.Command{
   credential can be changed.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = updateJson.Unmarshall(&updateReq)
+		if err != nil {
+			return err
+		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.StorageCredentials.Update(ctx, updateReq)
+		err = w.StorageCredentials.Update(ctx, updateReq)
 		if err != nil {
 			return err
 		}

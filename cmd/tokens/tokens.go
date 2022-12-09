@@ -14,6 +14,8 @@ var Cmd = &cobra.Command{
   to authenticate and access Databricks REST APIs.`,
 }
 
+// start create command
+
 var createReq tokens.CreateTokenRequest
 
 func init() {
@@ -36,7 +38,7 @@ var createCmd = &cobra.Command{
   an error **QUOTA_EXCEEDED**.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Tokens.Create(ctx, createReq)
@@ -46,6 +48,8 @@ var createCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start delete command
 
 var deleteReq tokens.RevokeTokenRequest
 
@@ -68,16 +72,18 @@ var deleteCmd = &cobra.Command{
   **RESOURCE_DOES_NOT_EXIST**.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.Tokens.Delete(ctx, deleteReq)
+		err = w.Tokens.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
 		return nil
 	},
 }
+
+// start list command
 
 func init() {
 	Cmd.AddCommand(listCmd)
@@ -92,7 +98,7 @@ var listCmd = &cobra.Command{
   Lists all the valid tokens for a user-workspace pair.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Tokens.ListAll(ctx)

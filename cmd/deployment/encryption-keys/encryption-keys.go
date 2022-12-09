@@ -1,6 +1,7 @@
 package encryption_keys
 
 import (
+	"github.com/databricks/bricks/lib/jsonflag"
 	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
 	"github.com/databricks/databricks-sdk-go/service/deployment"
@@ -28,11 +29,15 @@ var Cmd = &cobra.Command{
   platform. If you are not sure, contact your Databricks reprsentative.`,
 }
 
+// start create command
+
 var createReq deployment.CreateCustomerManagedKeyRequest
+var createJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(createCmd)
 	// TODO: short flags
+	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: aws_key_info
 	// TODO: array: use_cases
@@ -62,7 +67,11 @@ var createCmd = &cobra.Command{
   account.`,
 
 	PreRunE: sdk.PreAccountClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = createJson.Unmarshall(&createReq)
+		if err != nil {
+			return err
+		}
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
 		response, err := a.EncryptionKeys.Create(ctx, createReq)
@@ -72,6 +81,8 @@ var createCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start delete command
 
 var deleteReq deployment.DeleteEncryptionKeyRequest
 
@@ -92,16 +103,18 @@ var deleteCmd = &cobra.Command{
   delete a configuration that is associated with a running workspace.`,
 
 	PreRunE: sdk.PreAccountClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
-		err := a.EncryptionKeys.Delete(ctx, deleteReq)
+		err = a.EncryptionKeys.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
 		return nil
 	},
 }
+
+// start get command
 
 var getReq deployment.GetEncryptionKeyRequest
 
@@ -135,7 +148,7 @@ var getCmd = &cobra.Command{
   platform.`,
 
 	PreRunE: sdk.PreAccountClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
 		response, err := a.EncryptionKeys.Get(ctx, getReq)
@@ -145,6 +158,8 @@ var getCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start list command
 
 func init() {
 	Cmd.AddCommand(listCmd)
@@ -171,7 +186,7 @@ var listCmd = &cobra.Command{
   platform.`,
 
 	PreRunE: sdk.PreAccountClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
 		response, err := a.EncryptionKeys.List(ctx)

@@ -1,6 +1,7 @@
 package queries
 
 import (
+	"github.com/databricks/bricks/lib/jsonflag"
 	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
 	"github.com/databricks/databricks-sdk-go/service/sql"
@@ -15,11 +16,15 @@ var Cmd = &cobra.Command{
   tags, execution schedule, parameters, and visualizations.`,
 }
 
+// start create command
+
 var createReq sql.QueryPostContent
+var createJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(createCmd)
 	// TODO: short flags
+	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	createCmd.Flags().StringVar(&createReq.DataSourceId, "data-source-id", createReq.DataSourceId, `The ID of the data source / SQL warehouse where this query will run.`)
 	createCmd.Flags().StringVar(&createReq.Description, "description", createReq.Description, `General description that can convey additional information about this query such as usage notes.`)
@@ -47,7 +52,11 @@ var createCmd = &cobra.Command{
   **Note**: You cannot add a visualization until you create the query.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = createJson.Unmarshall(&createReq)
+		if err != nil {
+			return err
+		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Queries.Create(ctx, createReq)
@@ -57,6 +66,8 @@ var createCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start delete command
 
 var deleteReq sql.DeleteQueryRequest
 
@@ -78,16 +89,18 @@ var deleteCmd = &cobra.Command{
   deleted after 30 days.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.Queries.Delete(ctx, deleteReq)
+		err = w.Queries.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
 		return nil
 	},
 }
+
+// start get command
 
 var getReq sql.GetQueryRequest
 
@@ -108,7 +121,7 @@ var getCmd = &cobra.Command{
   information about the currently authenticated user.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Queries.Get(ctx, getReq)
@@ -118,6 +131,8 @@ var getCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start list command
 
 var listReq sql.ListQueriesRequest
 
@@ -141,7 +156,7 @@ var listCmd = &cobra.Command{
   term.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Queries.ListAll(ctx, listReq)
@@ -151,6 +166,8 @@ var listCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start restore command
 
 var restoreReq sql.RestoreQueryRequest
 
@@ -171,10 +188,10 @@ var restoreCmd = &cobra.Command{
   list views and searches. You can use restored queries for alerts.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.Queries.Restore(ctx, restoreReq)
+		err = w.Queries.Restore(ctx, restoreReq)
 		if err != nil {
 			return err
 		}
@@ -182,11 +199,15 @@ var restoreCmd = &cobra.Command{
 	},
 }
 
+// start update command
+
 var updateReq sql.QueryPostContent
+var updateJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(updateCmd)
 	// TODO: short flags
+	updateCmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	updateCmd.Flags().StringVar(&updateReq.DataSourceId, "data-source-id", updateReq.DataSourceId, `The ID of the data source / SQL warehouse where this query will run.`)
 	updateCmd.Flags().StringVar(&updateReq.Description, "description", updateReq.Description, `General description that can convey additional information about this query such as usage notes.`)
@@ -208,7 +229,11 @@ var updateCmd = &cobra.Command{
   **Note**: You cannot undo this operation.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = updateJson.Unmarshall(&updateReq)
+		if err != nil {
+			return err
+		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Queries.Update(ctx, updateReq)

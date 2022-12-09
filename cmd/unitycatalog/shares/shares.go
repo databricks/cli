@@ -1,6 +1,7 @@
 package shares
 
 import (
+	"github.com/databricks/bricks/lib/jsonflag"
 	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
 	"github.com/databricks/databricks-sdk-go/service/unitycatalog"
@@ -12,6 +13,8 @@ var Cmd = &cobra.Command{
 	Short: `Databricks Delta Sharing: Shares REST API.`,
 	Long:  `Databricks Delta Sharing: Shares REST API`,
 }
+
+// start create command
 
 var createReq unitycatalog.CreateShare
 
@@ -34,7 +37,7 @@ var createCmd = &cobra.Command{
   have the CREATE SHARE privilege on the Metastore.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Shares.Create(ctx, createReq)
@@ -44,6 +47,8 @@ var createCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start delete command
 
 var deleteReq unitycatalog.DeleteShareRequest
 
@@ -64,16 +69,18 @@ var deleteCmd = &cobra.Command{
   the share.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.Shares.Delete(ctx, deleteReq)
+		err = w.Shares.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
 		return nil
 	},
 }
+
+// start get command
 
 var getReq unitycatalog.GetShareRequest
 
@@ -95,7 +102,7 @@ var getCmd = &cobra.Command{
   admin or the owner of the share.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Shares.Get(ctx, getReq)
@@ -105,6 +112,8 @@ var getCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start list command
 
 func init() {
 	Cmd.AddCommand(listCmd)
@@ -120,7 +129,7 @@ var listCmd = &cobra.Command{
   Metastore admin or the owner of the share.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Shares.ListAll(ctx)
@@ -130,6 +139,8 @@ var listCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start share-permissions command
 
 var sharePermissionsReq unitycatalog.SharePermissionsRequest
 
@@ -150,7 +161,7 @@ var sharePermissionsCmd = &cobra.Command{
   Metastore admin or the owner of the share.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Shares.SharePermissions(ctx, sharePermissionsReq)
@@ -161,11 +172,15 @@ var sharePermissionsCmd = &cobra.Command{
 	},
 }
 
+// start update command
+
 var updateReq unitycatalog.UpdateShare
+var updateJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(updateCmd)
 	// TODO: short flags
+	updateCmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	updateCmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `The name of the share.`)
 	// TODO: array: updates
@@ -193,10 +208,14 @@ var updateCmd = &cobra.Command{
   Table removals through **update** do not require additional privileges.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = updateJson.Unmarshall(&updateReq)
+		if err != nil {
+			return err
+		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.Shares.Update(ctx, updateReq)
+		err = w.Shares.Update(ctx, updateReq)
 		if err != nil {
 			return err
 		}
@@ -204,11 +223,15 @@ var updateCmd = &cobra.Command{
 	},
 }
 
+// start update-permissions command
+
 var updatePermissionsReq unitycatalog.UpdateSharePermissions
+var updatePermissionsJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(updatePermissionsCmd)
 	// TODO: short flags
+	updatePermissionsCmd.Flags().Var(&updatePermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: changes
 	updatePermissionsCmd.Flags().StringVar(&updatePermissionsReq.Name, "name", updatePermissionsReq.Name, `Required.`)
@@ -227,10 +250,14 @@ var updatePermissionsCmd = &cobra.Command{
   recipient revocations do not require additional privileges.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = updatePermissionsJson.Unmarshall(&updatePermissionsReq)
+		if err != nil {
+			return err
+		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.Shares.UpdatePermissions(ctx, updatePermissionsReq)
+		err = w.Shares.UpdatePermissions(ctx, updatePermissionsReq)
 		if err != nil {
 			return err
 		}

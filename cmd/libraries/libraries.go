@@ -1,6 +1,7 @@
 package libraries
 
 import (
+	"github.com/databricks/bricks/lib/jsonflag"
 	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
 	"github.com/databricks/databricks-sdk-go/service/libraries"
@@ -32,6 +33,8 @@ var Cmd = &cobra.Command{
   uninstalled library appears as Uninstall pending restart.`,
 }
 
+// start all-cluster-statuses command
+
 func init() {
 	Cmd.AddCommand(allClusterStatusesCmd)
 
@@ -47,7 +50,7 @@ var allClusterStatusesCmd = &cobra.Command{
   well as libraries set to be installed on all clusters via the libraries UI.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Libraries.AllClusterStatuses(ctx)
@@ -57,6 +60,8 @@ var allClusterStatusesCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start cluster-status command
 
 var clusterStatusReq libraries.ClusterStatus
 
@@ -90,7 +95,7 @@ var clusterStatusCmd = &cobra.Command{
   guarantee.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Libraries.ClusterStatus(ctx, clusterStatusReq)
@@ -101,11 +106,15 @@ var clusterStatusCmd = &cobra.Command{
 	},
 }
 
+// start install command
+
 var installReq libraries.InstallLibraries
+var installJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(installCmd)
 	// TODO: short flags
+	installCmd.Flags().Var(&installJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	installCmd.Flags().StringVar(&installReq.ClusterId, "cluster-id", installReq.ClusterId, `Unique identifier for the cluster on which to install these libraries.`)
 	// TODO: array: libraries
@@ -125,10 +134,14 @@ var installCmd = &cobra.Command{
   installed on all clusters via the libraries UI.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = installJson.Unmarshall(&installReq)
+		if err != nil {
+			return err
+		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.Libraries.Install(ctx, installReq)
+		err = w.Libraries.Install(ctx, installReq)
 		if err != nil {
 			return err
 		}
@@ -136,11 +149,15 @@ var installCmd = &cobra.Command{
 	},
 }
 
+// start uninstall command
+
 var uninstallReq libraries.UninstallLibraries
+var uninstallJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(uninstallCmd)
 	// TODO: short flags
+	uninstallCmd.Flags().Var(&uninstallJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	uninstallCmd.Flags().StringVar(&uninstallReq.ClusterId, "cluster-id", uninstallReq.ClusterId, `Unique identifier for the cluster on which to uninstall these libraries.`)
 	// TODO: array: libraries
@@ -157,10 +174,14 @@ var uninstallCmd = &cobra.Command{
   not installed on the cluster will have no impact but is not an error.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = uninstallJson.Unmarshall(&uninstallReq)
+		if err != nil {
+			return err
+		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.Libraries.Uninstall(ctx, uninstallReq)
+		err = w.Libraries.Uninstall(ctx, uninstallReq)
 		if err != nil {
 			return err
 		}

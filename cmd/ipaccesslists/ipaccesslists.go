@@ -1,6 +1,7 @@
 package ipaccesslists
 
 import (
+	"github.com/databricks/bricks/lib/jsonflag"
 	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
 	"github.com/databricks/databricks-sdk-go/service/ipaccesslists"
@@ -34,11 +35,15 @@ var Cmd = &cobra.Command{
   changes to take effect.`,
 }
 
+// start create command
+
 var createReq ipaccesslists.CreateIpAccessList
+var createJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(createCmd)
 	// TODO: short flags
+	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: ip_addresses
 	createCmd.Flags().StringVar(&createReq.Label, "label", createReq.Label, `Label for the IP access list.`)
@@ -68,7 +73,11 @@ var createCmd = &cobra.Command{
   :method:workspaceconf/setStatus`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = createJson.Unmarshall(&createReq)
+		if err != nil {
+			return err
+		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.IpAccessLists.Create(ctx, createReq)
@@ -78,6 +87,8 @@ var createCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start delete command
 
 var deleteReq ipaccesslists.Delete
 
@@ -97,16 +108,18 @@ var deleteCmd = &cobra.Command{
   Deletes an IP access list, specified by its list ID.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.IpAccessLists.Delete(ctx, deleteReq)
+		err = w.IpAccessLists.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
 		return nil
 	},
 }
+
+// start get command
 
 var getReq ipaccesslists.Get
 
@@ -126,7 +139,7 @@ var getCmd = &cobra.Command{
   Gets an IP access list, specified by its list ID.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.IpAccessLists.Get(ctx, getReq)
@@ -136,6 +149,8 @@ var getCmd = &cobra.Command{
 		return ui.Render(cmd, response)
 	},
 }
+
+// start list command
 
 func init() {
 	Cmd.AddCommand(listCmd)
@@ -150,7 +165,7 @@ var listCmd = &cobra.Command{
   Gets all IP access lists for the specified workspace.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.IpAccessLists.ListAll(ctx)
@@ -161,11 +176,15 @@ var listCmd = &cobra.Command{
 	},
 }
 
+// start replace command
+
 var replaceReq ipaccesslists.ReplaceIpAccessList
+var replaceJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(replaceCmd)
 	// TODO: short flags
+	replaceCmd.Flags().Var(&replaceJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	replaceCmd.Flags().BoolVar(&replaceReq.Enabled, "enabled", replaceReq.Enabled, `Specifies whether this IP access list is enabled.`)
 	replaceCmd.Flags().StringVar(&replaceReq.IpAccessListId, "ip-access-list-id", replaceReq.IpAccessListId, `The ID for the corresponding IP access list to modify.`)
@@ -194,10 +213,14 @@ var replaceCmd = &cobra.Command{
   :method:workspaceconf/setStatus.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = replaceJson.Unmarshall(&replaceReq)
+		if err != nil {
+			return err
+		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.IpAccessLists.Replace(ctx, replaceReq)
+		err = w.IpAccessLists.Replace(ctx, replaceReq)
 		if err != nil {
 			return err
 		}
@@ -205,11 +228,15 @@ var replaceCmd = &cobra.Command{
 	},
 }
 
+// start update command
+
 var updateReq ipaccesslists.UpdateIpAccessList
+var updateJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(updateCmd)
 	// TODO: short flags
+	updateCmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	updateCmd.Flags().BoolVar(&updateReq.Enabled, "enabled", updateReq.Enabled, `Specifies whether this IP access list is enabled.`)
 	updateCmd.Flags().StringVar(&updateReq.IpAccessListId, "ip-access-list-id", updateReq.IpAccessListId, `The ID for the corresponding IP access list to modify.`)
@@ -242,10 +269,14 @@ var updateCmd = &cobra.Command{
   :method:workspaceconf/setStatus.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = updateJson.Unmarshall(&updateReq)
+		if err != nil {
+			return err
+		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.IpAccessLists.Update(ctx, updateReq)
+		err = w.IpAccessLists.Update(ctx, updateReq)
 		if err != nil {
 			return err
 		}
