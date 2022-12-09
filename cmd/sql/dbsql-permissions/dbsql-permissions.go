@@ -3,7 +3,7 @@ package dbsql_permissions
 import (
 	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
-	"github.com/databricks/databricks-sdk-go/service/dbsql"
+	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/spf13/cobra"
 )
 
@@ -25,19 +25,19 @@ var Cmd = &cobra.Command{
   permissions (superset of CAN_RUN)`,
 }
 
-var getPermissionsReq dbsql.GetPermissionsRequest
+var getReq sql.GetDbsqlPermissionRequest
 
 func init() {
-	Cmd.AddCommand(getPermissionsCmd)
+	Cmd.AddCommand(getCmd)
 	// TODO: short flags
 
-	getPermissionsCmd.Flags().StringVar(&getPermissionsReq.ObjectId, "object-id", getPermissionsReq.ObjectId, `Object ID.`)
-	getPermissionsCmd.Flags().Var(&getPermissionsReq.ObjectType, "object-type", `The type of object permissions to check.`)
+	getCmd.Flags().StringVar(&getReq.ObjectId, "object-id", getReq.ObjectId, `Object ID.`)
+	getCmd.Flags().Var(&getReq.ObjectType, "object-type", `The type of object permissions to check.`)
 
 }
 
-var getPermissionsCmd = &cobra.Command{
-	Use:   "get-permissions",
+var getCmd = &cobra.Command{
+	Use:   "get",
 	Short: `Get object ACL.`,
 	Long: `Get object ACL.
   
@@ -48,7 +48,7 @@ var getPermissionsCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		response, err := w.DbsqlPermissions.GetPermissions(ctx, getPermissionsReq)
+		response, err := w.DbsqlPermissions.Get(ctx, getReq)
 		if err != nil {
 			return err
 		}
@@ -56,20 +56,20 @@ var getPermissionsCmd = &cobra.Command{
 	},
 }
 
-var setPermissionsReq dbsql.SetPermissionsRequest
+var setReq sql.SetRequest
 
 func init() {
-	Cmd.AddCommand(setPermissionsCmd)
+	Cmd.AddCommand(setCmd)
 	// TODO: short flags
 
 	// TODO: array: access_control_list
-	setPermissionsCmd.Flags().StringVar(&setPermissionsReq.ObjectId, "object-id", setPermissionsReq.ObjectId, `Object ID.`)
-	setPermissionsCmd.Flags().Var(&setPermissionsReq.ObjectType, "object-type", `The type of object permission to set.`)
+	setCmd.Flags().StringVar(&setReq.ObjectId, "object-id", setReq.ObjectId, `Object ID.`)
+	setCmd.Flags().Var(&setReq.ObjectType, "object-type", `The type of object permission to set.`)
 
 }
 
-var setPermissionsCmd = &cobra.Command{
-	Use:   "set-permissions",
+var setCmd = &cobra.Command{
+	Use:   "set",
 	Short: `Set object ACL.`,
 	Long: `Set object ACL.
   
@@ -80,7 +80,7 @@ var setPermissionsCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		response, err := w.DbsqlPermissions.SetPermissions(ctx, setPermissionsReq)
+		response, err := w.DbsqlPermissions.Set(ctx, setReq)
 		if err != nil {
 			return err
 		}
@@ -88,7 +88,7 @@ var setPermissionsCmd = &cobra.Command{
 	},
 }
 
-var transferOwnershipReq dbsql.TransferOwnershipRequest
+var transferOwnershipReq sql.TransferOwnershipRequest
 
 func init() {
 	Cmd.AddCommand(transferOwnershipCmd)

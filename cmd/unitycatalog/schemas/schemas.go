@@ -23,18 +23,10 @@ func init() {
 	Cmd.AddCommand(createCmd)
 	// TODO: short flags
 
-	createCmd.Flags().StringVar(&createReq.CatalogName, "catalog-name", createReq.CatalogName, `[Create:REQ Update:IGN] Name of parent Catalog.`)
-	createCmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `[Create,Update:OPT] User-provided free-form text description.`)
-	createCmd.Flags().Int64Var(&createReq.CreatedAt, "created-at", createReq.CreatedAt, `[Create,Update:IGN] Time at which this Schema was created, in epoch milliseconds.`)
-	createCmd.Flags().StringVar(&createReq.CreatedBy, "created-by", createReq.CreatedBy, `[Create,Update:IGN] Username of Schema creator.`)
-	createCmd.Flags().StringVar(&createReq.FullName, "full-name", createReq.FullName, `[Create,Update:IGN] Full name of Schema, in form of <catalog_name>.<schema_name>.`)
-	createCmd.Flags().StringVar(&createReq.MetastoreId, "metastore-id", createReq.MetastoreId, `[Create,Update:IGN] Unique identifier of parent Metastore.`)
-	createCmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `[Create:REQ Update:OPT] Name of Schema, relative to parent Catalog.`)
-	createCmd.Flags().StringVar(&createReq.Owner, "owner", createReq.Owner, `[Create:IGN Update:OPT] Username of current owner of Schema.`)
-	// TODO: array: privileges
-	// TODO: array: properties
-	createCmd.Flags().Int64Var(&createReq.UpdatedAt, "updated-at", createReq.UpdatedAt, `[Create,Update:IGN] Time at which this Schema was created, in epoch milliseconds.`)
-	createCmd.Flags().StringVar(&createReq.UpdatedBy, "updated-by", createReq.UpdatedBy, `[Create,Update:IGN] Username of user who last modified Schema.`)
+	createCmd.Flags().StringVar(&createReq.CatalogName, "catalog-name", createReq.CatalogName, `Name of parent Catalog.`)
+	createCmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `User-provided free-form text description.`)
+	createCmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `Name of Schema, relative to parent Catalog.`)
+	// TODO: map via StringToStringVar: properties
 
 }
 
@@ -157,18 +149,12 @@ func init() {
 	Cmd.AddCommand(updateCmd)
 	// TODO: short flags
 
-	updateCmd.Flags().StringVar(&updateReq.CatalogName, "catalog-name", updateReq.CatalogName, `[Create:REQ Update:IGN] Name of parent Catalog.`)
-	updateCmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `[Create,Update:OPT] User-provided free-form text description.`)
-	updateCmd.Flags().Int64Var(&updateReq.CreatedAt, "created-at", updateReq.CreatedAt, `[Create,Update:IGN] Time at which this Schema was created, in epoch milliseconds.`)
-	updateCmd.Flags().StringVar(&updateReq.CreatedBy, "created-by", updateReq.CreatedBy, `[Create,Update:IGN] Username of Schema creator.`)
-	updateCmd.Flags().StringVar(&updateReq.FullName, "full-name", updateReq.FullName, `[Create,Update:IGN] Full name of Schema, in form of <catalog_name>.<schema_name>.`)
-	updateCmd.Flags().StringVar(&updateReq.MetastoreId, "metastore-id", updateReq.MetastoreId, `[Create,Update:IGN] Unique identifier of parent Metastore.`)
-	updateCmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `[Create:REQ Update:OPT] Name of Schema, relative to parent Catalog.`)
-	updateCmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `[Create:IGN Update:OPT] Username of current owner of Schema.`)
-	// TODO: array: privileges
-	// TODO: array: properties
-	updateCmd.Flags().Int64Var(&updateReq.UpdatedAt, "updated-at", updateReq.UpdatedAt, `[Create,Update:IGN] Time at which this Schema was created, in epoch milliseconds.`)
-	updateCmd.Flags().StringVar(&updateReq.UpdatedBy, "updated-by", updateReq.UpdatedBy, `[Create,Update:IGN] Username of user who last modified Schema.`)
+	updateCmd.Flags().StringVar(&updateReq.CatalogName, "catalog-name", updateReq.CatalogName, `Name of parent Catalog.`)
+	updateCmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `User-provided free-form text description.`)
+	updateCmd.Flags().StringVar(&updateReq.FullName, "full-name", updateReq.FullName, `Required.`)
+	updateCmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `Name of Schema, relative to parent Catalog.`)
+	updateCmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of current owner of Schema.`)
+	// TODO: map via StringToStringVar: properties
 
 }
 

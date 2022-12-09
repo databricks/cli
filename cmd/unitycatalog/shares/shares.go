@@ -19,11 +19,8 @@ func init() {
 	Cmd.AddCommand(createCmd)
 	// TODO: short flags
 
-	createCmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `[Create: OPT] comment when creating the share.`)
-	createCmd.Flags().Int64Var(&createReq.CreatedAt, "created-at", createReq.CreatedAt, `[Create:IGN] Time at which this Share was created, in epoch milliseconds.`)
-	createCmd.Flags().StringVar(&createReq.CreatedBy, "created-by", createReq.CreatedBy, `[Create:IGN] Username of Share creator.`)
-	createCmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `[Create:REQ] Name of the Share.`)
-	// TODO: array: objects
+	createCmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `comment when creating the share.`)
+	createCmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `Name of the Share.`)
 
 }
 

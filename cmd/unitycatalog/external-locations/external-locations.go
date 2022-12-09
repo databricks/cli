@@ -31,17 +31,10 @@ func init() {
 	Cmd.AddCommand(createCmd)
 	// TODO: short flags
 
-	createCmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `[Create:OPT Update:OPT] User-provided free-form text description.`)
-	createCmd.Flags().Int64Var(&createReq.CreatedAt, "created-at", createReq.CreatedAt, `[Create,Update:IGN] Time at which this External Location was created, in epoch milliseconds.`)
-	createCmd.Flags().StringVar(&createReq.CreatedBy, "created-by", createReq.CreatedBy, `[Create,Update:IGN] Username of External Location creator.`)
-	createCmd.Flags().StringVar(&createReq.CredentialId, "credential-id", createReq.CredentialId, `[Create,Update:IGN] Unique ID of the location's Storage Credential.`)
-	createCmd.Flags().StringVar(&createReq.CredentialName, "credential-name", createReq.CredentialName, `[Create:REQ Update:OPT] Current name of the Storage Credential this location uses.`)
-	createCmd.Flags().StringVar(&createReq.MetastoreId, "metastore-id", createReq.MetastoreId, `[Create,Update:IGN] Unique identifier of Metastore hosting the External Location.`)
-	createCmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `[Create:REQ Update:OPT] Name of the External Location.`)
-	createCmd.Flags().StringVar(&createReq.Owner, "owner", createReq.Owner, `[Create:IGN Update:OPT] The owner of the External Location.`)
-	createCmd.Flags().Int64Var(&createReq.UpdatedAt, "updated-at", createReq.UpdatedAt, `[Create,Update:IGN] Time at which this was last modified, in epoch milliseconds.`)
-	createCmd.Flags().StringVar(&createReq.UpdatedBy, "updated-by", createReq.UpdatedBy, `[Create,Update:IGN] Username of user who last modified the External Location.`)
-	createCmd.Flags().StringVar(&createReq.Url, "url", createReq.Url, `[Create:REQ Update:OPT] Path URL of the External Location.`)
+	createCmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `User-provided free-form text description.`)
+	createCmd.Flags().StringVar(&createReq.CredentialName, "credential-name", createReq.CredentialName, `Current name of the Storage Credential this location uses.`)
+	createCmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `Name of the External Location.`)
+	createCmd.Flags().StringVar(&createReq.Url, "url", createReq.Url, `Path URL of the External Location.`)
 
 }
 
@@ -160,18 +153,12 @@ func init() {
 	Cmd.AddCommand(updateCmd)
 	// TODO: short flags
 
-	updateCmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `[Create:OPT Update:OPT] User-provided free-form text description.`)
-	updateCmd.Flags().Int64Var(&updateReq.CreatedAt, "created-at", updateReq.CreatedAt, `[Create,Update:IGN] Time at which this External Location was created, in epoch milliseconds.`)
-	updateCmd.Flags().StringVar(&updateReq.CreatedBy, "created-by", updateReq.CreatedBy, `[Create,Update:IGN] Username of External Location creator.`)
-	updateCmd.Flags().StringVar(&updateReq.CredentialId, "credential-id", updateReq.CredentialId, `[Create,Update:IGN] Unique ID of the location's Storage Credential.`)
-	updateCmd.Flags().StringVar(&updateReq.CredentialName, "credential-name", updateReq.CredentialName, `[Create:REQ Update:OPT] Current name of the Storage Credential this location uses.`)
-	updateCmd.Flags().BoolVar(&updateReq.Force, "force", updateReq.Force, `TODO: SC-90063 re-add 'force' parameter in backward-compatible way for DBR (not removed below as it still works with CLI) Optional.`)
-	updateCmd.Flags().StringVar(&updateReq.MetastoreId, "metastore-id", updateReq.MetastoreId, `[Create,Update:IGN] Unique identifier of Metastore hosting the External Location.`)
-	updateCmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `[Create:REQ Update:OPT] Name of the External Location.`)
-	updateCmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `[Create:IGN Update:OPT] The owner of the External Location.`)
-	updateCmd.Flags().Int64Var(&updateReq.UpdatedAt, "updated-at", updateReq.UpdatedAt, `[Create,Update:IGN] Time at which this was last modified, in epoch milliseconds.`)
-	updateCmd.Flags().StringVar(&updateReq.UpdatedBy, "updated-by", updateReq.UpdatedBy, `[Create,Update:IGN] Username of user who last modified the External Location.`)
-	updateCmd.Flags().StringVar(&updateReq.Url, "url", updateReq.Url, `[Create:REQ Update:OPT] Path URL of the External Location.`)
+	updateCmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `User-provided free-form text description.`)
+	updateCmd.Flags().StringVar(&updateReq.CredentialName, "credential-name", updateReq.CredentialName, `Current name of the Storage Credential this location uses.`)
+	updateCmd.Flags().BoolVar(&updateReq.Force, "force", updateReq.Force, `Force update even if changing url invalidates dependent external tables or mounts.`)
+	updateCmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `Name of the External Location.`)
+	updateCmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `The owner of the External Location.`)
+	updateCmd.Flags().StringVar(&updateReq.Url, "url", updateReq.Url, `Path URL of the External Location.`)
 
 }
 

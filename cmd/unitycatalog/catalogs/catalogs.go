@@ -28,8 +28,8 @@ func init() {
 
 	createCmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `User-provided free-form text description.`)
 	createCmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `Name of Catalog.`)
-	// TODO: array: properties
-	createCmd.Flags().StringVar(&createReq.ProviderName, "provider-name", createReq.ProviderName, `Delta Sharing Catalog specific fields.`)
+	// TODO: map via StringToStringVar: properties
+	createCmd.Flags().StringVar(&createReq.ProviderName, "provider-name", createReq.ProviderName, `The name of delta sharing provider.`)
 	createCmd.Flags().StringVar(&createReq.ShareName, "share-name", createReq.ShareName, `The name of the share under the share provider.`)
 
 }
@@ -146,19 +146,10 @@ func init() {
 	Cmd.AddCommand(updateCmd)
 	// TODO: short flags
 
-	updateCmd.Flags().Var(&updateReq.CatalogType, "catalog-type", `[Create,Update:IGN] The type of the catalog.`)
-	updateCmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `[Create,Update:OPT] User-provided free-form text description.`)
-	updateCmd.Flags().Int64Var(&updateReq.CreatedAt, "created-at", updateReq.CreatedAt, `[Create,Update:IGN] Time at which this Catalog was created, in epoch milliseconds.`)
-	updateCmd.Flags().StringVar(&updateReq.CreatedBy, "created-by", updateReq.CreatedBy, `[Create,Update:IGN] Username of Catalog creator.`)
-	updateCmd.Flags().StringVar(&updateReq.MetastoreId, "metastore-id", updateReq.MetastoreId, `[Create,Update:IGN] Unique identifier of parent Metastore.`)
-	updateCmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `[Create:REQ Update:OPT] Name of Catalog.`)
-	updateCmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `[Create:IGN,Update:OPT] Username of current owner of Catalog.`)
-	// TODO: array: privileges
-	// TODO: array: properties
-	updateCmd.Flags().StringVar(&updateReq.ProviderName, "provider-name", updateReq.ProviderName, `Delta Sharing Catalog specific fields.`)
-	updateCmd.Flags().StringVar(&updateReq.ShareName, "share-name", updateReq.ShareName, `[Create:OPT,Update: IGN] The name of the share under the share provider.`)
-	updateCmd.Flags().Int64Var(&updateReq.UpdatedAt, "updated-at", updateReq.UpdatedAt, `[Create,Update:IGN] Time at which this Catalog was last modified, in epoch milliseconds.`)
-	updateCmd.Flags().StringVar(&updateReq.UpdatedBy, "updated-by", updateReq.UpdatedBy, `[Create,Update:IGN] Username of user who last modified Catalog.`)
+	updateCmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `User-provided free-form text description.`)
+	updateCmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `Name of Catalog.`)
+	updateCmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of current owner of Catalog.`)
+	// TODO: map via StringToStringVar: properties
 
 }
 

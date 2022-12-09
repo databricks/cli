@@ -3,7 +3,7 @@ package alerts
 import (
 	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
-	"github.com/databricks/databricks-sdk-go/service/dbsql"
+	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/spf13/cobra"
 )
 
@@ -16,22 +16,22 @@ var Cmd = &cobra.Command{
   condition was met.`,
 }
 
-var createAlertReq dbsql.EditAlert
+var createReq sql.EditAlert
 
 func init() {
-	Cmd.AddCommand(createAlertCmd)
+	Cmd.AddCommand(createCmd)
 	// TODO: short flags
 
-	createAlertCmd.Flags().StringVar(&createAlertReq.AlertId, "alert-id", createAlertReq.AlertId, ``)
-	createAlertCmd.Flags().StringVar(&createAlertReq.Name, "name", createAlertReq.Name, `Name of the alert.`)
+	createCmd.Flags().StringVar(&createReq.AlertId, "alert-id", createReq.AlertId, ``)
+	createCmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `Name of the alert.`)
 	// TODO: complex arg: options
-	createAlertCmd.Flags().StringVar(&createAlertReq.QueryId, "query-id", createAlertReq.QueryId, `ID of the query evaluated by the alert.`)
-	createAlertCmd.Flags().IntVar(&createAlertReq.Rearm, "rearm", createAlertReq.Rearm, `Number of seconds after being triggered before the alert rearms itself and can be triggered again.`)
+	createCmd.Flags().StringVar(&createReq.QueryId, "query-id", createReq.QueryId, `ID of the query evaluated by the alert.`)
+	createCmd.Flags().IntVar(&createReq.Rearm, "rearm", createReq.Rearm, `Number of seconds after being triggered before the alert rearms itself and can be triggered again.`)
 
 }
 
-var createAlertCmd = &cobra.Command{
-	Use:   "create-alert",
+var createCmd = &cobra.Command{
+	Use:   "create",
 	Short: `Create an alert.`,
 	Long: `Create an alert.
   
@@ -43,7 +43,7 @@ var createAlertCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		response, err := w.Alerts.CreateAlert(ctx, createAlertReq)
+		response, err := w.Alerts.Create(ctx, createReq)
 		if err != nil {
 			return err
 		}
@@ -51,7 +51,7 @@ var createAlertCmd = &cobra.Command{
 	},
 }
 
-var createScheduleReq dbsql.CreateRefreshSchedule
+var createScheduleReq sql.CreateRefreshSchedule
 
 func init() {
 	Cmd.AddCommand(createScheduleCmd)
@@ -84,18 +84,18 @@ var createScheduleCmd = &cobra.Command{
 	},
 }
 
-var deleteAlertReq dbsql.DeleteAlertRequest
+var deleteReq sql.DeleteAlertRequest
 
 func init() {
-	Cmd.AddCommand(deleteAlertCmd)
+	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
 
-	deleteAlertCmd.Flags().StringVar(&deleteAlertReq.AlertId, "alert-id", deleteAlertReq.AlertId, ``)
+	deleteCmd.Flags().StringVar(&deleteReq.AlertId, "alert-id", deleteReq.AlertId, ``)
 
 }
 
-var deleteAlertCmd = &cobra.Command{
-	Use:   "delete-alert",
+var deleteCmd = &cobra.Command{
+	Use:   "delete",
 	Short: `Delete an alert.`,
 	Long: `Delete an alert.
   
@@ -107,7 +107,7 @@ var deleteAlertCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.Alerts.DeleteAlert(ctx, deleteAlertReq)
+		err := w.Alerts.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
@@ -115,7 +115,7 @@ var deleteAlertCmd = &cobra.Command{
 	},
 }
 
-var deleteScheduleReq dbsql.DeleteScheduleRequest
+var deleteScheduleReq sql.DeleteScheduleRequest
 
 func init() {
 	Cmd.AddCommand(deleteScheduleCmd)
@@ -146,18 +146,18 @@ var deleteScheduleCmd = &cobra.Command{
 	},
 }
 
-var getAlertReq dbsql.GetAlertRequest
+var getReq sql.GetAlertRequest
 
 func init() {
-	Cmd.AddCommand(getAlertCmd)
+	Cmd.AddCommand(getCmd)
 	// TODO: short flags
 
-	getAlertCmd.Flags().StringVar(&getAlertReq.AlertId, "alert-id", getAlertReq.AlertId, ``)
+	getCmd.Flags().StringVar(&getReq.AlertId, "alert-id", getReq.AlertId, ``)
 
 }
 
-var getAlertCmd = &cobra.Command{
-	Use:   "get-alert",
+var getCmd = &cobra.Command{
+	Use:   "get",
 	Short: `Get an alert.`,
 	Long: `Get an alert.
   
@@ -167,7 +167,7 @@ var getAlertCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		response, err := w.Alerts.GetAlert(ctx, getAlertReq)
+		response, err := w.Alerts.Get(ctx, getReq)
 		if err != nil {
 			return err
 		}
@@ -175,7 +175,7 @@ var getAlertCmd = &cobra.Command{
 	},
 }
 
-var getSubscriptionsReq dbsql.GetSubscriptionsRequest
+var getSubscriptionsReq sql.GetSubscriptionsRequest
 
 func init() {
 	Cmd.AddCommand(getSubscriptionsCmd)
@@ -208,12 +208,12 @@ var getSubscriptionsCmd = &cobra.Command{
 }
 
 func init() {
-	Cmd.AddCommand(listAlertsCmd)
+	Cmd.AddCommand(listCmd)
 
 }
 
-var listAlertsCmd = &cobra.Command{
-	Use:   "list-alerts",
+var listCmd = &cobra.Command{
+	Use:   "list",
 	Short: `Get alerts.`,
 	Long: `Get alerts.
   
@@ -223,7 +223,7 @@ var listAlertsCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		response, err := w.Alerts.ListAlerts(ctx)
+		response, err := w.Alerts.List(ctx)
 		if err != nil {
 			return err
 		}
@@ -231,7 +231,7 @@ var listAlertsCmd = &cobra.Command{
 	},
 }
 
-var listSchedulesReq dbsql.ListSchedulesRequest
+var listSchedulesReq sql.ListSchedulesRequest
 
 func init() {
 	Cmd.AddCommand(listSchedulesCmd)
@@ -266,7 +266,7 @@ var listSchedulesCmd = &cobra.Command{
 	},
 }
 
-var subscribeReq dbsql.CreateSubscription
+var subscribeReq sql.CreateSubscription
 
 func init() {
 	Cmd.AddCommand(subscribeCmd)
@@ -295,7 +295,7 @@ var subscribeCmd = &cobra.Command{
 	},
 }
 
-var unsubscribeReq dbsql.UnsubscribeRequest
+var unsubscribeReq sql.UnsubscribeRequest
 
 func init() {
 	Cmd.AddCommand(unsubscribeCmd)
@@ -325,22 +325,22 @@ var unsubscribeCmd = &cobra.Command{
 	},
 }
 
-var updateAlertReq dbsql.EditAlert
+var updateReq sql.EditAlert
 
 func init() {
-	Cmd.AddCommand(updateAlertCmd)
+	Cmd.AddCommand(updateCmd)
 	// TODO: short flags
 
-	updateAlertCmd.Flags().StringVar(&updateAlertReq.AlertId, "alert-id", updateAlertReq.AlertId, ``)
-	updateAlertCmd.Flags().StringVar(&updateAlertReq.Name, "name", updateAlertReq.Name, `Name of the alert.`)
+	updateCmd.Flags().StringVar(&updateReq.AlertId, "alert-id", updateReq.AlertId, ``)
+	updateCmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `Name of the alert.`)
 	// TODO: complex arg: options
-	updateAlertCmd.Flags().StringVar(&updateAlertReq.QueryId, "query-id", updateAlertReq.QueryId, `ID of the query evaluated by the alert.`)
-	updateAlertCmd.Flags().IntVar(&updateAlertReq.Rearm, "rearm", updateAlertReq.Rearm, `Number of seconds after being triggered before the alert rearms itself and can be triggered again.`)
+	updateCmd.Flags().StringVar(&updateReq.QueryId, "query-id", updateReq.QueryId, `ID of the query evaluated by the alert.`)
+	updateCmd.Flags().IntVar(&updateReq.Rearm, "rearm", updateReq.Rearm, `Number of seconds after being triggered before the alert rearms itself and can be triggered again.`)
 
 }
 
-var updateAlertCmd = &cobra.Command{
-	Use:   "update-alert",
+var updateCmd = &cobra.Command{
+	Use:   "update",
 	Short: `Update an alert.`,
 	Long: `Update an alert.
   
@@ -350,7 +350,7 @@ var updateAlertCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.Alerts.UpdateAlert(ctx, updateAlertReq)
+		err := w.Alerts.Update(ctx, updateReq)
 		if err != nil {
 			return err
 		}

@@ -3,7 +3,7 @@ package queries
 import (
 	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
-	"github.com/databricks/databricks-sdk-go/service/dbsql"
+	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/spf13/cobra"
 )
 
@@ -15,24 +15,24 @@ var Cmd = &cobra.Command{
   tags, execution schedule, parameters, and visualizations.`,
 }
 
-var createQueryReq dbsql.QueryPostContent
+var createReq sql.QueryPostContent
 
 func init() {
-	Cmd.AddCommand(createQueryCmd)
+	Cmd.AddCommand(createCmd)
 	// TODO: short flags
 
-	createQueryCmd.Flags().StringVar(&createQueryReq.DataSourceId, "data-source-id", createQueryReq.DataSourceId, `The ID of the data source / SQL warehouse where this query will run.`)
-	createQueryCmd.Flags().StringVar(&createQueryReq.Description, "description", createQueryReq.Description, `General description that can convey additional information about this query such as usage notes.`)
-	createQueryCmd.Flags().StringVar(&createQueryReq.Name, "name", createQueryReq.Name, `The name or title of this query to display in list views.`)
+	createCmd.Flags().StringVar(&createReq.DataSourceId, "data-source-id", createReq.DataSourceId, `The ID of the data source / SQL warehouse where this query will run.`)
+	createCmd.Flags().StringVar(&createReq.Description, "description", createReq.Description, `General description that can convey additional information about this query such as usage notes.`)
+	createCmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `The name or title of this query to display in list views.`)
 	// TODO: any: options
-	createQueryCmd.Flags().StringVar(&createQueryReq.Query, "query", createQueryReq.Query, `The text of the query.`)
-	createQueryCmd.Flags().StringVar(&createQueryReq.QueryId, "query-id", createQueryReq.QueryId, ``)
+	createCmd.Flags().StringVar(&createReq.Query, "query", createReq.Query, `The text of the query.`)
+	createCmd.Flags().StringVar(&createReq.QueryId, "query-id", createReq.QueryId, ``)
 	// TODO: complex arg: schedule
 
 }
 
-var createQueryCmd = &cobra.Command{
-	Use:   "create-query",
+var createCmd = &cobra.Command{
+	Use:   "create",
 	Short: `Create a new query definition.`,
 	Long: `Create a new query definition.
   
@@ -50,7 +50,7 @@ var createQueryCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		response, err := w.Queries.CreateQuery(ctx, createQueryReq)
+		response, err := w.Queries.Create(ctx, createReq)
 		if err != nil {
 			return err
 		}
@@ -58,18 +58,18 @@ var createQueryCmd = &cobra.Command{
 	},
 }
 
-var deleteQueryReq dbsql.DeleteQueryRequest
+var deleteReq sql.DeleteQueryRequest
 
 func init() {
-	Cmd.AddCommand(deleteQueryCmd)
+	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
 
-	deleteQueryCmd.Flags().StringVar(&deleteQueryReq.QueryId, "query-id", deleteQueryReq.QueryId, ``)
+	deleteCmd.Flags().StringVar(&deleteReq.QueryId, "query-id", deleteReq.QueryId, ``)
 
 }
 
-var deleteQueryCmd = &cobra.Command{
-	Use:   "delete-query",
+var deleteCmd = &cobra.Command{
+	Use:   "delete",
 	Short: `Delete a query.`,
 	Long: `Delete a query.
   
@@ -81,7 +81,7 @@ var deleteQueryCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.Queries.DeleteQuery(ctx, deleteQueryReq)
+		err := w.Queries.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
@@ -89,18 +89,18 @@ var deleteQueryCmd = &cobra.Command{
 	},
 }
 
-var getQueryReq dbsql.GetQueryRequest
+var getReq sql.GetQueryRequest
 
 func init() {
-	Cmd.AddCommand(getQueryCmd)
+	Cmd.AddCommand(getCmd)
 	// TODO: short flags
 
-	getQueryCmd.Flags().StringVar(&getQueryReq.QueryId, "query-id", getQueryReq.QueryId, ``)
+	getCmd.Flags().StringVar(&getReq.QueryId, "query-id", getReq.QueryId, ``)
 
 }
 
-var getQueryCmd = &cobra.Command{
-	Use:   "get-query",
+var getCmd = &cobra.Command{
+	Use:   "get",
 	Short: `Get a query definition.`,
 	Long: `Get a query definition.
   
@@ -111,7 +111,7 @@ var getQueryCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		response, err := w.Queries.GetQuery(ctx, getQueryReq)
+		response, err := w.Queries.Get(ctx, getReq)
 		if err != nil {
 			return err
 		}
@@ -119,21 +119,21 @@ var getQueryCmd = &cobra.Command{
 	},
 }
 
-var listQueriesReq dbsql.ListQueriesRequest
+var listReq sql.ListQueriesRequest
 
 func init() {
-	Cmd.AddCommand(listQueriesCmd)
+	Cmd.AddCommand(listCmd)
 	// TODO: short flags
 
-	listQueriesCmd.Flags().StringVar(&listQueriesReq.Order, "order", listQueriesReq.Order, `Name of query attribute to order by.`)
-	listQueriesCmd.Flags().IntVar(&listQueriesReq.Page, "page", listQueriesReq.Page, `Page number to retrieve.`)
-	listQueriesCmd.Flags().IntVar(&listQueriesReq.PageSize, "page-size", listQueriesReq.PageSize, `Number of queries to return per page.`)
-	listQueriesCmd.Flags().StringVar(&listQueriesReq.Q, "q", listQueriesReq.Q, `Full text search term.`)
+	listCmd.Flags().StringVar(&listReq.Order, "order", listReq.Order, `Name of query attribute to order by.`)
+	listCmd.Flags().IntVar(&listReq.Page, "page", listReq.Page, `Page number to retrieve.`)
+	listCmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `Number of queries to return per page.`)
+	listCmd.Flags().StringVar(&listReq.Q, "q", listReq.Q, `Full text search term.`)
 
 }
 
-var listQueriesCmd = &cobra.Command{
-	Use:   "list-queries",
+var listCmd = &cobra.Command{
+	Use:   "list",
 	Short: `Get a list of queries.`,
 	Long: `Get a list of queries.
   
@@ -144,7 +144,7 @@ var listQueriesCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		response, err := w.Queries.ListQueriesAll(ctx, listQueriesReq)
+		response, err := w.Queries.ListAll(ctx, listReq)
 		if err != nil {
 			return err
 		}
@@ -152,18 +152,18 @@ var listQueriesCmd = &cobra.Command{
 	},
 }
 
-var restoreQueryReq dbsql.RestoreQueryRequest
+var restoreReq sql.RestoreQueryRequest
 
 func init() {
-	Cmd.AddCommand(restoreQueryCmd)
+	Cmd.AddCommand(restoreCmd)
 	// TODO: short flags
 
-	restoreQueryCmd.Flags().StringVar(&restoreQueryReq.QueryId, "query-id", restoreQueryReq.QueryId, ``)
+	restoreCmd.Flags().StringVar(&restoreReq.QueryId, "query-id", restoreReq.QueryId, ``)
 
 }
 
-var restoreQueryCmd = &cobra.Command{
-	Use:   "restore-query",
+var restoreCmd = &cobra.Command{
+	Use:   "restore",
 	Short: `Restore a query.`,
 	Long: `Restore a query.
   
@@ -174,7 +174,7 @@ var restoreQueryCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.Queries.RestoreQuery(ctx, restoreQueryReq)
+		err := w.Queries.Restore(ctx, restoreReq)
 		if err != nil {
 			return err
 		}
@@ -182,24 +182,24 @@ var restoreQueryCmd = &cobra.Command{
 	},
 }
 
-var updateQueryReq dbsql.QueryPostContent
+var updateReq sql.QueryPostContent
 
 func init() {
-	Cmd.AddCommand(updateQueryCmd)
+	Cmd.AddCommand(updateCmd)
 	// TODO: short flags
 
-	updateQueryCmd.Flags().StringVar(&updateQueryReq.DataSourceId, "data-source-id", updateQueryReq.DataSourceId, `The ID of the data source / SQL warehouse where this query will run.`)
-	updateQueryCmd.Flags().StringVar(&updateQueryReq.Description, "description", updateQueryReq.Description, `General description that can convey additional information about this query such as usage notes.`)
-	updateQueryCmd.Flags().StringVar(&updateQueryReq.Name, "name", updateQueryReq.Name, `The name or title of this query to display in list views.`)
+	updateCmd.Flags().StringVar(&updateReq.DataSourceId, "data-source-id", updateReq.DataSourceId, `The ID of the data source / SQL warehouse where this query will run.`)
+	updateCmd.Flags().StringVar(&updateReq.Description, "description", updateReq.Description, `General description that can convey additional information about this query such as usage notes.`)
+	updateCmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `The name or title of this query to display in list views.`)
 	// TODO: any: options
-	updateQueryCmd.Flags().StringVar(&updateQueryReq.Query, "query", updateQueryReq.Query, `The text of the query.`)
-	updateQueryCmd.Flags().StringVar(&updateQueryReq.QueryId, "query-id", updateQueryReq.QueryId, ``)
+	updateCmd.Flags().StringVar(&updateReq.Query, "query", updateReq.Query, `The text of the query.`)
+	updateCmd.Flags().StringVar(&updateReq.QueryId, "query-id", updateReq.QueryId, ``)
 	// TODO: complex arg: schedule
 
 }
 
-var updateQueryCmd = &cobra.Command{
-	Use:   "update-query",
+var updateCmd = &cobra.Command{
+	Use:   "update",
 	Short: `Change a query definition.`,
 	Long: `Change a query definition.
   
@@ -211,7 +211,7 @@ var updateQueryCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		response, err := w.Queries.UpdateQuery(ctx, updateQueryReq)
+		response, err := w.Queries.Update(ctx, updateReq)
 		if err != nil {
 			return err
 		}

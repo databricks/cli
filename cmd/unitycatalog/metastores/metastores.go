@@ -64,20 +64,8 @@ func init() {
 	Cmd.AddCommand(createCmd)
 	// TODO: short flags
 
-	createCmd.Flags().Int64Var(&createReq.CreatedAt, "created-at", createReq.CreatedAt, `[Create,Update:IGN] Time at which this Metastore was created, in epoch milliseconds.`)
-	createCmd.Flags().StringVar(&createReq.CreatedBy, "created-by", createReq.CreatedBy, `[Create,Update:IGN] Username of Metastore creator.`)
-	createCmd.Flags().StringVar(&createReq.DefaultDataAccessConfigId, "default-data-access-config-id", createReq.DefaultDataAccessConfigId, `[Create:IGN Update:OPT] Unique identifier of (Default) Data Access Configuration.`)
-	createCmd.Flags().BoolVar(&createReq.DeltaSharingEnabled, "delta-sharing-enabled", createReq.DeltaSharingEnabled, `[Create:IGN Update:OPT] Whether Delta Sharing is enabled on this metastore.`)
-	createCmd.Flags().IntVar(&createReq.DeltaSharingRecipientTokenLifetimeInSeconds, "delta-sharing-recipient-token-lifetime-in-seconds", createReq.DeltaSharingRecipientTokenLifetimeInSeconds, `[Create:IGN Update:OPT] The lifetime of delta sharing recipient token in seconds.`)
-	createCmd.Flags().StringVar(&createReq.MetastoreId, "metastore-id", createReq.MetastoreId, `[Create,Update:IGN] Unique identifier of Metastore.`)
-	createCmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `[Create:REQ Update:OPT] Name of Metastore.`)
-	createCmd.Flags().StringVar(&createReq.Owner, "owner", createReq.Owner, `[Create:IGN Update:OPT] The owner of the metastore.`)
-	// TODO: array: privileges
-	createCmd.Flags().StringVar(&createReq.Region, "region", createReq.Region, `The region this metastore has an afinity to.`)
-	createCmd.Flags().StringVar(&createReq.StorageRoot, "storage-root", createReq.StorageRoot, `[Create:REQ Update:ERR] Storage root URL for Metastore.`)
-	createCmd.Flags().StringVar(&createReq.StorageRootCredentialId, "storage-root-credential-id", createReq.StorageRootCredentialId, `[Create:IGN Update:OPT] UUID of storage credential to access storage_root.`)
-	createCmd.Flags().Int64Var(&createReq.UpdatedAt, "updated-at", createReq.UpdatedAt, `[Create,Update:IGN] Time at which the Metastore was last modified, in epoch milliseconds.`)
-	createCmd.Flags().StringVar(&createReq.UpdatedBy, "updated-by", createReq.UpdatedBy, `[Create,Update:IGN] Username of user who last modified the Metastore.`)
+	createCmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `Name of Metastore.`)
+	createCmd.Flags().StringVar(&createReq.StorageRoot, "storage-root", createReq.StorageRoot, `Storage root URL for Metastore.`)
 
 }
 
@@ -246,21 +234,13 @@ func init() {
 	Cmd.AddCommand(updateCmd)
 	// TODO: short flags
 
-	updateCmd.Flags().Int64Var(&updateReq.CreatedAt, "created-at", updateReq.CreatedAt, `[Create,Update:IGN] Time at which this Metastore was created, in epoch milliseconds.`)
-	updateCmd.Flags().StringVar(&updateReq.CreatedBy, "created-by", updateReq.CreatedBy, `[Create,Update:IGN] Username of Metastore creator.`)
-	updateCmd.Flags().StringVar(&updateReq.DefaultDataAccessConfigId, "default-data-access-config-id", updateReq.DefaultDataAccessConfigId, `[Create:IGN Update:OPT] Unique identifier of (Default) Data Access Configuration.`)
-	updateCmd.Flags().BoolVar(&updateReq.DeltaSharingEnabled, "delta-sharing-enabled", updateReq.DeltaSharingEnabled, `[Create:IGN Update:OPT] Whether Delta Sharing is enabled on this metastore.`)
-	updateCmd.Flags().IntVar(&updateReq.DeltaSharingRecipientTokenLifetimeInSeconds, "delta-sharing-recipient-token-lifetime-in-seconds", updateReq.DeltaSharingRecipientTokenLifetimeInSeconds, `[Create:IGN Update:OPT] The lifetime of delta sharing recipient token in seconds.`)
+	updateCmd.Flags().StringVar(&updateReq.DefaultDataAccessConfigId, "default-data-access-config-id", updateReq.DefaultDataAccessConfigId, `Unique identifier of (Default) Data Access Configuration.`)
+	updateCmd.Flags().BoolVar(&updateReq.DeltaSharingEnabled, "delta-sharing-enabled", updateReq.DeltaSharingEnabled, `Whether Delta Sharing is enabled on this metastore.`)
+	updateCmd.Flags().IntVar(&updateReq.DeltaSharingRecipientTokenLifetimeInSeconds, "delta-sharing-recipient-token-lifetime-in-seconds", updateReq.DeltaSharingRecipientTokenLifetimeInSeconds, `The lifetime of delta sharing recipient token in seconds.`)
 	updateCmd.Flags().StringVar(&updateReq.Id, "id", updateReq.Id, `Required.`)
-	updateCmd.Flags().StringVar(&updateReq.MetastoreId, "metastore-id", updateReq.MetastoreId, `[Create,Update:IGN] Unique identifier of Metastore.`)
-	updateCmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `[Create:REQ Update:OPT] Name of Metastore.`)
-	updateCmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `[Create:IGN Update:OPT] The owner of the metastore.`)
-	// TODO: array: privileges
-	updateCmd.Flags().StringVar(&updateReq.Region, "region", updateReq.Region, `The region this metastore has an afinity to.`)
-	updateCmd.Flags().StringVar(&updateReq.StorageRoot, "storage-root", updateReq.StorageRoot, `[Create:REQ Update:ERR] Storage root URL for Metastore.`)
-	updateCmd.Flags().StringVar(&updateReq.StorageRootCredentialId, "storage-root-credential-id", updateReq.StorageRootCredentialId, `[Create:IGN Update:OPT] UUID of storage credential to access storage_root.`)
-	updateCmd.Flags().Int64Var(&updateReq.UpdatedAt, "updated-at", updateReq.UpdatedAt, `[Create,Update:IGN] Time at which the Metastore was last modified, in epoch milliseconds.`)
-	updateCmd.Flags().StringVar(&updateReq.UpdatedBy, "updated-by", updateReq.UpdatedBy, `[Create,Update:IGN] Username of user who last modified the Metastore.`)
+	updateCmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `Name of Metastore.`)
+	updateCmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `The owner of the metastore.`)
+	updateCmd.Flags().StringVar(&updateReq.StorageRootCredentialId, "storage-root-credential-id", updateReq.StorageRootCredentialId, `UUID of storage credential to access storage_root.`)
 
 }
 

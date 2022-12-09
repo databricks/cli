@@ -3,7 +3,7 @@ package query_history
 import (
 	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
-	"github.com/databricks/databricks-sdk-go/service/warehouses"
+	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/spf13/cobra"
 )
 
@@ -13,23 +13,23 @@ var Cmd = &cobra.Command{
 	Long:  `Access the history of queries through SQL warehouses.`,
 }
 
-var listQueriesReq warehouses.ListQueriesRequest
+var listReq sql.ListQueryHistoryRequest
 
 func init() {
-	Cmd.AddCommand(listQueriesCmd)
+	Cmd.AddCommand(listCmd)
 	// TODO: short flags
 
 	// TODO: complex arg: filter_by
-	listQueriesCmd.Flags().BoolVar(&listQueriesReq.IncludeMetrics, "include-metrics", listQueriesReq.IncludeMetrics, `Whether to include metrics about query.`)
-	listQueriesCmd.Flags().IntVar(&listQueriesReq.MaxResults, "max-results", listQueriesReq.MaxResults, `Limit the number of results returned in one page.`)
-	listQueriesCmd.Flags().StringVar(&listQueriesReq.PageToken, "page-token", listQueriesReq.PageToken, `A token that can be used to get the next page of results.`)
+	listCmd.Flags().BoolVar(&listReq.IncludeMetrics, "include-metrics", listReq.IncludeMetrics, `Whether to include metrics about query.`)
+	listCmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Limit the number of results returned in one page.`)
+	listCmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `A token that can be used to get the next page of results.`)
 
 }
 
-var listQueriesCmd = &cobra.Command{
-	Use:   "list-queries",
-	Short: `List.`,
-	Long: `List.
+var listCmd = &cobra.Command{
+	Use:   "list",
+	Short: `List Queries.`,
+	Long: `List Queries.
   
   List the history of queries through SQL warehouses.
   
@@ -39,7 +39,7 @@ var listQueriesCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		response, err := w.QueryHistory.ListQueriesAll(ctx, listQueriesReq)
+		response, err := w.QueryHistory.ListAll(ctx, listReq)
 		if err != nil {
 			return err
 		}

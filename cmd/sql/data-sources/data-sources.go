@@ -22,12 +22,12 @@ var Cmd = &cobra.Command{
 }
 
 func init() {
-	Cmd.AddCommand(listDataSourcesCmd)
+	Cmd.AddCommand(listCmd)
 
 }
 
-var listDataSourcesCmd = &cobra.Command{
-	Use:   "list-data-sources",
+var listCmd = &cobra.Command{
+	Use:   "list",
 	Short: `Get a list of SQL warehouses.`,
 	Long: `Get a list of SQL warehouses.
   
@@ -39,7 +39,7 @@ var listDataSourcesCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		response, err := w.DataSources.ListDataSources(ctx)
+		response, err := w.DataSources.List(ctx)
 		if err != nil {
 			return err
 		}

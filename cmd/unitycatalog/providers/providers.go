@@ -19,17 +19,12 @@ func init() {
 	Cmd.AddCommand(createCmd)
 	// TODO: short flags
 
-	createCmd.Flags().BoolVar(&createReq.ActivatedByProvider, "activated-by-provider", createReq.ActivatedByProvider, `[Create,Update:IGN] Whether this provider is successfully activated by the data provider.`)
-	createCmd.Flags().Var(&createReq.AuthenticationType, "authentication-type", `[Create:REQ,Update:IGN] The delta sharing authentication type.`)
-	createCmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `[Create,Update:OPT] Description about the provider.`)
-	createCmd.Flags().Int64Var(&createReq.CreatedAt, "created-at", createReq.CreatedAt, `[Create,Update:IGN] Time at which this Provider was created, in epoch milliseconds.`)
-	createCmd.Flags().StringVar(&createReq.CreatedBy, "created-by", createReq.CreatedBy, `[Create,Update:IGN] Username of Provider creator.`)
-	createCmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `[Create,Update:REQ] The name of the Provider.`)
+	createCmd.Flags().Var(&createReq.AuthenticationType, "authentication-type", `The delta sharing authentication type.`)
+	createCmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `Description about the provider.`)
+	createCmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `The name of the Provider.`)
+	createCmd.Flags().StringVar(&createReq.Owner, "owner", createReq.Owner, `Username of Provider owner.`)
 	// TODO: complex arg: recipient_profile
-	createCmd.Flags().StringVar(&createReq.RecipientProfileStr, "recipient-profile-str", createReq.RecipientProfileStr, `[Create,Update:OPT] This field is only present when the authentication type is TOKEN.`)
-	createCmd.Flags().StringVar(&createReq.SharingCode, "sharing-code", createReq.SharingCode, `[Create,Update:IGN] The server-generated one-time sharing code.`)
-	createCmd.Flags().Int64Var(&createReq.UpdatedAt, "updated-at", createReq.UpdatedAt, `[Create,Update:IGN] Time at which this Provider was created, in epoch milliseconds.`)
-	createCmd.Flags().StringVar(&createReq.UpdatedBy, "updated-by", createReq.UpdatedBy, `[Create,Update:IGN] Username of user who last modified Share.`)
+	createCmd.Flags().StringVar(&createReq.RecipientProfileStr, "recipient-profile-str", createReq.RecipientProfileStr, `This field is only present when the authentication type is TOKEN.`)
 
 }
 
@@ -182,17 +177,12 @@ func init() {
 	Cmd.AddCommand(updateCmd)
 	// TODO: short flags
 
-	updateCmd.Flags().BoolVar(&updateReq.ActivatedByProvider, "activated-by-provider", updateReq.ActivatedByProvider, `[Create,Update:IGN] Whether this provider is successfully activated by the data provider.`)
-	updateCmd.Flags().Var(&updateReq.AuthenticationType, "authentication-type", `[Create:REQ,Update:IGN] The delta sharing authentication type.`)
-	updateCmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `[Create,Update:OPT] Description about the provider.`)
-	updateCmd.Flags().Int64Var(&updateReq.CreatedAt, "created-at", updateReq.CreatedAt, `[Create,Update:IGN] Time at which this Provider was created, in epoch milliseconds.`)
-	updateCmd.Flags().StringVar(&updateReq.CreatedBy, "created-by", updateReq.CreatedBy, `[Create,Update:IGN] Username of Provider creator.`)
-	updateCmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `[Create, Update:REQ] The name of the Provider.`)
+	updateCmd.Flags().Var(&updateReq.AuthenticationType, "authentication-type", `The delta sharing authentication type.`)
+	updateCmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `Description about the provider.`)
+	updateCmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `The name of the Provider.`)
+	updateCmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of Provider owner.`)
 	// TODO: complex arg: recipient_profile
-	updateCmd.Flags().StringVar(&updateReq.RecipientProfileStr, "recipient-profile-str", updateReq.RecipientProfileStr, `[Create,Update:OPT] This field is only present when the authentication type is TOKEN.`)
-	updateCmd.Flags().StringVar(&updateReq.SharingCode, "sharing-code", updateReq.SharingCode, `[Create,Update:IGN] The server-generated one-time sharing code.`)
-	updateCmd.Flags().Int64Var(&updateReq.UpdatedAt, "updated-at", updateReq.UpdatedAt, `[Create,Update:IGN] Time at which this Provider was created, in epoch milliseconds.`)
-	updateCmd.Flags().StringVar(&updateReq.UpdatedBy, "updated-by", updateReq.UpdatedBy, `[Create,Update:IGN] Username of user who last modified Share.`)
+	updateCmd.Flags().StringVar(&updateReq.RecipientProfileStr, "recipient-profile-str", updateReq.RecipientProfileStr, `This field is only present when the authentication type is TOKEN.`)
 
 }
 

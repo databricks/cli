@@ -34,17 +34,10 @@ func init() {
 
 	// TODO: complex arg: aws_iam_role
 	// TODO: complex arg: azure_service_principal
-	createCmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `[Create,Update:OPT] Comment associated with the credential.`)
-	createCmd.Flags().Int64Var(&createReq.CreatedAt, "created-at", createReq.CreatedAt, `[Create,Update:IGN] Time at which this Credential was created, in epoch milliseconds.`)
-	createCmd.Flags().StringVar(&createReq.CreatedBy, "created-by", createReq.CreatedBy, `[Create,Update:IGN] Username of credential creator.`)
+	createCmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `Comment associated with the credential.`)
 	// TODO: complex arg: gcp_service_account_key
-	createCmd.Flags().StringVar(&createReq.Id, "id", createReq.Id, `[Create:IGN] The unique identifier of the credential.`)
-	createCmd.Flags().StringVar(&createReq.MetastoreId, "metastore-id", createReq.MetastoreId, `[Create,Update:IGN] Unique identifier of parent Metastore.`)
-	createCmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `[Create:REQ, Update:OPT] The credential name.`)
-	createCmd.Flags().StringVar(&createReq.Owner, "owner", createReq.Owner, `[Create:IGN Update:OPT] Username of current owner of credential.`)
+	createCmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `The credential name.`)
 	createCmd.Flags().BoolVar(&createReq.SkipValidation, "skip-validation", createReq.SkipValidation, `Optional.`)
-	createCmd.Flags().Int64Var(&createReq.UpdatedAt, "updated-at", createReq.UpdatedAt, `[Create,Update:IGN] Time at which this credential was last modified, in epoch milliseconds.`)
-	createCmd.Flags().StringVar(&createReq.UpdatedBy, "updated-by", createReq.UpdatedBy, `[Create,Update:IGN] Username of user who last modified the credential.`)
 
 }
 
@@ -170,17 +163,10 @@ func init() {
 
 	// TODO: complex arg: aws_iam_role
 	// TODO: complex arg: azure_service_principal
-	updateCmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `[Create,Update:OPT] Comment associated with the credential.`)
-	updateCmd.Flags().Int64Var(&updateReq.CreatedAt, "created-at", updateReq.CreatedAt, `[Create,Update:IGN] Time at which this Credential was created, in epoch milliseconds.`)
-	updateCmd.Flags().StringVar(&updateReq.CreatedBy, "created-by", updateReq.CreatedBy, `[Create,Update:IGN] Username of credential creator.`)
+	updateCmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `Comment associated with the credential.`)
 	// TODO: complex arg: gcp_service_account_key
-	updateCmd.Flags().StringVar(&updateReq.Id, "id", updateReq.Id, `[Create:IGN] The unique identifier of the credential.`)
-	updateCmd.Flags().StringVar(&updateReq.MetastoreId, "metastore-id", updateReq.MetastoreId, `[Create,Update:IGN] Unique identifier of parent Metastore.`)
-	updateCmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `[Create:REQ, Update:OPT] The credential name.`)
-	updateCmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `[Create:IGN Update:OPT] Username of current owner of credential.`)
-	updateCmd.Flags().BoolVar(&updateReq.SkipValidation, "skip-validation", updateReq.SkipValidation, `Optional.`)
-	updateCmd.Flags().Int64Var(&updateReq.UpdatedAt, "updated-at", updateReq.UpdatedAt, `[Create,Update:IGN] Time at which this credential was last modified, in epoch milliseconds.`)
-	updateCmd.Flags().StringVar(&updateReq.UpdatedBy, "updated-by", updateReq.UpdatedBy, `[Create,Update:IGN] Username of user who last modified the credential.`)
+	updateCmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `The credential name.`)
+	updateCmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of current owner of credential.`)
 
 }
 

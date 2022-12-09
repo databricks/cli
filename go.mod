@@ -30,7 +30,6 @@ require (
 	github.com/hashicorp/terraform-json v0.14.0
 	golang.org/x/exp v0.0.0-20221031165847-c99f073a8326
 	golang.org/x/sync v0.1.0
-	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211
 )
 
 require github.com/mattn/go-colorable v0.1.9 // indirect

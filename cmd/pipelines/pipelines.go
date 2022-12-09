@@ -29,34 +29,34 @@ var Cmd = &cobra.Command{
   expectations.`,
 }
 
-var createPipelineReq pipelines.CreatePipeline
+var createReq pipelines.CreatePipeline
 
 func init() {
-	Cmd.AddCommand(createPipelineCmd)
+	Cmd.AddCommand(createCmd)
 	// TODO: short flags
 
-	createPipelineCmd.Flags().BoolVar(&createPipelineReq.AllowDuplicateNames, "allow-duplicate-names", createPipelineReq.AllowDuplicateNames, `If false, deployment will fail if name conflicts with that of another pipeline.`)
-	createPipelineCmd.Flags().StringVar(&createPipelineReq.Catalog, "catalog", createPipelineReq.Catalog, `Catalog in UC to add tables to.`)
-	createPipelineCmd.Flags().StringVar(&createPipelineReq.Channel, "channel", createPipelineReq.Channel, `DLT Release Channel that specifies which version to use.`)
+	createCmd.Flags().BoolVar(&createReq.AllowDuplicateNames, "allow-duplicate-names", createReq.AllowDuplicateNames, `If false, deployment will fail if name conflicts with that of another pipeline.`)
+	createCmd.Flags().StringVar(&createReq.Catalog, "catalog", createReq.Catalog, `Catalog in UC to add tables to.`)
+	createCmd.Flags().StringVar(&createReq.Channel, "channel", createReq.Channel, `DLT Release Channel that specifies which version to use.`)
 	// TODO: array: clusters
 	// TODO: map via StringToStringVar: configuration
-	createPipelineCmd.Flags().BoolVar(&createPipelineReq.Continuous, "continuous", createPipelineReq.Continuous, `Whether the pipeline is continuous or triggered.`)
-	createPipelineCmd.Flags().BoolVar(&createPipelineReq.Development, "development", createPipelineReq.Development, `Whether the pipeline is in Development mode.`)
-	createPipelineCmd.Flags().BoolVar(&createPipelineReq.DryRun, "dry-run", createPipelineReq.DryRun, ``)
-	createPipelineCmd.Flags().StringVar(&createPipelineReq.Edition, "edition", createPipelineReq.Edition, `Pipeline product edition.`)
+	createCmd.Flags().BoolVar(&createReq.Continuous, "continuous", createReq.Continuous, `Whether the pipeline is continuous or triggered.`)
+	createCmd.Flags().BoolVar(&createReq.Development, "development", createReq.Development, `Whether the pipeline is in Development mode.`)
+	createCmd.Flags().BoolVar(&createReq.DryRun, "dry-run", createReq.DryRun, ``)
+	createCmd.Flags().StringVar(&createReq.Edition, "edition", createReq.Edition, `Pipeline product edition.`)
 	// TODO: complex arg: filters
-	createPipelineCmd.Flags().StringVar(&createPipelineReq.Id, "id", createPipelineReq.Id, `Unique identifier for this pipeline.`)
+	createCmd.Flags().StringVar(&createReq.Id, "id", createReq.Id, `Unique identifier for this pipeline.`)
 	// TODO: array: libraries
-	createPipelineCmd.Flags().StringVar(&createPipelineReq.Name, "name", createPipelineReq.Name, `Friendly identifier for this pipeline.`)
-	createPipelineCmd.Flags().BoolVar(&createPipelineReq.Photon, "photon", createPipelineReq.Photon, `Whether Photon is enabled for this pipeline.`)
-	createPipelineCmd.Flags().StringVar(&createPipelineReq.Storage, "storage", createPipelineReq.Storage, `DBFS root directory for storing checkpoints and tables.`)
-	createPipelineCmd.Flags().StringVar(&createPipelineReq.Target, "target", createPipelineReq.Target, `Target schema (database) to add tables in this pipeline to.`)
+	createCmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `Friendly identifier for this pipeline.`)
+	createCmd.Flags().BoolVar(&createReq.Photon, "photon", createReq.Photon, `Whether Photon is enabled for this pipeline.`)
+	createCmd.Flags().StringVar(&createReq.Storage, "storage", createReq.Storage, `DBFS root directory for storing checkpoints and tables.`)
+	createCmd.Flags().StringVar(&createReq.Target, "target", createReq.Target, `Target schema (database) to add tables in this pipeline to.`)
 	// TODO: complex arg: trigger
 
 }
 
-var createPipelineCmd = &cobra.Command{
-	Use:   "create-pipeline",
+var createCmd = &cobra.Command{
+	Use:   "create",
 	Short: `Create a pipeline.`,
 	Long: `Create a pipeline.
   
@@ -67,7 +67,7 @@ var createPipelineCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		response, err := w.Pipelines.CreatePipeline(ctx, createPipelineReq)
+		response, err := w.Pipelines.Create(ctx, createReq)
 		if err != nil {
 			return err
 		}
@@ -75,18 +75,18 @@ var createPipelineCmd = &cobra.Command{
 	},
 }
 
-var deletePipelineReq pipelines.DeletePipeline
+var deleteReq pipelines.Delete
 
 func init() {
-	Cmd.AddCommand(deletePipelineCmd)
+	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
 
-	deletePipelineCmd.Flags().StringVar(&deletePipelineReq.PipelineId, "pipeline-id", deletePipelineReq.PipelineId, ``)
+	deleteCmd.Flags().StringVar(&deleteReq.PipelineId, "pipeline-id", deleteReq.PipelineId, ``)
 
 }
 
-var deletePipelineCmd = &cobra.Command{
-	Use:   "delete-pipeline",
+var deleteCmd = &cobra.Command{
+	Use:   "delete",
 	Short: `Delete a pipeline.`,
 	Long: `Delete a pipeline.
   
@@ -96,7 +96,7 @@ var deletePipelineCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.Pipelines.DeletePipeline(ctx, deletePipelineReq)
+		err := w.Pipelines.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
@@ -104,23 +104,23 @@ var deletePipelineCmd = &cobra.Command{
 	},
 }
 
-var getPipelineReq pipelines.GetPipeline
-var getPipelineNoWait bool
-var getPipelineTimeout time.Duration
+var getReq pipelines.Get
+var getNoWait bool
+var getTimeout time.Duration
 
 func init() {
-	Cmd.AddCommand(getPipelineCmd)
+	Cmd.AddCommand(getCmd)
 
-	getPipelineCmd.Flags().BoolVar(&getPipelineNoWait, "no-wait", getPipelineNoWait, `do not wait to reach RUNNING state`)
-	getPipelineCmd.Flags().DurationVar(&getPipelineTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
+	getCmd.Flags().BoolVar(&getNoWait, "no-wait", getNoWait, `do not wait to reach RUNNING state`)
+	getCmd.Flags().DurationVar(&getTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
 	// TODO: short flags
 
-	getPipelineCmd.Flags().StringVar(&getPipelineReq.PipelineId, "pipeline-id", getPipelineReq.PipelineId, ``)
+	getCmd.Flags().StringVar(&getReq.PipelineId, "pipeline-id", getReq.PipelineId, ``)
 
 }
 
-var getPipelineCmd = &cobra.Command{
-	Use:   "get-pipeline",
+var getCmd = &cobra.Command{
+	Use:   "get",
 	Short: `Get a pipeline.`,
 	Long:  `Get a pipeline.`,
 
@@ -128,10 +128,10 @@ var getPipelineCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		if !getPipelineNoWait {
+		if !getNoWait {
 			spinner := ui.StartSpinner()
-			info, err := w.Pipelines.GetPipelineAndWait(ctx, getPipelineReq,
-				retries.Timeout[pipelines.GetPipelineResponse](getPipelineTimeout),
+			info, err := w.Pipelines.GetAndWait(ctx, getReq,
+				retries.Timeout[pipelines.GetPipelineResponse](getTimeout),
 				func(i *retries.Info[pipelines.GetPipelineResponse]) {
 					spinner.Suffix = " " + i.Info.Cause
 				})
@@ -141,7 +141,7 @@ var getPipelineCmd = &cobra.Command{
 			}
 			return ui.Render(cmd, info)
 		}
-		response, err := w.Pipelines.GetPipeline(ctx, getPipelineReq)
+		response, err := w.Pipelines.Get(ctx, getReq)
 		if err != nil {
 			return err
 		}
@@ -243,23 +243,23 @@ var listUpdatesCmd = &cobra.Command{
 	},
 }
 
-var resetPipelineReq pipelines.ResetPipeline
-var resetPipelineNoWait bool
-var resetPipelineTimeout time.Duration
+var resetReq pipelines.Reset
+var resetNoWait bool
+var resetTimeout time.Duration
 
 func init() {
-	Cmd.AddCommand(resetPipelineCmd)
+	Cmd.AddCommand(resetCmd)
 
-	resetPipelineCmd.Flags().BoolVar(&resetPipelineNoWait, "no-wait", resetPipelineNoWait, `do not wait to reach RUNNING state`)
-	resetPipelineCmd.Flags().DurationVar(&resetPipelineTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
+	resetCmd.Flags().BoolVar(&resetNoWait, "no-wait", resetNoWait, `do not wait to reach RUNNING state`)
+	resetCmd.Flags().DurationVar(&resetTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
 	// TODO: short flags
 
-	resetPipelineCmd.Flags().StringVar(&resetPipelineReq.PipelineId, "pipeline-id", resetPipelineReq.PipelineId, ``)
+	resetCmd.Flags().StringVar(&resetReq.PipelineId, "pipeline-id", resetReq.PipelineId, ``)
 
 }
 
-var resetPipelineCmd = &cobra.Command{
-	Use:   "reset-pipeline",
+var resetCmd = &cobra.Command{
+	Use:   "reset",
 	Short: `Reset a pipeline.`,
 	Long: `Reset a pipeline.
   
@@ -269,10 +269,10 @@ var resetPipelineCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		if !resetPipelineNoWait {
+		if !resetNoWait {
 			spinner := ui.StartSpinner()
-			info, err := w.Pipelines.ResetPipelineAndWait(ctx, resetPipelineReq,
-				retries.Timeout[pipelines.GetPipelineResponse](resetPipelineTimeout),
+			info, err := w.Pipelines.ResetAndWait(ctx, resetReq,
+				retries.Timeout[pipelines.GetPipelineResponse](resetTimeout),
 				func(i *retries.Info[pipelines.GetPipelineResponse]) {
 					spinner.Suffix = " " + i.Info.Cause
 				})
@@ -282,7 +282,7 @@ var resetPipelineCmd = &cobra.Command{
 			}
 			return ui.Render(cmd, info)
 		}
-		err := w.Pipelines.ResetPipeline(ctx, resetPipelineReq)
+		err := w.Pipelines.Reset(ctx, resetReq)
 		if err != nil {
 			return err
 		}
@@ -323,23 +323,23 @@ var startUpdateCmd = &cobra.Command{
 	},
 }
 
-var stopPipelineReq pipelines.StopPipeline
-var stopPipelineNoWait bool
-var stopPipelineTimeout time.Duration
+var stopReq pipelines.Stop
+var stopNoWait bool
+var stopTimeout time.Duration
 
 func init() {
-	Cmd.AddCommand(stopPipelineCmd)
+	Cmd.AddCommand(stopCmd)
 
-	stopPipelineCmd.Flags().BoolVar(&stopPipelineNoWait, "no-wait", stopPipelineNoWait, `do not wait to reach IDLE state`)
-	stopPipelineCmd.Flags().DurationVar(&stopPipelineTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach IDLE state`)
+	stopCmd.Flags().BoolVar(&stopNoWait, "no-wait", stopNoWait, `do not wait to reach IDLE state`)
+	stopCmd.Flags().DurationVar(&stopTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach IDLE state`)
 	// TODO: short flags
 
-	stopPipelineCmd.Flags().StringVar(&stopPipelineReq.PipelineId, "pipeline-id", stopPipelineReq.PipelineId, ``)
+	stopCmd.Flags().StringVar(&stopReq.PipelineId, "pipeline-id", stopReq.PipelineId, ``)
 
 }
 
-var stopPipelineCmd = &cobra.Command{
-	Use:   "stop-pipeline",
+var stopCmd = &cobra.Command{
+	Use:   "stop",
 	Short: `Stop a pipeline.`,
 	Long: `Stop a pipeline.
   
@@ -349,10 +349,10 @@ var stopPipelineCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		if !stopPipelineNoWait {
+		if !stopNoWait {
 			spinner := ui.StartSpinner()
-			info, err := w.Pipelines.StopPipelineAndWait(ctx, stopPipelineReq,
-				retries.Timeout[pipelines.GetPipelineResponse](stopPipelineTimeout),
+			info, err := w.Pipelines.StopAndWait(ctx, stopReq,
+				retries.Timeout[pipelines.GetPipelineResponse](stopTimeout),
 				func(i *retries.Info[pipelines.GetPipelineResponse]) {
 					spinner.Suffix = " " + i.Info.Cause
 				})
@@ -362,7 +362,7 @@ var stopPipelineCmd = &cobra.Command{
 			}
 			return ui.Render(cmd, info)
 		}
-		err := w.Pipelines.StopPipeline(ctx, stopPipelineReq)
+		err := w.Pipelines.Stop(ctx, stopReq)
 		if err != nil {
 			return err
 		}
@@ -370,35 +370,35 @@ var stopPipelineCmd = &cobra.Command{
 	},
 }
 
-var updatePipelineReq pipelines.EditPipeline
+var updateReq pipelines.EditPipeline
 
 func init() {
-	Cmd.AddCommand(updatePipelineCmd)
+	Cmd.AddCommand(updateCmd)
 	// TODO: short flags
 
-	updatePipelineCmd.Flags().BoolVar(&updatePipelineReq.AllowDuplicateNames, "allow-duplicate-names", updatePipelineReq.AllowDuplicateNames, `If false, deployment will fail if name has changed and conflicts the name of another pipeline.`)
-	updatePipelineCmd.Flags().StringVar(&updatePipelineReq.Catalog, "catalog", updatePipelineReq.Catalog, `Catalog in UC to add tables to.`)
-	updatePipelineCmd.Flags().StringVar(&updatePipelineReq.Channel, "channel", updatePipelineReq.Channel, `DLT Release Channel that specifies which version to use.`)
+	updateCmd.Flags().BoolVar(&updateReq.AllowDuplicateNames, "allow-duplicate-names", updateReq.AllowDuplicateNames, `If false, deployment will fail if name has changed and conflicts the name of another pipeline.`)
+	updateCmd.Flags().StringVar(&updateReq.Catalog, "catalog", updateReq.Catalog, `Catalog in UC to add tables to.`)
+	updateCmd.Flags().StringVar(&updateReq.Channel, "channel", updateReq.Channel, `DLT Release Channel that specifies which version to use.`)
 	// TODO: array: clusters
 	// TODO: map via StringToStringVar: configuration
-	updatePipelineCmd.Flags().BoolVar(&updatePipelineReq.Continuous, "continuous", updatePipelineReq.Continuous, `Whether the pipeline is continuous or triggered.`)
-	updatePipelineCmd.Flags().BoolVar(&updatePipelineReq.Development, "development", updatePipelineReq.Development, `Whether the pipeline is in Development mode.`)
-	updatePipelineCmd.Flags().StringVar(&updatePipelineReq.Edition, "edition", updatePipelineReq.Edition, `Pipeline product edition.`)
-	updatePipelineCmd.Flags().Int64Var(&updatePipelineReq.ExpectedLastModified, "expected-last-modified", updatePipelineReq.ExpectedLastModified, `If present, the last-modified time of the pipeline settings before the edit.`)
+	updateCmd.Flags().BoolVar(&updateReq.Continuous, "continuous", updateReq.Continuous, `Whether the pipeline is continuous or triggered.`)
+	updateCmd.Flags().BoolVar(&updateReq.Development, "development", updateReq.Development, `Whether the pipeline is in Development mode.`)
+	updateCmd.Flags().StringVar(&updateReq.Edition, "edition", updateReq.Edition, `Pipeline product edition.`)
+	updateCmd.Flags().Int64Var(&updateReq.ExpectedLastModified, "expected-last-modified", updateReq.ExpectedLastModified, `If present, the last-modified time of the pipeline settings before the edit.`)
 	// TODO: complex arg: filters
-	updatePipelineCmd.Flags().StringVar(&updatePipelineReq.Id, "id", updatePipelineReq.Id, `Unique identifier for this pipeline.`)
+	updateCmd.Flags().StringVar(&updateReq.Id, "id", updateReq.Id, `Unique identifier for this pipeline.`)
 	// TODO: array: libraries
-	updatePipelineCmd.Flags().StringVar(&updatePipelineReq.Name, "name", updatePipelineReq.Name, `Friendly identifier for this pipeline.`)
-	updatePipelineCmd.Flags().BoolVar(&updatePipelineReq.Photon, "photon", updatePipelineReq.Photon, `Whether Photon is enabled for this pipeline.`)
-	updatePipelineCmd.Flags().StringVar(&updatePipelineReq.PipelineId, "pipeline-id", updatePipelineReq.PipelineId, `Unique identifier for this pipeline.`)
-	updatePipelineCmd.Flags().StringVar(&updatePipelineReq.Storage, "storage", updatePipelineReq.Storage, `DBFS root directory for storing checkpoints and tables.`)
-	updatePipelineCmd.Flags().StringVar(&updatePipelineReq.Target, "target", updatePipelineReq.Target, `Target schema (database) to add tables in this pipeline to.`)
+	updateCmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `Friendly identifier for this pipeline.`)
+	updateCmd.Flags().BoolVar(&updateReq.Photon, "photon", updateReq.Photon, `Whether Photon is enabled for this pipeline.`)
+	updateCmd.Flags().StringVar(&updateReq.PipelineId, "pipeline-id", updateReq.PipelineId, `Unique identifier for this pipeline.`)
+	updateCmd.Flags().StringVar(&updateReq.Storage, "storage", updateReq.Storage, `DBFS root directory for storing checkpoints and tables.`)
+	updateCmd.Flags().StringVar(&updateReq.Target, "target", updateReq.Target, `Target schema (database) to add tables in this pipeline to.`)
 	// TODO: complex arg: trigger
 
 }
 
-var updatePipelineCmd = &cobra.Command{
-	Use:   "update-pipeline",
+var updateCmd = &cobra.Command{
+	Use:   "update",
 	Short: `Edit a pipeline.`,
 	Long: `Edit a pipeline.
   
@@ -408,7 +408,7 @@ var updatePipelineCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.Pipelines.UpdatePipeline(ctx, updatePipelineReq)
+		err := w.Pipelines.Update(ctx, updateReq)
 		if err != nil {
 			return err
 		}
