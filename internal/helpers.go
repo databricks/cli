@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/databricks/bricks/cmd/root"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -109,8 +108,8 @@ func (t *cobraTestRunner) Run() (bytes.Buffer, bytes.Buffer, error) {
 	return t.stdout, t.stderr, err
 }
 
-// Like [assert.Eventually] but errors if the underlying command has failed.
-func (c *cobraTestRunner) Eventually(condition func() bool, waitFor time.Duration, tick time.Duration, msgAndArgs ...interface{}) bool {
+// Like [require.Eventually] but errors if the underlying command has failed.
+func (c *cobraTestRunner) Eventually(condition func() bool, waitFor time.Duration, tick time.Duration, msgAndArgs ...interface{}) {
 	ch := make(chan bool, 1)
 
 	timer := time.NewTimer(waitFor)
@@ -122,15 +121,17 @@ func (c *cobraTestRunner) Eventually(condition func() bool, waitFor time.Duratio
 	for tick := ticker.C; ; {
 		select {
 		case err := <-c.errch:
-			assert.Fail(c, "Command failed", err)
+			require.Fail(c, "Command failed", err)
+			return
 		case <-timer.C:
-			assert.Fail(c, "Condition never satisfied", msgAndArgs...)
+			require.Fail(c, "Condition never satisfied", msgAndArgs...)
+			return
 		case <-tick:
 			tick = nil
 			go func() { ch <- condition() }()
 		case v := <-ch:
 			if v {
-				return true
+				return
 			}
 			tick = ticker.C
 		}
