@@ -10,3 +10,5 @@ var Cmd = &cobra.Command{
 	Long: `This API allows execution of Python, Scala, SQL, or R commands on running
   Databricks Clusters.`,
 }
+
+// end service CommandExecution

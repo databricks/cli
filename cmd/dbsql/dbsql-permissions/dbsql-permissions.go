@@ -140,3 +140,5 @@ var transferOwnershipCmd = &cobra.Command{
 		return nil
 	},
 }
+
+// end service DbsqlPermissions

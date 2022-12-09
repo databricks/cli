@@ -199,3 +199,5 @@ var rejectCmd = &cobra.Command{
 		return nil
 	},
 }
+
+// end service TransitionRequests

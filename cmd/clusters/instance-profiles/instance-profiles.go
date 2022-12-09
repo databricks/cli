@@ -163,3 +163,5 @@ var removeCmd = &cobra.Command{
 		return nil
 	},
 }
+
+// end service InstanceProfiles

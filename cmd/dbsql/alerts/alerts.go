@@ -410,3 +410,5 @@ var updateAlertCmd = &cobra.Command{
 		return nil
 	},
 }
+
+// end service Alerts

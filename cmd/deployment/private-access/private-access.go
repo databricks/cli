@@ -266,3 +266,5 @@ var replaceCmd = &cobra.Command{
 		return nil
 	},
 }
+
+// end service PrivateAccess

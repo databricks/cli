@@ -248,3 +248,5 @@ var updateQueryCmd = &cobra.Command{
 		return nil
 	},
 }
+
+// end service Queries

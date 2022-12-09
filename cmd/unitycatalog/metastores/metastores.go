@@ -350,3 +350,5 @@ var updateAssignmentCmd = &cobra.Command{
 		return nil
 	},
 }
+
+// end service Metastores

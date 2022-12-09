@@ -48,3 +48,5 @@ var getHistoryCmd = &cobra.Command{
 		return nil
 	},
 }
+
+// end service MLflowMetrics

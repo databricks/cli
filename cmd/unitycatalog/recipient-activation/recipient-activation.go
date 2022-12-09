@@ -79,3 +79,5 @@ var retrieveTokenCmd = &cobra.Command{
 		return nil
 	},
 }
+
+// end service RecipientActivation

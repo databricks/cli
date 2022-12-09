@@ -331,3 +331,5 @@ var updateCmd = &cobra.Command{
 		return nil
 	},
 }
+
+// end service ModelVersions

@@ -43,3 +43,5 @@ var meCmd = &cobra.Command{
 		return nil
 	},
 }
+
+// end service CurrentUser

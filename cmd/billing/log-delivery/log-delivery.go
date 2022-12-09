@@ -243,3 +243,5 @@ var patchStatusCmd = &cobra.Command{
 		return nil
 	},
 }
+
+// end service LogDelivery

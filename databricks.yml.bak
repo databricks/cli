@@ -1,0 +1,5 @@
+environments:
+  development:
+    workspace:
+      profile: aws-prod
+name: bricks

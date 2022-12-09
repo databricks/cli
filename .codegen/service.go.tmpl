@@ -7,6 +7,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
+{{if not .MatchesPackageName}}
+	{{template "service" .}}
+{{else}}
+	{{skipThisFile}}
+{{end}}
+
+{{define "service"}}
 var Cmd = &cobra.Command{
 	Use:   "{{.KebabName}}",
     {{if .Description -}}
@@ -64,6 +71,8 @@ var {{.CamelName}}Cmd = &cobra.Command{
 }
 {{end}}
 {{end}}
+
+// end service {{.Name}}{{end}}
 
 {{- define "arg-type" -}}
 	{{- if .IsString}}StringVar

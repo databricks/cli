@@ -48,3 +48,5 @@ var downloadCmd = &cobra.Command{
 		return nil
 	},
 }
+
+// end service BillableUsage

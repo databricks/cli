@@ -192,3 +192,5 @@ var restoreDashboardCmd = &cobra.Command{
 		return nil
 	},
 }
+
+// end service Dashboards

@@ -271,3 +271,5 @@ var updatePermissionsCmd = &cobra.Command{
 		return nil
 	},
 }
+
+// end service Shares

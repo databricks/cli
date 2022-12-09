@@ -53,3 +53,5 @@ var listQueriesCmd = &cobra.Command{
 		return nil
 	},
 }
+
+// end service QueryHistory
