@@ -1,8 +1,11 @@
 package pipelines
 
 import (
+	"time"
+
 	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
+	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/spf13/cobra"
 )
@@ -102,9 +105,14 @@ var deletePipelineCmd = &cobra.Command{
 }
 
 var getPipelineReq pipelines.GetPipeline
+var getPipelineAndWait bool
+var getPipelineTimeout time.Duration
 
 func init() {
 	Cmd.AddCommand(getPipelineCmd)
+
+	getPipelineCmd.Flags().BoolVar(&getPipelineAndWait, "wait", true, `wait to reach RUNNING state`)
+	getPipelineCmd.Flags().DurationVar(&getPipelineTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
 	// TODO: short flags
 
 	getPipelineCmd.Flags().StringVar(&getPipelineReq.PipelineId, "pipeline-id", getPipelineReq.PipelineId, ``)
@@ -120,6 +128,19 @@ var getPipelineCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		if getPipelineAndWait {
+			spinner := ui.StartSpinner()
+			info, err := w.Pipelines.GetPipelineAndWait(ctx, getPipelineReq,
+				retries.Timeout[pipelines.GetPipelineResponse](getPipelineTimeout),
+				func(i *retries.Info[pipelines.GetPipelineResponse]) {
+					spinner.Suffix = i.Info.Cause
+				})
+			spinner.Stop()
+			if err != nil {
+				return err
+			}
+			return ui.Render(cmd, info)
+		}
 		response, err := w.Pipelines.GetPipeline(ctx, getPipelineReq)
 		if err != nil {
 			return err
@@ -223,9 +244,14 @@ var listUpdatesCmd = &cobra.Command{
 }
 
 var resetPipelineReq pipelines.ResetPipeline
+var resetPipelineAndWait bool
+var resetPipelineTimeout time.Duration
 
 func init() {
 	Cmd.AddCommand(resetPipelineCmd)
+
+	resetPipelineCmd.Flags().BoolVar(&resetPipelineAndWait, "wait", true, `wait to reach RUNNING state`)
+	resetPipelineCmd.Flags().DurationVar(&resetPipelineTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
 	// TODO: short flags
 
 	resetPipelineCmd.Flags().StringVar(&resetPipelineReq.PipelineId, "pipeline-id", resetPipelineReq.PipelineId, ``)
@@ -243,6 +269,19 @@ var resetPipelineCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		if resetPipelineAndWait {
+			spinner := ui.StartSpinner()
+			info, err := w.Pipelines.ResetPipelineAndWait(ctx, resetPipelineReq,
+				retries.Timeout[pipelines.GetPipelineResponse](resetPipelineTimeout),
+				func(i *retries.Info[pipelines.GetPipelineResponse]) {
+					spinner.Suffix = i.Info.Cause
+				})
+			spinner.Stop()
+			if err != nil {
+				return err
+			}
+			return ui.Render(cmd, info)
+		}
 		err := w.Pipelines.ResetPipeline(ctx, resetPipelineReq)
 		if err != nil {
 			return err
@@ -285,9 +324,14 @@ var startUpdateCmd = &cobra.Command{
 }
 
 var stopPipelineReq pipelines.StopPipeline
+var stopPipelineAndWait bool
+var stopPipelineTimeout time.Duration
 
 func init() {
 	Cmd.AddCommand(stopPipelineCmd)
+
+	stopPipelineCmd.Flags().BoolVar(&stopPipelineAndWait, "wait", true, `wait to reach IDLE state`)
+	stopPipelineCmd.Flags().DurationVar(&stopPipelineTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach IDLE state`)
 	// TODO: short flags
 
 	stopPipelineCmd.Flags().StringVar(&stopPipelineReq.PipelineId, "pipeline-id", stopPipelineReq.PipelineId, ``)
@@ -305,6 +349,19 @@ var stopPipelineCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		if stopPipelineAndWait {
+			spinner := ui.StartSpinner()
+			info, err := w.Pipelines.StopPipelineAndWait(ctx, stopPipelineReq,
+				retries.Timeout[pipelines.GetPipelineResponse](stopPipelineTimeout),
+				func(i *retries.Info[pipelines.GetPipelineResponse]) {
+					spinner.Suffix = i.Info.Cause
+				})
+			spinner.Stop()
+			if err != nil {
+				return err
+			}
+			return ui.Render(cmd, info)
+		}
 		err := w.Pipelines.StopPipeline(ctx, stopPipelineReq)
 		if err != nil {
 			return err

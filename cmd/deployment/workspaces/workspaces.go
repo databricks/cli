@@ -1,8 +1,11 @@
 package workspaces
 
 import (
+	"time"
+
 	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
+	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/deployment"
 	"github.com/spf13/cobra"
 )
@@ -21,9 +24,14 @@ var Cmd = &cobra.Command{
 }
 
 var createReq deployment.CreateWorkspaceRequest
+var createAndWait bool
+var createTimeout time.Duration
 
 func init() {
 	Cmd.AddCommand(createCmd)
+
+	createCmd.Flags().BoolVar(&createAndWait, "wait", true, `wait to reach RUNNING state`)
+	createCmd.Flags().DurationVar(&createTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
 	// TODO: short flags
 
 	createCmd.Flags().StringVar(&createReq.AwsRegion, "aws-region", createReq.AwsRegion, `The AWS region of the workspace's data plane.`)
@@ -87,6 +95,19 @@ var createCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
+		if createAndWait {
+			spinner := ui.StartSpinner()
+			info, err := a.Workspaces.CreateAndWait(ctx, createReq,
+				retries.Timeout[deployment.Workspace](createTimeout),
+				func(i *retries.Info[deployment.Workspace]) {
+					spinner.Suffix = i.Info.WorkspaceStatusMessage
+				})
+			spinner.Stop()
+			if err != nil {
+				return err
+			}
+			return ui.Render(cmd, info)
+		}
 		response, err := a.Workspaces.Create(ctx, createReq)
 		if err != nil {
 			return err
@@ -202,9 +223,14 @@ var listCmd = &cobra.Command{
 }
 
 var updateReq deployment.UpdateWorkspaceRequest
+var updateAndWait bool
+var updateTimeout time.Duration
 
 func init() {
 	Cmd.AddCommand(updateCmd)
+
+	updateCmd.Flags().BoolVar(&updateAndWait, "wait", true, `wait to reach RUNNING state`)
+	updateCmd.Flags().DurationVar(&updateTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
 	// TODO: short flags
 
 	updateCmd.Flags().StringVar(&updateReq.AwsRegion, "aws-region", updateReq.AwsRegion, `The AWS region of the workspace's data plane (for example, us-west-2).`)
@@ -329,6 +355,19 @@ var updateCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
+		if updateAndWait {
+			spinner := ui.StartSpinner()
+			info, err := a.Workspaces.UpdateAndWait(ctx, updateReq,
+				retries.Timeout[deployment.Workspace](updateTimeout),
+				func(i *retries.Info[deployment.Workspace]) {
+					spinner.Suffix = i.Info.WorkspaceStatusMessage
+				})
+			spinner.Stop()
+			if err != nil {
+				return err
+			}
+			return ui.Render(cmd, info)
+		}
 		err := a.Workspaces.Update(ctx, updateReq)
 		if err != nil {
 			return err

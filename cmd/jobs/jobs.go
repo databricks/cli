@@ -1,8 +1,11 @@
 package jobs
 
 import (
+	"time"
+
 	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
+	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/spf13/cobra"
 )
@@ -60,9 +63,14 @@ var cancelAllRunsCmd = &cobra.Command{
 }
 
 var cancelRunReq jobs.CancelRun
+var cancelRunAndWait bool
+var cancelRunTimeout time.Duration
 
 func init() {
 	Cmd.AddCommand(cancelRunCmd)
+
+	cancelRunCmd.Flags().BoolVar(&cancelRunAndWait, "wait", true, `wait to reach TERMINATED or SKIPPED state`)
+	cancelRunCmd.Flags().DurationVar(&cancelRunTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach TERMINATED or SKIPPED state`)
 	// TODO: short flags
 
 	cancelRunCmd.Flags().Int64Var(&cancelRunReq.RunId, "run-id", cancelRunReq.RunId, `This field is required.`)
@@ -81,6 +89,19 @@ var cancelRunCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		if cancelRunAndWait {
+			spinner := ui.StartSpinner()
+			info, err := w.Jobs.CancelRunAndWait(ctx, cancelRunReq,
+				retries.Timeout[jobs.Run](cancelRunTimeout),
+				func(i *retries.Info[jobs.Run]) {
+					spinner.Suffix = i.Info.State.StateMessage
+				})
+			spinner.Stop()
+			if err != nil {
+				return err
+			}
+			return ui.Render(cmd, info)
+		}
 		err := w.Jobs.CancelRun(ctx, cancelRunReq)
 		if err != nil {
 			return err
@@ -247,9 +268,14 @@ var getCmd = &cobra.Command{
 }
 
 var getRunReq jobs.GetRun
+var getRunAndWait bool
+var getRunTimeout time.Duration
 
 func init() {
 	Cmd.AddCommand(getRunCmd)
+
+	getRunCmd.Flags().BoolVar(&getRunAndWait, "wait", true, `wait to reach TERMINATED or SKIPPED state`)
+	getRunCmd.Flags().DurationVar(&getRunTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach TERMINATED or SKIPPED state`)
 	// TODO: short flags
 
 	getRunCmd.Flags().BoolVar(&getRunReq.IncludeHistory, "include-history", getRunReq.IncludeHistory, `Whether to include the repair history in the response.`)
@@ -268,6 +294,19 @@ var getRunCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		if getRunAndWait {
+			spinner := ui.StartSpinner()
+			info, err := w.Jobs.GetRunAndWait(ctx, getRunReq,
+				retries.Timeout[jobs.Run](getRunTimeout),
+				func(i *retries.Info[jobs.Run]) {
+					spinner.Suffix = i.Info.State.StateMessage
+				})
+			spinner.Stop()
+			if err != nil {
+				return err
+			}
+			return ui.Render(cmd, info)
+		}
 		response, err := w.Jobs.GetRun(ctx, getRunReq)
 		if err != nil {
 			return err
@@ -384,9 +423,14 @@ var listRunsCmd = &cobra.Command{
 }
 
 var repairRunReq jobs.RepairRun
+var repairRunAndWait bool
+var repairRunTimeout time.Duration
 
 func init() {
 	Cmd.AddCommand(repairRunCmd)
+
+	repairRunCmd.Flags().BoolVar(&repairRunAndWait, "wait", true, `wait to reach TERMINATED or SKIPPED state`)
+	repairRunCmd.Flags().DurationVar(&repairRunTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach TERMINATED or SKIPPED state`)
 	// TODO: short flags
 
 	// TODO: array: dbt_commands
@@ -417,6 +461,19 @@ var repairRunCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		if repairRunAndWait {
+			spinner := ui.StartSpinner()
+			info, err := w.Jobs.RepairRunAndWait(ctx, repairRunReq,
+				retries.Timeout[jobs.Run](repairRunTimeout),
+				func(i *retries.Info[jobs.Run]) {
+					spinner.Suffix = i.Info.State.StateMessage
+				})
+			spinner.Stop()
+			if err != nil {
+				return err
+			}
+			return ui.Render(cmd, info)
+		}
 		response, err := w.Jobs.RepairRun(ctx, repairRunReq)
 		if err != nil {
 			return err
@@ -457,9 +514,14 @@ var resetCmd = &cobra.Command{
 }
 
 var runNowReq jobs.RunNow
+var runNowAndWait bool
+var runNowTimeout time.Duration
 
 func init() {
 	Cmd.AddCommand(runNowCmd)
+
+	runNowCmd.Flags().BoolVar(&runNowAndWait, "wait", true, `wait to reach TERMINATED or SKIPPED state`)
+	runNowCmd.Flags().DurationVar(&runNowTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach TERMINATED or SKIPPED state`)
 	// TODO: short flags
 
 	// TODO: array: dbt_commands
@@ -486,6 +548,19 @@ var runNowCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		if runNowAndWait {
+			spinner := ui.StartSpinner()
+			info, err := w.Jobs.RunNowAndWait(ctx, runNowReq,
+				retries.Timeout[jobs.Run](runNowTimeout),
+				func(i *retries.Info[jobs.Run]) {
+					spinner.Suffix = i.Info.State.StateMessage
+				})
+			spinner.Stop()
+			if err != nil {
+				return err
+			}
+			return ui.Render(cmd, info)
+		}
 		response, err := w.Jobs.RunNow(ctx, runNowReq)
 		if err != nil {
 			return err
@@ -495,9 +570,14 @@ var runNowCmd = &cobra.Command{
 }
 
 var submitReq jobs.SubmitRun
+var submitAndWait bool
+var submitTimeout time.Duration
 
 func init() {
 	Cmd.AddCommand(submitCmd)
+
+	submitCmd.Flags().BoolVar(&submitAndWait, "wait", true, `wait to reach TERMINATED or SKIPPED state`)
+	submitCmd.Flags().DurationVar(&submitTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach TERMINATED or SKIPPED state`)
 	// TODO: short flags
 
 	// TODO: array: access_control_list
@@ -524,6 +604,19 @@ var submitCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		if submitAndWait {
+			spinner := ui.StartSpinner()
+			info, err := w.Jobs.SubmitAndWait(ctx, submitReq,
+				retries.Timeout[jobs.Run](submitTimeout),
+				func(i *retries.Info[jobs.Run]) {
+					spinner.Suffix = i.Info.State.StateMessage
+				})
+			spinner.Stop()
+			if err != nil {
+				return err
+			}
+			return ui.Render(cmd, info)
+		}
 		response, err := w.Jobs.Submit(ctx, submitReq)
 		if err != nil {
 			return err
