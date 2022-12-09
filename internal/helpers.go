@@ -151,6 +151,13 @@ func NewCobraTestRunner(t *testing.T, args ...string) *cobraTestRunner {
 	}
 }
 
+func RequireSuccessfulRun(t *testing.T, args ...string) (bytes.Buffer, bytes.Buffer) {
+	c := NewCobraTestRunner(t, args...)
+	stdout, stderr, err := c.Run()
+	require.NoError(t, err)
+	return stdout, stderr
+}
+
 func writeFile(t *testing.T, name string, body string) string {
 	f, err := os.Create(filepath.Join(t.TempDir(), name))
 	require.NoError(t, err)

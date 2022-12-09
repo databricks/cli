@@ -15,13 +15,11 @@ import (
 func TestAccApiGet(t *testing.T) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
-	c := NewCobraTestRunner(t, "api", "get", "/api/2.0/preview/scim/v2/Me")
-	stdout, _, err := c.Run()
-	require.NoError(t, err)
+	stdout, _ := RequireSuccessfulRun(t, "api", "get", "/api/2.0/preview/scim/v2/Me")
 
 	// Deserialize SCIM API response.
 	var out map[string]any
-	err = json.Unmarshal(stdout.Bytes(), &out)
+	err := json.Unmarshal(stdout.Bytes(), &out)
 	require.NoError(t, err)
 
 	// Assert that the output somewhat makes sense for the SCIM API.
@@ -43,15 +41,11 @@ func TestAccApiPost(t *testing.T) {
 
 	// Post to mkdir
 	{
-		c := NewCobraTestRunner(t, "api", "post", "--body=@"+requestPath, "/api/2.0/dbfs/mkdirs")
-		_, _, err := c.Run()
-		require.NoError(t, err)
+		RequireSuccessfulRun(t, "api", "post", "--body=@"+requestPath, "/api/2.0/dbfs/mkdirs")
 	}
 
 	// Post to delete
 	{
-		c := NewCobraTestRunner(t, "api", "post", "--body=@"+requestPath, "/api/2.0/dbfs/delete")
-		_, _, err := c.Run()
-		require.NoError(t, err)
+		RequireSuccessfulRun(t, "api", "post", "--body=@"+requestPath, "/api/2.0/dbfs/delete")
 	}
 }
