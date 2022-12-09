@@ -17,8 +17,8 @@ func init() {
 	Cmd.AddCommand(createCmd)
 	// TODO: short flags
 
-	createCmd.Flags().StringVar(&createReq.Description, "description", "", `Optional description for registered model.`)
-	createCmd.Flags().StringVar(&createReq.Name, "name", "", `Register models under this name.`)
+	createCmd.Flags().StringVar(&createReq.Description, "description", createReq.Description, `Optional description for registered model.`)
+	createCmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `Register models under this name.`)
 	// TODO: array: tags
 
 }
@@ -41,14 +41,7 @@ var createCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -58,7 +51,7 @@ func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
 
-	deleteCmd.Flags().StringVar(&deleteReq.Name, "name", "", `Registered model unique name identifier.`)
+	deleteCmd.Flags().StringVar(&deleteReq.Name, "name", deleteReq.Name, `Registered model unique name identifier.`)
 
 }
 
@@ -77,7 +70,6 @@ var deleteCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -88,8 +80,8 @@ func init() {
 	Cmd.AddCommand(deleteTagCmd)
 	// TODO: short flags
 
-	deleteTagCmd.Flags().StringVar(&deleteTagReq.Key, "key", "", `Name of the tag.`)
-	deleteTagCmd.Flags().StringVar(&deleteTagReq.Name, "name", "", `Name of the registered model that the tag was logged under.`)
+	deleteTagCmd.Flags().StringVar(&deleteTagReq.Key, "key", deleteTagReq.Key, `Name of the tag.`)
+	deleteTagCmd.Flags().StringVar(&deleteTagReq.Name, "name", deleteTagReq.Name, `Name of the registered model that the tag was logged under.`)
 
 }
 
@@ -108,7 +100,6 @@ var deleteTagCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -119,7 +110,7 @@ func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
 
-	getCmd.Flags().StringVar(&getReq.Name, "name", "", `Registered model unique name identifier.`)
+	getCmd.Flags().StringVar(&getReq.Name, "name", getReq.Name, `Registered model unique name identifier.`)
 
 }
 
@@ -138,14 +129,7 @@ var getCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -155,7 +139,7 @@ func init() {
 	Cmd.AddCommand(getLatestVersionsCmd)
 	// TODO: short flags
 
-	getLatestVersionsCmd.Flags().StringVar(&getLatestVersionsReq.Name, "name", "", `Registered model unique name identifier.`)
+	getLatestVersionsCmd.Flags().StringVar(&getLatestVersionsReq.Name, "name", getLatestVersionsReq.Name, `Registered model unique name identifier.`)
 	// TODO: array: stages
 
 }
@@ -175,14 +159,7 @@ var getLatestVersionsCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -192,8 +169,8 @@ func init() {
 	Cmd.AddCommand(listCmd)
 	// TODO: short flags
 
-	listCmd.Flags().IntVar(&listReq.MaxResults, "max-results", 0, `Maximum number of registered models desired.`)
-	listCmd.Flags().StringVar(&listReq.PageToken, "page-token", "", `Pagination token to go to the next page based on a previous query.`)
+	listCmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of registered models desired.`)
+	listCmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token to go to the next page based on a previous query.`)
 
 }
 
@@ -213,14 +190,7 @@ var listCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -230,8 +200,8 @@ func init() {
 	Cmd.AddCommand(renameCmd)
 	// TODO: short flags
 
-	renameCmd.Flags().StringVar(&renameReq.Name, "name", "", `Registered model unique name identifier.`)
-	renameCmd.Flags().StringVar(&renameReq.NewName, "new-name", "", `If provided, updates the name for this registered_model.`)
+	renameCmd.Flags().StringVar(&renameReq.Name, "name", renameReq.Name, `Registered model unique name identifier.`)
+	renameCmd.Flags().StringVar(&renameReq.NewName, "new-name", renameReq.NewName, `If provided, updates the name for this registered_model.`)
 
 }
 
@@ -250,14 +220,7 @@ var renameCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -267,10 +230,10 @@ func init() {
 	Cmd.AddCommand(searchCmd)
 	// TODO: short flags
 
-	searchCmd.Flags().StringVar(&searchReq.Filter, "filter", "", `String filter condition, like "name LIKE 'my-model-name'".`)
-	searchCmd.Flags().IntVar(&searchReq.MaxResults, "max-results", 0, `Maximum number of models desired.`)
+	searchCmd.Flags().StringVar(&searchReq.Filter, "filter", searchReq.Filter, `String filter condition, like "name LIKE 'my-model-name'".`)
+	searchCmd.Flags().IntVar(&searchReq.MaxResults, "max-results", searchReq.MaxResults, `Maximum number of models desired.`)
 	// TODO: array: order_by
-	searchCmd.Flags().StringVar(&searchReq.PageToken, "page-token", "", `Pagination token to go to the next page based on a previous search query.`)
+	searchCmd.Flags().StringVar(&searchReq.PageToken, "page-token", searchReq.PageToken, `Pagination token to go to the next page based on a previous search query.`)
 
 }
 
@@ -289,14 +252,7 @@ var searchCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -306,9 +262,9 @@ func init() {
 	Cmd.AddCommand(setTagCmd)
 	// TODO: short flags
 
-	setTagCmd.Flags().StringVar(&setTagReq.Key, "key", "", `Name of the tag.`)
-	setTagCmd.Flags().StringVar(&setTagReq.Name, "name", "", `Unique name of the model.`)
-	setTagCmd.Flags().StringVar(&setTagReq.Value, "value", "", `String value of the tag being logged.`)
+	setTagCmd.Flags().StringVar(&setTagReq.Key, "key", setTagReq.Key, `Name of the tag.`)
+	setTagCmd.Flags().StringVar(&setTagReq.Name, "name", setTagReq.Name, `Unique name of the model.`)
+	setTagCmd.Flags().StringVar(&setTagReq.Value, "value", setTagReq.Value, `String value of the tag being logged.`)
 
 }
 
@@ -327,7 +283,6 @@ var setTagCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -338,8 +293,8 @@ func init() {
 	Cmd.AddCommand(updateCmd)
 	// TODO: short flags
 
-	updateCmd.Flags().StringVar(&updateReq.Description, "description", "", `If provided, updates the description for this registered_model.`)
-	updateCmd.Flags().StringVar(&updateReq.Name, "name", "", `Registered model unique name identifier.`)
+	updateCmd.Flags().StringVar(&updateReq.Description, "description", updateReq.Description, `If provided, updates the description for this registered_model.`)
+	updateCmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `Registered model unique name identifier.`)
 
 }
 
@@ -358,7 +313,6 @@ var updateCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }

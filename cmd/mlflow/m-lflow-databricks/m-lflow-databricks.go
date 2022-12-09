@@ -20,7 +20,7 @@ func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
 
-	getCmd.Flags().StringVar(&getReq.Name, "name", "", `Name of the model.`)
+	getCmd.Flags().StringVar(&getReq.Name, "name", getReq.Name, `Name of the model.`)
 
 }
 
@@ -43,14 +43,7 @@ var getCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -60,11 +53,11 @@ func init() {
 	Cmd.AddCommand(transitionStageCmd)
 	// TODO: short flags
 
-	transitionStageCmd.Flags().BoolVar(&transitionStageReq.ArchiveExistingVersions, "archive-existing-versions", false, `Specifies whether to archive all current model versions in the target stage.`)
-	transitionStageCmd.Flags().StringVar(&transitionStageReq.Comment, "comment", "", `User-provided comment on the action.`)
-	transitionStageCmd.Flags().StringVar(&transitionStageReq.Name, "name", "", `Name of the model.`)
+	transitionStageCmd.Flags().BoolVar(&transitionStageReq.ArchiveExistingVersions, "archive-existing-versions", transitionStageReq.ArchiveExistingVersions, `Specifies whether to archive all current model versions in the target stage.`)
+	transitionStageCmd.Flags().StringVar(&transitionStageReq.Comment, "comment", transitionStageReq.Comment, `User-provided comment on the action.`)
+	transitionStageCmd.Flags().StringVar(&transitionStageReq.Name, "name", transitionStageReq.Name, `Name of the model.`)
 	transitionStageCmd.Flags().Var(&transitionStageReq.Stage, "stage", `Target stage of the transition.`)
-	transitionStageCmd.Flags().StringVar(&transitionStageReq.Version, "version", "", `Version of the model.`)
+	transitionStageCmd.Flags().StringVar(&transitionStageReq.Version, "version", transitionStageReq.Version, `Version of the model.`)
 
 }
 
@@ -87,14 +80,7 @@ var transitionStageCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 

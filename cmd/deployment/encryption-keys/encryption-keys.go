@@ -69,14 +69,7 @@ var createCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -86,7 +79,7 @@ func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
 
-	deleteCmd.Flags().StringVar(&deleteReq.CustomerManagedKeyId, "customer-managed-key-id", "", `Databricks encryption key configuration ID.`)
+	deleteCmd.Flags().StringVar(&deleteReq.CustomerManagedKeyId, "customer-managed-key-id", deleteReq.CustomerManagedKeyId, `Databricks encryption key configuration ID.`)
 
 }
 
@@ -106,7 +99,6 @@ var deleteCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -117,7 +109,7 @@ func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
 
-	getCmd.Flags().StringVar(&getReq.CustomerManagedKeyId, "customer-managed-key-id", "", `Databricks encryption key configuration ID.`)
+	getCmd.Flags().StringVar(&getReq.CustomerManagedKeyId, "customer-managed-key-id", getReq.CustomerManagedKeyId, `Databricks encryption key configuration ID.`)
 
 }
 
@@ -150,52 +142,7 @@ var getCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
-	},
-}
-
-func init() {
-	Cmd.AddCommand(getKeyWorkspaceHistoryCmd)
-
-}
-
-var getKeyWorkspaceHistoryCmd = &cobra.Command{
-	Use:   "get-key-workspace-history",
-	Short: `Get history of a key's associations with workspaces.`,
-	Long: `Get history of a key's associations with workspaces.
-  
-  Gets a list of records that show how key configurations are associated with
-  workspaces.
-  
-  **Important**: Customer-managed keys are supported only for some deployment
-  types, subscription types, and AWS regions.
-  
-  This operation is available only if your account is on the E2 version of the
-  platform.`,
-
-	PreRunE: sdk.PreAccountClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		ctx := cmd.Context()
-		a := sdk.AccountClient(ctx)
-		response, err := a.EncryptionKeys.GetKeyWorkspaceHistory(ctx)
-		if err != nil {
-			return err
-		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -231,14 +178,7 @@ var listCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 

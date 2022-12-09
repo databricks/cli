@@ -17,9 +17,9 @@ func init() {
 	Cmd.AddCommand(createCmd)
 	// TODO: short flags
 
-	createCmd.Flags().StringVar(&createReq.Comment, "comment", "", `User-provided comment on the action.`)
-	createCmd.Flags().StringVar(&createReq.Name, "name", "", `Name of the model.`)
-	createCmd.Flags().StringVar(&createReq.Version, "version", "", `Version of the model.`)
+	createCmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `User-provided comment on the action.`)
+	createCmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `Name of the model.`)
+	createCmd.Flags().StringVar(&createReq.Version, "version", createReq.Version, `Version of the model.`)
 
 }
 
@@ -40,14 +40,7 @@ var createCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -57,7 +50,7 @@ func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
 
-	deleteCmd.Flags().StringVar(&deleteReq.Id, "id", "", ``)
+	deleteCmd.Flags().StringVar(&deleteReq.Id, "id", deleteReq.Id, ``)
 
 }
 
@@ -76,7 +69,6 @@ var deleteCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -87,8 +79,8 @@ func init() {
 	Cmd.AddCommand(updateCmd)
 	// TODO: short flags
 
-	updateCmd.Flags().StringVar(&updateReq.Comment, "comment", "", `User-provided comment on the action.`)
-	updateCmd.Flags().StringVar(&updateReq.Id, "id", "", `Unique identifier of an activity.`)
+	updateCmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `User-provided comment on the action.`)
+	updateCmd.Flags().StringVar(&updateReq.Id, "id", updateReq.Id, `Unique identifier of an activity.`)
 
 }
 
@@ -107,14 +99,7 @@ var updateCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 

@@ -46,8 +46,8 @@ func init() {
 	Cmd.AddCommand(changeOwnerCmd)
 	// TODO: short flags
 
-	changeOwnerCmd.Flags().StringVar(&changeOwnerReq.ClusterId, "cluster-id", "", `<needs content added>.`)
-	changeOwnerCmd.Flags().StringVar(&changeOwnerReq.OwnerUsername, "owner-username", "", `New owner of the cluster_id after this RPC.`)
+	changeOwnerCmd.Flags().StringVar(&changeOwnerReq.ClusterId, "cluster-id", changeOwnerReq.ClusterId, `<needs content added>.`)
+	changeOwnerCmd.Flags().StringVar(&changeOwnerReq.OwnerUsername, "owner-username", changeOwnerReq.OwnerUsername, `New owner of the cluster_id after this RPC.`)
 
 }
 
@@ -67,7 +67,6 @@ var changeOwnerCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -78,29 +77,28 @@ func init() {
 	Cmd.AddCommand(createCmd)
 	// TODO: short flags
 
-	createCmd.Flags().BoolVar(&createReq.ApplyPolicyDefaultValues, "apply-policy-default-values", false, `Note: This field won't be true for webapp requests.`)
+	createCmd.Flags().BoolVar(&createReq.ApplyPolicyDefaultValues, "apply-policy-default-values", createReq.ApplyPolicyDefaultValues, `Note: This field won't be true for webapp requests.`)
 	// TODO: complex arg: autoscale
-	createCmd.Flags().IntVar(&createReq.AutoterminationMinutes, "autotermination-minutes", 0, `Automatically terminates the cluster after it is inactive for this time in minutes.`)
+	createCmd.Flags().IntVar(&createReq.AutoterminationMinutes, "autotermination-minutes", createReq.AutoterminationMinutes, `Automatically terminates the cluster after it is inactive for this time in minutes.`)
 	// TODO: complex arg: aws_attributes
 	// TODO: complex arg: azure_attributes
 	// TODO: complex arg: cluster_log_conf
-	createCmd.Flags().StringVar(&createReq.ClusterName, "cluster-name", "", `Cluster name requested by the user.`)
+	createCmd.Flags().StringVar(&createReq.ClusterName, "cluster-name", createReq.ClusterName, `Cluster name requested by the user.`)
 	createCmd.Flags().Var(&createReq.ClusterSource, "cluster-source", `Determines whether the cluster was created by a user through the UI, created by the Databricks Jobs Scheduler, or through an API request.`)
 	// TODO: map via StringToStringVar: custom_tags
-	createCmd.Flags().StringVar(&createReq.DriverInstancePoolId, "driver-instance-pool-id", "", `The optional ID of the instance pool for the driver of the cluster belongs.`)
-	createCmd.Flags().StringVar(&createReq.DriverNodeTypeId, "driver-node-type-id", "", `The node type of the Spark driver.`)
-	createCmd.Flags().StringVar(&createReq.EffectiveSparkVersion, "effective-spark-version", "", `The key of the spark version running in the dataplane.`)
-	createCmd.Flags().BoolVar(&createReq.EnableElasticDisk, "enable-elastic-disk", false, `Autoscaling Local Storage: when enabled, this cluster will dynamically acquire additional disk space when its Spark workers are running low on disk space.`)
-	createCmd.Flags().BoolVar(&createReq.EnableLocalDiskEncryption, "enable-local-disk-encryption", false, `Whether to enable LUKS on cluster VMs' local disks.`)
+	createCmd.Flags().StringVar(&createReq.DriverInstancePoolId, "driver-instance-pool-id", createReq.DriverInstancePoolId, `The optional ID of the instance pool for the driver of the cluster belongs.`)
+	createCmd.Flags().StringVar(&createReq.DriverNodeTypeId, "driver-node-type-id", createReq.DriverNodeTypeId, `The node type of the Spark driver.`)
+	createCmd.Flags().BoolVar(&createReq.EnableElasticDisk, "enable-elastic-disk", createReq.EnableElasticDisk, `Autoscaling Local Storage: when enabled, this cluster will dynamically acquire additional disk space when its Spark workers are running low on disk space.`)
+	createCmd.Flags().BoolVar(&createReq.EnableLocalDiskEncryption, "enable-local-disk-encryption", createReq.EnableLocalDiskEncryption, `Whether to enable LUKS on cluster VMs' local disks.`)
 	// TODO: complex arg: gcp_attributes
-	createCmd.Flags().StringVar(&createReq.InstancePoolId, "instance-pool-id", "", `The optional ID of the instance pool to which the cluster belongs.`)
-	createCmd.Flags().StringVar(&createReq.NodeTypeId, "node-type-id", "", `This field encodes, through a single value, the resources available to each of the Spark nodes in this cluster.`)
-	createCmd.Flags().IntVar(&createReq.NumWorkers, "num-workers", 0, `Number of worker nodes that this cluster should have.`)
-	createCmd.Flags().StringVar(&createReq.PolicyId, "policy-id", "", `The ID of the cluster policy used to create the cluster if applicable.`)
+	createCmd.Flags().StringVar(&createReq.InstancePoolId, "instance-pool-id", createReq.InstancePoolId, `The optional ID of the instance pool to which the cluster belongs.`)
+	createCmd.Flags().StringVar(&createReq.NodeTypeId, "node-type-id", createReq.NodeTypeId, `This field encodes, through a single value, the resources available to each of the Spark nodes in this cluster.`)
+	createCmd.Flags().IntVar(&createReq.NumWorkers, "num-workers", createReq.NumWorkers, `Number of worker nodes that this cluster should have.`)
+	createCmd.Flags().StringVar(&createReq.PolicyId, "policy-id", createReq.PolicyId, `The ID of the cluster policy used to create the cluster if applicable.`)
 	createCmd.Flags().Var(&createReq.RuntimeEngine, "runtime-engine", `Decides which runtime engine to be use, e.g.`)
 	// TODO: map via StringToStringVar: spark_conf
 	// TODO: map via StringToStringVar: spark_env_vars
-	createCmd.Flags().StringVar(&createReq.SparkVersion, "spark-version", "", `The Spark version of the cluster, e.g.`)
+	createCmd.Flags().StringVar(&createReq.SparkVersion, "spark-version", createReq.SparkVersion, `The Spark version of the cluster, e.g.`)
 	// TODO: array: ssh_public_keys
 	// TODO: complex arg: workload_type
 
@@ -133,14 +131,7 @@ var createCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -150,7 +141,7 @@ func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
 
-	deleteCmd.Flags().StringVar(&deleteReq.ClusterId, "cluster-id", "", `The cluster to be terminated.`)
+	deleteCmd.Flags().StringVar(&deleteReq.ClusterId, "cluster-id", deleteReq.ClusterId, `The cluster to be terminated.`)
 
 }
 
@@ -172,7 +163,6 @@ var deleteCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -183,30 +173,29 @@ func init() {
 	Cmd.AddCommand(editCmd)
 	// TODO: short flags
 
-	editCmd.Flags().BoolVar(&editReq.ApplyPolicyDefaultValues, "apply-policy-default-values", false, `Note: This field won't be true for webapp requests.`)
+	editCmd.Flags().BoolVar(&editReq.ApplyPolicyDefaultValues, "apply-policy-default-values", editReq.ApplyPolicyDefaultValues, `Note: This field won't be true for webapp requests.`)
 	// TODO: complex arg: autoscale
-	editCmd.Flags().IntVar(&editReq.AutoterminationMinutes, "autotermination-minutes", 0, `Automatically terminates the cluster after it is inactive for this time in minutes.`)
+	editCmd.Flags().IntVar(&editReq.AutoterminationMinutes, "autotermination-minutes", editReq.AutoterminationMinutes, `Automatically terminates the cluster after it is inactive for this time in minutes.`)
 	// TODO: complex arg: aws_attributes
 	// TODO: complex arg: azure_attributes
-	editCmd.Flags().StringVar(&editReq.ClusterId, "cluster-id", "", `<needs content added>.`)
+	editCmd.Flags().StringVar(&editReq.ClusterId, "cluster-id", editReq.ClusterId, `ID of the cluser.`)
 	// TODO: complex arg: cluster_log_conf
-	editCmd.Flags().StringVar(&editReq.ClusterName, "cluster-name", "", `Cluster name requested by the user.`)
+	editCmd.Flags().StringVar(&editReq.ClusterName, "cluster-name", editReq.ClusterName, `Cluster name requested by the user.`)
 	editCmd.Flags().Var(&editReq.ClusterSource, "cluster-source", `Determines whether the cluster was created by a user through the UI, created by the Databricks Jobs Scheduler, or through an API request.`)
 	// TODO: map via StringToStringVar: custom_tags
-	editCmd.Flags().StringVar(&editReq.DriverInstancePoolId, "driver-instance-pool-id", "", `The optional ID of the instance pool for the driver of the cluster belongs.`)
-	editCmd.Flags().StringVar(&editReq.DriverNodeTypeId, "driver-node-type-id", "", `The node type of the Spark driver.`)
-	editCmd.Flags().StringVar(&editReq.EffectiveSparkVersion, "effective-spark-version", "", `The key of the spark version running in the dataplane.`)
-	editCmd.Flags().BoolVar(&editReq.EnableElasticDisk, "enable-elastic-disk", false, `Autoscaling Local Storage: when enabled, this cluster will dynamically acquire additional disk space when its Spark workers are running low on disk space.`)
-	editCmd.Flags().BoolVar(&editReq.EnableLocalDiskEncryption, "enable-local-disk-encryption", false, `Whether to enable LUKS on cluster VMs' local disks.`)
+	editCmd.Flags().StringVar(&editReq.DriverInstancePoolId, "driver-instance-pool-id", editReq.DriverInstancePoolId, `The optional ID of the instance pool for the driver of the cluster belongs.`)
+	editCmd.Flags().StringVar(&editReq.DriverNodeTypeId, "driver-node-type-id", editReq.DriverNodeTypeId, `The node type of the Spark driver.`)
+	editCmd.Flags().BoolVar(&editReq.EnableElasticDisk, "enable-elastic-disk", editReq.EnableElasticDisk, `Autoscaling Local Storage: when enabled, this cluster will dynamically acquire additional disk space when its Spark workers are running low on disk space.`)
+	editCmd.Flags().BoolVar(&editReq.EnableLocalDiskEncryption, "enable-local-disk-encryption", editReq.EnableLocalDiskEncryption, `Whether to enable LUKS on cluster VMs' local disks.`)
 	// TODO: complex arg: gcp_attributes
-	editCmd.Flags().StringVar(&editReq.InstancePoolId, "instance-pool-id", "", `The optional ID of the instance pool to which the cluster belongs.`)
-	editCmd.Flags().StringVar(&editReq.NodeTypeId, "node-type-id", "", `This field encodes, through a single value, the resources available to each of the Spark nodes in this cluster.`)
-	editCmd.Flags().IntVar(&editReq.NumWorkers, "num-workers", 0, `Number of worker nodes that this cluster should have.`)
-	editCmd.Flags().StringVar(&editReq.PolicyId, "policy-id", "", `The ID of the cluster policy used to create the cluster if applicable.`)
+	editCmd.Flags().StringVar(&editReq.InstancePoolId, "instance-pool-id", editReq.InstancePoolId, `The optional ID of the instance pool to which the cluster belongs.`)
+	editCmd.Flags().StringVar(&editReq.NodeTypeId, "node-type-id", editReq.NodeTypeId, `This field encodes, through a single value, the resources available to each of the Spark nodes in this cluster.`)
+	editCmd.Flags().IntVar(&editReq.NumWorkers, "num-workers", editReq.NumWorkers, `Number of worker nodes that this cluster should have.`)
+	editCmd.Flags().StringVar(&editReq.PolicyId, "policy-id", editReq.PolicyId, `The ID of the cluster policy used to create the cluster if applicable.`)
 	editCmd.Flags().Var(&editReq.RuntimeEngine, "runtime-engine", `Decides which runtime engine to be use, e.g.`)
 	// TODO: map via StringToStringVar: spark_conf
 	// TODO: map via StringToStringVar: spark_env_vars
-	editCmd.Flags().StringVar(&editReq.SparkVersion, "spark-version", "", `The Spark version of the cluster, e.g.`)
+	editCmd.Flags().StringVar(&editReq.SparkVersion, "spark-version", editReq.SparkVersion, `The Spark version of the cluster, e.g.`)
 	// TODO: array: ssh_public_keys
 	// TODO: complex arg: workload_type
 
@@ -238,7 +227,6 @@ var editCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -249,13 +237,13 @@ func init() {
 	Cmd.AddCommand(eventsCmd)
 	// TODO: short flags
 
-	eventsCmd.Flags().StringVar(&eventsReq.ClusterId, "cluster-id", "", `The ID of the cluster to retrieve events about.`)
-	eventsCmd.Flags().Int64Var(&eventsReq.EndTime, "end-time", 0, `The end time in epoch milliseconds.`)
+	eventsCmd.Flags().StringVar(&eventsReq.ClusterId, "cluster-id", eventsReq.ClusterId, `The ID of the cluster to retrieve events about.`)
+	eventsCmd.Flags().Int64Var(&eventsReq.EndTime, "end-time", eventsReq.EndTime, `The end time in epoch milliseconds.`)
 	// TODO: array: event_types
-	eventsCmd.Flags().Int64Var(&eventsReq.Limit, "limit", 0, `The maximum number of events to include in a page of events.`)
-	eventsCmd.Flags().Int64Var(&eventsReq.Offset, "offset", 0, `The offset in the result set.`)
+	eventsCmd.Flags().Int64Var(&eventsReq.Limit, "limit", eventsReq.Limit, `The maximum number of events to include in a page of events.`)
+	eventsCmd.Flags().Int64Var(&eventsReq.Offset, "offset", eventsReq.Offset, `The offset in the result set.`)
 	eventsCmd.Flags().Var(&eventsReq.Order, "order", `The order to list events in; either "ASC" or "DESC".`)
-	eventsCmd.Flags().Int64Var(&eventsReq.StartTime, "start-time", 0, `The start time in epoch milliseconds.`)
+	eventsCmd.Flags().Int64Var(&eventsReq.StartTime, "start-time", eventsReq.StartTime, `The start time in epoch milliseconds.`)
 
 }
 
@@ -276,14 +264,7 @@ var eventsCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -293,7 +274,7 @@ func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
 
-	getCmd.Flags().StringVar(&getReq.ClusterId, "cluster-id", "", `The cluster about which to retrieve information.`)
+	getCmd.Flags().StringVar(&getReq.ClusterId, "cluster-id", getReq.ClusterId, `The cluster about which to retrieve information.`)
 
 }
 
@@ -313,14 +294,7 @@ var getCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -330,7 +304,7 @@ func init() {
 	Cmd.AddCommand(listCmd)
 	// TODO: short flags
 
-	listCmd.Flags().StringVar(&listReq.CanUseClient, "can-use-client", "", `Filter clusters based on what type of client it can be used for.`)
+	listCmd.Flags().StringVar(&listReq.CanUseClient, "can-use-client", listReq.CanUseClient, `Filter clusters based on what type of client it can be used for.`)
 
 }
 
@@ -357,14 +331,7 @@ var listCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -389,14 +356,7 @@ var listNodeTypesCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -421,14 +381,7 @@ var listZonesCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -438,7 +391,7 @@ func init() {
 	Cmd.AddCommand(permanentDeleteCmd)
 	// TODO: short flags
 
-	permanentDeleteCmd.Flags().StringVar(&permanentDeleteReq.ClusterId, "cluster-id", "", `The cluster to be deleted.`)
+	permanentDeleteCmd.Flags().StringVar(&permanentDeleteReq.ClusterId, "cluster-id", permanentDeleteReq.ClusterId, `The cluster to be deleted.`)
 
 }
 
@@ -462,7 +415,6 @@ var permanentDeleteCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -473,7 +425,7 @@ func init() {
 	Cmd.AddCommand(pinCmd)
 	// TODO: short flags
 
-	pinCmd.Flags().StringVar(&pinReq.ClusterId, "cluster-id", "", `<needs content added>.`)
+	pinCmd.Flags().StringVar(&pinReq.ClusterId, "cluster-id", pinReq.ClusterId, `<needs content added>.`)
 
 }
 
@@ -494,7 +446,6 @@ var pinCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -506,8 +457,8 @@ func init() {
 	// TODO: short flags
 
 	// TODO: complex arg: autoscale
-	resizeCmd.Flags().StringVar(&resizeReq.ClusterId, "cluster-id", "", `The cluster to be resized.`)
-	resizeCmd.Flags().IntVar(&resizeReq.NumWorkers, "num-workers", 0, `Number of worker nodes that this cluster should have.`)
+	resizeCmd.Flags().StringVar(&resizeReq.ClusterId, "cluster-id", resizeReq.ClusterId, `The cluster to be resized.`)
+	resizeCmd.Flags().IntVar(&resizeReq.NumWorkers, "num-workers", resizeReq.NumWorkers, `Number of worker nodes that this cluster should have.`)
 
 }
 
@@ -527,7 +478,6 @@ var resizeCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -538,8 +488,8 @@ func init() {
 	Cmd.AddCommand(restartCmd)
 	// TODO: short flags
 
-	restartCmd.Flags().StringVar(&restartReq.ClusterId, "cluster-id", "", `The cluster to be started.`)
-	restartCmd.Flags().StringVar(&restartReq.RestartUser, "restart-user", "", `<needs content added>.`)
+	restartCmd.Flags().StringVar(&restartReq.ClusterId, "cluster-id", restartReq.ClusterId, `The cluster to be started.`)
+	restartCmd.Flags().StringVar(&restartReq.RestartUser, "restart-user", restartReq.RestartUser, `<needs content added>.`)
 
 }
 
@@ -559,7 +509,6 @@ var restartCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -585,14 +534,7 @@ var sparkVersionsCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -602,7 +544,7 @@ func init() {
 	Cmd.AddCommand(startCmd)
 	// TODO: short flags
 
-	startCmd.Flags().StringVar(&startReq.ClusterId, "cluster-id", "", `The cluster to be started.`)
+	startCmd.Flags().StringVar(&startReq.ClusterId, "cluster-id", startReq.ClusterId, `The cluster to be started.`)
 
 }
 
@@ -628,7 +570,6 @@ var startCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -639,7 +580,7 @@ func init() {
 	Cmd.AddCommand(unpinCmd)
 	// TODO: short flags
 
-	unpinCmd.Flags().StringVar(&unpinReq.ClusterId, "cluster-id", "", `<needs content added>.`)
+	unpinCmd.Flags().StringVar(&unpinReq.ClusterId, "cluster-id", unpinReq.ClusterId, `<needs content added>.`)
 
 }
 
@@ -660,7 +601,6 @@ var unpinCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }

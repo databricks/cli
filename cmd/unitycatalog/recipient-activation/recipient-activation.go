@@ -19,7 +19,7 @@ func init() {
 	Cmd.AddCommand(getActivationUrlInfoCmd)
 	// TODO: short flags
 
-	getActivationUrlInfoCmd.Flags().StringVar(&getActivationUrlInfoReq.ActivationUrl, "activation-url", "", `Required.`)
+	getActivationUrlInfoCmd.Flags().StringVar(&getActivationUrlInfoReq.ActivationUrl, "activation-url", getActivationUrlInfoReq.ActivationUrl, `Required.`)
 
 }
 
@@ -38,7 +38,6 @@ var getActivationUrlInfoCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -49,7 +48,7 @@ func init() {
 	Cmd.AddCommand(retrieveTokenCmd)
 	// TODO: short flags
 
-	retrieveTokenCmd.Flags().StringVar(&retrieveTokenReq.ActivationUrl, "activation-url", "", `Required.`)
+	retrieveTokenCmd.Flags().StringVar(&retrieveTokenReq.ActivationUrl, "activation-url", retrieveTokenReq.ActivationUrl, `Required.`)
 
 }
 
@@ -69,14 +68,7 @@ var retrieveTokenCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 

@@ -23,8 +23,8 @@ func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
 
-	deleteCmd.Flags().StringVar(&deleteReq.Path, "path", "", `The absolute path of the notebook or directory.`)
-	deleteCmd.Flags().BoolVar(&deleteReq.Recursive, "recursive", false, `The flag that specifies whether to delete the object recursively.`)
+	deleteCmd.Flags().StringVar(&deleteReq.Path, "path", deleteReq.Path, `The absolute path of the notebook or directory.`)
+	deleteCmd.Flags().BoolVar(&deleteReq.Recursive, "recursive", deleteReq.Recursive, `The flag that specifies whether to delete the object recursively.`)
 
 }
 
@@ -50,7 +50,6 @@ var deleteCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -61,9 +60,9 @@ func init() {
 	Cmd.AddCommand(exportCmd)
 	// TODO: short flags
 
-	exportCmd.Flags().BoolVar(&exportReq.DirectDownload, "direct-download", false, `Flag to enable direct download.`)
+	exportCmd.Flags().BoolVar(&exportReq.DirectDownload, "direct-download", exportReq.DirectDownload, `Flag to enable direct download.`)
 	exportCmd.Flags().Var(&exportReq.Format, "format", `This specifies the format of the exported file.`)
-	exportCmd.Flags().StringVar(&exportReq.Path, "path", "", `The absolute path of the notebook or directory.`)
+	exportCmd.Flags().StringVar(&exportReq.Path, "path", exportReq.Path, `The absolute path of the notebook or directory.`)
 
 }
 
@@ -89,14 +88,7 @@ var exportCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -106,7 +98,7 @@ func init() {
 	Cmd.AddCommand(getStatusCmd)
 	// TODO: short flags
 
-	getStatusCmd.Flags().StringVar(&getStatusReq.Path, "path", "", `The absolute path of the notebook or directory.`)
+	getStatusCmd.Flags().StringVar(&getStatusReq.Path, "path", getStatusReq.Path, `The absolute path of the notebook or directory.`)
 
 }
 
@@ -126,14 +118,7 @@ var getStatusCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -143,11 +128,11 @@ func init() {
 	Cmd.AddCommand(importCmd)
 	// TODO: short flags
 
-	importCmd.Flags().StringVar(&importReq.Content, "content", "", `The base64-encoded content.`)
+	importCmd.Flags().StringVar(&importReq.Content, "content", importReq.Content, `The base64-encoded content.`)
 	importCmd.Flags().Var(&importReq.Format, "format", `This specifies the format of the file to be imported.`)
 	importCmd.Flags().Var(&importReq.Language, "language", `The language of the object.`)
-	importCmd.Flags().BoolVar(&importReq.Overwrite, "overwrite", false, `The flag that specifies whether to overwrite existing object.`)
-	importCmd.Flags().StringVar(&importReq.Path, "path", "", `The absolute path of the notebook or directory.`)
+	importCmd.Flags().BoolVar(&importReq.Overwrite, "overwrite", importReq.Overwrite, `The flag that specifies whether to overwrite existing object.`)
+	importCmd.Flags().StringVar(&importReq.Path, "path", importReq.Path, `The absolute path of the notebook or directory.`)
 
 }
 
@@ -169,7 +154,6 @@ var importCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -180,8 +164,8 @@ func init() {
 	Cmd.AddCommand(listCmd)
 	// TODO: short flags
 
-	listCmd.Flags().IntVar(&listReq.NotebooksModifiedAfter, "notebooks-modified-after", 0, `<content needed>.`)
-	listCmd.Flags().StringVar(&listReq.Path, "path", "", `The absolute path of the notebook or directory.`)
+	listCmd.Flags().IntVar(&listReq.NotebooksModifiedAfter, "notebooks-modified-after", listReq.NotebooksModifiedAfter, `<content needed>.`)
+	listCmd.Flags().StringVar(&listReq.Path, "path", listReq.Path, `The absolute path of the notebook or directory.`)
 
 }
 
@@ -202,14 +186,7 @@ var listCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -219,7 +196,7 @@ func init() {
 	Cmd.AddCommand(mkdirsCmd)
 	// TODO: short flags
 
-	mkdirsCmd.Flags().StringVar(&mkdirsReq.Path, "path", "", `The absolute path of the directory.`)
+	mkdirsCmd.Flags().StringVar(&mkdirsReq.Path, "path", mkdirsReq.Path, `The absolute path of the directory.`)
 
 }
 
@@ -243,7 +220,6 @@ var mkdirsCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }

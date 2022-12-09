@@ -21,12 +21,12 @@ func init() {
 	Cmd.AddCommand(createQueryCmd)
 	// TODO: short flags
 
-	createQueryCmd.Flags().StringVar(&createQueryReq.DataSourceId, "data-source-id", "", `The ID of the data source / SQL warehouse where this query will run.`)
-	createQueryCmd.Flags().StringVar(&createQueryReq.Description, "description", "", `General description that can convey additional information about this query such as usage notes.`)
-	createQueryCmd.Flags().StringVar(&createQueryReq.Name, "name", "", `The name or title of this query to display in list views.`)
+	createQueryCmd.Flags().StringVar(&createQueryReq.DataSourceId, "data-source-id", createQueryReq.DataSourceId, `The ID of the data source / SQL warehouse where this query will run.`)
+	createQueryCmd.Flags().StringVar(&createQueryReq.Description, "description", createQueryReq.Description, `General description that can convey additional information about this query such as usage notes.`)
+	createQueryCmd.Flags().StringVar(&createQueryReq.Name, "name", createQueryReq.Name, `The name or title of this query to display in list views.`)
 	// TODO: any: options
-	createQueryCmd.Flags().StringVar(&createQueryReq.Query, "query", "", `The text of the query.`)
-	createQueryCmd.Flags().StringVar(&createQueryReq.QueryId, "query-id", "", ``)
+	createQueryCmd.Flags().StringVar(&createQueryReq.Query, "query", createQueryReq.Query, `The text of the query.`)
+	createQueryCmd.Flags().StringVar(&createQueryReq.QueryId, "query-id", createQueryReq.QueryId, ``)
 	// TODO: complex arg: schedule
 
 }
@@ -54,14 +54,7 @@ var createQueryCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -71,7 +64,7 @@ func init() {
 	Cmd.AddCommand(deleteQueryCmd)
 	// TODO: short flags
 
-	deleteQueryCmd.Flags().StringVar(&deleteQueryReq.QueryId, "query-id", "", ``)
+	deleteQueryCmd.Flags().StringVar(&deleteQueryReq.QueryId, "query-id", deleteQueryReq.QueryId, ``)
 
 }
 
@@ -92,7 +85,6 @@ var deleteQueryCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -103,7 +95,7 @@ func init() {
 	Cmd.AddCommand(getQueryCmd)
 	// TODO: short flags
 
-	getQueryCmd.Flags().StringVar(&getQueryReq.QueryId, "query-id", "", ``)
+	getQueryCmd.Flags().StringVar(&getQueryReq.QueryId, "query-id", getQueryReq.QueryId, ``)
 
 }
 
@@ -123,14 +115,7 @@ var getQueryCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -140,10 +125,10 @@ func init() {
 	Cmd.AddCommand(listQueriesCmd)
 	// TODO: short flags
 
-	listQueriesCmd.Flags().StringVar(&listQueriesReq.Order, "order", "", `Name of query attribute to order by.`)
-	listQueriesCmd.Flags().IntVar(&listQueriesReq.Page, "page", 0, `Page number to retrieve.`)
-	listQueriesCmd.Flags().IntVar(&listQueriesReq.PageSize, "page-size", 0, `Number of queries to return per page.`)
-	listQueriesCmd.Flags().StringVar(&listQueriesReq.Q, "q", "", `Full text search term.`)
+	listQueriesCmd.Flags().StringVar(&listQueriesReq.Order, "order", listQueriesReq.Order, `Name of query attribute to order by.`)
+	listQueriesCmd.Flags().IntVar(&listQueriesReq.Page, "page", listQueriesReq.Page, `Page number to retrieve.`)
+	listQueriesCmd.Flags().IntVar(&listQueriesReq.PageSize, "page-size", listQueriesReq.PageSize, `Number of queries to return per page.`)
+	listQueriesCmd.Flags().StringVar(&listQueriesReq.Q, "q", listQueriesReq.Q, `Full text search term.`)
 
 }
 
@@ -163,14 +148,7 @@ var listQueriesCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -180,7 +158,7 @@ func init() {
 	Cmd.AddCommand(restoreQueryCmd)
 	// TODO: short flags
 
-	restoreQueryCmd.Flags().StringVar(&restoreQueryReq.QueryId, "query-id", "", ``)
+	restoreQueryCmd.Flags().StringVar(&restoreQueryReq.QueryId, "query-id", restoreQueryReq.QueryId, ``)
 
 }
 
@@ -200,7 +178,6 @@ var restoreQueryCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -211,12 +188,12 @@ func init() {
 	Cmd.AddCommand(updateQueryCmd)
 	// TODO: short flags
 
-	updateQueryCmd.Flags().StringVar(&updateQueryReq.DataSourceId, "data-source-id", "", `The ID of the data source / SQL warehouse where this query will run.`)
-	updateQueryCmd.Flags().StringVar(&updateQueryReq.Description, "description", "", `General description that can convey additional information about this query such as usage notes.`)
-	updateQueryCmd.Flags().StringVar(&updateQueryReq.Name, "name", "", `The name or title of this query to display in list views.`)
+	updateQueryCmd.Flags().StringVar(&updateQueryReq.DataSourceId, "data-source-id", updateQueryReq.DataSourceId, `The ID of the data source / SQL warehouse where this query will run.`)
+	updateQueryCmd.Flags().StringVar(&updateQueryReq.Description, "description", updateQueryReq.Description, `General description that can convey additional information about this query such as usage notes.`)
+	updateQueryCmd.Flags().StringVar(&updateQueryReq.Name, "name", updateQueryReq.Name, `The name or title of this query to display in list views.`)
 	// TODO: any: options
-	updateQueryCmd.Flags().StringVar(&updateQueryReq.Query, "query", "", `The text of the query.`)
-	updateQueryCmd.Flags().StringVar(&updateQueryReq.QueryId, "query-id", "", ``)
+	updateQueryCmd.Flags().StringVar(&updateQueryReq.Query, "query", updateQueryReq.Query, `The text of the query.`)
+	updateQueryCmd.Flags().StringVar(&updateQueryReq.QueryId, "query-id", updateQueryReq.QueryId, ``)
 	// TODO: complex arg: schedule
 
 }
@@ -238,14 +215,7 @@ var updateQueryCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 

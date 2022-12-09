@@ -32,22 +32,22 @@ func init() {
 	Cmd.AddCommand(createPipelineCmd)
 	// TODO: short flags
 
-	createPipelineCmd.Flags().BoolVar(&createPipelineReq.AllowDuplicateNames, "allow-duplicate-names", false, `If false, deployment will fail if name conflicts with that of another pipeline.`)
-	createPipelineCmd.Flags().StringVar(&createPipelineReq.Catalog, "catalog", "", `Catalog in UC to add tables to.`)
-	createPipelineCmd.Flags().StringVar(&createPipelineReq.Channel, "channel", "", `DLT Release Channel that specifies which version to use.`)
+	createPipelineCmd.Flags().BoolVar(&createPipelineReq.AllowDuplicateNames, "allow-duplicate-names", createPipelineReq.AllowDuplicateNames, `If false, deployment will fail if name conflicts with that of another pipeline.`)
+	createPipelineCmd.Flags().StringVar(&createPipelineReq.Catalog, "catalog", createPipelineReq.Catalog, `Catalog in UC to add tables to.`)
+	createPipelineCmd.Flags().StringVar(&createPipelineReq.Channel, "channel", createPipelineReq.Channel, `DLT Release Channel that specifies which version to use.`)
 	// TODO: array: clusters
 	// TODO: map via StringToStringVar: configuration
-	createPipelineCmd.Flags().BoolVar(&createPipelineReq.Continuous, "continuous", false, `Whether the pipeline is continuous or triggered.`)
-	createPipelineCmd.Flags().BoolVar(&createPipelineReq.Development, "development", false, `Whether the pipeline is in Development mode.`)
-	createPipelineCmd.Flags().BoolVar(&createPipelineReq.DryRun, "dry-run", false, ``)
-	createPipelineCmd.Flags().StringVar(&createPipelineReq.Edition, "edition", "", `Pipeline product edition.`)
+	createPipelineCmd.Flags().BoolVar(&createPipelineReq.Continuous, "continuous", createPipelineReq.Continuous, `Whether the pipeline is continuous or triggered.`)
+	createPipelineCmd.Flags().BoolVar(&createPipelineReq.Development, "development", createPipelineReq.Development, `Whether the pipeline is in Development mode.`)
+	createPipelineCmd.Flags().BoolVar(&createPipelineReq.DryRun, "dry-run", createPipelineReq.DryRun, ``)
+	createPipelineCmd.Flags().StringVar(&createPipelineReq.Edition, "edition", createPipelineReq.Edition, `Pipeline product edition.`)
 	// TODO: complex arg: filters
-	createPipelineCmd.Flags().StringVar(&createPipelineReq.Id, "id", "", `Unique identifier for this pipeline.`)
+	createPipelineCmd.Flags().StringVar(&createPipelineReq.Id, "id", createPipelineReq.Id, `Unique identifier for this pipeline.`)
 	// TODO: array: libraries
-	createPipelineCmd.Flags().StringVar(&createPipelineReq.Name, "name", "", `Friendly identifier for this pipeline.`)
-	createPipelineCmd.Flags().BoolVar(&createPipelineReq.Photon, "photon", false, `Whether Photon is enabled for this pipeline.`)
-	createPipelineCmd.Flags().StringVar(&createPipelineReq.Storage, "storage", "", `DBFS root directory for storing checkpoints and tables.`)
-	createPipelineCmd.Flags().StringVar(&createPipelineReq.Target, "target", "", `Target schema (database) to add tables in this pipeline to.`)
+	createPipelineCmd.Flags().StringVar(&createPipelineReq.Name, "name", createPipelineReq.Name, `Friendly identifier for this pipeline.`)
+	createPipelineCmd.Flags().BoolVar(&createPipelineReq.Photon, "photon", createPipelineReq.Photon, `Whether Photon is enabled for this pipeline.`)
+	createPipelineCmd.Flags().StringVar(&createPipelineReq.Storage, "storage", createPipelineReq.Storage, `DBFS root directory for storing checkpoints and tables.`)
+	createPipelineCmd.Flags().StringVar(&createPipelineReq.Target, "target", createPipelineReq.Target, `Target schema (database) to add tables in this pipeline to.`)
 	// TODO: complex arg: trigger
 
 }
@@ -68,14 +68,7 @@ var createPipelineCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -85,7 +78,7 @@ func init() {
 	Cmd.AddCommand(deletePipelineCmd)
 	// TODO: short flags
 
-	deletePipelineCmd.Flags().StringVar(&deletePipelineReq.PipelineId, "pipeline-id", "", ``)
+	deletePipelineCmd.Flags().StringVar(&deletePipelineReq.PipelineId, "pipeline-id", deletePipelineReq.PipelineId, ``)
 
 }
 
@@ -104,7 +97,6 @@ var deletePipelineCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -115,7 +107,7 @@ func init() {
 	Cmd.AddCommand(getPipelineCmd)
 	// TODO: short flags
 
-	getPipelineCmd.Flags().StringVar(&getPipelineReq.PipelineId, "pipeline-id", "", ``)
+	getPipelineCmd.Flags().StringVar(&getPipelineReq.PipelineId, "pipeline-id", getPipelineReq.PipelineId, ``)
 
 }
 
@@ -132,14 +124,7 @@ var getPipelineCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -149,8 +134,8 @@ func init() {
 	Cmd.AddCommand(getUpdateCmd)
 	// TODO: short flags
 
-	getUpdateCmd.Flags().StringVar(&getUpdateReq.PipelineId, "pipeline-id", "", `The ID of the pipeline.`)
-	getUpdateCmd.Flags().StringVar(&getUpdateReq.UpdateId, "update-id", "", `The ID of the update.`)
+	getUpdateCmd.Flags().StringVar(&getUpdateReq.PipelineId, "pipeline-id", getUpdateReq.PipelineId, `The ID of the pipeline.`)
+	getUpdateCmd.Flags().StringVar(&getUpdateReq.UpdateId, "update-id", getUpdateReq.UpdateId, `The ID of the update.`)
 
 }
 
@@ -169,14 +154,7 @@ var getUpdateCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -186,10 +164,10 @@ func init() {
 	Cmd.AddCommand(listPipelinesCmd)
 	// TODO: short flags
 
-	listPipelinesCmd.Flags().StringVar(&listPipelinesReq.Filter, "filter", "", `Select a subset of results based on the specified criteria.`)
-	listPipelinesCmd.Flags().IntVar(&listPipelinesReq.MaxResults, "max-results", 0, `The maximum number of entries to return in a single page.`)
+	listPipelinesCmd.Flags().StringVar(&listPipelinesReq.Filter, "filter", listPipelinesReq.Filter, `Select a subset of results based on the specified criteria.`)
+	listPipelinesCmd.Flags().IntVar(&listPipelinesReq.MaxResults, "max-results", listPipelinesReq.MaxResults, `The maximum number of entries to return in a single page.`)
 	// TODO: array: order_by
-	listPipelinesCmd.Flags().StringVar(&listPipelinesReq.PageToken, "page-token", "", `Page token returned by previous call.`)
+	listPipelinesCmd.Flags().StringVar(&listPipelinesReq.PageToken, "page-token", listPipelinesReq.PageToken, `Page token returned by previous call.`)
 
 }
 
@@ -208,14 +186,7 @@ var listPipelinesCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -225,10 +196,10 @@ func init() {
 	Cmd.AddCommand(listUpdatesCmd)
 	// TODO: short flags
 
-	listUpdatesCmd.Flags().IntVar(&listUpdatesReq.MaxResults, "max-results", 0, `Max number of entries to return in a single page.`)
-	listUpdatesCmd.Flags().StringVar(&listUpdatesReq.PageToken, "page-token", "", `Page token returned by previous call.`)
-	listUpdatesCmd.Flags().StringVar(&listUpdatesReq.PipelineId, "pipeline-id", "", `The pipeline to return updates for.`)
-	listUpdatesCmd.Flags().StringVar(&listUpdatesReq.UntilUpdateId, "until-update-id", "", `If present, returns updates until and including this update_id.`)
+	listUpdatesCmd.Flags().IntVar(&listUpdatesReq.MaxResults, "max-results", listUpdatesReq.MaxResults, `Max number of entries to return in a single page.`)
+	listUpdatesCmd.Flags().StringVar(&listUpdatesReq.PageToken, "page-token", listUpdatesReq.PageToken, `Page token returned by previous call.`)
+	listUpdatesCmd.Flags().StringVar(&listUpdatesReq.PipelineId, "pipeline-id", listUpdatesReq.PipelineId, `The pipeline to return updates for.`)
+	listUpdatesCmd.Flags().StringVar(&listUpdatesReq.UntilUpdateId, "until-update-id", listUpdatesReq.UntilUpdateId, `If present, returns updates until and including this update_id.`)
 
 }
 
@@ -247,14 +218,7 @@ var listUpdatesCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -264,7 +228,7 @@ func init() {
 	Cmd.AddCommand(resetPipelineCmd)
 	// TODO: short flags
 
-	resetPipelineCmd.Flags().StringVar(&resetPipelineReq.PipelineId, "pipeline-id", "", ``)
+	resetPipelineCmd.Flags().StringVar(&resetPipelineReq.PipelineId, "pipeline-id", resetPipelineReq.PipelineId, ``)
 
 }
 
@@ -283,7 +247,6 @@ var resetPipelineCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -295,9 +258,9 @@ func init() {
 	// TODO: short flags
 
 	startUpdateCmd.Flags().Var(&startUpdateReq.Cause, "cause", ``)
-	startUpdateCmd.Flags().BoolVar(&startUpdateReq.FullRefresh, "full-refresh", false, `If true, this update will reset all tables before running.`)
+	startUpdateCmd.Flags().BoolVar(&startUpdateReq.FullRefresh, "full-refresh", startUpdateReq.FullRefresh, `If true, this update will reset all tables before running.`)
 	// TODO: array: full_refresh_selection
-	startUpdateCmd.Flags().StringVar(&startUpdateReq.PipelineId, "pipeline-id", "", ``)
+	startUpdateCmd.Flags().StringVar(&startUpdateReq.PipelineId, "pipeline-id", startUpdateReq.PipelineId, ``)
 	// TODO: array: refresh_selection
 
 }
@@ -317,14 +280,7 @@ var startUpdateCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -334,7 +290,7 @@ func init() {
 	Cmd.AddCommand(stopPipelineCmd)
 	// TODO: short flags
 
-	stopPipelineCmd.Flags().StringVar(&stopPipelineReq.PipelineId, "pipeline-id", "", ``)
+	stopPipelineCmd.Flags().StringVar(&stopPipelineReq.PipelineId, "pipeline-id", stopPipelineReq.PipelineId, ``)
 
 }
 
@@ -353,7 +309,6 @@ var stopPipelineCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -364,23 +319,23 @@ func init() {
 	Cmd.AddCommand(updatePipelineCmd)
 	// TODO: short flags
 
-	updatePipelineCmd.Flags().BoolVar(&updatePipelineReq.AllowDuplicateNames, "allow-duplicate-names", false, `If false, deployment will fail if name has changed and conflicts the name of another pipeline.`)
-	updatePipelineCmd.Flags().StringVar(&updatePipelineReq.Catalog, "catalog", "", `Catalog in UC to add tables to.`)
-	updatePipelineCmd.Flags().StringVar(&updatePipelineReq.Channel, "channel", "", `DLT Release Channel that specifies which version to use.`)
+	updatePipelineCmd.Flags().BoolVar(&updatePipelineReq.AllowDuplicateNames, "allow-duplicate-names", updatePipelineReq.AllowDuplicateNames, `If false, deployment will fail if name has changed and conflicts the name of another pipeline.`)
+	updatePipelineCmd.Flags().StringVar(&updatePipelineReq.Catalog, "catalog", updatePipelineReq.Catalog, `Catalog in UC to add tables to.`)
+	updatePipelineCmd.Flags().StringVar(&updatePipelineReq.Channel, "channel", updatePipelineReq.Channel, `DLT Release Channel that specifies which version to use.`)
 	// TODO: array: clusters
 	// TODO: map via StringToStringVar: configuration
-	updatePipelineCmd.Flags().BoolVar(&updatePipelineReq.Continuous, "continuous", false, `Whether the pipeline is continuous or triggered.`)
-	updatePipelineCmd.Flags().BoolVar(&updatePipelineReq.Development, "development", false, `Whether the pipeline is in Development mode.`)
-	updatePipelineCmd.Flags().StringVar(&updatePipelineReq.Edition, "edition", "", `Pipeline product edition.`)
-	updatePipelineCmd.Flags().Int64Var(&updatePipelineReq.ExpectedLastModified, "expected-last-modified", 0, `If present, the last-modified time of the pipeline settings before the edit.`)
+	updatePipelineCmd.Flags().BoolVar(&updatePipelineReq.Continuous, "continuous", updatePipelineReq.Continuous, `Whether the pipeline is continuous or triggered.`)
+	updatePipelineCmd.Flags().BoolVar(&updatePipelineReq.Development, "development", updatePipelineReq.Development, `Whether the pipeline is in Development mode.`)
+	updatePipelineCmd.Flags().StringVar(&updatePipelineReq.Edition, "edition", updatePipelineReq.Edition, `Pipeline product edition.`)
+	updatePipelineCmd.Flags().Int64Var(&updatePipelineReq.ExpectedLastModified, "expected-last-modified", updatePipelineReq.ExpectedLastModified, `If present, the last-modified time of the pipeline settings before the edit.`)
 	// TODO: complex arg: filters
-	updatePipelineCmd.Flags().StringVar(&updatePipelineReq.Id, "id", "", `Unique identifier for this pipeline.`)
+	updatePipelineCmd.Flags().StringVar(&updatePipelineReq.Id, "id", updatePipelineReq.Id, `Unique identifier for this pipeline.`)
 	// TODO: array: libraries
-	updatePipelineCmd.Flags().StringVar(&updatePipelineReq.Name, "name", "", `Friendly identifier for this pipeline.`)
-	updatePipelineCmd.Flags().BoolVar(&updatePipelineReq.Photon, "photon", false, `Whether Photon is enabled for this pipeline.`)
-	updatePipelineCmd.Flags().StringVar(&updatePipelineReq.PipelineId, "pipeline-id", "", `Unique identifier for this pipeline.`)
-	updatePipelineCmd.Flags().StringVar(&updatePipelineReq.Storage, "storage", "", `DBFS root directory for storing checkpoints and tables.`)
-	updatePipelineCmd.Flags().StringVar(&updatePipelineReq.Target, "target", "", `Target schema (database) to add tables in this pipeline to.`)
+	updatePipelineCmd.Flags().StringVar(&updatePipelineReq.Name, "name", updatePipelineReq.Name, `Friendly identifier for this pipeline.`)
+	updatePipelineCmd.Flags().BoolVar(&updatePipelineReq.Photon, "photon", updatePipelineReq.Photon, `Whether Photon is enabled for this pipeline.`)
+	updatePipelineCmd.Flags().StringVar(&updatePipelineReq.PipelineId, "pipeline-id", updatePipelineReq.PipelineId, `Unique identifier for this pipeline.`)
+	updatePipelineCmd.Flags().StringVar(&updatePipelineReq.Storage, "storage", updatePipelineReq.Storage, `DBFS root directory for storing checkpoints and tables.`)
+	updatePipelineCmd.Flags().StringVar(&updatePipelineReq.Target, "target", updatePipelineReq.Target, `Target schema (database) to add tables in this pipeline to.`)
 	// TODO: complex arg: trigger
 
 }
@@ -400,7 +355,6 @@ var updatePipelineCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }

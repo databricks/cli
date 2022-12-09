@@ -20,8 +20,8 @@ func init() {
 	Cmd.AddCommand(addBlockCmd)
 	// TODO: short flags
 
-	addBlockCmd.Flags().StringVar(&addBlockReq.Data, "data", "", `The base64-encoded data to append to the stream.`)
-	addBlockCmd.Flags().Int64Var(&addBlockReq.Handle, "handle", 0, `The handle on an open stream.`)
+	addBlockCmd.Flags().StringVar(&addBlockReq.Data, "data", addBlockReq.Data, `The base64-encoded data to append to the stream.`)
+	addBlockCmd.Flags().Int64Var(&addBlockReq.Handle, "handle", addBlockReq.Handle, `The handle on an open stream.`)
 
 }
 
@@ -45,7 +45,6 @@ var addBlockCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -56,7 +55,7 @@ func init() {
 	Cmd.AddCommand(closeCmd)
 	// TODO: short flags
 
-	closeCmd.Flags().Int64Var(&closeReq.Handle, "handle", 0, `The handle on an open stream.`)
+	closeCmd.Flags().Int64Var(&closeReq.Handle, "handle", closeReq.Handle, `The handle on an open stream.`)
 
 }
 
@@ -76,7 +75,6 @@ var closeCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -87,8 +85,8 @@ func init() {
 	Cmd.AddCommand(createCmd)
 	// TODO: short flags
 
-	createCmd.Flags().BoolVar(&createReq.Overwrite, "overwrite", false, `The flag that specifies whether to overwrite existing file/files.`)
-	createCmd.Flags().StringVar(&createReq.Path, "path", "", `The path of the new file.`)
+	createCmd.Flags().BoolVar(&createReq.Overwrite, "overwrite", createReq.Overwrite, `The flag that specifies whether to overwrite existing file/files.`)
+	createCmd.Flags().StringVar(&createReq.Path, "path", createReq.Path, `The path of the new file.`)
 
 }
 
@@ -116,14 +114,7 @@ var createCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -133,8 +124,8 @@ func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
 
-	deleteCmd.Flags().StringVar(&deleteReq.Path, "path", "", `The path of the file or directory to delete.`)
-	deleteCmd.Flags().BoolVar(&deleteReq.Recursive, "recursive", false, `Whether or not to recursively delete the directory's contents.`)
+	deleteCmd.Flags().StringVar(&deleteReq.Path, "path", deleteReq.Path, `The path of the file or directory to delete.`)
+	deleteCmd.Flags().BoolVar(&deleteReq.Recursive, "recursive", deleteReq.Recursive, `Whether or not to recursively delete the directory's contents.`)
 
 }
 
@@ -170,7 +161,6 @@ var deleteCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -181,7 +171,7 @@ func init() {
 	Cmd.AddCommand(getStatusCmd)
 	// TODO: short flags
 
-	getStatusCmd.Flags().StringVar(&getStatusReq.Path, "path", "", `The path of the file or directory.`)
+	getStatusCmd.Flags().StringVar(&getStatusReq.Path, "path", getStatusReq.Path, `The path of the file or directory.`)
 
 }
 
@@ -201,14 +191,7 @@ var getStatusCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -218,7 +201,7 @@ func init() {
 	Cmd.AddCommand(listCmd)
 	// TODO: short flags
 
-	listCmd.Flags().StringVar(&listReq.Path, "path", "", `The path of the file or directory.`)
+	listCmd.Flags().StringVar(&listReq.Path, "path", listReq.Path, `The path of the file or directory.`)
 
 }
 
@@ -247,14 +230,7 @@ var listCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -264,7 +240,7 @@ func init() {
 	Cmd.AddCommand(mkdirsCmd)
 	// TODO: short flags
 
-	mkdirsCmd.Flags().StringVar(&mkdirsReq.Path, "path", "", `The path of the new directory.`)
+	mkdirsCmd.Flags().StringVar(&mkdirsReq.Path, "path", mkdirsReq.Path, `The path of the new directory.`)
 
 }
 
@@ -287,7 +263,6 @@ var mkdirsCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -298,8 +273,8 @@ func init() {
 	Cmd.AddCommand(moveCmd)
 	// TODO: short flags
 
-	moveCmd.Flags().StringVar(&moveReq.DestinationPath, "destination-path", "", `The destination path of the file or directory.`)
-	moveCmd.Flags().StringVar(&moveReq.SourcePath, "source-path", "", `The source path of the file or directory.`)
+	moveCmd.Flags().StringVar(&moveReq.DestinationPath, "destination-path", moveReq.DestinationPath, `The destination path of the file or directory.`)
+	moveCmd.Flags().StringVar(&moveReq.SourcePath, "source-path", moveReq.SourcePath, `The source path of the file or directory.`)
 
 }
 
@@ -322,7 +297,6 @@ var moveCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -333,9 +307,9 @@ func init() {
 	Cmd.AddCommand(putCmd)
 	// TODO: short flags
 
-	putCmd.Flags().StringVar(&putReq.Contents, "contents", "", `This parameter might be absent, and instead a posted file will be used.`)
-	putCmd.Flags().BoolVar(&putReq.Overwrite, "overwrite", false, `The flag that specifies whether to overwrite existing file/files.`)
-	putCmd.Flags().StringVar(&putReq.Path, "path", "", `The path of the new file.`)
+	putCmd.Flags().StringVar(&putReq.Contents, "contents", putReq.Contents, `This parameter might be absent, and instead a posted file will be used.`)
+	putCmd.Flags().BoolVar(&putReq.Overwrite, "overwrite", putReq.Overwrite, `The flag that specifies whether to overwrite existing file/files.`)
+	putCmd.Flags().StringVar(&putReq.Path, "path", putReq.Path, `The path of the new file.`)
 
 }
 
@@ -365,7 +339,6 @@ var putCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -376,9 +349,9 @@ func init() {
 	Cmd.AddCommand(readCmd)
 	// TODO: short flags
 
-	readCmd.Flags().IntVar(&readReq.Length, "length", 0, `The number of bytes to read starting from the offset.`)
-	readCmd.Flags().IntVar(&readReq.Offset, "offset", 0, `The offset to read from in bytes.`)
-	readCmd.Flags().StringVar(&readReq.Path, "path", "", `The path of the file to read.`)
+	readCmd.Flags().IntVar(&readReq.Length, "length", readReq.Length, `The number of bytes to read starting from the offset.`)
+	readCmd.Flags().IntVar(&readReq.Offset, "offset", readReq.Offset, `The offset to read from in bytes.`)
+	readCmd.Flags().StringVar(&readReq.Path, "path", readReq.Path, `The path of the file to read.`)
 
 }
 
@@ -404,14 +377,7 @@ var readCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 

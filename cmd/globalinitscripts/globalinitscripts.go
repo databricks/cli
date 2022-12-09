@@ -21,21 +21,21 @@ var Cmd = &cobra.Command{
   fail, the entire cluster fails with a GLOBAL_INIT_SCRIPT_FAILURE error code.`,
 }
 
-var createScriptReq globalinitscripts.GlobalInitScriptCreateRequest
+var createReq globalinitscripts.GlobalInitScriptCreateRequest
 
 func init() {
-	Cmd.AddCommand(createScriptCmd)
+	Cmd.AddCommand(createCmd)
 	// TODO: short flags
 
-	createScriptCmd.Flags().BoolVar(&createScriptReq.Enabled, "enabled", false, `Specifies whether the script is enabled.`)
-	createScriptCmd.Flags().StringVar(&createScriptReq.Name, "name", "", `The name of the script.`)
-	createScriptCmd.Flags().IntVar(&createScriptReq.Position, "position", 0, `The position of a global init script, where 0 represents the first script to run, 1 is the second script to run, in ascending order.`)
-	createScriptCmd.Flags().StringVar(&createScriptReq.Script, "script", "", `The Base64-encoded content of the script.`)
+	createCmd.Flags().BoolVar(&createReq.Enabled, "enabled", createReq.Enabled, `Specifies whether the script is enabled.`)
+	createCmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `The name of the script.`)
+	createCmd.Flags().IntVar(&createReq.Position, "position", createReq.Position, `The position of a global init script, where 0 represents the first script to run, 1 is the second script to run, in ascending order.`)
+	createCmd.Flags().StringVar(&createReq.Script, "script", createReq.Script, `The Base64-encoded content of the script.`)
 
 }
 
-var createScriptCmd = &cobra.Command{
-	Use:   "create-script",
+var createCmd = &cobra.Command{
+	Use:   "create",
 	Short: `Create init script.`,
 	Long: `Create init script.
   
@@ -45,33 +45,26 @@ var createScriptCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		response, err := w.GlobalInitScripts.CreateScript(ctx, createScriptReq)
+		response, err := w.GlobalInitScripts.Create(ctx, createReq)
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
-var deleteScriptReq globalinitscripts.DeleteScript
+var deleteReq globalinitscripts.Delete
 
 func init() {
-	Cmd.AddCommand(deleteScriptCmd)
+	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
 
-	deleteScriptCmd.Flags().StringVar(&deleteScriptReq.ScriptId, "script-id", "", `The ID of the global init script.`)
+	deleteCmd.Flags().StringVar(&deleteReq.ScriptId, "script-id", deleteReq.ScriptId, `The ID of the global init script.`)
 
 }
 
-var deleteScriptCmd = &cobra.Command{
-	Use:   "delete-script",
+var deleteCmd = &cobra.Command{
+	Use:   "delete",
 	Short: `Delete init script.`,
 	Long: `Delete init script.
   
@@ -81,27 +74,26 @@ var deleteScriptCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.GlobalInitScripts.DeleteScript(ctx, deleteScriptReq)
+		err := w.GlobalInitScripts.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
 
-var getScriptReq globalinitscripts.GetScript
+var getReq globalinitscripts.Get
 
 func init() {
-	Cmd.AddCommand(getScriptCmd)
+	Cmd.AddCommand(getCmd)
 	// TODO: short flags
 
-	getScriptCmd.Flags().StringVar(&getScriptReq.ScriptId, "script-id", "", `The ID of the global init script.`)
+	getCmd.Flags().StringVar(&getReq.ScriptId, "script-id", getReq.ScriptId, `The ID of the global init script.`)
 
 }
 
-var getScriptCmd = &cobra.Command{
-	Use:   "get-script",
+var getCmd = &cobra.Command{
+	Use:   "get",
 	Short: `Get an init script.`,
 	Long: `Get an init script.
   
@@ -111,28 +103,21 @@ var getScriptCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		response, err := w.GlobalInitScripts.GetScript(ctx, getScriptReq)
+		response, err := w.GlobalInitScripts.Get(ctx, getReq)
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
 func init() {
-	Cmd.AddCommand(listScriptsCmd)
+	Cmd.AddCommand(listCmd)
 
 }
 
-var listScriptsCmd = &cobra.Command{
-	Use:   "list-scripts",
+var listCmd = &cobra.Command{
+	Use:   "list",
 	Short: `Get init scripts.`,
 	Long: `Get init scripts.
   
@@ -145,37 +130,30 @@ var listScriptsCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		response, err := w.GlobalInitScripts.ListScriptsAll(ctx)
+		response, err := w.GlobalInitScripts.ListAll(ctx)
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
-var updateScriptReq globalinitscripts.GlobalInitScriptUpdateRequest
+var updateReq globalinitscripts.GlobalInitScriptUpdateRequest
 
 func init() {
-	Cmd.AddCommand(updateScriptCmd)
+	Cmd.AddCommand(updateCmd)
 	// TODO: short flags
 
-	updateScriptCmd.Flags().BoolVar(&updateScriptReq.Enabled, "enabled", false, `Specifies whether the script is enabled.`)
-	updateScriptCmd.Flags().StringVar(&updateScriptReq.Name, "name", "", `The name of the script.`)
-	updateScriptCmd.Flags().IntVar(&updateScriptReq.Position, "position", 0, `The position of a script, where 0 represents the first script to run, 1 is the second script to run, in ascending order.`)
-	updateScriptCmd.Flags().StringVar(&updateScriptReq.Script, "script", "", `The Base64-encoded content of the script.`)
-	updateScriptCmd.Flags().StringVar(&updateScriptReq.ScriptId, "script-id", "", `The ID of the global init script.`)
+	updateCmd.Flags().BoolVar(&updateReq.Enabled, "enabled", updateReq.Enabled, `Specifies whether the script is enabled.`)
+	updateCmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `The name of the script.`)
+	updateCmd.Flags().IntVar(&updateReq.Position, "position", updateReq.Position, `The position of a script, where 0 represents the first script to run, 1 is the second script to run, in ascending order.`)
+	updateCmd.Flags().StringVar(&updateReq.Script, "script", updateReq.Script, `The Base64-encoded content of the script.`)
+	updateCmd.Flags().StringVar(&updateReq.ScriptId, "script-id", updateReq.ScriptId, `The ID of the global init script.`)
 
 }
 
-var updateScriptCmd = &cobra.Command{
-	Use:   "update-script",
+var updateCmd = &cobra.Command{
+	Use:   "update",
 	Short: `Update init script.`,
 	Long: `Update init script.
   
@@ -186,11 +164,10 @@ var updateScriptCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err := w.GlobalInitScripts.UpdateScript(ctx, updateScriptReq)
+		err := w.GlobalInitScripts.Update(ctx, updateReq)
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }

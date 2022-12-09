@@ -17,10 +17,10 @@ func init() {
 	Cmd.AddCommand(listCmd)
 	// TODO: short flags
 
-	listCmd.Flags().StringVar(&listReq.PageToken, "page-token", "", `Token indicating the page of artifact results to fetch.`)
-	listCmd.Flags().StringVar(&listReq.Path, "path", "", `Filter artifacts matching this path (a relative path from the root artifact directory).`)
-	listCmd.Flags().StringVar(&listReq.RunId, "run-id", "", `ID of the run whose artifacts to list.`)
-	listCmd.Flags().StringVar(&listReq.RunUuid, "run-uuid", "", `[Deprecated, use run_id instead] ID of the run whose artifacts to list.`)
+	listCmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Token indicating the page of artifact results to fetch.`)
+	listCmd.Flags().StringVar(&listReq.Path, "path", listReq.Path, `Filter artifacts matching this path (a relative path from the root artifact directory).`)
+	listCmd.Flags().StringVar(&listReq.RunId, "run-id", listReq.RunId, `ID of the run whose artifacts to list.`)
+	listCmd.Flags().StringVar(&listReq.RunUuid, "run-uuid", listReq.RunUuid, `[Deprecated, use run_id instead] ID of the run whose artifacts to list.`)
 
 }
 
@@ -40,14 +40,7 @@ var listCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 

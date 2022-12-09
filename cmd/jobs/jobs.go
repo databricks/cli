@@ -35,7 +35,7 @@ func init() {
 	Cmd.AddCommand(cancelAllRunsCmd)
 	// TODO: short flags
 
-	cancelAllRunsCmd.Flags().Int64Var(&cancelAllRunsReq.JobId, "job-id", 0, `The canonical identifier of the job to cancel all runs of.`)
+	cancelAllRunsCmd.Flags().Int64Var(&cancelAllRunsReq.JobId, "job-id", cancelAllRunsReq.JobId, `The canonical identifier of the job to cancel all runs of.`)
 
 }
 
@@ -55,7 +55,6 @@ var cancelAllRunsCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -66,7 +65,7 @@ func init() {
 	Cmd.AddCommand(cancelRunCmd)
 	// TODO: short flags
 
-	cancelRunCmd.Flags().Int64Var(&cancelRunReq.RunId, "run-id", 0, `This field is required.`)
+	cancelRunCmd.Flags().Int64Var(&cancelRunReq.RunId, "run-id", cancelRunReq.RunId, `This field is required.`)
 
 }
 
@@ -86,7 +85,6 @@ var cancelRunCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -102,12 +100,12 @@ func init() {
 	createCmd.Flags().Var(&createReq.Format, "format", `Used to tell what is the format of the job.`)
 	// TODO: complex arg: git_source
 	// TODO: array: job_clusters
-	createCmd.Flags().IntVar(&createReq.MaxConcurrentRuns, "max-concurrent-runs", 0, `An optional maximum allowed number of concurrent runs of the job.`)
-	createCmd.Flags().StringVar(&createReq.Name, "name", "", `An optional name for the job.`)
+	createCmd.Flags().IntVar(&createReq.MaxConcurrentRuns, "max-concurrent-runs", createReq.MaxConcurrentRuns, `An optional maximum allowed number of concurrent runs of the job.`)
+	createCmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `An optional name for the job.`)
 	// TODO: complex arg: schedule
 	// TODO: map via StringToStringVar: tags
 	// TODO: array: tasks
-	createCmd.Flags().IntVar(&createReq.TimeoutSeconds, "timeout-seconds", 0, `An optional timeout applied to each run of this job.`)
+	createCmd.Flags().IntVar(&createReq.TimeoutSeconds, "timeout-seconds", createReq.TimeoutSeconds, `An optional timeout applied to each run of this job.`)
 	// TODO: complex arg: webhook_notifications
 
 }
@@ -127,14 +125,7 @@ var createCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -144,7 +135,7 @@ func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
 
-	deleteCmd.Flags().Int64Var(&deleteReq.JobId, "job-id", 0, `The canonical identifier of the job to delete.`)
+	deleteCmd.Flags().Int64Var(&deleteReq.JobId, "job-id", deleteReq.JobId, `The canonical identifier of the job to delete.`)
 
 }
 
@@ -163,7 +154,6 @@ var deleteCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -174,7 +164,7 @@ func init() {
 	Cmd.AddCommand(deleteRunCmd)
 	// TODO: short flags
 
-	deleteRunCmd.Flags().Int64Var(&deleteRunReq.RunId, "run-id", 0, `The canonical identifier of the run for which to retrieve the metadata.`)
+	deleteRunCmd.Flags().Int64Var(&deleteRunReq.RunId, "run-id", deleteRunReq.RunId, `The canonical identifier of the run for which to retrieve the metadata.`)
 
 }
 
@@ -193,7 +183,6 @@ var deleteRunCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -204,7 +193,7 @@ func init() {
 	Cmd.AddCommand(exportRunCmd)
 	// TODO: short flags
 
-	exportRunCmd.Flags().Int64Var(&exportRunReq.RunId, "run-id", 0, `The canonical identifier for the run.`)
+	exportRunCmd.Flags().Int64Var(&exportRunReq.RunId, "run-id", exportRunReq.RunId, `The canonical identifier for the run.`)
 	exportRunCmd.Flags().Var(&exportRunReq.ViewsToExport, "views-to-export", `Which views to export (CODE, DASHBOARDS, or ALL).`)
 
 }
@@ -224,14 +213,7 @@ var exportRunCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -241,7 +223,7 @@ func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
 
-	getCmd.Flags().Int64Var(&getReq.JobId, "job-id", 0, `The canonical identifier of the job to retrieve information about.`)
+	getCmd.Flags().Int64Var(&getReq.JobId, "job-id", getReq.JobId, `The canonical identifier of the job to retrieve information about.`)
 
 }
 
@@ -260,14 +242,7 @@ var getCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -277,8 +252,8 @@ func init() {
 	Cmd.AddCommand(getRunCmd)
 	// TODO: short flags
 
-	getRunCmd.Flags().BoolVar(&getRunReq.IncludeHistory, "include-history", false, `Whether to include the repair history in the response.`)
-	getRunCmd.Flags().Int64Var(&getRunReq.RunId, "run-id", 0, `The canonical identifier of the run for which to retrieve the metadata.`)
+	getRunCmd.Flags().BoolVar(&getRunReq.IncludeHistory, "include-history", getRunReq.IncludeHistory, `Whether to include the repair history in the response.`)
+	getRunCmd.Flags().Int64Var(&getRunReq.RunId, "run-id", getRunReq.RunId, `The canonical identifier of the run for which to retrieve the metadata.`)
 
 }
 
@@ -297,14 +272,7 @@ var getRunCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -314,7 +282,7 @@ func init() {
 	Cmd.AddCommand(getRunOutputCmd)
 	// TODO: short flags
 
-	getRunOutputCmd.Flags().Int64Var(&getRunOutputReq.RunId, "run-id", 0, `The canonical identifier for the run.`)
+	getRunOutputCmd.Flags().Int64Var(&getRunOutputReq.RunId, "run-id", getRunOutputReq.RunId, `The canonical identifier for the run.`)
 
 }
 
@@ -342,14 +310,7 @@ var getRunOutputCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -359,10 +320,10 @@ func init() {
 	Cmd.AddCommand(listCmd)
 	// TODO: short flags
 
-	listCmd.Flags().BoolVar(&listReq.ExpandTasks, "expand-tasks", false, `Whether to include task and cluster details in the response.`)
-	listCmd.Flags().IntVar(&listReq.Limit, "limit", 0, `The number of jobs to return.`)
-	listCmd.Flags().StringVar(&listReq.Name, "name", "", `A filter on the list based on the exact (case insensitive) job name.`)
-	listCmd.Flags().IntVar(&listReq.Offset, "offset", 0, `The offset of the first job to return, relative to the most recently created job.`)
+	listCmd.Flags().BoolVar(&listReq.ExpandTasks, "expand-tasks", listReq.ExpandTasks, `Whether to include task and cluster details in the response.`)
+	listCmd.Flags().IntVar(&listReq.Limit, "limit", listReq.Limit, `The number of jobs to return.`)
+	listCmd.Flags().StringVar(&listReq.Name, "name", listReq.Name, `A filter on the list based on the exact (case insensitive) job name.`)
+	listCmd.Flags().IntVar(&listReq.Offset, "offset", listReq.Offset, `The offset of the first job to return, relative to the most recently created job.`)
 
 }
 
@@ -381,14 +342,7 @@ var listCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -398,15 +352,15 @@ func init() {
 	Cmd.AddCommand(listRunsCmd)
 	// TODO: short flags
 
-	listRunsCmd.Flags().BoolVar(&listRunsReq.ActiveOnly, "active-only", false, `If active_only is true, only active runs are included in the results; otherwise, lists both active and completed runs.`)
-	listRunsCmd.Flags().BoolVar(&listRunsReq.CompletedOnly, "completed-only", false, `If completed_only is true, only completed runs are included in the results; otherwise, lists both active and completed runs.`)
-	listRunsCmd.Flags().BoolVar(&listRunsReq.ExpandTasks, "expand-tasks", false, `Whether to include task and cluster details in the response.`)
-	listRunsCmd.Flags().Int64Var(&listRunsReq.JobId, "job-id", 0, `The job for which to list runs.`)
-	listRunsCmd.Flags().IntVar(&listRunsReq.Limit, "limit", 0, `The number of runs to return.`)
-	listRunsCmd.Flags().IntVar(&listRunsReq.Offset, "offset", 0, `The offset of the first run to return, relative to the most recent run.`)
+	listRunsCmd.Flags().BoolVar(&listRunsReq.ActiveOnly, "active-only", listRunsReq.ActiveOnly, `If active_only is true, only active runs are included in the results; otherwise, lists both active and completed runs.`)
+	listRunsCmd.Flags().BoolVar(&listRunsReq.CompletedOnly, "completed-only", listRunsReq.CompletedOnly, `If completed_only is true, only completed runs are included in the results; otherwise, lists both active and completed runs.`)
+	listRunsCmd.Flags().BoolVar(&listRunsReq.ExpandTasks, "expand-tasks", listRunsReq.ExpandTasks, `Whether to include task and cluster details in the response.`)
+	listRunsCmd.Flags().Int64Var(&listRunsReq.JobId, "job-id", listRunsReq.JobId, `The job for which to list runs.`)
+	listRunsCmd.Flags().IntVar(&listRunsReq.Limit, "limit", listRunsReq.Limit, `The number of runs to return.`)
+	listRunsCmd.Flags().IntVar(&listRunsReq.Offset, "offset", listRunsReq.Offset, `The offset of the first run to return, relative to the most recent run.`)
 	listRunsCmd.Flags().Var(&listRunsReq.RunType, "run-type", `The type of runs to return.`)
-	listRunsCmd.Flags().IntVar(&listRunsReq.StartTimeFrom, "start-time-from", 0, `Show runs that started _at or after_ this value.`)
-	listRunsCmd.Flags().IntVar(&listRunsReq.StartTimeTo, "start-time-to", 0, `Show runs that started _at or before_ this value.`)
+	listRunsCmd.Flags().IntVar(&listRunsReq.StartTimeFrom, "start-time-from", listRunsReq.StartTimeFrom, `Show runs that started _at or after_ this value.`)
+	listRunsCmd.Flags().IntVar(&listRunsReq.StartTimeTo, "start-time-to", listRunsReq.StartTimeTo, `Show runs that started _at or before_ this value.`)
 
 }
 
@@ -425,14 +379,7 @@ var listRunsCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -444,14 +391,14 @@ func init() {
 
 	// TODO: array: dbt_commands
 	// TODO: array: jar_params
-	repairRunCmd.Flags().Int64Var(&repairRunReq.LatestRepairId, "latest-repair-id", 0, `The ID of the latest repair.`)
+	repairRunCmd.Flags().Int64Var(&repairRunReq.LatestRepairId, "latest-repair-id", repairRunReq.LatestRepairId, `The ID of the latest repair.`)
 	// TODO: map via StringToStringVar: notebook_params
 	// TODO: complex arg: pipeline_params
 	// TODO: map via StringToStringVar: python_named_params
 	// TODO: array: python_params
-	repairRunCmd.Flags().BoolVar(&repairRunReq.RerunAllFailedTasks, "rerun-all-failed-tasks", false, `If true, repair all failed tasks.`)
+	repairRunCmd.Flags().BoolVar(&repairRunReq.RerunAllFailedTasks, "rerun-all-failed-tasks", repairRunReq.RerunAllFailedTasks, `If true, repair all failed tasks.`)
 	// TODO: array: rerun_tasks
-	repairRunCmd.Flags().Int64Var(&repairRunReq.RunId, "run-id", 0, `The job run ID of the run to repair.`)
+	repairRunCmd.Flags().Int64Var(&repairRunReq.RunId, "run-id", repairRunReq.RunId, `The job run ID of the run to repair.`)
 	// TODO: array: spark_submit_params
 	// TODO: map via StringToStringVar: sql_params
 
@@ -474,14 +421,7 @@ var repairRunCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -491,7 +431,7 @@ func init() {
 	Cmd.AddCommand(resetCmd)
 	// TODO: short flags
 
-	resetCmd.Flags().Int64Var(&resetReq.JobId, "job-id", 0, `The canonical identifier of the job to reset.`)
+	resetCmd.Flags().Int64Var(&resetReq.JobId, "job-id", resetReq.JobId, `The canonical identifier of the job to reset.`)
 	// TODO: complex arg: new_settings
 
 }
@@ -512,7 +452,6 @@ var resetCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -524,9 +463,9 @@ func init() {
 	// TODO: short flags
 
 	// TODO: array: dbt_commands
-	runNowCmd.Flags().StringVar(&runNowReq.IdempotencyToken, "idempotency-token", "", `An optional token to guarantee the idempotency of job run requests.`)
+	runNowCmd.Flags().StringVar(&runNowReq.IdempotencyToken, "idempotency-token", runNowReq.IdempotencyToken, `An optional token to guarantee the idempotency of job run requests.`)
 	// TODO: array: jar_params
-	runNowCmd.Flags().Int64Var(&runNowReq.JobId, "job-id", 0, `The ID of the job to be executed.`)
+	runNowCmd.Flags().Int64Var(&runNowReq.JobId, "job-id", runNowReq.JobId, `The ID of the job to be executed.`)
 	// TODO: map via StringToStringVar: notebook_params
 	// TODO: complex arg: pipeline_params
 	// TODO: map via StringToStringVar: python_named_params
@@ -551,14 +490,7 @@ var runNowCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -570,10 +502,10 @@ func init() {
 
 	// TODO: array: access_control_list
 	// TODO: complex arg: git_source
-	submitCmd.Flags().StringVar(&submitReq.IdempotencyToken, "idempotency-token", "", `An optional token that can be used to guarantee the idempotency of job run requests.`)
-	submitCmd.Flags().StringVar(&submitReq.RunName, "run-name", "", `An optional name for the run.`)
+	submitCmd.Flags().StringVar(&submitReq.IdempotencyToken, "idempotency-token", submitReq.IdempotencyToken, `An optional token that can be used to guarantee the idempotency of job run requests.`)
+	submitCmd.Flags().StringVar(&submitReq.RunName, "run-name", submitReq.RunName, `An optional name for the run.`)
 	// TODO: array: tasks
-	submitCmd.Flags().IntVar(&submitReq.TimeoutSeconds, "timeout-seconds", 0, `An optional timeout applied to each run of this job.`)
+	submitCmd.Flags().IntVar(&submitReq.TimeoutSeconds, "timeout-seconds", submitReq.TimeoutSeconds, `An optional timeout applied to each run of this job.`)
 	// TODO: complex arg: webhook_notifications
 
 }
@@ -596,14 +528,7 @@ var submitCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -614,7 +539,7 @@ func init() {
 	// TODO: short flags
 
 	// TODO: array: fields_to_remove
-	updateCmd.Flags().Int64Var(&updateReq.JobId, "job-id", 0, `The canonical identifier of the job to update.`)
+	updateCmd.Flags().Int64Var(&updateReq.JobId, "job-id", updateReq.JobId, `The canonical identifier of the job to update.`)
 	// TODO: complex arg: new_settings
 
 }
@@ -635,7 +560,6 @@ var updateCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }

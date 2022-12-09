@@ -19,9 +19,9 @@ func init() {
 	Cmd.AddCommand(downloadCmd)
 	// TODO: short flags
 
-	downloadCmd.Flags().StringVar(&downloadReq.EndMonth, "end-month", "", `Format: YYYY-MM.`)
-	downloadCmd.Flags().BoolVar(&downloadReq.PersonalData, "personal-data", false, `Specify whether to include personally identifiable information in the billable usage logs, for example the email addresses of cluster creators.`)
-	downloadCmd.Flags().StringVar(&downloadReq.StartMonth, "start-month", "", `Format: YYYY-MM.`)
+	downloadCmd.Flags().StringVar(&downloadReq.EndMonth, "end-month", downloadReq.EndMonth, `Format: YYYY-MM.`)
+	downloadCmd.Flags().BoolVar(&downloadReq.PersonalData, "personal-data", downloadReq.PersonalData, `Specify whether to include personally identifiable information in the billable usage logs, for example the email addresses of cluster creators.`)
+	downloadCmd.Flags().StringVar(&downloadReq.StartMonth, "start-month", downloadReq.StartMonth, `Format: YYYY-MM.`)
 
 }
 
@@ -44,7 +44,6 @@ var downloadCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }

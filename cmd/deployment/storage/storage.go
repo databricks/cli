@@ -25,7 +25,7 @@ func init() {
 	// TODO: short flags
 
 	// TODO: complex arg: root_bucket_info
-	createCmd.Flags().StringVar(&createReq.StorageConfigurationName, "storage-configuration-name", "", `The human-readable name of the storage configuration.`)
+	createCmd.Flags().StringVar(&createReq.StorageConfigurationName, "storage-configuration-name", createReq.StorageConfigurationName, `The human-readable name of the storage configuration.`)
 
 }
 
@@ -53,14 +53,7 @@ var createCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -70,7 +63,7 @@ func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
 
-	deleteCmd.Flags().StringVar(&deleteReq.StorageConfigurationId, "storage-configuration-id", "", `Databricks Account API storage configuration ID.`)
+	deleteCmd.Flags().StringVar(&deleteReq.StorageConfigurationId, "storage-configuration-id", deleteReq.StorageConfigurationId, `Databricks Account API storage configuration ID.`)
 
 }
 
@@ -90,7 +83,6 @@ var deleteCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -101,7 +93,7 @@ func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
 
-	getCmd.Flags().StringVar(&getReq.StorageConfigurationId, "storage-configuration-id", "", `Databricks Account API storage configuration ID.`)
+	getCmd.Flags().StringVar(&getReq.StorageConfigurationId, "storage-configuration-id", getReq.StorageConfigurationId, `Databricks Account API storage configuration ID.`)
 
 }
 
@@ -120,14 +112,7 @@ var getCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -152,14 +137,7 @@ var listCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 

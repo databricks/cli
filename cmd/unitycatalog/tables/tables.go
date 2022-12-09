@@ -26,28 +26,28 @@ func init() {
 	Cmd.AddCommand(createCmd)
 	// TODO: short flags
 
-	createCmd.Flags().StringVar(&createReq.CatalogName, "catalog-name", "", `[Create:REQ Update:IGN] Name of parent Catalog.`)
+	createCmd.Flags().StringVar(&createReq.CatalogName, "catalog-name", createReq.CatalogName, `[Create:REQ Update:IGN] Name of parent Catalog.`)
 	// TODO: array: columns
-	createCmd.Flags().StringVar(&createReq.Comment, "comment", "", `[Create,Update:OPT] User-provided free-form text description.`)
-	createCmd.Flags().Int64Var(&createReq.CreatedAt, "created-at", 0, `[Create,Update:IGN] Time at which this Table was created, in epoch milliseconds.`)
-	createCmd.Flags().StringVar(&createReq.CreatedBy, "created-by", "", `[Create,Update:IGN] Username of Table creator.`)
-	createCmd.Flags().StringVar(&createReq.DataAccessConfigurationId, "data-access-configuration-id", "", `[Create,Update:IGN] Unique ID of the data_access_configuration to use.`)
+	createCmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `[Create,Update:OPT] User-provided free-form text description.`)
+	createCmd.Flags().Int64Var(&createReq.CreatedAt, "created-at", createReq.CreatedAt, `[Create,Update:IGN] Time at which this Table was created, in epoch milliseconds.`)
+	createCmd.Flags().StringVar(&createReq.CreatedBy, "created-by", createReq.CreatedBy, `[Create,Update:IGN] Username of Table creator.`)
+	createCmd.Flags().StringVar(&createReq.DataAccessConfigurationId, "data-access-configuration-id", createReq.DataAccessConfigurationId, `[Create,Update:IGN] Unique ID of the data_access_configuration to use.`)
 	createCmd.Flags().Var(&createReq.DataSourceFormat, "data-source-format", `[Create:REQ Update:OPT] Data source format ("DELTA", "CSV", etc.).`)
-	createCmd.Flags().StringVar(&createReq.FullName, "full-name", "", `[Create,Update:IGN] Full name of Table, in form of <catalog_name>.<schema_name>.<table_name>.`)
-	createCmd.Flags().StringVar(&createReq.MetastoreId, "metastore-id", "", `[Create,Update:IGN] Unique identifier of parent Metastore.`)
-	createCmd.Flags().StringVar(&createReq.Name, "name", "", `[Create:REQ Update:OPT] Name of Table, relative to parent Schema.`)
-	createCmd.Flags().StringVar(&createReq.Owner, "owner", "", `[Create: IGN Update:OPT] Username of current owner of Table.`)
+	createCmd.Flags().StringVar(&createReq.FullName, "full-name", createReq.FullName, `[Create,Update:IGN] Full name of Table, in form of <catalog_name>.<schema_name>.<table_name>.`)
+	createCmd.Flags().StringVar(&createReq.MetastoreId, "metastore-id", createReq.MetastoreId, `[Create,Update:IGN] Unique identifier of parent Metastore.`)
+	createCmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `[Create:REQ Update:OPT] Name of Table, relative to parent Schema.`)
+	createCmd.Flags().StringVar(&createReq.Owner, "owner", createReq.Owner, `[Create: IGN Update:OPT] Username of current owner of Table.`)
 	// TODO: array: privileges
 	// TODO: array: properties
-	createCmd.Flags().StringVar(&createReq.SchemaName, "schema-name", "", `[Create:REQ Update:IGN] Name of parent Schema relative to its parent Catalog.`)
-	createCmd.Flags().StringVar(&createReq.SqlPath, "sql-path", "", `[Create,Update:OPT] List of schemes whose objects can be referenced without qualification.`)
-	createCmd.Flags().StringVar(&createReq.StorageCredentialName, "storage-credential-name", "", `[Create:OPT Update:IGN] Name of the storage credential this table used.`)
-	createCmd.Flags().StringVar(&createReq.StorageLocation, "storage-location", "", `[Create:REQ Update:OPT] Storage root URL for table (for MANAGED, EXTERNAL tables).`)
-	createCmd.Flags().StringVar(&createReq.TableId, "table-id", "", `[Create:IGN Update:IGN] Name of Table, relative to parent Schema.`)
+	createCmd.Flags().StringVar(&createReq.SchemaName, "schema-name", createReq.SchemaName, `[Create:REQ Update:IGN] Name of parent Schema relative to its parent Catalog.`)
+	createCmd.Flags().StringVar(&createReq.SqlPath, "sql-path", createReq.SqlPath, `[Create,Update:OPT] List of schemes whose objects can be referenced without qualification.`)
+	createCmd.Flags().StringVar(&createReq.StorageCredentialName, "storage-credential-name", createReq.StorageCredentialName, `[Create:OPT Update:IGN] Name of the storage credential this table used.`)
+	createCmd.Flags().StringVar(&createReq.StorageLocation, "storage-location", createReq.StorageLocation, `[Create:REQ Update:OPT] Storage root URL for table (for MANAGED, EXTERNAL tables).`)
+	createCmd.Flags().StringVar(&createReq.TableId, "table-id", createReq.TableId, `[Create:IGN Update:IGN] Name of Table, relative to parent Schema.`)
 	createCmd.Flags().Var(&createReq.TableType, "table-type", `[Create:REQ Update:OPT] Table type ("MANAGED", "EXTERNAL", "VIEW").`)
-	createCmd.Flags().Int64Var(&createReq.UpdatedAt, "updated-at", 0, `[Create,Update:IGN] Time at which this Table was last modified, in epoch milliseconds.`)
-	createCmd.Flags().StringVar(&createReq.UpdatedBy, "updated-by", "", `[Create,Update:IGN] Username of user who last modified the Table.`)
-	createCmd.Flags().StringVar(&createReq.ViewDefinition, "view-definition", "", `[Create,Update:OPT] View definition SQL (when table_type == "VIEW").`)
+	createCmd.Flags().Int64Var(&createReq.UpdatedAt, "updated-at", createReq.UpdatedAt, `[Create,Update:IGN] Time at which this Table was last modified, in epoch milliseconds.`)
+	createCmd.Flags().StringVar(&createReq.UpdatedBy, "updated-by", createReq.UpdatedBy, `[Create,Update:IGN] Username of user who last modified the Table.`)
+	createCmd.Flags().StringVar(&createReq.ViewDefinition, "view-definition", createReq.ViewDefinition, `[Create,Update:OPT] View definition SQL (when table_type == "VIEW").`)
 
 }
 
@@ -75,14 +75,7 @@ var createCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -92,11 +85,11 @@ func init() {
 	Cmd.AddCommand(createStagingTableCmd)
 	// TODO: short flags
 
-	createStagingTableCmd.Flags().StringVar(&createStagingTableReq.CatalogName, "catalog-name", "", `[Create:REQ] Name of parent Catalog.`)
-	createStagingTableCmd.Flags().StringVar(&createStagingTableReq.Id, "id", "", `[Create:IGN] Unique id generated for the staging table.`)
-	createStagingTableCmd.Flags().StringVar(&createStagingTableReq.Name, "name", "", `[Create:REQ] Name of Table, relative to parent Schema.`)
-	createStagingTableCmd.Flags().StringVar(&createStagingTableReq.SchemaName, "schema-name", "", `[Create:REQ] Name of parent Schema relative to its parent Catalog.`)
-	createStagingTableCmd.Flags().StringVar(&createStagingTableReq.StagingLocation, "staging-location", "", `[Create:IGN] URI generated for the staging table.`)
+	createStagingTableCmd.Flags().StringVar(&createStagingTableReq.CatalogName, "catalog-name", createStagingTableReq.CatalogName, `[Create:REQ] Name of parent Catalog.`)
+	createStagingTableCmd.Flags().StringVar(&createStagingTableReq.Id, "id", createStagingTableReq.Id, `[Create:IGN] Unique id generated for the staging table.`)
+	createStagingTableCmd.Flags().StringVar(&createStagingTableReq.Name, "name", createStagingTableReq.Name, `[Create:REQ] Name of Table, relative to parent Schema.`)
+	createStagingTableCmd.Flags().StringVar(&createStagingTableReq.SchemaName, "schema-name", createStagingTableReq.SchemaName, `[Create:REQ] Name of parent Schema relative to its parent Catalog.`)
+	createStagingTableCmd.Flags().StringVar(&createStagingTableReq.StagingLocation, "staging-location", createStagingTableReq.StagingLocation, `[Create:IGN] URI generated for the staging table.`)
 
 }
 
@@ -117,14 +110,7 @@ var createStagingTableCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -134,7 +120,7 @@ func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
 
-	deleteCmd.Flags().StringVar(&deleteReq.FullName, "full-name", "", `Required.`)
+	deleteCmd.Flags().StringVar(&deleteReq.FullName, "full-name", deleteReq.FullName, `Required.`)
 
 }
 
@@ -156,7 +142,6 @@ var deleteCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -167,7 +152,7 @@ func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
 
-	getCmd.Flags().StringVar(&getReq.FullName, "full-name", "", `Required.`)
+	getCmd.Flags().StringVar(&getReq.FullName, "full-name", getReq.FullName, `Required.`)
 
 }
 
@@ -189,14 +174,7 @@ var getCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -206,8 +184,8 @@ func init() {
 	Cmd.AddCommand(listCmd)
 	// TODO: short flags
 
-	listCmd.Flags().StringVar(&listReq.CatalogName, "catalog-name", "", `Required.`)
-	listCmd.Flags().StringVar(&listReq.SchemaName, "schema-name", "", `Required (for now -- may be optional for wildcard search in future).`)
+	listCmd.Flags().StringVar(&listReq.CatalogName, "catalog-name", listReq.CatalogName, `Required.`)
+	listCmd.Flags().StringVar(&listReq.SchemaName, "schema-name", listReq.SchemaName, `Required (for now -- may be optional for wildcard search in future).`)
 
 }
 
@@ -229,14 +207,7 @@ var listCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -246,11 +217,11 @@ func init() {
 	Cmd.AddCommand(tableSummariesCmd)
 	// TODO: short flags
 
-	tableSummariesCmd.Flags().StringVar(&tableSummariesReq.CatalogName, "catalog-name", "", `Required.`)
-	tableSummariesCmd.Flags().IntVar(&tableSummariesReq.MaxResults, "max-results", 0, `Optional.`)
-	tableSummariesCmd.Flags().StringVar(&tableSummariesReq.PageToken, "page-token", "", `Optional.`)
-	tableSummariesCmd.Flags().StringVar(&tableSummariesReq.SchemaNamePattern, "schema-name-pattern", "", `Optional.`)
-	tableSummariesCmd.Flags().StringVar(&tableSummariesReq.TableNamePattern, "table-name-pattern", "", `Optional.`)
+	tableSummariesCmd.Flags().StringVar(&tableSummariesReq.CatalogName, "catalog-name", tableSummariesReq.CatalogName, `Required.`)
+	tableSummariesCmd.Flags().IntVar(&tableSummariesReq.MaxResults, "max-results", tableSummariesReq.MaxResults, `Optional.`)
+	tableSummariesCmd.Flags().StringVar(&tableSummariesReq.PageToken, "page-token", tableSummariesReq.PageToken, `Optional.`)
+	tableSummariesCmd.Flags().StringVar(&tableSummariesReq.SchemaNamePattern, "schema-name-pattern", tableSummariesReq.SchemaNamePattern, `Optional.`)
+	tableSummariesCmd.Flags().StringVar(&tableSummariesReq.TableNamePattern, "table-name-pattern", tableSummariesReq.TableNamePattern, `Optional.`)
 
 }
 
@@ -277,14 +248,7 @@ var tableSummariesCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -294,28 +258,28 @@ func init() {
 	Cmd.AddCommand(updateCmd)
 	// TODO: short flags
 
-	updateCmd.Flags().StringVar(&updateReq.CatalogName, "catalog-name", "", `[Create:REQ Update:IGN] Name of parent Catalog.`)
+	updateCmd.Flags().StringVar(&updateReq.CatalogName, "catalog-name", updateReq.CatalogName, `[Create:REQ Update:IGN] Name of parent Catalog.`)
 	// TODO: array: columns
-	updateCmd.Flags().StringVar(&updateReq.Comment, "comment", "", `[Create,Update:OPT] User-provided free-form text description.`)
-	updateCmd.Flags().Int64Var(&updateReq.CreatedAt, "created-at", 0, `[Create,Update:IGN] Time at which this Table was created, in epoch milliseconds.`)
-	updateCmd.Flags().StringVar(&updateReq.CreatedBy, "created-by", "", `[Create,Update:IGN] Username of Table creator.`)
-	updateCmd.Flags().StringVar(&updateReq.DataAccessConfigurationId, "data-access-configuration-id", "", `[Create,Update:IGN] Unique ID of the data_access_configuration to use.`)
+	updateCmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `[Create,Update:OPT] User-provided free-form text description.`)
+	updateCmd.Flags().Int64Var(&updateReq.CreatedAt, "created-at", updateReq.CreatedAt, `[Create,Update:IGN] Time at which this Table was created, in epoch milliseconds.`)
+	updateCmd.Flags().StringVar(&updateReq.CreatedBy, "created-by", updateReq.CreatedBy, `[Create,Update:IGN] Username of Table creator.`)
+	updateCmd.Flags().StringVar(&updateReq.DataAccessConfigurationId, "data-access-configuration-id", updateReq.DataAccessConfigurationId, `[Create,Update:IGN] Unique ID of the data_access_configuration to use.`)
 	updateCmd.Flags().Var(&updateReq.DataSourceFormat, "data-source-format", `[Create:REQ Update:OPT] Data source format ("DELTA", "CSV", etc.).`)
-	updateCmd.Flags().StringVar(&updateReq.FullName, "full-name", "", `[Create,Update:IGN] Full name of Table, in form of <catalog_name>.<schema_name>.<table_name>.`)
-	updateCmd.Flags().StringVar(&updateReq.MetastoreId, "metastore-id", "", `[Create,Update:IGN] Unique identifier of parent Metastore.`)
-	updateCmd.Flags().StringVar(&updateReq.Name, "name", "", `[Create:REQ Update:OPT] Name of Table, relative to parent Schema.`)
-	updateCmd.Flags().StringVar(&updateReq.Owner, "owner", "", `[Create: IGN Update:OPT] Username of current owner of Table.`)
+	updateCmd.Flags().StringVar(&updateReq.FullName, "full-name", updateReq.FullName, `[Create,Update:IGN] Full name of Table, in form of <catalog_name>.<schema_name>.<table_name>.`)
+	updateCmd.Flags().StringVar(&updateReq.MetastoreId, "metastore-id", updateReq.MetastoreId, `[Create,Update:IGN] Unique identifier of parent Metastore.`)
+	updateCmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `[Create:REQ Update:OPT] Name of Table, relative to parent Schema.`)
+	updateCmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `[Create: IGN Update:OPT] Username of current owner of Table.`)
 	// TODO: array: privileges
 	// TODO: array: properties
-	updateCmd.Flags().StringVar(&updateReq.SchemaName, "schema-name", "", `[Create:REQ Update:IGN] Name of parent Schema relative to its parent Catalog.`)
-	updateCmd.Flags().StringVar(&updateReq.SqlPath, "sql-path", "", `[Create,Update:OPT] List of schemes whose objects can be referenced without qualification.`)
-	updateCmd.Flags().StringVar(&updateReq.StorageCredentialName, "storage-credential-name", "", `[Create:OPT Update:IGN] Name of the storage credential this table used.`)
-	updateCmd.Flags().StringVar(&updateReq.StorageLocation, "storage-location", "", `[Create:REQ Update:OPT] Storage root URL for table (for MANAGED, EXTERNAL tables).`)
-	updateCmd.Flags().StringVar(&updateReq.TableId, "table-id", "", `[Create:IGN Update:IGN] Name of Table, relative to parent Schema.`)
+	updateCmd.Flags().StringVar(&updateReq.SchemaName, "schema-name", updateReq.SchemaName, `[Create:REQ Update:IGN] Name of parent Schema relative to its parent Catalog.`)
+	updateCmd.Flags().StringVar(&updateReq.SqlPath, "sql-path", updateReq.SqlPath, `[Create,Update:OPT] List of schemes whose objects can be referenced without qualification.`)
+	updateCmd.Flags().StringVar(&updateReq.StorageCredentialName, "storage-credential-name", updateReq.StorageCredentialName, `[Create:OPT Update:IGN] Name of the storage credential this table used.`)
+	updateCmd.Flags().StringVar(&updateReq.StorageLocation, "storage-location", updateReq.StorageLocation, `[Create:REQ Update:OPT] Storage root URL for table (for MANAGED, EXTERNAL tables).`)
+	updateCmd.Flags().StringVar(&updateReq.TableId, "table-id", updateReq.TableId, `[Create:IGN Update:IGN] Name of Table, relative to parent Schema.`)
 	updateCmd.Flags().Var(&updateReq.TableType, "table-type", `[Create:REQ Update:OPT] Table type ("MANAGED", "EXTERNAL", "VIEW").`)
-	updateCmd.Flags().Int64Var(&updateReq.UpdatedAt, "updated-at", 0, `[Create,Update:IGN] Time at which this Table was last modified, in epoch milliseconds.`)
-	updateCmd.Flags().StringVar(&updateReq.UpdatedBy, "updated-by", "", `[Create,Update:IGN] Username of user who last modified the Table.`)
-	updateCmd.Flags().StringVar(&updateReq.ViewDefinition, "view-definition", "", `[Create,Update:OPT] View definition SQL (when table_type == "VIEW").`)
+	updateCmd.Flags().Int64Var(&updateReq.UpdatedAt, "updated-at", updateReq.UpdatedAt, `[Create,Update:IGN] Time at which this Table was last modified, in epoch milliseconds.`)
+	updateCmd.Flags().StringVar(&updateReq.UpdatedBy, "updated-by", updateReq.UpdatedBy, `[Create,Update:IGN] Username of user who last modified the Table.`)
+	updateCmd.Flags().StringVar(&updateReq.ViewDefinition, "view-definition", updateReq.ViewDefinition, `[Create,Update:OPT] View definition SQL (when table_type == "VIEW").`)
 
 }
 
@@ -336,7 +300,6 @@ var updateCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }

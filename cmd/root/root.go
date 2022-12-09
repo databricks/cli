@@ -2,10 +2,12 @@ package root
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"os"
 	"strings"
+	"syscall"
 
 	"github.com/spf13/cobra"
 )
@@ -64,6 +66,9 @@ func Execute() {
 	// TODO: deferred panic recovery
 	ctx := context.Background()
 	err := RootCmd.ExecuteContext(ctx)
+	if errors.Is(err, syscall.EPIPE) {
+		return
+	}
 	if err != nil {
 		os.Exit(1)
 	}

@@ -20,7 +20,7 @@ func init() {
 	// TODO: short flags
 
 	// TODO: array: permission_assignments
-	createCmd.Flags().Int64Var(&createReq.WorkspaceId, "workspace-id", 0, `The workspace ID for the account.`)
+	createCmd.Flags().Int64Var(&createReq.WorkspaceId, "workspace-id", createReq.WorkspaceId, `The workspace ID for the account.`)
 
 }
 
@@ -39,14 +39,7 @@ var createCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -56,8 +49,8 @@ func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
 
-	deleteCmd.Flags().Int64Var(&deleteReq.PrincipalId, "principal-id", 0, `The ID of the service principal.`)
-	deleteCmd.Flags().Int64Var(&deleteReq.WorkspaceId, "workspace-id", 0, `The workspace ID.`)
+	deleteCmd.Flags().Int64Var(&deleteReq.PrincipalId, "principal-id", deleteReq.PrincipalId, `The ID of the service principal.`)
+	deleteCmd.Flags().Int64Var(&deleteReq.WorkspaceId, "workspace-id", deleteReq.WorkspaceId, `The workspace ID.`)
 
 }
 
@@ -77,7 +70,6 @@ var deleteCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -88,7 +80,7 @@ func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
 
-	getCmd.Flags().Int64Var(&getReq.WorkspaceId, "workspace-id", 0, `The workspace ID.`)
+	getCmd.Flags().Int64Var(&getReq.WorkspaceId, "workspace-id", getReq.WorkspaceId, `The workspace ID.`)
 
 }
 
@@ -107,14 +99,7 @@ var getCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -124,7 +109,7 @@ func init() {
 	Cmd.AddCommand(listCmd)
 	// TODO: short flags
 
-	listCmd.Flags().Int64Var(&listReq.WorkspaceId, "workspace-id", 0, `The workspace ID for the account.`)
+	listCmd.Flags().Int64Var(&listReq.WorkspaceId, "workspace-id", listReq.WorkspaceId, `The workspace ID for the account.`)
 
 }
 
@@ -144,14 +129,7 @@ var listCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -162,8 +140,8 @@ func init() {
 	// TODO: short flags
 
 	// TODO: array: permissions
-	updateCmd.Flags().Int64Var(&updateReq.PrincipalId, "principal-id", 0, `The ID of the service principal.`)
-	updateCmd.Flags().Int64Var(&updateReq.WorkspaceId, "workspace-id", 0, `The workspace ID.`)
+	updateCmd.Flags().Int64Var(&updateReq.PrincipalId, "principal-id", updateReq.PrincipalId, `The ID of the service principal.`)
+	updateCmd.Flags().Int64Var(&updateReq.WorkspaceId, "workspace-id", updateReq.WorkspaceId, `The workspace ID.`)
 
 }
 
@@ -183,7 +161,6 @@ var updateCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }

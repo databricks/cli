@@ -21,9 +21,9 @@ func init() {
 	Cmd.AddCommand(createOboTokenCmd)
 	// TODO: short flags
 
-	createOboTokenCmd.Flags().StringVar(&createOboTokenReq.ApplicationId, "application-id", "", `Application ID of the service principal.`)
-	createOboTokenCmd.Flags().StringVar(&createOboTokenReq.Comment, "comment", "", `Comment that describes the purpose of the token.`)
-	createOboTokenCmd.Flags().Int64Var(&createOboTokenReq.LifetimeSeconds, "lifetime-seconds", 0, `The number of seconds before the token expires.`)
+	createOboTokenCmd.Flags().StringVar(&createOboTokenReq.ApplicationId, "application-id", createOboTokenReq.ApplicationId, `Application ID of the service principal.`)
+	createOboTokenCmd.Flags().StringVar(&createOboTokenReq.Comment, "comment", createOboTokenReq.Comment, `Comment that describes the purpose of the token.`)
+	createOboTokenCmd.Flags().Int64Var(&createOboTokenReq.LifetimeSeconds, "lifetime-seconds", createOboTokenReq.LifetimeSeconds, `The number of seconds before the token expires.`)
 
 }
 
@@ -42,14 +42,7 @@ var createOboTokenCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -59,7 +52,7 @@ func init() {
 	Cmd.AddCommand(deleteTokenCmd)
 	// TODO: short flags
 
-	deleteTokenCmd.Flags().StringVar(&deleteTokenReq.TokenId, "token-id", "", `The ID of the token to get.`)
+	deleteTokenCmd.Flags().StringVar(&deleteTokenReq.TokenId, "token-id", deleteTokenReq.TokenId, `The ID of the token to get.`)
 
 }
 
@@ -78,7 +71,6 @@ var deleteTokenCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -89,7 +81,7 @@ func init() {
 	Cmd.AddCommand(getTokenInfoCmd)
 	// TODO: short flags
 
-	getTokenInfoCmd.Flags().StringVar(&getTokenInfoReq.TokenId, "token-id", "", `The ID of the token to get.`)
+	getTokenInfoCmd.Flags().StringVar(&getTokenInfoReq.TokenId, "token-id", getTokenInfoReq.TokenId, `The ID of the token to get.`)
 
 }
 
@@ -108,14 +100,7 @@ var getTokenInfoCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -125,8 +110,8 @@ func init() {
 	Cmd.AddCommand(listTokensCmd)
 	// TODO: short flags
 
-	listTokensCmd.Flags().StringVar(&listTokensReq.CreatedById, "created-by-id", "", `User ID of the user that created the token.`)
-	listTokensCmd.Flags().StringVar(&listTokensReq.CreatedByUsername, "created-by-username", "", `Username of the user that created the token.`)
+	listTokensCmd.Flags().StringVar(&listTokensReq.CreatedById, "created-by-id", listTokensReq.CreatedById, `User ID of the user that created the token.`)
+	listTokensCmd.Flags().StringVar(&listTokensReq.CreatedByUsername, "created-by-username", listTokensReq.CreatedByUsername, `Username of the user that created the token.`)
 
 }
 
@@ -145,14 +130,7 @@ var listTokensCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 

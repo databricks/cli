@@ -37,7 +37,7 @@ func init() {
 		{{else if .Entity.ArrayValue }}// TODO: array: {{.Name}}
 		{{else if .Entity.MapValue }}// TODO: map via StringToStringVar: {{.Name}}
 		{{else if .Entity.Enum }}{{$method.CamelName}}Cmd.Flags().Var(&{{$method.CamelName}}Req.{{.PascalName}}, "{{.KebabName}}", `{{.Summary | without "`"}}`)
-		{{else}}{{$method.CamelName}}Cmd.Flags().{{template "arg-type" .Entity}}(&{{$method.CamelName}}Req.{{.PascalName}}, "{{.KebabName}}", {{template "type-default" .Entity}}, `{{.Summary | without "`"}}`)
+		{{else}}{{$method.CamelName}}Cmd.Flags().{{template "arg-type" .Entity}}(&{{$method.CamelName}}Req.{{.PascalName}}, "{{.KebabName}}", {{$method.CamelName}}Req.{{.PascalName}}, `{{.Summary | without "`"}}`)
         {{end}}    
     {{- end}}
     {{end}}
@@ -59,14 +59,11 @@ var {{.CamelName}}Cmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-        {{if .Response}}
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-        {{end}}
+        {{if .Response -}}
+		return ui.Render(cmd, response)
+		{{else -}}
 		return nil
+		{{- end -}}
 	},
 }
 {{end}}
@@ -82,16 +79,5 @@ var {{.CamelName}}Cmd = &cobra.Command{
 	{{- else if .IsInt}}IntVar
 	{{- else if .Enum }}StringVar
 	{{- else}}/* NOT PRIMITIVE */
-	{{- end -}}
-{{- end -}}
-
-{{- define "type-default" -}}
-	{{- if .IsString}}""
-	{{- else if .IsBool}}false
-	{{- else if .IsInt64}}0
-	{{- else if .IsFloat64}}0
-	{{- else if .IsInt}}0
-	{{- else if .Enum }}""
-	{{- else}}/* NOT PRIMITIVE DEFAULT */
 	{{- end -}}
 {{- end -}}

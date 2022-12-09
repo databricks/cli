@@ -19,17 +19,17 @@ func init() {
 	Cmd.AddCommand(createCmd)
 	// TODO: short flags
 
-	createCmd.Flags().BoolVar(&createReq.ActivatedByProvider, "activated-by-provider", false, `[Create,Update:IGN] Whether this provider is successfully activated by the data provider.`)
+	createCmd.Flags().BoolVar(&createReq.ActivatedByProvider, "activated-by-provider", createReq.ActivatedByProvider, `[Create,Update:IGN] Whether this provider is successfully activated by the data provider.`)
 	createCmd.Flags().Var(&createReq.AuthenticationType, "authentication-type", `[Create:REQ,Update:IGN] The delta sharing authentication type.`)
-	createCmd.Flags().StringVar(&createReq.Comment, "comment", "", `[Create,Update:OPT] Description about the provider.`)
-	createCmd.Flags().Int64Var(&createReq.CreatedAt, "created-at", 0, `[Create,Update:IGN] Time at which this Provider was created, in epoch milliseconds.`)
-	createCmd.Flags().StringVar(&createReq.CreatedBy, "created-by", "", `[Create,Update:IGN] Username of Provider creator.`)
-	createCmd.Flags().StringVar(&createReq.Name, "name", "", `[Create,Update:REQ] The name of the Provider.`)
+	createCmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `[Create,Update:OPT] Description about the provider.`)
+	createCmd.Flags().Int64Var(&createReq.CreatedAt, "created-at", createReq.CreatedAt, `[Create,Update:IGN] Time at which this Provider was created, in epoch milliseconds.`)
+	createCmd.Flags().StringVar(&createReq.CreatedBy, "created-by", createReq.CreatedBy, `[Create,Update:IGN] Username of Provider creator.`)
+	createCmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `[Create,Update:REQ] The name of the Provider.`)
 	// TODO: complex arg: recipient_profile
-	createCmd.Flags().StringVar(&createReq.RecipientProfileStr, "recipient-profile-str", "", `[Create,Update:OPT] This field is only present when the authentication type is TOKEN.`)
-	createCmd.Flags().StringVar(&createReq.SharingCode, "sharing-code", "", `[Create,Update:IGN] The server-generated one-time sharing code.`)
-	createCmd.Flags().Int64Var(&createReq.UpdatedAt, "updated-at", 0, `[Create,Update:IGN] Time at which this Provider was created, in epoch milliseconds.`)
-	createCmd.Flags().StringVar(&createReq.UpdatedBy, "updated-by", "", `[Create,Update:IGN] Username of user who last modified Share.`)
+	createCmd.Flags().StringVar(&createReq.RecipientProfileStr, "recipient-profile-str", createReq.RecipientProfileStr, `[Create,Update:OPT] This field is only present when the authentication type is TOKEN.`)
+	createCmd.Flags().StringVar(&createReq.SharingCode, "sharing-code", createReq.SharingCode, `[Create,Update:IGN] The server-generated one-time sharing code.`)
+	createCmd.Flags().Int64Var(&createReq.UpdatedAt, "updated-at", createReq.UpdatedAt, `[Create,Update:IGN] Time at which this Provider was created, in epoch milliseconds.`)
+	createCmd.Flags().StringVar(&createReq.UpdatedBy, "updated-by", createReq.UpdatedBy, `[Create,Update:IGN] Username of user who last modified Share.`)
 
 }
 
@@ -49,14 +49,7 @@ var createCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -66,7 +59,7 @@ func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
 
-	deleteCmd.Flags().StringVar(&deleteReq.Name, "name", "", `Required.`)
+	deleteCmd.Flags().StringVar(&deleteReq.Name, "name", deleteReq.Name, `Required.`)
 
 }
 
@@ -86,7 +79,6 @@ var deleteCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -97,7 +89,7 @@ func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
 
-	getCmd.Flags().StringVar(&getReq.Name, "name", "", `Required.`)
+	getCmd.Flags().StringVar(&getReq.Name, "name", getReq.Name, `Required.`)
 
 }
 
@@ -118,14 +110,7 @@ var getCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -135,7 +120,7 @@ func init() {
 	Cmd.AddCommand(listCmd)
 	// TODO: short flags
 
-	listCmd.Flags().StringVar(&listReq.DataProviderGlobalMetastoreId, "data-provider-global-metastore-id", "", `If not provided, all providers will be returned.`)
+	listCmd.Flags().StringVar(&listReq.DataProviderGlobalMetastoreId, "data-provider-global-metastore-id", listReq.DataProviderGlobalMetastoreId, `If not provided, all providers will be returned.`)
 
 }
 
@@ -156,14 +141,7 @@ var listCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -173,7 +151,7 @@ func init() {
 	Cmd.AddCommand(listSharesCmd)
 	// TODO: short flags
 
-	listSharesCmd.Flags().StringVar(&listSharesReq.Name, "name", "", `Required.`)
+	listSharesCmd.Flags().StringVar(&listSharesReq.Name, "name", listSharesReq.Name, `Required.`)
 
 }
 
@@ -194,14 +172,7 @@ var listSharesCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -211,17 +182,17 @@ func init() {
 	Cmd.AddCommand(updateCmd)
 	// TODO: short flags
 
-	updateCmd.Flags().BoolVar(&updateReq.ActivatedByProvider, "activated-by-provider", false, `[Create,Update:IGN] Whether this provider is successfully activated by the data provider.`)
+	updateCmd.Flags().BoolVar(&updateReq.ActivatedByProvider, "activated-by-provider", updateReq.ActivatedByProvider, `[Create,Update:IGN] Whether this provider is successfully activated by the data provider.`)
 	updateCmd.Flags().Var(&updateReq.AuthenticationType, "authentication-type", `[Create:REQ,Update:IGN] The delta sharing authentication type.`)
-	updateCmd.Flags().StringVar(&updateReq.Comment, "comment", "", `[Create,Update:OPT] Description about the provider.`)
-	updateCmd.Flags().Int64Var(&updateReq.CreatedAt, "created-at", 0, `[Create,Update:IGN] Time at which this Provider was created, in epoch milliseconds.`)
-	updateCmd.Flags().StringVar(&updateReq.CreatedBy, "created-by", "", `[Create,Update:IGN] Username of Provider creator.`)
-	updateCmd.Flags().StringVar(&updateReq.Name, "name", "", `[Create, Update:REQ] The name of the Provider.`)
+	updateCmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `[Create,Update:OPT] Description about the provider.`)
+	updateCmd.Flags().Int64Var(&updateReq.CreatedAt, "created-at", updateReq.CreatedAt, `[Create,Update:IGN] Time at which this Provider was created, in epoch milliseconds.`)
+	updateCmd.Flags().StringVar(&updateReq.CreatedBy, "created-by", updateReq.CreatedBy, `[Create,Update:IGN] Username of Provider creator.`)
+	updateCmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `[Create, Update:REQ] The name of the Provider.`)
 	// TODO: complex arg: recipient_profile
-	updateCmd.Flags().StringVar(&updateReq.RecipientProfileStr, "recipient-profile-str", "", `[Create,Update:OPT] This field is only present when the authentication type is TOKEN.`)
-	updateCmd.Flags().StringVar(&updateReq.SharingCode, "sharing-code", "", `[Create,Update:IGN] The server-generated one-time sharing code.`)
-	updateCmd.Flags().Int64Var(&updateReq.UpdatedAt, "updated-at", 0, `[Create,Update:IGN] Time at which this Provider was created, in epoch milliseconds.`)
-	updateCmd.Flags().StringVar(&updateReq.UpdatedBy, "updated-by", "", `[Create,Update:IGN] Username of user who last modified Share.`)
+	updateCmd.Flags().StringVar(&updateReq.RecipientProfileStr, "recipient-profile-str", updateReq.RecipientProfileStr, `[Create,Update:OPT] This field is only present when the authentication type is TOKEN.`)
+	updateCmd.Flags().StringVar(&updateReq.SharingCode, "sharing-code", updateReq.SharingCode, `[Create,Update:IGN] The server-generated one-time sharing code.`)
+	updateCmd.Flags().Int64Var(&updateReq.UpdatedAt, "updated-at", updateReq.UpdatedAt, `[Create,Update:IGN] Time at which this Provider was created, in epoch milliseconds.`)
+	updateCmd.Flags().StringVar(&updateReq.UpdatedBy, "updated-by", updateReq.UpdatedBy, `[Create,Update:IGN] Username of user who last modified Share.`)
 
 }
 
@@ -243,7 +214,6 @@ var updateCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }

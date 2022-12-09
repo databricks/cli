@@ -19,10 +19,10 @@ func init() {
 	Cmd.AddCommand(createCmd)
 	// TODO: short flags
 
-	createCmd.Flags().StringVar(&createReq.Comment, "comment", "", `[Create: OPT] comment when creating the share.`)
-	createCmd.Flags().Int64Var(&createReq.CreatedAt, "created-at", 0, `[Create:IGN] Time at which this Share was created, in epoch milliseconds.`)
-	createCmd.Flags().StringVar(&createReq.CreatedBy, "created-by", "", `[Create:IGN] Username of Share creator.`)
-	createCmd.Flags().StringVar(&createReq.Name, "name", "", `[Create:REQ] Name of the Share.`)
+	createCmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `[Create: OPT] comment when creating the share.`)
+	createCmd.Flags().Int64Var(&createReq.CreatedAt, "created-at", createReq.CreatedAt, `[Create:IGN] Time at which this Share was created, in epoch milliseconds.`)
+	createCmd.Flags().StringVar(&createReq.CreatedBy, "created-by", createReq.CreatedBy, `[Create:IGN] Username of Share creator.`)
+	createCmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `[Create:REQ] Name of the Share.`)
 	// TODO: array: objects
 
 }
@@ -44,14 +44,7 @@ var createCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -61,7 +54,7 @@ func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
 
-	deleteCmd.Flags().StringVar(&deleteReq.Name, "name", "", `The name of the share.`)
+	deleteCmd.Flags().StringVar(&deleteReq.Name, "name", deleteReq.Name, `The name of the share.`)
 
 }
 
@@ -81,7 +74,6 @@ var deleteCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -92,8 +84,8 @@ func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
 
-	getCmd.Flags().BoolVar(&getReq.IncludeSharedData, "include-shared-data", false, `Query for data to include in the share.`)
-	getCmd.Flags().StringVar(&getReq.Name, "name", "", `The name of the share.`)
+	getCmd.Flags().BoolVar(&getReq.IncludeSharedData, "include-shared-data", getReq.IncludeSharedData, `Query for data to include in the share.`)
+	getCmd.Flags().StringVar(&getReq.Name, "name", getReq.Name, `The name of the share.`)
 
 }
 
@@ -113,14 +105,7 @@ var getCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -145,14 +130,7 @@ var listCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -162,7 +140,7 @@ func init() {
 	Cmd.AddCommand(sharePermissionsCmd)
 	// TODO: short flags
 
-	sharePermissionsCmd.Flags().StringVar(&sharePermissionsReq.Name, "name", "", `Required.`)
+	sharePermissionsCmd.Flags().StringVar(&sharePermissionsReq.Name, "name", sharePermissionsReq.Name, `Required.`)
 
 }
 
@@ -182,14 +160,7 @@ var sharePermissionsCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -199,7 +170,7 @@ func init() {
 	Cmd.AddCommand(updateCmd)
 	// TODO: short flags
 
-	updateCmd.Flags().StringVar(&updateReq.Name, "name", "", `The name of the share.`)
+	updateCmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `The name of the share.`)
 	// TODO: array: updates
 
 }
@@ -232,7 +203,6 @@ var updateCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -244,7 +214,7 @@ func init() {
 	// TODO: short flags
 
 	// TODO: array: changes
-	updatePermissionsCmd.Flags().StringVar(&updatePermissionsReq.Name, "name", "", `Required.`)
+	updatePermissionsCmd.Flags().StringVar(&updatePermissionsReq.Name, "name", updatePermissionsReq.Name, `Required.`)
 
 }
 
@@ -267,7 +237,6 @@ var updatePermissionsCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }

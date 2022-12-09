@@ -24,10 +24,10 @@ func init() {
 	Cmd.AddCommand(addCmd)
 	// TODO: short flags
 
-	addCmd.Flags().StringVar(&addReq.IamRoleArn, "iam-role-arn", "", `The AWS IAM role ARN of the role associated with the instance profile.`)
-	addCmd.Flags().StringVar(&addReq.InstanceProfileArn, "instance-profile-arn", "", `The AWS ARN of the instance profile to register with Databricks.`)
-	addCmd.Flags().BoolVar(&addReq.IsMetaInstanceProfile, "is-meta-instance-profile", false, `By default, Databricks validates that it has sufficient permissions to launch instances with the instance profile.`)
-	addCmd.Flags().BoolVar(&addReq.SkipValidation, "skip-validation", false, `By default, Databricks validates that it has sufficient permissions to launch instances with the instance profile.`)
+	addCmd.Flags().StringVar(&addReq.IamRoleArn, "iam-role-arn", addReq.IamRoleArn, `The AWS IAM role ARN of the role associated with the instance profile.`)
+	addCmd.Flags().StringVar(&addReq.InstanceProfileArn, "instance-profile-arn", addReq.InstanceProfileArn, `The AWS ARN of the instance profile to register with Databricks.`)
+	addCmd.Flags().BoolVar(&addReq.IsMetaInstanceProfile, "is-meta-instance-profile", addReq.IsMetaInstanceProfile, `By default, Databricks validates that it has sufficient permissions to launch instances with the instance profile.`)
+	addCmd.Flags().BoolVar(&addReq.SkipValidation, "skip-validation", addReq.SkipValidation, `By default, Databricks validates that it has sufficient permissions to launch instances with the instance profile.`)
 
 }
 
@@ -47,7 +47,6 @@ var addCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -58,9 +57,9 @@ func init() {
 	Cmd.AddCommand(editCmd)
 	// TODO: short flags
 
-	editCmd.Flags().StringVar(&editReq.IamRoleArn, "iam-role-arn", "", `The AWS IAM role ARN of the role associated with the instance profile.`)
-	editCmd.Flags().StringVar(&editReq.InstanceProfileArn, "instance-profile-arn", "", `The AWS ARN of the instance profile to register with Databricks.`)
-	editCmd.Flags().BoolVar(&editReq.IsMetaInstanceProfile, "is-meta-instance-profile", false, `By default, Databricks validates that it has sufficient permissions to launch instances with the instance profile.`)
+	editCmd.Flags().StringVar(&editReq.IamRoleArn, "iam-role-arn", editReq.IamRoleArn, `The AWS IAM role ARN of the role associated with the instance profile.`)
+	editCmd.Flags().StringVar(&editReq.InstanceProfileArn, "instance-profile-arn", editReq.InstanceProfileArn, `The AWS ARN of the instance profile to register with Databricks.`)
+	editCmd.Flags().BoolVar(&editReq.IsMetaInstanceProfile, "is-meta-instance-profile", editReq.IsMetaInstanceProfile, `By default, Databricks validates that it has sufficient permissions to launch instances with the instance profile.`)
 
 }
 
@@ -93,7 +92,6 @@ var editCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -120,14 +118,7 @@ var listCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -137,7 +128,7 @@ func init() {
 	Cmd.AddCommand(removeCmd)
 	// TODO: short flags
 
-	removeCmd.Flags().StringVar(&removeReq.InstanceProfileArn, "instance-profile-arn", "", `The ARN of the instance profile to remove.`)
+	removeCmd.Flags().StringVar(&removeReq.InstanceProfileArn, "instance-profile-arn", removeReq.InstanceProfileArn, `The ARN of the instance profile to remove.`)
 
 }
 
@@ -159,7 +150,6 @@ var removeCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }

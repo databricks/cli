@@ -23,11 +23,11 @@ func init() {
 	// TODO: short flags
 
 	// TODO: complex arg: gcp_network_info
-	createCmd.Flags().StringVar(&createReq.NetworkName, "network-name", "", `The human-readable name of the network configuration.`)
+	createCmd.Flags().StringVar(&createReq.NetworkName, "network-name", createReq.NetworkName, `The human-readable name of the network configuration.`)
 	// TODO: array: security_group_ids
 	// TODO: array: subnet_ids
 	// TODO: complex arg: vpc_endpoints
-	createCmd.Flags().StringVar(&createReq.VpcId, "vpc-id", "", `The ID of the VPC associated with this network.`)
+	createCmd.Flags().StringVar(&createReq.VpcId, "vpc-id", createReq.VpcId, `The ID of the VPC associated with this network.`)
 
 }
 
@@ -65,14 +65,7 @@ var createCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -82,7 +75,7 @@ func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
 
-	deleteCmd.Flags().StringVar(&deleteReq.NetworkId, "network-id", "", `Databricks Account API network configuration ID.`)
+	deleteCmd.Flags().StringVar(&deleteReq.NetworkId, "network-id", deleteReq.NetworkId, `Databricks Account API network configuration ID.`)
 
 }
 
@@ -106,7 +99,6 @@ var deleteCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -117,7 +109,7 @@ func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
 
-	getCmd.Flags().StringVar(&getReq.NetworkId, "network-id", "", `Databricks Account API network configuration ID.`)
+	getCmd.Flags().StringVar(&getReq.NetworkId, "network-id", getReq.NetworkId, `Databricks Account API network configuration ID.`)
 
 }
 
@@ -143,14 +135,7 @@ var getCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -178,14 +163,7 @@ var listCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 

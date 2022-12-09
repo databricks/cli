@@ -24,9 +24,9 @@ func init() {
 	Cmd.AddCommand(createCmd)
 	// TODO: short flags
 
-	createCmd.Flags().StringVar(&createReq.GitProvider, "git-provider", "", `Git provider.`)
-	createCmd.Flags().StringVar(&createReq.GitUsername, "git-username", "", `Git username.`)
-	createCmd.Flags().StringVar(&createReq.PersonalAccessToken, "personal-access-token", "", `The personal access token used to authenticate to the corresponding Git provider.`)
+	createCmd.Flags().StringVar(&createReq.GitProvider, "git-provider", createReq.GitProvider, `Git provider.`)
+	createCmd.Flags().StringVar(&createReq.GitUsername, "git-username", createReq.GitUsername, `Git username.`)
+	createCmd.Flags().StringVar(&createReq.PersonalAccessToken, "personal-access-token", createReq.PersonalAccessToken, `The personal access token used to authenticate to the corresponding Git provider.`)
 
 }
 
@@ -48,14 +48,7 @@ var createCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -65,7 +58,7 @@ func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
 
-	deleteCmd.Flags().Int64Var(&deleteReq.CredentialId, "credential-id", 0, `The ID for the corresponding credential to access.`)
+	deleteCmd.Flags().Int64Var(&deleteReq.CredentialId, "credential-id", deleteReq.CredentialId, `The ID for the corresponding credential to access.`)
 
 }
 
@@ -84,7 +77,6 @@ var deleteCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -95,7 +87,7 @@ func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
 
-	getCmd.Flags().Int64Var(&getReq.CredentialId, "credential-id", 0, `The ID for the corresponding credential to access.`)
+	getCmd.Flags().Int64Var(&getReq.CredentialId, "credential-id", getReq.CredentialId, `The ID for the corresponding credential to access.`)
 
 }
 
@@ -114,14 +106,7 @@ var getCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -146,14 +131,7 @@ var listCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -163,10 +141,10 @@ func init() {
 	Cmd.AddCommand(updateCmd)
 	// TODO: short flags
 
-	updateCmd.Flags().Int64Var(&updateReq.CredentialId, "credential-id", 0, `The ID for the corresponding credential to access.`)
-	updateCmd.Flags().StringVar(&updateReq.GitProvider, "git-provider", "", `Git provider.`)
-	updateCmd.Flags().StringVar(&updateReq.GitUsername, "git-username", "", `Git username.`)
-	updateCmd.Flags().StringVar(&updateReq.PersonalAccessToken, "personal-access-token", "", `The personal access token used to authenticate to the corresponding Git provider.`)
+	updateCmd.Flags().Int64Var(&updateReq.CredentialId, "credential-id", updateReq.CredentialId, `The ID for the corresponding credential to access.`)
+	updateCmd.Flags().StringVar(&updateReq.GitProvider, "git-provider", updateReq.GitProvider, `Git provider.`)
+	updateCmd.Flags().StringVar(&updateReq.GitUsername, "git-username", updateReq.GitUsername, `Git username.`)
+	updateCmd.Flags().StringVar(&updateReq.PersonalAccessToken, "personal-access-token", updateReq.PersonalAccessToken, `The personal access token used to authenticate to the corresponding Git provider.`)
 
 }
 
@@ -185,7 +163,6 @@ var updateCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }

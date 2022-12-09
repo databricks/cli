@@ -22,11 +22,11 @@ func init() {
 	Cmd.AddCommand(createAlertCmd)
 	// TODO: short flags
 
-	createAlertCmd.Flags().StringVar(&createAlertReq.AlertId, "alert-id", "", ``)
-	createAlertCmd.Flags().StringVar(&createAlertReq.Name, "name", "", `Name of the alert.`)
+	createAlertCmd.Flags().StringVar(&createAlertReq.AlertId, "alert-id", createAlertReq.AlertId, ``)
+	createAlertCmd.Flags().StringVar(&createAlertReq.Name, "name", createAlertReq.Name, `Name of the alert.`)
 	// TODO: complex arg: options
-	createAlertCmd.Flags().StringVar(&createAlertReq.QueryId, "query-id", "", `ID of the query evaluated by the alert.`)
-	createAlertCmd.Flags().IntVar(&createAlertReq.Rearm, "rearm", 0, `Number of seconds after being triggered before the alert rearms itself and can be triggered again.`)
+	createAlertCmd.Flags().StringVar(&createAlertReq.QueryId, "query-id", createAlertReq.QueryId, `ID of the query evaluated by the alert.`)
+	createAlertCmd.Flags().IntVar(&createAlertReq.Rearm, "rearm", createAlertReq.Rearm, `Number of seconds after being triggered before the alert rearms itself and can be triggered again.`)
 
 }
 
@@ -47,14 +47,7 @@ var createAlertCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -64,9 +57,9 @@ func init() {
 	Cmd.AddCommand(createScheduleCmd)
 	// TODO: short flags
 
-	createScheduleCmd.Flags().StringVar(&createScheduleReq.AlertId, "alert-id", "", ``)
-	createScheduleCmd.Flags().StringVar(&createScheduleReq.Cron, "cron", "", `Cron string representing the refresh schedule.`)
-	createScheduleCmd.Flags().StringVar(&createScheduleReq.DataSourceId, "data-source-id", "", `ID of the SQL warehouse to refresh with.`)
+	createScheduleCmd.Flags().StringVar(&createScheduleReq.AlertId, "alert-id", createScheduleReq.AlertId, ``)
+	createScheduleCmd.Flags().StringVar(&createScheduleReq.Cron, "cron", createScheduleReq.Cron, `Cron string representing the refresh schedule.`)
+	createScheduleCmd.Flags().StringVar(&createScheduleReq.DataSourceId, "data-source-id", createScheduleReq.DataSourceId, `ID of the SQL warehouse to refresh with.`)
 
 }
 
@@ -87,14 +80,7 @@ var createScheduleCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -104,7 +90,7 @@ func init() {
 	Cmd.AddCommand(deleteAlertCmd)
 	// TODO: short flags
 
-	deleteAlertCmd.Flags().StringVar(&deleteAlertReq.AlertId, "alert-id", "", ``)
+	deleteAlertCmd.Flags().StringVar(&deleteAlertReq.AlertId, "alert-id", deleteAlertReq.AlertId, ``)
 
 }
 
@@ -125,7 +111,6 @@ var deleteAlertCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -136,8 +121,8 @@ func init() {
 	Cmd.AddCommand(deleteScheduleCmd)
 	// TODO: short flags
 
-	deleteScheduleCmd.Flags().StringVar(&deleteScheduleReq.AlertId, "alert-id", "", ``)
-	deleteScheduleCmd.Flags().StringVar(&deleteScheduleReq.ScheduleId, "schedule-id", "", ``)
+	deleteScheduleCmd.Flags().StringVar(&deleteScheduleReq.AlertId, "alert-id", deleteScheduleReq.AlertId, ``)
+	deleteScheduleCmd.Flags().StringVar(&deleteScheduleReq.ScheduleId, "schedule-id", deleteScheduleReq.ScheduleId, ``)
 
 }
 
@@ -157,7 +142,6 @@ var deleteScheduleCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -168,7 +152,7 @@ func init() {
 	Cmd.AddCommand(getAlertCmd)
 	// TODO: short flags
 
-	getAlertCmd.Flags().StringVar(&getAlertReq.AlertId, "alert-id", "", ``)
+	getAlertCmd.Flags().StringVar(&getAlertReq.AlertId, "alert-id", getAlertReq.AlertId, ``)
 
 }
 
@@ -187,14 +171,7 @@ var getAlertCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -204,7 +181,7 @@ func init() {
 	Cmd.AddCommand(getSubscriptionsCmd)
 	// TODO: short flags
 
-	getSubscriptionsCmd.Flags().StringVar(&getSubscriptionsReq.AlertId, "alert-id", "", ``)
+	getSubscriptionsCmd.Flags().StringVar(&getSubscriptionsReq.AlertId, "alert-id", getSubscriptionsReq.AlertId, ``)
 
 }
 
@@ -226,14 +203,7 @@ var getSubscriptionsCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -257,14 +227,7 @@ var listAlertsCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -274,7 +237,7 @@ func init() {
 	Cmd.AddCommand(listSchedulesCmd)
 	// TODO: short flags
 
-	listSchedulesCmd.Flags().StringVar(&listSchedulesReq.AlertId, "alert-id", "", ``)
+	listSchedulesCmd.Flags().StringVar(&listSchedulesReq.AlertId, "alert-id", listSchedulesReq.AlertId, ``)
 
 }
 
@@ -299,14 +262,7 @@ var listSchedulesCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -316,9 +272,9 @@ func init() {
 	Cmd.AddCommand(subscribeCmd)
 	// TODO: short flags
 
-	subscribeCmd.Flags().StringVar(&subscribeReq.AlertId, "alert-id", "", `ID of the alert.`)
-	subscribeCmd.Flags().StringVar(&subscribeReq.DestinationId, "destination-id", "", `ID of the alert subscriber (if subscribing an alert destination).`)
-	subscribeCmd.Flags().Int64Var(&subscribeReq.UserId, "user-id", 0, `ID of the alert subscriber (if subscribing a user).`)
+	subscribeCmd.Flags().StringVar(&subscribeReq.AlertId, "alert-id", subscribeReq.AlertId, `ID of the alert.`)
+	subscribeCmd.Flags().StringVar(&subscribeReq.DestinationId, "destination-id", subscribeReq.DestinationId, `ID of the alert subscriber (if subscribing an alert destination).`)
+	subscribeCmd.Flags().Int64Var(&subscribeReq.UserId, "user-id", subscribeReq.UserId, `ID of the alert subscriber (if subscribing a user).`)
 
 }
 
@@ -335,14 +291,7 @@ var subscribeCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -352,8 +301,8 @@ func init() {
 	Cmd.AddCommand(unsubscribeCmd)
 	// TODO: short flags
 
-	unsubscribeCmd.Flags().StringVar(&unsubscribeReq.AlertId, "alert-id", "", ``)
-	unsubscribeCmd.Flags().StringVar(&unsubscribeReq.SubscriptionId, "subscription-id", "", ``)
+	unsubscribeCmd.Flags().StringVar(&unsubscribeReq.AlertId, "alert-id", unsubscribeReq.AlertId, ``)
+	unsubscribeCmd.Flags().StringVar(&unsubscribeReq.SubscriptionId, "subscription-id", unsubscribeReq.SubscriptionId, ``)
 
 }
 
@@ -372,7 +321,6 @@ var unsubscribeCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -383,11 +331,11 @@ func init() {
 	Cmd.AddCommand(updateAlertCmd)
 	// TODO: short flags
 
-	updateAlertCmd.Flags().StringVar(&updateAlertReq.AlertId, "alert-id", "", ``)
-	updateAlertCmd.Flags().StringVar(&updateAlertReq.Name, "name", "", `Name of the alert.`)
+	updateAlertCmd.Flags().StringVar(&updateAlertReq.AlertId, "alert-id", updateAlertReq.AlertId, ``)
+	updateAlertCmd.Flags().StringVar(&updateAlertReq.Name, "name", updateAlertReq.Name, `Name of the alert.`)
 	// TODO: complex arg: options
-	updateAlertCmd.Flags().StringVar(&updateAlertReq.QueryId, "query-id", "", `ID of the query evaluated by the alert.`)
-	updateAlertCmd.Flags().IntVar(&updateAlertReq.Rearm, "rearm", 0, `Number of seconds after being triggered before the alert rearms itself and can be triggered again.`)
+	updateAlertCmd.Flags().StringVar(&updateAlertReq.QueryId, "query-id", updateAlertReq.QueryId, `ID of the query evaluated by the alert.`)
+	updateAlertCmd.Flags().IntVar(&updateAlertReq.Rearm, "rearm", updateAlertReq.Rearm, `Number of seconds after being triggered before the alert rearms itself and can be triggered again.`)
 
 }
 
@@ -406,7 +354,6 @@ var updateAlertCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }

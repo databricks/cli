@@ -33,9 +33,9 @@ func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
 
-	getCmd.Flags().StringVar(&getReq.FullName, "full-name", "", `Required.`)
-	getCmd.Flags().StringVar(&getReq.Principal, "principal", "", `Optional.`)
-	getCmd.Flags().StringVar(&getReq.SecurableType, "securable-type", "", `Required.`)
+	getCmd.Flags().StringVar(&getReq.FullName, "full-name", getReq.FullName, `Required.`)
+	getCmd.Flags().StringVar(&getReq.Principal, "principal", getReq.Principal, `Optional.`)
+	getCmd.Flags().StringVar(&getReq.SecurableType, "securable-type", getReq.SecurableType, `Required.`)
 
 }
 
@@ -54,14 +54,7 @@ var getCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -72,9 +65,9 @@ func init() {
 	// TODO: short flags
 
 	// TODO: array: changes
-	updateCmd.Flags().StringVar(&updateReq.FullName, "full-name", "", `Required.`)
-	updateCmd.Flags().StringVar(&updateReq.Principal, "principal", "", `Optional.`)
-	updateCmd.Flags().StringVar(&updateReq.SecurableType, "securable-type", "", `Required.`)
+	updateCmd.Flags().StringVar(&updateReq.FullName, "full-name", updateReq.FullName, `Required.`)
+	updateCmd.Flags().StringVar(&updateReq.Principal, "principal", updateReq.Principal, `Optional.`)
+	updateCmd.Flags().StringVar(&updateReq.SecurableType, "securable-type", updateReq.SecurableType, `Required.`)
 
 }
 
@@ -93,7 +86,6 @@ var updateCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }

@@ -28,9 +28,9 @@ func init() {
 	Cmd.AddCommand(createCmd)
 	// TODO: short flags
 
-	createCmd.Flags().StringVar(&createReq.Path, "path", "", `Desired path for the repo in the workspace.`)
-	createCmd.Flags().StringVar(&createReq.Provider, "provider", "", `Git provider.`)
-	createCmd.Flags().StringVar(&createReq.Url, "url", "", `URL of the Git repository to be linked.`)
+	createCmd.Flags().StringVar(&createReq.Path, "path", createReq.Path, `Desired path for the repo in the workspace.`)
+	createCmd.Flags().StringVar(&createReq.Provider, "provider", createReq.Provider, `Git provider.`)
+	createCmd.Flags().StringVar(&createReq.Url, "url", createReq.Url, `URL of the Git repository to be linked.`)
 
 }
 
@@ -51,14 +51,7 @@ var createCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -68,7 +61,7 @@ func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
 
-	deleteCmd.Flags().Int64Var(&deleteReq.RepoId, "repo-id", 0, `The ID for the corresponding repo to access.`)
+	deleteCmd.Flags().Int64Var(&deleteReq.RepoId, "repo-id", deleteReq.RepoId, `The ID for the corresponding repo to access.`)
 
 }
 
@@ -87,7 +80,6 @@ var deleteCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -98,7 +90,7 @@ func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
 
-	getCmd.Flags().Int64Var(&getReq.RepoId, "repo-id", 0, `The ID for the corresponding repo to access.`)
+	getCmd.Flags().Int64Var(&getReq.RepoId, "repo-id", getReq.RepoId, `The ID for the corresponding repo to access.`)
 
 }
 
@@ -117,14 +109,7 @@ var getCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -134,8 +119,8 @@ func init() {
 	Cmd.AddCommand(listCmd)
 	// TODO: short flags
 
-	listCmd.Flags().StringVar(&listReq.NextPageToken, "next-page-token", "", `Token used to get the next page of results.`)
-	listCmd.Flags().StringVar(&listReq.PathPrefix, "path-prefix", "", `Filters repos that have paths starting with the given path prefix.`)
+	listCmd.Flags().StringVar(&listReq.NextPageToken, "next-page-token", listReq.NextPageToken, `Token used to get the next page of results.`)
+	listCmd.Flags().StringVar(&listReq.PathPrefix, "path-prefix", listReq.PathPrefix, `Filters repos that have paths starting with the given path prefix.`)
 
 }
 
@@ -155,14 +140,7 @@ var listCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -172,9 +150,9 @@ func init() {
 	Cmd.AddCommand(updateCmd)
 	// TODO: short flags
 
-	updateCmd.Flags().StringVar(&updateReq.Branch, "branch", "", `Branch that the local version of the repo is checked out to.`)
-	updateCmd.Flags().Int64Var(&updateReq.RepoId, "repo-id", 0, `The ID for the corresponding repo to access.`)
-	updateCmd.Flags().StringVar(&updateReq.Tag, "tag", "", `Tag that the local version of the repo is checked out to.`)
+	updateCmd.Flags().StringVar(&updateReq.Branch, "branch", updateReq.Branch, `Branch that the local version of the repo is checked out to.`)
+	updateCmd.Flags().Int64Var(&updateReq.RepoId, "repo-id", updateReq.RepoId, `The ID for the corresponding repo to access.`)
+	updateCmd.Flags().StringVar(&updateReq.Tag, "tag", updateReq.Tag, `Tag that the local version of the repo is checked out to.`)
 
 }
 
@@ -194,7 +172,6 @@ var updateCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }

@@ -30,9 +30,9 @@ func init() {
 	Cmd.AddCommand(createScopeCmd)
 	// TODO: short flags
 
-	createScopeCmd.Flags().StringVar(&createScopeReq.InitialManagePrincipal, "initial-manage-principal", "", `The principal that is initially granted MANAGE permission to the created scope.`)
+	createScopeCmd.Flags().StringVar(&createScopeReq.InitialManagePrincipal, "initial-manage-principal", createScopeReq.InitialManagePrincipal, `The principal that is initially granted MANAGE permission to the created scope.`)
 	// TODO: complex arg: keyvault_metadata
-	createScopeCmd.Flags().StringVar(&createScopeReq.Scope, "scope", "", `Scope name requested by the user.`)
+	createScopeCmd.Flags().StringVar(&createScopeReq.Scope, "scope", createScopeReq.Scope, `Scope name requested by the user.`)
 	createScopeCmd.Flags().Var(&createScopeReq.ScopeBackendType, "scope-backend-type", `The backend type the scope will be created with.`)
 
 }
@@ -54,7 +54,6 @@ var createScopeCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -65,8 +64,8 @@ func init() {
 	Cmd.AddCommand(deleteAclCmd)
 	// TODO: short flags
 
-	deleteAclCmd.Flags().StringVar(&deleteAclReq.Principal, "principal", "", `The principal to remove an existing ACL from.`)
-	deleteAclCmd.Flags().StringVar(&deleteAclReq.Scope, "scope", "", `The name of the scope to remove permissions from.`)
+	deleteAclCmd.Flags().StringVar(&deleteAclReq.Principal, "principal", deleteAclReq.Principal, `The principal to remove an existing ACL from.`)
+	deleteAclCmd.Flags().StringVar(&deleteAclReq.Scope, "scope", deleteAclReq.Scope, `The name of the scope to remove permissions from.`)
 
 }
 
@@ -90,7 +89,6 @@ var deleteAclCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -101,7 +99,7 @@ func init() {
 	Cmd.AddCommand(deleteScopeCmd)
 	// TODO: short flags
 
-	deleteScopeCmd.Flags().StringVar(&deleteScopeReq.Scope, "scope", "", `Name of the scope to delete.`)
+	deleteScopeCmd.Flags().StringVar(&deleteScopeReq.Scope, "scope", deleteScopeReq.Scope, `Name of the scope to delete.`)
 
 }
 
@@ -124,7 +122,6 @@ var deleteScopeCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -135,8 +132,8 @@ func init() {
 	Cmd.AddCommand(deleteSecretCmd)
 	// TODO: short flags
 
-	deleteSecretCmd.Flags().StringVar(&deleteSecretReq.Key, "key", "", `Name of the secret to delete.`)
-	deleteSecretCmd.Flags().StringVar(&deleteSecretReq.Scope, "scope", "", `The name of the scope that contains the secret to delete.`)
+	deleteSecretCmd.Flags().StringVar(&deleteSecretReq.Key, "key", deleteSecretReq.Key, `Name of the secret to delete.`)
+	deleteSecretCmd.Flags().StringVar(&deleteSecretReq.Scope, "scope", deleteSecretReq.Scope, `The name of the scope that contains the secret to delete.`)
 
 }
 
@@ -160,7 +157,6 @@ var deleteSecretCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -171,8 +167,8 @@ func init() {
 	Cmd.AddCommand(getAclCmd)
 	// TODO: short flags
 
-	getAclCmd.Flags().StringVar(&getAclReq.Principal, "principal", "", `The principal to fetch ACL information for.`)
-	getAclCmd.Flags().StringVar(&getAclReq.Scope, "scope", "", `The name of the scope to fetch ACL information from.`)
+	getAclCmd.Flags().StringVar(&getAclReq.Principal, "principal", getAclReq.Principal, `The principal to fetch ACL information for.`)
+	getAclCmd.Flags().StringVar(&getAclReq.Scope, "scope", getAclReq.Scope, `The name of the scope to fetch ACL information from.`)
 
 }
 
@@ -196,14 +192,7 @@ var getAclCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -213,7 +202,7 @@ func init() {
 	Cmd.AddCommand(listAclsCmd)
 	// TODO: short flags
 
-	listAclsCmd.Flags().StringVar(&listAclsReq.Scope, "scope", "", `The name of the scope to fetch ACL information from.`)
+	listAclsCmd.Flags().StringVar(&listAclsReq.Scope, "scope", listAclsReq.Scope, `The name of the scope to fetch ACL information from.`)
 
 }
 
@@ -237,14 +226,7 @@ var listAclsCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -271,14 +253,7 @@ var listScopesCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -288,7 +263,7 @@ func init() {
 	Cmd.AddCommand(listSecretsCmd)
 	// TODO: short flags
 
-	listSecretsCmd.Flags().StringVar(&listSecretsReq.Scope, "scope", "", `The name of the scope to list secrets within.`)
+	listSecretsCmd.Flags().StringVar(&listSecretsReq.Scope, "scope", listSecretsReq.Scope, `The name of the scope to list secrets within.`)
 
 }
 
@@ -314,14 +289,7 @@ var listSecretsCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -332,8 +300,8 @@ func init() {
 	// TODO: short flags
 
 	putAclCmd.Flags().Var(&putAclReq.Permission, "permission", `The permission level applied to the principal.`)
-	putAclCmd.Flags().StringVar(&putAclReq.Principal, "principal", "", `The principal in which the permission is applied.`)
-	putAclCmd.Flags().StringVar(&putAclReq.Scope, "scope", "", `The name of the scope to apply permissions to.`)
+	putAclCmd.Flags().StringVar(&putAclReq.Principal, "principal", putAclReq.Principal, `The principal in which the permission is applied.`)
+	putAclCmd.Flags().StringVar(&putAclReq.Scope, "scope", putAclReq.Scope, `The name of the scope to apply permissions to.`)
 
 }
 
@@ -377,7 +345,6 @@ var putAclCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -388,10 +355,10 @@ func init() {
 	Cmd.AddCommand(putSecretCmd)
 	// TODO: short flags
 
-	putSecretCmd.Flags().StringVar(&putSecretReq.BytesValue, "bytes-value", "", `If specified, value will be stored as bytes.`)
-	putSecretCmd.Flags().StringVar(&putSecretReq.Key, "key", "", `A unique name to identify the secret.`)
-	putSecretCmd.Flags().StringVar(&putSecretReq.Scope, "scope", "", `The name of the scope to which the secret will be associated with.`)
-	putSecretCmd.Flags().StringVar(&putSecretReq.StringValue, "string-value", "", `If specified, note that the value will be stored in UTF-8 (MB4) form.`)
+	putSecretCmd.Flags().StringVar(&putSecretReq.BytesValue, "bytes-value", putSecretReq.BytesValue, `If specified, value will be stored as bytes.`)
+	putSecretCmd.Flags().StringVar(&putSecretReq.Key, "key", putSecretReq.Key, `A unique name to identify the secret.`)
+	putSecretCmd.Flags().StringVar(&putSecretReq.Scope, "scope", putSecretReq.Scope, `The name of the scope to which the secret will be associated with.`)
+	putSecretCmd.Flags().StringVar(&putSecretReq.StringValue, "string-value", putSecretReq.StringValue, `If specified, note that the value will be stored in UTF-8 (MB4) form.`)
 
 }
 
@@ -428,7 +395,6 @@ var putSecretCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }

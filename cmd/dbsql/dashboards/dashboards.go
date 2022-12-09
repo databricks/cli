@@ -23,10 +23,10 @@ func init() {
 	Cmd.AddCommand(createDashboardCmd)
 	// TODO: short flags
 
-	createDashboardCmd.Flags().BoolVar(&createDashboardReq.DashboardFiltersEnabled, "dashboard-filters-enabled", false, `In the web application, query filters that share a name are coupled to a single selection box if this value is true.`)
-	createDashboardCmd.Flags().BoolVar(&createDashboardReq.IsDraft, "is-draft", false, `Draft dashboards only appear in list views for their owners.`)
-	createDashboardCmd.Flags().BoolVar(&createDashboardReq.IsTrashed, "is-trashed", false, `Indicates whether the dashboard is trashed.`)
-	createDashboardCmd.Flags().StringVar(&createDashboardReq.Name, "name", "", `The title of this dashboard that appears in list views and at the top of the dashboard page.`)
+	createDashboardCmd.Flags().BoolVar(&createDashboardReq.DashboardFiltersEnabled, "dashboard-filters-enabled", createDashboardReq.DashboardFiltersEnabled, `In the web application, query filters that share a name are coupled to a single selection box if this value is true.`)
+	createDashboardCmd.Flags().BoolVar(&createDashboardReq.IsDraft, "is-draft", createDashboardReq.IsDraft, `Draft dashboards only appear in list views for their owners.`)
+	createDashboardCmd.Flags().BoolVar(&createDashboardReq.IsTrashed, "is-trashed", createDashboardReq.IsTrashed, `Indicates whether the dashboard is trashed.`)
+	createDashboardCmd.Flags().StringVar(&createDashboardReq.Name, "name", createDashboardReq.Name, `The title of this dashboard that appears in list views and at the top of the dashboard page.`)
 	// TODO: array: tags
 	// TODO: array: widgets
 
@@ -45,14 +45,7 @@ var createDashboardCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -62,7 +55,7 @@ func init() {
 	Cmd.AddCommand(deleteDashboardCmd)
 	// TODO: short flags
 
-	deleteDashboardCmd.Flags().StringVar(&deleteDashboardReq.DashboardId, "dashboard-id", "", ``)
+	deleteDashboardCmd.Flags().StringVar(&deleteDashboardReq.DashboardId, "dashboard-id", deleteDashboardReq.DashboardId, ``)
 
 }
 
@@ -82,7 +75,6 @@ var deleteDashboardCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -93,7 +85,7 @@ func init() {
 	Cmd.AddCommand(getDashboardCmd)
 	// TODO: short flags
 
-	getDashboardCmd.Flags().StringVar(&getDashboardReq.DashboardId, "dashboard-id", "", ``)
+	getDashboardCmd.Flags().StringVar(&getDashboardReq.DashboardId, "dashboard-id", getDashboardReq.DashboardId, ``)
 
 }
 
@@ -113,14 +105,7 @@ var getDashboardCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -131,9 +116,9 @@ func init() {
 	// TODO: short flags
 
 	listDashboardsCmd.Flags().Var(&listDashboardsReq.Order, "order", `Name of dashboard attribute to order by.`)
-	listDashboardsCmd.Flags().IntVar(&listDashboardsReq.Page, "page", 0, `Page number to retrieve.`)
-	listDashboardsCmd.Flags().IntVar(&listDashboardsReq.PageSize, "page-size", 0, `Number of dashboards to return per page.`)
-	listDashboardsCmd.Flags().StringVar(&listDashboardsReq.Q, "q", "", `Full text search term.`)
+	listDashboardsCmd.Flags().IntVar(&listDashboardsReq.Page, "page", listDashboardsReq.Page, `Page number to retrieve.`)
+	listDashboardsCmd.Flags().IntVar(&listDashboardsReq.PageSize, "page-size", listDashboardsReq.PageSize, `Number of dashboards to return per page.`)
+	listDashboardsCmd.Flags().StringVar(&listDashboardsReq.Q, "q", listDashboardsReq.Q, `Full text search term.`)
 
 }
 
@@ -152,14 +137,7 @@ var listDashboardsCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -169,7 +147,7 @@ func init() {
 	Cmd.AddCommand(restoreDashboardCmd)
 	// TODO: short flags
 
-	restoreDashboardCmd.Flags().StringVar(&restoreDashboardReq.DashboardId, "dashboard-id", "", ``)
+	restoreDashboardCmd.Flags().StringVar(&restoreDashboardReq.DashboardId, "dashboard-id", restoreDashboardReq.DashboardId, ``)
 
 }
 
@@ -188,7 +166,6 @@ var restoreDashboardCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }

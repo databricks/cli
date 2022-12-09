@@ -20,9 +20,9 @@ func init() {
 	// TODO: short flags
 
 	// TODO: complex arg: filter_by
-	listQueriesCmd.Flags().BoolVar(&listQueriesReq.IncludeMetrics, "include-metrics", false, `Whether to include metrics about query.`)
-	listQueriesCmd.Flags().IntVar(&listQueriesReq.MaxResults, "max-results", 0, `Limit the number of results returned in one page.`)
-	listQueriesCmd.Flags().StringVar(&listQueriesReq.PageToken, "page-token", "", `A token that can be used to get the next page of results.`)
+	listQueriesCmd.Flags().BoolVar(&listQueriesReq.IncludeMetrics, "include-metrics", listQueriesReq.IncludeMetrics, `Whether to include metrics about query.`)
+	listQueriesCmd.Flags().IntVar(&listQueriesReq.MaxResults, "max-results", listQueriesReq.MaxResults, `Limit the number of results returned in one page.`)
+	listQueriesCmd.Flags().StringVar(&listQueriesReq.PageToken, "page-token", listQueriesReq.PageToken, `A token that can be used to get the next page of results.`)
 
 }
 
@@ -43,14 +43,7 @@ var listQueriesCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 

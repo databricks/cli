@@ -21,7 +21,7 @@ func init() {
 	// TODO: short flags
 
 	// TODO: complex arg: budget
-	createCmd.Flags().StringVar(&createReq.BudgetId, "budget-id", "", `Budget ID.`)
+	createCmd.Flags().StringVar(&createReq.BudgetId, "budget-id", createReq.BudgetId, `Budget ID.`)
 
 }
 
@@ -40,14 +40,7 @@ var createCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -57,7 +50,7 @@ func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
 
-	deleteCmd.Flags().StringVar(&deleteReq.BudgetId, "budget-id", "", `Budget ID.`)
+	deleteCmd.Flags().StringVar(&deleteReq.BudgetId, "budget-id", deleteReq.BudgetId, `Budget ID.`)
 
 }
 
@@ -76,7 +69,6 @@ var deleteCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -87,7 +79,7 @@ func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
 
-	getCmd.Flags().StringVar(&getReq.BudgetId, "budget-id", "", `Budget ID.`)
+	getCmd.Flags().StringVar(&getReq.BudgetId, "budget-id", getReq.BudgetId, `Budget ID.`)
 
 }
 
@@ -107,14 +99,7 @@ var getCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -139,14 +124,7 @@ var listCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -157,7 +135,7 @@ func init() {
 	// TODO: short flags
 
 	// TODO: complex arg: budget
-	updateCmd.Flags().StringVar(&updateReq.BudgetId, "budget-id", "", `Budget ID.`)
+	updateCmd.Flags().StringVar(&updateReq.BudgetId, "budget-id", updateReq.BudgetId, `Budget ID.`)
 
 }
 
@@ -177,7 +155,6 @@ var updateCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }

@@ -40,13 +40,13 @@ func init() {
 	// TODO: complex arg: azure_attributes
 	// TODO: map via StringToStringVar: custom_tags
 	// TODO: complex arg: disk_spec
-	createCmd.Flags().BoolVar(&createReq.EnableElasticDisk, "enable-elastic-disk", false, `Autoscaling Local Storage: when enabled, this instances in this pool will dynamically acquire additional disk space when its Spark workers are running low on disk space.`)
-	createCmd.Flags().IntVar(&createReq.IdleInstanceAutoterminationMinutes, "idle-instance-autotermination-minutes", 0, `Automatically terminates the extra instances in the pool cache after they are inactive for this time in minutes if min_idle_instances requirement is already met.`)
+	createCmd.Flags().BoolVar(&createReq.EnableElasticDisk, "enable-elastic-disk", createReq.EnableElasticDisk, `Autoscaling Local Storage: when enabled, this instances in this pool will dynamically acquire additional disk space when its Spark workers are running low on disk space.`)
+	createCmd.Flags().IntVar(&createReq.IdleInstanceAutoterminationMinutes, "idle-instance-autotermination-minutes", createReq.IdleInstanceAutoterminationMinutes, `Automatically terminates the extra instances in the pool cache after they are inactive for this time in minutes if min_idle_instances requirement is already met.`)
 	// TODO: complex arg: instance_pool_fleet_attributes
-	createCmd.Flags().StringVar(&createReq.InstancePoolName, "instance-pool-name", "", `Pool name requested by the user.`)
-	createCmd.Flags().IntVar(&createReq.MaxCapacity, "max-capacity", 0, `Maximum number of outstanding instances to keep in the pool, including both instances used by clusters and idle instances.`)
-	createCmd.Flags().IntVar(&createReq.MinIdleInstances, "min-idle-instances", 0, `Minimum number of idle instances to keep in the instance pool.`)
-	createCmd.Flags().StringVar(&createReq.NodeTypeId, "node-type-id", "", `This field encodes, through a single value, the resources available to each of the Spark nodes in this cluster.`)
+	createCmd.Flags().StringVar(&createReq.InstancePoolName, "instance-pool-name", createReq.InstancePoolName, `Pool name requested by the user.`)
+	createCmd.Flags().IntVar(&createReq.MaxCapacity, "max-capacity", createReq.MaxCapacity, `Maximum number of outstanding instances to keep in the pool, including both instances used by clusters and idle instances.`)
+	createCmd.Flags().IntVar(&createReq.MinIdleInstances, "min-idle-instances", createReq.MinIdleInstances, `Minimum number of idle instances to keep in the instance pool.`)
+	createCmd.Flags().StringVar(&createReq.NodeTypeId, "node-type-id", createReq.NodeTypeId, `This field encodes, through a single value, the resources available to each of the Spark nodes in this cluster.`)
 	// TODO: array: preloaded_docker_images
 	// TODO: array: preloaded_spark_versions
 
@@ -67,14 +67,7 @@ var createCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -84,7 +77,7 @@ func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
 
-	deleteCmd.Flags().StringVar(&deleteReq.InstancePoolId, "instance-pool-id", "", `The instance pool to be terminated.`)
+	deleteCmd.Flags().StringVar(&deleteReq.InstancePoolId, "instance-pool-id", deleteReq.InstancePoolId, `The instance pool to be terminated.`)
 
 }
 
@@ -104,7 +97,6 @@ var deleteCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -119,13 +111,14 @@ func init() {
 	// TODO: complex arg: azure_attributes
 	// TODO: map via StringToStringVar: custom_tags
 	// TODO: complex arg: disk_spec
-	editCmd.Flags().BoolVar(&editReq.EnableElasticDisk, "enable-elastic-disk", false, `Autoscaling Local Storage: when enabled, this instances in this pool will dynamically acquire additional disk space when its Spark workers are running low on disk space.`)
-	editCmd.Flags().IntVar(&editReq.IdleInstanceAutoterminationMinutes, "idle-instance-autotermination-minutes", 0, `Automatically terminates the extra instances in the pool cache after they are inactive for this time in minutes if min_idle_instances requirement is already met.`)
-	editCmd.Flags().StringVar(&editReq.InstancePoolId, "instance-pool-id", "", ``)
-	editCmd.Flags().StringVar(&editReq.InstancePoolName, "instance-pool-name", "", `Pool name requested by the user.`)
-	editCmd.Flags().IntVar(&editReq.MaxCapacity, "max-capacity", 0, `Maximum number of outstanding instances to keep in the pool, including both instances used by clusters and idle ones.`)
-	editCmd.Flags().IntVar(&editReq.MinIdleInstances, "min-idle-instances", 0, `Minimum number of idle instances to keep in the instance pool.`)
-	editCmd.Flags().StringVar(&editReq.NodeTypeId, "node-type-id", "", `This field encodes, through a single value, the resources available to each of the Spark nodes in this cluster.`)
+	editCmd.Flags().BoolVar(&editReq.EnableElasticDisk, "enable-elastic-disk", editReq.EnableElasticDisk, `Autoscaling Local Storage: when enabled, this instances in this pool will dynamically acquire additional disk space when its Spark workers are running low on disk space.`)
+	editCmd.Flags().IntVar(&editReq.IdleInstanceAutoterminationMinutes, "idle-instance-autotermination-minutes", editReq.IdleInstanceAutoterminationMinutes, `Automatically terminates the extra instances in the pool cache after they are inactive for this time in minutes if min_idle_instances requirement is already met.`)
+	// TODO: complex arg: instance_pool_fleet_attributes
+	editCmd.Flags().StringVar(&editReq.InstancePoolId, "instance-pool-id", editReq.InstancePoolId, `Instance pool ID.`)
+	editCmd.Flags().StringVar(&editReq.InstancePoolName, "instance-pool-name", editReq.InstancePoolName, `Pool name requested by the user.`)
+	editCmd.Flags().IntVar(&editReq.MaxCapacity, "max-capacity", editReq.MaxCapacity, `Maximum number of outstanding instances to keep in the pool, including both instances used by clusters and idle instances.`)
+	editCmd.Flags().IntVar(&editReq.MinIdleInstances, "min-idle-instances", editReq.MinIdleInstances, `Minimum number of idle instances to keep in the instance pool.`)
+	editCmd.Flags().StringVar(&editReq.NodeTypeId, "node-type-id", editReq.NodeTypeId, `This field encodes, through a single value, the resources available to each of the Spark nodes in this cluster.`)
 	// TODO: array: preloaded_docker_images
 	// TODO: array: preloaded_spark_versions
 
@@ -146,7 +139,6 @@ var editCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -157,7 +149,7 @@ func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
 
-	getCmd.Flags().StringVar(&getReq.InstancePoolId, "instance-pool-id", "", `The canonical unique identifier for the instance pool.`)
+	getCmd.Flags().StringVar(&getReq.InstancePoolId, "instance-pool-id", getReq.InstancePoolId, `The canonical unique identifier for the instance pool.`)
 
 }
 
@@ -176,14 +168,7 @@ var getCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -207,14 +192,7 @@ var listCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 

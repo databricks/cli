@@ -17,11 +17,11 @@ func init() {
 	Cmd.AddCommand(approveCmd)
 	// TODO: short flags
 
-	approveCmd.Flags().BoolVar(&approveReq.ArchiveExistingVersions, "archive-existing-versions", false, `Specifies whether to archive all current model versions in the target stage.`)
-	approveCmd.Flags().StringVar(&approveReq.Comment, "comment", "", `User-provided comment on the action.`)
-	approveCmd.Flags().StringVar(&approveReq.Name, "name", "", `Name of the model.`)
+	approveCmd.Flags().BoolVar(&approveReq.ArchiveExistingVersions, "archive-existing-versions", approveReq.ArchiveExistingVersions, `Specifies whether to archive all current model versions in the target stage.`)
+	approveCmd.Flags().StringVar(&approveReq.Comment, "comment", approveReq.Comment, `User-provided comment on the action.`)
+	approveCmd.Flags().StringVar(&approveReq.Name, "name", approveReq.Name, `Name of the model.`)
 	approveCmd.Flags().Var(&approveReq.Stage, "stage", `Target stage of the transition.`)
-	approveCmd.Flags().StringVar(&approveReq.Version, "version", "", `Version of the model.`)
+	approveCmd.Flags().StringVar(&approveReq.Version, "version", approveReq.Version, `Version of the model.`)
 
 }
 
@@ -40,14 +40,7 @@ var approveCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -57,10 +50,10 @@ func init() {
 	Cmd.AddCommand(createCmd)
 	// TODO: short flags
 
-	createCmd.Flags().StringVar(&createReq.Comment, "comment", "", `User-provided comment on the action.`)
-	createCmd.Flags().StringVar(&createReq.Name, "name", "", `Name of the model.`)
+	createCmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `User-provided comment on the action.`)
+	createCmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `Name of the model.`)
 	createCmd.Flags().Var(&createReq.Stage, "stage", `Target stage of the transition.`)
-	createCmd.Flags().StringVar(&createReq.Version, "version", "", `Version of the model.`)
+	createCmd.Flags().StringVar(&createReq.Version, "version", createReq.Version, `Version of the model.`)
 
 }
 
@@ -79,14 +72,7 @@ var createCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -96,11 +82,11 @@ func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
 
-	deleteCmd.Flags().StringVar(&deleteReq.Comment, "comment", "", `User-provided comment on the action.`)
-	deleteCmd.Flags().StringVar(&deleteReq.Creator, "creator", "", `Username of the user who created this request.`)
-	deleteCmd.Flags().StringVar(&deleteReq.Name, "name", "", `Name of the model.`)
-	deleteCmd.Flags().StringVar(&deleteReq.Stage, "stage", "", `Target stage of the transition request.`)
-	deleteCmd.Flags().StringVar(&deleteReq.Version, "version", "", `Version of the model.`)
+	deleteCmd.Flags().StringVar(&deleteReq.Comment, "comment", deleteReq.Comment, `User-provided comment on the action.`)
+	deleteCmd.Flags().StringVar(&deleteReq.Creator, "creator", deleteReq.Creator, `Username of the user who created this request.`)
+	deleteCmd.Flags().StringVar(&deleteReq.Name, "name", deleteReq.Name, `Name of the model.`)
+	deleteCmd.Flags().StringVar(&deleteReq.Stage, "stage", deleteReq.Stage, `Target stage of the transition request.`)
+	deleteCmd.Flags().StringVar(&deleteReq.Version, "version", deleteReq.Version, `Version of the model.`)
 
 }
 
@@ -119,7 +105,6 @@ var deleteCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -130,8 +115,8 @@ func init() {
 	Cmd.AddCommand(listCmd)
 	// TODO: short flags
 
-	listCmd.Flags().StringVar(&listReq.Name, "name", "", `Name of the model.`)
-	listCmd.Flags().StringVar(&listReq.Version, "version", "", `Version of the model.`)
+	listCmd.Flags().StringVar(&listReq.Name, "name", listReq.Name, `Name of the model.`)
+	listCmd.Flags().StringVar(&listReq.Version, "version", listReq.Version, `Version of the model.`)
 
 }
 
@@ -150,14 +135,7 @@ var listCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -167,10 +145,10 @@ func init() {
 	Cmd.AddCommand(rejectCmd)
 	// TODO: short flags
 
-	rejectCmd.Flags().StringVar(&rejectReq.Comment, "comment", "", `User-provided comment on the action.`)
-	rejectCmd.Flags().StringVar(&rejectReq.Name, "name", "", `Name of the model.`)
+	rejectCmd.Flags().StringVar(&rejectReq.Comment, "comment", rejectReq.Comment, `User-provided comment on the action.`)
+	rejectCmd.Flags().StringVar(&rejectReq.Name, "name", rejectReq.Name, `Name of the model.`)
 	rejectCmd.Flags().Var(&rejectReq.Stage, "stage", `Target stage of the transition.`)
-	rejectCmd.Flags().StringVar(&rejectReq.Version, "version", "", `Version of the model.`)
+	rejectCmd.Flags().StringVar(&rejectReq.Version, "version", rejectReq.Version, `Version of the model.`)
 
 }
 
@@ -189,14 +167,7 @@ var rejectCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 

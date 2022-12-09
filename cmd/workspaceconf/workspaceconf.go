@@ -19,7 +19,7 @@ func init() {
 	Cmd.AddCommand(getStatusCmd)
 	// TODO: short flags
 
-	getStatusCmd.Flags().StringVar(&getStatusReq.Keys, "keys", "", ``)
+	getStatusCmd.Flags().StringVar(&getStatusReq.Keys, "keys", getStatusReq.Keys, ``)
 
 }
 
@@ -38,14 +38,7 @@ var getStatusCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -73,7 +66,6 @@ var setStatusCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }

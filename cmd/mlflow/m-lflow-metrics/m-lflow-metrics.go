@@ -17,9 +17,9 @@ func init() {
 	Cmd.AddCommand(getHistoryCmd)
 	// TODO: short flags
 
-	getHistoryCmd.Flags().StringVar(&getHistoryReq.MetricKey, "metric-key", "", `Name of the metric.`)
-	getHistoryCmd.Flags().StringVar(&getHistoryReq.RunId, "run-id", "", `ID of the run from which to fetch metric values.`)
-	getHistoryCmd.Flags().StringVar(&getHistoryReq.RunUuid, "run-uuid", "", `[Deprecated, use run_id instead] ID of the run from which to fetch metric values.`)
+	getHistoryCmd.Flags().StringVar(&getHistoryReq.MetricKey, "metric-key", getHistoryReq.MetricKey, `Name of the metric.`)
+	getHistoryCmd.Flags().StringVar(&getHistoryReq.RunId, "run-id", getHistoryReq.RunId, `ID of the run from which to fetch metric values.`)
+	getHistoryCmd.Flags().StringVar(&getHistoryReq.RunUuid, "run-uuid", getHistoryReq.RunUuid, `[Deprecated, use run_id instead] ID of the run from which to fetch metric values.`)
 
 }
 
@@ -38,14 +38,7 @@ var getHistoryCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 

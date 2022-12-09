@@ -24,7 +24,7 @@ func init() {
 	// TODO: short flags
 
 	// TODO: complex arg: aws_credentials
-	createCmd.Flags().StringVar(&createReq.CredentialsName, "credentials-name", "", `The human-readable name of the credential configuration object.`)
+	createCmd.Flags().StringVar(&createReq.CredentialsName, "credentials-name", createReq.CredentialsName, `The human-readable name of the credential configuration object.`)
 
 }
 
@@ -56,14 +56,7 @@ var createCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -73,7 +66,7 @@ func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
 
-	deleteCmd.Flags().StringVar(&deleteReq.CredentialsId, "credentials-id", "", `Databricks Account API credential configuration ID.`)
+	deleteCmd.Flags().StringVar(&deleteReq.CredentialsId, "credentials-id", deleteReq.CredentialsId, `Databricks Account API credential configuration ID.`)
 
 }
 
@@ -94,7 +87,6 @@ var deleteCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -105,7 +97,7 @@ func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
 
-	getCmd.Flags().StringVar(&getReq.CredentialsId, "credentials-id", "", `Databricks Account API credential configuration ID.`)
+	getCmd.Flags().StringVar(&getReq.CredentialsId, "credentials-id", getReq.CredentialsId, `Databricks Account API credential configuration ID.`)
 
 }
 
@@ -125,14 +117,7 @@ var getCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -157,14 +142,7 @@ var listCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 

@@ -26,11 +26,11 @@ func init() {
 	Cmd.AddCommand(createCmd)
 	// TODO: short flags
 
-	createCmd.Flags().StringVar(&createReq.Comment, "comment", "", `User-provided free-form text description.`)
-	createCmd.Flags().StringVar(&createReq.Name, "name", "", `Name of Catalog.`)
+	createCmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `User-provided free-form text description.`)
+	createCmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `Name of Catalog.`)
 	// TODO: array: properties
-	createCmd.Flags().StringVar(&createReq.ProviderName, "provider-name", "", `Delta Sharing Catalog specific fields.`)
-	createCmd.Flags().StringVar(&createReq.ShareName, "share-name", "", `The name of the share under the share provider.`)
+	createCmd.Flags().StringVar(&createReq.ProviderName, "provider-name", createReq.ProviderName, `Delta Sharing Catalog specific fields.`)
+	createCmd.Flags().StringVar(&createReq.ShareName, "share-name", createReq.ShareName, `The name of the share under the share provider.`)
 
 }
 
@@ -50,14 +50,7 @@ var createCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -67,7 +60,7 @@ func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
 
-	deleteCmd.Flags().StringVar(&deleteReq.Name, "name", "", `Required.`)
+	deleteCmd.Flags().StringVar(&deleteReq.Name, "name", deleteReq.Name, `Required.`)
 
 }
 
@@ -87,7 +80,6 @@ var deleteCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -98,7 +90,7 @@ func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
 
-	getCmd.Flags().StringVar(&getReq.Name, "name", "", `Required.`)
+	getCmd.Flags().StringVar(&getReq.Name, "name", getReq.Name, `Required.`)
 
 }
 
@@ -118,14 +110,7 @@ var getCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -151,14 +136,7 @@ var listCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -169,18 +147,18 @@ func init() {
 	// TODO: short flags
 
 	updateCmd.Flags().Var(&updateReq.CatalogType, "catalog-type", `[Create,Update:IGN] The type of the catalog.`)
-	updateCmd.Flags().StringVar(&updateReq.Comment, "comment", "", `[Create,Update:OPT] User-provided free-form text description.`)
-	updateCmd.Flags().Int64Var(&updateReq.CreatedAt, "created-at", 0, `[Create,Update:IGN] Time at which this Catalog was created, in epoch milliseconds.`)
-	updateCmd.Flags().StringVar(&updateReq.CreatedBy, "created-by", "", `[Create,Update:IGN] Username of Catalog creator.`)
-	updateCmd.Flags().StringVar(&updateReq.MetastoreId, "metastore-id", "", `[Create,Update:IGN] Unique identifier of parent Metastore.`)
-	updateCmd.Flags().StringVar(&updateReq.Name, "name", "", `[Create:REQ Update:OPT] Name of Catalog.`)
-	updateCmd.Flags().StringVar(&updateReq.Owner, "owner", "", `[Create:IGN,Update:OPT] Username of current owner of Catalog.`)
+	updateCmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `[Create,Update:OPT] User-provided free-form text description.`)
+	updateCmd.Flags().Int64Var(&updateReq.CreatedAt, "created-at", updateReq.CreatedAt, `[Create,Update:IGN] Time at which this Catalog was created, in epoch milliseconds.`)
+	updateCmd.Flags().StringVar(&updateReq.CreatedBy, "created-by", updateReq.CreatedBy, `[Create,Update:IGN] Username of Catalog creator.`)
+	updateCmd.Flags().StringVar(&updateReq.MetastoreId, "metastore-id", updateReq.MetastoreId, `[Create,Update:IGN] Unique identifier of parent Metastore.`)
+	updateCmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `[Create:REQ Update:OPT] Name of Catalog.`)
+	updateCmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `[Create:IGN,Update:OPT] Username of current owner of Catalog.`)
 	// TODO: array: privileges
 	// TODO: array: properties
-	updateCmd.Flags().StringVar(&updateReq.ProviderName, "provider-name", "", `Delta Sharing Catalog specific fields.`)
-	updateCmd.Flags().StringVar(&updateReq.ShareName, "share-name", "", `[Create:OPT,Update: IGN] The name of the share under the share provider.`)
-	updateCmd.Flags().Int64Var(&updateReq.UpdatedAt, "updated-at", 0, `[Create,Update:IGN] Time at which this Catalog was last modified, in epoch milliseconds.`)
-	updateCmd.Flags().StringVar(&updateReq.UpdatedBy, "updated-by", "", `[Create,Update:IGN] Username of user who last modified Catalog.`)
+	updateCmd.Flags().StringVar(&updateReq.ProviderName, "provider-name", updateReq.ProviderName, `Delta Sharing Catalog specific fields.`)
+	updateCmd.Flags().StringVar(&updateReq.ShareName, "share-name", updateReq.ShareName, `[Create:OPT,Update: IGN] The name of the share under the share provider.`)
+	updateCmd.Flags().Int64Var(&updateReq.UpdatedAt, "updated-at", updateReq.UpdatedAt, `[Create,Update:IGN] Time at which this Catalog was last modified, in epoch milliseconds.`)
+	updateCmd.Flags().StringVar(&updateReq.UpdatedBy, "updated-by", updateReq.UpdatedBy, `[Create,Update:IGN] Username of user who last modified Catalog.`)
 
 }
 
@@ -201,7 +179,6 @@ var updateCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }

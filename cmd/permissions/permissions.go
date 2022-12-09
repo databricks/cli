@@ -21,8 +21,8 @@ func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
 
-	getCmd.Flags().StringVar(&getReq.RequestObjectId, "request-object-id", "", ``)
-	getCmd.Flags().StringVar(&getReq.RequestObjectType, "request-object-type", "", `<needs content>.`)
+	getCmd.Flags().StringVar(&getReq.RequestObjectId, "request-object-id", getReq.RequestObjectId, ``)
+	getCmd.Flags().StringVar(&getReq.RequestObjectType, "request-object-type", getReq.RequestObjectType, `<needs content>.`)
 
 }
 
@@ -42,14 +42,7 @@ var getCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -59,8 +52,8 @@ func init() {
 	Cmd.AddCommand(getPermissionLevelsCmd)
 	// TODO: short flags
 
-	getPermissionLevelsCmd.Flags().StringVar(&getPermissionLevelsReq.RequestObjectId, "request-object-id", "", `<needs content>.`)
-	getPermissionLevelsCmd.Flags().StringVar(&getPermissionLevelsReq.RequestObjectType, "request-object-type", "", `<needs content>.`)
+	getPermissionLevelsCmd.Flags().StringVar(&getPermissionLevelsReq.RequestObjectId, "request-object-id", getPermissionLevelsReq.RequestObjectId, `<needs content>.`)
+	getPermissionLevelsCmd.Flags().StringVar(&getPermissionLevelsReq.RequestObjectType, "request-object-type", getPermissionLevelsReq.RequestObjectType, `<needs content>.`)
 
 }
 
@@ -79,14 +72,7 @@ var getPermissionLevelsCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -97,8 +83,8 @@ func init() {
 	// TODO: short flags
 
 	// TODO: array: access_control_list
-	setCmd.Flags().StringVar(&setReq.RequestObjectId, "request-object-id", "", ``)
-	setCmd.Flags().StringVar(&setReq.RequestObjectType, "request-object-type", "", `<needs content>.`)
+	setCmd.Flags().StringVar(&setReq.RequestObjectId, "request-object-id", setReq.RequestObjectId, ``)
+	setCmd.Flags().StringVar(&setReq.RequestObjectType, "request-object-type", setReq.RequestObjectType, `<needs content>.`)
 
 }
 
@@ -118,7 +104,6 @@ var setCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -130,8 +115,8 @@ func init() {
 	// TODO: short flags
 
 	// TODO: array: access_control_list
-	updateCmd.Flags().StringVar(&updateReq.RequestObjectId, "request-object-id", "", ``)
-	updateCmd.Flags().StringVar(&updateReq.RequestObjectType, "request-object-type", "", `<needs content>.`)
+	updateCmd.Flags().StringVar(&updateReq.RequestObjectId, "request-object-id", updateReq.RequestObjectId, ``)
+	updateCmd.Flags().StringVar(&updateReq.RequestObjectType, "request-object-type", updateReq.RequestObjectType, `<needs content>.`)
 
 }
 
@@ -150,7 +135,6 @@ var updateCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }

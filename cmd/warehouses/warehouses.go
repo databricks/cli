@@ -22,16 +22,16 @@ func init() {
 	Cmd.AddCommand(createWarehouseCmd)
 	// TODO: short flags
 
-	createWarehouseCmd.Flags().IntVar(&createWarehouseReq.AutoStopMins, "auto-stop-mins", 0, `The amount of time in minutes that a SQL Endpoint must be idle (i.e., no RUNNING queries) before it is automatically stopped.`)
+	createWarehouseCmd.Flags().IntVar(&createWarehouseReq.AutoStopMins, "auto-stop-mins", createWarehouseReq.AutoStopMins, `The amount of time in minutes that a SQL Endpoint must be idle (i.e., no RUNNING queries) before it is automatically stopped.`)
 	// TODO: complex arg: channel
-	createWarehouseCmd.Flags().StringVar(&createWarehouseReq.ClusterSize, "cluster-size", "", `Size of the clusters allocated for this endpoint.`)
-	createWarehouseCmd.Flags().StringVar(&createWarehouseReq.CreatorName, "creator-name", "", `endpoint creator name.`)
-	createWarehouseCmd.Flags().BoolVar(&createWarehouseReq.EnablePhoton, "enable-photon", false, `Configures whether the endpoint should use Photon optimized clusters.`)
-	createWarehouseCmd.Flags().BoolVar(&createWarehouseReq.EnableServerlessCompute, "enable-serverless-compute", false, `Configures whether the endpoint should use Serverless Compute (aka Nephos) Defaults to value in global endpoint settings.`)
-	createWarehouseCmd.Flags().StringVar(&createWarehouseReq.InstanceProfileArn, "instance-profile-arn", "", `Deprecated.`)
-	createWarehouseCmd.Flags().IntVar(&createWarehouseReq.MaxNumClusters, "max-num-clusters", 0, `Maximum number of clusters that the autoscaler will create to handle concurrent queries.`)
-	createWarehouseCmd.Flags().IntVar(&createWarehouseReq.MinNumClusters, "min-num-clusters", 0, `Minimum number of available clusters that will be maintained for this SQL Endpoint.`)
-	createWarehouseCmd.Flags().StringVar(&createWarehouseReq.Name, "name", "", `Logical name for the cluster.`)
+	createWarehouseCmd.Flags().StringVar(&createWarehouseReq.ClusterSize, "cluster-size", createWarehouseReq.ClusterSize, `Size of the clusters allocated for this endpoint.`)
+	createWarehouseCmd.Flags().StringVar(&createWarehouseReq.CreatorName, "creator-name", createWarehouseReq.CreatorName, `endpoint creator name.`)
+	createWarehouseCmd.Flags().BoolVar(&createWarehouseReq.EnablePhoton, "enable-photon", createWarehouseReq.EnablePhoton, `Configures whether the endpoint should use Photon optimized clusters.`)
+	createWarehouseCmd.Flags().BoolVar(&createWarehouseReq.EnableServerlessCompute, "enable-serverless-compute", createWarehouseReq.EnableServerlessCompute, `Configures whether the endpoint should use Serverless Compute (aka Nephos) Defaults to value in global endpoint settings.`)
+	createWarehouseCmd.Flags().StringVar(&createWarehouseReq.InstanceProfileArn, "instance-profile-arn", createWarehouseReq.InstanceProfileArn, `Deprecated.`)
+	createWarehouseCmd.Flags().IntVar(&createWarehouseReq.MaxNumClusters, "max-num-clusters", createWarehouseReq.MaxNumClusters, `Maximum number of clusters that the autoscaler will create to handle concurrent queries.`)
+	createWarehouseCmd.Flags().IntVar(&createWarehouseReq.MinNumClusters, "min-num-clusters", createWarehouseReq.MinNumClusters, `Minimum number of available clusters that will be maintained for this SQL Endpoint.`)
+	createWarehouseCmd.Flags().StringVar(&createWarehouseReq.Name, "name", createWarehouseReq.Name, `Logical name for the cluster.`)
 	createWarehouseCmd.Flags().Var(&createWarehouseReq.SpotInstancePolicy, "spot-instance-policy", `Configurations whether the endpoint should use spot instances.`)
 	// TODO: complex arg: tags
 	createWarehouseCmd.Flags().Var(&createWarehouseReq.WarehouseType, "warehouse-type", `Warehouse type (Classic/Pro).`)
@@ -53,14 +53,7 @@ var createWarehouseCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -70,7 +63,7 @@ func init() {
 	Cmd.AddCommand(deleteWarehouseCmd)
 	// TODO: short flags
 
-	deleteWarehouseCmd.Flags().StringVar(&deleteWarehouseReq.Id, "id", "", `Required.`)
+	deleteWarehouseCmd.Flags().StringVar(&deleteWarehouseReq.Id, "id", deleteWarehouseReq.Id, `Required.`)
 
 }
 
@@ -89,7 +82,6 @@ var deleteWarehouseCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -100,18 +92,18 @@ func init() {
 	Cmd.AddCommand(editWarehouseCmd)
 	// TODO: short flags
 
-	editWarehouseCmd.Flags().IntVar(&editWarehouseReq.AutoStopMins, "auto-stop-mins", 0, `The amount of time in minutes that a SQL Endpoint must be idle (i.e., no RUNNING queries) before it is automatically stopped.`)
+	editWarehouseCmd.Flags().IntVar(&editWarehouseReq.AutoStopMins, "auto-stop-mins", editWarehouseReq.AutoStopMins, `The amount of time in minutes that a SQL Endpoint must be idle (i.e., no RUNNING queries) before it is automatically stopped.`)
 	// TODO: complex arg: channel
-	editWarehouseCmd.Flags().StringVar(&editWarehouseReq.ClusterSize, "cluster-size", "", `Size of the clusters allocated for this endpoint.`)
-	editWarehouseCmd.Flags().StringVar(&editWarehouseReq.CreatorName, "creator-name", "", `endpoint creator name.`)
-	editWarehouseCmd.Flags().BoolVar(&editWarehouseReq.EnableDatabricksCompute, "enable-databricks-compute", false, `Configures whether the endpoint should use Databricks Compute (aka Nephos) Deprecated: Use enable_serverless_compute TODO(SC-79930): Remove the field once clients are updated.`)
-	editWarehouseCmd.Flags().BoolVar(&editWarehouseReq.EnablePhoton, "enable-photon", false, `Configures whether the endpoint should use Photon optimized clusters.`)
-	editWarehouseCmd.Flags().BoolVar(&editWarehouseReq.EnableServerlessCompute, "enable-serverless-compute", false, `Configures whether the endpoint should use Serverless Compute (aka Nephos) Defaults to value in global endpoint settings.`)
-	editWarehouseCmd.Flags().StringVar(&editWarehouseReq.Id, "id", "", `Required.`)
-	editWarehouseCmd.Flags().StringVar(&editWarehouseReq.InstanceProfileArn, "instance-profile-arn", "", `Deprecated.`)
-	editWarehouseCmd.Flags().IntVar(&editWarehouseReq.MaxNumClusters, "max-num-clusters", 0, `Maximum number of clusters that the autoscaler will create to handle concurrent queries.`)
-	editWarehouseCmd.Flags().IntVar(&editWarehouseReq.MinNumClusters, "min-num-clusters", 0, `Minimum number of available clusters that will be maintained for this SQL Endpoint.`)
-	editWarehouseCmd.Flags().StringVar(&editWarehouseReq.Name, "name", "", `Logical name for the cluster.`)
+	editWarehouseCmd.Flags().StringVar(&editWarehouseReq.ClusterSize, "cluster-size", editWarehouseReq.ClusterSize, `Size of the clusters allocated for this endpoint.`)
+	editWarehouseCmd.Flags().StringVar(&editWarehouseReq.CreatorName, "creator-name", editWarehouseReq.CreatorName, `endpoint creator name.`)
+	editWarehouseCmd.Flags().BoolVar(&editWarehouseReq.EnableDatabricksCompute, "enable-databricks-compute", editWarehouseReq.EnableDatabricksCompute, `Configures whether the endpoint should use Databricks Compute (aka Nephos) Deprecated: Use enable_serverless_compute TODO(SC-79930): Remove the field once clients are updated.`)
+	editWarehouseCmd.Flags().BoolVar(&editWarehouseReq.EnablePhoton, "enable-photon", editWarehouseReq.EnablePhoton, `Configures whether the endpoint should use Photon optimized clusters.`)
+	editWarehouseCmd.Flags().BoolVar(&editWarehouseReq.EnableServerlessCompute, "enable-serverless-compute", editWarehouseReq.EnableServerlessCompute, `Configures whether the endpoint should use Serverless Compute (aka Nephos) Defaults to value in global endpoint settings.`)
+	editWarehouseCmd.Flags().StringVar(&editWarehouseReq.Id, "id", editWarehouseReq.Id, `Required.`)
+	editWarehouseCmd.Flags().StringVar(&editWarehouseReq.InstanceProfileArn, "instance-profile-arn", editWarehouseReq.InstanceProfileArn, `Deprecated.`)
+	editWarehouseCmd.Flags().IntVar(&editWarehouseReq.MaxNumClusters, "max-num-clusters", editWarehouseReq.MaxNumClusters, `Maximum number of clusters that the autoscaler will create to handle concurrent queries.`)
+	editWarehouseCmd.Flags().IntVar(&editWarehouseReq.MinNumClusters, "min-num-clusters", editWarehouseReq.MinNumClusters, `Minimum number of available clusters that will be maintained for this SQL Endpoint.`)
+	editWarehouseCmd.Flags().StringVar(&editWarehouseReq.Name, "name", editWarehouseReq.Name, `Logical name for the cluster.`)
 	editWarehouseCmd.Flags().Var(&editWarehouseReq.SpotInstancePolicy, "spot-instance-policy", `Configurations whether the endpoint should use spot instances.`)
 	// TODO: complex arg: tags
 	editWarehouseCmd.Flags().Var(&editWarehouseReq.WarehouseType, "warehouse-type", `Warehouse type (Classic/Pro).`)
@@ -133,7 +125,6 @@ var editWarehouseCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -144,7 +135,7 @@ func init() {
 	Cmd.AddCommand(getWarehouseCmd)
 	// TODO: short flags
 
-	getWarehouseCmd.Flags().StringVar(&getWarehouseReq.Id, "id", "", `Required.`)
+	getWarehouseCmd.Flags().StringVar(&getWarehouseReq.Id, "id", getWarehouseReq.Id, `Required.`)
 
 }
 
@@ -163,14 +154,7 @@ var getWarehouseCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -195,14 +179,7 @@ var getWorkspaceWarehouseConfigCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -212,7 +189,7 @@ func init() {
 	Cmd.AddCommand(listWarehousesCmd)
 	// TODO: short flags
 
-	listWarehousesCmd.Flags().IntVar(&listWarehousesReq.RunAsUserId, "run-as-user-id", 0, `Service Principal which will be used to fetch the list of endpoints.`)
+	listWarehousesCmd.Flags().IntVar(&listWarehousesReq.RunAsUserId, "run-as-user-id", listWarehousesReq.RunAsUserId, `Service Principal which will be used to fetch the list of endpoints.`)
 
 }
 
@@ -231,14 +208,7 @@ var listWarehousesCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -251,14 +221,14 @@ func init() {
 	// TODO: complex arg: channel
 	// TODO: complex arg: config_param
 	// TODO: array: data_access_config
-	setWorkspaceWarehouseConfigCmd.Flags().BoolVar(&setWorkspaceWarehouseConfigReq.EnableDatabricksCompute, "enable-databricks-compute", false, `Enable Serverless compute for SQL Endpoints Deprecated: Use enable_serverless_compute TODO(SC-79930): Remove the field once clients are updated.`)
-	setWorkspaceWarehouseConfigCmd.Flags().BoolVar(&setWorkspaceWarehouseConfigReq.EnableServerlessCompute, "enable-serverless-compute", false, `Enable Serverless compute for SQL Endpoints.`)
+	setWorkspaceWarehouseConfigCmd.Flags().BoolVar(&setWorkspaceWarehouseConfigReq.EnableDatabricksCompute, "enable-databricks-compute", setWorkspaceWarehouseConfigReq.EnableDatabricksCompute, `Enable Serverless compute for SQL Endpoints Deprecated: Use enable_serverless_compute TODO(SC-79930): Remove the field once clients are updated.`)
+	setWorkspaceWarehouseConfigCmd.Flags().BoolVar(&setWorkspaceWarehouseConfigReq.EnableServerlessCompute, "enable-serverless-compute", setWorkspaceWarehouseConfigReq.EnableServerlessCompute, `Enable Serverless compute for SQL Endpoints.`)
 	// TODO: array: enabled_warehouse_types
 	// TODO: complex arg: global_param
-	setWorkspaceWarehouseConfigCmd.Flags().StringVar(&setWorkspaceWarehouseConfigReq.GoogleServiceAccount, "google-service-account", "", `GCP only: Google Service Account used to pass to cluster to access Google Cloud Storage.`)
-	setWorkspaceWarehouseConfigCmd.Flags().StringVar(&setWorkspaceWarehouseConfigReq.InstanceProfileArn, "instance-profile-arn", "", `AWS Only: Instance profile used to pass IAM role to the cluster.`)
+	setWorkspaceWarehouseConfigCmd.Flags().StringVar(&setWorkspaceWarehouseConfigReq.GoogleServiceAccount, "google-service-account", setWorkspaceWarehouseConfigReq.GoogleServiceAccount, `GCP only: Google Service Account used to pass to cluster to access Google Cloud Storage.`)
+	setWorkspaceWarehouseConfigCmd.Flags().StringVar(&setWorkspaceWarehouseConfigReq.InstanceProfileArn, "instance-profile-arn", setWorkspaceWarehouseConfigReq.InstanceProfileArn, `AWS Only: Instance profile used to pass IAM role to the cluster.`)
 	setWorkspaceWarehouseConfigCmd.Flags().Var(&setWorkspaceWarehouseConfigReq.SecurityPolicy, "security-policy", `Security policy for endpoints.`)
-	setWorkspaceWarehouseConfigCmd.Flags().BoolVar(&setWorkspaceWarehouseConfigReq.ServerlessAgreement, "serverless-agreement", false, `Internal.`)
+	setWorkspaceWarehouseConfigCmd.Flags().BoolVar(&setWorkspaceWarehouseConfigReq.ServerlessAgreement, "serverless-agreement", setWorkspaceWarehouseConfigReq.ServerlessAgreement, `Internal.`)
 	// TODO: complex arg: sql_configuration_parameters
 
 }
@@ -279,7 +249,6 @@ var setWorkspaceWarehouseConfigCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -290,7 +259,7 @@ func init() {
 	Cmd.AddCommand(startWarehouseCmd)
 	// TODO: short flags
 
-	startWarehouseCmd.Flags().StringVar(&startWarehouseReq.Id, "id", "", `Required.`)
+	startWarehouseCmd.Flags().StringVar(&startWarehouseReq.Id, "id", startWarehouseReq.Id, `Required.`)
 
 }
 
@@ -309,7 +278,6 @@ var startWarehouseCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -320,7 +288,7 @@ func init() {
 	Cmd.AddCommand(stopWarehouseCmd)
 	// TODO: short flags
 
-	stopWarehouseCmd.Flags().StringVar(&stopWarehouseReq.Id, "id", "", `Required.`)
+	stopWarehouseCmd.Flags().StringVar(&stopWarehouseReq.Id, "id", stopWarehouseReq.Id, `Required.`)
 
 }
 
@@ -339,7 +307,6 @@ var stopWarehouseCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }

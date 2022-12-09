@@ -122,14 +122,7 @@ var createCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -139,7 +132,7 @@ func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
 
-	getCmd.Flags().StringVar(&getReq.LogDeliveryConfigurationId, "log-delivery-configuration-id", "", `Databricks log delivery configuration ID.`)
+	getCmd.Flags().StringVar(&getReq.LogDeliveryConfigurationId, "log-delivery-configuration-id", getReq.LogDeliveryConfigurationId, `Databricks log delivery configuration ID.`)
 
 }
 
@@ -159,14 +152,7 @@ var getCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -176,9 +162,9 @@ func init() {
 	Cmd.AddCommand(listCmd)
 	// TODO: short flags
 
-	listCmd.Flags().StringVar(&listReq.CredentialsId, "credentials-id", "", `Filter by credential configuration ID.`)
+	listCmd.Flags().StringVar(&listReq.CredentialsId, "credentials-id", listReq.CredentialsId, `Filter by credential configuration ID.`)
 	listCmd.Flags().Var(&listReq.Status, "status", `Filter by status ENABLED or DISABLED.`)
-	listCmd.Flags().StringVar(&listReq.StorageConfigurationId, "storage-configuration-id", "", `Filter by storage configuration ID.`)
+	listCmd.Flags().StringVar(&listReq.StorageConfigurationId, "storage-configuration-id", listReq.StorageConfigurationId, `Filter by storage configuration ID.`)
 
 }
 
@@ -198,14 +184,7 @@ var listCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -215,7 +194,7 @@ func init() {
 	Cmd.AddCommand(patchStatusCmd)
 	// TODO: short flags
 
-	patchStatusCmd.Flags().StringVar(&patchStatusReq.LogDeliveryConfigurationId, "log-delivery-configuration-id", "", `Databricks log delivery configuration ID.`)
+	patchStatusCmd.Flags().StringVar(&patchStatusReq.LogDeliveryConfigurationId, "log-delivery-configuration-id", patchStatusReq.LogDeliveryConfigurationId, `Databricks log delivery configuration ID.`)
 	patchStatusCmd.Flags().Var(&patchStatusReq.Status, "status", `Status of log delivery configuration.`)
 
 }
@@ -239,7 +218,6 @@ var patchStatusCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }

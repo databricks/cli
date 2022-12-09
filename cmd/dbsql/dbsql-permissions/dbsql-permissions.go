@@ -31,7 +31,7 @@ func init() {
 	Cmd.AddCommand(getPermissionsCmd)
 	// TODO: short flags
 
-	getPermissionsCmd.Flags().StringVar(&getPermissionsReq.ObjectId, "object-id", "", `Object ID.`)
+	getPermissionsCmd.Flags().StringVar(&getPermissionsReq.ObjectId, "object-id", getPermissionsReq.ObjectId, `Object ID.`)
 	getPermissionsCmd.Flags().Var(&getPermissionsReq.ObjectType, "object-type", `The type of object permissions to check.`)
 
 }
@@ -52,14 +52,7 @@ var getPermissionsCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -70,7 +63,7 @@ func init() {
 	// TODO: short flags
 
 	// TODO: array: access_control_list
-	setPermissionsCmd.Flags().StringVar(&setPermissionsReq.ObjectId, "object-id", "", `Object ID.`)
+	setPermissionsCmd.Flags().StringVar(&setPermissionsReq.ObjectId, "object-id", setPermissionsReq.ObjectId, `Object ID.`)
 	setPermissionsCmd.Flags().Var(&setPermissionsReq.ObjectType, "object-type", `The type of object permission to set.`)
 
 }
@@ -91,14 +84,7 @@ var setPermissionsCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -108,7 +94,7 @@ func init() {
 	Cmd.AddCommand(transferOwnershipCmd)
 	// TODO: short flags
 
-	transferOwnershipCmd.Flags().StringVar(&transferOwnershipReq.NewOwner, "new-owner", "", `Email address for the new owner, who must exist in the workspace.`)
+	transferOwnershipCmd.Flags().StringVar(&transferOwnershipReq.NewOwner, "new-owner", transferOwnershipReq.NewOwner, `Email address for the new owner, who must exist in the workspace.`)
 	// TODO: complex arg: objectId
 	transferOwnershipCmd.Flags().Var(&transferOwnershipReq.ObjectType, "object-type", `The type of object on which to change ownership.`)
 
@@ -130,14 +116,7 @@ var transferOwnershipCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 

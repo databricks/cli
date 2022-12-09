@@ -17,11 +17,11 @@ func init() {
 	Cmd.AddCommand(createCmd)
 	// TODO: short flags
 
-	createCmd.Flags().StringVar(&createReq.Description, "description", "", `User-specified description for the webhook.`)
+	createCmd.Flags().StringVar(&createReq.Description, "description", createReq.Description, `User-specified description for the webhook.`)
 	// TODO: array: events
 	// TODO: complex arg: http_url_spec
 	// TODO: complex arg: job_spec
-	createCmd.Flags().StringVar(&createReq.ModelName, "model-name", "", `Name of the model whose events would trigger this webhook.`)
+	createCmd.Flags().StringVar(&createReq.ModelName, "model-name", createReq.ModelName, `Name of the model whose events would trigger this webhook.`)
 	createCmd.Flags().Var(&createReq.Status, "status", `This describes an enum.`)
 
 }
@@ -43,14 +43,7 @@ var createCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -60,7 +53,7 @@ func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
 
-	deleteCmd.Flags().StringVar(&deleteReq.Id, "id", "", `Webhook ID required to delete a registry webhook.`)
+	deleteCmd.Flags().StringVar(&deleteReq.Id, "id", deleteReq.Id, `Webhook ID required to delete a registry webhook.`)
 
 }
 
@@ -81,7 +74,6 @@ var deleteCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -93,8 +85,8 @@ func init() {
 	// TODO: short flags
 
 	// TODO: array: events
-	listCmd.Flags().StringVar(&listReq.ModelName, "model-name", "", `If not specified, all webhooks associated with the specified events are listed, regardless of their associated model.`)
-	listCmd.Flags().StringVar(&listReq.PageToken, "page-token", "", `Token indicating the page of artifact results to fetch.`)
+	listCmd.Flags().StringVar(&listReq.ModelName, "model-name", listReq.ModelName, `If not specified, all webhooks associated with the specified events are listed, regardless of their associated model.`)
+	listCmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Token indicating the page of artifact results to fetch.`)
 
 }
 
@@ -115,14 +107,7 @@ var listCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -133,7 +118,7 @@ func init() {
 	// TODO: short flags
 
 	testCmd.Flags().Var(&testReq.Event, "event", `If event is specified, the test trigger uses the specified event.`)
-	testCmd.Flags().StringVar(&testReq.Id, "id", "", `Webhook ID.`)
+	testCmd.Flags().StringVar(&testReq.Id, "id", testReq.Id, `Webhook ID.`)
 
 }
 
@@ -154,14 +139,7 @@ var testCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -171,10 +149,10 @@ func init() {
 	Cmd.AddCommand(updateCmd)
 	// TODO: short flags
 
-	updateCmd.Flags().StringVar(&updateReq.Description, "description", "", `User-specified description for the webhook.`)
+	updateCmd.Flags().StringVar(&updateReq.Description, "description", updateReq.Description, `User-specified description for the webhook.`)
 	// TODO: array: events
 	// TODO: complex arg: http_url_spec
-	updateCmd.Flags().StringVar(&updateReq.Id, "id", "", `Webhook ID.`)
+	updateCmd.Flags().StringVar(&updateReq.Id, "id", updateReq.Id, `Webhook ID.`)
 	// TODO: complex arg: job_spec
 	updateCmd.Flags().Var(&updateReq.Status, "status", `This describes an enum.`)
 
@@ -197,7 +175,6 @@ var updateCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }

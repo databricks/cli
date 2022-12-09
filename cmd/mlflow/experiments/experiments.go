@@ -17,8 +17,8 @@ func init() {
 	Cmd.AddCommand(createCmd)
 	// TODO: short flags
 
-	createCmd.Flags().StringVar(&createReq.ArtifactLocation, "artifact-location", "", `Location where all artifacts for the experiment are stored.`)
-	createCmd.Flags().StringVar(&createReq.Name, "name", "", `Experiment name.`)
+	createCmd.Flags().StringVar(&createReq.ArtifactLocation, "artifact-location", createReq.ArtifactLocation, `Location where all artifacts for the experiment are stored.`)
+	createCmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `Experiment name.`)
 	// TODO: array: tags
 
 }
@@ -43,14 +43,7 @@ var createCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -60,7 +53,7 @@ func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
 
-	deleteCmd.Flags().StringVar(&deleteReq.ExperimentId, "experiment-id", "", `ID of the associated experiment.`)
+	deleteCmd.Flags().StringVar(&deleteReq.ExperimentId, "experiment-id", deleteReq.ExperimentId, `ID of the associated experiment.`)
 
 }
 
@@ -81,7 +74,6 @@ var deleteCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -92,7 +84,7 @@ func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
 
-	getCmd.Flags().StringVar(&getReq.ExperimentId, "experiment-id", "", `ID of the associated experiment.`)
+	getCmd.Flags().StringVar(&getReq.ExperimentId, "experiment-id", getReq.ExperimentId, `ID of the associated experiment.`)
 
 }
 
@@ -111,14 +103,7 @@ var getCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -128,7 +113,7 @@ func init() {
 	Cmd.AddCommand(getByNameCmd)
 	// TODO: short flags
 
-	getByNameCmd.Flags().StringVar(&getByNameReq.ExperimentName, "experiment-name", "", `Name of the associated experiment.`)
+	getByNameCmd.Flags().StringVar(&getByNameReq.ExperimentName, "experiment-name", getByNameReq.ExperimentName, `Name of the associated experiment.`)
 
 }
 
@@ -155,14 +140,7 @@ var getByNameCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -172,9 +150,9 @@ func init() {
 	Cmd.AddCommand(listCmd)
 	// TODO: short flags
 
-	listCmd.Flags().IntVar(&listReq.MaxResults, "max-results", 0, `Maximum number of experiments desired.`)
-	listCmd.Flags().StringVar(&listReq.PageToken, "page-token", "", `Token indicating the page of experiments to fetch.`)
-	listCmd.Flags().StringVar(&listReq.ViewType, "view-type", "", `Qualifier for type of experiments to be returned.`)
+	listCmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of experiments desired.`)
+	listCmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Token indicating the page of experiments to fetch.`)
+	listCmd.Flags().StringVar(&listReq.ViewType, "view-type", listReq.ViewType, `Qualifier for type of experiments to be returned.`)
 
 }
 
@@ -193,14 +171,7 @@ var listCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -210,7 +181,7 @@ func init() {
 	Cmd.AddCommand(restoreCmd)
 	// TODO: short flags
 
-	restoreCmd.Flags().StringVar(&restoreReq.ExperimentId, "experiment-id", "", `ID of the associated experiment.`)
+	restoreCmd.Flags().StringVar(&restoreReq.ExperimentId, "experiment-id", restoreReq.ExperimentId, `ID of the associated experiment.`)
 
 }
 
@@ -233,7 +204,6 @@ var restoreCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -244,10 +214,10 @@ func init() {
 	Cmd.AddCommand(searchCmd)
 	// TODO: short flags
 
-	searchCmd.Flags().StringVar(&searchReq.Filter, "filter", "", `String representing a SQL filter condition (e.g.`)
-	searchCmd.Flags().Int64Var(&searchReq.MaxResults, "max-results", 0, `Maximum number of experiments desired.`)
+	searchCmd.Flags().StringVar(&searchReq.Filter, "filter", searchReq.Filter, `String representing a SQL filter condition (e.g.`)
+	searchCmd.Flags().Int64Var(&searchReq.MaxResults, "max-results", searchReq.MaxResults, `Maximum number of experiments desired.`)
 	// TODO: array: order_by
-	searchCmd.Flags().StringVar(&searchReq.PageToken, "page-token", "", `Token indicating the page of experiments to fetch.`)
+	searchCmd.Flags().StringVar(&searchReq.PageToken, "page-token", searchReq.PageToken, `Token indicating the page of experiments to fetch.`)
 	searchCmd.Flags().Var(&searchReq.ViewType, "view-type", `Qualifier for type of experiments to be returned.`)
 
 }
@@ -267,14 +237,7 @@ var searchCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -284,9 +247,9 @@ func init() {
 	Cmd.AddCommand(setExperimentTagCmd)
 	// TODO: short flags
 
-	setExperimentTagCmd.Flags().StringVar(&setExperimentTagReq.ExperimentId, "experiment-id", "", `ID of the experiment under which to log the tag.`)
-	setExperimentTagCmd.Flags().StringVar(&setExperimentTagReq.Key, "key", "", `Name of the tag.`)
-	setExperimentTagCmd.Flags().StringVar(&setExperimentTagReq.Value, "value", "", `String value of the tag being logged.`)
+	setExperimentTagCmd.Flags().StringVar(&setExperimentTagReq.ExperimentId, "experiment-id", setExperimentTagReq.ExperimentId, `ID of the experiment under which to log the tag.`)
+	setExperimentTagCmd.Flags().StringVar(&setExperimentTagReq.Key, "key", setExperimentTagReq.Key, `Name of the tag.`)
+	setExperimentTagCmd.Flags().StringVar(&setExperimentTagReq.Value, "value", setExperimentTagReq.Value, `String value of the tag being logged.`)
 
 }
 
@@ -305,7 +268,6 @@ var setExperimentTagCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -316,8 +278,8 @@ func init() {
 	Cmd.AddCommand(updateCmd)
 	// TODO: short flags
 
-	updateCmd.Flags().StringVar(&updateReq.ExperimentId, "experiment-id", "", `ID of the associated experiment.`)
-	updateCmd.Flags().StringVar(&updateReq.NewName, "new-name", "", `If provided, the experiment's name is changed to the new name.`)
+	updateCmd.Flags().StringVar(&updateReq.ExperimentId, "experiment-id", updateReq.ExperimentId, `ID of the associated experiment.`)
+	updateCmd.Flags().StringVar(&updateReq.NewName, "new-name", updateReq.NewName, `If provided, the experiment's name is changed to the new name.`)
 
 }
 
@@ -336,7 +298,6 @@ var updateCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }

@@ -26,20 +26,20 @@ func init() {
 	Cmd.AddCommand(createCmd)
 	// TODO: short flags
 
-	createCmd.Flags().StringVar(&createReq.AwsRegion, "aws-region", "", `The AWS region of the workspace's data plane.`)
-	createCmd.Flags().StringVar(&createReq.Cloud, "cloud", "", `The cloud provider which the workspace uses.`)
+	createCmd.Flags().StringVar(&createReq.AwsRegion, "aws-region", createReq.AwsRegion, `The AWS region of the workspace's data plane.`)
+	createCmd.Flags().StringVar(&createReq.Cloud, "cloud", createReq.Cloud, `The cloud provider which the workspace uses.`)
 	// TODO: complex arg: cloud_resource_bucket
-	createCmd.Flags().StringVar(&createReq.CredentialsId, "credentials-id", "", `ID of the workspace's credential configuration object.`)
-	createCmd.Flags().StringVar(&createReq.DeploymentName, "deployment-name", "", `The deployment name defines part of the subdomain for the workspace.`)
-	createCmd.Flags().StringVar(&createReq.Location, "location", "", `The Google Cloud region of the workspace data plane in your Google account.`)
-	createCmd.Flags().StringVar(&createReq.ManagedServicesCustomerManagedKeyId, "managed-services-customer-managed-key-id", "", `The ID of the workspace's managed services encryption key configuration object.`)
+	createCmd.Flags().StringVar(&createReq.CredentialsId, "credentials-id", createReq.CredentialsId, `ID of the workspace's credential configuration object.`)
+	createCmd.Flags().StringVar(&createReq.DeploymentName, "deployment-name", createReq.DeploymentName, `The deployment name defines part of the subdomain for the workspace.`)
+	createCmd.Flags().StringVar(&createReq.Location, "location", createReq.Location, `The Google Cloud region of the workspace data plane in your Google account.`)
+	createCmd.Flags().StringVar(&createReq.ManagedServicesCustomerManagedKeyId, "managed-services-customer-managed-key-id", createReq.ManagedServicesCustomerManagedKeyId, `The ID of the workspace's managed services encryption key configuration object.`)
 	// TODO: complex arg: network
-	createCmd.Flags().StringVar(&createReq.NetworkId, "network-id", "", `The ID of the workspace's network configuration object.`)
+	createCmd.Flags().StringVar(&createReq.NetworkId, "network-id", createReq.NetworkId, `The ID of the workspace's network configuration object.`)
 	createCmd.Flags().Var(&createReq.PricingTier, "pricing-tier", `The pricing tier of the workspace.`)
-	createCmd.Flags().StringVar(&createReq.PrivateAccessSettingsId, "private-access-settings-id", "", `ID of the workspace's private access settings object.`)
-	createCmd.Flags().StringVar(&createReq.StorageConfigurationId, "storage-configuration-id", "", `The ID of the workspace's storage configuration object.`)
-	createCmd.Flags().StringVar(&createReq.StorageCustomerManagedKeyId, "storage-customer-managed-key-id", "", `The ID of the workspace's storage encryption key configuration object.`)
-	createCmd.Flags().StringVar(&createReq.WorkspaceName, "workspace-name", "", `The workspace's human-readable name.`)
+	createCmd.Flags().StringVar(&createReq.PrivateAccessSettingsId, "private-access-settings-id", createReq.PrivateAccessSettingsId, `ID of the workspace's private access settings object.`)
+	createCmd.Flags().StringVar(&createReq.StorageConfigurationId, "storage-configuration-id", createReq.StorageConfigurationId, `The ID of the workspace's storage configuration object.`)
+	createCmd.Flags().StringVar(&createReq.StorageCustomerManagedKeyId, "storage-customer-managed-key-id", createReq.StorageCustomerManagedKeyId, `The ID of the workspace's storage encryption key configuration object.`)
+	createCmd.Flags().StringVar(&createReq.WorkspaceName, "workspace-name", createReq.WorkspaceName, `The workspace's human-readable name.`)
 
 }
 
@@ -91,14 +91,7 @@ var createCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -108,7 +101,7 @@ func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
 
-	deleteCmd.Flags().Int64Var(&deleteReq.WorkspaceId, "workspace-id", 0, `Workspace ID.`)
+	deleteCmd.Flags().Int64Var(&deleteReq.WorkspaceId, "workspace-id", deleteReq.WorkspaceId, `Workspace ID.`)
 
 }
 
@@ -134,7 +127,6 @@ var deleteCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -145,7 +137,7 @@ func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
 
-	getCmd.Flags().Int64Var(&getReq.WorkspaceId, "workspace-id", 0, `Workspace ID.`)
+	getCmd.Flags().Int64Var(&getReq.WorkspaceId, "workspace-id", getReq.WorkspaceId, `Workspace ID.`)
 
 }
 
@@ -177,63 +169,7 @@ var getCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
-	},
-}
-
-var getWorkspaceKeyHistoryReq deployment.GetWorkspaceKeyHistoryRequest
-
-func init() {
-	Cmd.AddCommand(getWorkspaceKeyHistoryCmd)
-	// TODO: short flags
-
-	getWorkspaceKeyHistoryCmd.Flags().Int64Var(&getWorkspaceKeyHistoryReq.WorkspaceId, "workspace-id", 0, `Workspace ID.`)
-
-}
-
-var getWorkspaceKeyHistoryCmd = &cobra.Command{
-	Use:   "get-workspace-key-history",
-	Short: `Get the history of a workspace's associations with keys.`,
-	Long: `Get the history of a workspace's associations with keys.
-  
-  Gets a list of all associations with key configuration objects for the
-  specified workspace that encapsulate customer-managed keys that encrypt
-  managed services, workspace storage, or in some cases both.
-  
-  **Important**: In the current implementation, keys cannot be rotated or
-  removed from a workspace. It is possible for a workspace to show a storage
-  customer-managed key having been attached and then detached if the workspace
-  was updated to use the key and the update operation failed.
-  
-  **Important**: Customer-managed keys are supported only for some deployment
-  types and subscription types.
-  
-  This operation is available only if your account is on the E2 version of the
-  platform.`,
-
-	PreRunE: sdk.PreAccountClient,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		ctx := cmd.Context()
-		a := sdk.AccountClient(ctx)
-		response, err := a.Workspaces.GetWorkspaceKeyHistory(ctx, getWorkspaceKeyHistoryReq)
-		if err != nil {
-			return err
-		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -261,14 +197,7 @@ var listCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -278,13 +207,13 @@ func init() {
 	Cmd.AddCommand(updateCmd)
 	// TODO: short flags
 
-	updateCmd.Flags().StringVar(&updateReq.AwsRegion, "aws-region", "", `The AWS region of the workspace's data plane (for example, us-west-2).`)
-	updateCmd.Flags().StringVar(&updateReq.CredentialsId, "credentials-id", "", `ID of the workspace's credential configuration object.`)
-	updateCmd.Flags().StringVar(&updateReq.ManagedServicesCustomerManagedKeyId, "managed-services-customer-managed-key-id", "", `The ID of the workspace's managed services encryption key configuration object.`)
-	updateCmd.Flags().StringVar(&updateReq.NetworkId, "network-id", "", `The ID of the workspace's network configuration object.`)
-	updateCmd.Flags().StringVar(&updateReq.StorageConfigurationId, "storage-configuration-id", "", `The ID of the workspace's storage configuration object.`)
-	updateCmd.Flags().StringVar(&updateReq.StorageCustomerManagedKeyId, "storage-customer-managed-key-id", "", `The ID of the key configuration object for workspace storage.`)
-	updateCmd.Flags().Int64Var(&updateReq.WorkspaceId, "workspace-id", 0, `Workspace ID.`)
+	updateCmd.Flags().StringVar(&updateReq.AwsRegion, "aws-region", updateReq.AwsRegion, `The AWS region of the workspace's data plane (for example, us-west-2).`)
+	updateCmd.Flags().StringVar(&updateReq.CredentialsId, "credentials-id", updateReq.CredentialsId, `ID of the workspace's credential configuration object.`)
+	updateCmd.Flags().StringVar(&updateReq.ManagedServicesCustomerManagedKeyId, "managed-services-customer-managed-key-id", updateReq.ManagedServicesCustomerManagedKeyId, `The ID of the workspace's managed services encryption key configuration object.`)
+	updateCmd.Flags().StringVar(&updateReq.NetworkId, "network-id", updateReq.NetworkId, `The ID of the workspace's network configuration object.`)
+	updateCmd.Flags().StringVar(&updateReq.StorageConfigurationId, "storage-configuration-id", updateReq.StorageConfigurationId, `The ID of the workspace's storage configuration object.`)
+	updateCmd.Flags().StringVar(&updateReq.StorageCustomerManagedKeyId, "storage-customer-managed-key-id", updateReq.StorageCustomerManagedKeyId, `The ID of the key configuration object for workspace storage.`)
+	updateCmd.Flags().Int64Var(&updateReq.WorkspaceId, "workspace-id", updateReq.WorkspaceId, `Workspace ID.`)
 
 }
 
@@ -404,7 +333,6 @@ var updateCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }

@@ -29,10 +29,10 @@ func init() {
 
 	// TODO: array: allowed_vpc_endpoint_ids
 	createCmd.Flags().Var(&createReq.PrivateAccessLevel, "private-access-level", `The private access level controls which VPC endpoints can connect to the UI or API of any workspace that attaches this private access settings object.`)
-	createCmd.Flags().StringVar(&createReq.PrivateAccessSettingsId, "private-access-settings-id", "", `Databricks Account API private access settings ID.`)
-	createCmd.Flags().StringVar(&createReq.PrivateAccessSettingsName, "private-access-settings-name", "", `The human-readable name of the private access settings object.`)
-	createCmd.Flags().BoolVar(&createReq.PublicAccessEnabled, "public-access-enabled", false, `Determines if the workspace can be accessed over public internet.`)
-	createCmd.Flags().StringVar(&createReq.Region, "region", "", `The AWS region for workspaces associated with this private access settings object.`)
+	createCmd.Flags().StringVar(&createReq.PrivateAccessSettingsId, "private-access-settings-id", createReq.PrivateAccessSettingsId, `Databricks Account API private access settings ID.`)
+	createCmd.Flags().StringVar(&createReq.PrivateAccessSettingsName, "private-access-settings-name", createReq.PrivateAccessSettingsName, `The human-readable name of the private access settings object.`)
+	createCmd.Flags().BoolVar(&createReq.PublicAccessEnabled, "public-access-enabled", createReq.PublicAccessEnabled, `Determines if the workspace can be accessed over public internet.`)
+	createCmd.Flags().StringVar(&createReq.Region, "region", createReq.Region, `The AWS region for workspaces associated with this private access settings object.`)
 
 }
 
@@ -70,14 +70,7 @@ var createCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -87,7 +80,7 @@ func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
 
-	deleteCmd.Flags().StringVar(&deleteReq.PrivateAccessSettingsId, "private-access-settings-id", "", `Databricks Account API private access settings ID.`)
+	deleteCmd.Flags().StringVar(&deleteReq.PrivateAccessSettingsId, "private-access-settings-id", deleteReq.PrivateAccessSettingsId, `Databricks Account API private access settings ID.`)
 
 }
 
@@ -118,7 +111,6 @@ var deleteCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -129,7 +121,7 @@ func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
 
-	getCmd.Flags().StringVar(&getReq.PrivateAccessSettingsId, "private-access-settings-id", "", `Databricks Account API private access settings ID.`)
+	getCmd.Flags().StringVar(&getReq.PrivateAccessSettingsId, "private-access-settings-id", getReq.PrivateAccessSettingsId, `Databricks Account API private access settings ID.`)
 
 }
 
@@ -160,14 +152,7 @@ var getCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -197,14 +182,7 @@ var listCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -216,10 +194,10 @@ func init() {
 
 	// TODO: array: allowed_vpc_endpoint_ids
 	replaceCmd.Flags().Var(&replaceReq.PrivateAccessLevel, "private-access-level", `The private access level controls which VPC endpoints can connect to the UI or API of any workspace that attaches this private access settings object.`)
-	replaceCmd.Flags().StringVar(&replaceReq.PrivateAccessSettingsId, "private-access-settings-id", "", `Databricks Account API private access settings ID.`)
-	replaceCmd.Flags().StringVar(&replaceReq.PrivateAccessSettingsName, "private-access-settings-name", "", `The human-readable name of the private access settings object.`)
-	replaceCmd.Flags().BoolVar(&replaceReq.PublicAccessEnabled, "public-access-enabled", false, `Determines if the workspace can be accessed over public internet.`)
-	replaceCmd.Flags().StringVar(&replaceReq.Region, "region", "", `The AWS region for workspaces associated with this private access settings object.`)
+	replaceCmd.Flags().StringVar(&replaceReq.PrivateAccessSettingsId, "private-access-settings-id", replaceReq.PrivateAccessSettingsId, `Databricks Account API private access settings ID.`)
+	replaceCmd.Flags().StringVar(&replaceReq.PrivateAccessSettingsName, "private-access-settings-name", replaceReq.PrivateAccessSettingsName, `The human-readable name of the private access settings object.`)
+	replaceCmd.Flags().BoolVar(&replaceReq.PublicAccessEnabled, "public-access-enabled", replaceReq.PublicAccessEnabled, `Determines if the workspace can be accessed over public internet.`)
+	replaceCmd.Flags().StringVar(&replaceReq.Region, "region", replaceReq.Region, `The AWS region for workspaces associated with this private access settings object.`)
 
 }
 
@@ -262,7 +240,6 @@ var replaceCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }

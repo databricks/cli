@@ -34,17 +34,17 @@ func init() {
 
 	// TODO: complex arg: aws_iam_role
 	// TODO: complex arg: azure_service_principal
-	createCmd.Flags().StringVar(&createReq.Comment, "comment", "", `[Create,Update:OPT] Comment associated with the credential.`)
-	createCmd.Flags().Int64Var(&createReq.CreatedAt, "created-at", 0, `[Create,Update:IGN] Time at which this Credential was created, in epoch milliseconds.`)
-	createCmd.Flags().StringVar(&createReq.CreatedBy, "created-by", "", `[Create,Update:IGN] Username of credential creator.`)
+	createCmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `[Create,Update:OPT] Comment associated with the credential.`)
+	createCmd.Flags().Int64Var(&createReq.CreatedAt, "created-at", createReq.CreatedAt, `[Create,Update:IGN] Time at which this Credential was created, in epoch milliseconds.`)
+	createCmd.Flags().StringVar(&createReq.CreatedBy, "created-by", createReq.CreatedBy, `[Create,Update:IGN] Username of credential creator.`)
 	// TODO: complex arg: gcp_service_account_key
-	createCmd.Flags().StringVar(&createReq.Id, "id", "", `[Create:IGN] The unique identifier of the credential.`)
-	createCmd.Flags().StringVar(&createReq.MetastoreId, "metastore-id", "", `[Create,Update:IGN] Unique identifier of parent Metastore.`)
-	createCmd.Flags().StringVar(&createReq.Name, "name", "", `[Create:REQ, Update:OPT] The credential name.`)
-	createCmd.Flags().StringVar(&createReq.Owner, "owner", "", `[Create:IGN Update:OPT] Username of current owner of credential.`)
-	createCmd.Flags().BoolVar(&createReq.SkipValidation, "skip-validation", false, `Optional.`)
-	createCmd.Flags().Int64Var(&createReq.UpdatedAt, "updated-at", 0, `[Create,Update:IGN] Time at which this credential was last modified, in epoch milliseconds.`)
-	createCmd.Flags().StringVar(&createReq.UpdatedBy, "updated-by", "", `[Create,Update:IGN] Username of user who last modified the credential.`)
+	createCmd.Flags().StringVar(&createReq.Id, "id", createReq.Id, `[Create:IGN] The unique identifier of the credential.`)
+	createCmd.Flags().StringVar(&createReq.MetastoreId, "metastore-id", createReq.MetastoreId, `[Create,Update:IGN] Unique identifier of parent Metastore.`)
+	createCmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `[Create:REQ, Update:OPT] The credential name.`)
+	createCmd.Flags().StringVar(&createReq.Owner, "owner", createReq.Owner, `[Create:IGN Update:OPT] Username of current owner of credential.`)
+	createCmd.Flags().BoolVar(&createReq.SkipValidation, "skip-validation", createReq.SkipValidation, `Optional.`)
+	createCmd.Flags().Int64Var(&createReq.UpdatedAt, "updated-at", createReq.UpdatedAt, `[Create,Update:IGN] Time at which this credential was last modified, in epoch milliseconds.`)
+	createCmd.Flags().StringVar(&createReq.UpdatedBy, "updated-by", createReq.UpdatedBy, `[Create,Update:IGN] Username of user who last modified the credential.`)
 
 }
 
@@ -69,14 +69,7 @@ var createCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -86,8 +79,8 @@ func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
 
-	deleteCmd.Flags().BoolVar(&deleteReq.Force, "force", false, `Force deletion even if there are dependent external locations or external tables.`)
-	deleteCmd.Flags().StringVar(&deleteReq.Name, "name", "", `Required.`)
+	deleteCmd.Flags().BoolVar(&deleteReq.Force, "force", deleteReq.Force, `Force deletion even if there are dependent external locations or external tables.`)
+	deleteCmd.Flags().StringVar(&deleteReq.Name, "name", deleteReq.Name, `Required.`)
 
 }
 
@@ -107,7 +100,6 @@ var deleteCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -118,7 +110,7 @@ func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
 
-	getCmd.Flags().StringVar(&getReq.Name, "name", "", `Required.`)
+	getCmd.Flags().StringVar(&getReq.Name, "name", getReq.Name, `Required.`)
 
 }
 
@@ -139,14 +131,7 @@ var getCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -173,14 +158,7 @@ var listCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -192,17 +170,17 @@ func init() {
 
 	// TODO: complex arg: aws_iam_role
 	// TODO: complex arg: azure_service_principal
-	updateCmd.Flags().StringVar(&updateReq.Comment, "comment", "", `[Create,Update:OPT] Comment associated with the credential.`)
-	updateCmd.Flags().Int64Var(&updateReq.CreatedAt, "created-at", 0, `[Create,Update:IGN] Time at which this Credential was created, in epoch milliseconds.`)
-	updateCmd.Flags().StringVar(&updateReq.CreatedBy, "created-by", "", `[Create,Update:IGN] Username of credential creator.`)
+	updateCmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `[Create,Update:OPT] Comment associated with the credential.`)
+	updateCmd.Flags().Int64Var(&updateReq.CreatedAt, "created-at", updateReq.CreatedAt, `[Create,Update:IGN] Time at which this Credential was created, in epoch milliseconds.`)
+	updateCmd.Flags().StringVar(&updateReq.CreatedBy, "created-by", updateReq.CreatedBy, `[Create,Update:IGN] Username of credential creator.`)
 	// TODO: complex arg: gcp_service_account_key
-	updateCmd.Flags().StringVar(&updateReq.Id, "id", "", `[Create:IGN] The unique identifier of the credential.`)
-	updateCmd.Flags().StringVar(&updateReq.MetastoreId, "metastore-id", "", `[Create,Update:IGN] Unique identifier of parent Metastore.`)
-	updateCmd.Flags().StringVar(&updateReq.Name, "name", "", `[Create:REQ, Update:OPT] The credential name.`)
-	updateCmd.Flags().StringVar(&updateReq.Owner, "owner", "", `[Create:IGN Update:OPT] Username of current owner of credential.`)
-	updateCmd.Flags().BoolVar(&updateReq.SkipValidation, "skip-validation", false, `Optional.`)
-	updateCmd.Flags().Int64Var(&updateReq.UpdatedAt, "updated-at", 0, `[Create,Update:IGN] Time at which this credential was last modified, in epoch milliseconds.`)
-	updateCmd.Flags().StringVar(&updateReq.UpdatedBy, "updated-by", "", `[Create,Update:IGN] Username of user who last modified the credential.`)
+	updateCmd.Flags().StringVar(&updateReq.Id, "id", updateReq.Id, `[Create:IGN] The unique identifier of the credential.`)
+	updateCmd.Flags().StringVar(&updateReq.MetastoreId, "metastore-id", updateReq.MetastoreId, `[Create,Update:IGN] Unique identifier of parent Metastore.`)
+	updateCmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `[Create:REQ, Update:OPT] The credential name.`)
+	updateCmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `[Create:IGN Update:OPT] Username of current owner of credential.`)
+	updateCmd.Flags().BoolVar(&updateReq.SkipValidation, "skip-validation", updateReq.SkipValidation, `Optional.`)
+	updateCmd.Flags().Int64Var(&updateReq.UpdatedAt, "updated-at", updateReq.UpdatedAt, `[Create,Update:IGN] Time at which this credential was last modified, in epoch milliseconds.`)
+	updateCmd.Flags().StringVar(&updateReq.UpdatedBy, "updated-by", updateReq.UpdatedBy, `[Create,Update:IGN] Username of user who last modified the credential.`)
 
 }
 
@@ -223,7 +201,6 @@ var updateCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }

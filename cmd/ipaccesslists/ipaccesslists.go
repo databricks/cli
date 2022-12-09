@@ -41,7 +41,7 @@ func init() {
 	// TODO: short flags
 
 	// TODO: array: ip_addresses
-	createCmd.Flags().StringVar(&createReq.Label, "label", "", `Label for the IP access list.`)
+	createCmd.Flags().StringVar(&createReq.Label, "label", createReq.Label, `Label for the IP access list.`)
 	createCmd.Flags().Var(&createReq.ListType, "list-type", `This describes an enum.`)
 
 }
@@ -65,7 +65,7 @@ var createCmd = &cobra.Command{
   
   It can take a few minutes for the changes to take effect. **Note**: Your new
   IP access list has no effect until you enable the feature. See
-  [/workspace-conf](#operation/set-status).`,
+  :method:workspaceconf/setStatus`,
 
 	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -75,14 +75,7 @@ var createCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -92,7 +85,7 @@ func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
 
-	deleteCmd.Flags().StringVar(&deleteReq.IpAccessListId, "ip-access-list-id", "", `The ID for the corresponding IP access list to modify.`)
+	deleteCmd.Flags().StringVar(&deleteReq.IpAccessListId, "ip-access-list-id", deleteReq.IpAccessListId, `The ID for the corresponding IP access list to modify.`)
 
 }
 
@@ -111,7 +104,6 @@ var deleteCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -122,7 +114,7 @@ func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
 
-	getCmd.Flags().StringVar(&getReq.IpAccessListId, "ip-access-list-id", "", `The ID for the corresponding IP access list to modify.`)
+	getCmd.Flags().StringVar(&getReq.IpAccessListId, "ip-access-list-id", getReq.IpAccessListId, `The ID for the corresponding IP access list to modify.`)
 
 }
 
@@ -141,14 +133,7 @@ var getCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -172,14 +157,7 @@ var listCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -189,11 +167,11 @@ func init() {
 	Cmd.AddCommand(replaceCmd)
 	// TODO: short flags
 
-	replaceCmd.Flags().BoolVar(&replaceReq.Enabled, "enabled", false, `Specifies whether this IP access list is enabled.`)
-	replaceCmd.Flags().StringVar(&replaceReq.IpAccessListId, "ip-access-list-id", "", `The ID for the corresponding IP access list to modify.`)
+	replaceCmd.Flags().BoolVar(&replaceReq.Enabled, "enabled", replaceReq.Enabled, `Specifies whether this IP access list is enabled.`)
+	replaceCmd.Flags().StringVar(&replaceReq.IpAccessListId, "ip-access-list-id", replaceReq.IpAccessListId, `The ID for the corresponding IP access list to modify.`)
 	// TODO: array: ip_addresses
-	replaceCmd.Flags().StringVar(&replaceReq.Label, "label", "", `Label for the IP access list.`)
-	replaceCmd.Flags().StringVar(&replaceReq.ListId, "list-id", "", `Universally unique identifier(UUID) of the IP access list.`)
+	replaceCmd.Flags().StringVar(&replaceReq.Label, "label", replaceReq.Label, `Label for the IP access list.`)
+	replaceCmd.Flags().StringVar(&replaceReq.ListId, "list-id", replaceReq.ListId, `Universally unique identifier(UUID) of the IP access list.`)
 	replaceCmd.Flags().Var(&replaceReq.ListType, "list-type", `This describes an enum.`)
 
 }
@@ -223,7 +201,6 @@ var replaceCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -234,11 +211,11 @@ func init() {
 	Cmd.AddCommand(updateCmd)
 	// TODO: short flags
 
-	updateCmd.Flags().BoolVar(&updateReq.Enabled, "enabled", false, `Specifies whether this IP access list is enabled.`)
-	updateCmd.Flags().StringVar(&updateReq.IpAccessListId, "ip-access-list-id", "", `The ID for the corresponding IP access list to modify.`)
+	updateCmd.Flags().BoolVar(&updateReq.Enabled, "enabled", updateReq.Enabled, `Specifies whether this IP access list is enabled.`)
+	updateCmd.Flags().StringVar(&updateReq.IpAccessListId, "ip-access-list-id", updateReq.IpAccessListId, `The ID for the corresponding IP access list to modify.`)
 	// TODO: array: ip_addresses
-	updateCmd.Flags().StringVar(&updateReq.Label, "label", "", `Label for the IP access list.`)
-	updateCmd.Flags().StringVar(&updateReq.ListId, "list-id", "", `Universally unique identifier(UUID) of the IP access list.`)
+	updateCmd.Flags().StringVar(&updateReq.Label, "label", updateReq.Label, `Label for the IP access list.`)
+	updateCmd.Flags().StringVar(&updateReq.ListId, "list-id", updateReq.ListId, `Universally unique identifier(UUID) of the IP access list.`)
 	updateCmd.Flags().Var(&updateReq.ListType, "list-type", `This describes an enum.`)
 
 }
@@ -272,7 +249,6 @@ var updateCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }

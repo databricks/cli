@@ -31,9 +31,9 @@ func init() {
 	Cmd.AddCommand(assignCmd)
 	// TODO: short flags
 
-	assignCmd.Flags().StringVar(&assignReq.DefaultCatalogName, "default-catalog-name", "", `THe name of the default catalog in the Metastore.`)
-	assignCmd.Flags().StringVar(&assignReq.MetastoreId, "metastore-id", "", `The ID of the Metastore.`)
-	assignCmd.Flags().IntVar(&assignReq.WorkspaceId, "workspace-id", 0, `A workspace ID.`)
+	assignCmd.Flags().StringVar(&assignReq.DefaultCatalogName, "default-catalog-name", assignReq.DefaultCatalogName, `THe name of the default catalog in the Metastore.`)
+	assignCmd.Flags().StringVar(&assignReq.MetastoreId, "metastore-id", assignReq.MetastoreId, `The ID of the Metastore.`)
+	assignCmd.Flags().IntVar(&assignReq.WorkspaceId, "workspace-id", assignReq.WorkspaceId, `A workspace ID.`)
 
 }
 
@@ -54,7 +54,6 @@ var assignCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -65,20 +64,20 @@ func init() {
 	Cmd.AddCommand(createCmd)
 	// TODO: short flags
 
-	createCmd.Flags().Int64Var(&createReq.CreatedAt, "created-at", 0, `[Create,Update:IGN] Time at which this Metastore was created, in epoch milliseconds.`)
-	createCmd.Flags().StringVar(&createReq.CreatedBy, "created-by", "", `[Create,Update:IGN] Username of Metastore creator.`)
-	createCmd.Flags().StringVar(&createReq.DefaultDataAccessConfigId, "default-data-access-config-id", "", `[Create:IGN Update:OPT] Unique identifier of (Default) Data Access Configuration.`)
-	createCmd.Flags().BoolVar(&createReq.DeltaSharingEnabled, "delta-sharing-enabled", false, `[Create:IGN Update:OPT] Whether Delta Sharing is enabled on this metastore.`)
-	createCmd.Flags().IntVar(&createReq.DeltaSharingRecipientTokenLifetimeInSeconds, "delta-sharing-recipient-token-lifetime-in-seconds", 0, `[Create:IGN Update:OPT] The lifetime of delta sharing recipient token in seconds.`)
-	createCmd.Flags().StringVar(&createReq.MetastoreId, "metastore-id", "", `[Create,Update:IGN] Unique identifier of Metastore.`)
-	createCmd.Flags().StringVar(&createReq.Name, "name", "", `[Create:REQ Update:OPT] Name of Metastore.`)
-	createCmd.Flags().StringVar(&createReq.Owner, "owner", "", `[Create:IGN Update:OPT] The owner of the metastore.`)
+	createCmd.Flags().Int64Var(&createReq.CreatedAt, "created-at", createReq.CreatedAt, `[Create,Update:IGN] Time at which this Metastore was created, in epoch milliseconds.`)
+	createCmd.Flags().StringVar(&createReq.CreatedBy, "created-by", createReq.CreatedBy, `[Create,Update:IGN] Username of Metastore creator.`)
+	createCmd.Flags().StringVar(&createReq.DefaultDataAccessConfigId, "default-data-access-config-id", createReq.DefaultDataAccessConfigId, `[Create:IGN Update:OPT] Unique identifier of (Default) Data Access Configuration.`)
+	createCmd.Flags().BoolVar(&createReq.DeltaSharingEnabled, "delta-sharing-enabled", createReq.DeltaSharingEnabled, `[Create:IGN Update:OPT] Whether Delta Sharing is enabled on this metastore.`)
+	createCmd.Flags().IntVar(&createReq.DeltaSharingRecipientTokenLifetimeInSeconds, "delta-sharing-recipient-token-lifetime-in-seconds", createReq.DeltaSharingRecipientTokenLifetimeInSeconds, `[Create:IGN Update:OPT] The lifetime of delta sharing recipient token in seconds.`)
+	createCmd.Flags().StringVar(&createReq.MetastoreId, "metastore-id", createReq.MetastoreId, `[Create,Update:IGN] Unique identifier of Metastore.`)
+	createCmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `[Create:REQ Update:OPT] Name of Metastore.`)
+	createCmd.Flags().StringVar(&createReq.Owner, "owner", createReq.Owner, `[Create:IGN Update:OPT] The owner of the metastore.`)
 	// TODO: array: privileges
-	createCmd.Flags().StringVar(&createReq.Region, "region", "", `The region this metastore has an afinity to.`)
-	createCmd.Flags().StringVar(&createReq.StorageRoot, "storage-root", "", `[Create:REQ Update:ERR] Storage root URL for Metastore.`)
-	createCmd.Flags().StringVar(&createReq.StorageRootCredentialId, "storage-root-credential-id", "", `[Create:IGN Update:OPT] UUID of storage credential to access storage_root.`)
-	createCmd.Flags().Int64Var(&createReq.UpdatedAt, "updated-at", 0, `[Create,Update:IGN] Time at which the Metastore was last modified, in epoch milliseconds.`)
-	createCmd.Flags().StringVar(&createReq.UpdatedBy, "updated-by", "", `[Create,Update:IGN] Username of user who last modified the Metastore.`)
+	createCmd.Flags().StringVar(&createReq.Region, "region", createReq.Region, `The region this metastore has an afinity to.`)
+	createCmd.Flags().StringVar(&createReq.StorageRoot, "storage-root", createReq.StorageRoot, `[Create:REQ Update:ERR] Storage root URL for Metastore.`)
+	createCmd.Flags().StringVar(&createReq.StorageRootCredentialId, "storage-root-credential-id", createReq.StorageRootCredentialId, `[Create:IGN Update:OPT] UUID of storage credential to access storage_root.`)
+	createCmd.Flags().Int64Var(&createReq.UpdatedAt, "updated-at", createReq.UpdatedAt, `[Create,Update:IGN] Time at which the Metastore was last modified, in epoch milliseconds.`)
+	createCmd.Flags().StringVar(&createReq.UpdatedBy, "updated-by", createReq.UpdatedBy, `[Create,Update:IGN] Username of user who last modified the Metastore.`)
 
 }
 
@@ -97,14 +96,7 @@ var createCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -114,8 +106,8 @@ func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
 
-	deleteCmd.Flags().BoolVar(&deleteReq.Force, "force", false, `Force deletion even if the metastore is not empty.`)
-	deleteCmd.Flags().StringVar(&deleteReq.Id, "id", "", `Required.`)
+	deleteCmd.Flags().BoolVar(&deleteReq.Force, "force", deleteReq.Force, `Force deletion even if the metastore is not empty.`)
+	deleteCmd.Flags().StringVar(&deleteReq.Id, "id", deleteReq.Id, `Required.`)
 
 }
 
@@ -134,7 +126,6 @@ var deleteCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -145,7 +136,7 @@ func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
 
-	getCmd.Flags().StringVar(&getReq.Id, "id", "", `Required.`)
+	getCmd.Flags().StringVar(&getReq.Id, "id", getReq.Id, `Required.`)
 
 }
 
@@ -165,14 +156,7 @@ var getCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -197,14 +181,7 @@ var listCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -229,14 +206,7 @@ var summaryCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -246,8 +216,8 @@ func init() {
 	Cmd.AddCommand(unassignCmd)
 	// TODO: short flags
 
-	unassignCmd.Flags().StringVar(&unassignReq.MetastoreId, "metastore-id", "", `Query for the ID of the Metastore to delete.`)
-	unassignCmd.Flags().IntVar(&unassignReq.WorkspaceId, "workspace-id", 0, `A workspace ID.`)
+	unassignCmd.Flags().StringVar(&unassignReq.MetastoreId, "metastore-id", unassignReq.MetastoreId, `Query for the ID of the Metastore to delete.`)
+	unassignCmd.Flags().IntVar(&unassignReq.WorkspaceId, "workspace-id", unassignReq.WorkspaceId, `A workspace ID.`)
 
 }
 
@@ -266,7 +236,6 @@ var unassignCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -277,21 +246,21 @@ func init() {
 	Cmd.AddCommand(updateCmd)
 	// TODO: short flags
 
-	updateCmd.Flags().Int64Var(&updateReq.CreatedAt, "created-at", 0, `[Create,Update:IGN] Time at which this Metastore was created, in epoch milliseconds.`)
-	updateCmd.Flags().StringVar(&updateReq.CreatedBy, "created-by", "", `[Create,Update:IGN] Username of Metastore creator.`)
-	updateCmd.Flags().StringVar(&updateReq.DefaultDataAccessConfigId, "default-data-access-config-id", "", `[Create:IGN Update:OPT] Unique identifier of (Default) Data Access Configuration.`)
-	updateCmd.Flags().BoolVar(&updateReq.DeltaSharingEnabled, "delta-sharing-enabled", false, `[Create:IGN Update:OPT] Whether Delta Sharing is enabled on this metastore.`)
-	updateCmd.Flags().IntVar(&updateReq.DeltaSharingRecipientTokenLifetimeInSeconds, "delta-sharing-recipient-token-lifetime-in-seconds", 0, `[Create:IGN Update:OPT] The lifetime of delta sharing recipient token in seconds.`)
-	updateCmd.Flags().StringVar(&updateReq.Id, "id", "", `Required.`)
-	updateCmd.Flags().StringVar(&updateReq.MetastoreId, "metastore-id", "", `[Create,Update:IGN] Unique identifier of Metastore.`)
-	updateCmd.Flags().StringVar(&updateReq.Name, "name", "", `[Create:REQ Update:OPT] Name of Metastore.`)
-	updateCmd.Flags().StringVar(&updateReq.Owner, "owner", "", `[Create:IGN Update:OPT] The owner of the metastore.`)
+	updateCmd.Flags().Int64Var(&updateReq.CreatedAt, "created-at", updateReq.CreatedAt, `[Create,Update:IGN] Time at which this Metastore was created, in epoch milliseconds.`)
+	updateCmd.Flags().StringVar(&updateReq.CreatedBy, "created-by", updateReq.CreatedBy, `[Create,Update:IGN] Username of Metastore creator.`)
+	updateCmd.Flags().StringVar(&updateReq.DefaultDataAccessConfigId, "default-data-access-config-id", updateReq.DefaultDataAccessConfigId, `[Create:IGN Update:OPT] Unique identifier of (Default) Data Access Configuration.`)
+	updateCmd.Flags().BoolVar(&updateReq.DeltaSharingEnabled, "delta-sharing-enabled", updateReq.DeltaSharingEnabled, `[Create:IGN Update:OPT] Whether Delta Sharing is enabled on this metastore.`)
+	updateCmd.Flags().IntVar(&updateReq.DeltaSharingRecipientTokenLifetimeInSeconds, "delta-sharing-recipient-token-lifetime-in-seconds", updateReq.DeltaSharingRecipientTokenLifetimeInSeconds, `[Create:IGN Update:OPT] The lifetime of delta sharing recipient token in seconds.`)
+	updateCmd.Flags().StringVar(&updateReq.Id, "id", updateReq.Id, `Required.`)
+	updateCmd.Flags().StringVar(&updateReq.MetastoreId, "metastore-id", updateReq.MetastoreId, `[Create,Update:IGN] Unique identifier of Metastore.`)
+	updateCmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `[Create:REQ Update:OPT] Name of Metastore.`)
+	updateCmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `[Create:IGN Update:OPT] The owner of the metastore.`)
 	// TODO: array: privileges
-	updateCmd.Flags().StringVar(&updateReq.Region, "region", "", `The region this metastore has an afinity to.`)
-	updateCmd.Flags().StringVar(&updateReq.StorageRoot, "storage-root", "", `[Create:REQ Update:ERR] Storage root URL for Metastore.`)
-	updateCmd.Flags().StringVar(&updateReq.StorageRootCredentialId, "storage-root-credential-id", "", `[Create:IGN Update:OPT] UUID of storage credential to access storage_root.`)
-	updateCmd.Flags().Int64Var(&updateReq.UpdatedAt, "updated-at", 0, `[Create,Update:IGN] Time at which the Metastore was last modified, in epoch milliseconds.`)
-	updateCmd.Flags().StringVar(&updateReq.UpdatedBy, "updated-by", "", `[Create,Update:IGN] Username of user who last modified the Metastore.`)
+	updateCmd.Flags().StringVar(&updateReq.Region, "region", updateReq.Region, `The region this metastore has an afinity to.`)
+	updateCmd.Flags().StringVar(&updateReq.StorageRoot, "storage-root", updateReq.StorageRoot, `[Create:REQ Update:ERR] Storage root URL for Metastore.`)
+	updateCmd.Flags().StringVar(&updateReq.StorageRootCredentialId, "storage-root-credential-id", updateReq.StorageRootCredentialId, `[Create:IGN Update:OPT] UUID of storage credential to access storage_root.`)
+	updateCmd.Flags().Int64Var(&updateReq.UpdatedAt, "updated-at", updateReq.UpdatedAt, `[Create,Update:IGN] Time at which the Metastore was last modified, in epoch milliseconds.`)
+	updateCmd.Flags().StringVar(&updateReq.UpdatedBy, "updated-by", updateReq.UpdatedBy, `[Create,Update:IGN] Username of user who last modified the Metastore.`)
 
 }
 
@@ -311,7 +280,6 @@ var updateCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -322,9 +290,9 @@ func init() {
 	Cmd.AddCommand(updateAssignmentCmd)
 	// TODO: short flags
 
-	updateAssignmentCmd.Flags().StringVar(&updateAssignmentReq.DefaultCatalogName, "default-catalog-name", "", `The name of the default catalog for the Metastore.`)
-	updateAssignmentCmd.Flags().StringVar(&updateAssignmentReq.MetastoreId, "metastore-id", "", `The unique ID of the Metastore.`)
-	updateAssignmentCmd.Flags().IntVar(&updateAssignmentReq.WorkspaceId, "workspace-id", 0, `A workspace ID.`)
+	updateAssignmentCmd.Flags().StringVar(&updateAssignmentReq.DefaultCatalogName, "default-catalog-name", updateAssignmentReq.DefaultCatalogName, `The name of the default catalog for the Metastore.`)
+	updateAssignmentCmd.Flags().StringVar(&updateAssignmentReq.MetastoreId, "metastore-id", updateAssignmentReq.MetastoreId, `The unique ID of the Metastore.`)
+	updateAssignmentCmd.Flags().IntVar(&updateAssignmentReq.WorkspaceId, "workspace-id", updateAssignmentReq.WorkspaceId, `A workspace ID.`)
 
 }
 
@@ -346,7 +314,6 @@ var updateAssignmentCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }

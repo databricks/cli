@@ -54,14 +54,7 @@ var allClusterStatusesCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -71,7 +64,7 @@ func init() {
 	Cmd.AddCommand(clusterStatusCmd)
 	// TODO: short flags
 
-	clusterStatusCmd.Flags().StringVar(&clusterStatusReq.ClusterId, "cluster-id", "", `Unique identifier of the cluster whose status should be retrieved.`)
+	clusterStatusCmd.Flags().StringVar(&clusterStatusReq.ClusterId, "cluster-id", clusterStatusReq.ClusterId, `Unique identifier of the cluster whose status should be retrieved.`)
 
 }
 
@@ -104,14 +97,7 @@ var clusterStatusCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -121,7 +107,7 @@ func init() {
 	Cmd.AddCommand(installCmd)
 	// TODO: short flags
 
-	installCmd.Flags().StringVar(&installReq.ClusterId, "cluster-id", "", `Unique identifier for the cluster on which to install these libraries.`)
+	installCmd.Flags().StringVar(&installReq.ClusterId, "cluster-id", installReq.ClusterId, `Unique identifier for the cluster on which to install these libraries.`)
 	// TODO: array: libraries
 
 }
@@ -146,7 +132,6 @@ var installCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -157,7 +142,7 @@ func init() {
 	Cmd.AddCommand(uninstallCmd)
 	// TODO: short flags
 
-	uninstallCmd.Flags().StringVar(&uninstallReq.ClusterId, "cluster-id", "", `Unique identifier for the cluster on which to uninstall these libraries.`)
+	uninstallCmd.Flags().StringVar(&uninstallReq.ClusterId, "cluster-id", uninstallReq.ClusterId, `Unique identifier for the cluster on which to uninstall these libraries.`)
 	// TODO: array: libraries
 
 }
@@ -179,7 +164,6 @@ var uninstallCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }

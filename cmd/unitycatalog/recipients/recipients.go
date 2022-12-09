@@ -19,18 +19,18 @@ func init() {
 	Cmd.AddCommand(createCmd)
 	// TODO: short flags
 
-	createCmd.Flags().BoolVar(&createReq.Activated, "activated", false, `[Create:IGN,Update:IGN] A boolean status field showing whether the Recipient's activation URL has been exercised or not.`)
-	createCmd.Flags().StringVar(&createReq.ActivationUrl, "activation-url", "", `[Create:IGN,Update:IGN] Full activation url to retrieve the access token.`)
+	createCmd.Flags().BoolVar(&createReq.Activated, "activated", createReq.Activated, `[Create:IGN,Update:IGN] A boolean status field showing whether the Recipient's activation URL has been exercised or not.`)
+	createCmd.Flags().StringVar(&createReq.ActivationUrl, "activation-url", createReq.ActivationUrl, `[Create:IGN,Update:IGN] Full activation url to retrieve the access token.`)
 	createCmd.Flags().Var(&createReq.AuthenticationType, "authentication-type", `[Create:REQ,Update:IGN] The delta sharing authentication type.`)
-	createCmd.Flags().StringVar(&createReq.Comment, "comment", "", `[Create:OPT,Update:OPT] Description about the recipient.`)
-	createCmd.Flags().Int64Var(&createReq.CreatedAt, "created-at", 0, `[Create:IGN,Update:IGN] Time at which this recipient was created, in epoch milliseconds.`)
-	createCmd.Flags().StringVar(&createReq.CreatedBy, "created-by", "", `[Create:IGN,Update:IGN] Username of recipient creator.`)
+	createCmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `[Create:OPT,Update:OPT] Description about the recipient.`)
+	createCmd.Flags().Int64Var(&createReq.CreatedAt, "created-at", createReq.CreatedAt, `[Create:IGN,Update:IGN] Time at which this recipient was created, in epoch milliseconds.`)
+	createCmd.Flags().StringVar(&createReq.CreatedBy, "created-by", createReq.CreatedBy, `[Create:IGN,Update:IGN] Username of recipient creator.`)
 	// TODO: complex arg: ip_access_list
-	createCmd.Flags().StringVar(&createReq.Name, "name", "", `[Create:REQ,Update:OPT] Name of Recipient.`)
-	createCmd.Flags().StringVar(&createReq.SharingCode, "sharing-code", "", `[Create:OPT,Update:IGN] The one-time sharing code provided by the data recipient.`)
+	createCmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `[Create:REQ,Update:OPT] Name of Recipient.`)
+	createCmd.Flags().StringVar(&createReq.SharingCode, "sharing-code", createReq.SharingCode, `[Create:OPT,Update:IGN] The one-time sharing code provided by the data recipient.`)
 	// TODO: array: tokens
-	createCmd.Flags().Int64Var(&createReq.UpdatedAt, "updated-at", 0, `[Create:IGN,Update:IGN] Time at which the recipient was updated, in epoch milliseconds.`)
-	createCmd.Flags().StringVar(&createReq.UpdatedBy, "updated-by", "", `[Create:IGN,Update:IGN] Username of recipient updater.`)
+	createCmd.Flags().Int64Var(&createReq.UpdatedAt, "updated-at", createReq.UpdatedAt, `[Create:IGN,Update:IGN] Time at which the recipient was updated, in epoch milliseconds.`)
+	createCmd.Flags().StringVar(&createReq.UpdatedBy, "updated-by", createReq.UpdatedBy, `[Create:IGN,Update:IGN] Username of recipient updater.`)
 
 }
 
@@ -51,14 +51,7 @@ var createCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -68,7 +61,7 @@ func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
 
-	deleteCmd.Flags().StringVar(&deleteReq.Name, "name", "", `Required.`)
+	deleteCmd.Flags().StringVar(&deleteReq.Name, "name", deleteReq.Name, `Required.`)
 
 }
 
@@ -88,7 +81,6 @@ var deleteCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -99,7 +91,7 @@ func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
 
-	getCmd.Flags().StringVar(&getReq.Name, "name", "", `Required.`)
+	getCmd.Flags().StringVar(&getReq.Name, "name", getReq.Name, `Required.`)
 
 }
 
@@ -120,14 +112,7 @@ var getCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -137,7 +122,7 @@ func init() {
 	Cmd.AddCommand(listCmd)
 	// TODO: short flags
 
-	listCmd.Flags().StringVar(&listReq.DataRecipientGlobalMetastoreId, "data-recipient-global-metastore-id", "", `If not provided, all recipients will be returned.`)
+	listCmd.Flags().StringVar(&listReq.DataRecipientGlobalMetastoreId, "data-recipient-global-metastore-id", listReq.DataRecipientGlobalMetastoreId, `If not provided, all recipients will be returned.`)
 
 }
 
@@ -158,14 +143,7 @@ var listCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -175,8 +153,8 @@ func init() {
 	Cmd.AddCommand(rotateTokenCmd)
 	// TODO: short flags
 
-	rotateTokenCmd.Flags().Int64Var(&rotateTokenReq.ExistingTokenExpireInSeconds, "existing-token-expire-in-seconds", 0, `Required.`)
-	rotateTokenCmd.Flags().StringVar(&rotateTokenReq.Name, "name", "", `Required.`)
+	rotateTokenCmd.Flags().Int64Var(&rotateTokenReq.ExistingTokenExpireInSeconds, "existing-token-expire-in-seconds", rotateTokenReq.ExistingTokenExpireInSeconds, `Required.`)
+	rotateTokenCmd.Flags().StringVar(&rotateTokenReq.Name, "name", rotateTokenReq.Name, `Required.`)
 
 }
 
@@ -196,14 +174,7 @@ var rotateTokenCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -213,7 +184,7 @@ func init() {
 	Cmd.AddCommand(sharePermissionsCmd)
 	// TODO: short flags
 
-	sharePermissionsCmd.Flags().StringVar(&sharePermissionsReq.Name, "name", "", `Required.`)
+	sharePermissionsCmd.Flags().StringVar(&sharePermissionsReq.Name, "name", sharePermissionsReq.Name, `Required.`)
 
 }
 
@@ -233,14 +204,7 @@ var sharePermissionsCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -250,18 +214,18 @@ func init() {
 	Cmd.AddCommand(updateCmd)
 	// TODO: short flags
 
-	updateCmd.Flags().BoolVar(&updateReq.Activated, "activated", false, `[Create:IGN,Update:IGN] A boolean status field showing whether the Recipient's activation URL has been exercised or not.`)
-	updateCmd.Flags().StringVar(&updateReq.ActivationUrl, "activation-url", "", `[Create:IGN,Update:IGN] Full activation url to retrieve the access token.`)
+	updateCmd.Flags().BoolVar(&updateReq.Activated, "activated", updateReq.Activated, `[Create:IGN,Update:IGN] A boolean status field showing whether the Recipient's activation URL has been exercised or not.`)
+	updateCmd.Flags().StringVar(&updateReq.ActivationUrl, "activation-url", updateReq.ActivationUrl, `[Create:IGN,Update:IGN] Full activation url to retrieve the access token.`)
 	updateCmd.Flags().Var(&updateReq.AuthenticationType, "authentication-type", `[Create:REQ,Update:IGN] The delta sharing authentication type.`)
-	updateCmd.Flags().StringVar(&updateReq.Comment, "comment", "", `[Create:OPT,Update:OPT] Description about the recipient.`)
-	updateCmd.Flags().Int64Var(&updateReq.CreatedAt, "created-at", 0, `[Create:IGN,Update:IGN] Time at which this recipient was created, in epoch milliseconds.`)
-	updateCmd.Flags().StringVar(&updateReq.CreatedBy, "created-by", "", `[Create:IGN,Update:IGN] Username of recipient creator.`)
+	updateCmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `[Create:OPT,Update:OPT] Description about the recipient.`)
+	updateCmd.Flags().Int64Var(&updateReq.CreatedAt, "created-at", updateReq.CreatedAt, `[Create:IGN,Update:IGN] Time at which this recipient was created, in epoch milliseconds.`)
+	updateCmd.Flags().StringVar(&updateReq.CreatedBy, "created-by", updateReq.CreatedBy, `[Create:IGN,Update:IGN] Username of recipient creator.`)
 	// TODO: complex arg: ip_access_list
-	updateCmd.Flags().StringVar(&updateReq.Name, "name", "", `[Create:REQ,Update:OPT] Name of Recipient.`)
-	updateCmd.Flags().StringVar(&updateReq.SharingCode, "sharing-code", "", `[Create:OPT,Update:IGN] The one-time sharing code provided by the data recipient.`)
+	updateCmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `[Create:REQ,Update:OPT] Name of Recipient.`)
+	updateCmd.Flags().StringVar(&updateReq.SharingCode, "sharing-code", updateReq.SharingCode, `[Create:OPT,Update:IGN] The one-time sharing code provided by the data recipient.`)
 	// TODO: array: tokens
-	updateCmd.Flags().Int64Var(&updateReq.UpdatedAt, "updated-at", 0, `[Create:IGN,Update:IGN] Time at which the recipient was updated, in epoch milliseconds.`)
-	updateCmd.Flags().StringVar(&updateReq.UpdatedBy, "updated-by", "", `[Create:IGN,Update:IGN] Username of recipient updater.`)
+	updateCmd.Flags().Int64Var(&updateReq.UpdatedAt, "updated-at", updateReq.UpdatedAt, `[Create:IGN,Update:IGN] Time at which the recipient was updated, in epoch milliseconds.`)
+	updateCmd.Flags().StringVar(&updateReq.UpdatedBy, "updated-by", updateReq.UpdatedBy, `[Create:IGN,Update:IGN] Username of recipient updater.`)
 
 }
 
@@ -282,7 +246,6 @@ var updateCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }

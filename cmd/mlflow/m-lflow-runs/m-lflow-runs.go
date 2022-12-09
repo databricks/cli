@@ -17,10 +17,10 @@ func init() {
 	Cmd.AddCommand(createCmd)
 	// TODO: short flags
 
-	createCmd.Flags().StringVar(&createReq.ExperimentId, "experiment-id", "", `ID of the associated experiment.`)
-	createCmd.Flags().Int64Var(&createReq.StartTime, "start-time", 0, `Unix timestamp in milliseconds of when the run started.`)
+	createCmd.Flags().StringVar(&createReq.ExperimentId, "experiment-id", createReq.ExperimentId, `ID of the associated experiment.`)
+	createCmd.Flags().Int64Var(&createReq.StartTime, "start-time", createReq.StartTime, `Unix timestamp in milliseconds of when the run started.`)
 	// TODO: array: tags
-	createCmd.Flags().StringVar(&createReq.UserId, "user-id", "", `ID of the user executing the run.`)
+	createCmd.Flags().StringVar(&createReq.UserId, "user-id", createReq.UserId, `ID of the user executing the run.`)
 
 }
 
@@ -42,14 +42,7 @@ var createCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -59,7 +52,7 @@ func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
 
-	deleteCmd.Flags().StringVar(&deleteReq.RunId, "run-id", "", `ID of the run to delete.`)
+	deleteCmd.Flags().StringVar(&deleteReq.RunId, "run-id", deleteReq.RunId, `ID of the run to delete.`)
 
 }
 
@@ -78,7 +71,6 @@ var deleteCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -89,8 +81,8 @@ func init() {
 	Cmd.AddCommand(deleteTagCmd)
 	// TODO: short flags
 
-	deleteTagCmd.Flags().StringVar(&deleteTagReq.Key, "key", "", `Name of the tag.`)
-	deleteTagCmd.Flags().StringVar(&deleteTagReq.RunId, "run-id", "", `ID of the run that the tag was logged under.`)
+	deleteTagCmd.Flags().StringVar(&deleteTagReq.Key, "key", deleteTagReq.Key, `Name of the tag.`)
+	deleteTagCmd.Flags().StringVar(&deleteTagReq.RunId, "run-id", deleteTagReq.RunId, `ID of the run that the tag was logged under.`)
 
 }
 
@@ -110,7 +102,6 @@ var deleteTagCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -121,8 +112,8 @@ func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
 
-	getCmd.Flags().StringVar(&getReq.RunId, "run-id", "", `ID of the run to fetch.`)
-	getCmd.Flags().StringVar(&getReq.RunUuid, "run-uuid", "", `[Deprecated, use run_id instead] ID of the run to fetch.`)
+	getCmd.Flags().StringVar(&getReq.RunId, "run-id", getReq.RunId, `ID of the run to fetch.`)
+	getCmd.Flags().StringVar(&getReq.RunUuid, "run-uuid", getReq.RunUuid, `[Deprecated, use run_id instead] ID of the run to fetch.`)
 
 }
 
@@ -146,14 +137,7 @@ var getCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -165,7 +149,7 @@ func init() {
 
 	// TODO: array: metrics
 	// TODO: array: params
-	logBatchCmd.Flags().StringVar(&logBatchReq.RunId, "run-id", "", `ID of the run to log under.`)
+	logBatchCmd.Flags().StringVar(&logBatchReq.RunId, "run-id", logBatchReq.RunId, `ID of the run to log under.`)
 	// TODO: array: tags
 
 }
@@ -221,7 +205,6 @@ var logBatchCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -232,12 +215,12 @@ func init() {
 	Cmd.AddCommand(logMetricCmd)
 	// TODO: short flags
 
-	logMetricCmd.Flags().StringVar(&logMetricReq.Key, "key", "", `Name of the metric.`)
-	logMetricCmd.Flags().StringVar(&logMetricReq.RunId, "run-id", "", `ID of the run under which to log the metric.`)
-	logMetricCmd.Flags().StringVar(&logMetricReq.RunUuid, "run-uuid", "", `[Deprecated, use run_id instead] ID of the run under which to log the metric.`)
-	logMetricCmd.Flags().Int64Var(&logMetricReq.Step, "step", 0, `Step at which to log the metric.`)
-	logMetricCmd.Flags().Int64Var(&logMetricReq.Timestamp, "timestamp", 0, `Unix timestamp in milliseconds at the time metric was logged.`)
-	logMetricCmd.Flags().Float64Var(&logMetricReq.Value, "value", 0, `Double value of the metric being logged.`)
+	logMetricCmd.Flags().StringVar(&logMetricReq.Key, "key", logMetricReq.Key, `Name of the metric.`)
+	logMetricCmd.Flags().StringVar(&logMetricReq.RunId, "run-id", logMetricReq.RunId, `ID of the run under which to log the metric.`)
+	logMetricCmd.Flags().StringVar(&logMetricReq.RunUuid, "run-uuid", logMetricReq.RunUuid, `[Deprecated, use run_id instead] ID of the run under which to log the metric.`)
+	logMetricCmd.Flags().Int64Var(&logMetricReq.Step, "step", logMetricReq.Step, `Step at which to log the metric.`)
+	logMetricCmd.Flags().Int64Var(&logMetricReq.Timestamp, "timestamp", logMetricReq.Timestamp, `Unix timestamp in milliseconds at the time metric was logged.`)
+	logMetricCmd.Flags().Float64Var(&logMetricReq.Value, "value", logMetricReq.Value, `Double value of the metric being logged.`)
 
 }
 
@@ -258,7 +241,6 @@ var logMetricCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -269,8 +251,8 @@ func init() {
 	Cmd.AddCommand(logModelCmd)
 	// TODO: short flags
 
-	logModelCmd.Flags().StringVar(&logModelReq.ModelJson, "model-json", "", `MLmodel file in json format.`)
-	logModelCmd.Flags().StringVar(&logModelReq.RunId, "run-id", "", `ID of the run to log under.`)
+	logModelCmd.Flags().StringVar(&logModelReq.ModelJson, "model-json", logModelReq.ModelJson, `MLmodel file in json format.`)
+	logModelCmd.Flags().StringVar(&logModelReq.RunId, "run-id", logModelReq.RunId, `ID of the run to log under.`)
 
 }
 
@@ -290,7 +272,6 @@ var logModelCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -301,10 +282,10 @@ func init() {
 	Cmd.AddCommand(logParameterCmd)
 	// TODO: short flags
 
-	logParameterCmd.Flags().StringVar(&logParameterReq.Key, "key", "", `Name of the param.`)
-	logParameterCmd.Flags().StringVar(&logParameterReq.RunId, "run-id", "", `ID of the run under which to log the param.`)
-	logParameterCmd.Flags().StringVar(&logParameterReq.RunUuid, "run-uuid", "", `[Deprecated, use run_id instead] ID of the run under which to log the param.`)
-	logParameterCmd.Flags().StringVar(&logParameterReq.Value, "value", "", `String value of the param being logged.`)
+	logParameterCmd.Flags().StringVar(&logParameterReq.Key, "key", logParameterReq.Key, `Name of the param.`)
+	logParameterCmd.Flags().StringVar(&logParameterReq.RunId, "run-id", logParameterReq.RunId, `ID of the run under which to log the param.`)
+	logParameterCmd.Flags().StringVar(&logParameterReq.RunUuid, "run-uuid", logParameterReq.RunUuid, `[Deprecated, use run_id instead] ID of the run under which to log the param.`)
+	logParameterCmd.Flags().StringVar(&logParameterReq.Value, "value", logParameterReq.Value, `String value of the param being logged.`)
 
 }
 
@@ -326,7 +307,6 @@ var logParameterCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -337,7 +317,7 @@ func init() {
 	Cmd.AddCommand(restoreCmd)
 	// TODO: short flags
 
-	restoreCmd.Flags().StringVar(&restoreReq.RunId, "run-id", "", `ID of the run to restore.`)
+	restoreCmd.Flags().StringVar(&restoreReq.RunId, "run-id", restoreReq.RunId, `ID of the run to restore.`)
 
 }
 
@@ -356,7 +336,6 @@ var restoreCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -368,10 +347,10 @@ func init() {
 	// TODO: short flags
 
 	// TODO: array: experiment_ids
-	searchCmd.Flags().StringVar(&searchReq.Filter, "filter", "", `A filter expression over params, metrics, and tags, that allows returning a subset of runs.`)
-	searchCmd.Flags().IntVar(&searchReq.MaxResults, "max-results", 0, `Maximum number of runs desired.`)
+	searchCmd.Flags().StringVar(&searchReq.Filter, "filter", searchReq.Filter, `A filter expression over params, metrics, and tags, that allows returning a subset of runs.`)
+	searchCmd.Flags().IntVar(&searchReq.MaxResults, "max-results", searchReq.MaxResults, `Maximum number of runs desired.`)
 	// TODO: array: order_by
-	searchCmd.Flags().StringVar(&searchReq.PageToken, "page-token", "", `Token for the current page of runs.`)
+	searchCmd.Flags().StringVar(&searchReq.PageToken, "page-token", searchReq.PageToken, `Token for the current page of runs.`)
 	searchCmd.Flags().Var(&searchReq.RunViewType, "run-view-type", `Whether to display only active, only deleted, or all runs.`)
 
 }
@@ -393,14 +372,7 @@ var searchCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 
@@ -410,10 +382,10 @@ func init() {
 	Cmd.AddCommand(setTagCmd)
 	// TODO: short flags
 
-	setTagCmd.Flags().StringVar(&setTagReq.Key, "key", "", `Name of the tag.`)
-	setTagCmd.Flags().StringVar(&setTagReq.RunId, "run-id", "", `ID of the run under which to log the tag.`)
-	setTagCmd.Flags().StringVar(&setTagReq.RunUuid, "run-uuid", "", `[Deprecated, use run_id instead] ID of the run under which to log the tag.`)
-	setTagCmd.Flags().StringVar(&setTagReq.Value, "value", "", `String value of the tag being logged.`)
+	setTagCmd.Flags().StringVar(&setTagReq.Key, "key", setTagReq.Key, `Name of the tag.`)
+	setTagCmd.Flags().StringVar(&setTagReq.RunId, "run-id", setTagReq.RunId, `ID of the run under which to log the tag.`)
+	setTagCmd.Flags().StringVar(&setTagReq.RunUuid, "run-uuid", setTagReq.RunUuid, `[Deprecated, use run_id instead] ID of the run under which to log the tag.`)
+	setTagCmd.Flags().StringVar(&setTagReq.Value, "value", setTagReq.Value, `String value of the tag being logged.`)
 
 }
 
@@ -433,7 +405,6 @@ var setTagCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 }
@@ -444,9 +415,9 @@ func init() {
 	Cmd.AddCommand(updateCmd)
 	// TODO: short flags
 
-	updateCmd.Flags().Int64Var(&updateReq.EndTime, "end-time", 0, `Unix timestamp in milliseconds of when the run ended.`)
-	updateCmd.Flags().StringVar(&updateReq.RunId, "run-id", "", `ID of the run to update.`)
-	updateCmd.Flags().StringVar(&updateReq.RunUuid, "run-uuid", "", `[Deprecated, use run_id instead] ID of the run to update.`)
+	updateCmd.Flags().Int64Var(&updateReq.EndTime, "end-time", updateReq.EndTime, `Unix timestamp in milliseconds of when the run ended.`)
+	updateCmd.Flags().StringVar(&updateReq.RunId, "run-id", updateReq.RunId, `ID of the run to update.`)
+	updateCmd.Flags().StringVar(&updateReq.RunUuid, "run-uuid", updateReq.RunUuid, `[Deprecated, use run_id instead] ID of the run to update.`)
 	updateCmd.Flags().Var(&updateReq.Status, "status", `Updated status of the run.`)
 
 }
@@ -466,14 +437,7 @@ var updateCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		pretty, err := ui.MarshalJSON(response)
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(pretty)
-
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 

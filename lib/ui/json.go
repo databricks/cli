@@ -3,7 +3,22 @@ package ui
 import (
 	"github.com/fatih/color"
 	"github.com/nwidger/jsoncolor"
+	"github.com/spf13/cobra"
 )
+
+func Render(cmd *cobra.Command, v any) error {
+	// TODO: render in other formats
+	pretty, err := MarshalJSON(v)
+	if err != nil {
+		return err
+	}
+	err = startPager(cmd)
+	if err != nil {
+		return err
+	}
+	cmd.OutOrStdout().Write(pretty)
+	return nil
+}
 
 func MarshalJSON(v any) ([]byte, error) {
 	// create custom formatter
