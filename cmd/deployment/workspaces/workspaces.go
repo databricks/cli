@@ -24,13 +24,13 @@ var Cmd = &cobra.Command{
 }
 
 var createReq deployment.CreateWorkspaceRequest
-var createAndWait bool
+var createNoWait bool
 var createTimeout time.Duration
 
 func init() {
 	Cmd.AddCommand(createCmd)
 
-	createCmd.Flags().BoolVar(&createAndWait, "wait", true, `wait to reach RUNNING state`)
+	createCmd.Flags().BoolVar(&createNoWait, "no-wait", createNoWait, `do not wait to reach RUNNING state`)
 	createCmd.Flags().DurationVar(&createTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
 	// TODO: short flags
 
@@ -95,12 +95,12 @@ var createCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
-		if createAndWait {
+		if !createNoWait {
 			spinner := ui.StartSpinner()
 			info, err := a.Workspaces.CreateAndWait(ctx, createReq,
 				retries.Timeout[deployment.Workspace](createTimeout),
 				func(i *retries.Info[deployment.Workspace]) {
-					spinner.Suffix = i.Info.WorkspaceStatusMessage
+					spinner.Suffix = " " + i.Info.WorkspaceStatusMessage
 				})
 			spinner.Stop()
 			if err != nil {
@@ -223,13 +223,13 @@ var listCmd = &cobra.Command{
 }
 
 var updateReq deployment.UpdateWorkspaceRequest
-var updateAndWait bool
+var updateNoWait bool
 var updateTimeout time.Duration
 
 func init() {
 	Cmd.AddCommand(updateCmd)
 
-	updateCmd.Flags().BoolVar(&updateAndWait, "wait", true, `wait to reach RUNNING state`)
+	updateCmd.Flags().BoolVar(&updateNoWait, "no-wait", updateNoWait, `do not wait to reach RUNNING state`)
 	updateCmd.Flags().DurationVar(&updateTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
 	// TODO: short flags
 
@@ -355,12 +355,12 @@ var updateCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
-		if updateAndWait {
+		if !updateNoWait {
 			spinner := ui.StartSpinner()
 			info, err := a.Workspaces.UpdateAndWait(ctx, updateReq,
 				retries.Timeout[deployment.Workspace](updateTimeout),
 				func(i *retries.Info[deployment.Workspace]) {
-					spinner.Suffix = i.Info.WorkspaceStatusMessage
+					spinner.Suffix = " " + i.Info.WorkspaceStatusMessage
 				})
 			spinner.Stop()
 			if err != nil {

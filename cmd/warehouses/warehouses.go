@@ -20,13 +20,13 @@ var Cmd = &cobra.Command{
 }
 
 var createWarehouseReq warehouses.CreateWarehouseRequest
-var createWarehouseAndWait bool
+var createWarehouseNoWait bool
 var createWarehouseTimeout time.Duration
 
 func init() {
 	Cmd.AddCommand(createWarehouseCmd)
 
-	createWarehouseCmd.Flags().BoolVar(&createWarehouseAndWait, "wait", true, `wait to reach RUNNING state`)
+	createWarehouseCmd.Flags().BoolVar(&createWarehouseNoWait, "no-wait", createWarehouseNoWait, `do not wait to reach RUNNING state`)
 	createWarehouseCmd.Flags().DurationVar(&createWarehouseTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
 	// TODO: short flags
 
@@ -57,12 +57,12 @@ var createWarehouseCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		if createWarehouseAndWait {
+		if !createWarehouseNoWait {
 			spinner := ui.StartSpinner()
 			info, err := w.Warehouses.CreateWarehouseAndWait(ctx, createWarehouseReq,
 				retries.Timeout[warehouses.GetWarehouseResponse](createWarehouseTimeout),
 				func(i *retries.Info[warehouses.GetWarehouseResponse]) {
-					spinner.Suffix = i.Info.Health.Summary
+					spinner.Suffix = " " + i.Info.Health.Summary
 				})
 			spinner.Stop()
 			if err != nil {
@@ -79,13 +79,13 @@ var createWarehouseCmd = &cobra.Command{
 }
 
 var deleteWarehouseReq warehouses.DeleteWarehouse
-var deleteWarehouseAndWait bool
+var deleteWarehouseNoWait bool
 var deleteWarehouseTimeout time.Duration
 
 func init() {
 	Cmd.AddCommand(deleteWarehouseCmd)
 
-	deleteWarehouseCmd.Flags().BoolVar(&deleteWarehouseAndWait, "wait", true, `wait to reach DELETED state`)
+	deleteWarehouseCmd.Flags().BoolVar(&deleteWarehouseNoWait, "no-wait", deleteWarehouseNoWait, `do not wait to reach DELETED state`)
 	deleteWarehouseCmd.Flags().DurationVar(&deleteWarehouseTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach DELETED state`)
 	// TODO: short flags
 
@@ -104,12 +104,12 @@ var deleteWarehouseCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		if deleteWarehouseAndWait {
+		if !deleteWarehouseNoWait {
 			spinner := ui.StartSpinner()
 			info, err := w.Warehouses.DeleteWarehouseAndWait(ctx, deleteWarehouseReq,
 				retries.Timeout[warehouses.GetWarehouseResponse](deleteWarehouseTimeout),
 				func(i *retries.Info[warehouses.GetWarehouseResponse]) {
-					spinner.Suffix = i.Info.Health.Summary
+					spinner.Suffix = " " + i.Info.Health.Summary
 				})
 			spinner.Stop()
 			if err != nil {
@@ -126,13 +126,13 @@ var deleteWarehouseCmd = &cobra.Command{
 }
 
 var editWarehouseReq warehouses.EditWarehouseRequest
-var editWarehouseAndWait bool
+var editWarehouseNoWait bool
 var editWarehouseTimeout time.Duration
 
 func init() {
 	Cmd.AddCommand(editWarehouseCmd)
 
-	editWarehouseCmd.Flags().BoolVar(&editWarehouseAndWait, "wait", true, `wait to reach RUNNING state`)
+	editWarehouseCmd.Flags().BoolVar(&editWarehouseNoWait, "no-wait", editWarehouseNoWait, `do not wait to reach RUNNING state`)
 	editWarehouseCmd.Flags().DurationVar(&editWarehouseTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
 	// TODO: short flags
 
@@ -165,12 +165,12 @@ var editWarehouseCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		if editWarehouseAndWait {
+		if !editWarehouseNoWait {
 			spinner := ui.StartSpinner()
 			info, err := w.Warehouses.EditWarehouseAndWait(ctx, editWarehouseReq,
 				retries.Timeout[warehouses.GetWarehouseResponse](editWarehouseTimeout),
 				func(i *retries.Info[warehouses.GetWarehouseResponse]) {
-					spinner.Suffix = i.Info.Health.Summary
+					spinner.Suffix = " " + i.Info.Health.Summary
 				})
 			spinner.Stop()
 			if err != nil {
@@ -187,13 +187,13 @@ var editWarehouseCmd = &cobra.Command{
 }
 
 var getWarehouseReq warehouses.GetWarehouse
-var getWarehouseAndWait bool
+var getWarehouseNoWait bool
 var getWarehouseTimeout time.Duration
 
 func init() {
 	Cmd.AddCommand(getWarehouseCmd)
 
-	getWarehouseCmd.Flags().BoolVar(&getWarehouseAndWait, "wait", true, `wait to reach RUNNING state`)
+	getWarehouseCmd.Flags().BoolVar(&getWarehouseNoWait, "no-wait", getWarehouseNoWait, `do not wait to reach RUNNING state`)
 	getWarehouseCmd.Flags().DurationVar(&getWarehouseTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
 	// TODO: short flags
 
@@ -212,12 +212,12 @@ var getWarehouseCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		if getWarehouseAndWait {
+		if !getWarehouseNoWait {
 			spinner := ui.StartSpinner()
 			info, err := w.Warehouses.GetWarehouseAndWait(ctx, getWarehouseReq,
 				retries.Timeout[warehouses.GetWarehouseResponse](getWarehouseTimeout),
 				func(i *retries.Info[warehouses.GetWarehouseResponse]) {
-					spinner.Suffix = i.Info.Health.Summary
+					spinner.Suffix = " " + i.Info.Health.Summary
 				})
 			spinner.Stop()
 			if err != nil {
@@ -329,13 +329,13 @@ var setWorkspaceWarehouseConfigCmd = &cobra.Command{
 }
 
 var startWarehouseReq warehouses.StartWarehouse
-var startWarehouseAndWait bool
+var startWarehouseNoWait bool
 var startWarehouseTimeout time.Duration
 
 func init() {
 	Cmd.AddCommand(startWarehouseCmd)
 
-	startWarehouseCmd.Flags().BoolVar(&startWarehouseAndWait, "wait", true, `wait to reach RUNNING state`)
+	startWarehouseCmd.Flags().BoolVar(&startWarehouseNoWait, "no-wait", startWarehouseNoWait, `do not wait to reach RUNNING state`)
 	startWarehouseCmd.Flags().DurationVar(&startWarehouseTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
 	// TODO: short flags
 
@@ -354,12 +354,12 @@ var startWarehouseCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		if startWarehouseAndWait {
+		if !startWarehouseNoWait {
 			spinner := ui.StartSpinner()
 			info, err := w.Warehouses.StartWarehouseAndWait(ctx, startWarehouseReq,
 				retries.Timeout[warehouses.GetWarehouseResponse](startWarehouseTimeout),
 				func(i *retries.Info[warehouses.GetWarehouseResponse]) {
-					spinner.Suffix = i.Info.Health.Summary
+					spinner.Suffix = " " + i.Info.Health.Summary
 				})
 			spinner.Stop()
 			if err != nil {
@@ -376,13 +376,13 @@ var startWarehouseCmd = &cobra.Command{
 }
 
 var stopWarehouseReq warehouses.StopWarehouse
-var stopWarehouseAndWait bool
+var stopWarehouseNoWait bool
 var stopWarehouseTimeout time.Duration
 
 func init() {
 	Cmd.AddCommand(stopWarehouseCmd)
 
-	stopWarehouseCmd.Flags().BoolVar(&stopWarehouseAndWait, "wait", true, `wait to reach STOPPED state`)
+	stopWarehouseCmd.Flags().BoolVar(&stopWarehouseNoWait, "no-wait", stopWarehouseNoWait, `do not wait to reach STOPPED state`)
 	stopWarehouseCmd.Flags().DurationVar(&stopWarehouseTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach STOPPED state`)
 	// TODO: short flags
 
@@ -401,12 +401,12 @@ var stopWarehouseCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		if stopWarehouseAndWait {
+		if !stopWarehouseNoWait {
 			spinner := ui.StartSpinner()
 			info, err := w.Warehouses.StopWarehouseAndWait(ctx, stopWarehouseReq,
 				retries.Timeout[warehouses.GetWarehouseResponse](stopWarehouseTimeout),
 				func(i *retries.Info[warehouses.GetWarehouseResponse]) {
-					spinner.Suffix = i.Info.Health.Summary
+					spinner.Suffix = " " + i.Info.Health.Summary
 				})
 			spinner.Stop()
 			if err != nil {

@@ -75,13 +75,13 @@ var changeOwnerCmd = &cobra.Command{
 }
 
 var createReq clusters.CreateCluster
-var createAndWait bool
+var createNoWait bool
 var createTimeout time.Duration
 
 func init() {
 	Cmd.AddCommand(createCmd)
 
-	createCmd.Flags().BoolVar(&createAndWait, "wait", true, `wait to reach RUNNING state`)
+	createCmd.Flags().BoolVar(&createNoWait, "no-wait", createNoWait, `do not wait to reach RUNNING state`)
 	createCmd.Flags().DurationVar(&createTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
 	// TODO: short flags
 
@@ -135,12 +135,12 @@ var createCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		if createAndWait {
+		if !createNoWait {
 			spinner := ui.StartSpinner()
 			info, err := w.Clusters.CreateAndWait(ctx, createReq,
 				retries.Timeout[clusters.ClusterInfo](createTimeout),
 				func(i *retries.Info[clusters.ClusterInfo]) {
-					spinner.Suffix = i.Info.StateMessage
+					spinner.Suffix = " " + i.Info.StateMessage
 				})
 			spinner.Stop()
 			if err != nil {
@@ -157,13 +157,13 @@ var createCmd = &cobra.Command{
 }
 
 var deleteReq clusters.DeleteCluster
-var deleteAndWait bool
+var deleteNoWait bool
 var deleteTimeout time.Duration
 
 func init() {
 	Cmd.AddCommand(deleteCmd)
 
-	deleteCmd.Flags().BoolVar(&deleteAndWait, "wait", true, `wait to reach TERMINATED state`)
+	deleteCmd.Flags().BoolVar(&deleteNoWait, "no-wait", deleteNoWait, `do not wait to reach TERMINATED state`)
 	deleteCmd.Flags().DurationVar(&deleteTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach TERMINATED state`)
 	// TODO: short flags
 
@@ -185,12 +185,12 @@ var deleteCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		if deleteAndWait {
+		if !deleteNoWait {
 			spinner := ui.StartSpinner()
 			info, err := w.Clusters.DeleteAndWait(ctx, deleteReq,
 				retries.Timeout[clusters.ClusterInfo](deleteTimeout),
 				func(i *retries.Info[clusters.ClusterInfo]) {
-					spinner.Suffix = i.Info.StateMessage
+					spinner.Suffix = " " + i.Info.StateMessage
 				})
 			spinner.Stop()
 			if err != nil {
@@ -207,13 +207,13 @@ var deleteCmd = &cobra.Command{
 }
 
 var editReq clusters.EditCluster
-var editAndWait bool
+var editNoWait bool
 var editTimeout time.Duration
 
 func init() {
 	Cmd.AddCommand(editCmd)
 
-	editCmd.Flags().BoolVar(&editAndWait, "wait", true, `wait to reach RUNNING state`)
+	editCmd.Flags().BoolVar(&editNoWait, "no-wait", editNoWait, `do not wait to reach RUNNING state`)
 	editCmd.Flags().DurationVar(&editTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
 	// TODO: short flags
 
@@ -267,12 +267,12 @@ var editCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		if editAndWait {
+		if !editNoWait {
 			spinner := ui.StartSpinner()
 			info, err := w.Clusters.EditAndWait(ctx, editReq,
 				retries.Timeout[clusters.ClusterInfo](editTimeout),
 				func(i *retries.Info[clusters.ClusterInfo]) {
-					spinner.Suffix = i.Info.StateMessage
+					spinner.Suffix = " " + i.Info.StateMessage
 				})
 			spinner.Stop()
 			if err != nil {
@@ -326,13 +326,13 @@ var eventsCmd = &cobra.Command{
 }
 
 var getReq clusters.Get
-var getAndWait bool
+var getNoWait bool
 var getTimeout time.Duration
 
 func init() {
 	Cmd.AddCommand(getCmd)
 
-	getCmd.Flags().BoolVar(&getAndWait, "wait", true, `wait to reach RUNNING state`)
+	getCmd.Flags().BoolVar(&getNoWait, "no-wait", getNoWait, `do not wait to reach RUNNING state`)
 	getCmd.Flags().DurationVar(&getTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
 	// TODO: short flags
 
@@ -352,12 +352,12 @@ var getCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		if getAndWait {
+		if !getNoWait {
 			spinner := ui.StartSpinner()
 			info, err := w.Clusters.GetAndWait(ctx, getReq,
 				retries.Timeout[clusters.ClusterInfo](getTimeout),
 				func(i *retries.Info[clusters.ClusterInfo]) {
-					spinner.Suffix = i.Info.StateMessage
+					spinner.Suffix = " " + i.Info.StateMessage
 				})
 			spinner.Stop()
 			if err != nil {
@@ -526,13 +526,13 @@ var pinCmd = &cobra.Command{
 }
 
 var resizeReq clusters.ResizeCluster
-var resizeAndWait bool
+var resizeNoWait bool
 var resizeTimeout time.Duration
 
 func init() {
 	Cmd.AddCommand(resizeCmd)
 
-	resizeCmd.Flags().BoolVar(&resizeAndWait, "wait", true, `wait to reach RUNNING state`)
+	resizeCmd.Flags().BoolVar(&resizeNoWait, "no-wait", resizeNoWait, `do not wait to reach RUNNING state`)
 	resizeCmd.Flags().DurationVar(&resizeTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
 	// TODO: short flags
 
@@ -554,12 +554,12 @@ var resizeCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		if resizeAndWait {
+		if !resizeNoWait {
 			spinner := ui.StartSpinner()
 			info, err := w.Clusters.ResizeAndWait(ctx, resizeReq,
 				retries.Timeout[clusters.ClusterInfo](resizeTimeout),
 				func(i *retries.Info[clusters.ClusterInfo]) {
-					spinner.Suffix = i.Info.StateMessage
+					spinner.Suffix = " " + i.Info.StateMessage
 				})
 			spinner.Stop()
 			if err != nil {
@@ -576,13 +576,13 @@ var resizeCmd = &cobra.Command{
 }
 
 var restartReq clusters.RestartCluster
-var restartAndWait bool
+var restartNoWait bool
 var restartTimeout time.Duration
 
 func init() {
 	Cmd.AddCommand(restartCmd)
 
-	restartCmd.Flags().BoolVar(&restartAndWait, "wait", true, `wait to reach RUNNING state`)
+	restartCmd.Flags().BoolVar(&restartNoWait, "no-wait", restartNoWait, `do not wait to reach RUNNING state`)
 	restartCmd.Flags().DurationVar(&restartTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
 	// TODO: short flags
 
@@ -603,12 +603,12 @@ var restartCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		if restartAndWait {
+		if !restartNoWait {
 			spinner := ui.StartSpinner()
 			info, err := w.Clusters.RestartAndWait(ctx, restartReq,
 				retries.Timeout[clusters.ClusterInfo](restartTimeout),
 				func(i *retries.Info[clusters.ClusterInfo]) {
-					spinner.Suffix = i.Info.StateMessage
+					spinner.Suffix = " " + i.Info.StateMessage
 				})
 			spinner.Stop()
 			if err != nil {
@@ -650,13 +650,13 @@ var sparkVersionsCmd = &cobra.Command{
 }
 
 var startReq clusters.StartCluster
-var startAndWait bool
+var startNoWait bool
 var startTimeout time.Duration
 
 func init() {
 	Cmd.AddCommand(startCmd)
 
-	startCmd.Flags().BoolVar(&startAndWait, "wait", true, `wait to reach RUNNING state`)
+	startCmd.Flags().BoolVar(&startNoWait, "no-wait", startNoWait, `do not wait to reach RUNNING state`)
 	startCmd.Flags().DurationVar(&startTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
 	// TODO: short flags
 
@@ -682,12 +682,12 @@ var startCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		if startAndWait {
+		if !startNoWait {
 			spinner := ui.StartSpinner()
 			info, err := w.Clusters.StartAndWait(ctx, startReq,
 				retries.Timeout[clusters.ClusterInfo](startTimeout),
 				func(i *retries.Info[clusters.ClusterInfo]) {
-					spinner.Suffix = i.Info.StateMessage
+					spinner.Suffix = " " + i.Info.StateMessage
 				})
 			spinner.Stop()
 			if err != nil {

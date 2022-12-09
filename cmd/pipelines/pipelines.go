@@ -105,13 +105,13 @@ var deletePipelineCmd = &cobra.Command{
 }
 
 var getPipelineReq pipelines.GetPipeline
-var getPipelineAndWait bool
+var getPipelineNoWait bool
 var getPipelineTimeout time.Duration
 
 func init() {
 	Cmd.AddCommand(getPipelineCmd)
 
-	getPipelineCmd.Flags().BoolVar(&getPipelineAndWait, "wait", true, `wait to reach RUNNING state`)
+	getPipelineCmd.Flags().BoolVar(&getPipelineNoWait, "no-wait", getPipelineNoWait, `do not wait to reach RUNNING state`)
 	getPipelineCmd.Flags().DurationVar(&getPipelineTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
 	// TODO: short flags
 
@@ -128,12 +128,12 @@ var getPipelineCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		if getPipelineAndWait {
+		if !getPipelineNoWait {
 			spinner := ui.StartSpinner()
 			info, err := w.Pipelines.GetPipelineAndWait(ctx, getPipelineReq,
 				retries.Timeout[pipelines.GetPipelineResponse](getPipelineTimeout),
 				func(i *retries.Info[pipelines.GetPipelineResponse]) {
-					spinner.Suffix = i.Info.Cause
+					spinner.Suffix = " " + i.Info.Cause
 				})
 			spinner.Stop()
 			if err != nil {
@@ -244,13 +244,13 @@ var listUpdatesCmd = &cobra.Command{
 }
 
 var resetPipelineReq pipelines.ResetPipeline
-var resetPipelineAndWait bool
+var resetPipelineNoWait bool
 var resetPipelineTimeout time.Duration
 
 func init() {
 	Cmd.AddCommand(resetPipelineCmd)
 
-	resetPipelineCmd.Flags().BoolVar(&resetPipelineAndWait, "wait", true, `wait to reach RUNNING state`)
+	resetPipelineCmd.Flags().BoolVar(&resetPipelineNoWait, "no-wait", resetPipelineNoWait, `do not wait to reach RUNNING state`)
 	resetPipelineCmd.Flags().DurationVar(&resetPipelineTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
 	// TODO: short flags
 
@@ -269,12 +269,12 @@ var resetPipelineCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		if resetPipelineAndWait {
+		if !resetPipelineNoWait {
 			spinner := ui.StartSpinner()
 			info, err := w.Pipelines.ResetPipelineAndWait(ctx, resetPipelineReq,
 				retries.Timeout[pipelines.GetPipelineResponse](resetPipelineTimeout),
 				func(i *retries.Info[pipelines.GetPipelineResponse]) {
-					spinner.Suffix = i.Info.Cause
+					spinner.Suffix = " " + i.Info.Cause
 				})
 			spinner.Stop()
 			if err != nil {
@@ -324,13 +324,13 @@ var startUpdateCmd = &cobra.Command{
 }
 
 var stopPipelineReq pipelines.StopPipeline
-var stopPipelineAndWait bool
+var stopPipelineNoWait bool
 var stopPipelineTimeout time.Duration
 
 func init() {
 	Cmd.AddCommand(stopPipelineCmd)
 
-	stopPipelineCmd.Flags().BoolVar(&stopPipelineAndWait, "wait", true, `wait to reach IDLE state`)
+	stopPipelineCmd.Flags().BoolVar(&stopPipelineNoWait, "no-wait", stopPipelineNoWait, `do not wait to reach IDLE state`)
 	stopPipelineCmd.Flags().DurationVar(&stopPipelineTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach IDLE state`)
 	// TODO: short flags
 
@@ -349,12 +349,12 @@ var stopPipelineCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		if stopPipelineAndWait {
+		if !stopPipelineNoWait {
 			spinner := ui.StartSpinner()
 			info, err := w.Pipelines.StopPipelineAndWait(ctx, stopPipelineReq,
 				retries.Timeout[pipelines.GetPipelineResponse](stopPipelineTimeout),
 				func(i *retries.Info[pipelines.GetPipelineResponse]) {
-					spinner.Suffix = i.Info.Cause
+					spinner.Suffix = " " + i.Info.Cause
 				})
 			spinner.Stop()
 			if err != nil {
