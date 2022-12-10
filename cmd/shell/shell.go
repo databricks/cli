@@ -34,7 +34,6 @@ var shellCmd = &cobra.Command{
 			err = root.RootCmd.Execute()
 			if err != nil {
 				cmd.PrintErrln(err)
-				//os.Exit(1)
 			}
 		}, suggester(root.RootCmd),
 			prompt.OptionPrefix("🧱 > "),
