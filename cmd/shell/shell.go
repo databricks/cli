@@ -51,6 +51,14 @@ var shellCmd = &cobra.Command{
 	},
 }
 
+// we could also add dynamic argument completion, which is reasonable performance-wise
+// only in the interactive shell, as ValidArgsFunction gets called every time bash/zsh/psh 
+// types a character, while every call is isolated from another. filesystem cache is another 
+// option.
+//
+// See: 
+// https://github.com/c-bata/gh-prompt/blob/master/completer/argument.go#L28-L51
+// https://github.com/c-bata/gh-prompt/blob/master/completer/client.go
 func suggester(root *cobra.Command) func(d prompt.Document) (sgg []prompt.Suggest) {
 	return func(d prompt.Document) (sgg []prompt.Suggest) {
 		args := strings.Fields(d.CurrentLine())
