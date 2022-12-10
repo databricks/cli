@@ -14,6 +14,7 @@ func (j *JsonFlag) String() string {
 	return fmt.Sprintf("JSON (%d bytes)", len(j.raw))
 }
 
+// TODO: Command.MarkFlagFilename()
 func (j *JsonFlag) Set(v string) error {
 	// Load request from file if it starts with '@' (like curl).
 	if v[0] != '@' {

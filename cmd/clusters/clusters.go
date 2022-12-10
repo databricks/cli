@@ -1,6 +1,8 @@
 package clusters
 
 import (
+	"fmt"
+	"sort"
 	"time"
 
 	instance_profiles "github.com/databricks/bricks/cmd/clusters/instance-profiles"
@@ -9,6 +11,7 @@ import (
 	"github.com/databricks/bricks/lib/ui"
 	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/clusters"
+	"github.com/databricks/databricks-sdk-go/useragent"
 	"github.com/spf13/cobra"
 )
 
@@ -374,7 +377,7 @@ func init() {
 }
 
 var getCmd = &cobra.Command{
-	Use:   "get",
+	Use:   "get CLUSTER_NAME",
 	Short: `Get cluster info.`,
 	Long: `Get cluster info.
   
@@ -382,7 +385,24 @@ var getCmd = &cobra.Command{
   described while they are running, or up to 60 days after they are terminated.`,
 
 	PreRunE: sdk.PreWorkspaceClient,
+	ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		ctx := cmd.Context()
+		ctx = useragent.InContext(ctx, "feature", "shell-completion")
+		w := sdk.WorkspaceClient(ctx)
+		names, err := w.Clusters.ClusterInfoClusterNameToClusterIdMap(ctx, listReq)
+		if err != nil {
+			return nil, cobra.ShellCompDirectiveError
+		}
+		var sgg []string
+		for k := range names {
+			sgg = append(sgg, fmt.Sprintf(`"%s"`, k))
+		}
+		sort.Strings(sgg)
+		return sgg, cobra.ShellCompDirectiveDefault
+	},
+	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		panic(fmt.Sprintf("`%s`", args[0]))
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		if !getNoWait {
