@@ -1,3 +1,5 @@
+// Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+
 package recipient_activation
 
 import (
@@ -32,7 +34,8 @@ var getActivationUrlInfoCmd = &cobra.Command{
   
   Gets information about an Activation URL.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -64,7 +67,8 @@ var retrieveTokenCmd = &cobra.Command{
   RPC to retrieve access token with an activation token. This is a public API
   without any authentication.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)

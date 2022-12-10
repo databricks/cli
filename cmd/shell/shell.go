@@ -13,8 +13,8 @@ import (
 )
 
 var shellCmd = &cobra.Command{
-	Use:     "shell",
-	Short:   "Launches interactive CLI prompt",
+	Use:   "shell",
+	Short: "Launches interactive CLI prompt",
 	// TODO: improve context/client sharing between commands launched in this shell
 	PreRunE: sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
@@ -52,11 +52,11 @@ var shellCmd = &cobra.Command{
 }
 
 // we could also add dynamic argument completion, which is reasonable performance-wise
-// only in the interactive shell, as ValidArgsFunction gets called every time bash/zsh/psh 
-// types a character, while every call is isolated from another. filesystem cache is another 
+// only in the interactive shell, as ValidArgsFunction gets called every time bash/zsh/psh
+// types a character, while every call is isolated from another. filesystem cache is another
 // option.
 //
-// See: 
+// See:
 // https://github.com/c-bata/gh-prompt/blob/master/completer/argument.go#L28-L51
 // https://github.com/c-bata/gh-prompt/blob/master/completer/client.go
 func suggester(root *cobra.Command) func(d prompt.Document) (sgg []prompt.Suggest) {

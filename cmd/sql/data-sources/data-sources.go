@@ -1,3 +1,5 @@
+// Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+
 package data_sources
 
 import (
@@ -37,7 +39,8 @@ var listCmd = &cobra.Command{
   fields that appear in this API response are enumerated for clarity. However,
   you need only a SQL warehouse's id to create new queries against it.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)

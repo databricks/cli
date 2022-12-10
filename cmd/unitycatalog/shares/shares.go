@@ -1,3 +1,5 @@
+// Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+
 package shares
 
 import (
@@ -36,7 +38,8 @@ var createCmd = &cobra.Command{
   or after creation with **update**. The caller must be a Metastore admin or
   have the CREATE SHARE privilege on the Metastore.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -68,7 +71,8 @@ var deleteCmd = &cobra.Command{
   Deletes a data object share from the Metastore. The caller must be an owner of
   the share.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -101,7 +105,8 @@ var getCmd = &cobra.Command{
   Gets a data object share from the Metastore. The caller must be a Metastore
   admin or the owner of the share.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -128,7 +133,8 @@ var listCmd = &cobra.Command{
   Gets an array of data object shares from the Metastore. The caller must be a
   Metastore admin or the owner of the share.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -160,7 +166,8 @@ var sharePermissionsCmd = &cobra.Command{
   Gets the permissions for a data share from the Metastore. The caller must be a
   Metastore admin or the owner of the share.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -207,7 +214,8 @@ var updateCmd = &cobra.Command{
   
   Table removals through **update** do not require additional privileges.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		err = updateJson.Unmarshall(&updateReq)
 		if err != nil {
@@ -249,7 +257,8 @@ var updatePermissionsCmd = &cobra.Command{
   For new recipient grants, the user must also be the owner of the recipients.
   recipient revocations do not require additional privileges.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		err = updatePermissionsJson.Unmarshall(&updatePermissionsReq)
 		if err != nil {

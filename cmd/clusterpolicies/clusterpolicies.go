@@ -1,3 +1,5 @@
+// Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+
 package clusterpolicies
 
 import (
@@ -56,7 +58,8 @@ var createCmd = &cobra.Command{
   
   Creates a new policy with prescribed settings.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -88,7 +91,8 @@ var deleteCmd = &cobra.Command{
   Delete a policy for a cluster. Clusters governed by this policy can still run,
   but cannot be edited.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -122,7 +126,8 @@ var editCmd = &cobra.Command{
   Update an existing policy for cluster. This operation may make some clusters
   governed by the previous policy invalid.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -153,7 +158,8 @@ var getCmd = &cobra.Command{
   
   Get a cluster policy entity. Creation and editing is available to admins only.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -179,7 +185,8 @@ var listCmd = &cobra.Command{
   
   Returns a list of policies accessible by the requesting user.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)

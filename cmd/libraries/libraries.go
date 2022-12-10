@@ -1,3 +1,5 @@
+// Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+
 package libraries
 
 import (
@@ -49,7 +51,8 @@ var allClusterStatusesCmd = &cobra.Command{
   for all libraries installed on this cluster via the API or the libraries UI as
   well as libraries set to be installed on all clusters via the libraries UI.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -94,7 +97,8 @@ var clusterStatusCmd = &cobra.Command{
   clusters, but now marked for removal. Within this group there is no order
   guarantee.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -133,7 +137,8 @@ var installCmd = &cobra.Command{
   union of the libraries specified via this method and the libraries set to be
   installed on all clusters via the libraries UI.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		err = installJson.Unmarshall(&installReq)
 		if err != nil {
@@ -173,7 +178,8 @@ var uninstallCmd = &cobra.Command{
   uninstalled until the cluster is restarted. Uninstalling libraries that are
   not installed on the cluster will have no impact but is not an error.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		err = uninstallJson.Unmarshall(&uninstallReq)
 		if err != nil {

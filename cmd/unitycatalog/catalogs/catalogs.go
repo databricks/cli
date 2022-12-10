@@ -1,3 +1,5 @@
+// Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+
 package catalogs
 
 import (
@@ -47,7 +49,8 @@ var createCmd = &cobra.Command{
   Creates a new catalog instance in the parent Metastore if the caller is a
   Metastore admin or has the CREATE CATALOG privilege.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		err = createJson.Unmarshall(&createReq)
 		if err != nil {
@@ -83,7 +86,8 @@ var deleteCmd = &cobra.Command{
   Deletes the catalog that matches the supplied name. The caller must be a
   Metastore admin or the owner of the catalog.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -115,7 +119,8 @@ var getCmd = &cobra.Command{
   Gets an array of all catalogs in the current Metastore for which the user is
   an admin or Catalog owner, or has the USAGE privilege set for their account.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -143,7 +148,8 @@ var listCmd = &cobra.Command{
   Metastore. The caller must be a Metastore admin, is the owner of the External
   Location, or has privileges to access the External Location.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -181,7 +187,8 @@ var updateCmd = &cobra.Command{
   the owner of the catalog, or a Metastore admin (when changing the owner field
   of the catalog).`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		err = updateJson.Unmarshall(&updateReq)
 		if err != nil {

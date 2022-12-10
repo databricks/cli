@@ -1,3 +1,5 @@
+// Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+
 package dashboards
 
 import (
@@ -42,7 +44,8 @@ var createCmd = &cobra.Command{
 	Short: `Create a dashboard object.`,
 	Long:  `Create a dashboard object.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		err = createJson.Unmarshall(&createReq)
 		if err != nil {
@@ -78,7 +81,8 @@ var deleteCmd = &cobra.Command{
   Moves a dashboard to the trash. Trashed dashboards do not appear in list views
   or searches, and cannot be shared.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -110,7 +114,8 @@ var getCmd = &cobra.Command{
   Returns a JSON representation of a dashboard object, including its
   visualization and query objects.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -146,7 +151,8 @@ var listCmd = &cobra.Command{
   
   Fetch a paginated list of dashboard objects.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		err = listJson.Unmarshall(&listReq)
 		if err != nil {
@@ -181,7 +187,8 @@ var restoreCmd = &cobra.Command{
   
   A restored dashboard appears in list views and searches and can be shared.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)

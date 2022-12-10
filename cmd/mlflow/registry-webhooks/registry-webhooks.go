@@ -1,3 +1,5 @@
+// Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+
 package registry_webhooks
 
 import (
@@ -40,7 +42,8 @@ var createCmd = &cobra.Command{
   
   Creates a registry webhook.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		err = createJson.Unmarshall(&createReq)
 		if err != nil {
@@ -77,7 +80,8 @@ var deleteCmd = &cobra.Command{
   
   Deletes a registry webhook.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -114,7 +118,8 @@ var listCmd = &cobra.Command{
   
   Lists all registry webhooks.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		err = listJson.Unmarshall(&listReq)
 		if err != nil {
@@ -154,7 +159,8 @@ var testCmd = &cobra.Command{
   
   Tests a registry webhook.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		err = testJson.Unmarshall(&testReq)
 		if err != nil {
@@ -198,7 +204,8 @@ var updateCmd = &cobra.Command{
   
   Updates a registry webhook.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		err = updateJson.Unmarshall(&updateReq)
 		if err != nil {

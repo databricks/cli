@@ -1,6 +1,9 @@
+// Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+
 package jobs
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/databricks/bricks/lib/jsonflag"
@@ -53,7 +56,8 @@ var cancelAllRunsCmd = &cobra.Command{
   Cancels all active runs of a job. The runs are canceled asynchronously, so it
   doesn't prevent new runs from being started.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -91,7 +95,8 @@ var cancelRunCmd = &cobra.Command{
   Cancels a job run. The run is canceled asynchronously, so it may still be
   running when this request completes.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -100,7 +105,12 @@ var cancelRunCmd = &cobra.Command{
 			info, err := w.Jobs.CancelRunAndWait(ctx, cancelRunReq,
 				retries.Timeout[jobs.Run](cancelRunTimeout),
 				func(i *retries.Info[jobs.Run]) {
-					spinner.Suffix = " " + i.Info.State.StateMessage
+					status := i.Info.State.LifeCycleState
+					statusMessage := fmt.Sprintf("current status: %s", status)
+					if i.Info.State != nil {
+						statusMessage = i.Info.State.StateMessage
+					}
+					spinner.Suffix = " " + statusMessage
 				})
 			spinner.Stop()
 			if err != nil {
@@ -148,7 +158,8 @@ var createCmd = &cobra.Command{
   
   Create a new job.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		err = createJson.Unmarshall(&createReq)
 		if err != nil {
@@ -183,7 +194,8 @@ var deleteCmd = &cobra.Command{
   
   Deletes a job.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -214,7 +226,8 @@ var deleteRunCmd = &cobra.Command{
   
   Deletes a non-active run. Returns an error if the run is active.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -248,7 +261,8 @@ var exportRunCmd = &cobra.Command{
   
   Export and retrieve the job run task.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		err = exportRunJson.Unmarshall(&exportRunReq)
 		if err != nil {
@@ -283,7 +297,8 @@ var getCmd = &cobra.Command{
   
   Retrieves the details for a single job.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -321,7 +336,8 @@ var getRunCmd = &cobra.Command{
   
   Retrieve the metadata of a run.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -330,7 +346,12 @@ var getRunCmd = &cobra.Command{
 			info, err := w.Jobs.GetRunAndWait(ctx, getRunReq,
 				retries.Timeout[jobs.Run](getRunTimeout),
 				func(i *retries.Info[jobs.Run]) {
-					spinner.Suffix = " " + i.Info.State.StateMessage
+					status := i.Info.State.LifeCycleState
+					statusMessage := fmt.Sprintf("current status: %s", status)
+					if i.Info.State != nil {
+						statusMessage = i.Info.State.StateMessage
+					}
+					spinner.Suffix = " " + statusMessage
 				})
 			spinner.Stop()
 			if err != nil {
@@ -374,7 +395,8 @@ var getRunOutputCmd = &cobra.Command{
   automatically removed after 60 days. If you to want to reference them beyond
   60 days, you must save old run results before they expire.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -408,7 +430,8 @@ var listCmd = &cobra.Command{
   
   Retrieves a list of jobs.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -449,7 +472,8 @@ var listRunsCmd = &cobra.Command{
   
   List runs in descending order by start time.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		err = listRunsJson.Unmarshall(&listRunsReq)
 		if err != nil {
@@ -504,7 +528,8 @@ var repairRunCmd = &cobra.Command{
   They use the current job and task settings, and can be viewed in the history
   for the original job run.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		err = repairRunJson.Unmarshall(&repairRunReq)
 		if err != nil {
@@ -517,7 +542,12 @@ var repairRunCmd = &cobra.Command{
 			info, err := w.Jobs.RepairRunAndWait(ctx, repairRunReq,
 				retries.Timeout[jobs.Run](repairRunTimeout),
 				func(i *retries.Info[jobs.Run]) {
-					spinner.Suffix = " " + i.Info.State.StateMessage
+					status := i.Info.State.LifeCycleState
+					statusMessage := fmt.Sprintf("current status: %s", status)
+					if i.Info.State != nil {
+						statusMessage = i.Info.State.StateMessage
+					}
+					spinner.Suffix = " " + statusMessage
 				})
 			spinner.Stop()
 			if err != nil {
@@ -556,7 +586,8 @@ var resetCmd = &cobra.Command{
   Overwrites all the settings for a specific job. Use the Update endpoint to
   update job settings partially.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		err = resetJson.Unmarshall(&resetReq)
 		if err != nil {
@@ -607,7 +638,8 @@ var runNowCmd = &cobra.Command{
   
   Run a job and return the run_id of the triggered run.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		err = runNowJson.Unmarshall(&runNowReq)
 		if err != nil {
@@ -620,7 +652,12 @@ var runNowCmd = &cobra.Command{
 			info, err := w.Jobs.RunNowAndWait(ctx, runNowReq,
 				retries.Timeout[jobs.Run](runNowTimeout),
 				func(i *retries.Info[jobs.Run]) {
-					spinner.Suffix = " " + i.Info.State.StateMessage
+					status := i.Info.State.LifeCycleState
+					statusMessage := fmt.Sprintf("current status: %s", status)
+					if i.Info.State != nil {
+						statusMessage = i.Info.State.StateMessage
+					}
+					spinner.Suffix = " " + statusMessage
 				})
 			spinner.Stop()
 			if err != nil {
@@ -671,7 +708,8 @@ var submitCmd = &cobra.Command{
   the UI. Use the jobs/runs/get API to check the run state after the job is
   submitted.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		err = submitJson.Unmarshall(&submitReq)
 		if err != nil {
@@ -684,7 +722,12 @@ var submitCmd = &cobra.Command{
 			info, err := w.Jobs.SubmitAndWait(ctx, submitReq,
 				retries.Timeout[jobs.Run](submitTimeout),
 				func(i *retries.Info[jobs.Run]) {
-					spinner.Suffix = " " + i.Info.State.StateMessage
+					status := i.Info.State.LifeCycleState
+					statusMessage := fmt.Sprintf("current status: %s", status)
+					if i.Info.State != nil {
+						statusMessage = i.Info.State.StateMessage
+					}
+					spinner.Suffix = " " + statusMessage
 				})
 			spinner.Stop()
 			if err != nil {
@@ -724,7 +767,8 @@ var updateCmd = &cobra.Command{
   Add, update, or remove specific settings of an existing job. Use the ResetJob
   to overwrite all job settings.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		err = updateJson.Unmarshall(&updateReq)
 		if err != nil {

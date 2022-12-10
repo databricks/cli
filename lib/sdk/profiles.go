@@ -93,6 +93,9 @@ func askForAccountProfile() (string, error) {
 		}
 		items = append(items, v)
 	}
+	if len(items) == 1 {
+		return items[0].Name, nil
+	}
 	label := "~/.databrickscfg profile"
 	i, _, err := (&promptui.Select{
 		Label: label,

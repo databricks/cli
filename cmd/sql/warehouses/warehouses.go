@@ -1,6 +1,9 @@
+// Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+
 package warehouses
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/databricks/bricks/lib/jsonflag"
@@ -44,9 +47,9 @@ func init() {
 	createCmd.Flags().IntVar(&createReq.MaxNumClusters, "max-num-clusters", createReq.MaxNumClusters, `Maximum number of clusters that the autoscaler will create to handle concurrent queries.`)
 	createCmd.Flags().IntVar(&createReq.MinNumClusters, "min-num-clusters", createReq.MinNumClusters, `Minimum number of available clusters that will be maintained for this SQL Endpoint.`)
 	createCmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `Logical name for the cluster.`)
-	createCmd.Flags().Var(&createReq.SpotInstancePolicy, "spot-instance-policy", `Configurations whether the endpoint should use spot instances.`)
+	createCmd.Flags().Var(&createReq.SpotInstancePolicy, "spot-instance-policy", `Configurations whether the warehouse should use spot instances.`)
 	// TODO: complex arg: tags
-	createCmd.Flags().Var(&createReq.WarehouseType, "warehouse-type", `Warehouse type (Classic/Pro).`)
+	createCmd.Flags().Var(&createReq.WarehouseType, "warehouse-type", ``)
 
 }
 
@@ -57,7 +60,8 @@ var createCmd = &cobra.Command{
   
   Creates a new SQL warehouse.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		err = createJson.Unmarshall(&createReq)
 		if err != nil {
@@ -70,7 +74,12 @@ var createCmd = &cobra.Command{
 			info, err := w.Warehouses.CreateAndWait(ctx, createReq,
 				retries.Timeout[sql.GetWarehouseResponse](createTimeout),
 				func(i *retries.Info[sql.GetWarehouseResponse]) {
-					spinner.Suffix = " " + i.Info.Health.Summary
+					status := i.Info.State
+					statusMessage := fmt.Sprintf("current status: %s", status)
+					if i.Info.Health != nil {
+						statusMessage = i.Info.Health.Summary
+					}
+					spinner.Suffix = " " + statusMessage
 				})
 			spinner.Stop()
 			if err != nil {
@@ -111,7 +120,8 @@ var deleteCmd = &cobra.Command{
   
   Deletes a SQL warehouse.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -120,7 +130,12 @@ var deleteCmd = &cobra.Command{
 			info, err := w.Warehouses.DeleteAndWait(ctx, deleteReq,
 				retries.Timeout[sql.GetWarehouseResponse](deleteTimeout),
 				func(i *retries.Info[sql.GetWarehouseResponse]) {
-					spinner.Suffix = " " + i.Info.Health.Summary
+					status := i.Info.State
+					statusMessage := fmt.Sprintf("current status: %s", status)
+					if i.Info.Health != nil {
+						statusMessage = i.Info.Health.Summary
+					}
+					spinner.Suffix = " " + statusMessage
 				})
 			spinner.Stop()
 			if err != nil {
@@ -163,9 +178,9 @@ func init() {
 	editCmd.Flags().IntVar(&editReq.MaxNumClusters, "max-num-clusters", editReq.MaxNumClusters, `Maximum number of clusters that the autoscaler will create to handle concurrent queries.`)
 	editCmd.Flags().IntVar(&editReq.MinNumClusters, "min-num-clusters", editReq.MinNumClusters, `Minimum number of available clusters that will be maintained for this SQL Endpoint.`)
 	editCmd.Flags().StringVar(&editReq.Name, "name", editReq.Name, `Logical name for the cluster.`)
-	editCmd.Flags().Var(&editReq.SpotInstancePolicy, "spot-instance-policy", `Configurations whether the endpoint should use spot instances.`)
+	editCmd.Flags().Var(&editReq.SpotInstancePolicy, "spot-instance-policy", `Configurations whether the warehouse should use spot instances.`)
 	// TODO: complex arg: tags
-	editCmd.Flags().Var(&editReq.WarehouseType, "warehouse-type", `Warehouse type (Classic/Pro).`)
+	editCmd.Flags().Var(&editReq.WarehouseType, "warehouse-type", ``)
 
 }
 
@@ -176,7 +191,8 @@ var editCmd = &cobra.Command{
   
   Updates the configuration for a SQL warehouse.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		err = editJson.Unmarshall(&editReq)
 		if err != nil {
@@ -189,7 +205,12 @@ var editCmd = &cobra.Command{
 			info, err := w.Warehouses.EditAndWait(ctx, editReq,
 				retries.Timeout[sql.GetWarehouseResponse](editTimeout),
 				func(i *retries.Info[sql.GetWarehouseResponse]) {
-					spinner.Suffix = " " + i.Info.Health.Summary
+					status := i.Info.State
+					statusMessage := fmt.Sprintf("current status: %s", status)
+					if i.Info.Health != nil {
+						statusMessage = i.Info.Health.Summary
+					}
+					spinner.Suffix = " " + statusMessage
 				})
 			spinner.Stop()
 			if err != nil {
@@ -230,7 +251,8 @@ var getCmd = &cobra.Command{
   
   Gets the information for a single SQL warehouse.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -239,7 +261,12 @@ var getCmd = &cobra.Command{
 			info, err := w.Warehouses.GetAndWait(ctx, getReq,
 				retries.Timeout[sql.GetWarehouseResponse](getTimeout),
 				func(i *retries.Info[sql.GetWarehouseResponse]) {
-					spinner.Suffix = " " + i.Info.Health.Summary
+					status := i.Info.State
+					statusMessage := fmt.Sprintf("current status: %s", status)
+					if i.Info.Health != nil {
+						statusMessage = i.Info.Health.Summary
+					}
+					spinner.Suffix = " " + statusMessage
 				})
 			spinner.Stop()
 			if err != nil {
@@ -270,7 +297,8 @@ var getWorkspaceWarehouseConfigCmd = &cobra.Command{
   Gets the workspace level configuration that is shared by all SQL warehouses in
   a workspace.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -301,7 +329,8 @@ var listCmd = &cobra.Command{
   
   Lists all SQL warehouses that a user has manager permissions on.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -346,7 +375,8 @@ var setWorkspaceWarehouseConfigCmd = &cobra.Command{
   Sets the workspace level configuration that is shared by all SQL warehouses in
   a workspace.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		err = setWorkspaceWarehouseConfigJson.Unmarshall(&setWorkspaceWarehouseConfigReq)
 		if err != nil {
@@ -387,7 +417,8 @@ var startCmd = &cobra.Command{
   
   Starts a SQL warehouse.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -396,7 +427,12 @@ var startCmd = &cobra.Command{
 			info, err := w.Warehouses.StartAndWait(ctx, startReq,
 				retries.Timeout[sql.GetWarehouseResponse](startTimeout),
 				func(i *retries.Info[sql.GetWarehouseResponse]) {
-					spinner.Suffix = " " + i.Info.Health.Summary
+					status := i.Info.State
+					statusMessage := fmt.Sprintf("current status: %s", status)
+					if i.Info.Health != nil {
+						statusMessage = i.Info.Health.Summary
+					}
+					spinner.Suffix = " " + statusMessage
 				})
 			spinner.Stop()
 			if err != nil {
@@ -437,7 +473,8 @@ var stopCmd = &cobra.Command{
   
   Stops a SQL warehouse.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -446,7 +483,12 @@ var stopCmd = &cobra.Command{
 			info, err := w.Warehouses.StopAndWait(ctx, stopReq,
 				retries.Timeout[sql.GetWarehouseResponse](stopTimeout),
 				func(i *retries.Info[sql.GetWarehouseResponse]) {
-					spinner.Suffix = " " + i.Info.Health.Summary
+					status := i.Info.State
+					statusMessage := fmt.Sprintf("current status: %s", status)
+					if i.Info.Health != nil {
+						statusMessage = i.Info.Health.Summary
+					}
+					spinner.Suffix = " " + statusMessage
 				})
 			spinner.Stop()
 			if err != nil {

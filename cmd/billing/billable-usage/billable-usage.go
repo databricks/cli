@@ -1,3 +1,5 @@
+// Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+
 package billable_usage
 
 import (
@@ -38,7 +40,8 @@ var downloadCmd = &cobra.Command{
   
   [CSV file schema]: https://docs.databricks.com/administration-guide/account-settings/usage-analysis.html#schema`,
 
-	PreRunE: sdk.PreAccountClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)

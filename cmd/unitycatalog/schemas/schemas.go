@@ -1,3 +1,5 @@
+// Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+
 package schemas
 
 import (
@@ -43,7 +45,8 @@ var createCmd = &cobra.Command{
   Creates a new schema for catalog in the Metatastore. The caller must be a
   Metastore admin, or have the CREATE privilege in the parentcatalog.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		err = createJson.Unmarshall(&createReq)
 		if err != nil {
@@ -79,7 +82,8 @@ var deleteCmd = &cobra.Command{
   Deletes the specified schema from the parent catalog. The caller must be the
   owner of the schema or an owner of the parent catalog.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -112,7 +116,8 @@ var getCmd = &cobra.Command{
   Metastore admin, the owner of the schema, or a user that has the USAGE
   privilege on the schema.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -146,7 +151,8 @@ var listCmd = &cobra.Command{
   catalog will be retrieved. Otherwise, only schemas owned by the caller (or for
   which the caller has the USAGE privilege) will be retrieved.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -187,7 +193,8 @@ var updateCmd = &cobra.Command{
   the update. If the __name__ field must be updated, the caller must be a
   Metastore admin or have the CREATE privilege on the parent catalog.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		err = updateJson.Unmarshall(&updateReq)
 		if err != nil {

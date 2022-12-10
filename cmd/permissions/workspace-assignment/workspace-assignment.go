@@ -1,3 +1,5 @@
+// Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+
 package workspace_assignment
 
 import (
@@ -36,7 +38,8 @@ var createCmd = &cobra.Command{
   
   Create new permission assignments for the specified account and workspace.`,
 
-	PreRunE: sdk.PreAccountClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		err = createJson.Unmarshall(&createReq)
 		if err != nil {
@@ -73,7 +76,8 @@ var deleteCmd = &cobra.Command{
   Deletes the workspace permissions assignment for a given account and workspace
   using the specified service principal.`,
 
-	PreRunE: sdk.PreAccountClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
@@ -104,7 +108,8 @@ var getCmd = &cobra.Command{
   
   Get an array of workspace permissions for the specified account and workspace.`,
 
-	PreRunE: sdk.PreAccountClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
@@ -136,7 +141,8 @@ var listCmd = &cobra.Command{
   Get the permission assignments for the specified Databricks Account and
   Databricks Workspace.`,
 
-	PreRunE: sdk.PreAccountClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
@@ -172,7 +178,8 @@ var updateCmd = &cobra.Command{
   Updates the workspace permissions assignment for a given account and workspace
   using the specified service principal.`,
 
-	PreRunE: sdk.PreAccountClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		err = updateJson.Unmarshall(&updateReq)
 		if err != nil {

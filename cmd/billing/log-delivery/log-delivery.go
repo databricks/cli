@@ -1,3 +1,5 @@
+// Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+
 package log_delivery
 
 import (
@@ -119,7 +121,8 @@ var createCmd = &cobra.Command{
   [Configure audit logging]: https://docs.databricks.com/administration-guide/account-settings/audit-logs.html
   [Deliver and access billable usage logs]: https://docs.databricks.com/administration-guide/account-settings/billable-usage-delivery.html`,
 
-	PreRunE: sdk.PreAccountClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		err = createJson.Unmarshall(&createReq)
 		if err != nil {
@@ -155,7 +158,8 @@ var getCmd = &cobra.Command{
   Gets a Databricks log delivery configuration object for an account, both
   specified by ID.`,
 
-	PreRunE: sdk.PreAccountClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
@@ -191,7 +195,8 @@ var listCmd = &cobra.Command{
   Gets all Databricks log delivery configurations associated with an account
   specified by ID.`,
 
-	PreRunE: sdk.PreAccountClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		err = listJson.Unmarshall(&listReq)
 		if err != nil {
@@ -233,7 +238,8 @@ var patchStatusCmd = &cobra.Command{
   if this would violate the delivery configuration limits described under
   [Create log delivery](#operation/create-log-delivery-config).`,
 
-	PreRunE: sdk.PreAccountClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		err = patchStatusJson.Unmarshall(&patchStatusReq)
 		if err != nil {

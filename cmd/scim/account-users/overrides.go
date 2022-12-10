@@ -1,5 +1,10 @@
 package account_users
 
+import "github.com/databricks/bricks/lib/ui"
+
 func init() {
-	listReq.Attributes = "id,userName"
+	listReq.Attributes = "id,userName,groups,roles,active"
+	listCmd.Annotations["template"] = ui.Heredoc(`
+	{{range .}}{{.Id|green}}	{{.UserName}}	{{range .Groups}}{{.Display}} {{end}}	{{range .Roles}}{{.Display}} {{end}}	{{if .Active}}{{"ACTIVE"|green}}{{else}}DISABLED{{end}}
+	{{end}}`)
 }

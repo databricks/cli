@@ -1,3 +1,5 @@
+// Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+
 package tokenmanagement
 
 import (
@@ -36,7 +38,8 @@ var createOboTokenCmd = &cobra.Command{
   
   Creates a token on behalf of a service principal.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -48,30 +51,31 @@ var createOboTokenCmd = &cobra.Command{
 	},
 }
 
-// start delete-token command
+// start delete command
 
-var deleteTokenReq tokenmanagement.DeleteToken
+var deleteReq tokenmanagement.Delete
 
 func init() {
-	Cmd.AddCommand(deleteTokenCmd)
+	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
 
-	deleteTokenCmd.Flags().StringVar(&deleteTokenReq.TokenId, "token-id", deleteTokenReq.TokenId, `The ID of the token to get.`)
+	deleteCmd.Flags().StringVar(&deleteReq.TokenId, "token-id", deleteReq.TokenId, `The ID of the token to get.`)
 
 }
 
-var deleteTokenCmd = &cobra.Command{
-	Use:   "delete-token",
+var deleteCmd = &cobra.Command{
+	Use:   "delete",
 	Short: `Delete a token.`,
 	Long: `Delete a token.
   
   Deletes a token, specified by its ID.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err = w.TokenManagement.DeleteToken(ctx, deleteTokenReq)
+		err = w.TokenManagement.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
@@ -79,30 +83,31 @@ var deleteTokenCmd = &cobra.Command{
 	},
 }
 
-// start get-token-info command
+// start get command
 
-var getTokenInfoReq tokenmanagement.GetTokenInfo
+var getReq tokenmanagement.Get
 
 func init() {
-	Cmd.AddCommand(getTokenInfoCmd)
+	Cmd.AddCommand(getCmd)
 	// TODO: short flags
 
-	getTokenInfoCmd.Flags().StringVar(&getTokenInfoReq.TokenId, "token-id", getTokenInfoReq.TokenId, `The ID of the token to get.`)
+	getCmd.Flags().StringVar(&getReq.TokenId, "token-id", getReq.TokenId, `The ID of the token to get.`)
 
 }
 
-var getTokenInfoCmd = &cobra.Command{
-	Use:   "get-token-info",
+var getCmd = &cobra.Command{
+	Use:   "get",
 	Short: `Get token info.`,
 	Long: `Get token info.
   
   Gets information about a token, specified by its ID.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		response, err := w.TokenManagement.GetTokenInfo(ctx, getTokenInfoReq)
+		response, err := w.TokenManagement.Get(ctx, getReq)
 		if err != nil {
 			return err
 		}
@@ -110,31 +115,32 @@ var getTokenInfoCmd = &cobra.Command{
 	},
 }
 
-// start list-tokens command
+// start list command
 
-var listTokensReq tokenmanagement.ListTokens
+var listReq tokenmanagement.List
 
 func init() {
-	Cmd.AddCommand(listTokensCmd)
+	Cmd.AddCommand(listCmd)
 	// TODO: short flags
 
-	listTokensCmd.Flags().StringVar(&listTokensReq.CreatedById, "created-by-id", listTokensReq.CreatedById, `User ID of the user that created the token.`)
-	listTokensCmd.Flags().StringVar(&listTokensReq.CreatedByUsername, "created-by-username", listTokensReq.CreatedByUsername, `Username of the user that created the token.`)
+	listCmd.Flags().StringVar(&listReq.CreatedById, "created-by-id", listReq.CreatedById, `User ID of the user that created the token.`)
+	listCmd.Flags().StringVar(&listReq.CreatedByUsername, "created-by-username", listReq.CreatedByUsername, `Username of the user that created the token.`)
 
 }
 
-var listTokensCmd = &cobra.Command{
-	Use:   "list-tokens",
+var listCmd = &cobra.Command{
+	Use:   "list",
 	Short: `List all tokens.`,
 	Long: `List all tokens.
   
   Lists all tokens associated with the specified workspace or user.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		response, err := w.TokenManagement.ListTokensAll(ctx, listTokensReq)
+		response, err := w.TokenManagement.ListAll(ctx, listReq)
 		if err != nil {
 			return err
 		}

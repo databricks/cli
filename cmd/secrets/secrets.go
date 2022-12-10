@@ -1,3 +1,5 @@
+// Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+
 package secrets
 
 import (
@@ -51,7 +53,8 @@ var createScopeCmd = &cobra.Command{
   and periods, and may not exceed 128 characters. The maximum number of scopes
   in a workspace is 100.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		err = createScopeJson.Unmarshall(&createScopeReq)
 		if err != nil {
@@ -92,7 +95,8 @@ var deleteAclCmd = &cobra.Command{
   Throws PERMISSION_DENIED if the user does not have permission to make this
   API call.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -127,7 +131,8 @@ var deleteScopeCmd = &cobra.Command{
   PERMISSION_DENIED if the user does not have permission to make this API
   call.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -164,7 +169,8 @@ var deleteSecretCmd = &cobra.Command{
   Throws PERMISSION_DENIED if the user does not have permission to make this
   API call.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -201,7 +207,8 @@ var getAclCmd = &cobra.Command{
   PERMISSION_DENIED if the user does not have permission to make this API
   call.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -237,7 +244,8 @@ var listAclsCmd = &cobra.Command{
   PERMISSION_DENIED if the user does not have permission to make this API
   call.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -266,7 +274,8 @@ var listScopesCmd = &cobra.Command{
   Throws PERMISSION_DENIED if the user does not have permission to make this
   API call.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -304,7 +313,8 @@ var listSecretsCmd = &cobra.Command{
   PERMISSION_DENIED if the user does not have permission to make this API
   call.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -364,7 +374,8 @@ var putAclCmd = &cobra.Command{
   PERMISSION_DENIED if the user does not have permission to make this API
   call.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		err = putAclJson.Unmarshall(&putAclReq)
 		if err != nil {
@@ -420,7 +431,8 @@ var putSecretCmd = &cobra.Command{
   Throws PERMISSION_DENIED if the user does not have permission to make this
   API call.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)

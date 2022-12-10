@@ -1,3 +1,5 @@
+// Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+
 package storage_credentials
 
 import (
@@ -59,7 +61,8 @@ var createCmd = &cobra.Command{
   The caller must be a Metastore admin and have the CREATE STORAGE CREDENTIAL
   privilege on the Metastore.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		err = createJson.Unmarshall(&createReq)
 		if err != nil {
@@ -96,7 +99,8 @@ var deleteCmd = &cobra.Command{
   Deletes a storage credential from the Metastore. The caller must be an owner
   of the storage credential.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -129,7 +133,8 @@ var getCmd = &cobra.Command{
   admin, the owner of the storage credential, or have a level of privilege on
   the storage credential.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -158,7 +163,8 @@ var listCmd = &cobra.Command{
   privilege level to access. If the caller is a Metastore admin, all storage
   credentials will be retrieved.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -198,7 +204,8 @@ var updateCmd = &cobra.Command{
   the storage credential. If the caller is a Metastore admin, only the __owner__
   credential can be changed.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		err = updateJson.Unmarshall(&updateReq)
 		if err != nil {

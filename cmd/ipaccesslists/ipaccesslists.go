@@ -1,3 +1,5 @@
+// Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+
 package ipaccesslists
 
 import (
@@ -72,7 +74,8 @@ var createCmd = &cobra.Command{
   IP access list has no effect until you enable the feature. See
   :method:workspaceconf/setStatus`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		err = createJson.Unmarshall(&createReq)
 		if err != nil {
@@ -107,7 +110,8 @@ var deleteCmd = &cobra.Command{
   
   Deletes an IP access list, specified by its list ID.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -138,7 +142,8 @@ var getCmd = &cobra.Command{
   
   Gets an IP access list, specified by its list ID.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -164,7 +169,8 @@ var listCmd = &cobra.Command{
   
   Gets all IP access lists for the specified workspace.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -212,7 +218,8 @@ var replaceCmd = &cobra.Command{
   resulting IP access list has no effect until you enable the feature. See
   :method:workspaceconf/setStatus.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		err = replaceJson.Unmarshall(&replaceReq)
 		if err != nil {
@@ -268,7 +275,8 @@ var updateCmd = &cobra.Command{
   resulting IP access list has no effect until you enable the feature. See
   :method:workspaceconf/setStatus.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		err = updateJson.Unmarshall(&updateReq)
 		if err != nil {

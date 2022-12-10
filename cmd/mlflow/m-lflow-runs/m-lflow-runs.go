@@ -1,3 +1,5 @@
+// Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+
 package m_lflow_runs
 
 import (
@@ -39,7 +41,8 @@ var createCmd = &cobra.Command{
   mlflowParam, mlflowMetric and mlflowRunTag associated with a single
   execution.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		err = createJson.Unmarshall(&createReq)
 		if err != nil {
@@ -74,7 +77,8 @@ var deleteCmd = &cobra.Command{
   
   Marks a run for deletion.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -107,7 +111,8 @@ var deleteTagCmd = &cobra.Command{
   Deletes a tag on a run. Tags are run metadata that can be updated during a run
   and after a run completes.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -144,7 +149,8 @@ var getCmd = &cobra.Command{
   If there are multiple values with the latest timestamp, return the maximum of
   these values.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -216,7 +222,8 @@ var logBatchCmd = &cobra.Command{
   * Metric keyes, param keys, and tag keys can be up to 250 characters in length
   * Parameter and tag values can be up to 250 characters in length`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		err = logBatchJson.Unmarshall(&logBatchReq)
 		if err != nil {
@@ -258,7 +265,8 @@ var logMetricCmd = &cobra.Command{
   value) with an associated timestamp. Examples include the various metrics that
   represent ML model accuracy. A metric can be logged multiple times.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -291,7 +299,8 @@ var logModelCmd = &cobra.Command{
   **NOTE:** Experimental: This API may change or be removed in a future release
   without warning.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -328,7 +337,8 @@ var logParameterCmd = &cobra.Command{
   constant dates and values used in an ETL pipeline. A param can be logged only
   once for a run.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -359,7 +369,8 @@ var restoreCmd = &cobra.Command{
   
   Restores a deleted run.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -399,7 +410,8 @@ var searchCmd = &cobra.Command{
   
   Search expressions can use mlflowMetric and mlflowParam keys.",`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		err = searchJson.Unmarshall(&searchReq)
 		if err != nil {
@@ -438,7 +450,8 @@ var setTagCmd = &cobra.Command{
   Sets a tag on a run. Tags are run metadata that can be updated during a run
   and after a run completes.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -474,7 +487,8 @@ var updateCmd = &cobra.Command{
   
   Updates run metadata.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		err = updateJson.Unmarshall(&updateReq)
 		if err != nil {

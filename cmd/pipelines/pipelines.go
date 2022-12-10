@@ -1,3 +1,5 @@
+// Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+
 package pipelines
 
 import (
@@ -68,7 +70,8 @@ var createCmd = &cobra.Command{
   Creates a new data processing pipeline based on the requested configuration.
   If successful, this method returns the ID of the new pipeline.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		err = createJson.Unmarshall(&createReq)
 		if err != nil {
@@ -103,7 +106,8 @@ var deleteCmd = &cobra.Command{
   
   Deletes a pipeline.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -138,7 +142,8 @@ var getCmd = &cobra.Command{
 	Short: `Get a pipeline.`,
 	Long:  `Get a pipeline.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -147,7 +152,8 @@ var getCmd = &cobra.Command{
 			info, err := w.Pipelines.GetAndWait(ctx, getReq,
 				retries.Timeout[pipelines.GetPipelineResponse](getTimeout),
 				func(i *retries.Info[pipelines.GetPipelineResponse]) {
-					spinner.Suffix = " " + i.Info.Cause
+					statusMessage := i.Info.Cause
+					spinner.Suffix = " " + statusMessage
 				})
 			spinner.Stop()
 			if err != nil {
@@ -183,7 +189,8 @@ var getUpdateCmd = &cobra.Command{
   
   Gets an update from an active pipeline.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -219,7 +226,8 @@ var listPipelinesCmd = &cobra.Command{
   
   Lists pipelines defined in the Delta Live Tables system.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		err = listPipelinesJson.Unmarshall(&listPipelinesReq)
 		if err != nil {
@@ -257,7 +265,8 @@ var listUpdatesCmd = &cobra.Command{
   
   List updates for an active pipeline.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -294,7 +303,8 @@ var resetCmd = &cobra.Command{
   
   Resets a pipeline.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -303,7 +313,8 @@ var resetCmd = &cobra.Command{
 			info, err := w.Pipelines.ResetAndWait(ctx, resetReq,
 				retries.Timeout[pipelines.GetPipelineResponse](resetTimeout),
 				func(i *retries.Info[pipelines.GetPipelineResponse]) {
-					spinner.Suffix = " " + i.Info.Cause
+					statusMessage := i.Info.Cause
+					spinner.Suffix = " " + statusMessage
 				})
 			spinner.Stop()
 			if err != nil {
@@ -344,7 +355,8 @@ var startUpdateCmd = &cobra.Command{
   
   Starts or queues a pipeline update.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		err = startUpdateJson.Unmarshall(&startUpdateReq)
 		if err != nil {
@@ -385,7 +397,8 @@ var stopCmd = &cobra.Command{
   
   Stops a pipeline.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -394,7 +407,8 @@ var stopCmd = &cobra.Command{
 			info, err := w.Pipelines.StopAndWait(ctx, stopReq,
 				retries.Timeout[pipelines.GetPipelineResponse](stopTimeout),
 				func(i *retries.Info[pipelines.GetPipelineResponse]) {
-					spinner.Suffix = " " + i.Info.Cause
+					statusMessage := i.Info.Cause
+					spinner.Suffix = " " + statusMessage
 				})
 			spinner.Stop()
 			if err != nil {
@@ -448,7 +462,8 @@ var updateCmd = &cobra.Command{
   
   Updates a pipeline with the supplied configuration.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		err = updateJson.Unmarshall(&updateReq)
 		if err != nil {

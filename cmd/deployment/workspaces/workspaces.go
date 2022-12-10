@@ -1,3 +1,5 @@
+// Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+
 package workspaces
 
 import (
@@ -96,7 +98,8 @@ var createCmd = &cobra.Command{
   
   [Create a new workspace using the Account API]: http://docs.databricks.com/administration-guide/account-api/new-workspace.html`,
 
-	PreRunE: sdk.PreAccountClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		err = createJson.Unmarshall(&createReq)
 		if err != nil {
@@ -109,7 +112,8 @@ var createCmd = &cobra.Command{
 			info, err := a.Workspaces.CreateAndWait(ctx, createReq,
 				retries.Timeout[deployment.Workspace](createTimeout),
 				func(i *retries.Info[deployment.Workspace]) {
-					spinner.Suffix = " " + i.Info.WorkspaceStatusMessage
+					statusMessage := i.Info.WorkspaceStatusMessage
+					spinner.Suffix = " " + statusMessage
 				})
 			spinner.Stop()
 			if err != nil {
@@ -151,7 +155,8 @@ var deleteCmd = &cobra.Command{
   platform or on a select custom plan that allows multiple workspaces per
   account.`,
 
-	PreRunE: sdk.PreAccountClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
@@ -195,7 +200,8 @@ var getCmd = &cobra.Command{
   
   [Create a new workspace using the Account API]: http://docs.databricks.com/administration-guide/account-api/new-workspace.html`,
 
-	PreRunE: sdk.PreAccountClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
@@ -225,7 +231,8 @@ var listCmd = &cobra.Command{
   platform or on a select custom plan that allows multiple workspaces per
   account.`,
 
-	PreRunE: sdk.PreAccountClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
@@ -369,7 +376,8 @@ var updateCmd = &cobra.Command{
   [Account Console]: https://docs.databricks.com/administration-guide/account-settings-e2/account-console-e2.html
   [Create a new workspace using the Account API]: http://docs.databricks.com/administration-guide/account-api/new-workspace.html`,
 
-	PreRunE: sdk.PreAccountClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
@@ -378,7 +386,8 @@ var updateCmd = &cobra.Command{
 			info, err := a.Workspaces.UpdateAndWait(ctx, updateReq,
 				retries.Timeout[deployment.Workspace](updateTimeout),
 				func(i *retries.Info[deployment.Workspace]) {
-					spinner.Suffix = " " + i.Info.WorkspaceStatusMessage
+					statusMessage := i.Info.WorkspaceStatusMessage
+					spinner.Suffix = " " + statusMessage
 				})
 			spinner.Stop()
 			if err != nil {

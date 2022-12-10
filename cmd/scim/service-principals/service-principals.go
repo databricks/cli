@@ -1,3 +1,5 @@
+// Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+
 package service_principals
 
 import (
@@ -47,7 +49,8 @@ var createCmd = &cobra.Command{
   
   Creates a new service principal in the Databricks Workspace.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		err = createJson.Unmarshall(&createReq)
 		if err != nil {
@@ -82,7 +85,8 @@ var deleteCmd = &cobra.Command{
   
   Delete a single service principal in the Databricks Workspace.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -114,7 +118,8 @@ var getCmd = &cobra.Command{
   Gets the details for a single service principal define in the Databricks
   Workspace.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -153,7 +158,8 @@ var listCmd = &cobra.Command{
   
   Gets the set of service principals associated with a Databricks Workspace.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		err = listJson.Unmarshall(&listReq)
 		if err != nil {
@@ -192,7 +198,8 @@ var patchCmd = &cobra.Command{
   Partially updates the details of a single service principal in the Databricks
   Workspace.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		err = patchJson.Unmarshall(&patchReq)
 		if err != nil {
@@ -238,7 +245,8 @@ var updateCmd = &cobra.Command{
   
   This action replaces the existing service principal with the same name.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		err = updateJson.Unmarshall(&updateReq)
 		if err != nil {

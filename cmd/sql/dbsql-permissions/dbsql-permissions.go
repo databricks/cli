@@ -1,3 +1,5 @@
+// Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+
 package dbsql_permissions
 
 import (
@@ -49,7 +51,8 @@ var getCmd = &cobra.Command{
   Gets a JSON representation of the access control list (ACL) for a specified
   object.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		err = getJson.Unmarshall(&getReq)
 		if err != nil {
@@ -89,7 +92,8 @@ var setCmd = &cobra.Command{
   Sets the access control list (ACL) for a specified object. This operation will
   complete rewrite the ACL.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		err = setJson.Unmarshall(&setReq)
 		if err != nil {
@@ -129,7 +133,8 @@ var transferOwnershipCmd = &cobra.Command{
   Transfers ownership of a dashboard, query, or alert to an active user.
   Requires an admin API key.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		err = transferOwnershipJson.Unmarshall(&transferOwnershipReq)
 		if err != nil {

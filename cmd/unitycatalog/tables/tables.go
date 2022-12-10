@@ -1,3 +1,5 @@
+// Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+
 package tables
 
 import (
@@ -42,7 +44,8 @@ var deleteCmd = &cobra.Command{
   catalog and be the owner of the parent schema, or be the owner of the table
   and have the USAGE privilege on both the parent catalog and schema.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -76,7 +79,8 @@ var getCmd = &cobra.Command{
   privilege on both the parent catalog and schema, or be the owner of the table
   and have the SELECT privilege on it as well.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -111,7 +115,8 @@ var listCmd = &cobra.Command{
   SELECT privilege on) the table. For the latter case, the caller must also be
   the owner or have the USAGE privilege on the parent catalog and schema.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -154,7 +159,8 @@ var tableSummariesCmd = &cobra.Command{
   USAGE privilege on the Schema, provided that the user also has ownership or
   the USAGE privilege on the parent Catalog`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)

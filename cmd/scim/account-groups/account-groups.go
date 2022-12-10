@@ -1,3 +1,5 @@
+// Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+
 package account_groups
 
 import (
@@ -48,7 +50,8 @@ var createCmd = &cobra.Command{
   Creates a group in the Databricks Account with a unique name, using the
   supplied group details.`,
 
-	PreRunE: sdk.PreAccountClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		err = createJson.Unmarshall(&createReq)
 		if err != nil {
@@ -83,7 +86,8 @@ var deleteCmd = &cobra.Command{
   
   Deletes a group from the Databricks Account.`,
 
-	PreRunE: sdk.PreAccountClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
@@ -114,7 +118,8 @@ var getCmd = &cobra.Command{
   
   Gets the information for a specific group in the Databricks Account.`,
 
-	PreRunE: sdk.PreAccountClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
@@ -153,7 +158,8 @@ var listCmd = &cobra.Command{
   
   Gets all details of the groups associated with the Databricks Account.`,
 
-	PreRunE: sdk.PreAccountClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		err = listJson.Unmarshall(&listReq)
 		if err != nil {
@@ -191,7 +197,8 @@ var patchCmd = &cobra.Command{
   
   Partially updates the details of a group.`,
 
-	PreRunE: sdk.PreAccountClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		err = patchJson.Unmarshall(&patchReq)
 		if err != nil {
@@ -234,7 +241,8 @@ var updateCmd = &cobra.Command{
   
   Updates the details of a group by replacing the entire group entity.`,
 
-	PreRunE: sdk.PreAccountClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		err = updateJson.Unmarshall(&updateReq)
 		if err != nil {

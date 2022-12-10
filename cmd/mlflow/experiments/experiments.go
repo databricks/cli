@@ -1,3 +1,5 @@
+// Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+
 package experiments
 
 import (
@@ -40,7 +42,8 @@ var createCmd = &cobra.Command{
   
   Throws RESOURCE_ALREADY_EXISTS if a experiment with the given name exists.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		err = createJson.Unmarshall(&createReq)
 		if err != nil {
@@ -77,7 +80,8 @@ var deleteCmd = &cobra.Command{
   for deletion. If the experiment uses FileStore, artifacts associated with
   experiment are also deleted.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -108,7 +112,8 @@ var getCmd = &cobra.Command{
   
   Gets metadata for an experiment. This method works on deleted experiments.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -147,7 +152,8 @@ var getByNameCmd = &cobra.Command{
   Throws RESOURCE_DOES_NOT_EXIST if no experiment with the specified name
   exists.S`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -180,7 +186,8 @@ var listCmd = &cobra.Command{
   
   Gets a list of all experiments.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -215,7 +222,8 @@ var restoreCmd = &cobra.Command{
   RESOURCE_DOES_NOT_EXIST if experiment was never created or was permanently
   deleted.",`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -252,7 +260,8 @@ var searchCmd = &cobra.Command{
   
   Searches for experiments that satisfy specified search criteria.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		err = searchJson.Unmarshall(&searchReq)
 		if err != nil {
@@ -289,7 +298,8 @@ var setExperimentTagCmd = &cobra.Command{
   
   Sets a tag on an experiment. Experiment tags are metadata that can be updated.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -321,7 +331,8 @@ var updateCmd = &cobra.Command{
   
   Updates experiment metadata.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)

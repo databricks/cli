@@ -1,3 +1,5 @@
+// Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+
 package m_lflow_artifacts
 
 import (
@@ -34,7 +36,8 @@ var listCmd = &cobra.Command{
   List artifacts for a run. Takes an optional artifact_path prefix. If it is
   specified, the response contains only artifacts with the specified prefix.",`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)

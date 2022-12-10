@@ -27,6 +27,27 @@ func PreAccountClient(cmd *cobra.Command, args []string) error {
 		cfg.Profile = profileFlag.Value.String()
 	}
 
+	if cfg.Profile == "" {
+		// account-level CLI was not really done before, so here are the assumptions:
+		// 1. only admins will have account configured
+		// 2. 99% of admins will have access to just one account
+		// hence, we don't need to create a special "DEFAULT_ACCOUNT" profile yet
+		profiles, err := loadProfiles()
+		if err != nil {
+			return err
+		}
+		var items []Profile
+		for _, v := range profiles {
+			if v.AccountID == "" {
+				continue
+			}
+			items = append(items, v)
+		}
+		if len(items) == 1 {
+			cfg.Profile = items[0].Name
+		}
+	}
+
 TRY_AUTH: // or try picking a config profile dynamically
 	a, err := databricks.NewAccountClient((*databricks.Config)(cfg))
 	if ui.Interactive && errors.Is(err, databricks.ErrNotAccountClient) {

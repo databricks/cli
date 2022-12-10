@@ -1,3 +1,5 @@
+// Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+
 package account_users
 
 import (
@@ -55,7 +57,8 @@ var createCmd = &cobra.Command{
   Creates a new user in the Databricks Account. This new user will also be added
   to the Databricks account.`,
 
-	PreRunE: sdk.PreAccountClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		err = createJson.Unmarshall(&createReq)
 		if err != nil {
@@ -91,7 +94,8 @@ var deleteCmd = &cobra.Command{
   Deletes a user. Deleting a user from a Databricks Account also removes objects
   associated with the user.`,
 
-	PreRunE: sdk.PreAccountClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
@@ -122,7 +126,8 @@ var getCmd = &cobra.Command{
   
   Gets information for a specific user in Databricks Account.`,
 
-	PreRunE: sdk.PreAccountClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
@@ -161,7 +166,8 @@ var listCmd = &cobra.Command{
   
   Gets details for all the users associated with a Databricks Account.`,
 
-	PreRunE: sdk.PreAccountClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		err = listJson.Unmarshall(&listReq)
 		if err != nil {
@@ -200,7 +206,8 @@ var patchCmd = &cobra.Command{
   Partially updates a user resource by applying the supplied operations on
   specific user attributes.`,
 
-	PreRunE: sdk.PreAccountClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		err = patchJson.Unmarshall(&patchReq)
 		if err != nil {
@@ -246,7 +253,8 @@ var updateCmd = &cobra.Command{
   
   Replaces a user's information with the data supplied in request.`,
 
-	PreRunE: sdk.PreAccountClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		err = updateJson.Unmarshall(&updateReq)
 		if err != nil {

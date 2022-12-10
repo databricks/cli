@@ -1,3 +1,5 @@
+// Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+
 package workspace
 
 import (
@@ -45,7 +47,8 @@ var deleteCmd = &cobra.Command{
   Object deletion cannot be undone and deleting a directory recursively is not
   atomic.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -87,7 +90,8 @@ var exportCmd = &cobra.Command{
   exceed size limit, this call returns MAX_NOTEBOOK_SIZE_EXCEEDED. Currently,
   this API does not support exporting a library.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		err = exportJson.Unmarshall(&exportReq)
 		if err != nil {
@@ -123,7 +127,8 @@ var getStatusCmd = &cobra.Command{
   Gets the status of an object or a directory. If path does not exist, this
   call returns an error RESOURCE_DOES_NOT_EXIST.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -163,7 +168,8 @@ var importCmd = &cobra.Command{
   RESOURCE_ALREADY_EXISTS. One can only use DBC format to import a
   directory.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		err = importJson.Unmarshall(&importReq)
 		if err != nil {
@@ -201,7 +207,8 @@ var listCmd = &cobra.Command{
   the input path does not exist, this call returns an error
   RESOURCE_DOES_NOT_EXIST.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -237,7 +244,8 @@ var mkdirsCmd = &cobra.Command{
   Note that if this operation fails it may have succeeded in creating some of
   the necessary\nparrent directories.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)

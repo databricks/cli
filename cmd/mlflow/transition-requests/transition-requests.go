@@ -1,3 +1,5 @@
+// Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+
 package transition_requests
 
 import (
@@ -37,7 +39,8 @@ var approveCmd = &cobra.Command{
   
   Approves a model version stage transition request.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		err = approveJson.Unmarshall(&approveReq)
 		if err != nil {
@@ -77,7 +80,8 @@ var createCmd = &cobra.Command{
   
   Creates a model version stage transition request.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		err = createJson.Unmarshall(&createReq)
 		if err != nil {
@@ -116,7 +120,8 @@ var deleteCmd = &cobra.Command{
   
   Cancels a model version stage transition request.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -148,7 +153,8 @@ var listCmd = &cobra.Command{
   
   Gets a list of all open stage transition requests for the model version.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -184,7 +190,8 @@ var rejectCmd = &cobra.Command{
   
   Rejects a model version stage transition request.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		err = rejectJson.Unmarshall(&rejectReq)
 		if err != nil {

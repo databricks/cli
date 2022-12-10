@@ -1,3 +1,5 @@
+// Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+
 package permissions
 
 import (
@@ -37,7 +39,8 @@ var getCmd = &cobra.Command{
   Gets the permission of an object. Objects can inherit permissions from their
   parent objects or root objects.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -69,7 +72,8 @@ var getPermissionLevelsCmd = &cobra.Command{
   
   Gets the permission levels that a user can have on an object.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -105,7 +109,8 @@ var setCmd = &cobra.Command{
   Sets permissions on object. Objects can inherit permissions from their parent
   objects and root objects.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		err = setJson.Unmarshall(&setReq)
 		if err != nil {
@@ -144,7 +149,8 @@ var updateCmd = &cobra.Command{
   
   Updates the permissions on an object.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		err = updateJson.Unmarshall(&updateReq)
 		if err != nil {

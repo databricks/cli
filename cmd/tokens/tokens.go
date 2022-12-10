@@ -1,3 +1,5 @@
+// Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+
 package tokens
 
 import (
@@ -37,7 +39,8 @@ var createCmd = &cobra.Command{
   authenticated token. If the user's token quota is exceeded, this call returns
   an error **QUOTA_EXCEEDED**.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -71,7 +74,8 @@ var deleteCmd = &cobra.Command{
   If a token with the specified ID is not valid, this call returns an error
   **RESOURCE_DOES_NOT_EXIST**.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -97,7 +101,8 @@ var listCmd = &cobra.Command{
   
   Lists all the valid tokens for a user-workspace pair.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)

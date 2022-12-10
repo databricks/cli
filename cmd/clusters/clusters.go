@@ -1,8 +1,8 @@
+// Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+
 package clusters
 
 import (
-	"fmt"
-	"sort"
 	"time"
 
 	instance_profiles "github.com/databricks/bricks/cmd/clusters/instance-profiles"
@@ -11,7 +11,6 @@ import (
 	"github.com/databricks/bricks/lib/ui"
 	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/clusters"
-	"github.com/databricks/databricks-sdk-go/useragent"
 	"github.com/spf13/cobra"
 )
 
@@ -68,7 +67,8 @@ var changeOwnerCmd = &cobra.Command{
   Change the owner of the cluster. You must be an admin to perform this
   operation.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -141,7 +141,8 @@ var createCmd = &cobra.Command{
   creation will succeed. Otherwise the cluster will terminate with an
   informative error message.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		err = createJson.Unmarshall(&createReq)
 		if err != nil {
@@ -154,7 +155,8 @@ var createCmd = &cobra.Command{
 			info, err := w.Clusters.CreateAndWait(ctx, createReq,
 				retries.Timeout[clusters.ClusterInfo](createTimeout),
 				func(i *retries.Info[clusters.ClusterInfo]) {
-					spinner.Suffix = " " + i.Info.StateMessage
+					statusMessage := i.Info.StateMessage
+					spinner.Suffix = " " + statusMessage
 				})
 			spinner.Stop()
 			if err != nil {
@@ -198,7 +200,8 @@ var deleteCmd = &cobra.Command{
   TERMINATED state. If the cluster is already in a TERMINATING or
   TERMINATED state, nothing will happen.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -207,7 +210,8 @@ var deleteCmd = &cobra.Command{
 			info, err := w.Clusters.DeleteAndWait(ctx, deleteReq,
 				retries.Timeout[clusters.ClusterInfo](deleteTimeout),
 				func(i *retries.Info[clusters.ClusterInfo]) {
-					spinner.Suffix = " " + i.Info.StateMessage
+					statusMessage := i.Info.StateMessage
+					spinner.Suffix = " " + statusMessage
 				})
 			spinner.Stop()
 			if err != nil {
@@ -284,7 +288,8 @@ var editCmd = &cobra.Command{
   
   Clusters created by the Databricks Jobs service cannot be edited.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		err = editJson.Unmarshall(&editReq)
 		if err != nil {
@@ -297,7 +302,8 @@ var editCmd = &cobra.Command{
 			info, err := w.Clusters.EditAndWait(ctx, editReq,
 				retries.Timeout[clusters.ClusterInfo](editTimeout),
 				func(i *retries.Info[clusters.ClusterInfo]) {
-					spinner.Suffix = " " + i.Info.StateMessage
+					statusMessage := i.Info.StateMessage
+					spinner.Suffix = " " + statusMessage
 				})
 			spinner.Stop()
 			if err != nil {
@@ -342,7 +348,8 @@ var eventsCmd = &cobra.Command{
   paginated. If there are more events to read, the response includes all the
   nparameters necessary to request the next page of events.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		err = eventsJson.Unmarshall(&eventsReq)
 		if err != nil {
@@ -377,32 +384,16 @@ func init() {
 }
 
 var getCmd = &cobra.Command{
-	Use:   "get CLUSTER_NAME",
+	Use:   "get",
 	Short: `Get cluster info.`,
 	Long: `Get cluster info.
   
   "Retrieves the information for a cluster given its identifier. Clusters can be
   described while they are running, or up to 60 days after they are terminated.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
-	ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		ctx := cmd.Context()
-		ctx = useragent.InContext(ctx, "feature", "shell-completion")
-		w := sdk.WorkspaceClient(ctx)
-		names, err := w.Clusters.ClusterInfoClusterNameToClusterIdMap(ctx, listReq)
-		if err != nil {
-			return nil, cobra.ShellCompDirectiveError
-		}
-		var sgg []string
-		for k := range names {
-			sgg = append(sgg, fmt.Sprintf(`"%s"`, k))
-		}
-		sort.Strings(sgg)
-		return sgg, cobra.ShellCompDirectiveDefault
-	},
-	Args: cobra.ExactArgs(1),
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		panic(fmt.Sprintf("`%s`", args[0]))
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		if !getNoWait {
@@ -410,7 +401,8 @@ var getCmd = &cobra.Command{
 			info, err := w.Clusters.GetAndWait(ctx, getReq,
 				retries.Timeout[clusters.ClusterInfo](getTimeout),
 				func(i *retries.Info[clusters.ClusterInfo]) {
-					spinner.Suffix = " " + i.Info.StateMessage
+					statusMessage := i.Info.StateMessage
+					spinner.Suffix = " " + statusMessage
 				})
 			spinner.Stop()
 			if err != nil {
@@ -453,7 +445,8 @@ var listCmd = &cobra.Command{
   clusters, all 45 terminated interactive clusters, and the 30 most recently
   terminated job clusters.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -480,7 +473,8 @@ var listNodeTypesCmd = &cobra.Command{
   Returns a list of supported Spark node types. These node types can be used to
   launch a cluster.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -507,7 +501,8 @@ var listZonesCmd = &cobra.Command{
   Returns a list of availability zones where clusters can be created in (For
   example, us-west-2a). These zones can be used to launch a cluster.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -543,7 +538,8 @@ var permanentDeleteCmd = &cobra.Command{
   cluster list, and API users can no longer perform any action on permanently
   deleted clusters.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -576,7 +572,8 @@ var pinCmd = &cobra.Command{
   ListClusters API. Pinning a cluster that is already pinned will have no
   effect. This API can only be called by workspace admins.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -617,7 +614,8 @@ var resizeCmd = &cobra.Command{
   Resizes a cluster to have a desired number of workers. This will fail unless
   the cluster is in a RUNNING state.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		err = resizeJson.Unmarshall(&resizeReq)
 		if err != nil {
@@ -630,7 +628,8 @@ var resizeCmd = &cobra.Command{
 			info, err := w.Clusters.ResizeAndWait(ctx, resizeReq,
 				retries.Timeout[clusters.ClusterInfo](resizeTimeout),
 				func(i *retries.Info[clusters.ClusterInfo]) {
-					spinner.Suffix = " " + i.Info.StateMessage
+					statusMessage := i.Info.StateMessage
+					spinner.Suffix = " " + statusMessage
 				})
 			spinner.Stop()
 			if err != nil {
@@ -673,7 +672,8 @@ var restartCmd = &cobra.Command{
   Restarts a Spark cluster with the supplied ID. If the cluster is not currently
   in a RUNNING state, nothing will happen.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -682,7 +682,8 @@ var restartCmd = &cobra.Command{
 			info, err := w.Clusters.RestartAndWait(ctx, restartReq,
 				retries.Timeout[clusters.ClusterInfo](restartTimeout),
 				func(i *retries.Info[clusters.ClusterInfo]) {
-					spinner.Suffix = " " + i.Info.StateMessage
+					statusMessage := i.Info.StateMessage
+					spinner.Suffix = " " + statusMessage
 				})
 			spinner.Stop()
 			if err != nil {
@@ -713,7 +714,8 @@ var sparkVersionsCmd = &cobra.Command{
   Returns the list of available Spark versions. These versions can be used to
   launch a cluster.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -757,7 +759,8 @@ var startCmd = &cobra.Command{
   nodes. * If the cluster is not currently in a TERMINATED state, nothing will
   happen. * Clusters launched to run a job cannot be started.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -766,7 +769,8 @@ var startCmd = &cobra.Command{
 			info, err := w.Clusters.StartAndWait(ctx, startReq,
 				retries.Timeout[clusters.ClusterInfo](startTimeout),
 				func(i *retries.Info[clusters.ClusterInfo]) {
-					spinner.Suffix = " " + i.Info.StateMessage
+					statusMessage := i.Info.StateMessage
+					spinner.Suffix = " " + statusMessage
 				})
 			spinner.Stop()
 			if err != nil {
@@ -803,7 +807,8 @@ var unpinCmd = &cobra.Command{
   ListClusters API. Unpinning a cluster that is not pinned will have no effect.
   This API can only be called by workspace admins.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)

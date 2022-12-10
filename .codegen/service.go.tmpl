@@ -1,3 +1,5 @@
+// Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+
 package {{.SnakeName}}
 
 import (
@@ -59,6 +61,7 @@ var {{.CamelName}}Cmd = &cobra.Command{
     Short: `{{.Summary | without "`"}}`,
 	Long: `{{.Comment  "  " 80 | without "`"}}`,
     {{end}}
+	Annotations: map[string]string{},
 	PreRunE: sdk.{{if .Service.IsAccounts}}PreAccountClient{{else}}PreWorkspaceClient{{end}},
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		{{- if .Request}}{{if not .Request.IsOnlyPrimitiveFields -}}
@@ -75,7 +78,21 @@ var {{.CamelName}}Cmd = &cobra.Command{
 			info, err := {{if .Service.IsAccounts}}a{{else}}w{{end}}.{{.Service.PascalName}}.{{.PascalName}}AndWait(ctx{{if .Request}}, {{.CamelName}}Req{{end}},
 				retries.Timeout[{{.Service.Package.Name}}.{{.Wait.Poll.Response.PascalName}}]({{.CamelName}}Timeout),
 				func(i *retries.Info[{{.Service.Package.Name}}.{{.Wait.Poll.Response.PascalName}}]) {
-					spinner.Suffix = " " + i.Info{{range .Wait.MessagePath}}.{{.PascalName}}{{end}}
+					{{if .Wait.MessagePath -}}
+					{{if .Wait.ComplexMessagePath -}}
+					status := i.Info{{range .Wait.StatusPath}}.{{.PascalName}}{{end}}
+					statusMessage := fmt.Sprintf("current status: %s", status)
+					if i.Info.{{.Wait.MessagePathHead.PascalName}} != nil {
+						statusMessage = i.Info{{range .Wait.MessagePath}}.{{.PascalName}}{{end}}
+					}
+					{{- else -}}
+					statusMessage := i.Info{{range .Wait.MessagePath}}.{{.PascalName}}{{end}}
+					{{- end}}
+					{{- else -}}
+					status := i.Info{{range .Wait.StatusPath}}.{{.PascalName}}{{end}}
+					statusMessage := fmt.Sprintf("current status: %s", status)
+					{{- end}}
+					spinner.Suffix = " " + statusMessage
 				})
 			spinner.Stop()
 			if err != nil {

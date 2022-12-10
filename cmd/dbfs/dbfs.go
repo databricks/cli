@@ -1,3 +1,5 @@
+// Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+
 package dbfs
 
 import (
@@ -39,7 +41,8 @@ var addBlockCmd = &cobra.Command{
   If the block of data exceeds 1 MB, this call will throw an exception with
   MAX_BLOCK_SIZE_EXCEEDED.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -71,7 +74,8 @@ var closeCmd = &cobra.Command{
   Closes the stream specified by the input handle. If the handle does not exist,
   this call throws an exception with RESOURCE_DOES_NOT_EXIST.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -112,7 +116,8 @@ var createCmd = &cobra.Command{
   calls with the handle you have. 3. Issue a close call with the handle you
   have.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -161,7 +166,8 @@ var deleteCmd = &cobra.Command{
   such as selective deletes, and the possibility to automate periodic delete
   jobs.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -193,7 +199,8 @@ var getStatusCmd = &cobra.Command{
   Gets the file information for a file or directory. If the file or directory
   does not exist, this call throws an exception with RESOURCE_DOES_NOT_EXIST.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -234,7 +241,8 @@ var listCmd = &cobra.Command{
   utility (dbutils.fs)](/dev-tools/databricks-utils.html#dbutils-fs), which
   provides the same functionality without timing out.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -269,7 +277,8 @@ var mkdirsCmd = &cobra.Command{
   this operation fails, it might have succeeded in creating some of the
   necessary parent directories.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -305,7 +314,8 @@ var moveCmd = &cobra.Command{
   this call throws an exception with RESOURCE_ALREADY_EXISTS. If the given
   source path is a directory, this call always recursively moves all files.",`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -349,7 +359,8 @@ var putCmd = &cobra.Command{
   If you want to upload large files, use the streaming upload. For details, see
   :method:create, :method:addBlock, :method:close.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -389,7 +400,8 @@ var readCmd = &cobra.Command{
   If offset + length exceeds the number of bytes in a file, it reads the
   contents until the end of file.",`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)

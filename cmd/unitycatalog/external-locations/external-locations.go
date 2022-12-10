@@ -1,3 +1,5 @@
+// Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+
 package external_locations
 
 import (
@@ -49,7 +51,8 @@ var createCmd = &cobra.Command{
   Metastore admin or have the CREATE EXTERNAL LOCATION privilege on the
   Metastore.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -82,7 +85,8 @@ var deleteCmd = &cobra.Command{
   Deletes the specified external location from the Metastore. The caller must be
   the owner of the external location.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -115,7 +119,8 @@ var getCmd = &cobra.Command{
   Metastore admin, the owner of the external location, or has an appropriate
   privilege level on the Metastore.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -143,7 +148,8 @@ var listCmd = &cobra.Command{
   Metastore. The caller must be a Metastore admin, is the owner of the external
   location, or has privileges to access the external location.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -181,7 +187,8 @@ var updateCmd = &cobra.Command{
   the externa location, or be a Metastore admin. In the second case, the admin
   can only update the name of the external location.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)

@@ -1,3 +1,5 @@
+// Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+
 package recipients
 
 import (
@@ -41,7 +43,8 @@ var createCmd = &cobra.Command{
   Metastore. The caller must be a Metastore admin or has the CREATE RECIPIENT
   privilege on the Metastore.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		err = createJson.Unmarshall(&createReq)
 		if err != nil {
@@ -77,7 +80,8 @@ var deleteCmd = &cobra.Command{
   Deletes the specified recipient from the Metastore. The caller must be the
   owner of the recipient.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -110,7 +114,8 @@ var getCmd = &cobra.Command{
   
   * the caller is the owner of the share recipient, or: * is a Metastore admin`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -143,7 +148,8 @@ var listCmd = &cobra.Command{
   
   * the caller is a Metastore admin, or * the caller is the owner.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -176,7 +182,8 @@ var rotateTokenCmd = &cobra.Command{
   Refreshes the specified recipient's delta sharing authentication token with
   the provided token info. The caller must be the owner of the recipient.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -208,7 +215,8 @@ var sharePermissionsCmd = &cobra.Command{
   Gets the share permissions for the specified Recipient. The caller must be a
   Metastore admin or the owner of the Recipient.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -246,7 +254,8 @@ var updateCmd = &cobra.Command{
   admin or the owner of the recipient. If the recipient name will be updated,
   the user must be both a Metastore admin and the owner of the recipient.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		err = updateJson.Unmarshall(&updateReq)
 		if err != nil {

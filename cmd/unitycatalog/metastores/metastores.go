@@ -1,3 +1,5 @@
+// Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+
 package metastores
 
 import (
@@ -48,7 +50,8 @@ var assignCmd = &cobra.Command{
   __workspace_id__ exists, it will be overwritten by the new __metastore_id__
   and __default_catalog_name__. The caller must be an account admin.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -80,7 +83,8 @@ var createCmd = &cobra.Command{
   
   Creates a new Metastore based on a provided name and storage root path.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -112,7 +116,8 @@ var deleteCmd = &cobra.Command{
   
   Deletes a Metastore. The caller must be a Metastore admin.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -144,7 +149,8 @@ var getCmd = &cobra.Command{
   Gets a Metastore that matches the supplied ID. The caller must be a Metastore
   admin to retrieve this info.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -171,7 +177,8 @@ var listCmd = &cobra.Command{
   Gets an array of the available Metastores (as MetastoreInfo objects). The
   caller must be an admin to retrieve this info.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -198,7 +205,8 @@ var summaryCmd = &cobra.Command{
   Gets information about a Metastore. This summary includes the storage
   credential, the cloud vendor, the cloud region, and the global Metastore ID.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -230,7 +238,8 @@ var unassignCmd = &cobra.Command{
   
   Deletes a Metastore assignment. The caller must be an account administrator.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -268,7 +277,8 @@ var updateCmd = &cobra.Command{
   Updates information for a specific Metastore. The caller must be a Metastore
   admin.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
@@ -304,7 +314,8 @@ var updateAssignmentCmd = &cobra.Command{
   Workspace is already assigned a Metastore. The caller must be an account admin
   to update __metastore_id__; otherwise, the caller can be a Workspace admin.`,
 
-	PreRunE: sdk.PreWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
