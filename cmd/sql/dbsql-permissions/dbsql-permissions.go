@@ -38,9 +38,6 @@ func init() {
 	// TODO: short flags
 	getCmd.Flags().Var(&getJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	getCmd.Flags().StringVar(&getReq.ObjectId, "object-id", getReq.ObjectId, `Object ID.`)
-	getCmd.Flags().Var(&getReq.ObjectType, "object-type", `The type of object permissions to check.`)
-
 }
 
 var getCmd = &cobra.Command{
@@ -79,8 +76,6 @@ func init() {
 	setCmd.Flags().Var(&setJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: access_control_list
-	setCmd.Flags().StringVar(&setReq.ObjectId, "object-id", setReq.ObjectId, `Object ID.`)
-	setCmd.Flags().Var(&setReq.ObjectType, "object-type", `The type of object permission to set.`)
 
 }
 
@@ -120,8 +115,6 @@ func init() {
 	transferOwnershipCmd.Flags().Var(&transferOwnershipJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	transferOwnershipCmd.Flags().StringVar(&transferOwnershipReq.NewOwner, "new-owner", transferOwnershipReq.NewOwner, `Email address for the new owner, who must exist in the workspace.`)
-	// TODO: complex arg: objectId
-	transferOwnershipCmd.Flags().Var(&transferOwnershipReq.ObjectType, "object-type", `The type of object on which to change ownership.`)
 
 }
 

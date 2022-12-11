@@ -26,13 +26,10 @@ func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
 
-	getCmd.Flags().StringVar(&getReq.RequestObjectId, "request-object-id", getReq.RequestObjectId, ``)
-	getCmd.Flags().StringVar(&getReq.RequestObjectType, "request-object-type", getReq.RequestObjectType, `<needs content>.`)
-
 }
 
 var getCmd = &cobra.Command{
-	Use:   "get",
+	Use:   "get REQUEST_OBJECT_TYPE REQUEST_OBJECT_ID",
 	Short: `Get object permissions.`,
 	Long: `Get object permissions.
   
@@ -40,8 +37,11 @@ var getCmd = &cobra.Command{
   parent objects or root objects.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(2),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		getReq.RequestObjectType = args[0]
+		getReq.RequestObjectId = args[1]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Permissions.Get(ctx, getReq)
@@ -60,21 +60,21 @@ func init() {
 	Cmd.AddCommand(getPermissionLevelsCmd)
 	// TODO: short flags
 
-	getPermissionLevelsCmd.Flags().StringVar(&getPermissionLevelsReq.RequestObjectId, "request-object-id", getPermissionLevelsReq.RequestObjectId, `<needs content>.`)
-	getPermissionLevelsCmd.Flags().StringVar(&getPermissionLevelsReq.RequestObjectType, "request-object-type", getPermissionLevelsReq.RequestObjectType, `<needs content>.`)
-
 }
 
 var getPermissionLevelsCmd = &cobra.Command{
-	Use:   "get-permission-levels",
+	Use:   "get-permission-levels REQUEST_OBJECT_TYPE REQUEST_OBJECT_ID",
 	Short: `Get permission levels.`,
 	Long: `Get permission levels.
   
   Gets the permission levels that a user can have on an object.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(2),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		getPermissionLevelsReq.RequestObjectType = args[0]
+		getPermissionLevelsReq.RequestObjectId = args[1]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Permissions.GetPermissionLevels(ctx, getPermissionLevelsReq)
@@ -96,8 +96,6 @@ func init() {
 	setCmd.Flags().Var(&setJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: access_control_list
-	setCmd.Flags().StringVar(&setReq.RequestObjectId, "request-object-id", setReq.RequestObjectId, ``)
-	setCmd.Flags().StringVar(&setReq.RequestObjectType, "request-object-type", setReq.RequestObjectType, `<needs content>.`)
 
 }
 
@@ -137,8 +135,6 @@ func init() {
 	updateCmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: access_control_list
-	updateCmd.Flags().StringVar(&updateReq.RequestObjectId, "request-object-id", updateReq.RequestObjectId, ``)
-	updateCmd.Flags().StringVar(&updateReq.RequestObjectType, "request-object-type", updateReq.RequestObjectType, `<needs content>.`)
 
 }
 

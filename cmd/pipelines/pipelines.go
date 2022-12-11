@@ -95,20 +95,20 @@ func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
 
-	deleteCmd.Flags().StringVar(&deleteReq.PipelineId, "pipeline-id", deleteReq.PipelineId, ``)
-
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete",
+	Use:   "delete PIPELINE_ID",
 	Short: `Delete a pipeline.`,
 	Long: `Delete a pipeline.
   
   Deletes a pipeline.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		deleteReq.PipelineId = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		err = w.Pipelines.Delete(ctx, deleteReq)
@@ -133,18 +133,18 @@ func init() {
 	getCmd.Flags().DurationVar(&getTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
 	// TODO: short flags
 
-	getCmd.Flags().StringVar(&getReq.PipelineId, "pipeline-id", getReq.PipelineId, ``)
-
 }
 
 var getCmd = &cobra.Command{
-	Use:   "get",
+	Use:   "get PIPELINE_ID",
 	Short: `Get a pipeline.`,
 	Long:  `Get a pipeline.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		getReq.PipelineId = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		if !getNoWait {
@@ -177,21 +177,21 @@ func init() {
 	Cmd.AddCommand(getUpdateCmd)
 	// TODO: short flags
 
-	getUpdateCmd.Flags().StringVar(&getUpdateReq.PipelineId, "pipeline-id", getUpdateReq.PipelineId, `The ID of the pipeline.`)
-	getUpdateCmd.Flags().StringVar(&getUpdateReq.UpdateId, "update-id", getUpdateReq.UpdateId, `The ID of the update.`)
-
 }
 
 var getUpdateCmd = &cobra.Command{
-	Use:   "get-update",
+	Use:   "get-update PIPELINE_ID UPDATE_ID",
 	Short: `Get a pipeline update.`,
 	Long: `Get a pipeline update.
   
   Gets an update from an active pipeline.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(2),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		getUpdateReq.PipelineId = args[0]
+		getUpdateReq.UpdateId = args[1]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Pipelines.GetUpdate(ctx, getUpdateReq)
@@ -253,21 +253,22 @@ func init() {
 
 	listUpdatesCmd.Flags().IntVar(&listUpdatesReq.MaxResults, "max-results", listUpdatesReq.MaxResults, `Max number of entries to return in a single page.`)
 	listUpdatesCmd.Flags().StringVar(&listUpdatesReq.PageToken, "page-token", listUpdatesReq.PageToken, `Page token returned by previous call.`)
-	listUpdatesCmd.Flags().StringVar(&listUpdatesReq.PipelineId, "pipeline-id", listUpdatesReq.PipelineId, `The pipeline to return updates for.`)
 	listUpdatesCmd.Flags().StringVar(&listUpdatesReq.UntilUpdateId, "until-update-id", listUpdatesReq.UntilUpdateId, `If present, returns updates until and including this update_id.`)
 
 }
 
 var listUpdatesCmd = &cobra.Command{
-	Use:   "list-updates",
+	Use:   "list-updates PIPELINE_ID",
 	Short: `List pipeline updates.`,
 	Long: `List pipeline updates.
   
   List updates for an active pipeline.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		listUpdatesReq.PipelineId = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Pipelines.ListUpdates(ctx, listUpdatesReq)
@@ -292,20 +293,20 @@ func init() {
 	resetCmd.Flags().DurationVar(&resetTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
 	// TODO: short flags
 
-	resetCmd.Flags().StringVar(&resetReq.PipelineId, "pipeline-id", resetReq.PipelineId, ``)
-
 }
 
 var resetCmd = &cobra.Command{
-	Use:   "reset",
+	Use:   "reset PIPELINE_ID",
 	Short: `Reset a pipeline.`,
 	Long: `Reset a pipeline.
   
   Resets a pipeline.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		resetReq.PipelineId = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		if !resetNoWait {
@@ -343,7 +344,6 @@ func init() {
 	startUpdateCmd.Flags().Var(&startUpdateReq.Cause, "cause", ``)
 	startUpdateCmd.Flags().BoolVar(&startUpdateReq.FullRefresh, "full-refresh", startUpdateReq.FullRefresh, `If true, this update will reset all tables before running.`)
 	// TODO: array: full_refresh_selection
-	startUpdateCmd.Flags().StringVar(&startUpdateReq.PipelineId, "pipeline-id", startUpdateReq.PipelineId, ``)
 	// TODO: array: refresh_selection
 
 }
@@ -386,20 +386,20 @@ func init() {
 	stopCmd.Flags().DurationVar(&stopTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach IDLE state`)
 	// TODO: short flags
 
-	stopCmd.Flags().StringVar(&stopReq.PipelineId, "pipeline-id", stopReq.PipelineId, ``)
-
 }
 
 var stopCmd = &cobra.Command{
-	Use:   "stop",
+	Use:   "stop PIPELINE_ID",
 	Short: `Stop a pipeline.`,
 	Long: `Stop a pipeline.
   
   Stops a pipeline.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		stopReq.PipelineId = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		if !stopNoWait {

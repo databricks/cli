@@ -34,7 +34,6 @@ func init() {
 	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	createCmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `User-provided free-form text description.`)
-	createCmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `Name of Catalog.`)
 	// TODO: map via StringToStringVar: properties
 	createCmd.Flags().StringVar(&createReq.ProviderName, "provider-name", createReq.ProviderName, `The name of delta sharing provider.`)
 	createCmd.Flags().StringVar(&createReq.ShareName, "share-name", createReq.ShareName, `The name of the share under the share provider.`)
@@ -74,12 +73,10 @@ func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
 
-	deleteCmd.Flags().StringVar(&deleteReq.Name, "name", deleteReq.Name, `Required.`)
-
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete",
+	Use:   "delete NAME",
 	Short: `Delete a catalog.`,
 	Long: `Delete a catalog.
   
@@ -87,8 +84,10 @@ var deleteCmd = &cobra.Command{
   Metastore admin or the owner of the catalog.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		deleteReq.Name = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		err = w.Catalogs.Delete(ctx, deleteReq)
@@ -107,12 +106,10 @@ func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
 
-	getCmd.Flags().StringVar(&getReq.Name, "name", getReq.Name, `Required.`)
-
 }
 
 var getCmd = &cobra.Command{
-	Use:   "get",
+	Use:   "get NAME",
 	Short: `Get a catalog.`,
 	Long: `Get a catalog.
   
@@ -120,8 +117,10 @@ var getCmd = &cobra.Command{
   an admin or Catalog owner, or has the USAGE privilege set for their account.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		getReq.Name = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Catalogs.Get(ctx, getReq)

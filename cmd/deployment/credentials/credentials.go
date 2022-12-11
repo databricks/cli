@@ -30,9 +30,6 @@ func init() {
 	// TODO: short flags
 	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	// TODO: complex arg: aws_credentials
-	createCmd.Flags().StringVar(&createReq.CredentialsName, "credentials-name", createReq.CredentialsName, `The human-readable name of the credential configuration object.`)
-
 }
 
 var createCmd = &cobra.Command{
@@ -80,12 +77,10 @@ func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
 
-	deleteCmd.Flags().StringVar(&deleteReq.CredentialsId, "credentials-id", deleteReq.CredentialsId, `Databricks Account API credential configuration ID.`)
-
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete",
+	Use:   "delete CREDENTIALS_ID",
 	Short: `Delete credential configuration.`,
 	Long: `Delete credential configuration.
   
@@ -94,8 +89,10 @@ var deleteCmd = &cobra.Command{
   workspace.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		deleteReq.CredentialsId = args[0]
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
 		err = a.Credentials.Delete(ctx, deleteReq)
@@ -114,12 +111,10 @@ func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
 
-	getCmd.Flags().StringVar(&getReq.CredentialsId, "credentials-id", getReq.CredentialsId, `Databricks Account API credential configuration ID.`)
-
 }
 
 var getCmd = &cobra.Command{
-	Use:   "get",
+	Use:   "get CREDENTIALS_ID",
 	Short: `Get credential configuration.`,
 	Long: `Get credential configuration.
   
@@ -127,8 +122,10 @@ var getCmd = &cobra.Command{
   specified by ID.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		getReq.CredentialsId = args[0]
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
 		response, err := a.Credentials.Get(ctx, getReq)

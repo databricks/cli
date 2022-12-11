@@ -69,12 +69,10 @@ func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
 
-	deleteCmd.Flags().StringVar(&deleteReq.DashboardId, "dashboard-id", deleteReq.DashboardId, ``)
-
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete",
+	Use:   "delete DASHBOARD_ID",
 	Short: `Remove a dashboard.`,
 	Long: `Remove a dashboard.
   
@@ -82,8 +80,10 @@ var deleteCmd = &cobra.Command{
   or searches, and cannot be shared.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		deleteReq.DashboardId = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		err = w.Dashboards.Delete(ctx, deleteReq)
@@ -102,12 +102,10 @@ func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
 
-	getCmd.Flags().StringVar(&getReq.DashboardId, "dashboard-id", getReq.DashboardId, ``)
-
 }
 
 var getCmd = &cobra.Command{
-	Use:   "get",
+	Use:   "get DASHBOARD_ID",
 	Short: `Retrieve a definition.`,
 	Long: `Retrieve a definition.
   
@@ -115,8 +113,10 @@ var getCmd = &cobra.Command{
   visualization and query objects.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		getReq.DashboardId = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Dashboards.Get(ctx, getReq)
@@ -176,20 +176,20 @@ func init() {
 	Cmd.AddCommand(restoreCmd)
 	// TODO: short flags
 
-	restoreCmd.Flags().StringVar(&restoreReq.DashboardId, "dashboard-id", restoreReq.DashboardId, ``)
-
 }
 
 var restoreCmd = &cobra.Command{
-	Use:   "restore",
+	Use:   "restore DASHBOARD_ID",
 	Short: `Restore a dashboard.`,
 	Long: `Restore a dashboard.
   
   A restored dashboard appears in list views and searches and can be shared.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		restoreReq.DashboardId = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		err = w.Dashboards.Restore(ctx, restoreReq)

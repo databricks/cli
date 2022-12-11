@@ -26,9 +26,7 @@ func init() {
 	// TODO: short flags
 	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	createCmd.Flags().Var(&createReq.AuthenticationType, "authentication-type", `The delta sharing authentication type.`)
 	createCmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `Description about the provider.`)
-	createCmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `The name of the Provider.`)
 	createCmd.Flags().StringVar(&createReq.Owner, "owner", createReq.Owner, `Username of Provider owner.`)
 	// TODO: complex arg: recipient_profile
 	createCmd.Flags().StringVar(&createReq.RecipientProfileStr, "recipient-profile-str", createReq.RecipientProfileStr, `This field is only present when the authentication type is TOKEN.`)
@@ -68,12 +66,10 @@ func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
 
-	deleteCmd.Flags().StringVar(&deleteReq.Name, "name", deleteReq.Name, `Required.`)
-
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete",
+	Use:   "delete NAME",
 	Short: `Delete a provider.`,
 	Long: `Delete a provider.
   
@@ -81,8 +77,10 @@ var deleteCmd = &cobra.Command{
   the owner of the provider.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		deleteReq.Name = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		err = w.Providers.Delete(ctx, deleteReq)
@@ -101,12 +99,10 @@ func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
 
-	getCmd.Flags().StringVar(&getReq.Name, "name", getReq.Name, `Required.`)
-
 }
 
 var getCmd = &cobra.Command{
-	Use:   "get",
+	Use:   "get NAME",
 	Short: `Get a provider.`,
 	Long: `Get a provider.
   
@@ -115,8 +111,10 @@ var getCmd = &cobra.Command{
   provider.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		getReq.Name = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Providers.Get(ctx, getReq)
@@ -149,6 +147,7 @@ var listCmd = &cobra.Command{
   caller are not included in the response.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(0),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -169,12 +168,10 @@ func init() {
 	Cmd.AddCommand(listSharesCmd)
 	// TODO: short flags
 
-	listSharesCmd.Flags().StringVar(&listSharesReq.Name, "name", listSharesReq.Name, `Required.`)
-
 }
 
 var listSharesCmd = &cobra.Command{
-	Use:   "list-shares",
+	Use:   "list-shares NAME",
 	Short: `List shares.`,
 	Long: `List shares.
   
@@ -183,8 +180,10 @@ var listSharesCmd = &cobra.Command{
   * the caller is a Metastore admin, or * the caller is the owner.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		listSharesReq.Name = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Providers.ListShares(ctx, listSharesReq)
@@ -207,7 +206,6 @@ func init() {
 
 	updateCmd.Flags().Var(&updateReq.AuthenticationType, "authentication-type", `The delta sharing authentication type.`)
 	updateCmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `Description about the provider.`)
-	updateCmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `The name of the Provider.`)
 	updateCmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of Provider owner.`)
 	// TODO: complex arg: recipient_profile
 	updateCmd.Flags().StringVar(&updateReq.RecipientProfileStr, "recipient-profile-str", updateReq.RecipientProfileStr, `This field is only present when the authentication type is TOKEN.`)

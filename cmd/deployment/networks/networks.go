@@ -30,7 +30,6 @@ func init() {
 	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: gcp_network_info
-	createCmd.Flags().StringVar(&createReq.NetworkName, "network-name", createReq.NetworkName, `The human-readable name of the network configuration.`)
 	// TODO: array: security_group_ids
 	// TODO: array: subnet_ids
 	// TODO: complex arg: vpc_endpoints
@@ -89,12 +88,10 @@ func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
 
-	deleteCmd.Flags().StringVar(&deleteReq.NetworkId, "network-id", deleteReq.NetworkId, `Databricks Account API network configuration ID.`)
-
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete",
+	Use:   "delete NETWORK_ID",
 	Short: `Delete network configuration.`,
 	Long: `Delete network configuration.
   
@@ -106,8 +103,10 @@ var deleteCmd = &cobra.Command{
   platform.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		deleteReq.NetworkId = args[0]
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
 		err = a.Networks.Delete(ctx, deleteReq)
@@ -126,12 +125,10 @@ func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
 
-	getCmd.Flags().StringVar(&getReq.NetworkId, "network-id", getReq.NetworkId, `Databricks Account API network configuration ID.`)
-
 }
 
 var getCmd = &cobra.Command{
-	Use:   "get",
+	Use:   "get NETWORK_ID",
 	Short: `Get a network configuration.`,
 	Long: `Get a network configuration.
   
@@ -145,8 +142,10 @@ var getCmd = &cobra.Command{
   [Customer-managed VPC]: http://docs.databricks.com/administration-guide/cloud-configurations/aws/customer-managed-vpc.html`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		getReq.NetworkId = args[0]
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
 		response, err := a.Networks.Get(ctx, getReq)

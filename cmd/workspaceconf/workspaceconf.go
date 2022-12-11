@@ -23,20 +23,20 @@ func init() {
 	Cmd.AddCommand(getStatusCmd)
 	// TODO: short flags
 
-	getStatusCmd.Flags().StringVar(&getStatusReq.Keys, "keys", getStatusReq.Keys, ``)
-
 }
 
 var getStatusCmd = &cobra.Command{
-	Use:   "get-status",
+	Use:   "get-status KEYS",
 	Short: `Check configuration status.`,
 	Long: `Check configuration status.
   
   Gets the configuration status for a workspace.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		getStatusReq.Keys = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.WorkspaceConf.GetStatus(ctx, getStatusReq)
@@ -66,6 +66,7 @@ var setStatusCmd = &cobra.Command{
   it.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(0),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()

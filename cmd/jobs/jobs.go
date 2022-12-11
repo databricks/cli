@@ -44,12 +44,10 @@ func init() {
 	Cmd.AddCommand(cancelAllRunsCmd)
 	// TODO: short flags
 
-	cancelAllRunsCmd.Flags().Int64Var(&cancelAllRunsReq.JobId, "job-id", cancelAllRunsReq.JobId, `The canonical identifier of the job to cancel all runs of.`)
-
 }
 
 var cancelAllRunsCmd = &cobra.Command{
-	Use:   "cancel-all-runs",
+	Use:   "cancel-all-runs JOB_ID",
 	Short: `Cancel all runs of a job.`,
 	Long: `Cancel all runs of a job.
   
@@ -57,8 +55,13 @@ var cancelAllRunsCmd = &cobra.Command{
   doesn't prevent new runs from being started.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		_, err = fmt.Sscan(args[0], &cancelAllRunsReq.JobId)
+		if err != nil {
+			return fmt.Errorf("invalid JOB_ID: %s", args[0])
+		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		err = w.Jobs.CancelAllRuns(ctx, cancelAllRunsReq)
@@ -83,12 +86,10 @@ func init() {
 	cancelRunCmd.Flags().DurationVar(&cancelRunTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach TERMINATED or SKIPPED state`)
 	// TODO: short flags
 
-	cancelRunCmd.Flags().Int64Var(&cancelRunReq.RunId, "run-id", cancelRunReq.RunId, `This field is required.`)
-
 }
 
 var cancelRunCmd = &cobra.Command{
-	Use:   "cancel-run",
+	Use:   "cancel-run RUN_ID",
 	Short: `Cancel a job run.`,
 	Long: `Cancel a job run.
   
@@ -96,8 +97,13 @@ var cancelRunCmd = &cobra.Command{
   running when this request completes.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		_, err = fmt.Sscan(args[0], &cancelRunReq.RunId)
+		if err != nil {
+			return fmt.Errorf("invalid RUN_ID: %s", args[0])
+		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		if !cancelRunNoWait {
@@ -145,7 +151,6 @@ func init() {
 	createCmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `An optional name for the job.`)
 	// TODO: complex arg: schedule
 	// TODO: map via StringToStringVar: tags
-	// TODO: array: tasks
 	createCmd.Flags().IntVar(&createReq.TimeoutSeconds, "timeout-seconds", createReq.TimeoutSeconds, `An optional timeout applied to each run of this job.`)
 	// TODO: complex arg: webhook_notifications
 
@@ -183,20 +188,23 @@ func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
 
-	deleteCmd.Flags().Int64Var(&deleteReq.JobId, "job-id", deleteReq.JobId, `The canonical identifier of the job to delete.`)
-
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete",
+	Use:   "delete JOB_ID",
 	Short: `Delete a job.`,
 	Long: `Delete a job.
   
   Deletes a job.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		_, err = fmt.Sscan(args[0], &deleteReq.JobId)
+		if err != nil {
+			return fmt.Errorf("invalid JOB_ID: %s", args[0])
+		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		err = w.Jobs.Delete(ctx, deleteReq)
@@ -215,20 +223,23 @@ func init() {
 	Cmd.AddCommand(deleteRunCmd)
 	// TODO: short flags
 
-	deleteRunCmd.Flags().Int64Var(&deleteRunReq.RunId, "run-id", deleteRunReq.RunId, `The canonical identifier of the run for which to retrieve the metadata.`)
-
 }
 
 var deleteRunCmd = &cobra.Command{
-	Use:   "delete-run",
+	Use:   "delete-run RUN_ID",
 	Short: `Delete a job run.`,
 	Long: `Delete a job run.
   
   Deletes a non-active run. Returns an error if the run is active.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		_, err = fmt.Sscan(args[0], &deleteRunReq.RunId)
+		if err != nil {
+			return fmt.Errorf("invalid RUN_ID: %s", args[0])
+		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		err = w.Jobs.DeleteRun(ctx, deleteRunReq)
@@ -249,7 +260,6 @@ func init() {
 	// TODO: short flags
 	exportRunCmd.Flags().Var(&exportRunJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	exportRunCmd.Flags().Int64Var(&exportRunReq.RunId, "run-id", exportRunReq.RunId, `The canonical identifier for the run.`)
 	exportRunCmd.Flags().Var(&exportRunReq.ViewsToExport, "views-to-export", `Which views to export (CODE, DASHBOARDS, or ALL).`)
 
 }
@@ -286,20 +296,23 @@ func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
 
-	getCmd.Flags().Int64Var(&getReq.JobId, "job-id", getReq.JobId, `The canonical identifier of the job to retrieve information about.`)
-
 }
 
 var getCmd = &cobra.Command{
-	Use:   "get",
+	Use:   "get JOB_ID",
 	Short: `Get a single job.`,
 	Long: `Get a single job.
   
   Retrieves the details for a single job.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		_, err = fmt.Sscan(args[0], &getReq.JobId)
+		if err != nil {
+			return fmt.Errorf("invalid JOB_ID: %s", args[0])
+		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Jobs.Get(ctx, getReq)
@@ -325,20 +338,24 @@ func init() {
 	// TODO: short flags
 
 	getRunCmd.Flags().BoolVar(&getRunReq.IncludeHistory, "include-history", getRunReq.IncludeHistory, `Whether to include the repair history in the response.`)
-	getRunCmd.Flags().Int64Var(&getRunReq.RunId, "run-id", getRunReq.RunId, `The canonical identifier of the run for which to retrieve the metadata.`)
 
 }
 
 var getRunCmd = &cobra.Command{
-	Use:   "get-run",
+	Use:   "get-run RUN_ID",
 	Short: `Get a single job run.`,
 	Long: `Get a single job run.
   
   Retrieve the metadata of a run.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		_, err = fmt.Sscan(args[0], &getRunReq.RunId)
+		if err != nil {
+			return fmt.Errorf("invalid RUN_ID: %s", args[0])
+		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		if !getRunNoWait {
@@ -375,12 +392,10 @@ func init() {
 	Cmd.AddCommand(getRunOutputCmd)
 	// TODO: short flags
 
-	getRunOutputCmd.Flags().Int64Var(&getRunOutputReq.RunId, "run-id", getRunOutputReq.RunId, `The canonical identifier for the run.`)
-
 }
 
 var getRunOutputCmd = &cobra.Command{
-	Use:   "get-run-output",
+	Use:   "get-run-output RUN_ID",
 	Short: `Get the output for a single run.`,
 	Long: `Get the output for a single run.
   
@@ -396,8 +411,13 @@ var getRunOutputCmd = &cobra.Command{
   60 days, you must save old run results before they expire.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		_, err = fmt.Sscan(args[0], &getRunOutputReq.RunId)
+		if err != nil {
+			return fmt.Errorf("invalid RUN_ID: %s", args[0])
+		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Jobs.GetRunOutput(ctx, getRunOutputReq)
@@ -431,6 +451,7 @@ var listCmd = &cobra.Command{
   Retrieves a list of jobs.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(0),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -513,7 +534,6 @@ func init() {
 	// TODO: array: python_params
 	repairRunCmd.Flags().BoolVar(&repairRunReq.RerunAllFailedTasks, "rerun-all-failed-tasks", repairRunReq.RerunAllFailedTasks, `If true, repair all failed tasks.`)
 	// TODO: array: rerun_tasks
-	repairRunCmd.Flags().Int64Var(&repairRunReq.RunId, "run-id", repairRunReq.RunId, `The job run ID of the run to repair.`)
 	// TODO: array: spark_submit_params
 	// TODO: map via StringToStringVar: sql_params
 
@@ -573,9 +593,6 @@ func init() {
 	// TODO: short flags
 	resetCmd.Flags().Var(&resetJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	resetCmd.Flags().Int64Var(&resetReq.JobId, "job-id", resetReq.JobId, `The canonical identifier of the job to reset.`)
-	// TODO: complex arg: new_settings
-
 }
 
 var resetCmd = &cobra.Command{
@@ -621,7 +638,6 @@ func init() {
 	// TODO: array: dbt_commands
 	runNowCmd.Flags().StringVar(&runNowReq.IdempotencyToken, "idempotency-token", runNowReq.IdempotencyToken, `An optional token to guarantee the idempotency of job run requests.`)
 	// TODO: array: jar_params
-	runNowCmd.Flags().Int64Var(&runNowReq.JobId, "job-id", runNowReq.JobId, `The ID of the job to be executed.`)
 	// TODO: map via StringToStringVar: notebook_params
 	// TODO: complex arg: pipeline_params
 	// TODO: map via StringToStringVar: python_named_params
@@ -692,7 +708,6 @@ func init() {
 	// TODO: complex arg: git_source
 	submitCmd.Flags().StringVar(&submitReq.IdempotencyToken, "idempotency-token", submitReq.IdempotencyToken, `An optional token that can be used to guarantee the idempotency of job run requests.`)
 	submitCmd.Flags().StringVar(&submitReq.RunName, "run-name", submitReq.RunName, `An optional name for the run.`)
-	// TODO: array: tasks
 	submitCmd.Flags().IntVar(&submitReq.TimeoutSeconds, "timeout-seconds", submitReq.TimeoutSeconds, `An optional timeout applied to each run of this job.`)
 	// TODO: complex arg: webhook_notifications
 
@@ -754,7 +769,6 @@ func init() {
 	updateCmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: fields_to_remove
-	updateCmd.Flags().Int64Var(&updateReq.JobId, "job-id", updateReq.JobId, `The canonical identifier of the job to update.`)
 	// TODO: complex arg: new_settings
 
 }

@@ -3,6 +3,8 @@
 package m_lflow_runs
 
 import (
+	"fmt"
+
 	"github.com/databricks/bricks/lib/jsonflag"
 	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
@@ -66,20 +68,20 @@ func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
 
-	deleteCmd.Flags().StringVar(&deleteReq.RunId, "run-id", deleteReq.RunId, `ID of the run to delete.`)
-
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete",
+	Use:   "delete RUN_ID",
 	Short: `Delete a run.`,
 	Long: `Delete a run.
   
   Marks a run for deletion.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		deleteReq.RunId = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		err = w.MLflowRuns.Delete(ctx, deleteReq)
@@ -98,13 +100,10 @@ func init() {
 	Cmd.AddCommand(deleteTagCmd)
 	// TODO: short flags
 
-	deleteTagCmd.Flags().StringVar(&deleteTagReq.Key, "key", deleteTagReq.Key, `Name of the tag.`)
-	deleteTagCmd.Flags().StringVar(&deleteTagReq.RunId, "run-id", deleteTagReq.RunId, `ID of the run that the tag was logged under.`)
-
 }
 
 var deleteTagCmd = &cobra.Command{
-	Use:   "delete-tag",
+	Use:   "delete-tag RUN_ID KEY",
 	Short: `Delete a tag.`,
 	Long: `Delete a tag.
   
@@ -112,8 +111,11 @@ var deleteTagCmd = &cobra.Command{
   and after a run completes.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(2),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		deleteTagReq.RunId = args[0]
+		deleteTagReq.Key = args[1]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		err = w.MLflowRuns.DeleteTag(ctx, deleteTagReq)
@@ -132,13 +134,12 @@ func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
 
-	getCmd.Flags().StringVar(&getReq.RunId, "run-id", getReq.RunId, `ID of the run to fetch.`)
 	getCmd.Flags().StringVar(&getReq.RunUuid, "run-uuid", getReq.RunUuid, `[Deprecated, use run_id instead] ID of the run to fetch.`)
 
 }
 
 var getCmd = &cobra.Command{
-	Use:   "get",
+	Use:   "get RUN_ID",
 	Short: `Get a run.`,
 	Long: `Get a run.
   
@@ -150,8 +151,10 @@ var getCmd = &cobra.Command{
   these values.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		getReq.RunId = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.MLflowRuns.Get(ctx, getReq)
@@ -247,17 +250,14 @@ func init() {
 	Cmd.AddCommand(logMetricCmd)
 	// TODO: short flags
 
-	logMetricCmd.Flags().StringVar(&logMetricReq.Key, "key", logMetricReq.Key, `Name of the metric.`)
 	logMetricCmd.Flags().StringVar(&logMetricReq.RunId, "run-id", logMetricReq.RunId, `ID of the run under which to log the metric.`)
 	logMetricCmd.Flags().StringVar(&logMetricReq.RunUuid, "run-uuid", logMetricReq.RunUuid, `[Deprecated, use run_id instead] ID of the run under which to log the metric.`)
 	logMetricCmd.Flags().Int64Var(&logMetricReq.Step, "step", logMetricReq.Step, `Step at which to log the metric.`)
-	logMetricCmd.Flags().Int64Var(&logMetricReq.Timestamp, "timestamp", logMetricReq.Timestamp, `Unix timestamp in milliseconds at the time metric was logged.`)
-	logMetricCmd.Flags().Float64Var(&logMetricReq.Value, "value", logMetricReq.Value, `Double value of the metric being logged.`)
 
 }
 
 var logMetricCmd = &cobra.Command{
-	Use:   "log-metric",
+	Use:   "log-metric KEY VALUE TIMESTAMP",
 	Short: `Log a metric.`,
 	Long: `Log a metric.
   
@@ -266,8 +266,18 @@ var logMetricCmd = &cobra.Command{
   represent ML model accuracy. A metric can be logged multiple times.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(3),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		logMetricReq.Key = args[0]
+		_, err = fmt.Sscan(args[1], &logMetricReq.Value)
+		if err != nil {
+			return fmt.Errorf("invalid VALUE: %s", args[1])
+		}
+		_, err = fmt.Sscan(args[2], &logMetricReq.Timestamp)
+		if err != nil {
+			return fmt.Errorf("invalid TIMESTAMP: %s", args[2])
+		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		err = w.MLflowRuns.LogMetric(ctx, logMetricReq)
@@ -300,6 +310,7 @@ var logModelCmd = &cobra.Command{
   without warning.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(0),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -320,15 +331,13 @@ func init() {
 	Cmd.AddCommand(logParameterCmd)
 	// TODO: short flags
 
-	logParameterCmd.Flags().StringVar(&logParameterReq.Key, "key", logParameterReq.Key, `Name of the param.`)
 	logParameterCmd.Flags().StringVar(&logParameterReq.RunId, "run-id", logParameterReq.RunId, `ID of the run under which to log the param.`)
 	logParameterCmd.Flags().StringVar(&logParameterReq.RunUuid, "run-uuid", logParameterReq.RunUuid, `[Deprecated, use run_id instead] ID of the run under which to log the param.`)
-	logParameterCmd.Flags().StringVar(&logParameterReq.Value, "value", logParameterReq.Value, `String value of the param being logged.`)
 
 }
 
 var logParameterCmd = &cobra.Command{
-	Use:   "log-parameter",
+	Use:   "log-parameter KEY VALUE",
 	Short: `Log a param.`,
 	Long: `Log a param.
   
@@ -338,8 +347,11 @@ var logParameterCmd = &cobra.Command{
   once for a run.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(2),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		logParameterReq.Key = args[0]
+		logParameterReq.Value = args[1]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		err = w.MLflowRuns.LogParameter(ctx, logParameterReq)
@@ -358,20 +370,20 @@ func init() {
 	Cmd.AddCommand(restoreCmd)
 	// TODO: short flags
 
-	restoreCmd.Flags().StringVar(&restoreReq.RunId, "run-id", restoreReq.RunId, `ID of the run to restore.`)
-
 }
 
 var restoreCmd = &cobra.Command{
-	Use:   "restore",
+	Use:   "restore RUN_ID",
 	Short: `Restore a run.`,
 	Long: `Restore a run.
   
   Restores a deleted run.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		restoreReq.RunId = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		err = w.MLflowRuns.Restore(ctx, restoreReq)
@@ -435,15 +447,13 @@ func init() {
 	Cmd.AddCommand(setTagCmd)
 	// TODO: short flags
 
-	setTagCmd.Flags().StringVar(&setTagReq.Key, "key", setTagReq.Key, `Name of the tag.`)
 	setTagCmd.Flags().StringVar(&setTagReq.RunId, "run-id", setTagReq.RunId, `ID of the run under which to log the tag.`)
 	setTagCmd.Flags().StringVar(&setTagReq.RunUuid, "run-uuid", setTagReq.RunUuid, `[Deprecated, use run_id instead] ID of the run under which to log the tag.`)
-	setTagCmd.Flags().StringVar(&setTagReq.Value, "value", setTagReq.Value, `String value of the tag being logged.`)
 
 }
 
 var setTagCmd = &cobra.Command{
-	Use:   "set-tag",
+	Use:   "set-tag KEY VALUE",
 	Short: `Set a tag.`,
 	Long: `Set a tag.
   
@@ -451,8 +461,11 @@ var setTagCmd = &cobra.Command{
   and after a run completes.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(2),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		setTagReq.Key = args[0]
+		setTagReq.Value = args[1]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		err = w.MLflowRuns.SetTag(ctx, setTagReq)

@@ -146,12 +146,10 @@ func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
 
-	getCmd.Flags().StringVar(&getReq.LogDeliveryConfigurationId, "log-delivery-configuration-id", getReq.LogDeliveryConfigurationId, `Databricks log delivery configuration ID.`)
-
 }
 
 var getCmd = &cobra.Command{
-	Use:   "get",
+	Use:   "get LOG_DELIVERY_CONFIGURATION_ID",
 	Short: `Get log delivery configuration.`,
 	Long: `Get log delivery configuration.
   
@@ -159,8 +157,10 @@ var getCmd = &cobra.Command{
   specified by ID.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		getReq.LogDeliveryConfigurationId = args[0]
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
 		response, err := a.LogDelivery.Get(ctx, getReq)
@@ -221,9 +221,6 @@ func init() {
 	Cmd.AddCommand(patchStatusCmd)
 	// TODO: short flags
 	patchStatusCmd.Flags().Var(&patchStatusJson, "json", `either inline JSON string or @path/to/file.json with request body`)
-
-	patchStatusCmd.Flags().StringVar(&patchStatusReq.LogDeliveryConfigurationId, "log-delivery-configuration-id", patchStatusReq.LogDeliveryConfigurationId, `Databricks log delivery configuration ID.`)
-	patchStatusCmd.Flags().Var(&patchStatusReq.Status, "status", `Status of log delivery configuration.`)
 
 }
 

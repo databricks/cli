@@ -33,7 +33,6 @@ func init() {
 	createCmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `The name or title of this query to display in list views.`)
 	// TODO: any: options
 	createCmd.Flags().StringVar(&createReq.Query, "query", createReq.Query, `The text of the query.`)
-	createCmd.Flags().StringVar(&createReq.QueryId, "query-id", createReq.QueryId, ``)
 	// TODO: complex arg: schedule
 
 }
@@ -78,12 +77,10 @@ func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
 
-	deleteCmd.Flags().StringVar(&deleteReq.QueryId, "query-id", deleteReq.QueryId, ``)
-
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete",
+	Use:   "delete QUERY_ID",
 	Short: `Delete a query.`,
 	Long: `Delete a query.
   
@@ -92,8 +89,10 @@ var deleteCmd = &cobra.Command{
   deleted after 30 days.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		deleteReq.QueryId = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		err = w.Queries.Delete(ctx, deleteReq)
@@ -112,12 +111,10 @@ func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
 
-	getCmd.Flags().StringVar(&getReq.QueryId, "query-id", getReq.QueryId, ``)
-
 }
 
 var getCmd = &cobra.Command{
-	Use:   "get",
+	Use:   "get QUERY_ID",
 	Short: `Get a query definition.`,
 	Long: `Get a query definition.
   
@@ -125,8 +122,10 @@ var getCmd = &cobra.Command{
   information about the currently authenticated user.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		getReq.QueryId = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Queries.Get(ctx, getReq)
@@ -161,6 +160,7 @@ var listCmd = &cobra.Command{
   term.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(0),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -181,12 +181,10 @@ func init() {
 	Cmd.AddCommand(restoreCmd)
 	// TODO: short flags
 
-	restoreCmd.Flags().StringVar(&restoreReq.QueryId, "query-id", restoreReq.QueryId, ``)
-
 }
 
 var restoreCmd = &cobra.Command{
-	Use:   "restore",
+	Use:   "restore QUERY_ID",
 	Short: `Restore a query.`,
 	Long: `Restore a query.
   
@@ -194,8 +192,10 @@ var restoreCmd = &cobra.Command{
   list views and searches. You can use restored queries for alerts.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		restoreReq.QueryId = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		err = w.Queries.Restore(ctx, restoreReq)
@@ -221,7 +221,6 @@ func init() {
 	updateCmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `The name or title of this query to display in list views.`)
 	// TODO: any: options
 	updateCmd.Flags().StringVar(&updateReq.Query, "query", updateReq.Query, `The text of the query.`)
-	updateCmd.Flags().StringVar(&updateReq.QueryId, "query-id", updateReq.QueryId, ``)
 	// TODO: complex arg: schedule
 
 }

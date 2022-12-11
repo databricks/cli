@@ -37,6 +37,7 @@ var listCmd = &cobra.Command{
   specified, the response contains only artifacts with the specified prefix.",`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(0),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()

@@ -26,10 +26,8 @@ func init() {
 	// TODO: short flags
 	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	createCmd.Flags().Var(&createReq.AuthenticationType, "authentication-type", `The delta sharing authentication type.`)
 	createCmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `Description about the recipient.`)
 	// TODO: complex arg: ip_access_list
-	createCmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `Name of Recipient.`)
 	createCmd.Flags().StringVar(&createReq.SharingCode, "sharing-code", createReq.SharingCode, `The one-time sharing code provided by the data recipient.`)
 
 }
@@ -68,12 +66,10 @@ func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
 
-	deleteCmd.Flags().StringVar(&deleteReq.Name, "name", deleteReq.Name, `Required.`)
-
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete",
+	Use:   "delete NAME",
 	Short: `Delete a share recipient.`,
 	Long: `Delete a share recipient.
   
@@ -81,8 +77,10 @@ var deleteCmd = &cobra.Command{
   owner of the recipient.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		deleteReq.Name = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		err = w.Recipients.Delete(ctx, deleteReq)
@@ -101,12 +99,10 @@ func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
 
-	getCmd.Flags().StringVar(&getReq.Name, "name", getReq.Name, `Required.`)
-
 }
 
 var getCmd = &cobra.Command{
-	Use:   "get",
+	Use:   "get NAME",
 	Short: `Get a share recipient.`,
 	Long: `Get a share recipient.
   
@@ -115,8 +111,10 @@ var getCmd = &cobra.Command{
   * the caller is the owner of the share recipient, or: * is a Metastore admin`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		getReq.Name = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Recipients.Get(ctx, getReq)
@@ -149,6 +147,7 @@ var listCmd = &cobra.Command{
   * the caller is a Metastore admin, or * the caller is the owner.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(0),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -170,12 +169,11 @@ func init() {
 	// TODO: short flags
 
 	rotateTokenCmd.Flags().Int64Var(&rotateTokenReq.ExistingTokenExpireInSeconds, "existing-token-expire-in-seconds", rotateTokenReq.ExistingTokenExpireInSeconds, `Required.`)
-	rotateTokenCmd.Flags().StringVar(&rotateTokenReq.Name, "name", rotateTokenReq.Name, `Required.`)
 
 }
 
 var rotateTokenCmd = &cobra.Command{
-	Use:   "rotate-token",
+	Use:   "rotate-token NAME",
 	Short: `Rotate a token.`,
 	Long: `Rotate a token.
   
@@ -183,8 +181,10 @@ var rotateTokenCmd = &cobra.Command{
   the provided token info. The caller must be the owner of the recipient.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		rotateTokenReq.Name = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Recipients.RotateToken(ctx, rotateTokenReq)
@@ -203,12 +203,10 @@ func init() {
 	Cmd.AddCommand(sharePermissionsCmd)
 	// TODO: short flags
 
-	sharePermissionsCmd.Flags().StringVar(&sharePermissionsReq.Name, "name", sharePermissionsReq.Name, `Required.`)
-
 }
 
 var sharePermissionsCmd = &cobra.Command{
-	Use:   "share-permissions",
+	Use:   "share-permissions NAME",
 	Short: `Get share permissions.`,
 	Long: `Get share permissions.
   
@@ -216,8 +214,10 @@ var sharePermissionsCmd = &cobra.Command{
   Metastore admin or the owner of the Recipient.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		sharePermissionsReq.Name = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Recipients.SharePermissions(ctx, sharePermissionsReq)

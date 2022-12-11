@@ -54,13 +54,10 @@ func init() {
 	Cmd.AddCommand(changeOwnerCmd)
 	// TODO: short flags
 
-	changeOwnerCmd.Flags().StringVar(&changeOwnerReq.ClusterId, "cluster-id", changeOwnerReq.ClusterId, `<needs content added>.`)
-	changeOwnerCmd.Flags().StringVar(&changeOwnerReq.OwnerUsername, "owner-username", changeOwnerReq.OwnerUsername, `New owner of the cluster_id after this RPC.`)
-
 }
 
 var changeOwnerCmd = &cobra.Command{
-	Use:   "change-owner",
+	Use:   "change-owner CLUSTER_ID OWNER_USERNAME",
 	Short: `Change cluster owner.`,
 	Long: `Change cluster owner.
   
@@ -68,8 +65,11 @@ var changeOwnerCmd = &cobra.Command{
   operation.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(2),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		changeOwnerReq.ClusterId = args[0]
+		changeOwnerReq.OwnerUsername = args[1]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		err = w.Clusters.ChangeOwner(ctx, changeOwnerReq)
@@ -116,7 +116,6 @@ func init() {
 	createCmd.Flags().Var(&createReq.RuntimeEngine, "runtime-engine", `Decides which runtime engine to be use, e.g.`)
 	// TODO: map via StringToStringVar: spark_conf
 	// TODO: map via StringToStringVar: spark_env_vars
-	createCmd.Flags().StringVar(&createReq.SparkVersion, "spark-version", createReq.SparkVersion, `The Spark version of the cluster, e.g.`)
 	// TODO: array: ssh_public_keys
 	// TODO: complex arg: workload_type
 
@@ -186,12 +185,10 @@ func init() {
 	deleteCmd.Flags().DurationVar(&deleteTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach TERMINATED state`)
 	// TODO: short flags
 
-	deleteCmd.Flags().StringVar(&deleteReq.ClusterId, "cluster-id", deleteReq.ClusterId, `The cluster to be terminated.`)
-
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete",
+	Use:   "delete CLUSTER_ID",
 	Short: `Terminate cluster.`,
 	Long: `Terminate cluster.
   
@@ -201,8 +198,10 @@ var deleteCmd = &cobra.Command{
   TERMINATED state, nothing will happen.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		deleteReq.ClusterId = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		if !deleteNoWait {
@@ -247,7 +246,6 @@ func init() {
 	editCmd.Flags().IntVar(&editReq.AutoterminationMinutes, "autotermination-minutes", editReq.AutoterminationMinutes, `Automatically terminates the cluster after it is inactive for this time in minutes.`)
 	// TODO: complex arg: aws_attributes
 	// TODO: complex arg: azure_attributes
-	editCmd.Flags().StringVar(&editReq.ClusterId, "cluster-id", editReq.ClusterId, `ID of the cluser.`)
 	// TODO: complex arg: cluster_log_conf
 	editCmd.Flags().StringVar(&editReq.ClusterName, "cluster-name", editReq.ClusterName, `Cluster name requested by the user.`)
 	editCmd.Flags().Var(&editReq.ClusterSource, "cluster-source", `Determines whether the cluster was created by a user through the UI, created by the Databricks Jobs Scheduler, or through an API request.`)
@@ -264,7 +262,6 @@ func init() {
 	editCmd.Flags().Var(&editReq.RuntimeEngine, "runtime-engine", `Decides which runtime engine to be use, e.g.`)
 	// TODO: map via StringToStringVar: spark_conf
 	// TODO: map via StringToStringVar: spark_env_vars
-	editCmd.Flags().StringVar(&editReq.SparkVersion, "spark-version", editReq.SparkVersion, `The Spark version of the cluster, e.g.`)
 	// TODO: array: ssh_public_keys
 	// TODO: complex arg: workload_type
 
@@ -329,7 +326,6 @@ func init() {
 	// TODO: short flags
 	eventsCmd.Flags().Var(&eventsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	eventsCmd.Flags().StringVar(&eventsReq.ClusterId, "cluster-id", eventsReq.ClusterId, `The ID of the cluster to retrieve events about.`)
 	eventsCmd.Flags().Int64Var(&eventsReq.EndTime, "end-time", eventsReq.EndTime, `The end time in epoch milliseconds.`)
 	// TODO: array: event_types
 	eventsCmd.Flags().Int64Var(&eventsReq.Limit, "limit", eventsReq.Limit, `The maximum number of events to include in a page of events.`)
@@ -379,12 +375,10 @@ func init() {
 	getCmd.Flags().DurationVar(&getTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
 	// TODO: short flags
 
-	getCmd.Flags().StringVar(&getReq.ClusterId, "cluster-id", getReq.ClusterId, `The cluster about which to retrieve information.`)
-
 }
 
 var getCmd = &cobra.Command{
-	Use:   "get",
+	Use:   "get CLUSTER_ID",
 	Short: `Get cluster info.`,
 	Long: `Get cluster info.
   
@@ -392,8 +386,10 @@ var getCmd = &cobra.Command{
   described while they are running, or up to 60 days after they are terminated.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		getReq.ClusterId = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		if !getNoWait {
@@ -446,6 +442,7 @@ var listCmd = &cobra.Command{
   terminated job clusters.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(0),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -522,12 +519,10 @@ func init() {
 	Cmd.AddCommand(permanentDeleteCmd)
 	// TODO: short flags
 
-	permanentDeleteCmd.Flags().StringVar(&permanentDeleteReq.ClusterId, "cluster-id", permanentDeleteReq.ClusterId, `The cluster to be deleted.`)
-
 }
 
 var permanentDeleteCmd = &cobra.Command{
-	Use:   "permanent-delete",
+	Use:   "permanent-delete CLUSTER_ID",
 	Short: `Permanently delete cluster.`,
 	Long: `Permanently delete cluster.
   
@@ -539,8 +534,10 @@ var permanentDeleteCmd = &cobra.Command{
   deleted clusters.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		permanentDeleteReq.ClusterId = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		err = w.Clusters.PermanentDelete(ctx, permanentDeleteReq)
@@ -559,12 +556,10 @@ func init() {
 	Cmd.AddCommand(pinCmd)
 	// TODO: short flags
 
-	pinCmd.Flags().StringVar(&pinReq.ClusterId, "cluster-id", pinReq.ClusterId, `<needs content added>.`)
-
 }
 
 var pinCmd = &cobra.Command{
-	Use:   "pin",
+	Use:   "pin CLUSTER_ID",
 	Short: `Pin cluster.`,
 	Long: `Pin cluster.
   
@@ -573,8 +568,10 @@ var pinCmd = &cobra.Command{
   effect. This API can only be called by workspace admins.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		pinReq.ClusterId = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		err = w.Clusters.Pin(ctx, pinReq)
@@ -601,7 +598,6 @@ func init() {
 	resizeCmd.Flags().Var(&resizeJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: autoscale
-	resizeCmd.Flags().StringVar(&resizeReq.ClusterId, "cluster-id", resizeReq.ClusterId, `The cluster to be resized.`)
 	resizeCmd.Flags().IntVar(&resizeReq.NumWorkers, "num-workers", resizeReq.NumWorkers, `Number of worker nodes that this cluster should have.`)
 
 }
@@ -659,13 +655,12 @@ func init() {
 	restartCmd.Flags().DurationVar(&restartTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
 	// TODO: short flags
 
-	restartCmd.Flags().StringVar(&restartReq.ClusterId, "cluster-id", restartReq.ClusterId, `The cluster to be started.`)
 	restartCmd.Flags().StringVar(&restartReq.RestartUser, "restart-user", restartReq.RestartUser, `<needs content added>.`)
 
 }
 
 var restartCmd = &cobra.Command{
-	Use:   "restart",
+	Use:   "restart CLUSTER_ID",
 	Short: `Restart cluster.`,
 	Long: `Restart cluster.
   
@@ -673,8 +668,10 @@ var restartCmd = &cobra.Command{
   in a RUNNING state, nothing will happen.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		restartReq.ClusterId = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		if !restartNoWait {
@@ -741,12 +738,10 @@ func init() {
 	startCmd.Flags().DurationVar(&startTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
 	// TODO: short flags
 
-	startCmd.Flags().StringVar(&startReq.ClusterId, "cluster-id", startReq.ClusterId, `The cluster to be started.`)
-
 }
 
 var startCmd = &cobra.Command{
-	Use:   "start",
+	Use:   "start CLUSTER_ID",
 	Short: `Start terminated cluster.`,
 	Long: `Start terminated cluster.
   
@@ -760,8 +755,10 @@ var startCmd = &cobra.Command{
   happen. * Clusters launched to run a job cannot be started.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		startReq.ClusterId = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		if !startNoWait {
@@ -794,12 +791,10 @@ func init() {
 	Cmd.AddCommand(unpinCmd)
 	// TODO: short flags
 
-	unpinCmd.Flags().StringVar(&unpinReq.ClusterId, "cluster-id", unpinReq.ClusterId, `<needs content added>.`)
-
 }
 
 var unpinCmd = &cobra.Command{
-	Use:   "unpin",
+	Use:   "unpin CLUSTER_ID",
 	Short: `Unpin cluster.`,
 	Long: `Unpin cluster.
   
@@ -808,8 +803,10 @@ var unpinCmd = &cobra.Command{
   This API can only be called by workspace admins.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		unpinReq.ClusterId = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		err = w.Clusters.Unpin(ctx, unpinReq)

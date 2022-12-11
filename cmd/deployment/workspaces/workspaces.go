@@ -3,6 +3,7 @@
 package workspaces
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/databricks/bricks/lib/jsonflag"
@@ -54,7 +55,6 @@ func init() {
 	createCmd.Flags().StringVar(&createReq.PrivateAccessSettingsId, "private-access-settings-id", createReq.PrivateAccessSettingsId, `ID of the workspace's private access settings object.`)
 	createCmd.Flags().StringVar(&createReq.StorageConfigurationId, "storage-configuration-id", createReq.StorageConfigurationId, `The ID of the workspace's storage configuration object.`)
 	createCmd.Flags().StringVar(&createReq.StorageCustomerManagedKeyId, "storage-customer-managed-key-id", createReq.StorageCustomerManagedKeyId, `The ID of the workspace's storage encryption key configuration object.`)
-	createCmd.Flags().StringVar(&createReq.WorkspaceName, "workspace-name", createReq.WorkspaceName, `The workspace's human-readable name.`)
 
 }
 
@@ -137,12 +137,10 @@ func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
 
-	deleteCmd.Flags().Int64Var(&deleteReq.WorkspaceId, "workspace-id", deleteReq.WorkspaceId, `Workspace ID.`)
-
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete",
+	Use:   "delete WORKSPACE_ID",
 	Short: `Delete workspace.`,
 	Long: `Delete workspace.
   
@@ -156,8 +154,13 @@ var deleteCmd = &cobra.Command{
   account.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		_, err = fmt.Sscan(args[0], &deleteReq.WorkspaceId)
+		if err != nil {
+			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
+		}
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
 		err = a.Workspaces.Delete(ctx, deleteReq)
@@ -176,12 +179,10 @@ func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
 
-	getCmd.Flags().Int64Var(&getReq.WorkspaceId, "workspace-id", getReq.WorkspaceId, `Workspace ID.`)
-
 }
 
 var getCmd = &cobra.Command{
-	Use:   "get",
+	Use:   "get WORKSPACE_ID",
 	Short: `Get workspace.`,
 	Long: `Get workspace.
   
@@ -201,8 +202,13 @@ var getCmd = &cobra.Command{
   [Create a new workspace using the Account API]: http://docs.databricks.com/administration-guide/account-api/new-workspace.html`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		_, err = fmt.Sscan(args[0], &getReq.WorkspaceId)
+		if err != nil {
+			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
+		}
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
 		response, err := a.Workspaces.Get(ctx, getReq)
@@ -264,12 +270,11 @@ func init() {
 	updateCmd.Flags().StringVar(&updateReq.NetworkId, "network-id", updateReq.NetworkId, `The ID of the workspace's network configuration object.`)
 	updateCmd.Flags().StringVar(&updateReq.StorageConfigurationId, "storage-configuration-id", updateReq.StorageConfigurationId, `The ID of the workspace's storage configuration object.`)
 	updateCmd.Flags().StringVar(&updateReq.StorageCustomerManagedKeyId, "storage-customer-managed-key-id", updateReq.StorageCustomerManagedKeyId, `The ID of the key configuration object for workspace storage.`)
-	updateCmd.Flags().Int64Var(&updateReq.WorkspaceId, "workspace-id", updateReq.WorkspaceId, `Workspace ID.`)
 
 }
 
 var updateCmd = &cobra.Command{
-	Use:   "update",
+	Use:   "update WORKSPACE_ID",
 	Short: `Update workspace configuration.`,
 	Long: `Update workspace configuration.
   
@@ -377,8 +382,13 @@ var updateCmd = &cobra.Command{
   [Create a new workspace using the Account API]: http://docs.databricks.com/administration-guide/account-api/new-workspace.html`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		_, err = fmt.Sscan(args[0], &updateReq.WorkspaceId)
+		if err != nil {
+			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
+		}
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
 		if !updateNoWait {

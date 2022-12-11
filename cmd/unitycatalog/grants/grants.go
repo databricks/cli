@@ -38,22 +38,23 @@ func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
 
-	getCmd.Flags().StringVar(&getReq.FullName, "full-name", getReq.FullName, `Required.`)
 	getCmd.Flags().StringVar(&getReq.Principal, "principal", getReq.Principal, `Optional.`)
-	getCmd.Flags().StringVar(&getReq.SecurableType, "securable-type", getReq.SecurableType, `Required.`)
 
 }
 
 var getCmd = &cobra.Command{
-	Use:   "get",
+	Use:   "get SECURABLE_TYPE FULL_NAME",
 	Short: `Get permissions.`,
 	Long: `Get permissions.
   
   Gets the permissions for a Securable type.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(2),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		getReq.SecurableType = args[0]
+		getReq.FullName = args[1]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Grants.Get(ctx, getReq)
@@ -75,9 +76,7 @@ func init() {
 	updateCmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: changes
-	updateCmd.Flags().StringVar(&updateReq.FullName, "full-name", updateReq.FullName, `Required.`)
 	updateCmd.Flags().StringVar(&updateReq.Principal, "principal", updateReq.Principal, `Optional.`)
-	updateCmd.Flags().StringVar(&updateReq.SecurableType, "securable-type", updateReq.SecurableType, `Required.`)
 
 }
 

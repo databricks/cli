@@ -25,12 +25,10 @@ func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
 
-	getCmd.Flags().StringVar(&getReq.Name, "name", getReq.Name, `Name of the model.`)
-
 }
 
 var getCmd = &cobra.Command{
-	Use:   "get",
+	Use:   "get NAME",
 	Short: `Get model.`,
 	Long: `Get model.
   
@@ -41,8 +39,10 @@ var getCmd = &cobra.Command{
   [MLflow endpoint]: https://www.mlflow.org/docs/latest/rest-api.html#get-registeredmodel`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		getReq.Name = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.MLflowDatabricks.Get(ctx, getReq)
@@ -63,11 +63,7 @@ func init() {
 	// TODO: short flags
 	transitionStageCmd.Flags().Var(&transitionStageJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	transitionStageCmd.Flags().BoolVar(&transitionStageReq.ArchiveExistingVersions, "archive-existing-versions", transitionStageReq.ArchiveExistingVersions, `Specifies whether to archive all current model versions in the target stage.`)
 	transitionStageCmd.Flags().StringVar(&transitionStageReq.Comment, "comment", transitionStageReq.Comment, `User-provided comment on the action.`)
-	transitionStageCmd.Flags().StringVar(&transitionStageReq.Name, "name", transitionStageReq.Name, `Name of the model.`)
-	transitionStageCmd.Flags().Var(&transitionStageReq.Stage, "stage", `Target stage of the transition.`)
-	transitionStageCmd.Flags().StringVar(&transitionStageReq.Version, "version", transitionStageReq.Version, `Version of the model.`)
 
 }
 

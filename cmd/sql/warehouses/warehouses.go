@@ -109,20 +109,20 @@ func init() {
 	deleteCmd.Flags().DurationVar(&deleteTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach DELETED state`)
 	// TODO: short flags
 
-	deleteCmd.Flags().StringVar(&deleteReq.Id, "id", deleteReq.Id, `Required.`)
-
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete",
+	Use:   "delete ID",
 	Short: `Delete a warehouse.`,
 	Long: `Delete a warehouse.
   
   Deletes a SQL warehouse.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		deleteReq.Id = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		if !deleteNoWait {
@@ -173,7 +173,6 @@ func init() {
 	editCmd.Flags().BoolVar(&editReq.EnableDatabricksCompute, "enable-databricks-compute", editReq.EnableDatabricksCompute, `Configures whether the endpoint should use Databricks Compute (aka Nephos) Deprecated: Use enable_serverless_compute TODO(SC-79930): Remove the field once clients are updated.`)
 	editCmd.Flags().BoolVar(&editReq.EnablePhoton, "enable-photon", editReq.EnablePhoton, `Configures whether the endpoint should use Photon optimized clusters.`)
 	editCmd.Flags().BoolVar(&editReq.EnableServerlessCompute, "enable-serverless-compute", editReq.EnableServerlessCompute, `Configures whether the endpoint should use Serverless Compute (aka Nephos) Defaults to value in global endpoint settings.`)
-	editCmd.Flags().StringVar(&editReq.Id, "id", editReq.Id, `Required.`)
 	editCmd.Flags().StringVar(&editReq.InstanceProfileArn, "instance-profile-arn", editReq.InstanceProfileArn, `Deprecated.`)
 	editCmd.Flags().IntVar(&editReq.MaxNumClusters, "max-num-clusters", editReq.MaxNumClusters, `Maximum number of clusters that the autoscaler will create to handle concurrent queries.`)
 	editCmd.Flags().IntVar(&editReq.MinNumClusters, "min-num-clusters", editReq.MinNumClusters, `Minimum number of available clusters that will be maintained for this SQL Endpoint.`)
@@ -240,20 +239,20 @@ func init() {
 	getCmd.Flags().DurationVar(&getTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
 	// TODO: short flags
 
-	getCmd.Flags().StringVar(&getReq.Id, "id", getReq.Id, `Required.`)
-
 }
 
 var getCmd = &cobra.Command{
-	Use:   "get",
+	Use:   "get ID",
 	Short: `Get warehouse info.`,
 	Long: `Get warehouse info.
   
   Gets the information for a single SQL warehouse.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		getReq.Id = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		if !getNoWait {
@@ -330,6 +329,7 @@ var listCmd = &cobra.Command{
   Lists all SQL warehouses that a user has manager permissions on.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(0),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -406,20 +406,20 @@ func init() {
 	startCmd.Flags().DurationVar(&startTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
 	// TODO: short flags
 
-	startCmd.Flags().StringVar(&startReq.Id, "id", startReq.Id, `Required.`)
-
 }
 
 var startCmd = &cobra.Command{
-	Use:   "start",
+	Use:   "start ID",
 	Short: `Start a warehouse.`,
 	Long: `Start a warehouse.
   
   Starts a SQL warehouse.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		startReq.Id = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		if !startNoWait {
@@ -462,20 +462,20 @@ func init() {
 	stopCmd.Flags().DurationVar(&stopTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach STOPPED state`)
 	// TODO: short flags
 
-	stopCmd.Flags().StringVar(&stopReq.Id, "id", stopReq.Id, `Required.`)
-
 }
 
 var stopCmd = &cobra.Command{
-	Use:   "stop",
+	Use:   "stop ID",
 	Short: `Stop a warehouse.`,
 	Long: `Stop a warehouse.
   
   Stops a SQL warehouse.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		stopReq.Id = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		if !stopNoWait {

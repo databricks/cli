@@ -3,6 +3,8 @@
 package dbfs
 
 import (
+	"fmt"
+
 	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
 	"github.com/databricks/databricks-sdk-go/service/dbfs"
@@ -24,13 +26,10 @@ func init() {
 	Cmd.AddCommand(addBlockCmd)
 	// TODO: short flags
 
-	addBlockCmd.Flags().StringVar(&addBlockReq.Data, "data", addBlockReq.Data, `The base64-encoded data to append to the stream.`)
-	addBlockCmd.Flags().Int64Var(&addBlockReq.Handle, "handle", addBlockReq.Handle, `The handle on an open stream.`)
-
 }
 
 var addBlockCmd = &cobra.Command{
-	Use:   "add-block",
+	Use:   "add-block HANDLE DATA",
 	Short: `Append data block.`,
 	Long: `Append data block.
   
@@ -42,8 +41,14 @@ var addBlockCmd = &cobra.Command{
   MAX_BLOCK_SIZE_EXCEEDED.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(2),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		_, err = fmt.Sscan(args[0], &addBlockReq.Handle)
+		if err != nil {
+			return fmt.Errorf("invalid HANDLE: %s", args[0])
+		}
+		addBlockReq.Data = args[1]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		err = w.Dbfs.AddBlock(ctx, addBlockReq)
@@ -62,12 +67,10 @@ func init() {
 	Cmd.AddCommand(closeCmd)
 	// TODO: short flags
 
-	closeCmd.Flags().Int64Var(&closeReq.Handle, "handle", closeReq.Handle, `The handle on an open stream.`)
-
 }
 
 var closeCmd = &cobra.Command{
-	Use:   "close",
+	Use:   "close HANDLE",
 	Short: `Close the stream.`,
 	Long: `Close the stream.
   
@@ -75,8 +78,13 @@ var closeCmd = &cobra.Command{
   this call throws an exception with RESOURCE_DOES_NOT_EXIST.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		_, err = fmt.Sscan(args[0], &closeReq.Handle)
+		if err != nil {
+			return fmt.Errorf("invalid HANDLE: %s", args[0])
+		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		err = w.Dbfs.Close(ctx, closeReq)
@@ -96,12 +104,11 @@ func init() {
 	// TODO: short flags
 
 	createCmd.Flags().BoolVar(&createReq.Overwrite, "overwrite", createReq.Overwrite, `The flag that specifies whether to overwrite existing file/files.`)
-	createCmd.Flags().StringVar(&createReq.Path, "path", createReq.Path, `The path of the new file.`)
 
 }
 
 var createCmd = &cobra.Command{
-	Use:   "create",
+	Use:   "create PATH",
 	Short: `Open a stream.`,
 	Long: `Open a stream.
   
@@ -117,8 +124,10 @@ var createCmd = &cobra.Command{
   have.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		createReq.Path = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Dbfs.Create(ctx, createReq)
@@ -137,13 +146,12 @@ func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
 
-	deleteCmd.Flags().StringVar(&deleteReq.Path, "path", deleteReq.Path, `The path of the file or directory to delete.`)
 	deleteCmd.Flags().BoolVar(&deleteReq.Recursive, "recursive", deleteReq.Recursive, `Whether or not to recursively delete the directory's contents.`)
 
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete",
+	Use:   "delete PATH",
 	Short: `Delete a file/directory.`,
 	Long: `Delete a file/directory.
   
@@ -167,8 +175,10 @@ var deleteCmd = &cobra.Command{
   jobs.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		deleteReq.Path = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		err = w.Dbfs.Delete(ctx, deleteReq)
@@ -187,12 +197,10 @@ func init() {
 	Cmd.AddCommand(getStatusCmd)
 	// TODO: short flags
 
-	getStatusCmd.Flags().StringVar(&getStatusReq.Path, "path", getStatusReq.Path, `The path of the file or directory.`)
-
 }
 
 var getStatusCmd = &cobra.Command{
-	Use:   "get-status",
+	Use:   "get-status PATH",
 	Short: `Get the information of a file or directory.`,
 	Long: `Get the information of a file or directory.
   
@@ -200,8 +208,10 @@ var getStatusCmd = &cobra.Command{
   does not exist, this call throws an exception with RESOURCE_DOES_NOT_EXIST.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		getStatusReq.Path = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Dbfs.GetStatus(ctx, getStatusReq)
@@ -220,12 +230,10 @@ func init() {
 	Cmd.AddCommand(listCmd)
 	// TODO: short flags
 
-	listCmd.Flags().StringVar(&listReq.Path, "path", listReq.Path, `The path of the file or directory.`)
-
 }
 
 var listCmd = &cobra.Command{
-	Use:   "list",
+	Use:   "list PATH",
 	Short: `List directory contents or file details.`,
 	Long: `List directory contents or file details.
   
@@ -242,8 +250,10 @@ var listCmd = &cobra.Command{
   provides the same functionality without timing out.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		listReq.Path = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Dbfs.ListAll(ctx, listReq)
@@ -262,12 +272,10 @@ func init() {
 	Cmd.AddCommand(mkdirsCmd)
 	// TODO: short flags
 
-	mkdirsCmd.Flags().StringVar(&mkdirsReq.Path, "path", mkdirsReq.Path, `The path of the new directory.`)
-
 }
 
 var mkdirsCmd = &cobra.Command{
-	Use:   "mkdirs",
+	Use:   "mkdirs PATH",
 	Short: `Create a directory.`,
 	Long: `Create a directory.
   
@@ -278,8 +286,10 @@ var mkdirsCmd = &cobra.Command{
   necessary parent directories.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		mkdirsReq.Path = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		err = w.Dbfs.Mkdirs(ctx, mkdirsReq)
@@ -298,13 +308,10 @@ func init() {
 	Cmd.AddCommand(moveCmd)
 	// TODO: short flags
 
-	moveCmd.Flags().StringVar(&moveReq.DestinationPath, "destination-path", moveReq.DestinationPath, `The destination path of the file or directory.`)
-	moveCmd.Flags().StringVar(&moveReq.SourcePath, "source-path", moveReq.SourcePath, `The source path of the file or directory.`)
-
 }
 
 var moveCmd = &cobra.Command{
-	Use:   "move",
+	Use:   "move SOURCE_PATH DESTINATION_PATH",
 	Short: `Move a file.`,
 	Long: `Move a file.
   
@@ -315,8 +322,11 @@ var moveCmd = &cobra.Command{
   source path is a directory, this call always recursively moves all files.",`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(2),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		moveReq.SourcePath = args[0]
+		moveReq.DestinationPath = args[1]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		err = w.Dbfs.Move(ctx, moveReq)
@@ -337,12 +347,11 @@ func init() {
 
 	putCmd.Flags().StringVar(&putReq.Contents, "contents", putReq.Contents, `This parameter might be absent, and instead a posted file will be used.`)
 	putCmd.Flags().BoolVar(&putReq.Overwrite, "overwrite", putReq.Overwrite, `The flag that specifies whether to overwrite existing file/files.`)
-	putCmd.Flags().StringVar(&putReq.Path, "path", putReq.Path, `The path of the new file.`)
 
 }
 
 var putCmd = &cobra.Command{
-	Use:   "put",
+	Use:   "put PATH",
 	Short: `Upload a file.`,
 	Long: `Upload a file.
   
@@ -360,8 +369,10 @@ var putCmd = &cobra.Command{
   :method:create, :method:addBlock, :method:close.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		putReq.Path = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		err = w.Dbfs.Put(ctx, putReq)
@@ -382,12 +393,11 @@ func init() {
 
 	readCmd.Flags().IntVar(&readReq.Length, "length", readReq.Length, `The number of bytes to read starting from the offset.`)
 	readCmd.Flags().IntVar(&readReq.Offset, "offset", readReq.Offset, `The offset to read from in bytes.`)
-	readCmd.Flags().StringVar(&readReq.Path, "path", readReq.Path, `The path of the file to read.`)
 
 }
 
 var readCmd = &cobra.Command{
-	Use:   "read",
+	Use:   "read PATH",
 	Short: `Get the contents of a file.`,
 	Long: `Get the contents of a file.
   
@@ -401,8 +411,10 @@ var readCmd = &cobra.Command{
   contents until the end of file.",`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		readReq.Path = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Dbfs.Read(ctx, readReq)

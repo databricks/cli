@@ -30,9 +30,7 @@ func init() {
 	// TODO: short flags
 	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	createCmd.Flags().StringVar(&createReq.CatalogName, "catalog-name", createReq.CatalogName, `Name of parent Catalog.`)
 	createCmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `User-provided free-form text description.`)
-	createCmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `Name of Schema, relative to parent Catalog.`)
 	// TODO: map via StringToStringVar: properties
 
 }
@@ -70,12 +68,10 @@ func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
 
-	deleteCmd.Flags().StringVar(&deleteReq.FullName, "full-name", deleteReq.FullName, `Required.`)
-
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete",
+	Use:   "delete FULL_NAME",
 	Short: `Delete a schema.`,
 	Long: `Delete a schema.
   
@@ -83,8 +79,10 @@ var deleteCmd = &cobra.Command{
   owner of the schema or an owner of the parent catalog.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		deleteReq.FullName = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		err = w.Schemas.Delete(ctx, deleteReq)
@@ -103,12 +101,10 @@ func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
 
-	getCmd.Flags().StringVar(&getReq.FullName, "full-name", getReq.FullName, `Required.`)
-
 }
 
 var getCmd = &cobra.Command{
-	Use:   "get",
+	Use:   "get FULL_NAME",
 	Short: `Get a schema.`,
 	Long: `Get a schema.
   
@@ -117,8 +113,10 @@ var getCmd = &cobra.Command{
   privilege on the schema.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		getReq.FullName = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Schemas.Get(ctx, getReq)
@@ -152,6 +150,7 @@ var listCmd = &cobra.Command{
   which the caller has the USAGE privilege) will be retrieved.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(0),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -176,7 +175,6 @@ func init() {
 
 	updateCmd.Flags().StringVar(&updateReq.CatalogName, "catalog-name", updateReq.CatalogName, `Name of parent Catalog.`)
 	updateCmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `User-provided free-form text description.`)
-	updateCmd.Flags().StringVar(&updateReq.FullName, "full-name", updateReq.FullName, `Required.`)
 	updateCmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `Name of Schema, relative to parent Catalog.`)
 	updateCmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of current owner of Schema.`)
 	// TODO: map via StringToStringVar: properties

@@ -25,7 +25,6 @@ func init() {
 	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	createCmd.Flags().StringVar(&createReq.ArtifactLocation, "artifact-location", createReq.ArtifactLocation, `Location where all artifacts for the experiment are stored.`)
-	createCmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `Experiment name.`)
 	// TODO: array: tags
 
 }
@@ -67,12 +66,10 @@ func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
 
-	deleteCmd.Flags().StringVar(&deleteReq.ExperimentId, "experiment-id", deleteReq.ExperimentId, `ID of the associated experiment.`)
-
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete",
+	Use:   "delete EXPERIMENT_ID",
 	Short: `Delete an experiment.`,
 	Long: `Delete an experiment.
   
@@ -81,8 +78,10 @@ var deleteCmd = &cobra.Command{
   experiment are also deleted.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		deleteReq.ExperimentId = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		err = w.Experiments.Delete(ctx, deleteReq)
@@ -101,20 +100,20 @@ func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
 
-	getCmd.Flags().StringVar(&getReq.ExperimentId, "experiment-id", getReq.ExperimentId, `ID of the associated experiment.`)
-
 }
 
 var getCmd = &cobra.Command{
-	Use:   "get",
+	Use:   "get EXPERIMENT_ID",
 	Short: `Get an experiment.`,
 	Long: `Get an experiment.
   
   Gets metadata for an experiment. This method works on deleted experiments.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		getReq.ExperimentId = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Experiments.Get(ctx, getReq)
@@ -133,12 +132,10 @@ func init() {
 	Cmd.AddCommand(getByNameCmd)
 	// TODO: short flags
 
-	getByNameCmd.Flags().StringVar(&getByNameReq.ExperimentName, "experiment-name", getByNameReq.ExperimentName, `Name of the associated experiment.`)
-
 }
 
 var getByNameCmd = &cobra.Command{
-	Use:   "get-by-name",
+	Use:   "get-by-name EXPERIMENT_NAME",
 	Short: `Get metadata.`,
 	Long: `Get metadata.
   
@@ -153,8 +150,10 @@ var getByNameCmd = &cobra.Command{
   exists.S`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		getByNameReq.ExperimentName = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Experiments.GetByName(ctx, getByNameReq)
@@ -187,6 +186,7 @@ var listCmd = &cobra.Command{
   Gets a list of all experiments.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(0),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -207,12 +207,10 @@ func init() {
 	Cmd.AddCommand(restoreCmd)
 	// TODO: short flags
 
-	restoreCmd.Flags().StringVar(&restoreReq.ExperimentId, "experiment-id", restoreReq.ExperimentId, `ID of the associated experiment.`)
-
 }
 
 var restoreCmd = &cobra.Command{
-	Use:   "restore",
+	Use:   "restore EXPERIMENT_ID",
 	Short: `Restores an experiment.`,
 	Long: `Restores an experiment.
   
@@ -223,8 +221,10 @@ var restoreCmd = &cobra.Command{
   deleted.",`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		restoreReq.ExperimentId = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		err = w.Experiments.Restore(ctx, restoreReq)
@@ -285,22 +285,22 @@ func init() {
 	Cmd.AddCommand(setExperimentTagCmd)
 	// TODO: short flags
 
-	setExperimentTagCmd.Flags().StringVar(&setExperimentTagReq.ExperimentId, "experiment-id", setExperimentTagReq.ExperimentId, `ID of the experiment under which to log the tag.`)
-	setExperimentTagCmd.Flags().StringVar(&setExperimentTagReq.Key, "key", setExperimentTagReq.Key, `Name of the tag.`)
-	setExperimentTagCmd.Flags().StringVar(&setExperimentTagReq.Value, "value", setExperimentTagReq.Value, `String value of the tag being logged.`)
-
 }
 
 var setExperimentTagCmd = &cobra.Command{
-	Use:   "set-experiment-tag",
+	Use:   "set-experiment-tag EXPERIMENT_ID KEY VALUE",
 	Short: `Set a tag.`,
 	Long: `Set a tag.
   
   Sets a tag on an experiment. Experiment tags are metadata that can be updated.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(3),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		setExperimentTagReq.ExperimentId = args[0]
+		setExperimentTagReq.Key = args[1]
+		setExperimentTagReq.Value = args[2]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		err = w.Experiments.SetExperimentTag(ctx, setExperimentTagReq)
@@ -319,21 +319,22 @@ func init() {
 	Cmd.AddCommand(updateCmd)
 	// TODO: short flags
 
-	updateCmd.Flags().StringVar(&updateReq.ExperimentId, "experiment-id", updateReq.ExperimentId, `ID of the associated experiment.`)
 	updateCmd.Flags().StringVar(&updateReq.NewName, "new-name", updateReq.NewName, `If provided, the experiment's name is changed to the new name.`)
 
 }
 
 var updateCmd = &cobra.Command{
-	Use:   "update",
+	Use:   "update EXPERIMENT_ID",
 	Short: `Update an experiment.`,
 	Long: `Update an experiment.
   
   Updates experiment metadata.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		updateReq.ExperimentId = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		err = w.Experiments.Update(ctx, updateReq)

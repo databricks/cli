@@ -25,12 +25,11 @@ func init() {
 	// TODO: short flags
 
 	createCmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `comment when creating the share.`)
-	createCmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `Name of the Share.`)
 
 }
 
 var createCmd = &cobra.Command{
-	Use:   "create",
+	Use:   "create NAME",
 	Short: `Create a share.`,
 	Long: `Create a share.
   
@@ -39,8 +38,10 @@ var createCmd = &cobra.Command{
   have the CREATE SHARE privilege on the Metastore.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		createReq.Name = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Shares.Create(ctx, createReq)
@@ -59,12 +60,10 @@ func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
 
-	deleteCmd.Flags().StringVar(&deleteReq.Name, "name", deleteReq.Name, `The name of the share.`)
-
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete",
+	Use:   "delete NAME",
 	Short: `Delete a share.`,
 	Long: `Delete a share.
   
@@ -72,8 +71,10 @@ var deleteCmd = &cobra.Command{
   the share.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		deleteReq.Name = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		err = w.Shares.Delete(ctx, deleteReq)
@@ -93,12 +94,11 @@ func init() {
 	// TODO: short flags
 
 	getCmd.Flags().BoolVar(&getReq.IncludeSharedData, "include-shared-data", getReq.IncludeSharedData, `Query for data to include in the share.`)
-	getCmd.Flags().StringVar(&getReq.Name, "name", getReq.Name, `The name of the share.`)
 
 }
 
 var getCmd = &cobra.Command{
-	Use:   "get",
+	Use:   "get NAME",
 	Short: `Get a share.`,
 	Long: `Get a share.
   
@@ -106,8 +106,10 @@ var getCmd = &cobra.Command{
   admin or the owner of the share.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		getReq.Name = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Shares.Get(ctx, getReq)
@@ -154,12 +156,10 @@ func init() {
 	Cmd.AddCommand(sharePermissionsCmd)
 	// TODO: short flags
 
-	sharePermissionsCmd.Flags().StringVar(&sharePermissionsReq.Name, "name", sharePermissionsReq.Name, `Required.`)
-
 }
 
 var sharePermissionsCmd = &cobra.Command{
-	Use:   "share-permissions",
+	Use:   "share-permissions NAME",
 	Short: `Get permissions.`,
 	Long: `Get permissions.
   
@@ -167,8 +167,10 @@ var sharePermissionsCmd = &cobra.Command{
   Metastore admin or the owner of the share.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		sharePermissionsReq.Name = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Shares.SharePermissions(ctx, sharePermissionsReq)
@@ -188,9 +190,6 @@ func init() {
 	Cmd.AddCommand(updateCmd)
 	// TODO: short flags
 	updateCmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
-
-	updateCmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `The name of the share.`)
-	// TODO: array: updates
 
 }
 
@@ -242,7 +241,6 @@ func init() {
 	updatePermissionsCmd.Flags().Var(&updatePermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: changes
-	updatePermissionsCmd.Flags().StringVar(&updatePermissionsReq.Name, "name", updatePermissionsReq.Name, `Required.`)
 
 }
 

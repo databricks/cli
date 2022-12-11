@@ -43,7 +43,6 @@ func init() {
 	// TODO: complex arg: azure_service_principal
 	createCmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `Comment associated with the credential.`)
 	// TODO: complex arg: gcp_service_account_key
-	createCmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `The credential name.`)
 	createCmd.Flags().BoolVar(&createReq.SkipValidation, "skip-validation", createReq.SkipValidation, `Optional.`)
 
 }
@@ -87,12 +86,11 @@ func init() {
 	// TODO: short flags
 
 	deleteCmd.Flags().BoolVar(&deleteReq.Force, "force", deleteReq.Force, `Force deletion even if there are dependent external locations or external tables.`)
-	deleteCmd.Flags().StringVar(&deleteReq.Name, "name", deleteReq.Name, `Required.`)
 
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete",
+	Use:   "delete NAME",
 	Short: `Delete a credential.`,
 	Long: `Delete a credential.
   
@@ -100,8 +98,10 @@ var deleteCmd = &cobra.Command{
   of the storage credential.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		deleteReq.Name = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		err = w.StorageCredentials.Delete(ctx, deleteReq)
@@ -120,12 +120,10 @@ func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
 
-	getCmd.Flags().StringVar(&getReq.Name, "name", getReq.Name, `Required.`)
-
 }
 
 var getCmd = &cobra.Command{
-	Use:   "get",
+	Use:   "get NAME",
 	Short: `Get a credential.`,
 	Long: `Get a credential.
   
@@ -134,8 +132,10 @@ var getCmd = &cobra.Command{
   the storage credential.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		getReq.Name = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.StorageCredentials.Get(ctx, getReq)

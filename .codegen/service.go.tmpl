@@ -44,32 +44,48 @@ func init() {
 	{{if not .Request.IsOnlyPrimitiveFields}}{{.CamelName}}Cmd.Flags().Var(&{{.CamelName}}Json, "json", `either inline JSON string or @path/to/file.json with request body`){{end}}
     {{$method := .}}
     {{range .Request.Fields -}}
-		{{if .Entity.IsObject }}// TODO: complex arg: {{.Name}}
-		{{else if .Entity.IsAny }}// TODO: any: {{.Name}}
-		{{else if .Entity.ArrayValue }}// TODO: array: {{.Name}}
-		{{else if .Entity.MapValue }}// TODO: map via StringToStringVar: {{.Name}}
-		{{else if .Entity.Enum }}{{$method.CamelName}}Cmd.Flags().Var(&{{$method.CamelName}}Req.{{.PascalName}}, "{{.KebabName}}", `{{.Summary | without "`"}}`)
-		{{else}}{{$method.CamelName}}Cmd.Flags().{{template "arg-type" .Entity}}(&{{$method.CamelName}}Req.{{.PascalName}}, "{{.KebabName}}", {{$method.CamelName}}Req.{{.PascalName}}, `{{.Summary | without "`"}}`)
-        {{end}}    
+		{{- if not .Required -}}
+			{{if .Entity.IsObject }}// TODO: complex arg: {{.Name}}
+			{{else if .Entity.IsAny }}// TODO: any: {{.Name}}
+			{{else if .Entity.ArrayValue }}// TODO: array: {{.Name}}
+			{{else if .Entity.MapValue }}// TODO: map via StringToStringVar: {{.Name}}
+			{{else if .Entity.Enum }}{{$method.CamelName}}Cmd.Flags().Var(&{{$method.CamelName}}Req.{{.PascalName}}, "{{.KebabName}}", `{{.Summary | without "`"}}`)
+			{{else}}{{$method.CamelName}}Cmd.Flags().{{template "arg-type" .Entity}}(&{{$method.CamelName}}Req.{{.PascalName}}, "{{.KebabName}}", {{$method.CamelName}}Req.{{.PascalName}}, `{{.Summary | without "`"}}`)
+			{{end}}
+		{{- end -}}
     {{- end}}
     {{end}}
 }
 
 var {{.CamelName}}Cmd = &cobra.Command{
-	Use: "{{.KebabName}}",
+	Use: "{{.KebabName}}{{if and .Request .Request.IsOnlyPrimitiveFields}}{{range .Request.RequiredFields}} {{.ConstantName}}{{end}}{{end}}",
 	{{if .Description -}}
     Short: `{{.Summary | without "`"}}`,
 	Long: `{{.Comment  "  " 80 | without "`"}}`,
     {{end}}
-	Annotations: map[string]string{},
+	Annotations: map[string]string{},{{if and .Request .Request.IsOnlyPrimitiveFields}}
+	Args: cobra.ExactArgs({{len .Request.RequiredFields}}),{{end}}
 	PreRunE: sdk.{{if .Service.IsAccounts}}PreAccountClient{{else}}PreWorkspaceClient{{end}},
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		{{- if .Request}}{{if not .Request.IsOnlyPrimitiveFields -}}
-		err = {{.CamelName}}Json.Unmarshall(&{{.CamelName}}Req)
-		if err != nil {
-			return err
-		}
-		{{- end}}{{end}}
+		{{- if .Request -}}
+			{{if not .Request.IsOnlyPrimitiveFields -}}
+				err = {{.CamelName}}Json.Unmarshall(&{{.CamelName}}Req)
+				if err != nil {
+					return err
+				}
+			{{- else -}}
+			{{$method := .}}
+			{{- range $arg, $field := .Request.RequiredFields}}
+				{{if not $field.Entity.IsString -}}
+					_, err = fmt.Sscan(args[{{$arg}}], &{{$method.CamelName}}Req.{{$field.PascalName}})
+					if err != nil {
+						return fmt.Errorf("invalid {{$field.ConstantName}}: %s", args[{{$arg}}])
+					}
+				{{- else -}}
+					{{$method.CamelName}}Req.{{$field.PascalName}} = args[{{$arg}}]
+				{{- end -}}{{end}}
+			{{- end -}}
+		{{end}}
 		ctx := cmd.Context()
 		{{if .Service.IsAccounts}}a := sdk.AccountClient(ctx){{else}}w := sdk.WorkspaceClient(ctx){{end}}
 		{{if .Wait -}}

@@ -39,7 +39,6 @@ func init() {
 
 	createScopeCmd.Flags().StringVar(&createScopeReq.InitialManagePrincipal, "initial-manage-principal", createScopeReq.InitialManagePrincipal, `The principal that is initially granted MANAGE permission to the created scope.`)
 	// TODO: complex arg: keyvault_metadata
-	createScopeCmd.Flags().StringVar(&createScopeReq.Scope, "scope", createScopeReq.Scope, `Scope name requested by the user.`)
 	createScopeCmd.Flags().Var(&createScopeReq.ScopeBackendType, "scope-backend-type", `The backend type the scope will be created with.`)
 
 }
@@ -78,13 +77,10 @@ func init() {
 	Cmd.AddCommand(deleteAclCmd)
 	// TODO: short flags
 
-	deleteAclCmd.Flags().StringVar(&deleteAclReq.Principal, "principal", deleteAclReq.Principal, `The principal to remove an existing ACL from.`)
-	deleteAclCmd.Flags().StringVar(&deleteAclReq.Scope, "scope", deleteAclReq.Scope, `The name of the scope to remove permissions from.`)
-
 }
 
 var deleteAclCmd = &cobra.Command{
-	Use:   "delete-acl",
+	Use:   "delete-acl SCOPE PRINCIPAL",
 	Short: `Delete an ACL.`,
 	Long: `Delete an ACL.
   
@@ -96,8 +92,11 @@ var deleteAclCmd = &cobra.Command{
   API call.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(2),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		deleteAclReq.Scope = args[0]
+		deleteAclReq.Principal = args[1]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		err = w.Secrets.DeleteAcl(ctx, deleteAclReq)
@@ -116,12 +115,10 @@ func init() {
 	Cmd.AddCommand(deleteScopeCmd)
 	// TODO: short flags
 
-	deleteScopeCmd.Flags().StringVar(&deleteScopeReq.Scope, "scope", deleteScopeReq.Scope, `Name of the scope to delete.`)
-
 }
 
 var deleteScopeCmd = &cobra.Command{
-	Use:   "delete-scope",
+	Use:   "delete-scope SCOPE",
 	Short: `Delete a secret scope.`,
 	Long: `Delete a secret scope.
   
@@ -132,8 +129,10 @@ var deleteScopeCmd = &cobra.Command{
   call.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		deleteScopeReq.Scope = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		err = w.Secrets.DeleteScope(ctx, deleteScopeReq)
@@ -152,13 +151,10 @@ func init() {
 	Cmd.AddCommand(deleteSecretCmd)
 	// TODO: short flags
 
-	deleteSecretCmd.Flags().StringVar(&deleteSecretReq.Key, "key", deleteSecretReq.Key, `Name of the secret to delete.`)
-	deleteSecretCmd.Flags().StringVar(&deleteSecretReq.Scope, "scope", deleteSecretReq.Scope, `The name of the scope that contains the secret to delete.`)
-
 }
 
 var deleteSecretCmd = &cobra.Command{
-	Use:   "delete-secret",
+	Use:   "delete-secret SCOPE KEY",
 	Short: `Delete a secret.`,
 	Long: `Delete a secret.
   
@@ -170,8 +166,11 @@ var deleteSecretCmd = &cobra.Command{
   API call.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(2),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		deleteSecretReq.Scope = args[0]
+		deleteSecretReq.Key = args[1]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		err = w.Secrets.DeleteSecret(ctx, deleteSecretReq)
@@ -190,13 +189,10 @@ func init() {
 	Cmd.AddCommand(getAclCmd)
 	// TODO: short flags
 
-	getAclCmd.Flags().StringVar(&getAclReq.Principal, "principal", getAclReq.Principal, `The principal to fetch ACL information for.`)
-	getAclCmd.Flags().StringVar(&getAclReq.Scope, "scope", getAclReq.Scope, `The name of the scope to fetch ACL information from.`)
-
 }
 
 var getAclCmd = &cobra.Command{
-	Use:   "get-acl",
+	Use:   "get-acl SCOPE PRINCIPAL",
 	Short: `Get secret ACL details.`,
 	Long: `Get secret ACL details.
   
@@ -208,8 +204,11 @@ var getAclCmd = &cobra.Command{
   call.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(2),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		getAclReq.Scope = args[0]
+		getAclReq.Principal = args[1]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Secrets.GetAcl(ctx, getAclReq)
@@ -228,12 +227,10 @@ func init() {
 	Cmd.AddCommand(listAclsCmd)
 	// TODO: short flags
 
-	listAclsCmd.Flags().StringVar(&listAclsReq.Scope, "scope", listAclsReq.Scope, `The name of the scope to fetch ACL information from.`)
-
 }
 
 var listAclsCmd = &cobra.Command{
-	Use:   "list-acls",
+	Use:   "list-acls SCOPE",
 	Short: `Lists ACLs.`,
 	Long: `Lists ACLs.
   
@@ -245,8 +242,10 @@ var listAclsCmd = &cobra.Command{
   call.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		listAclsReq.Scope = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Secrets.ListAclsAll(ctx, listAclsReq)
@@ -295,12 +294,10 @@ func init() {
 	Cmd.AddCommand(listSecretsCmd)
 	// TODO: short flags
 
-	listSecretsCmd.Flags().StringVar(&listSecretsReq.Scope, "scope", listSecretsReq.Scope, `The name of the scope to list secrets within.`)
-
 }
 
 var listSecretsCmd = &cobra.Command{
-	Use:   "list-secrets",
+	Use:   "list-secrets SCOPE",
 	Short: `List secret keys.`,
 	Long: `List secret keys.
   
@@ -314,8 +311,10 @@ var listSecretsCmd = &cobra.Command{
   call.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		listSecretsReq.Scope = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Secrets.ListSecretsAll(ctx, listSecretsReq)
@@ -335,10 +334,6 @@ func init() {
 	Cmd.AddCommand(putAclCmd)
 	// TODO: short flags
 	putAclCmd.Flags().Var(&putAclJson, "json", `either inline JSON string or @path/to/file.json with request body`)
-
-	putAclCmd.Flags().Var(&putAclReq.Permission, "permission", `The permission level applied to the principal.`)
-	putAclCmd.Flags().StringVar(&putAclReq.Principal, "principal", putAclReq.Principal, `The principal in which the permission is applied.`)
-	putAclCmd.Flags().StringVar(&putAclReq.Scope, "scope", putAclReq.Scope, `The name of the scope to apply permissions to.`)
 
 }
 
@@ -400,14 +395,12 @@ func init() {
 	// TODO: short flags
 
 	putSecretCmd.Flags().StringVar(&putSecretReq.BytesValue, "bytes-value", putSecretReq.BytesValue, `If specified, value will be stored as bytes.`)
-	putSecretCmd.Flags().StringVar(&putSecretReq.Key, "key", putSecretReq.Key, `A unique name to identify the secret.`)
-	putSecretCmd.Flags().StringVar(&putSecretReq.Scope, "scope", putSecretReq.Scope, `The name of the scope to which the secret will be associated with.`)
 	putSecretCmd.Flags().StringVar(&putSecretReq.StringValue, "string-value", putSecretReq.StringValue, `If specified, note that the value will be stored in UTF-8 (MB4) form.`)
 
 }
 
 var putSecretCmd = &cobra.Command{
-	Use:   "put-secret",
+	Use:   "put-secret SCOPE KEY",
 	Short: `Add a secret.`,
 	Long: `Add a secret.
   
@@ -432,8 +425,11 @@ var putSecretCmd = &cobra.Command{
   API call.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(2),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		putSecretReq.Scope = args[0]
+		putSecretReq.Key = args[1]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		err = w.Secrets.PutSecret(ctx, putSecretReq)

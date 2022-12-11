@@ -23,14 +23,12 @@ func init() {
 	Cmd.AddCommand(downloadCmd)
 	// TODO: short flags
 
-	downloadCmd.Flags().StringVar(&downloadReq.EndMonth, "end-month", downloadReq.EndMonth, `Format: YYYY-MM.`)
 	downloadCmd.Flags().BoolVar(&downloadReq.PersonalData, "personal-data", downloadReq.PersonalData, `Specify whether to include personally identifiable information in the billable usage logs, for example the email addresses of cluster creators.`)
-	downloadCmd.Flags().StringVar(&downloadReq.StartMonth, "start-month", downloadReq.StartMonth, `Format: YYYY-MM.`)
 
 }
 
 var downloadCmd = &cobra.Command{
-	Use:   "download",
+	Use:   "download START_MONTH END_MONTH",
 	Short: `Return billable usage logs.`,
 	Long: `Return billable usage logs.
   
@@ -41,8 +39,11 @@ var downloadCmd = &cobra.Command{
   [CSV file schema]: https://docs.databricks.com/administration-guide/account-settings/usage-analysis.html#schema`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(2),
 	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		downloadReq.StartMonth = args[0]
+		downloadReq.EndMonth = args[1]
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
 		err = a.BillableUsage.Download(ctx, downloadReq)

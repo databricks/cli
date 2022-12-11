@@ -74,20 +74,20 @@ func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
 
-	deleteCmd.Flags().StringVar(&deleteReq.Id, "id", deleteReq.Id, `Unique ID for a service principal in the Databricks Workspace.`)
-
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete",
+	Use:   "delete ID",
 	Short: `Delete a service principal.`,
 	Long: `Delete a service principal.
   
   Delete a single service principal in the Databricks Workspace.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		deleteReq.Id = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		err = w.ServicePrincipals.Delete(ctx, deleteReq)
@@ -106,12 +106,10 @@ func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
 
-	getCmd.Flags().StringVar(&getReq.Id, "id", getReq.Id, `Unique ID for a service principal in the Databricks Workspace.`)
-
 }
 
 var getCmd = &cobra.Command{
-	Use:   "get",
+	Use:   "get ID",
 	Short: `Get service principal details.`,
 	Long: `Get service principal details.
   
@@ -119,8 +117,10 @@ var getCmd = &cobra.Command{
   Workspace.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		getReq.Id = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.ServicePrincipals.Get(ctx, getReq)
@@ -185,7 +185,6 @@ func init() {
 	// TODO: short flags
 	patchCmd.Flags().Var(&patchJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	patchCmd.Flags().StringVar(&patchReq.Id, "id", patchReq.Id, `Unique ID for a group in the Databricks Account.`)
 	// TODO: array: operations
 
 }

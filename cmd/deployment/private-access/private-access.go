@@ -36,10 +36,7 @@ func init() {
 
 	// TODO: array: allowed_vpc_endpoint_ids
 	createCmd.Flags().Var(&createReq.PrivateAccessLevel, "private-access-level", `The private access level controls which VPC endpoints can connect to the UI or API of any workspace that attaches this private access settings object.`)
-	createCmd.Flags().StringVar(&createReq.PrivateAccessSettingsId, "private-access-settings-id", createReq.PrivateAccessSettingsId, `Databricks Account API private access settings ID.`)
-	createCmd.Flags().StringVar(&createReq.PrivateAccessSettingsName, "private-access-settings-name", createReq.PrivateAccessSettingsName, `The human-readable name of the private access settings object.`)
 	createCmd.Flags().BoolVar(&createReq.PublicAccessEnabled, "public-access-enabled", createReq.PublicAccessEnabled, `Determines if the workspace can be accessed over public internet.`)
-	createCmd.Flags().StringVar(&createReq.Region, "region", createReq.Region, `The AWS region for workspaces associated with this private access settings object.`)
 
 }
 
@@ -94,12 +91,10 @@ func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
 
-	deleteCmd.Flags().StringVar(&deleteReq.PrivateAccessSettingsId, "private-access-settings-id", deleteReq.PrivateAccessSettingsId, `Databricks Account API private access settings ID.`)
-
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete",
+	Use:   "delete PRIVATE_ACCESS_SETTINGS_ID",
 	Short: `Delete a private access settings object.`,
 	Long: `Delete a private access settings object.
   
@@ -118,8 +113,10 @@ var deleteCmd = &cobra.Command{
   [Databricks article about PrivateLink]: https://docs.databricks.com/administration-guide/cloud-configurations/aws/privatelink.html`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		deleteReq.PrivateAccessSettingsId = args[0]
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
 		err = a.PrivateAccess.Delete(ctx, deleteReq)
@@ -138,12 +135,10 @@ func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
 
-	getCmd.Flags().StringVar(&getReq.PrivateAccessSettingsId, "private-access-settings-id", getReq.PrivateAccessSettingsId, `Databricks Account API private access settings ID.`)
-
 }
 
 var getCmd = &cobra.Command{
-	Use:   "get",
+	Use:   "get PRIVATE_ACCESS_SETTINGS_ID",
 	Short: `Get a private access settings object.`,
 	Long: `Get a private access settings object.
   
@@ -162,8 +157,10 @@ var getCmd = &cobra.Command{
   [Databricks article about PrivateLink]: https://docs.databricks.com/administration-guide/cloud-configurations/aws/privatelink.html`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		getReq.PrivateAccessSettingsId = args[0]
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
 		response, err := a.PrivateAccess.Get(ctx, getReq)
@@ -219,10 +216,7 @@ func init() {
 
 	// TODO: array: allowed_vpc_endpoint_ids
 	replaceCmd.Flags().Var(&replaceReq.PrivateAccessLevel, "private-access-level", `The private access level controls which VPC endpoints can connect to the UI or API of any workspace that attaches this private access settings object.`)
-	replaceCmd.Flags().StringVar(&replaceReq.PrivateAccessSettingsId, "private-access-settings-id", replaceReq.PrivateAccessSettingsId, `Databricks Account API private access settings ID.`)
-	replaceCmd.Flags().StringVar(&replaceReq.PrivateAccessSettingsName, "private-access-settings-name", replaceReq.PrivateAccessSettingsName, `The human-readable name of the private access settings object.`)
 	replaceCmd.Flags().BoolVar(&replaceReq.PublicAccessEnabled, "public-access-enabled", replaceReq.PublicAccessEnabled, `Determines if the workspace can be accessed over public internet.`)
-	replaceCmd.Flags().StringVar(&replaceReq.Region, "region", replaceReq.Region, `The AWS region for workspaces associated with this private access settings object.`)
 
 }
 

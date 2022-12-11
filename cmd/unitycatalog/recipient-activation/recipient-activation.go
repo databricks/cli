@@ -23,20 +23,20 @@ func init() {
 	Cmd.AddCommand(getActivationUrlInfoCmd)
 	// TODO: short flags
 
-	getActivationUrlInfoCmd.Flags().StringVar(&getActivationUrlInfoReq.ActivationUrl, "activation-url", getActivationUrlInfoReq.ActivationUrl, `Required.`)
-
 }
 
 var getActivationUrlInfoCmd = &cobra.Command{
-	Use:   "get-activation-url-info",
+	Use:   "get-activation-url-info ACTIVATION_URL",
 	Short: `Get a share activation URL.`,
 	Long: `Get a share activation URL.
   
   Gets information about an Activation URL.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		getActivationUrlInfoReq.ActivationUrl = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		err = w.RecipientActivation.GetActivationUrlInfo(ctx, getActivationUrlInfoReq)
@@ -55,12 +55,10 @@ func init() {
 	Cmd.AddCommand(retrieveTokenCmd)
 	// TODO: short flags
 
-	retrieveTokenCmd.Flags().StringVar(&retrieveTokenReq.ActivationUrl, "activation-url", retrieveTokenReq.ActivationUrl, `Required.`)
-
 }
 
 var retrieveTokenCmd = &cobra.Command{
-	Use:   "retrieve-token",
+	Use:   "retrieve-token ACTIVATION_URL",
 	Short: `Get an access token.`,
 	Long: `Get an access token.
   
@@ -68,8 +66,10 @@ var retrieveTokenCmd = &cobra.Command{
   without any authentication.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		retrieveTokenReq.ActivationUrl = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.RecipientActivation.RetrieveToken(ctx, retrieveTokenReq)

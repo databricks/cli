@@ -82,12 +82,10 @@ func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
 
-	deleteCmd.Flags().StringVar(&deleteReq.Id, "id", deleteReq.Id, `Unique ID for a user in the Databricks Workspace.`)
-
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete",
+	Use:   "delete ID",
 	Short: `Delete a user.`,
 	Long: `Delete a user.
   
@@ -95,8 +93,10 @@ var deleteCmd = &cobra.Command{
   objects associated with the user.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		deleteReq.Id = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		err = w.Users.Delete(ctx, deleteReq)
@@ -115,20 +115,20 @@ func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
 
-	getCmd.Flags().StringVar(&getReq.Id, "id", getReq.Id, `Unique ID for a user in the Databricks Workspace.`)
-
 }
 
 var getCmd = &cobra.Command{
-	Use:   "get",
+	Use:   "get ID",
 	Short: `Get user details.`,
 	Long: `Get user details.
   
   Gets information for a specific user in Databricks Workspace.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		getReq.Id = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Users.Get(ctx, getReq)
@@ -193,7 +193,6 @@ func init() {
 	// TODO: short flags
 	patchCmd.Flags().Var(&patchJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	patchCmd.Flags().StringVar(&patchReq.Id, "id", patchReq.Id, `Unique ID for a group in the Databricks Account.`)
 	// TODO: array: operations
 
 }

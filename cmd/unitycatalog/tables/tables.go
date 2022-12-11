@@ -30,12 +30,10 @@ func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
 
-	deleteCmd.Flags().StringVar(&deleteReq.FullName, "full-name", deleteReq.FullName, `Required.`)
-
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete",
+	Use:   "delete FULL_NAME",
 	Short: `Delete a table.`,
 	Long: `Delete a table.
   
@@ -45,8 +43,10 @@ var deleteCmd = &cobra.Command{
   and have the USAGE privilege on both the parent catalog and schema.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		deleteReq.FullName = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		err = w.Tables.Delete(ctx, deleteReq)
@@ -65,12 +65,10 @@ func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
 
-	getCmd.Flags().StringVar(&getReq.FullName, "full-name", getReq.FullName, `Required.`)
-
 }
 
 var getCmd = &cobra.Command{
-	Use:   "get",
+	Use:   "get FULL_NAME",
 	Short: `Get a table.`,
 	Long: `Get a table.
   
@@ -80,8 +78,10 @@ var getCmd = &cobra.Command{
   and have the SELECT privilege on it as well.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		getReq.FullName = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Tables.Get(ctx, getReq)
@@ -116,6 +116,7 @@ var listCmd = &cobra.Command{
   the owner or have the USAGE privilege on the parent catalog and schema.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(0),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -160,6 +161,7 @@ var tableSummariesCmd = &cobra.Command{
   the USAGE privilege on the parent Catalog`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(0),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()

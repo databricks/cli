@@ -36,14 +36,11 @@ func init() {
 	// TODO: short flags
 
 	createCmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `User-provided free-form text description.`)
-	createCmd.Flags().StringVar(&createReq.CredentialName, "credential-name", createReq.CredentialName, `Current name of the Storage Credential this location uses.`)
-	createCmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `Name of the External Location.`)
-	createCmd.Flags().StringVar(&createReq.Url, "url", createReq.Url, `Path URL of the External Location.`)
 
 }
 
 var createCmd = &cobra.Command{
-	Use:   "create",
+	Use:   "create NAME URL CREDENTIAL_NAME",
 	Short: `Create an external location.`,
 	Long: `Create an external location.
   
@@ -52,8 +49,12 @@ var createCmd = &cobra.Command{
   Metastore.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(3),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		createReq.Name = args[0]
+		createReq.Url = args[1]
+		createReq.CredentialName = args[2]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.ExternalLocations.Create(ctx, createReq)
@@ -73,12 +74,11 @@ func init() {
 	// TODO: short flags
 
 	deleteCmd.Flags().BoolVar(&deleteReq.Force, "force", deleteReq.Force, `Force deletion even if there are dependent external tables or mounts.`)
-	deleteCmd.Flags().StringVar(&deleteReq.Name, "name", deleteReq.Name, `Required.`)
 
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete",
+	Use:   "delete NAME",
 	Short: `Delete an external location.`,
 	Long: `Delete an external location.
   
@@ -86,8 +86,10 @@ var deleteCmd = &cobra.Command{
   the owner of the external location.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		deleteReq.Name = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		err = w.ExternalLocations.Delete(ctx, deleteReq)
@@ -106,12 +108,10 @@ func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
 
-	getCmd.Flags().StringVar(&getReq.Name, "name", getReq.Name, `Required.`)
-
 }
 
 var getCmd = &cobra.Command{
-	Use:   "get",
+	Use:   "get NAME",
 	Short: `Get an external location.`,
 	Long: `Get an external location.
   
@@ -120,8 +120,10 @@ var getCmd = &cobra.Command{
   privilege level on the Metastore.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		getReq.Name = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.ExternalLocations.Get(ctx, getReq)
@@ -179,7 +181,7 @@ func init() {
 }
 
 var updateCmd = &cobra.Command{
-	Use:   "update",
+	Use:   "update NAME",
 	Short: `Update an external location.`,
 	Long: `Update an external location.
   
@@ -188,8 +190,10 @@ var updateCmd = &cobra.Command{
   can only update the name of the external location.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		updateReq.Name = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		err = w.ExternalLocations.Update(ctx, updateReq)

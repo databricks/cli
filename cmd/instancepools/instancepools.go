@@ -50,10 +50,8 @@ func init() {
 	createCmd.Flags().BoolVar(&createReq.EnableElasticDisk, "enable-elastic-disk", createReq.EnableElasticDisk, `Autoscaling Local Storage: when enabled, this instances in this pool will dynamically acquire additional disk space when its Spark workers are running low on disk space.`)
 	createCmd.Flags().IntVar(&createReq.IdleInstanceAutoterminationMinutes, "idle-instance-autotermination-minutes", createReq.IdleInstanceAutoterminationMinutes, `Automatically terminates the extra instances in the pool cache after they are inactive for this time in minutes if min_idle_instances requirement is already met.`)
 	// TODO: complex arg: instance_pool_fleet_attributes
-	createCmd.Flags().StringVar(&createReq.InstancePoolName, "instance-pool-name", createReq.InstancePoolName, `Pool name requested by the user.`)
 	createCmd.Flags().IntVar(&createReq.MaxCapacity, "max-capacity", createReq.MaxCapacity, `Maximum number of outstanding instances to keep in the pool, including both instances used by clusters and idle instances.`)
 	createCmd.Flags().IntVar(&createReq.MinIdleInstances, "min-idle-instances", createReq.MinIdleInstances, `Minimum number of idle instances to keep in the instance pool.`)
-	createCmd.Flags().StringVar(&createReq.NodeTypeId, "node-type-id", createReq.NodeTypeId, `This field encodes, through a single value, the resources available to each of the Spark nodes in this cluster.`)
 	// TODO: array: preloaded_docker_images
 	// TODO: array: preloaded_spark_versions
 
@@ -91,12 +89,10 @@ func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
 
-	deleteCmd.Flags().StringVar(&deleteReq.InstancePoolId, "instance-pool-id", deleteReq.InstancePoolId, `The instance pool to be terminated.`)
-
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete",
+	Use:   "delete INSTANCE_POOL_ID",
 	Short: `Delete an instance pool.`,
 	Long: `Delete an instance pool.
   
@@ -104,8 +100,10 @@ var deleteCmd = &cobra.Command{
   terminated asynchronously.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		deleteReq.InstancePoolId = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		err = w.InstancePools.Delete(ctx, deleteReq)
@@ -133,11 +131,8 @@ func init() {
 	editCmd.Flags().BoolVar(&editReq.EnableElasticDisk, "enable-elastic-disk", editReq.EnableElasticDisk, `Autoscaling Local Storage: when enabled, this instances in this pool will dynamically acquire additional disk space when its Spark workers are running low on disk space.`)
 	editCmd.Flags().IntVar(&editReq.IdleInstanceAutoterminationMinutes, "idle-instance-autotermination-minutes", editReq.IdleInstanceAutoterminationMinutes, `Automatically terminates the extra instances in the pool cache after they are inactive for this time in minutes if min_idle_instances requirement is already met.`)
 	// TODO: complex arg: instance_pool_fleet_attributes
-	editCmd.Flags().StringVar(&editReq.InstancePoolId, "instance-pool-id", editReq.InstancePoolId, `Instance pool ID.`)
-	editCmd.Flags().StringVar(&editReq.InstancePoolName, "instance-pool-name", editReq.InstancePoolName, `Pool name requested by the user.`)
 	editCmd.Flags().IntVar(&editReq.MaxCapacity, "max-capacity", editReq.MaxCapacity, `Maximum number of outstanding instances to keep in the pool, including both instances used by clusters and idle instances.`)
 	editCmd.Flags().IntVar(&editReq.MinIdleInstances, "min-idle-instances", editReq.MinIdleInstances, `Minimum number of idle instances to keep in the instance pool.`)
-	editCmd.Flags().StringVar(&editReq.NodeTypeId, "node-type-id", editReq.NodeTypeId, `This field encodes, through a single value, the resources available to each of the Spark nodes in this cluster.`)
 	// TODO: array: preloaded_docker_images
 	// TODO: array: preloaded_spark_versions
 
@@ -175,20 +170,20 @@ func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
 
-	getCmd.Flags().StringVar(&getReq.InstancePoolId, "instance-pool-id", getReq.InstancePoolId, `The canonical unique identifier for the instance pool.`)
-
 }
 
 var getCmd = &cobra.Command{
-	Use:   "get",
+	Use:   "get INSTANCE_POOL_ID",
 	Short: `Get instance pool information.`,
 	Long: `Get instance pool information.
   
   Retrieve the information for an instance pool based on its identifier.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		getReq.InstancePoolId = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.InstancePools.Get(ctx, getReq)

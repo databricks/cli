@@ -46,21 +46,21 @@ func init() {
 	Cmd.AddCommand(createCmd)
 	// TODO: short flags
 
-	createCmd.Flags().StringVar(&createReq.Definition, "definition", createReq.Definition, `Policy definition document expressed in Databricks Cluster Policy Definition Language.`)
-	createCmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `Cluster Policy name requested by the user.`)
-
 }
 
 var createCmd = &cobra.Command{
-	Use:   "create",
+	Use:   "create NAME DEFINITION",
 	Short: `Create a new policy.`,
 	Long: `Create a new policy.
   
   Creates a new policy with prescribed settings.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(2),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		createReq.Name = args[0]
+		createReq.Definition = args[1]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.ClusterPolicies.Create(ctx, createReq)
@@ -79,12 +79,10 @@ func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
 
-	deleteCmd.Flags().StringVar(&deleteReq.PolicyId, "policy-id", deleteReq.PolicyId, `The ID of the policy to delete.`)
-
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete",
+	Use:   "delete POLICY_ID",
 	Short: `Delete a cluster policy.`,
 	Long: `Delete a cluster policy.
   
@@ -92,8 +90,10 @@ var deleteCmd = &cobra.Command{
   but cannot be edited.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		deleteReq.PolicyId = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		err = w.ClusterPolicies.Delete(ctx, deleteReq)
@@ -112,14 +112,10 @@ func init() {
 	Cmd.AddCommand(editCmd)
 	// TODO: short flags
 
-	editCmd.Flags().StringVar(&editReq.Definition, "definition", editReq.Definition, `Policy definition document expressed in Databricks Cluster Policy Definition Language.`)
-	editCmd.Flags().StringVar(&editReq.Name, "name", editReq.Name, `Cluster Policy name requested by the user.`)
-	editCmd.Flags().StringVar(&editReq.PolicyId, "policy-id", editReq.PolicyId, `The ID of the policy to update.`)
-
 }
 
 var editCmd = &cobra.Command{
-	Use:   "edit",
+	Use:   "edit POLICY_ID NAME DEFINITION",
 	Short: `Update a cluster policy.`,
 	Long: `Update a cluster policy.
   
@@ -127,8 +123,12 @@ var editCmd = &cobra.Command{
   governed by the previous policy invalid.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(3),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		editReq.PolicyId = args[0]
+		editReq.Name = args[1]
+		editReq.Definition = args[2]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		err = w.ClusterPolicies.Edit(ctx, editReq)
@@ -147,20 +147,20 @@ func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
 
-	getCmd.Flags().StringVar(&getReq.PolicyId, "policy-id", getReq.PolicyId, `Canonical unique identifier for the cluster policy.`)
-
 }
 
 var getCmd = &cobra.Command{
-	Use:   "get",
+	Use:   "get POLICY_ID",
 	Short: `Get entity.`,
 	Long: `Get entity.
   
   Get a cluster policy entity. Creation and editing is available to admins only.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		getReq.PolicyId = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.ClusterPolicies.Get(ctx, getReq)

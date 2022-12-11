@@ -40,6 +40,7 @@ var createCmd = &cobra.Command{
   an error **QUOTA_EXCEEDED**.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(0),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -60,12 +61,10 @@ func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
 
-	deleteCmd.Flags().StringVar(&deleteReq.TokenId, "token-id", deleteReq.TokenId, `The ID of the token to be revoked.`)
-
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete",
+	Use:   "delete TOKEN_ID",
 	Short: `Revoke token.`,
 	Long: `Revoke token.
   
@@ -75,8 +74,10 @@ var deleteCmd = &cobra.Command{
   **RESOURCE_DOES_NOT_EXIST**.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		deleteReq.TokenId = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		err = w.Tokens.Delete(ctx, deleteReq)

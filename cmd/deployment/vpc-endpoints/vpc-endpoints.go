@@ -32,14 +32,10 @@ func init() {
 	Cmd.AddCommand(createCmd)
 	// TODO: short flags
 
-	createCmd.Flags().StringVar(&createReq.AwsVpcEndpointId, "aws-vpc-endpoint-id", createReq.AwsVpcEndpointId, `The ID of the VPC endpoint object in AWS.`)
-	createCmd.Flags().StringVar(&createReq.Region, "region", createReq.Region, `The AWS region in which this VPC endpoint object exists.`)
-	createCmd.Flags().StringVar(&createReq.VpcEndpointName, "vpc-endpoint-name", createReq.VpcEndpointName, `The human-readable name of the storage configuration.`)
-
 }
 
 var createCmd = &cobra.Command{
-	Use:   "create",
+	Use:   "create VPC_ENDPOINT_NAME AWS_VPC_ENDPOINT_ID REGION",
 	Short: `Create VPC endpoint configuration.`,
 	Long: `Create VPC endpoint configuration.
   
@@ -74,8 +70,12 @@ var createCmd = &cobra.Command{
   [endpoint service]: https://docs.aws.amazon.com/vpc/latest/privatelink/privatelink-share-your-services.html`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(3),
 	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		createReq.VpcEndpointName = args[0]
+		createReq.AwsVpcEndpointId = args[1]
+		createReq.Region = args[2]
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
 		response, err := a.VpcEndpoints.Create(ctx, createReq)
@@ -94,12 +94,10 @@ func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
 
-	deleteCmd.Flags().StringVar(&deleteReq.VpcEndpointId, "vpc-endpoint-id", deleteReq.VpcEndpointId, `Databricks VPC endpoint ID.`)
-
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete",
+	Use:   "delete VPC_ENDPOINT_ID",
 	Short: `Delete VPC endpoint configuration.`,
 	Long: `Delete VPC endpoint configuration.
   
@@ -123,8 +121,10 @@ var deleteCmd = &cobra.Command{
   [Databricks article about PrivateLink]: https://docs.databricks.com/administration-guide/cloud-configurations/aws/privatelink.html`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		deleteReq.VpcEndpointId = args[0]
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
 		err = a.VpcEndpoints.Delete(ctx, deleteReq)
@@ -143,12 +143,10 @@ func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
 
-	getCmd.Flags().StringVar(&getReq.VpcEndpointId, "vpc-endpoint-id", getReq.VpcEndpointId, `Databricks VPC endpoint ID.`)
-
 }
 
 var getCmd = &cobra.Command{
-	Use:   "get",
+	Use:   "get VPC_ENDPOINT_ID",
 	Short: `Get a VPC endpoint configuration.`,
 	Long: `Get a VPC endpoint configuration.
   
@@ -164,8 +162,10 @@ var getCmd = &cobra.Command{
   [VPC endpoint]: https://docs.aws.amazon.com/vpc/latest/privatelink/concepts.html`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		getReq.VpcEndpointId = args[0]
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
 		response, err := a.VpcEndpoints.Get(ctx, getReq)

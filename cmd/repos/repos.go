@@ -3,6 +3,8 @@
 package repos
 
 import (
+	"fmt"
+
 	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
 	"github.com/databricks/databricks-sdk-go/service/repos"
@@ -33,13 +35,11 @@ func init() {
 	// TODO: short flags
 
 	createCmd.Flags().StringVar(&createReq.Path, "path", createReq.Path, `Desired path for the repo in the workspace.`)
-	createCmd.Flags().StringVar(&createReq.Provider, "provider", createReq.Provider, `Git provider.`)
-	createCmd.Flags().StringVar(&createReq.Url, "url", createReq.Url, `URL of the Git repository to be linked.`)
 
 }
 
 var createCmd = &cobra.Command{
-	Use:   "create",
+	Use:   "create URL PROVIDER",
 	Short: `Create a repo.`,
 	Long: `Create a repo.
   
@@ -48,8 +48,11 @@ var createCmd = &cobra.Command{
   unlike repos created in the browser.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(2),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		createReq.Url = args[0]
+		createReq.Provider = args[1]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Repos.Create(ctx, createReq)
@@ -68,20 +71,23 @@ func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
 
-	deleteCmd.Flags().Int64Var(&deleteReq.RepoId, "repo-id", deleteReq.RepoId, `The ID for the corresponding repo to access.`)
-
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete",
+	Use:   "delete REPO_ID",
 	Short: `Delete a repo.`,
 	Long: `Delete a repo.
   
   Deletes the specified repo.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		_, err = fmt.Sscan(args[0], &deleteReq.RepoId)
+		if err != nil {
+			return fmt.Errorf("invalid REPO_ID: %s", args[0])
+		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		err = w.Repos.Delete(ctx, deleteReq)
@@ -100,20 +106,23 @@ func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
 
-	getCmd.Flags().Int64Var(&getReq.RepoId, "repo-id", getReq.RepoId, `The ID for the corresponding repo to access.`)
-
 }
 
 var getCmd = &cobra.Command{
-	Use:   "get",
+	Use:   "get REPO_ID",
 	Short: `Get a repo.`,
 	Long: `Get a repo.
   
   Returns the repo with the given repo ID.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		_, err = fmt.Sscan(args[0], &getReq.RepoId)
+		if err != nil {
+			return fmt.Errorf("invalid REPO_ID: %s", args[0])
+		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Repos.Get(ctx, getReq)
@@ -146,6 +155,7 @@ var listCmd = &cobra.Command{
   paginated with each page containing twenty repos.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(0),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -167,13 +177,12 @@ func init() {
 	// TODO: short flags
 
 	updateCmd.Flags().StringVar(&updateReq.Branch, "branch", updateReq.Branch, `Branch that the local version of the repo is checked out to.`)
-	updateCmd.Flags().Int64Var(&updateReq.RepoId, "repo-id", updateReq.RepoId, `The ID for the corresponding repo to access.`)
 	updateCmd.Flags().StringVar(&updateReq.Tag, "tag", updateReq.Tag, `Tag that the local version of the repo is checked out to.`)
 
 }
 
 var updateCmd = &cobra.Command{
-	Use:   "update",
+	Use:   "update REPO_ID",
 	Short: `Update a repo.`,
 	Long: `Update a repo.
   
@@ -181,8 +190,13 @@ var updateCmd = &cobra.Command{
   latest commit on the same branch.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		_, err = fmt.Sscan(args[0], &updateReq.RepoId)
+		if err != nil {
+			return fmt.Errorf("invalid REPO_ID: %s", args[0])
+		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		err = w.Repos.Update(ctx, updateReq)

@@ -3,6 +3,8 @@
 package tokenmanagement
 
 import (
+	"fmt"
+
 	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
 	"github.com/databricks/databricks-sdk-go/service/tokenmanagement"
@@ -25,22 +27,26 @@ func init() {
 	Cmd.AddCommand(createOboTokenCmd)
 	// TODO: short flags
 
-	createOboTokenCmd.Flags().StringVar(&createOboTokenReq.ApplicationId, "application-id", createOboTokenReq.ApplicationId, `Application ID of the service principal.`)
 	createOboTokenCmd.Flags().StringVar(&createOboTokenReq.Comment, "comment", createOboTokenReq.Comment, `Comment that describes the purpose of the token.`)
-	createOboTokenCmd.Flags().Int64Var(&createOboTokenReq.LifetimeSeconds, "lifetime-seconds", createOboTokenReq.LifetimeSeconds, `The number of seconds before the token expires.`)
 
 }
 
 var createOboTokenCmd = &cobra.Command{
-	Use:   "create-obo-token",
+	Use:   "create-obo-token APPLICATION_ID LIFETIME_SECONDS",
 	Short: `Create on-behalf token.`,
 	Long: `Create on-behalf token.
   
   Creates a token on behalf of a service principal.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(2),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		createOboTokenReq.ApplicationId = args[0]
+		_, err = fmt.Sscan(args[1], &createOboTokenReq.LifetimeSeconds)
+		if err != nil {
+			return fmt.Errorf("invalid LIFETIME_SECONDS: %s", args[1])
+		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.TokenManagement.CreateOboToken(ctx, createOboTokenReq)
@@ -59,20 +65,20 @@ func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
 
-	deleteCmd.Flags().StringVar(&deleteReq.TokenId, "token-id", deleteReq.TokenId, `The ID of the token to get.`)
-
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete",
+	Use:   "delete TOKEN_ID",
 	Short: `Delete a token.`,
 	Long: `Delete a token.
   
   Deletes a token, specified by its ID.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		deleteReq.TokenId = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		err = w.TokenManagement.Delete(ctx, deleteReq)
@@ -91,20 +97,20 @@ func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
 
-	getCmd.Flags().StringVar(&getReq.TokenId, "token-id", getReq.TokenId, `The ID of the token to get.`)
-
 }
 
 var getCmd = &cobra.Command{
-	Use:   "get",
+	Use:   "get TOKEN_ID",
 	Short: `Get token info.`,
 	Long: `Get token info.
   
   Gets information about a token, specified by its ID.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		getReq.TokenId = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.TokenManagement.Get(ctx, getReq)
@@ -136,6 +142,7 @@ var listCmd = &cobra.Command{
   Lists all tokens associated with the specified workspace or user.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(0),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()

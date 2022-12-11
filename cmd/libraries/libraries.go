@@ -72,12 +72,10 @@ func init() {
 	Cmd.AddCommand(clusterStatusCmd)
 	// TODO: short flags
 
-	clusterStatusCmd.Flags().StringVar(&clusterStatusReq.ClusterId, "cluster-id", clusterStatusReq.ClusterId, `Unique identifier of the cluster whose status should be retrieved.`)
-
 }
 
 var clusterStatusCmd = &cobra.Command{
-	Use:   "cluster-status",
+	Use:   "cluster-status CLUSTER_ID",
 	Short: `Get status.`,
 	Long: `Get status.
   
@@ -98,8 +96,10 @@ var clusterStatusCmd = &cobra.Command{
   guarantee.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		clusterStatusReq.ClusterId = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Libraries.ClusterStatus(ctx, clusterStatusReq)
@@ -119,9 +119,6 @@ func init() {
 	Cmd.AddCommand(installCmd)
 	// TODO: short flags
 	installCmd.Flags().Var(&installJson, "json", `either inline JSON string or @path/to/file.json with request body`)
-
-	installCmd.Flags().StringVar(&installReq.ClusterId, "cluster-id", installReq.ClusterId, `Unique identifier for the cluster on which to install these libraries.`)
-	// TODO: array: libraries
 
 }
 
@@ -163,9 +160,6 @@ func init() {
 	Cmd.AddCommand(uninstallCmd)
 	// TODO: short flags
 	uninstallCmd.Flags().Var(&uninstallJson, "json", `either inline JSON string or @path/to/file.json with request body`)
-
-	uninstallCmd.Flags().StringVar(&uninstallReq.ClusterId, "cluster-id", uninstallReq.ClusterId, `Unique identifier for the cluster on which to uninstall these libraries.`)
-	// TODO: array: libraries
 
 }
 

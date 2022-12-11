@@ -29,10 +29,6 @@ func init() {
 	// TODO: short flags
 	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	createCmd.Flags().StringVar(&createReq.AlertId, "alert-id", createReq.AlertId, ``)
-	createCmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `Name of the alert.`)
-	// TODO: complex arg: options
-	createCmd.Flags().StringVar(&createReq.QueryId, "query-id", createReq.QueryId, `ID of the query evaluated by the alert.`)
 	createCmd.Flags().IntVar(&createReq.Rearm, "rearm", createReq.Rearm, `Number of seconds after being triggered before the alert rearms itself and can be triggered again.`)
 
 }
@@ -71,14 +67,12 @@ func init() {
 	Cmd.AddCommand(createScheduleCmd)
 	// TODO: short flags
 
-	createScheduleCmd.Flags().StringVar(&createScheduleReq.AlertId, "alert-id", createScheduleReq.AlertId, ``)
-	createScheduleCmd.Flags().StringVar(&createScheduleReq.Cron, "cron", createScheduleReq.Cron, `Cron string representing the refresh schedule.`)
 	createScheduleCmd.Flags().StringVar(&createScheduleReq.DataSourceId, "data-source-id", createScheduleReq.DataSourceId, `ID of the SQL warehouse to refresh with.`)
 
 }
 
 var createScheduleCmd = &cobra.Command{
-	Use:   "create-schedule",
+	Use:   "create-schedule CRON ALERT_ID",
 	Short: `Create a refresh schedule.`,
 	Long: `Create a refresh schedule.
   
@@ -87,8 +81,11 @@ var createScheduleCmd = &cobra.Command{
   **Note:** The structure of refresh schedules is subject to change.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(2),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		createScheduleReq.Cron = args[0]
+		createScheduleReq.AlertId = args[1]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Alerts.CreateSchedule(ctx, createScheduleReq)
@@ -107,12 +104,10 @@ func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
 
-	deleteCmd.Flags().StringVar(&deleteReq.AlertId, "alert-id", deleteReq.AlertId, ``)
-
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete",
+	Use:   "delete ALERT_ID",
 	Short: `Delete an alert.`,
 	Long: `Delete an alert.
   
@@ -121,8 +116,10 @@ var deleteCmd = &cobra.Command{
   the trash.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		deleteReq.AlertId = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		err = w.Alerts.Delete(ctx, deleteReq)
@@ -141,13 +138,10 @@ func init() {
 	Cmd.AddCommand(deleteScheduleCmd)
 	// TODO: short flags
 
-	deleteScheduleCmd.Flags().StringVar(&deleteScheduleReq.AlertId, "alert-id", deleteScheduleReq.AlertId, ``)
-	deleteScheduleCmd.Flags().StringVar(&deleteScheduleReq.ScheduleId, "schedule-id", deleteScheduleReq.ScheduleId, ``)
-
 }
 
 var deleteScheduleCmd = &cobra.Command{
-	Use:   "delete-schedule",
+	Use:   "delete-schedule ALERT_ID SCHEDULE_ID",
 	Short: `Delete a refresh schedule.`,
 	Long: `Delete a refresh schedule.
   
@@ -155,8 +149,11 @@ var deleteScheduleCmd = &cobra.Command{
   refresh and evaluate the associated query result.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(2),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		deleteScheduleReq.AlertId = args[0]
+		deleteScheduleReq.ScheduleId = args[1]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		err = w.Alerts.DeleteSchedule(ctx, deleteScheduleReq)
@@ -175,20 +172,20 @@ func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
 
-	getCmd.Flags().StringVar(&getReq.AlertId, "alert-id", getReq.AlertId, ``)
-
 }
 
 var getCmd = &cobra.Command{
-	Use:   "get",
+	Use:   "get ALERT_ID",
 	Short: `Get an alert.`,
 	Long: `Get an alert.
   
   Gets an alert.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		getReq.AlertId = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Alerts.Get(ctx, getReq)
@@ -207,12 +204,10 @@ func init() {
 	Cmd.AddCommand(getSubscriptionsCmd)
 	// TODO: short flags
 
-	getSubscriptionsCmd.Flags().StringVar(&getSubscriptionsReq.AlertId, "alert-id", getSubscriptionsReq.AlertId, ``)
-
 }
 
 var getSubscriptionsCmd = &cobra.Command{
-	Use:   "get-subscriptions",
+	Use:   "get-subscriptions ALERT_ID",
 	Short: `Get an alert's subscriptions.`,
 	Long: `Get an alert's subscriptions.
   
@@ -222,8 +217,10 @@ var getSubscriptionsCmd = &cobra.Command{
   The user field is ignored if destination is non-null.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		getSubscriptionsReq.AlertId = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Alerts.GetSubscriptions(ctx, getSubscriptionsReq)
@@ -269,12 +266,10 @@ func init() {
 	Cmd.AddCommand(listSchedulesCmd)
 	// TODO: short flags
 
-	listSchedulesCmd.Flags().StringVar(&listSchedulesReq.AlertId, "alert-id", listSchedulesReq.AlertId, ``)
-
 }
 
 var listSchedulesCmd = &cobra.Command{
-	Use:   "list-schedules",
+	Use:   "list-schedules ALERT_ID",
 	Short: `Get refresh schedules.`,
 	Long: `Get refresh schedules.
   
@@ -287,8 +282,10 @@ var listSchedulesCmd = &cobra.Command{
   is subject to change.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		listSchedulesReq.AlertId = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Alerts.ListSchedules(ctx, listSchedulesReq)
@@ -307,20 +304,22 @@ func init() {
 	Cmd.AddCommand(subscribeCmd)
 	// TODO: short flags
 
-	subscribeCmd.Flags().StringVar(&subscribeReq.AlertId, "alert-id", subscribeReq.AlertId, `ID of the alert.`)
 	subscribeCmd.Flags().StringVar(&subscribeReq.DestinationId, "destination-id", subscribeReq.DestinationId, `ID of the alert subscriber (if subscribing an alert destination).`)
 	subscribeCmd.Flags().Int64Var(&subscribeReq.UserId, "user-id", subscribeReq.UserId, `ID of the alert subscriber (if subscribing a user).`)
 
 }
 
 var subscribeCmd = &cobra.Command{
-	Use:   "subscribe",
+	Use:   "subscribe ALERT_ID ALERT_ID",
 	Short: `Subscribe to an alert.`,
 	Long:  `Subscribe to an alert.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(2),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		subscribeReq.AlertId = args[0]
+		subscribeReq.AlertId = args[1]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Alerts.Subscribe(ctx, subscribeReq)
@@ -339,21 +338,21 @@ func init() {
 	Cmd.AddCommand(unsubscribeCmd)
 	// TODO: short flags
 
-	unsubscribeCmd.Flags().StringVar(&unsubscribeReq.AlertId, "alert-id", unsubscribeReq.AlertId, ``)
-	unsubscribeCmd.Flags().StringVar(&unsubscribeReq.SubscriptionId, "subscription-id", unsubscribeReq.SubscriptionId, ``)
-
 }
 
 var unsubscribeCmd = &cobra.Command{
-	Use:   "unsubscribe",
+	Use:   "unsubscribe ALERT_ID SUBSCRIPTION_ID",
 	Short: `Unsubscribe to an alert.`,
 	Long: `Unsubscribe to an alert.
   
   Unsubscribes a user or a destination to an alert.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(2),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		unsubscribeReq.AlertId = args[0]
+		unsubscribeReq.SubscriptionId = args[1]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		err = w.Alerts.Unsubscribe(ctx, unsubscribeReq)
@@ -374,10 +373,6 @@ func init() {
 	// TODO: short flags
 	updateCmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	updateCmd.Flags().StringVar(&updateReq.AlertId, "alert-id", updateReq.AlertId, ``)
-	updateCmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `Name of the alert.`)
-	// TODO: complex arg: options
-	updateCmd.Flags().StringVar(&updateReq.QueryId, "query-id", updateReq.QueryId, `ID of the query evaluated by the alert.`)
 	updateCmd.Flags().IntVar(&updateReq.Rearm, "rearm", updateReq.Rearm, `Number of seconds after being triggered before the alert rearms itself and can be triggered again.`)
 
 }

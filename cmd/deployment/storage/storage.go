@@ -31,9 +31,6 @@ func init() {
 	// TODO: short flags
 	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	// TODO: complex arg: root_bucket_info
-	createCmd.Flags().StringVar(&createReq.StorageConfigurationName, "storage-configuration-name", createReq.StorageConfigurationName, `The human-readable name of the storage configuration.`)
-
 }
 
 var createCmd = &cobra.Command{
@@ -77,12 +74,10 @@ func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
 
-	deleteCmd.Flags().StringVar(&deleteReq.StorageConfigurationId, "storage-configuration-id", deleteReq.StorageConfigurationId, `Databricks Account API storage configuration ID.`)
-
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete",
+	Use:   "delete STORAGE_CONFIGURATION_ID",
 	Short: `Delete storage configuration.`,
 	Long: `Delete storage configuration.
   
@@ -90,8 +85,10 @@ var deleteCmd = &cobra.Command{
   configuration that is associated with any workspace.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		deleteReq.StorageConfigurationId = args[0]
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
 		err = a.Storage.Delete(ctx, deleteReq)
@@ -110,20 +107,20 @@ func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
 
-	getCmd.Flags().StringVar(&getReq.StorageConfigurationId, "storage-configuration-id", getReq.StorageConfigurationId, `Databricks Account API storage configuration ID.`)
-
 }
 
 var getCmd = &cobra.Command{
-	Use:   "get",
+	Use:   "get STORAGE_CONFIGURATION_ID",
 	Short: `Get storage configuration.`,
 	Long: `Get storage configuration.
   
   Gets a Databricks storage configuration for an account, both specified by ID.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		getReq.StorageConfigurationId = args[0]
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
 		response, err := a.Storage.Get(ctx, getReq)

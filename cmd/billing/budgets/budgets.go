@@ -27,9 +27,6 @@ func init() {
 	// TODO: short flags
 	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	// TODO: complex arg: budget
-	createCmd.Flags().StringVar(&createReq.BudgetId, "budget-id", createReq.BudgetId, `Budget ID.`)
-
 }
 
 var createCmd = &cobra.Command{
@@ -64,20 +61,20 @@ func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
 
-	deleteCmd.Flags().StringVar(&deleteReq.BudgetId, "budget-id", deleteReq.BudgetId, `Budget ID.`)
-
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete",
+	Use:   "delete BUDGET_ID",
 	Short: `Delete budget.`,
 	Long: `Delete budget.
   
   Deletes the budget specified by its UUID.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		deleteReq.BudgetId = args[0]
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
 		err = a.Budgets.Delete(ctx, deleteReq)
@@ -96,12 +93,10 @@ func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
 
-	getCmd.Flags().StringVar(&getReq.BudgetId, "budget-id", getReq.BudgetId, `Budget ID.`)
-
 }
 
 var getCmd = &cobra.Command{
-	Use:   "get",
+	Use:   "get BUDGET_ID",
 	Short: `Get budget and its status.`,
 	Long: `Get budget and its status.
   
@@ -109,8 +104,10 @@ var getCmd = &cobra.Command{
   day that the budget is configured to include.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		getReq.BudgetId = args[0]
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
 		response, err := a.Budgets.Get(ctx, getReq)
@@ -158,9 +155,6 @@ func init() {
 	Cmd.AddCommand(updateCmd)
 	// TODO: short flags
 	updateCmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
-
-	// TODO: complex arg: budget
-	updateCmd.Flags().StringVar(&updateReq.BudgetId, "budget-id", updateReq.BudgetId, `Budget ID.`)
 
 }
 

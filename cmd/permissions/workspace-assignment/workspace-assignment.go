@@ -3,6 +3,8 @@
 package workspace_assignment
 
 import (
+	"fmt"
+
 	"github.com/databricks/bricks/lib/jsonflag"
 	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
@@ -25,9 +27,6 @@ func init() {
 	Cmd.AddCommand(createCmd)
 	// TODO: short flags
 	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
-
-	// TODO: array: permission_assignments
-	createCmd.Flags().Int64Var(&createReq.WorkspaceId, "workspace-id", createReq.WorkspaceId, `The workspace ID for the account.`)
 
 }
 
@@ -63,13 +62,10 @@ func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
 
-	deleteCmd.Flags().Int64Var(&deleteReq.PrincipalId, "principal-id", deleteReq.PrincipalId, `The ID of the service principal.`)
-	deleteCmd.Flags().Int64Var(&deleteReq.WorkspaceId, "workspace-id", deleteReq.WorkspaceId, `The workspace ID.`)
-
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete",
+	Use:   "delete WORKSPACE_ID PRINCIPAL_ID",
 	Short: `Delete permissions assignment.`,
 	Long: `Delete permissions assignment.
   
@@ -77,8 +73,17 @@ var deleteCmd = &cobra.Command{
   using the specified service principal.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(2),
 	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		_, err = fmt.Sscan(args[0], &deleteReq.WorkspaceId)
+		if err != nil {
+			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
+		}
+		_, err = fmt.Sscan(args[1], &deleteReq.PrincipalId)
+		if err != nil {
+			return fmt.Errorf("invalid PRINCIPAL_ID: %s", args[1])
+		}
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
 		err = a.WorkspaceAssignment.Delete(ctx, deleteReq)
@@ -97,20 +102,23 @@ func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
 
-	getCmd.Flags().Int64Var(&getReq.WorkspaceId, "workspace-id", getReq.WorkspaceId, `The workspace ID.`)
-
 }
 
 var getCmd = &cobra.Command{
-	Use:   "get",
+	Use:   "get WORKSPACE_ID",
 	Short: `List workspace permissions.`,
 	Long: `List workspace permissions.
   
   Get an array of workspace permissions for the specified account and workspace.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		_, err = fmt.Sscan(args[0], &getReq.WorkspaceId)
+		if err != nil {
+			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
+		}
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
 		response, err := a.WorkspaceAssignment.Get(ctx, getReq)
@@ -129,12 +137,10 @@ func init() {
 	Cmd.AddCommand(listCmd)
 	// TODO: short flags
 
-	listCmd.Flags().Int64Var(&listReq.WorkspaceId, "workspace-id", listReq.WorkspaceId, `The workspace ID for the account.`)
-
 }
 
 var listCmd = &cobra.Command{
-	Use:   "list",
+	Use:   "list WORKSPACE_ID",
 	Short: `Get permission assignments.`,
 	Long: `Get permission assignments.
   
@@ -142,8 +148,13 @@ var listCmd = &cobra.Command{
   Databricks Workspace.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		_, err = fmt.Sscan(args[0], &listReq.WorkspaceId)
+		if err != nil {
+			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
+		}
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
 		response, err := a.WorkspaceAssignment.ListAll(ctx, listReq)
@@ -163,10 +174,6 @@ func init() {
 	Cmd.AddCommand(updateCmd)
 	// TODO: short flags
 	updateCmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
-
-	// TODO: array: permissions
-	updateCmd.Flags().Int64Var(&updateReq.PrincipalId, "principal-id", updateReq.PrincipalId, `The ID of the service principal.`)
-	updateCmd.Flags().Int64Var(&updateReq.WorkspaceId, "workspace-id", updateReq.WorkspaceId, `The workspace ID.`)
 
 }
 

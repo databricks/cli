@@ -75,20 +75,20 @@ func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
 
-	deleteCmd.Flags().StringVar(&deleteReq.Id, "id", deleteReq.Id, `Unique ID for a group in the Databricks Account.`)
-
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete",
+	Use:   "delete ID",
 	Short: `Delete a group.`,
 	Long: `Delete a group.
   
   Deletes a group from the Databricks Account.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		deleteReq.Id = args[0]
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
 		err = a.Groups.Delete(ctx, deleteReq)
@@ -107,20 +107,20 @@ func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
 
-	getCmd.Flags().StringVar(&getReq.Id, "id", getReq.Id, `Unique ID for a group in the Databricks Account.`)
-
 }
 
 var getCmd = &cobra.Command{
-	Use:   "get",
+	Use:   "get ID",
 	Short: `Get group details.`,
 	Long: `Get group details.
   
   Gets the information for a specific group in the Databricks Account.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		getReq.Id = args[0]
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
 		response, err := a.Groups.Get(ctx, getReq)
@@ -185,7 +185,6 @@ func init() {
 	// TODO: short flags
 	patchCmd.Flags().Var(&patchJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	patchCmd.Flags().StringVar(&patchReq.Id, "id", patchReq.Id, `Unique ID for a group in the Databricks Account.`)
 	// TODO: array: operations
 
 }

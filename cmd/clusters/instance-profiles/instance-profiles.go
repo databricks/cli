@@ -29,14 +29,13 @@ func init() {
 	// TODO: short flags
 
 	addCmd.Flags().StringVar(&addReq.IamRoleArn, "iam-role-arn", addReq.IamRoleArn, `The AWS IAM role ARN of the role associated with the instance profile.`)
-	addCmd.Flags().StringVar(&addReq.InstanceProfileArn, "instance-profile-arn", addReq.InstanceProfileArn, `The AWS ARN of the instance profile to register with Databricks.`)
 	addCmd.Flags().BoolVar(&addReq.IsMetaInstanceProfile, "is-meta-instance-profile", addReq.IsMetaInstanceProfile, `By default, Databricks validates that it has sufficient permissions to launch instances with the instance profile.`)
 	addCmd.Flags().BoolVar(&addReq.SkipValidation, "skip-validation", addReq.SkipValidation, `By default, Databricks validates that it has sufficient permissions to launch instances with the instance profile.`)
 
 }
 
 var addCmd = &cobra.Command{
-	Use:   "add",
+	Use:   "add INSTANCE_PROFILE_ARN",
 	Short: `Register an instance profile.`,
 	Long: `Register an instance profile.
   
@@ -44,8 +43,10 @@ var addCmd = &cobra.Command{
   API is only available to admin users.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		addReq.InstanceProfileArn = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		err = w.InstanceProfiles.Add(ctx, addReq)
@@ -65,13 +66,12 @@ func init() {
 	// TODO: short flags
 
 	editCmd.Flags().StringVar(&editReq.IamRoleArn, "iam-role-arn", editReq.IamRoleArn, `The AWS IAM role ARN of the role associated with the instance profile.`)
-	editCmd.Flags().StringVar(&editReq.InstanceProfileArn, "instance-profile-arn", editReq.InstanceProfileArn, `The AWS ARN of the instance profile to register with Databricks.`)
 	editCmd.Flags().BoolVar(&editReq.IsMetaInstanceProfile, "is-meta-instance-profile", editReq.IsMetaInstanceProfile, `By default, Databricks validates that it has sufficient permissions to launch instances with the instance profile.`)
 
 }
 
 var editCmd = &cobra.Command{
-	Use:   "edit",
+	Use:   "edit INSTANCE_PROFILE_ARN",
 	Short: `Edit an instance profile.`,
 	Long: `Edit an instance profile.
   
@@ -92,8 +92,10 @@ var editCmd = &cobra.Command{
   [Enable serverless SQL warehouses]: https://docs.databricks.com/sql/admin/serverless.html`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		editReq.InstanceProfileArn = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		err = w.InstanceProfiles.Edit(ctx, editReq)
@@ -141,12 +143,10 @@ func init() {
 	Cmd.AddCommand(removeCmd)
 	// TODO: short flags
 
-	removeCmd.Flags().StringVar(&removeReq.InstanceProfileArn, "instance-profile-arn", removeReq.InstanceProfileArn, `The ARN of the instance profile to remove.`)
-
 }
 
 var removeCmd = &cobra.Command{
-	Use:   "remove",
+	Use:   "remove INSTANCE_PROFILE_ARN",
 	Short: `Remove the instance profile.`,
 	Long: `Remove the instance profile.
   
@@ -156,8 +156,10 @@ var removeCmd = &cobra.Command{
   This API is only accessible to admin users.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		removeReq.InstanceProfileArn = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		err = w.InstanceProfiles.Remove(ctx, removeReq)

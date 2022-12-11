@@ -28,13 +28,12 @@ func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
 
-	deleteCmd.Flags().StringVar(&deleteReq.Path, "path", deleteReq.Path, `The absolute path of the notebook or directory.`)
 	deleteCmd.Flags().BoolVar(&deleteReq.Recursive, "recursive", deleteReq.Recursive, `The flag that specifies whether to delete the object recursively.`)
 
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete",
+	Use:   "delete PATH",
 	Short: `Delete a workspace object.`,
 	Long: `Delete a workspace object.
   
@@ -48,8 +47,10 @@ var deleteCmd = &cobra.Command{
   atomic.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		deleteReq.Path = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		err = w.Workspace.Delete(ctx, deleteReq)
@@ -72,7 +73,6 @@ func init() {
 
 	exportCmd.Flags().BoolVar(&exportReq.DirectDownload, "direct-download", exportReq.DirectDownload, `Flag to enable direct download.`)
 	exportCmd.Flags().Var(&exportReq.Format, "format", `This specifies the format of the exported file.`)
-	exportCmd.Flags().StringVar(&exportReq.Path, "path", exportReq.Path, `The absolute path of the notebook or directory.`)
 
 }
 
@@ -115,12 +115,10 @@ func init() {
 	Cmd.AddCommand(getStatusCmd)
 	// TODO: short flags
 
-	getStatusCmd.Flags().StringVar(&getStatusReq.Path, "path", getStatusReq.Path, `The absolute path of the notebook or directory.`)
-
 }
 
 var getStatusCmd = &cobra.Command{
-	Use:   "get-status",
+	Use:   "get-status PATH",
 	Short: `Get status.`,
 	Long: `Get status.
   
@@ -128,8 +126,10 @@ var getStatusCmd = &cobra.Command{
   call returns an error RESOURCE_DOES_NOT_EXIST.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		getStatusReq.Path = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Workspace.GetStatus(ctx, getStatusReq)
@@ -154,7 +154,6 @@ func init() {
 	importCmd.Flags().Var(&importReq.Format, "format", `This specifies the format of the file to be imported.`)
 	importCmd.Flags().Var(&importReq.Language, "language", `The language of the object.`)
 	importCmd.Flags().BoolVar(&importReq.Overwrite, "overwrite", importReq.Overwrite, `The flag that specifies whether to overwrite existing object.`)
-	importCmd.Flags().StringVar(&importReq.Path, "path", importReq.Path, `The absolute path of the notebook or directory.`)
 
 }
 
@@ -194,12 +193,11 @@ func init() {
 	// TODO: short flags
 
 	listCmd.Flags().IntVar(&listReq.NotebooksModifiedAfter, "notebooks-modified-after", listReq.NotebooksModifiedAfter, `<content needed>.`)
-	listCmd.Flags().StringVar(&listReq.Path, "path", listReq.Path, `The absolute path of the notebook or directory.`)
 
 }
 
 var listCmd = &cobra.Command{
-	Use:   "list",
+	Use:   "list PATH",
 	Short: `List contents.`,
 	Long: `List contents.
   
@@ -208,8 +206,10 @@ var listCmd = &cobra.Command{
   RESOURCE_DOES_NOT_EXIST.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		listReq.Path = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.Workspace.ListAll(ctx, listReq)
@@ -228,12 +228,10 @@ func init() {
 	Cmd.AddCommand(mkdirsCmd)
 	// TODO: short flags
 
-	mkdirsCmd.Flags().StringVar(&mkdirsReq.Path, "path", mkdirsReq.Path, `The absolute path of the directory.`)
-
 }
 
 var mkdirsCmd = &cobra.Command{
-	Use:   "mkdirs",
+	Use:   "mkdirs PATH",
 	Short: `Create a directory.`,
 	Long: `Create a directory.
   
@@ -245,8 +243,10 @@ var mkdirsCmd = &cobra.Command{
   the necessary\nparrent directories.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		mkdirsReq.Path = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		err = w.Workspace.Mkdirs(ctx, mkdirsReq)

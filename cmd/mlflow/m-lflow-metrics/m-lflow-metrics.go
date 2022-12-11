@@ -21,22 +21,23 @@ func init() {
 	Cmd.AddCommand(getHistoryCmd)
 	// TODO: short flags
 
-	getHistoryCmd.Flags().StringVar(&getHistoryReq.MetricKey, "metric-key", getHistoryReq.MetricKey, `Name of the metric.`)
 	getHistoryCmd.Flags().StringVar(&getHistoryReq.RunId, "run-id", getHistoryReq.RunId, `ID of the run from which to fetch metric values.`)
 	getHistoryCmd.Flags().StringVar(&getHistoryReq.RunUuid, "run-uuid", getHistoryReq.RunUuid, `[Deprecated, use run_id instead] ID of the run from which to fetch metric values.`)
 
 }
 
 var getHistoryCmd = &cobra.Command{
-	Use:   "get-history",
+	Use:   "get-history METRIC_KEY",
 	Short: `Get all history.`,
 	Long: `Get all history.
   
   Gets a list of all values for the specified metric for a given run.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		getHistoryReq.MetricKey = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.MLflowMetrics.GetHistory(ctx, getHistoryReq)

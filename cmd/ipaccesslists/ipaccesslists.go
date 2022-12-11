@@ -47,10 +47,6 @@ func init() {
 	// TODO: short flags
 	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	// TODO: array: ip_addresses
-	createCmd.Flags().StringVar(&createReq.Label, "label", createReq.Label, `Label for the IP access list.`)
-	createCmd.Flags().Var(&createReq.ListType, "list-type", `This describes an enum.`)
-
 }
 
 var createCmd = &cobra.Command{
@@ -99,20 +95,20 @@ func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
 
-	deleteCmd.Flags().StringVar(&deleteReq.IpAccessListId, "ip-access-list-id", deleteReq.IpAccessListId, `The ID for the corresponding IP access list to modify.`)
-
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete",
+	Use:   "delete IP_ACCESS_LIST_ID",
 	Short: `Delete access list.`,
 	Long: `Delete access list.
   
   Deletes an IP access list, specified by its list ID.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		deleteReq.IpAccessListId = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		err = w.IpAccessLists.Delete(ctx, deleteReq)
@@ -131,20 +127,20 @@ func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
 
-	getCmd.Flags().StringVar(&getReq.IpAccessListId, "ip-access-list-id", getReq.IpAccessListId, `The ID for the corresponding IP access list to modify.`)
-
 }
 
 var getCmd = &cobra.Command{
-	Use:   "get",
+	Use:   "get IP_ACCESS_LIST_ID",
 	Short: `Get access list.`,
 	Long: `Get access list.
   
   Gets an IP access list, specified by its list ID.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		getReq.IpAccessListId = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.IpAccessLists.Get(ctx, getReq)
@@ -192,12 +188,7 @@ func init() {
 	// TODO: short flags
 	replaceCmd.Flags().Var(&replaceJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	replaceCmd.Flags().BoolVar(&replaceReq.Enabled, "enabled", replaceReq.Enabled, `Specifies whether this IP access list is enabled.`)
-	replaceCmd.Flags().StringVar(&replaceReq.IpAccessListId, "ip-access-list-id", replaceReq.IpAccessListId, `The ID for the corresponding IP access list to modify.`)
-	// TODO: array: ip_addresses
-	replaceCmd.Flags().StringVar(&replaceReq.Label, "label", replaceReq.Label, `Label for the IP access list.`)
 	replaceCmd.Flags().StringVar(&replaceReq.ListId, "list-id", replaceReq.ListId, `Universally unique identifier(UUID) of the IP access list.`)
-	replaceCmd.Flags().Var(&replaceReq.ListType, "list-type", `This describes an enum.`)
 
 }
 
@@ -245,12 +236,7 @@ func init() {
 	// TODO: short flags
 	updateCmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	updateCmd.Flags().BoolVar(&updateReq.Enabled, "enabled", updateReq.Enabled, `Specifies whether this IP access list is enabled.`)
-	updateCmd.Flags().StringVar(&updateReq.IpAccessListId, "ip-access-list-id", updateReq.IpAccessListId, `The ID for the corresponding IP access list to modify.`)
-	// TODO: array: ip_addresses
-	updateCmd.Flags().StringVar(&updateReq.Label, "label", updateReq.Label, `Label for the IP access list.`)
 	updateCmd.Flags().StringVar(&updateReq.ListId, "list-id", updateReq.ListId, `Universally unique identifier(UUID) of the IP access list.`)
-	updateCmd.Flags().Var(&updateReq.ListType, "list-type", `This describes an enum.`)
 
 }
 

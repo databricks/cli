@@ -25,7 +25,6 @@ func init() {
 	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	createCmd.Flags().StringVar(&createReq.Description, "description", createReq.Description, `Optional description for registered model.`)
-	createCmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `Register models under this name.`)
 	// TODO: array: tags
 
 }
@@ -65,20 +64,20 @@ func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
 
-	deleteCmd.Flags().StringVar(&deleteReq.Name, "name", deleteReq.Name, `Registered model unique name identifier.`)
-
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete",
+	Use:   "delete NAME",
 	Short: `Delete a model.`,
 	Long: `Delete a model.
   
   Deletes a registered model.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		deleteReq.Name = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		err = w.RegisteredModels.Delete(ctx, deleteReq)
@@ -97,21 +96,21 @@ func init() {
 	Cmd.AddCommand(deleteTagCmd)
 	// TODO: short flags
 
-	deleteTagCmd.Flags().StringVar(&deleteTagReq.Key, "key", deleteTagReq.Key, `Name of the tag.`)
-	deleteTagCmd.Flags().StringVar(&deleteTagReq.Name, "name", deleteTagReq.Name, `Name of the registered model that the tag was logged under.`)
-
 }
 
 var deleteTagCmd = &cobra.Command{
-	Use:   "delete-tag",
+	Use:   "delete-tag NAME KEY",
 	Short: `Delete a model tag.`,
 	Long: `Delete a model tag.
   
   Deletes the tag for a registered model.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(2),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		deleteTagReq.Name = args[0]
+		deleteTagReq.Key = args[1]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		err = w.RegisteredModels.DeleteTag(ctx, deleteTagReq)
@@ -130,20 +129,20 @@ func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
 
-	getCmd.Flags().StringVar(&getReq.Name, "name", getReq.Name, `Registered model unique name identifier.`)
-
 }
 
 var getCmd = &cobra.Command{
-	Use:   "get",
+	Use:   "get NAME",
 	Short: `Get a model.`,
 	Long: `Get a model.
   
   Gets the registered model that matches the specified ID.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		getReq.Name = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.RegisteredModels.Get(ctx, getReq)
@@ -164,7 +163,6 @@ func init() {
 	// TODO: short flags
 	getLatestVersionsCmd.Flags().Var(&getLatestVersionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	getLatestVersionsCmd.Flags().StringVar(&getLatestVersionsReq.Name, "name", getLatestVersionsReq.Name, `Registered model unique name identifier.`)
 	// TODO: array: stages
 
 }
@@ -215,6 +213,7 @@ var listCmd = &cobra.Command{
   __max_results__.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(0),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -235,21 +234,22 @@ func init() {
 	Cmd.AddCommand(renameCmd)
 	// TODO: short flags
 
-	renameCmd.Flags().StringVar(&renameReq.Name, "name", renameReq.Name, `Registered model unique name identifier.`)
 	renameCmd.Flags().StringVar(&renameReq.NewName, "new-name", renameReq.NewName, `If provided, updates the name for this registered_model.`)
 
 }
 
 var renameCmd = &cobra.Command{
-	Use:   "rename",
+	Use:   "rename NAME",
 	Short: `Rename a model.`,
 	Long: `Rename a model.
   
   Renames a registered model.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		renameReq.Name = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.RegisteredModels.Rename(ctx, renameReq)
@@ -309,22 +309,22 @@ func init() {
 	Cmd.AddCommand(setTagCmd)
 	// TODO: short flags
 
-	setTagCmd.Flags().StringVar(&setTagReq.Key, "key", setTagReq.Key, `Name of the tag.`)
-	setTagCmd.Flags().StringVar(&setTagReq.Name, "name", setTagReq.Name, `Unique name of the model.`)
-	setTagCmd.Flags().StringVar(&setTagReq.Value, "value", setTagReq.Value, `String value of the tag being logged.`)
-
 }
 
 var setTagCmd = &cobra.Command{
-	Use:   "set-tag",
+	Use:   "set-tag NAME KEY VALUE",
 	Short: `Set a tag.`,
 	Long: `Set a tag.
   
   Sets a tag on a registered model.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(3),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		setTagReq.Name = args[0]
+		setTagReq.Key = args[1]
+		setTagReq.Value = args[2]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		err = w.RegisteredModels.SetTag(ctx, setTagReq)
@@ -344,20 +344,21 @@ func init() {
 	// TODO: short flags
 
 	updateCmd.Flags().StringVar(&updateReq.Description, "description", updateReq.Description, `If provided, updates the description for this registered_model.`)
-	updateCmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `Registered model unique name identifier.`)
 
 }
 
 var updateCmd = &cobra.Command{
-	Use:   "update",
+	Use:   "update NAME",
 	Short: `Update model.`,
 	Long: `Update model.
   
   Updates a registered model.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		updateReq.Name = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		err = w.RegisteredModels.Update(ctx, updateReq)

@@ -41,9 +41,6 @@ func init() {
 	// TODO: short flags
 	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	// TODO: complex arg: aws_key_info
-	// TODO: array: use_cases
-
 }
 
 var createCmd = &cobra.Command{
@@ -93,12 +90,10 @@ func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
 
-	deleteCmd.Flags().StringVar(&deleteReq.CustomerManagedKeyId, "customer-managed-key-id", deleteReq.CustomerManagedKeyId, `Databricks encryption key configuration ID.`)
-
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete",
+	Use:   "delete CUSTOMER_MANAGED_KEY_ID",
 	Short: `Delete encryption key configuration.`,
 	Long: `Delete encryption key configuration.
   
@@ -106,8 +101,10 @@ var deleteCmd = &cobra.Command{
   delete a configuration that is associated with a running workspace.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		deleteReq.CustomerManagedKeyId = args[0]
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
 		err = a.EncryptionKeys.Delete(ctx, deleteReq)
@@ -126,12 +123,10 @@ func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
 
-	getCmd.Flags().StringVar(&getReq.CustomerManagedKeyId, "customer-managed-key-id", getReq.CustomerManagedKeyId, `Databricks encryption key configuration ID.`)
-
 }
 
 var getCmd = &cobra.Command{
-	Use:   "get",
+	Use:   "get CUSTOMER_MANAGED_KEY_ID",
 	Short: `Get encryption key configuration.`,
 	Long: `Get encryption key configuration.
   
@@ -152,8 +147,10 @@ var getCmd = &cobra.Command{
   platform.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		getReq.CustomerManagedKeyId = args[0]
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
 		response, err := a.EncryptionKeys.Get(ctx, getReq)

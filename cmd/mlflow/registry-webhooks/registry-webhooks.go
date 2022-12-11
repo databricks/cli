@@ -25,7 +25,6 @@ func init() {
 	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	createCmd.Flags().StringVar(&createReq.Description, "description", createReq.Description, `User-specified description for the webhook.`)
-	// TODO: array: events
 	// TODO: complex arg: http_url_spec
 	// TODO: complex arg: job_spec
 	createCmd.Flags().StringVar(&createReq.ModelName, "model-name", createReq.ModelName, `Name of the model whose events would trigger this webhook.`)
@@ -81,6 +80,7 @@ var deleteCmd = &cobra.Command{
   Deletes a registry webhook.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(0),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -146,7 +146,6 @@ func init() {
 	testCmd.Flags().Var(&testJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	testCmd.Flags().Var(&testReq.Event, "event", `If event is specified, the test trigger uses the specified event.`)
-	testCmd.Flags().StringVar(&testReq.Id, "id", testReq.Id, `Webhook ID.`)
 
 }
 
@@ -189,7 +188,6 @@ func init() {
 	updateCmd.Flags().StringVar(&updateReq.Description, "description", updateReq.Description, `User-specified description for the webhook.`)
 	// TODO: array: events
 	// TODO: complex arg: http_url_spec
-	updateCmd.Flags().StringVar(&updateReq.Id, "id", updateReq.Id, `Webhook ID.`)
 	// TODO: complex arg: job_spec
 	updateCmd.Flags().Var(&updateReq.Status, "status", `This describes an enum.`)
 

@@ -32,22 +32,23 @@ func init() {
 	// TODO: short flags
 
 	createCmd.Flags().BoolVar(&createReq.Enabled, "enabled", createReq.Enabled, `Specifies whether the script is enabled.`)
-	createCmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `The name of the script.`)
 	createCmd.Flags().IntVar(&createReq.Position, "position", createReq.Position, `The position of a global init script, where 0 represents the first script to run, 1 is the second script to run, in ascending order.`)
-	createCmd.Flags().StringVar(&createReq.Script, "script", createReq.Script, `The Base64-encoded content of the script.`)
 
 }
 
 var createCmd = &cobra.Command{
-	Use:   "create",
+	Use:   "create NAME SCRIPT",
 	Short: `Create init script.`,
 	Long: `Create init script.
   
   Creates a new global init script in this workspace.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(2),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		createReq.Name = args[0]
+		createReq.Script = args[1]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.GlobalInitScripts.Create(ctx, createReq)
@@ -66,20 +67,20 @@ func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
 
-	deleteCmd.Flags().StringVar(&deleteReq.ScriptId, "script-id", deleteReq.ScriptId, `The ID of the global init script.`)
-
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete",
+	Use:   "delete SCRIPT_ID",
 	Short: `Delete init script.`,
 	Long: `Delete init script.
   
   Deletes a global init script.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		deleteReq.ScriptId = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		err = w.GlobalInitScripts.Delete(ctx, deleteReq)
@@ -98,20 +99,20 @@ func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
 
-	getCmd.Flags().StringVar(&getReq.ScriptId, "script-id", getReq.ScriptId, `The ID of the global init script.`)
-
 }
 
 var getCmd = &cobra.Command{
-	Use:   "get",
+	Use:   "get SCRIPT_ID",
 	Short: `Get an init script.`,
 	Long: `Get an init script.
   
   Gets all the details of a script, including its Base64-encoded contents.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		getReq.ScriptId = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		response, err := w.GlobalInitScripts.Get(ctx, getReq)
@@ -161,15 +162,12 @@ func init() {
 	// TODO: short flags
 
 	updateCmd.Flags().BoolVar(&updateReq.Enabled, "enabled", updateReq.Enabled, `Specifies whether the script is enabled.`)
-	updateCmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `The name of the script.`)
 	updateCmd.Flags().IntVar(&updateReq.Position, "position", updateReq.Position, `The position of a script, where 0 represents the first script to run, 1 is the second script to run, in ascending order.`)
-	updateCmd.Flags().StringVar(&updateReq.Script, "script", updateReq.Script, `The Base64-encoded content of the script.`)
-	updateCmd.Flags().StringVar(&updateReq.ScriptId, "script-id", updateReq.ScriptId, `The ID of the global init script.`)
 
 }
 
 var updateCmd = &cobra.Command{
-	Use:   "update",
+	Use:   "update NAME SCRIPT SCRIPT_ID",
 	Short: `Update init script.`,
 	Long: `Update init script.
   
@@ -177,8 +175,12 @@ var updateCmd = &cobra.Command{
   are optional. Unspecified fields retain their current value.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(3),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		updateReq.Name = args[0]
+		updateReq.Script = args[1]
+		updateReq.ScriptId = args[2]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		err = w.GlobalInitScripts.Update(ctx, updateReq)
