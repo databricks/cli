@@ -13,6 +13,7 @@ func Initialize() bundle.Mutator {
 	return newPhase(
 		"initialize",
 		[]bundle.Mutator{
+			mutator.DefaultDbtTaskLibrary(),
 			mutator.PopulateCurrentUser(),
 			mutator.DefaultArtifactPath(),
 			interpolation.Interpolate(
