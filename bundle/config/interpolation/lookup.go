@@ -20,16 +20,29 @@ func DefaultLookup(path string, lookup map[string]string) (string, error) {
 	return v, nil
 }
 
+func pathPrefixMatches(prefix []string, path string) bool {
+	parts := strings.Split(path, Delimiter)
+	return len(parts) >= len(prefix) && slices.Compare(prefix, parts[0:len(prefix)]) == 0
+}
+
 // ExcludeLookupsInPath is a lookup function that skips lookups for the specified path.
 func ExcludeLookupsInPath(exclude ...string) LookupFunction {
 	return func(path string, lookup map[string]string) (string, error) {
-		parts := strings.Split(path, Delimiter)
-
-		// Skip interpolation of this path.
-		if len(parts) >= len(exclude) && slices.Compare(exclude, parts[0:len(exclude)]) == 0 {
+		if pathPrefixMatches(exclude, path) {
 			return fmt.Sprintf("${%s}", path), nil
 		}
 
 		return DefaultLookup(path, lookup)
+	}
+}
+
+// IncludeLookupsInPath is a lookup function that limits lookups to the specified path.
+func IncludeLookupsInPath(include ...string) LookupFunction {
+	return func(path string, lookup map[string]string) (string, error) {
+		if pathPrefixMatches(include, path) {
+			return DefaultLookup(path, lookup)
+		}
+
+		return fmt.Sprintf("${%s}", path), nil
 	}
 }
