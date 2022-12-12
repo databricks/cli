@@ -3,6 +3,8 @@
 package encryption_keys
 
 import (
+	"fmt"
+
 	"github.com/databricks/bricks/lib/jsonflag"
 	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
@@ -68,12 +70,21 @@ var createCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		a := sdk.AccountClient(ctx)
 		err = createJson.Unmarshall(&createReq)
 		if err != nil {
 			return err
 		}
-		ctx := cmd.Context()
-		a := sdk.AccountClient(ctx)
+		_, err = fmt.Sscan(args[0], &createReq.AwsKeyInfo)
+		if err != nil {
+			return fmt.Errorf("invalid AWS_KEY_INFO: %s", args[0])
+		}
+		_, err = fmt.Sscan(args[1], &createReq.UseCases)
+		if err != nil {
+			return fmt.Errorf("invalid USE_CASES: %s", args[1])
+		}
+
 		response, err := a.EncryptionKeys.Create(ctx, createReq)
 		if err != nil {
 			return err
@@ -101,12 +112,26 @@ var deleteCmd = &cobra.Command{
   delete a configuration that is associated with a running workspace.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		deleteReq.CustomerManagedKeyId = args[0]
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
+		if len(args) == 0 {
+			names, err := a.EncryptionKeys.CustomerManagedKeyAwsKeyInfoKeyArnToCustomerManagedKeyIdMap(ctx)
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "Databricks encryption key configuration ID")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have databricks encryption key configuration id")
+		}
+		deleteReq.CustomerManagedKeyId = args[0]
+
 		err = a.EncryptionKeys.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
@@ -147,12 +172,26 @@ var getCmd = &cobra.Command{
   platform.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		getReq.CustomerManagedKeyId = args[0]
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
+		if len(args) == 0 {
+			names, err := a.EncryptionKeys.CustomerManagedKeyAwsKeyInfoKeyArnToCustomerManagedKeyIdMap(ctx)
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "Databricks encryption key configuration ID")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have databricks encryption key configuration id")
+		}
+		getReq.CustomerManagedKeyId = args[0]
+
 		response, err := a.EncryptionKeys.Get(ctx, getReq)
 		if err != nil {
 			return err

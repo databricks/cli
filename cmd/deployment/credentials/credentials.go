@@ -3,6 +3,8 @@
 package credentials
 
 import (
+	"fmt"
+
 	"github.com/databricks/bricks/lib/jsonflag"
 	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
@@ -55,12 +57,18 @@ var createCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		a := sdk.AccountClient(ctx)
 		err = createJson.Unmarshall(&createReq)
 		if err != nil {
 			return err
 		}
-		ctx := cmd.Context()
-		a := sdk.AccountClient(ctx)
+		createReq.CredentialsName = args[0]
+		_, err = fmt.Sscan(args[1], &createReq.AwsCredentials)
+		if err != nil {
+			return fmt.Errorf("invalid AWS_CREDENTIALS: %s", args[1])
+		}
+
 		response, err := a.Credentials.Create(ctx, createReq)
 		if err != nil {
 			return err
@@ -89,12 +97,26 @@ var deleteCmd = &cobra.Command{
   workspace.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		deleteReq.CredentialsId = args[0]
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
+		if len(args) == 0 {
+			names, err := a.Credentials.CredentialCredentialsNameToCredentialsIdMap(ctx)
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "Databricks Account API credential configuration ID")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have databricks account api credential configuration id")
+		}
+		deleteReq.CredentialsId = args[0]
+
 		err = a.Credentials.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
@@ -122,12 +144,26 @@ var getCmd = &cobra.Command{
   specified by ID.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		getReq.CredentialsId = args[0]
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
+		if len(args) == 0 {
+			names, err := a.Credentials.CredentialCredentialsNameToCredentialsIdMap(ctx)
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "Databricks Account API credential configuration ID")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have databricks account api credential configuration id")
+		}
+		getReq.CredentialsId = args[0]
+
 		response, err := a.Credentials.Get(ctx, getReq)
 		if err != nil {
 			return err

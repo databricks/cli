@@ -46,12 +46,15 @@ var createCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := sdk.WorkspaceClient(ctx)
 		err = createJson.Unmarshall(&createReq)
 		if err != nil {
 			return err
 		}
-		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		createReq.Name = args[0]
+		createReq.CatalogName = args[1]
+
 		response, err := w.Schemas.Create(ctx, createReq)
 		if err != nil {
 			return err
@@ -82,9 +85,10 @@ var deleteCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		deleteReq.FullName = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		deleteReq.FullName = args[0]
+
 		err = w.Schemas.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
@@ -116,9 +120,10 @@ var getCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		getReq.FullName = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		getReq.FullName = args[0]
+
 		response, err := w.Schemas.Get(ctx, getReq)
 		if err != nil {
 			return err
@@ -155,6 +160,7 @@ var listCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+
 		response, err := w.Schemas.ListAll(ctx, listReq)
 		if err != nil {
 			return err
@@ -194,12 +200,14 @@ var updateCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := sdk.WorkspaceClient(ctx)
 		err = updateJson.Unmarshall(&updateReq)
 		if err != nil {
 			return err
 		}
-		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		updateReq.FullName = args[0]
+
 		err = w.Schemas.Update(ctx, updateReq)
 		if err != nil {
 			return err

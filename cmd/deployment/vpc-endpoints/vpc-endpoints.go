@@ -3,6 +3,8 @@
 package vpc_endpoints
 
 import (
+	"fmt"
+
 	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
 	"github.com/databricks/databricks-sdk-go/service/deployment"
@@ -73,11 +75,12 @@ var createCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(3),
 	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		a := sdk.AccountClient(ctx)
 		createReq.VpcEndpointName = args[0]
 		createReq.AwsVpcEndpointId = args[1]
 		createReq.Region = args[2]
-		ctx := cmd.Context()
-		a := sdk.AccountClient(ctx)
+
 		response, err := a.VpcEndpoints.Create(ctx, createReq)
 		if err != nil {
 			return err
@@ -121,12 +124,26 @@ var deleteCmd = &cobra.Command{
   [Databricks article about PrivateLink]: https://docs.databricks.com/administration-guide/cloud-configurations/aws/privatelink.html`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		deleteReq.VpcEndpointId = args[0]
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
+		if len(args) == 0 {
+			names, err := a.VpcEndpoints.VpcEndpointVpcEndpointNameToVpcEndpointIdMap(ctx)
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "Databricks VPC endpoint ID")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have databricks vpc endpoint id")
+		}
+		deleteReq.VpcEndpointId = args[0]
+
 		err = a.VpcEndpoints.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
@@ -162,12 +179,26 @@ var getCmd = &cobra.Command{
   [VPC endpoint]: https://docs.aws.amazon.com/vpc/latest/privatelink/concepts.html`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		getReq.VpcEndpointId = args[0]
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
+		if len(args) == 0 {
+			names, err := a.VpcEndpoints.VpcEndpointVpcEndpointNameToVpcEndpointIdMap(ctx)
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "Databricks VPC endpoint ID")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have databricks vpc endpoint id")
+		}
+		getReq.VpcEndpointId = args[0]
+
 		response, err := a.VpcEndpoints.Get(ctx, getReq)
 		if err != nil {
 			return err

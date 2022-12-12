@@ -3,6 +3,8 @@
 package dbsql_permissions
 
 import (
+	"fmt"
+
 	"github.com/databricks/bricks/lib/jsonflag"
 	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
@@ -31,17 +33,15 @@ var Cmd = &cobra.Command{
 // start get command
 
 var getReq sql.GetDbsqlPermissionRequest
-var getJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
-	getCmd.Flags().Var(&getJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
 var getCmd = &cobra.Command{
-	Use:   "get",
+	Use:   "get OBJECT_TYPE OBJECT_ID",
 	Short: `Get object ACL.`,
 	Long: `Get object ACL.
   
@@ -49,14 +49,17 @@ var getCmd = &cobra.Command{
   object.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(2),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		err = getJson.Unmarshall(&getReq)
-		if err != nil {
-			return err
-		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		_, err = fmt.Sscan(args[0], &getReq.ObjectType)
+		if err != nil {
+			return fmt.Errorf("invalid OBJECT_TYPE: %s", args[0])
+		}
+		getReq.ObjectId = args[1]
+
 		response, err := w.DbsqlPermissions.Get(ctx, getReq)
 		if err != nil {
 			return err
@@ -90,12 +93,18 @@ var setCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := sdk.WorkspaceClient(ctx)
 		err = setJson.Unmarshall(&setReq)
 		if err != nil {
 			return err
 		}
-		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		_, err = fmt.Sscan(args[0], &setReq.ObjectType)
+		if err != nil {
+			return fmt.Errorf("invalid OBJECT_TYPE: %s", args[0])
+		}
+		setReq.ObjectId = args[1]
+
 		response, err := w.DbsqlPermissions.Set(ctx, setReq)
 		if err != nil {
 			return err
@@ -129,12 +138,21 @@ var transferOwnershipCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := sdk.WorkspaceClient(ctx)
 		err = transferOwnershipJson.Unmarshall(&transferOwnershipReq)
 		if err != nil {
 			return err
 		}
-		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		_, err = fmt.Sscan(args[0], &transferOwnershipReq.ObjectType)
+		if err != nil {
+			return fmt.Errorf("invalid OBJECT_TYPE: %s", args[0])
+		}
+		_, err = fmt.Sscan(args[1], &transferOwnershipReq.ObjectId)
+		if err != nil {
+			return fmt.Errorf("invalid OBJECT_ID: %s", args[1])
+		}
+
 		response, err := w.DbsqlPermissions.TransferOwnership(ctx, transferOwnershipReq)
 		if err != nil {
 			return err

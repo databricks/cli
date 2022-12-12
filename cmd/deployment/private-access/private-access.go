@@ -3,6 +3,8 @@
 package private_access
 
 import (
+	"fmt"
+
 	"github.com/databricks/bricks/lib/jsonflag"
 	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
@@ -69,12 +71,16 @@ var createCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		a := sdk.AccountClient(ctx)
 		err = createJson.Unmarshall(&createReq)
 		if err != nil {
 			return err
 		}
-		ctx := cmd.Context()
-		a := sdk.AccountClient(ctx)
+		createReq.PrivateAccessSettingsName = args[0]
+		createReq.Region = args[1]
+		createReq.PrivateAccessSettingsId = args[2]
+
 		response, err := a.PrivateAccess.Create(ctx, createReq)
 		if err != nil {
 			return err
@@ -113,12 +119,26 @@ var deleteCmd = &cobra.Command{
   [Databricks article about PrivateLink]: https://docs.databricks.com/administration-guide/cloud-configurations/aws/privatelink.html`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		deleteReq.PrivateAccessSettingsId = args[0]
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
+		if len(args) == 0 {
+			names, err := a.PrivateAccess.PrivateAccessSettingsPrivateAccessSettingsNameToPrivateAccessSettingsIdMap(ctx)
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "Databricks Account API private access settings ID")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have databricks account api private access settings id")
+		}
+		deleteReq.PrivateAccessSettingsId = args[0]
+
 		err = a.PrivateAccess.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
@@ -157,12 +177,26 @@ var getCmd = &cobra.Command{
   [Databricks article about PrivateLink]: https://docs.databricks.com/administration-guide/cloud-configurations/aws/privatelink.html`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		getReq.PrivateAccessSettingsId = args[0]
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
+		if len(args) == 0 {
+			names, err := a.PrivateAccess.PrivateAccessSettingsPrivateAccessSettingsNameToPrivateAccessSettingsIdMap(ctx)
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "Databricks Account API private access settings ID")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have databricks account api private access settings id")
+		}
+		getReq.PrivateAccessSettingsId = args[0]
+
 		response, err := a.PrivateAccess.Get(ctx, getReq)
 		if err != nil {
 			return err
@@ -254,12 +288,16 @@ var replaceCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		a := sdk.AccountClient(ctx)
 		err = replaceJson.Unmarshall(&replaceReq)
 		if err != nil {
 			return err
 		}
-		ctx := cmd.Context()
-		a := sdk.AccountClient(ctx)
+		replaceReq.PrivateAccessSettingsName = args[0]
+		replaceReq.Region = args[1]
+		replaceReq.PrivateAccessSettingsId = args[2]
+
 		err = a.PrivateAccess.Replace(ctx, replaceReq)
 		if err != nil {
 			return err

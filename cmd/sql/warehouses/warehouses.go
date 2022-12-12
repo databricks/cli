@@ -63,17 +63,21 @@ var createCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := sdk.WorkspaceClient(ctx)
 		err = createJson.Unmarshall(&createReq)
 		if err != nil {
 			return err
 		}
-		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+
 		if !createNoWait {
 			spinner := ui.StartSpinner()
 			info, err := w.Warehouses.CreateAndWait(ctx, createReq,
 				retries.Timeout[sql.GetWarehouseResponse](createTimeout),
 				func(i *retries.Info[sql.GetWarehouseResponse]) {
+					if i.Info.Health == nil {
+						return
+					}
 					status := i.Info.State
 					statusMessage := fmt.Sprintf("current status: %s", status)
 					if i.Info.Health != nil {
@@ -119,17 +123,34 @@ var deleteCmd = &cobra.Command{
   Deletes a SQL warehouse.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		deleteReq.Id = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		if len(args) == 0 {
+			names, err := w.Warehouses.EndpointInfoNameToIdMap(ctx, sql.ListWarehousesRequest{})
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "Required")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have required")
+		}
+		deleteReq.Id = args[0]
+
 		if !deleteNoWait {
 			spinner := ui.StartSpinner()
 			info, err := w.Warehouses.DeleteAndWait(ctx, deleteReq,
 				retries.Timeout[sql.GetWarehouseResponse](deleteTimeout),
 				func(i *retries.Info[sql.GetWarehouseResponse]) {
+					if i.Info.Health == nil {
+						return
+					}
 					status := i.Info.State
 					statusMessage := fmt.Sprintf("current status: %s", status)
 					if i.Info.Health != nil {
@@ -193,17 +214,22 @@ var editCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := sdk.WorkspaceClient(ctx)
 		err = editJson.Unmarshall(&editReq)
 		if err != nil {
 			return err
 		}
-		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		editReq.Id = args[0]
+
 		if !editNoWait {
 			spinner := ui.StartSpinner()
 			info, err := w.Warehouses.EditAndWait(ctx, editReq,
 				retries.Timeout[sql.GetWarehouseResponse](editTimeout),
 				func(i *retries.Info[sql.GetWarehouseResponse]) {
+					if i.Info.Health == nil {
+						return
+					}
 					status := i.Info.State
 					statusMessage := fmt.Sprintf("current status: %s", status)
 					if i.Info.Health != nil {
@@ -249,17 +275,34 @@ var getCmd = &cobra.Command{
   Gets the information for a single SQL warehouse.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		getReq.Id = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		if len(args) == 0 {
+			names, err := w.Warehouses.EndpointInfoNameToIdMap(ctx, sql.ListWarehousesRequest{})
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "Required")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have required")
+		}
+		getReq.Id = args[0]
+
 		if !getNoWait {
 			spinner := ui.StartSpinner()
 			info, err := w.Warehouses.GetAndWait(ctx, getReq,
 				retries.Timeout[sql.GetWarehouseResponse](getTimeout),
 				func(i *retries.Info[sql.GetWarehouseResponse]) {
+					if i.Info.Health == nil {
+						return
+					}
 					status := i.Info.State
 					statusMessage := fmt.Sprintf("current status: %s", status)
 					if i.Info.Health != nil {
@@ -334,6 +377,7 @@ var listCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+
 		response, err := w.Warehouses.ListAll(ctx, listReq)
 		if err != nil {
 			return err
@@ -378,12 +422,13 @@ var setWorkspaceWarehouseConfigCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := sdk.WorkspaceClient(ctx)
 		err = setWorkspaceWarehouseConfigJson.Unmarshall(&setWorkspaceWarehouseConfigReq)
 		if err != nil {
 			return err
 		}
-		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+
 		err = w.Warehouses.SetWorkspaceWarehouseConfig(ctx, setWorkspaceWarehouseConfigReq)
 		if err != nil {
 			return err
@@ -416,17 +461,34 @@ var startCmd = &cobra.Command{
   Starts a SQL warehouse.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		startReq.Id = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		if len(args) == 0 {
+			names, err := w.Warehouses.EndpointInfoNameToIdMap(ctx, sql.ListWarehousesRequest{})
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "Required")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have required")
+		}
+		startReq.Id = args[0]
+
 		if !startNoWait {
 			spinner := ui.StartSpinner()
 			info, err := w.Warehouses.StartAndWait(ctx, startReq,
 				retries.Timeout[sql.GetWarehouseResponse](startTimeout),
 				func(i *retries.Info[sql.GetWarehouseResponse]) {
+					if i.Info.Health == nil {
+						return
+					}
 					status := i.Info.State
 					statusMessage := fmt.Sprintf("current status: %s", status)
 					if i.Info.Health != nil {
@@ -472,17 +534,34 @@ var stopCmd = &cobra.Command{
   Stops a SQL warehouse.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		stopReq.Id = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		if len(args) == 0 {
+			names, err := w.Warehouses.EndpointInfoNameToIdMap(ctx, sql.ListWarehousesRequest{})
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "Required")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have required")
+		}
+		stopReq.Id = args[0]
+
 		if !stopNoWait {
 			spinner := ui.StartSpinner()
 			info, err := w.Warehouses.StopAndWait(ctx, stopReq,
 				retries.Timeout[sql.GetWarehouseResponse](stopTimeout),
 				func(i *retries.Info[sql.GetWarehouseResponse]) {
+					if i.Info.Health == nil {
+						return
+					}
 					status := i.Info.State
 					statusMessage := fmt.Sprintf("current status: %s", status)
 					if i.Info.Health != nil {

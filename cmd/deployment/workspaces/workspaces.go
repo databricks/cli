@@ -101,12 +101,14 @@ var createCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		a := sdk.AccountClient(ctx)
 		err = createJson.Unmarshall(&createReq)
 		if err != nil {
 			return err
 		}
-		ctx := cmd.Context()
-		a := sdk.AccountClient(ctx)
+		createReq.WorkspaceName = args[0]
+
 		if !createNoWait {
 			spinner := ui.StartSpinner()
 			info, err := a.Workspaces.CreateAndWait(ctx, createReq,
@@ -154,15 +156,29 @@ var deleteCmd = &cobra.Command{
   account.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		a := sdk.AccountClient(ctx)
+		if len(args) == 0 {
+			names, err := a.Workspaces.WorkspaceWorkspaceNameToWorkspaceIdMap(ctx)
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "Workspace ID")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have workspace id")
+		}
 		_, err = fmt.Sscan(args[0], &deleteReq.WorkspaceId)
 		if err != nil {
 			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
 		}
-		ctx := cmd.Context()
-		a := sdk.AccountClient(ctx)
+
 		err = a.Workspaces.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
@@ -202,15 +218,29 @@ var getCmd = &cobra.Command{
   [Create a new workspace using the Account API]: http://docs.databricks.com/administration-guide/account-api/new-workspace.html`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		a := sdk.AccountClient(ctx)
+		if len(args) == 0 {
+			names, err := a.Workspaces.WorkspaceWorkspaceNameToWorkspaceIdMap(ctx)
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "Workspace ID")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have workspace id")
+		}
 		_, err = fmt.Sscan(args[0], &getReq.WorkspaceId)
 		if err != nil {
 			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
 		}
-		ctx := cmd.Context()
-		a := sdk.AccountClient(ctx)
+
 		response, err := a.Workspaces.Get(ctx, getReq)
 		if err != nil {
 			return err
@@ -382,15 +412,29 @@ var updateCmd = &cobra.Command{
   [Create a new workspace using the Account API]: http://docs.databricks.com/administration-guide/account-api/new-workspace.html`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		a := sdk.AccountClient(ctx)
+		if len(args) == 0 {
+			names, err := a.Workspaces.WorkspaceWorkspaceNameToWorkspaceIdMap(ctx)
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "Workspace ID")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have workspace id")
+		}
 		_, err = fmt.Sscan(args[0], &updateReq.WorkspaceId)
 		if err != nil {
 			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
 		}
-		ctx := cmd.Context()
-		a := sdk.AccountClient(ctx)
+
 		if !updateNoWait {
 			spinner := ui.StartSpinner()
 			info, err := a.Workspaces.UpdateAndWait(ctx, updateReq,

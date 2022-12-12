@@ -40,12 +40,21 @@ var createCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		a := sdk.AccountClient(ctx)
 		err = createJson.Unmarshall(&createReq)
 		if err != nil {
 			return err
 		}
-		ctx := cmd.Context()
-		a := sdk.AccountClient(ctx)
+		_, err = fmt.Sscan(args[0], &createReq.PermissionAssignments)
+		if err != nil {
+			return fmt.Errorf("invalid PERMISSION_ASSIGNMENTS: %s", args[0])
+		}
+		_, err = fmt.Sscan(args[1], &createReq.WorkspaceId)
+		if err != nil {
+			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[1])
+		}
+
 		response, err := a.WorkspaceAssignment.Create(ctx, createReq)
 		if err != nil {
 			return err
@@ -76,6 +85,8 @@ var deleteCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(2),
 	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		a := sdk.AccountClient(ctx)
 		_, err = fmt.Sscan(args[0], &deleteReq.WorkspaceId)
 		if err != nil {
 			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
@@ -84,8 +95,7 @@ var deleteCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("invalid PRINCIPAL_ID: %s", args[1])
 		}
-		ctx := cmd.Context()
-		a := sdk.AccountClient(ctx)
+
 		err = a.WorkspaceAssignment.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
@@ -115,12 +125,13 @@ var getCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		a := sdk.AccountClient(ctx)
 		_, err = fmt.Sscan(args[0], &getReq.WorkspaceId)
 		if err != nil {
 			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
 		}
-		ctx := cmd.Context()
-		a := sdk.AccountClient(ctx)
+
 		response, err := a.WorkspaceAssignment.Get(ctx, getReq)
 		if err != nil {
 			return err
@@ -151,12 +162,13 @@ var listCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		a := sdk.AccountClient(ctx)
 		_, err = fmt.Sscan(args[0], &listReq.WorkspaceId)
 		if err != nil {
 			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
 		}
-		ctx := cmd.Context()
-		a := sdk.AccountClient(ctx)
+
 		response, err := a.WorkspaceAssignment.ListAll(ctx, listReq)
 		if err != nil {
 			return err
@@ -188,12 +200,25 @@ var updateCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		a := sdk.AccountClient(ctx)
 		err = updateJson.Unmarshall(&updateReq)
 		if err != nil {
 			return err
 		}
-		ctx := cmd.Context()
-		a := sdk.AccountClient(ctx)
+		_, err = fmt.Sscan(args[0], &updateReq.Permissions)
+		if err != nil {
+			return fmt.Errorf("invalid PERMISSIONS: %s", args[0])
+		}
+		_, err = fmt.Sscan(args[1], &updateReq.WorkspaceId)
+		if err != nil {
+			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[1])
+		}
+		_, err = fmt.Sscan(args[2], &updateReq.PrincipalId)
+		if err != nil {
+			return fmt.Errorf("invalid PRINCIPAL_ID: %s", args[2])
+		}
+
 		err = a.WorkspaceAssignment.Update(ctx, updateReq)
 		if err != nil {
 			return err

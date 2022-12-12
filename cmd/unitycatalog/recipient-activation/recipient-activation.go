@@ -36,9 +36,10 @@ var getActivationUrlInfoCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		getActivationUrlInfoReq.ActivationUrl = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		getActivationUrlInfoReq.ActivationUrl = args[0]
+
 		err = w.RecipientActivation.GetActivationUrlInfo(ctx, getActivationUrlInfoReq)
 		if err != nil {
 			return err
@@ -69,9 +70,10 @@ var retrieveTokenCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		retrieveTokenReq.ActivationUrl = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		retrieveTokenReq.ActivationUrl = args[0]
+
 		response, err := w.RecipientActivation.RetrieveToken(ctx, retrieveTokenReq)
 		if err != nil {
 			return err

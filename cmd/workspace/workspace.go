@@ -3,7 +3,8 @@
 package workspace
 
 import (
-	"github.com/databricks/bricks/lib/jsonflag"
+	"fmt"
+
 	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
@@ -47,12 +48,26 @@ var deleteCmd = &cobra.Command{
   atomic.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		deleteReq.Path = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		if len(args) == 0 {
+			names, err := w.Workspace.ObjectInfoPathToObjectIdMap(ctx, workspace.List{})
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "The absolute path of the notebook or directory")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the absolute path of the notebook or directory")
+		}
+		deleteReq.Path = args[0]
+
 		err = w.Workspace.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
@@ -64,12 +79,10 @@ var deleteCmd = &cobra.Command{
 // start export command
 
 var exportReq workspace.Export
-var exportJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(exportCmd)
 	// TODO: short flags
-	exportCmd.Flags().Var(&exportJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	exportCmd.Flags().BoolVar(&exportReq.DirectDownload, "direct-download", exportReq.DirectDownload, `Flag to enable direct download.`)
 	exportCmd.Flags().Var(&exportReq.Format, "format", `This specifies the format of the exported file.`)
@@ -77,7 +90,7 @@ func init() {
 }
 
 var exportCmd = &cobra.Command{
-	Use:   "export",
+	Use:   "export PATH",
 	Short: `Export a notebook.`,
 	Long: `Export a notebook.
   
@@ -93,12 +106,24 @@ var exportCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		err = exportJson.Unmarshall(&exportReq)
-		if err != nil {
-			return err
-		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		if len(args) == 0 {
+			names, err := w.Workspace.ObjectInfoPathToObjectIdMap(ctx, workspace.List{})
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "The absolute path of the notebook or directory")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the absolute path of the notebook or directory")
+		}
+		exportReq.Path = args[0]
+
 		response, err := w.Workspace.Export(ctx, exportReq)
 		if err != nil {
 			return err
@@ -126,12 +151,26 @@ var getStatusCmd = &cobra.Command{
   call returns an error RESOURCE_DOES_NOT_EXIST.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		getStatusReq.Path = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		if len(args) == 0 {
+			names, err := w.Workspace.ObjectInfoPathToObjectIdMap(ctx, workspace.List{})
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "The absolute path of the notebook or directory")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the absolute path of the notebook or directory")
+		}
+		getStatusReq.Path = args[0]
+
 		response, err := w.Workspace.GetStatus(ctx, getStatusReq)
 		if err != nil {
 			return err
@@ -143,12 +182,10 @@ var getStatusCmd = &cobra.Command{
 // start import command
 
 var importReq workspace.Import
-var importJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(importCmd)
 	// TODO: short flags
-	importCmd.Flags().Var(&importJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	importCmd.Flags().StringVar(&importReq.Content, "content", importReq.Content, `The base64-encoded content.`)
 	importCmd.Flags().Var(&importReq.Format, "format", `This specifies the format of the file to be imported.`)
@@ -158,7 +195,7 @@ func init() {
 }
 
 var importCmd = &cobra.Command{
-	Use:   "import",
+	Use:   "import PATH",
 	Short: `Import a notebook.`,
 	Long: `Import a notebook.
   
@@ -170,12 +207,24 @@ var importCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		err = importJson.Unmarshall(&importReq)
-		if err != nil {
-			return err
-		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		if len(args) == 0 {
+			names, err := w.Workspace.ObjectInfoPathToObjectIdMap(ctx, workspace.List{})
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "The absolute path of the notebook or directory")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the absolute path of the notebook or directory")
+		}
+		importReq.Path = args[0]
+
 		err = w.Workspace.Import(ctx, importReq)
 		if err != nil {
 			return err
@@ -206,12 +255,26 @@ var listCmd = &cobra.Command{
   RESOURCE_DOES_NOT_EXIST.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		listReq.Path = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		if len(args) == 0 {
+			names, err := w.Workspace.ObjectInfoPathToObjectIdMap(ctx, workspace.List{})
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "The absolute path of the notebook or directory")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the absolute path of the notebook or directory")
+		}
+		listReq.Path = args[0]
+
 		response, err := w.Workspace.ListAll(ctx, listReq)
 		if err != nil {
 			return err
@@ -243,12 +306,26 @@ var mkdirsCmd = &cobra.Command{
   the necessary\nparrent directories.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		mkdirsReq.Path = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		if len(args) == 0 {
+			names, err := w.Workspace.ObjectInfoPathToObjectIdMap(ctx, workspace.List{})
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "The absolute path of the directory")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the absolute path of the directory")
+		}
+		mkdirsReq.Path = args[0]
+
 		err = w.Workspace.Mkdirs(ctx, mkdirsReq)
 		if err != nil {
 			return err

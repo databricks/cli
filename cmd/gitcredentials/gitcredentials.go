@@ -46,12 +46,26 @@ var createCmd = &cobra.Command{
   DELETE endpoint to delete existing credentials.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		createReq.GitProvider = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		if len(args) == 0 {
+			names, err := w.GitCredentials.CredentialInfoGitProviderToCredentialIdMap(ctx)
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "Git provider")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have git provider")
+		}
+		createReq.GitProvider = args[0]
+
 		response, err := w.GitCredentials.Create(ctx, createReq)
 		if err != nil {
 			return err
@@ -78,15 +92,29 @@ var deleteCmd = &cobra.Command{
   Deletes the specified Git credential.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := sdk.WorkspaceClient(ctx)
+		if len(args) == 0 {
+			names, err := w.GitCredentials.CredentialInfoGitProviderToCredentialIdMap(ctx)
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "The ID for the corresponding credential to access")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the id for the corresponding credential to access")
+		}
 		_, err = fmt.Sscan(args[0], &deleteReq.CredentialId)
 		if err != nil {
 			return fmt.Errorf("invalid CREDENTIAL_ID: %s", args[0])
 		}
-		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+
 		err = w.GitCredentials.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
@@ -113,15 +141,29 @@ var getCmd = &cobra.Command{
   Gets the Git credential with the specified credential ID.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := sdk.WorkspaceClient(ctx)
+		if len(args) == 0 {
+			names, err := w.GitCredentials.CredentialInfoGitProviderToCredentialIdMap(ctx)
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "The ID for the corresponding credential to access")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the id for the corresponding credential to access")
+		}
 		_, err = fmt.Sscan(args[0], &getReq.CredentialId)
 		if err != nil {
 			return fmt.Errorf("invalid CREDENTIAL_ID: %s", args[0])
 		}
-		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+
 		response, err := w.GitCredentials.Get(ctx, getReq)
 		if err != nil {
 			return err
@@ -180,15 +222,29 @@ var updateCmd = &cobra.Command{
   Updates the specified Git credential.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := sdk.WorkspaceClient(ctx)
+		if len(args) == 0 {
+			names, err := w.GitCredentials.CredentialInfoGitProviderToCredentialIdMap(ctx)
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "The ID for the corresponding credential to access")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the id for the corresponding credential to access")
+		}
 		_, err = fmt.Sscan(args[0], &updateReq.CredentialId)
 		if err != nil {
 			return fmt.Errorf("invalid CREDENTIAL_ID: %s", args[0])
 		}
-		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+
 		err = w.GitCredentials.Update(ctx, updateReq)
 		if err != nil {
 			return err

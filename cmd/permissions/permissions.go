@@ -40,10 +40,11 @@ var getCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(2),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		getReq.RequestObjectType = args[0]
-		getReq.RequestObjectId = args[1]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		getReq.RequestObjectType = args[0]
+		getReq.RequestObjectId = args[1]
+
 		response, err := w.Permissions.Get(ctx, getReq)
 		if err != nil {
 			return err
@@ -73,10 +74,11 @@ var getPermissionLevelsCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(2),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		getPermissionLevelsReq.RequestObjectType = args[0]
-		getPermissionLevelsReq.RequestObjectId = args[1]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		getPermissionLevelsReq.RequestObjectType = args[0]
+		getPermissionLevelsReq.RequestObjectId = args[1]
+
 		response, err := w.Permissions.GetPermissionLevels(ctx, getPermissionLevelsReq)
 		if err != nil {
 			return err
@@ -110,12 +112,17 @@ var setCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := sdk.WorkspaceClient(ctx)
 		err = setJson.Unmarshall(&setReq)
 		if err != nil {
 			return err
 		}
-		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		setReq.RequestObjectType = args[0]
+		setReq.RequestObjectId = args[1]
+		setReq.RequestObjectType = args[2]
+		setReq.RequestObjectId = args[3]
+
 		err = w.Permissions.Set(ctx, setReq)
 		if err != nil {
 			return err
@@ -148,12 +155,17 @@ var updateCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := sdk.WorkspaceClient(ctx)
 		err = updateJson.Unmarshall(&updateReq)
 		if err != nil {
 			return err
 		}
-		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		updateReq.RequestObjectType = args[0]
+		updateReq.RequestObjectId = args[1]
+		updateReq.RequestObjectType = args[2]
+		updateReq.RequestObjectId = args[3]
+
 		err = w.Permissions.Update(ctx, updateReq)
 		if err != nil {
 			return err

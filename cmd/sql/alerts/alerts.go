@@ -3,6 +3,8 @@
 package alerts
 
 import (
+	"fmt"
+
 	"github.com/databricks/bricks/lib/jsonflag"
 	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
@@ -45,12 +47,20 @@ var createCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := sdk.WorkspaceClient(ctx)
 		err = createJson.Unmarshall(&createReq)
 		if err != nil {
 			return err
 		}
-		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		createReq.Name = args[0]
+		_, err = fmt.Sscan(args[1], &createReq.Options)
+		if err != nil {
+			return fmt.Errorf("invalid OPTIONS: %s", args[1])
+		}
+		createReq.QueryId = args[2]
+		createReq.AlertId = args[3]
+
 		response, err := w.Alerts.Create(ctx, createReq)
 		if err != nil {
 			return err
@@ -84,10 +94,11 @@ var createScheduleCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(2),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		createScheduleReq.Cron = args[0]
-		createScheduleReq.AlertId = args[1]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		createScheduleReq.Cron = args[0]
+		createScheduleReq.AlertId = args[1]
+
 		response, err := w.Alerts.CreateSchedule(ctx, createScheduleReq)
 		if err != nil {
 			return err
@@ -116,12 +127,26 @@ var deleteCmd = &cobra.Command{
   the trash.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		deleteReq.AlertId = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		if len(args) == 0 {
+			names, err := w.Alerts.AlertNameToIdMap(ctx)
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have ")
+		}
+		deleteReq.AlertId = args[0]
+
 		err = w.Alerts.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
@@ -152,10 +177,11 @@ var deleteScheduleCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(2),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		deleteScheduleReq.AlertId = args[0]
-		deleteScheduleReq.ScheduleId = args[1]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		deleteScheduleReq.AlertId = args[0]
+		deleteScheduleReq.ScheduleId = args[1]
+
 		err = w.Alerts.DeleteSchedule(ctx, deleteScheduleReq)
 		if err != nil {
 			return err
@@ -182,12 +208,26 @@ var getCmd = &cobra.Command{
   Gets an alert.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		getReq.AlertId = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		if len(args) == 0 {
+			names, err := w.Alerts.AlertNameToIdMap(ctx)
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have ")
+		}
+		getReq.AlertId = args[0]
+
 		response, err := w.Alerts.Get(ctx, getReq)
 		if err != nil {
 			return err
@@ -217,12 +257,26 @@ var getSubscriptionsCmd = &cobra.Command{
   The user field is ignored if destination is non-null.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		getSubscriptionsReq.AlertId = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		if len(args) == 0 {
+			names, err := w.Alerts.AlertNameToIdMap(ctx)
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have ")
+		}
+		getSubscriptionsReq.AlertId = args[0]
+
 		response, err := w.Alerts.GetSubscriptions(ctx, getSubscriptionsReq)
 		if err != nil {
 			return err
@@ -282,12 +336,26 @@ var listSchedulesCmd = &cobra.Command{
   is subject to change.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		listSchedulesReq.AlertId = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		if len(args) == 0 {
+			names, err := w.Alerts.AlertNameToIdMap(ctx)
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have ")
+		}
+		listSchedulesReq.AlertId = args[0]
+
 		response, err := w.Alerts.ListSchedules(ctx, listSchedulesReq)
 		if err != nil {
 			return err
@@ -318,10 +386,11 @@ var subscribeCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(2),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		subscribeReq.AlertId = args[0]
-		subscribeReq.AlertId = args[1]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		subscribeReq.AlertId = args[0]
+		subscribeReq.AlertId = args[1]
+
 		response, err := w.Alerts.Subscribe(ctx, subscribeReq)
 		if err != nil {
 			return err
@@ -351,10 +420,11 @@ var unsubscribeCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(2),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		unsubscribeReq.AlertId = args[0]
-		unsubscribeReq.SubscriptionId = args[1]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		unsubscribeReq.AlertId = args[0]
+		unsubscribeReq.SubscriptionId = args[1]
+
 		err = w.Alerts.Unsubscribe(ctx, unsubscribeReq)
 		if err != nil {
 			return err
@@ -387,12 +457,20 @@ var updateCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := sdk.WorkspaceClient(ctx)
 		err = updateJson.Unmarshall(&updateReq)
 		if err != nil {
 			return err
 		}
-		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		updateReq.Name = args[0]
+		_, err = fmt.Sscan(args[1], &updateReq.Options)
+		if err != nil {
+			return fmt.Errorf("invalid OPTIONS: %s", args[1])
+		}
+		updateReq.QueryId = args[2]
+		updateReq.AlertId = args[3]
+
 		err = w.Alerts.Update(ctx, updateReq)
 		if err != nil {
 			return err

@@ -3,6 +3,8 @@
 package libraries
 
 import (
+	"fmt"
+
 	"github.com/databricks/bricks/lib/jsonflag"
 	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
@@ -99,9 +101,10 @@ var clusterStatusCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		clusterStatusReq.ClusterId = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		clusterStatusReq.ClusterId = args[0]
+
 		response, err := w.Libraries.ClusterStatus(ctx, clusterStatusReq)
 		if err != nil {
 			return err
@@ -137,12 +140,18 @@ var installCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := sdk.WorkspaceClient(ctx)
 		err = installJson.Unmarshall(&installReq)
 		if err != nil {
 			return err
 		}
-		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		installReq.ClusterId = args[0]
+		_, err = fmt.Sscan(args[1], &installReq.Libraries)
+		if err != nil {
+			return fmt.Errorf("invalid LIBRARIES: %s", args[1])
+		}
+
 		err = w.Libraries.Install(ctx, installReq)
 		if err != nil {
 			return err
@@ -175,12 +184,18 @@ var uninstallCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := sdk.WorkspaceClient(ctx)
 		err = uninstallJson.Unmarshall(&uninstallReq)
 		if err != nil {
 			return err
 		}
-		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		uninstallReq.ClusterId = args[0]
+		_, err = fmt.Sscan(args[1], &uninstallReq.Libraries)
+		if err != nil {
+			return fmt.Errorf("invalid LIBRARIES: %s", args[1])
+		}
+
 		err = w.Libraries.Uninstall(ctx, uninstallReq)
 		if err != nil {
 			return err

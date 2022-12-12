@@ -3,6 +3,8 @@
 package clusterpolicies
 
 import (
+	"fmt"
+
 	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
 	"github.com/databricks/databricks-sdk-go/service/clusterpolicies"
@@ -59,10 +61,11 @@ var createCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(2),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		createReq.Name = args[0]
-		createReq.Definition = args[1]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		createReq.Name = args[0]
+		createReq.Definition = args[1]
+
 		response, err := w.ClusterPolicies.Create(ctx, createReq)
 		if err != nil {
 			return err
@@ -90,12 +93,26 @@ var deleteCmd = &cobra.Command{
   but cannot be edited.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		deleteReq.PolicyId = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		if len(args) == 0 {
+			names, err := w.ClusterPolicies.PolicyNameToPolicyIdMap(ctx)
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "The ID of the policy to delete")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the id of the policy to delete")
+		}
+		deleteReq.PolicyId = args[0]
+
 		err = w.ClusterPolicies.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
@@ -126,11 +143,12 @@ var editCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(3),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := sdk.WorkspaceClient(ctx)
 		editReq.PolicyId = args[0]
 		editReq.Name = args[1]
 		editReq.Definition = args[2]
-		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+
 		err = w.ClusterPolicies.Edit(ctx, editReq)
 		if err != nil {
 			return err
@@ -157,12 +175,26 @@ var getCmd = &cobra.Command{
   Get a cluster policy entity. Creation and editing is available to admins only.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		getReq.PolicyId = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		if len(args) == 0 {
+			names, err := w.ClusterPolicies.PolicyNameToPolicyIdMap(ctx)
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "Canonical unique identifier for the cluster policy")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have canonical unique identifier for the cluster policy")
+		}
+		getReq.PolicyId = args[0]
+
 		response, err := w.ClusterPolicies.Get(ctx, getReq)
 		if err != nil {
 			return err

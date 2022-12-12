@@ -11,10 +11,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func startPager(cmd *cobra.Command) error {
+func startPager(cmd *cobra.Command) (func() error, error) {
 	pagerFromEnv := os.Getenv("PAGER")
 	if !Interactive || filepath.Base(pagerFromEnv) == "cat" || !isTTY(cmd.OutOrStdout()) {
-		return nil
+		return func() error { return nil }, nil
 	}
 	var lessEnvSet bool
 	passEnv := []string{}
@@ -43,24 +43,18 @@ func startPager(cmd *cobra.Command) error {
 	pager.Stderr = cmd.ErrOrStderr()
 	pagedOut, err := pager.StdinPipe()
 	if err != nil {
-		return fmt.Errorf("stdin pipe: %w", err)
+		return nil, fmt.Errorf("stdin pipe: %w", err)
 	}
 	cmd.SetOut(pagedOut) // TODO: exiting main with OK for syscall.Errno(232) on windows and syscall.EPIPE
 	err = pager.Start()
 	if err != nil {
-		return fmt.Errorf("start pager: %w", err)
+		return nil, fmt.Errorf("start pager: %w", err)
 	}
-	postRun := cmd.PostRunE
-	if postRun == nil {
-		// noop
-		postRun = func(cmd *cobra.Command, args []string) error { return nil }
-	}
-	cmd.PostRunE = func(cmd *cobra.Command, args []string) error {
+	return func() error {
 		// if a pager was started, we're guaranteed to have a WriteCloser
 		cmd.OutOrStdout().(io.WriteCloser).Close()
 		pager.Process.Wait()
 		pager.Process = nil
-		return postRun(cmd, args)
-	}
-	return nil
+		return nil
+	}, nil
 }

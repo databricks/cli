@@ -3,6 +3,8 @@
 package providers
 
 import (
+	"fmt"
+
 	"github.com/databricks/bricks/lib/jsonflag"
 	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
@@ -44,12 +46,18 @@ var createCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := sdk.WorkspaceClient(ctx)
 		err = createJson.Unmarshall(&createReq)
 		if err != nil {
 			return err
 		}
-		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		createReq.Name = args[0]
+		_, err = fmt.Sscan(args[1], &createReq.AuthenticationType)
+		if err != nil {
+			return fmt.Errorf("invalid AUTHENTICATION_TYPE: %s", args[1])
+		}
+
 		response, err := w.Providers.Create(ctx, createReq)
 		if err != nil {
 			return err
@@ -80,9 +88,10 @@ var deleteCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		deleteReq.Name = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		deleteReq.Name = args[0]
+
 		err = w.Providers.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
@@ -114,9 +123,10 @@ var getCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		getReq.Name = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		getReq.Name = args[0]
+
 		response, err := w.Providers.Get(ctx, getReq)
 		if err != nil {
 			return err
@@ -152,6 +162,7 @@ var listCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+
 		response, err := w.Providers.ListAll(ctx, listReq)
 		if err != nil {
 			return err
@@ -183,9 +194,10 @@ var listSharesCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		listSharesReq.Name = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		listSharesReq.Name = args[0]
+
 		response, err := w.Providers.ListShares(ctx, listSharesReq)
 		if err != nil {
 			return err
@@ -225,12 +237,15 @@ var updateCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := sdk.WorkspaceClient(ctx)
 		err = updateJson.Unmarshall(&updateReq)
 		if err != nil {
 			return err
 		}
-		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		updateReq.Name = args[0]
+		updateReq.Name = args[1]
+
 		err = w.Providers.Update(ctx, updateReq)
 		if err != nil {
 			return err

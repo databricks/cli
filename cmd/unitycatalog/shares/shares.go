@@ -3,6 +3,8 @@
 package shares
 
 import (
+	"fmt"
+
 	"github.com/databricks/bricks/lib/jsonflag"
 	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
@@ -41,9 +43,10 @@ var createCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		createReq.Name = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		createReq.Name = args[0]
+
 		response, err := w.Shares.Create(ctx, createReq)
 		if err != nil {
 			return err
@@ -74,9 +77,10 @@ var deleteCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		deleteReq.Name = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		deleteReq.Name = args[0]
+
 		err = w.Shares.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
@@ -109,9 +113,10 @@ var getCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		getReq.Name = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		getReq.Name = args[0]
+
 		response, err := w.Shares.Get(ctx, getReq)
 		if err != nil {
 			return err
@@ -170,9 +175,10 @@ var sharePermissionsCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		sharePermissionsReq.Name = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		sharePermissionsReq.Name = args[0]
+
 		response, err := w.Shares.SharePermissions(ctx, sharePermissionsReq)
 		if err != nil {
 			return err
@@ -216,12 +222,18 @@ var updateCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := sdk.WorkspaceClient(ctx)
 		err = updateJson.Unmarshall(&updateReq)
 		if err != nil {
 			return err
 		}
-		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		_, err = fmt.Sscan(args[0], &updateReq.Updates)
+		if err != nil {
+			return fmt.Errorf("invalid UPDATES: %s", args[0])
+		}
+		updateReq.Name = args[1]
+
 		err = w.Shares.Update(ctx, updateReq)
 		if err != nil {
 			return err
@@ -258,12 +270,14 @@ var updatePermissionsCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := sdk.WorkspaceClient(ctx)
 		err = updatePermissionsJson.Unmarshall(&updatePermissionsReq)
 		if err != nil {
 			return err
 		}
-		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		updatePermissionsReq.Name = args[0]
+
 		err = w.Shares.UpdatePermissions(ctx, updatePermissionsReq)
 		if err != nil {
 			return err

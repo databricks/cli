@@ -3,6 +3,7 @@
 package pipelines
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/databricks/bricks/lib/jsonflag"
@@ -73,12 +74,13 @@ var createCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := sdk.WorkspaceClient(ctx)
 		err = createJson.Unmarshall(&createReq)
 		if err != nil {
 			return err
 		}
-		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+
 		response, err := w.Pipelines.Create(ctx, createReq)
 		if err != nil {
 			return err
@@ -105,12 +107,26 @@ var deleteCmd = &cobra.Command{
   Deletes a pipeline.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		deleteReq.PipelineId = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		if len(args) == 0 {
+			names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelines{})
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have ")
+		}
+		deleteReq.PipelineId = args[0]
+
 		err = w.Pipelines.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
@@ -141,12 +157,26 @@ var getCmd = &cobra.Command{
 	Long:  `Get a pipeline.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		getReq.PipelineId = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		if len(args) == 0 {
+			names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelines{})
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have ")
+		}
+		getReq.PipelineId = args[0]
+
 		if !getNoWait {
 			spinner := ui.StartSpinner()
 			info, err := w.Pipelines.GetAndWait(ctx, getReq,
@@ -190,10 +220,11 @@ var getUpdateCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(2),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		getUpdateReq.PipelineId = args[0]
-		getUpdateReq.UpdateId = args[1]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		getUpdateReq.PipelineId = args[0]
+		getUpdateReq.UpdateId = args[1]
+
 		response, err := w.Pipelines.GetUpdate(ctx, getUpdateReq)
 		if err != nil {
 			return err
@@ -229,12 +260,13 @@ var listPipelinesCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := sdk.WorkspaceClient(ctx)
 		err = listPipelinesJson.Unmarshall(&listPipelinesReq)
 		if err != nil {
 			return err
 		}
-		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+
 		response, err := w.Pipelines.ListPipelinesAll(ctx, listPipelinesReq)
 		if err != nil {
 			return err
@@ -265,12 +297,26 @@ var listUpdatesCmd = &cobra.Command{
   List updates for an active pipeline.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		listUpdatesReq.PipelineId = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		if len(args) == 0 {
+			names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelines{})
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "The pipeline to return updates for")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the pipeline to return updates for")
+		}
+		listUpdatesReq.PipelineId = args[0]
+
 		response, err := w.Pipelines.ListUpdates(ctx, listUpdatesReq)
 		if err != nil {
 			return err
@@ -303,12 +349,26 @@ var resetCmd = &cobra.Command{
   Resets a pipeline.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		resetReq.PipelineId = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		if len(args) == 0 {
+			names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelines{})
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have ")
+		}
+		resetReq.PipelineId = args[0]
+
 		if !resetNoWait {
 			spinner := ui.StartSpinner()
 			info, err := w.Pipelines.ResetAndWait(ctx, resetReq,
@@ -358,12 +418,14 @@ var startUpdateCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := sdk.WorkspaceClient(ctx)
 		err = startUpdateJson.Unmarshall(&startUpdateReq)
 		if err != nil {
 			return err
 		}
-		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		startUpdateReq.PipelineId = args[0]
+
 		response, err := w.Pipelines.StartUpdate(ctx, startUpdateReq)
 		if err != nil {
 			return err
@@ -396,12 +458,26 @@ var stopCmd = &cobra.Command{
   Stops a pipeline.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		stopReq.PipelineId = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		if len(args) == 0 {
+			names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelines{})
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have ")
+		}
+		stopReq.PipelineId = args[0]
+
 		if !stopNoWait {
 			spinner := ui.StartSpinner()
 			info, err := w.Pipelines.StopAndWait(ctx, stopReq,
@@ -465,12 +541,14 @@ var updateCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := sdk.WorkspaceClient(ctx)
 		err = updateJson.Unmarshall(&updateReq)
 		if err != nil {
 			return err
 		}
-		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		updateReq.PipelineId = args[0]
+
 		err = w.Pipelines.Update(ctx, updateReq)
 		if err != nil {
 			return err

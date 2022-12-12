@@ -44,13 +44,14 @@ var addBlockCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(2),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := sdk.WorkspaceClient(ctx)
 		_, err = fmt.Sscan(args[0], &addBlockReq.Handle)
 		if err != nil {
 			return fmt.Errorf("invalid HANDLE: %s", args[0])
 		}
 		addBlockReq.Data = args[1]
-		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+
 		err = w.Dbfs.AddBlock(ctx, addBlockReq)
 		if err != nil {
 			return err
@@ -81,12 +82,13 @@ var closeCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := sdk.WorkspaceClient(ctx)
 		_, err = fmt.Sscan(args[0], &closeReq.Handle)
 		if err != nil {
 			return fmt.Errorf("invalid HANDLE: %s", args[0])
 		}
-		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+
 		err = w.Dbfs.Close(ctx, closeReq)
 		if err != nil {
 			return err
@@ -127,9 +129,10 @@ var createCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		createReq.Path = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		createReq.Path = args[0]
+
 		response, err := w.Dbfs.Create(ctx, createReq)
 		if err != nil {
 			return err
@@ -178,9 +181,10 @@ var deleteCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		deleteReq.Path = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		deleteReq.Path = args[0]
+
 		err = w.Dbfs.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
@@ -211,9 +215,10 @@ var getStatusCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		getStatusReq.Path = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		getStatusReq.Path = args[0]
+
 		response, err := w.Dbfs.GetStatus(ctx, getStatusReq)
 		if err != nil {
 			return err
@@ -253,9 +258,10 @@ var listCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		listReq.Path = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		listReq.Path = args[0]
+
 		response, err := w.Dbfs.ListAll(ctx, listReq)
 		if err != nil {
 			return err
@@ -289,9 +295,10 @@ var mkdirsCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		mkdirsReq.Path = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		mkdirsReq.Path = args[0]
+
 		err = w.Dbfs.Mkdirs(ctx, mkdirsReq)
 		if err != nil {
 			return err
@@ -325,10 +332,11 @@ var moveCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(2),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		moveReq.SourcePath = args[0]
-		moveReq.DestinationPath = args[1]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		moveReq.SourcePath = args[0]
+		moveReq.DestinationPath = args[1]
+
 		err = w.Dbfs.Move(ctx, moveReq)
 		if err != nil {
 			return err
@@ -372,9 +380,10 @@ var putCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		putReq.Path = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		putReq.Path = args[0]
+
 		err = w.Dbfs.Put(ctx, putReq)
 		if err != nil {
 			return err
@@ -414,9 +423,10 @@ var readCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		readReq.Path = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		readReq.Path = args[0]
+
 		response, err := w.Dbfs.Read(ctx, readReq)
 		if err != nil {
 			return err

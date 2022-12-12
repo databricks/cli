@@ -3,6 +3,8 @@
 package registry_webhooks
 
 import (
+	"fmt"
+
 	"github.com/databricks/bricks/lib/jsonflag"
 	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
@@ -44,12 +46,17 @@ var createCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := sdk.WorkspaceClient(ctx)
 		err = createJson.Unmarshall(&createReq)
 		if err != nil {
 			return err
 		}
-		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		_, err = fmt.Sscan(args[0], &createReq.Events)
+		if err != nil {
+			return fmt.Errorf("invalid EVENTS: %s", args[0])
+		}
+
 		response, err := w.RegistryWebhooks.Create(ctx, createReq)
 		if err != nil {
 			return err
@@ -85,6 +92,7 @@ var deleteCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+
 		err = w.RegistryWebhooks.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
@@ -121,12 +129,13 @@ var listCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := sdk.WorkspaceClient(ctx)
 		err = listJson.Unmarshall(&listReq)
 		if err != nil {
 			return err
 		}
-		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+
 		response, err := w.RegistryWebhooks.ListAll(ctx, listReq)
 		if err != nil {
 			return err
@@ -138,19 +147,17 @@ var listCmd = &cobra.Command{
 // start test command
 
 var testReq mlflow.TestRegistryWebhookRequest
-var testJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(testCmd)
 	// TODO: short flags
-	testCmd.Flags().Var(&testJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	testCmd.Flags().Var(&testReq.Event, "event", `If event is specified, the test trigger uses the specified event.`)
 
 }
 
 var testCmd = &cobra.Command{
-	Use:   "test",
+	Use:   "test ID",
 	Short: `Test a webhook.`,
 	Long: `Test a webhook.
   
@@ -159,14 +166,13 @@ var testCmd = &cobra.Command{
   Tests a registry webhook.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		err = testJson.Unmarshall(&testReq)
-		if err != nil {
-			return err
-		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		testReq.Id = args[0]
+
 		response, err := w.RegistryWebhooks.Test(ctx, testReq)
 		if err != nil {
 			return err
@@ -205,12 +211,14 @@ var updateCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := sdk.WorkspaceClient(ctx)
 		err = updateJson.Unmarshall(&updateReq)
 		if err != nil {
 			return err
 		}
-		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		updateReq.Id = args[0]
+
 		err = w.RegistryWebhooks.Update(ctx, updateReq)
 		if err != nil {
 			return err

@@ -3,6 +3,8 @@
 package globalinitscripts
 
 import (
+	"fmt"
+
 	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
 	"github.com/databricks/databricks-sdk-go/service/globalinitscripts"
@@ -47,10 +49,11 @@ var createCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(2),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		createReq.Name = args[0]
-		createReq.Script = args[1]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		createReq.Name = args[0]
+		createReq.Script = args[1]
+
 		response, err := w.GlobalInitScripts.Create(ctx, createReq)
 		if err != nil {
 			return err
@@ -77,12 +80,26 @@ var deleteCmd = &cobra.Command{
   Deletes a global init script.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		deleteReq.ScriptId = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		if len(args) == 0 {
+			names, err := w.GlobalInitScripts.GlobalInitScriptDetailsNameToScriptIdMap(ctx)
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "The ID of the global init script")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the id of the global init script")
+		}
+		deleteReq.ScriptId = args[0]
+
 		err = w.GlobalInitScripts.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
@@ -109,12 +126,26 @@ var getCmd = &cobra.Command{
   Gets all the details of a script, including its Base64-encoded contents.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		getReq.ScriptId = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		if len(args) == 0 {
+			names, err := w.GlobalInitScripts.GlobalInitScriptDetailsNameToScriptIdMap(ctx)
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "The ID of the global init script")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the id of the global init script")
+		}
+		getReq.ScriptId = args[0]
+
 		response, err := w.GlobalInitScripts.Get(ctx, getReq)
 		if err != nil {
 			return err
@@ -178,11 +209,12 @@ var updateCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(3),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := sdk.WorkspaceClient(ctx)
 		updateReq.Name = args[0]
 		updateReq.Script = args[1]
 		updateReq.ScriptId = args[2]
-		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+
 		err = w.GlobalInitScripts.Update(ctx, updateReq)
 		if err != nil {
 			return err

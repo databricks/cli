@@ -44,12 +44,14 @@ var createCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := sdk.WorkspaceClient(ctx)
 		err = createJson.Unmarshall(&createReq)
 		if err != nil {
 			return err
 		}
-		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		createReq.Name = args[0]
+
 		response, err := w.Experiments.Create(ctx, createReq)
 		if err != nil {
 			return err
@@ -81,9 +83,10 @@ var deleteCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		deleteReq.ExperimentId = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		deleteReq.ExperimentId = args[0]
+
 		err = w.Experiments.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
@@ -113,9 +116,10 @@ var getCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		getReq.ExperimentId = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		getReq.ExperimentId = args[0]
+
 		response, err := w.Experiments.Get(ctx, getReq)
 		if err != nil {
 			return err
@@ -153,9 +157,10 @@ var getByNameCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		getByNameReq.ExperimentName = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		getByNameReq.ExperimentName = args[0]
+
 		response, err := w.Experiments.GetByName(ctx, getByNameReq)
 		if err != nil {
 			return err
@@ -191,6 +196,7 @@ var listCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+
 		response, err := w.Experiments.ListAll(ctx, listReq)
 		if err != nil {
 			return err
@@ -224,9 +230,10 @@ var restoreCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		restoreReq.ExperimentId = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		restoreReq.ExperimentId = args[0]
+
 		err = w.Experiments.Restore(ctx, restoreReq)
 		if err != nil {
 			return err
@@ -263,12 +270,13 @@ var searchCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := sdk.WorkspaceClient(ctx)
 		err = searchJson.Unmarshall(&searchReq)
 		if err != nil {
 			return err
 		}
-		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+
 		response, err := w.Experiments.SearchAll(ctx, searchReq)
 		if err != nil {
 			return err
@@ -298,11 +306,12 @@ var setExperimentTagCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(3),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := sdk.WorkspaceClient(ctx)
 		setExperimentTagReq.ExperimentId = args[0]
 		setExperimentTagReq.Key = args[1]
 		setExperimentTagReq.Value = args[2]
-		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+
 		err = w.Experiments.SetExperimentTag(ctx, setExperimentTagReq)
 		if err != nil {
 			return err
@@ -334,9 +343,10 @@ var updateCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		updateReq.ExperimentId = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		updateReq.ExperimentId = args[0]
+
 		err = w.Experiments.Update(ctx, updateReq)
 		if err != nil {
 			return err

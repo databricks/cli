@@ -36,11 +36,12 @@ var createCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(3),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := sdk.WorkspaceClient(ctx)
 		createReq.Name = args[0]
 		createReq.Version = args[1]
 		createReq.Comment = args[2]
-		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+
 		response, err := w.ModelVersionComments.Create(ctx, createReq)
 		if err != nil {
 			return err
@@ -70,9 +71,10 @@ var deleteCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		deleteReq.Id = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		deleteReq.Id = args[0]
+
 		err = w.ModelVersionComments.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
@@ -102,10 +104,11 @@ var updateCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(2),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		updateReq.Id = args[0]
-		updateReq.Comment = args[1]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		updateReq.Id = args[0]
+		updateReq.Comment = args[1]
+
 		response, err := w.ModelVersionComments.Update(ctx, updateReq)
 		if err != nil {
 			return err

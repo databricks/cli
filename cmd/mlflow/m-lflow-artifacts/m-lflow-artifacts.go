@@ -42,6 +42,7 @@ var listCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+
 		response, err := w.MLflowArtifacts.ListAll(ctx, listReq)
 		if err != nil {
 			return err

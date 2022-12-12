@@ -52,11 +52,12 @@ var createCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(3),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := sdk.WorkspaceClient(ctx)
 		createReq.Name = args[0]
 		createReq.Url = args[1]
 		createReq.CredentialName = args[2]
-		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+
 		response, err := w.ExternalLocations.Create(ctx, createReq)
 		if err != nil {
 			return err
@@ -89,9 +90,10 @@ var deleteCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		deleteReq.Name = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		deleteReq.Name = args[0]
+
 		err = w.ExternalLocations.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
@@ -123,9 +125,10 @@ var getCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		getReq.Name = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		getReq.Name = args[0]
+
 		response, err := w.ExternalLocations.Get(ctx, getReq)
 		if err != nil {
 			return err
@@ -193,9 +196,10 @@ var updateCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		updateReq.Name = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		updateReq.Name = args[0]
+
 		err = w.ExternalLocations.Update(ctx, updateReq)
 		if err != nil {
 			return err

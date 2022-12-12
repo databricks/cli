@@ -3,7 +3,8 @@
 package m_lflow_databricks
 
 import (
-	"github.com/databricks/bricks/lib/jsonflag"
+	"fmt"
+
 	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
 	"github.com/databricks/databricks-sdk-go/service/mlflow"
@@ -42,9 +43,10 @@ var getCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		getReq.Name = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		getReq.Name = args[0]
+
 		response, err := w.MLflowDatabricks.Get(ctx, getReq)
 		if err != nil {
 			return err
@@ -56,19 +58,17 @@ var getCmd = &cobra.Command{
 // start transition-stage command
 
 var transitionStageReq mlflow.TransitionModelVersionStageDatabricks
-var transitionStageJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(transitionStageCmd)
 	// TODO: short flags
-	transitionStageCmd.Flags().Var(&transitionStageJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	transitionStageCmd.Flags().StringVar(&transitionStageReq.Comment, "comment", transitionStageReq.Comment, `User-provided comment on the action.`)
 
 }
 
 var transitionStageCmd = &cobra.Command{
-	Use:   "transition-stage",
+	Use:   "transition-stage NAME VERSION STAGE ARCHIVE_EXISTING_VERSIONS",
 	Short: `Transition a stage.`,
 	Long: `Transition a stage.
   
@@ -79,14 +79,22 @@ var transitionStageCmd = &cobra.Command{
   [MLflow endpoint]: https://www.mlflow.org/docs/latest/rest-api.html#transition-modelversion-stage`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(4),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		err = transitionStageJson.Unmarshall(&transitionStageReq)
-		if err != nil {
-			return err
-		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		transitionStageReq.Name = args[0]
+		transitionStageReq.Version = args[1]
+		_, err = fmt.Sscan(args[2], &transitionStageReq.Stage)
+		if err != nil {
+			return fmt.Errorf("invalid STAGE: %s", args[2])
+		}
+		_, err = fmt.Sscan(args[3], &transitionStageReq.ArchiveExistingVersions)
+		if err != nil {
+			return fmt.Errorf("invalid ARCHIVE_EXISTING_VERSIONS: %s", args[3])
+		}
+
 		response, err := w.MLflowDatabricks.TransitionStage(ctx, transitionStageReq)
 		if err != nil {
 			return err

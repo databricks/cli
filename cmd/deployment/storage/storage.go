@@ -3,6 +3,8 @@
 package storage
 
 import (
+	"fmt"
+
 	"github.com/databricks/bricks/lib/jsonflag"
 	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
@@ -52,12 +54,18 @@ var createCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		a := sdk.AccountClient(ctx)
 		err = createJson.Unmarshall(&createReq)
 		if err != nil {
 			return err
 		}
-		ctx := cmd.Context()
-		a := sdk.AccountClient(ctx)
+		createReq.StorageConfigurationName = args[0]
+		_, err = fmt.Sscan(args[1], &createReq.RootBucketInfo)
+		if err != nil {
+			return fmt.Errorf("invalid ROOT_BUCKET_INFO: %s", args[1])
+		}
+
 		response, err := a.Storage.Create(ctx, createReq)
 		if err != nil {
 			return err
@@ -85,12 +93,26 @@ var deleteCmd = &cobra.Command{
   configuration that is associated with any workspace.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		deleteReq.StorageConfigurationId = args[0]
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
+		if len(args) == 0 {
+			names, err := a.Storage.StorageConfigurationStorageConfigurationNameToStorageConfigurationIdMap(ctx)
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "Databricks Account API storage configuration ID")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have databricks account api storage configuration id")
+		}
+		deleteReq.StorageConfigurationId = args[0]
+
 		err = a.Storage.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
@@ -117,12 +139,26 @@ var getCmd = &cobra.Command{
   Gets a Databricks storage configuration for an account, both specified by ID.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		getReq.StorageConfigurationId = args[0]
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
+		if len(args) == 0 {
+			names, err := a.Storage.StorageConfigurationStorageConfigurationNameToStorageConfigurationIdMap(ctx)
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "Databricks Account API storage configuration ID")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have databricks account api storage configuration id")
+		}
+		getReq.StorageConfigurationId = args[0]
+
 		response, err := a.Storage.Get(ctx, getReq)
 		if err != nil {
 			return err

@@ -46,12 +46,13 @@ var createCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := sdk.WorkspaceClient(ctx)
 		err = createJson.Unmarshall(&createReq)
 		if err != nil {
 			return err
 		}
-		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+
 		response, err := w.MLflowRuns.Create(ctx, createReq)
 		if err != nil {
 			return err
@@ -81,9 +82,10 @@ var deleteCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		deleteReq.RunId = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		deleteReq.RunId = args[0]
+
 		err = w.MLflowRuns.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
@@ -114,10 +116,11 @@ var deleteTagCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(2),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		deleteTagReq.RunId = args[0]
-		deleteTagReq.Key = args[1]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		deleteTagReq.RunId = args[0]
+		deleteTagReq.Key = args[1]
+
 		err = w.MLflowRuns.DeleteTag(ctx, deleteTagReq)
 		if err != nil {
 			return err
@@ -154,9 +157,10 @@ var getCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		getReq.RunId = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		getReq.RunId = args[0]
+
 		response, err := w.MLflowRuns.Get(ctx, getReq)
 		if err != nil {
 			return err
@@ -228,12 +232,13 @@ var logBatchCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := sdk.WorkspaceClient(ctx)
 		err = logBatchJson.Unmarshall(&logBatchReq)
 		if err != nil {
 			return err
 		}
-		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+
 		err = w.MLflowRuns.LogBatch(ctx, logBatchReq)
 		if err != nil {
 			return err
@@ -269,6 +274,8 @@ var logMetricCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(3),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := sdk.WorkspaceClient(ctx)
 		logMetricReq.Key = args[0]
 		_, err = fmt.Sscan(args[1], &logMetricReq.Value)
 		if err != nil {
@@ -278,8 +285,7 @@ var logMetricCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("invalid TIMESTAMP: %s", args[2])
 		}
-		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+
 		err = w.MLflowRuns.LogMetric(ctx, logMetricReq)
 		if err != nil {
 			return err
@@ -315,6 +321,7 @@ var logModelCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+
 		err = w.MLflowRuns.LogModel(ctx, logModelReq)
 		if err != nil {
 			return err
@@ -350,10 +357,11 @@ var logParameterCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(2),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		logParameterReq.Key = args[0]
-		logParameterReq.Value = args[1]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		logParameterReq.Key = args[0]
+		logParameterReq.Value = args[1]
+
 		err = w.MLflowRuns.LogParameter(ctx, logParameterReq)
 		if err != nil {
 			return err
@@ -383,9 +391,10 @@ var restoreCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		restoreReq.RunId = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		restoreReq.RunId = args[0]
+
 		err = w.MLflowRuns.Restore(ctx, restoreReq)
 		if err != nil {
 			return err
@@ -425,12 +434,13 @@ var searchCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := sdk.WorkspaceClient(ctx)
 		err = searchJson.Unmarshall(&searchReq)
 		if err != nil {
 			return err
 		}
-		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+
 		response, err := w.MLflowRuns.SearchAll(ctx, searchReq)
 		if err != nil {
 			return err
@@ -464,10 +474,11 @@ var setTagCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(2),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		setTagReq.Key = args[0]
-		setTagReq.Value = args[1]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		setTagReq.Key = args[0]
+		setTagReq.Value = args[1]
+
 		err = w.MLflowRuns.SetTag(ctx, setTagReq)
 		if err != nil {
 			return err
@@ -479,12 +490,10 @@ var setTagCmd = &cobra.Command{
 // start update command
 
 var updateReq mlflow.UpdateRun
-var updateJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(updateCmd)
 	// TODO: short flags
-	updateCmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	updateCmd.Flags().Int64Var(&updateReq.EndTime, "end-time", updateReq.EndTime, `Unix timestamp in milliseconds of when the run ended.`)
 	updateCmd.Flags().StringVar(&updateReq.RunId, "run-id", updateReq.RunId, `ID of the run to update.`)
@@ -501,14 +510,12 @@ var updateCmd = &cobra.Command{
   Updates run metadata.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(0),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		err = updateJson.Unmarshall(&updateReq)
-		if err != nil {
-			return err
-		}
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+
 		response, err := w.MLflowRuns.Update(ctx, updateReq)
 		if err != nil {
 			return err

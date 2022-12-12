@@ -46,9 +46,10 @@ var addCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		addReq.InstanceProfileArn = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		addReq.InstanceProfileArn = args[0]
+
 		err = w.InstanceProfiles.Add(ctx, addReq)
 		if err != nil {
 			return err
@@ -95,9 +96,10 @@ var editCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		editReq.InstanceProfileArn = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		editReq.InstanceProfileArn = args[0]
+
 		err = w.InstanceProfiles.Edit(ctx, editReq)
 		if err != nil {
 			return err
@@ -159,9 +161,10 @@ var removeCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		removeReq.InstanceProfileArn = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		removeReq.InstanceProfileArn = args[0]
+
 		err = w.InstanceProfiles.Remove(ctx, removeReq)
 		if err != nil {
 			return err

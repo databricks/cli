@@ -46,9 +46,10 @@ var deleteCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		deleteReq.FullName = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		deleteReq.FullName = args[0]
+
 		err = w.Tables.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
@@ -81,9 +82,10 @@ var getCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		getReq.FullName = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		getReq.FullName = args[0]
+
 		response, err := w.Tables.Get(ctx, getReq)
 		if err != nil {
 			return err
@@ -121,6 +123,7 @@ var listCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+
 		response, err := w.Tables.ListAll(ctx, listReq)
 		if err != nil {
 			return err
@@ -166,6 +169,7 @@ var tableSummariesCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+
 		response, err := w.Tables.TableSummaries(ctx, tableSummariesReq)
 		if err != nil {
 			return err

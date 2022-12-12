@@ -42,13 +42,14 @@ var createOboTokenCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(2),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := sdk.WorkspaceClient(ctx)
 		createOboTokenReq.ApplicationId = args[0]
 		_, err = fmt.Sscan(args[1], &createOboTokenReq.LifetimeSeconds)
 		if err != nil {
 			return fmt.Errorf("invalid LIFETIME_SECONDS: %s", args[1])
 		}
-		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+
 		response, err := w.TokenManagement.CreateOboToken(ctx, createOboTokenReq)
 		if err != nil {
 			return err
@@ -75,12 +76,26 @@ var deleteCmd = &cobra.Command{
   Deletes a token, specified by its ID.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		deleteReq.TokenId = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		if len(args) == 0 {
+			names, err := w.TokenManagement.TokenInfoCommentToTokenIdMap(ctx, tokenmanagement.List{})
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "The ID of the token to get")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the id of the token to get")
+		}
+		deleteReq.TokenId = args[0]
+
 		err = w.TokenManagement.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
@@ -107,12 +122,26 @@ var getCmd = &cobra.Command{
   Gets information about a token, specified by its ID.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		getReq.TokenId = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		if len(args) == 0 {
+			names, err := w.TokenManagement.TokenInfoCommentToTokenIdMap(ctx, tokenmanagement.List{})
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "The ID of the token to get")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the id of the token to get")
+		}
+		getReq.TokenId = args[0]
+
 		response, err := w.TokenManagement.Get(ctx, getReq)
 		if err != nil {
 			return err
@@ -147,6 +176,7 @@ var listCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+
 		response, err := w.TokenManagement.ListAll(ctx, listReq)
 		if err != nil {
 			return err

@@ -3,6 +3,8 @@
 package ipaccesslists
 
 import (
+	"fmt"
+
 	"github.com/databricks/bricks/lib/jsonflag"
 	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
@@ -73,12 +75,22 @@ var createCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := sdk.WorkspaceClient(ctx)
 		err = createJson.Unmarshall(&createReq)
 		if err != nil {
 			return err
 		}
-		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		createReq.Label = args[0]
+		_, err = fmt.Sscan(args[1], &createReq.ListType)
+		if err != nil {
+			return fmt.Errorf("invalid LIST_TYPE: %s", args[1])
+		}
+		_, err = fmt.Sscan(args[2], &createReq.IpAddresses)
+		if err != nil {
+			return fmt.Errorf("invalid IP_ADDRESSES: %s", args[2])
+		}
+
 		response, err := w.IpAccessLists.Create(ctx, createReq)
 		if err != nil {
 			return err
@@ -105,12 +117,26 @@ var deleteCmd = &cobra.Command{
   Deletes an IP access list, specified by its list ID.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		deleteReq.IpAccessListId = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		if len(args) == 0 {
+			names, err := w.IpAccessLists.IpAccessListInfoLabelToListIdMap(ctx)
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "The ID for the corresponding IP access list to modify")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the id for the corresponding ip access list to modify")
+		}
+		deleteReq.IpAccessListId = args[0]
+
 		err = w.IpAccessLists.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
@@ -137,12 +163,26 @@ var getCmd = &cobra.Command{
   Gets an IP access list, specified by its list ID.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		getReq.IpAccessListId = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		if len(args) == 0 {
+			names, err := w.IpAccessLists.IpAccessListInfoLabelToListIdMap(ctx)
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "The ID for the corresponding IP access list to modify")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the id for the corresponding ip access list to modify")
+		}
+		getReq.IpAccessListId = args[0]
+
 		response, err := w.IpAccessLists.Get(ctx, getReq)
 		if err != nil {
 			return err
@@ -212,12 +252,27 @@ var replaceCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := sdk.WorkspaceClient(ctx)
 		err = replaceJson.Unmarshall(&replaceReq)
 		if err != nil {
 			return err
 		}
-		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		replaceReq.Label = args[0]
+		_, err = fmt.Sscan(args[1], &replaceReq.ListType)
+		if err != nil {
+			return fmt.Errorf("invalid LIST_TYPE: %s", args[1])
+		}
+		_, err = fmt.Sscan(args[2], &replaceReq.IpAddresses)
+		if err != nil {
+			return fmt.Errorf("invalid IP_ADDRESSES: %s", args[2])
+		}
+		_, err = fmt.Sscan(args[3], &replaceReq.Enabled)
+		if err != nil {
+			return fmt.Errorf("invalid ENABLED: %s", args[3])
+		}
+		replaceReq.IpAccessListId = args[4]
+
 		err = w.IpAccessLists.Replace(ctx, replaceReq)
 		if err != nil {
 			return err
@@ -264,12 +319,27 @@ var updateCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := sdk.WorkspaceClient(ctx)
 		err = updateJson.Unmarshall(&updateReq)
 		if err != nil {
 			return err
 		}
-		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		updateReq.Label = args[0]
+		_, err = fmt.Sscan(args[1], &updateReq.ListType)
+		if err != nil {
+			return fmt.Errorf("invalid LIST_TYPE: %s", args[1])
+		}
+		_, err = fmt.Sscan(args[2], &updateReq.IpAddresses)
+		if err != nil {
+			return fmt.Errorf("invalid IP_ADDRESSES: %s", args[2])
+		}
+		_, err = fmt.Sscan(args[3], &updateReq.Enabled)
+		if err != nil {
+			return fmt.Errorf("invalid ENABLED: %s", args[3])
+		}
+		updateReq.IpAccessListId = args[4]
+
 		err = w.IpAccessLists.Update(ctx, updateReq)
 		if err != nil {
 			return err

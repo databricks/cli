@@ -51,10 +51,11 @@ var createCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(2),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		createReq.Url = args[0]
-		createReq.Provider = args[1]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		createReq.Url = args[0]
+		createReq.Provider = args[1]
+
 		response, err := w.Repos.Create(ctx, createReq)
 		if err != nil {
 			return err
@@ -81,15 +82,29 @@ var deleteCmd = &cobra.Command{
   Deletes the specified repo.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := sdk.WorkspaceClient(ctx)
+		if len(args) == 0 {
+			names, err := w.Repos.RepoInfoPathToIdMap(ctx, repos.List{})
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "The ID for the corresponding repo to access")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the id for the corresponding repo to access")
+		}
 		_, err = fmt.Sscan(args[0], &deleteReq.RepoId)
 		if err != nil {
 			return fmt.Errorf("invalid REPO_ID: %s", args[0])
 		}
-		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+
 		err = w.Repos.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
@@ -116,15 +131,29 @@ var getCmd = &cobra.Command{
   Returns the repo with the given repo ID.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := sdk.WorkspaceClient(ctx)
+		if len(args) == 0 {
+			names, err := w.Repos.RepoInfoPathToIdMap(ctx, repos.List{})
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "The ID for the corresponding repo to access")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the id for the corresponding repo to access")
+		}
 		_, err = fmt.Sscan(args[0], &getReq.RepoId)
 		if err != nil {
 			return fmt.Errorf("invalid REPO_ID: %s", args[0])
 		}
-		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+
 		response, err := w.Repos.Get(ctx, getReq)
 		if err != nil {
 			return err
@@ -160,6 +189,7 @@ var listCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+
 		response, err := w.Repos.ListAll(ctx, listReq)
 		if err != nil {
 			return err
@@ -190,15 +220,29 @@ var updateCmd = &cobra.Command{
   latest commit on the same branch.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := sdk.WorkspaceClient(ctx)
+		if len(args) == 0 {
+			names, err := w.Repos.RepoInfoPathToIdMap(ctx, repos.List{})
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "The ID for the corresponding repo to access")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the id for the corresponding repo to access")
+		}
 		_, err = fmt.Sscan(args[0], &updateReq.RepoId)
 		if err != nil {
 			return fmt.Errorf("invalid REPO_ID: %s", args[0])
 		}
-		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+
 		err = w.Repos.Update(ctx, updateReq)
 		if err != nil {
 			return err

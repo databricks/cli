@@ -37,9 +37,10 @@ var getHistoryCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		getHistoryReq.MetricKey = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		getHistoryReq.MetricKey = args[0]
+
 		response, err := w.MLflowMetrics.GetHistory(ctx, getHistoryReq)
 		if err != nil {
 			return err

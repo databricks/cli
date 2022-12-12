@@ -3,6 +3,8 @@
 package tokens
 
 import (
+	"fmt"
+
 	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
 	"github.com/databricks/databricks-sdk-go/service/tokens"
@@ -45,6 +47,7 @@ var createCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+
 		response, err := w.Tokens.Create(ctx, createReq)
 		if err != nil {
 			return err
@@ -74,12 +77,26 @@ var deleteCmd = &cobra.Command{
   **RESOURCE_DOES_NOT_EXIST**.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		deleteReq.TokenId = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		if len(args) == 0 {
+			names, err := w.Tokens.PublicTokenInfoCommentToTokenIdMap(ctx)
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "The ID of the token to be revoked")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the id of the token to be revoked")
+		}
+		deleteReq.TokenId = args[0]
+
 		err = w.Tokens.Delete(ctx, deleteReq)
 		if err != nil {
 			return err

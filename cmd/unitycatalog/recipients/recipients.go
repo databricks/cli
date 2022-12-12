@@ -3,6 +3,8 @@
 package recipients
 
 import (
+	"fmt"
+
 	"github.com/databricks/bricks/lib/jsonflag"
 	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
@@ -44,12 +46,18 @@ var createCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := sdk.WorkspaceClient(ctx)
 		err = createJson.Unmarshall(&createReq)
 		if err != nil {
 			return err
 		}
-		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		createReq.Name = args[0]
+		_, err = fmt.Sscan(args[1], &createReq.AuthenticationType)
+		if err != nil {
+			return fmt.Errorf("invalid AUTHENTICATION_TYPE: %s", args[1])
+		}
+
 		response, err := w.Recipients.Create(ctx, createReq)
 		if err != nil {
 			return err
@@ -80,9 +88,10 @@ var deleteCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		deleteReq.Name = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		deleteReq.Name = args[0]
+
 		err = w.Recipients.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
@@ -114,9 +123,10 @@ var getCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		getReq.Name = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		getReq.Name = args[0]
+
 		response, err := w.Recipients.Get(ctx, getReq)
 		if err != nil {
 			return err
@@ -152,6 +162,7 @@ var listCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+
 		response, err := w.Recipients.ListAll(ctx, listReq)
 		if err != nil {
 			return err
@@ -184,9 +195,10 @@ var rotateTokenCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		rotateTokenReq.Name = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		rotateTokenReq.Name = args[0]
+
 		response, err := w.Recipients.RotateToken(ctx, rotateTokenReq)
 		if err != nil {
 			return err
@@ -217,9 +229,10 @@ var sharePermissionsCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		sharePermissionsReq.Name = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		sharePermissionsReq.Name = args[0]
+
 		response, err := w.Recipients.SharePermissions(ctx, sharePermissionsReq)
 		if err != nil {
 			return err
@@ -257,12 +270,14 @@ var updateCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := sdk.WorkspaceClient(ctx)
 		err = updateJson.Unmarshall(&updateReq)
 		if err != nil {
 			return err
 		}
-		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		updateReq.Name = args[0]
+
 		err = w.Recipients.Update(ctx, updateReq)
 		if err != nil {
 			return err

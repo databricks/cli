@@ -36,9 +36,10 @@ var getStatusCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		getStatusReq.Keys = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		getStatusReq.Keys = args[0]
+
 		response, err := w.WorkspaceConf.GetStatus(ctx, getStatusReq)
 		if err != nil {
 			return err
@@ -71,6 +72,7 @@ var setStatusCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+
 		err = w.WorkspaceConf.SetStatus(ctx, setStatusReq)
 		if err != nil {
 			return err

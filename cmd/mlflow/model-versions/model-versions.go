@@ -43,12 +43,15 @@ var createCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := sdk.WorkspaceClient(ctx)
 		err = createJson.Unmarshall(&createReq)
 		if err != nil {
 			return err
 		}
-		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		createReq.Name = args[0]
+		createReq.Source = args[1]
+
 		response, err := w.ModelVersions.Create(ctx, createReq)
 		if err != nil {
 			return err
@@ -78,10 +81,11 @@ var deleteCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(2),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		deleteReq.Name = args[0]
-		deleteReq.Version = args[1]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		deleteReq.Name = args[0]
+		deleteReq.Version = args[1]
+
 		err = w.ModelVersions.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
@@ -111,11 +115,12 @@ var deleteTagCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(3),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := sdk.WorkspaceClient(ctx)
 		deleteTagReq.Name = args[0]
 		deleteTagReq.Version = args[1]
 		deleteTagReq.Key = args[2]
-		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+
 		err = w.ModelVersions.DeleteTag(ctx, deleteTagReq)
 		if err != nil {
 			return err
@@ -145,10 +150,11 @@ var getCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(2),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		getReq.Name = args[0]
-		getReq.Version = args[1]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		getReq.Name = args[0]
+		getReq.Version = args[1]
+
 		response, err := w.ModelVersions.Get(ctx, getReq)
 		if err != nil {
 			return err
@@ -178,10 +184,11 @@ var getDownloadUriCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(2),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		getDownloadUriReq.Name = args[0]
-		getDownloadUriReq.Version = args[1]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		getDownloadUriReq.Name = args[0]
+		getDownloadUriReq.Version = args[1]
+
 		response, err := w.ModelVersions.GetDownloadUri(ctx, getDownloadUriReq)
 		if err != nil {
 			return err
@@ -217,12 +224,13 @@ var searchCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := sdk.WorkspaceClient(ctx)
 		err = searchJson.Unmarshall(&searchReq)
 		if err != nil {
 			return err
 		}
-		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+
 		response, err := w.ModelVersions.SearchAll(ctx, searchReq)
 		if err != nil {
 			return err
@@ -252,12 +260,13 @@ var setTagCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(4),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := sdk.WorkspaceClient(ctx)
 		setTagReq.Name = args[0]
 		setTagReq.Version = args[1]
 		setTagReq.Key = args[2]
 		setTagReq.Value = args[3]
-		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+
 		err = w.ModelVersions.SetTag(ctx, setTagReq)
 		if err != nil {
 			return err
@@ -287,6 +296,8 @@ var transitionStageCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(4),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := sdk.WorkspaceClient(ctx)
 		transitionStageReq.Name = args[0]
 		transitionStageReq.Version = args[1]
 		transitionStageReq.Stage = args[2]
@@ -294,8 +305,7 @@ var transitionStageCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("invalid ARCHIVE_EXISTING_VERSIONS: %s", args[3])
 		}
-		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+
 		response, err := w.ModelVersions.TransitionStage(ctx, transitionStageReq)
 		if err != nil {
 			return err
@@ -327,10 +337,11 @@ var updateCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(2),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		updateReq.Name = args[0]
-		updateReq.Version = args[1]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		updateReq.Name = args[0]
+		updateReq.Version = args[1]
+
 		err = w.ModelVersions.Update(ctx, updateReq)
 		if err != nil {
 			return err

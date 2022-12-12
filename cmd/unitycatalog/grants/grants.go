@@ -53,10 +53,11 @@ var getCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(2),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		getReq.SecurableType = args[0]
-		getReq.FullName = args[1]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		getReq.SecurableType = args[0]
+		getReq.FullName = args[1]
+
 		response, err := w.Grants.Get(ctx, getReq)
 		if err != nil {
 			return err
@@ -90,12 +91,15 @@ var updateCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := sdk.WorkspaceClient(ctx)
 		err = updateJson.Unmarshall(&updateReq)
 		if err != nil {
 			return err
 		}
-		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		updateReq.SecurableType = args[0]
+		updateReq.FullName = args[1]
+
 		err = w.Grants.Update(ctx, updateReq)
 		if err != nil {
 			return err

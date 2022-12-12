@@ -3,6 +3,7 @@
 package clusters
 
 import (
+	"fmt"
 	"time"
 
 	instance_profiles "github.com/databricks/bricks/cmd/clusters/instance-profiles"
@@ -68,10 +69,11 @@ var changeOwnerCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(2),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		changeOwnerReq.ClusterId = args[0]
-		changeOwnerReq.OwnerUsername = args[1]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		changeOwnerReq.ClusterId = args[0]
+		changeOwnerReq.OwnerUsername = args[1]
+
 		err = w.Clusters.ChangeOwner(ctx, changeOwnerReq)
 		if err != nil {
 			return err
@@ -143,12 +145,14 @@ var createCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := sdk.WorkspaceClient(ctx)
 		err = createJson.Unmarshall(&createReq)
 		if err != nil {
 			return err
 		}
-		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		createReq.SparkVersion = args[0]
+
 		if !createNoWait {
 			spinner := ui.StartSpinner()
 			info, err := w.Clusters.CreateAndWait(ctx, createReq,
@@ -198,12 +202,26 @@ var deleteCmd = &cobra.Command{
   TERMINATED state, nothing will happen.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		deleteReq.ClusterId = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		if len(args) == 0 {
+			names, err := w.Clusters.ClusterInfoClusterNameToClusterIdMap(ctx, clusters.List{})
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "The cluster to be terminated")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the cluster to be terminated")
+		}
+		deleteReq.ClusterId = args[0]
+
 		if !deleteNoWait {
 			spinner := ui.StartSpinner()
 			info, err := w.Clusters.DeleteAndWait(ctx, deleteReq,
@@ -288,12 +306,15 @@ var editCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := sdk.WorkspaceClient(ctx)
 		err = editJson.Unmarshall(&editReq)
 		if err != nil {
 			return err
 		}
-		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		editReq.ClusterId = args[0]
+		editReq.SparkVersion = args[1]
+
 		if !editNoWait {
 			spinner := ui.StartSpinner()
 			info, err := w.Clusters.EditAndWait(ctx, editReq,
@@ -347,12 +368,14 @@ var eventsCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := sdk.WorkspaceClient(ctx)
 		err = eventsJson.Unmarshall(&eventsReq)
 		if err != nil {
 			return err
 		}
-		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		eventsReq.ClusterId = args[0]
+
 		response, err := w.Clusters.EventsAll(ctx, eventsReq)
 		if err != nil {
 			return err
@@ -386,12 +409,26 @@ var getCmd = &cobra.Command{
   described while they are running, or up to 60 days after they are terminated.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		getReq.ClusterId = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		if len(args) == 0 {
+			names, err := w.Clusters.ClusterInfoClusterNameToClusterIdMap(ctx, clusters.List{})
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "The cluster about which to retrieve information")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the cluster about which to retrieve information")
+		}
+		getReq.ClusterId = args[0]
+
 		if !getNoWait {
 			spinner := ui.StartSpinner()
 			info, err := w.Clusters.GetAndWait(ctx, getReq,
@@ -447,6 +484,7 @@ var listCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+
 		response, err := w.Clusters.ListAll(ctx, listReq)
 		if err != nil {
 			return err
@@ -534,12 +572,26 @@ var permanentDeleteCmd = &cobra.Command{
   deleted clusters.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		permanentDeleteReq.ClusterId = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		if len(args) == 0 {
+			names, err := w.Clusters.ClusterInfoClusterNameToClusterIdMap(ctx, clusters.List{})
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "The cluster to be deleted")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the cluster to be deleted")
+		}
+		permanentDeleteReq.ClusterId = args[0]
+
 		err = w.Clusters.PermanentDelete(ctx, permanentDeleteReq)
 		if err != nil {
 			return err
@@ -568,12 +620,26 @@ var pinCmd = &cobra.Command{
   effect. This API can only be called by workspace admins.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		pinReq.ClusterId = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		if len(args) == 0 {
+			names, err := w.Clusters.ClusterInfoClusterNameToClusterIdMap(ctx, clusters.List{})
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "<needs content added>")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have <needs content added>")
+		}
+		pinReq.ClusterId = args[0]
+
 		err = w.Clusters.Pin(ctx, pinReq)
 		if err != nil {
 			return err
@@ -613,12 +679,14 @@ var resizeCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := sdk.WorkspaceClient(ctx)
 		err = resizeJson.Unmarshall(&resizeReq)
 		if err != nil {
 			return err
 		}
-		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		resizeReq.ClusterId = args[0]
+
 		if !resizeNoWait {
 			spinner := ui.StartSpinner()
 			info, err := w.Clusters.ResizeAndWait(ctx, resizeReq,
@@ -668,12 +736,26 @@ var restartCmd = &cobra.Command{
   in a RUNNING state, nothing will happen.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		restartReq.ClusterId = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		if len(args) == 0 {
+			names, err := w.Clusters.ClusterInfoClusterNameToClusterIdMap(ctx, clusters.List{})
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "The cluster to be started")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the cluster to be started")
+		}
+		restartReq.ClusterId = args[0]
+
 		if !restartNoWait {
 			spinner := ui.StartSpinner()
 			info, err := w.Clusters.RestartAndWait(ctx, restartReq,
@@ -755,12 +837,26 @@ var startCmd = &cobra.Command{
   happen. * Clusters launched to run a job cannot be started.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		startReq.ClusterId = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		if len(args) == 0 {
+			names, err := w.Clusters.ClusterInfoClusterNameToClusterIdMap(ctx, clusters.List{})
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "The cluster to be started")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the cluster to be started")
+		}
+		startReq.ClusterId = args[0]
+
 		if !startNoWait {
 			spinner := ui.StartSpinner()
 			info, err := w.Clusters.StartAndWait(ctx, startReq,
@@ -803,12 +899,26 @@ var unpinCmd = &cobra.Command{
   This API can only be called by workspace admins.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		unpinReq.ClusterId = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		if len(args) == 0 {
+			names, err := w.Clusters.ClusterInfoClusterNameToClusterIdMap(ctx, clusters.List{})
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "<needs content added>")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have <needs content added>")
+		}
+		unpinReq.ClusterId = args[0]
+
 		err = w.Clusters.Unpin(ctx, unpinReq)
 		if err != nil {
 			return err

@@ -3,6 +3,8 @@
 package account_service_principals
 
 import (
+	"fmt"
+
 	"github.com/databricks/bricks/lib/jsonflag"
 	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
@@ -52,12 +54,15 @@ var createCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		a := sdk.AccountClient(ctx)
 		err = createJson.Unmarshall(&createReq)
 		if err != nil {
 			return err
 		}
-		ctx := cmd.Context()
-		a := sdk.AccountClient(ctx)
+		createReq.Id = args[0]
+		createReq.Id = args[1]
+
 		response, err := a.ServicePrincipals.Create(ctx, createReq)
 		if err != nil {
 			return err
@@ -84,12 +89,26 @@ var deleteCmd = &cobra.Command{
   Delete a single service principal in the Databricks Account.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		deleteReq.Id = args[0]
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
+		if len(args) == 0 {
+			names, err := a.ServicePrincipals.ServicePrincipalDisplayNameToIdMap(ctx, scim.ListServicePrincipalsRequest{})
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "Unique ID for a service principal in the Databricks Account")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have unique id for a service principal in the databricks account")
+		}
+		deleteReq.Id = args[0]
+
 		err = a.ServicePrincipals.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
@@ -117,12 +136,26 @@ var getCmd = &cobra.Command{
   Account.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		getReq.Id = args[0]
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
+		if len(args) == 0 {
+			names, err := a.ServicePrincipals.ServicePrincipalDisplayNameToIdMap(ctx, scim.ListServicePrincipalsRequest{})
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "Unique ID for a service principal in the Databricks Account")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have unique id for a service principal in the databricks account")
+		}
+		getReq.Id = args[0]
+
 		response, err := a.ServicePrincipals.Get(ctx, getReq)
 		if err != nil {
 			return err
@@ -134,12 +167,10 @@ var getCmd = &cobra.Command{
 // start list command
 
 var listReq scim.ListServicePrincipalsRequest
-var listJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(listCmd)
 	// TODO: short flags
-	listCmd.Flags().Var(&listJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	listCmd.Flags().StringVar(&listReq.Attributes, "attributes", listReq.Attributes, `Comma-separated list of attributes to return in response.`)
 	listCmd.Flags().IntVar(&listReq.Count, "count", listReq.Count, `Desired number of results per page.`)
@@ -159,14 +190,12 @@ var listCmd = &cobra.Command{
   Gets the set of service principals associated with a Databricks Account.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(0),
 	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		err = listJson.Unmarshall(&listReq)
-		if err != nil {
-			return err
-		}
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
+
 		response, err := a.ServicePrincipals.ListAll(ctx, listReq)
 		if err != nil {
 			return err
@@ -200,12 +229,19 @@ var patchCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		a := sdk.AccountClient(ctx)
 		err = patchJson.Unmarshall(&patchReq)
 		if err != nil {
 			return err
 		}
-		ctx := cmd.Context()
-		a := sdk.AccountClient(ctx)
+		patchReq.Id = args[0]
+		patchReq.Id = args[1]
+		patchReq.Id = args[2]
+		patchReq.Id = args[3]
+		patchReq.Id = args[4]
+		patchReq.Id = args[5]
+
 		err = a.ServicePrincipals.Patch(ctx, patchReq)
 		if err != nil {
 			return err
@@ -247,12 +283,15 @@ var updateCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		a := sdk.AccountClient(ctx)
 		err = updateJson.Unmarshall(&updateReq)
 		if err != nil {
 			return err
 		}
-		ctx := cmd.Context()
-		a := sdk.AccountClient(ctx)
+		updateReq.Id = args[0]
+		updateReq.Id = args[1]
+
 		err = a.ServicePrincipals.Update(ctx, updateReq)
 		if err != nil {
 			return err

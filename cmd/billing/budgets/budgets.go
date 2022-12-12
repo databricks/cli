@@ -3,6 +3,8 @@
 package budgets
 
 import (
+	"fmt"
+
 	"github.com/databricks/bricks/lib/jsonflag"
 	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
@@ -39,12 +41,18 @@ var createCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		a := sdk.AccountClient(ctx)
 		err = createJson.Unmarshall(&createReq)
 		if err != nil {
 			return err
 		}
-		ctx := cmd.Context()
-		a := sdk.AccountClient(ctx)
+		_, err = fmt.Sscan(args[0], &createReq.Budget)
+		if err != nil {
+			return fmt.Errorf("invalid BUDGET: %s", args[0])
+		}
+		createReq.BudgetId = args[1]
+
 		response, err := a.Budgets.Create(ctx, createReq)
 		if err != nil {
 			return err
@@ -71,12 +79,26 @@ var deleteCmd = &cobra.Command{
   Deletes the budget specified by its UUID.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		deleteReq.BudgetId = args[0]
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
+		if len(args) == 0 {
+			names, err := a.Budgets.BudgetWithStatusNameToBudgetIdMap(ctx)
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "Budget ID")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have budget id")
+		}
+		deleteReq.BudgetId = args[0]
+
 		err = a.Budgets.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
@@ -104,12 +126,26 @@ var getCmd = &cobra.Command{
   day that the budget is configured to include.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		getReq.BudgetId = args[0]
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
+		if len(args) == 0 {
+			names, err := a.Budgets.BudgetWithStatusNameToBudgetIdMap(ctx)
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "Budget ID")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have budget id")
+		}
+		getReq.BudgetId = args[0]
+
 		response, err := a.Budgets.Get(ctx, getReq)
 		if err != nil {
 			return err
@@ -169,12 +205,18 @@ var updateCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		a := sdk.AccountClient(ctx)
 		err = updateJson.Unmarshall(&updateReq)
 		if err != nil {
 			return err
 		}
-		ctx := cmd.Context()
-		a := sdk.AccountClient(ctx)
+		_, err = fmt.Sscan(args[0], &updateReq.Budget)
+		if err != nil {
+			return fmt.Errorf("invalid BUDGET: %s", args[0])
+		}
+		updateReq.BudgetId = args[1]
+
 		err = a.Budgets.Update(ctx, updateReq)
 		if err != nil {
 			return err

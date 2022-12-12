@@ -52,14 +52,15 @@ var assignCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(3),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := sdk.WorkspaceClient(ctx)
 		assignReq.MetastoreId = args[0]
 		assignReq.DefaultCatalogName = args[1]
 		_, err = fmt.Sscan(args[2], &assignReq.WorkspaceId)
 		if err != nil {
 			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[2])
 		}
-		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+
 		err = w.Metastores.Assign(ctx, assignReq)
 		if err != nil {
 			return err
@@ -89,10 +90,11 @@ var createCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(2),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		createReq.Name = args[0]
-		createReq.StorageRoot = args[1]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		createReq.Name = args[0]
+		createReq.StorageRoot = args[1]
+
 		response, err := w.Metastores.Create(ctx, createReq)
 		if err != nil {
 			return err
@@ -121,12 +123,26 @@ var deleteCmd = &cobra.Command{
   Deletes a Metastore. The caller must be a Metastore admin.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		deleteReq.Id = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		if len(args) == 0 {
+			names, err := w.Metastores.MetastoreInfoNameToMetastoreIdMap(ctx)
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "Required")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have required")
+		}
+		deleteReq.Id = args[0]
+
 		err = w.Metastores.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
@@ -154,12 +170,26 @@ var getCmd = &cobra.Command{
   admin to retrieve this info.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		getReq.Id = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		if len(args) == 0 {
+			names, err := w.Metastores.MetastoreInfoNameToMetastoreIdMap(ctx)
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "Required")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have required")
+		}
+		getReq.Id = args[0]
+
 		response, err := w.Metastores.Get(ctx, getReq)
 		if err != nil {
 			return err
@@ -245,13 +275,14 @@ var unassignCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(2),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := sdk.WorkspaceClient(ctx)
 		_, err = fmt.Sscan(args[0], &unassignReq.WorkspaceId)
 		if err != nil {
 			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
 		}
 		unassignReq.MetastoreId = args[1]
-		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+
 		err = w.Metastores.Unassign(ctx, unassignReq)
 		if err != nil {
 			return err
@@ -286,12 +317,26 @@ var updateCmd = &cobra.Command{
   admin.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		updateReq.Id = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		if len(args) == 0 {
+			names, err := w.Metastores.MetastoreInfoNameToMetastoreIdMap(ctx)
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "Required")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have required")
+		}
+		updateReq.Id = args[0]
+
 		err = w.Metastores.Update(ctx, updateReq)
 		if err != nil {
 			return err
@@ -324,15 +369,29 @@ var updateAssignmentCmd = &cobra.Command{
   to update __metastore_id__; otherwise, the caller can be a Workspace admin.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := sdk.WorkspaceClient(ctx)
+		if len(args) == 0 {
+			names, err := w.Metastores.MetastoreInfoNameToMetastoreIdMap(ctx)
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "A workspace ID")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have a workspace id")
+		}
 		_, err = fmt.Sscan(args[0], &updateAssignmentReq.WorkspaceId)
 		if err != nil {
 			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
 		}
-		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+
 		err = w.Metastores.UpdateAssignment(ctx, updateAssignmentReq)
 		if err != nil {
 			return err

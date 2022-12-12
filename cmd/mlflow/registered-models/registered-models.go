@@ -42,12 +42,14 @@ var createCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := sdk.WorkspaceClient(ctx)
 		err = createJson.Unmarshall(&createReq)
 		if err != nil {
 			return err
 		}
-		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		createReq.Name = args[0]
+
 		response, err := w.RegisteredModels.Create(ctx, createReq)
 		if err != nil {
 			return err
@@ -77,9 +79,10 @@ var deleteCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		deleteReq.Name = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		deleteReq.Name = args[0]
+
 		err = w.RegisteredModels.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
@@ -109,10 +112,11 @@ var deleteTagCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(2),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		deleteTagReq.Name = args[0]
-		deleteTagReq.Key = args[1]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		deleteTagReq.Name = args[0]
+		deleteTagReq.Key = args[1]
+
 		err = w.RegisteredModels.DeleteTag(ctx, deleteTagReq)
 		if err != nil {
 			return err
@@ -142,9 +146,10 @@ var getCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		getReq.Name = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		getReq.Name = args[0]
+
 		response, err := w.RegisteredModels.Get(ctx, getReq)
 		if err != nil {
 			return err
@@ -177,12 +182,14 @@ var getLatestVersionsCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := sdk.WorkspaceClient(ctx)
 		err = getLatestVersionsJson.Unmarshall(&getLatestVersionsReq)
 		if err != nil {
 			return err
 		}
-		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		getLatestVersionsReq.Name = args[0]
+
 		response, err := w.RegisteredModels.GetLatestVersionsAll(ctx, getLatestVersionsReq)
 		if err != nil {
 			return err
@@ -218,6 +225,7 @@ var listCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+
 		response, err := w.RegisteredModels.ListAll(ctx, listReq)
 		if err != nil {
 			return err
@@ -249,9 +257,10 @@ var renameCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		renameReq.Name = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		renameReq.Name = args[0]
+
 		response, err := w.RegisteredModels.Rename(ctx, renameReq)
 		if err != nil {
 			return err
@@ -287,12 +296,13 @@ var searchCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := sdk.WorkspaceClient(ctx)
 		err = searchJson.Unmarshall(&searchReq)
 		if err != nil {
 			return err
 		}
-		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+
 		response, err := w.RegisteredModels.SearchAll(ctx, searchReq)
 		if err != nil {
 			return err
@@ -322,11 +332,12 @@ var setTagCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(3),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := sdk.WorkspaceClient(ctx)
 		setTagReq.Name = args[0]
 		setTagReq.Key = args[1]
 		setTagReq.Value = args[2]
-		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+
 		err = w.RegisteredModels.SetTag(ctx, setTagReq)
 		if err != nil {
 			return err
@@ -358,9 +369,10 @@ var updateCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		updateReq.Name = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		updateReq.Name = args[0]
+
 		err = w.RegisteredModels.Update(ctx, updateReq)
 		if err != nil {
 			return err

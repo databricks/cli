@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"encoding/json"
 	"strings"
 	"text/tabwriter"
 	"text/template"
@@ -41,10 +42,11 @@ func Heredoc(tmpl string) (trimmed string) {
 
 // TODO: move to a separate package
 func Render(cmd *cobra.Command, v any) error {
-	err := startPager(cmd)
+	stopPager, err := startPager(cmd)
 	if err != nil {
 		return err
 	}
+	defer stopPager()
 	// TODO: add terminal width & white/dark theme detection
 	tmpl, ok := cmd.Annotations["template"]
 	if ok {
@@ -61,6 +63,18 @@ func Render(cmd *cobra.Command, v any) error {
 			"cyan":    color.CyanString,
 			"replace": strings.ReplaceAll,
 			"join":    strings.Join,
+			"pretty_json": func(in string) (string, error) {
+				var tmp any
+				err := json.Unmarshal([]byte(in), &tmp)
+				if err != nil {
+					return "", err
+				}
+				b, err := MarshalJSON(tmp)
+				if err != nil {
+					return "", err
+				}
+				return string(b), nil
+			},
 		}).Parse(tmpl)
 		if err != nil {
 			return err

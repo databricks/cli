@@ -42,10 +42,11 @@ var downloadCmd = &cobra.Command{
 	Args:        cobra.ExactArgs(2),
 	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		downloadReq.StartMonth = args[0]
-		downloadReq.EndMonth = args[1]
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
+		downloadReq.StartMonth = args[0]
+		downloadReq.EndMonth = args[1]
+
 		err = a.BillableUsage.Download(ctx, downloadReq)
 		if err != nil {
 			return err

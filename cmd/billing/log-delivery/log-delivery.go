@@ -3,6 +3,8 @@
 package log_delivery
 
 import (
+	"fmt"
+
 	"github.com/databricks/bricks/lib/jsonflag"
 	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
@@ -124,12 +126,13 @@ var createCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		a := sdk.AccountClient(ctx)
 		err = createJson.Unmarshall(&createReq)
 		if err != nil {
 			return err
 		}
-		ctx := cmd.Context()
-		a := sdk.AccountClient(ctx)
+
 		response, err := a.LogDelivery.Create(ctx, createReq)
 		if err != nil {
 			return err
@@ -157,12 +160,26 @@ var getCmd = &cobra.Command{
   specified by ID.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		getReq.LogDeliveryConfigurationId = args[0]
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
+		if len(args) == 0 {
+			names, err := a.LogDelivery.LogDeliveryConfigurationConfigNameToConfigIdMap(ctx, billing.ListLogDeliveryRequest{})
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "Databricks log delivery configuration ID")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have databricks log delivery configuration id")
+		}
+		getReq.LogDeliveryConfigurationId = args[0]
+
 		response, err := a.LogDelivery.Get(ctx, getReq)
 		if err != nil {
 			return err
@@ -174,12 +191,10 @@ var getCmd = &cobra.Command{
 // start list command
 
 var listReq billing.ListLogDeliveryRequest
-var listJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(listCmd)
 	// TODO: short flags
-	listCmd.Flags().Var(&listJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	listCmd.Flags().StringVar(&listReq.CredentialsId, "credentials-id", listReq.CredentialsId, `Filter by credential configuration ID.`)
 	listCmd.Flags().Var(&listReq.Status, "status", `Filter by status ENABLED or DISABLED.`)
@@ -196,14 +211,12 @@ var listCmd = &cobra.Command{
   specified by ID.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(0),
 	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		err = listJson.Unmarshall(&listReq)
-		if err != nil {
-			return err
-		}
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
+
 		response, err := a.LogDelivery.ListAll(ctx, listReq)
 		if err != nil {
 			return err
@@ -215,17 +228,15 @@ var listCmd = &cobra.Command{
 // start patch-status command
 
 var patchStatusReq billing.UpdateLogDeliveryConfigurationStatusRequest
-var patchStatusJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(patchStatusCmd)
 	// TODO: short flags
-	patchStatusCmd.Flags().Var(&patchStatusJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
 var patchStatusCmd = &cobra.Command{
-	Use:   "patch-status",
+	Use:   "patch-status STATUS LOG_DELIVERY_CONFIGURATION_ID",
 	Short: `Enable or disable log delivery configuration.`,
 	Long: `Enable or disable log delivery configuration.
   
@@ -236,14 +247,17 @@ var patchStatusCmd = &cobra.Command{
   [Create log delivery](#operation/create-log-delivery-config).`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(2),
 	PreRunE:     sdk.PreAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		err = patchStatusJson.Unmarshall(&patchStatusReq)
-		if err != nil {
-			return err
-		}
 		ctx := cmd.Context()
 		a := sdk.AccountClient(ctx)
+		_, err = fmt.Sscan(args[0], &patchStatusReq.Status)
+		if err != nil {
+			return fmt.Errorf("invalid STATUS: %s", args[0])
+		}
+		patchStatusReq.LogDeliveryConfigurationId = args[1]
+
 		err = a.LogDelivery.PatchStatus(ctx, patchStatusReq)
 		if err != nil {
 			return err

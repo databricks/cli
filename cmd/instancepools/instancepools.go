@@ -3,6 +3,8 @@
 package instancepools
 
 import (
+	"fmt"
+
 	"github.com/databricks/bricks/lib/jsonflag"
 	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
@@ -67,12 +69,15 @@ var createCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := sdk.WorkspaceClient(ctx)
 		err = createJson.Unmarshall(&createReq)
 		if err != nil {
 			return err
 		}
-		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		createReq.InstancePoolName = args[0]
+		createReq.NodeTypeId = args[1]
+
 		response, err := w.InstancePools.Create(ctx, createReq)
 		if err != nil {
 			return err
@@ -100,12 +105,26 @@ var deleteCmd = &cobra.Command{
   terminated asynchronously.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		deleteReq.InstancePoolId = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		if len(args) == 0 {
+			names, err := w.InstancePools.InstancePoolAndStatsInstancePoolNameToInstancePoolIdMap(ctx)
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "The instance pool to be terminated")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the instance pool to be terminated")
+		}
+		deleteReq.InstancePoolId = args[0]
+
 		err = w.InstancePools.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
@@ -148,12 +167,16 @@ var editCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := sdk.WorkspaceClient(ctx)
 		err = editJson.Unmarshall(&editReq)
 		if err != nil {
 			return err
 		}
-		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		editReq.InstancePoolId = args[0]
+		editReq.InstancePoolName = args[1]
+		editReq.NodeTypeId = args[2]
+
 		err = w.InstancePools.Edit(ctx, editReq)
 		if err != nil {
 			return err
@@ -180,12 +203,26 @@ var getCmd = &cobra.Command{
   Retrieve the information for an instance pool based on its identifier.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		getReq.InstancePoolId = args[0]
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		if len(args) == 0 {
+			names, err := w.InstancePools.InstancePoolAndStatsInstancePoolNameToInstancePoolIdMap(ctx)
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "The canonical unique identifier for the instance pool")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the canonical unique identifier for the instance pool")
+		}
+		getReq.InstancePoolId = args[0]
+
 		response, err := w.InstancePools.Get(ctx, getReq)
 		if err != nil {
 			return err
