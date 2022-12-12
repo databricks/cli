@@ -75,18 +75,18 @@ var {{.CamelName}}Cmd = &cobra.Command{
 		{{- if .Request -}}
 			{{if $hasIdPrompt}}
 				if len(args) == 0 {
-				names, err := {{if .Service.IsAccounts}}a{{else}}w{{end}}.{{trim_prefix .Service.PascalName "Account"}}.{{.Service.List.NamedIdMap.PascalName}}(ctx{{if .Service.List.Request}}, {{.Service.Package.Name}}.{{.Service.List.Request.PascalName}}{}{{end}})
+				names, err := {{if .Service.IsAccounts}}a{{else}}w{{end}}.{{.Service.PascalName | trimPrefix "Account"}}.{{.Service.List.NamedIdMap.PascalName}}(ctx{{if .Service.List.Request}}, {{.Service.Package.Name}}.{{.Service.List.Request.PascalName}}{}{{end}})
 				if err != nil {
 					return err
 				}
-				id, err := ui.PromptValue(cmd.InOrStdin(), names, "{{range .Request.RequiredFields}}{{.Summary | trim_suffix "."}}{{end}}")
+				id, err := ui.PromptValue(cmd.InOrStdin(), names, "{{range .Request.RequiredFields}}{{.Summary | trimSuffix "."}}{{end}}")
 				if err != nil {
 					return err
 				}
 				args = append(args, id)
 			}
 			if len(args) != 1 {
-				return fmt.Errorf("expected to have {{range .Request.RequiredFields}}{{.Summary | trim_suffix "." | lower}}{{end}}")
+				return fmt.Errorf("expected to have {{range .Request.RequiredFields}}{{.Summary | trimSuffix "." | lower}}{{end}}")
 			}{{end}}{{if not .Request.IsOnlyPrimitiveFields}}
 				err = {{.CamelName}}Json.Unmarshall(&{{.CamelName}}Req)
 				if err != nil {
@@ -136,7 +136,7 @@ var {{.CamelName}}Cmd = &cobra.Command{
 		}
 		{{end -}}
 		{{if .Response}}response, err :={{else}}err ={{end}} {{if .Service.IsAccounts}}a{{else}}w{{end}}.{{if eq .Service.Package.Name "scim" -}}
-			{{trim_prefix .Service.PascalName "Account"}} 
+			{{.Service.PascalName | trimPrefix "Account"}} 
 		{{- else}}{{.Service.PascalName}}{{end}}.{{.PascalName}}{{if .Pagination}}All{{end}}(ctx{{if .Request}}, {{.CamelName}}Req{{end}})
 		if err != nil {
 			return err

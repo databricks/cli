@@ -25,7 +25,6 @@ type project struct {
 	config      *Config
 	environment *Environment
 	wsc         *databricks.WorkspaceClient
-	ac          *databricks.AccountClient // TODO: move
 	me          *scim.User
 	fileSet     *git.FileSet
 }
@@ -120,10 +119,6 @@ func Get(ctx context.Context) *project {
 // Make sure to initialize the workspaces client on project init
 func (p *project) WorkspacesClient() *databricks.WorkspaceClient {
 	return p.wsc
-}
-
-func (p *project) AccountClient() *databricks.AccountClient {
-	return p.ac
 }
 
 func (p *project) Root() string {
