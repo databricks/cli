@@ -1,0 +1,11 @@
+// Generated from Databricks Terraform provider schema. DO NOT EDIT.
+
+package schema
+
+{{ range .StructTypes }}
+type {{ .Name }} struct {
+    {{- range .Fields }}
+    {{ .Name }} {{ .Type }} `json:"{{ .Tag }}"`
+    {{- end }}
+}
+{{ end }}
