@@ -31,7 +31,9 @@ func fixture() interpolationFixture {
 func TestExcludePath(t *testing.T) {
 	tmp := fixture()
 	m := interpolate{
-		fn: ExcludeLookupsInPath("a"),
+		fns: []LookupFunction{
+			ExcludeLookupsInPath("a"),
+		},
 	}
 
 	err := m.expand(&tmp)
@@ -46,7 +48,9 @@ func TestExcludePath(t *testing.T) {
 func TestIncludePath(t *testing.T) {
 	tmp := fixture()
 	m := interpolate{
-		fn: IncludeLookupsInPath("a"),
+		fns: []LookupFunction{
+			IncludeLookupsInPath("a"),
+		},
 	}
 
 	err := m.expand(&tmp)
@@ -56,4 +60,22 @@ func TestIncludePath(t *testing.T) {
 	assert.Equal(t, "2", tmp.B["x"])
 	assert.Equal(t, "1", tmp.C["ax"])
 	assert.Equal(t, "${b.x}", tmp.C["bx"])
+}
+
+func TestIncludePathMultiple(t *testing.T) {
+	tmp := fixture()
+	m := interpolate{
+		fns: []LookupFunction{
+			IncludeLookupsInPath("a"),
+			IncludeLookupsInPath("b"),
+		},
+	}
+
+	err := m.expand(&tmp)
+	require.NoError(t, err)
+
+	assert.Equal(t, "1", tmp.A["x"])
+	assert.Equal(t, "2", tmp.B["x"])
+	assert.Equal(t, "1", tmp.C["ax"])
+	assert.Equal(t, "2", tmp.C["bx"])
 }

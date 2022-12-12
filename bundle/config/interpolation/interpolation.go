@@ -2,6 +2,7 @@ package interpolation
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"reflect"
 	"regexp"
@@ -39,16 +40,23 @@ func (s *stringField) dependsOn() []string {
 	return out
 }
 
-func (s *stringField) interpolate(fn LookupFunction, lookup map[string]string) {
+func (s *stringField) interpolate(fns []LookupFunction, lookup map[string]string) {
 	out := re.ReplaceAllStringFunc(s.Get(), func(s string) string {
 		// Turn the whole match into the submatch.
 		match := re.FindStringSubmatch(s)
-		v, err := fn(match[1], lookup)
-		if err != nil {
-			panic(err)
+		for _, fn := range fns {
+			v, err := fn(match[1], lookup)
+			if errors.Is(err, ErrSkipInterpolation) {
+				continue
+			}
+			if err != nil {
+				panic(err)
+			}
+			return v
 		}
 
-		return v
+		// No substitution.
+		return s
 	})
 
 	s.Set(out)
@@ -163,7 +171,7 @@ func (a *accumulator) start(v any) {
 	a.walk([]string{}, rv, nilSetter{})
 }
 
-func (a *accumulator) expand(fn LookupFunction) error {
+func (a *accumulator) expand(fns ...LookupFunction) error {
 	for path, v := range a.strings {
 		ds := v.dependsOn()
 		if len(ds) == 0 {
@@ -176,24 +184,24 @@ func (a *accumulator) expand(fn LookupFunction) error {
 			return fmt.Errorf("cannot interpolate %s: %w", path, err)
 		}
 
-		v.interpolate(fn, m)
+		v.interpolate(fns, m)
 	}
 
 	return nil
 }
 
 type interpolate struct {
-	fn LookupFunction
+	fns []LookupFunction
 }
 
 func (m *interpolate) expand(v any) error {
 	a := accumulator{}
 	a.start(v)
-	return a.expand(m.fn)
+	return a.expand(m.fns...)
 }
 
-func Interpolate(fn LookupFunction) bundle.Mutator {
-	return &interpolate{fn: fn}
+func Interpolate(fns ...LookupFunction) bundle.Mutator {
+	return &interpolate{fns: fns}
 }
 
 func (m *interpolate) Name() string {
