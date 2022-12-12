@@ -342,6 +342,7 @@ func TestLatestVersionSnapshotGetsLoaded(t *testing.T) {
 	assert.FileExists(t, snapshotPath)
 	snapshot := emptySnapshot
 	err = snapshot.loadSnapshot(ctx)
+	assert.NoError(t, err)
 
 	// assert snapshot gets loaded
 	assert.NotEqual(t, emptySnapshot, snapshot)
