@@ -19,7 +19,7 @@ import (
 	"github.com/databricks/bricks/project"
 )
 
-// Bump it up everything a potentially breaking change is made to the snapshot schema
+// Bump it up every time a potentially breaking change is made to the snapshot schema
 const LatestSnapshotVersion = "v1"
 
 // A snapshot is a persistant store of knowledge bricks cli has about state of files
@@ -163,11 +163,8 @@ func (s *Snapshot) loadSnapshot(ctx context.Context) error {
 	}
 	// invalidate old snapshot with schema versions
 	if snapshotCopy.Version != LatestSnapshotVersion {
-		err := os.Remove(snapshotPath)
-		if err != nil {
-			return err
-		}
-		log.Printf("invalidating sync snapshot because it's schema version is: %s. Latest schema version: %s", s.Version, LatestSnapshotVersion)
+
+		log.Printf("Did not load existing snapshot because its version is %s while the latest version is %s", s.Version, LatestSnapshotVersion)
 		return nil
 	}
 	*s = snapshotCopy
@@ -271,6 +268,8 @@ func (s *Snapshot) diff(all []git.File) (change diff, err error) {
 			continue
 		}
 
+		// TODO: https://databricks.atlassian.net/browse/DECO-429
+		// Add error wrapper giving instructions like this for all errors here :)
 		remoteName, ok := localToRemoteNames[localName]
 		if !ok {
 			return change, fmt.Errorf("missing remote path for local path: %s. Please try syncing again after deleting .databricks/sync-snapshots dir from your project root", localName)

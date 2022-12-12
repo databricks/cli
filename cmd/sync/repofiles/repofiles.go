@@ -35,12 +35,14 @@ func Create(repoRoot, localRoot string, workspaceClient *databricks.WorkspaceCli
 
 func (r *RepoFiles) remotePath(relativePath string) (string, error) {
 	fullPath := path.Join(r.repoRoot, relativePath)
+	// TODO: check what happens if I delete a higher scoped dir
 	cleanFullPath := path.Clean(fullPath)
-	if cleanFullPath == r.repoRoot {
-		return "", fmt.Errorf("file path relative to repo root cannot be empty: %s", relativePath)
-	}
 	if !strings.HasPrefix(cleanFullPath, r.repoRoot) {
 		return "", fmt.Errorf("relative file path is not inside repo root: %s", relativePath)
+	}
+	// path.Clean will remove any trailing / so it's enough to check cleanFullPath == r.repoRoot
+	if cleanFullPath == r.repoRoot {
+		return "", fmt.Errorf("file path relative to repo root cannot be empty: %s", relativePath)
 	}
 	return cleanFullPath, nil
 }
@@ -150,3 +152,6 @@ func (r *RepoFiles) DeleteFile(ctx context.Context, relativePath string) error {
 	}
 	return nil
 }
+
+// TODO: write integration tests for all non happy path cases that rely on
+// specific behaviour of the workspace apis

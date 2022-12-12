@@ -239,13 +239,7 @@ func TestErrorWhenIdenticalRemoteName(t *testing.T) {
 }
 
 func TestNewSnapshotDefaults(t *testing.T) {
-	// Create temp project dir
-	projectDir := t.TempDir()
-	ctx := context.TODO()
-	err := os.Setenv("DATABRICKS_HOST", "www.foobar.com")
-	assert.NoError(t, err)
-	ctx, err = project.Initialize(ctx, projectDir, "development")
-	assert.NoError(t, err)
+	ctx := setupProject(t)
 	snapshot, err := newSnapshot(ctx, "/Repos/foo/bar")
 	prj := project.Get(ctx)
 	assert.NoError(t, err)
@@ -258,22 +252,75 @@ func TestNewSnapshotDefaults(t *testing.T) {
 	assert.Empty(t, snapshot.LocalToRemoteNames)
 }
 
-func TestSnapshotVersionInvalidation(t *testing.T) {
+func getEmptySnapshot() Snapshot {
+	return Snapshot{
+		LastUpdatedTimes:   make(map[string]time.Time),
+		LocalToRemoteNames: make(map[string]string),
+		RemoteToLocalNames: make(map[string]string),
+	}
+}
+
+func setupProject(t *testing.T) context.Context {
+	projectDir := t.TempDir()
+	ctx := context.TODO()
+	t.Setenv("DATABRICKS_HOST", "www.foobar.com")
+	ctx, err := project.Initialize(ctx, projectDir, "development")
+	assert.NoError(t, err)
+	return ctx
+}
+
+func TestOldSnapshotInvalidation(t *testing.T) {
 	oldVersionSnapshot := `{
-			"version": "v0",
-			"host": "www.foobar.com",
-			"remote_path": "/Repos/foo/bar",
-			"last_modified_times": {},
-			"local_to_remote_names": {},
-			"remote_to_local_names": {}
+		"version": "v0",
+		"host": "www.foobar.com",
+		"remote_path": "/Repos/foo/bar",
+		"last_modified_times": {},
+		"local_to_remote_names": {},
+		"remote_to_local_names": {}
 	}`
+	ctx := setupProject(t)
+	emptySnapshot := getEmptySnapshot()
+	snapshotPath, err := emptySnapshot.getPath(ctx)
+	assert.NoError(t, err)
+
+	snapshotFile := createFile(t, snapshotPath)
+	snapshotFile.overwrite(t, oldVersionSnapshot)
+	snapshotFile.close(t)
+
+	assert.FileExists(t, snapshotPath)
+	snapshot := emptySnapshot
+	err = snapshot.loadSnapshot(ctx)
+	assert.NoError(t, err)
+	// assert snapshot did not get loaded
+	assert.Equal(t, emptySnapshot, snapshot)
+}
+
+func TestNoVersionSnapshotInvalidation(t *testing.T) {
 	noVersionSnapshot := `{
-			"host": "www.foobar.com",
-			"remote_path": "/Repos/foo/bar",
-			"last_modified_times": {},
-			"local_to_remote_names": {},
-			"remote_to_local_names": {}
+		"host": "www.foobar.com",
+		"remote_path": "/Repos/foo/bar",
+		"last_modified_times": {},
+		"local_to_remote_names": {},
+		"remote_to_local_names": {}
 	}`
+	ctx := setupProject(t)
+	emptySnapshot := getEmptySnapshot()
+	snapshotPath, err := emptySnapshot.getPath(ctx)
+	assert.NoError(t, err)
+
+	snapshotFile := createFile(t, snapshotPath)
+	snapshotFile.overwrite(t, noVersionSnapshot)
+	snapshotFile.close(t)
+
+	assert.FileExists(t, snapshotPath)
+	snapshot := emptySnapshot
+	err = snapshot.loadSnapshot(ctx)
+	assert.NoError(t, err)
+	// assert snapshot did not get loaded
+	assert.Equal(t, emptySnapshot, snapshot)
+}
+
+func TestLatestVersionSnapshotGetsLoaded(t *testing.T) {
 	latestVersionSnapshot := fmt.Sprintf(`{
 			"version": "%s",
 			"host": "www.foobar.com",
@@ -283,60 +330,20 @@ func TestSnapshotVersionInvalidation(t *testing.T) {
 			"remote_to_local_names": {}
 	}`, LatestSnapshotVersion)
 
-	// Create temp project dir
-	projectDir := t.TempDir()
-	ctx := context.TODO()
-	err := os.Setenv("DATABRICKS_HOST", "www.foobar.com")
-	assert.NoError(t, err)
-	ctx, err = project.Initialize(ctx, projectDir, "development")
-	assert.NoError(t, err)
-	emptySnapshot := Snapshot{
-		LastUpdatedTimes:   make(map[string]time.Time),
-		LocalToRemoteNames: make(map[string]string),
-		RemoteToLocalNames: make(map[string]string),
-	}
+	ctx := setupProject(t)
+	emptySnapshot := getEmptySnapshot()
 	snapshotPath, err := emptySnapshot.getPath(ctx)
 	assert.NoError(t, err)
 
-	// case: old version snapshot
 	snapshotFile := createFile(t, snapshotPath)
-	snapshotFile.overwrite(t, oldVersionSnapshot)
-	snapshotFile.close(t)
-
-	assert.NoError(t, err)
-	assert.FileExists(t, snapshotPath)
-	snapshot := emptySnapshot
-	err = snapshot.loadSnapshot(ctx)
-	assert.NoError(t, err)
-	// snapshot invalidated
-	assert.NoFileExists(t, snapshotPath)
-	assert.Equal(t, emptySnapshot, snapshot)
-
-	// case: no version snapshot
-	snapshotFile = createFile(t, snapshotPath)
-	snapshotFile.overwrite(t, noVersionSnapshot)
-	snapshotFile.close(t)
-
-	assert.NoError(t, err)
-	assert.FileExists(t, snapshotPath)
-	snapshot = emptySnapshot
-	err = snapshot.loadSnapshot(ctx)
-	assert.NoError(t, err)
-	// snapshot invalidated
-	assert.NoFileExists(t, snapshotPath)
-	assert.Equal(t, emptySnapshot, snapshot)
-
-	// case: latest version snapshot
-	snapshotFile = createFile(t, snapshotPath)
 	snapshotFile.overwrite(t, latestVersionSnapshot)
 	snapshotFile.close(t)
 
-	assert.NoError(t, err)
 	assert.FileExists(t, snapshotPath)
+	snapshot := emptySnapshot
 	err = snapshot.loadSnapshot(ctx)
-	// snapshot not invalidated
-	assert.FileExists(t, snapshotPath)
-	assert.NoError(t, err)
+
+	// assert snapshot gets loaded
 	assert.NotEqual(t, emptySnapshot, snapshot)
 	assert.Equal(t, LatestSnapshotVersion, snapshot.Version)
 	assert.Equal(t, "www.foobar.com", snapshot.Host)
