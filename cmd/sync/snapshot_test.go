@@ -1,12 +1,15 @@
 package sync
 
 import (
+	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/databricks/bricks/git"
+	"github.com/databricks/bricks/project"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -233,4 +236,117 @@ func TestErrorWhenIdenticalRemoteName(t *testing.T) {
 	assert.NoError(t, err)
 	change, err = state.diff(files)
 	assert.ErrorContains(t, err, "both foo and foo.py point to the same remote file location foo. Please remove one of them from your local project")
+}
+
+func TestNewSnapshotDefaults(t *testing.T) {
+	ctx := setupProject(t)
+	snapshot, err := newSnapshot(ctx, "/Repos/foo/bar")
+	prj := project.Get(ctx)
+	assert.NoError(t, err)
+
+	assert.Equal(t, LatestSnapshotVersion, snapshot.Version)
+	assert.Equal(t, "/Repos/foo/bar", snapshot.RemotePath)
+	assert.Equal(t, prj.WorkspacesClient().Config.Host, snapshot.Host)
+	assert.Empty(t, snapshot.LastUpdatedTimes)
+	assert.Empty(t, snapshot.RemoteToLocalNames)
+	assert.Empty(t, snapshot.LocalToRemoteNames)
+}
+
+func getEmptySnapshot() Snapshot {
+	return Snapshot{
+		LastUpdatedTimes:   make(map[string]time.Time),
+		LocalToRemoteNames: make(map[string]string),
+		RemoteToLocalNames: make(map[string]string),
+	}
+}
+
+func setupProject(t *testing.T) context.Context {
+	projectDir := t.TempDir()
+	ctx := context.TODO()
+	t.Setenv("DATABRICKS_HOST", "www.foobar.com")
+	ctx, err := project.Initialize(ctx, projectDir, "development")
+	assert.NoError(t, err)
+	return ctx
+}
+
+func TestOldSnapshotInvalidation(t *testing.T) {
+	oldVersionSnapshot := `{
+		"version": "v0",
+		"host": "www.foobar.com",
+		"remote_path": "/Repos/foo/bar",
+		"last_modified_times": {},
+		"local_to_remote_names": {},
+		"remote_to_local_names": {}
+	}`
+	ctx := setupProject(t)
+	emptySnapshot := getEmptySnapshot()
+	snapshotPath, err := emptySnapshot.getPath(ctx)
+	assert.NoError(t, err)
+
+	snapshotFile := createFile(t, snapshotPath)
+	snapshotFile.overwrite(t, oldVersionSnapshot)
+	snapshotFile.close(t)
+
+	assert.FileExists(t, snapshotPath)
+	snapshot := emptySnapshot
+	err = snapshot.loadSnapshot(ctx)
+	assert.NoError(t, err)
+	// assert snapshot did not get loaded
+	assert.Equal(t, emptySnapshot, snapshot)
+}
+
+func TestNoVersionSnapshotInvalidation(t *testing.T) {
+	noVersionSnapshot := `{
+		"host": "www.foobar.com",
+		"remote_path": "/Repos/foo/bar",
+		"last_modified_times": {},
+		"local_to_remote_names": {},
+		"remote_to_local_names": {}
+	}`
+	ctx := setupProject(t)
+	emptySnapshot := getEmptySnapshot()
+	snapshotPath, err := emptySnapshot.getPath(ctx)
+	assert.NoError(t, err)
+
+	snapshotFile := createFile(t, snapshotPath)
+	snapshotFile.overwrite(t, noVersionSnapshot)
+	snapshotFile.close(t)
+
+	assert.FileExists(t, snapshotPath)
+	snapshot := emptySnapshot
+	err = snapshot.loadSnapshot(ctx)
+	assert.NoError(t, err)
+	// assert snapshot did not get loaded
+	assert.Equal(t, emptySnapshot, snapshot)
+}
+
+func TestLatestVersionSnapshotGetsLoaded(t *testing.T) {
+	latestVersionSnapshot := fmt.Sprintf(`{
+			"version": "%s",
+			"host": "www.foobar.com",
+			"remote_path": "/Repos/foo/bar",
+			"last_modified_times": {},
+			"local_to_remote_names": {},
+			"remote_to_local_names": {}
+	}`, LatestSnapshotVersion)
+
+	ctx := setupProject(t)
+	emptySnapshot := getEmptySnapshot()
+	snapshotPath, err := emptySnapshot.getPath(ctx)
+	assert.NoError(t, err)
+
+	snapshotFile := createFile(t, snapshotPath)
+	snapshotFile.overwrite(t, latestVersionSnapshot)
+	snapshotFile.close(t)
+
+	assert.FileExists(t, snapshotPath)
+	snapshot := emptySnapshot
+	err = snapshot.loadSnapshot(ctx)
+	assert.NoError(t, err)
+
+	// assert snapshot gets loaded
+	assert.NotEqual(t, emptySnapshot, snapshot)
+	assert.Equal(t, LatestSnapshotVersion, snapshot.Version)
+	assert.Equal(t, "www.foobar.com", snapshot.Host)
+	assert.Equal(t, "/Repos/foo/bar", snapshot.RemotePath)
 }

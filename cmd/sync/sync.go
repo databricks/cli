@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/databricks/bricks/cmd/root"
+	"github.com/databricks/bricks/cmd/sync/repofiles"
 	"github.com/databricks/bricks/git"
 	"github.com/databricks/bricks/project"
 	"github.com/spf13/cobra"
@@ -44,8 +45,9 @@ var syncCmd = &cobra.Command{
 		}
 
 		root := prj.Root()
-		syncCallback := getRemoteSyncCallback(ctx, root, *remotePath, wsc)
-		err = spawnSyncRoutine(ctx, *interval, syncCallback, *remotePath)
+		repoFiles := repofiles.Create(*remotePath, root, wsc)
+		syncCallback := syncCallback(ctx, repoFiles)
+		err = spawnWatchdog(ctx, *interval, syncCallback, *remotePath)
 		return err
 	},
 }

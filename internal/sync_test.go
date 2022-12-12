@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -17,6 +18,10 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/stretchr/testify/assert"
 )
+
+// TODO: these tests are bloated, refactor these, and make write down tests for
+// all edge cases with interop between files, directory and notebooks during syncing
+// https://databricks.atlassian.net/browse/DECO-416
 
 // This test needs auth env vars to run.
 // Please run using the deco env test or deco env shell
@@ -266,4 +271,88 @@ func TestAccIncrementalSync(t *testing.T) {
 	assert.Contains(t, files3, "amsterdam.txt")
 	assert.Contains(t, files3, ".gitignore")
 	assertSnapshotContents(t, wsc.Config.Host, repoPath, projectDir, []string{"amsterdam.txt", ".gitignore"})
+
+	// new file in dir upload assertion
+	fooPath := filepath.Join(projectDir, "bar/foo.txt")
+	err = os.MkdirAll(filepath.Dir(fooPath), os.ModePerm)
+	assert.NoError(t, err)
+	f, err = os.Create(fooPath)
+	assert.NoError(t, err)
+	defer f.Close()
+	assert.Eventually(t, func() bool {
+		objects, err := wsc.Workspace.ListAll(ctx, workspace.List{
+			Path: repoPath,
+		})
+		assert.NoError(t, err)
+		return len(objects) == 3
+	}, 30*time.Second, 5*time.Second)
+	objects, err = wsc.Workspace.ListAll(ctx, workspace.List{
+		Path: repoPath,
+	})
+	assert.NoError(t, err)
+	var files4 []string
+	for _, v := range objects {
+		files4 = append(files4, filepath.Base(v.Path))
+	}
+	assert.Len(t, files4, 3)
+	assert.Contains(t, files4, "amsterdam.txt")
+	assert.Contains(t, files4, ".gitignore")
+	assert.Contains(t, files4, "bar")
+	assertSnapshotContents(t, wsc.Config.Host, repoPath, projectDir, []string{"amsterdam.txt", "bar/foo.txt", ".gitignore"})
+
+	// delete dir
+	err = os.RemoveAll(filepath.Dir(fooPath))
+	assert.NoError(t, err)
+	assert.Eventually(t, func() bool {
+		objects, err := wsc.Workspace.ListAll(ctx, workspace.List{
+			Path: repoPath,
+		})
+		assert.NoError(t, err)
+		return len(objects) == 3
+	}, 30*time.Second, 5*time.Second)
+	objects, err = wsc.Workspace.ListAll(ctx, workspace.List{
+		Path: repoPath,
+	})
+	assert.NoError(t, err)
+	var files5 []string
+	for _, v := range objects {
+		files5 = append(files5, filepath.Base(v.Path))
+		if strings.Contains(v.Path, "bar") {
+			assert.Equal(t, workspace.ObjectType("DIRECTORY"), v.ObjectType)
+		}
+	}
+	assert.Len(t, files5, 3)
+	assert.Contains(t, files5, "bar")
+	assert.Contains(t, files5, "amsterdam.txt")
+	assert.Contains(t, files5, ".gitignore")
+	// workspace still contains `bar` directory but it has been deleted from snapshot
+	assertSnapshotContents(t, wsc.Config.Host, repoPath, projectDir, []string{"amsterdam.txt", ".gitignore"})
+
+	// file called bar should overwrite the directory
+	err = os.WriteFile(filepath.Join(projectDir, "bar"), []byte("Kal ho na ho is a cool movie"), os.ModePerm)
+	assert.NoError(t, err)
+	assert.Eventually(t, func() bool {
+		objects, err := wsc.Workspace.ListAll(ctx, workspace.List{
+			Path: repoPath,
+		})
+		assert.NoError(t, err)
+		return len(objects) == 3
+	}, 30*time.Second, 5*time.Second)
+	objects, err = wsc.Workspace.ListAll(ctx, workspace.List{
+		Path: repoPath,
+	})
+	assert.NoError(t, err)
+	var files6 []string
+	for _, v := range objects {
+		files6 = append(files6, filepath.Base(v.Path))
+		if strings.Contains(v.Path, "bar") {
+			assert.Equal(t, workspace.ObjectType("FILE"), v.ObjectType)
+		}
+	}
+	assert.Len(t, files6, 3)
+	assert.Contains(t, files6, "amsterdam.txt")
+	assert.Contains(t, files6, ".gitignore")
+	// workspace still contains `bar` directory but it has been deleted from snapshot
+	assert.Contains(t, files6, "bar")
+	assertSnapshotContents(t, wsc.Config.Host, repoPath, projectDir, []string{"amsterdam.txt", "bar", ".gitignore"})
 }

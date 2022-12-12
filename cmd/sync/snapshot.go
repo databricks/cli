@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
+	"log"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -18,6 +18,9 @@ import (
 	"github.com/databricks/bricks/git"
 	"github.com/databricks/bricks/project"
 )
+
+// Bump it up every time a potentially breaking change is made to the snapshot schema
+const LatestSnapshotVersion = "v1"
 
 // A snapshot is a persistant store of knowledge bricks cli has about state of files
 // in the remote repo. We use the last modified times (mtime) of files to determine
@@ -32,18 +35,26 @@ import (
 // local files are being synced to will make bricks cli switch to a different
 // snapshot for persisting/loading sync state
 type Snapshot struct {
+	// version for snapshot schema. Only snapshots matching the latest snapshot
+	// schema version are used and older ones are invalidated (by deleting them)
+	Version string `json:"version"`
+
 	// hostname of the workspace this snapshot is for
 	Host string `json:"host"`
+
 	// Path in workspace for project repo
 	RemotePath string `json:"remote_path"`
+
 	// Map of all files present in the remote repo with the:
 	// key: relative file path from project root
 	// value: last time the remote instance of this file was updated
 	LastUpdatedTimes map[string]time.Time `json:"last_modified_times"`
+
 	// This map maps local file names to their remote names
 	// eg. notebook named "foo.py" locally would be stored as "foo", thus this
 	// map will contain an entry "foo.py" -> "foo"
 	LocalToRemoteNames map[string]string `json:"local_to_remote_names"`
+
 	// Inverse of localToRemoteNames. Together the form a bijective mapping (ie
 	// there is a 1:1 unique mapping between local and remote name)
 	RemoteToLocalNames map[string]string `json:"remote_to_local_names"`
@@ -96,6 +107,7 @@ func newSnapshot(ctx context.Context, remotePath string) (*Snapshot, error) {
 	}
 
 	return &Snapshot{
+		Version:            LatestSnapshotVersion,
 		Host:               host,
 		RemotePath:         remotePath,
 		LastUpdatedTimes:   make(map[string]time.Time),
@@ -137,20 +149,23 @@ func (s *Snapshot) loadSnapshot(ctx context.Context) error {
 		return nil
 	}
 
-	f, err := os.Open(snapshotPath)
-	if err != nil {
-		return fmt.Errorf("failed to open persisted sync snapshot file: %s", err)
-	}
-	defer f.Close()
+	snapshotCopy := Snapshot{}
 
-	bytes, err := io.ReadAll(f)
+	bytes, err := os.ReadFile(snapshotPath)
 	if err != nil {
 		return fmt.Errorf("failed to read sync snapshot from disk: %s", err)
 	}
-	err = json.Unmarshal(bytes, &s)
+	err = json.Unmarshal(bytes, &snapshotCopy)
 	if err != nil {
 		return fmt.Errorf("failed to json unmarshal persisted snapshot: %s", err)
 	}
+	// invalidate old snapshot with schema versions
+	if snapshotCopy.Version != LatestSnapshotVersion {
+
+		log.Printf("Did not load existing snapshot because its version is %s while the latest version is %s", s.Version, LatestSnapshotVersion)
+		return nil
+	}
+	*s = snapshotCopy
 	return nil
 }
 
@@ -198,7 +213,7 @@ func getNotebookDetails(path string) (isNotebook bool, typeOfNotebook string, er
 	return false, "", nil
 }
 
-func (s Snapshot) diff(all []git.File) (change diff, err error) {
+func (s *Snapshot) diff(all []git.File) (change diff, err error) {
 	currentFilenames := map[string]bool{}
 	lastModifiedTimes := s.LastUpdatedTimes
 	remoteToLocalNames := s.RemoteToLocalNames
@@ -250,12 +265,23 @@ func (s Snapshot) diff(all []git.File) (change diff, err error) {
 		if exists {
 			continue
 		}
+
+		// TODO: https://databricks.atlassian.net/browse/DECO-429
+		// Add error wrapper giving instructions like this for all errors here :)
+		remoteName, ok := localToRemoteNames[localName]
+		if !ok {
+			return change, fmt.Errorf("missing remote path for local path: %s. Please try syncing again after deleting .databricks/sync-snapshots dir from your project root", localName)
+		}
+
 		// add them to a delete batch
-		change.delete = append(change.delete, localToRemoteNames[localName])
+		change.delete = append(change.delete, remoteName)
 	}
 	// and remove them from the snapshot
 	for _, remoteName := range change.delete {
+		// we do note assert that remoteName exists in remoteToLocalNames since it
+		// will be missing for files with remote name changed
 		localName := remoteToLocalNames[remoteName]
+
 		delete(lastModifiedTimes, localName)
 		delete(remoteToLocalNames, remoteName)
 		delete(localToRemoteNames, localName)

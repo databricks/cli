@@ -2,22 +2,12 @@ package sync
 
 import (
 	"context"
-	"fmt"
-	"io"
 	"log"
-	"net/http"
-	"os"
-	"path"
-	"path/filepath"
-	"strings"
 	"sync"
 	"time"
 
+	"github.com/databricks/bricks/cmd/sync/repofiles"
 	"github.com/databricks/bricks/project"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/client"
-	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -32,56 +22,8 @@ type watchdog struct {
 // rate limits
 const MaxRequestsInFlight = 20
 
-// path: The local path of the file in the local file system
-//
-// The API calls for a python script foo.py would be
-// `PUT foo.py`
-// `DELETE foo.py`
-//
-// The API calls for a python notebook foo.py would be
-// `PUT foo.py`
-// `DELETE foo`
-//
-// The workspace file system backend strips .py from the file name if the python
-// file is a notebook
-func putFile(ctx context.Context, remotePath string, content io.Reader) error {
-	wsc := project.Get(ctx).WorkspacesClient()
-	// workspace mkdirs is idempotent
-	err := wsc.Workspace.MkdirsByPath(ctx, path.Dir(remotePath))
-	if err != nil {
-		return fmt.Errorf("could not mkdir to put file: %s", err)
-	}
-	apiClient, err := client.New(wsc.Config)
-	if err != nil {
-		return err
-	}
-	apiPath := fmt.Sprintf(
-		"/api/2.0/workspace-files/import-file/%s?overwrite=true",
-		strings.TrimLeft(remotePath, "/"))
-	return apiClient.Do(ctx, http.MethodPost, apiPath, content, nil)
-}
-
-// path: The remote path of the file in the workspace
-func deleteFile(ctx context.Context, path string, w *databricks.WorkspaceClient) error {
-	err := w.Workspace.Delete(ctx,
-		workspace.Delete{
-			Path:      path,
-			Recursive: false,
-		},
-	)
-	// We explictly ignore RESOURCE_DOES_NOT_EXIST errors for deletion of files
-	// This makes deletion operation idempotent and allows us to not crash syncing on
-	// edge cases for eg: this api fails to delete notebooks, and returns a
-	// RESOURCE_DOES_NOT_EXIST error instead
-	if val, ok := err.(apierr.APIError); ok && val.ErrorCode == "RESOURCE_DOES_NOT_EXIST" {
-		return nil
-	}
-	return err
-}
-
-func getRemoteSyncCallback(ctx context.Context, root, remoteDir string, w *databricks.WorkspaceClient) func(localDiff diff) error {
+func syncCallback(ctx context.Context, repoFiles *repofiles.RepoFiles) func(localDiff diff) error {
 	return func(d diff) error {
-
 		// Abstraction over wait groups which allows you to get the errors
 		// returned in goroutines
 		var g errgroup.Group
@@ -96,7 +38,7 @@ func getRemoteSyncCallback(ctx context.Context, root, remoteDir string, w *datab
 			// is evaluated
 			remoteNameCopy := remoteName
 			g.Go(func() error {
-				err := deleteFile(ctx, path.Join(remoteDir, remoteNameCopy), w)
+				err := repoFiles.DeleteFile(ctx, remoteNameCopy)
 				if err != nil {
 					return err
 				}
@@ -104,23 +46,15 @@ func getRemoteSyncCallback(ctx context.Context, root, remoteDir string, w *datab
 				return nil
 			})
 		}
-		for _, localName := range d.put {
+		for _, localRelativePath := range d.put {
 			// Copy of localName created to make this safe for concurrent use.
-			localNameCopy := localName
+			localRelativePathCopy := localRelativePath
 			g.Go(func() error {
-				f, err := os.Open(filepath.Join(root, localNameCopy))
+				err := repoFiles.PutFile(ctx, localRelativePathCopy)
 				if err != nil {
 					return err
 				}
-				err = putFile(ctx, path.Join(remoteDir, localNameCopy), f)
-				if err != nil {
-					return fmt.Errorf("failed to upload file: %s", err)
-				}
-				err = f.Close()
-				if err != nil {
-					return err
-				}
-				log.Printf("[INFO] Uploaded %s", localNameCopy)
+				log.Printf("[INFO] Uploaded %s", localRelativePathCopy)
 				return nil
 			})
 		}
@@ -133,7 +67,7 @@ func getRemoteSyncCallback(ctx context.Context, root, remoteDir string, w *datab
 	}
 }
 
-func spawnSyncRoutine(ctx context.Context,
+func spawnWatchdog(ctx context.Context,
 	interval time.Duration,
 	applyDiff func(diff) error,
 	remotePath string) error {
