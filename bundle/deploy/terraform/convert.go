@@ -30,6 +30,13 @@ func BundleToTerraform(config *config.Root) *schema.Root {
 		for _, v := range src.Tasks {
 			var t schema.ResourceJobTask
 			conv(v, &t)
+
+			for _, v_ := range v.Libraries {
+				var l schema.ResourceJobTaskLibrary
+				conv(v_, &l)
+				t.Library = append(t.Library, l)
+			}
+
 			dst.Task = append(dst.Task, t)
 		}
 
