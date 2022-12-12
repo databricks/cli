@@ -37,8 +37,6 @@ const LatestSnapshotVersion = "v1"
 type Snapshot struct {
 	// version for snapshot schema. Only snapshots matching the latest snapshot
 	// schema version are used and older ones are invalidated (by deleting them)
-
-	// test whether this adding a version is backward compatible
 	Version string `json:"version"`
 
 	// hostname of the workspace this snapshot is for

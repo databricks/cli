@@ -15,8 +15,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
-// Use this class to do file upload/delete on a workspace repo
-//
 // RepoFiles wraps reading and writing into a remote repo with safeguards to prevent
 // accidental deletion of repos and more robust methods to overwrite workspace files
 type RepoFiles struct {
@@ -35,7 +33,6 @@ func Create(repoRoot, localRoot string, workspaceClient *databricks.WorkspaceCli
 
 func (r *RepoFiles) remotePath(relativePath string) (string, error) {
 	fullPath := path.Join(r.repoRoot, relativePath)
-	// TODO: check what happens if I delete a higher scoped dir
 	cleanFullPath := path.Clean(fullPath)
 	if !strings.HasPrefix(cleanFullPath, r.repoRoot) {
 		return "", fmt.Errorf("relative file path is not inside repo root: %s", relativePath)
