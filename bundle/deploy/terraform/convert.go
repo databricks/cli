@@ -19,7 +19,9 @@ func conv(from any, to any) {
 // CONVERT TO/FROM TERRAFORM COMPATIBLE FORMAT.
 func BundleToTerraform(config *config.Root) *schema.Root {
 	tfroot := schema.NewRoot()
+	tfroot.Provider = schema.NewProviders()
 	tfroot.Provider.Databricks.Profile = config.Workspace.Profile
+	tfroot.Resource = schema.NewResources()
 
 	for k, src := range config.Resources.Jobs {
 		var dst schema.ResourceJob
@@ -69,9 +71,6 @@ func BundleToTerraform(config *config.Root) *schema.Root {
 
 		tfroot.Resource.Pipeline[k] = &dst
 	}
-
-	// Clear data sources because we don't have any.
-	tfroot.Data = nil
 
 	return tfroot
 }
