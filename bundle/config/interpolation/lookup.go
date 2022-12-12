@@ -1,6 +1,7 @@
 package interpolation
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -9,6 +10,9 @@ import (
 
 // LookupFunction returns the value to rewrite a path expression to.
 type LookupFunction func(path string, depends map[string]string) (string, error)
+
+// ErrSkipInterpolation can be used to fall through from [LookupFunction].
+var ErrSkipInterpolation = errors.New("skip interpolation")
 
 // DefaultLookup looks up the specified path in the map.
 // It returns an error if it doesn't exist.
@@ -29,7 +33,7 @@ func pathPrefixMatches(prefix []string, path string) bool {
 func ExcludeLookupsInPath(exclude ...string) LookupFunction {
 	return func(path string, lookup map[string]string) (string, error) {
 		if pathPrefixMatches(exclude, path) {
-			return fmt.Sprintf("${%s}", path), nil
+			return "", ErrSkipInterpolation
 		}
 
 		return DefaultLookup(path, lookup)
@@ -39,10 +43,10 @@ func ExcludeLookupsInPath(exclude ...string) LookupFunction {
 // IncludeLookupsInPath is a lookup function that limits lookups to the specified path.
 func IncludeLookupsInPath(include ...string) LookupFunction {
 	return func(path string, lookup map[string]string) (string, error) {
-		if pathPrefixMatches(include, path) {
-			return DefaultLookup(path, lookup)
+		if !pathPrefixMatches(include, path) {
+			return "", ErrSkipInterpolation
 		}
 
-		return fmt.Sprintf("${%s}", path), nil
+		return DefaultLookup(path, lookup)
 	}
 }
