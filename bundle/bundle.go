@@ -1,3 +1,9 @@
+// Package bundle is the top level package for Databricks Application Bundles.
+//
+// A bundle is represented by the [Bundle] type. It consists of configuration
+// and runtime state, such as a client to a Databricks workspace.
+// Every mutation to a bundle's configuration or state is represented as a [Mutator].
+// This interface makes every mutation observable and lets us reason about sequencing.
 package bundle
 
 import (
