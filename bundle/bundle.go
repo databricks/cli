@@ -13,6 +13,7 @@ import (
 
 	"github.com/databricks/bricks/bundle/config"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/hashicorp/terraform-exec/tfexec"
 )
 
 type Bundle struct {
@@ -22,6 +23,9 @@ type Bundle struct {
 	// It can be initialized on demand after loading the configuration.
 	clientOnce sync.Once
 	client     *databricks.WorkspaceClient
+
+	// Stores an initialized copy of this bundle's Terraform wrapper.
+	Terraform *tfexec.Terraform
 }
 
 func Load(path string) (*Bundle, error) {
