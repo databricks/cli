@@ -23,7 +23,7 @@ type WorkspaceFilesClient struct {
 	apiClient       *client.DatabricksClient
 
 	// File operations will be relative to this path.
-	root string
+	root RootPath
 }
 
 func NewWorkspaceFilesClient(w *databricks.WorkspaceClient, root string) (Filer, error) {
@@ -36,28 +36,12 @@ func NewWorkspaceFilesClient(w *databricks.WorkspaceClient, root string) (Filer,
 		workspaceClient: w,
 		apiClient:       apiClient,
 
-		root: path.Clean(root),
+		root: NewRootPath(root),
 	}, nil
 }
 
-func (w *WorkspaceFilesClient) absPath(name string) (string, error) {
-	absPath := path.Join(w.root, name)
-
-	// Don't allow escaping the specified root using relative paths.
-	if !strings.HasPrefix(absPath, w.root) {
-		return "", fmt.Errorf("relative path escapes root: %s", name)
-	}
-
-	// Don't allow name to resolve to the root path.
-	if strings.TrimPrefix(absPath, w.root) == "" {
-		return "", fmt.Errorf("relative path resolves to root: %s", name)
-	}
-
-	return absPath, nil
-}
-
 func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io.Reader, mode ...WriteMode) error {
-	absPath, err := w.absPath(name)
+	absPath, err := w.root.Join(name)
 	if err != nil {
 		return err
 	}
@@ -109,7 +93,7 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 }
 
 func (w *WorkspaceFilesClient) Read(ctx context.Context, name string) (io.Reader, error) {
-	absPath, err := w.absPath(name)
+	absPath, err := w.root.Join(name)
 	if err != nil {
 		return nil, err
 	}
@@ -131,7 +115,7 @@ func (w *WorkspaceFilesClient) Read(ctx context.Context, name string) (io.Reader
 }
 
 func (w *WorkspaceFilesClient) Delete(ctx context.Context, name string) error {
-	absPath, err := w.absPath(name)
+	absPath, err := w.root.Join(name)
 	if err != nil {
 		return err
 	}
