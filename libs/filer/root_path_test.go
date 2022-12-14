@@ -6,69 +6,68 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestWorkspaceFilesClientPaths(t *testing.T) {
-	root := "/some/root/path"
-	f := WorkspaceFilesClient{root: root}
+func TestRootPath(t *testing.T) {
+	root := RootPath("/some/root/path")
 
-	remotePath, err := f.absPath("a/b/c")
+	remotePath, err := root.Join("a/b/c")
 	assert.NoError(t, err)
 	assert.Equal(t, root+"/a/b/c", remotePath)
 
-	remotePath, err = f.absPath("a/b/../d")
+	remotePath, err = root.Join("a/b/../d")
 	assert.NoError(t, err)
 	assert.Equal(t, root+"/a/d", remotePath)
 
-	remotePath, err = f.absPath("a/../c")
+	remotePath, err = root.Join("a/../c")
 	assert.NoError(t, err)
 	assert.Equal(t, root+"/c", remotePath)
 
-	remotePath, err = f.absPath("a/b/c/.")
+	remotePath, err = root.Join("a/b/c/.")
 	assert.NoError(t, err)
 	assert.Equal(t, root+"/a/b/c", remotePath)
 
-	remotePath, err = f.absPath("a/b/c/d/./../../f/g")
+	remotePath, err = root.Join("a/b/c/d/./../../f/g")
 	assert.NoError(t, err)
 	assert.Equal(t, root+"/a/b/f/g", remotePath)
 
-	_, err = f.absPath("..")
+	_, err = root.Join("..")
 	assert.ErrorContains(t, err, `relative path escapes root: ..`)
 
-	_, err = f.absPath("a/../..")
+	_, err = root.Join("a/../..")
 	assert.ErrorContains(t, err, `relative path escapes root: a/../..`)
 
-	_, err = f.absPath("./../.")
+	_, err = root.Join("./../.")
 	assert.ErrorContains(t, err, `relative path escapes root: ./../.`)
 
-	_, err = f.absPath("/./.././..")
+	_, err = root.Join("/./.././..")
 	assert.ErrorContains(t, err, `relative path escapes root: /./.././..`)
 
-	_, err = f.absPath("./../.")
+	_, err = root.Join("./../.")
 	assert.ErrorContains(t, err, `relative path escapes root: ./../.`)
 
-	_, err = f.absPath("./..")
+	_, err = root.Join("./..")
 	assert.ErrorContains(t, err, `relative path escapes root: ./..`)
 
-	_, err = f.absPath("./../../..")
+	_, err = root.Join("./../../..")
 	assert.ErrorContains(t, err, `relative path escapes root: ./../../..`)
 
-	_, err = f.absPath("./../a/./b../../..")
+	_, err = root.Join("./../a/./b../../..")
 	assert.ErrorContains(t, err, `relative path escapes root: ./../a/./b../../..`)
 
-	_, err = f.absPath("../..")
+	_, err = root.Join("../..")
 	assert.ErrorContains(t, err, `relative path escapes root: ../..`)
 
-	_, err = f.absPath(".//a/..//./b/..")
+	_, err = root.Join(".//a/..//./b/..")
 	assert.ErrorContains(t, err, `relative path resolves to root: .//a/..//./b/..`)
 
-	_, err = f.absPath("a/b/../..")
+	_, err = root.Join("a/b/../..")
 	assert.ErrorContains(t, err, "relative path resolves to root: a/b/../..")
 
-	_, err = f.absPath("")
+	_, err = root.Join("")
 	assert.ErrorContains(t, err, "relative path resolves to root: ")
 
-	_, err = f.absPath(".")
+	_, err = root.Join(".")
 	assert.ErrorContains(t, err, "relative path resolves to root: .")
 
-	_, err = f.absPath("/")
+	_, err = root.Join("/")
 	assert.ErrorContains(t, err, "relative path resolves to root: /")
 }
