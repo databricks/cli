@@ -21,8 +21,9 @@ import (
 // TODO(Nov 2022): add method in go sdk to get the raw bytes from response of an API
 //
 // TODO(Nov 2022): talk to eng-files team about what the response structure would look like.
-//       This function would have to be modfified probably in the future once this
-//       API goes to public preview
+//
+//	This function would have to be modfified probably in the future once this
+//	API goes to public preview
 func GetRawJsonFileContent(ctx context.Context, wsc *databricks.WorkspaceClient, path string) ([]byte, error) {
 	apiClient, err := client.New(wsc.Config)
 	if err != nil {
