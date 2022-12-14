@@ -182,6 +182,7 @@ func (locker *Locker) Unlock(ctx context.Context) error {
 }
 
 func (locker *Locker) RemotePath() string {
+	// Note: remote paths are scoped to `targetDir`. Also see [CreateLocker].
 	return ".bundle/deploy.lock"
 }
 
