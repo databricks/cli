@@ -108,7 +108,7 @@ func (locker *Locker) PutFile(ctx context.Context, pathToFile string, content []
 	if !locker.Active {
 		return fmt.Errorf("failed to put file. deploy lock not held")
 	}
-	return locker.filer.Write(ctx, pathToFile, bytes.NewReader(content), filer.CreateParentDirectories)
+	return locker.filer.Write(ctx, pathToFile, bytes.NewReader(content), filer.OverwriteIfExists, filer.CreateParentDirectories)
 }
 
 func (locker *Locker) GetRawJsonFileContent(ctx context.Context, path string) ([]byte, error) {
