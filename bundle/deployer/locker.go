@@ -23,23 +23,23 @@ import (
 //
 // Here are some of the details of the locking protocol used here:
 //
-// 1. Potentially multiple clients race to create a deploy.lock file in
-//    TargetDir/.bundle directory with unique ID. The deploy.lock file
-//    is a json file containing the State from the locker
+//  1. Potentially multiple clients race to create a deploy.lock file in
+//     TargetDir/.bundle directory with unique ID. The deploy.lock file
+//     is a json file containing the State from the locker
 //
-// 2. Clients read the remote deploy.lock file and if it's ID matches, the client
-//    assumes it has the lock on TargetDir. The client is now free to read/write code
-//    asserts and deploy databricks assets scoped under TargetDir
+//  2. Clients read the remote deploy.lock file and if it's ID matches, the client
+//     assumes it has the lock on TargetDir. The client is now free to read/write code
+//     asserts and deploy databricks assets scoped under TargetDir
 //
-// 3. To sidestep clients failing to relinquish a lock during a failed deploy attempt
-//    we allow clients to forcefully acquire a lock on TargetDir. However forcefully acquired
-//    locks come with the following caveats:
+//  3. To sidestep clients failing to relinquish a lock during a failed deploy attempt
+//     we allow clients to forcefully acquire a lock on TargetDir. However forcefully acquired
+//     locks come with the following caveats:
 //
-//       a.  a forcefully acquired lock does not guarentee exclusive access to
-//           TargetDir's scope
-//       b.  forcefully acquiring a lock(s) on TargetDir can break the assumption
-//           of exclusive access that other clients with non forcefully acquired
-//           locks might have
+//     a.  a forcefully acquired lock does not guarentee exclusive access to
+//     TargetDir's scope
+//     b.  forcefully acquiring a lock(s) on TargetDir can break the assumption
+//     of exclusive access that other clients with non forcefully acquired
+//     locks might have
 type Locker struct {
 	// scope of the locker
 	TargetDir string

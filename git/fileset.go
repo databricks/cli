@@ -31,7 +31,8 @@ func (f File) Modified() (ts time.Time) {
 //
 // root:   Root of the git repository
 // ignore: List of patterns defined in `.gitignore`.
-//  	   We do not sync files that match this pattern
+//
+//	We do not sync files that match this pattern
 type FileSet struct {
 	root   string
 	ignore *ignore.GitIgnore
