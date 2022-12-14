@@ -38,4 +38,7 @@ type Filer interface {
 
 	// Read file at `path`.
 	Read(ctx context.Context, path string) (io.Reader, error)
+
+	// Delete file at `path`.
+	Delete(ctx context.Context, path string) error
 }

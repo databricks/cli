@@ -13,6 +13,7 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/client"
+	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"golang.org/x/exp/slices"
 )
 
@@ -35,23 +36,28 @@ func NewWorkspaceFilesClient(w *databricks.WorkspaceClient, root string) (Filer,
 		workspaceClient: w,
 		apiClient:       apiClient,
 
-		root: root,
+		root: path.Clean(root),
 	}, nil
 }
 
-func (w *WorkspaceFilesClient) absName(name string) (string, error) {
-	absName := path.Join(w.root, name)
+func (w *WorkspaceFilesClient) absPath(name string) (string, error) {
+	absPath := path.Join(w.root, name)
 
 	// Don't allow escaping the specified root using relative paths.
-	if !strings.HasPrefix(absName, w.root) {
-		return "", fmt.Errorf("invalid path: %s", name)
+	if !strings.HasPrefix(absPath, w.root) {
+		return "", fmt.Errorf("relative path escapes root: %s", name)
 	}
 
-	return absName, nil
+	// Don't allow name to resolve to the root path.
+	if strings.TrimPrefix(absPath, w.root) == "" {
+		return "", fmt.Errorf("relative path resolves to root: %s", name)
+	}
+
+	return absPath, nil
 }
 
 func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io.Reader, mode ...WriteMode) error {
-	absName, err := w.absName(name)
+	absPath, err := w.absPath(name)
 	if err != nil {
 		return err
 	}
@@ -60,7 +66,7 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 	overwrite := slices.Contains(mode, OverwriteIfExists)
 	urlPath := fmt.Sprintf(
 		"/api/2.0/workspace-files/import-file/%s?overwrite=%t",
-		strings.TrimLeft(absName, "/"),
+		strings.TrimLeft(absPath, "/"),
 		overwrite,
 	)
 
@@ -81,13 +87,13 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 	// This API returns a 404 if the parent directory does not exist.
 	if aerr.StatusCode == http.StatusNotFound {
 		if !slices.Contains(mode, CreateParentDirectories) {
-			return NoSuchDirectoryError{path.Dir(absName)}
+			return NoSuchDirectoryError{path.Dir(absPath)}
 		}
 
 		// Create parent directory.
-		err = w.workspaceClient.Workspace.MkdirsByPath(ctx, path.Dir(absName))
+		err = w.workspaceClient.Workspace.MkdirsByPath(ctx, path.Dir(absPath))
 		if err != nil {
-			return fmt.Errorf("unable to mkdir to write file %s: %w", absName, err)
+			return fmt.Errorf("unable to mkdir to write file %s: %w", absPath, err)
 		}
 
 		// Retry without CreateParentDirectories mode flag.
@@ -96,14 +102,14 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 
 	// This API returns 409 if the file already exists.
 	if aerr.StatusCode == http.StatusConflict {
-		return FileAlreadyExistsError{absName}
+		return FileAlreadyExistsError{absPath}
 	}
 
 	return err
 }
 
 func (w *WorkspaceFilesClient) Read(ctx context.Context, name string) (io.Reader, error) {
-	absName, err := w.absName(name)
+	absPath, err := w.absPath(name)
 	if err != nil {
 		return nil, err
 	}
@@ -111,7 +117,7 @@ func (w *WorkspaceFilesClient) Read(ctx context.Context, name string) (io.Reader
 	// Remove leading "/" so we can use it in the URL.
 	urlPath := fmt.Sprintf(
 		"/api/2.0/workspace-files/%s",
-		strings.TrimLeft(absName, "/"),
+		strings.TrimLeft(absPath, "/"),
 	)
 
 	// Update to []byte after https://github.com/databricks/databricks-sdk-go/pull/247 is merged.
@@ -122,4 +128,16 @@ func (w *WorkspaceFilesClient) Read(ctx context.Context, name string) (io.Reader
 	}
 
 	return bytes.NewReader(res), nil
+}
+
+func (w *WorkspaceFilesClient) Delete(ctx context.Context, name string) error {
+	absPath, err := w.absPath(name)
+	if err != nil {
+		return err
+	}
+
+	return w.workspaceClient.Workspace.Delete(ctx, workspace.Delete{
+		Path:      absPath,
+		Recursive: false,
+	})
 }
