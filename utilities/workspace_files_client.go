@@ -87,7 +87,7 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 		// Create parent directory.
 		err = w.workspaceClient.Workspace.MkdirsByPath(ctx, path.Dir(absName))
 		if err != nil {
-			return fmt.Errorf("could not mkdir to post file: %s", err)
+			return fmt.Errorf("unable to mkdir to write file %s: %w", absName, err)
 		}
 
 		// Retry without CreateParentDirectories mode flag.
