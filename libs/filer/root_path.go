@@ -8,21 +8,30 @@ import (
 
 // RootPath can be joined with a relative path and ensures that
 // the returned path is always a strict child of the root path.
-type RootPath string
+type RootPath struct {
+	rootPath string
+}
+
+// NewRootPath constructs and returns [RootPath].
+// The named path is cleaned on construction.
+func NewRootPath(name string) RootPath {
+	return RootPath{
+		rootPath: path.Clean(name),
+	}
+}
 
 // Join returns the specified path name joined to the root.
 // It returns an error if the resulting path is not a strict child of the root path.
-func (p RootPath) Join(name string) (string, error) {
-	rootPath := path.Clean(string(p))
-	absPath := path.Join(rootPath, name)
+func (p *RootPath) Join(name string) (string, error) {
+	absPath := path.Join(p.rootPath, name)
 
 	// Don't allow escaping the specified root using relative paths.
-	if !strings.HasPrefix(absPath, rootPath) {
+	if !strings.HasPrefix(absPath, p.rootPath) {
 		return "", fmt.Errorf("relative path escapes root: %s", name)
 	}
 
 	// Don't allow name to resolve to the root path.
-	if strings.TrimPrefix(absPath, rootPath) == "" {
+	if strings.TrimPrefix(absPath, p.rootPath) == "" {
 		return "", fmt.Errorf("relative path resolves to root: %s", name)
 	}
 

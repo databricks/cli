@@ -36,7 +36,7 @@ func NewWorkspaceFilesClient(w *databricks.WorkspaceClient, root string) (Filer,
 		workspaceClient: w,
 		apiClient:       apiClient,
 
-		root: RootPath(root),
+		root: NewRootPath(root),
 	}, nil
 }
 
