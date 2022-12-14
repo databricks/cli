@@ -97,7 +97,7 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 		}
 
 		// Retry without CreateParentDirectories mode flag.
-		return w.Write(ctx, name, bytes.NewReader(body))
+		return w.Write(ctx, name, bytes.NewReader(body), sliceWithout(mode, CreateParentDirectories)...)
 	}
 
 	// This API returns 409 if the file already exists.
