@@ -7,7 +7,6 @@ import (
 	"math/rand"
 	"os"
 	"os/exec"
-	"path"
 	"path/filepath"
 	"sync"
 	"testing"
@@ -68,12 +67,16 @@ func TestAccLock(t *testing.T) {
 	// 50 lockers try to acquire a lock at the same time
 	numConcurrentLocks := 50
 
-	var err error
+	// Keep single locker unlocked.
+	// We use this to check on the current lock through GetActiveLockState.
+	locker, err := deployer.CreateLocker("humpty.dumpty@databricks.com", remoteProjectRoot, wsc)
+	require.NoError(t, err)
+
 	lockerErrs := make([]error, numConcurrentLocks)
 	lockers := make([]*deployer.Locker, numConcurrentLocks)
-
 	for i := 0; i < numConcurrentLocks; i++ {
-		lockers[i] = deployer.CreateLocker("humpty.dumpty@databricks.com", remoteProjectRoot)
+		lockers[i], err = deployer.CreateLocker("humpty.dumpty@databricks.com", remoteProjectRoot, wsc)
+		require.NoError(t, err)
 	}
 
 	var wg sync.WaitGroup
@@ -83,7 +86,7 @@ func TestAccLock(t *testing.T) {
 		go func() {
 			defer wg.Done()
 			time.Sleep(time.Duration(rand.Intn(100)) * time.Millisecond)
-			lockerErrs[currentIndex] = lockers[currentIndex].Lock(ctx, wsc, false)
+			lockerErrs[currentIndex] = lockers[currentIndex].Lock(ctx, false)
 		}()
 	}
 	wg.Wait()
@@ -107,7 +110,7 @@ func TestAccLock(t *testing.T) {
 	assert.Equal(t, 1, countActive, "Exactly one locker should successfull acquire the lock")
 
 	// test remote lock matches active lock
-	remoteLocker, err := deployer.GetActiveLockState(ctx, wsc, lockers[indexOfActiveLocker].RemotePath())
+	remoteLocker, err := locker.GetActiveLockState(ctx)
 	require.NoError(t, err)
 	assert.Equal(t, remoteLocker.ID, lockers[indexOfActiveLocker].State.ID, "remote locker id does not match active locker")
 	assert.True(t, remoteLocker.AcquisitionTime.Equal(lockers[indexOfActiveLocker].State.AcquisitionTime), "remote locker acquisition time does not match active locker")
@@ -118,7 +121,7 @@ func TestAccLock(t *testing.T) {
 			continue
 		}
 		assert.NotEqual(t, remoteLocker.ID, lockers[i].State.ID)
-		err := lockers[i].Unlock(ctx, wsc)
+		err := lockers[i].Unlock(ctx)
 		assert.ErrorContains(t, err, "unlock called when lock is not held")
 	}
 
@@ -127,16 +130,16 @@ func TestAccLock(t *testing.T) {
 		if i == indexOfActiveLocker {
 			continue
 		}
-		err := lockers[i].PutFile(ctx, wsc, path.Join(remoteProjectRoot, "foo.json"), []byte(`'{"surname":"Khan", "name":"Shah Rukh"}`))
+		err := lockers[i].PutFile(ctx, "foo.json", []byte(`'{"surname":"Khan", "name":"Shah Rukh"}`))
 		assert.ErrorContains(t, err, "failed to put file. deploy lock not held")
 	}
 
 	// active locker file write succeeds
-	err = lockers[indexOfActiveLocker].PutFile(ctx, wsc, path.Join(remoteProjectRoot, "foo.json"), []byte(`{"surname":"Khan", "name":"Shah Rukh"}`))
+	err = lockers[indexOfActiveLocker].PutFile(ctx, "foo.json", []byte(`{"surname":"Khan", "name":"Shah Rukh"}`))
 	assert.NoError(t, err)
 
 	// active locker file read succeeds with expected results
-	bytes, err := lockers[indexOfActiveLocker].GetRawJsonFileContent(ctx, wsc, path.Join(remoteProjectRoot, "foo.json"))
+	bytes, err := lockers[indexOfActiveLocker].GetRawJsonFileContent(ctx, "foo.json")
 	var res map[string]string
 	json.Unmarshal(bytes, &res)
 	assert.NoError(t, err)
@@ -148,21 +151,21 @@ func TestAccLock(t *testing.T) {
 		if i == indexOfActiveLocker {
 			continue
 		}
-		_, err = lockers[i].GetRawJsonFileContent(ctx, wsc, path.Join(remoteProjectRoot, "foo.json"))
+		_, err = lockers[i].GetRawJsonFileContent(ctx, "foo.json")
 		assert.ErrorContains(t, err, "failed to get file. deploy lock not held")
 	}
 
 	// Unlock active lock and check it becomes inactive
-	err = lockers[indexOfActiveLocker].Unlock(ctx, wsc)
+	err = lockers[indexOfActiveLocker].Unlock(ctx)
 	assert.NoError(t, err)
-	remoteLocker, err = deployer.GetActiveLockState(ctx, wsc, lockers[indexOfActiveLocker].RemotePath())
+	remoteLocker, err = locker.GetActiveLockState(ctx)
 	assert.ErrorContains(t, err, "File not found.", "remote lock file not deleted on unlock")
 	assert.Nil(t, remoteLocker)
 	assert.False(t, lockers[indexOfActiveLocker].Active)
 
 	// A locker that failed to acquire the lock should now be able to acquire it
 	assert.False(t, lockers[indexOfAnInactiveLocker].Active)
-	err = lockers[indexOfAnInactiveLocker].Lock(ctx, wsc, false)
+	err = lockers[indexOfAnInactiveLocker].Lock(ctx, false)
 	assert.NoError(t, err)
 	assert.True(t, lockers[indexOfAnInactiveLocker].Active)
 }
