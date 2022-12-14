@@ -1,4 +1,4 @@
-package utilities
+package filer
 
 import "golang.org/x/exp/slices"
 
