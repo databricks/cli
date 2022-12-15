@@ -4,16 +4,14 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
-	"net/http"
-	"path"
+	"io"
 	"strings"
 	"time"
 
-	"github.com/databricks/bricks/utilities"
+	"github.com/databricks/bricks/libs/filer"
 	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/client"
-	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/google/uuid"
 )
 
@@ -41,6 +39,8 @@ import (
 //     of exclusive access that other clients with non forcefully acquired
 //     locks might have
 type Locker struct {
+	filer filer.Filer
+
 	// scope of the locker
 	TargetDir string
 	// Active == true implies exclusive access to TargetDir for the client.
@@ -63,24 +63,31 @@ type LockState struct {
 	User string
 }
 
-// don't need to hold lock on TargetDir to read locker state
-func GetActiveLockState(ctx context.Context, wsc *databricks.WorkspaceClient, path string) (*LockState, error) {
-	bytes, err := utilities.GetRawJsonFileContent(ctx, wsc, path)
+// GetActiveLockState returns current lock state, irrespective of us holding it.
+func (locker *Locker) GetActiveLockState(ctx context.Context) (*LockState, error) {
+	reader, err := locker.filer.Read(ctx, locker.RemotePath())
 	if err != nil {
 		return nil, err
 	}
+
+	bytes, err := io.ReadAll(reader)
+	if err != nil {
+		return nil, err
+	}
+
 	remoteLock := LockState{}
 	err = json.Unmarshal(bytes, &remoteLock)
 	if err != nil {
 		return nil, err
 	}
+
 	return &remoteLock, nil
 }
 
 // asserts whether lock is held by locker. Returns descriptive error with current
 // holder details if locker does not hold the lock
-func (locker *Locker) assertLockHeld(ctx context.Context, wsc *databricks.WorkspaceClient) error {
-	activeLockState, err := GetActiveLockState(ctx, wsc, locker.RemotePath())
+func (locker *Locker) assertLockHeld(ctx context.Context) error {
+	activeLockState, err := locker.GetActiveLockState(ctx)
 	if err != nil && strings.Contains(err.Error(), "File not found.") {
 		return fmt.Errorf("no active lock on target dir: %s", err)
 	}
@@ -97,53 +104,58 @@ func (locker *Locker) assertLockHeld(ctx context.Context, wsc *databricks.Worksp
 }
 
 // idempotent function since overwrite is set to true
-func (locker *Locker) PutFile(ctx context.Context, wsc *databricks.WorkspaceClient, pathToFile string, content []byte) error {
+func (locker *Locker) PutFile(ctx context.Context, pathToFile string, content []byte) error {
 	if !locker.Active {
 		return fmt.Errorf("failed to put file. deploy lock not held")
 	}
-	apiClient, err := client.New(wsc.Config)
-	if err != nil {
-		return err
-	}
-	apiPath := fmt.Sprintf(
-		"/api/2.0/workspace-files/import-file/%s?overwrite=true",
-		strings.TrimLeft(pathToFile, "/"))
-
-	err = apiClient.Do(ctx, http.MethodPost, apiPath, bytes.NewReader(content), nil)
-	if err != nil {
-		// retry after creating parent dirs
-		err = wsc.Workspace.MkdirsByPath(ctx, path.Dir(pathToFile))
-		if err != nil {
-			return fmt.Errorf("could not mkdir to put file: %s", err)
-		}
-		err = apiClient.Do(ctx, http.MethodPost, apiPath, bytes.NewReader(content), nil)
-	}
-	return err
+	return locker.filer.Write(ctx, pathToFile, bytes.NewReader(content), filer.OverwriteIfExists, filer.CreateParentDirectories)
 }
 
-func (locker *Locker) GetRawJsonFileContent(ctx context.Context, wsc *databricks.WorkspaceClient, path string) ([]byte, error) {
+func (locker *Locker) GetRawJsonFileContent(ctx context.Context, path string) ([]byte, error) {
 	if !locker.Active {
 		return nil, fmt.Errorf("failed to get file. deploy lock not held")
 	}
-	return utilities.GetRawJsonFileContent(ctx, wsc, path)
+	reader, err := locker.filer.Read(ctx, path)
+	if err != nil {
+		return nil, err
+	}
+	return io.ReadAll(reader)
 }
 
-func (locker *Locker) Lock(ctx context.Context, wsc *databricks.WorkspaceClient, isForced bool) error {
+func (locker *Locker) Lock(ctx context.Context, isForced bool) error {
 	newLockerState := LockState{
 		ID:              locker.State.ID,
 		AcquisitionTime: time.Now(),
 		IsForced:        isForced,
 		User:            locker.State.User,
 	}
-	bytes, err := json.Marshal(newLockerState)
+	buf, err := json.Marshal(newLockerState)
 	if err != nil {
 		return err
 	}
-	err = utilities.WriteFile(ctx, wsc, locker.RemotePath(), bytes, isForced)
-	if err != nil && !strings.Contains(err.Error(), fmt.Sprintf("%s already exists", locker.RemotePath())) {
-		return err
+
+	var modes = []filer.WriteMode{
+		// Always create parent directory if it doesn't yet exist.
+		filer.CreateParentDirectories,
 	}
-	err = locker.assertLockHeld(ctx, wsc)
+
+	// Only overwrite lock file if `isForced`.
+	if isForced {
+		modes = append(modes, filer.OverwriteIfExists)
+	}
+
+	err = locker.filer.Write(ctx, locker.RemotePath(), bytes.NewReader(buf), modes...)
+	if err != nil {
+		// If the write failed because the lock file already exists, don't return
+		// the error and instead fall through to [assertLockHeld] below.
+		// This function will return a more descriptive error message that includes
+		// details about the current holder of the lock.
+		if !errors.As(err, &filer.FileAlreadyExistsError{}) {
+			return err
+		}
+	}
+
+	err = locker.assertLockHeld(ctx)
 	if err != nil {
 		return err
 	}
@@ -153,20 +165,15 @@ func (locker *Locker) Lock(ctx context.Context, wsc *databricks.WorkspaceClient,
 	return nil
 }
 
-func (locker *Locker) Unlock(ctx context.Context, wsc *databricks.WorkspaceClient) error {
+func (locker *Locker) Unlock(ctx context.Context) error {
 	if !locker.Active {
 		return fmt.Errorf("unlock called when lock is not held")
 	}
-	err := locker.assertLockHeld(ctx, wsc)
+	err := locker.assertLockHeld(ctx)
 	if err != nil {
 		return fmt.Errorf("unlock called when lock is not held: %s", err)
 	}
-	err = wsc.Workspace.Delete(ctx,
-		workspace.Delete{
-			Path:      locker.RemotePath(),
-			Recursive: false,
-		},
-	)
+	err = locker.filer.Delete(ctx, locker.RemotePath())
 	if err != nil {
 		return err
 	}
@@ -175,11 +182,19 @@ func (locker *Locker) Unlock(ctx context.Context, wsc *databricks.WorkspaceClien
 }
 
 func (locker *Locker) RemotePath() string {
-	return path.Join(locker.TargetDir, ".bundle/deploy.lock")
+	// Note: remote paths are scoped to `targetDir`. Also see [CreateLocker].
+	return ".bundle/deploy.lock"
 }
 
-func CreateLocker(user string, targetDir string) *Locker {
-	return &Locker{
+func CreateLocker(user string, targetDir string, w *databricks.WorkspaceClient) (*Locker, error) {
+	filer, err := filer.NewWorkspaceFilesClient(w, targetDir)
+	if err != nil {
+		return nil, err
+	}
+
+	locker := &Locker{
+		filer: filer,
+
 		TargetDir: targetDir,
 		Active:    false,
 		State: &LockState{
@@ -187,4 +202,6 @@ func CreateLocker(user string, targetDir string) *Locker {
 			User: user,
 		},
 	}
+
+	return locker, nil
 }

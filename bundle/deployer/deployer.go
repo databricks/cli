@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 
@@ -71,7 +70,7 @@ func Create(ctx context.Context, env, localRoot, remoteRoot string, wsc *databri
 	if err != nil {
 		return nil, err
 	}
-	newLocker := CreateLocker(user.UserName, remoteRoot)
+	newLocker, err := CreateLocker(user.UserName, remoteRoot, wsc)
 	if err != nil {
 		return nil, err
 	}
@@ -89,7 +88,8 @@ func (b *Deployer) DefaultTerraformRoot() string {
 }
 
 func (b *Deployer) tfStateRemotePath() string {
-	return path.Join(b.remoteRoot, ".bundle", "terraform.tfstate")
+	// Note: remote paths are scoped to `remoteRoot` through the locker. Also see [Create].
+	return ".bundle/terraform.tfstate"
 }
 
 func (b *Deployer) tfStateLocalPath() string {
@@ -97,7 +97,7 @@ func (b *Deployer) tfStateLocalPath() string {
 }
 
 func (b *Deployer) LoadTerraformState(ctx context.Context) error {
-	bytes, err := b.locker.GetRawJsonFileContent(ctx, b.wsc, b.tfStateRemotePath())
+	bytes, err := b.locker.GetRawJsonFileContent(ctx, b.tfStateRemotePath())
 	if err != nil {
 		// If remote tf state is absent, use local tf state
 		if strings.Contains(err.Error(), "File not found.") {
@@ -119,15 +119,15 @@ func (b *Deployer) SaveTerraformState(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	return b.locker.PutFile(ctx, b.wsc, b.tfStateRemotePath(), bytes)
+	return b.locker.PutFile(ctx, b.tfStateRemotePath(), bytes)
 }
 
 func (d *Deployer) Lock(ctx context.Context, isForced bool) error {
-	return d.locker.Lock(ctx, d.wsc, isForced)
+	return d.locker.Lock(ctx, isForced)
 }
 
 func (d *Deployer) Unlock(ctx context.Context) error {
-	return d.locker.Unlock(ctx, d.wsc)
+	return d.locker.Unlock(ctx)
 }
 
 func (d *Deployer) ApplyTerraformConfig(ctx context.Context, configPath, terraformBinaryPath string, isForced bool) (DeploymentStatus, error) {

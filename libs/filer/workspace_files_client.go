@@ -17,7 +17,10 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-// WorkspaceFilesClient implements the Files-in-Workspace API.
+// WorkspaceFilesClient implements the files-in-workspace API.
+
+// NOTE: This API is available for files under /Repos if a workspace has files-in-repos enabled.
+// It can access any workspace path if files-in-workspace is enabled.
 type WorkspaceFilesClient struct {
 	workspaceClient *databricks.WorkspaceClient
 	apiClient       *client.DatabricksClient
