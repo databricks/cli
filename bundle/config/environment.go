@@ -4,7 +4,7 @@ package config
 // This structure is recursively merged into the root configuration.
 type Environment struct {
 	// Default marks that this environment must be used if one isn't specified
-	// by the user (through environment variable or command line argument.
+	// by the user (through environment variable or command line argument).
 	Default bool `json:"default,omitempty"`
 
 	Bundle *Bundle `json:"bundle,omitempty"`
