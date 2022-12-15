@@ -33,8 +33,8 @@ func TestConvertJob(t *testing.T) {
 
 	var config = config.Root{
 		Resources: config.Resources{
-			Jobs: map[string]resources.Job{
-				"my_job": src,
+			Jobs: map[string]*resources.Job{
+				"my_job": &src,
 			},
 		},
 	}
@@ -67,8 +67,8 @@ func TestConvertJobTaskLibraries(t *testing.T) {
 
 	var config = config.Root{
 		Resources: config.Resources{
-			Jobs: map[string]resources.Job{
-				"my_job": src,
+			Jobs: map[string]*resources.Job{
+				"my_job": &src,
 			},
 		},
 	}
