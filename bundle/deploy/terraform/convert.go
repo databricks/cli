@@ -2,9 +2,11 @@ package terraform
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/databricks/bricks/bundle/config"
 	"github.com/databricks/bricks/bundle/internal/tf/schema"
+	tfjson "github.com/hashicorp/terraform-json"
 )
 
 func conv(from any, to any) {
@@ -80,4 +82,40 @@ func BundleToTerraform(config *config.Root) *schema.Root {
 	}
 
 	return tfroot
+}
+
+func TerraformToBundle(state *tfjson.State, config *config.Root) error {
+	if state.Values == nil {
+		return fmt.Errorf("state.Values not set")
+	}
+
+	if state.Values.RootModule == nil {
+		return fmt.Errorf("state.Values.RootModule not set")
+	}
+
+	for _, resource := range state.Values.RootModule.Resources {
+		// Limit to resources.
+		if resource.Mode != tfjson.ManagedResourceMode {
+			continue
+		}
+
+		switch resource.Type {
+		case "databricks_job":
+			var tmp schema.ResourceJob
+			conv(resource.AttributeValues, &tmp)
+			cur := config.Resources.Jobs[resource.Name]
+			conv(tmp, &cur)
+			config.Resources.Jobs[resource.Name] = cur
+		case "databricks_pipeline":
+			var tmp schema.ResourcePipeline
+			conv(resource.AttributeValues, &tmp)
+			cur := config.Resources.Pipelines[resource.Name]
+			conv(tmp, &cur)
+			config.Resources.Pipelines[resource.Name] = cur
+		default:
+			return fmt.Errorf("missing mapping for %s", resource.Type)
+		}
+	}
+
+	return nil
 }
