@@ -68,27 +68,29 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 
 	// Transform some API errors into filer specific errors.
 	var aerr apierr.APIError
-	if errors.As(err, &aerr) {
-		// This API returns a 404 if the parent directory does not exist.
-		if aerr.StatusCode == http.StatusNotFound {
-			if !slices.Contains(mode, CreateParentDirectories) {
-				return NoSuchDirectoryError{path.Dir(absPath)}
-			}
+	if !errors.As(err, &aerr) {
+		return err
+	}
 
-			// Create parent directory.
-			err = w.workspaceClient.Workspace.MkdirsByPath(ctx, path.Dir(absPath))
-			if err != nil {
-				return fmt.Errorf("unable to mkdir to write file %s: %w", absPath, err)
-			}
-
-			// Retry without CreateParentDirectories mode flag.
-			return w.Write(ctx, name, bytes.NewReader(body), sliceWithout(mode, CreateParentDirectories)...)
+	// This API returns a 404 if the parent directory does not exist.
+	if aerr.StatusCode == http.StatusNotFound {
+		if !slices.Contains(mode, CreateParentDirectories) {
+			return NoSuchDirectoryError{path.Dir(absPath)}
 		}
 
-		// This API returns 409 if the file already exists.
-		if aerr.StatusCode == http.StatusConflict {
-			return FileAlreadyExistsError{absPath}
+		// Create parent directory.
+		err = w.workspaceClient.Workspace.MkdirsByPath(ctx, path.Dir(absPath))
+		if err != nil {
+			return fmt.Errorf("unable to mkdir to write file %s: %w", absPath, err)
 		}
+
+		// Retry without CreateParentDirectories mode flag.
+		return w.Write(ctx, name, bytes.NewReader(body), sliceWithout(mode, CreateParentDirectories)...)
+	}
+
+	// This API returns 409 if the file already exists.
+	if aerr.StatusCode == http.StatusConflict {
+		return FileAlreadyExistsError{absPath}
 	}
 
 	return err
