@@ -66,31 +66,29 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 
 	err = w.apiClient.Do(ctx, http.MethodPost, urlPath, body, nil)
 
-	// If we got an API error we deal with it below.
-	var aerr *apierr.APIError
-	if !errors.As(err, &aerr) {
-		return err
-	}
+	// Transform some API errors into filer specific errors.
+	var aerr apierr.APIError
+	if errors.As(err, &aerr) {
+		// This API returns a 404 if the parent directory does not exist.
+		if aerr.StatusCode == http.StatusNotFound {
+			if !slices.Contains(mode, CreateParentDirectories) {
+				return NoSuchDirectoryError{path.Dir(absPath)}
+			}
 
-	// This API returns a 404 if the parent directory does not exist.
-	if aerr.StatusCode == http.StatusNotFound {
-		if !slices.Contains(mode, CreateParentDirectories) {
-			return NoSuchDirectoryError{path.Dir(absPath)}
+			// Create parent directory.
+			err = w.workspaceClient.Workspace.MkdirsByPath(ctx, path.Dir(absPath))
+			if err != nil {
+				return fmt.Errorf("unable to mkdir to write file %s: %w", absPath, err)
+			}
+
+			// Retry without CreateParentDirectories mode flag.
+			return w.Write(ctx, name, bytes.NewReader(body), sliceWithout(mode, CreateParentDirectories)...)
 		}
 
-		// Create parent directory.
-		err = w.workspaceClient.Workspace.MkdirsByPath(ctx, path.Dir(absPath))
-		if err != nil {
-			return fmt.Errorf("unable to mkdir to write file %s: %w", absPath, err)
+		// This API returns 409 if the file already exists.
+		if aerr.StatusCode == http.StatusConflict {
+			return FileAlreadyExistsError{absPath}
 		}
-
-		// Retry without CreateParentDirectories mode flag.
-		return w.Write(ctx, name, bytes.NewReader(body), sliceWithout(mode, CreateParentDirectories)...)
-	}
-
-	// This API returns 409 if the file already exists.
-	if aerr.StatusCode == http.StatusConflict {
-		return FileAlreadyExistsError{absPath}
 	}
 
 	return err
@@ -110,6 +108,15 @@ func (w *WorkspaceFilesClient) Read(ctx context.Context, name string) (io.Reader
 
 	var res []byte
 	err = w.apiClient.Do(ctx, http.MethodGet, urlPath, nil, &res)
+
+	// Transform some API errors into filer specific errors.
+	var aerr apierr.APIError
+	if errors.As(err, &aerr) {
+		if aerr.StatusCode == http.StatusNotFound {
+			return nil, FileDoesNotExistError{absPath}
+		}
+	}
+
 	if err != nil {
 		return nil, err
 	}
@@ -123,8 +130,18 @@ func (w *WorkspaceFilesClient) Delete(ctx context.Context, name string) error {
 		return err
 	}
 
-	return w.workspaceClient.Workspace.Delete(ctx, workspace.Delete{
+	err = w.workspaceClient.Workspace.Delete(ctx, workspace.Delete{
 		Path:      absPath,
 		Recursive: false,
 	})
+
+	// Transform some API errors into filer specific errors.
+	var aerr apierr.APIError
+	if errors.As(err, &aerr) {
+		if aerr.StatusCode == http.StatusNotFound {
+			return FileDoesNotExistError{absPath}
+		}
+	}
+
+	return err
 }
