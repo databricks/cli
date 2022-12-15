@@ -9,7 +9,7 @@ import (
 )
 
 var runCmd = &cobra.Command{
-	Use:   "run",
+	Use:   "run [flags] KEY...",
 	Short: "Run a workload (e.g. a job or a pipeline)",
 
 	PreRunE: ConfigureBundle,
