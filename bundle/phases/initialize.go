@@ -4,6 +4,7 @@ import (
 	"github.com/databricks/bricks/bundle"
 	"github.com/databricks/bricks/bundle/config/interpolation"
 	"github.com/databricks/bricks/bundle/config/mutator"
+	"github.com/databricks/bricks/bundle/deploy/terraform"
 )
 
 // The initialize phase fills in defaults and connects to the workspace.
@@ -19,6 +20,7 @@ func Initialize() bundle.Mutator {
 				interpolation.IncludeLookupsInPath("bundle"),
 				interpolation.IncludeLookupsInPath("workspace"),
 			),
+			terraform.Initialize(),
 		},
 	)
 }

@@ -1,5 +1,9 @@
 package config
 
+type Terraform struct {
+	ExecPath string `json:"exec_path"`
+}
+
 type Bundle struct {
 	Name string `json:"name,omitempty"`
 
@@ -13,4 +17,8 @@ type Bundle struct {
 
 	// Environment is set by the mutator that selects the environment.
 	Environment string `json:"environment,omitempty"`
+
+	// Terraform holds configuration related to Terraform.
+	// For example, where to find the binary, which version to use, etc.
+	Terraform *Terraform `json:"terraform,omitempty"`
 }

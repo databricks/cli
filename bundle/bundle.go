@@ -65,13 +65,26 @@ var cacheDirName = filepath.Join(".databricks", "bundle")
 
 // CacheDir returns directory to use for temporary files for this bundle.
 // Scoped to the bundle's environment.
-func (b *Bundle) CacheDir() (string, error) {
+func (b *Bundle) CacheDir(paths ...string) (string, error) {
 	if b.Config.Bundle.Environment == "" {
 		panic("environment not set")
 	}
 
+	// Fixed components of the result path.
+	parts := []string{
+		// Anchor at bundle root directory.
+		b.Config.Path,
+		// Static cache directory.
+		cacheDirName,
+		// Scope with environment name.
+		b.Config.Bundle.Environment,
+	}
+
+	// Append dynamic components of the result path.
+	parts = append(parts, paths...)
+
 	// Make directory if it doesn't exist yet.
-	dir := filepath.Join(b.Config.Path, cacheDirName, b.Config.Bundle.Environment)
+	dir := filepath.Join(parts...)
 	err := os.MkdirAll(dir, 0700)
 	if err != nil {
 		return "", err

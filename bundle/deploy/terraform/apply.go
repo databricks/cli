@@ -3,7 +3,6 @@ package terraform
 import (
 	"context"
 	"fmt"
-	"os/exec"
 
 	"github.com/databricks/bricks/bundle"
 	"github.com/hashicorp/terraform-exec/tfexec"
@@ -16,22 +15,12 @@ func (w *apply) Name() string {
 }
 
 func (w *apply) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator, error) {
-	workingDir, err := Dir(b)
-	if err != nil {
-		return nil, err
+	tf := b.Terraform
+	if tf == nil {
+		return nil, fmt.Errorf("terraform not initialized")
 	}
 
-	execPath, err := exec.LookPath("terraform")
-	if err != nil {
-		return nil, err
-	}
-
-	tf, err := tfexec.NewTerraform(workingDir, execPath)
-	if err != nil {
-		return nil, err
-	}
-
-	err = tf.Init(ctx, tfexec.Upgrade(true))
+	err := tf.Init(ctx, tfexec.Upgrade(true))
 	if err != nil {
 		return nil, fmt.Errorf("terraform init: %w", err)
 	}
