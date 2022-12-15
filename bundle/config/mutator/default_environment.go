@@ -26,7 +26,7 @@ func (m *defineDefaultEnvironment) Name() string {
 
 func (m *defineDefaultEnvironment) Apply(_ context.Context, b *bundle.Bundle) ([]bundle.Mutator, error) {
 	// Nothing to do if the configuration has at least 1 environment.
-	if b.Config.Environments != nil || len(b.Config.Environments) > 0 {
+	if len(b.Config.Environments) > 0 {
 		return nil, nil
 	}
 
