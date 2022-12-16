@@ -13,6 +13,7 @@ import (
 )
 
 type translateNotebookPaths struct {
+	seen map[string]string
 }
 
 // TranslateNotebookPaths converts paths to local notebook files into references to artifacts.
@@ -26,8 +27,36 @@ func (m *translateNotebookPaths) Name() string {
 
 var nonWord = regexp.MustCompile(`[^\w]`)
 
+func (m *translateNotebookPaths) rewritePath(b *bundle.Bundle, p *string) {
+	relPath := path.Clean(*p)
+	absPath := filepath.Join(b.Config.Path, relPath)
+
+	// This is opportunistic. If we can't stat, continue.
+	_, err := os.Stat(absPath)
+	if err != nil {
+		return
+	}
+
+	// Define artifact for this notebook.
+	id := nonWord.ReplaceAllString(relPath, "_")
+	if v, ok := m.seen[id]; ok {
+		*p = v
+		return
+	}
+
+	b.Config.Artifacts[id] = &config.Artifact{
+		Notebook: &config.NotebookArtifact{
+			Path: relPath,
+		},
+	}
+
+	interp := fmt.Sprintf("${artifacts.%s.notebook.remote_path}", id)
+	*p = interp
+	m.seen[id] = interp
+}
+
 func (m *translateNotebookPaths) Apply(_ context.Context, b *bundle.Bundle) ([]bundle.Mutator, error) {
-	var seen = make(map[string]string)
+	m.seen = make(map[string]string)
 
 	if b.Config.Artifacts == nil {
 		b.Config.Artifacts = make(map[string]*config.Artifact)
@@ -40,31 +69,7 @@ func (m *translateNotebookPaths) Apply(_ context.Context, b *bundle.Bundle) ([]b
 				continue
 			}
 
-			relPath := path.Clean(task.NotebookTask.NotebookPath)
-			absPath := filepath.Join(b.Config.Path, relPath)
-
-			// This is opportunistic. If we can't stat, continue.
-			_, err := os.Stat(absPath)
-			if err != nil {
-				continue
-			}
-
-			// Define artifact for this notebook.
-			id := nonWord.ReplaceAllString(relPath, "_")
-			if v, ok := seen[id]; ok {
-				task.NotebookTask.NotebookPath = v
-				continue
-			}
-
-			b.Config.Artifacts[id] = &config.Artifact{
-				Notebook: &config.NotebookArtifact{
-					Path: relPath,
-				},
-			}
-
-			interp := fmt.Sprintf("${artifacts.%s.notebook.remote_path}", id)
-			task.NotebookTask.NotebookPath = interp
-			seen[id] = interp
+			m.rewritePath(b, &task.NotebookTask.NotebookPath)
 		}
 	}
 
@@ -75,31 +80,7 @@ func (m *translateNotebookPaths) Apply(_ context.Context, b *bundle.Bundle) ([]b
 				continue
 			}
 
-			relPath := path.Clean(library.Notebook.Path)
-			absPath := filepath.Join(b.Config.Path, relPath)
-
-			// This is opportunistic. If we can't stat, continue.
-			_, err := os.Stat(absPath)
-			if err != nil {
-				continue
-			}
-
-			// Define artifact for this notebook.
-			id := nonWord.ReplaceAllString(relPath, "_")
-			if v, ok := seen[id]; ok {
-				library.Notebook.Path = v
-				continue
-			}
-
-			b.Config.Artifacts[id] = &config.Artifact{
-				Notebook: &config.NotebookArtifact{
-					Path: relPath,
-				},
-			}
-
-			interp := fmt.Sprintf("${artifacts.%s.notebook.remote_path}", id)
-			library.Notebook.Path = interp
-			seen[id] = interp
+			m.rewritePath(b, &library.Notebook.Path)
 		}
 	}
 
