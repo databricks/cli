@@ -21,7 +21,7 @@ type Runner interface {
 	Key() string
 
 	// Run the underlying worklow.
-	Run(ctx context.Context) error
+	Run(ctx context.Context, opts *Options) error
 }
 
 // Collect collects a list of runners given a list of arguments.

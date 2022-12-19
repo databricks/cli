@@ -8,6 +8,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var runOptions run.Options
+
 var runCmd = &cobra.Command{
 	Use:   "run [flags] KEY...",
 	Short: "Run a workload (e.g. a job or a pipeline)",
@@ -30,7 +32,7 @@ var runCmd = &cobra.Command{
 		}
 
 		for _, runner := range runners {
-			err = runner.Run(cmd.Context())
+			err = runner.Run(cmd.Context(), &runOptions)
 			if err != nil {
 				return err
 			}
@@ -41,5 +43,6 @@ var runCmd = &cobra.Command{
 }
 
 func init() {
+	runOptions.Define(runCmd.Flags())
 	rootCmd.AddCommand(runCmd)
 }
