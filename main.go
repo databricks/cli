@@ -15,5 +15,5 @@ import (
 )
 
 func main() {
-	root.RootCmd.Execute()
+	root.Execute()
 }
