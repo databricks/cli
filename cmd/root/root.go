@@ -2,6 +2,7 @@ package root
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 	"strings"
@@ -14,12 +15,20 @@ var RootCmd = &cobra.Command{
 	Use:   "bricks",
 	Short: "Databricks project lifecycle management",
 	Long:  `Where's "data"? Secured by the unity catalog. Projects build lifecycle is secured by bricks`,
+
+	// Cobra prints the usage string to stderr if a command returns an error.
+	// This usage string should only be displayed if an invalid combination of flags
+	// is specified and not when runtime errors occur (e.g. resource not found).
+	// The usage string is include in [flagErrorFunc] for flag errors only.
+	SilenceUsage: true,
+
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		if Verbose {
 			logLevel = append(logLevel, "[DEBUG]")
 		}
 		log.SetOutput(&logLevel)
 	},
+
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 }
@@ -42,6 +51,11 @@ func (lw *levelWriter) Write(p []byte) (n int, err error) {
 	return
 }
 
+// Wrap flag errors to include the usage string.
+func flagErrorFunc(c *cobra.Command, err error) error {
+	return fmt.Errorf("%w\n\n%s", err, c.UsageString())
+}
+
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
@@ -54,6 +68,7 @@ func Execute() {
 }
 
 func init() {
+	RootCmd.SetFlagErrorFunc(flagErrorFunc)
 	// flags available for every child command
 	RootCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "v", false, "print debug logs")
 }
