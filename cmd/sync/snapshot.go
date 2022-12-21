@@ -226,19 +226,21 @@ func (s *Snapshot) diff(all []git.File) (change diff, err error) {
 		lastSeenModified, seen := lastModifiedTimes[f.Relative]
 
 		if !seen || modified.After(lastSeenModified) {
-			change.put = append(change.put, f.Relative)
 			lastModifiedTimes[f.Relative] = modified
 
 			// Keep track of remote names of local files so we can delete them later
+			unixFileName := filepath.ToSlash(f.Relative)
+			change.put = append(change.put, unixFileName)
+
+			// strip `.py` for python notebook
+			remoteName := unixFileName
 			isNotebook, typeOfNotebook, err := getNotebookDetails(f.Absolute)
 			if err != nil {
 				return change, err
 			}
-			remoteName := f.Relative
 			if isNotebook && typeOfNotebook == "PYTHON" {
-				remoteName = strings.TrimSuffix(f.Relative, `.py`)
+				remoteName = strings.TrimSuffix(remoteName, `.py`)
 			}
-
 			// If the remote handle of a file changes, we want to delete the old
 			// remote version of that file to avoid duplicates.
 			// This can happen if a python notebook is converted to a python
