@@ -18,6 +18,7 @@ jobs:
         run: git fetch --prune --unshallow
 
       - name: Setup Go
+        id: go
         uses: actions/setup-go@v3
         with:
           go-version: 1.18.8
@@ -28,18 +29,18 @@ jobs:
           echo "GOMODCACHE=$(go env GOMODCACHE)" >> $GITHUB_OUTPUT
           echo "GOCACHE=$(go env GOCACHE)" >> $GITHUB_OUTPUT
 
-      # Note: use custom caching because goreleaser performs a cross platform build
-      # and therefore we cannot share a cache with the test builds.
+      # Note: use custom caching because below performs a cross platform build
+      # through goreleaser and don't want to share a cache with the test builds.
       - name: Setup caching
         uses: actions/cache@v3
         with:
           path: |
             ${{ steps.cache.outputs.GOMODCACHE }}
             ${{ steps.cache.outputs.GOCACHE }}
-          key: release-${{ runner.os }}-go-${{ hashFiles('go.sum', '.goreleaser.yaml') }}
+          key: release-${{ runner.os }}-go-${{ steps.go.outputs.go-version }}-${{ hashFiles('go.sum', '.goreleaser.yaml') }}
 
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v3.1.0
+        uses: goreleaser/goreleaser-action@v4
         with:
           version: latest
           args: release --rm-dist
