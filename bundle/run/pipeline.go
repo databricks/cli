@@ -23,7 +23,7 @@ func (r *pipelineRunner) Run(ctx context.Context) error {
 	var pipelineID = r.pipeline.ID
 
 	w := r.bundle.WorkspaceClient()
-	_, err := w.Pipelines.GetPipelineByPipelineId(ctx, pipelineID)
+	_, err := w.Pipelines.GetByPipelineId(ctx, pipelineID)
 	if err != nil {
 		log.Printf("[WARN] Cannot get pipeline: %s", err)
 		return err
