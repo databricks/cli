@@ -45,11 +45,23 @@ jobs:
           version: latest
           args: release --snapshot
 
-      - name: Upload assets
+      - name: Upload macOS binaries
         uses: actions/upload-artifact@v3
         with:
-          name: bricks_${}
+          name: bricks_darwin_snapshot.zip
           path: |
             dist/bricks_darwin_*
+
+      - name: Upload Linux binaries
+        uses: actions/upload-artifact@v3
+        with:
+          name: bricks_linux_snapshot.zip
+          path: |
             dist/bricks_linux_*
+
+      - name: Upload Windows binaries
+        uses: actions/upload-artifact@v3
+        with:
+          name: bricks_windows_snapshot.zip
+          path: |
             dist/bricks_windows_*
