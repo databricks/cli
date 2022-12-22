@@ -87,6 +87,11 @@ func (r *Root) Merge(other *Root) error {
 func (r *Root) MergeEnvironment(env *Environment) error {
 	var err error
 
+	// Environment may be nil if it's empty.
+	if env == nil {
+		return nil
+	}
+
 	if env.Bundle != nil {
 		err = mergo.MergeWithOverwrite(&r.Bundle, env.Bundle)
 		if err != nil {

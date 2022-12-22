@@ -48,6 +48,19 @@ func TestSelectDefaultEnvironmentNoDefaults(t *testing.T) {
 	assert.ErrorContains(t, err, "please specify environment")
 }
 
+func TestSelectDefaultEnvironmentNoDefaultsWithNil(t *testing.T) {
+	bundle := &bundle.Bundle{
+		Config: config.Root{
+			Environments: map[string]*config.Environment{
+				"foo": nil,
+				"bar": nil,
+			},
+		},
+	}
+	_, err := mutator.SelectDefaultEnvironment().Apply(context.Background(), bundle)
+	assert.ErrorContains(t, err, "please specify environment")
+}
+
 func TestSelectDefaultEnvironmentMultipleDefaults(t *testing.T) {
 	bundle := &bundle.Bundle{
 		Config: config.Root{
