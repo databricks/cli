@@ -33,8 +33,8 @@ func (m *selectDefaultEnvironment) Apply(_ context.Context, b *bundle.Bundle) ([
 
 	// Multiple environments means we look for the `default` flag.
 	var defaults []string
-	for _, name := range names {
-		if b.Config.Environments[name].Default {
+	for name, env := range b.Config.Environments {
+		if env != nil && env.Default {
 			defaults = append(defaults, name)
 		}
 	}
