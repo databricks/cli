@@ -34,11 +34,11 @@ func (w *DbfsClient) Write(ctx context.Context, name string, reader io.Reader, m
 		return err
 	}
 
-	dbfsMode := DbfsWrite
+	fileMode := dbfs.FileModeWrite
 	if slices.Contains(mode, OverwriteIfExists) {
-		dbfsMode |= DbfsOverwrite
+		fileMode |= dbfs.FileModeOverwrite
 	}
-	dbfsHandle, err := OpenFile(ctx, w.workspaceClient.Dbfs, absPath, dbfsMode)
+	handle, err := w.workspaceClient.Dbfs.Open(ctx, absPath, fileMode)
 	if err != nil {
 		var aerr apierr.APIError
 		if !errors.As(err, &aerr) {
@@ -55,8 +55,8 @@ func (w *DbfsClient) Write(ctx context.Context, name string, reader io.Reader, m
 		return err
 	}
 
-	_, err = io.Copy(dbfsHandle, reader)
-	cerr := dbfsHandle.Close()
+	_, err = io.Copy(handle, reader)
+	cerr := handle.Close()
 	if err == nil {
 		err = cerr
 	}
@@ -70,7 +70,7 @@ func (w *DbfsClient) Read(ctx context.Context, name string) (io.Reader, error) {
 		return nil, err
 	}
 
-	dbfsHandle, err := OpenFile(ctx, w.workspaceClient.Dbfs, absPath, DbfsRead)
+	handle, err := w.workspaceClient.Dbfs.Open(ctx, absPath, dbfs.FileModeRead)
 	if err != nil {
 		var aerr apierr.APIError
 		if !errors.As(err, &aerr) {
@@ -87,7 +87,7 @@ func (w *DbfsClient) Read(ctx context.Context, name string) (io.Reader, error) {
 		return nil, err
 	}
 
-	return dbfsHandle, nil
+	return handle, nil
 }
 
 func (w *DbfsClient) Delete(ctx context.Context, name string) error {
