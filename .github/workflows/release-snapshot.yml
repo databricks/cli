@@ -18,6 +18,7 @@ jobs:
         run: git fetch --prune --unshallow
 
       - name: Setup Go
+        id: go
         uses: actions/setup-go@v3
         with:
           go-version: 1.18.8
@@ -36,7 +37,7 @@ jobs:
           path: |
             ${{ steps.cache.outputs.GOMODCACHE }}
             ${{ steps.cache.outputs.GOCACHE }}
-          key: release-${{ runner.os }}-go-${{ hashFiles('go.sum', '.goreleaser.yaml') }}
+          key: release-${{ runner.os }}-go-${{ steps.go.outputs.go-version }}-${{ hashFiles('go.sum', '.goreleaser.yaml') }}
 
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v4
@@ -47,5 +48,8 @@ jobs:
       - name: Upload assets
         uses: actions/upload-artifact@v3
         with:
-          name: bricks
-          path: dist/*.zip
+          name: bricks_${}
+          path: |
+            dist/bricks_darwin_*
+            dist/bricks_linux_*
+            dist/bricks_windows_*
