@@ -136,6 +136,40 @@ func TestDiff(t *testing.T) {
 	assert.Equal(t, map[string]string{"world.txt": "world.txt"}, state.RemoteToLocalNames)
 }
 
+func TestFolderDiff(t *testing.T) {
+	// Create temp project dir
+	projectDir := t.TempDir()
+	fileSet := git.NewFileSet(projectDir)
+	state := Snapshot{
+		LastUpdatedTimes:   make(map[string]time.Time),
+		LocalToRemoteNames: make(map[string]string),
+		RemoteToLocalNames: make(map[string]string),
+	}
+
+	err := os.Mkdir(filepath.Join(projectDir, "foo"), os.ModePerm)
+	assert.NoError(t, err)
+	f1 := createFile(t, filepath.Join(projectDir, "foo", "bar.py"))
+	defer f1.close(t)
+	f1.overwrite(t, "# Databricks notebook source\nprint(\"abc\")")
+
+	files, err := fileSet.All()
+	assert.NoError(t, err)
+	change, err := state.diff(files)
+	assert.NoError(t, err)
+	assert.Len(t, change.delete, 0)
+	assert.Len(t, change.put, 1)
+	assert.Contains(t, change.put, "foo/bar.py")
+
+	f1.remove(t)
+	files, err = fileSet.All()
+	assert.NoError(t, err)
+	change, err = state.diff(files)
+	assert.NoError(t, err)
+	assert.Len(t, change.delete, 1)
+	assert.Len(t, change.put, 0)
+	assert.Contains(t, change.delete, "foo/bar")
+}
+
 func TestPythonNotebookDiff(t *testing.T) {
 	// Create temp project dir
 	projectDir := t.TempDir()
