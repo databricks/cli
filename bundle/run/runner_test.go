@@ -9,18 +9,18 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCollectNoResources(t *testing.T) {
+func TestFindNoResources(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Resources: config.Resources{},
 		},
 	}
 
-	_, err := Collect(b, []string{"foo"})
+	_, err := Find(b, "foo")
 	assert.ErrorContains(t, err, "bundle defines no resources")
 }
 
-func TestCollectNoArg(t *testing.T) {
+func TestFindSingleArg(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Resources: config.Resources{
@@ -31,28 +31,11 @@ func TestCollectNoArg(t *testing.T) {
 		},
 	}
 
-	out, err := Collect(b, []string{})
+	_, err := Find(b, "foo")
 	assert.NoError(t, err)
-	assert.Len(t, out, 1)
 }
 
-func TestCollectNoArgMultipleResources(t *testing.T) {
-	b := &bundle.Bundle{
-		Config: config.Root{
-			Resources: config.Resources{
-				Jobs: map[string]*resources.Job{
-					"foo": {},
-					"bar": {},
-				},
-			},
-		},
-	}
-
-	_, err := Collect(b, []string{})
-	assert.ErrorContains(t, err, "bundle defines multiple resources")
-}
-
-func TestCollectSingleArg(t *testing.T) {
+func TestFindSingleArgNotFound(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Resources: config.Resources{
@@ -63,27 +46,11 @@ func TestCollectSingleArg(t *testing.T) {
 		},
 	}
 
-	out, err := Collect(b, []string{"foo"})
-	assert.NoError(t, err)
-	assert.Len(t, out, 1)
-}
-
-func TestCollectSingleArgNotFound(t *testing.T) {
-	b := &bundle.Bundle{
-		Config: config.Root{
-			Resources: config.Resources{
-				Jobs: map[string]*resources.Job{
-					"foo": {},
-				},
-			},
-		},
-	}
-
-	_, err := Collect(b, []string{"bar"})
+	_, err := Find(b, "bar")
 	assert.ErrorContains(t, err, "no such resource: bar")
 }
 
-func TestCollectSingleArgAmbiguous(t *testing.T) {
+func TestFindSingleArgAmbiguous(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Resources: config.Resources{
@@ -97,11 +64,11 @@ func TestCollectSingleArgAmbiguous(t *testing.T) {
 		},
 	}
 
-	_, err := Collect(b, []string{"key"})
+	_, err := Find(b, "key")
 	assert.ErrorContains(t, err, "ambiguous: ")
 }
 
-func TestCollectSingleArgWithType(t *testing.T) {
+func TestFindSingleArgWithType(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Resources: config.Resources{
@@ -112,27 +79,6 @@ func TestCollectSingleArgWithType(t *testing.T) {
 		},
 	}
 
-	out, err := Collect(b, []string{"jobs.key"})
+	_, err := Find(b, "jobs.key")
 	assert.NoError(t, err)
-	assert.Len(t, out, 1)
-}
-
-func TestCollectMultipleArg(t *testing.T) {
-	b := &bundle.Bundle{
-		Config: config.Root{
-			Resources: config.Resources{
-				Jobs: map[string]*resources.Job{
-					"foo": {},
-					"bar": {},
-				},
-				Pipelines: map[string]*resources.Pipeline{
-					"qux": {},
-				},
-			},
-		},
-	}
-
-	out, err := Collect(b, []string{"foo", "bar", "qux"})
-	assert.NoError(t, err)
-	assert.Len(t, out, 3)
 }
