@@ -1,9 +1,9 @@
-name: release
+name: release-snapshot
 
 on:
   push:
-    tags:
-      - "v*"
+    branches:
+      - main
 
   workflow_dispatch:
 
@@ -28,8 +28,8 @@ jobs:
           echo "GOMODCACHE=$(go env GOMODCACHE)" >> $GITHUB_OUTPUT
           echo "GOCACHE=$(go env GOCACHE)" >> $GITHUB_OUTPUT
 
-      # Note: use custom caching because goreleaser performs a cross platform build
-      # and therefore we cannot share a cache with the test builds.
+      # Note: use custom caching because below performs a cross platform build
+      # through goreleaser and don't want to share a cache with the test builds.
       - name: Setup caching
         uses: actions/cache@v3
         with:
@@ -39,9 +39,13 @@ jobs:
           key: release-${{ runner.os }}-go-${{ hashFiles('go.sum', '.goreleaser.yaml') }}
 
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v3.1.0
+        uses: goreleaser/goreleaser-action@v4
         with:
           version: latest
-          args: release --rm-dist
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          args: release --snapshot
+
+      - name: Upload assets
+        uses: actions/upload-artifact@v3
+        with:
+          name: bricks
+          path: dist/*.zip
