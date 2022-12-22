@@ -48,20 +48,20 @@ jobs:
       - name: Upload macOS binaries
         uses: actions/upload-artifact@v3
         with:
-          name: bricks_darwin_snapshot.zip
+          name: bricks_darwin_snapshot
           path: |
             dist/bricks_darwin_*
 
       - name: Upload Linux binaries
         uses: actions/upload-artifact@v3
         with:
-          name: bricks_linux_snapshot.zip
+          name: bricks_linux_snapshot
           path: |
             dist/bricks_linux_*
 
       - name: Upload Windows binaries
         uses: actions/upload-artifact@v3
         with:
-          name: bricks_windows_snapshot.zip
+          name: bricks_windows_snapshot
           path: |
             dist/bricks_windows_*
