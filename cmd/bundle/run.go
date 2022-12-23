@@ -11,9 +11,10 @@ import (
 var runOptions run.Options
 
 var runCmd = &cobra.Command{
-	Use:   "run [flags] KEY...",
+	Use:   "run [flags] KEY",
 	Short: "Run a workload (e.g. a job or a pipeline)",
 
+	Args:    cobra.ExactArgs(1),
 	PreRunE: ConfigureBundle,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		b := bundle.Get(cmd.Context())
@@ -26,16 +27,14 @@ var runCmd = &cobra.Command{
 			return err
 		}
 
-		runners, err := run.Collect(b, args)
+		runner, err := run.Find(b, args[0])
 		if err != nil {
 			return err
 		}
 
-		for _, runner := range runners {
-			err = runner.Run(cmd.Context(), &runOptions)
-			if err != nil {
-				return err
-			}
+		err = runner.Run(cmd.Context(), &runOptions)
+		if err != nil {
+			return err
 		}
 
 		return nil

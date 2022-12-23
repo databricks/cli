@@ -226,17 +226,24 @@ func (s *Snapshot) diff(all []git.File) (change diff, err error) {
 		lastSeenModified, seen := lastModifiedTimes[f.Relative]
 
 		if !seen || modified.After(lastSeenModified) {
-			change.put = append(change.put, f.Relative)
 			lastModifiedTimes[f.Relative] = modified
 
-			// Keep track of remote names of local files so we can delete them later
+			// change separators to '/' for file paths in remote store
+			unixFileName := filepath.ToSlash(f.Relative)
+
+			// put file in databricks workspace
+			change.put = append(change.put, unixFileName)
+
+			// get file metadata about whether it's a notebook
 			isNotebook, typeOfNotebook, err := getNotebookDetails(f.Absolute)
 			if err != nil {
 				return change, err
 			}
-			remoteName := f.Relative
+
+			// strip `.py` for python notebooks
+			remoteName := unixFileName
 			if isNotebook && typeOfNotebook == "PYTHON" {
-				remoteName = strings.TrimSuffix(f.Relative, `.py`)
+				remoteName = strings.TrimSuffix(remoteName, `.py`)
 			}
 
 			// If the remote handle of a file changes, we want to delete the old

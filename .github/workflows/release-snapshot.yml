@@ -1,9 +1,9 @@
-name: release
+name: release-snapshot
 
 on:
   push:
-    tags:
-      - "v*"
+    branches:
+      - main
 
   workflow_dispatch:
 
@@ -43,6 +43,25 @@ jobs:
         uses: goreleaser/goreleaser-action@v4
         with:
           version: latest
-          args: release --rm-dist
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          args: release --snapshot
+
+      - name: Upload macOS binaries
+        uses: actions/upload-artifact@v3
+        with:
+          name: bricks_darwin_snapshot
+          path: |
+            dist/bricks_darwin_*
+
+      - name: Upload Linux binaries
+        uses: actions/upload-artifact@v3
+        with:
+          name: bricks_linux_snapshot
+          path: |
+            dist/bricks_linux_*
+
+      - name: Upload Windows binaries
+        uses: actions/upload-artifact@v3
+        with:
+          name: bricks_windows_snapshot
+          path: |
+            dist/bricks_windows_*
