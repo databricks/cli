@@ -11,7 +11,76 @@ import (
 	"github.com/databricks/bricks/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
+	flag "github.com/spf13/pflag"
 )
+
+// JobOptions defines options for running a job.
+type JobOptions struct {
+	dbtCommands       []string
+	jarParams         []string
+	notebookParams    map[string]string
+	pipelineParams    map[string]string
+	pythonNamedParams map[string]string
+	pythonParams      []string
+	sparkSubmitParams []string
+	sqlParams         map[string]string
+}
+
+func (o *JobOptions) Define(fs *flag.FlagSet) {
+	fs.StringSliceVar(&o.dbtCommands, "dbt-commands", nil, "A list of commands to execute for jobs with DBT tasks.")
+	fs.StringSliceVar(&o.jarParams, "jar-params", nil, "A list of parameters for jobs with Spark JAR tasks.")
+	fs.StringToStringVar(&o.notebookParams, "notebook-params", nil, "A map from keys to values for jobs with notebook tasks.")
+	fs.StringToStringVar(&o.pipelineParams, "pipeline-params", nil, "A map from keys to values for jobs with pipeline tasks.")
+	fs.StringToStringVar(&o.pythonNamedParams, "python-named-params", nil, "A map from keys to values for jobs with Python wheel tasks.")
+	fs.StringSliceVar(&o.pythonParams, "python-params", nil, "A list of parameters for jobs with Python tasks.")
+	fs.StringSliceVar(&o.sparkSubmitParams, "spark-submit-params", nil, "A list of parameters for jobs with Spark submit tasks.")
+	fs.StringToStringVar(&o.sqlParams, "sql-params", nil, "A map from keys to values for jobs with SQL tasks.")
+}
+
+func (o *JobOptions) validatePipelineParams() (*jobs.PipelineParams, error) {
+	if len(o.pipelineParams) == 0 {
+		return nil, nil
+	}
+
+	var defaultErr = fmt.Errorf("job run argument --pipeline-params only supports `full_refresh=<bool>`")
+	v, ok := o.pipelineParams["full_refresh"]
+	if !ok {
+		return nil, defaultErr
+	}
+
+	b, err := strconv.ParseBool(v)
+	if err != nil {
+		return nil, defaultErr
+	}
+
+	pipelineParams := &jobs.PipelineParams{
+		FullRefresh: b,
+	}
+
+	return pipelineParams, nil
+}
+
+func (o *JobOptions) toPayload(jobID int64) (*jobs.RunNow, error) {
+	pipelineParams, err := o.validatePipelineParams()
+	if err != nil {
+		return nil, err
+	}
+
+	payload := &jobs.RunNow{
+		JobId: jobID,
+
+		DbtCommands:       o.dbtCommands,
+		JarParams:         o.jarParams,
+		NotebookParams:    o.notebookParams,
+		PipelineParams:    pipelineParams,
+		PythonNamedParams: o.pythonNamedParams,
+		PythonParams:      o.pythonParams,
+		SparkSubmitParams: o.sparkSubmitParams,
+		SqlParams:         o.sqlParams,
+	}
+
+	return payload, nil
+}
 
 // Default timeout for waiting for a job run to complete.
 var jobRunTimeout time.Duration = 2 * time.Hour
@@ -23,7 +92,7 @@ type jobRunner struct {
 	job    *resources.Job
 }
 
-func (r *jobRunner) Run(ctx context.Context) error {
+func (r *jobRunner) Run(ctx context.Context, opts *Options) error {
 	jobID, err := strconv.ParseInt(r.job.ID, 10, 64)
 	if err != nil {
 		return fmt.Errorf("job ID is not an integer: %s", r.job.ID)
@@ -48,10 +117,13 @@ func (r *jobRunner) Run(ctx context.Context) error {
 		}
 	}
 
+	req, err := opts.Job.toPayload(jobID)
+	if err != nil {
+		return err
+	}
+
 	w := r.bundle.WorkspaceClient()
-	run, err := w.Jobs.RunNowAndWait(ctx, jobs.RunNow{
-		JobId: jobID,
-	}, retries.Timeout[jobs.Run](jobRunTimeout), update)
+	run, err := w.Jobs.RunNowAndWait(ctx, *req, retries.Timeout[jobs.Run](jobRunTimeout), update)
 	if err != nil {
 		return err
 	}

@@ -21,7 +21,7 @@ type Runner interface {
 	Key() string
 
 	// Run the underlying worklow.
-	Run(ctx context.Context) error
+	Run(ctx context.Context, opts *Options) error
 }
 
 // Find locates a runner matching the specified argument.
