@@ -28,8 +28,8 @@ github.com/client9/misspell v0.3.4/go.mod h1:qj6jICC3Q7zFZvVWo7KLAzC3yx5G7kyvSDk
 github.com/cncf/udpa/go v0.0.0-20191209042840-269d4d468f6f/go.mod h1:M8M6+tZqaGXZJjfX53e64911xZQV5JYwmTeXPW+k8Sc=
 github.com/cpuguy83/go-md2man/v2 v2.0.2/go.mod h1:tgQtvFlXSQOSOSIRvRPT7W67SCa46tRHOmNcaadrF8o=
 github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ33E=
-github.com/databricks/databricks-sdk-go v0.1.2-0.20221219172754-c59e38647f3f h1:Mfq6euTxxWa9wDyskWcC4zruT9bK6BlNhulgoAVsICk=
-github.com/databricks/databricks-sdk-go v0.1.2-0.20221219172754-c59e38647f3f/go.mod h1:5eV3o1zUxwkuQKiIOGAVNwK6zGAklnjz4G6uYNO9W8U=
+github.com/databricks/databricks-sdk-go v0.2.0 h1:wPdLoXQ+RVhwxk+7DxuScQryTC6ISgaKublANXcRM2Q=
+github.com/databricks/databricks-sdk-go v0.2.0/go.mod h1:5eV3o1zUxwkuQKiIOGAVNwK6zGAklnjz4G6uYNO9W8U=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=

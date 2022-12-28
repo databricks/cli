@@ -3,12 +3,14 @@ package python
 import (
 	"context"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"path"
 	"strings"
 
 	"github.com/databricks/bricks/project"
+	"github.com/databricks/databricks-sdk-go/service/dbfs"
 )
 
 func BuildWheel(ctx context.Context, dir string) (string, error) {
@@ -67,8 +69,11 @@ func UploadWheelToDBFSWithPEP503(ctx context.Context, dir string) (string, error
 		return "", err
 	}
 	defer wf.Close()
-	// err = dbfs.Create(dbfsLoc, raw, true)
-	err = wsc.Dbfs.Overwrite(ctx, dbfsLoc, wf)
+	h, err := wsc.Dbfs.Open(ctx, dbfsLoc, dbfs.FileModeOverwrite|dbfs.FileModeWrite)
+	if err != nil {
+		return "", err
+	}
+	_, err = io.Copy(h, wf)
 	// TODO: maintain PEP503 compliance and update meta-files:
 	// ${DBFSWheelLocation}/index.html and ${DBFSWheelLocation}/${NormalizedName}/index.html
 	return dbfsLoc, err
