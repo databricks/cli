@@ -2,6 +2,7 @@ package main
 
 import (
 	_ "github.com/databricks/bricks/cmd/api"
+	_ "github.com/databricks/bricks/cmd/auth"
 	_ "github.com/databricks/bricks/cmd/bundle"
 	_ "github.com/databricks/bricks/cmd/bundle/debug"
 	_ "github.com/databricks/bricks/cmd/bundle/debug/deploy"

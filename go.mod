@@ -48,7 +48,7 @@ require (
 	github.com/spf13/pflag v1.0.5
 	go.opencensus.io v0.24.0 // indirect
 	golang.org/x/net v0.1.0 // indirect
-	golang.org/x/oauth2 v0.0.0-20221014153046-6fdb5e3db783 // indirect
+	golang.org/x/oauth2 v0.0.0-20221014153046-6fdb5e3db783
 	golang.org/x/sys v0.1.0 // indirect
 	golang.org/x/text v0.5.0 // indirect
 	golang.org/x/time v0.0.0-20210723032227-1f47c861a9ac // indirect
