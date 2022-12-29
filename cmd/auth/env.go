@@ -1,0 +1,121 @@
+package auth
+
+import (
+	"encoding/json"
+	"errors"
+	"fmt"
+	"net/http"
+	"net/url"
+	"strings"
+
+	"github.com/databricks/databricks-sdk-go/config"
+	"github.com/spf13/cobra"
+	"gopkg.in/ini.v1"
+)
+
+func canonicalHost(host string) (string, error) {
+	parsedHost, err := url.Parse(host)
+	if err != nil {
+		return "", err
+	}
+	// If the host is empty, assume the scheme wasn't included.
+	if parsedHost.Host == "" {
+		return fmt.Sprintf("https://%s", host), nil
+	}
+	return fmt.Sprintf("https://%s", parsedHost.Host), nil
+}
+
+var ErrNoMatchingProfiles = errors.New("no matching profiles found")
+
+func resolveSection(cfg *config.Config, iniFile *ini.File) (*ini.Section, error) {
+	var candidates []*ini.Section
+	configuredHost, err := canonicalHost(cfg.Host)
+	if err != nil {
+		return nil, err
+	}
+	for _, section := range iniFile.Sections() {
+		hash := section.KeysHash()
+		host, ok := hash["host"]
+		if !ok {
+			// if host is not set
+			continue
+		}
+		canonical, err := canonicalHost(host)
+		if err != nil {
+			// we're fine with other corrupt profiles
+			continue
+		}
+		if canonical != configuredHost {
+			continue
+		}
+		candidates = append(candidates, section)
+	}
+	if len(candidates) == 0 {
+		return nil, ErrNoMatchingProfiles
+	}
+	// in the real situations, we don't expect this to happen often
+	// (if not at all), hence we don't trim the list
+	if len(candidates) > 1 {
+		var profiles []string
+		for _, v := range candidates {
+			profiles = append(profiles, v.Name())
+		}
+		return nil, fmt.Errorf("%s match %s in %s",
+			strings.Join(profiles, " and "), cfg.Host, cfg.ConfigFile)
+	}
+	return candidates[0], nil
+}
+
+var envCmd = &cobra.Command{
+	Use:   "env",
+	Short: "Get env",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		cfg := &config.Config{
+			Host: host,
+		}
+		if cfg.Host == "" {
+			cfg.Profile = "DEFAULT"
+		} else {
+			iniFile, err := getDatabricksCfg()
+			if err != nil {
+				return err
+			}
+			profile, err := resolveSection(cfg, iniFile)
+			if err != nil {
+				return err
+			}
+			cfg.Profile = profile.Name()
+		}
+		r := &http.Request{Header: http.Header{}}
+		err := cfg.Authenticate(r.WithContext(cmd.Context()))
+		if err != nil {
+			return err
+		}
+		cfg.Profile = "" // erase profile from config
+		vars := map[string]string{}
+		for _, a := range config.ConfigAttributes {
+			if a.IsZero(cfg) {
+				continue
+			}
+			envValue := a.GetString(cfg)
+			for _, envName := range a.EnvVars {
+				vars[envName] = envValue
+			}
+		}
+		raw, err := json.MarshalIndent(map[string]any{
+			"env": vars,
+		}, "", "  ")
+		if err != nil {
+			return err
+		}
+		cmd.OutOrStdout().Write(raw)
+		return nil
+	},
+}
+
+var host string
+
+func init() {
+	authCmd.AddCommand(envCmd)
+	envCmd.Flags().StringVar(&host, "host", host, "Hostname to get auth env for")
+}

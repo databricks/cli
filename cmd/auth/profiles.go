@@ -10,28 +10,31 @@ import (
 	"gopkg.in/ini.v1"
 )
 
+func getDatabricksCfg() (*ini.File, error) {
+	configFile := os.Getenv("DATABRICKS_CONFIG_FILE")
+	if configFile == "" {
+		configFile = "~/.databrickscfg"
+	}
+	if strings.HasPrefix(configFile, "~") {
+		homedir, err := os.UserHomeDir()
+		if err != nil {
+			return nil, fmt.Errorf("cannot find homedir: %w", err)
+		}
+		configFile = fmt.Sprintf("%s%s", homedir, configFile[1:])
+	}
+	return ini.Load(configFile)
+}
+
 var profilesCmd = &cobra.Command{
 	Use:   "profiles",
 	Short: "Lists profiles from ~/.databrickscfg",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		configFile := os.Getenv("DATABRICKS_CONFIG_FILE")
-		if configFile == "" {
-			configFile = "~/.databrickscfg"
-		}
-		if strings.HasPrefix(configFile, "~") {
-			homedir, err := os.UserHomeDir()
-			if err != nil {
-				return fmt.Errorf("cannot find homedir: %w", err)
-			}
-			configFile = fmt.Sprintf("%s%s", homedir, configFile[1:])
-		}
-		_, err := os.Stat(configFile)
+		iniFile, err := getDatabricksCfg()
 		if os.IsNotExist(err) {
 			// early return for non-configured machines
-			logger.Debugf("%s not found on current host", configFile)
+			logger.Debugf("Databricks config not found on current host")
 			return nil
 		}
-		iniFile, err := ini.Load(configFile)
 		if err != nil {
 			return fmt.Errorf("cannot parse config file: %w", err)
 		}

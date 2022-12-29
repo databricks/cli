@@ -11,6 +11,8 @@ import (
 	"time"
 
 	"github.com/pkg/browser"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 //go:embed page.tmpl
@@ -40,8 +42,8 @@ type callbackServer struct {
 func newCallback(ctx context.Context, a *PersistentAuth) (*callbackServer, error) {
 	tmpl, err := template.New("page").Funcs(template.FuncMap{
 		"title": func(in string) string {
-			// TODO: use x/text/cases
-			return strings.Title(strings.ReplaceAll(in, "_", " "))
+			title := cases.Title(language.English)
+			return title.String(strings.ReplaceAll(in, "_", " "))
 		},
 	}).Parse(pageTmpl)
 	if err != nil {
