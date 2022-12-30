@@ -81,7 +81,7 @@ func assertRepoContains(ctx context.Context, t *testing.T, c *cobraTestRunner, w
 
 	assert.Len(t, remoteFileNames, len(fileNames))
 	for _, v := range fileNames {
-		assert.Contains(t, remoteFileNames, filepath.Join(remoteRepoPath, v))
+		assert.Contains(t, remoteFileNames, path.Join(remoteRepoPath, v))
 	}
 }
 
@@ -179,6 +179,7 @@ func TestAccIncrementalFileSync(t *testing.T) {
 
 	// delete
 	f.Remove(t)
+	assertRepoContains(ctx, t, c, wsc, remoteRepoPath, []string{".gitkeep", ".gitignore"})
 	assertSnapshotContents(t, wsc.Config.Host, remoteRepoPath, localRepoPath, []string{".gitkeep", ".gitignore"})
 }
 
