@@ -5,18 +5,23 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/databricks/bricks/cmd/sync"
+	"github.com/databricks/bricks/libs/testfile"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/service/repos"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TODO: these tests are bloated, refactor these, and make write down tests for
@@ -25,11 +30,8 @@ import (
 
 // This test needs auth env vars to run.
 // Please run using the deco env test or deco env shell
-func TestAccFullSync(t *testing.T) {
-	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
-	wsc := databricks.Must(databricks.NewWorkspaceClient())
-	ctx := context.Background()
+func setupRepo(t *testing.T, wsc *databricks.WorkspaceClient, ctx context.Context) (localRoot, remoteRoot string) {
 	me, err := wsc.CurrentUser.Me(ctx)
 	assert.NoError(t, err)
 	repoUrl := "https://github.com/shreyas-goenka/empty-repo.git"
@@ -54,27 +56,122 @@ func TestAccFullSync(t *testing.T) {
 	err = cmd.Run()
 	assert.NoError(t, err)
 
+	localRoot = filepath.Join(tempDir, "empty-repo")
+	remoteRoot = repoPath
+	return localRoot, remoteRoot
+}
+
+func assertRepoContains(ctx context.Context, t *testing.T, c *cobraTestRunner, wsc *databricks.WorkspaceClient, remoteRepoPath string, fileNames []string) {
+	c.Eventually(func() bool {
+		objects, err := wsc.Workspace.ListAll(ctx, workspace.List{
+			Path: remoteRepoPath,
+		})
+		require.NoError(t, err)
+		return len(objects) == len(fileNames)
+	}, 30*time.Second, 5*time.Second)
+	objects, err := wsc.Workspace.ListAll(ctx, workspace.List{
+		Path: remoteRepoPath,
+	})
+	require.NoError(t, err)
+
+	var remoteFileNames []string
+	for _, v := range objects {
+		remoteFileNames = append(remoteFileNames, v.Path)
+	}
+
+	assert.Len(t, remoteFileNames, len(fileNames))
+	for _, v := range fileNames {
+		assert.Contains(t, remoteFileNames, filepath.Join(remoteRepoPath, v))
+	}
+}
+
+// content should be a valid json object due to go sdk limitations as of
+// 31 December 2022
+func assertFileContents(ctx context.Context, t *testing.T, c *cobraTestRunner, wsc *databricks.WorkspaceClient, path string, content string) {
+	// Remove leading "/" so we can use it in the URL.
+	urlPath := fmt.Sprintf(
+		"/api/2.0/workspace-files/%s",
+		strings.TrimLeft(path, "/"),
+	)
+
+	apiClient, err := client.New(wsc.Config)
+	require.NoError(t, err)
+
+	// Update to []byte after https://github.com/databricks/databricks-sdk-go/pull/247 is merged.
+	var res json.RawMessage
+	c.Eventually(func() bool {
+		err = apiClient.Do(ctx, http.MethodGet, urlPath, nil, &res)
+		require.NoError(t, err)
+		actualContent := string(res)
+		fmt.Println("[INFO][AAAA] actual content: ", actualContent)
+		return actualContent == content
+	}, 30*time.Second, 5*time.Second)
+}
+
+func TestAccFullFileSync(t *testing.T) {
+	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+
+	wsc := databricks.Must(databricks.NewWorkspaceClient())
+	ctx := context.Background()
+
+	localRepoPath, remoteRepoPath := setupRepo(t, wsc, ctx)
+
+	// Run `bricks sync` in the background.
+	t.Setenv("BRICKS_ROOT", localRepoPath)
+	c := NewCobraTestRunner(t, "sync", "--remote-path", remoteRepoPath, "--persist-snapshot=false")
+	c.RunBackground()
+
+	// .gitkeep comes from cloning during repo setup
+	assertRepoContains(ctx, t, c, wsc, remoteRepoPath, []string{".gitkeep"})
+
+	// New file
+	localFilePath := filepath.Join(localRepoPath, "foo.txt")
+	remoteFilePath := path.Join(remoteRepoPath, "foo.txt")
+	f := testfile.CreateFile(t, localFilePath)
+	defer f.Close(t)
+	assertRepoContains(ctx, t, c, wsc, remoteRepoPath, []string{"foo.txt", ".gitkeep", ".gitignore"})
+	assertFileContents(ctx, t, c, wsc, remoteFilePath, "")
+
+	// Write to file
+	f.Overwrite(t, `{"statement": "I like Taylor Swift's music"}`)
+	assertFileContents(ctx, t, c, wsc, remoteFilePath, `{"statement": "I like Taylor Swift's music"}`)
+
+	// Write again
+	f.Overwrite(t, `{"statement": "Not embarresed :P"}`)
+	assertFileContents(ctx, t, c, wsc, remoteFilePath, `{"statement": "Not embarresed :P"}`)
+
+	// delete
+	f.Remove(t)
+	assertRepoContains(ctx, t, c, wsc, remoteRepoPath, []string{".gitkeep", ".gitignore"})
+}
+
+func TestAccFullSync(t *testing.T) {
+	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+	wsc := databricks.Must(databricks.NewWorkspaceClient())
+	ctx := context.Background()
+
+	localRepoPath, remoteRepoPath := setupRepo(t, wsc, ctx)
+
 	// Create amsterdam.txt file
-	projectDir := filepath.Join(tempDir, "empty-repo")
-	f, err := os.Create(filepath.Join(projectDir, "amsterdam.txt"))
+	f, err := os.Create(filepath.Join(localRepoPath, "amsterdam.txt"))
 	assert.NoError(t, err)
 	defer f.Close()
 
 	// Run `bricks sync` in the background.
-	t.Setenv("BRICKS_ROOT", projectDir)
-	c := NewCobraTestRunner(t, "sync", "--remote-path", repoPath, "--persist-snapshot=false")
+	t.Setenv("BRICKS_ROOT", localRepoPath)
+	c := NewCobraTestRunner(t, "sync", "--remote-path", remoteRepoPath, "--persist-snapshot=false")
 	c.RunBackground()
 
 	// First upload assertion
 	c.Eventually(func() bool {
 		objects, err := wsc.Workspace.ListAll(ctx, workspace.List{
-			Path: repoPath,
+			Path: remoteRepoPath,
 		})
 		assert.NoError(t, err)
 		return len(objects) == 3
 	}, 30*time.Second, 5*time.Second)
 	objects, err := wsc.Workspace.ListAll(ctx, workspace.List{
-		Path: repoPath,
+		Path: remoteRepoPath,
 	})
 	assert.NoError(t, err)
 	var files1 []string
@@ -87,17 +184,17 @@ func TestAccFullSync(t *testing.T) {
 	assert.Contains(t, files1, ".gitignore")
 
 	// Create new files and assert
-	os.Create(filepath.Join(projectDir, "hello.txt"))
-	os.Create(filepath.Join(projectDir, "world.txt"))
+	os.Create(filepath.Join(localRepoPath, "hello.txt"))
+	os.Create(filepath.Join(localRepoPath, "world.txt"))
 	c.Eventually(func() bool {
 		objects, err := wsc.Workspace.ListAll(ctx, workspace.List{
-			Path: repoPath,
+			Path: remoteRepoPath,
 		})
 		assert.NoError(t, err)
 		return len(objects) == 5
 	}, 30*time.Second, 5*time.Second)
 	objects, err = wsc.Workspace.ListAll(ctx, workspace.List{
-		Path: repoPath,
+		Path: remoteRepoPath,
 	})
 	assert.NoError(t, err)
 	var files2 []string
@@ -112,16 +209,16 @@ func TestAccFullSync(t *testing.T) {
 	assert.Contains(t, files2, ".gitignore")
 
 	// delete a file and assert
-	os.Remove(filepath.Join(projectDir, "hello.txt"))
+	os.Remove(filepath.Join(localRepoPath, "hello.txt"))
 	c.Eventually(func() bool {
 		objects, err := wsc.Workspace.ListAll(ctx, workspace.List{
-			Path: repoPath,
+			Path: remoteRepoPath,
 		})
 		assert.NoError(t, err)
 		return len(objects) == 4
 	}, 30*time.Second, 5*time.Second)
 	objects, err = wsc.Workspace.ListAll(ctx, workspace.List{
-		Path: repoPath,
+		Path: remoteRepoPath,
 	})
 	assert.NoError(t, err)
 	var files3 []string
