@@ -429,3 +429,40 @@ func TestAccIncrementalSyncFileToPythonNotebook(t *testing.T) {
 	assertSync.language(ctx, "foo", "PYTHON")
 	assertSync.remoteDirContent(ctx, "", []string{"foo", ".gitkeep", ".gitignore"})
 }
+
+func TestAccIncrementalSyncPythonNotebookDelete(t *testing.T) {
+	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+
+	wsc := databricks.Must(databricks.NewWorkspaceClient())
+	ctx := context.Background()
+
+	localRepoPath, remoteRepoPath := setupRepo(t, wsc, ctx)
+
+	// create python notebook
+	localFilePath := filepath.Join(localRepoPath, "foo.py")
+	f := testfile.CreateFile(t, localFilePath)
+	defer f.Close(t)
+	f.Overwrite(t, "# Databricks notebook source")
+
+	// Run `bricks sync` in the background.
+	t.Setenv("BRICKS_ROOT", localRepoPath)
+	c := NewCobraTestRunner(t, "sync", "--remote-path", remoteRepoPath, "--persist-snapshot=true")
+	c.RunBackground()
+
+	assertSync := assertSync{
+		t:          t,
+		c:          c,
+		w:          wsc,
+		localRoot:  localRepoPath,
+		remoteRoot: remoteRepoPath,
+	}
+
+	// notebook was uploaded properly
+	assertSync.remoteDirContent(ctx, "", []string{"foo", ".gitkeep", ".gitignore"})
+	assertSync.objectType(ctx, "foo", "NOTEBOOK")
+	assertSync.language(ctx, "foo", "PYTHON")
+
+	// Delete notebook
+	f.Remove(t)
+	assertSync.remoteDirContent(ctx, "", []string{".gitkeep", ".gitignore"})
+}
