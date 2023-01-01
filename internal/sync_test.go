@@ -24,13 +24,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TODO: these tests are bloated, refactor these, and make write down tests for
-// all edge cases with interop between files, directory and notebooks during syncing
-// https://databricks.atlassian.net/browse/DECO-416
-
-// TODO: test case for mutiple files maybe
-// TODO: Implement cache invalidation with full sync
-
 // This test needs auth env vars to run.
 // Please run using the deco env test or deco env shell
 func setupRepo(t *testing.T, wsc *databricks.WorkspaceClient, ctx context.Context) (localRoot, remoteRoot string) {
@@ -353,8 +346,6 @@ func TestAccIncrementalFileOverwritesFolder(t *testing.T) {
 	assertSync.snapshotContains([]string{".gitkeep", ".gitignore", "foo"})
 }
 
-// TODO: add test case for deletion of python notebooks
-
 func TestAccIncrementalSyncPythonNotebookToFile(t *testing.T) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
@@ -386,11 +377,18 @@ func TestAccIncrementalSyncPythonNotebookToFile(t *testing.T) {
 	assertSync.remoteDirContent(ctx, "", []string{"foo", ".gitkeep", ".gitignore"})
 	assertSync.objectType(ctx, "foo", "NOTEBOOK")
 	assertSync.language(ctx, "foo", "PYTHON")
+	assertSync.snapshotContains([]string{".gitkeep", ".gitignore", "foo.py"})
 
 	// convert to vanilla python file
 	f.Overwrite(t, "# No longer a python notebook")
 	assertSync.objectType(ctx, "foo.py", "FILE")
 	assertSync.remoteDirContent(ctx, "", []string{"foo.py", ".gitkeep", ".gitignore"})
+	assertSync.snapshotContains([]string{".gitkeep", ".gitignore", "foo.py"})
+
+	// delete the vanilla python file
+	f.Remove(t)
+	assertSync.remoteDirContent(ctx, "", []string{".gitkeep", ".gitignore"})
+	assertSync.snapshotContains([]string{".gitkeep", ".gitignore"})
 }
 
 func TestAccIncrementalSyncFileToPythonNotebook(t *testing.T) {
@@ -422,12 +420,14 @@ func TestAccIncrementalSyncFileToPythonNotebook(t *testing.T) {
 	// assert file upload
 	assertSync.remoteDirContent(ctx, "", []string{"foo.py", ".gitkeep", ".gitignore"})
 	assertSync.objectType(ctx, "foo.py", "FILE")
+	assertSync.snapshotContains([]string{".gitkeep", ".gitignore", "foo.py"})
 
 	// convert to notebook
 	f.Overwrite(t, "# Databricks notebook source")
 	assertSync.objectType(ctx, "foo", "NOTEBOOK")
 	assertSync.language(ctx, "foo", "PYTHON")
 	assertSync.remoteDirContent(ctx, "", []string{"foo", ".gitkeep", ".gitignore"})
+	assertSync.snapshotContains([]string{".gitkeep", ".gitignore", "foo.py"})
 }
 
 func TestAccIncrementalSyncPythonNotebookDelete(t *testing.T) {
