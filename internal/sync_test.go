@@ -240,8 +240,8 @@ func TestAccIncrementalFileSync(t *testing.T) {
 	assertSync.remoteFileContent(ctx, "foo.txt", `{"statement": "Mi Gente"}`)
 
 	// Write again
-	f.Overwrite(t, `{"statement": "Mi Gente"}`)
-	assertSync.remoteFileContent(ctx, "foo.txt", `{"statement": "Mi Gente"}`)
+	f.Overwrite(t, `{"statement": "Young Dumb & Broke"}`)
+	assertSync.remoteFileContent(ctx, "foo.txt", `{"statement": "Young Dumb & Broke"}`)
 
 	// delete
 	f.Remove(t)
