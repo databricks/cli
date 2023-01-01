@@ -124,7 +124,9 @@ func (a *assertSync) objectType(ctx context.Context, relativePath string, expect
 
 	a.c.Eventually(func() bool {
 		metadata, err := a.w.Workspace.GetStatusByPath(ctx, path)
-		require.NoError(a.t, err)
+		if err != nil {
+			return false
+		}
 		return metadata.ObjectType.String() == expected
 	}, 30*time.Second, 5*time.Second)
 }
@@ -134,7 +136,9 @@ func (a *assertSync) language(ctx context.Context, relativePath string, expected
 
 	a.c.Eventually(func() bool {
 		metadata, err := a.w.Workspace.GetStatusByPath(ctx, path)
-		require.NoError(a.t, err)
+		if err != nil {
+			return false
+		}
 		return metadata.Language.String() == expected
 	}, 30*time.Second, 5*time.Second)
 }
@@ -387,4 +391,41 @@ func TestAccIncrementalSyncPythonNotebookToFile(t *testing.T) {
 	f.Overwrite(t, "# No longer a python notebook")
 	assertSync.objectType(ctx, "foo.py", "FILE")
 	assertSync.remoteDirContent(ctx, "", []string{"foo.py", ".gitkeep", ".gitignore"})
+}
+
+func TestAccIncrementalSyncFileToPythonNotebook(t *testing.T) {
+	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+
+	wsc := databricks.Must(databricks.NewWorkspaceClient())
+	ctx := context.Background()
+
+	localRepoPath, remoteRepoPath := setupRepo(t, wsc, ctx)
+
+	// Run `bricks sync` in the background.
+	t.Setenv("BRICKS_ROOT", localRepoPath)
+	c := NewCobraTestRunner(t, "sync", "--remote-path", remoteRepoPath, "--persist-snapshot=true")
+	c.RunBackground()
+
+	assertSync := assertSync{
+		t:          t,
+		c:          c,
+		w:          wsc,
+		localRoot:  localRepoPath,
+		remoteRoot: remoteRepoPath,
+	}
+
+	// create vanilla python file
+	localFilePath := filepath.Join(localRepoPath, "foo.py")
+	f := testfile.CreateFile(t, localFilePath)
+	defer f.Close(t)
+
+	// assert file upload
+	assertSync.remoteDirContent(ctx, "", []string{"foo.py", ".gitkeep", ".gitignore"})
+	assertSync.objectType(ctx, "foo.py", "FILE")
+
+	// convert to notebook
+	f.Overwrite(t, "# Databricks notebook source")
+	assertSync.objectType(ctx, "foo", "NOTEBOOK")
+	assertSync.language(ctx, "foo", "PYTHON")
+	assertSync.remoteDirContent(ctx, "", []string{"foo", ".gitkeep", ".gitignore"})
 }
