@@ -286,7 +286,7 @@ func TestAccIncrementalFolderSync(t *testing.T) {
 	assertSync.remoteDirContent(ctx, "dir1", []string{"dir2"})
 	assertSync.remoteDirContent(ctx, "dir1/dir2", []string{"dir3"})
 	assertSync.remoteDirContent(ctx, "dir1/dir2/dir3", []string{"foo.txt"})
-	assertSync.snapshotContains([]string{".gitkeep", ".gitignore", "dir1/dir2/dir3/foo.txt"})
+	assertSync.snapshotContains([]string{".gitkeep", ".gitignore", filepath.FromSlash("dir1/dir2/dir3/foo.txt")})
 
 	// delete
 	f.Remove(t)
@@ -333,7 +333,7 @@ func TestAccIncrementalFileOverwritesFolder(t *testing.T) {
 	defer f.Close(t)
 	assertSync.remoteDirContent(ctx, "", []string{"foo", ".gitkeep", ".gitignore"})
 	assertSync.remoteDirContent(ctx, "foo", []string{"bar.txt"})
-	assertSync.snapshotContains([]string{".gitkeep", ".gitignore", "foo/bar.txt"})
+	assertSync.snapshotContains([]string{".gitkeep", ".gitignore", filepath.FromSlash("foo/bar.txt")})
 
 	// delete foo/bar.txt
 	f.Remove(t)
@@ -347,4 +347,44 @@ func TestAccIncrementalFileOverwritesFolder(t *testing.T) {
 	assertSync.remoteDirContent(ctx, "", []string{"foo", ".gitkeep", ".gitignore"})
 	assertSync.objectType(ctx, "foo", "FILE")
 	assertSync.snapshotContains([]string{".gitkeep", ".gitignore", "foo"})
+}
+
+// TODO: add test case for deletion of python notebooks
+
+func TestAccIncrementalSyncPythonNotebookToFile(t *testing.T) {
+	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+
+	wsc := databricks.Must(databricks.NewWorkspaceClient())
+	ctx := context.Background()
+
+	localRepoPath, remoteRepoPath := setupRepo(t, wsc, ctx)
+
+	// create python notebook
+	localFilePath := filepath.Join(localRepoPath, "foo.py")
+	f := testfile.CreateFile(t, localFilePath)
+	defer f.Close(t)
+	f.Overwrite(t, "# Databricks notebook source")
+
+	// Run `bricks sync` in the background.
+	t.Setenv("BRICKS_ROOT", localRepoPath)
+	c := NewCobraTestRunner(t, "sync", "--remote-path", remoteRepoPath, "--persist-snapshot=true")
+	c.RunBackground()
+
+	assertSync := assertSync{
+		t:          t,
+		c:          c,
+		w:          wsc,
+		localRoot:  localRepoPath,
+		remoteRoot: remoteRepoPath,
+	}
+
+	// notebook was uploaded properly
+	assertSync.remoteDirContent(ctx, "", []string{"foo", ".gitkeep", ".gitignore"})
+	assertSync.objectType(ctx, "foo", "NOTEBOOK")
+	assertSync.language(ctx, "foo", "PYTHON")
+
+	// convert to vanilla python file
+	f.Overwrite(t, "# No longer a python notebook")
+	assertSync.objectType(ctx, "foo.py", "FILE")
+	assertSync.remoteDirContent(ctx, "", []string{"foo.py", ".gitkeep", ".gitignore"})
 }
