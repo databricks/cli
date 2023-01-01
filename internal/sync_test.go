@@ -119,6 +119,26 @@ func (a *assertSync) remoteFileContent(ctx context.Context, relativePath string,
 	}, 30*time.Second, 5*time.Second)
 }
 
+func (a *assertSync) objectType(ctx context.Context, relativePath string, expected string) {
+	path := path.Join(a.remoteRoot, relativePath)
+
+	a.c.Eventually(func() bool {
+		metadata, err := a.w.Workspace.GetStatusByPath(ctx, path)
+		require.NoError(a.t, err)
+		return metadata.ObjectType.String() == expected
+	}, 30*time.Second, 5*time.Second)
+}
+
+func (a *assertSync) language(ctx context.Context, relativePath string, expected string) {
+	path := path.Join(a.remoteRoot, relativePath)
+
+	a.c.Eventually(func() bool {
+		metadata, err := a.w.Workspace.GetStatusByPath(ctx, path)
+		require.NoError(a.t, err)
+		return metadata.Language.String() == expected
+	}, 30*time.Second, 5*time.Second)
+}
+
 func (a *assertSync) snapshotContains(files []string) {
 	snapshotPath := filepath.Join(a.localRoot, ".databricks/sync-snapshots", sync.GetFileName(a.w.Config.Host, a.remoteRoot))
 	assert.FileExists(a.t, snapshotPath)
@@ -297,6 +317,60 @@ func TestAccIncrementalFolderSync(t *testing.T) {
 	// directories are not cleaned up right now. This is not ideal
 	assertSync.remoteDirContent(ctx, "dir1/dir2/dir3", []string{})
 	assertSync.snapshotContains([]string{".gitkeep", ".gitignore"})
+}
+
+// sync does not clean up empty directories from the workspace file system.
+// This is a check for the edge case when a user does the following:
+//
+// 1. Add file foo/bar.txt
+// 2. Delete foo/bar.txt (including the directory)
+// 3. Add file foo
+//
+// In the above scenario sync should delete the empty folder and add foo to the remote
+// file system
+func TestAccIncrementalFileOverwritesFolder(t *testing.T) {
+	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+
+	wsc := databricks.Must(databricks.NewWorkspaceClient())
+	ctx := context.Background()
+
+	localRepoPath, remoteRepoPath := setupRepo(t, wsc, ctx)
+
+	// Run `bricks sync` in the background.
+	t.Setenv("BRICKS_ROOT", localRepoPath)
+	c := NewCobraTestRunner(t, "sync", "--remote-path", remoteRepoPath, "--persist-snapshot=true")
+	c.RunBackground()
+
+	assertSync := assertSync{
+		t:          t,
+		c:          c,
+		w:          wsc,
+		localRoot:  localRepoPath,
+		remoteRoot: remoteRepoPath,
+	}
+
+	// create foo/bar.txt
+	localFilePath := filepath.Join(localRepoPath, "foo/bar.txt")
+	err := os.MkdirAll(filepath.Dir(localFilePath), 0o755)
+	assert.NoError(t, err)
+	f := testfile.CreateFile(t, localFilePath)
+	defer f.Close(t)
+	assertSync.remoteDirContent(ctx, "", []string{"foo", ".gitkeep", ".gitignore"})
+	assertSync.remoteDirContent(ctx, "foo", []string{"bar.txt"})
+	assertSync.snapshotContains([]string{".gitkeep", ".gitignore", "foo/bar.txt"})
+
+	// delete foo/bar.txt
+	f.Remove(t)
+	os.Remove(filepath.Join(localRepoPath, "foo"))
+	assertSync.remoteDirContent(ctx, "foo", []string{})
+	assertSync.objectType(ctx, "foo", "DIRECTORY")
+	assertSync.snapshotContains([]string{".gitkeep", ".gitignore"})
+
+	f2 := testfile.CreateFile(t, filepath.Join(localRepoPath, "foo"))
+	defer f2.Close(t)
+	assertSync.remoteDirContent(ctx, "", []string{"foo", ".gitkeep", ".gitignore"})
+	assertSync.objectType(ctx, "foo", "FILE")
+	assertSync.snapshotContains([]string{".gitkeep", ".gitignore", "foo"})
 }
 
 func TestAccIncrementalSync(t *testing.T) {
