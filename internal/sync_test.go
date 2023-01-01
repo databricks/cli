@@ -63,53 +63,87 @@ func setupRepo(t *testing.T, wsc *databricks.WorkspaceClient, ctx context.Contex
 	return localRoot, remoteRoot
 }
 
-func assertRepoContains(ctx context.Context, t *testing.T, c *cobraTestRunner, wsc *databricks.WorkspaceClient, remoteRepoPath string, fileNames []string) {
-	c.Eventually(func() bool {
-		objects, err := wsc.Workspace.ListAll(ctx, workspace.List{
-			Path: remoteRepoPath,
-		})
-		require.NoError(t, err)
-		return len(objects) == len(fileNames)
-	}, 30*time.Second, 5*time.Second)
-	objects, err := wsc.Workspace.ListAll(ctx, workspace.List{
-		Path: remoteRepoPath,
-	})
-	require.NoError(t, err)
+type assertSync struct {
+	t          *testing.T
+	c          *cobraTestRunner
+	w          *databricks.WorkspaceClient
+	localRoot  string
+	remoteRoot string
+}
 
-	var remoteFileNames []string
+func (a *assertSync) remoteDirContent(ctx context.Context, relativeDir string, expectedFiles []string) {
+	remoteDir := path.Join(a.remoteRoot, relativeDir)
+	a.c.Eventually(func() bool {
+		objects, err := a.w.Workspace.ListAll(ctx, workspace.List{
+			Path: remoteDir,
+		})
+		require.NoError(a.t, err)
+		return len(objects) == len(expectedFiles)
+	}, 30*time.Second, 5*time.Second)
+	objects, err := a.w.Workspace.ListAll(ctx, workspace.List{
+		Path: remoteDir,
+	})
+	require.NoError(a.t, err)
+
+	var actualFiles []string
 	for _, v := range objects {
-		remoteFileNames = append(remoteFileNames, v.Path)
+		actualFiles = append(actualFiles, v.Path)
 	}
 
-	assert.Len(t, remoteFileNames, len(fileNames))
-	for _, v := range fileNames {
-		assert.Contains(t, remoteFileNames, path.Join(remoteRepoPath, v))
+	assert.Len(a.t, actualFiles, len(expectedFiles))
+	for _, v := range expectedFiles {
+		assert.Contains(a.t, actualFiles, path.Join(a.remoteRoot, relativeDir, v))
 	}
 }
 
-// content should be a valid json object due to go sdk limitations as of
-// 31 December 2022
-func assertFileContents(ctx context.Context, t *testing.T, c *cobraTestRunner, wsc *databricks.WorkspaceClient, path string, content string) {
+// content should be a valid json object due to current go sdk limitations (31 December 2022, see https://github.com/databricks/databricks-sdk-go/pull/247)
+func (a *assertSync) remoteFileContent(ctx context.Context, relativePath string, expectedContent string) {
+	filePath := path.Join(a.remoteRoot, relativePath)
+
 	// Remove leading "/" so we can use it in the URL.
 	urlPath := fmt.Sprintf(
 		"/api/2.0/workspace-files/%s",
-		strings.TrimLeft(path, "/"),
+		strings.TrimLeft(filePath, "/"),
 	)
 
-	apiClient, err := client.New(wsc.Config)
-	require.NoError(t, err)
+	apiClient, err := client.New(a.w.Config)
+	require.NoError(a.t, err)
 
 	// Update to []byte after https://github.com/databricks/databricks-sdk-go/pull/247 is merged.
 	var res json.RawMessage
-	c.Eventually(func() bool {
+	a.c.Eventually(func() bool {
 		err = apiClient.Do(ctx, http.MethodGet, urlPath, nil, &res)
-		require.NoError(t, err)
+		require.NoError(a.t, err)
 		actualContent := string(res)
-		return actualContent == content
+		return actualContent == expectedContent
 	}, 30*time.Second, 5*time.Second)
 }
 
-func assertSnapshotContents(t *testing.T, host, remoteRepo, localRepo string, listOfSyncedFiles []string) {
+func (a *assertSync) snapshotContains(files []string) {
+	snapshotPath := filepath.Join(a.localRoot, ".databricks/sync-snapshots", sync.GetFileName(a.w.Config.Host, a.remoteRoot))
+	assert.FileExists(a.t, snapshotPath)
+
+	var s *sync.Snapshot
+	f, err := os.Open(snapshotPath)
+	assert.NoError(a.t, err)
+	defer f.Close()
+
+	bytes, err := io.ReadAll(f)
+	assert.NoError(a.t, err)
+	err = json.Unmarshal(bytes, &s)
+	assert.NoError(a.t, err)
+
+	assert.Equal(a.t, s.Host, a.w.Config.Host)
+	assert.Equal(a.t, s.RemotePath, a.remoteRoot)
+	for _, filePath := range files {
+		_, ok := s.LastUpdatedTimes[filePath]
+		assert.True(a.t, ok, fmt.Sprintf("%s not in snapshot file: %v", filePath, s.LastUpdatedTimes))
+	}
+	assert.Equal(a.t, len(files), len(s.LastUpdatedTimes))
+}
+
+// TODO: remove function
+func assertSnapshotContents(t *testing.T, host, remoteRepo, localRepo string, files []string) {
 	snapshotPath := filepath.Join(localRepo, ".databricks/sync-snapshots", sync.GetFileName(host, remoteRepo))
 	assert.FileExists(t, snapshotPath)
 
@@ -125,11 +159,11 @@ func assertSnapshotContents(t *testing.T, host, remoteRepo, localRepo string, li
 
 	assert.Equal(t, s.Host, host)
 	assert.Equal(t, s.RemotePath, remoteRepo)
-	for _, filePath := range listOfSyncedFiles {
+	for _, filePath := range files {
 		_, ok := s.LastUpdatedTimes[filePath]
 		assert.True(t, ok, fmt.Sprintf("%s not in snapshot file: %v", filePath, s.LastUpdatedTimes))
 	}
-	assert.Equal(t, len(listOfSyncedFiles), len(s.LastUpdatedTimes))
+	assert.Equal(t, len(files), len(s.LastUpdatedTimes))
 }
 
 func TestAccFullFileSync(t *testing.T) {
@@ -145,28 +179,35 @@ func TestAccFullFileSync(t *testing.T) {
 	c := NewCobraTestRunner(t, "sync", "--remote-path", remoteRepoPath, "--persist-snapshot=false")
 	c.RunBackground()
 
+	assertSync := assertSync{
+		t:          t,
+		c:          c,
+		w:          wsc,
+		localRoot:  localRepoPath,
+		remoteRoot: remoteRepoPath,
+	}
+
 	// .gitkeep comes from cloning during repo setup
-	assertRepoContains(ctx, t, c, wsc, remoteRepoPath, []string{".gitkeep"})
+	assertSync.remoteDirContent(ctx, "", []string{".gitkeep"})
 
 	// New file
 	localFilePath := filepath.Join(localRepoPath, "foo.txt")
-	remoteFilePath := path.Join(remoteRepoPath, "foo.txt")
 	f := testfile.CreateFile(t, localFilePath)
 	defer f.Close(t)
-	assertRepoContains(ctx, t, c, wsc, remoteRepoPath, []string{"foo.txt", ".gitkeep", ".gitignore"})
-	assertFileContents(ctx, t, c, wsc, remoteFilePath, "")
+	assertSync.remoteDirContent(ctx, "", []string{"foo.txt", ".gitkeep", ".gitignore"})
+	assertSync.remoteFileContent(ctx, "foo.txt", "")
 
 	// Write to file
-	f.Overwrite(t, `{"statement": "I like Taylor Swift's music"}`)
-	assertFileContents(ctx, t, c, wsc, remoteFilePath, `{"statement": "I like Taylor Swift's music"}`)
+	f.Overwrite(t, `{"statement": "Mi Gente"}`)
+	assertSync.remoteFileContent(ctx, "foo.txt", `{"statement": "Mi Gente"}`)
 
 	// Write again
-	f.Overwrite(t, `{"statement": "Not embarresed :P"}`)
-	assertFileContents(ctx, t, c, wsc, remoteFilePath, `{"statement": "Not embarresed :P"}`)
+	f.Overwrite(t, `{"statement": "Young Dumb & Broke"}`)
+	assertSync.remoteFileContent(ctx, "foo.txt", `{"statement": "Young Dumb & Broke"}`)
 
 	// delete
 	f.Remove(t)
-	assertRepoContains(ctx, t, c, wsc, remoteRepoPath, []string{".gitkeep", ".gitignore"})
+	assertSync.remoteDirContent(ctx, "", []string{".gitkeep", ".gitignore"})
 }
 
 func TestAccIncrementalFileSync(t *testing.T) {
@@ -182,30 +223,80 @@ func TestAccIncrementalFileSync(t *testing.T) {
 	c := NewCobraTestRunner(t, "sync", "--remote-path", remoteRepoPath, "--persist-snapshot=true")
 	c.RunBackground()
 
+	assertSync := assertSync{
+		t:          t,
+		c:          c,
+		w:          wsc,
+		localRoot:  localRepoPath,
+		remoteRoot: remoteRepoPath,
+	}
+
 	// .gitkeep comes from cloning during repo setup
-	assertRepoContains(ctx, t, c, wsc, remoteRepoPath, []string{".gitkeep"})
+	assertSync.remoteDirContent(ctx, "", []string{".gitkeep"})
 
 	// New file
 	localFilePath := filepath.Join(localRepoPath, "foo.txt")
-	remoteFilePath := path.Join(remoteRepoPath, "foo.txt")
 	f := testfile.CreateFile(t, localFilePath)
 	defer f.Close(t)
-	assertRepoContains(ctx, t, c, wsc, remoteRepoPath, []string{"foo.txt", ".gitkeep", ".gitignore"})
-	assertFileContents(ctx, t, c, wsc, remoteFilePath, "")
-	assertSnapshotContents(t, wsc.Config.Host, remoteRepoPath, localRepoPath, []string{".gitkeep", ".gitignore", "foo.txt"})
+	assertSync.remoteDirContent(ctx, "", []string{"foo.txt", ".gitkeep", ".gitignore"})
+	assertSync.remoteFileContent(ctx, "foo.txt", "")
+	assertSync.snapshotContains([]string{".gitkeep", ".gitignore", "foo.txt"})
 
 	// Write to file
-	f.Overwrite(t, `{"statement": "I like Taylor Swift's music"}`)
-	assertFileContents(ctx, t, c, wsc, remoteFilePath, `{"statement": "I like Taylor Swift's music"}`)
+	f.Overwrite(t, `{"statement": "Mi Gente"}`)
+	assertSync.remoteFileContent(ctx, "foo.txt", `{"statement": "Mi Gente"}`)
 
 	// Write again
-	f.Overwrite(t, `{"statement": "Not embarresed :P"}`)
-	assertFileContents(ctx, t, c, wsc, remoteFilePath, `{"statement": "Not embarresed :P"}`)
+	f.Overwrite(t, `{"statement": "Mi Gente"}`)
+	assertSync.remoteFileContent(ctx, "foo.txt", `{"statement": "Mi Gente"}`)
 
 	// delete
 	f.Remove(t)
-	assertRepoContains(ctx, t, c, wsc, remoteRepoPath, []string{".gitkeep", ".gitignore"})
-	assertSnapshotContents(t, wsc.Config.Host, remoteRepoPath, localRepoPath, []string{".gitkeep", ".gitignore"})
+	assertSync.remoteDirContent(ctx, "", []string{".gitkeep", ".gitignore"})
+	assertSync.snapshotContains([]string{".gitkeep", ".gitignore"})
+}
+
+func TestAccIncrementalFolderSync(t *testing.T) {
+	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+
+	wsc := databricks.Must(databricks.NewWorkspaceClient())
+	ctx := context.Background()
+
+	localRepoPath, remoteRepoPath := setupRepo(t, wsc, ctx)
+
+	// Run `bricks sync` in the background.
+	t.Setenv("BRICKS_ROOT", localRepoPath)
+	c := NewCobraTestRunner(t, "sync", "--remote-path", remoteRepoPath, "--persist-snapshot=true")
+	c.RunBackground()
+
+	assertSync := assertSync{
+		t:          t,
+		c:          c,
+		w:          wsc,
+		localRoot:  localRepoPath,
+		remoteRoot: remoteRepoPath,
+	}
+
+	// .gitkeep comes from cloning during repo setup
+	assertSync.remoteDirContent(ctx, "/", []string{".gitkeep"})
+
+	// New file
+	localFilePath := filepath.Join(localRepoPath, "dir1/dir2/dir3/foo.txt")
+	err := os.MkdirAll(filepath.Dir(localFilePath), 0o755)
+	assert.NoError(t, err)
+	f := testfile.CreateFile(t, localFilePath)
+	defer f.Close(t)
+	assertSync.remoteDirContent(ctx, "", []string{"dir1", ".gitkeep", ".gitignore"})
+	assertSync.remoteDirContent(ctx, "dir1", []string{"dir2"})
+	assertSync.remoteDirContent(ctx, "dir1/dir2", []string{"dir3"})
+	assertSync.remoteDirContent(ctx, "dir1/dir2/dir3", []string{"foo.txt"})
+	assertSync.snapshotContains([]string{".gitkeep", ".gitignore", "dir1/dir2/dir3/foo.txt"})
+
+	// delete
+	f.Remove(t)
+	// directories are not cleaned up right now. This is not ideal
+	assertSync.remoteDirContent(ctx, "dir1/dir2/dir3", []string{})
+	assertSync.snapshotContains([]string{".gitkeep", ".gitignore"})
 }
 
 func TestAccIncrementalSync(t *testing.T) {
