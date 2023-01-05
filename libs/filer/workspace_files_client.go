@@ -3,7 +3,6 @@ package filer
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -107,8 +106,7 @@ func (w *WorkspaceFilesClient) Read(ctx context.Context, name string) (io.Reader
 		strings.TrimLeft(absPath, "/"),
 	)
 
-	// Update to []byte after https://github.com/databricks/databricks-sdk-go/pull/247 is merged.
-	var res json.RawMessage
+	var res []byte
 	err = w.apiClient.Do(ctx, http.MethodGet, urlPath, nil, &res)
 	if err != nil {
 		return nil, err
