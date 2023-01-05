@@ -91,6 +91,9 @@ func TestDevNull(t *testing.T) {
 }
 
 func TestStoreOnDev(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.SkipNow()
+	}
 	t.Setenv(homeEnvVar, "/dev")
 	c := &TokenCache{}
 	err := c.Store("x", &oauth2.Token{
