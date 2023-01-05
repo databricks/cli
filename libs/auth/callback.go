@@ -71,9 +71,9 @@ func (cb *callbackServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		Host:             cb.a.Host,
 	}
 	if res.Error != "" {
-		w.WriteHeader(400)
+		w.WriteHeader(http.StatusBadRequest)
 	} else {
-		w.WriteHeader(200)
+		w.WriteHeader(http.StatusOK)
 	}
 	err := cb.tmpl.Execute(w, res)
 	if err != nil {

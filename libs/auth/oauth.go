@@ -106,7 +106,9 @@ func (a *PersistentAuth) Load(ctx context.Context) (*oauth2.Token, error) {
 	if err != nil {
 		return nil, fmt.Errorf("init: %w", err)
 	}
-	t, err := a.cache.Lookup(a.key())
+	// lookup token identified by host (and possibly the account id)
+	key := a.key()
+	t, err := a.cache.Lookup(key)
 	if err != nil {
 		return nil, fmt.Errorf("cache: %w", err)
 	}
@@ -127,7 +129,7 @@ func (a *PersistentAuth) Load(ctx context.Context) (*oauth2.Token, error) {
 	if err != nil {
 		return nil, fmt.Errorf("token refresh: %w", err)
 	}
-	err = a.cache.Store(a.key(), refreshed)
+	err = a.cache.Store(key, refreshed)
 	if err != nil {
 		return nil, fmt.Errorf("cache refresh: %w", err)
 	}
@@ -156,7 +158,12 @@ func (a *PersistentAuth) Challenge(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("authorize: %w", err)
 	}
-	return a.cache.Store(a.key(), t)
+	// cache token identified by host (and possibly the account id)
+	err = a.cache.Store(a.key(), t)
+	if err != nil {
+		return fmt.Errorf("store: %w", err)
+	}
+	return nil
 }
 
 func (a *PersistentAuth) init(ctx context.Context) error {
@@ -263,6 +270,9 @@ func (a *PersistentAuth) oauth2Config() (*oauth2.Config, error) {
 	}, nil
 }
 
+// key is currently used for two purposes: OIDC URL prefix and token cache key.
+// once we decide to start storing scopes in the token cache, we should change
+// this approach.
 func (a *PersistentAuth) key() string {
 	scheme := "https"
 	if a.scheme != "" {

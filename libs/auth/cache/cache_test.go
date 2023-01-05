@@ -58,9 +58,9 @@ func TestNoCacheFileReturnsErrNotConfigured(t *testing.T) {
 func TestLoadCorruptFile(t *testing.T) {
 	home := setup(t)
 	f := filepath.Join(home, tokenCacheFile)
-	err := os.MkdirAll(filepath.Dir(f), tokenCacheChmod)
+	err := os.MkdirAll(filepath.Dir(f), ownerExecReadWrite)
 	require.NoError(t, err)
-	err = os.WriteFile(f, []byte("abc"), tokenCacheChmod)
+	err = os.WriteFile(f, []byte("abc"), ownerExecReadWrite)
 	require.NoError(t, err)
 
 	l := &TokenCache{}
@@ -71,9 +71,9 @@ func TestLoadCorruptFile(t *testing.T) {
 func TestLoadWrongVersion(t *testing.T) {
 	home := setup(t)
 	f := filepath.Join(home, tokenCacheFile)
-	err := os.MkdirAll(filepath.Dir(f), tokenCacheChmod)
+	err := os.MkdirAll(filepath.Dir(f), ownerExecReadWrite)
 	require.NoError(t, err)
-	err = os.WriteFile(f, []byte(`{"version": 823, "things": []}`), tokenCacheChmod)
+	err = os.WriteFile(f, []byte(`{"version": 823, "things": []}`), ownerExecReadWrite)
 	require.NoError(t, err)
 
 	l := &TokenCache{}

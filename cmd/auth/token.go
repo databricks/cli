@@ -39,5 +39,5 @@ var tokenCmd = &cobra.Command{
 func init() {
 	authCmd.AddCommand(tokenCmd)
 	tokenCmd.Flags().DurationVar(&tokenTimeout, "timeout", auth.DefaultTimeout,
-		"Timeout for acquiring token from a local cache")
+		"Timeout for acquiring a token.")
 }

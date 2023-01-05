@@ -16,7 +16,10 @@ const (
 	tokenCacheFile = ".databricks/token-cache.json"
 
 	// only the owner of the file has full execute, read, and write access
-	tokenCacheChmod = 0o700
+	ownerExecReadWrite = 0o700
+
+	// only the owner of the file has full read and write access
+	ownerReadWrite = 0o600
 
 	// format versioning leaves some room for format improvement
 	tokenCacheVersion = 1
@@ -30,14 +33,14 @@ type TokenCache struct {
 	Version int                      `json:"version"`
 	Tokens  map[string]*oauth2.Token `json:"tokens"`
 
-	fileLocation string `json:"-"`
+	fileLocation string
 }
 
 func (c *TokenCache) Store(key string, t *oauth2.Token) error {
 	err := c.load()
 	if errors.Is(err, fs.ErrNotExist) {
 		dir := filepath.Dir(c.fileLocation)
-		err = os.MkdirAll(dir, tokenCacheChmod)
+		err = os.MkdirAll(dir, ownerExecReadWrite)
 		if err != nil {
 			return fmt.Errorf("mkdir: %w", err)
 		}
@@ -53,7 +56,7 @@ func (c *TokenCache) Store(key string, t *oauth2.Token) error {
 	if err != nil {
 		return fmt.Errorf("marshal: %w", err)
 	}
-	return os.WriteFile(c.fileLocation, raw, tokenCacheChmod)
+	return os.WriteFile(c.fileLocation, raw, ownerReadWrite)
 }
 
 func (c *TokenCache) Lookup(key string) (*oauth2.Token, error) {
@@ -75,9 +78,6 @@ func (c *TokenCache) location() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("home: %w", err)
 	}
-	// we can also store all cached credentials in one single file,
-	// like ~/.azure/msal_token_cache.json for az login - in our case it'll be
-	// something like ~/.databricks/token-cache.json
 	return filepath.Join(home, tokenCacheFile), nil
 }
 
@@ -98,7 +98,7 @@ func (c *TokenCache) load() error {
 	if c.Version != tokenCacheVersion {
 		// in the later iterations we could do state upgraders,
 		// so that we transform token cache from v1 to v2 without
-		// loosing the tokens and asking the user to re-authenticate.
+		// losing the tokens and asking the user to re-authenticate.
 		return fmt.Errorf("needs version %d, got version %d",
 			tokenCacheVersion, c.Version)
 	}
