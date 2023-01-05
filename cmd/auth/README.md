@@ -9,7 +9,8 @@ sequenceDiagram
     
     User ->> CLI: type `bricks login HOST`
     CLI ->>+ HOST: request OIDC endpoints
-    HOST ->> CLI: auth & token endpoints
+    HOST ->>- CLI: auth & token endpoints
+    CLI ->> CLI: start embedded server to consume redirects (lock)
     CLI -->>+ Auth Endpoint: open browser with RND1 + SHA256(RND2)
 
     User ->>+ Auth Endpoint: Go through SSO
@@ -17,7 +18,6 @@ sequenceDiagram
 
     CLI ->>+ Token Endpoint: Exchange: AUTH CODE + RND2
     Token Endpoint ->>- CLI: Access Token (JWT) + refresh + expiry
-    CLI ->> CLI: acquire lock
     CLI ->> Token cache: Save Access Token (JWT) + refresh + expiry
     CLI ->> User: success
 ```
@@ -30,17 +30,16 @@ sequenceDiagram
     actor User
     
     User ->> CLI: type `bricks token HOST`
-    CLI ->>+ HOST: request OIDC endpoints
-    HOST ->> CLI: auth & token endpoints
-
-    CLI ->> CLI: acquire lock
+    
+    CLI ->> CLI: acquire lock (same local addr as redirect server)
     CLI ->>+ Token cache: read token
 
-
     critical token not expired
-    Token cache ->>- User: JWT (without refresh token)
+    Token cache ->>- User: JWT (without refresh)
 
     option token is expired
+    CLI ->>+ HOST: request OIDC endpoints
+    HOST ->>- CLI: auth & token endpoints
     CLI ->>+ Token Endpoint: refresh token
     Token Endpoint ->>- CLI: JWT (refreshed)
     CLI ->> Token cache: save JWT (refreshed)

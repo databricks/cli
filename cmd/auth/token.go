@@ -1,11 +1,15 @@
 package auth
 
 import (
+	"context"
 	"encoding/json"
+	"time"
 
 	"github.com/databricks/bricks/libs/auth"
 	"github.com/spf13/cobra"
 )
+
+var tokenTimeout time.Duration
 
 var tokenCmd = &cobra.Command{
 	Use:   "token HOST",
@@ -16,11 +20,13 @@ var tokenCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		t, err := u2m.Load(cmd.Context())
+		defer u2m.Close()
+		ctx, cancel := context.WithTimeout(cmd.Context(), tokenTimeout)
+		defer cancel()
+		t, err := u2m.Load(ctx)
 		if err != nil {
 			return err
 		}
-		t.RefreshToken = ""
 		raw, err := json.MarshalIndent(t, "", "  ")
 		if err != nil {
 			return err
@@ -32,4 +38,6 @@ var tokenCmd = &cobra.Command{
 
 func init() {
 	authCmd.AddCommand(tokenCmd)
+	tokenCmd.Flags().DurationVar(&tokenTimeout, "timeout", auth.DefaultTimeout,
+		"Timeout for acquiring token from a local cache")
 }

@@ -23,7 +23,6 @@ build: vendor
 	@go build -mod vendor
 
 snapshot:
-	# ln -fs $PWD/dist/bricks_darwin_arm64/bricks_v0.0.15-devel ~/bin/bricks
 	@echo "✓ Building dev snapshot"
 	@goreleaser build --snapshot --rm-dist --single-target
 

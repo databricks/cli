@@ -1,9 +1,14 @@
 package auth
 
 import (
+	"context"
+	"time"
+
 	"github.com/databricks/bricks/libs/auth"
 	"github.com/spf13/cobra"
 )
+
+var loginTimeout time.Duration
 
 var loginCmd = &cobra.Command{
 	Use:   "login HOST",
@@ -14,10 +19,15 @@ var loginCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		return u2m.Challenge(cmd.Context())
+		defer u2m.Close()
+		ctx, cancel := context.WithTimeout(cmd.Context(), loginTimeout)
+		defer cancel()
+		return u2m.Challenge(ctx)
 	},
 }
 
 func init() {
 	authCmd.AddCommand(loginCmd)
+	loginCmd.Flags().DurationVar(&loginTimeout, "timeout", auth.DefaultTimeout,
+		"Timeout for completing login challenge in the browser")
 }

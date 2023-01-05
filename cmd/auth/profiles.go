@@ -1,11 +1,13 @@
 package auth
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
-	"github.com/databricks/databricks-sdk-go/logger"
 	"github.com/spf13/cobra"
 	"gopkg.in/ini.v1"
 )
@@ -20,7 +22,7 @@ func getDatabricksCfg() (*ini.File, error) {
 		if err != nil {
 			return nil, fmt.Errorf("cannot find homedir: %w", err)
 		}
-		configFile = fmt.Sprintf("%s%s", homedir, configFile[1:])
+		configFile = filepath.Join(homedir, configFile[1:])
 	}
 	return ini.Load(configFile)
 }
@@ -32,21 +34,34 @@ var profilesCmd = &cobra.Command{
 		iniFile, err := getDatabricksCfg()
 		if os.IsNotExist(err) {
 			// early return for non-configured machines
-			logger.Debugf("Databricks config not found on current host")
-			return nil
+			return errors.New("~/.databrickcfg not found on current host")
 		}
 		if err != nil {
 			return fmt.Errorf("cannot parse config file: %w", err)
 		}
-		w := cmd.OutOrStdout()
+		type configProfile struct {
+			Name            string `json:"name"`
+			Host            string `json:"host,omitempty"`
+			AzureResourceID string `json:"azure_workspace_resource_id,omitempty"`
+			AccountID       string `json:"account_id,omitempty"`
+		}
+		var profiles []configProfile
 		for _, v := range iniFile.Sections() {
 			hash := v.KeysHash()
-			host := hash["host"]
-			if host == "" {
-				host = hash["azure_workspace_resource_id"]
-			}
-			fmt.Fprintf(w, "%s\t%s\n", v.Name(), host)
+			profiles = append(profiles, configProfile{
+				Name:            v.Name(),
+				Host:            hash["host"],
+				AzureResourceID: hash["azure_workspace_resource_id"],
+				AccountID:       hash["account_id"],
+			})
 		}
+		raw, err := json.MarshalIndent(map[string]any{
+			"profiles": profiles,
+		}, "", "  ")
+		if err != nil {
+			return err
+		}
+		cmd.OutOrStdout().Write(raw)
 		return nil
 	},
 }

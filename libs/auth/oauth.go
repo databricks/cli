@@ -10,36 +10,64 @@ import (
 	"fmt"
 	"io"
 	"math/rand"
+	"net"
 	"net/http"
 	"net/url"
-	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
 
+	"github.com/databricks/bricks/libs/auth/cache"
+	"github.com/databricks/databricks-sdk-go/retries"
+	"github.com/pkg/browser"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/authhandler"
+)
+
+const (
+	// these values are predefined by Databricks as a public client
+	// and is specific to this application only. Using these values
+	// for other applications is not allowed.
+	appClientID     = "databricks-cli"
+	appRedirectAddr = "localhost:8020"
+
+	// maximum amount of time to acquire listener on appRedirectAddr
+	DefaultTimeout = 15 * time.Second
 )
 
 var ( // Databricks SDK API: `databricks OAuth is not` will be checked for presence
 	ErrOAuthNotSupported = errors.New("databricks OAuth is not supported for this host")
 	ErrNotConfigured     = errors.New("databricks OAuth is not configured for this host")
-)
 
-var uuidRegex = regexp.MustCompile(`(?mi)^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$`)
+	uuidRegex = regexp.MustCompile(`(?i)^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$`)
+)
 
 type PersistentAuth struct {
 	Host      string
 	AccountID string
-	mu        portLocker
+
+	scheme  string
+	http    httpGet
+	cache   tokenCache
+	ln      net.Listener
+	browser func(string) error
+}
+
+type httpGet interface {
+	Get(string) (*http.Response, error)
+}
+
+type tokenCache interface {
+	Store(key string, t *oauth2.Token) error
+	Lookup(key string) (*oauth2.Token, error)
 }
 
 func NewPersistentOAuth(host string) (*PersistentAuth, error) {
 	if host == "" {
 		return nil, fmt.Errorf("host cannot be empty")
 	}
-	if uuidRegex.Match([]byte(host)) {
+	if uuidRegex.MatchString(host) {
 		// Example: bricks login a5115405-77bb-4fc3-8cfa-6963ca3dde04
 		return &PersistentAuth{
 			Host:      "accounts.cloud.databricks.com",
@@ -73,16 +101,110 @@ func NewPersistentOAuth(host string) (*PersistentAuth, error) {
 	}, nil
 }
 
+func (a *PersistentAuth) Load(ctx context.Context) (*oauth2.Token, error) {
+	err := a.init(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("init: %w", err)
+	}
+	t, err := a.cache.Lookup(a.key())
+	if err != nil {
+		return nil, fmt.Errorf("cache: %w", err)
+	}
+	// early return for valid tokens
+	if t.Valid() {
+		// do not print refresh token to end-user
+		t.RefreshToken = ""
+		return t, nil
+	}
+	// OAuth2 config is invoked only for expired tokens to speed up
+	// the happy path in the token retrieval
+	cfg, err := a.oauth2Config()
+	if err != nil {
+		return nil, err
+	}
+	// eagerly refresh token
+	refreshed, err := cfg.TokenSource(ctx, t).Token()
+	if err != nil {
+		return nil, fmt.Errorf("token refresh: %w", err)
+	}
+	err = a.cache.Store(a.key(), refreshed)
+	if err != nil {
+		return nil, fmt.Errorf("cache refresh: %w", err)
+	}
+	// do not print refresh token to end-user
+	refreshed.RefreshToken = ""
+	return refreshed, nil
+}
+
+func (a *PersistentAuth) Challenge(ctx context.Context) error {
+	err := a.init(ctx)
+	if err != nil {
+		return fmt.Errorf("init: %w", err)
+	}
+	cfg, err := a.oauth2Config()
+	if err != nil {
+		return err
+	}
+	cb, err := newCallback(ctx, a)
+	if err != nil {
+		return fmt.Errorf("callback server: %w", err)
+	}
+	defer cb.Close()
+	state, pkce := a.stateAndPKCE()
+	ts := authhandler.TokenSourceWithPKCE(ctx, cfg, state, cb.Handler, pkce)
+	t, err := ts.Token()
+	if err != nil {
+		return fmt.Errorf("authorize: %w", err)
+	}
+	return a.cache.Store(a.key(), t)
+}
+
+func (a *PersistentAuth) init(ctx context.Context) error {
+	if a.http == nil {
+		a.http = http.DefaultClient
+	}
+	if a.cache == nil {
+		a.cache = &cache.TokenCache{}
+	}
+	if a.browser == nil {
+		a.browser = browser.OpenURL
+	}
+	// try acquire listener, which we also use as a machine-local
+	// exclusive lock to prevent token cache corruption in the scope
+	// of developer machine, where this command runs.
+	listener, err := retries.Poll(ctx, DefaultTimeout,
+		func() (*net.Listener, *retries.Err) {
+			var lc net.ListenConfig
+			l, err := lc.Listen(ctx, "tcp", appRedirectAddr)
+			if err != nil {
+				return nil, retries.Continue(err)
+			}
+			return &l, nil
+		})
+	if err != nil {
+		return fmt.Errorf("listener: %w", err)
+	}
+	a.ln = *listener
+	return nil
+}
+
+func (a *PersistentAuth) Close() error {
+	if a.ln == nil {
+		return nil
+	}
+	return a.ln.Close()
+}
+
 func (a *PersistentAuth) oidcEndpoints() (*oauthAuthorizationServer, error) {
+	prefix := a.key()
 	if a.AccountID != "" {
-		prefix := fmt.Sprintf("https://%s/oidc/accounts/%s", a.Host, a.AccountID)
 		return &oauthAuthorizationServer{
 			AuthorizationEndpoint: fmt.Sprintf("%s/v1/authorize", prefix),
 			TokenEndpoint:         fmt.Sprintf("%s/v1/token", prefix),
 		}, nil
 	}
-	oidc := fmt.Sprintf("https://%s/oidc/.well-known/oauth-authorization-server", a.Host)
-	oidcResponse, err := http.Get(oidc)
+	oidc := fmt.Sprintf("%s/oidc/.well-known/oauth-authorization-server", prefix)
+	oidcResponse, err := a.http.Get(oidc)
 	if err != nil {
 		return nil, fmt.Errorf("fetch .well-known: %w", err)
 	}
@@ -106,7 +228,11 @@ func (a *PersistentAuth) oidcEndpoints() (*oauthAuthorizationServer, error) {
 }
 
 func (a *PersistentAuth) oauth2Config() (*oauth2.Config, error) {
-	scopes := []string{ // default
+	// in this iteration of CLI, we're using all scopes by default,
+	// because tools like CLI and Terraform do use all apis. This
+	// decision may be reconsidered later, once we have a proper
+	// taxonomy of all scopes ready and implemented.
+	scopes := []string{
 		"offline_access",
 		"unity-catalog",
 		"accounts",
@@ -116,8 +242,8 @@ func (a *PersistentAuth) oauth2Config() (*oauth2.Config, error) {
 		"sql",
 	}
 	if a.AccountID != "" {
-		// doesn't seem to work yet...
 		scopes = []string{
+			"offline_access",
 			"accounts",
 		}
 	}
@@ -126,7 +252,7 @@ func (a *PersistentAuth) oauth2Config() (*oauth2.Config, error) {
 		return nil, fmt.Errorf("oidc: %w", err)
 	}
 	return &oauth2.Config{
-		ClientID: "databricks-cli",
+		ClientID: appClientID,
 		Endpoint: oauth2.Endpoint{
 			AuthURL:   endpoints.AuthorizationEndpoint,
 			TokenURL:  endpoints.TokenEndpoint,
@@ -137,102 +263,16 @@ func (a *PersistentAuth) oauth2Config() (*oauth2.Config, error) {
 	}, nil
 }
 
-func (a *PersistentAuth) location() (string, error) {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return "", fmt.Errorf("home: %w", err)
+func (a *PersistentAuth) key() string {
+	scheme := "https"
+	if a.scheme != "" {
+		// this is done to enable unit testing via embedded insecure test server
+		scheme = a.scheme
 	}
-	// we can also store all cached credentials in one single file,
-	// like ~/.azure/msal_token_cache.json for az login - in our case it'll be
-	// something like ~/.databricks/token-cache.json
-	return fmt.Sprintf("%s/.databricks/auth/%s.json", home, a.Host), nil
-}
-
-func (a *PersistentAuth) store(ctx context.Context, t *oauth2.Token) error {
-	raw, err := json.MarshalIndent(t, "", "  ")
-	if err != nil {
-		return fmt.Errorf("token to json: %w", err)
+	if a.AccountID != "" {
+		return fmt.Sprintf("%s://%s/oidc/accounts/%s", scheme, a.Host, a.AccountID)
 	}
-	loc, err := a.location()
-	if err != nil {
-		return fmt.Errorf("token cache: %w", err)
-	}
-	tokenCacheDir := filepath.Dir(loc)
-	_, err = os.Stat(tokenCacheDir)
-	if os.IsNotExist(err) {
-		err = os.MkdirAll(tokenCacheDir, 0o600)
-		if err != nil {
-			return fmt.Errorf("token cache mkdir: %w", err)
-		}
-	}
-	return os.WriteFile(loc, raw, 0o600)
-}
-
-func (a *PersistentAuth) Load(ctx context.Context) (*oauth2.Token, error) {
-	err := a.mu.Lock(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to acquire lock: %w", err)
-	}
-	defer a.mu.Unlock()
-	loc, err := a.location()
-	if err != nil {
-		return nil, fmt.Errorf("token cache: %w", err)
-	}
-	raw, err := os.ReadFile(loc)
-	if os.IsNotExist(err) {
-		return nil, ErrNotConfigured
-	}
-	if err != nil {
-		return nil, fmt.Errorf("token cache read: %w", err)
-	}
-	var t oauth2.Token
-	err = json.Unmarshal(raw, &t)
-	if err != nil {
-		return nil, fmt.Errorf("corrput token cache: %w", err)
-	}
-	if t.Valid() {
-		return &t, nil
-	}
-	config, err := a.oauth2Config()
-	if err != nil {
-		return nil, err
-	}
-	refreshed, err := config.TokenSource(ctx, &t).Token()
-	if err != nil {
-		return nil, fmt.Errorf("token refresh: %w", err)
-	}
-	err = a.store(ctx, refreshed)
-	if err != nil {
-		return nil, fmt.Errorf("store in token cache: %w", err)
-	}
-	// do not print refresh token to end-user
-	refreshed.RefreshToken = ""
-	return refreshed, nil
-}
-
-func (a *PersistentAuth) Challenge(ctx context.Context) error {
-	config, err := a.oauth2Config()
-	if err != nil {
-		return err
-	}
-	cb, err := newCallback(ctx, a)
-	if err != nil {
-		return fmt.Errorf("callback server: %w", err)
-	}
-	defer cb.Close()
-	state, pkce := a.stateAndPKCE()
-	ts := authhandler.TokenSourceWithPKCE(ctx, config, state,
-		cb.AuthorizationHandler, pkce)
-	t, err := ts.Token()
-	if err != nil {
-		return fmt.Errorf("authorize: %w", err)
-	}
-	err = a.mu.Lock(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to acquire lock: %w", err)
-	}
-	defer a.mu.Unlock()
-	return a.store(ctx, t)
+	return fmt.Sprintf("%s://%s", scheme, a.Host)
 }
 
 func (a *PersistentAuth) stateAndPKCE() (string, *authhandler.PKCEParams) {

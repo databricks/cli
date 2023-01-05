@@ -8,17 +8,13 @@ import (
 	"net"
 	"net/http"
 	"strings"
-	"time"
 
-	"github.com/pkg/browser"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 )
 
 //go:embed page.tmpl
 var pageTmpl string
-
-const appRedirectAddr = "localhost:8020"
 
 type oauthResult struct {
 	Error            string
@@ -29,14 +25,13 @@ type oauthResult struct {
 }
 
 type callbackServer struct {
-	ln       net.Listener
-	srv      *http.Server
-	ctx      context.Context
-	a        *PersistentAuth
-	errc     chan error
-	feedback chan oauthResult
-	tmpl     *template.Template
-	browser  func(string) error
+	ln          net.Listener
+	srv         http.Server
+	ctx         context.Context
+	a           *PersistentAuth
+	renderErrCh chan error
+	feedbackCh  chan oauthResult
+	tmpl        *template.Template
 }
 
 func newCallback(ctx context.Context, a *PersistentAuth) (*callbackServer, error) {
@@ -49,19 +44,13 @@ func newCallback(ctx context.Context, a *PersistentAuth) (*callbackServer, error
 	if err != nil {
 		return nil, err
 	}
-	ln, err := net.Listen("tcp", appRedirectAddr)
-	if err != nil {
-		return nil, fmt.Errorf("listener: %w", err)
-	}
 	cb := &callbackServer{
-		feedback: make(chan oauthResult),
-		errc:     make(chan error),
-		browser:  browser.OpenURL,
-		srv:      &http.Server{},
-		tmpl:     tmpl,
-		ctx:      ctx,
-		ln:       ln,
-		a:        a,
+		feedbackCh:  make(chan oauthResult),
+		renderErrCh: make(chan error),
+		tmpl:        tmpl,
+		ctx:         ctx,
+		ln:          a.ln,
+		a:           a,
 	}
 	cb.srv.Handler = cb
 	go cb.srv.Serve(cb.ln)
@@ -72,6 +61,7 @@ func (cb *callbackServer) Close() error {
 	return cb.srv.Close()
 }
 
+// ServeHTTP renders page.html template
 func (cb *callbackServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	res := oauthResult{
 		Error:            r.FormValue("error"),
@@ -80,27 +70,33 @@ func (cb *callbackServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		State:            r.FormValue("state"),
 		Host:             cb.a.Host,
 	}
-	w.WriteHeader(200)
+	if res.Error != "" {
+		w.WriteHeader(400)
+	} else {
+		w.WriteHeader(200)
+	}
 	err := cb.tmpl.Execute(w, res)
 	if err != nil {
-		cb.errc <- err
+		cb.renderErrCh <- err
 	}
-	cb.feedback <- res
+	cb.feedbackCh <- res
 }
 
-func (cb *callbackServer) AuthorizationHandler(authCodeURL string) (string, string, error) {
-	err := cb.browser(authCodeURL)
+// Handler opens up a browser waits for redirect to come back from the identity provider
+func (cb *callbackServer) Handler(authCodeURL string) (string, string, error) {
+	err := cb.a.browser(authCodeURL)
 	if err != nil {
-		return "", "", fmt.Errorf("cannot open browser: %w", err)
+		fmt.Printf("Please open %s in the browser to continue authentication", authCodeURL)
 	}
-	ctx, cancel := context.WithTimeout(cb.ctx, 5*time.Minute)
-	defer cancel()
 	select {
-	case <-ctx.Done():
-		return "", "", fmt.Errorf("timed out")
-	case renderErr := <-cb.errc:
+	case <-cb.ctx.Done():
+		return "", "", cb.ctx.Err()
+	case renderErr := <-cb.renderErrCh:
 		return "", "", renderErr
-	case res := <-cb.feedback:
+	case res := <-cb.feedbackCh:
+		if res.Error != "" {
+			return "", "", fmt.Errorf("%s: %s", res.Error, res.ErrorDescription)
+		}
 		return res.Code, res.State, nil
 	}
 }

@@ -86,6 +86,9 @@ var envCmd = &cobra.Command{
 			}
 			cfg.Profile = profile.Name()
 		}
+		// Go SDK is lazy loaded because of Terraform semantics,
+		// so we're creating a dummy HTTP request as a placeholder
+		// for headers.
 		r := &http.Request{Header: http.Header{}}
 		err := cfg.Authenticate(r.WithContext(cmd.Context()))
 		if err != nil {
