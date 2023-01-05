@@ -81,7 +81,7 @@ func TestAccFilerWorkspaceFiles(t *testing.T) {
 	}
 
 	// Write should fail because the root path doesn't yet exist.
-	err = f.Write(ctx, "/foo/bar", strings.NewReader(`"hello world"`))
+	err = f.Write(ctx, "/foo/bar", strings.NewReader(`hello world`))
 	assert.True(t, errors.As(err, &filer.NoSuchDirectoryError{}))
 
 	// Read should fail because the root path doesn't yet exist.
@@ -89,18 +89,18 @@ func TestAccFilerWorkspaceFiles(t *testing.T) {
 	assert.True(t, apierr.IsMissing(err))
 
 	// Write with CreateParentDirectories flag should succeed.
-	err = f.Write(ctx, "/foo/bar", strings.NewReader(`"hello world"`), filer.CreateParentDirectories)
+	err = f.Write(ctx, "/foo/bar", strings.NewReader(`hello world`), filer.CreateParentDirectories)
 	assert.NoError(t, err)
-	filerTest{t, f}.assertContents(ctx, "/foo/bar", `"hello world"`)
+	filerTest{t, f}.assertContents(ctx, "/foo/bar", `hello world`)
 
 	// Write should fail because there is an existing file at the specified path.
-	err = f.Write(ctx, "/foo/bar", strings.NewReader(`"hello universe"`))
+	err = f.Write(ctx, "/foo/bar", strings.NewReader(`hello universe`))
 	assert.True(t, errors.As(err, &filer.FileAlreadyExistsError{}))
 
 	// Write with OverwriteIfExists should succeed.
-	err = f.Write(ctx, "/foo/bar", strings.NewReader(`"hello universe"`), filer.OverwriteIfExists)
+	err = f.Write(ctx, "/foo/bar", strings.NewReader(`hello universe`), filer.OverwriteIfExists)
 	assert.NoError(t, err)
-	filerTest{t, f}.assertContents(ctx, "/foo/bar", `"hello universe"`)
+	filerTest{t, f}.assertContents(ctx, "/foo/bar", `hello universe`)
 
 	// Delete should fail if the file doesn't exist.
 	err = f.Delete(ctx, "/doesnt_exist")
