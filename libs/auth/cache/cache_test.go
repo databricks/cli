@@ -85,14 +85,18 @@ func TestDevNull(t *testing.T) {
 	t.Setenv(homeEnvVar, "/dev/null")
 	l := &TokenCache{}
 	_, err := l.Lookup("x")
-	assert.EqualError(t, err, "load: read: open /dev/null/.databricks/token-cache.json: not a directory")
+	// macOS/Linux: load: read: open /dev/null/.databricks/token-cache.json:
+	// windows: databricks OAuth is not configured for this host
+	assert.Error(t, err)
 }
 
-func TestStoreOnRoot(t *testing.T) {
-	t.Setenv(homeEnvVar, "/")
+func TestStoreOnDev(t *testing.T) {
+	t.Setenv(homeEnvVar, "/dev")
 	c := &TokenCache{}
 	err := c.Store("x", &oauth2.Token{
 		AccessToken: "abc",
 	})
-	assert.EqualError(t, err, "mkdir: mkdir /.databricks: read-only file system")
+	// Linux: permission denied
+	// macOS: read-only file system
+	assert.Error(t, err)
 }

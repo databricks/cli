@@ -68,7 +68,7 @@ func NewPersistentOAuth(host string) (*PersistentAuth, error) {
 		return nil, fmt.Errorf("host cannot be empty")
 	}
 	if uuidRegex.MatchString(host) {
-		// Example: bricks login a5115405-77bb-4fc3-8cfa-6963ca3dde04
+		// Example: bricks auth login a5115405-77bb-4fc3-8cfa-6963ca3dde04
 		return &PersistentAuth{
 			Host:      "accounts.cloud.databricks.com",
 			AccountID: host,
@@ -79,7 +79,7 @@ func NewPersistentOAuth(host string) (*PersistentAuth, error) {
 		return nil, err
 	}
 	if parsedUrl.Host == "" {
-		// Example: bricks login XYZ.cloud.databricks.com
+		// Example: bricks auth login XYZ.cloud.databricks.com
 		return &PersistentAuth{
 			Host: host,
 		}, nil
@@ -89,13 +89,13 @@ func NewPersistentOAuth(host string) (*PersistentAuth, error) {
 		if !uuidRegex.Match([]byte(shouldBeUuid)) {
 			return nil, fmt.Errorf("path does not end in UUID: %s", parsedUrl.Path)
 		}
-		// Example: bricks login https://accounts.../oidc/accounts/a5115405-77bb-4fc3-8cfa-6963ca3dde04
+		// Example: bricks auth login https://accounts.../oidc/accounts/a5115405-77bb-4fc3-8cfa-6963ca3dde04
 		return &PersistentAuth{
 			Host:      parsedUrl.Host,
 			AccountID: shouldBeUuid,
 		}, nil
 	}
-	// Example: bricks login https://XYZ.cloud.databricks.com
+	// Example: bricks auth login https://XYZ.cloud.databricks.com
 	return &PersistentAuth{
 		Host: parsedUrl.Host,
 	}, nil

@@ -7,7 +7,7 @@ sequenceDiagram
     autonumber
     actor User
     
-    User ->> CLI: type `bricks login HOST`
+    User ->> CLI: type `bricks auth login HOST`
     CLI ->>+ HOST: request OIDC endpoints
     HOST ->>- CLI: auth & token endpoints
     CLI ->> CLI: start embedded server to consume redirects (lock)
