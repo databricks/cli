@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/fs"
 	"net/http"
 	"net/url"
 	"strings"
@@ -66,6 +67,28 @@ func resolveSection(cfg *config.Config, iniFile *ini.File) (*ini.Section, error)
 	return candidates[0], nil
 }
 
+func loadFromDatabricksCfg(cfg *config.Config) error {
+	iniFile, err := getDatabricksCfg()
+	if errors.Is(err, fs.ErrNotExist) {
+		// it's fine not to have ~/.databrickscfg
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	profile, err := resolveSection(cfg, iniFile)
+	if err == ErrNoMatchingProfiles {
+		// it's also fine for Azure CLI or Bricks CLI, which
+		// are resolved by unified auth handling in the Go SDK.
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	cfg.Profile = profile.Name()
+	return nil
+}
+
 var envCmd = &cobra.Command{
 	Use:   "env",
 	Short: "Get env",
@@ -75,16 +98,8 @@ var envCmd = &cobra.Command{
 		}
 		if cfg.Host == "" {
 			cfg.Profile = "DEFAULT"
-		} else {
-			iniFile, err := getDatabricksCfg()
-			if err != nil {
-				return err
-			}
-			profile, err := resolveSection(cfg, iniFile)
-			if err != nil {
-				return err
-			}
-			cfg.Profile = profile.Name()
+		} else if err := loadFromDatabricksCfg(cfg); err != nil {
+			return err
 		}
 		// Go SDK is lazy loaded because of Terraform semantics,
 		// so we're creating a dummy HTTP request as a placeholder

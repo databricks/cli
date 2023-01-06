@@ -11,18 +11,13 @@ import (
 var loginTimeout time.Duration
 
 var loginCmd = &cobra.Command{
-	Use:   "login HOST",
-	Args:  cobra.ExactArgs(1),
+	Use:   "login",
 	Short: "Authenticate this machine",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		u2m, err := auth.NewPersistentOAuth(args[0])
-		if err != nil {
-			return err
-		}
-		defer u2m.Close()
+		defer perisistentAuth.Close()
 		ctx, cancel := context.WithTimeout(cmd.Context(), loginTimeout)
 		defer cancel()
-		return u2m.Challenge(ctx)
+		return perisistentAuth.Challenge(ctx)
 	},
 }
 

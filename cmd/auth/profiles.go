@@ -1,13 +1,17 @@
 package auth
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
+	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
 	"gopkg.in/ini.v1"
 )
@@ -27,6 +31,56 @@ func getDatabricksCfg() (*ini.File, error) {
 	return ini.Load(configFile)
 }
 
+type configProfile struct {
+	Name      string `json:"name"`
+	Host      string `json:"host,omitempty"`
+	AccountID string `json:"account_id,omitempty"`
+	Cloud     string `json:"cloud"`
+	AuthType  string `json:"auth_type"`
+	Valid     bool   `json:"valid"`
+}
+
+func (c *configProfile) IsEmpty() bool {
+	return c.Host == "" && c.AccountID == ""
+}
+
+func (c *configProfile) Load(ctx context.Context) {
+	cfg := &config.Config{Profile: c.Name}
+	_ = cfg.EnsureResolved()
+	if cfg.IsAws() {
+		c.Cloud = "aws"
+	} else if cfg.IsAzure() {
+		c.Cloud = "azure"
+	} else if cfg.IsGcp() {
+		c.Cloud = "gcp"
+	}
+	if cfg.IsAccountClient() {
+		a, err := databricks.NewAccountClient((*databricks.Config)(cfg))
+		if err != nil {
+			return
+		}
+		_, err = a.Workspaces.List(ctx)
+		c.AuthType = cfg.AuthType
+		if err != nil {
+			return
+		}
+		c.Valid = true
+	} else {
+		w, err := databricks.NewWorkspaceClient((*databricks.Config)(cfg))
+		if err != nil {
+			return
+		}
+		_, err = w.Tokens.ListAll(ctx)
+		c.AuthType = cfg.AuthType
+		if err != nil {
+			return
+		}
+		c.Valid = true
+	}
+	// set host again, this time normalized
+	c.Host = cfg.Host
+}
+
 var profilesCmd = &cobra.Command{
 	Use:   "profiles",
 	Short: "Lists profiles from ~/.databrickscfg",
@@ -39,22 +93,27 @@ var profilesCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("cannot parse config file: %w", err)
 		}
-		type configProfile struct {
-			Name            string `json:"name"`
-			Host            string `json:"host,omitempty"`
-			AzureResourceID string `json:"azure_workspace_resource_id,omitempty"`
-			AccountID       string `json:"account_id,omitempty"`
-		}
-		var profiles []configProfile
+		var profiles []*configProfile
+		var wg sync.WaitGroup
 		for _, v := range iniFile.Sections() {
 			hash := v.KeysHash()
-			profiles = append(profiles, configProfile{
-				Name:            v.Name(),
-				Host:            hash["host"],
-				AzureResourceID: hash["azure_workspace_resource_id"],
-				AccountID:       hash["account_id"],
-			})
+			profile := &configProfile{
+				Name:      v.Name(),
+				Host:      hash["host"],
+				AccountID: hash["account_id"],
+			}
+			if profile.IsEmpty() {
+				continue
+			}
+			wg.Add(1)
+			go func() {
+				// load more information about profile
+				profile.Load(cmd.Context())
+				wg.Done()
+			}()
+			profiles = append(profiles, profile)
 		}
+		wg.Wait()
 		raw, err := json.MarshalIndent(map[string]any{
 			"profiles": profiles,
 		}, "", "  ")

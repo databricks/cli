@@ -12,18 +12,13 @@ import (
 var tokenTimeout time.Duration
 
 var tokenCmd = &cobra.Command{
-	Use:   "token HOST",
-	Args:  cobra.ExactArgs(1),
+	Use:   "token",
 	Short: "Get authentication token",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		u2m, err := auth.NewPersistentOAuth(args[0])
-		if err != nil {
-			return err
-		}
-		defer u2m.Close()
+		defer perisistentAuth.Close()
 		ctx, cancel := context.WithTimeout(cmd.Context(), tokenTimeout)
 		defer cancel()
-		t, err := u2m.Load(ctx)
+		t, err := perisistentAuth.Load(ctx)
 		if err != nil {
 			return err
 		}

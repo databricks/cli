@@ -39,6 +39,7 @@ const (
 var ( // Databricks SDK API: `databricks OAuth is not` will be checked for presence
 	ErrOAuthNotSupported = errors.New("databricks OAuth is not supported for this host")
 	ErrNotConfigured     = errors.New("databricks OAuth is not configured for this host")
+	ErrFetchCredentials  = errors.New("cannot fetch credentials")
 
 	uuidRegex = regexp.MustCompile(`(?i)^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$`)
 )
@@ -47,7 +48,6 @@ type PersistentAuth struct {
 	Host      string
 	AccountID string
 
-	scheme  string
 	http    httpGet
 	cache   tokenCache
 	ln      net.Listener
@@ -167,6 +167,9 @@ func (a *PersistentAuth) Challenge(ctx context.Context) error {
 }
 
 func (a *PersistentAuth) init(ctx context.Context) error {
+	if a.Host == "" && a.AccountID == "" {
+		return ErrFetchCredentials
+	}
 	if a.http == nil {
 		a.http = http.DefaultClient
 	}
@@ -274,15 +277,14 @@ func (a *PersistentAuth) oauth2Config() (*oauth2.Config, error) {
 // once we decide to start storing scopes in the token cache, we should change
 // this approach.
 func (a *PersistentAuth) key() string {
-	scheme := "https"
-	if a.scheme != "" {
-		// this is done to enable unit testing via embedded insecure test server
-		scheme = a.scheme
+	a.Host = strings.TrimSuffix(a.Host, "/")
+	if !strings.HasPrefix(a.Host, "http") {
+		a.Host = fmt.Sprintf("https://%s", a.Host)
 	}
 	if a.AccountID != "" {
-		return fmt.Sprintf("%s://%s/oidc/accounts/%s", scheme, a.Host, a.AccountID)
+		return fmt.Sprintf("%s/oidc/accounts/%s", a.Host, a.AccountID)
 	}
-	return fmt.Sprintf("%s://%s", scheme, a.Host)
+	return a.Host
 }
 
 func (a *PersistentAuth) stateAndPKCE() (string, *authhandler.PKCEParams) {

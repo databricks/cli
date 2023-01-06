@@ -2,6 +2,7 @@ package auth
 
 import (
 	"github.com/databricks/bricks/cmd/root"
+	"github.com/databricks/bricks/libs/auth"
 	"github.com/spf13/cobra"
 )
 
@@ -10,6 +11,10 @@ var authCmd = &cobra.Command{
 	Short: "Authentication related commands",
 }
 
+var perisistentAuth auth.PersistentAuth
+
 func init() {
 	root.RootCmd.AddCommand(authCmd)
+	authCmd.PersistentFlags().StringVar(&perisistentAuth.Host, "host", perisistentAuth.Host, "Databricks Host")
+	authCmd.PersistentFlags().StringVar(&perisistentAuth.AccountID, "account-id", perisistentAuth.AccountID, "Databricks Account ID")
 }

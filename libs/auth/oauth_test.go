@@ -173,9 +173,8 @@ func TestLoadRefresh(t *testing.T) {
 		ctx = useInsecureOAuthHttpClientForTests(ctx)
 		expectedKey := fmt.Sprintf("%s/oidc/accounts/xyz", c.Config.Host)
 		p := &PersistentAuth{
-			Host:      strings.TrimPrefix(c.Config.Host, "http://"),
+			Host:      c.Config.Host,
 			AccountID: "xyz",
-			scheme:    "http",
 			cache: &tokenCacheMock{
 				lookup: func(key string) (*oauth2.Token, error) {
 					assert.Equal(t, expectedKey, key)
@@ -213,9 +212,8 @@ func TestChallenge(t *testing.T) {
 
 		browserOpened := make(chan string)
 		p := &PersistentAuth{
-			Host:      strings.TrimPrefix(c.Config.Host, "http://"),
+			Host:      c.Config.Host,
 			AccountID: "xyz",
-			scheme:    "http",
 			browser: func(redirect string) error {
 				u, err := url.ParseRequestURI(redirect)
 				if err != nil {
@@ -258,9 +256,8 @@ func TestChallengeFailed(t *testing.T) {
 
 		browserOpened := make(chan string)
 		p := &PersistentAuth{
-			Host:      strings.TrimPrefix(c.Config.Host, "http://"),
+			Host:      c.Config.Host,
 			AccountID: "xyz",
-			scheme:    "http",
 			browser: func(redirect string) error {
 				u, err := url.ParseRequestURI(redirect)
 				if err != nil {
