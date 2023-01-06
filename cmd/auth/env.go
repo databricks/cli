@@ -94,9 +94,12 @@ var envCmd = &cobra.Command{
 	Short: "Get env",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cfg := &config.Config{
-			Host: host,
+			Host:    host,
+			Profile: profile,
 		}
-		if cfg.Host == "" {
+		if profile != "" {
+			cfg.Profile = profile
+		} else if cfg.Host == "" {
 			cfg.Profile = "DEFAULT"
 		} else if err := loadFromDatabricksCfg(cfg); err != nil {
 			return err
@@ -109,7 +112,6 @@ var envCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		cfg.Profile = "" // erase profile from config
 		vars := map[string]string{}
 		for _, a := range config.ConfigAttributes {
 			if a.IsZero(cfg) {
@@ -132,8 +134,10 @@ var envCmd = &cobra.Command{
 }
 
 var host string
+var profile string
 
 func init() {
 	authCmd.AddCommand(envCmd)
 	envCmd.Flags().StringVar(&host, "host", host, "Hostname to get auth env for")
+	envCmd.Flags().StringVar(&profile, "profile", profile, "Profile to get auth env for")
 }

@@ -45,6 +45,7 @@ func (c *profileMetadata) IsEmpty() bool {
 }
 
 func (c *profileMetadata) Load(ctx context.Context) {
+	// TODO: disable config loaders other than configfile
 	cfg := &config.Config{Profile: c.Name}
 	_ = cfg.EnsureResolved()
 	if cfg.IsAws() {
