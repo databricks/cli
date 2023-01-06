@@ -12,9 +12,12 @@ import (
 var tokenTimeout time.Duration
 
 var tokenCmd = &cobra.Command{
-	Use:   "token",
+	Use:   "token [HOST]",
 	Short: "Get authentication token",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if perisistentAuth.Host == "" && len(args) == 1 {
+			perisistentAuth.Host = args[0]
+		}
 		defer perisistentAuth.Close()
 		ctx, cancel := context.WithTimeout(cmd.Context(), tokenTimeout)
 		defer cancel()

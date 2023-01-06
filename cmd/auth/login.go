@@ -11,9 +11,12 @@ import (
 var loginTimeout time.Duration
 
 var loginCmd = &cobra.Command{
-	Use:   "login",
+	Use:   "login [HOST]",
 	Short: "Authenticate this machine",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if perisistentAuth.Host == "" && len(args) == 1 {
+			perisistentAuth.Host = args[0]
+		}
 		defer perisistentAuth.Close()
 		ctx, cancel := context.WithTimeout(cmd.Context(), loginTimeout)
 		defer cancel()

@@ -12,9 +12,6 @@ import (
 	"math/rand"
 	"net"
 	"net/http"
-	"net/url"
-	"path/filepath"
-	"regexp"
 	"strings"
 	"time"
 
@@ -40,8 +37,6 @@ var ( // Databricks SDK API: `databricks OAuth is not` will be checked for prese
 	ErrOAuthNotSupported = errors.New("databricks OAuth is not supported for this host")
 	ErrNotConfigured     = errors.New("databricks OAuth is not configured for this host")
 	ErrFetchCredentials  = errors.New("cannot fetch credentials")
-
-	uuidRegex = regexp.MustCompile(`(?i)^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$`)
 )
 
 type PersistentAuth struct {
@@ -61,44 +56,6 @@ type httpGet interface {
 type tokenCache interface {
 	Store(key string, t *oauth2.Token) error
 	Lookup(key string) (*oauth2.Token, error)
-}
-
-func NewPersistentOAuth(host string) (*PersistentAuth, error) {
-	if host == "" {
-		return nil, fmt.Errorf("host cannot be empty")
-	}
-	if uuidRegex.MatchString(host) {
-		// Example: bricks auth login a5115405-77bb-4fc3-8cfa-6963ca3dde04
-		return &PersistentAuth{
-			Host:      "accounts.cloud.databricks.com",
-			AccountID: host,
-		}, nil
-	}
-	parsedUrl, err := url.Parse(host)
-	if err != nil {
-		return nil, err
-	}
-	if parsedUrl.Host == "" {
-		// Example: bricks auth login XYZ.cloud.databricks.com
-		return &PersistentAuth{
-			Host: host,
-		}, nil
-	}
-	if strings.HasPrefix(parsedUrl.Host, "accounts.") {
-		shouldBeUuid := filepath.Base(parsedUrl.Path)
-		if !uuidRegex.Match([]byte(shouldBeUuid)) {
-			return nil, fmt.Errorf("path does not end in UUID: %s", parsedUrl.Path)
-		}
-		// Example: bricks auth login https://accounts.../oidc/accounts/a5115405-77bb-4fc3-8cfa-6963ca3dde04
-		return &PersistentAuth{
-			Host:      parsedUrl.Host,
-			AccountID: shouldBeUuid,
-		}, nil
-	}
-	// Example: bricks auth login https://XYZ.cloud.databricks.com
-	return &PersistentAuth{
-		Host: parsedUrl.Host,
-	}, nil
 }
 
 func (a *PersistentAuth) Load(ctx context.Context) (*oauth2.Token, error) {

@@ -18,61 +18,6 @@ import (
 	"golang.org/x/oauth2"
 )
 
-func TestNewPersistentOAuth(t *testing.T) {
-	type thing struct {
-		host string
-		want *PersistentAuth
-		err  string
-	}
-	tests := []thing{
-		{
-			err: "host cannot be empty",
-		},
-		{
-			host: "localhost",
-			want: &PersistentAuth{
-				Host: "localhost",
-			},
-		},
-		{
-			host: "https://localhost",
-			want: &PersistentAuth{
-				Host: "localhost",
-			},
-		},
-		{
-			host: "https://accounts.any",
-			err:  "path does not end in UUID: ",
-		},
-		{
-			host: "https://accounts.any/a5115405-77bb-4fc3-8cfa-6963ca3dde04",
-			want: &PersistentAuth{
-				Host:      "accounts.any",
-				AccountID: "a5115405-77bb-4fc3-8cfa-6963ca3dde04",
-			},
-		},
-		{
-			host: "a5115405-77bb-4fc3-8cfa-6963ca3dde04",
-			want: &PersistentAuth{
-				Host:      "accounts.cloud.databricks.com",
-				AccountID: "a5115405-77bb-4fc3-8cfa-6963ca3dde04",
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.host, func(t *testing.T) {
-			got, err := NewPersistentOAuth(tt.host)
-			if tt.err != "" {
-				assert.EqualError(t, err, tt.err)
-			} else if err != nil {
-				assert.NoError(t, err)
-			} else {
-				assert.Equal(t, tt.want, got)
-			}
-		})
-	}
-}
-
 func TestOidcEndpointsForAccounts(t *testing.T) {
 	p := &PersistentAuth{
 		Host:      "abc",
