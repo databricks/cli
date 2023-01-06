@@ -31,7 +31,7 @@ func getDatabricksCfg() (*ini.File, error) {
 	return ini.Load(configFile)
 }
 
-type configProfile struct {
+type profileMetadata struct {
 	Name      string `json:"name"`
 	Host      string `json:"host,omitempty"`
 	AccountID string `json:"account_id,omitempty"`
@@ -40,11 +40,11 @@ type configProfile struct {
 	Valid     bool   `json:"valid"`
 }
 
-func (c *configProfile) IsEmpty() bool {
+func (c *profileMetadata) IsEmpty() bool {
 	return c.Host == "" && c.AccountID == ""
 }
 
-func (c *configProfile) Load(ctx context.Context) {
+func (c *profileMetadata) Load(ctx context.Context) {
 	cfg := &config.Config{Profile: c.Name}
 	_ = cfg.EnsureResolved()
 	if cfg.IsAws() {
@@ -93,11 +93,11 @@ var profilesCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("cannot parse config file: %w", err)
 		}
-		var profiles []*configProfile
+		var profiles []*profileMetadata
 		var wg sync.WaitGroup
 		for _, v := range iniFile.Sections() {
 			hash := v.KeysHash()
-			profile := &configProfile{
+			profile := &profileMetadata{
 				Name:      v.Name(),
 				Host:      hash["host"],
 				AccountID: hash["account_id"],
