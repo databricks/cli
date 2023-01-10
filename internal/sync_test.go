@@ -89,7 +89,6 @@ func (a *assertSync) remoteDirContent(ctx context.Context, relativeDir string, e
 	}
 }
 
-// content should be a valid json object due to current go sdk limitations (31 December 2022, see https://github.com/databricks/databricks-sdk-go/pull/247)
 func (a *assertSync) remoteFileContent(ctx context.Context, relativePath string, expectedContent string) {
 	filePath := path.Join(a.remoteRoot, relativePath)
 
@@ -102,8 +101,7 @@ func (a *assertSync) remoteFileContent(ctx context.Context, relativePath string,
 	apiClient, err := client.New(a.w.Config)
 	require.NoError(a.t, err)
 
-	// Update to []byte after https://github.com/databricks/databricks-sdk-go/pull/247 is merged.
-	var res json.RawMessage
+	var res []byte
 	a.c.Eventually(func() bool {
 		err = apiClient.Do(ctx, http.MethodGet, urlPath, nil, &res)
 		require.NoError(a.t, err)
@@ -249,7 +247,7 @@ func TestAccIncrementalFileSync(t *testing.T) {
 	assertSync.snapshotContains([]string{".gitkeep", ".gitignore"})
 }
 
-func TestAccIncrementalFolderSync(t *testing.T) {
+func TestAccNestedFolderSync(t *testing.T) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	wsc := databricks.Must(databricks.NewWorkspaceClient())
