@@ -5,16 +5,23 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/chzyer/readline"
 	"github.com/databricks/bricks/bundle"
 	"github.com/databricks/bricks/bundle/repl"
 	"github.com/databricks/databricks-sdk-go/service/commands"
 	"github.com/spf13/cobra"
 )
 
-func displayTable(w io.Writer, results *commands.Results) {
+func displayTable(w io.Writer, results *commands.Results) error {
+	out, err := repl.TableToMap(results)
+	if err != nil {
+		return err
+	}
+
 	enc := json.NewEncoder(w)
 	enc.SetIndent("", "  ")
-	enc.Encode(results)
+	enc.Encode(out)
+	return nil
 }
 
 var replCmd = &cobra.Command{
@@ -25,40 +32,54 @@ var replCmd = &cobra.Command{
 		b := bundle.Get(cmd.Context())
 
 		// Ensure we have a command execution context.
-
-		buf, err := io.ReadAll(cmd.InOrStdin())
-		if err != nil {
-			return err
-		}
-
 		r, err := repl.GetOrCreate(cmd.Context(), b, replLanguage)
 		if err != nil {
 			return err
 		}
 
-		out, err := r.Execute(cmd.Context(), buf)
+		rl, err := readline.New("> ")
 		if err != nil {
-			return err
+			panic(err)
 		}
 
-		if out.Status == commands.CommandStatusFinished {
-			result := out.Results
-			switch result.ResultType {
-			case commands.ResultTypeError:
-				fmt.Fprintf(cmd.OutOrStdout(), "Result: %#v", out.Results)
-			case commands.ResultTypeImage:
-				fmt.Fprintf(cmd.OutOrStdout(), "Result: %#v", out.Results)
-			case commands.ResultTypeImages:
-				fmt.Fprintf(cmd.OutOrStdout(), "Result: %#v", out.Results)
-			case commands.ResultTypeTable:
-				displayTable(cmd.OutOrStdout(), out.Results)
+		defer rl.Close()
 
-				// fmt.Fprintf(cmd.OutOrStdout(), "Result: %#v", out.Results)
-			case commands.ResultTypeText:
-				fmt.Fprintln(cmd.OutOrStdout(), result.Data)
+		for {
+			line, err := rl.Readline()
+			if err != nil { // io.EOF
+				break
 			}
-		} else {
-			fmt.Fprintf(cmd.OutOrStdout(), "Status: %#v", out)
+
+			if line == "" {
+				continue
+			}
+
+			out, err := r.Execute(cmd.Context(), []byte(line))
+			if err != nil {
+				return err
+			}
+
+			if out.Status == commands.CommandStatusFinished {
+				result := out.Results
+				switch result.ResultType {
+				case commands.ResultTypeError:
+					fmt.Fprintf(cmd.OutOrStdout(), out.Results.Summary)
+				case commands.ResultTypeImage:
+					fmt.Fprintf(cmd.OutOrStdout(), "Result: %#v", out.Results)
+				case commands.ResultTypeImages:
+					fmt.Fprintf(cmd.OutOrStdout(), "Result: %#v", out.Results)
+				case commands.ResultTypeTable:
+					err = displayTable(cmd.OutOrStdout(), out.Results)
+					if err != nil {
+						return err
+					}
+
+				case commands.ResultTypeText:
+					fmt.Fprintln(cmd.OutOrStdout(), result.Data)
+				}
+			} else {
+				fmt.Fprintf(cmd.OutOrStdout(), "Status: %#v", out)
+			}
 		}
 
 		return nil

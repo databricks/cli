@@ -3,11 +3,15 @@ package repl
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/databricks/bricks/bundle"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/service/commands"
 )
@@ -36,6 +40,23 @@ func (r *Repl) IsRunning(ctx context.Context) (bool, error) {
 		ContextId: r.ContextID,
 	})
 	if err != nil {
+		var aerr apierr.APIError
+
+		// We can deal with API errors; bail if it is different.
+		if !errors.As(err, &aerr) {
+			return false, err
+		}
+
+		// The API returns a 500 if a context is missing; bail if it is different.
+		if aerr.StatusCode != http.StatusInternalServerError {
+			return false, err
+		}
+
+		// The context isn't running if the error message contains "ContextNotFound".
+		if strings.HasPrefix(aerr.Message, "ContextNotFound:") {
+			return false, nil
+		}
+
 		return false, err
 	}
 
@@ -168,7 +189,6 @@ func GetOrCreate(ctx context.Context, b *bundle.Bundle, lang commands.Language) 
 		return repl, nil
 	}
 
-	panic("repl not running")
-
-	return repl, nil
+	// Otherwise, create a new one.
+	return Create(ctx, b, lang)
 }
