@@ -9,63 +9,10 @@ import (
 	"time"
 
 	"github.com/databricks/bricks/git"
+	"github.com/databricks/bricks/libs/testfile"
 	"github.com/databricks/bricks/project"
 	"github.com/stretchr/testify/assert"
 )
-
-type testFile struct {
-	mtime time.Time
-	fd    *os.File
-	path  string
-	// to make close idempotent
-	isOpen bool
-}
-
-func createFile(t *testing.T, path string) *testFile {
-	f, err := os.Create(path)
-	assert.NoError(t, err)
-
-	fileInfo, err := os.Stat(path)
-	assert.NoError(t, err)
-
-	return &testFile{
-		path:   path,
-		fd:     f,
-		mtime:  fileInfo.ModTime(),
-		isOpen: true,
-	}
-}
-
-func (f *testFile) close(t *testing.T) {
-	if f.isOpen {
-		err := f.fd.Close()
-		assert.NoError(t, err)
-		f.isOpen = false
-	}
-}
-
-func (f *testFile) overwrite(t *testing.T, s string) {
-	err := os.Truncate(f.path, 0)
-	assert.NoError(t, err)
-
-	_, err = f.fd.Seek(0, 0)
-	assert.NoError(t, err)
-
-	_, err = f.fd.WriteString(s)
-	assert.NoError(t, err)
-
-	// We manually update mtime after write because github actions file
-	// system does not :')
-	err = os.Chtimes(f.path, f.mtime.Add(time.Minute), f.mtime.Add(time.Minute))
-	assert.NoError(t, err)
-	f.mtime = f.mtime.Add(time.Minute)
-}
-
-func (f *testFile) remove(t *testing.T) {
-	f.close(t)
-	err := os.Remove(f.path)
-	assert.NoError(t, err)
-}
 
 func assertKeysOfMap(t *testing.T, m map[string]time.Time, expectedKeys []string) {
 	keys := make([]string, len(m))
@@ -87,11 +34,11 @@ func TestDiff(t *testing.T) {
 		RemoteToLocalNames: make(map[string]string),
 	}
 
-	f1 := createFile(t, filepath.Join(projectDir, "hello.txt"))
-	defer f1.close(t)
+	f1 := testfile.CreateFile(t, filepath.Join(projectDir, "hello.txt"))
+	defer f1.Close(t)
 	worldFilePath := filepath.Join(projectDir, "world.txt")
-	f2 := createFile(t, worldFilePath)
-	defer f2.close(t)
+	f2 := testfile.CreateFile(t, worldFilePath)
+	defer f2.Close(t)
 
 	// New files are put
 	files, err := fileSet.All()
@@ -107,7 +54,7 @@ func TestDiff(t *testing.T) {
 	assert.Equal(t, map[string]string{"hello.txt": "hello.txt", "world.txt": "world.txt"}, state.RemoteToLocalNames)
 
 	// world.txt is editted
-	f2.overwrite(t, "bunnies are cute.")
+	f2.Overwrite(t, "bunnies are cute.")
 	assert.NoError(t, err)
 	files, err = fileSet.All()
 	assert.NoError(t, err)
@@ -122,7 +69,7 @@ func TestDiff(t *testing.T) {
 	assert.Equal(t, map[string]string{"hello.txt": "hello.txt", "world.txt": "world.txt"}, state.RemoteToLocalNames)
 
 	// hello.txt is deleted
-	f1.remove(t)
+	f1.Remove(t)
 	assert.NoError(t, err)
 	files, err = fileSet.All()
 	assert.NoError(t, err)
@@ -148,9 +95,9 @@ func TestFolderDiff(t *testing.T) {
 
 	err := os.Mkdir(filepath.Join(projectDir, "foo"), os.ModePerm)
 	assert.NoError(t, err)
-	f1 := createFile(t, filepath.Join(projectDir, "foo", "bar.py"))
-	defer f1.close(t)
-	f1.overwrite(t, "# Databricks notebook source\nprint(\"abc\")")
+	f1 := testfile.CreateFile(t, filepath.Join(projectDir, "foo", "bar.py"))
+	defer f1.Close(t)
+	f1.Overwrite(t, "# Databricks notebook source\nprint(\"abc\")")
 
 	files, err := fileSet.All()
 	assert.NoError(t, err)
@@ -160,7 +107,7 @@ func TestFolderDiff(t *testing.T) {
 	assert.Len(t, change.put, 1)
 	assert.Contains(t, change.put, "foo/bar.py")
 
-	f1.remove(t)
+	f1.Remove(t)
 	files, err = fileSet.All()
 	assert.NoError(t, err)
 	change, err = state.diff(files)
@@ -180,13 +127,13 @@ func TestPythonNotebookDiff(t *testing.T) {
 		RemoteToLocalNames: make(map[string]string),
 	}
 
-	foo := createFile(t, filepath.Join(projectDir, "foo.py"))
-	defer foo.close(t)
+	foo := testfile.CreateFile(t, filepath.Join(projectDir, "foo.py"))
+	defer foo.Close(t)
 
 	// Case 1: notebook foo.py is uploaded
 	files, err := fileSet.All()
 	assert.NoError(t, err)
-	foo.overwrite(t, "# Databricks notebook source\nprint(\"abc\")")
+	foo.Overwrite(t, "# Databricks notebook source\nprint(\"abc\")")
 	change, err := state.diff(files)
 	assert.NoError(t, err)
 	assert.Len(t, change.delete, 0)
@@ -198,7 +145,7 @@ func TestPythonNotebookDiff(t *testing.T) {
 
 	// Case 2: notebook foo.py is converted to python script by removing
 	// magic keyword
-	foo.overwrite(t, "print(\"abc\")")
+	foo.Overwrite(t, "print(\"abc\")")
 	files, err = fileSet.All()
 	assert.NoError(t, err)
 	change, err = state.diff(files)
@@ -212,7 +159,7 @@ func TestPythonNotebookDiff(t *testing.T) {
 	assert.Equal(t, map[string]string{"foo.py": "foo.py"}, state.RemoteToLocalNames)
 
 	// Case 3: Python script foo.py is converted to a databricks notebook
-	foo.overwrite(t, "# Databricks notebook source\nprint(\"def\")")
+	foo.Overwrite(t, "# Databricks notebook source\nprint(\"def\")")
 	files, err = fileSet.All()
 	assert.NoError(t, err)
 	change, err = state.diff(files)
@@ -226,7 +173,7 @@ func TestPythonNotebookDiff(t *testing.T) {
 	assert.Equal(t, map[string]string{"foo": "foo.py"}, state.RemoteToLocalNames)
 
 	// Case 4: Python notebook foo.py is deleted, and its remote name is used in change.delete
-	foo.remove(t)
+	foo.Remove(t)
 	assert.NoError(t, err)
 	files, err = fileSet.All()
 	assert.NoError(t, err)
@@ -251,10 +198,10 @@ func TestErrorWhenIdenticalRemoteName(t *testing.T) {
 	}
 
 	// upload should work since they point to different destinations
-	pythonFoo := createFile(t, filepath.Join(projectDir, "foo.py"))
-	defer pythonFoo.close(t)
-	vanillaFoo := createFile(t, filepath.Join(projectDir, "foo"))
-	defer vanillaFoo.close(t)
+	pythonFoo := testfile.CreateFile(t, filepath.Join(projectDir, "foo.py"))
+	defer pythonFoo.Close(t)
+	vanillaFoo := testfile.CreateFile(t, filepath.Join(projectDir, "foo"))
+	defer vanillaFoo.Close(t)
 	files, err := fileSet.All()
 	assert.NoError(t, err)
 	change, err := state.diff(files)
@@ -265,7 +212,7 @@ func TestErrorWhenIdenticalRemoteName(t *testing.T) {
 	assert.Contains(t, change.put, "foo")
 
 	// errors out because they point to the same destination
-	pythonFoo.overwrite(t, "# Databricks notebook source\nprint(\"def\")")
+	pythonFoo.Overwrite(t, "# Databricks notebook source\nprint(\"def\")")
 	files, err = fileSet.All()
 	assert.NoError(t, err)
 	change, err = state.diff(files)
@@ -317,9 +264,9 @@ func TestOldSnapshotInvalidation(t *testing.T) {
 	snapshotPath, err := emptySnapshot.getPath(ctx)
 	assert.NoError(t, err)
 
-	snapshotFile := createFile(t, snapshotPath)
-	snapshotFile.overwrite(t, oldVersionSnapshot)
-	snapshotFile.close(t)
+	snapshotFile := testfile.CreateFile(t, snapshotPath)
+	snapshotFile.Overwrite(t, oldVersionSnapshot)
+	snapshotFile.Close(t)
 
 	assert.FileExists(t, snapshotPath)
 	snapshot := emptySnapshot
@@ -342,9 +289,9 @@ func TestNoVersionSnapshotInvalidation(t *testing.T) {
 	snapshotPath, err := emptySnapshot.getPath(ctx)
 	assert.NoError(t, err)
 
-	snapshotFile := createFile(t, snapshotPath)
-	snapshotFile.overwrite(t, noVersionSnapshot)
-	snapshotFile.close(t)
+	snapshotFile := testfile.CreateFile(t, snapshotPath)
+	snapshotFile.Overwrite(t, noVersionSnapshot)
+	snapshotFile.Close(t)
 
 	assert.FileExists(t, snapshotPath)
 	snapshot := emptySnapshot
@@ -369,9 +316,9 @@ func TestLatestVersionSnapshotGetsLoaded(t *testing.T) {
 	snapshotPath, err := emptySnapshot.getPath(ctx)
 	assert.NoError(t, err)
 
-	snapshotFile := createFile(t, snapshotPath)
-	snapshotFile.overwrite(t, latestVersionSnapshot)
-	snapshotFile.close(t)
+	snapshotFile := testfile.CreateFile(t, snapshotPath)
+	snapshotFile.Overwrite(t, latestVersionSnapshot)
+	snapshotFile.Close(t)
 
 	assert.FileExists(t, snapshotPath)
 	snapshot := emptySnapshot
