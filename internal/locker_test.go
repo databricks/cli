@@ -5,9 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/rand"
-	"os"
-	"os/exec"
-	"path/filepath"
 	"sync"
 	"testing"
 	"time"
@@ -41,20 +38,6 @@ func createRemoteTestProject(t *testing.T, projectNamePrefix string, wsc *databr
 	})
 
 	return remoteProjectRoot
-}
-
-func createLocalTestProject(t *testing.T) string {
-	tempDir := t.TempDir()
-
-	cmd := exec.Command("git", "clone", EmptyRepoUrl)
-	cmd.Dir = tempDir
-	err := cmd.Run()
-	assert.NoError(t, err)
-
-	localProjectRoot := filepath.Join(tempDir, "empty-repo")
-	err = os.Chdir(localProjectRoot)
-	assert.NoError(t, err)
-	return localProjectRoot
 }
 
 func TestAccLock(t *testing.T) {
