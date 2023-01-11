@@ -58,9 +58,9 @@ func createLocalTestProject(t *testing.T) string {
 }
 
 func TestAccLock(t *testing.T) {
-	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 	ctx := context.TODO()
-	wsc := databricks.Must(databricks.NewWorkspaceClient())
+	wsc, err := databricks.NewWorkspaceClient()
+	assert.NoError(t, err)
 	createLocalTestProject(t)
 	remoteProjectRoot := createRemoteTestProject(t, "lock-acc-", wsc)
 
