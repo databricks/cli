@@ -3,7 +3,7 @@ package internal
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
+	"path"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -34,7 +34,7 @@ func TestAccApiPost(t *testing.T) {
 		t.Skip("DBFS REST API is disabled on gcp")
 	}
 
-	dbfsPath := strings.Join([]string{"/tmp/bricks/integration", RandomName("api-post")}, "/")
+	dbfsPath := path.Join("/tmp/bricks/integration", RandomName("api-post"))
 	requestPath := writeFile(t, "body.json", fmt.Sprintf(`{
 		"path": "%s"
 	}`, dbfsPath))
