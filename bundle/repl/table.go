@@ -8,38 +8,110 @@ import (
 )
 
 type field interface {
-	Decode(value any, out map[string]any) error
+	Decode(value any) (any, error)
 }
 
-type stringField struct {
-	name string
+type fieldDefinition struct {
+	Name     string `json:"name"`
+	Type     any    `json:"type"`
+	Metadata any    `json:"metadata"`
 }
 
-func (f stringField) Decode(value any, out map[string]any) error {
-	if value == nil {
-		out[f.name] = nil
-		return nil
+func parseFieldDefinition(m any) (*fieldDefinition, field, error) {
+	buf, err := json.Marshal(m)
+	if err != nil {
+		return nil, nil, err
 	}
 
+	var fd fieldDefinition
+	err = json.Unmarshal(buf, &fd)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// The type field may be JSON encoded (top level fields)
+	var tm any
+	switch fdt := fd.Type.(type) {
+	case string:
+		err = json.Unmarshal([]byte(fdt), &tm)
+		if err != nil {
+			// If "Type" is not valid JSON it must be a literal type name.
+			tm = fd.Type
+		}
+	default:
+		tm = fd.Type
+	}
+
+	// Turn contents of "type" into a field decoder.
+	f, err := typeToField(tm)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return &fd, f, nil
+}
+
+type structFieldType struct {
+	names  []string
+	fields []field
+}
+
+func newStructFieldType(fields []map[string]any) (field, error) {
+	var out structFieldType
+
+	for i := range fields {
+		fi, f, err := parseFieldDefinition(fields[i])
+		if err != nil {
+			return nil, err
+		}
+
+		out.names = append(out.names, fi.Name)
+		out.fields = append(out.fields, f)
+	}
+
+	return &out, nil
+}
+
+func (s *structFieldType) Decode(value any) (any, error) {
+	out := make(map[string]any)
+	switch v := value.(type) {
+	case []any:
+		for i := range v {
+			if v[i] == nil {
+				continue
+			}
+
+			vdec, err := s.fields[i].Decode(v[i])
+			if err != nil {
+				return nil, err
+			}
+
+			out[s.names[i]] = vdec
+		}
+	default:
+		panic(fmt.Errorf("expected []any, got %#v (%T)", value, value))
+	}
+	return out, nil
+}
+
+type stringFieldType struct{}
+
+var stringField stringFieldType
+
+func (f stringFieldType) Decode(value any) (any, error) {
 	v, ok := value.(string)
 	if !ok {
-		return fmt.Errorf("expected string, got %#v (%T)", value, value)
+		return nil, fmt.Errorf("expected string, got %#v (%T)", value, value)
 	}
 
-	out[f.name] = v
-	return nil
+	return v, nil
 }
 
-type integerField struct {
-	name string
-}
+type integerFieldType struct{}
 
-func (f integerField) Decode(value any, out map[string]any) error {
-	if value == nil {
-		out[f.name] = nil
-		return nil
-	}
+var integerField integerFieldType
 
+func (f integerFieldType) Decode(value any) (any, error) {
 	var i int64
 	switch v := value.(type) {
 	case float32:
@@ -47,140 +119,104 @@ func (f integerField) Decode(value any, out map[string]any) error {
 	case float64:
 		i = int64(v)
 	default:
-		return fmt.Errorf("expected float, got %#v (%T)", value, value)
+		return nil, fmt.Errorf("expected float, got %#v (%T)", value, value)
 	}
 
-	out[f.name] = i
-	return nil
+	return i, nil
 }
 
-type booleanField struct {
-	name string
-}
+type booleanFieldType struct{}
 
-func (f booleanField) Decode(value any, out map[string]any) error {
-	if value == nil {
-		out[f.name] = nil
-		return nil
-	}
+var booleanField booleanFieldType
 
+func (f booleanFieldType) Decode(value any) (any, error) {
 	var b bool
 	switch v := value.(type) {
 	case bool:
 		b = v
 	default:
-		return fmt.Errorf("expected bool, got %#v (%T)", value, value)
+		return nil, fmt.Errorf("expected bool, got %#v (%T)", value, value)
 	}
 
-	out[f.name] = b
-	return nil
+	return b, nil
 }
 
-type topLevelField struct {
-	field
+type mapFieldType struct{}
 
-	Name     string `json:"name"`
-	Type     string `json:"type"`
-	Metadata string `json:"metadata"`
+var mapField mapFieldType
+
+func (f mapFieldType) Decode(value any) (any, error) {
+	var m map[string]any
+	switch v := value.(type) {
+	case map[string]any:
+		m = v
+	default:
+		return nil, fmt.Errorf("expected map[string]any, got %#v (%T)", value, value)
+	}
+
+	// Remove nulls (implied if missing).
+	for k, v := range m {
+		if v == nil {
+			delete(m, k)
+		}
+	}
+
+	return m, nil
 }
 
-func newTopLevelFieldType(m map[string]any) (*topLevelField, error) {
-	buf, err := json.Marshal(m)
-	if err != nil {
-		return nil, err
-	}
-
-	var out topLevelField
-	err = json.Unmarshal(buf, &out)
-	if err != nil {
-		return nil, err
-	}
-
-	// The type field may be JSON encoded (top level fields)
-	var tm any
-	err = json.Unmarshal([]byte(out.Type), &tm)
-	if err != nil {
-		// If "Type" is not valid JSON it must be a literal type name.
-		tm = out.Type
-	}
-
-	switch v := tm.(type) {
+func typeToField(typ any) (field, error) {
+	switch v := typ.(type) {
 	case string:
 		switch v {
 		case "string":
-			out.field = &stringField{out.Name}
+			return stringField, nil
 		case "integer", "long", "bigint":
-			out.field = &integerField{out.Name}
+			return integerField, nil
 		case "boolean":
-			out.field = &booleanField{out.Name}
+			return booleanField, nil
 		case "date":
-			out.field = &stringField{out.Name}
+			return stringField, nil
 		case "timestamp":
-			out.field = &stringField{out.Name}
+			return stringField, nil
 		default:
 			panic("handle " + v)
+		}
+	case map[string]any:
+		typ := v["type"].(string)
+		switch typ {
+		case "map":
+			keyTyp := v["keyType"].(string)
+			if keyTyp == "string" {
+				return mapField, nil
+			} else {
+				panic("don't know what to do for non-string maps")
+			}
+		case "struct":
+			var fields []map[string]any
+			buf, _ := json.Marshal(v["fields"])
+			_ = json.Unmarshal(buf, &fields)
+			f, err := newStructFieldType(fields)
+			if err != nil {
+				return nil, err
+			}
+			return f, nil
+		default:
+			panic("handle " + typ)
 		}
 	default:
 		panic(fmt.Sprintf("todo %#v", v))
 	}
-
-	return &out, nil
 }
 
-type tableSchema struct {
-	fields []field
-}
-
-func (s *tableSchema) Decode(value any, out map[string]any) error {
-	switch v := value.(type) {
-	case []any:
-		for i := range v {
-			err := s.fields[i].Decode(v[i], out)
-			if err != nil {
-				return err
-			}
-		}
-	default:
-		panic("bad type")
-	}
-	return nil
-}
-
-func (s *tableSchema) DecodeRow(value any) (map[string]any, error) {
-	row, ok := value.([]any)
-	if !ok {
-		return nil, fmt.Errorf("row must be an array")
+func TableToMap(results *commands.Results) ([]any, error) {
+	root, err := newStructFieldType(results.Schema)
+	if err != nil {
+		return nil, err
 	}
 
-	if len(s.fields) != len(row) {
-		return nil, fmt.Errorf("schema and row have different number of columns (%d and %d)", len(s.fields), len(row))
-	}
-	out := make(map[string]any)
-	for i := range row {
-		err := s.fields[i].Decode(row[i], out)
-		if err != nil {
-			return nil, err
-		}
-	}
-	return out, nil
-}
-
-func TableToMap(results *commands.Results) ([]map[string]any, error) {
-	data := results.Data.([]any)
-	schema := results.Schema
-
-	var ts tableSchema
-	for _, f := range schema {
-		fs, err := newTopLevelFieldType(f)
-		if err != nil {
-			panic(err)
-		}
-		ts.fields = append(ts.fields, fs)
-	}
-
-	var out []map[string]any
-	for i := range data {
-		row, err := ts.DecodeRow(data[i])
+	var out []any
+	for _, row := range results.Data.([]any) {
+		row, err := root.Decode(row)
 		if err != nil {
 			return nil, err
 		}
