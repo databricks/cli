@@ -58,10 +58,10 @@ func createLocalTestProject(t *testing.T) string {
 }
 
 func TestAccLock(t *testing.T) {
+	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 	ctx := context.TODO()
 	wsc, err := databricks.NewWorkspaceClient()
 	assert.NoError(t, err)
-	// createLocalTestProject(t)
 	remoteProjectRoot := createRemoteTestProject(t, "lock-acc-", wsc)
 
 	// 50 lockers try to acquire a lock at the same time
