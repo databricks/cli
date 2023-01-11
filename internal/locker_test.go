@@ -5,9 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/rand"
-	"os"
-	"os/exec"
-	"path/filepath"
 	"sync"
 	"testing"
 	"time"
@@ -43,25 +40,11 @@ func createRemoteTestProject(t *testing.T, projectNamePrefix string, wsc *databr
 	return remoteProjectRoot
 }
 
-func createLocalTestProject(t *testing.T) string {
-	tempDir := t.TempDir()
-
-	cmd := exec.Command("git", "clone", EmptyRepoUrl)
-	cmd.Dir = tempDir
-	err := cmd.Run()
-	assert.NoError(t, err)
-
-	localProjectRoot := filepath.Join(tempDir, "empty-repo")
-	err = os.Chdir(localProjectRoot)
-	assert.NoError(t, err)
-	return localProjectRoot
-}
-
 func TestAccLock(t *testing.T) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 	ctx := context.TODO()
-	wsc := databricks.Must(databricks.NewWorkspaceClient())
-	createLocalTestProject(t)
+	wsc, err := databricks.NewWorkspaceClient()
+	require.NoError(t, err)
 	remoteProjectRoot := createRemoteTestProject(t, "lock-acc-", wsc)
 
 	// 50 lockers try to acquire a lock at the same time
