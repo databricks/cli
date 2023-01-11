@@ -179,7 +179,9 @@ func TestAccFullFileSync(t *testing.T) {
 	}
 
 	// .gitkeep comes from cloning during repo setup
-	assertSync.remoteDirContent(ctx, "", []string{".gitkeep"})
+	// .gitignore is created by the sync process to enforce .databricks is not
+	// synced
+	assertSync.remoteDirContent(ctx, "", []string{".gitkeep", ".gitignore"})
 
 	// New file
 	localFilePath := filepath.Join(localRepoPath, "foo.txt")
@@ -223,7 +225,9 @@ func TestAccIncrementalFileSync(t *testing.T) {
 	}
 
 	// .gitkeep comes from cloning during repo setup
-	assertSync.remoteDirContent(ctx, "", []string{".gitkeep"})
+	// .gitignore is created by the sync process to enforce .databricks is not
+	// synced
+	assertSync.remoteDirContent(ctx, "", []string{".gitkeep", ".gitignore"})
 
 	// New file
 	localFilePath := filepath.Join(localRepoPath, "foo.txt")
@@ -269,7 +273,9 @@ func TestAccNestedFolderSync(t *testing.T) {
 	}
 
 	// .gitkeep comes from cloning during repo setup
-	assertSync.remoteDirContent(ctx, "/", []string{".gitkeep"})
+	// .gitignore is created by the sync process to enforce .databricks is not
+	// synced
+	assertSync.remoteDirContent(ctx, "/", []string{".gitkeep", ".gitignore"})
 
 	// New file
 	localFilePath := filepath.Join(localRepoPath, "dir1/dir2/dir3/foo.txt")
