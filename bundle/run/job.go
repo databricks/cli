@@ -103,10 +103,16 @@ func (r *jobRunner) Run(ctx context.Context, opts *Options) error {
 
 	// This function is called each time the function below polls the run status.
 	update := func(info *retries.Info[jobs.Run]) {
-		state := info.Info.State
+		i := info.Info
+		if i == nil {
+			return
+		}
+
+		state := i.State
 		if state == nil {
 			return
 		}
+
 		// Log the job run URL as soon as it is available.
 		if prevState == nil {
 			log.Printf("%s Run available at %s", prefix, info.Info.RunPageUrl)
