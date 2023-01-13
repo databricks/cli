@@ -266,7 +266,7 @@ func TestMapOfObjectsSchema(t *testing.T) {
 	assert.Equal(t, expected, string(jsonSchema))
 }
 
-func TestEmbeddedSchema(t *testing.T) {
+func TestEmbeddedStructSchema(t *testing.T) {
 	type Person struct {
 		Name string `json:"name"`
 		Age  int    `json:"age,omitempty"`
@@ -274,7 +274,7 @@ func TestEmbeddedSchema(t *testing.T) {
 
 	type Location struct {
 		Country string `json:"country"`
-		State   string    `json:"state,omitempty"`
+		State   string `json:"state,omitempty"`
 	}
 
 	type Plot struct {

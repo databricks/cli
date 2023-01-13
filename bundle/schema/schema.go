@@ -119,16 +119,6 @@ func safeToProperty(golangType reflect.Type, traceSet map[reflect.Type]struct{},
 	return props, nil
 }
 
-func pop(q []reflect.StructField) reflect.StructField {
-	elem := q[0]
-	q = q[1:]
-	return elem
-}
-
-func push(q []reflect.StructField, r reflect.StructField) {
-	q = append(q, r)
-}
-
 // travels anonymous embedded fields in a bfs manner to give us a list of all
 // member fields of a struct
 // simple Tree based traversal will take place because embbedded fields cannot
