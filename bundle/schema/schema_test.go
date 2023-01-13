@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/databricks/bricks/bundle/config"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -332,6 +333,24 @@ func TestEmbeddedStructSchema(t *testing.T) {
 				}
 			}
 		}`
+
+	t.Log("[DEBUG] actual: ", string(jsonSchema))
+	t.Log("[DEBUG] expected: ", expected)
+	assert.Equal(t, expected, string(jsonSchema))
+}
+
+// Only for testing bundle, will be removed
+func TestBundleSchema(t *testing.T) {
+	elem := config.Root{}
+
+	schema, err := NewSchema(reflect.TypeOf(elem))
+	assert.NoError(t, err)
+
+	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
+	assert.NoError(t, err)
+
+	expected :=
+		``
 
 	t.Log("[DEBUG] actual: ", string(jsonSchema))
 	t.Log("[DEBUG] expected: ", expected)

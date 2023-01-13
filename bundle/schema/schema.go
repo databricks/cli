@@ -31,11 +31,11 @@ type Item struct {
 }
 
 func NewSchema(golangType reflect.Type) (*Schema, error) {
-	traceSet := map[reflect.Type]struct{}{}
-	trace := list.New()
-	rootProp, err := toProperity(golangType, traceSet, trace)
+	seenTypes := map[reflect.Type]struct{}{}
+	debugTrace := list.New()
+	rootProp, err := toProperity(golangType, seenTypes, debugTrace)
 	if err != nil {
-		return nil, err
+		return nil, errWithTrace(err.Error(), debugTrace)
 	}
 	return &Schema{
 		Type:                  rootProp.Type,
@@ -46,15 +46,15 @@ func NewSchema(golangType reflect.Type) (*Schema, error) {
 
 // TODO: add tests for errors being triggered
 
-type JavascriptType int
+type JavascriptType string
 
 const (
-	Invalid JavascriptType = iota
-	Boolean
-	String
-	Number
-	Object
-	Array
+	Invalid JavascriptType = "invalid"
+	Boolean JavascriptType = "boolean"
+	String  JavascriptType = "string"
+	Number  JavascriptType = "number"
+	Object  JavascriptType = "object"
+	Array   JavascriptType = "array"
 )
 
 func javascriptType(golangType reflect.Type) (JavascriptType, error) {
@@ -84,13 +84,13 @@ func javascriptType(golangType reflect.Type) (JavascriptType, error) {
 
 // TODO: add a simple test for this
 func errWithTrace(prefix string, trace *list.List) error {
-	traceString := ""
+	traceString := "root"
 	curr := trace.Front()
 	for curr.Next() != nil {
-		traceString += " -> " + curr.Value.(reflect.Type).Name()
+		traceString += " -> " + curr.Value.(string)
 		curr = curr.Next()
 	}
-	return fmt.Errorf("[ERROR] " + prefix + " type traveral trace: " + traceString)
+	return fmt.Errorf("[ERROR] " + prefix + ". traveral trace: " + traceString)
 }
 
 // TODO: handle case of self referential pointers in structs
@@ -100,25 +100,22 @@ func errWithTrace(prefix string, trace *list.List) error {
 
 // checks and errors out for cycles
 // wraps the error with context
-func safeToProperty(golangType reflect.Type, traceSet map[reflect.Type]struct{}, trace *list.List) (*Property, error) {
-	trace.PushBack(golangType)
+func safeToProperty(golangType reflect.Type, seenTypes map[reflect.Type]struct{}, debugTrace *list.List) (*Property, error) {
 	// detect cycles. Fail if a cycle is detected
 	// TODO: Add references here for cycles
 	// TODO: move this check somewhere nicer
-	_, ok := traceSet[golangType]
+	_, ok := seenTypes[golangType]
 	if ok {
-		fmt.Println("[DEBUG] traceSet: ", traceSet)
-		return nil, errWithTrace("cycle detected", trace)
+		fmt.Println("[DEBUG] traceSet: ", seenTypes)
+		return nil, fmt.Errorf("cycle detected")
 	}
 	// add current child field to history
-	traceSet[golangType] = struct{}{}
-	props, err := toProperity(golangType, traceSet, trace)
+	seenTypes[golangType] = struct{}{}
+	props, err := toProperity(golangType, seenTypes, debugTrace)
 	if err != nil {
-		return nil, errWithTrace(err.Error(), trace)
+		return nil, err
 	}
-	delete(traceSet, golangType)
-	back := trace.Back()
-	trace.Remove(back)
+	delete(seenTypes, golangType)
 	return props, nil
 }
 
@@ -155,11 +152,19 @@ func addStructFields(fields []reflect.StructField, golangType reflect.Type) []re
 	return fields
 }
 
+// TODO: add ignore for -
+
 // TODO: add doc string explaining numHistoryOccurances
-func toProperity(golangType reflect.Type, traceSet map[reflect.Type]struct{}, trace *list.List) (*Property, error) {
+func toProperity(golangType reflect.Type, seenTypes map[reflect.Type]struct{}, debugTrace *list.List) (*Property, error) {
 	// *Struct and Struct generate identical json schemas
+	// TODO: add test case for pointer
 	if golangType.Kind() == reflect.Pointer {
-		return toProperity(golangType.Elem(), traceSet, trace)
+		return toProperity(golangType.Elem(), seenTypes, debugTrace)
+	}
+
+	// TODO: add test case for interfaces
+	if golangType.Kind() == reflect.Interface {
+		return nil, nil
 	}
 
 	rootJavascriptType, err := javascriptType(golangType)
@@ -175,7 +180,7 @@ func toProperity(golangType reflect.Type, traceSet map[reflect.Type]struct{}, tr
 		if err != nil {
 			return nil, err
 		}
-		elemProps, err := safeToProperty(elemGolangType, traceSet, trace)
+		elemProps, err := safeToProperty(elemGolangType, seenTypes, debugTrace)
 		if err != nil {
 			return nil, err
 		}
@@ -190,9 +195,9 @@ func toProperity(golangType reflect.Type, traceSet map[reflect.Type]struct{}, tr
 	var additionalProperties *Property
 	if golangType.Kind() == reflect.Map {
 		if golangType.Key().Kind() != reflect.String {
-			return nil, errWithTrace("only string keyed maps allowed", trace)
+			return nil, fmt.Errorf("only string keyed maps allowed")
 		}
-		additionalProperties, err = safeToProperty(golangType.Elem(), traceSet, trace)
+		additionalProperties, err = safeToProperty(golangType.Elem(), seenTypes, debugTrace)
 		if err != nil {
 			return nil, err
 		}
@@ -208,17 +213,24 @@ func toProperity(golangType reflect.Type, traceSet map[reflect.Type]struct{}, tr
 			childJsonTag := child.Tag.Get("json")
 			childName := strings.Split(childJsonTag, ",")[0]
 
+			// add current field to debug trace
+			debugTrace.PushBack(childName)
+
 			// skip non json annotated fields
 			if childName == "" {
 				continue
 			}
 
 			// recursively compute properties for this child field
-			fieldProps, err := safeToProperty(child.Type, traceSet, trace)
+			fieldProps, err := safeToProperty(child.Type, seenTypes, debugTrace)
 			if err != nil {
-				return nil, errWithTrace(err.Error(), trace)
+				return nil, err
 			}
 			properities[childName] = fieldProps
+
+			// remove current field from debug trace
+			back := debugTrace.Back()
+			debugTrace.Remove(back)
 		}
 	}
 
