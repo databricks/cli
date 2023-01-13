@@ -17,7 +17,7 @@ type Schema struct {
 
 type Property struct {
 	Type                  JsType               `json:"type"`
-	Items                 *Item                `json:"item,omitempty"`
+	Items                 *Item                `json:"items,omitempty"`
 	Properities           map[string]*Property `json:"properties,omitempty"`
 	AdditionalProperities *Property            `json:"additionalProperties,omitempty"`
 }

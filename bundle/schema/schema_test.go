@@ -136,7 +136,7 @@ func TestObjectSchema(t *testing.T) {
 					"properties": {
 						"stakes": {
 							"type": "array",
-							"item": {
+							"items": {
 								"type": "string"
 							}
 						}
