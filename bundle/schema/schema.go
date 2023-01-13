@@ -26,6 +26,7 @@ type Property struct {
 
 type Item struct {
 	Type JsType `json:"type"`
+	Properities  map[string]*Property `json:"properties,omitempty"`
 }
 
 func NewSchema(golangType reflect.Type) (*Schema, error) {
@@ -79,6 +80,7 @@ func javascriptType(golangType reflect.Type) (JsType, error) {
 	}
 }
 
+// TODO: add a simple test for this
 func errWithTrace(prefix string, trace []reflect.Type) error {
 	traceString := ""
 	for _, golangType := range trace {
@@ -88,6 +90,9 @@ func errWithTrace(prefix string, trace []reflect.Type) error {
 }
 
 // TODO: handle case of self referential pointers in structs
+// TODO: add handling of embedded types
+
+// TODO: add tests for the error cases, forcefully triggering them
 
 // TODO: add doc string explaining numHistoryOccurances
 func toProperity(golangType reflect.Type, traceSet map[reflect.Type]struct{}, traceSlice []reflect.Type) (*Property, error) {
@@ -100,28 +105,45 @@ func toProperity(golangType reflect.Type, traceSet map[reflect.Type]struct{}, tr
 
 	rootJavascriptType, err := javascriptType(golangType)
 
-	// TODO: recursive debugging can be a pain. Make sure the error localtion
-	// floats up
 	if err != nil {
-		return nil, err
+		return nil, errWithTrace(err.Error(), traceSlice)
 	}
 
 	var items *Item
 	if golangType.Kind() == reflect.Array || golangType.Kind() == reflect.Slice {
-		elemJsType, err := javascriptType(golangType.Elem())
+		elemGolangType := golangType.Elem()
+		elemJavascriptType, err := javascriptType(elemGolangType)
 		if err != nil {
-			// TODO: float up error in case of deep recursion
-			return nil, err
+			return nil, errWithTrace(err.Error(), traceSlice)
 		}
+
+		// detect cycles. Fail if a cycle is detected
+		// TODO: Add references here for cycles
+		_, ok := traceSet[elemGolangType]
+		if ok {
+			fmt.Println("[DEBUG] traceSet: ", traceSet)
+			return nil, errWithTrace("cycle detected", traceSlice)
+		}
+		// add current child field to history
+		traceSet[elemGolangType] = struct{}{}
+		elemProps, err := toProperity(elemGolangType, traceSet, traceSlice)
+		if err != nil {
+			return nil, errWithTrace(err.Error(), traceSlice)
+		}
+
 		items = &Item{
-			// TODO: what if there is an array of objects?
-			Type: elemJsType,
+			// TODO: Add a test for slice of object
+			Type: elemJavascriptType,
+			Properities: elemProps.Properities,
 		}
 	}
 
-	properities := map[string]*Property{}
+	// var additionalProperties *Property
+	// if golangType.Kind() == reflect.Map {
+	// 	additionalProperties = 
+	// }
 
-	// TODO: for reflect.Map case for prop computation
+	properities := map[string]*Property{}
 	if golangType.Kind() == reflect.Struct {
 		for i := 0; i < golangType.NumField(); i++ {
 			child := golangType.Field(i)
@@ -149,9 +171,8 @@ func toProperity(golangType reflect.Type, traceSet map[reflect.Type]struct{}, tr
 			// recursively compute properties for this child field
 			fieldProps, err := toProperity(child.Type, traceSet, traceSlice)
 
-			// TODO: make sure this error floats up with context
 			if err != nil {
-				return nil, err
+				return nil, errWithTrace(err.Error(), traceSlice)
 			}
 
 			// traversal complete, delete child from history

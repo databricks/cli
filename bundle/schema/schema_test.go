@@ -160,3 +160,80 @@ func TestObjectSchema(t *testing.T) {
 	fmt.Println("[DEBUG] expected: ", expected)
 	assert.Equal(t, expected, string(jsonSchema))
 }
+
+func TestSliceOfObjectsSchema(t *testing.T) {
+	type Person struct {
+		Name string `json:"name"`
+		Age  int    `json:"age,omitempty"`
+	}
+
+	type Plot struct {
+		MainCharacters []Person `json:"main_characters"`
+	}
+
+	type Story struct {
+		Hero    Person `json:"hero"`
+		Villian Person `json:"villian"`
+		Plot    Plot   `json:"plot"`
+	}
+
+	elem := Story{}
+
+	schema, err := NewSchema(reflect.TypeOf(elem))
+	assert.NoError(t, err)
+
+	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
+	assert.NoError(t, err)
+
+	expected :=
+		`{
+			"type": "object",
+			"properties": {
+				"hero": {
+					"type": "object",
+					"properties": {
+						"age": {
+							"type": "number"
+						},
+						"name": {
+							"type": "string"
+						}
+					}
+				},
+				"plot": {
+					"type": "object",
+					"properties": {
+						"main_characters": {
+							"type": "array",
+							"items": {
+								"type": "object",
+								"properties": {
+									"age": {
+										"type": "number"
+									},
+									"name": {
+										"type": "string"
+									}
+								}
+							}
+						}
+					}
+				},
+				"villian": {
+					"type": "object",
+					"properties": {
+						"age": {
+							"type": "number"
+						},
+						"name": {
+							"type": "string"
+						}
+					}
+				}
+			}
+		}`
+
+	fmt.Println("[DEBUG] actual: ", string(jsonSchema))
+	fmt.Println("[DEBUG] expected: ", expected)
+	assert.Equal(t, expected, string(jsonSchema))
+}
