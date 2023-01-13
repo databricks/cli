@@ -301,7 +301,7 @@ func init() {
 
 	updateCmd.Flags().StringVar(&updateReq.DefaultDataAccessConfigId, "default-data-access-config-id", updateReq.DefaultDataAccessConfigId, `Unique identifier of (Default) Data Access Configuration.`)
 	updateCmd.Flags().BoolVar(&updateReq.DeltaSharingEnabled, "delta-sharing-enabled", updateReq.DeltaSharingEnabled, `Whether Delta Sharing is enabled on this metastore.`)
-	updateCmd.Flags().IntVar(&updateReq.DeltaSharingRecipientTokenLifetimeInSeconds, "delta-sharing-recipient-token-lifetime-in-seconds", updateReq.DeltaSharingRecipientTokenLifetimeInSeconds, `The lifetime of delta sharing recipient token in seconds.`)
+	updateCmd.Flags().Int64Var(&updateReq.DeltaSharingRecipientTokenLifetimeInSeconds, "delta-sharing-recipient-token-lifetime-in-seconds", updateReq.DeltaSharingRecipientTokenLifetimeInSeconds, `The lifetime of delta sharing recipient token in seconds.`)
 	updateCmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `Name of Metastore.`)
 	updateCmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `The owner of the metastore.`)
 	updateCmd.Flags().StringVar(&updateReq.StorageRootCredentialId, "storage-root-credential-id", updateReq.StorageRootCredentialId, `UUID of storage credential to access storage_root.`)
@@ -337,11 +337,11 @@ var updateCmd = &cobra.Command{
 		}
 		updateReq.Id = args[0]
 
-		err = w.Metastores.Update(ctx, updateReq)
+		response, err := w.Metastores.Update(ctx, updateReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 

@@ -3,6 +3,7 @@ cmd/billing/billing.go linguist-generated=true
 cmd/billing/budgets/budgets.go linguist-generated=true
 cmd/billing/log-delivery/log-delivery.go linguist-generated=true
 cmd/clusterpolicies/clusterpolicies.go linguist-generated=true
+cmd/clusterpolicies/policy-families/policy-families.go linguist-generated=true
 cmd/clusters/clusters.go linguist-generated=true
 cmd/clusters/instance-profiles/instance-profiles.go linguist-generated=true
 cmd/cmd.go linguist-generated=true

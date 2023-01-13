@@ -3,8 +3,6 @@
 package shares
 
 import (
-	"fmt"
-
 	"github.com/databricks/bricks/lib/jsonflag"
 	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
@@ -26,7 +24,7 @@ func init() {
 	Cmd.AddCommand(createCmd)
 	// TODO: short flags
 
-	createCmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `comment when creating the share.`)
+	createCmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `User-provided free-form text description.`)
 
 }
 
@@ -37,7 +35,7 @@ var createCmd = &cobra.Command{
   
   Creates a new share for data objects. Data objects can be added at this time
   or after creation with **update**. The caller must be a Metastore admin or
-  have the CREATE SHARE privilege on the Metastore.`,
+  have the CREATE_SHARE privilege on the Metastore.`,
 
 	Annotations: map[string]string{},
 	Args:        cobra.ExactArgs(1),
@@ -197,6 +195,11 @@ func init() {
 	// TODO: short flags
 	updateCmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	updateCmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `User-provided free-form text description.`)
+	updateCmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `Name of the Share.`)
+	updateCmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of current owner of Share.`)
+	// TODO: array: updates
+
 }
 
 var updateCmd = &cobra.Command{
@@ -228,17 +231,13 @@ var updateCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		_, err = fmt.Sscan(args[0], &updateReq.Updates)
-		if err != nil {
-			return fmt.Errorf("invalid UPDATES: %s", args[0])
-		}
-		updateReq.Name = args[1]
+		updateReq.Name = args[0]
 
-		err = w.Shares.Update(ctx, updateReq)
+		response, err := w.Shares.Update(ctx, updateReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 

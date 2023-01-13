@@ -182,6 +182,7 @@ func init() {
 	createCmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `An optional name for the job.`)
 	// TODO: complex arg: schedule
 	// TODO: map via StringToStringVar: tags
+	// TODO: array: tasks
 	createCmd.Flags().IntVar(&createReq.TimeoutSeconds, "timeout-seconds", createReq.TimeoutSeconds, `An optional timeout applied to each run of this job.`)
 	// TODO: complex arg: webhook_notifications
 
@@ -202,10 +203,6 @@ var createCmd = &cobra.Command{
 		err = createJson.Unmarshall(&createReq)
 		if err != nil {
 			return err
-		}
-		_, err = fmt.Sscan(args[0], &createReq.Tasks)
-		if err != nil {
-			return fmt.Errorf("invalid TASKS: %s", args[0])
 		}
 
 		response, err := w.Jobs.Create(ctx, createReq)
@@ -866,6 +863,7 @@ func init() {
 	// TODO: complex arg: git_source
 	submitCmd.Flags().StringVar(&submitReq.IdempotencyToken, "idempotency-token", submitReq.IdempotencyToken, `An optional token that can be used to guarantee the idempotency of job run requests.`)
 	submitCmd.Flags().StringVar(&submitReq.RunName, "run-name", submitReq.RunName, `An optional name for the run.`)
+	// TODO: array: tasks
 	submitCmd.Flags().IntVar(&submitReq.TimeoutSeconds, "timeout-seconds", submitReq.TimeoutSeconds, `An optional timeout applied to each run of this job.`)
 	// TODO: complex arg: webhook_notifications
 
@@ -889,10 +887,6 @@ var submitCmd = &cobra.Command{
 		err = submitJson.Unmarshall(&submitReq)
 		if err != nil {
 			return err
-		}
-		_, err = fmt.Sscan(args[0], &submitReq.Tasks)
-		if err != nil {
-			return fmt.Errorf("invalid TASKS: %s", args[0])
 		}
 
 		if !submitNoWait {

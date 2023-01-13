@@ -3,6 +3,8 @@
 package storage_credentials
 
 import (
+	"fmt"
+
 	"github.com/databricks/bricks/lib/jsonflag"
 	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
@@ -57,7 +59,7 @@ var createCmd = &cobra.Command{
   * **AwsIamRole** for AWS credentials * **AzureServicePrincipal** for Azure
   credentials * **GcpServiceAcountKey** for GCP credentials.
   
-  The caller must be a Metastore admin and have the CREATE STORAGE CREDENTIAL
+  The caller must be a Metastore admin and have the CREATE_STORAGE_CREDENTIAL
   privilege on the Metastore.`,
 
 	Annotations: map[string]string{},
@@ -100,11 +102,24 @@ var deleteCmd = &cobra.Command{
   of the storage credential.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		if len(args) == 0 {
+			names, err := w.StorageCredentials.StorageCredentialInfoNameToIdMap(ctx)
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "Required")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have required")
+		}
 		deleteReq.Name = args[0]
 
 		err = w.StorageCredentials.Delete(ctx, deleteReq)
@@ -135,11 +150,24 @@ var getCmd = &cobra.Command{
   the storage credential.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		if len(args) == 0 {
+			names, err := w.StorageCredentials.StorageCredentialInfoNameToIdMap(ctx)
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "Required")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have required")
+		}
 		getReq.Name = args[0]
 
 		response, err := w.StorageCredentials.Get(ctx, getReq)
@@ -219,11 +247,11 @@ var updateCmd = &cobra.Command{
 		}
 		updateReq.Name = args[0]
 
-		err = w.StorageCredentials.Update(ctx, updateReq)
+		response, err := w.StorageCredentials.Update(ctx, updateReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 

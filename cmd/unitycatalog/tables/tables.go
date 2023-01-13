@@ -3,6 +3,8 @@
 package tables
 
 import (
+	"fmt"
+
 	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
 	"github.com/databricks/databricks-sdk-go/service/unitycatalog"
@@ -13,11 +15,11 @@ var Cmd = &cobra.Command{
 	Use:   "tables",
 	Short: `A table resides in the third layer of Unity Catalog’s three-level namespace.`,
 	Long: `A table resides in the third layer of Unity Catalog’s three-level namespace.
-  It contains rows of data. To create a table, users must have CREATE and USAGE
-  permissions on the schema, and they must have the USAGE permission on its
-  parent catalog. To query a table, users must have the SELECT permission on the
-  table, and they must have the USAGE permission on its parent schema and
-  catalog.
+  It contains rows of data. To create a table, users must have CREATE_TABLE and
+  USE_SCHEMA permissions on the schema, and they must have the USE_CATALOG
+  permission on its parent catalog. To query a table, users must have the SELECT
+  permission on the table, and they must have the USE_CATALOG permission on its
+  parent catalog and the USE_SCHEMA permission on its parent schema.
   
   A table can be managed or external.`,
 }
@@ -38,16 +40,30 @@ var deleteCmd = &cobra.Command{
 	Long: `Delete a table.
   
   Deletes a table from the specified parent catalog and schema. The caller must
-  be the owner of the parent catalog, have the USAGE privilege on the parent
-  catalog and be the owner of the parent schema, or be the owner of the table
-  and have the USAGE privilege on both the parent catalog and schema.`,
+  be the owner of the parent catalog, have the USE_CATALOG privilege on the
+  parent catalog and be the owner of the parent schema, or be the owner of the
+  table and have the USE_CATALOG privilege on the parent catalog and the
+  USE_SCHEMA privilege on the parent schema.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		if len(args) == 0 {
+			names, err := w.Tables.TableInfoNameToTableIdMap(ctx, unitycatalog.ListTablesRequest{})
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "Required")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have required")
+		}
 		deleteReq.FullName = args[0]
 
 		err = w.Tables.Delete(ctx, deleteReq)
@@ -74,16 +90,30 @@ var getCmd = &cobra.Command{
 	Long: `Get a table.
   
   Gets a table from the Metastore for a specific catalog and schema. The caller
-  must be a Metastore admin, be the owner of the table and have the USAGE
-  privilege on both the parent catalog and schema, or be the owner of the table
-  and have the SELECT privilege on it as well.`,
+  must be a Metastore admin, be the owner of the table and have the USE_CATALOG
+  privilege on the parent catalog and the USE_SCHEMA privilege on the parent
+  schema, or be the owner of the table and have the SELECT privilege on it as
+  well.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		if len(args) == 0 {
+			names, err := w.Tables.TableInfoNameToTableIdMap(ctx, unitycatalog.ListTablesRequest{})
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "Required")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have required")
+		}
 		getReq.FullName = args[0]
 
 		response, err := w.Tables.Get(ctx, getReq)
@@ -115,7 +145,8 @@ var listCmd = &cobra.Command{
   Gets an array of all tables for the current Metastore under the parent catalog
   and schema. The caller must be a Metastore admin or an owner of (or have the
   SELECT privilege on) the table. For the latter case, the caller must also be
-  the owner or have the USAGE privilege on the parent catalog and schema.`,
+  the owner or have the USE_CATALOG privilege on the parent catalog and the
+  USE_SCHEMA privilege on the parent schema.`,
 
 	Annotations: map[string]string{},
 	Args:        cobra.ExactArgs(0),
@@ -160,8 +191,8 @@ var tableSummariesCmd = &cobra.Command{
   and schema), when the user is a Metastore admin, or: * summaries for all
   tables and schemas (within the current Metastore and parent catalog) for which
   the user has ownership or the SELECT privilege on the Table and ownership or
-  USAGE privilege on the Schema, provided that the user also has ownership or
-  the USAGE privilege on the parent Catalog`,
+  USE_SCHEMA privilege on the Schema, provided that the user also has ownership
+  or the USE_CATALOG privilege on the parent Catalog`,
 
 	Annotations: map[string]string{},
 	Args:        cobra.ExactArgs(0),

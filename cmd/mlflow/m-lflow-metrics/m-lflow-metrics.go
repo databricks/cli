@@ -21,6 +21,8 @@ func init() {
 	Cmd.AddCommand(getHistoryCmd)
 	// TODO: short flags
 
+	// getHistoryCmd.Flags().IntVar(&getHistoryReq.MaxResults, "max-results", getHistoryReq.MaxResults, `Maximum number of Metric records to return per paginated request.`)
+	// getHistoryCmd.Flags().StringVar(&getHistoryReq.PageToken, "page-token", getHistoryReq.PageToken, `Token indicating the page of metric histories to fetch.`)
 	getHistoryCmd.Flags().StringVar(&getHistoryReq.RunId, "run-id", getHistoryReq.RunId, `ID of the run from which to fetch metric values.`)
 	getHistoryCmd.Flags().StringVar(&getHistoryReq.RunUuid, "run-uuid", getHistoryReq.RunUuid, `[Deprecated, use run_id instead] ID of the run from which to fetch metric values.`)
 
@@ -28,8 +30,8 @@ func init() {
 
 var getHistoryCmd = &cobra.Command{
 	Use:   "get-history METRIC_KEY",
-	Short: `Get all history.`,
-	Long: `Get all history.
+	Short: `Get history of a given metric within a run.`,
+	Long: `Get history of a given metric within a run.
   
   Gets a list of all values for the specified metric for a given run.`,
 

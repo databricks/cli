@@ -3,6 +3,8 @@
 package schemas
 
 import (
+	"fmt"
+
 	"github.com/databricks/bricks/lib/jsonflag"
 	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
@@ -15,9 +17,9 @@ var Cmd = &cobra.Command{
 	Short: `A schema (also called a database) is the second layer of Unity Catalog’s three-level namespace.`,
 	Long: `A schema (also called a database) is the second layer of Unity Catalog’s
   three-level namespace. A schema organizes tables and views. To access (or
-  list) a table or view in a schema, users must have the USAGE data permission
-  on the schema and its parent catalog, and they must have the SELECT permission
-  on the table or view.`,
+  list) a table or view in a schema, users must have the USE_SCHEMA data
+  permission on the schema and its parent catalog, and they must have the SELECT
+  permission on the table or view.`,
 }
 
 // start create command
@@ -41,7 +43,7 @@ var createCmd = &cobra.Command{
 	Long: `Create a schema.
   
   Creates a new schema for catalog in the Metatastore. The caller must be a
-  Metastore admin, or have the CREATE privilege in the parentcatalog.`,
+  Metastore admin, or have the CREATE_SCHEMA privilege in the parent catalog.`,
 
 	Annotations: map[string]string{},
 	PreRunE:     sdk.PreWorkspaceClient,
@@ -82,11 +84,24 @@ var deleteCmd = &cobra.Command{
   owner of the schema or an owner of the parent catalog.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		if len(args) == 0 {
+			names, err := w.Schemas.SchemaInfoNameToFullNameMap(ctx, unitycatalog.ListSchemasRequest{})
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "Required")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have required")
+		}
 		deleteReq.FullName = args[0]
 
 		err = w.Schemas.Delete(ctx, deleteReq)
@@ -113,15 +128,28 @@ var getCmd = &cobra.Command{
 	Long: `Get a schema.
   
   Gets the specified schema for a catalog in the Metastore. The caller must be a
-  Metastore admin, the owner of the schema, or a user that has the USAGE
+  Metastore admin, the owner of the schema, or a user that has the USE_SCHEMA
   privilege on the schema.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		if len(args) == 0 {
+			names, err := w.Schemas.SchemaInfoNameToFullNameMap(ctx, unitycatalog.ListSchemasRequest{})
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "Required")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have required")
+		}
 		getReq.FullName = args[0]
 
 		response, err := w.Schemas.Get(ctx, getReq)
@@ -152,7 +180,7 @@ var listCmd = &cobra.Command{
   Gets an array of schemas for catalog in the Metastore. If the caller is the
   Metastore admin or the owner of the parent catalog, all schemas for the
   catalog will be retrieved. Otherwise, only schemas owned by the caller (or for
-  which the caller has the USAGE privilege) will be retrieved.`,
+  which the caller has the USE_SCHEMA privilege) will be retrieved.`,
 
 	Annotations: map[string]string{},
 	Args:        cobra.ExactArgs(0),
@@ -184,6 +212,7 @@ func init() {
 	updateCmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `Name of Schema, relative to parent Catalog.`)
 	updateCmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of current owner of Schema.`)
 	// TODO: map via StringToStringVar: properties
+	updateCmd.Flags().StringVar(&updateReq.StorageRoot, "storage-root", updateReq.StorageRoot, `Storage root URL for managed tables within schema.`)
 
 }
 
@@ -195,7 +224,7 @@ var updateCmd = &cobra.Command{
   Updates a schema for a catalog. The caller must be the owner of the schema. If
   the caller is a Metastore admin, only the __owner__ field can be changed in
   the update. If the __name__ field must be updated, the caller must be a
-  Metastore admin or have the CREATE privilege on the parent catalog.`,
+  Metastore admin or have the CREATE_SCHEMA privilege on the parent catalog.`,
 
 	Annotations: map[string]string{},
 	PreRunE:     sdk.PreWorkspaceClient,
@@ -208,11 +237,11 @@ var updateCmd = &cobra.Command{
 		}
 		updateReq.FullName = args[0]
 
-		err = w.Schemas.Update(ctx, updateReq)
+		response, err := w.Schemas.Update(ctx, updateReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 

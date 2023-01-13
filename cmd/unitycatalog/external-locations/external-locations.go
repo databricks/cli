@@ -14,9 +14,9 @@ var Cmd = &cobra.Command{
 	Short: `An external location is an object that combines a cloud storage path with a storage credential that authorizes access to the cloud storage path.`,
 	Long: `An external location is an object that combines a cloud storage path with a
   storage credential that authorizes access to the cloud storage path. Each
-  storage location is subject to Unity Catalog access-control policies that
+  external location is subject to Unity Catalog access-control policies that
   control which users and groups can access the credential. If a user does not
-  have access to a storage location in Unity Catalog, the request fails and
+  have access to an external location in Unity Catalog, the request fails and
   Unity Catalog does not attempt to authenticate to your cloud tenant on the
   user’s behalf.
   
@@ -24,7 +24,7 @@ var Cmd = &cobra.Command{
   credentials directly.
   
   To create external locations, you must be a metastore admin or a user with the
-  CREATE EXTERNAL LOCATION privilege.`,
+  CREATE_EXTERNAL_LOCATION privilege.`,
 }
 
 // start create command
@@ -36,6 +36,8 @@ func init() {
 	// TODO: short flags
 
 	createCmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `User-provided free-form text description.`)
+	createCmd.Flags().BoolVar(&createReq.ReadOnly, "read-only", createReq.ReadOnly, `Indicates whether the external location is read-only.`)
+	createCmd.Flags().BoolVar(&createReq.SkipValidation, "skip-validation", createReq.SkipValidation, `Skips validation of the storage credential associated with the external location.`)
 
 }
 
@@ -45,8 +47,8 @@ var createCmd = &cobra.Command{
 	Long: `Create an external location.
   
   Creates a new External Location entry in the Metastore. The caller must be a
-  Metastore admin or have the CREATE EXTERNAL LOCATION privilege on the
-  Metastore.`,
+  Metastore admin or have the CREATE_EXTERNAL_LOCATION privilege on both the
+  Metastore and the associated storage credential.`,
 
 	Annotations: map[string]string{},
 	Args:        cobra.ExactArgs(3),
@@ -118,8 +120,8 @@ var getCmd = &cobra.Command{
 	Long: `Get an external location.
   
   Gets an external location from the Metastore. The caller must be either a
-  Metastore admin, the owner of the external location, or has an appropriate
-  privilege level on the Metastore.`,
+  Metastore admin, the owner of the external location, or has some privilege on
+  the external location.`,
 
 	Annotations: map[string]string{},
 	Args:        cobra.ExactArgs(1),
@@ -151,7 +153,7 @@ var listCmd = &cobra.Command{
   
   Gets an array of External Locations (ExternalLocationInfo objects) from the
   Metastore. The caller must be a Metastore admin, is the owner of the external
-  location, or has privileges to access the external location.`,
+  location, or has some privilege on the external location.`,
 
 	Annotations: map[string]string{},
 	PreRunE:     sdk.PreWorkspaceClient,
@@ -179,6 +181,8 @@ func init() {
 	updateCmd.Flags().BoolVar(&updateReq.Force, "force", updateReq.Force, `Force update even if changing url invalidates dependent external tables or mounts.`)
 	updateCmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `Name of the External Location.`)
 	updateCmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `The owner of the External Location.`)
+	updateCmd.Flags().BoolVar(&updateReq.ReadOnly, "read-only", updateReq.ReadOnly, `Indicates whether the external location is read-only.`)
+	updateCmd.Flags().BoolVar(&updateReq.SkipValidation, "skip-validation", updateReq.SkipValidation, `Skips validation of the storage credential associated with the external location.`)
 	updateCmd.Flags().StringVar(&updateReq.Url, "url", updateReq.Url, `Path URL of the External Location.`)
 
 }
@@ -189,7 +193,7 @@ var updateCmd = &cobra.Command{
 	Long: `Update an external location.
   
   Updates an external location in the Metastore. The caller must be the owner of
-  the externa location, or be a Metastore admin. In the second case, the admin
+  the external location, or be a Metastore admin. In the second case, the admin
   can only update the name of the external location.`,
 
 	Annotations: map[string]string{},
@@ -200,11 +204,11 @@ var updateCmd = &cobra.Command{
 		w := sdk.WorkspaceClient(ctx)
 		updateReq.Name = args[0]
 
-		err = w.ExternalLocations.Update(ctx, updateReq)
+		response, err := w.ExternalLocations.Update(ctx, updateReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 

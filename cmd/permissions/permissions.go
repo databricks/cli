@@ -120,8 +120,6 @@ var setCmd = &cobra.Command{
 		}
 		setReq.RequestObjectType = args[0]
 		setReq.RequestObjectId = args[1]
-		setReq.RequestObjectType = args[2]
-		setReq.RequestObjectId = args[3]
 
 		err = w.Permissions.Set(ctx, setReq)
 		if err != nil {
@@ -163,8 +161,6 @@ var updateCmd = &cobra.Command{
 		}
 		updateReq.RequestObjectType = args[0]
 		updateReq.RequestObjectId = args[1]
-		updateReq.RequestObjectType = args[2]
-		updateReq.RequestObjectId = args[3]
 
 		err = w.Permissions.Update(ctx, updateReq)
 		if err != nil {

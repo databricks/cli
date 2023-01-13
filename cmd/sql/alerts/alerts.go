@@ -378,18 +378,30 @@ func init() {
 }
 
 var subscribeCmd = &cobra.Command{
-	Use:   "subscribe ALERT_ID ALERT_ID",
+	Use:   "subscribe ALERT_ID",
 	Short: `Subscribe to an alert.`,
 	Long:  `Subscribe to an alert.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(2),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		if len(args) == 0 {
+			names, err := w.Alerts.AlertNameToIdMap(ctx)
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "ID of the alert")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have id of the alert")
+		}
 		subscribeReq.AlertId = args[0]
-		subscribeReq.AlertId = args[1]
 
 		response, err := w.Alerts.Subscribe(ctx, subscribeReq)
 		if err != nil {

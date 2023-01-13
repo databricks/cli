@@ -61,7 +61,6 @@ var createCmd = &cobra.Command{
 			return err
 		}
 		createReq.Id = args[0]
-		createReq.Id = args[1]
 
 		response, err := a.ServicePrincipals.Create(ctx, createReq)
 		if err != nil {
@@ -236,11 +235,6 @@ var patchCmd = &cobra.Command{
 			return err
 		}
 		patchReq.Id = args[0]
-		patchReq.Id = args[1]
-		patchReq.Id = args[2]
-		patchReq.Id = args[3]
-		patchReq.Id = args[4]
-		patchReq.Id = args[5]
 
 		err = a.ServicePrincipals.Patch(ctx, patchReq)
 		if err != nil {
@@ -290,7 +284,6 @@ var updateCmd = &cobra.Command{
 			return err
 		}
 		updateReq.Id = args[0]
-		updateReq.Id = args[1]
 
 		err = a.ServicePrincipals.Update(ctx, updateReq)
 		if err != nil {

@@ -15,7 +15,7 @@ var Cmd = &cobra.Command{
 	Short: `A catalog is the first layer of Unity Catalog’s three-level namespace.`,
 	Long: `A catalog is the first layer of Unity Catalog’s three-level namespace.
   It’s used to organize your data assets. Users can see all catalogs on which
-  they have been assigned the USAGE data permission.
+  they have been assigned the USE_CATALOG data permission.
   
   In Unity Catalog, admins and data stewards manage users and their access to
   data centrally across all of the workspaces in a Databricks account. Users in
@@ -37,6 +37,7 @@ func init() {
 	// TODO: map via StringToStringVar: properties
 	createCmd.Flags().StringVar(&createReq.ProviderName, "provider-name", createReq.ProviderName, `The name of delta sharing provider.`)
 	createCmd.Flags().StringVar(&createReq.ShareName, "share-name", createReq.ShareName, `The name of the share under the share provider.`)
+	createCmd.Flags().StringVar(&createReq.StorageRoot, "storage-root", createReq.StorageRoot, `Storage root URL for managed tables within Catalog.`)
 
 }
 
@@ -46,7 +47,7 @@ var createCmd = &cobra.Command{
 	Long: `Create a catalog.
   
   Creates a new catalog instance in the parent Metastore if the caller is a
-  Metastore admin or has the CREATE CATALOG privilege.`,
+  Metastore admin or has the CREATE_CATALOG privilege.`,
 
 	Annotations: map[string]string{},
 	PreRunE:     sdk.PreWorkspaceClient,
@@ -74,6 +75,8 @@ var deleteReq unitycatalog.DeleteCatalogRequest
 func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
+
+	deleteCmd.Flags().BoolVar(&deleteReq.Force, "force", deleteReq.Force, `Force deletion even if the catalog is notempty.`)
 
 }
 
@@ -117,7 +120,8 @@ var getCmd = &cobra.Command{
 	Long: `Get a catalog.
   
   Gets an array of all catalogs in the current Metastore for which the user is
-  an admin or Catalog owner, or has the USAGE privilege set for their account.`,
+  an admin or Catalog owner, or has the USE_CATALOG privilege set for their
+  account.`,
 
 	Annotations: map[string]string{},
 	Args:        cobra.ExactArgs(1),
@@ -147,9 +151,10 @@ var listCmd = &cobra.Command{
 	Short: `List catalogs.`,
 	Long: `List catalogs.
   
-  Gets an array of External Locations (ExternalLocationInfo objects) from the
-  Metastore. The caller must be a Metastore admin, is the owner of the External
-  Location, or has privileges to access the External Location.`,
+  Gets an array of catalogs in the Metastore. If the caller is the Metastore
+  admin, all catalogs will be retrieved. Otherwise, only catalogs owned by the
+  caller (or for which the caller has the USE_CATALOG privilege) will be
+  retrieved.`,
 
 	Annotations: map[string]string{},
 	PreRunE:     sdk.PreWorkspaceClient,
@@ -201,11 +206,11 @@ var updateCmd = &cobra.Command{
 		}
 		updateReq.Name = args[0]
 
-		err = w.Catalogs.Update(ctx, updateReq)
+		response, err := w.Catalogs.Update(ctx, updateReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 

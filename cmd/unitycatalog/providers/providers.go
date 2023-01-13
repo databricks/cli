@@ -5,7 +5,6 @@ package providers
 import (
 	"fmt"
 
-	"github.com/databricks/bricks/lib/jsonflag"
 	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
 	"github.com/databricks/databricks-sdk-go/service/unitycatalog"
@@ -21,22 +20,19 @@ var Cmd = &cobra.Command{
 // start create command
 
 var createReq unitycatalog.CreateProvider
-var createJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(createCmd)
 	// TODO: short flags
-	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	createCmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `Description about the provider.`)
 	createCmd.Flags().StringVar(&createReq.Owner, "owner", createReq.Owner, `Username of Provider owner.`)
-	// TODO: complex arg: recipient_profile
-	createCmd.Flags().StringVar(&createReq.RecipientProfileStr, "recipient-profile-str", createReq.RecipientProfileStr, `This field is only present when the authentication type is TOKEN.`)
+	createCmd.Flags().StringVar(&createReq.RecipientProfileStr, "recipient-profile-str", createReq.RecipientProfileStr, `This field is required when the authentication_type is TOKEN or not provided.`)
 
 }
 
 var createCmd = &cobra.Command{
-	Use:   "create",
+	Use:   "create NAME AUTHENTICATION_TYPE",
 	Short: `Create an auth provider.`,
 	Long: `Create an auth provider.
   
@@ -44,14 +40,11 @@ var createCmd = &cobra.Command{
   authentication type. The caller must be an admin on the Metastore.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(2),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err = createJson.Unmarshall(&createReq)
-		if err != nil {
-			return err
-		}
 		createReq.Name = args[0]
 		_, err = fmt.Sscan(args[1], &createReq.AuthenticationType)
 		if err != nil {
@@ -85,11 +78,24 @@ var deleteCmd = &cobra.Command{
   the owner of the provider.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		if len(args) == 0 {
+			names, err := w.Providers.ProviderInfoNameToMetastoreIdMap(ctx, unitycatalog.ListProvidersRequest{})
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "Required")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have required")
+		}
 		deleteReq.Name = args[0]
 
 		err = w.Providers.Delete(ctx, deleteReq)
@@ -120,11 +126,24 @@ var getCmd = &cobra.Command{
   provider.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		if len(args) == 0 {
+			names, err := w.Providers.ProviderInfoNameToMetastoreIdMap(ctx, unitycatalog.ListProvidersRequest{})
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "Required")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have required")
+		}
 		getReq.Name = args[0]
 
 		response, err := w.Providers.Get(ctx, getReq)
@@ -191,11 +210,24 @@ var listSharesCmd = &cobra.Command{
   * the caller is a Metastore admin, or * the caller is the owner.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		if len(args) == 0 {
+			names, err := w.Providers.ProviderInfoNameToMetastoreIdMap(ctx, unitycatalog.ListProvidersRequest{})
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "Required")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have required")
+		}
 		listSharesReq.Name = args[0]
 
 		response, err := w.Providers.ListShares(ctx, listSharesReq)
@@ -209,23 +241,20 @@ var listSharesCmd = &cobra.Command{
 // start update command
 
 var updateReq unitycatalog.UpdateProvider
-var updateJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(updateCmd)
 	// TODO: short flags
-	updateCmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	updateCmd.Flags().Var(&updateReq.AuthenticationType, "authentication-type", `The delta sharing authentication type.`)
 	updateCmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `Description about the provider.`)
+	updateCmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `The name of the Provider.`)
 	updateCmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of Provider owner.`)
-	// TODO: complex arg: recipient_profile
-	updateCmd.Flags().StringVar(&updateReq.RecipientProfileStr, "recipient-profile-str", updateReq.RecipientProfileStr, `This field is only present when the authentication type is TOKEN.`)
+	updateCmd.Flags().StringVar(&updateReq.RecipientProfileStr, "recipient-profile-str", updateReq.RecipientProfileStr, `This field is required when the authentication_type is TOKEN or not provided.`)
 
 }
 
 var updateCmd = &cobra.Command{
-	Use:   "update",
+	Use:   "update NAME",
 	Short: `Update a provider.`,
 	Long: `Update a provider.
   
@@ -239,18 +268,27 @@ var updateCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		err = updateJson.Unmarshall(&updateReq)
-		if err != nil {
-			return err
+		if len(args) == 0 {
+			names, err := w.Providers.ProviderInfoNameToMetastoreIdMap(ctx, unitycatalog.ListProvidersRequest{})
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "The name of the Provider")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the name of the provider")
 		}
 		updateReq.Name = args[0]
-		updateReq.Name = args[1]
 
-		err = w.Providers.Update(ctx, updateReq)
+		response, err := w.Providers.Update(ctx, updateReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return ui.Render(cmd, response)
 	},
 }
 

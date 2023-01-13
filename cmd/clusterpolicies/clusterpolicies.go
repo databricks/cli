@@ -5,6 +5,7 @@ package clusterpolicies
 import (
 	"fmt"
 
+	policy_families "github.com/databricks/bricks/cmd/clusterpolicies/policy-families"
 	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
 	"github.com/databricks/databricks-sdk-go/service/clusterpolicies"
@@ -48,23 +49,41 @@ func init() {
 	Cmd.AddCommand(createCmd)
 	// TODO: short flags
 
+	createCmd.Flags().StringVar(&createReq.Definition, "definition", createReq.Definition, `Policy definition document expressed in Databricks Cluster Policy Definition Language.`)
+	createCmd.Flags().StringVar(&createReq.Description, "description", createReq.Description, `Additional human-readable description of the cluster policy.`)
+	createCmd.Flags().Int64Var(&createReq.MaxClustersPerUser, "max-clusters-per-user", createReq.MaxClustersPerUser, `Max number of clusters per user that can be active using this policy.`)
+	createCmd.Flags().StringVar(&createReq.PolicyFamilyDefinitionOverrides, "policy-family-definition-overrides", createReq.PolicyFamilyDefinitionOverrides, `Policy definition JSON document expressed in Databricks Policy Definition Language.`)
+	createCmd.Flags().StringVar(&createReq.PolicyFamilyId, "policy-family-id", createReq.PolicyFamilyId, `ID of the policy family.`)
+
 }
 
 var createCmd = &cobra.Command{
-	Use:   "create NAME DEFINITION",
+	Use:   "create NAME",
 	Short: `Create a new policy.`,
 	Long: `Create a new policy.
   
   Creates a new policy with prescribed settings.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(2),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		if len(args) == 0 {
+			names, err := w.ClusterPolicies.PolicyNameToPolicyIdMap(ctx, clusterpolicies.List{})
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "Cluster Policy name requested by the user")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have cluster policy name requested by the user")
+		}
 		createReq.Name = args[0]
-		createReq.Definition = args[1]
 
 		response, err := w.ClusterPolicies.Create(ctx, createReq)
 		if err != nil {
@@ -98,7 +117,7 @@ var deleteCmd = &cobra.Command{
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		if len(args) == 0 {
-			names, err := w.ClusterPolicies.PolicyNameToPolicyIdMap(ctx)
+			names, err := w.ClusterPolicies.PolicyNameToPolicyIdMap(ctx, clusterpolicies.List{})
 			if err != nil {
 				return err
 			}
@@ -129,10 +148,16 @@ func init() {
 	Cmd.AddCommand(editCmd)
 	// TODO: short flags
 
+	editCmd.Flags().StringVar(&editReq.Definition, "definition", editReq.Definition, `Policy definition document expressed in Databricks Cluster Policy Definition Language.`)
+	editCmd.Flags().StringVar(&editReq.Description, "description", editReq.Description, `Additional human-readable description of the cluster policy.`)
+	editCmd.Flags().Int64Var(&editReq.MaxClustersPerUser, "max-clusters-per-user", editReq.MaxClustersPerUser, `Max number of clusters per user that can be active using this policy.`)
+	editCmd.Flags().StringVar(&editReq.PolicyFamilyDefinitionOverrides, "policy-family-definition-overrides", editReq.PolicyFamilyDefinitionOverrides, `Policy definition JSON document expressed in Databricks Policy Definition Language.`)
+	editCmd.Flags().StringVar(&editReq.PolicyFamilyId, "policy-family-id", editReq.PolicyFamilyId, `ID of the policy family.`)
+
 }
 
 var editCmd = &cobra.Command{
-	Use:   "edit POLICY_ID NAME DEFINITION",
+	Use:   "edit POLICY_ID NAME",
 	Short: `Update a cluster policy.`,
 	Long: `Update a cluster policy.
   
@@ -140,14 +165,13 @@ var editCmd = &cobra.Command{
   governed by the previous policy invalid.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(3),
+	Args:        cobra.ExactArgs(2),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		editReq.PolicyId = args[0]
 		editReq.Name = args[1]
-		editReq.Definition = args[2]
 
 		err = w.ClusterPolicies.Edit(ctx, editReq)
 		if err != nil {
@@ -180,7 +204,7 @@ var getCmd = &cobra.Command{
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
 		if len(args) == 0 {
-			names, err := w.ClusterPolicies.PolicyNameToPolicyIdMap(ctx)
+			names, err := w.ClusterPolicies.PolicyNameToPolicyIdMap(ctx, clusterpolicies.List{})
 			if err != nil {
 				return err
 			}
@@ -205,8 +229,14 @@ var getCmd = &cobra.Command{
 
 // start list command
 
+var listReq clusterpolicies.List
+
 func init() {
 	Cmd.AddCommand(listCmd)
+	// TODO: short flags
+
+	listCmd.Flags().Var(&listReq.SortColumn, "sort-column", `The cluster policy attribute to sort by.`)
+	listCmd.Flags().Var(&listReq.SortOrder, "sort-order", `The order in which the policies get listed.`)
 
 }
 
@@ -218,11 +248,13 @@ var listCmd = &cobra.Command{
   Returns a list of policies accessible by the requesting user.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(0),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		response, err := w.ClusterPolicies.ListAll(ctx)
+
+		response, err := w.ClusterPolicies.ListAll(ctx, listReq)
 		if err != nil {
 			return err
 		}
@@ -235,4 +267,5 @@ var listCmd = &cobra.Command{
 func init() {
 	Cmd.PersistentFlags().String("profile", "", "~/.databrickscfg profile")
 
+	Cmd.AddCommand(policy_families.Cmd)
 }

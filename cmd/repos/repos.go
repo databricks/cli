@@ -5,6 +5,7 @@ package repos
 import (
 	"fmt"
 
+	"github.com/databricks/bricks/lib/jsonflag"
 	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
 	"github.com/databricks/databricks-sdk-go/service/repos"
@@ -29,17 +30,20 @@ var Cmd = &cobra.Command{
 // start create command
 
 var createReq repos.CreateRepo
+var createJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(createCmd)
 	// TODO: short flags
+	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	createCmd.Flags().StringVar(&createReq.Path, "path", createReq.Path, `Desired path for the repo in the workspace.`)
+	// TODO: complex arg: sparse_checkout
 
 }
 
 var createCmd = &cobra.Command{
-	Use:   "create URL PROVIDER",
+	Use:   "create",
 	Short: `Create a repo.`,
 	Long: `Create a repo.
   
@@ -48,11 +52,14 @@ var createCmd = &cobra.Command{
   unlike repos created in the browser.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(2),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		err = createJson.Unmarshall(&createReq)
+		if err != nil {
+			return err
+		}
 		createReq.Url = args[0]
 		createReq.Provider = args[1]
 
@@ -201,18 +208,21 @@ var listCmd = &cobra.Command{
 // start update command
 
 var updateReq repos.UpdateRepo
+var updateJson jsonflag.JsonFlag
 
 func init() {
 	Cmd.AddCommand(updateCmd)
 	// TODO: short flags
+	updateCmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	updateCmd.Flags().StringVar(&updateReq.Branch, "branch", updateReq.Branch, `Branch that the local version of the repo is checked out to.`)
+	// TODO: complex arg: sparse_checkout
 	updateCmd.Flags().StringVar(&updateReq.Tag, "tag", updateReq.Tag, `Tag that the local version of the repo is checked out to.`)
 
 }
 
 var updateCmd = &cobra.Command{
-	Use:   "update REPO_ID",
+	Use:   "update",
 	Short: `Update a repo.`,
 	Long: `Update a repo.
   
@@ -224,19 +234,9 @@ var updateCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
-		if len(args) == 0 {
-			names, err := w.Repos.RepoInfoPathToIdMap(ctx, repos.List{})
-			if err != nil {
-				return err
-			}
-			id, err := ui.PromptValue(cmd.InOrStdin(), names, "The ID for the corresponding repo to access")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have the id for the corresponding repo to access")
+		err = updateJson.Unmarshall(&updateReq)
+		if err != nil {
+			return err
 		}
 		_, err = fmt.Sscan(args[0], &updateReq.RepoId)
 		if err != nil {

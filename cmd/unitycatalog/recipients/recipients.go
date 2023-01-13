@@ -29,6 +29,7 @@ func init() {
 	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	createCmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `Description about the recipient.`)
+	// TODO: any: data_recipient_global_metastore_id
 	// TODO: complex arg: ip_access_list
 	createCmd.Flags().StringVar(&createReq.SharingCode, "sharing-code", createReq.SharingCode, `The one-time sharing code provided by the data recipient.`)
 
@@ -40,7 +41,7 @@ var createCmd = &cobra.Command{
 	Long: `Create a share recipient.
   
   Creates a new recipient with the delta sharing authentication type in the
-  Metastore. The caller must be a Metastore admin or has the CREATE RECIPIENT
+  Metastore. The caller must be a Metastore admin or has the CREATE_RECIPIENT
   privilege on the Metastore.`,
 
 	Annotations: map[string]string{},
@@ -85,11 +86,24 @@ var deleteCmd = &cobra.Command{
   owner of the recipient.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		if len(args) == 0 {
+			names, err := w.Recipients.RecipientInfoNameToMetastoreIdMap(ctx, unitycatalog.ListRecipientsRequest{})
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "Required")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have required")
+		}
 		deleteReq.Name = args[0]
 
 		err = w.Recipients.Delete(ctx, deleteReq)
@@ -120,11 +134,24 @@ var getCmd = &cobra.Command{
   * the caller is the owner of the share recipient, or: * is a Metastore admin`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		if len(args) == 0 {
+			names, err := w.Recipients.RecipientInfoNameToMetastoreIdMap(ctx, unitycatalog.ListRecipientsRequest{})
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "Required")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have required")
+		}
 		getReq.Name = args[0]
 
 		response, err := w.Recipients.Get(ctx, getReq)
@@ -192,11 +219,24 @@ var rotateTokenCmd = &cobra.Command{
   the provided token info. The caller must be the owner of the recipient.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		if len(args) == 0 {
+			names, err := w.Recipients.RecipientInfoNameToMetastoreIdMap(ctx, unitycatalog.ListRecipientsRequest{})
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "Required")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have required")
+		}
 		rotateTokenReq.Name = args[0]
 
 		response, err := w.Recipients.RotateToken(ctx, rotateTokenReq)
@@ -226,11 +266,24 @@ var sharePermissionsCmd = &cobra.Command{
   Metastore admin or the owner of the Recipient.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
 	PreRunE:     sdk.PreWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := sdk.WorkspaceClient(ctx)
+		if len(args) == 0 {
+			names, err := w.Recipients.RecipientInfoNameToMetastoreIdMap(ctx, unitycatalog.ListRecipientsRequest{})
+			if err != nil {
+				return err
+			}
+			id, err := ui.PromptValue(cmd.InOrStdin(), names, "Required")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have required")
+		}
 		sharePermissionsReq.Name = args[0]
 
 		response, err := w.Recipients.SharePermissions(ctx, sharePermissionsReq)
@@ -251,7 +304,6 @@ func init() {
 	// TODO: short flags
 	updateCmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	updateCmd.Flags().Var(&updateReq.AuthenticationType, "authentication-type", `The delta sharing authentication type.`)
 	updateCmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `Description about the recipient.`)
 	// TODO: complex arg: ip_access_list
 	updateCmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `Name of Recipient.`)
