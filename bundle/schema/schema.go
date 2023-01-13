@@ -32,8 +32,8 @@ type Item struct {
 
 func NewSchema(golangType reflect.Type) (*Schema, error) {
 	traceSet := map[reflect.Type]struct{}{}
-	traceSlice := []reflect.Type{}
-	rootProp, err := toProperity(golangType, traceSet, traceSlice)
+	trace := list.New()
+	rootProp, err := toProperity(golangType, traceSet, trace)
 	if err != nil {
 		return nil, err
 	}
@@ -83,10 +83,12 @@ func javascriptType(golangType reflect.Type) (JsType, error) {
 }
 
 // TODO: add a simple test for this
-func errWithTrace(prefix string, trace []reflect.Type) error {
+func errWithTrace(prefix string, trace *list.List) error {
 	traceString := ""
-	for _, golangType := range trace {
-		traceString += " -> " + golangType.Name()
+	curr := trace.Front()
+	for curr.Next() != nil {
+		traceString += " -> " + curr.Value.(reflect.Type).Name()
+		curr = curr.Next()
 	}
 	return fmt.Errorf("[ERROR] " + prefix + " type traveral trace: " + traceString)
 }
@@ -98,24 +100,25 @@ func errWithTrace(prefix string, trace []reflect.Type) error {
 
 // checks and errors out for cycles
 // wraps the error with context
-func safeToProperty(golangType reflect.Type, traceSet map[reflect.Type]struct{}, traceSlice []reflect.Type) (*Property, error) {
-	traceSlice = append(traceSlice, golangType)
+func safeToProperty(golangType reflect.Type, traceSet map[reflect.Type]struct{}, trace *list.List) (*Property, error) {
+	trace.PushBack(golangType)
 	// detect cycles. Fail if a cycle is detected
 	// TODO: Add references here for cycles
 	// TODO: move this check somewhere nicer
 	_, ok := traceSet[golangType]
 	if ok {
 		fmt.Println("[DEBUG] traceSet: ", traceSet)
-		return nil, errWithTrace("cycle detected", traceSlice)
+		return nil, errWithTrace("cycle detected", trace)
 	}
 	// add current child field to history
 	traceSet[golangType] = struct{}{}
-	props, err := toProperity(golangType, traceSet, traceSlice)
+	props, err := toProperity(golangType, traceSet, trace)
 	if err != nil {
-		return nil, errWithTrace(err.Error(), traceSlice)
+		return nil, errWithTrace(err.Error(), trace)
 	}
 	delete(traceSet, golangType)
-	traceSlice = traceSlice[:len(traceSlice)-1]
+	back := trace.Back()
+	trace.Remove(back)
 	return props, nil
 }
 
@@ -153,10 +156,10 @@ func addStructFields(fields []reflect.StructField, golangType reflect.Type) []re
 }
 
 // TODO: add doc string explaining numHistoryOccurances
-func toProperity(golangType reflect.Type, traceSet map[reflect.Type]struct{}, traceSlice []reflect.Type) (*Property, error) {
+func toProperity(golangType reflect.Type, traceSet map[reflect.Type]struct{}, trace *list.List) (*Property, error) {
 	// *Struct and Struct generate identical json schemas
 	if golangType.Kind() == reflect.Pointer {
-		return toProperity(golangType.Elem(), traceSet, traceSlice)
+		return toProperity(golangType.Elem(), traceSet, trace)
 	}
 
 	rootJavascriptType, err := javascriptType(golangType)
@@ -172,7 +175,7 @@ func toProperity(golangType reflect.Type, traceSet map[reflect.Type]struct{}, tr
 		if err != nil {
 			return nil, err
 		}
-		elemProps, err := safeToProperty(elemGolangType, traceSet, traceSlice)
+		elemProps, err := safeToProperty(elemGolangType, traceSet, trace)
 		if err != nil {
 			return nil, err
 		}
@@ -187,9 +190,9 @@ func toProperity(golangType reflect.Type, traceSet map[reflect.Type]struct{}, tr
 	var additionalProperties *Property
 	if golangType.Kind() == reflect.Map {
 		if golangType.Key().Kind() != reflect.String {
-			return nil, errWithTrace("only string keyed maps allowed", traceSlice)
+			return nil, errWithTrace("only string keyed maps allowed", trace)
 		}
-		additionalProperties, err = safeToProperty(golangType.Elem(), traceSet, traceSlice)
+		additionalProperties, err = safeToProperty(golangType.Elem(), traceSet, trace)
 		if err != nil {
 			return nil, err
 		}
@@ -211,9 +214,9 @@ func toProperity(golangType reflect.Type, traceSet map[reflect.Type]struct{}, tr
 			}
 
 			// recursively compute properties for this child field
-			fieldProps, err := safeToProperty(child.Type, traceSet, traceSlice)
+			fieldProps, err := safeToProperty(child.Type, traceSet, trace)
 			if err != nil {
-				return nil, errWithTrace(err.Error(), traceSlice)
+				return nil, errWithTrace(err.Error(), trace)
 			}
 			properities[childName] = fieldProps
 		}
