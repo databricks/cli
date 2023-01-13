@@ -44,7 +44,7 @@ func TestNumberStringBooleanSchema(t *testing.T) {
 	expected :=
 		`{
 			"type": "object",
-			"properities": {
+			"properties": {
 				"bool_val": {
 					"type": "string"
 				},
@@ -119,10 +119,10 @@ func TestObjectSchema(t *testing.T) {
 	expected :=
 		`{
 			"type": "object",
-			"properities": {
+			"properties": {
 				"hero": {
 					"type": "object",
-					"properities": {
+					"properties": {
 						"age": {
 							"type": "number"
 						},
@@ -133,7 +133,7 @@ func TestObjectSchema(t *testing.T) {
 				},
 				"plot": {
 					"type": "object",
-					"properities": {
+					"properties": {
 						"stakes": {
 							"type": "array",
 							"item": {
@@ -144,7 +144,7 @@ func TestObjectSchema(t *testing.T) {
 				},
 				"villian": {
 					"type": "object",
-					"properities": {
+					"properties": {
 						"age": {
 							"type": "number"
 						},

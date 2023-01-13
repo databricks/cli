@@ -11,15 +11,15 @@ const MaxHistoryOccurances = 3
 // TODO: should omit empty denote non required fields in the json schema?
 type Schema struct {
 	Type                  JsType               `json:"type"`
-	Properities           map[string]*Property `json:"properities,omitempty"`
-	AdditionalProperities *Property            `json:"additionalProperities,omitempty"`
+	Properities           map[string]*Property `json:"properties,omitempty"`
+	AdditionalProperities *Property            `json:"additionalProperties,omitempty"`
 }
 
 type Property struct {
 	Type                  JsType               `json:"type"`
 	Items                 *Item                `json:"item,omitempty"`
-	Properities           map[string]*Property `json:"properities,omitempty"`
-	AdditionalProperities *Property            `json:"additionalProperities,omitempty"`
+	Properities           map[string]*Property `json:"properties,omitempty"`
+	AdditionalProperities *Property            `json:"additionalProperties,omitempty"`
 }
 
 // TODO: panic for now, add support for adding schemas to $defs in case of cycles
