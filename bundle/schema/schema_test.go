@@ -2,7 +2,6 @@ package schema
 
 import (
 	"encoding/json"
-	"fmt"
 	"reflect"
 	"testing"
 
@@ -87,8 +86,8 @@ func TestNumberStringBooleanSchema(t *testing.T) {
 			}
 		}`
 
-	fmt.Println("[DEBUG] actual: ", string(jsonSchema))
-	fmt.Println("[DEBUG] expected: ", expected)
+	t.Log("[DEBUG] actual: ", string(jsonSchema))
+	t.Log("[DEBUG] expected: ", expected)
 	assert.Equal(t, expected, string(jsonSchema))
 }
 
@@ -156,8 +155,8 @@ func TestObjectSchema(t *testing.T) {
 			}
 		}`
 
-	fmt.Println("[DEBUG] actual: ", string(jsonSchema))
-	fmt.Println("[DEBUG] expected: ", expected)
+	t.Log("[DEBUG] actual: ", string(jsonSchema))
+	t.Log("[DEBUG] expected: ", expected)
 	assert.Equal(t, expected, string(jsonSchema))
 }
 
@@ -209,8 +208,8 @@ func TestSliceOfObjectsSchema(t *testing.T) {
 			}
 		}`
 
-	fmt.Println("[DEBUG] actual: ", string(jsonSchema))
-	fmt.Println("[DEBUG] expected: ", expected)
+	t.Log("[DEBUG] actual: ", string(jsonSchema))
+	t.Log("[DEBUG] expected: ", expected)
 	assert.Equal(t, expected, string(jsonSchema))
 }
 
@@ -262,7 +261,79 @@ func TestMapOfObjectsSchema(t *testing.T) {
 			}
 		}`
 
-	fmt.Println("[DEBUG] actual: ", string(jsonSchema))
-	fmt.Println("[DEBUG] expected: ", expected)
+	t.Log("[DEBUG] actual: ", string(jsonSchema))
+	t.Log("[DEBUG] expected: ", expected)
+	assert.Equal(t, expected, string(jsonSchema))
+}
+
+func TestEmbeddedSchema(t *testing.T) {
+	type Person struct {
+		Name string `json:"name"`
+		Age  int    `json:"age,omitempty"`
+	}
+
+	type Location struct {
+		Country string `json:"country"`
+		State   string    `json:"state,omitempty"`
+	}
+
+	type Plot struct {
+		Events map[string]Person `json:"events"`
+	}
+
+	type Story struct {
+		Plot Plot `json:"plot"`
+		*Person
+		Location
+	}
+
+	elem := Story{}
+
+	schema, err := NewSchema(reflect.TypeOf(elem))
+	assert.NoError(t, err)
+
+	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
+	assert.NoError(t, err)
+
+	expected :=
+		`{
+			"type": "object",
+			"properties": {
+				"age": {
+					"type": "number"
+				},
+				"country": {
+					"type": "string"
+				},
+				"name": {
+					"type": "string"
+				},
+				"plot": {
+					"type": "object",
+					"properties": {
+						"events": {
+							"type": "object",
+							"additionalProperties": {
+								"type": "object",
+								"properties": {
+									"age": {
+										"type": "number"
+									},
+									"name": {
+										"type": "string"
+									}
+								}
+							}
+						}
+					}
+				},
+				"state": {
+					"type": "string"
+				}
+			}
+		}`
+
+	t.Log("[DEBUG] actual: ", string(jsonSchema))
+	t.Log("[DEBUG] expected: ", expected)
 	assert.Equal(t, expected, string(jsonSchema))
 }

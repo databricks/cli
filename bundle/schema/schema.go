@@ -136,7 +136,7 @@ func push(q []reflect.StructField, r reflect.StructField) {
 func addStructFields(fields []reflect.StructField, golangType reflect.Type) []reflect.StructField {
 	bfsQueue := list.New()
 
-	for i := 0; i < golangType.NumField(); i++ {
+	for i := golangType.NumField() - 1; i >= 0; i-- {
 		bfsQueue.PushBack(golangType.Field(i))
 	}
 	for bfsQueue.Len() > 0 {
@@ -148,8 +148,15 @@ func addStructFields(fields []reflect.StructField, golangType reflect.Type) []re
 			fields = append(fields, field)
 			continue
 		}
-		for i := 0; i < field.Type.NumField(); i++ {
-			bfsQueue.PushBack(field.Type.Field(i))
+
+		// TODO: add test case for pointer too
+		fieldType := field.Type
+		if fieldType.Kind() == reflect.Pointer {
+			fieldType = fieldType.Elem()
+		}
+
+		for i := 0; i < fieldType.NumField(); i++ {
+			bfsQueue.PushBack(fieldType.Field(i))
 		}
 	}
 	return fields
