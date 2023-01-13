@@ -11,13 +11,13 @@ const MaxHistoryOccurances = 3
 
 // TODO: should omit empty denote non required fields in the json schema?
 type Schema struct {
-	Type                  JsType               `json:"type"`
+	Type                  JavascriptType       `json:"type"`
 	Properities           map[string]*Property `json:"properties,omitempty"`
 	AdditionalProperities *Property            `json:"additionalProperties,omitempty"`
 }
 
 type Property struct {
-	Type                  JsType               `json:"type"`
+	Type                  JavascriptType       `json:"type"`
 	Items                 *Item                `json:"items,omitempty"`
 	Properities           map[string]*Property `json:"properties,omitempty"`
 	AdditionalProperities *Property            `json:"additionalProperties,omitempty"`
@@ -26,7 +26,7 @@ type Property struct {
 // TODO: panic for now, add support for adding schemas to $defs in case of cycles
 
 type Item struct {
-	Type        JsType               `json:"type"`
+	Type        JavascriptType       `json:"type"`
 	Properities map[string]*Property `json:"properties,omitempty"`
 }
 
@@ -46,18 +46,18 @@ func NewSchema(golangType reflect.Type) (*Schema, error) {
 
 // TODO: add tests for errors being triggered
 
-type JsType string
+type JavascriptType int
 
 const (
-	Invalid JsType = "invalid"
-	Boolean        = "boolean"
-	String         = "string"
-	Number         = "number"
-	Object         = "object"
-	Array          = "array"
+	Invalid JavascriptType = iota
+	Boolean
+	String
+	Number
+	Object
+	Array
 )
 
-func javascriptType(golangType reflect.Type) (JsType, error) {
+func javascriptType(golangType reflect.Type) (JavascriptType, error) {
 	switch golangType.Kind() {
 	case reflect.Bool:
 		return Boolean, nil
