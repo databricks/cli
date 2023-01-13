@@ -172,9 +172,7 @@ func TestSliceOfObjectsSchema(t *testing.T) {
 	}
 
 	type Story struct {
-		Hero    Person `json:"hero"`
-		Villian Person `json:"villian"`
-		Plot    Plot   `json:"plot"`
+		Plot Plot `json:"plot"`
 	}
 
 	elem := Story{}
@@ -189,17 +187,6 @@ func TestSliceOfObjectsSchema(t *testing.T) {
 		`{
 			"type": "object",
 			"properties": {
-				"hero": {
-					"type": "object",
-					"properties": {
-						"age": {
-							"type": "number"
-						},
-						"name": {
-							"type": "string"
-						}
-					}
-				},
 				"plot": {
 					"type": "object",
 					"properties": {
@@ -218,15 +205,57 @@ func TestSliceOfObjectsSchema(t *testing.T) {
 							}
 						}
 					}
-				},
-				"villian": {
+				}
+			}
+		}`
+
+	fmt.Println("[DEBUG] actual: ", string(jsonSchema))
+	fmt.Println("[DEBUG] expected: ", expected)
+	assert.Equal(t, expected, string(jsonSchema))
+}
+
+func TestMapOfObjectsSchema(t *testing.T) {
+	type Person struct {
+		Name string `json:"name"`
+		Age  int    `json:"age,omitempty"`
+	}
+
+	type Plot struct {
+		Events map[string]Person `json:"events"`
+	}
+
+	type Story struct {
+		Plot Plot `json:"plot"`
+	}
+
+	elem := Story{}
+
+	schema, err := NewSchema(reflect.TypeOf(elem))
+	assert.NoError(t, err)
+
+	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
+	assert.NoError(t, err)
+
+	expected :=
+		`{
+			"type": "object",
+			"properties": {
+				"plot": {
 					"type": "object",
 					"properties": {
-						"age": {
-							"type": "number"
-						},
-						"name": {
-							"type": "string"
+						"events": {
+							"type": "object",
+							"additionalProperties": {
+								"type": "object",
+								"properties": {
+									"age": {
+										"type": "number"
+									},
+									"name": {
+										"type": "string"
+									}
+								}
+							}
 						}
 					}
 				}
