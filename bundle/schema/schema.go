@@ -6,17 +6,21 @@ import (
 	"strings"
 )
 
-// TODO: should omit empty denote non required fields in the json schema
+const MaxHistoryOccurances = 3
+
+// TODO: should omit empty denote non required fields in the json schema?
 type Schema struct {
-	Type        JsType               `json:"type"`
-	Properities map[string]*Property `json:"properities,omitempty"`
+	Type                  JsType               `json:"type"`
+	Properities           map[string]*Property `json:"properities,omitempty"`
+	AdditionalProperities *Property            `json:"additionalProperities,omitempty"`
 }
 
 type Property struct {
 	// TODO: Add a enum for json types
-	Type        JsType               `json:"type"`
-	Items       *Item                `json:"item,omitempty"`
-	Properities map[string]*Property `json:"properities,omitempty"`
+	Type                  JsType               `json:"type"`
+	Items                 *Item                `json:"item,omitempty"`
+	Properities           map[string]*Property `json:"properities,omitempty"`
+	AdditionalProperities *Property            `json:"additionalProperities,omitempty"`
 }
 
 type Item struct {
@@ -29,8 +33,9 @@ func NewSchema(goType reflect.Type) (*Schema, error) {
 		return nil, err
 	}
 	return &Schema{
-		Type:        rootProp.Type,
-		Properities: rootProp.Properities,
+		Type:                  rootProp.Type,
+		Properities:           rootProp.Properities,
+		AdditionalProperities: rootProp.AdditionalProperities,
 	}, nil
 }
 
@@ -45,7 +50,6 @@ const (
 	Array          = "array"
 )
 
-// TODO: add support for pointers
 func jsType(goType reflect.Type) (JsType, error) {
 	switch goType.Kind() {
 	case reflect.Bool:
@@ -71,8 +75,8 @@ func jsType(goType reflect.Type) (JsType, error) {
 
 // TODO: handle case of self referential pointers in structs
 
-// TODO: add support for lower case field name if json tag is missing
-func properity(goType reflect.Type) (*Property, error) {
+// TODO: add doc string explaining numHistoryOccurances
+func properity(goType reflect.Type, numHistoryOccurances map[string]int) (*Property, error) {
 	// *Struct and Struct generate identical json schemas
 	if goType.Kind() == reflect.Pointer {
 		return properity(goType.Elem())
@@ -100,26 +104,48 @@ func properity(goType reflect.Type) (*Property, error) {
 	}
 
 	properities := map[string]*Property{}
+	var additionalProperities *Property
+
+	// TODO: for reflect.Map case for prop computation
+
 	if goType.Kind() == reflect.Struct {
 		for i := 0; i < goType.NumField(); i++ {
 			field := goType.Field(i)
+
+			// compute child properties
+			fieldJsonTag := field.Tag.Get("json")
+			fieldName := strings.Split(fieldJsonTag, ",")[0]
+
+			// stopgap infinite recursion
+			numHistoryOccurances[fieldName] += 1
+			if numHistoryOccurances[fieldName] > MaxHistoryOccurances {
+				return nil
+			}
 			fieldProps, err := properity(field.Type)
+			numHistoryOccurances[fieldName] -= 1
+
 			// TODO: make sure this error floats up with context
 			if err != nil {
 				return nil, err
 			}
-			fieldJsonTags := field.Tag.Get("json")
-			// TODO: test if this split is needed
-			fieldName := strings.Split(fieldJsonTags, ",")[0]
 
-			properities[fieldName] = fieldProps
+			if fieldJsonTag != "" {
+				properities[fieldName] = fieldProps
+			} else if additionalProperities == nil {
+				// TODO: add error disallowing self referenincing without json tags
+				additionalProperities = fieldProps
+			} else {
+				// TODO: float error up with context
+				return nil, fmt.Errorf("only one non json annotated field allowed")
+			}
 		}
 	}
 
 	return &Property{
-		Type:        rootJsType,
-		Items:       items,
-		Properities: properities,
+		Type:                  rootJsType,
+		Items:                 items,
+		Properities:           properities,
+		AdditionalProperities: additionalProperities,
 	}, nil
 
 }
