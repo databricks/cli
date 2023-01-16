@@ -16,20 +16,20 @@ const MaxHistoryOccurances = 3
 
 type Schema struct {
 	Type                  JavascriptType       `json:"type"`
-	Properities           map[string]*Property `json:"properties,omitempty"`
-	AdditionalProperities *Property            `json:"additionalProperties,omitempty"`
+	Properties           map[string]*Property `json:"properties,omitempty"`
+	AdditionalProperties *Property            `json:"additionalProperties,omitempty"`
 }
 
 type Property struct {
 	Type                  JavascriptType       `json:"type"`
 	Items                 *Item                `json:"items,omitempty"`
-	Properities           map[string]*Property `json:"properties,omitempty"`
-	AdditionalProperities *Property            `json:"additionalProperties,omitempty"`
+	Properties           map[string]*Property `json:"properties,omitempty"`
+	AdditionalProperties *Property            `json:"additionalProperties,omitempty"`
 }
 
 type Item struct {
 	Type        JavascriptType       `json:"type"`
-	Properities map[string]*Property `json:"properties,omitempty"`
+	Properties map[string]*Property `json:"properties,omitempty"`
 }
 
 func NewSchema(golangType reflect.Type) (*Schema, error) {
@@ -41,8 +41,8 @@ func NewSchema(golangType reflect.Type) (*Schema, error) {
 	}
 	return &Schema{
 		Type:                  rootProp.Type,
-		Properities:           rootProp.Properities,
-		AdditionalProperities: rootProp.AdditionalProperities,
+		Properties:           rootProp.Properties,
+		AdditionalProperties: rootProp.AdditionalProperties,
 	}, nil
 }
 
@@ -185,7 +185,7 @@ func toProperty(golangType reflect.Type, seenTypes map[reflect.Type]struct{}, de
 		items = &Item{
 			// TODO: Add a test for slice of object
 			Type:        elemJavascriptType,
-			Properities: elemProps.Properities,
+			Properties: elemProps.Properties,
 		}
 	}
 
@@ -202,7 +202,7 @@ func toProperty(golangType reflect.Type, seenTypes map[reflect.Type]struct{}, de
 	}
 
 	// case struct
-	properities := map[string]*Property{}
+	properties := map[string]*Property{}
 	if golangType.Kind() == reflect.Struct {
 		children := []reflect.StructField{}
 		children = addStructFields(children, golangType)
@@ -224,7 +224,7 @@ func toProperty(golangType reflect.Type, seenTypes map[reflect.Type]struct{}, de
 			if err != nil {
 				return nil, err
 			}
-			properities[childName] = fieldProps
+			properties[childName] = fieldProps
 
 			// remove current field from debug trace
 			back := debugTrace.Back()
@@ -235,7 +235,7 @@ func toProperty(golangType reflect.Type, seenTypes map[reflect.Type]struct{}, de
 	return &Property{
 		Type:                  rootJavascriptType,
 		Items:                 items,
-		Properities:           properities,
-		AdditionalProperities: additionalProperties,
+		Properties:           properties,
+		AdditionalProperties: additionalProperties,
 	}, nil
 }
