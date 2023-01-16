@@ -9,7 +9,6 @@ import (
 
 const MaxHistoryOccurances = 3
 
-// TODO: should omit empty denote non required fields in the json schema?
 // TODO: add tests for the error cases, forcefully triggering them
 // TODO: Add support for refs in case of a cycle
 // TODO: handle case of self referential pointers in structs
@@ -83,15 +82,14 @@ func javascriptType(golangType reflect.Type) (JavascriptType, error) {
 	}
 }
 
-// TODO: add a simple test for this
 func errWithTrace(prefix string, trace *list.List) error {
 	traceString := "root"
 	curr := trace.Front()
-	for curr.Next() != nil {
+	for curr != nil {
 		traceString += " -> " + curr.Value.(string)
 		curr = curr.Next()
 	}
-	return fmt.Errorf("[ERROR] " + prefix + ". traveral trace: " + traceString)
+	return fmt.Errorf("[ERROR] " + prefix + ". traversal trace: " + traceString)
 }
 
 // A wrapper over toProperty function with checks for an cycles to avoid being

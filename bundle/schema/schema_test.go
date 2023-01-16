@@ -1,6 +1,7 @@
 package schema
 
 import (
+	"container/list"
 	"encoding/json"
 	"reflect"
 	"testing"
@@ -336,6 +337,21 @@ func TestEmbeddedStructSchema(t *testing.T) {
 	t.Log("[DEBUG] actual: ", string(jsonSchema))
 	t.Log("[DEBUG] expected: ", expected)
 	assert.Equal(t, expected, string(jsonSchema))
+}
+
+func TestErrorWithTrace(t *testing.T) {
+	debugTrace := list.New()
+	err := errWithTrace("with empty trace", debugTrace)
+	assert.ErrorContains(t, err, "[ERROR] with empty trace. traversal trace: root")
+
+	debugTrace.PushBack("resources")
+	err = errWithTrace("with depth = 1", debugTrace)
+	assert.ErrorContains(t, err, "[ERROR] with depth = 1. traversal trace: root -> resources")
+
+	debugTrace.PushBack("pipelines")
+	debugTrace.PushBack("datasets")
+	err = errWithTrace("with depth = 4", debugTrace)
+	assert.ErrorContains(t, err, "[ERROR] with depth = 4. traversal trace: root -> resources -> pipelines -> datasets")
 }
 
 // // Only for testing bundle, will be removed
