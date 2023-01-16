@@ -33,7 +33,7 @@ type Item struct {
 func NewSchema(golangType reflect.Type) (*Schema, error) {
 	seenTypes := map[reflect.Type]struct{}{}
 	debugTrace := list.New()
-	rootProp, err := toProperity(golangType, seenTypes, debugTrace)
+	rootProp, err := toProperty(golangType, seenTypes, debugTrace)
 	if err != nil {
 		return nil, errWithTrace(err.Error(), debugTrace)
 	}
@@ -98,8 +98,8 @@ func errWithTrace(prefix string, trace *list.List) error {
 
 // TODO: add tests for the error cases, forcefully triggering them
 
-// checks and errors out for cycles
-// wraps the error with context
+// A wrapper over toProperty function with checks for an cycles to avoid being
+// stuck in an loop when traversing the config struct
 func safeToProperty(golangType reflect.Type, seenTypes map[reflect.Type]struct{}, debugTrace *list.List) (*Property, error) {
 	// detect cycles. Fail if a cycle is detected
 	// TODO: Add references here for cycles
@@ -111,7 +111,7 @@ func safeToProperty(golangType reflect.Type, seenTypes map[reflect.Type]struct{}
 	}
 	// add current child field to history
 	seenTypes[golangType] = struct{}{}
-	props, err := toProperity(golangType, seenTypes, debugTrace)
+	props, err := toProperty(golangType, seenTypes, debugTrace)
 	if err != nil {
 		return nil, err
 	}
@@ -123,6 +123,14 @@ func safeToProperty(golangType reflect.Type, seenTypes map[reflect.Type]struct{}
 // member fields of a struct
 // simple Tree based traversal will take place because embbedded fields cannot
 // form a cycle
+
+// Adds the member fields of golangType to the passed slice. Needed because
+// golangType can contain embedded fields (aka anonymous)
+// 
+// The function traverses the embedded fields in a breadth first manner
+//
+// params:
+// 	  fields: slice to which member fields of golangType will be added to
 func addStructFields(fields []reflect.StructField, golangType reflect.Type) []reflect.StructField {
 	bfsQueue := list.New()
 
@@ -154,12 +162,17 @@ func addStructFields(fields []reflect.StructField, golangType reflect.Type) []re
 
 // TODO: add ignore for -
 
-// TODO: add doc string explaining numHistoryOccurances
-func toProperity(golangType reflect.Type, seenTypes map[reflect.Type]struct{}, debugTrace *list.List) (*Property, error) {
+// params:
+//   golangType: golang type for which json schema properties to generate
+//   seenTypes : set of golang types already seen in path during recursion. 
+//               Used to identify cycles.
+//   debugTrace: linked list of golang types encounted. In case of errors this 
+//               helps log where the error originated from 
+func toProperty(golangType reflect.Type, seenTypes map[reflect.Type]struct{}, debugTrace *list.List) (*Property, error) {
 	// *Struct and Struct generate identical json schemas
 	// TODO: add test case for pointer
 	if golangType.Kind() == reflect.Pointer {
-		return toProperity(golangType.Elem(), seenTypes, debugTrace)
+		return toProperty(golangType.Elem(), seenTypes, debugTrace)
 	}
 
 	// TODO: add test case for interfaces
