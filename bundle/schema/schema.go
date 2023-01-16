@@ -115,7 +115,7 @@ func safeToProperty(golangType reflect.Type, seenTypes map[reflect.Type]struct{}
 
 // Adds the member fields of golangType to the passed slice. Needed because
 // golangType can contain embedded fields (aka anonymous)
-// 
+//
 // The function traverses the embedded fields in a breadth first manner
 //
 // params:
@@ -151,10 +151,10 @@ func addStructFields(fields []reflect.StructField, golangType reflect.Type) []re
 
 // params:
 //   golangType: golang type for which json schema properties to generate
-//   seenTypes : set of golang types already seen in path during recursion. 
+//   seenTypes : set of golang types already seen in path during recursion.
 //               Used to identify cycles.
-//   debugTrace: linked list of golang types encounted. In case of errors this 
-//               helps log where the error originated from 
+//   debugTrace: linked list of golang types encounted. In case of errors this
+//               helps log where the error originated from
 func toProperty(golangType reflect.Type, seenTypes map[reflect.Type]struct{}, debugTrace *list.List) (*Property, error) {
 	// *Struct and Struct generate identical json schemas
 	// TODO: add test case for pointer
