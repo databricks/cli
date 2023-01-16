@@ -10,6 +10,11 @@ import (
 const MaxHistoryOccurances = 3
 
 // TODO: should omit empty denote non required fields in the json schema?
+// TODO: add tests for the error cases, forcefully triggering them
+// TODO: Add support for refs in case of a cycle
+// TODO: handle case of self referential pointers in structs
+// TODO: add ignore for -
+
 type Schema struct {
 	Type                  JavascriptType       `json:"type"`
 	Properities           map[string]*Property `json:"properties,omitempty"`
@@ -22,8 +27,6 @@ type Property struct {
 	Properities           map[string]*Property `json:"properties,omitempty"`
 	AdditionalProperities *Property            `json:"additionalProperties,omitempty"`
 }
-
-// TODO: panic for now, add support for adding schemas to $defs in case of cycles
 
 type Item struct {
 	Type        JavascriptType       `json:"type"`
@@ -43,8 +46,6 @@ func NewSchema(golangType reflect.Type) (*Schema, error) {
 		AdditionalProperities: rootProp.AdditionalProperities,
 	}, nil
 }
-
-// TODO: add tests for errors being triggered
 
 type JavascriptType string
 
@@ -93,23 +94,16 @@ func errWithTrace(prefix string, trace *list.List) error {
 	return fmt.Errorf("[ERROR] " + prefix + ". traveral trace: " + traceString)
 }
 
-// TODO: handle case of self referential pointers in structs
-// TODO: add handling of embedded types
-
-// TODO: add tests for the error cases, forcefully triggering them
-
 // A wrapper over toProperty function with checks for an cycles to avoid being
 // stuck in an loop when traversing the config struct
 func safeToProperty(golangType reflect.Type, seenTypes map[reflect.Type]struct{}, debugTrace *list.List) (*Property, error) {
 	// detect cycles. Fail if a cycle is detected
-	// TODO: Add references here for cycles
-	// TODO: move this check somewhere nicer
 	_, ok := seenTypes[golangType]
 	if ok {
 		fmt.Println("[DEBUG] traceSet: ", seenTypes)
 		return nil, fmt.Errorf("cycle detected")
 	}
-	// add current child field to history
+	// Update set of types in current path
 	seenTypes[golangType] = struct{}{}
 	props, err := toProperty(golangType, seenTypes, debugTrace)
 	if err != nil {
@@ -118,11 +112,6 @@ func safeToProperty(golangType reflect.Type, seenTypes map[reflect.Type]struct{}
 	delete(seenTypes, golangType)
 	return props, nil
 }
-
-// travels anonymous embedded fields in a bfs manner to give us a list of all
-// member fields of a struct
-// simple Tree based traversal will take place because embbedded fields cannot
-// form a cycle
 
 // Adds the member fields of golangType to the passed slice. Needed because
 // golangType can contain embedded fields (aka anonymous)
@@ -159,8 +148,6 @@ func addStructFields(fields []reflect.StructField, golangType reflect.Type) []re
 	}
 	return fields
 }
-
-// TODO: add ignore for -
 
 // params:
 //   golangType: golang type for which json schema properties to generate
