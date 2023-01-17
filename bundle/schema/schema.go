@@ -43,6 +43,7 @@ import (
 										type: object
 										properties: {}
 									}
+	for details visit: https://json-schema.org/understanding-json-schema/reference/object.html#properties
 */
 type Schema struct {
 	Type                 JavascriptType       `json:"type"`
@@ -53,13 +54,13 @@ type Schema struct {
 
 type Property struct {
 	Type                 JavascriptType       `json:"type"`
-	Items                *Item                `json:"items,omitempty"`
+	Items                *Items               `json:"items,omitempty"`
 	Properties           map[string]*Property `json:"properties,omitempty"`
 	AdditionalProperties *Property            `json:"additionalProperties,omitempty"`
 	Required             []string             `json:"required,omitempty"`
 }
 
-type Item struct {
+type Items struct {
 	Type       JavascriptType       `json:"type"`
 	Properties map[string]*Property `json:"properties,omitempty"`
 	Required   []string             `json:"required,omitempty"`
@@ -188,6 +189,8 @@ func addStructFields(fields []reflect.StructField, golangType reflect.Type) []re
 	return fields
 }
 
+// TODO: see what kind of schema will be generated for interface{}
+
 // params:
 //   golangType: golang type for which json schema properties to generate
 //   seenTypes : set of golang types already seen in path during recursion.
@@ -212,7 +215,7 @@ func toProperty(golangType reflect.Type, seenTypes map[reflect.Type]struct{}, de
 	}
 
 	// case array/slice
-	var items *Item
+	var items *Items
 	if golangType.Kind() == reflect.Array || golangType.Kind() == reflect.Slice {
 		elemGolangType := golangType.Elem()
 		elemJavascriptType, err := javascriptType(elemGolangType)
@@ -223,7 +226,7 @@ func toProperty(golangType reflect.Type, seenTypes map[reflect.Type]struct{}, de
 		if err != nil {
 			return nil, err
 		}
-		items = &Item{
+		items = &Items{
 			// TODO: Add a test for slice of object
 			Type:       elemJavascriptType,
 			Properties: elemProps.Properties,
@@ -238,6 +241,8 @@ func toProperty(golangType reflect.Type, seenTypes map[reflect.Type]struct{}, de
 		if golangType.Key().Kind() != reflect.String {
 			return nil, fmt.Errorf("only string keyed maps allowed")
 		}
+		// TODO: Add a test for map of maps, and map of slices. Check that there
+		// is already a test for map of objects and map of primites
 		additionalProperties, err = safeToProperty(golangType.Elem(), seenTypes, debugTrace)
 		if err != nil {
 			return nil, err
