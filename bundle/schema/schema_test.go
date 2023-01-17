@@ -16,7 +16,12 @@ import (
 // TODO: See that all golang reflect types are covered (reasonalble limits) within
 // these tests
 
-func TestSIntSchema(t *testing.T) {
+// TODO: test what json schema is generated for an interface{} type. Make sure the behavior makes sense
+
+// TODO: Have a test that combines multiple different cases
+// TODO: have a test for what happens when omitempty in different cases: primitives, object, map, array
+
+func TestIntSchema(t *testing.T) {
 	var elemInt int
 
 	expected :=
@@ -73,7 +78,7 @@ func TestStringSchema(t *testing.T) {
 	assert.Equal(t, expected, string(jsonSchema))
 }
 
-func TestSchemaObjectOfPrimitives(t *testing.T) {
+func TestStructOfPrimitivesSchema(t *testing.T) {
 	type Foo struct {
 		IntVal   int   `json:"int_val"`
 		Int8Val  int8  `json:"int8_val"`
@@ -148,6 +153,56 @@ func TestSchemaObjectOfPrimitives(t *testing.T) {
 				},
 				"uint_val": {
 					"type": "number"
+				}
+			}
+		}`
+
+	t.Log("[DEBUG] actual: ", string(jsonSchema))
+	t.Log("[DEBUG] expected: ", expected)
+	assert.Equal(t, expected, string(jsonSchema))
+}
+
+func TestStructOfStructsSchema(t *testing.T) {
+	type Bar struct {
+		A int    `json:"a"`
+		B string `json:"b,string"`
+	}
+
+	type Foo struct {
+		Bar Bar `json:"bar"`
+	}
+
+	type MyStruct struct {
+		Foo Foo `json:"foo"`
+	}
+
+	elem := MyStruct{}
+
+	schema, err := NewSchema(reflect.TypeOf(elem))
+	assert.NoError(t, err)
+
+	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
+	assert.NoError(t, err)
+
+	expected :=
+		`{
+			"type": "object",
+			"properties": {
+				"foo": {
+					"type": "object",
+					"properties": {
+						"bar": {
+							"type": "object",
+							"properties": {
+								"a": {
+									"type": "number"
+								},
+								"b": {
+									"type": "string"
+								}
+							}
+						}
+					}
 				}
 			}
 		}`
