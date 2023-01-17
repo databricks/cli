@@ -21,7 +21,6 @@ import (
 // TODO: Have a test that combines multiple different cases
 // TODO: have a test for what happens when omitempty in different cases: primitives, object, map, array
 
-
 func TestIntSchema(t *testing.T) {
 	var elemInt int
 
@@ -345,6 +344,31 @@ func TestMapOfStructSchema(t *testing.T) {
 					"my_int": {
 						"type": "number"
 					}
+				}
+			}
+		}`
+
+	t.Log("[DEBUG] actual: ", string(jsonSchema))
+	t.Log("[DEBUG] expected: ", expected)
+	assert.Equal(t, expected, string(jsonSchema))
+}
+
+func TestMapOfMapSchema(t *testing.T) {
+	var elem map[string]map[string]int
+
+	schema, err := NewSchema(reflect.TypeOf(elem))
+	assert.NoError(t, err)
+
+	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
+	assert.NoError(t, err)
+
+	expected :=
+		`{
+			"type": "object",
+			"additionalProperties": {
+				"type": "object",
+				"additionalProperties": {
+					"type": "number"
 				}
 			}
 		}`
