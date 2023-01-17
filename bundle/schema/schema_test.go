@@ -403,6 +403,110 @@ func TestMapOfSliceSchema(t *testing.T) {
 	assert.Equal(t, expected, string(jsonSchema))
 }
 
+func TestSliceOfPrimitivesSchema(t *testing.T) {
+	var elem []float32
+
+	schema, err := NewSchema(reflect.TypeOf(elem))
+	assert.NoError(t, err)
+
+	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
+	assert.NoError(t, err)
+
+	expected :=
+		`{
+			"type": "array",
+			"items": {
+				"type": "number"
+			}
+		}`
+
+	t.Log("[DEBUG] actual: ", string(jsonSchema))
+	t.Log("[DEBUG] expected: ", expected)
+	assert.Equal(t, expected, string(jsonSchema))
+}
+
+func TestSliceOfSliceSchema(t *testing.T) {
+	var elem [][]string
+
+	schema, err := NewSchema(reflect.TypeOf(elem))
+	assert.NoError(t, err)
+
+	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
+	assert.NoError(t, err)
+
+	expected :=
+		`{
+			"type": "array",
+			"items": {
+				"type": "array",
+				"items": {
+					"type": "string"
+				}
+			}
+		}`
+
+	t.Log("[DEBUG] actual: ", string(jsonSchema))
+	t.Log("[DEBUG] expected: ", expected)
+	assert.Equal(t, expected, string(jsonSchema))
+}
+
+func TestSliceOfMapSchema(t *testing.T) {
+	var elem []map[string]int
+
+	schema, err := NewSchema(reflect.TypeOf(elem))
+	assert.NoError(t, err)
+
+	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
+	assert.NoError(t, err)
+
+	expected :=
+		`{
+			"type": "array",
+			"items": {
+				"type": "object",
+				"additionalProperties": {
+					"type": "number"
+				}
+			}
+		}`
+
+	t.Log("[DEBUG] actual: ", string(jsonSchema))
+	t.Log("[DEBUG] expected: ", expected)
+	assert.Equal(t, expected, string(jsonSchema))
+}
+
+func TestSliceOfStructSchema(t *testing.T) {
+	type Foo struct {
+		MyInt int `json:"my_int"`
+	}
+
+	var elem []Foo
+
+	schema, err := NewSchema(reflect.TypeOf(elem))
+	assert.NoError(t, err)
+
+	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
+	assert.NoError(t, err)
+
+	expected :=
+		`{
+			"type": "array",
+			"items": {
+				"type": "object",
+				"properties": {
+					"my_int": {
+						"type": "number"
+					}
+				},
+				"additionalProperties": false
+			}
+		}`
+
+	t.Log("[DEBUG] actual: ", string(jsonSchema))
+	t.Log("[DEBUG] expected: ", expected)
+	assert.Equal(t, expected, string(jsonSchema))
+}
+
 func TestObjectSchema(t *testing.T) {
 	type Person struct {
 		Name string `json:"name"`

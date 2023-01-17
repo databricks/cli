@@ -84,6 +84,7 @@ func NewSchema(golangType reflect.Type) (*Schema, error) {
 		Type:                 rootProp.Type,
 		Properties:           rootProp.Properties,
 		AdditionalProperties: rootProp.AdditionalProperties,
+		Items:                rootProp.Items,
 	}, nil
 }
 
@@ -234,8 +235,10 @@ func toSchema(golangType reflect.Type, seenTypes map[reflect.Type]struct{}, debu
 		}
 		items = &Schema{
 			// TODO: Add a test for slice of object
-			Type:       elemJavascriptType,
-			Properties: elemProps.Properties,
+			Type:                 elemJavascriptType,
+			Properties:           elemProps.Properties,
+			AdditionalProperties: elemProps.AdditionalProperties,
+			Items:                elemProps.Items,
 		}
 		// TODO: what if there is an array of maps. Add additional properties to
 		// TODO: what if there are maps of maps
