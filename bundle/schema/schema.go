@@ -7,31 +7,36 @@ import (
 	"strings"
 )
 
-const MaxHistoryOccurances = 3
-
-// TODO: add tests for the error cases, forcefully triggering them
-// TODO: Add support for refs in case of a cycle
-// TODO: handle case of self referential pointers in structs
-// TODO: add ignore for -
+// TODO: Add tests for the error cases, forcefully triggering them
+// TODO: Add ignore for -
+// TODO: Add required validation for omitempty
+// TODO: Add example documentation
+// TODO: Do final checks for more validation that can be added to json schema
 
 type Schema struct {
-	Type                  JavascriptType       `json:"type"`
+	Type                 JavascriptType       `json:"type"`
 	Properties           map[string]*Property `json:"properties,omitempty"`
 	AdditionalProperties *Property            `json:"additionalProperties,omitempty"`
 }
 
 type Property struct {
-	Type                  JavascriptType       `json:"type"`
-	Items                 *Item                `json:"items,omitempty"`
+	Type                 JavascriptType       `json:"type"`
+	Items                *Item                `json:"items,omitempty"`
 	Properties           map[string]*Property `json:"properties,omitempty"`
 	AdditionalProperties *Property            `json:"additionalProperties,omitempty"`
 }
 
 type Item struct {
-	Type        JavascriptType       `json:"type"`
+	Type       JavascriptType       `json:"type"`
 	Properties map[string]*Property `json:"properties,omitempty"`
 }
 
+// NOTE about loops in golangType: Right now we error out if there is a loop
+// in the types traversed when generating the json schema. This can be solved
+// using $refs but there is complexity around making sure we do not create json
+// schema's where properties indirectly refer to each other, which would be an
+// invalid json schema. See https://json-schema.org/understanding-json-schema/structuring.html#recursion
+// for more details
 func NewSchema(golangType reflect.Type) (*Schema, error) {
 	seenTypes := map[reflect.Type]struct{}{}
 	debugTrace := list.New()
@@ -40,7 +45,7 @@ func NewSchema(golangType reflect.Type) (*Schema, error) {
 		return nil, errWithTrace(err.Error(), debugTrace)
 	}
 	return &Schema{
-		Type:                  rootProp.Type,
+		Type:                 rootProp.Type,
 		Properties:           rootProp.Properties,
 		AdditionalProperties: rootProp.AdditionalProperties,
 	}, nil
@@ -184,7 +189,7 @@ func toProperty(golangType reflect.Type, seenTypes map[reflect.Type]struct{}, de
 		}
 		items = &Item{
 			// TODO: Add a test for slice of object
-			Type:        elemJavascriptType,
+			Type:       elemJavascriptType,
 			Properties: elemProps.Properties,
 		}
 	}
@@ -233,8 +238,8 @@ func toProperty(golangType reflect.Type, seenTypes map[reflect.Type]struct{}, de
 	}
 
 	return &Property{
-		Type:                  rootJavascriptType,
-		Items:                 items,
+		Type:                 rootJavascriptType,
+		Items:                items,
 		Properties:           properties,
 		AdditionalProperties: additionalProperties,
 	}, nil
