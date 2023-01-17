@@ -212,6 +212,86 @@ func TestStructOfStructsSchema(t *testing.T) {
 	assert.Equal(t, expected, string(jsonSchema))
 }
 
+func TestStructOfMapsSchema(t *testing.T) {
+	type Bar struct {
+		MyMap map[string]int `json:"my_map"`
+	}
+
+	type Foo struct {
+		Bar Bar `json:"bar"`
+	}
+
+	elem := Foo{}
+
+	schema, err := NewSchema(reflect.TypeOf(elem))
+	assert.NoError(t, err)
+
+	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
+	assert.NoError(t, err)
+
+	expected :=
+		`{
+			"type": "object",
+			"properties": {
+				"bar": {
+					"type": "object",
+					"properties": {
+						"my_map": {
+							"type": "object",
+							"additionalProperties": {
+								"type": "number"
+							}
+						}
+					}
+				}
+			}
+		}`
+
+	t.Log("[DEBUG] actual: ", string(jsonSchema))
+	t.Log("[DEBUG] expected: ", expected)
+	assert.Equal(t, expected, string(jsonSchema))
+}
+
+func TestStructOfSliceSchema(t *testing.T) {
+	type Bar struct {
+		MySlice []string `json:"my_slice"`
+	}
+
+	type Foo struct {
+		Bar Bar `json:"bar"`
+	}
+
+	elem := Foo{}
+
+	schema, err := NewSchema(reflect.TypeOf(elem))
+	assert.NoError(t, err)
+
+	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
+	assert.NoError(t, err)
+
+	expected :=
+		`{
+			"type": "object",
+			"properties": {
+				"bar": {
+					"type": "object",
+					"properties": {
+						"my_slice": {
+							"type": "array",
+							"items": {
+								"type": "string"
+							}
+						}
+					}
+				}
+			}
+		}`
+
+	t.Log("[DEBUG] actual: ", string(jsonSchema))
+	t.Log("[DEBUG] expected: ", expected)
+	assert.Equal(t, expected, string(jsonSchema))
+}
+
 func TestObjectSchema(t *testing.T) {
 	type Person struct {
 		Name string `json:"name"`
