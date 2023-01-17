@@ -507,75 +507,6 @@ func TestSliceOfStructSchema(t *testing.T) {
 	assert.Equal(t, expected, string(jsonSchema))
 }
 
-func TestObjectSchema(t *testing.T) {
-	type Person struct {
-		Name string `json:"name"`
-		Age  int    `json:"age,omitempty"`
-	}
-
-	type Plot struct {
-		Stakes []string `json:"stakes"`
-	}
-
-	type Story struct {
-		Hero    Person `json:"hero"`
-		Villian Person `json:"villian"`
-		Plot    Plot   `json:"plot"`
-	}
-
-	elem := Story{}
-
-	schema, err := NewSchema(reflect.TypeOf(elem))
-	assert.NoError(t, err)
-
-	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
-	assert.NoError(t, err)
-
-	expected :=
-		`{
-			"type": "object",
-			"properties": {
-				"hero": {
-					"type": "object",
-					"properties": {
-						"age": {
-							"type": "number"
-						},
-						"name": {
-							"type": "string"
-						}
-					}
-				},
-				"plot": {
-					"type": "object",
-					"properties": {
-						"stakes": {
-							"type": "array",
-							"items": {
-								"type": "string"
-							}
-						}
-					}
-				},
-				"villian": {
-					"type": "object",
-					"properties": {
-						"age": {
-							"type": "number"
-						},
-						"name": {
-							"type": "string"
-						}
-					}
-				}
-			}
-		}`
-
-	t.Log("[DEBUG] actual: ", string(jsonSchema))
-	t.Log("[DEBUG] expected: ", expected)
-	assert.Equal(t, expected, string(jsonSchema))
-}
-
 func TestEmbeddedStructSchema(t *testing.T) {
 	type Person struct {
 		Name string `json:"name"`
@@ -721,6 +652,75 @@ func TestDashFieldsAreSkipped(t *testing.T) {
 	t.Log("[DEBUG] expected: ", expectedSchema)
 
 	assert.Equal(t, expectedSchema, string(jsonSchema))
+}
+
+func TestObjectSchema(t *testing.T) {
+	type Person struct {
+		Name string `json:"name"`
+		Age  int    `json:"age,omitempty"`
+	}
+
+	type Plot struct {
+		Stakes []string `json:"stakes"`
+	}
+
+	type Story struct {
+		Hero    Person `json:"hero"`
+		Villian Person `json:"villian"`
+		Plot    Plot   `json:"plot"`
+	}
+
+	elem := Story{}
+
+	schema, err := NewSchema(reflect.TypeOf(elem))
+	assert.NoError(t, err)
+
+	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
+	assert.NoError(t, err)
+
+	expected :=
+		`{
+			"type": "object",
+			"properties": {
+				"hero": {
+					"type": "object",
+					"properties": {
+						"age": {
+							"type": "number"
+						},
+						"name": {
+							"type": "string"
+						}
+					}
+				},
+				"plot": {
+					"type": "object",
+					"properties": {
+						"stakes": {
+							"type": "array",
+							"items": {
+								"type": "string"
+							}
+						}
+					}
+				},
+				"villian": {
+					"type": "object",
+					"properties": {
+						"age": {
+							"type": "number"
+						},
+						"name": {
+							"type": "string"
+						}
+					}
+				}
+			}
+		}`
+
+	t.Log("[DEBUG] actual: ", string(jsonSchema))
+	t.Log("[DEBUG] expected: ", expected)
+	assert.Equal(t, expected, string(jsonSchema))
 }
 
 // // Only for testing bundle, will be removed
