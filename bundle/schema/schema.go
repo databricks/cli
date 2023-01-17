@@ -12,10 +12,43 @@ import (
 // TODO: Add example documentation
 // TODO: Do final checks for more validation that can be added to json schema
 
+/*
+	This is a struct to translate golang types into json schema. Here is the mapping
+	between json schema types and golang types
+
+	- GolangType               ->    Javascript type / Json Schema
+
+	Javascript Primitives:
+	- bool                     ->    boolean
+	- string                   ->    string
+	- int (all variants)       ->    number
+	- float (all variants)     ->    number
+
+	Json Schema Fields:
+	- map[string]MyStruct      ->   {
+										type: object
+										additionalProperties: {}
+									}
+	for details visit: https://json-schema.org/understanding-json-schema/reference/object.html#additional-properties
+
+	- []MyStruct               ->   {
+										type: array
+										items: {}
+									}
+
+	for details visit: https://json-schema.org/understanding-json-schema/reference/array.html#items
+
+
+	- []MyStruct               ->   {
+										type: object
+										properties: {}
+									}
+*/
 type Schema struct {
 	Type                 JavascriptType       `json:"type"`
 	Properties           map[string]*Property `json:"properties,omitempty"`
 	AdditionalProperties *Property            `json:"additionalProperties,omitempty"`
+	Required             []string             `json:"required,omitempty"`
 }
 
 type Property struct {
@@ -23,11 +56,13 @@ type Property struct {
 	Items                *Item                `json:"items,omitempty"`
 	Properties           map[string]*Property `json:"properties,omitempty"`
 	AdditionalProperties *Property            `json:"additionalProperties,omitempty"`
+	Required             []string             `json:"required,omitempty"`
 }
 
 type Item struct {
 	Type       JavascriptType       `json:"type"`
 	Properties map[string]*Property `json:"properties,omitempty"`
+	Required   []string             `json:"required,omitempty"`
 }
 
 // NOTE about loops in golangType: Right now we error out if there is a loop
@@ -61,6 +96,8 @@ const (
 	Array   JavascriptType = "array"
 )
 
+// TODO: document that only string keys allowed in maps
+// TODO: document mapping between schema and json
 func javascriptType(golangType reflect.Type) (JavascriptType, error) {
 	switch golangType.Kind() {
 	case reflect.Bool:
@@ -191,6 +228,8 @@ func toProperty(golangType reflect.Type, seenTypes map[reflect.Type]struct{}, de
 			Type:       elemJavascriptType,
 			Properties: elemProps.Properties,
 		}
+		// TODO: what if there is an array of maps. Add additional properties to
+		// TODO: what if there are maps of maps
 	}
 
 	// case map
