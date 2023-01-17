@@ -11,12 +11,13 @@ import (
 // TODO: Add required validation for omitempty
 // TODO: Add example documentation
 // TODO: Do final checks for more validation that can be added to json schema
+// TODO: Run all tests to see code coverage and add tests for missing assertions
 
 /*
 	This is a struct to translate golang types into json schema. Here is the mapping
 	between json schema types and golang types
 
-	- GolangType               ->    Javascript type / Json Schema
+	- GolangType               ->    Javascript type / Json Schema2
 
 	Javascript Primitives:
 	- bool                     ->    boolean
@@ -24,7 +25,7 @@ import (
 	- int (all variants)       ->    number
 	- float (all variants)     ->    number
 
-	Json Schema Fields:
+	Json Schema2 Fields:
 	- map[string]MyStruct      ->   {
 										type: object
 										additionalProperties: {}
@@ -46,24 +47,11 @@ import (
 	for details visit: https://json-schema.org/understanding-json-schema/reference/object.html#properties
 */
 type Schema struct {
-	Type                 JavascriptType       `json:"type"`
-	Properties           map[string]*Property `json:"properties,omitempty"`
-	AdditionalProperties *Property            `json:"additionalProperties,omitempty"`
-	Required             []string             `json:"required,omitempty"`
-}
-
-type Property struct {
-	Type                 JavascriptType       `json:"type"`
-	Items                *Items               `json:"items,omitempty"`
-	Properties           map[string]*Property `json:"properties,omitempty"`
-	AdditionalProperties *Property            `json:"additionalProperties,omitempty"`
-	Required             []string             `json:"required,omitempty"`
-}
-
-type Items struct {
-	Type       JavascriptType       `json:"type"`
-	Properties map[string]*Property `json:"properties,omitempty"`
-	Required   []string             `json:"required,omitempty"`
+	Type                 JavascriptType     `json:"type"`
+	Items                *Schema            `json:"items,omitempty"`
+	Properties           map[string]*Schema `json:"properties,omitempty"`
+	AdditionalProperties *Schema            `json:"additionalProperties,omitempty"`
+	Required             []string           `json:"required,omitempty"`
 }
 
 // NOTE about loops in golangType: Right now we error out if there is a loop
@@ -75,7 +63,7 @@ type Items struct {
 func NewSchema(golangType reflect.Type) (*Schema, error) {
 	seenTypes := map[reflect.Type]struct{}{}
 	debugTrace := list.New()
-	rootProp, err := toProperty(golangType, seenTypes, debugTrace)
+	rootProp, err := toSchema(golangType, seenTypes, debugTrace)
 	if err != nil {
 		return nil, errWithTrace(err.Error(), debugTrace)
 	}
@@ -136,7 +124,7 @@ func errWithTrace(prefix string, trace *list.List) error {
 
 // A wrapper over toProperty function with checks for an cycles to avoid being
 // stuck in an loop when traversing the config struct
-func safeToProperty(golangType reflect.Type, seenTypes map[reflect.Type]struct{}, debugTrace *list.List) (*Property, error) {
+func safeToSchema(golangType reflect.Type, seenTypes map[reflect.Type]struct{}, debugTrace *list.List) (*Schema, error) {
 	// detect cycles. Fail if a cycle is detected
 	_, ok := seenTypes[golangType]
 	if ok {
@@ -145,7 +133,7 @@ func safeToProperty(golangType reflect.Type, seenTypes map[reflect.Type]struct{}
 	}
 	// Update set of types in current path
 	seenTypes[golangType] = struct{}{}
-	props, err := toProperty(golangType, seenTypes, debugTrace)
+	props, err := toSchema(golangType, seenTypes, debugTrace)
 	if err != nil {
 		return nil, err
 	}
@@ -197,11 +185,11 @@ func addStructFields(fields []reflect.StructField, golangType reflect.Type) []re
 //               Used to identify cycles.
 //   debugTrace: linked list of golang types encounted. In case of errors this
 //               helps log where the error originated from
-func toProperty(golangType reflect.Type, seenTypes map[reflect.Type]struct{}, debugTrace *list.List) (*Property, error) {
+func toSchema(golangType reflect.Type, seenTypes map[reflect.Type]struct{}, debugTrace *list.List) (*Schema, error) {
 	// *Struct and Struct generate identical json schemas
 	// TODO: add test case for pointer
 	if golangType.Kind() == reflect.Pointer {
-		return toProperty(golangType.Elem(), seenTypes, debugTrace)
+		return toSchema(golangType.Elem(), seenTypes, debugTrace)
 	}
 
 	// TODO: add test case for interfaces
@@ -215,18 +203,18 @@ func toProperty(golangType reflect.Type, seenTypes map[reflect.Type]struct{}, de
 	}
 
 	// case array/slice
-	var items *Items
+	var items *Schema
 	if golangType.Kind() == reflect.Array || golangType.Kind() == reflect.Slice {
 		elemGolangType := golangType.Elem()
 		elemJavascriptType, err := javascriptType(elemGolangType)
 		if err != nil {
 			return nil, err
 		}
-		elemProps, err := safeToProperty(elemGolangType, seenTypes, debugTrace)
+		elemProps, err := safeToSchema(elemGolangType, seenTypes, debugTrace)
 		if err != nil {
 			return nil, err
 		}
-		items = &Items{
+		items = &Schema{
 			// TODO: Add a test for slice of object
 			Type:       elemJavascriptType,
 			Properties: elemProps.Properties,
@@ -236,21 +224,21 @@ func toProperty(golangType reflect.Type, seenTypes map[reflect.Type]struct{}, de
 	}
 
 	// case map
-	var additionalProperties *Property
+	var additionalProperties *Schema
 	if golangType.Kind() == reflect.Map {
 		if golangType.Key().Kind() != reflect.String {
 			return nil, fmt.Errorf("only string keyed maps allowed")
 		}
 		// TODO: Add a test for map of maps, and map of slices. Check that there
 		// is already a test for map of objects and map of primites
-		additionalProperties, err = safeToProperty(golangType.Elem(), seenTypes, debugTrace)
+		additionalProperties, err = safeToSchema(golangType.Elem(), seenTypes, debugTrace)
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	// case struct
-	properties := map[string]*Property{}
+	properties := map[string]*Schema{}
 	if golangType.Kind() == reflect.Struct {
 		children := []reflect.StructField{}
 		children = addStructFields(children, golangType)
@@ -268,7 +256,7 @@ func toProperty(golangType reflect.Type, seenTypes map[reflect.Type]struct{}, de
 			}
 
 			// recursively compute properties for this child field
-			fieldProps, err := safeToProperty(child.Type, seenTypes, debugTrace)
+			fieldProps, err := safeToSchema(child.Type, seenTypes, debugTrace)
 			if err != nil {
 				return nil, err
 			}
@@ -280,7 +268,7 @@ func toProperty(golangType reflect.Type, seenTypes map[reflect.Type]struct{}, de
 		}
 	}
 
-	return &Property{
+	return &Schema{
 		Type:                 rootJavascriptType,
 		Items:                items,
 		Properties:           properties,
