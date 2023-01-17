@@ -21,6 +21,7 @@ import (
 // TODO: Have a test that combines multiple different cases
 // TODO: have a test for what happens when omitempty in different cases: primitives, object, map, array
 
+
 func TestIntSchema(t *testing.T) {
 	var elemInt int
 
@@ -109,7 +110,7 @@ func TestStructOfPrimitivesSchema(t *testing.T) {
 	assert.NoError(t, err)
 
 	expected :=
-		`{
+		` {
 			"type": "object",
 			"properties": {
 				"bool_val": {
@@ -154,7 +155,8 @@ func TestStructOfPrimitivesSchema(t *testing.T) {
 				"uint_val": {
 					"type": "number"
 				}
-			}
+			},
+			"additionalProperties": false
 		}`
 
 	t.Log("[DEBUG] actual: ", string(jsonSchema))
@@ -200,11 +202,14 @@ func TestStructOfStructsSchema(t *testing.T) {
 								"b": {
 									"type": "string"
 								}
-							}
+							},
+							"additionalProperties": false
 						}
-					}
+					},
+					"additionalProperties": false
 				}
-			}
+			},
+			"additionalProperties": false
 		}`
 
 	t.Log("[DEBUG] actual: ", string(jsonSchema))
@@ -242,9 +247,11 @@ func TestStructOfMapsSchema(t *testing.T) {
 								"type": "number"
 							}
 						}
-					}
+					},
+					"additionalProperties": false
 				}
-			}
+			},
+			"additionalProperties": false
 		}`
 
 	t.Log("[DEBUG] actual: ", string(jsonSchema))
@@ -282,9 +289,11 @@ func TestStructOfSliceSchema(t *testing.T) {
 								"type": "string"
 							}
 						}
-					}
+					},
+					"additionalProperties": false
 				}
-			}
+			},
+			"additionalProperties": false
 		}`
 
 	t.Log("[DEBUG] actual: ", string(jsonSchema))
@@ -306,6 +315,37 @@ func TestMapOfPrimitivesSchema(t *testing.T) {
 			"type": "object",
 			"additionalProperties": {
 				"type": "number"
+			}
+		}`
+
+	t.Log("[DEBUG] actual: ", string(jsonSchema))
+	t.Log("[DEBUG] expected: ", expected)
+	assert.Equal(t, expected, string(jsonSchema))
+}
+
+func TestMapOfStructSchema(t *testing.T) {
+	type Foo struct {
+		MyInt int `json:"my_int"`
+	}
+
+	var elem map[string]Foo
+
+	schema, err := NewSchema(reflect.TypeOf(elem))
+	assert.NoError(t, err)
+
+	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
+	assert.NoError(t, err)
+
+	expected :=
+		`{
+			"type": "object",
+			"additionalProperties": {
+				"type": "object",
+				"properties": {
+					"my_int": {
+						"type": "number"
+					}
+				}
 			}
 		}`
 

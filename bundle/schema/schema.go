@@ -19,33 +19,25 @@ type Schema struct {
 	// Type of the object
 	Type JavascriptType `json:"type"`
 
-	// TODO: See what happens if these REQUIRED constraint is not satisfied
-	// Type == object if this is non empty
 	// keys are named properties of the object
 	// values are json schema for the values of the named properties
 	Properties map[string]*Schema `json:"properties,omitempty"`
 
-	// REQUIRED: Type == array if this is non empty
 	// the schema for all values of the array
 	Items *Schema `json:"items,omitempty"`
 
-	// REQUIRED: Type == object if this is non empty
 	// the schema for any properties not mentioned in the Schema.Properties field.
 	// we leverage this to validate Maps in bundle configuration
-	AdditionalProperties *Schema `json:"additionalProperties,omitempty"`
+	// OR
+	// a boolean type with value false
+	//
+	// Its type during runtime will either be *Schema or bool
+	AdditionalProperties interface{} `json:"additionalProperties,omitempty"`
 
-	// REQUIRED: Type == object if this is non empty
 	// required properties for the object. Any propertites listed here should
 	// also be listed in Schema.Properties
 	Required []string `json:"required,omitempty"`
 }
-
-// NOTE about loops in golangType: Right now we error out if there is a loop
-// in the types traversed when generating the json schema. This can be solved
-// using $refs but there is complexity around making sure we do not create json
-// schemas where properties indirectly refer to each other, which would be an
-// invalid json schema. See https://json-schema.org/understanding-json-schema/structuring.html#recursion
-// for more details
 
 /*
 	This function translates golang types into json schema. Here is the mapping
@@ -77,6 +69,7 @@ type Schema struct {
 	- []MyStruct               ->   {
 										type: object
 										properties: {}
+										additionalProperties: false
 									}
 	for details visit: https://json-schema.org/understanding-json-schema/reference/object.html#properties
 */
@@ -142,10 +135,15 @@ func errWithTrace(prefix string, trace *list.List) error {
 	return fmt.Errorf("[ERROR] " + prefix + ". traversal trace: " + traceString)
 }
 
-// A wrapper over toProperty function with checks for an cycles to avoid being
-// stuck in an loop when traversing the config struct
+// A wrapper over toSchema function to detect cycles in the bundle config struct
 func safeToSchema(golangType reflect.Type, seenTypes map[reflect.Type]struct{}, debugTrace *list.List) (*Schema, error) {
-	// detect cycles. Fail if a cycle is detected
+	// WE ERROR OUT IF THERE ARE CYCLES IN THE JSON SCHEMA
+	// There are mechanisms to deal with cycles though recursive identifiers in json
+	// schema. However if we use them, we would need to make sure we are able to detect
+	// cycles two properties (directly or indirectly) pointing to each other
+	//
+	// see: https://json-schema.org/understanding-json-schema/structuring.html#recursion
+	// for details
 	_, ok := seenTypes[golangType]
 	if ok {
 		fmt.Println("[DEBUG] traceSet: ", seenTypes)
@@ -244,7 +242,7 @@ func toSchema(golangType reflect.Type, seenTypes map[reflect.Type]struct{}, debu
 	}
 
 	// case map
-	var additionalProperties *Schema
+	var additionalProperties interface{}
 	if golangType.Kind() == reflect.Map {
 		if golangType.Key().Kind() != reflect.String {
 			return nil, fmt.Errorf("only string keyed maps allowed")
@@ -285,6 +283,9 @@ func toSchema(golangType reflect.Type, seenTypes map[reflect.Type]struct{}, debu
 			// remove current field from debug trace
 			back := debugTrace.Back()
 			debugTrace.Remove(back)
+
+			// set Schema.AdditionalProperties to false
+			additionalProperties = false
 		}
 	}
 
