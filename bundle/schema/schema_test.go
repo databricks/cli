@@ -13,7 +13,67 @@ import (
 // TODO: add tests to assert that these are valid json schemas. Maybe validate some
 // json/yaml documents againts them, by unmarshalling a value
 
-func TestNumberStringBooleanSchema(t *testing.T) {
+// TODO: See that all golang reflect types are covered (reasonalble limits) within
+// these tests
+
+func TestSIntSchema(t *testing.T) {
+	var elemInt int
+
+	expected :=
+		`{
+			"type": "number"
+		}`
+
+	Int, err := NewSchema(reflect.TypeOf(elemInt))
+	require.NoError(t, err)
+
+	jsonSchema, err := json.MarshalIndent(Int, "		", "	")
+	assert.NoError(t, err)
+
+	t.Log("[DEBUG] actual: ", string(jsonSchema))
+	t.Log("[DEBUG] expected: ", expected)
+	assert.Equal(t, expected, string(jsonSchema))
+}
+
+func TestBooleanSchema(t *testing.T) {
+	var elem bool
+
+	expected :=
+		`{
+			"type": "boolean"
+		}`
+
+	Int, err := NewSchema(reflect.TypeOf(elem))
+	require.NoError(t, err)
+
+	jsonSchema, err := json.MarshalIndent(Int, "		", "	")
+	assert.NoError(t, err)
+
+	t.Log("[DEBUG] actual: ", string(jsonSchema))
+	t.Log("[DEBUG] expected: ", expected)
+	assert.Equal(t, expected, string(jsonSchema))
+}
+
+func TestStringSchema(t *testing.T) {
+	var elem string
+
+	expected :=
+		`{
+			"type": "string"
+		}`
+
+	Int, err := NewSchema(reflect.TypeOf(elem))
+	require.NoError(t, err)
+
+	jsonSchema, err := json.MarshalIndent(Int, "		", "	")
+	assert.NoError(t, err)
+
+	t.Log("[DEBUG] actual: ", string(jsonSchema))
+	t.Log("[DEBUG] expected: ", expected)
+	assert.Equal(t, expected, string(jsonSchema))
+}
+
+func TestSchemaObjectOfPrimitives(t *testing.T) {
 	type Foo struct {
 		IntVal   int   `json:"int_val"`
 		Int8Val  int8  `json:"int8_val"`
@@ -21,17 +81,18 @@ func TestNumberStringBooleanSchema(t *testing.T) {
 		Int32Val int32 `json:"int32_val"`
 		Int64Val int64 `json:"int64_val"`
 
-		Uint8Val  int8  `json:"uint8_val"`
-		Uint16Val int16 `json:"uint16_val"`
-		Uint32Val int32 `json:"uint32_val"`
-		Uint64Val int64 `json:"uint64_val"`
+		UIntVal   uint   `json:"uint_val"`
+		Uint8Val  uint8  `json:"uint8_val"`
+		Uint16Val uint16 `json:"uint16_val"`
+		Uint32Val uint32 `json:"uint32_val"`
+		Uint64Val uint64 `json:"uint64_val"`
 
-		Float32Val int64 `json:"float32_val"`
-		Float64Val int64 `json:"float64_val"`
+		Float32Val float32 `json:"float32_val"`
+		Float64Val float64 `json:"float64_val"`
 
 		StringVal string `json:"string_val"`
 
-		BoolVal string `json:"bool_val"`
+		BoolVal bool `json:"bool_val"`
 	}
 
 	elem := Foo{}
@@ -47,7 +108,7 @@ func TestNumberStringBooleanSchema(t *testing.T) {
 			"type": "object",
 			"properties": {
 				"bool_val": {
-					"type": "string"
+					"type": "boolean"
 				},
 				"float32_val": {
 					"type": "number"
@@ -83,6 +144,9 @@ func TestNumberStringBooleanSchema(t *testing.T) {
 					"type": "number"
 				},
 				"uint8_val": {
+					"type": "number"
+				},
+				"uint_val": {
 					"type": "number"
 				}
 			}
