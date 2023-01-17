@@ -292,6 +292,28 @@ func TestStructOfSliceSchema(t *testing.T) {
 	assert.Equal(t, expected, string(jsonSchema))
 }
 
+func TestMapOfPrimitivesSchema(t *testing.T) {
+	var elem map[string]int
+
+	schema, err := NewSchema(reflect.TypeOf(elem))
+	assert.NoError(t, err)
+
+	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
+	assert.NoError(t, err)
+
+	expected :=
+		`{
+			"type": "object",
+			"additionalProperties": {
+				"type": "number"
+			}
+		}`
+
+	t.Log("[DEBUG] actual: ", string(jsonSchema))
+	t.Log("[DEBUG] expected: ", expected)
+	assert.Equal(t, expected, string(jsonSchema))
+}
+
 func TestObjectSchema(t *testing.T) {
 	type Person struct {
 		Name string `json:"name"`
