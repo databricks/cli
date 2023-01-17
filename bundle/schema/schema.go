@@ -12,9 +12,43 @@ import (
 // TODO: Add example documentation
 // TODO: Do final checks for more validation that can be added to json schema
 // TODO: Run all tests to see code coverage and add tests for missing assertions
+// TODO: test all permutations of types [primitives, maps, arrays, objects]
+
+// defines schema for a json object
+type Schema struct {
+	// Type of the object
+	Type JavascriptType `json:"type"`
+
+	// TODO: See what happens if these REQUIRED constraint is not satisfied
+	// Type == object if this is non empty
+	// keys are named properties of the object
+	// values are json schema for the values of the named properties
+	Properties map[string]*Schema `json:"properties,omitempty"`
+
+	// REQUIRED: Type == array if this is non empty
+	// the schema for all values of the array
+	Items *Schema `json:"items,omitempty"`
+
+	// REQUIRED: Type == object if this is non empty
+	// the schema for any properties not mentioned in the Schema.Properties field.
+	// we leverage this to validate Maps in bundle configuration
+	AdditionalProperties *Schema `json:"additionalProperties,omitempty"`
+
+	// REQUIRED: Type == object if this is non empty
+	// required properties for the object. Any propertites listed here should
+	// also be listed in Schema.Properties
+	Required []string `json:"required,omitempty"`
+}
+
+// NOTE about loops in golangType: Right now we error out if there is a loop
+// in the types traversed when generating the json schema. This can be solved
+// using $refs but there is complexity around making sure we do not create json
+// schemas where properties indirectly refer to each other, which would be an
+// invalid json schema. See https://json-schema.org/understanding-json-schema/structuring.html#recursion
+// for more details
 
 /*
-	This is a struct to translate golang types into json schema. Here is the mapping
+	This function translates golang types into json schema. Here is the mapping
 	between json schema types and golang types
 
 	- GolangType               ->    Javascript type / Json Schema2
@@ -46,20 +80,6 @@ import (
 									}
 	for details visit: https://json-schema.org/understanding-json-schema/reference/object.html#properties
 */
-type Schema struct {
-	Type                 JavascriptType     `json:"type"`
-	Items                *Schema            `json:"items,omitempty"`
-	Properties           map[string]*Schema `json:"properties,omitempty"`
-	AdditionalProperties *Schema            `json:"additionalProperties,omitempty"`
-	Required             []string           `json:"required,omitempty"`
-}
-
-// NOTE about loops in golangType: Right now we error out if there is a loop
-// in the types traversed when generating the json schema. This can be solved
-// using $refs but there is complexity around making sure we do not create json
-// schemas where properties indirectly refer to each other, which would be an
-// invalid json schema. See https://json-schema.org/understanding-json-schema/structuring.html#recursion
-// for more details
 func NewSchema(golangType reflect.Type) (*Schema, error) {
 	seenTypes := map[reflect.Type]struct{}{}
 	debugTrace := list.New()
