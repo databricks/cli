@@ -8,7 +8,6 @@ import (
 )
 
 // TODO: Add tests for the error cases, forcefully triggering them
-// TODO: Add ignore for -
 // TODO: Add required validation for omitempty
 // TODO: Add example documentation
 // TODO: Do final checks for more validation that can be added to json schema
@@ -34,7 +33,7 @@ type Item struct {
 // NOTE about loops in golangType: Right now we error out if there is a loop
 // in the types traversed when generating the json schema. This can be solved
 // using $refs but there is complexity around making sure we do not create json
-// schema's where properties indirectly refer to each other, which would be an
+// schemas where properties indirectly refer to each other, which would be an
 // invalid json schema. See https://json-schema.org/understanding-json-schema/structuring.html#recursion
 // for more details
 func NewSchema(golangType reflect.Type) (*Schema, error) {
@@ -219,8 +218,8 @@ func toProperty(golangType reflect.Type, seenTypes map[reflect.Type]struct{}, de
 			// add current field to debug trace
 			debugTrace.PushBack(childName)
 
-			// skip non json annotated fields
-			if childName == "" {
+			// skip fields that are not annotated or annotated with "-"
+			if childName == "" || childName == "-" {
 				continue
 			}
 

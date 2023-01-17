@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TODO: add tests to assert that these are valid json schemas. Maybe validate some
@@ -352,6 +353,66 @@ func TestErrorWithTrace(t *testing.T) {
 	debugTrace.PushBack("datasets")
 	err = errWithTrace("with depth = 4", debugTrace)
 	assert.ErrorContains(t, err, "[ERROR] with depth = 4. traversal trace: root -> resources -> pipelines -> datasets")
+}
+
+func TestNonAnnotatedFieldsAreSkipped(t *testing.T) {
+	type MyStruct struct {
+		Foo string
+		Bar int `json:"bar"`
+	}
+
+	elem := MyStruct{}
+
+	schema, err := NewSchema(reflect.TypeOf(elem))
+	require.NoError(t, err)
+
+	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
+	assert.NoError(t, err)
+
+	expectedSchema :=
+		`{
+			"type": "object",
+			"properties": {
+				"bar": {
+					"type": "number"
+				}
+			}
+		}`
+
+	t.Log("[DEBUG] actual: ", string(jsonSchema))
+	t.Log("[DEBUG] expected: ", expectedSchema)
+
+	assert.Equal(t, expectedSchema, string(jsonSchema))
+}
+
+func TestDashFieldsAreSkipped(t *testing.T) {
+	type MyStruct struct {
+		Foo string `json:"-"`
+		Bar int    `json:"bar"`
+	}
+
+	elem := MyStruct{}
+
+	schema, err := NewSchema(reflect.TypeOf(elem))
+	require.NoError(t, err)
+
+	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
+	assert.NoError(t, err)
+
+	expectedSchema :=
+		`{
+			"type": "object",
+			"properties": {
+				"bar": {
+					"type": "number"
+				}
+			}
+		}`
+
+	t.Log("[DEBUG] actual: ", string(jsonSchema))
+	t.Log("[DEBUG] expected: ", expectedSchema)
+
+	assert.Equal(t, expectedSchema, string(jsonSchema))
 }
 
 // // Only for testing bundle, will be removed
