@@ -10,8 +10,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TODO: Have a test that combines multiple different cases
-
 func TestIntSchema(t *testing.T) {
 	var elemInt int
 
@@ -1190,20 +1188,20 @@ func TestInterfaceGeneratesEmptySchema(t *testing.T) {
 	assert.Equal(t, expected, string(jsonSchema))
 }
 
-// // Only for testing bundle, will be removed
+// A toy test to generate the schema for bundle. Will be removed once we have a
+// command to generate the json schema
 // func TestBundleSchema(t *testing.T) {
 // 	elem := config.Root{}
 
-// 	schema, err := NewSchema(reflect.TypeOf(elem))
+// 	docs, err := LoadDocs("./bundle_config_docs.yml")
+// 	require.NoError(t, err)
+
+// 	schema, err := NewSchema(reflect.TypeOf(elem), docs)
 // 	assert.NoError(t, err)
 
 // 	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
 // 	assert.NoError(t, err)
 
-// 	expected :=
-// 		``
-
 // 	t.Log("[DEBUG] actual: ", string(jsonSchema))
-// 	t.Log("[DEBUG] expected: ", expected)
-// 	assert.Equal(t, expected, string(jsonSchema))
+// 	assert.True(t, false)
 // }

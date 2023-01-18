@@ -1,0 +1,12 @@
+documentation: Root of the bundle config
+children:
+  bundle:
+    documentation: |
+      Bundle contains details about this bundle, such as its name,
+      version of the spec (TODO), default cluster, default warehouse, etc.
+    children:
+      environment:
+        documentation: Environment is set by the mutator that selects the environment.
+
+  artifacts:
+    documentation: Artifacts contains a description of all code artifacts in this bundle.

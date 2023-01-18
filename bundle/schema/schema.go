@@ -7,10 +7,6 @@ import (
 	"strings"
 )
 
-// TODO: Add example documentation
-// TODO: Do final checks for more validation that can be added to json schema
-// TODO: cleanup docs and reorder code if needed
-
 // defines schema for a json object
 type Schema struct {
 	// Type of the object
