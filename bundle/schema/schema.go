@@ -165,7 +165,8 @@ func safeToSchema(golangType reflect.Type, docs *Docs, debugTraceId string, seen
 //
 // params:
 // 	  fields: slice to which member fields of golangType will be added to
-func addStructFields(fields []reflect.StructField, golangType reflect.Type) []reflect.StructField {
+func getStructFields(golangType reflect.Type) []reflect.StructField {
+	fields := []reflect.StructField{}
 	bfsQueue := list.New()
 
 	for i := 0; i < golangType.NumField(); i++ {
@@ -256,8 +257,7 @@ func toSchema(golangType reflect.Type, docs *Docs, seenTypes map[reflect.Type]st
 	properties := map[string]*Schema{}
 	required := []string{}
 	if golangType.Kind() == reflect.Struct {
-		children := []reflect.StructField{}
-		children = addStructFields(children, golangType)
+		children := getStructFields(golangType)
 		for _, child := range children {
 			// get child json tags
 			childJsonTag := strings.Split(child.Tag.Get("json"), ",")
