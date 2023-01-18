@@ -7,15 +7,14 @@ import (
 	"strings"
 )
 
-// TODO: Add tests for the error cases, forcefully triggering them
 // TODO: Add example documentation
 // TODO: Do final checks for more validation that can be added to json schema
-// TODO: Run all tests to see code coverage and add tests for missing assertions
+// TODO: cleanup docs and reorder code if needed
 
 // defines schema for a json object
 type Schema struct {
 	// Type of the object
-	Type JavascriptType `json:"type"`
+	Type JavascriptType `json:"type,omitempty"`
 
 	// Description of the object. This is rendered as inline documentation in the
 	// IDE
@@ -96,7 +95,6 @@ const (
 	Array   JavascriptType = "array"
 )
 
-// TODO: document that only string keys allowed in maps
 func javascriptType(golangType reflect.Type) (JavascriptType, error) {
 	switch golangType.Kind() {
 	case reflect.Bool:
@@ -191,8 +189,6 @@ func addStructFields(fields []reflect.StructField, golangType reflect.Type) []re
 	return fields
 }
 
-// TODO: see what kind of schema will be generated for interface{}
-
 // params:
 //   golangType: golang type for which json schema properties to generate
 //   seenTypes : set of golang types already seen in path during recursion.
@@ -205,9 +201,8 @@ func toSchema(golangType reflect.Type, docs *Docs, seenTypes map[reflect.Type]st
 		return toSchema(golangType.Elem(), docs, seenTypes, debugTrace)
 	}
 
-	// TODO: add test case for interfaces
 	if golangType.Kind() == reflect.Interface {
-		return nil, nil
+		return &Schema{}, nil
 	}
 
 	rootJavascriptType, err := javascriptType(golangType)
@@ -233,15 +228,12 @@ func toSchema(golangType reflect.Type, docs *Docs, seenTypes map[reflect.Type]st
 			return nil, err
 		}
 		items = &Schema{
-			// TODO: Add a test for slice of object
 			Type:                 elemJavascriptType,
 			Properties:           elemProps.Properties,
 			AdditionalProperties: elemProps.AdditionalProperties,
 			Items:                elemProps.Items,
 			Required:             elemProps.Required,
 		}
-		// TODO: what if there is an array of maps. Add additional properties to
-		// TODO: what if there are maps of maps
 	}
 
 	// case map
@@ -250,8 +242,6 @@ func toSchema(golangType reflect.Type, docs *Docs, seenTypes map[reflect.Type]st
 		if golangType.Key().Kind() != reflect.String {
 			return nil, fmt.Errorf("only string keyed maps allowed")
 		}
-		// TODO: Add a test for map of maps, and map of slices. Check that there
-		// is already a test for map of objects and map of primites
 		additionalProperties, err = safeToSchema(golangType.Elem(), docs, seenTypes, debugTrace)
 		if err != nil {
 			return nil, err
@@ -265,11 +255,12 @@ func toSchema(golangType reflect.Type, docs *Docs, seenTypes map[reflect.Type]st
 		children := []reflect.StructField{}
 		children = addStructFields(children, golangType)
 		for _, child := range children {
-			// compute child properties
+			// get child json tags
 			childJsonTag := strings.Split(child.Tag.Get("json"), ",")
 			childName := childJsonTag[0]
 
-			// skip fields that are not annotated or annotated with "-"
+			// skip children that have no json tags, the first json tag is ""
+			// or the first json tag is "-"
 			if childName == "" || childName == "-" {
 				continue
 			}
@@ -282,7 +273,8 @@ func toSchema(golangType reflect.Type, docs *Docs, seenTypes map[reflect.Type]st
 				}
 			}
 
-			// TODO: Add test for omitempty
+			// compute if the child is a required field. Determined by the
+			// resence of "omitempty" in the json tags
 			hasOmitEmptyTag := false
 			for i := 1; i < len(childJsonTag); i++ {
 				if childJsonTag[i] == "omitempty" {
@@ -293,25 +285,19 @@ func toSchema(golangType reflect.Type, docs *Docs, seenTypes map[reflect.Type]st
 				required = append(required, childName)
 			}
 
-			// add current field to debug trace
-			// TODO: Add tests testing correct traversal and adding of strings
-			// into debugTrace
+			// compute Schema.Properties for the child recursively
 			debugTrace.PushBack(childName)
-
-			// recursively compute properties for this child field
 			fieldProps, err := safeToSchema(child.Type, childDocs, seenTypes, debugTrace)
 			if err != nil {
 				return nil, err
 			}
 			properties[childName] = fieldProps
-
-			// remove current field from debug trace
 			back := debugTrace.Back()
 			debugTrace.Remove(back)
-
-			// set Schema.AdditionalProperties to false
-			additionalProperties = false
 		}
+
+		// set Schema.AdditionalProperties to false
+		additionalProperties = false
 	}
 
 	return &Schema{

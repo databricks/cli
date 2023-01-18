@@ -10,16 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TODO: add tests to assert that these are valid json schemas. Maybe validate some
-// json/yaml documents againts them, by unmarshalling a value
-
-// TODO: See that all golang reflect types are covered (reasonalble limits) within
-// these tests
-
-// TODO: test what json schema is generated for an interface{} type. Make sure the behavior makes sense
-
 // TODO: Have a test that combines multiple different cases
-// TODO: have a test for what happens when omitempty in different cases: primitives, object, map, array
 
 func TestIntSchema(t *testing.T) {
 	var elemInt int
@@ -1126,6 +1117,77 @@ func TestDocIngestionInSchema(t *testing.T) {
 	t.Log("[DEBUG] expected: ", expectedSchema)
 
 	assert.Equal(t, expectedSchema, string(jsonSchema))
+}
+
+func TestErrorOnMapWithoutStringKey(t *testing.T) {
+	type Foo struct {
+		Bar map[int]string `json:"bar"`
+	}
+	elem := Foo{}
+	_, err := NewSchema(reflect.TypeOf(elem), nil)
+	assert.ErrorContains(t, err, "only strings map keys are valid. key type: int")
+}
+
+func TestErrorIfStructRefersToItself(t *testing.T) {
+	type Foo struct {
+		MyFoo *Foo `json:"my_foo"`
+	}
+
+	elem := Foo{}
+	_, err := NewSchema(reflect.TypeOf(elem), nil)
+	assert.ErrorContains(t, err, "ERROR] cycle detected. traversal trace: root -> my_foo -> my_foo")
+}
+
+func TestErrorIfStructHasLoop(t *testing.T) {
+	type Apple struct {
+		MyVal   int `json:"my_val"`
+		MyMango struct {
+			MyGuava struct {
+				MyPapaya struct {
+					MyApple *Apple `json:"my_apple"`
+				} `json:"my_papaya"`
+			} `json:"my_guava"`
+		} `json:"my_mango"`
+	}
+
+	elem := Apple{}
+	_, err := NewSchema(reflect.TypeOf(elem), nil)
+	assert.ErrorContains(t, err, "[ERROR] cycle detected. traversal trace: root -> my_mango -> my_guava -> my_papaya -> my_apple -> my_mango")
+}
+
+func TestInterfaceGeneratesEmptySchema(t *testing.T) {
+	type Foo struct {
+		Apple int         `json:"apple"`
+		Mango interface{} `json:"mango"`
+	}
+
+	elem := Foo{}
+
+	schema, err := NewSchema(reflect.TypeOf(elem), nil)
+	assert.NoError(t, err)
+
+	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
+	assert.NoError(t, err)
+
+	expected :=
+		`{
+			"type": "object",
+			"properties": {
+				"apple": {
+					"type": "number"
+				},
+				"mango": {}
+			},
+			"additionalProperties": false,
+			"required": [
+				"apple",
+				"mango"
+			]
+		}`
+
+	t.Log("[DEBUG] actual: ", string(jsonSchema))
+	t.Log("[DEBUG] expected: ", expected)
+	assert.Equal(t, expected, string(jsonSchema))
 }
 
 // // Only for testing bundle, will be removed
