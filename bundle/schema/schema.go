@@ -36,40 +36,31 @@ type Schema struct {
 	Required []string `json:"required,omitempty"`
 }
 
-/*
-	This function translates golang types into json schema. Here is the mapping
-	between json schema types and golang types
-
-	- GolangType               ->    Javascript type / Json Schema2
-
-	Javascript Primitives:
-	- bool                     ->    boolean
-	- string                   ->    string
-	- int (all variants)       ->    number
-	- float (all variants)     ->    number
-
-	Json Schema2 Fields:
-	- map[string]MyStruct      ->   {
-										type: object
-										additionalProperties: {}
-									}
-	for details visit: https://json-schema.org/understanding-json-schema/reference/object.html#additional-properties
-
-	- []MyStruct               ->   {
-										type: array
-										items: {}
-									}
-
-	for details visit: https://json-schema.org/understanding-json-schema/reference/array.html#items
-
-
-	- []MyStruct               ->   {
-										type: object
-										properties: {}
-										additionalProperties: false
-									}
-	for details visit: https://json-schema.org/understanding-json-schema/reference/object.html#properties
-*/
+// This function translates golang types into json schema. Here is the mapping
+// between json schema types and golang types
+// - GolangType               ->    Javascript type / Json Schema2
+// Javascript Primitives:
+// - bool                     ->    boolean
+// - string                   ->    string
+// - int (all variants)       ->    number
+// - float (all variants)     ->    number
+// Json Schema2 Fields:
+// - map[string]MyStruct      ->   {
+// 									type: object
+// 									additionalProperties: {}
+// 								}
+// for details visit: https://json-schema.org/understanding-json-schema/reference/object.html#additional-properties
+// - []MyStruct               ->   {
+// 									type: array
+// 									items: {}
+// 								}
+// for details visit: https://json-schema.org/understanding-json-schema/reference/array.html#items
+// - []MyStruct               ->   {
+// 									type: object
+// 									properties: {}
+// 									additionalProperties: false
+// 								}
+// for details visit: https://json-schema.org/understanding-json-schema/reference/object.html#properties
 func NewSchema(golangType reflect.Type, docs *Docs) (*Schema, error) {
 	seenTypes := map[reflect.Type]struct{}{}
 	debugTrace := list.New()
@@ -160,9 +151,9 @@ func safeToSchema(golangType reflect.Type, docs *Docs, debugTraceId string, seen
 
 // Adds the member fields of golangType to the passed slice. Needed because
 // golangType can contain embedded fields (aka anonymous)
-//
+
 // The function traverses the embedded fields in a breadth first manner
-//
+
 // params:
 // 	  fields: slice to which member fields of golangType will be added to
 func getStructFields(golangType reflect.Type) []reflect.StructField {
