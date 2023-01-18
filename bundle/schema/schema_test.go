@@ -643,7 +643,8 @@ func TestNonAnnotatedFieldsAreSkipped(t *testing.T) {
 				"bar": {
 					"type": "number"
 				}
-			}
+			},
+			"additionalProperties": false
 		}`
 
 	t.Log("[DEBUG] actual: ", string(jsonSchema))
@@ -673,7 +674,8 @@ func TestDashFieldsAreSkipped(t *testing.T) {
 				"bar": {
 					"type": "number"
 				}
-			}
+			},
+			"additionalProperties": false
 		}`
 
 	t.Log("[DEBUG] actual: ", string(jsonSchema))
@@ -682,6 +684,7 @@ func TestDashFieldsAreSkipped(t *testing.T) {
 	assert.Equal(t, expectedSchema, string(jsonSchema))
 }
 
+// TODO: last test to do once all the todos are done
 func TestObjectSchema(t *testing.T) {
 	type Person struct {
 		Name string `json:"name"`
