@@ -109,7 +109,7 @@ func TestStructOfPrimitivesSchema(t *testing.T) {
 	assert.NoError(t, err)
 
 	expected :=
-		` {
+		`{
 			"type": "object",
 			"properties": {
 				"bool_val": {
@@ -155,7 +155,23 @@ func TestStructOfPrimitivesSchema(t *testing.T) {
 					"type": "number"
 				}
 			},
-			"additionalProperties": false
+			"additionalProperties": false,
+			"required": [
+				"int_val",
+				"int8_val",
+				"int16_val",
+				"int32_val",
+				"int64_val",
+				"uint_val",
+				"uint8_val",
+				"uint16_val",
+				"uint32_val",
+				"uint64_val",
+				"float32_val",
+				"float64_val",
+				"string_val",
+				"bool_val"
+			]
 		}`
 
 	t.Log("[DEBUG] actual: ", string(jsonSchema))
@@ -202,13 +218,23 @@ func TestStructOfStructsSchema(t *testing.T) {
 									"type": "string"
 								}
 							},
-							"additionalProperties": false
+							"additionalProperties": false,
+							"required": [
+								"a",
+								"b"
+							]
 						}
 					},
-					"additionalProperties": false
+					"additionalProperties": false,
+					"required": [
+						"bar"
+					]
 				}
 			},
-			"additionalProperties": false
+			"additionalProperties": false,
+			"required": [
+				"foo"
+			]
 		}`
 
 	t.Log("[DEBUG] actual: ", string(jsonSchema))
@@ -247,10 +273,16 @@ func TestStructOfMapsSchema(t *testing.T) {
 							}
 						}
 					},
-					"additionalProperties": false
+					"additionalProperties": false,
+					"required": [
+						"my_map"
+					]
 				}
 			},
-			"additionalProperties": false
+			"additionalProperties": false,
+			"required": [
+				"bar"
+			]
 		}`
 
 	t.Log("[DEBUG] actual: ", string(jsonSchema))
@@ -289,10 +321,16 @@ func TestStructOfSliceSchema(t *testing.T) {
 							}
 						}
 					},
-					"additionalProperties": false
+					"additionalProperties": false,
+					"required": [
+						"my_slice"
+					]
 				}
 			},
-			"additionalProperties": false
+			"additionalProperties": false,
+			"required": [
+				"bar"
+			]
 		}`
 
 	t.Log("[DEBUG] actual: ", string(jsonSchema))
@@ -344,7 +382,11 @@ func TestMapOfStructSchema(t *testing.T) {
 					"my_int": {
 						"type": "number"
 					}
-				}
+				},
+				"additionalProperties": false,
+				"required": [
+					"my_int"
+				]
 			}
 		}`
 
@@ -498,7 +540,10 @@ func TestSliceOfStructSchema(t *testing.T) {
 						"type": "number"
 					}
 				},
-				"additionalProperties": false
+				"additionalProperties": false,
+				"required": [
+					"my_int"
+				]
 			}
 		}`
 
@@ -557,7 +602,10 @@ func TestEmbeddedStructSchema(t *testing.T) {
 							"type": "string"
 						}
 					},
-					"additionalProperties": false
+					"additionalProperties": false,
+					"required": [
+						"country"
+					]
 				},
 				"name": {
 					"type": "string"
@@ -583,23 +631,39 @@ func TestEmbeddedStructSchema(t *testing.T) {
 												"type": "string"
 											}
 										},
-										"additionalProperties": false
+										"additionalProperties": false,
+										"required": [
+											"country"
+										]
 									},
 									"name": {
 										"type": "string"
 									}
 								},
-								"additionalProperties": false
+								"additionalProperties": false,
+								"required": [
+									"name",
+									"home"
+								]
 							}
 						}
 					},
-					"additionalProperties": false
+					"additionalProperties": false,
+					"required": [
+						"events"
+					]
 				},
 				"state": {
 					"type": "string"
 				}
 			},
-			"additionalProperties": false
+			"additionalProperties": false,
+			"required": [
+				"plot",
+				"name",
+				"home",
+				"country"
+			]
 		}`
 
 	t.Log("[DEBUG] actual: ", string(jsonSchema))
@@ -644,7 +708,10 @@ func TestNonAnnotatedFieldsAreSkipped(t *testing.T) {
 					"type": "number"
 				}
 			},
-			"additionalProperties": false
+			"additionalProperties": false,
+			"required": [
+				"bar"
+			]
 		}`
 
 	t.Log("[DEBUG] actual: ", string(jsonSchema))
@@ -675,7 +742,10 @@ func TestDashFieldsAreSkipped(t *testing.T) {
 					"type": "number"
 				}
 			},
-			"additionalProperties": false
+			"additionalProperties": false,
+			"required": [
+				"bar"
+			]
 		}`
 
 	t.Log("[DEBUG] actual: ", string(jsonSchema))
@@ -717,7 +787,10 @@ func TestPointerInStructSchema(t *testing.T) {
 							"type": "number"
 						}
 					},
-					"additionalProperties": false
+					"additionalProperties": false,
+					"required": [
+						"ptr_val2"
+					]
 				},
 				"float_val": {
 					"type": "number"
@@ -729,7 +802,10 @@ func TestPointerInStructSchema(t *testing.T) {
 							"type": "number"
 						}
 					},
-					"additionalProperties": false
+					"additionalProperties": false,
+					"required": [
+						"ptr_val2"
+					]
 				},
 				"ptr_int": {
 					"type": "number"
@@ -738,7 +814,14 @@ func TestPointerInStructSchema(t *testing.T) {
 					"type": "string"
 				}
 			},
-			"additionalProperties": false
+			"additionalProperties": false,
+			"required": [
+				"ptr_int",
+				"ptr_string",
+				"float_val",
+				"ptr_bar",
+				"bar"
+			]
 		}`
 
 	t.Log("[DEBUG] actual: ", string(jsonSchema))
@@ -785,7 +868,11 @@ func TestObjectSchema(t *testing.T) {
 						"name": {
 							"type": "string"
 						}
-					}
+					},
+					"additionalProperties": false,
+					"required": [
+						"name"
+					]
 				},
 				"plot": {
 					"type": "object",
@@ -796,7 +883,11 @@ func TestObjectSchema(t *testing.T) {
 								"type": "string"
 							}
 						}
-					}
+					},
+					"additionalProperties": false,
+					"required": [
+						"stakes"
+					]
 				},
 				"villian": {
 					"type": "object",
@@ -807,9 +898,19 @@ func TestObjectSchema(t *testing.T) {
 						"name": {
 							"type": "string"
 						}
-					}
+					},
+					"additionalProperties": false,
+					"required": [
+						"name"
+					]
 				}
-			}
+			},
+			"additionalProperties": false,
+			"required": [
+				"hero",
+				"villian",
+				"plot"
+			]
 		}`
 
 	t.Log("[DEBUG] actual: ", string(jsonSchema))

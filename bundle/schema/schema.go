@@ -84,6 +84,7 @@ func NewSchema(golangType reflect.Type) (*Schema, error) {
 		Properties:           rootProp.Properties,
 		AdditionalProperties: rootProp.AdditionalProperties,
 		Items:                rootProp.Items,
+		Required:             rootProp.Required,
 	}, nil
 }
 
@@ -168,7 +169,7 @@ func safeToSchema(golangType reflect.Type, seenTypes map[reflect.Type]struct{}, 
 func addStructFields(fields []reflect.StructField, golangType reflect.Type) []reflect.StructField {
 	bfsQueue := list.New()
 
-	for i := golangType.NumField() - 1; i >= 0; i-- {
+	for i := 0; i < golangType.NumField(); i++ {
 		bfsQueue.PushBack(golangType.Field(i))
 	}
 	for bfsQueue.Len() > 0 {
@@ -203,7 +204,6 @@ func addStructFields(fields []reflect.StructField, golangType reflect.Type) []re
 //               helps log where the error originated from
 func toSchema(golangType reflect.Type, seenTypes map[reflect.Type]struct{}, debugTrace *list.List) (*Schema, error) {
 	// *Struct and Struct generate identical json schemas
-	// TODO: add test case for pointer
 	if golangType.Kind() == reflect.Pointer {
 		return toSchema(golangType.Elem(), seenTypes, debugTrace)
 	}
@@ -236,6 +236,7 @@ func toSchema(golangType reflect.Type, seenTypes map[reflect.Type]struct{}, debu
 			Properties:           elemProps.Properties,
 			AdditionalProperties: elemProps.AdditionalProperties,
 			Items:                elemProps.Items,
+			Required:             elemProps.Required,
 		}
 		// TODO: what if there is an array of maps. Add additional properties to
 		// TODO: what if there are maps of maps
@@ -257,21 +258,35 @@ func toSchema(golangType reflect.Type, seenTypes map[reflect.Type]struct{}, debu
 
 	// case struct
 	properties := map[string]*Schema{}
+	required := []string{}
 	if golangType.Kind() == reflect.Struct {
 		children := []reflect.StructField{}
 		children = addStructFields(children, golangType)
 		for _, child := range children {
 			// compute child properties
-			childJsonTag := child.Tag.Get("json")
-			childName := strings.Split(childJsonTag, ",")[0]
-
-			// add current field to debug trace
-			debugTrace.PushBack(childName)
+			childJsonTag := strings.Split(child.Tag.Get("json"), ",")
+			childName := childJsonTag[0]
 
 			// skip fields that are not annotated or annotated with "-"
 			if childName == "" || childName == "-" {
 				continue
 			}
+
+			// TODO: Add test for omitempty
+			hasOmitEmptyTag := false
+			for i := 1; i < len(childJsonTag); i++ {
+				if childJsonTag[i] == "omitempty" {
+					hasOmitEmptyTag = true
+				}
+			}
+			if !hasOmitEmptyTag {
+				required = append(required, childName)
+			}
+
+			// add current field to debug trace
+			// TODO: Add tests testing correct traversal and adding of strings
+			// into debugTrace
+			debugTrace.PushBack(childName)
 
 			// recursively compute properties for this child field
 			fieldProps, err := safeToSchema(child.Type, seenTypes, debugTrace)
@@ -294,5 +309,6 @@ func toSchema(golangType reflect.Type, seenTypes map[reflect.Type]struct{}, debu
 		Items:                items,
 		Properties:           properties,
 		AdditionalProperties: additionalProperties,
+		Required:             required,
 	}, nil
 }
