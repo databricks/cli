@@ -73,7 +73,7 @@ type Schema struct {
 func NewSchema(golangType reflect.Type, docs *Docs) (*Schema, error) {
 	seenTypes := map[reflect.Type]struct{}{}
 	debugTrace := list.New()
-	schema, err := toSchema(golangType, docs, seenTypes, debugTrace)
+	schema, err := safeToSchema(golangType, docs, "", seenTypes, debugTrace)
 	if err != nil {
 		return nil, errWithTrace(err.Error(), debugTrace)
 	}
@@ -120,14 +120,16 @@ func errWithTrace(prefix string, trace *list.List) error {
 	traceString := "root"
 	curr := trace.Front()
 	for curr != nil {
-		traceString += " -> " + curr.Value.(string)
+		if curr.Value.(string) != "" {
+			traceString += " -> " + curr.Value.(string)
+		}
 		curr = curr.Next()
 	}
 	return fmt.Errorf("[ERROR] " + prefix + ". traversal trace: " + traceString)
 }
 
 // A wrapper over toSchema function to detect cycles in the bundle config struct
-func safeToSchema(golangType reflect.Type, docs *Docs, seenTypes map[reflect.Type]struct{}, debugTrace *list.List) (*Schema, error) {
+func safeToSchema(golangType reflect.Type, docs *Docs, debugTraceId string, seenTypes map[reflect.Type]struct{}, debugTrace *list.List) (*Schema, error) {
 	// WE ERROR OUT IF THERE ARE CYCLES IN THE JSON SCHEMA
 	// There are mechanisms to deal with cycles though recursive identifiers in json
 	// schema. However if we use them, we would need to make sure we are able to detect
@@ -140,12 +142,18 @@ func safeToSchema(golangType reflect.Type, docs *Docs, seenTypes map[reflect.Typ
 		fmt.Println("[DEBUG] traceSet: ", seenTypes)
 		return nil, fmt.Errorf("cycle detected")
 	}
+
 	// Update set of types in current path
 	seenTypes[golangType] = struct{}{}
+
+	// Add the json tag name of struct field to debug trace
+	debugTrace.PushBack(debugTraceId)
 	props, err := toSchema(golangType, docs, seenTypes, debugTrace)
 	if err != nil {
 		return nil, err
 	}
+	back := debugTrace.Back()
+	debugTrace.Remove(back)
 	delete(seenTypes, golangType)
 	return props, nil
 }
@@ -194,7 +202,7 @@ func addStructFields(fields []reflect.StructField, golangType reflect.Type) []re
 func toSchema(golangType reflect.Type, docs *Docs, seenTypes map[reflect.Type]struct{}, debugTrace *list.List) (*Schema, error) {
 	// *Struct and Struct generate identical json schemas
 	if golangType.Kind() == reflect.Pointer {
-		return toSchema(golangType.Elem(), docs, seenTypes, debugTrace)
+		return safeToSchema(golangType.Elem(), docs, "", seenTypes, debugTrace)
 	}
 
 	if golangType.Kind() == reflect.Interface {
@@ -219,7 +227,7 @@ func toSchema(golangType reflect.Type, docs *Docs, seenTypes map[reflect.Type]st
 		if err != nil {
 			return nil, err
 		}
-		elemProps, err := safeToSchema(elemGolangType, docs, seenTypes, debugTrace)
+		elemProps, err := safeToSchema(elemGolangType, docs, "", seenTypes, debugTrace)
 		if err != nil {
 			return nil, err
 		}
@@ -238,7 +246,7 @@ func toSchema(golangType reflect.Type, docs *Docs, seenTypes map[reflect.Type]st
 		if golangType.Key().Kind() != reflect.String {
 			return nil, fmt.Errorf("only string keyed maps allowed")
 		}
-		additionalProperties, err = safeToSchema(golangType.Elem(), docs, seenTypes, debugTrace)
+		additionalProperties, err = safeToSchema(golangType.Elem(), docs, "", seenTypes, debugTrace)
 		if err != nil {
 			return nil, err
 		}
@@ -282,14 +290,11 @@ func toSchema(golangType reflect.Type, docs *Docs, seenTypes map[reflect.Type]st
 			}
 
 			// compute Schema.Properties for the child recursively
-			debugTrace.PushBack(childName)
-			fieldProps, err := safeToSchema(child.Type, childDocs, seenTypes, debugTrace)
+			fieldProps, err := safeToSchema(child.Type, childDocs, childName, seenTypes, debugTrace)
 			if err != nil {
 				return nil, err
 			}
 			properties[childName] = fieldProps
-			back := debugTrace.Back()
-			debugTrace.Remove(back)
 		}
 
 		// set Schema.AdditionalProperties to false

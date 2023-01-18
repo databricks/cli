@@ -1133,7 +1133,7 @@ func TestErrorIfStructRefersToItself(t *testing.T) {
 
 	elem := Foo{}
 	_, err := NewSchema(reflect.TypeOf(elem), nil)
-	assert.ErrorContains(t, err, "ERROR] cycle detected. traversal trace: root -> my_foo -> my_foo")
+	assert.ErrorContains(t, err, "ERROR] cycle detected. traversal trace: root -> my_foo")
 }
 
 func TestErrorIfStructHasLoop(t *testing.T) {
@@ -1150,7 +1150,7 @@ func TestErrorIfStructHasLoop(t *testing.T) {
 
 	elem := Apple{}
 	_, err := NewSchema(reflect.TypeOf(elem), nil)
-	assert.ErrorContains(t, err, "[ERROR] cycle detected. traversal trace: root -> my_mango -> my_guava -> my_papaya -> my_apple -> my_mango")
+	assert.ErrorContains(t, err, "[ERROR] cycle detected. traversal trace: root -> my_mango -> my_guava -> my_papaya -> my_apple")
 }
 
 func TestInterfaceGeneratesEmptySchema(t *testing.T) {
