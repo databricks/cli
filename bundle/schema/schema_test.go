@@ -918,6 +918,69 @@ func TestObjectSchema(t *testing.T) {
 	assert.Equal(t, expected, string(jsonSchema))
 }
 
+func TestFieldsWithoutOmitEmptyAreRequired(t *testing.T) {
+
+	type Papaya struct {
+		A int    `json:"a,string,omitempty"`
+		B string `json:"b"`
+	}
+
+	type MyStruct struct {
+		Foo    string  `json:"-,omitempty"`
+		Bar    int     `json:"bar"`
+		Apple  int     `json:"apple,omitempty"`
+		Mango  int     `json:",omitempty"`
+		Guava  int     `json:","`
+		Papaya *Papaya `json:"papaya,"`
+	}
+
+	elem := MyStruct{}
+
+	schema, err := NewSchema(reflect.TypeOf(elem))
+	require.NoError(t, err)
+
+	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
+	assert.NoError(t, err)
+
+	expectedSchema :=
+		`{
+			"type": "object",
+			"properties": {
+				"apple": {
+					"type": "number"
+				},
+				"bar": {
+					"type": "number"
+				},
+				"papaya": {
+					"type": "object",
+					"properties": {
+						"a": {
+							"type": "number"
+						},
+						"b": {
+							"type": "string"
+						}
+					},
+					"additionalProperties": false,
+					"required": [
+						"b"
+					]
+				}
+			},
+			"additionalProperties": false,
+			"required": [
+				"bar",
+				"papaya"
+			]
+		}`
+
+	t.Log("[DEBUG] actual: ", string(jsonSchema))
+	t.Log("[DEBUG] expected: ", expectedSchema)
+
+	assert.Equal(t, expectedSchema, string(jsonSchema))
+}
+
 // // Only for testing bundle, will be removed
 // func TestBundleSchema(t *testing.T) {
 // 	elem := config.Root{}
