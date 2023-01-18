@@ -508,14 +508,15 @@ func TestSliceOfStructSchema(t *testing.T) {
 }
 
 func TestEmbeddedStructSchema(t *testing.T) {
-	type Person struct {
-		Name string `json:"name"`
-		Age  int    `json:"age,omitempty"`
-	}
-
 	type Location struct {
 		Country string `json:"country"`
 		State   string `json:"state,omitempty"`
+	}
+
+	type Person struct {
+		Name string   `json:"name"`
+		Age  int      `json:"age,omitempty"`
+		Home Location `json:"home"`
 	}
 
 	type Plot struct {
@@ -546,6 +547,18 @@ func TestEmbeddedStructSchema(t *testing.T) {
 				"country": {
 					"type": "string"
 				},
+				"home": {
+					"type": "object",
+					"properties": {
+						"country": {
+							"type": "string"
+						},
+						"state": {
+							"type": "string"
+						}
+					},
+					"additionalProperties": false
+				},
 				"name": {
 					"type": "string"
 				},
@@ -560,18 +573,33 @@ func TestEmbeddedStructSchema(t *testing.T) {
 									"age": {
 										"type": "number"
 									},
+									"home": {
+										"type": "object",
+										"properties": {
+											"country": {
+												"type": "string"
+											},
+											"state": {
+												"type": "string"
+											}
+										},
+										"additionalProperties": false
+									},
 									"name": {
 										"type": "string"
 									}
-								}
+								},
+								"additionalProperties": false
 							}
 						}
-					}
+					},
+					"additionalProperties": false
 				},
 				"state": {
 					"type": "string"
 				}
-			}
+			},
+			"additionalProperties": false
 		}`
 
 	t.Log("[DEBUG] actual: ", string(jsonSchema))
