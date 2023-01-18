@@ -819,21 +819,29 @@ func TestPointerInStructSchema(t *testing.T) {
 	assert.Equal(t, expectedSchema, string(jsonSchema))
 }
 
-// TODO: last test to do once all the todos are done
-func TestObjectSchema(t *testing.T) {
+func TestGenericSchema(t *testing.T) {
 	type Person struct {
 		Name string `json:"name"`
 		Age  int    `json:"age,omitempty"`
 	}
 
 	type Plot struct {
-		Stakes []string `json:"stakes"`
+		Stakes  []string          `json:"stakes"`
+		Deaths  []Person          `json:"deaths"`
+		Murders map[string]Person `json:"murders"`
+	}
+
+	type Wedding struct {
+		Hidden string `json:","`
+		Groom  Person `json:"groom"`
+		Bride  Person `json:"bride"`
+		Plots  []Plot `json:"plots"`
 	}
 
 	type Story struct {
-		Hero    Person `json:"hero"`
-		Villian Person `json:"villian"`
-		Plot    Plot   `json:"plot"`
+		Hero     *Person   `json:"hero"`
+		Villian  Person    `json:"villian,omitempty"`
+		Weddings []Wedding `json:"weddings"`
 	}
 
 	elem := Story{}
@@ -863,21 +871,6 @@ func TestObjectSchema(t *testing.T) {
 						"name"
 					]
 				},
-				"plot": {
-					"type": "object",
-					"properties": {
-						"stakes": {
-							"type": "array",
-							"items": {
-								"type": "string"
-							}
-						}
-					},
-					"additionalProperties": false,
-					"required": [
-						"stakes"
-					]
-				},
 				"villian": {
 					"type": "object",
 					"properties": {
@@ -892,13 +885,112 @@ func TestObjectSchema(t *testing.T) {
 					"required": [
 						"name"
 					]
+				},
+				"weddings": {
+					"type": "array",
+					"items": {
+						"type": "object",
+						"properties": {
+							"bride": {
+								"type": "object",
+								"properties": {
+									"age": {
+										"type": "number"
+									},
+									"name": {
+										"type": "string"
+									}
+								},
+								"additionalProperties": false,
+								"required": [
+									"name"
+								]
+							},
+							"groom": {
+								"type": "object",
+								"properties": {
+									"age": {
+										"type": "number"
+									},
+									"name": {
+										"type": "string"
+									}
+								},
+								"additionalProperties": false,
+								"required": [
+									"name"
+								]
+							},
+							"plots": {
+								"type": "array",
+								"items": {
+									"type": "object",
+									"properties": {
+										"deaths": {
+											"type": "array",
+											"items": {
+												"type": "object",
+												"properties": {
+													"age": {
+														"type": "number"
+													},
+													"name": {
+														"type": "string"
+													}
+												},
+												"additionalProperties": false,
+												"required": [
+													"name"
+												]
+											}
+										},
+										"murders": {
+											"type": "object",
+											"additionalProperties": {
+												"type": "object",
+												"properties": {
+													"age": {
+														"type": "number"
+													},
+													"name": {
+														"type": "string"
+													}
+												},
+												"additionalProperties": false,
+												"required": [
+													"name"
+												]
+											}
+										},
+										"stakes": {
+											"type": "array",
+											"items": {
+												"type": "string"
+											}
+										}
+									},
+									"additionalProperties": false,
+									"required": [
+										"stakes",
+										"deaths",
+										"murders"
+									]
+								}
+							}
+						},
+						"additionalProperties": false,
+						"required": [
+							"groom",
+							"bride",
+							"plots"
+						]
+					}
 				}
 			},
 			"additionalProperties": false,
 			"required": [
 				"hero",
-				"villian",
-				"plot"
+				"weddings"
 			]
 		}`
 
