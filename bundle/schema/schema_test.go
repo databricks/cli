@@ -29,7 +29,7 @@ func TestIntSchema(t *testing.T) {
 			"type": "number"
 		}`
 
-	Int, err := NewSchema(reflect.TypeOf(elemInt))
+	Int, err := NewSchema(reflect.TypeOf(elemInt), nil)
 	require.NoError(t, err)
 
 	jsonSchema, err := json.MarshalIndent(Int, "		", "	")
@@ -48,7 +48,7 @@ func TestBooleanSchema(t *testing.T) {
 			"type": "boolean"
 		}`
 
-	Int, err := NewSchema(reflect.TypeOf(elem))
+	Int, err := NewSchema(reflect.TypeOf(elem), nil)
 	require.NoError(t, err)
 
 	jsonSchema, err := json.MarshalIndent(Int, "		", "	")
@@ -67,7 +67,7 @@ func TestStringSchema(t *testing.T) {
 			"type": "string"
 		}`
 
-	Int, err := NewSchema(reflect.TypeOf(elem))
+	Int, err := NewSchema(reflect.TypeOf(elem), nil)
 	require.NoError(t, err)
 
 	jsonSchema, err := json.MarshalIndent(Int, "		", "	")
@@ -102,7 +102,7 @@ func TestStructOfPrimitivesSchema(t *testing.T) {
 
 	elem := Foo{}
 
-	schema, err := NewSchema(reflect.TypeOf(elem))
+	schema, err := NewSchema(reflect.TypeOf(elem), nil)
 	assert.NoError(t, err)
 
 	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
@@ -195,7 +195,7 @@ func TestStructOfStructsSchema(t *testing.T) {
 
 	elem := MyStruct{}
 
-	schema, err := NewSchema(reflect.TypeOf(elem))
+	schema, err := NewSchema(reflect.TypeOf(elem), nil)
 	assert.NoError(t, err)
 
 	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
@@ -253,7 +253,7 @@ func TestStructOfMapsSchema(t *testing.T) {
 
 	elem := Foo{}
 
-	schema, err := NewSchema(reflect.TypeOf(elem))
+	schema, err := NewSchema(reflect.TypeOf(elem), nil)
 	assert.NoError(t, err)
 
 	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
@@ -301,7 +301,7 @@ func TestStructOfSliceSchema(t *testing.T) {
 
 	elem := Foo{}
 
-	schema, err := NewSchema(reflect.TypeOf(elem))
+	schema, err := NewSchema(reflect.TypeOf(elem), nil)
 	assert.NoError(t, err)
 
 	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
@@ -341,7 +341,7 @@ func TestStructOfSliceSchema(t *testing.T) {
 func TestMapOfPrimitivesSchema(t *testing.T) {
 	var elem map[string]int
 
-	schema, err := NewSchema(reflect.TypeOf(elem))
+	schema, err := NewSchema(reflect.TypeOf(elem), nil)
 	assert.NoError(t, err)
 
 	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
@@ -367,7 +367,7 @@ func TestMapOfStructSchema(t *testing.T) {
 
 	var elem map[string]Foo
 
-	schema, err := NewSchema(reflect.TypeOf(elem))
+	schema, err := NewSchema(reflect.TypeOf(elem), nil)
 	assert.NoError(t, err)
 
 	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
@@ -398,7 +398,7 @@ func TestMapOfStructSchema(t *testing.T) {
 func TestMapOfMapSchema(t *testing.T) {
 	var elem map[string]map[string]int
 
-	schema, err := NewSchema(reflect.TypeOf(elem))
+	schema, err := NewSchema(reflect.TypeOf(elem), nil)
 	assert.NoError(t, err)
 
 	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
@@ -423,7 +423,7 @@ func TestMapOfMapSchema(t *testing.T) {
 func TestMapOfSliceSchema(t *testing.T) {
 	var elem map[string][]string
 
-	schema, err := NewSchema(reflect.TypeOf(elem))
+	schema, err := NewSchema(reflect.TypeOf(elem), nil)
 	assert.NoError(t, err)
 
 	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
@@ -448,7 +448,7 @@ func TestMapOfSliceSchema(t *testing.T) {
 func TestSliceOfPrimitivesSchema(t *testing.T) {
 	var elem []float32
 
-	schema, err := NewSchema(reflect.TypeOf(elem))
+	schema, err := NewSchema(reflect.TypeOf(elem), nil)
 	assert.NoError(t, err)
 
 	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
@@ -470,7 +470,7 @@ func TestSliceOfPrimitivesSchema(t *testing.T) {
 func TestSliceOfSliceSchema(t *testing.T) {
 	var elem [][]string
 
-	schema, err := NewSchema(reflect.TypeOf(elem))
+	schema, err := NewSchema(reflect.TypeOf(elem), nil)
 	assert.NoError(t, err)
 
 	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
@@ -495,7 +495,7 @@ func TestSliceOfSliceSchema(t *testing.T) {
 func TestSliceOfMapSchema(t *testing.T) {
 	var elem []map[string]int
 
-	schema, err := NewSchema(reflect.TypeOf(elem))
+	schema, err := NewSchema(reflect.TypeOf(elem), nil)
 	assert.NoError(t, err)
 
 	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
@@ -524,7 +524,7 @@ func TestSliceOfStructSchema(t *testing.T) {
 
 	var elem []Foo
 
-	schema, err := NewSchema(reflect.TypeOf(elem))
+	schema, err := NewSchema(reflect.TypeOf(elem), nil)
 	assert.NoError(t, err)
 
 	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
@@ -576,7 +576,7 @@ func TestEmbeddedStructSchema(t *testing.T) {
 
 	elem := Story{}
 
-	schema, err := NewSchema(reflect.TypeOf(elem))
+	schema, err := NewSchema(reflect.TypeOf(elem), nil)
 	assert.NoError(t, err)
 
 	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
@@ -694,7 +694,7 @@ func TestNonAnnotatedFieldsAreSkipped(t *testing.T) {
 
 	elem := MyStruct{}
 
-	schema, err := NewSchema(reflect.TypeOf(elem))
+	schema, err := NewSchema(reflect.TypeOf(elem), nil)
 	require.NoError(t, err)
 
 	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
@@ -728,7 +728,7 @@ func TestDashFieldsAreSkipped(t *testing.T) {
 
 	elem := MyStruct{}
 
-	schema, err := NewSchema(reflect.TypeOf(elem))
+	schema, err := NewSchema(reflect.TypeOf(elem), nil)
 	require.NoError(t, err)
 
 	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
@@ -770,7 +770,7 @@ func TestPointerInStructSchema(t *testing.T) {
 
 	elem := Foo{}
 
-	schema, err := NewSchema(reflect.TypeOf(elem))
+	schema, err := NewSchema(reflect.TypeOf(elem), nil)
 	require.NoError(t, err)
 
 	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
@@ -849,7 +849,7 @@ func TestObjectSchema(t *testing.T) {
 
 	elem := Story{}
 
-	schema, err := NewSchema(reflect.TypeOf(elem))
+	schema, err := NewSchema(reflect.TypeOf(elem), nil)
 	assert.NoError(t, err)
 
 	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
@@ -936,7 +936,7 @@ func TestFieldsWithoutOmitEmptyAreRequired(t *testing.T) {
 
 	elem := MyStruct{}
 
-	schema, err := NewSchema(reflect.TypeOf(elem))
+	schema, err := NewSchema(reflect.TypeOf(elem), nil)
 	require.NoError(t, err)
 
 	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
@@ -972,6 +972,153 @@ func TestFieldsWithoutOmitEmptyAreRequired(t *testing.T) {
 			"required": [
 				"bar",
 				"papaya"
+			]
+		}`
+
+	t.Log("[DEBUG] actual: ", string(jsonSchema))
+	t.Log("[DEBUG] expected: ", expectedSchema)
+
+	assert.Equal(t, expectedSchema, string(jsonSchema))
+}
+
+func TestDocIngestionInSchema(t *testing.T) {
+	docs := &Docs{
+		Documentation: "docs for root",
+		Children: map[string]Docs{
+			"my_struct": {
+				Documentation: "docs for my struct",
+			},
+			"my_val": {
+				Documentation: "docs for my val",
+			},
+			"my_slice": {
+				Documentation: "docs for my slice",
+				Children: map[string]Docs{
+					"guava": {
+						Documentation: "docs for guava",
+					},
+					"pineapple": {
+						Documentation: "docs for pineapple",
+					},
+				},
+			},
+			"my_map": {
+				Documentation: "docs for my map",
+				Children: map[string]Docs{
+					"apple": {
+						Documentation: "docs for apple",
+					},
+					"mango": {
+						Documentation: "docs for mango",
+					},
+				},
+			},
+		},
+	}
+
+	type Foo struct {
+		Apple int `json:"apple"`
+		Mango int `json:"mango"`
+	}
+
+	type Bar struct {
+		Guava     int `json:"guava"`
+		Pineapple int `json:"pineapple"`
+	}
+
+	type MyStruct struct {
+		A string `json:"a"`
+	}
+
+	type Root struct {
+		MyStruct *MyStruct       `json:"my_struct"`
+		MyVal    int             `json:"my_val"`
+		MySlice  []Bar           `json:"my_slice"`
+		MyMap    map[string]*Foo `json:"my_map"`
+	}
+
+	elem := Root{}
+
+	schema, err := NewSchema(reflect.TypeOf(elem), docs)
+	require.NoError(t, err)
+
+	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
+	assert.NoError(t, err)
+
+	expectedSchema :=
+		`{
+			"type": "object",
+			"description": "docs for root",
+			"properties": {
+				"my_map": {
+					"type": "object",
+					"description": "docs for my map",
+					"additionalProperties": {
+						"type": "object",
+						"description": "docs for my map",
+						"properties": {
+							"apple": {
+								"type": "number",
+								"description": "docs for apple"
+							},
+							"mango": {
+								"type": "number",
+								"description": "docs for mango"
+							}
+						},
+						"additionalProperties": false,
+						"required": [
+							"apple",
+							"mango"
+						]
+					}
+				},
+				"my_slice": {
+					"type": "array",
+					"description": "docs for my slice",
+					"items": {
+						"type": "object",
+						"properties": {
+							"guava": {
+								"type": "number",
+								"description": "docs for guava"
+							},
+							"pineapple": {
+								"type": "number",
+								"description": "docs for pineapple"
+							}
+						},
+						"additionalProperties": false,
+						"required": [
+							"guava",
+							"pineapple"
+						]
+					}
+				},
+				"my_struct": {
+					"type": "object",
+					"description": "docs for my struct",
+					"properties": {
+						"a": {
+							"type": "string"
+						}
+					},
+					"additionalProperties": false,
+					"required": [
+						"a"
+					]
+				},
+				"my_val": {
+					"type": "number",
+					"description": "docs for my val"
+				}
+			},
+			"additionalProperties": false,
+			"required": [
+				"my_struct",
+				"my_val",
+				"my_slice",
+				"my_map"
 			]
 		}`
 

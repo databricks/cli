@@ -8,7 +8,6 @@ import (
 )
 
 // TODO: Add tests for the error cases, forcefully triggering them
-// TODO: Add required validation for omitempty
 // TODO: Add example documentation
 // TODO: Do final checks for more validation that can be added to json schema
 // TODO: Run all tests to see code coverage and add tests for missing assertions
@@ -17,6 +16,10 @@ import (
 type Schema struct {
 	// Type of the object
 	Type JavascriptType `json:"type"`
+
+	// Description of the object. This is rendered as inline documentation in the
+	// IDE
+	Description string `json:"description,omitempty"`
 
 	// keys are named properties of the object
 	// values are json schema for the values of the named properties
@@ -72,20 +75,14 @@ type Schema struct {
 									}
 	for details visit: https://json-schema.org/understanding-json-schema/reference/object.html#properties
 */
-func NewSchema(golangType reflect.Type) (*Schema, error) {
+func NewSchema(golangType reflect.Type, docs *Docs) (*Schema, error) {
 	seenTypes := map[reflect.Type]struct{}{}
 	debugTrace := list.New()
-	rootProp, err := toSchema(golangType, seenTypes, debugTrace)
+	schema, err := toSchema(golangType, docs, seenTypes, debugTrace)
 	if err != nil {
 		return nil, errWithTrace(err.Error(), debugTrace)
 	}
-	return &Schema{
-		Type:                 rootProp.Type,
-		Properties:           rootProp.Properties,
-		AdditionalProperties: rootProp.AdditionalProperties,
-		Items:                rootProp.Items,
-		Required:             rootProp.Required,
-	}, nil
+	return schema, nil
 }
 
 type JavascriptType string
@@ -136,7 +133,7 @@ func errWithTrace(prefix string, trace *list.List) error {
 }
 
 // A wrapper over toSchema function to detect cycles in the bundle config struct
-func safeToSchema(golangType reflect.Type, seenTypes map[reflect.Type]struct{}, debugTrace *list.List) (*Schema, error) {
+func safeToSchema(golangType reflect.Type, docs *Docs, seenTypes map[reflect.Type]struct{}, debugTrace *list.List) (*Schema, error) {
 	// WE ERROR OUT IF THERE ARE CYCLES IN THE JSON SCHEMA
 	// There are mechanisms to deal with cycles though recursive identifiers in json
 	// schema. However if we use them, we would need to make sure we are able to detect
@@ -151,7 +148,7 @@ func safeToSchema(golangType reflect.Type, seenTypes map[reflect.Type]struct{}, 
 	}
 	// Update set of types in current path
 	seenTypes[golangType] = struct{}{}
-	props, err := toSchema(golangType, seenTypes, debugTrace)
+	props, err := toSchema(golangType, docs, seenTypes, debugTrace)
 	if err != nil {
 		return nil, err
 	}
@@ -202,10 +199,10 @@ func addStructFields(fields []reflect.StructField, golangType reflect.Type) []re
 //               Used to identify cycles.
 //   debugTrace: linked list of golang types encounted. In case of errors this
 //               helps log where the error originated from
-func toSchema(golangType reflect.Type, seenTypes map[reflect.Type]struct{}, debugTrace *list.List) (*Schema, error) {
+func toSchema(golangType reflect.Type, docs *Docs, seenTypes map[reflect.Type]struct{}, debugTrace *list.List) (*Schema, error) {
 	// *Struct and Struct generate identical json schemas
 	if golangType.Kind() == reflect.Pointer {
-		return toSchema(golangType.Elem(), seenTypes, debugTrace)
+		return toSchema(golangType.Elem(), docs, seenTypes, debugTrace)
 	}
 
 	// TODO: add test case for interfaces
@@ -218,6 +215,11 @@ func toSchema(golangType reflect.Type, seenTypes map[reflect.Type]struct{}, debu
 		return nil, err
 	}
 
+	var description string
+	if docs != nil {
+		description = docs.Documentation
+	}
+
 	// case array/slice
 	var items *Schema
 	if golangType.Kind() == reflect.Array || golangType.Kind() == reflect.Slice {
@@ -226,7 +228,7 @@ func toSchema(golangType reflect.Type, seenTypes map[reflect.Type]struct{}, debu
 		if err != nil {
 			return nil, err
 		}
-		elemProps, err := safeToSchema(elemGolangType, seenTypes, debugTrace)
+		elemProps, err := safeToSchema(elemGolangType, docs, seenTypes, debugTrace)
 		if err != nil {
 			return nil, err
 		}
@@ -250,7 +252,7 @@ func toSchema(golangType reflect.Type, seenTypes map[reflect.Type]struct{}, debu
 		}
 		// TODO: Add a test for map of maps, and map of slices. Check that there
 		// is already a test for map of objects and map of primites
-		additionalProperties, err = safeToSchema(golangType.Elem(), seenTypes, debugTrace)
+		additionalProperties, err = safeToSchema(golangType.Elem(), docs, seenTypes, debugTrace)
 		if err != nil {
 			return nil, err
 		}
@@ -272,6 +274,14 @@ func toSchema(golangType reflect.Type, seenTypes map[reflect.Type]struct{}, debu
 				continue
 			}
 
+			// get docs for the child if they exist
+			var childDocs *Docs
+			if docs != nil {
+				if val, ok := docs.Children[childName]; ok {
+					childDocs = &val
+				}
+			}
+
 			// TODO: Add test for omitempty
 			hasOmitEmptyTag := false
 			for i := 1; i < len(childJsonTag); i++ {
@@ -289,7 +299,7 @@ func toSchema(golangType reflect.Type, seenTypes map[reflect.Type]struct{}, debu
 			debugTrace.PushBack(childName)
 
 			// recursively compute properties for this child field
-			fieldProps, err := safeToSchema(child.Type, seenTypes, debugTrace)
+			fieldProps, err := safeToSchema(child.Type, childDocs, seenTypes, debugTrace)
 			if err != nil {
 				return nil, err
 			}
@@ -306,6 +316,7 @@ func toSchema(golangType reflect.Type, seenTypes map[reflect.Type]struct{}, debu
 
 	return &Schema{
 		Type:                 rootJavascriptType,
+		Description:          description,
 		Items:                items,
 		Properties:           properties,
 		AdditionalProperties: additionalProperties,

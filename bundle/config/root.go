@@ -48,6 +48,7 @@ type Root struct {
 
 func Load(path string) (*Root, error) {
 	var r Root
+
 	stat, err := os.Stat(path)
 	if err != nil {
 		return nil, err
