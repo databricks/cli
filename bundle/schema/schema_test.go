@@ -684,6 +684,69 @@ func TestDashFieldsAreSkipped(t *testing.T) {
 	assert.Equal(t, expectedSchema, string(jsonSchema))
 }
 
+func TestPointerInStructSchema(t *testing.T) {
+
+	type Bar struct {
+		PtrVal2 *int `json:"ptr_val2"`
+	}
+
+	type Foo struct {
+		PtrInt    *int    `json:"ptr_int"`
+		PtrString *string `json:"ptr_string"`
+		FloatVal  float32 `json:"float_val"`
+		PtrBar    *Bar    `json:"ptr_bar"`
+		Bar       *Bar    `json:"bar"`
+	}
+
+	elem := Foo{}
+
+	schema, err := NewSchema(reflect.TypeOf(elem))
+	require.NoError(t, err)
+
+	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
+	assert.NoError(t, err)
+
+	expectedSchema :=
+		`{
+			"type": "object",
+			"properties": {
+				"bar": {
+					"type": "object",
+					"properties": {
+						"ptr_val2": {
+							"type": "number"
+						}
+					},
+					"additionalProperties": false
+				},
+				"float_val": {
+					"type": "number"
+				},
+				"ptr_bar": {
+					"type": "object",
+					"properties": {
+						"ptr_val2": {
+							"type": "number"
+						}
+					},
+					"additionalProperties": false
+				},
+				"ptr_int": {
+					"type": "number"
+				},
+				"ptr_string": {
+					"type": "string"
+				}
+			},
+			"additionalProperties": false
+		}`
+
+	t.Log("[DEBUG] actual: ", string(jsonSchema))
+	t.Log("[DEBUG] expected: ", expectedSchema)
+
+	assert.Equal(t, expectedSchema, string(jsonSchema))
+}
+
 // TODO: last test to do once all the todos are done
 func TestObjectSchema(t *testing.T) {
 	type Person struct {

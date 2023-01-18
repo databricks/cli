@@ -12,7 +12,6 @@ import (
 // TODO: Add example documentation
 // TODO: Do final checks for more validation that can be added to json schema
 // TODO: Run all tests to see code coverage and add tests for missing assertions
-// TODO: test all permutations of types [primitives, maps, arrays, objects]
 
 // defines schema for a json object
 type Schema struct {
@@ -100,7 +99,6 @@ const (
 )
 
 // TODO: document that only string keys allowed in maps
-// TODO: document mapping between schema and json
 func javascriptType(golangType reflect.Type) (JavascriptType, error) {
 	switch golangType.Kind() {
 	case reflect.Bool:
@@ -183,7 +181,6 @@ func addStructFields(fields []reflect.StructField, golangType reflect.Type) []re
 			continue
 		}
 
-		// TODO: add test case for pointer too
 		fieldType := field.Type
 		if fieldType.Kind() == reflect.Pointer {
 			fieldType = fieldType.Elem()
