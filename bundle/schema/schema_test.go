@@ -1,7 +1,6 @@
 package schema
 
 import (
-	"container/list"
 	"encoding/json"
 	"reflect"
 	"testing"
@@ -661,17 +660,18 @@ func TestEmbeddedStructSchema(t *testing.T) {
 }
 
 func TestErrorWithTrace(t *testing.T) {
-	debugTrace := list.New()
-	err := errWithTrace("with empty trace", debugTrace)
+	tracker := newTracker()
+	dummyType := reflect.TypeOf(struct{}{})
+	err := tracker.errWithTrace("with empty trace")
 	assert.ErrorContains(t, err, "[ERROR] with empty trace. traversal trace: root")
 
-	debugTrace.PushBack("resources")
-	err = errWithTrace("with depth = 1", debugTrace)
+	tracker.step(dummyType, "resources")
+	err = tracker.errWithTrace("with depth = 1")
 	assert.ErrorContains(t, err, "[ERROR] with depth = 1. traversal trace: root -> resources")
 
-	debugTrace.PushBack("pipelines")
-	debugTrace.PushBack("datasets")
-	err = errWithTrace("with depth = 4", debugTrace)
+	tracker.step(dummyType, "pipelines")
+	tracker.step(dummyType, "datasets")
+	err = tracker.errWithTrace("with depth = 4")
 	assert.ErrorContains(t, err, "[ERROR] with depth = 4. traversal trace: root -> resources -> pipelines -> datasets")
 }
 
