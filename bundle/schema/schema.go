@@ -46,21 +46,21 @@ between json schema types and golang types
   - int (all variants)       ->    number
   - float (all variants)     ->    number
   - map[string]MyStruct      ->   {
-                                     type: object
-                                     additionalProperties: {}
-                                  }
-  for details visit: https://json-schema.org/understanding-json-schema/reference/object.html#additional-properties
+  *                                  type: object
+  *                                  additionalProperties: {}
+  *                               }
+  *  for details visit: https://json-schema.org/understanding-json-schema/reference/object.html#additional-properties
   - []MyStruct               ->   {
-                                     type: array
-                                     items: {}
-                                  }
-  for details visit: https://json-schema.org/understanding-json-schema/reference/array.html#items
+  *                                  type: array
+  *                                  items: {}
+  *                               }
+  *  for details visit: https://json-schema.org/understanding-json-schema/reference/array.html#items
   - []MyStruct               ->   {
-                                     type: object
-                                     properties: {}
-                                     additionalProperties: false
-                                  }
-  for details visit: https://json-schema.org/understanding-json-schema/reference/object.html#properties
+  *                                  type: object
+  *                                  properties: {}
+  *                                  additionalProperties: false
+  *                               }
+  *  for details visit: https://json-schema.org/understanding-json-schema/reference/object.html#properties
 */
 func NewSchema(golangType reflect.Type, docs *Docs) (*Schema, error) {
 	seenTypes := map[reflect.Type]struct{}{}
