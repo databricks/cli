@@ -37,7 +37,7 @@ type Root struct {
 
 	// Resources contains a description of all Databricks resources
 	// to deploy in this bundle (e.g. jobs, pipelines, etc.).
-	Resources Resources `json:"resources"`
+	Resources Resources `json:"resources,omitempty"`
 
 	// Environments can be used to differentiate settings and resources between
 	// bundle deployment environments (e.g. development, staging, production).
