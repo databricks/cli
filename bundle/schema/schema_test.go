@@ -18,10 +18,10 @@ func TestIntSchema(t *testing.T) {
 			"type": "number"
 		}`
 
-	Int, err := NewSchema(reflect.TypeOf(elemInt), nil)
+	schema, err := NewSchema(reflect.TypeOf(elemInt), nil)
 	require.NoError(t, err)
 
-	jsonSchema, err := json.MarshalIndent(Int, "		", "	")
+	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
 	assert.NoError(t, err)
 
 	t.Log("[DEBUG] actual: ", string(jsonSchema))
@@ -37,10 +37,10 @@ func TestBooleanSchema(t *testing.T) {
 			"type": "boolean"
 		}`
 
-	Int, err := NewSchema(reflect.TypeOf(elem), nil)
+	schema, err := NewSchema(reflect.TypeOf(elem), nil)
 	require.NoError(t, err)
 
-	jsonSchema, err := json.MarshalIndent(Int, "		", "	")
+	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
 	assert.NoError(t, err)
 
 	t.Log("[DEBUG] actual: ", string(jsonSchema))
@@ -56,10 +56,10 @@ func TestStringSchema(t *testing.T) {
 			"type": "string"
 		}`
 
-	Int, err := NewSchema(reflect.TypeOf(elem), nil)
+	schema, err := NewSchema(reflect.TypeOf(elem), nil)
 	require.NoError(t, err)
 
-	jsonSchema, err := json.MarshalIndent(Int, "		", "	")
+	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
 	assert.NoError(t, err)
 
 	t.Log("[DEBUG] actual: ", string(jsonSchema))

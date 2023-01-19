@@ -13,38 +13,37 @@ type Schema struct {
 	Type JavascriptType `json:"type,omitempty"`
 
 	// Description of the object. This is rendered as inline documentation in the
-	// IDE
+	// IDE. This is manually injected here using schema.Docs
 	Description string `json:"description,omitempty"`
 
-	// keys are named properties of the object
-	// values are json schema for the values of the named properties
+	// schemas for the fields of an struct. The keys are the first json tag.
+	// The values are the schema for the type of the field
 	Properties map[string]*Schema `json:"properties,omitempty"`
 
-	// the schema for all values of the array
+	// the schema for all values of an array
 	Items *Schema `json:"items,omitempty"`
 
 	// the schema for any properties not mentioned in the Schema.Properties field.
-	// we leverage this to validate Maps in bundle configuration
+	// this validates  Maps in bundle configuration
 	// OR
-	// a boolean type with value false
+	// a boolean type with value false. Setting false here validates that all
+	// properties in the yaml file have been defined in the json schema
 	//
 	// Its type during runtime will either be *Schema or bool
 	AdditionalProperties interface{} `json:"additionalProperties,omitempty"`
 
-	// required properties for the object. Any propertites listed here should
-	// also be listed in Schema.Properties
+	// required properties for the object. Any fields missing the "omitempty"
+	// tag will be included
 	Required []string `json:"required,omitempty"`
 }
 
 // This function translates golang types into json schema. Here is the mapping
 // between json schema types and golang types
 // - GolangType               ->    Javascript type / Json Schema2
-// Javascript Primitives:
 // - bool                     ->    boolean
 // - string                   ->    string
 // - int (all variants)       ->    number
 // - float (all variants)     ->    number
-// Json Schema2 Fields:
 // - map[string]MyStruct      ->   {
 // 									type: object
 // 									additionalProperties: {}
@@ -150,12 +149,9 @@ func safeToSchema(golangType reflect.Type, docs *Docs, debugTraceId string, seen
 }
 
 // Adds the member fields of golangType to the passed slice. Needed because
-// golangType can contain embedded fields (aka anonymous)
+// golangType can contain embedded fields (aka anonymous fields)
 
-// The function traverses the embedded fields in a breadth first manner
-
-// params:
-// 	  fields: slice to which member fields of golangType will be added to
+// The function traverses the embedded fields in a breadth first mannerå
 func getStructFields(golangType reflect.Type) []reflect.StructField {
 	fields := []reflect.StructField{}
 	bfsQueue := list.New()
@@ -187,6 +183,7 @@ func getStructFields(golangType reflect.Type) []reflect.StructField {
 
 // params:
 //   golangType: golang type for which json schema properties to generate
+//   docs: Struct containing documentation to be injected into the json schema generated
 //   seenTypes : set of golang types already seen in path during recursion.
 //               Used to identify cycles.
 //   debugTrace: linked list of golang types encounted. In case of errors this
