@@ -20,8 +20,8 @@ import (
 
 func matchesBasePaths(me *scim.User, path string) error {
 	basePaths := []string{
-		fmt.Sprintf("/Users/%s", me.UserName),
-		fmt.Sprintf("/Repos/%s", me.UserName),
+		fmt.Sprintf("/Users/%s/", me.UserName),
+		fmt.Sprintf("/Repos/%s/", me.UserName),
 	}
 	basePathMatch := false
 	for _, basePath := range basePaths {
