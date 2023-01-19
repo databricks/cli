@@ -111,12 +111,12 @@ var syncCmd = &cobra.Command{
 			*remotePath = fmt.Sprintf("/Repos/%s/%s", me.UserName, repositoryName)
 		}
 
+		log.Printf("[INFO] Remote file sync location: %v", *remotePath)
+
 		err = ensureRemotePathIsUsable(ctx, wsc, me, *remotePath)
 		if err != nil {
 			return err
 		}
-
-		log.Printf("[INFO] Remote file sync location: %v", *remotePath)
 
 		root := prj.Root()
 		repoFiles := repofiles.Create(*remotePath, root, wsc)
