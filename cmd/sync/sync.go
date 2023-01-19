@@ -36,18 +36,18 @@ var syncCmd = &cobra.Command{
 		}
 
 		log.Printf("[INFO] Remote file sync location: %v", *remotePath)
-		repoExists, err := git.RepoExists(*remotePath, ctx, wsc)
-		if err != nil {
-			return err
-		}
-		if !repoExists {
-			return fmt.Errorf("repo not found, please ensure %s exists", *remotePath)
-		}
+		// repoExists, err := git.RepoExists(*remotePath, ctx, wsc)
+		// if err != nil {
+		// 	return err
+		// }
+		// if !repoExists {
+		// 	return fmt.Errorf("repo not found, please ensure %s exists", *remotePath)
+		// }
 
 		root := prj.Root()
 		repoFiles := repofiles.Create(*remotePath, root, wsc)
 		syncCallback := syncCallback(ctx, repoFiles)
-		err = spawnWatchdog(ctx, *interval, syncCallback, *remotePath)
+		err := spawnWatchdog(ctx, *interval, syncCallback, *remotePath)
 		return err
 	},
 }
