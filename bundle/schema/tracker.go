@@ -7,12 +7,14 @@ import (
 )
 
 type tracker struct {
-	// Types encountered in path of reaching the current type. Used to deletect
-	// cycles
+	// Types encountered in current path during the recursive traversal. Used to
+	// check for cycles
 	seenTypes map[reflect.Type]struct{}
 
-	// List of names from json tag encountered while reaching current type. This
-	// is logged on any error so we know on which type an error occured
+	// List of field names encountered in current path during the recursive traversal.
+	// Used to hydrate errors with path to the exact node where error occured.
+	//
+	// The field names here are the first tag in the json tags of struct field.
 	debugTrace *list.List
 }
 

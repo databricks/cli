@@ -24,16 +24,16 @@ type Schema struct {
 	Items *Schema `json:"items,omitempty"`
 
 	// The schema for any properties not mentioned in the Schema.Properties field.
-	// this validates  Maps in bundle configuration
+	// this validates maps[string]any in bundle configuration
 	// OR
 	// A boolean type with value false. Setting false here validates that all
-	// properties in the yaml file have been defined in the json schema
+	// properties in the config have been defined in the json schema as properties
 	//
 	// Its type during runtime will either be *Schema or bool
 	AdditionalProperties any `json:"additionalProperties,omitempty"`
 
 	// Required properties for the object. Any fields missing the "omitempty"
-	// tag will be included
+	// json tag will be included
 	Required []string `json:"required,omitempty"`
 }
 
@@ -105,12 +105,26 @@ func javascriptType(golangType reflect.Type) (JavascriptType, error) {
 	}
 }
 
-// A wrapper over toSchema function to detect cycles in the bundle config struct
+// A wrapper over toSchema function to:
+//  1. Detect cycles in the bundle config struct.
+//  2. Update tracker
+//
+// params:
+//
+//   - golangType: Golang type to generate json schema for
+//
+//   - docs: Contains documentation to be injected into the generated json schema
+//
+//   - traceId: An identifier for the current type, to trace recursive traversal.
+//     Its value is the first json tag in case of struct fields and "" in other cases
+//     like array, map or no json tags
+//
+//   - tracker: Keeps track of types / traceIds seen during recursive traversal
 func safeToSchema(golangType reflect.Type, docs *Docs, traceId string, tracker *tracker) (*Schema, error) {
 	// WE ERROR OUT IF THERE ARE CYCLES IN THE JSON SCHEMA
 	// There are mechanisms to deal with cycles though recursive identifiers in json
 	// schema. However if we use them, we would need to make sure we are able to detect
-	// cycles two properties (directly or indirectly) pointing to each other
+	// cycles where two properties (directly or indirectly) pointing to each other
 	//
 	// see: https://json-schema.org/understanding-json-schema/structuring.html#recursion
 	// for details
@@ -159,14 +173,6 @@ func getStructFields(golangType reflect.Type) []reflect.StructField {
 	return fields
 }
 
-// params:
-//
-//	golangType: golang type for which json schema properties to generate
-//	docs: Struct containing documentation to be injected into the json schema generated
-//	seenTypes : set of golang types already seen in path during recursion.
-//	            Used to identify cycles.
-//	debugTrace: linked list of golang types encounted. In case of errors this
-//	            helps log where the error originated from
 func toSchema(golangType reflect.Type, docs *Docs, tracker *tracker) (*Schema, error) {
 	// *Struct and Struct generate identical json schemas
 	if golangType.Kind() == reflect.Pointer {
@@ -242,7 +248,7 @@ func toSchema(golangType reflect.Type, docs *Docs, tracker *tracker) (*Schema, e
 			}
 
 			// compute if the child is a required field. Determined by the
-			// resence of "omitempty" in the json tags
+			// presence of "omitempty" in the json tags
 			hasOmitEmptyTag := false
 			for i := 1; i < len(childJsonTag); i++ {
 				if childJsonTag[i] == "omitempty" {
