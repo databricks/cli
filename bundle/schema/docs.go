@@ -1,7 +1,6 @@
 package schema
 
 import (
-	"io/ioutil"
 	"os"
 
 	"gopkg.in/yaml.v2"
@@ -13,11 +12,7 @@ type Docs struct {
 }
 
 func LoadDocs(path string) (*Docs, error) {
-	f, err := os.Open(path)
-	if err != nil {
-		return nil, err
-	}
-	bytes, err := ioutil.ReadAll(f)
+	bytes, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}

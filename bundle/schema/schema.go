@@ -16,23 +16,23 @@ type Schema struct {
 	// IDE. This is manually injected here using schema.Docs
 	Description string `json:"description,omitempty"`
 
-	// schemas for the fields of an struct. The keys are the first json tag.
+	// Schemas for the fields of an struct. The keys are the first json tag.
 	// The values are the schema for the type of the field
 	Properties map[string]*Schema `json:"properties,omitempty"`
 
-	// the schema for all values of an array
+	// The schema for all values of an array
 	Items *Schema `json:"items,omitempty"`
 
-	// the schema for any properties not mentioned in the Schema.Properties field.
+	// The schema for any properties not mentioned in the Schema.Properties field.
 	// this validates  Maps in bundle configuration
 	// OR
-	// a boolean type with value false. Setting false here validates that all
+	// A boolean type with value false. Setting false here validates that all
 	// properties in the yaml file have been defined in the json schema
 	//
 	// Its type during runtime will either be *Schema or bool
-	AdditionalProperties interface{} `json:"additionalProperties,omitempty"`
+	AdditionalProperties any `json:"additionalProperties,omitempty"`
 
-	// required properties for the object. Any fields missing the "omitempty"
+	// Required properties for the object. Any fields missing the "omitempty"
 	// tag will be included
 	Required []string `json:"required,omitempty"`
 }
@@ -45,20 +45,20 @@ type Schema struct {
 // - int (all variants)       ->    number
 // - float (all variants)     ->    number
 // - map[string]MyStruct      ->   {
-// 									type: object
-// 									additionalProperties: {}
-// 								}
+//                                    type: object
+//                                    additionalProperties: {}
+//                                 }
 // for details visit: https://json-schema.org/understanding-json-schema/reference/object.html#additional-properties
 // - []MyStruct               ->   {
-// 									type: array
-// 									items: {}
-// 								}
+//                                    type: array
+//                                    items: {}
+//                                 }
 // for details visit: https://json-schema.org/understanding-json-schema/reference/array.html#items
 // - []MyStruct               ->   {
-// 									type: object
-// 									properties: {}
-// 									additionalProperties: false
-// 								}
+//                                    type: object
+//                                    properties: {}
+//                                    additionalProperties: false
+//                                 }
 // for details visit: https://json-schema.org/understanding-json-schema/reference/object.html#properties
 func NewSchema(golangType reflect.Type, docs *Docs) (*Schema, error) {
 	seenTypes := map[reflect.Type]struct{}{}
@@ -148,10 +148,9 @@ func safeToSchema(golangType reflect.Type, docs *Docs, debugTraceId string, seen
 	return props, nil
 }
 
-// Adds the member fields of golangType to the passed slice. Needed because
-// golangType can contain embedded fields (aka anonymous fields)
-
-// The function traverses the embedded fields in a breadth first mannerå
+// This function returns all member fields of the provided type.
+// If the type has embedded (aka anonymous) fields, this function traverses
+// those in a breadth first manner
 func getStructFields(golangType reflect.Type) []reflect.StructField {
 	fields := []reflect.StructField{}
 	bfsQueue := list.New()
