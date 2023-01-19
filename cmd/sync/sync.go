@@ -116,6 +116,8 @@ var syncCmd = &cobra.Command{
 			return err
 		}
 
+		log.Printf("[INFO] Remote file sync location: %v", *remotePath)
+
 		root := prj.Root()
 		repoFiles := repofiles.Create(*remotePath, root, wsc)
 		syncCallback := syncCallback(ctx, repoFiles)
