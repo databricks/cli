@@ -40,27 +40,25 @@ type Schema struct {
 /*
 This function translates golang types into json schema. Here is the mapping
 between json schema types and golang types
+
   - GolangType               ->    Javascript type / Json Schema2
+
   - bool                     ->    boolean
+
   - string                   ->    string
+
   - int (all variants)       ->    number
+
   - float (all variants)     ->    number
-  - map[string]MyStruct      ->   {
-  *                                  type: object
-  *                                  additionalProperties: {}
-  *                               }
-  *  for details visit: https://json-schema.org/understanding-json-schema/reference/object.html#additional-properties
-  - []MyStruct               ->   {
-  *                                  type: array
-  *                                  items: {}
-  *                               }
-  *  for details visit: https://json-schema.org/understanding-json-schema/reference/array.html#items
-  - []MyStruct               ->   {
-  *                                  type: object
-  *                                  properties: {}
-  *                                  additionalProperties: false
-  *                               }
-  *  for details visit: https://json-schema.org/understanding-json-schema/reference/object.html#properties
+
+  - map[string]MyStruct      ->   { type: object, additionalProperties: {}}
+    for details visit: https://json-schema.org/understanding-json-schema/reference/object.html#additional-properties
+
+  - []MyStruct               ->   {type: array, items: {}}
+    for details visit: https://json-schema.org/understanding-json-schema/reference/array.html#items
+
+  - []MyStruct               ->   {type: object, properties: {}, additionalProperties: false}
+    for details visit: https://json-schema.org/understanding-json-schema/reference/object.html#properties
 */
 func NewSchema(golangType reflect.Type, docs *Docs) (*Schema, error) {
 	seenTypes := map[reflect.Type]struct{}{}
@@ -183,6 +181,7 @@ func getStructFields(golangType reflect.Type) []reflect.StructField {
 }
 
 // params:
+//
 //	golangType: golang type for which json schema properties to generate
 //	docs: Struct containing documentation to be injected into the json schema generated
 //	seenTypes : set of golang types already seen in path during recursion.
