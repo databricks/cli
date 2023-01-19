@@ -39,27 +39,27 @@ type Schema struct {
 
 // This function translates golang types into json schema. Here is the mapping
 // between json schema types and golang types
-// - GolangType               ->    Javascript type / Json Schema2
-// - bool                     ->    boolean
-// - string                   ->    string
-// - int (all variants)       ->    number
-// - float (all variants)     ->    number
-// - map[string]MyStruct      ->   {
-//                                    type: object
-//                                    additionalProperties: {}
-//                                 }
-// for details visit: https://json-schema.org/understanding-json-schema/reference/object.html#additional-properties
-// - []MyStruct               ->   {
-//                                    type: array
-//                                    items: {}
-//                                 }
-// for details visit: https://json-schema.org/understanding-json-schema/reference/array.html#items
-// - []MyStruct               ->   {
-//                                    type: object
-//                                    properties: {}
-//                                    additionalProperties: false
-//                                 }
-// for details visit: https://json-schema.org/understanding-json-schema/reference/object.html#properties
+//   - GolangType               ->    Javascript type / Json Schema2
+//   - bool                     ->    boolean
+//   - string                   ->    string
+//   - int (all variants)       ->    number
+//   - float (all variants)     ->    number
+//   - map[string]MyStruct      ->   {
+//                                      type: object
+//                                      additionalProperties: {}
+//                                   }
+//   for details visit: https://json-schema.org/understanding-json-schema/reference/object.html#additional-properties
+//   - []MyStruct               ->   {
+//                                      type: array
+//                                      items: {}
+//                                   }
+//   for details visit: https://json-schema.org/understanding-json-schema/reference/array.html#items
+//   - []MyStruct               ->   {
+//                                      type: object
+//                                      properties: {}
+//                                      additionalProperties: false
+//                                   }
+//   for details visit: https://json-schema.org/understanding-json-schema/reference/object.html#properties
 func NewSchema(golangType reflect.Type, docs *Docs) (*Schema, error) {
 	seenTypes := map[reflect.Type]struct{}{}
 	debugTrace := list.New()
@@ -181,12 +181,12 @@ func getStructFields(golangType reflect.Type) []reflect.StructField {
 }
 
 // params:
-//   golangType: golang type for which json schema properties to generate
-//   docs: Struct containing documentation to be injected into the json schema generated
-//   seenTypes : set of golang types already seen in path during recursion.
-//               Used to identify cycles.
-//   debugTrace: linked list of golang types encounted. In case of errors this
-//               helps log where the error originated from
+//	golangType: golang type for which json schema properties to generate
+//	docs: Struct containing documentation to be injected into the json schema generated
+//	seenTypes : set of golang types already seen in path during recursion.
+//	            Used to identify cycles.
+//	debugTrace: linked list of golang types encounted. In case of errors this
+//	            helps log where the error originated from
 func toSchema(golangType reflect.Type, docs *Docs, seenTypes map[reflect.Type]struct{}, debugTrace *list.List) (*Schema, error) {
 	// *Struct and Struct generate identical json schemas
 	if golangType.Kind() == reflect.Pointer {
