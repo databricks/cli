@@ -63,7 +63,10 @@ func ensureRemotePathIsUsable(ctx context.Context, wsc *databricks.WorkspaceClie
 			if err != nil {
 				return fmt.Errorf("unable to create directory at %s: %w", path, err)
 			}
-			return ensureRemotePathIsUsable(ctx, wsc, me, path)
+			info, err = wsc.Workspace.GetStatusByPath(ctx, path)
+			if err != nil {
+				return err
+			}
 		default:
 			return err
 		}
