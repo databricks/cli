@@ -39,7 +39,7 @@ func (t *tracker) errWithTrace(prefix string) error {
 
 func (t *tracker) hasCycle(golangType reflect.Type) bool {
 	_, ok := t.seenTypes[golangType]
-	if !ok {
+	if ok {
 		fmt.Println("[DEBUG] traceSet for cycle: ", t.seenTypes)
 	}
 	return ok
