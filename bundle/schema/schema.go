@@ -172,7 +172,6 @@ func toSchema(golangType reflect.Type, docs *Docs, tracker *tracker) (*Schema, e
 	if golangType.Kind() == reflect.Pointer {
 		return safeToSchema(golangType.Elem(), docs, "", tracker)
 	}
-
 	if golangType.Kind() == reflect.Interface {
 		return &Schema{}, nil
 	}
@@ -181,14 +180,13 @@ func toSchema(golangType reflect.Type, docs *Docs, tracker *tracker) (*Schema, e
 	if err != nil {
 		return nil, err
 	}
+	schema := &Schema{Type: rootJavascriptType}
 
-	var description string
 	if docs != nil {
-		description = docs.Documentation
+		schema.Description = docs.Documentation
 	}
 
 	// case array/slice
-	var items *Schema
 	if golangType.Kind() == reflect.Array || golangType.Kind() == reflect.Slice {
 		elemGolangType := golangType.Elem()
 		elemJavascriptType, err := javascriptType(elemGolangType)
@@ -199,7 +197,7 @@ func toSchema(golangType reflect.Type, docs *Docs, tracker *tracker) (*Schema, e
 		if err != nil {
 			return nil, err
 		}
-		items = &Schema{
+		schema.Items = &Schema{
 			Type:                 elemJavascriptType,
 			Properties:           elemProps.Properties,
 			AdditionalProperties: elemProps.AdditionalProperties,
@@ -209,22 +207,21 @@ func toSchema(golangType reflect.Type, docs *Docs, tracker *tracker) (*Schema, e
 	}
 
 	// case map
-	var additionalProperties interface{}
 	if golangType.Kind() == reflect.Map {
 		if golangType.Key().Kind() != reflect.String {
 			return nil, fmt.Errorf("only string keyed maps allowed")
 		}
-		additionalProperties, err = safeToSchema(golangType.Elem(), docs, "", tracker)
+		schema.AdditionalProperties, err = safeToSchema(golangType.Elem(), docs, "", tracker)
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	// case struct
-	properties := map[string]*Schema{}
-	required := []string{}
 	if golangType.Kind() == reflect.Struct {
 		children := getStructFields(golangType)
+		properties := map[string]*Schema{}
+		required := []string{}
 		for _, child := range children {
 			// get child json tags
 			childJsonTag := strings.Split(child.Tag.Get("json"), ",")
@@ -264,16 +261,10 @@ func toSchema(golangType reflect.Type, docs *Docs, tracker *tracker) (*Schema, e
 			properties[childName] = fieldProps
 		}
 
-		// set Schema.AdditionalProperties to false
-		additionalProperties = false
+		schema.AdditionalProperties = false
+		schema.Properties = properties
+		schema.Required = required
 	}
 
-	return &Schema{
-		Type:                 rootJavascriptType,
-		Description:          description,
-		Items:                items,
-		Properties:           properties,
-		AdditionalProperties: additionalProperties,
-		Required:             required,
-	}, nil
+	return schema, nil
 }
