@@ -112,7 +112,6 @@ var syncCmd = &cobra.Command{
 		}
 
 		log.Printf("[INFO] Remote file sync location: %v", *remotePath)
-
 		err = ensureRemotePathIsUsable(ctx, wsc, me, *remotePath)
 		if err != nil {
 			return err
