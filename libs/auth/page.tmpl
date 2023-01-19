@@ -91,10 +91,16 @@
         <div class="content">{{ .ErrorDescription }}</div>
         <!-- {{ else }} -->
         <div class="title">Authenticated</div>
-        <div class="content">Go to <a href="https://{{.Host}}">{{.Host}}</a></div>
         <!-- {{ end }} -->
         <div class="content">
-          You can close this tab. Or go to <a href="https://docs.databricks.com/dev-tools/index-cli.html">documentation</a>
+          You can close this tab.
+        </div>
+
+        <div class="content" style="text-align: left">
+          <ul>
+            <li><a href="{{.Host}}">{{.Host}}</a></li>
+            <li><a href="https://docs.databricks.com/dev-tools/index-cli.html">Documentation</a></li>
+          </ul>
         </div>
       </div>
     </div>
