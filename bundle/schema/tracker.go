@@ -45,12 +45,12 @@ func (t *tracker) hasCycle(golangType reflect.Type) bool {
 	return ok
 }
 
-func (t *tracker) step(nodeType reflect.Type, jsonName string) {
+func (t *tracker) push(nodeType reflect.Type, jsonName string) {
 	t.seenTypes[nodeType] = struct{}{}
 	t.debugTrace.PushBack(jsonName)
 }
 
-func (t *tracker) undoStep(nodeType reflect.Type) {
+func (t *tracker) pop(nodeType reflect.Type) {
 	back := t.debugTrace.Back()
 	t.debugTrace.Remove(back)
 	delete(t.seenTypes, nodeType)

@@ -130,12 +130,12 @@ func safeToSchema(golangType reflect.Type, docs *Docs, traceId string, tracker *
 		return nil, fmt.Errorf("cycle detected")
 	}
 
-	tracker.step(golangType, traceId)
+	tracker.push(golangType, traceId)
 	props, err := toSchema(golangType, docs, tracker)
 	if err != nil {
 		return nil, err
 	}
-	tracker.undoStep(golangType)
+	tracker.pop(golangType)
 	return props, nil
 }
 

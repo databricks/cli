@@ -665,12 +665,12 @@ func TestErrorWithTrace(t *testing.T) {
 	err := tracker.errWithTrace("with empty trace")
 	assert.ErrorContains(t, err, "[ERROR] with empty trace. traversal trace: root")
 
-	tracker.step(dummyType, "resources")
+	tracker.push(dummyType, "resources")
 	err = tracker.errWithTrace("with depth = 1")
 	assert.ErrorContains(t, err, "[ERROR] with depth = 1. traversal trace: root -> resources")
 
-	tracker.step(dummyType, "pipelines")
-	tracker.step(dummyType, "datasets")
+	tracker.push(dummyType, "pipelines")
+	tracker.push(dummyType, "datasets")
 	err = tracker.errWithTrace("with depth = 4")
 	assert.ErrorContains(t, err, "[ERROR] with depth = 4. traversal trace: root -> resources -> pipelines -> datasets")
 }
