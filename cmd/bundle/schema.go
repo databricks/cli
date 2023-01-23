@@ -2,7 +2,6 @@ package bundle
 
 import (
 	"encoding/json"
-	"fmt"
 	"reflect"
 
 	"github.com/databricks/bricks/bundle/config"
@@ -12,23 +11,22 @@ import (
 
 var schemaCmd = &cobra.Command{
 	Use:   "schema",
-	Short: "Generates JSON schema for a bundle config",
+	Short: "Generate JSON Schema for bundle configuration",
 
 	RunE: func(cmd *cobra.Command, args []string) error {
 		docs, err := schema.GetBundleDocs()
 		if err != nil {
 			return err
 		}
-		dummyBundleConfig := config.Root{}
-		schema, err := schema.New(reflect.TypeOf(dummyBundleConfig), docs)
+		schema, err := schema.New(reflect.TypeOf(config.Root{}), docs)
 		if err != nil {
 			return err
 		}
-		jsonSchema, err := json.MarshalIndent(schema, "", "    ")
+		jsonSchema, err := json.MarshalIndent(schema, "", "  ")
 		if err != nil {
 			return err
 		}
-		fmt.Println(string(jsonSchema))
+		cmd.OutOrStdout().Write(jsonSchema)
 		return nil
 	},
 }
