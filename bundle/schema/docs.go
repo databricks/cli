@@ -1,9 +1,10 @@
 package schema
 
 import (
+	_ "embed"
 	"os"
 
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 type Docs struct {
@@ -18,6 +19,18 @@ func LoadDocs(path string) (*Docs, error) {
 	}
 	docs := Docs{}
 	err = yaml.Unmarshal(bytes, &docs)
+	if err != nil {
+		return nil, err
+	}
+	return &docs, nil
+}
+
+//go:embed bundle_config_docs.yml
+var bundleDocs []byte
+
+func GetBundleDocs() (*Docs, error) {
+	docs := Docs{}
+	err := yaml.Unmarshal(bundleDocs, &docs)
 	if err != nil {
 		return nil, err
 	}

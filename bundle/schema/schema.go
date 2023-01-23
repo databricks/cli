@@ -58,7 +58,7 @@ type Schema struct {
 //
 //   - []MyStruct               ->   {type: object, properties: {}, additionalProperties: false}
 //     for details visit: https://json-schema.org/understanding-json-schema/reference/object.html#properties
-func NewSchema(golangType reflect.Type, docs *Docs) (*Schema, error) {
+func New(golangType reflect.Type, docs *Docs) (*Schema, error) {
 	tracker := newTracker()
 	schema, err := safeToSchema(golangType, docs, "", tracker)
 	if err != nil {
