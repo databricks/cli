@@ -66,11 +66,6 @@ type Snapshot struct {
 	RemoteToLocalNames map[string]string `json:"remote_to_local_names"`
 }
 
-type diff struct {
-	put    []string
-	delete []string
-}
-
 const syncSnapshotDirName = "sync-snapshots"
 
 func GetFileName(host, remotePath string) string {
@@ -168,24 +163,6 @@ func loadOrNewSnapshot(opts *SyncOptions) (*Snapshot, error) {
 
 	snapshot.New = false
 	return snapshot, nil
-}
-
-func (d diff) IsEmpty() bool {
-	return len(d.put) == 0 && len(d.delete) == 0
-}
-
-func (d diff) String() string {
-	if d.IsEmpty() {
-		return "no changes"
-	}
-	var changes []string
-	if len(d.put) > 0 {
-		changes = append(changes, fmt.Sprintf("PUT: %s", strings.Join(d.put, ", ")))
-	}
-	if len(d.delete) > 0 {
-		changes = append(changes, fmt.Sprintf("DELETE: %s", strings.Join(d.delete, ", ")))
-	}
-	return strings.Join(changes, ", ")
 }
 
 func getNotebookDetails(path string) (isNotebook bool, typeOfNotebook string, err error) {
