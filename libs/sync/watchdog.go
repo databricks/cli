@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/databricks/bricks/cmd/sync/repofiles"
+	"github.com/databricks/bricks/libs/sync/repofiles"
 	"github.com/databricks/bricks/project"
 	"golang.org/x/sync/errgroup"
 )
@@ -16,6 +16,8 @@ type watchdog struct {
 	ticker  *time.Ticker
 	wg      sync.WaitGroup
 	failure error // data race? make channel?
+
+	persistSnapshot bool
 }
 
 // See https://docs.databricks.com/resources/limits.html#limits-api-rate-limits for per api
@@ -70,9 +72,11 @@ func syncCallback(ctx context.Context, repoFiles *repofiles.RepoFiles) func(loca
 func spawnWatchdog(ctx context.Context,
 	interval time.Duration,
 	applyDiff func(diff) error,
-	remotePath string) error {
+	remotePath string,
+	persistSnapshot bool) error {
 	w := &watchdog{
-		ticker: time.NewTicker(interval),
+		ticker:          time.NewTicker(interval),
+		persistSnapshot: persistSnapshot,
 	}
 	w.wg.Add(1)
 	go w.main(ctx, applyDiff, remotePath)
@@ -90,7 +94,7 @@ func (w *watchdog) main(ctx context.Context, applyDiff func(diff) error, remoteP
 		w.failure = err
 		return
 	}
-	if *persistSnapshot {
+	if w.persistSnapshot {
 		err := snapshot.loadSnapshot(ctx)
 		if err != nil {
 			log.Printf("[ERROR] cannot load snapshot: %s", err)
@@ -128,7 +132,7 @@ func (w *watchdog) main(ctx context.Context, applyDiff func(diff) error, remoteP
 				w.failure = err
 				return
 			}
-			if *persistSnapshot {
+			if w.persistSnapshot {
 				err = snapshot.storeSnapshot(ctx)
 				if err != nil {
 					log.Printf("[ERROR] cannot store snapshot: %s", err)
