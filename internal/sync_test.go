@@ -14,7 +14,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/databricks/bricks/cmd/sync"
+	_ "github.com/databricks/bricks/cmd/sync"
+	"github.com/databricks/bricks/libs/sync"
 	"github.com/databricks/bricks/libs/testfile"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/client"

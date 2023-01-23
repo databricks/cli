@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/databricks/bricks/cmd/root"
-	"github.com/databricks/bricks/cmd/sync/repofiles"
 	"github.com/databricks/bricks/git"
+	"github.com/databricks/bricks/libs/sync"
 	"github.com/databricks/bricks/project"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -120,11 +120,14 @@ var syncCmd = &cobra.Command{
 			return err
 		}
 
-		root := prj.Root()
-		repoFiles := repofiles.Create(*remotePath, root, wsc)
-		syncCallback := syncCallback(ctx, repoFiles)
-		err = spawnWatchdog(ctx, *interval, syncCallback, *remotePath)
-		return err
+		s := sync.Sync{
+			LocalPath:       prj.Root(),
+			RemotePath:      *remotePath,
+			PersistSnapshot: *persistSnapshot,
+			PollInterval:    *interval,
+		}
+
+		return s.RunWatchdog(ctx, wsc)
 	},
 }
 
