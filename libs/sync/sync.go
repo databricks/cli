@@ -39,8 +39,7 @@ func New(ctx context.Context, opts SyncOptions) (*Sync, error) {
 		return nil, err
 	}
 
-	// Retrieve current user so that we can verify that the remote path
-	// is nested under the user's directories.
+	// Verify that the remote path we're about to synchronize to is valid and allowed.
 	err = ensureRemotePathIsUsable(ctx, opts.WorkspaceClient, opts.RemotePath)
 	if err != nil {
 		return nil, err
