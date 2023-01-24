@@ -14,11 +14,14 @@ import (
 )
 
 // Return if the specified path is nested under the parent path.
-func isPathNestedUnder(p, parent string) bool {
-	// Traverse up the tree as long as p is contained in parent.
-	for len(p) > len(parent) && strings.HasPrefix(p, parent) {
-		p = path.Dir(p)
-		if p == parent {
+func isPathNestedUnder(child, parent string) bool {
+	child = path.Clean(child)
+	parent = path.Clean(parent)
+
+	// Traverse up the tree as long as p is contained in q.
+	for len(child) > len(parent) && strings.HasPrefix(child, parent) {
+		child = path.Dir(child)
+		if child == parent {
 			return true
 		}
 	}
