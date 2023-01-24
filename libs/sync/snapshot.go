@@ -16,7 +16,6 @@ import (
 	"encoding/hex"
 
 	"github.com/databricks/bricks/git"
-	"github.com/databricks/bricks/project"
 )
 
 // Bump it up every time a potentially breaking change is made to the snapshot schema
@@ -35,6 +34,13 @@ const LatestSnapshotVersion = "v1"
 // local files are being synced to will make bricks cli switch to a different
 // snapshot for persisting/loading sync state
 type Snapshot struct {
+	// Path where this snapshot was loaded from and will be saved to.
+	// Intentionally not part of the snapshot state because it may be moved by the user.
+	SnapshotPath string `json:"-"`
+
+	// New indicates if this is a fresh snapshot or if it was loaded from disk.
+	New bool `json:"-"`
+
 	// version for snapshot schema. Only snapshots matching the latest snapshot
 	// schema version are used and older ones are invalidated (by deleting them)
 	Version string `json:"version"`
@@ -76,52 +82,39 @@ func GetFileName(host, remotePath string) string {
 // Compute path of the snapshot file on the local machine
 // The file name for unique for a tuple of (host, remotePath)
 // precisely it's the first 16 characters of md5(concat(host, remotePath))
-func (s *Snapshot) getPath(ctx context.Context) (string, error) {
-	prj := project.Get(ctx)
-	cacheDir, err := prj.CacheDir()
-	if err != nil {
-		return "", err
-	}
-	snapshotDir := filepath.Join(cacheDir, syncSnapshotDirName)
+func SnapshotPath(opts *SyncOptions) (string, error) {
+	snapshotDir := filepath.Join(opts.SnapshotBasePath, syncSnapshotDirName)
 	if _, err := os.Stat(snapshotDir); os.IsNotExist(err) {
 		err = os.Mkdir(snapshotDir, os.ModeDir|os.ModePerm)
 		if err != nil {
 			return "", fmt.Errorf("failed to create config directory: %s", err)
 		}
 	}
-	fileName := GetFileName(s.Host, s.RemotePath)
+	fileName := GetFileName(opts.Host, opts.RemotePath)
 	return filepath.Join(snapshotDir, fileName), nil
 }
 
-func newSnapshot(ctx context.Context, remotePath string) (*Snapshot, error) {
-	prj := project.Get(ctx)
-
-	// Get host this snapshot is for
-	wsc := prj.WorkspacesClient()
-
-	// TODO: The host may be late-initialized in certain Azure setups where we
-	// specify the workspace by its resource ID. tracked in: https://databricks.atlassian.net/browse/DECO-194
-	host := wsc.Config.Host
-	if host == "" {
-		return nil, fmt.Errorf("failed to resolve host for snapshot")
+func newSnapshot(opts *SyncOptions) (*Snapshot, error) {
+	path, err := SnapshotPath(opts)
+	if err != nil {
+		return nil, err
 	}
 
 	return &Snapshot{
+		SnapshotPath: path,
+		New:          true,
+
 		Version:            LatestSnapshotVersion,
-		Host:               host,
-		RemotePath:         remotePath,
+		Host:               opts.Host,
+		RemotePath:         opts.RemotePath,
 		LastUpdatedTimes:   make(map[string]time.Time),
 		LocalToRemoteNames: make(map[string]string),
 		RemoteToLocalNames: make(map[string]string),
 	}, nil
 }
 
-func (s *Snapshot) storeSnapshot(ctx context.Context) error {
-	snapshotPath, err := s.getPath(ctx)
-	if err != nil {
-		return err
-	}
-	f, err := os.OpenFile(snapshotPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
+func (s *Snapshot) Save(ctx context.Context) error {
+	f, err := os.OpenFile(s.SnapshotPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 	if err != nil {
 		return fmt.Errorf("failed to create/open persisted sync snapshot file: %s", err)
 	}
@@ -139,34 +132,42 @@ func (s *Snapshot) storeSnapshot(ctx context.Context) error {
 	return nil
 }
 
-func (s *Snapshot) loadSnapshot(ctx context.Context) error {
-	snapshotPath, err := s.getPath(ctx)
+func loadOrNewSnapshot(opts *SyncOptions) (*Snapshot, error) {
+	snapshot, err := newSnapshot(opts)
 	if err != nil {
-		return err
-	}
-	// Snapshot file not found. We do not load anything
-	if _, err := os.Stat(snapshotPath); os.IsNotExist(err) {
-		return nil
+		return nil, err
 	}
 
-	snapshotCopy := Snapshot{}
+	// Snapshot file not found. We return the new copy.
+	if _, err := os.Stat(snapshot.SnapshotPath); os.IsNotExist(err) {
+		return snapshot, nil
+	}
 
-	bytes, err := os.ReadFile(snapshotPath)
+	bytes, err := os.ReadFile(snapshot.SnapshotPath)
 	if err != nil {
-		return fmt.Errorf("failed to read sync snapshot from disk: %s", err)
+		return nil, fmt.Errorf("failed to read sync snapshot from disk: %s", err)
 	}
-	err = json.Unmarshal(bytes, &snapshotCopy)
+
+	var fromDisk Snapshot
+	err = json.Unmarshal(bytes, &fromDisk)
 	if err != nil {
-		return fmt.Errorf("failed to json unmarshal persisted snapshot: %s", err)
+		return nil, fmt.Errorf("failed to json unmarshal persisted snapshot: %s", err)
 	}
+
 	// invalidate old snapshot with schema versions
-	if snapshotCopy.Version != LatestSnapshotVersion {
-
-		log.Printf("Did not load existing snapshot because its version is %s while the latest version is %s", s.Version, LatestSnapshotVersion)
-		return nil
+	if fromDisk.Version != LatestSnapshotVersion {
+		log.Printf("Did not load existing snapshot because its version is %s while the latest version is %s", snapshot.Version, LatestSnapshotVersion)
+		return newSnapshot(opts)
 	}
-	*s = snapshotCopy
-	return nil
+
+	// unmarshal again over the existing snapshot instance
+	err = json.Unmarshal(bytes, &snapshot)
+	if err != nil {
+		return nil, fmt.Errorf("failed to json unmarshal persisted snapshot: %s", err)
+	}
+
+	snapshot.New = false
+	return snapshot, nil
 }
 
 func (d diff) IsEmpty() bool {

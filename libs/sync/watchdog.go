@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/databricks/bricks/libs/sync/repofiles"
-	"github.com/databricks/bricks/project"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -17,7 +16,7 @@ type watchdog struct {
 	wg      sync.WaitGroup
 	failure error // data race? make channel?
 
-	persistSnapshot bool
+	sync *Sync
 }
 
 // See https://docs.databricks.com/resources/limits.html#limits-api-rate-limits for per api
@@ -70,16 +69,14 @@ func syncCallback(ctx context.Context, repoFiles *repofiles.RepoFiles) func(loca
 }
 
 func spawnWatchdog(ctx context.Context,
-	interval time.Duration,
 	applyDiff func(diff) error,
-	remotePath string,
-	persistSnapshot bool) error {
+	sync *Sync) error {
 	w := &watchdog{
-		ticker:          time.NewTicker(interval),
-		persistSnapshot: persistSnapshot,
+		ticker: time.NewTicker(sync.PollInterval),
+		sync:   sync,
 	}
 	w.wg.Add(1)
-	go w.main(ctx, applyDiff, remotePath)
+	go w.main(ctx, applyDiff, sync.RemotePath)
 	w.wg.Wait()
 	return w.failure
 }
@@ -88,28 +85,27 @@ func spawnWatchdog(ctx context.Context,
 // https://github.com/gorakhargosh/watchdog/blob/master/src/watchdog/observers/kqueue.py#L394-L418
 func (w *watchdog) main(ctx context.Context, applyDiff func(diff) error, remotePath string) {
 	defer w.wg.Done()
-	snapshot, err := newSnapshot(ctx, remotePath)
+	snapshot, err := newSnapshot(w.sync.SyncOptions)
 	if err != nil {
 		log.Printf("[ERROR] cannot create snapshot: %s", err)
 		w.failure = err
 		return
 	}
-	if w.persistSnapshot {
-		err := snapshot.loadSnapshot(ctx)
+	if w.sync.PersistSnapshot {
+		snapshot, err = loadOrNewSnapshot(w.sync.SyncOptions)
 		if err != nil {
 			log.Printf("[ERROR] cannot load snapshot: %s", err)
 			w.failure = err
 			return
 		}
 	}
-	prj := project.Get(ctx)
 	var onlyOnceInitLog sync.Once
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case <-w.ticker.C:
-			all, err := prj.GetFileSet().All()
+			all, err := w.sync.fileSet.All()
 			if err != nil {
 				log.Printf("[ERROR] cannot list files: %s", err)
 				w.failure = err
@@ -132,8 +128,8 @@ func (w *watchdog) main(ctx context.Context, applyDiff func(diff) error, remoteP
 				w.failure = err
 				return
 			}
-			if w.persistSnapshot {
-				err = snapshot.storeSnapshot(ctx)
+			if w.sync.PersistSnapshot {
+				err = snapshot.Save(ctx)
 				if err != nil {
 					log.Printf("[ERROR] cannot store snapshot: %s", err)
 					w.failure = err

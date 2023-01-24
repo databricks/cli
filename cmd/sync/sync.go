@@ -120,14 +120,26 @@ var syncCmd = &cobra.Command{
 			return err
 		}
 
-		s := sync.Sync{
-			LocalPath:       prj.Root(),
-			RemotePath:      *remotePath,
-			PersistSnapshot: *persistSnapshot,
-			PollInterval:    *interval,
+		cacheDir, err := prj.CacheDir()
+		if err != nil {
+			return err
 		}
 
-		return s.RunWatchdog(ctx, wsc)
+		opts := sync.SyncOptions{
+			LocalPath:        prj.Root(),
+			RemotePath:       *remotePath,
+			PersistSnapshot:  *persistSnapshot,
+			SnapshotBasePath: cacheDir,
+			PollInterval:     *interval,
+			WorkspaceClient:  wsc,
+		}
+
+		s, err := sync.New(opts)
+		if err != nil {
+			return err
+		}
+
+		return s.RunWatchdog(ctx)
 	},
 }
 
