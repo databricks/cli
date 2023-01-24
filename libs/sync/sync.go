@@ -3,6 +3,8 @@ package sync
 import (
 	"context"
 	"fmt"
+	"log"
+	"sync"
 	"time"
 
 	"github.com/databricks/bricks/git"
@@ -14,7 +16,7 @@ type SyncOptions struct {
 	LocalPath  string
 	RemotePath string
 
-	PersistSnapshot bool
+	Full bool
 
 	SnapshotBasePath string
 
@@ -28,7 +30,9 @@ type SyncOptions struct {
 type Sync struct {
 	*SyncOptions
 
-	fileSet *git.FileSet
+	fileSet   *git.FileSet
+	snapshot  *Snapshot
+	repoFiles *repofiles.RepoFiles
 }
 
 // New initializes and returns a new [Sync] instance.
@@ -52,16 +56,86 @@ func New(ctx context.Context, opts SyncOptions) (*Sync, error) {
 		return nil, fmt.Errorf("failed to resolve host for snapshot")
 	}
 
+	// For full sync, we start with an empty snapshot.
+	// For incremental sync, we try to load an existing snapshot to start from.
+	var snapshot *Snapshot
+	if opts.Full {
+		snapshot, err = newSnapshot(&opts)
+		if err != nil {
+			return nil, fmt.Errorf("unable to instantiate new sync snapshot: %w", err)
+		}
+	} else {
+		snapshot, err = loadOrNewSnapshot(&opts)
+		if err != nil {
+			return nil, fmt.Errorf("unable to load sync snapshot: %w", err)
+		}
+	}
+
+	repoFiles := repofiles.Create(opts.RemotePath, opts.LocalPath, opts.WorkspaceClient)
+
 	return &Sync{
 		SyncOptions: &opts,
-		fileSet:     fileSet,
+
+		fileSet:   fileSet,
+		snapshot:  snapshot,
+		repoFiles: repoFiles,
 	}, nil
 }
 
-// RunWatchdog kicks off a polling loop to monitor local changes and synchronize
-// them to the remote workspace path.
-func (s *Sync) RunWatchdog(ctx context.Context) error {
+func (s *Sync) RunOnce(ctx context.Context) error {
 	repoFiles := repofiles.Create(s.RemotePath, s.LocalPath, s.WorkspaceClient)
-	syncCallback := syncCallback(ctx, repoFiles)
-	return spawnWatchdog(ctx, syncCallback, s)
+	applyDiff := syncCallback(ctx, repoFiles)
+
+	// tradeoff: doing portable monitoring only due to macOS max descriptor manual ulimit setting requirement
+	// https://github.com/gorakhargosh/watchdog/blob/master/src/watchdog/observers/kqueue.py#L394-L418
+	all, err := s.fileSet.All()
+	if err != nil {
+		log.Printf("[ERROR] cannot list files: %s", err)
+		return err
+	}
+
+	change, err := s.snapshot.diff(all)
+	if err != nil {
+		return err
+	}
+	if change.IsEmpty() {
+		return nil
+	}
+
+	log.Printf("[INFO] Action: %v", change)
+	err = applyDiff(change)
+	if err != nil {
+		return err
+	}
+
+	err = s.snapshot.Save(ctx)
+	if err != nil {
+		log.Printf("[ERROR] cannot store snapshot: %s", err)
+		return err
+	}
+
+	return nil
+}
+
+func (s *Sync) RunContinuous(ctx context.Context) error {
+	var once sync.Once
+
+	ticker := time.NewTicker(s.PollInterval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-ticker.C:
+			err := s.RunOnce(ctx)
+			if err != nil {
+				return err
+			}
+
+			once.Do(func() {
+				log.Printf("[INFO] Initial Sync Complete")
+			})
+		}
+	}
 }
