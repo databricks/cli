@@ -3,21 +3,10 @@ package sync
 import (
 	"context"
 	"log"
-	"sync"
-	"time"
 
 	"github.com/databricks/bricks/libs/sync/repofiles"
 	"golang.org/x/sync/errgroup"
 )
-
-// TODO: add .databricks to .gitignore on bricks init
-type watchdog struct {
-	ticker  *time.Ticker
-	wg      sync.WaitGroup
-	failure error // data race? make channel?
-
-	sync *Sync
-}
 
 // See https://docs.databricks.com/resources/limits.html#limits-api-rate-limits for per api
 // rate limits
@@ -65,80 +54,5 @@ func syncCallback(ctx context.Context, repoFiles *repofiles.RepoFiles) func(loca
 			return err
 		}
 		return nil
-	}
-}
-
-func spawnWatchdog(ctx context.Context,
-	applyDiff func(diff) error,
-	sync *Sync) error {
-	w := &watchdog{
-		ticker: time.NewTicker(sync.PollInterval),
-		sync:   sync,
-	}
-	w.wg.Add(1)
-	go w.main(ctx, applyDiff, sync.RemotePath)
-	w.wg.Wait()
-	return w.failure
-}
-
-// tradeoff: doing portable monitoring only due to macOS max descriptor manual ulimit setting requirement
-// https://github.com/gorakhargosh/watchdog/blob/master/src/watchdog/observers/kqueue.py#L394-L418
-func (w *watchdog) main(ctx context.Context, applyDiff func(diff) error, remotePath string) {
-	defer w.wg.Done()
-	snapshot, err := newSnapshot(w.sync.SyncOptions)
-	if err != nil {
-		log.Printf("[ERROR] cannot create snapshot: %s", err)
-		w.failure = err
-		return
-	}
-	if w.sync.PersistSnapshot {
-		snapshot, err = loadOrNewSnapshot(w.sync.SyncOptions)
-		if err != nil {
-			log.Printf("[ERROR] cannot load snapshot: %s", err)
-			w.failure = err
-			return
-		}
-	}
-	var onlyOnceInitLog sync.Once
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-w.ticker.C:
-			all, err := w.sync.fileSet.All()
-			if err != nil {
-				log.Printf("[ERROR] cannot list files: %s", err)
-				w.failure = err
-				return
-			}
-			change, err := snapshot.diff(all)
-			if err != nil {
-				w.failure = err
-				return
-			}
-			if change.IsEmpty() {
-				onlyOnceInitLog.Do(func() {
-					log.Printf("[INFO] Initial Sync Complete")
-				})
-				continue
-			}
-			log.Printf("[INFO] Action: %v", change)
-			err = applyDiff(change)
-			if err != nil {
-				w.failure = err
-				return
-			}
-			if w.sync.PersistSnapshot {
-				err = snapshot.Save(ctx)
-				if err != nil {
-					log.Printf("[ERROR] cannot store snapshot: %s", err)
-					w.failure = err
-					return
-				}
-			}
-			onlyOnceInitLog.Do(func() {
-				log.Printf("[INFO] Initial Sync Complete")
-			})
-		}
 	}
 }

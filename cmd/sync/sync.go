@@ -15,7 +15,7 @@ import (
 // syncCmd represents the sync command
 var syncCmd = &cobra.Command{
 	Use:   "sync",
-	Short: "run syncs for the project",
+	Short: "Synchronize a local directory to a workspace directory",
 
 	PreRunE: project.Configure,
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -46,7 +46,7 @@ var syncCmd = &cobra.Command{
 		opts := sync.SyncOptions{
 			LocalPath:        prj.Root(),
 			RemotePath:       *remotePath,
-			PersistSnapshot:  *persistSnapshot,
+			Full:             *full,
 			SnapshotBasePath: cacheDir,
 			PollInterval:     *interval,
 			WorkspaceClient:  wsc,
@@ -57,7 +57,11 @@ var syncCmd = &cobra.Command{
 			return err
 		}
 
-		return s.RunWatchdog(ctx)
+		if *watch {
+			return s.RunContinuous(ctx)
+		}
+
+		return s.RunOnce(ctx)
 	},
 }
 
@@ -66,11 +70,13 @@ var interval *time.Duration
 
 var remotePath *string
 
-var persistSnapshot *bool
+var full *bool
+var watch *bool
 
 func init() {
 	root.RootCmd.AddCommand(syncCmd)
-	interval = syncCmd.Flags().Duration("interval", 1*time.Second, "project files polling interval")
+	interval = syncCmd.Flags().Duration("interval", 1*time.Second, "file system polling interval (for --watch)")
 	remotePath = syncCmd.Flags().String("remote-path", "", "remote path to store repo in. eg: /Repos/me@example.com/test-repo")
-	persistSnapshot = syncCmd.Flags().Bool("persist-snapshot", true, "whether to store local snapshots of sync state")
+	full = syncCmd.Flags().Bool("full", false, "perform full synchronization (default is incremental)")
+	watch = syncCmd.Flags().Bool("watch", false, "watch local file system for changes")
 }
