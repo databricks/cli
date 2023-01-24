@@ -3,8 +3,8 @@ package auth
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -55,6 +55,18 @@ func (c *profileMetadata) Load(ctx context.Context) {
 	} else if cfg.IsGcp() {
 		c.Cloud = "gcp"
 	}
+
+	if skipValidate {
+		err := cfg.Authenticate(&http.Request{
+			Header: make(http.Header),
+		})
+		if err != nil {
+			return
+		}
+		c.AuthType = cfg.AuthType
+		return
+	}
+
 	if cfg.IsAccountClient() {
 		a, err := databricks.NewAccountClient((*databricks.Config)(cfg))
 		if err != nil {
@@ -71,7 +83,7 @@ func (c *profileMetadata) Load(ctx context.Context) {
 		if err != nil {
 			return
 		}
-		_, err = w.Tokens.ListAll(ctx)
+		_, err = w.CurrentUser.Me(ctx)
 		c.AuthType = cfg.AuthType
 		if err != nil {
 			return
@@ -86,15 +98,14 @@ var profilesCmd = &cobra.Command{
 	Use:   "profiles",
 	Short: "Lists profiles from ~/.databrickscfg",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		var profiles []*profileMetadata
 		iniFile, err := getDatabricksCfg()
 		if os.IsNotExist(err) {
-			// early return for non-configured machines
-			return errors.New("~/.databrickcfg not found on current host")
-		}
-		if err != nil {
+			// return empty list for non-configured machines
+			iniFile = ini.Empty()
+		} else if err != nil {
 			return fmt.Errorf("cannot parse config file: %w", err)
 		}
-		var profiles []*profileMetadata
 		var wg sync.WaitGroup
 		for _, v := range iniFile.Sections() {
 			hash := v.KeysHash()
@@ -126,6 +137,9 @@ var profilesCmd = &cobra.Command{
 	},
 }
 
+var skipValidate bool
+
 func init() {
 	authCmd.AddCommand(profilesCmd)
+	profilesCmd.Flags().BoolVar(&skipValidate, "skip-validate", false, "Whether to skip validating the profiles")
 }
