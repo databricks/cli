@@ -1,94 +1,16 @@
 package sync
 
 import (
-	"context"
 	"fmt"
 	"log"
-	"strings"
 	"time"
 
 	"github.com/databricks/bricks/cmd/root"
 	"github.com/databricks/bricks/git"
 	"github.com/databricks/bricks/libs/sync"
 	"github.com/databricks/bricks/project"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/service/scim"
-	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/spf13/cobra"
 )
-
-func matchesBasePaths(me *scim.User, path string) error {
-	basePaths := []string{
-		fmt.Sprintf("/Users/%s/", me.UserName),
-		fmt.Sprintf("/Repos/%s/", me.UserName),
-	}
-	basePathMatch := false
-	for _, basePath := range basePaths {
-		if strings.HasPrefix(path, basePath) {
-			basePathMatch = true
-			break
-		}
-	}
-	if !basePathMatch {
-		return fmt.Errorf("path must be nested under %s or %s", basePaths[0], basePaths[1])
-	}
-	return nil
-}
-
-// ensureRemotePathIsUsable checks if the specified path is nested under
-// expected base paths and if it is a directory or repository.
-func ensureRemotePathIsUsable(ctx context.Context, wsc *databricks.WorkspaceClient, me *scim.User, path string) error {
-	err := matchesBasePaths(me, path)
-	if err != nil {
-		return err
-	}
-
-	// Ensure that the remote path exits.
-	// If it is a repo, it has to exist.
-	// If it is a workspace path, it may not exist.
-	info, err := wsc.Workspace.GetStatusByPath(ctx, path)
-	if err != nil {
-		// We only deal with 404s below.
-		if !apierr.IsMissing(err) {
-			return err
-		}
-
-		switch {
-		case strings.HasPrefix(path, "/Repos/"):
-			return fmt.Errorf("%s does not exist; please create it first", path)
-		case strings.HasPrefix(path, "/Users/"):
-			// The workspace path doesn't exist. Create it and try again.
-			err = wsc.Workspace.MkdirsByPath(ctx, path)
-			if err != nil {
-				return fmt.Errorf("unable to create directory at %s: %w", path, err)
-			}
-			info, err = wsc.Workspace.GetStatusByPath(ctx, path)
-			if err != nil {
-				return err
-			}
-		default:
-			return err
-		}
-	}
-
-	log.Printf(
-		"[DEBUG] Path %s has type %s (ID: %d)",
-		info.Path,
-		strings.ToLower(info.ObjectType.String()),
-		info.ObjectId,
-	)
-
-	// We expect the object at path to be a directory or a repo.
-	switch info.ObjectType {
-	case workspace.ObjectTypeDirectory:
-		return nil
-	case workspace.ObjectTypeRepo:
-		return nil
-	}
-
-	return fmt.Errorf("%s points to a %s", path, strings.ToLower(info.ObjectType.String()))
-}
 
 // syncCmd represents the sync command
 var syncCmd = &cobra.Command{
@@ -115,10 +37,6 @@ var syncCmd = &cobra.Command{
 		}
 
 		log.Printf("[INFO] Remote file sync location: %v", *remotePath)
-		err = ensureRemotePathIsUsable(ctx, wsc, me, *remotePath)
-		if err != nil {
-			return err
-		}
 
 		cacheDir, err := prj.CacheDir()
 		if err != nil {
@@ -134,7 +52,7 @@ var syncCmd = &cobra.Command{
 			WorkspaceClient:  wsc,
 		}
 
-		s, err := sync.New(opts)
+		s, err := sync.New(ctx, opts)
 		if err != nil {
 			return err
 		}

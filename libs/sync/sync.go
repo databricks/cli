@@ -32,9 +32,16 @@ type Sync struct {
 }
 
 // New initializes and returns a new [Sync] instance.
-func New(opts SyncOptions) (*Sync, error) {
+func New(ctx context.Context, opts SyncOptions) (*Sync, error) {
 	fileSet := git.NewFileSet(opts.LocalPath)
 	err := fileSet.EnsureValidGitIgnoreExists()
+	if err != nil {
+		return nil, err
+	}
+
+	// Retrieve current user so that we can verify that the remote path
+	// is nested under the user's directories.
+	err = ensureRemotePathIsUsable(ctx, opts.WorkspaceClient, opts.RemotePath)
 	if err != nil {
 		return nil, err
 	}
