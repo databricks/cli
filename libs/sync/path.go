@@ -13,12 +13,12 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
-// Return if the specified path is nested under the parent path.
+// Return if the child path is nested under the parent path.
 func isPathNestedUnder(child, parent string) bool {
 	child = path.Clean(child)
 	parent = path.Clean(parent)
 
-	// Traverse up the tree as long as p is contained in q.
+	// Traverse up the tree as long as "child" is contained in "parent".
 	for len(child) > len(parent) && strings.HasPrefix(child, parent) {
 		child = path.Dir(child)
 		if child == parent {
