@@ -168,7 +168,7 @@ func TestAccFullFileSync(t *testing.T) {
 
 	// Run `bricks sync` in the background.
 	t.Setenv("BRICKS_ROOT", localRepoPath)
-	c := NewCobraTestRunner(t, "sync", "--remote-path", remoteRepoPath, "--persist-snapshot=false")
+	c := NewCobraTestRunner(t, "sync", "--remote-path", remoteRepoPath, "--full", "--watch")
 	c.RunBackground()
 
 	assertSync := assertSync{
@@ -214,7 +214,7 @@ func TestAccIncrementalFileSync(t *testing.T) {
 
 	// Run `bricks sync` in the background.
 	t.Setenv("BRICKS_ROOT", localRepoPath)
-	c := NewCobraTestRunner(t, "sync", "--remote-path", remoteRepoPath, "--persist-snapshot=true")
+	c := NewCobraTestRunner(t, "sync", "--remote-path", remoteRepoPath, "--watch")
 	c.RunBackground()
 
 	assertSync := assertSync{
@@ -262,7 +262,7 @@ func TestAccNestedFolderSync(t *testing.T) {
 
 	// Run `bricks sync` in the background.
 	t.Setenv("BRICKS_ROOT", localRepoPath)
-	c := NewCobraTestRunner(t, "sync", "--remote-path", remoteRepoPath, "--persist-snapshot=true")
+	c := NewCobraTestRunner(t, "sync", "--remote-path", remoteRepoPath, "--watch")
 	c.RunBackground()
 
 	assertSync := assertSync{
@@ -316,7 +316,7 @@ func TestAccIncrementalFileOverwritesFolder(t *testing.T) {
 
 	// Run `bricks sync` in the background.
 	t.Setenv("BRICKS_ROOT", localRepoPath)
-	c := NewCobraTestRunner(t, "sync", "--remote-path", remoteRepoPath, "--persist-snapshot=true")
+	c := NewCobraTestRunner(t, "sync", "--remote-path", remoteRepoPath, "--watch")
 	c.RunBackground()
 
 	assertSync := assertSync{
@@ -367,7 +367,7 @@ func TestAccIncrementalSyncPythonNotebookToFile(t *testing.T) {
 
 	// Run `bricks sync` in the background.
 	t.Setenv("BRICKS_ROOT", localRepoPath)
-	c := NewCobraTestRunner(t, "sync", "--remote-path", remoteRepoPath, "--persist-snapshot=true")
+	c := NewCobraTestRunner(t, "sync", "--remote-path", remoteRepoPath, "--watch")
 	c.RunBackground()
 
 	assertSync := assertSync{
@@ -406,7 +406,7 @@ func TestAccIncrementalSyncFileToPythonNotebook(t *testing.T) {
 
 	// Run `bricks sync` in the background.
 	t.Setenv("BRICKS_ROOT", localRepoPath)
-	c := NewCobraTestRunner(t, "sync", "--remote-path", remoteRepoPath, "--persist-snapshot=true")
+	c := NewCobraTestRunner(t, "sync", "--remote-path", remoteRepoPath, "--watch")
 	c.RunBackground()
 
 	assertSync := assertSync{
@@ -451,7 +451,7 @@ func TestAccIncrementalSyncPythonNotebookDelete(t *testing.T) {
 
 	// Run `bricks sync` in the background.
 	t.Setenv("BRICKS_ROOT", localRepoPath)
-	c := NewCobraTestRunner(t, "sync", "--remote-path", remoteRepoPath, "--persist-snapshot=true")
+	c := NewCobraTestRunner(t, "sync", "--remote-path", remoteRepoPath, "--watch")
 	c.RunBackground()
 
 	assertSync := assertSync{
