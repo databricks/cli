@@ -59,7 +59,7 @@ func ensureRemotePathIsUsable(ctx context.Context, wsc *databricks.WorkspaceClie
 		return err
 	}
 
-	// Ensure that the remote path exits.
+	// Ensure that the remote path exists.
 	// If it is a repo, it has to exist.
 	// If it is a workspace path, it may not exist.
 	info, err := wsc.Workspace.GetStatusByPath(ctx, path)
