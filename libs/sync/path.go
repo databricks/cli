@@ -13,13 +13,16 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
-// Return if the specified path is contained in the parent path.
-func isPathNestedUnderOrEqualTo(p, parent string) bool {
+// Return if the specified path is nested under the parent path.
+func isPathNestedUnder(p, parent string) bool {
 	// Traverse up the tree as long as p is contained in parent.
 	for len(p) > len(parent) && strings.HasPrefix(p, parent) {
 		p = path.Dir(p)
+		if p == parent {
+			return true
+		}
 	}
-	return p == parent
+	return false
 }
 
 // Check if the specified path is nested under one of the allowed base paths.
@@ -30,10 +33,9 @@ func checkPathNestedUnderBasePaths(me *scim.User, p string) error {
 	}
 
 	givenBasePath := path.Clean(p)
-	givenBasePathDir := path.Dir(givenBasePath)
 	match := false
 	for _, basePath := range validBasePaths {
-		if isPathNestedUnderOrEqualTo(givenBasePathDir, basePath) {
+		if isPathNestedUnder(givenBasePath, basePath) {
 			match = true
 			break
 		}
