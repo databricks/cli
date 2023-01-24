@@ -29,7 +29,7 @@ import (
 // Please run using the deco env test or deco env shell
 func setupRepo(t *testing.T, wsc *databricks.WorkspaceClient, ctx context.Context) (localRoot, remoteRoot string) {
 	me, err := wsc.CurrentUser.Me(ctx)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	repoUrl := "https://github.com/shreyas-goenka/empty-repo.git"
 	repoPath := fmt.Sprintf("/Repos/%s/%s", me.UserName, RandomName("empty-repo-sync-integration-"))
 
@@ -38,7 +38,7 @@ func setupRepo(t *testing.T, wsc *databricks.WorkspaceClient, ctx context.Contex
 		Url:      repoUrl,
 		Provider: "gitHub",
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	t.Cleanup(func() {
 		err := wsc.Repos.DeleteByRepoId(ctx, repoInfo.Id)
@@ -50,7 +50,7 @@ func setupRepo(t *testing.T, wsc *databricks.WorkspaceClient, ctx context.Contex
 	cmd := exec.Command("git", "clone", repoUrl)
 	cmd.Dir = tempDir
 	err = cmd.Run()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	localRoot = filepath.Join(tempDir, "empty-repo")
 	remoteRoot = repoPath
