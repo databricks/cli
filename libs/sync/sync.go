@@ -32,9 +32,15 @@ type Sync struct {
 }
 
 // New initializes and returns a new [Sync] instance.
-func New(opts SyncOptions) (*Sync, error) {
+func New(ctx context.Context, opts SyncOptions) (*Sync, error) {
 	fileSet := git.NewFileSet(opts.LocalPath)
 	err := fileSet.EnsureValidGitIgnoreExists()
+	if err != nil {
+		return nil, err
+	}
+
+	// Verify that the remote path we're about to synchronize to is valid and allowed.
+	err = ensureRemotePathIsUsable(ctx, opts.WorkspaceClient, opts.RemotePath)
 	if err != nil {
 		return nil, err
 	}
