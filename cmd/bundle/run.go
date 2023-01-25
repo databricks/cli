@@ -5,6 +5,7 @@ import (
 	"github.com/databricks/bricks/bundle/deploy/terraform"
 	"github.com/databricks/bricks/bundle/phases"
 	"github.com/databricks/bricks/bundle/run"
+	"github.com/databricks/bricks/cmd/root"
 	"github.com/spf13/cobra"
 )
 
@@ -15,7 +16,7 @@ var runCmd = &cobra.Command{
 	Short: "Run a workload (e.g. a job or a pipeline)",
 
 	Args:    cobra.ExactArgs(1),
-	PreRunE: ConfigureBundle,
+	PreRunE: root.MustConfigureBundle,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		b := bundle.Get(cmd.Context())
 		err := bundle.Apply(cmd.Context(), b, []bundle.Mutator{
