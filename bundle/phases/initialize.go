@@ -15,7 +15,9 @@ func Initialize() bundle.Mutator {
 		"initialize",
 		[]bundle.Mutator{
 			mutator.PopulateCurrentUser(),
-			mutator.DefaultArtifactPath(),
+			mutator.DefineDefaultWorkspaceRoot(),
+			mutator.ExpandWorkspaceRoot(),
+			mutator.DefineDefaultWorkspacePaths(),
 			mutator.TranslateNotebookPaths(),
 			interpolation.Interpolate(
 				interpolation.IncludeLookupsInPath("bundle"),
