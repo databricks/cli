@@ -63,6 +63,9 @@ func testViewAtRoot(t *testing.T, v *View) {
 	// Nested .gitignores should apply in their path.
 	assert.True(t, v.Ignore("a/a.sh"))
 	assert.True(t, v.Ignore("a/whatever/a.sh"))
+
+	// .git must always be ignored.
+	assert.True(t, v.Ignore(".git"))
 }
 
 func TestViewRootInBricksRepo(t *testing.T) {

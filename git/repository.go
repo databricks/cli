@@ -185,6 +185,9 @@ func NewRepository(path string) (*Repository, error) {
 		ignore:   make(map[string][]*ignore.GitIgnore),
 	}
 
+	// Always ignore ".git" directory.
+	repo.ignore["."] = append(repo.ignore["."], ignore.CompileIgnoreLines(".git"))
+
 	// Load repository-wide excludes file.
 	err = repo.includeIgnoreFile(filepath.Join(".git", "info", "excludes"), ".")
 	if err != nil {
