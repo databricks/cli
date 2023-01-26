@@ -1,0 +1,6 @@
+root.*
+/root/foo
+**/root_double
+
+# Don't recurse into this directory.
+/ignorethis
