@@ -47,11 +47,22 @@ type Workspace struct {
 	// This is set after configuration initialization.
 	CurrentUser *scim.User `json:"current_user,omitempty"`
 
-	// Remote path for artifacts.
-	// This can specify a workspace path, a DBFS path, or both.
-	// Some artifacts must be stored in the workspace (e.g. notebooks).
-	// Some artifacts must be stored on DBFS (e.g. wheels, JARs).
+	// Remote base path for deployment state, for artifacts, as synchronization target.
+	// This defaults to "~/.bundle/${bundle.name}/${bundle.environment}" where "~" expands to
+	// the current user's home directory in the workspace (e.g. `/Users/jane@doe.com`).
+	Root string `json:"root"`
+
+	// Remote path to synchronize local files to.
+	// This defaults to "${workspace.root}/files".
+	FilePath PathLike `json:"file_path"`
+
+	// Remote path for build artifacts.
+	// This defaults to "${workspace.root}/artifacts".
 	ArtifactPath PathLike `json:"artifact_path"`
+
+	// Remote path for deployment state.
+	// This defaults to "${workspace.root}/state".
+	StatePath PathLike `json:"state_path"`
 }
 
 func (w *Workspace) Client() (*databricks.WorkspaceClient, error) {
