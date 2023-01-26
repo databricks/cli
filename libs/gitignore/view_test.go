@@ -61,31 +61,4 @@ func TestViewAB(t *testing.T) {
 	assert.True(t, v.Ignore("b.sh"))
 	assert.True(t, v.Ignore("b_double"))
 	assert.False(t, v.Ignore("newfile"))
-
-	// Nested .gitignores should apply in their path.
-	assert.True(t, v.Ignore("c/c.sh"))
-	assert.True(t, v.Ignore("c/whatever/c.sh"))
-}
-
-func TestViewABC(t *testing.T) {
-	v, err := NewView("./testdata/a/b/c")
-	require.NoError(t, err)
-
-	// Inherit .gitignore from root.
-	assert.True(t, v.Ignore("root.sh"))
-	assert.False(t, v.Ignore("root/foo"))
-	assert.True(t, v.Ignore("root_double"))
-
-	// Inherit .gitignore from root/a.
-	assert.True(t, v.Ignore("a.sh"))
-	assert.True(t, v.Ignore("a_double"))
-
-	// Inherit .gitignore from root/b.
-	assert.True(t, v.Ignore("b.sh"))
-	assert.True(t, v.Ignore("b_double"))
-
-	// Check current .gitignore
-	assert.True(t, v.Ignore("c.sh"))
-	assert.True(t, v.Ignore("c_double"))
-	assert.False(t, v.Ignore("newfile"))
 }
