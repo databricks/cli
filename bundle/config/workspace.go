@@ -48,7 +48,8 @@ type Workspace struct {
 	CurrentUser *scim.User `json:"current_user,omitempty"`
 
 	// Remote base path for deployment state, for artifacts, as synchronization target.
-	// This defaults to "~/.bundle/${bundle.name}/${bundle.environment}".
+	// This defaults to "~/.bundle/${bundle.name}/${bundle.environment}" where "~" expands to
+	// the current user's home directory in the workspace (e.g. `/Users/jane@doe.com`).
 	Root string `json:"root"`
 
 	// Remote path to synchronize local files to.
