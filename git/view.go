@@ -60,10 +60,8 @@ func NewView(path string) (*View, error) {
 		return nil, err
 	}
 
-	view := &View{
+	return &View{
 		repo:       repo,
 		targetPath: targetPath,
-	}
-
-	return view, nil
+	}, nil
 }
