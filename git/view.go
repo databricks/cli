@@ -38,6 +38,27 @@ func (v *View) Ignore(path string) bool {
 	return v.repo.Ignore(filepath.Join(v.targetPath, path) + trailingSlash)
 }
 
+// IgnoreFile returns if the gitignore rules in this fileset
+// apply to the specified file path.
+//
+// This function is provided to implement [fileset.Ignorer].
+func (v *View) IgnoreFile(file string) bool {
+	return v.Ignore(file)
+}
+
+// IgnoreDirectory returns if the gitignore rules in this fileset
+// apply to the specified directory path.
+//
+// A gitignore rule may apply only to directories if it uses
+// a trailing slash. Therefore this function checks the gitignore
+// rules for the specified directory path first without and then
+// with a trailing slash.
+//
+// This function is provided to implement [fileset.Ignorer].
+func (v *View) IgnoreDirectory(dir string) bool {
+	return v.Ignore(dir) || v.Ignore(dir+"/")
+}
+
 func NewView(path string) (*View, error) {
 	path, err := filepath.Abs(path)
 	if err != nil {
