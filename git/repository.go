@@ -159,11 +159,12 @@ func (r *Repository) Ignore(relPath string) bool {
 		// For this prefix (e.g. ".", or "dir1/dir2") we check if the
 		// suffix is matched in the respective ignore files.
 		fs, ok := r.ignore[prefix]
-		if ok {
-			for _, f := range fs {
-				if f.MatchesPath(suffix) {
-					return true
-				}
+		if !ok {
+			continue
+		}
+		for _, f := range fs {
+			if f.MatchesPath(suffix) {
+				return true
 			}
 		}
 	}
