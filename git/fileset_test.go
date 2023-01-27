@@ -9,7 +9,8 @@ import (
 )
 
 func TestFileSetRecursiveListFiles(t *testing.T) {
-	fileSet := NewFileSet("./testdata")
+	fileSet, err := NewFileSet("./testdata")
+	require.NoError(t, err)
 	files, err := fileSet.RecursiveListFiles("./testdata")
 	require.NoError(t, err)
 	require.Len(t, files, 6)
@@ -25,8 +26,9 @@ func TestFileSetNonCleanRoot(t *testing.T) {
 	// Test what happens if the root directory can be simplified.
 	// Path simplification is done by most filepath functions.
 	// This should yield the same result as above test.
-	fs := NewFileSet("./testdata/../testdata")
-	files, err := fs.All()
+	fileSet, err := NewFileSet("./testdata/../testdata")
+	require.NoError(t, err)
+	files, err := fileSet.All()
 	require.NoError(t, err)
 	assert.Len(t, files, 6)
 }
