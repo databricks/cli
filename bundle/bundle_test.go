@@ -39,3 +39,42 @@ func TestBundleCacheDir(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, strings.HasPrefix(cacheDir, projectDir))
 }
+
+func TestBundleMustLoadSuccess(t *testing.T) {
+	t.Setenv(envBundleRoot, "./tests/basic")
+	b, err := MustLoad()
+	require.NoError(t, err)
+	assert.Equal(t, "./tests/basic", b.Config.Path)
+}
+
+func TestBundleMustLoadFailureWithEnv(t *testing.T) {
+	t.Setenv(envBundleRoot, "./tests/doesntexist")
+	_, err := MustLoad()
+	require.Error(t, err, "not a directory")
+}
+
+func TestBundleMustLoadFailureIfNotFound(t *testing.T) {
+	chdir(t, t.TempDir())
+	_, err := MustLoad()
+	require.Error(t, err, "unable to find bundle root")
+}
+
+func TestBundleTryLoadSuccess(t *testing.T) {
+	t.Setenv(envBundleRoot, "./tests/basic")
+	b, err := TryLoad()
+	require.NoError(t, err)
+	assert.Equal(t, "./tests/basic", b.Config.Path)
+}
+
+func TestBundleTryLoadFailureWithEnv(t *testing.T) {
+	t.Setenv(envBundleRoot, "./tests/doesntexist")
+	_, err := TryLoad()
+	require.Error(t, err, "not a directory")
+}
+
+func TestBundleTryLoadOkIfNotFound(t *testing.T) {
+	chdir(t, t.TempDir())
+	b, err := TryLoad()
+	assert.NoError(t, err)
+	assert.Nil(t, b)
+}

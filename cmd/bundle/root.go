@@ -17,7 +17,7 @@ var rootCmd = &cobra.Command{
 // and configures it on the command's context.
 func ConfigureBundle(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
-	b, err := bundle.LoadFromRoot()
+	b, err := bundle.MustLoad()
 	if err != nil {
 		return err
 	}

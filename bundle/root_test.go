@@ -34,7 +34,7 @@ func TestRootFromEnv(t *testing.T) {
 	t.Setenv(envBundleRoot, dir)
 
 	// It should pull the root from the environment variable.
-	root, err := getRoot()
+	root, err := mustGetRoot()
 	require.NoError(t, err)
 	require.Equal(t, root, dir)
 }
@@ -44,7 +44,7 @@ func TestRootFromEnvDoesntExist(t *testing.T) {
 	t.Setenv(envBundleRoot, filepath.Join(dir, "doesntexist"))
 
 	// It should pull the root from the environment variable.
-	_, err := getRoot()
+	_, err := mustGetRoot()
 	require.Errorf(t, err, "invalid bundle root")
 }
 
@@ -56,7 +56,7 @@ func TestRootFromEnvIsFile(t *testing.T) {
 	t.Setenv(envBundleRoot, f.Name())
 
 	// It should pull the root from the environment variable.
-	_, err = getRoot()
+	_, err = mustGetRoot()
 	require.Errorf(t, err, "invalid bundle root")
 }
 
@@ -65,7 +65,7 @@ func TestRootIfEnvIsEmpty(t *testing.T) {
 	t.Setenv(envBundleRoot, dir)
 
 	// It should pull the root from the environment variable.
-	_, err := getRoot()
+	_, err := mustGetRoot()
 	require.Errorf(t, err, "invalid bundle root")
 }
 
@@ -87,7 +87,7 @@ func TestRootLookup(t *testing.T) {
 
 	// It should find the project root from $PWD.
 	wd := chdir(t, "./a/b/c")
-	root, err := getRoot()
+	root, err := mustGetRoot()
 	require.NoError(t, err)
 	require.Equal(t, wd, root)
 }
@@ -99,6 +99,6 @@ func TestRootLookupError(t *testing.T) {
 
 	// It can't find a project root from a temporary directory.
 	_ = chdir(t, t.TempDir())
-	_, err := getRoot()
+	_, err := mustGetRoot()
 	require.ErrorContains(t, err, "unable to locate bundle root")
 }

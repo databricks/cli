@@ -41,10 +41,29 @@ func Load(path string) (*Bundle, error) {
 	return bundle, nil
 }
 
-func LoadFromRoot() (*Bundle, error) {
-	root, err := getRoot()
+// MustLoad returns a bundle configuration.
+// It returns an error if a bundle was not found or could not be loaded.
+func MustLoad() (*Bundle, error) {
+	root, err := mustGetRoot()
 	if err != nil {
 		return nil, err
+	}
+
+	return Load(root)
+}
+
+// TryLoad returns a bundle configuration if there is one, but doesn't fail if there isn't one.
+// It returns an error if a bundle was found but could not be loaded.
+// It returns a `nil` bundle if a bundle was not found.
+func TryLoad() (*Bundle, error) {
+	root, err := tryGetRoot()
+	if err != nil {
+		return nil, err
+	}
+
+	// No root is fine in this function.
+	if root == "" {
+		return nil, nil
 	}
 
 	return Load(root)
