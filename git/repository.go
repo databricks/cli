@@ -66,16 +66,15 @@ func (r *Repository) includeIgnoreFilesUpToPath(relPath string) error {
 		".",
 	}
 	for _, path := range strings.Split(relPath, string(os.PathSeparator)) {
-		path = filepath.Join(paths[len(paths)-1], path)
-
-		// May be identical if relPath == ".".
-		if path != relPath {
-			paths = append(paths, path)
-		}
+		paths = append(paths, filepath.Join(paths[len(paths)-1], path))
 	}
 
 	// Load ignore files.
 	for _, path := range paths {
+		// Path equal to `relPath` is loaded by [includeIgnoreFilesUnderPath].
+		if path == relPath {
+			continue
+		}
 		err := r.includeIgnoreFile(filepath.Join(path, gitIgnoreFileName), path)
 		if err != nil {
 			return err
