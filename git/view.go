@@ -1,7 +1,6 @@
 package git
 
 import (
-	"os"
 	"path/filepath"
 	"strings"
 )
@@ -27,11 +26,13 @@ type View struct {
 // Ignore computes whether to ignore the specified path.
 // The specified path is relative to the view's target path.
 func (v *View) Ignore(path string) bool {
+	path = filepath.ToSlash(path)
+
 	// Retain trailing slash for directory patterns.
 	// Needs special handling because it is removed by path cleaning.
 	trailingSlash := ""
-	if strings.HasSuffix(path, string(os.PathSeparator)) {
-		trailingSlash = string(os.PathSeparator)
+	if strings.HasSuffix(path, "/") {
+		trailingSlash = "/"
 	}
 
 	return v.repo.Ignore(filepath.Join(v.targetPath, path) + trailingSlash)

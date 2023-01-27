@@ -140,7 +140,7 @@ func (r *Repository) includeIgnoreFilesForPath(relPath string) error {
 // Ignore computes whether to ignore the specified path.
 // The specified path is relative to the repository root path.
 func (r *Repository) Ignore(relPath string) bool {
-	parts := strings.Split(relPath, string(os.PathSeparator))
+	parts := strings.Split(filepath.ToSlash(relPath), "/")
 
 	// Retain trailing slash for directory patterns.
 	// We know a trailing slash was present if the last element
