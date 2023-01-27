@@ -34,7 +34,7 @@ type Repository struct {
 	ignore map[string][]*ignore.GitIgnore
 }
 
-func (r *Repository) includeIgnoreFile(relativeIgnoreFilePath string, relativeTo string) error {
+func (r *Repository) includeIgnoreFile(relativeIgnoreFilePath, relativeTo string) error {
 	absPath := filepath.Join(r.rootPath, relativeIgnoreFilePath)
 
 	// The file must be stat-able and not a directory.
