@@ -20,6 +20,11 @@ func New(root string) *FileSet {
 	}
 }
 
+// Ignorer returns the [FileSet]'s current ignorer.
+func (w *FileSet) Ignorer() Ignorer {
+	return w.ignore
+}
+
 // SetIgnorer sets the [Ignorer] interface for this [FileSet].
 func (w *FileSet) SetIgnorer(ignore Ignorer) {
 	w.ignore = ignore

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/databricks/bricks/git"
+	"github.com/databricks/bricks/libs/fileset"
 	"github.com/databricks/bricks/libs/sync/repofiles"
 	"github.com/databricks/databricks-sdk-go"
 )
@@ -30,15 +31,18 @@ type SyncOptions struct {
 type Sync struct {
 	*SyncOptions
 
-	fileSet   *git.FileSet
+	fileSet   *fileset.FileSet
 	snapshot  *Snapshot
 	repoFiles *repofiles.RepoFiles
 }
 
 // New initializes and returns a new [Sync] instance.
 func New(ctx context.Context, opts SyncOptions) (*Sync, error) {
-	fileSet := git.NewFileSet(opts.LocalPath)
-	err := fileSet.EnsureValidGitIgnoreExists()
+	fileSet, err := git.NewFileSet(opts.LocalPath)
+	if err != nil {
+		return nil, err
+	}
+	err = git.EnsureValidGitIgnoreExists(fileSet)
 	if err != nil {
 		return nil, err
 	}

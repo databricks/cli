@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	"github.com/databricks/bricks/git"
+	"github.com/databricks/bricks/libs/fileset"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/commands"
 	"github.com/databricks/databricks-sdk-go/service/scim"
@@ -26,7 +27,7 @@ type project struct {
 	environment *Environment
 	wsc         *databricks.WorkspaceClient
 	me          *scim.User
-	fileSet     *git.FileSet
+	fileSet     *fileset.FileSet
 }
 
 // Configure is used as a PreRunE function for all commands that
@@ -65,10 +66,13 @@ func Initialize(ctx context.Context, root, env string) (context.Context, error) 
 		return nil, fmt.Errorf("environment [%s] not defined", env)
 	}
 
-	fileSet := git.NewFileSet(root)
-	err = fileSet.EnsureValidGitIgnoreExists()
+	fileSet, err := git.NewFileSet(root)
 	if err != nil {
-		return ctx, nil
+		return nil, err
+	}
+	err = git.EnsureValidGitIgnoreExists(fileSet)
+	if err != nil {
+		return nil, err
 	}
 
 	p := project{
@@ -116,7 +120,7 @@ func (p *project) Root() string {
 	return p.root
 }
 
-func (p *project) GetFileSet() *git.FileSet {
+func (p *project) GetFileSet() *fileset.FileSet {
 	return p.fileSet
 }
 
@@ -129,7 +133,7 @@ func (p *project) GetFileSet() *git.FileSet {
 // accidentally check into git
 func (p *project) CacheDir() (string, error) {
 	// assert cache dir is present in git ignore
-	if !p.fileSet.IgnoreDirectory(fmt.Sprintf("/%s/", CacheDirName)) {
+	if !p.fileSet.Ignorer().IgnoreDirectory(fmt.Sprintf("/%s/", CacheDirName)) {
 		return "", fmt.Errorf("please add /%s/ to .gitignore", CacheDirName)
 	}
 

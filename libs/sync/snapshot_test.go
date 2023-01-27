@@ -26,7 +26,8 @@ func assertKeysOfMap(t *testing.T, m map[string]time.Time, expectedKeys []string
 func TestDiff(t *testing.T) {
 	// Create temp project dir
 	projectDir := t.TempDir()
-	fileSet := git.NewFileSet(projectDir)
+	fileSet, err := git.NewFileSet(projectDir)
+	require.NoError(t, err)
 	state := Snapshot{
 		LastUpdatedTimes:   make(map[string]time.Time),
 		LocalToRemoteNames: make(map[string]string),
@@ -85,14 +86,15 @@ func TestDiff(t *testing.T) {
 func TestFolderDiff(t *testing.T) {
 	// Create temp project dir
 	projectDir := t.TempDir()
-	fileSet := git.NewFileSet(projectDir)
+	fileSet, err := git.NewFileSet(projectDir)
+	require.NoError(t, err)
 	state := Snapshot{
 		LastUpdatedTimes:   make(map[string]time.Time),
 		LocalToRemoteNames: make(map[string]string),
 		RemoteToLocalNames: make(map[string]string),
 	}
 
-	err := os.Mkdir(filepath.Join(projectDir, "foo"), os.ModePerm)
+	err = os.Mkdir(filepath.Join(projectDir, "foo"), os.ModePerm)
 	assert.NoError(t, err)
 	f1 := testfile.CreateFile(t, filepath.Join(projectDir, "foo", "bar.py"))
 	defer f1.Close(t)
@@ -119,7 +121,8 @@ func TestFolderDiff(t *testing.T) {
 func TestPythonNotebookDiff(t *testing.T) {
 	// Create temp project dir
 	projectDir := t.TempDir()
-	fileSet := git.NewFileSet(projectDir)
+	fileSet, err := git.NewFileSet(projectDir)
+	require.NoError(t, err)
 	state := Snapshot{
 		LastUpdatedTimes:   make(map[string]time.Time),
 		LocalToRemoteNames: make(map[string]string),
@@ -189,7 +192,8 @@ func TestPythonNotebookDiff(t *testing.T) {
 func TestErrorWhenIdenticalRemoteName(t *testing.T) {
 	// Create temp project dir
 	projectDir := t.TempDir()
-	fileSet := git.NewFileSet(projectDir)
+	fileSet, err := git.NewFileSet(projectDir)
+	require.NoError(t, err)
 	state := Snapshot{
 		LastUpdatedTimes:   make(map[string]time.Time),
 		LocalToRemoteNames: make(map[string]string),

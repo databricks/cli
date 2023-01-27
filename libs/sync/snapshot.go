@@ -15,7 +15,7 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 
-	"github.com/databricks/bricks/git"
+	"github.com/databricks/bricks/libs/fileset"
 )
 
 // Bump it up every time a potentially breaking change is made to the snapshot schema
@@ -191,7 +191,7 @@ func getNotebookDetails(path string) (isNotebook bool, typeOfNotebook string, er
 	return false, "", nil
 }
 
-func (s *Snapshot) diff(all []git.File) (change diff, err error) {
+func (s *Snapshot) diff(all []fileset.File) (change diff, err error) {
 	currentFilenames := map[string]bool{}
 	lastModifiedTimes := s.LastUpdatedTimes
 	remoteToLocalNames := s.RemoteToLocalNames
