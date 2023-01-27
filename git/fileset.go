@@ -21,13 +21,8 @@ func (f File) Modified() (ts time.Time) {
 	return info.ModTime()
 }
 
-// FileSet facilitates fast recursive tracked file listing
-// with respect to patterns defined in `.gitignore` file
-//
-// root:   Root of the git repository
-// ignore: List of patterns defined in `.gitignore`.
-//
-//	We do not sync files that match this pattern
+// FileSet facilitates fast recursive file listing taking into account
+// gitignore rules defined in the repository it is a part of.
 type FileSet struct {
 	root string
 	view *View
@@ -87,12 +82,21 @@ func (w *FileSet) All() ([]File, error) {
 	return w.RecursiveListFiles(w.root)
 }
 
-func (w *FileSet) IgnoreFile(pattern string) bool {
-	return w.view.Ignore(pattern)
+// IgnoreFile returns if the gitignore rules in this fileset
+// apply to the specified file path.
+func (w *FileSet) IgnoreFile(file string) bool {
+	return w.view.Ignore(file)
 }
 
-func (w *FileSet) IgnoreDirectory(path string) bool {
-	return w.view.Ignore(path) || w.view.Ignore(path+"/")
+// IgnoreDirectory returns if the gitignore rules in this fileset
+// apply to the specified directory path.
+//
+// A gitignore rule may apply only to directories if it uses
+// a trailing slash. Therefore this function checks the gitignore
+// rules for the specified directory path first without and then
+// with a trailing slash.
+func (w *FileSet) IgnoreDirectory(dir string) bool {
+	return w.view.Ignore(dir) || w.view.Ignore(dir+"/")
 }
 
 // Recursively traverses dir in a depth first manner and returns a list of all files
