@@ -4,14 +4,14 @@ import (
 	"fmt"
 
 	"github.com/databricks/bricks/bundle"
-	parent "github.com/databricks/bricks/cmd/bundle"
+	"github.com/databricks/bricks/cmd/root"
 	"github.com/spf13/cobra"
 )
 
 var whoamiCmd = &cobra.Command{
 	Use: "whoami",
 
-	PreRunE: parent.ConfigureBundle,
+	PreRunE: root.MustConfigureBundle,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		w := bundle.Get(ctx).WorkspaceClient()
