@@ -60,7 +60,7 @@ func (w *FileSet) createView() error {
 // Only call this function for a bricks project root
 // since it will create a .gitignore file if missing
 func (w *FileSet) EnsureValidGitIgnoreExists() error {
-	if w.view.Ignore(".databricks") {
+	if w.IgnoreDirectory(".databricks") {
 		return nil
 	}
 
@@ -87,8 +87,12 @@ func (w *FileSet) All() ([]File, error) {
 	return w.RecursiveListFiles(w.root)
 }
 
-func (w *FileSet) IsGitIgnored(pattern string) bool {
+func (w *FileSet) IgnoreFile(pattern string) bool {
 	return w.view.Ignore(pattern)
+}
+
+func (w *FileSet) IgnoreDirectory(path string) bool {
+	return w.view.Ignore(path) || w.view.Ignore(path+"/")
 }
 
 // Recursively traverses dir in a depth first manner and returns a list of all files
@@ -105,17 +109,18 @@ func (w *FileSet) RecursiveListFiles(dir string) (fileList []File, err error) {
 			return err
 		}
 
-		if w.view.Ignore(relPath) {
-			if d.IsDir() {
+		if d.IsDir() {
+			if w.IgnoreDirectory(relPath) {
 				return filepath.SkipDir
 			}
 			return nil
 		}
 
-		if !d.IsDir() {
-			fileList = append(fileList, File{d, path, relPath})
+		if w.IgnoreFile(relPath) {
+			return nil
 		}
 
+		fileList = append(fileList, File{d, path, relPath})
 		return nil
 	})
 	return

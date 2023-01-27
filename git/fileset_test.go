@@ -18,7 +18,7 @@ func TestFileSetRecursiveListFiles(t *testing.T) {
 	assert.Equal(t, filepath.Join("a", "b", ".gitignore"), files[2].Relative)
 	assert.Equal(t, filepath.Join("a", "b", "world.txt"), files[3].Relative)
 	assert.Equal(t, filepath.Join("a", "hello.txt"), files[4].Relative)
-	assert.Equal(t, "databricks.yml", files[5].Relative)
+	assert.Equal(t, filepath.Join("databricks.yml"), files[5].Relative)
 }
 
 func TestFileSetNonCleanRoot(t *testing.T) {

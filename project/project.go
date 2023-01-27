@@ -129,7 +129,7 @@ func (p *project) GetFileSet() *git.FileSet {
 // accidentally check into git
 func (p *project) CacheDir() (string, error) {
 	// assert cache dir is present in git ignore
-	if !p.fileSet.IsGitIgnored(fmt.Sprintf("/%s/", CacheDirName)) {
+	if !p.fileSet.IgnoreDirectory(fmt.Sprintf("/%s/", CacheDirName)) {
 		return "", fmt.Errorf("please add /%s/ to .gitignore", CacheDirName)
 	}
 
