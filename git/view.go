@@ -16,9 +16,12 @@ import (
 // We use this functionality to synchronize files from a path nested
 // in a repository while respecting the repository's ignore rules.
 type View struct {
+	// repo points to the repository that contains the directory
+	// that this view is anchored at.
 	repo *Repository
 
-	// targetPath is the relative path within the repository we care about.
+	// targetPath is the relative path to the directory tree that this
+	// view is anchored at (with respect to the repository root).
 	// For example: "." or "a/b".
 	targetPath string
 }
