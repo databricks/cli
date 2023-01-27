@@ -140,11 +140,17 @@ func (r *Repository) includeIgnoreFilesForPath(relPath string) error {
 // Ignore computes whether to ignore the specified path.
 // The specified path is relative to the repository root path.
 func (r *Repository) Ignore(relPath string) bool {
+	// Retain trailing slash for directory patterns.
+	trailingSlash := ""
+	if strings.HasSuffix(relPath, "/") {
+		trailingSlash = "/"
+	}
+
 	// Walk over path prefixes to check applicable gitignore files.
 	parts := strings.Split(relPath, string(os.PathSeparator))
 	for i := range parts {
 		prefix := path.Clean(strings.Join(parts[:i], "/"))
-		suffix := path.Clean(strings.Join(parts[i:], "/"))
+		suffix := path.Clean(strings.Join(parts[i:], "/")) + trailingSlash
 
 		// For this prefix (e.g. ".", or "dir1/dir2") we check if the
 		// suffix is matched in the respective ignore files.

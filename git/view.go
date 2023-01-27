@@ -2,6 +2,7 @@ package git
 
 import (
 	"path/filepath"
+	"strings"
 )
 
 // View represents a view on a directory tree that takes into account
@@ -25,7 +26,13 @@ type View struct {
 // Ignore computes whether to ignore the specified path.
 // The specified path is relative to the view's target path.
 func (v *View) Ignore(path string) bool {
-	return v.repo.Ignore(filepath.Join(v.targetPath, path))
+	// Retain trailing slash for directory patterns.
+	trailingSlash := ""
+	if strings.HasSuffix(path, "/") {
+		trailingSlash = "/"
+	}
+
+	return v.repo.Ignore(filepath.Join(v.targetPath, path) + trailingSlash)
 }
 
 func NewView(path string) (*View, error) {

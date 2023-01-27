@@ -4,3 +4,6 @@ root.*
 
 # Don't recurse into this directory.
 /ignorethis
+
+# Directory pattern.
+ignoredirectory/

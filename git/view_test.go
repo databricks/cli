@@ -56,6 +56,7 @@ func testViewAtRoot(t *testing.T, v *View) {
 	assert.True(t, v.Ignore("root/foo"))
 	assert.True(t, v.Ignore("root_double"))
 	assert.False(t, v.Ignore("newfile"))
+	assert.True(t, v.Ignore("ignoredirectory/"))
 
 	// Nested .gitignores should not affect root.
 	assert.False(t, v.Ignore("a.sh"))
@@ -91,6 +92,7 @@ func testViewAtA(t *testing.T, v *View) {
 	assert.True(t, v.Ignore("root.sh"))
 	assert.False(t, v.Ignore("root/foo"))
 	assert.True(t, v.Ignore("root_double"))
+	assert.True(t, v.Ignore("ignoredirectory/"))
 
 	// Check current .gitignore
 	assert.True(t, v.Ignore("a.sh"))
@@ -139,6 +141,7 @@ func testViewAtAB(t *testing.T, v *View) {
 	assert.True(t, v.Ignore("root.sh"))
 	assert.False(t, v.Ignore("root/foo"))
 	assert.True(t, v.Ignore("root_double"))
+	assert.True(t, v.Ignore("ignoredirectory/"))
 
 	// Inherit .gitignore from root/a.
 	assert.True(t, v.Ignore("a.sh"))
