@@ -61,8 +61,9 @@ func TestProjectInitializationAddsCacheDirToGitIgnore(t *testing.T) {
 	// Muck with mtime of this file manually because in GitHub Actions runners the
 	// mtime isn't updated on write automatically (probably to save I/Os).
 	// We perform a reload of .gitignore files only if their mtime has changed.
-	now := time.Now()
-	err = os.Chtimes(gitIgnorePath, now, now)
+	// Add a minute to ensure it is different if the value is truncated to full seconds.
+	future := time.Now().Add(time.Minute)
+	err = os.Chtimes(gitIgnorePath, future, future)
 	require.NoError(t, err)
 
 	prj := Get(ctx)
