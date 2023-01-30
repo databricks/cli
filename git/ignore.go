@@ -75,9 +75,10 @@ func (f *ignoreFile) load() error {
 		return err
 	}
 
-	// If the underlying file has not been modified
-	// it does not need to be reloaded.
-	if stat.ModTime() == f.modTime {
+	// If the underlying file has not been modified it does not need to be reloaded.
+	// We check that the mtime is not zero because if it is the underlying
+	// file system may not support mtime and we need to reload regardless.
+	if !stat.ModTime().IsZero() && stat.ModTime() == f.modTime {
 		return nil
 	}
 
