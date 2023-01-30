@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -56,6 +57,12 @@ func TestProjectInitializationAddsCacheDirToGitIgnore(t *testing.T) {
 	fileBytes, err := os.ReadFile(gitIgnorePath)
 	assert.NoError(t, err)
 	assert.Contains(t, string(fileBytes), ".databricks")
+
+	// Muck with mtime of this file manually because in GitHub Actions runners the
+	// mtime isn't updated on write automatically (probably to save I/Os).
+	now := time.Now()
+	err = os.Chtimes(gitIgnorePath, now, now)
+	require.NoError(t, err)
 
 	prj := Get(ctx)
 	_, err = prj.CacheDir()
