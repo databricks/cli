@@ -1,6 +1,7 @@
 package fileset
 
 import (
+	"fmt"
 	"io/fs"
 	"path/filepath"
 )
@@ -55,13 +56,21 @@ func (w *FileSet) RecursiveListFiles(dir string) (fileList []File, err error) {
 		}
 
 		if d.IsDir() {
-			if w.ignore.IgnoreDirectory(relPath) {
+			ign, err := w.ignore.IgnoreDirectory(relPath)
+			if err != nil {
+				return fmt.Errorf("cannot check if %s should be ignored: %w", relPath, err)
+			}
+			if ign {
 				return filepath.SkipDir
 			}
 			return nil
 		}
 
-		if w.ignore.IgnoreFile(relPath) {
+		ign, err := w.ignore.IgnoreFile(relPath)
+		if err != nil {
+			return fmt.Errorf("cannot check if %s should be ignored: %w", relPath, err)
+		}
+		if ign {
 			return nil
 		}
 

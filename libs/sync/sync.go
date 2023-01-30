@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/databricks/bricks/git"
-	"github.com/databricks/bricks/libs/fileset"
 	"github.com/databricks/bricks/libs/sync/repofiles"
 	"github.com/databricks/databricks-sdk-go"
 )
@@ -31,7 +30,7 @@ type SyncOptions struct {
 type Sync struct {
 	*SyncOptions
 
-	fileSet   *fileset.FileSet
+	fileSet   *git.FileSet
 	snapshot  *Snapshot
 	repoFiles *repofiles.RepoFiles
 }

@@ -8,21 +8,30 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// Wrap a Repository and expose a panicking version of [Repository.Ignore].
+type testRepository struct {
+	t *testing.T
+	r *Repository
+}
+
+func (r *testRepository) Ignore(relPath string) bool {
+	ign, err := r.r.Ignore(relPath)
+	require.NoError(r.t, err)
+	return ign
+}
+
 func TestRepository(t *testing.T) {
 	// Load this repository as test.
 	repo, err := NewRepository("..")
-	require.NoError(t, err)
-
-	// Load all .gitignore files in this repository.
-	err = repo.includeIgnoreFilesForPath(".")
+	tr := testRepository{t, repo}
 	require.NoError(t, err)
 
 	// Check that top level ignores work.
-	assert.True(t, repo.Ignore(".DS_Store"))
-	assert.True(t, repo.Ignore("foo.pyc"))
-	assert.False(t, repo.Ignore("vendor"))
-	assert.True(t, repo.Ignore("vendor/"))
+	assert.True(t, tr.Ignore(".DS_Store"))
+	assert.True(t, tr.Ignore("foo.pyc"))
+	assert.False(t, tr.Ignore("vendor"))
+	assert.True(t, tr.Ignore("vendor/"))
 
 	// Check that ignores under testdata work.
-	assert.True(t, repo.Ignore(filepath.Join("git", "testdata", "root.ignoreme")))
+	assert.True(t, tr.Ignore(filepath.Join("git", "testdata", "root.ignoreme")))
 }

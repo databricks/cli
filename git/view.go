@@ -28,7 +28,7 @@ type View struct {
 
 // Ignore computes whether to ignore the specified path.
 // The specified path is relative to the view's target path.
-func (v *View) Ignore(path string) bool {
+func (v *View) Ignore(path string) (bool, error) {
 	path = filepath.ToSlash(path)
 
 	// Retain trailing slash for directory patterns.
@@ -45,7 +45,7 @@ func (v *View) Ignore(path string) bool {
 // apply to the specified file path.
 //
 // This function is provided to implement [fileset.Ignorer].
-func (v *View) IgnoreFile(file string) bool {
+func (v *View) IgnoreFile(file string) (bool, error) {
 	return v.Ignore(file)
 }
 
@@ -58,8 +58,15 @@ func (v *View) IgnoreFile(file string) bool {
 // with a trailing slash.
 //
 // This function is provided to implement [fileset.Ignorer].
-func (v *View) IgnoreDirectory(dir string) bool {
-	return v.Ignore(dir) || v.Ignore(dir+"/")
+func (v *View) IgnoreDirectory(dir string) (bool, error) {
+	ign, err := v.Ignore(dir)
+	if err != nil {
+		return false, err
+	}
+	if ign {
+		return ign, nil
+	}
+	return v.Ignore(dir + "/")
 }
 
 func NewView(path string) (*View, error) {
@@ -75,12 +82,6 @@ func NewView(path string) (*View, error) {
 
 	// Target path must be relative to the repository root path.
 	targetPath, err := filepath.Rel(repo.rootPath, path)
-	if err != nil {
-		return nil, err
-	}
-
-	// Load ignore files relevant for this view's path.
-	err = repo.includeIgnoreFilesForPath(targetPath)
 	if err != nil {
 		return nil, err
 	}

@@ -7,40 +7,72 @@ import (
 	"github.com/databricks/bricks/libs/fileset"
 )
 
-// Retuns FileSet for the git repo located at `root`
-func NewFileSet(root string) (*fileset.FileSet, error) {
-	w := fileset.New(root)
+// FileSet is Git repository aware implementation of [fileset.FileSet].
+// It forces checking if gitignore files have been modified every
+// time a call to [FileSet.All] or [FileSet.RecursiveListFiles] is made.
+type FileSet struct {
+	fileset *fileset.FileSet
+	view    *View
+}
+
+// NewFileSet returns [FileSet] for the Git repository located at `root`.
+func NewFileSet(root string) (*FileSet, error) {
+	fs := fileset.New(root)
 	v, err := NewView(root)
 	if err != nil {
 		return nil, err
 	}
-	w.SetIgnorer(v)
-	return w, nil
+	fs.SetIgnorer(v)
+	return &FileSet{
+		fileset: fs,
+		view:    v,
+	}, nil
+}
+
+func (f *FileSet) IgnoreFile(file string) (bool, error) {
+	return f.view.IgnoreFile(file)
+}
+
+func (f *FileSet) IgnoreDirectory(dir string) (bool, error) {
+	return f.view.IgnoreDirectory(dir)
+}
+
+func (f *FileSet) Root() string {
+	return f.fileset.Root()
+}
+
+func (f *FileSet) All() ([]fileset.File, error) {
+	f.view.repo.taintIgnoreRules()
+	return f.fileset.All()
+}
+
+func (f *FileSet) RecursiveListFiles(dir string) ([]fileset.File, error) {
+	f.view.repo.taintIgnoreRules()
+	return f.fileset.RecursiveListFiles(dir)
 }
 
 // Only call this function for a bricks project root
 // since it will create a .gitignore file if missing
-func EnsureValidGitIgnoreExists(w *fileset.FileSet) error {
-	if w.Ignorer().IgnoreDirectory(".databricks") {
+func EnsureValidGitIgnoreExists(f *FileSet) error {
+	ign, err := f.view.IgnoreDirectory(".databricks")
+	if err != nil {
+		return err
+	}
+	if ign {
 		return nil
 	}
 
-	gitIgnorePath := filepath.Join(w.Root(), ".gitignore")
-	f, err := os.OpenFile(gitIgnorePath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
+	file, err := os.OpenFile(filepath.Join(f.fileset.Root(), ".gitignore"), os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
 		return err
 	}
-	defer f.Close()
-	_, err = f.WriteString("\n.databricks\n")
+	defer file.Close()
+
+	_, err = file.WriteString("\n.databricks\n")
 	if err != nil {
 		return err
 	}
 
-	// Reload view to update ignore rules.
-	v, err := NewView(w.Root())
-	if err != nil {
-		return err
-	}
-	w.SetIgnorer(v)
+	f.view.repo.taintIgnoreRules()
 	return nil
 }
