@@ -1,15 +1,12 @@
 package git
 
 import (
-	"fmt"
-	"io/fs"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
 
 	"github.com/databricks/bricks/folders"
-	ignore "github.com/sabhiram/go-gitignore"
 )
 
 const gitIgnoreFileName = ".gitignore"
@@ -31,114 +28,42 @@ type Repository struct {
 	//
 	// Note: prefixes use the forward slash instead of the
 	// OS-specific path separator. This matches Git convention.
-	ignore map[string][]*ignore.GitIgnore
+	ignore map[string][]ignoreRules
 }
 
-func (r *Repository) includeIgnoreFile(relativeIgnoreFilePath, relativeTo string) error {
-	absPath := filepath.Join(r.rootPath, relativeIgnoreFilePath)
-
-	// The file must be stat-able and not a directory.
-	// If it doesn't exist or is a directory, do nothing.
-	stat, err := os.Stat(absPath)
-	if err != nil || stat.IsDir() {
-		return nil
-	}
-
-	ignore, err := ignore.CompileIgnoreFile(absPath)
-	if err != nil {
-		return err
-	}
-
-	relativeTo = path.Clean(filepath.ToSlash(relativeTo))
-	r.ignore[relativeTo] = append(r.ignore[relativeTo], ignore)
-	return nil
+// newIgnoreFile constructs a new [ignoreRules] implementation backed by
+// a file using the specified path relative to the repository root.
+func (r *Repository) newIgnoreFile(relativeIgnoreFilePath string) ignoreRules {
+	return newIgnoreFile(filepath.Join(r.rootPath, relativeIgnoreFilePath))
 }
 
-// Include ignore files in directories that are parent to `relPath`.
-//
-// If equal to "foo/bar" this loads ignore files
-// located at the repository root and in the directory "foo".
-//
-// If equal to "." this function does nothing.
-func (r *Repository) includeIgnoreFilesUpToPath(relPath string) error {
-	// Accumulate list of directories to load ignore file from.
-	paths := []string{
-		".",
-	}
-	for _, path := range strings.Split(relPath, string(os.PathSeparator)) {
-		paths = append(paths, filepath.Join(paths[len(paths)-1], path))
+// getIgnoreRules returns a slice of [ignoreRules] that apply
+// for the specified prefix. The prefix must be cleaned by the caller.
+// It lazily initializes an entry for the specified prefix if it
+// doesn't yet exist.
+func (r *Repository) getIgnoreRules(prefix string) []ignoreRules {
+	fs, ok := r.ignore[prefix]
+	if ok {
+		return fs
 	}
 
-	// Load ignore files.
-	for _, path := range paths {
-		// Path equal to `relPath` is loaded by [includeIgnoreFilesUnderPath].
-		if path == relPath {
-			continue
-		}
-		err := r.includeIgnoreFile(filepath.Join(path, gitIgnoreFileName), path)
-		if err != nil {
-			return err
+	r.ignore[prefix] = append(r.ignore[prefix], r.newIgnoreFile(filepath.Join(prefix, gitIgnoreFileName)))
+	return r.ignore[prefix]
+}
+
+// taintIgnoreRules taints all ignore rules such that the underlying files
+// are checked for modification next time they are needed.
+func (r *Repository) taintIgnoreRules() {
+	for _, fs := range r.ignore {
+		for _, f := range fs {
+			f.Taint()
 		}
 	}
-
-	return nil
-}
-
-// Include ignore files in directories that are equal to or nested under `relPath`.
-func (r *Repository) includeIgnoreFilesUnderPath(relPath string) error {
-	absPath := filepath.Join(r.rootPath, relPath)
-	err := filepath.WalkDir(absPath, r.includeIgnoreFilesWalkDirFn)
-	if err != nil {
-		return fmt.Errorf("unable to walk directory: %w", err)
-	}
-	return nil
-}
-
-// includeIgnoreFilesWalkDirFn is called from [filepath.WalkDir] in includeIgnoreFilesUnderPath.
-func (r *Repository) includeIgnoreFilesWalkDirFn(absPath string, d fs.DirEntry, err error) error {
-	if err != nil {
-		// If reading the target path fails bubble up the error.
-		if d == nil {
-			return err
-		}
-		// Ignore failure to read paths nested under the target path.
-		return filepath.SkipDir
-	}
-
-	// Get path relative to root path.
-	pathRelativeToRoot, err := filepath.Rel(r.rootPath, absPath)
-	if err != nil {
-		return err
-	}
-
-	// Check if directory is ignored before recursing into it.
-	if d.IsDir() && r.Ignore(pathRelativeToRoot) {
-		return filepath.SkipDir
-	}
-
-	// Load .gitignore if we find one.
-	if d.Name() == gitIgnoreFileName {
-		err := r.includeIgnoreFile(pathRelativeToRoot, filepath.Dir(pathRelativeToRoot))
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-// Include ignore files relevant for files nested under `relPath`.
-func (r *Repository) includeIgnoreFilesForPath(relPath string) error {
-	err := r.includeIgnoreFilesUpToPath(relPath)
-	if err != nil {
-		return err
-	}
-	return r.includeIgnoreFilesUnderPath(relPath)
 }
 
 // Ignore computes whether to ignore the specified path.
 // The specified path is relative to the repository root path.
-func (r *Repository) Ignore(relPath string) bool {
+func (r *Repository) Ignore(relPath string) (bool, error) {
 	parts := strings.Split(filepath.ToSlash(relPath), "/")
 
 	// Retain trailing slash for directory patterns.
@@ -156,19 +81,19 @@ func (r *Repository) Ignore(relPath string) bool {
 		suffix := path.Clean(strings.Join(parts[i:], "/")) + trailingSlash
 
 		// For this prefix (e.g. ".", or "dir1/dir2") we check if the
-		// suffix is matched in the respective ignore files.
-		fs, ok := r.ignore[prefix]
-		if !ok {
-			continue
-		}
-		for _, f := range fs {
-			if f.MatchesPath(suffix) {
-				return true
+		// suffix is matched in the respective gitignore files.
+		for _, rules := range r.getIgnoreRules(prefix) {
+			match, err := rules.MatchesPath(suffix)
+			if err != nil {
+				return false, err
+			}
+			if match {
+				return true, nil
 			}
 		}
 	}
 
-	return false
+	return false, nil
 }
 
 func NewRepository(path string) (*Repository, error) {
@@ -192,16 +117,22 @@ func NewRepository(path string) (*Repository, error) {
 	repo := &Repository{
 		real:     real,
 		rootPath: rootPath,
-		ignore:   make(map[string][]*ignore.GitIgnore),
+		ignore:   make(map[string][]ignoreRules),
 	}
 
-	// Always ignore ".git" directory.
-	repo.ignore["."] = append(repo.ignore["."], ignore.CompileIgnoreLines(".git"))
-
-	// Load repository-wide excludes file.
-	err = repo.includeIgnoreFile(filepath.Join(".git", "info", "excludes"), ".")
-	if err != nil {
-		return nil, err
+	// Initialize root ignore rules.
+	// These are special and not lazily initialized because:
+	// 1) we include a hardcoded ignore pattern
+	// 2) we include a gitignore file at a non-standard path
+	repo.ignore["."] = []ignoreRules{
+		// Always ignore root .git directory.
+		newStringIgnoreRules([]string{
+			".git",
+		}),
+		// Load repository-wide excludes file.
+		repo.newIgnoreFile(".git/info/excludes"),
+		// Load root gitignore file.
+		repo.newIgnoreFile(".gitignore"),
 	}
 
 	return repo, nil
