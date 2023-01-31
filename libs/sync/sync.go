@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/databricks/bricks/git"
+	"github.com/databricks/bricks/libs/git"
 	"github.com/databricks/bricks/libs/sync/repofiles"
 	"github.com/databricks/databricks-sdk-go"
 )

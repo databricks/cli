@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/databricks/bricks/git"
+	"github.com/databricks/bricks/libs/git"
 	"github.com/databricks/bricks/libs/testfile"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
