@@ -1,6 +1,7 @@
 package git
 
 import (
+	"fmt"
 	"os"
 	"path"
 	"path/filepath"
@@ -120,11 +121,18 @@ func NewRepository(path string) (*Repository, error) {
 		ignore:   make(map[string][]ignoreRules),
 	}
 
+	coreExcludesPath, err := coreExcludesFile()
+	if err != nil {
+		return nil, fmt.Errorf("unable to determine global excludes file: %w", err)
+	}
+
 	// Initialize root ignore rules.
 	// These are special and not lazily initialized because:
 	// 1) we include a hardcoded ignore pattern
 	// 2) we include a gitignore file at a non-standard path
 	repo.ignore["."] = []ignoreRules{
+		// Load global excludes on this machine.
+		newIgnoreFile(coreExcludesPath),
 		// Always ignore root .git directory.
 		newStringIgnoreRules([]string{
 			".git",
