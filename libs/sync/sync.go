@@ -41,7 +41,7 @@ func New(ctx context.Context, opts SyncOptions) (*Sync, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = git.EnsureValidGitIgnoreExists(fileSet)
+	err = fileSet.EnsureValidGitIgnoreExists()
 	if err != nil {
 		return nil, err
 	}

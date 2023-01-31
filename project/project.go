@@ -69,7 +69,7 @@ func Initialize(ctx context.Context, root, env string) (context.Context, error) 
 	if err != nil {
 		return nil, err
 	}
-	err = git.EnsureValidGitIgnoreExists(fileSet)
+	err = fileSet.EnsureValidGitIgnoreExists()
 	if err != nil {
 		return nil, err
 	}
