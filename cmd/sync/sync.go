@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/databricks/bricks/cmd/root"
-	"github.com/databricks/bricks/git"
+	"github.com/databricks/bricks/libs/git"
 	"github.com/databricks/bricks/libs/sync"
 	"github.com/databricks/bricks/project"
 	"github.com/spf13/cobra"

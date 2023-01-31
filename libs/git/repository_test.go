@@ -22,7 +22,7 @@ func (r *testRepository) Ignore(relPath string) bool {
 
 func TestRepository(t *testing.T) {
 	// Load this repository as test.
-	repo, err := NewRepository("..")
+	repo, err := NewRepository("../..")
 	tr := testRepository{t, repo}
 	require.NoError(t, err)
 
@@ -33,5 +33,5 @@ func TestRepository(t *testing.T) {
 	assert.True(t, tr.Ignore("vendor/"))
 
 	// Check that ignores under testdata work.
-	assert.True(t, tr.Ignore(filepath.Join("git", "testdata", "root.ignoreme")))
+	assert.True(t, tr.Ignore(filepath.Join("libs", "git", "testdata", "root.ignoreme")))
 }
