@@ -142,7 +142,7 @@ func NewRepository(path string) (*Repository, error) {
 
 	coreExcludesPath, err := config.coreExcludesFile()
 	if err != nil {
-		return nil, fmt.Errorf("unable to determine global excludes file: %w", err)
+		return nil, fmt.Errorf("unable to access core excludes file: %w", err)
 	}
 
 	// Initialize root ignore rules.
