@@ -32,6 +32,19 @@ type Repository struct {
 	ignore map[string][]ignoreRules
 }
 
+// loadConfig loads and combines user specific and repository specific configuration files.
+func (r *Repository) loadConfig() (*config, error) {
+	config, err := globalGitConfig()
+	if err != nil {
+		return nil, fmt.Errorf("unable to load user specific gitconfig: %w", err)
+	}
+	err = config.loadFile(filepath.Join(r.rootPath, ".git/config"))
+	if err != nil {
+		return nil, fmt.Errorf("unable to load repository specific gitconfig: %w", err)
+	}
+	return config, nil
+}
+
 // newIgnoreFile constructs a new [ignoreRules] implementation backed by
 // a file using the specified path relative to the repository root.
 func (r *Repository) newIgnoreFile(relativeIgnoreFilePath string) ignoreRules {
@@ -121,7 +134,13 @@ func NewRepository(path string) (*Repository, error) {
 		ignore:   make(map[string][]ignoreRules),
 	}
 
-	coreExcludesPath, err := coreExcludesFile()
+	config, err := repo.loadConfig()
+	if err != nil {
+		// Error doesn't need to be rewrapped.
+		return nil, err
+	}
+
+	coreExcludesPath, err := config.coreExcludesFile()
 	if err != nil {
 		return nil, fmt.Errorf("unable to determine global excludes file: %w", err)
 	}

@@ -69,22 +69,26 @@ func TestConfig(t *testing.T) {
 	url = https://example.com/git
 `
 
-	c := make(Config)
-	err := c.load(bytes.NewBufferString(raw))
+	c, err := newConfig()
+	require.NoError(t, err)
+
+	err = c.load(bytes.NewBufferString(raw))
 	require.NoError(t, err)
 
 	home, err := os.UserHomeDir()
 	require.NoError(t, err)
 
-	assert.Equal(t, "false", c["core.filemode"])
-	assert.Equal(t, "origin", c["branch.devel.remote"])
+	assert.Equal(t, "false", c.variables["core.filemode"])
+	assert.Equal(t, "origin", c.variables["branch.devel.remote"])
 
 	// Verify that ~/ expands to the user's home directory.
-	assert.Equal(t, filepath.Join(home, "foo.inc"), c["include.path"])
+	assert.Equal(t, filepath.Join(home, "foo.inc"), c.variables["include.path"])
 }
 
 func TestCoreExcludesFile(t *testing.T) {
-	path, err := coreExcludesFile()
+	config, err := globalGitConfig()
+	require.NoError(t, err)
+	path, err := config.coreExcludesFile()
 	require.NoError(t, err)
 	t.Log(path)
 }
@@ -113,6 +117,12 @@ func (h *testCoreExcludesHelper) initialize(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func (h *testCoreExcludesHelper) coreExcludesFile() (string, error) {
+	config, err := globalGitConfig()
+	require.NoError(h.T, err)
+	return config.coreExcludesFile()
+}
+
 func (h *testCoreExcludesHelper) writeConfig(path, contents string) {
 	err := os.WriteFile(path, []byte(contents), 0644)
 	require.NoError(h, err)
@@ -122,7 +132,7 @@ func TestCoreExcludesFileDefaultWithXdgConfigHome(t *testing.T) {
 	h := &testCoreExcludesHelper{}
 	h.initialize(t)
 
-	path, err := coreExcludesFile()
+	path, err := h.coreExcludesFile()
 	require.NoError(t, err)
 	assert.Equal(t, filepath.Join(h.xdgConfigHome, "git/ignore"), path)
 }
@@ -132,7 +142,7 @@ func TestCoreExcludesFileDefaultWithoutXdgConfigHome(t *testing.T) {
 	h.initialize(t)
 	h.Setenv("XDG_CONFIG_HOME", "")
 
-	path, err := coreExcludesFile()
+	path, err := h.coreExcludesFile()
 	require.NoError(t, err)
 	assert.Equal(t, filepath.Join(h.home, ".config/git/ignore"), path)
 }
@@ -145,7 +155,7 @@ func TestCoreExcludesFileSetInXdgConfigHomeGitConfig(t *testing.T) {
 excludesFile = ~/foo
 	`)
 
-	path, err := coreExcludesFile()
+	path, err := h.coreExcludesFile()
 	require.NoError(t, err)
 	assert.Equal(t, filepath.Join(h.home, "foo"), path)
 }
@@ -158,7 +168,7 @@ func TestCoreExcludesFileSetInHomeGitConfig(t *testing.T) {
 excludesFile = ~/foo
 	`)
 
-	path, err := coreExcludesFile()
+	path, err := h.coreExcludesFile()
 	require.NoError(t, err)
 	assert.Equal(t, filepath.Join(h.home, "foo"), path)
 }
@@ -175,7 +185,7 @@ excludesFile = ~/foo1
 excludesFile = ~/foo2
 	`)
 
-	path, err := coreExcludesFile()
+	path, err := h.coreExcludesFile()
 	require.NoError(t, err)
 	assert.Equal(t, filepath.Join(h.home, "foo2"), path)
 }
