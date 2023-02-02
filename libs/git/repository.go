@@ -1,6 +1,7 @@
 package git
 
 import (
+	"fmt"
 	"os"
 	"path"
 	"path/filepath"
@@ -29,6 +30,19 @@ type Repository struct {
 	// Note: prefixes use the forward slash instead of the
 	// OS-specific path separator. This matches Git convention.
 	ignore map[string][]ignoreRules
+}
+
+// loadConfig loads and combines user specific and repository specific configuration files.
+func (r *Repository) loadConfig() (*config, error) {
+	config, err := globalGitConfig()
+	if err != nil {
+		return nil, fmt.Errorf("unable to load user specific gitconfig: %w", err)
+	}
+	err = config.loadFile(filepath.Join(r.rootPath, ".git/config"))
+	if err != nil {
+		return nil, fmt.Errorf("unable to load repository specific gitconfig: %w", err)
+	}
+	return config, nil
 }
 
 // newIgnoreFile constructs a new [ignoreRules] implementation backed by
@@ -120,11 +134,24 @@ func NewRepository(path string) (*Repository, error) {
 		ignore:   make(map[string][]ignoreRules),
 	}
 
+	config, err := repo.loadConfig()
+	if err != nil {
+		// Error doesn't need to be rewrapped.
+		return nil, err
+	}
+
+	coreExcludesPath, err := config.coreExcludesFile()
+	if err != nil {
+		return nil, fmt.Errorf("unable to access core excludes file: %w", err)
+	}
+
 	// Initialize root ignore rules.
 	// These are special and not lazily initialized because:
 	// 1) we include a hardcoded ignore pattern
 	// 2) we include a gitignore file at a non-standard path
 	repo.ignore["."] = []ignoreRules{
+		// Load global excludes on this machine.
+		newIgnoreFile(coreExcludesPath),
 		// Always ignore root .git directory.
 		newStringIgnoreRules([]string{
 			".git",
