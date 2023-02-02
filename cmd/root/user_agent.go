@@ -29,7 +29,7 @@ func commandString(cmd *cobra.Command) string {
 }
 
 func withCommandInUserAgent(ctx context.Context, cmd *cobra.Command) context.Context {
-	return useragent.InContext(cmd.Context(), "cmd", commandString(cmd))
+	return useragent.InContext(ctx, "cmd", commandString(cmd))
 }
 
 func init() {
