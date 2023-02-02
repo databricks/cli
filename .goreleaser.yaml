@@ -30,7 +30,7 @@ checksum:
   name_template: '{{ .ProjectName }}_{{ .Version }}_SHA256SUMS'
   algorithm: sha256
 snapshot:
-  name_template: '{{ incpatch .Version }}-devel'
+  name_template: '{{ incpatch .Version }}-dev+{{ .ShortCommit }}'
 changelog:
   sort: asc
   filters:
