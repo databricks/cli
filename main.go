@@ -13,6 +13,7 @@ import (
 	"github.com/databricks/bricks/cmd/root"
 	_ "github.com/databricks/bricks/cmd/sync"
 	_ "github.com/databricks/bricks/cmd/test"
+	_ "github.com/databricks/bricks/cmd/version"
 )
 
 func main() {
