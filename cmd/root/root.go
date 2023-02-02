@@ -23,6 +23,10 @@ var RootCmd = &cobra.Command{
 	SilenceUsage: true,
 
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		// Configure our user agent with the command that's about to be executed.
+		ctx := withCommandInUserAgent(cmd.Context(), cmd)
+		cmd.SetContext(ctx)
+
 		if Verbose {
 			logLevel = append(logLevel, "[DEBUG]")
 		}
