@@ -27,7 +27,7 @@ var RootCmd = &cobra.Command{
 
 		// Configure our user agent with the command that's about to be executed.
 		ctx = withCommandInUserAgent(ctx, cmd)
-		ctx = withInvokedByInUserAgent(ctx)
+		ctx = withUpstreamInUserAgent(ctx)
 		cmd.SetContext(ctx)
 
 		if Verbose {
