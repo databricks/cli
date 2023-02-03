@@ -9,7 +9,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var jsonOutput = false
+var detail = false
 
 var versionCmd = &cobra.Command{
 	Use:  "version",
@@ -17,7 +17,7 @@ var versionCmd = &cobra.Command{
 
 	RunE: func(cmd *cobra.Command, args []string) error {
 		info := build.GetInfo()
-		if jsonOutput {
+		if detail {
 			enc := json.NewEncoder(cmd.OutOrStdout())
 			enc.SetIndent("", "  ")
 			return enc.Encode(info)
@@ -29,6 +29,6 @@ var versionCmd = &cobra.Command{
 }
 
 func init() {
-	versionCmd.Flags().BoolVar(&jsonOutput, "json", false, "output detailed version information as JSON")
+	versionCmd.Flags().BoolVar(&detail, "detail", false, "output detailed version information as JSON")
 	root.RootCmd.AddCommand(versionCmd)
 }
