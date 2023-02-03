@@ -1,9 +1,13 @@
 package build
 
 import (
+	"fmt"
+	"runtime/debug"
 	"strconv"
 	"sync"
 	"time"
+
+	"golang.org/x/mod/semver"
 )
 
 type Info struct {
@@ -29,7 +33,44 @@ var info Info
 
 var once sync.Once
 
+// getDefaultBuildVersion uses build information stored by Go itself
+// to synthesize a build version if one wasn't set.
+// This is necessary if the binary was not built through goreleaser.
+func getDefaultBuildVersion() string {
+	bi, ok := debug.ReadBuildInfo()
+	if !ok {
+		panic("unable to read build info")
+	}
+
+	m := make(map[string]string)
+	for _, s := range bi.Settings {
+		m[s.Key] = s.Value
+	}
+
+	out := "0.0.0-dev"
+
+	// Append revision as build metadata.
+	if v, ok := m["vcs.revision"]; ok {
+		// First 12 characters of the commit SHA is plenty to identify one.
+		out = fmt.Sprintf("%s+%s", out, v[0:12])
+	}
+
+	return out
+}
+
 func initialize() {
+	// If buildVersion is empty it means the binary was NOT built through goreleaser.
+	// We try to pull version information from debug.BuildInfo().
+	if buildVersion == "" {
+		buildVersion = getDefaultBuildVersion()
+	}
+
+	// Confirm that buildVersion is valid semver.
+	// Note that the semver package requires a leading 'v'.
+	if !semver.IsValid("v" + buildVersion) {
+		panic(fmt.Sprintf(`version is not a valid semver string: "%s"`, buildVersion))
+	}
+
 	info = Info{
 		ProjectName: buildProjectName,
 		Version:     buildVersion,
