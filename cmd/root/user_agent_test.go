@@ -25,5 +25,5 @@ func TestCommandString(t *testing.T) {
 
 	assert.Equal(t, "root", commandString(root))
 	assert.Equal(t, "hello", commandString(hello))
-	assert.Equal(t, "hello-world", commandString(world))
+	assert.Equal(t, "hello_world", commandString(world))
 }

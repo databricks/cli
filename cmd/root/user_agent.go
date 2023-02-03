@@ -9,6 +9,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// commandSeparator joins command names in a command hierachy.
+// We enforce no command name contains this character.
+// See unit test [main.TestCommandsDontUseUnderscoreInName].
+const commandSeparator = "_"
+
 // commandString walks up the command hierarchy of the specified
 // command to build a string representing this hierarchy.
 func commandString(cmd *cobra.Command) string {
@@ -25,7 +30,7 @@ func commandString(cmd *cobra.Command) string {
 		ordered = append(ordered, reversed[i])
 	}
 
-	return strings.Join(ordered, "-")
+	return strings.Join(ordered, commandSeparator)
 }
 
 func withCommandInUserAgent(ctx context.Context, cmd *cobra.Command) context.Context {
