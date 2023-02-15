@@ -50,19 +50,19 @@ type Workspace struct {
 	// Remote base path for deployment state, for artifacts, as synchronization target.
 	// This defaults to "~/.bundle/${bundle.name}/${bundle.environment}" where "~" expands to
 	// the current user's home directory in the workspace (e.g. `/Users/jane@doe.com`).
-	Root string `json:"root"`
+	Root string `json:"root,omitempty"`
 
 	// Remote path to synchronize local files to.
 	// This defaults to "${workspace.root}/files".
-	FilePath PathLike `json:"file_path"`
+	FilePath PathLike `json:"file_path,omitempty"`
 
 	// Remote path for build artifacts.
 	// This defaults to "${workspace.root}/artifacts".
-	ArtifactPath PathLike `json:"artifact_path"`
+	ArtifactPath PathLike `json:"artifact_path,omitempty"`
 
 	// Remote path for deployment state.
 	// This defaults to "${workspace.root}/state".
-	StatePath PathLike `json:"state_path"`
+	StatePath PathLike `json:"state_path,omitempty"`
 }
 
 func (w *Workspace) Client() (*databricks.WorkspaceClient, error) {
