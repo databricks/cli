@@ -1,14 +1,12 @@
 package sync
 
 import (
-	"bufio"
 	"context"
 	"encoding/json"
 	"fmt"
 	"log"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"time"
 
@@ -16,6 +14,7 @@ import (
 	"encoding/hex"
 
 	"github.com/databricks/bricks/libs/fileset"
+	"github.com/databricks/bricks/libs/notebook"
 )
 
 // Bump it up every time a potentially breaking change is made to the snapshot schema
@@ -165,32 +164,6 @@ func loadOrNewSnapshot(opts *SyncOptions) (*Snapshot, error) {
 	return snapshot, nil
 }
 
-func getNotebookDetails(path string) (isNotebook bool, typeOfNotebook string, err error) {
-	isNotebook = false
-	typeOfNotebook = ""
-
-	isPythonFile, err := regexp.Match(`\.py$`, []byte(path))
-	if err != nil {
-		return
-	}
-	if isPythonFile {
-		f, err := os.Open(path)
-		if err != nil {
-			return false, "", err
-		}
-		defer f.Close()
-		scanner := bufio.NewScanner(f)
-		ok := scanner.Scan()
-		if !ok {
-			return false, "", scanner.Err()
-		}
-		// A python file is a notebook if it starts with the following magic string
-		isNotebook = strings.Contains(scanner.Text(), "# Databricks notebook source")
-		return isNotebook, "PYTHON", nil
-	}
-	return false, "", nil
-}
-
 func (s *Snapshot) diff(all []fileset.File) (change diff, err error) {
 	currentFilenames := map[string]bool{}
 	lastModifiedTimes := s.LastUpdatedTimes
@@ -213,15 +186,16 @@ func (s *Snapshot) diff(all []fileset.File) (change diff, err error) {
 			change.put = append(change.put, unixFileName)
 
 			// get file metadata about whether it's a notebook
-			isNotebook, typeOfNotebook, err := getNotebookDetails(f.Absolute)
+			isNotebook, _, err := notebook.Detect(f.Absolute)
 			if err != nil {
 				return change, err
 			}
 
-			// strip `.py` for python notebooks
+			// Strip extension for notebooks.
 			remoteName := unixFileName
-			if isNotebook && typeOfNotebook == "PYTHON" {
-				remoteName = strings.TrimSuffix(remoteName, `.py`)
+			if isNotebook {
+				ext := filepath.Ext(remoteName)
+				remoteName = strings.TrimSuffix(remoteName, ext)
 			}
 
 			// If the remote handle of a file changes, we want to delete the old
