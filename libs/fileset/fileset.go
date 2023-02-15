@@ -62,7 +62,7 @@ func (w *FileSet) RecursiveListFiles(dir string) (fileList []File, err error) {
 			return err
 		}
 		if info.Mode()&os.ModeSymlink != 0 {
-			return filepath.SkipDir
+			return nil
 		}
 
 		if d.IsDir() {

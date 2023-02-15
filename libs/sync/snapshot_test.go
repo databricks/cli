@@ -83,6 +83,33 @@ func TestDiff(t *testing.T) {
 	assert.Equal(t, map[string]string{"world.txt": "world.txt"}, state.RemoteToLocalNames)
 }
 
+func TestSymlinkDiff(t *testing.T) {
+	// Create temp project dir
+	projectDir := t.TempDir()
+	fileSet, err := git.NewFileSet(projectDir)
+	require.NoError(t, err)
+	state := Snapshot{
+		LastUpdatedTimes:   make(map[string]time.Time),
+		LocalToRemoteNames: make(map[string]string),
+		RemoteToLocalNames: make(map[string]string),
+	}
+
+	err = os.Mkdir(filepath.Join(projectDir, "foo"), os.ModePerm)
+	assert.NoError(t, err)
+
+	f1 := testfile.CreateFile(t, filepath.Join(projectDir, "foo", "hello.txt"))
+	defer f1.Close(t)
+
+	err = os.Symlink(filepath.Join(projectDir, "foo"), filepath.Join(projectDir, "bar"))
+	assert.NoError(t, err)
+
+	files, err := fileSet.All()
+	assert.NoError(t, err)
+	change, err := state.diff(files)
+	assert.NoError(t, err)
+	assert.Len(t, change.put, 1)
+}
+
 func TestFolderDiff(t *testing.T) {
 	// Create temp project dir
 	projectDir := t.TempDir()
