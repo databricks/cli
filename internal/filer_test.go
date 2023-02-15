@@ -76,8 +76,9 @@ func TestAccFilerWorkspaceFiles(t *testing.T) {
 
 	// Check if we can use this API here, skip test if we cannot.
 	_, err = f.Read(ctx, "we_use_this_call_to_test_if_this_api_is_enabled")
-	if apierr, ok := err.(apierr.APIError); ok && apierr.StatusCode == http.StatusBadRequest {
-		t.Skip(apierr.Message)
+	var aerr *apierr.APIError
+	if errors.As(err, &aerr) && aerr.StatusCode == http.StatusBadRequest {
+		t.Skip(aerr.Message)
 	}
 
 	// Write should fail because the root path doesn't yet exist.

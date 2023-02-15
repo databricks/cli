@@ -2,6 +2,7 @@ package repofiles
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -85,7 +86,8 @@ func (r *RepoFiles) writeRemote(ctx context.Context, relativePath string, conten
 			},
 		)
 		// ignore RESOURCE_DOES_NOT_EXIST here incase nothing existed at remotePath
-		if val, ok := err.(apierr.APIError); ok && val.ErrorCode == "RESOURCE_DOES_NOT_EXIST" {
+		var aerr *apierr.APIError
+		if errors.As(err, &aerr) && aerr.ErrorCode == "RESOURCE_DOES_NOT_EXIST" {
 			err = nil
 		}
 		if err != nil {
@@ -144,8 +146,9 @@ func (r *RepoFiles) DeleteFile(ctx context.Context, relativePath string) error {
 	err := r.deleteRemote(ctx, relativePath)
 
 	// We explictly ignore RESOURCE_DOES_NOT_EXIST error to make delete idempotent
-	if val, ok := err.(apierr.APIError); ok && val.ErrorCode == "RESOURCE_DOES_NOT_EXIST" {
-		return nil
+	var aerr *apierr.APIError
+	if errors.As(err, &aerr) && aerr.ErrorCode == "RESOURCE_DOES_NOT_EXIST" {
+		err = nil
 	}
 	return nil
 }
