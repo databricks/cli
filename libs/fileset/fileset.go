@@ -3,6 +3,7 @@ package fileset
 import (
 	"fmt"
 	"io/fs"
+	"os"
 	"path/filepath"
 )
 
@@ -53,6 +54,15 @@ func (w *FileSet) RecursiveListFiles(dir string) (fileList []File, err error) {
 		relPath, err := filepath.Rel(w.root, path)
 		if err != nil {
 			return err
+		}
+
+		// skip symlinks
+		info, err := d.Info()
+		if err != nil {
+			return err
+		}
+		if info.Mode()&os.ModeSymlink != 0 {
+			return filepath.SkipDir
 		}
 
 		if d.IsDir() {
