@@ -103,6 +103,33 @@ var syncCmd = &cobra.Command{
 
 		return s.RunOnce(ctx)
 	},
+
+	ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		err := root.TryConfigureBundle(cmd, args)
+		if err != nil {
+			return nil, cobra.ShellCompDirectiveError
+		}
+
+		// No completion in the context of a bundle.
+		// Source and destination paths are taken from bundle configuration.
+		b := bundle.GetOrNil(cmd.Context())
+		if b != nil {
+			return nil, cobra.ShellCompDirectiveNoFileComp
+		}
+
+		switch len(args) {
+		case 0:
+			return nil, cobra.ShellCompDirectiveFilterDirs
+		case 1:
+			wsc, err := databricks.NewWorkspaceClient()
+			if err != nil {
+				return nil, cobra.ShellCompDirectiveError
+			}
+			return completeRemotePath(cmd.Context(), wsc, toComplete)
+		default:
+			return nil, cobra.ShellCompDirectiveNoFileComp
+		}
+	},
 }
 
 // project files polling interval
