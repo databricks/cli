@@ -5,7 +5,7 @@ type Terraform struct {
 }
 
 type Bundle struct {
-	Name string `json:"name,omitempty"`
+	Name string `json:"name"`
 
 	// TODO
 	// Default cluster to run commands on (Python, Scala).
