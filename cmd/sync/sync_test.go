@@ -45,7 +45,6 @@ func TestSyncOptionsFromArgsRequiredTwoArgs(t *testing.T) {
 	require.ErrorIs(t, err, flag.ErrHelp)
 	_, err = syncOptionsFromArgs(syncCmd, []string{"foo", "bar", "qux"})
 	require.ErrorIs(t, err, flag.ErrHelp)
-
 }
 
 func TestSyncOptionsFromArgs(t *testing.T) {
