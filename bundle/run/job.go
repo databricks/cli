@@ -95,17 +95,20 @@ type jobRunner struct {
 
 func isFailed(task jobs.RunTask) bool {
 	return task.State.LifeCycleState == jobs.RunLifeCycleStateInternalError ||
-		(task.State.LifeCycleState == jobs.RunLifeCycleStateTerminated && task.State.ResultState == jobs.RunResultStateFailed)
+		(task.State.LifeCycleState == jobs.RunLifeCycleStateTerminated &&
+			task.State.ResultState == jobs.RunResultStateFailed)
 }
 
 func isSuccess(task jobs.RunTask) bool {
-	return task.State.LifeCycleState == jobs.RunLifeCycleStateTerminated && task.State.ResultState == jobs.RunResultStateSuccess
+	return task.State.LifeCycleState == jobs.RunLifeCycleStateTerminated &&
+		task.State.ResultState == jobs.RunResultStateSuccess
 }
 
 func (r *jobRunner) logRun(ctx context.Context, runId int64) {
 	w := r.bundle.WorkspaceClient()
 	red := color.New(color.FgRed).SprintFunc()
 	green := color.New(color.FgGreen).SprintFunc()
+	yellow := color.New(color.FgYellow).SprintFunc()
 	var errorPrefix = fmt.Sprintf("%s [%s]", red("[ERROR]"), r.Key())
 	var infoPrefix = fmt.Sprintf("%s [%s]", "[INFO]", r.Key())
 	run, err := w.Jobs.GetRun(ctx, jobs.GetRun{
@@ -127,11 +130,15 @@ func (r *jobRunner) logRun(ctx context.Context, runId int64) {
 				RunId: task.RunId,
 			})
 			if err != nil {
-				log.Printf("%s task %s failed. Unable to fetch error trace: %s", errorPrefix, red(task.TaskKey), err)
+				log.Printf("%s task %s failed. Unable to fetch error trace: %s",
+					errorPrefix, red(task.TaskKey), err)
+				return
 			}
-			log.Printf("%s Task %s failed!\nError:\n%s\nTrace:\n%s", errorPrefix, red(task.TaskKey), taskInfo.Error, taskInfo.ErrorTrace)
+			log.Printf("%s Task %s failed!\nError:\n%s\nTrace:\n%s", errorPrefix,
+				red(task.TaskKey), taskInfo.Error, taskInfo.ErrorTrace)
 		} else {
-			log.Printf("%s Task %s is in state %s", infoPrefix, task.TaskKey, task.State.LifeCycleState)
+			log.Printf("%s task %s is in state %s", infoPrefix,
+				yellow(task.TaskKey), task.State.LifeCycleState)
 		}
 	}
 
