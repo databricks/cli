@@ -16,6 +16,7 @@ func ResourceKeys(b *bundle.Bundle) (keyOnly RunnerLookup, keyWithType RunnerLoo
 	keyOnly = make(RunnerLookup)
 	keyWithType = make(RunnerLookup)
 
+	// TODO: how do these resources get back the job id?
 	r := b.Config.Resources
 	for k, v := range r.Jobs {
 		kt := fmt.Sprintf("jobs.%s", k)

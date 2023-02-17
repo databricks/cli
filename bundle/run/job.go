@@ -14,6 +14,18 @@ import (
 	flag "github.com/spf13/pflag"
 )
 
+func colorRed(s string) string {
+	const colorReset = "\033[0m"
+	const colorRed = "\033[31m"
+	return colorRed + s + colorReset
+}
+
+func colorGreen(s string) string {
+	const colorReset = "\033[0m"
+	const colorGreen = "\033[32m"
+	return colorGreen + s + colorReset
+}
+
 // JobOptions defines options for running a job.
 type JobOptions struct {
 	dbtCommands       []string
@@ -99,6 +111,7 @@ func (r *jobRunner) Run(ctx context.Context, opts *Options) error {
 	}
 
 	var prefix = fmt.Sprintf("[INFO] [%s]", r.Key())
+	var errorPrefix = fmt.Sprintf("%s [%s]", colorRed("[ERROR]"), r.Key())
 	var prevState *jobs.RunState
 
 	// This function is called each time the function below polls the run status.
@@ -129,7 +142,33 @@ func (r *jobRunner) Run(ctx context.Context, opts *Options) error {
 	}
 
 	w := r.bundle.WorkspaceClient()
+
+	// TODO: we will need to get run ID for this run. To do that either
+	// 1. Return runId on error from the SDK. Might not be trivial since the file seems autogenerate
+	// 2. Add a new custom method in the SDK to wait for a run to terminate
+	//
+	// For now proceeding with modifying the sdk to move onto figuring out how to render the
+	// error
 	run, err := w.Jobs.RunNowAndWait(ctx, *req, retries.Timeout[jobs.Run](jobRunTimeout), update)
+	// runJson, _ := json.MarshalIndent(run, "", " ")
+	// fmt.Println("AAAA export out json: \n", string(runJson))
+
+	for _, task := range run.Tasks {
+		// fmt.Printf("task %s state is %s.\n", task.TaskKey, task.State.ResultState)
+		if task.State.LifeCycleState == jobs.RunLifeCycleStateInternalError || task.State.ResultState == jobs.RunResultStateFailed {
+			runOutput, err2 := w.Jobs.GetRunOutput(ctx, jobs.GetRunOutput{
+				RunId: task.RunId,
+			})
+			if err2 != nil {
+				return err2
+			}
+			log.Printf("%s Task %s failed!\n%s\nTrace:\n%s", errorPrefix, colorRed(task.TaskKey), runOutput.Error, runOutput.ErrorTrace)
+		}
+		if task.State.ResultState == jobs.RunResultStateSuccess {
+			log.Printf("%s Task %s succeeded.", prefix, colorGreen(task.TaskKey))
+		}
+	}
+
 	if err != nil {
 		return err
 	}
