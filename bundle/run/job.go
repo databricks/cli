@@ -144,7 +144,6 @@ func (r *jobRunner) logRun(ctx context.Context, runId int64) {
 
 }
 
-// TODO: see if this can be done for dlt pipeline runs, and what that looks like (vanilla and when you use jobs as a scheduler)
 func (r *jobRunner) Run(ctx context.Context, opts *Options) error {
 	jobID, err := strconv.ParseInt(r.job.ID, 10, 64)
 	if err != nil {
