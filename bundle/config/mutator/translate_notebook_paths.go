@@ -6,17 +6,17 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"regexp"
+	"strings"
 
 	"github.com/databricks/bricks/bundle"
-	"github.com/databricks/bricks/bundle/config"
+	"github.com/databricks/bricks/libs/notebook"
 )
 
 type translateNotebookPaths struct {
 	seen map[string]string
 }
 
-// TranslateNotebookPaths converts paths to local notebook files into references to artifacts.
+// TranslateNotebookPaths converts paths to local notebook files into workspace paths.
 func TranslateNotebookPaths() bundle.Mutator {
 	return &translateNotebookPaths{}
 }
@@ -25,42 +25,39 @@ func (m *translateNotebookPaths) Name() string {
 	return "TranslateNotebookPaths"
 }
 
-var nonWord = regexp.MustCompile(`[^\w]`)
-
-func (m *translateNotebookPaths) rewritePath(b *bundle.Bundle, p *string) {
+func (m *translateNotebookPaths) rewritePath(b *bundle.Bundle, p *string) error {
 	relPath := path.Clean(*p)
+	if interp, ok := m.seen[relPath]; ok {
+		*p = interp
+		return nil
+	}
+
 	absPath := filepath.Join(b.Config.Path, relPath)
-
-	// This is opportunistic. If we can't stat, continue.
-	_, err := os.Stat(absPath)
+	nb, _, err := notebook.Detect(absPath)
 	if err != nil {
-		return
+		// Ignore if this file doesn't exist. Maybe it's an absolute workspace path?
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return fmt.Errorf("unable to determine if %s is a notebook: %w", relPath, err)
 	}
 
-	// Define artifact for this notebook.
-	id := nonWord.ReplaceAllString(relPath, "_")
-	if v, ok := m.seen[id]; ok {
-		*p = v
-		return
+	if !nb {
+		return fmt.Errorf("file at %s is not a notebook", relPath)
 	}
 
-	b.Config.Artifacts[id] = &config.Artifact{
-		Notebook: &config.NotebookArtifact{
-			Path: relPath,
-		},
-	}
+	// Upon import, notebooks are stripped of their extension.
+	withoutExt := strings.TrimSuffix(relPath, filepath.Ext(relPath))
 
-	interp := fmt.Sprintf("${artifacts.%s.notebook.remote_path}", id)
+	// We have a notebook on our hands! It will be available under the file path.
+	interp := fmt.Sprintf("${workspace.file_path.workspace}/%s", withoutExt)
 	*p = interp
-	m.seen[id] = interp
+	m.seen[relPath] = interp
+	return nil
 }
 
 func (m *translateNotebookPaths) Apply(_ context.Context, b *bundle.Bundle) ([]bundle.Mutator, error) {
 	m.seen = make(map[string]string)
-
-	if b.Config.Artifacts == nil {
-		b.Config.Artifacts = make(map[string]*config.Artifact)
-	}
 
 	for _, job := range b.Config.Resources.Jobs {
 		for i := 0; i < len(job.Tasks); i++ {
@@ -69,7 +66,10 @@ func (m *translateNotebookPaths) Apply(_ context.Context, b *bundle.Bundle) ([]b
 				continue
 			}
 
-			m.rewritePath(b, &task.NotebookTask.NotebookPath)
+			err := m.rewritePath(b, &task.NotebookTask.NotebookPath)
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 
@@ -80,7 +80,10 @@ func (m *translateNotebookPaths) Apply(_ context.Context, b *bundle.Bundle) ([]b
 				continue
 			}
 
-			m.rewritePath(b, &library.Notebook.Path)
+			err := m.rewritePath(b, &library.Notebook.Path)
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 

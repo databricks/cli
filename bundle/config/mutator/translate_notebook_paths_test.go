@@ -19,6 +19,7 @@ import (
 func touchFile(t *testing.T, path string) {
 	f, err := os.Create(path)
 	require.NoError(t, err)
+	f.WriteString("# Databricks notebook source\n")
 	f.Close()
 }
 
@@ -92,16 +93,10 @@ func TestNotebookPaths(t *testing.T) {
 	_, err := mutator.TranslateNotebookPaths().Apply(context.Background(), bundle)
 	require.NoError(t, err)
 
-	// Assert that the notebook artifact was defined.
-	assert.Len(t, bundle.Config.Artifacts, 2)
-	for _, artifact := range bundle.Config.Artifacts {
-		assert.Contains(t, artifact.Notebook.Path, "notebook.py")
-	}
-
 	// Assert that the path in the tasks now refer to the artifact.
 	assert.Equal(
 		t,
-		"${artifacts.my_job_notebook_py.notebook.remote_path}",
+		"${workspace.file_path.workspace}/my_job_notebook",
 		bundle.Config.Resources.Jobs["job"].Tasks[0].NotebookTask.NotebookPath,
 	)
 	assert.Equal(
@@ -111,14 +106,14 @@ func TestNotebookPaths(t *testing.T) {
 	)
 	assert.Equal(
 		t,
-		"${artifacts.my_job_notebook_py.notebook.remote_path}",
+		"${workspace.file_path.workspace}/my_job_notebook",
 		bundle.Config.Resources.Jobs["job"].Tasks[2].NotebookTask.NotebookPath,
 	)
 
 	// Assert that the path in the libraries now refer to the artifact.
 	assert.Equal(
 		t,
-		"${artifacts.my_pipeline_notebook_py.notebook.remote_path}",
+		"${workspace.file_path.workspace}/my_pipeline_notebook",
 		bundle.Config.Resources.Pipelines["pipeline"].Libraries[0].Notebook.Path,
 	)
 	assert.Equal(
@@ -128,7 +123,7 @@ func TestNotebookPaths(t *testing.T) {
 	)
 	assert.Equal(
 		t,
-		"${artifacts.my_pipeline_notebook_py.notebook.remote_path}",
+		"${workspace.file_path.workspace}/my_pipeline_notebook",
 		bundle.Config.Resources.Pipelines["pipeline"].Libraries[2].Notebook.Path,
 	)
 }
