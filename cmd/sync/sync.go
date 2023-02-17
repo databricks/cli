@@ -28,8 +28,8 @@ func syncOptionsFromBundle(cmd *cobra.Command, args []string, b *bundle.Bundle) 
 	opts := sync.SyncOptions{
 		LocalPath:    b.Config.Path,
 		RemotePath:   b.Config.Workspace.FilePath.Workspace,
-		Full:         *full,
-		PollInterval: *interval,
+		Full:         full,
+		PollInterval: interval,
 
 		SnapshotBasePath: cacheDir,
 		WorkspaceClient:  b.WorkspaceClient(),
@@ -45,8 +45,8 @@ func syncOptionsFromArgs(cmd *cobra.Command, args []string) (*sync.SyncOptions, 
 	opts := sync.SyncOptions{
 		LocalPath:    args[0],
 		RemotePath:   args[1],
-		Full:         *full,
-		PollInterval: *interval,
+		Full:         full,
+		PollInterval: interval,
 
 		// We keep existing behavior for VS Code extension where if there is
 		// no bundle defined, we store the snapshots in `.databricks`.
@@ -93,7 +93,7 @@ var syncCmd = &cobra.Command{
 
 		log.Printf("[INFO] Remote file sync location: %v", opts.RemotePath)
 
-		if *watch {
+		if watch {
 			return s.RunContinuous(ctx)
 		}
 
@@ -102,13 +102,13 @@ var syncCmd = &cobra.Command{
 }
 
 // project files polling interval
-var interval *time.Duration
-var full *bool
-var watch *bool
+var interval time.Duration
+var full bool
+var watch bool
 
 func init() {
 	root.RootCmd.AddCommand(syncCmd)
-	interval = syncCmd.Flags().Duration("interval", 1*time.Second, "file system polling interval (for --watch)")
-	full = syncCmd.Flags().Bool("full", false, "perform full synchronization (default is incremental)")
-	watch = syncCmd.Flags().Bool("watch", false, "watch local file system for changes")
+	syncCmd.Flags().DurationVar(&interval, "interval", 1*time.Second, "file system polling interval (for --watch)")
+	syncCmd.Flags().BoolVar(&full, "full", false, "perform full synchronization (default is incremental)")
+	syncCmd.Flags().BoolVar(&watch, "watch", false, "watch local file system for changes")
 }
