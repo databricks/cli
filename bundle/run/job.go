@@ -11,20 +11,9 @@ import (
 	"github.com/databricks/bricks/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/fatih/color"
 	flag "github.com/spf13/pflag"
 )
-
-func colorRed(s string) string {
-	const colorReset = "\033[0m"
-	const colorRed = "\033[31m"
-	return colorRed + s + colorReset
-}
-
-func colorGreen(s string) string {
-	const colorReset = "\033[0m"
-	const colorGreen = "\033[32m"
-	return colorGreen + s + colorReset
-}
 
 // JobOptions defines options for running a job.
 type JobOptions struct {
@@ -104,6 +93,51 @@ type jobRunner struct {
 	job    *resources.Job
 }
 
+func isFailed(task jobs.RunTask) bool {
+	return task.State.LifeCycleState == jobs.RunLifeCycleStateInternalError ||
+		(task.State.LifeCycleState == jobs.RunLifeCycleStateTerminated && task.State.ResultState == jobs.RunResultStateFailed)
+}
+
+func isSuccess(task jobs.RunTask) bool {
+	return task.State.LifeCycleState == jobs.RunLifeCycleStateTerminated && task.State.ResultState == jobs.RunResultStateSuccess
+}
+
+func (r *jobRunner) logRun(ctx context.Context, runId int64) {
+	w := r.bundle.WorkspaceClient()
+	red := color.New(color.FgRed).SprintFunc()
+	green := color.New(color.FgGreen).SprintFunc()
+	var errorPrefix = fmt.Sprintf("%s [%s]", red("[ERROR]"), r.Key())
+	var infoPrefix = fmt.Sprintf("%s [%s]", "[INFO]", r.Key())
+	run, err := w.Jobs.GetRun(ctx, jobs.GetRun{
+		RunId: runId,
+	})
+	if err != nil {
+		log.Printf("%s failed to log job run. Error: %s", errorPrefix, err)
+		return
+	}
+	if run.State.ResultState == jobs.RunResultStateSuccess {
+		log.Printf("%s all tasks executed successfully", infoPrefix)
+		return
+	}
+	for _, task := range run.Tasks {
+		if isSuccess(task) {
+			log.Printf("%s task %s completed successfully", infoPrefix, green(task.TaskKey))
+		} else if isFailed(task) {
+			taskInfo, err := w.Jobs.GetRunOutput(ctx, jobs.GetRunOutput{
+				RunId: task.RunId,
+			})
+			if err != nil {
+				log.Printf("%s task %s failed. Unable to fetch error trace: %s", errorPrefix, red(task.TaskKey), err)
+			}
+			log.Printf("%s Task %s failed!\nError:\n%s\nTrace:\n%s", errorPrefix, red(task.TaskKey), taskInfo.Error, taskInfo.ErrorTrace)
+		} else {
+			log.Printf("%s Task %s is in state %s", infoPrefix, task.TaskKey, task.State.LifeCycleState)
+		}
+	}
+
+}
+
+// TODO: see if this can be done for dlt pipeline runs, and what that looks like (vanilla and when you use jobs as a scheduler)
 func (r *jobRunner) Run(ctx context.Context, opts *Options) error {
 	jobID, err := strconv.ParseInt(r.job.ID, 10, 64)
 	if err != nil {
@@ -111,8 +145,8 @@ func (r *jobRunner) Run(ctx context.Context, opts *Options) error {
 	}
 
 	var prefix = fmt.Sprintf("[INFO] [%s]", r.Key())
-	var errorPrefix = fmt.Sprintf("%s [%s]", colorRed("[ERROR]"), r.Key())
 	var prevState *jobs.RunState
+	var runId *int64
 
 	// This function is called each time the function below polls the run status.
 	update := func(info *retries.Info[jobs.Run]) {
@@ -134,6 +168,9 @@ func (r *jobRunner) Run(ctx context.Context, opts *Options) error {
 			log.Printf("%s Run status: %s", prefix, info.Info.State.LifeCycleState)
 			prevState = state
 		}
+		if runId == nil {
+			runId = &i.RunId
+		}
 	}
 
 	req, err := opts.Job.toPayload(jobID)
@@ -143,32 +180,13 @@ func (r *jobRunner) Run(ctx context.Context, opts *Options) error {
 
 	w := r.bundle.WorkspaceClient()
 
-	// TODO: we will need to get run ID for this run. To do that either
-	// 1. Return runId on error from the SDK. Might not be trivial since the file seems autogenerate
-	// 2. Add a new custom method in the SDK to wait for a run to terminate
-	//
-	// For now proceeding with modifying the sdk to move onto figuring out how to render the
-	// error
 	run, err := w.Jobs.RunNowAndWait(ctx, *req, retries.Timeout[jobs.Run](jobRunTimeout), update)
-	// runJson, _ := json.MarshalIndent(run, "", " ")
-	// fmt.Println("AAAA export out json: \n", string(runJson))
+	if runId == nil {
+		log.Printf("%s runId unavailable. Skipping logging job run", prefix)
+	} else {
+		r.logRun(ctx, *runId)
 
-	for _, task := range run.Tasks {
-		// fmt.Printf("task %s state is %s.\n", task.TaskKey, task.State.ResultState)
-		if task.State.LifeCycleState == jobs.RunLifeCycleStateInternalError || task.State.ResultState == jobs.RunResultStateFailed {
-			runOutput, err2 := w.Jobs.GetRunOutput(ctx, jobs.GetRunOutput{
-				RunId: task.RunId,
-			})
-			if err2 != nil {
-				return err2
-			}
-			log.Printf("%s Task %s failed!\n%s\nTrace:\n%s", errorPrefix, colorRed(task.TaskKey), runOutput.Error, runOutput.ErrorTrace)
-		}
-		if task.State.ResultState == jobs.RunResultStateSuccess {
-			log.Printf("%s Task %s succeeded.", prefix, colorGreen(task.TaskKey))
-		}
 	}
-
 	if err != nil {
 		return err
 	}
