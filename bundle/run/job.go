@@ -132,7 +132,7 @@ func (r *jobRunner) logRun(ctx context.Context, runId int64) {
 			if err != nil {
 				log.Printf("%s task %s failed. Unable to fetch error trace: %s",
 					errorPrefix, red(task.TaskKey), err)
-				return
+				continue
 			}
 			log.Printf("%s Task %s failed!\nError:\n%s\nTrace:\n%s", errorPrefix,
 				red(task.TaskKey), taskInfo.Error, taskInfo.ErrorTrace)
