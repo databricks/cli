@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/databricks/bricks/bundle"
-	"github.com/databricks/bricks/bundle/phases"
 	"github.com/databricks/bricks/cmd/root"
 	"github.com/databricks/bricks/libs/sync"
 	"github.com/databricks/databricks-sdk-go"
@@ -63,24 +62,29 @@ var syncCmd = &cobra.Command{
 	Short: "Synchronize a local directory to a workspace directory",
 	Args:  cobra.MaximumNArgs(2),
 
-	PreRunE: root.TryConfigureBundle,
+	// PreRunE: root.TryConfigureBundle,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		var opts *sync.SyncOptions
 		var err error
 
-		b := bundle.GetOrNil(cmd.Context())
-		if b != nil {
-			// Run initialize phase to make sure paths are set.
-			err = bundle.Apply(cmd.Context(), b, []bundle.Mutator{
-				phases.Initialize(),
-			})
-			if err != nil {
-				return err
-			}
-			opts, err = syncOptionsFromBundle(cmd, args, b)
-		} else {
-			opts, err = syncOptionsFromArgs(cmd, args)
-		}
+		//
+		// To be uncommented and used once our VS Code extension is bundle aware.
+		// Until then, this could interfere with extension usage where a `bundle.yml` file is present.
+		// See https://github.com/databricks/bricks/pull/207.
+		//
+		// b := bundle.GetOrNil(cmd.Context())
+		// if b != nil {
+		// 	// Run initialize phase to make sure paths are set.
+		// 	err = bundle.Apply(cmd.Context(), b, []bundle.Mutator{
+		// 		phases.Initialize(),
+		// 	})
+		// 	if err != nil {
+		// 		return err
+		// 	}
+		// 	opts, err = syncOptionsFromBundle(cmd, args, b)
+		// } else {
+		opts, err = syncOptionsFromArgs(cmd, args)
+		// }
 		if err != nil {
 			return err
 		}
