@@ -16,7 +16,7 @@ type translateNotebookPaths struct {
 	seen map[string]string
 }
 
-// TranslateNotebookPaths converts paths to local notebook files into paths in the workspace file system
+// TranslateNotebookPaths converts paths to local notebook files into paths in the workspace file system.
 func TranslateNotebookPaths() bundle.Mutator {
 	return &translateNotebookPaths{}
 }
