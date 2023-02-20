@@ -12,11 +12,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func syncOptionsFromBundle(cmd *cobra.Command, args []string, b *bundle.Bundle) (*sync.SyncOptions, error) {
-	if len(args) > 0 {
-		return nil, fmt.Errorf("SRC and DST are not configurable in the context of a bundle")
-	}
-
+func syncOptionsFromBundle(cmd *cobra.Command, b *bundle.Bundle) (*sync.SyncOptions, error) {
 	cacheDir, err := b.CacheDir()
 	if err != nil {
 		return nil, fmt.Errorf("cannot get bundle cache directory: %w", err)
@@ -51,7 +47,7 @@ var syncCmd = &cobra.Command{
 			return err
 		}
 
-		opts, err := syncOptionsFromBundle(cmd, args, b)
+		opts, err := syncOptionsFromBundle(cmd, b)
 		if err != nil {
 			return err
 		}
