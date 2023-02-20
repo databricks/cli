@@ -25,12 +25,16 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+var (
+	repoUrl   = "https://github.com/databricks/databricks-empty-ide-project.git"
+	repoFiles = []string{"README-IDE.md"}
+)
+
 // This test needs auth env vars to run.
 // Please run using the deco env test or deco env shell
 func setupRepo(t *testing.T, wsc *databricks.WorkspaceClient, ctx context.Context) (localRoot, remoteRoot string) {
 	me, err := wsc.CurrentUser.Me(ctx)
 	require.NoError(t, err)
-	repoUrl := "https://github.com/shreyas-goenka/empty-repo.git"
 	repoPath := fmt.Sprintf("/Repos/%s/%s", me.UserName, RandomName("empty-repo-sync-integration-"))
 
 	repoInfo, err := wsc.Repos.Create(ctx, repos.CreateRepo{
@@ -45,15 +49,14 @@ func setupRepo(t *testing.T, wsc *databricks.WorkspaceClient, ctx context.Contex
 		assert.NoError(t, err)
 	})
 
-	// clone public empty remote repo
 	tempDir := t.TempDir()
-	cmd := exec.Command("git", "clone", repoUrl)
-	cmd.Dir = tempDir
-	err = cmd.Run()
-	require.NoError(t, err)
-
 	localRoot = filepath.Join(tempDir, "empty-repo")
 	remoteRoot = repoPath
+
+	// clone public empty remote repo
+	cmd := exec.Command("git", "clone", repoUrl, localRoot)
+	err = cmd.Run()
+	require.NoError(t, err)
 	return localRoot, remoteRoot
 }
 
@@ -167,8 +170,7 @@ func TestAccFullFileSync(t *testing.T) {
 	localRepoPath, remoteRepoPath := setupRepo(t, wsc, ctx)
 
 	// Run `bricks sync` in the background.
-	t.Setenv("BRICKS_ROOT", localRepoPath)
-	c := NewCobraTestRunner(t, "sync", "--remote-path", remoteRepoPath, "--full", "--watch")
+	c := NewCobraTestRunner(t, "sync", localRepoPath, remoteRepoPath, "--full", "--watch")
 	c.RunBackground()
 
 	assertSync := assertSync{
@@ -179,16 +181,14 @@ func TestAccFullFileSync(t *testing.T) {
 		remoteRoot: remoteRepoPath,
 	}
 
-	// .gitkeep comes from cloning during repo setup
-	// .gitignore is created by the sync process to enforce .databricks is not
-	// synced
-	assertSync.remoteDirContent(ctx, "", []string{".gitkeep", ".gitignore"})
+	// .gitignore is created by the sync process to enforce .databricks is not synced
+	assertSync.remoteDirContent(ctx, "", append(repoFiles, ".gitignore"))
 
 	// New file
 	localFilePath := filepath.Join(localRepoPath, "foo.txt")
 	f := testfile.CreateFile(t, localFilePath)
 	defer f.Close(t)
-	assertSync.remoteDirContent(ctx, "", []string{"foo.txt", ".gitkeep", ".gitignore"})
+	assertSync.remoteDirContent(ctx, "", append(repoFiles, "foo.txt", ".gitignore"))
 	assertSync.remoteFileContent(ctx, "foo.txt", "")
 
 	// Write to file
@@ -201,7 +201,7 @@ func TestAccFullFileSync(t *testing.T) {
 
 	// delete
 	f.Remove(t)
-	assertSync.remoteDirContent(ctx, "", []string{".gitkeep", ".gitignore"})
+	assertSync.remoteDirContent(ctx, "", append(repoFiles, ".gitignore"))
 }
 
 func TestAccIncrementalFileSync(t *testing.T) {
@@ -213,8 +213,7 @@ func TestAccIncrementalFileSync(t *testing.T) {
 	localRepoPath, remoteRepoPath := setupRepo(t, wsc, ctx)
 
 	// Run `bricks sync` in the background.
-	t.Setenv("BRICKS_ROOT", localRepoPath)
-	c := NewCobraTestRunner(t, "sync", "--remote-path", remoteRepoPath, "--watch")
+	c := NewCobraTestRunner(t, "sync", localRepoPath, remoteRepoPath, "--watch")
 	c.RunBackground()
 
 	assertSync := assertSync{
@@ -225,18 +224,16 @@ func TestAccIncrementalFileSync(t *testing.T) {
 		remoteRoot: remoteRepoPath,
 	}
 
-	// .gitkeep comes from cloning during repo setup
-	// .gitignore is created by the sync process to enforce .databricks is not
-	// synced
-	assertSync.remoteDirContent(ctx, "", []string{".gitkeep", ".gitignore"})
+	// .gitignore is created by the sync process to enforce .databricks is not synced
+	assertSync.remoteDirContent(ctx, "", append(repoFiles, ".gitignore"))
 
 	// New file
 	localFilePath := filepath.Join(localRepoPath, "foo.txt")
 	f := testfile.CreateFile(t, localFilePath)
 	defer f.Close(t)
-	assertSync.remoteDirContent(ctx, "", []string{"foo.txt", ".gitkeep", ".gitignore"})
+	assertSync.remoteDirContent(ctx, "", append(repoFiles, "foo.txt", ".gitignore"))
 	assertSync.remoteFileContent(ctx, "foo.txt", "")
-	assertSync.snapshotContains([]string{".gitkeep", ".gitignore", "foo.txt"})
+	assertSync.snapshotContains(append(repoFiles, "foo.txt", ".gitignore"))
 
 	// Write to file
 	f.Overwrite(t, `{"statement": "Mi Gente"}`)
@@ -248,8 +245,8 @@ func TestAccIncrementalFileSync(t *testing.T) {
 
 	// delete
 	f.Remove(t)
-	assertSync.remoteDirContent(ctx, "", []string{".gitkeep", ".gitignore"})
-	assertSync.snapshotContains([]string{".gitkeep", ".gitignore"})
+	assertSync.remoteDirContent(ctx, "", append(repoFiles, ".gitignore"))
+	assertSync.snapshotContains(append(repoFiles, ".gitignore"))
 }
 
 func TestAccNestedFolderSync(t *testing.T) {
@@ -261,8 +258,7 @@ func TestAccNestedFolderSync(t *testing.T) {
 	localRepoPath, remoteRepoPath := setupRepo(t, wsc, ctx)
 
 	// Run `bricks sync` in the background.
-	t.Setenv("BRICKS_ROOT", localRepoPath)
-	c := NewCobraTestRunner(t, "sync", "--remote-path", remoteRepoPath, "--watch")
+	c := NewCobraTestRunner(t, "sync", localRepoPath, remoteRepoPath, "--watch")
 	c.RunBackground()
 
 	assertSync := assertSync{
@@ -273,10 +269,8 @@ func TestAccNestedFolderSync(t *testing.T) {
 		remoteRoot: remoteRepoPath,
 	}
 
-	// .gitkeep comes from cloning during repo setup
-	// .gitignore is created by the sync process to enforce .databricks is not
-	// synced
-	assertSync.remoteDirContent(ctx, "/", []string{".gitkeep", ".gitignore"})
+	// .gitignore is created by the sync process to enforce .databricks is not synced
+	assertSync.remoteDirContent(ctx, "", append(repoFiles, ".gitignore"))
 
 	// New file
 	localFilePath := filepath.Join(localRepoPath, "dir1/dir2/dir3/foo.txt")
@@ -284,17 +278,17 @@ func TestAccNestedFolderSync(t *testing.T) {
 	assert.NoError(t, err)
 	f := testfile.CreateFile(t, localFilePath)
 	defer f.Close(t)
-	assertSync.remoteDirContent(ctx, "", []string{"dir1", ".gitkeep", ".gitignore"})
+	assertSync.remoteDirContent(ctx, "", append(repoFiles, ".gitignore", "dir1"))
 	assertSync.remoteDirContent(ctx, "dir1", []string{"dir2"})
 	assertSync.remoteDirContent(ctx, "dir1/dir2", []string{"dir3"})
 	assertSync.remoteDirContent(ctx, "dir1/dir2/dir3", []string{"foo.txt"})
-	assertSync.snapshotContains([]string{".gitkeep", ".gitignore", filepath.FromSlash("dir1/dir2/dir3/foo.txt")})
+	assertSync.snapshotContains(append(repoFiles, ".gitignore", filepath.FromSlash("dir1/dir2/dir3/foo.txt")))
 
 	// delete
 	f.Remove(t)
 	// directories are not cleaned up right now. This is not ideal
 	assertSync.remoteDirContent(ctx, "dir1/dir2/dir3", []string{})
-	assertSync.snapshotContains([]string{".gitkeep", ".gitignore"})
+	assertSync.snapshotContains(append(repoFiles, ".gitignore"))
 }
 
 // sync does not clean up empty directories from the workspace file system.
@@ -315,8 +309,7 @@ func TestAccIncrementalFileOverwritesFolder(t *testing.T) {
 	localRepoPath, remoteRepoPath := setupRepo(t, wsc, ctx)
 
 	// Run `bricks sync` in the background.
-	t.Setenv("BRICKS_ROOT", localRepoPath)
-	c := NewCobraTestRunner(t, "sync", "--remote-path", remoteRepoPath, "--watch")
+	c := NewCobraTestRunner(t, "sync", localRepoPath, remoteRepoPath, "--watch")
 	c.RunBackground()
 
 	assertSync := assertSync{
@@ -333,22 +326,22 @@ func TestAccIncrementalFileOverwritesFolder(t *testing.T) {
 	assert.NoError(t, err)
 	f := testfile.CreateFile(t, localFilePath)
 	defer f.Close(t)
-	assertSync.remoteDirContent(ctx, "", []string{"foo", ".gitkeep", ".gitignore"})
+	assertSync.remoteDirContent(ctx, "", append(repoFiles, ".gitignore"))
 	assertSync.remoteDirContent(ctx, "foo", []string{"bar.txt"})
-	assertSync.snapshotContains([]string{".gitkeep", ".gitignore", filepath.FromSlash("foo/bar.txt")})
+	assertSync.snapshotContains(append(repoFiles, ".gitignore", filepath.FromSlash("foo/bar.txt")))
 
 	// delete foo/bar.txt
 	f.Remove(t)
 	os.Remove(filepath.Join(localRepoPath, "foo"))
 	assertSync.remoteDirContent(ctx, "foo", []string{})
 	assertSync.objectType(ctx, "foo", "DIRECTORY")
-	assertSync.snapshotContains([]string{".gitkeep", ".gitignore"})
+	assertSync.snapshotContains(append(repoFiles, ".gitignore"))
 
 	f2 := testfile.CreateFile(t, filepath.Join(localRepoPath, "foo"))
 	defer f2.Close(t)
-	assertSync.remoteDirContent(ctx, "", []string{"foo", ".gitkeep", ".gitignore"})
+	assertSync.remoteDirContent(ctx, "", append(repoFiles, ".gitignore", "foo"))
 	assertSync.objectType(ctx, "foo", "FILE")
-	assertSync.snapshotContains([]string{".gitkeep", ".gitignore", "foo"})
+	assertSync.snapshotContains(append(repoFiles, ".gitignore", "foo"))
 }
 
 func TestAccIncrementalSyncPythonNotebookToFile(t *testing.T) {
@@ -366,8 +359,7 @@ func TestAccIncrementalSyncPythonNotebookToFile(t *testing.T) {
 	f.Overwrite(t, "# Databricks notebook source")
 
 	// Run `bricks sync` in the background.
-	t.Setenv("BRICKS_ROOT", localRepoPath)
-	c := NewCobraTestRunner(t, "sync", "--remote-path", remoteRepoPath, "--watch")
+	c := NewCobraTestRunner(t, "sync", localRepoPath, remoteRepoPath, "--watch")
 	c.RunBackground()
 
 	assertSync := assertSync{
@@ -379,21 +371,21 @@ func TestAccIncrementalSyncPythonNotebookToFile(t *testing.T) {
 	}
 
 	// notebook was uploaded properly
-	assertSync.remoteDirContent(ctx, "", []string{"foo", ".gitkeep", ".gitignore"})
+	assertSync.remoteDirContent(ctx, "", append(repoFiles, ".gitignore", "foo"))
 	assertSync.objectType(ctx, "foo", "NOTEBOOK")
 	assertSync.language(ctx, "foo", "PYTHON")
-	assertSync.snapshotContains([]string{".gitkeep", ".gitignore", "foo.py"})
+	assertSync.snapshotContains(append(repoFiles, ".gitignore", "foo.py"))
 
 	// convert to vanilla python file
 	f.Overwrite(t, "# No longer a python notebook")
 	assertSync.objectType(ctx, "foo.py", "FILE")
-	assertSync.remoteDirContent(ctx, "", []string{"foo.py", ".gitkeep", ".gitignore"})
-	assertSync.snapshotContains([]string{".gitkeep", ".gitignore", "foo.py"})
+	assertSync.remoteDirContent(ctx, "", append(repoFiles, ".gitignore", "foo.py"))
+	assertSync.snapshotContains(append(repoFiles, ".gitignore", "foo.py"))
 
 	// delete the vanilla python file
 	f.Remove(t)
-	assertSync.remoteDirContent(ctx, "", []string{".gitkeep", ".gitignore"})
-	assertSync.snapshotContains([]string{".gitkeep", ".gitignore"})
+	assertSync.remoteDirContent(ctx, "", append(repoFiles, ".gitignore"))
+	assertSync.snapshotContains(append(repoFiles, ".gitignore"))
 }
 
 func TestAccIncrementalSyncFileToPythonNotebook(t *testing.T) {
@@ -405,8 +397,7 @@ func TestAccIncrementalSyncFileToPythonNotebook(t *testing.T) {
 	localRepoPath, remoteRepoPath := setupRepo(t, wsc, ctx)
 
 	// Run `bricks sync` in the background.
-	t.Setenv("BRICKS_ROOT", localRepoPath)
-	c := NewCobraTestRunner(t, "sync", "--remote-path", remoteRepoPath, "--watch")
+	c := NewCobraTestRunner(t, "sync", localRepoPath, remoteRepoPath, "--watch")
 	c.RunBackground()
 
 	assertSync := assertSync{
@@ -423,16 +414,16 @@ func TestAccIncrementalSyncFileToPythonNotebook(t *testing.T) {
 	defer f.Close(t)
 
 	// assert file upload
-	assertSync.remoteDirContent(ctx, "", []string{"foo.py", ".gitkeep", ".gitignore"})
+	assertSync.remoteDirContent(ctx, "", append(repoFiles, ".gitignore", "foo.py"))
 	assertSync.objectType(ctx, "foo.py", "FILE")
-	assertSync.snapshotContains([]string{".gitkeep", ".gitignore", "foo.py"})
+	assertSync.snapshotContains(append(repoFiles, ".gitignore", "foo.py"))
 
 	// convert to notebook
 	f.Overwrite(t, "# Databricks notebook source")
 	assertSync.objectType(ctx, "foo", "NOTEBOOK")
 	assertSync.language(ctx, "foo", "PYTHON")
-	assertSync.remoteDirContent(ctx, "", []string{"foo", ".gitkeep", ".gitignore"})
-	assertSync.snapshotContains([]string{".gitkeep", ".gitignore", "foo.py"})
+	assertSync.remoteDirContent(ctx, "", append(repoFiles, ".gitignore", "foo"))
+	assertSync.snapshotContains(append(repoFiles, ".gitignore", "foo.py"))
 }
 
 func TestAccIncrementalSyncPythonNotebookDelete(t *testing.T) {
@@ -450,8 +441,7 @@ func TestAccIncrementalSyncPythonNotebookDelete(t *testing.T) {
 	f.Overwrite(t, "# Databricks notebook source")
 
 	// Run `bricks sync` in the background.
-	t.Setenv("BRICKS_ROOT", localRepoPath)
-	c := NewCobraTestRunner(t, "sync", "--remote-path", remoteRepoPath, "--watch")
+	c := NewCobraTestRunner(t, "sync", localRepoPath, remoteRepoPath, "--watch")
 	c.RunBackground()
 
 	assertSync := assertSync{
@@ -463,11 +453,11 @@ func TestAccIncrementalSyncPythonNotebookDelete(t *testing.T) {
 	}
 
 	// notebook was uploaded properly
-	assertSync.remoteDirContent(ctx, "", []string{"foo", ".gitkeep", ".gitignore"})
+	assertSync.remoteDirContent(ctx, "", append(repoFiles, ".gitignore", "foo"))
 	assertSync.objectType(ctx, "foo", "NOTEBOOK")
 	assertSync.language(ctx, "foo", "PYTHON")
 
 	// Delete notebook
 	f.Remove(t)
-	assertSync.remoteDirContent(ctx, "", []string{".gitkeep", ".gitignore"})
+	assertSync.remoteDirContent(ctx, "", append(repoFiles, ".gitignore"))
 }

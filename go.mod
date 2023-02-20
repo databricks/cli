@@ -13,7 +13,7 @@ require (
 	github.com/spf13/cobra v1.6.1 // Apache 2.0
 	github.com/stretchr/testify v1.8.1 // MIT
 	github.com/whilp/git-urls v1.0.0 // MIT
-	golang.org/x/mod v0.7.0 // BSD-3-Clause
+	golang.org/x/mod v0.8.0 // BSD-3-Clause
 	gopkg.in/ini.v1 v1.67.0 // Apache 2.0
 )
 
@@ -21,9 +21,9 @@ require (
 	github.com/fatih/color v1.14.1
 	github.com/google/uuid v1.3.0
 	github.com/hashicorp/go-version v1.6.0
-	github.com/hashicorp/hc-install v0.4.0
+	github.com/hashicorp/hc-install v0.5.0
 	github.com/hashicorp/terraform-exec v0.17.3
-	github.com/hashicorp/terraform-json v0.14.0
+	github.com/hashicorp/terraform-json v0.15.0
 	golang.org/x/exp v0.0.0-20221031165847-c99f073a8326
 	golang.org/x/sync v0.1.0
 )
@@ -33,7 +33,7 @@ require (
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.17 // indirect
 	github.com/zclconf/go-cty v1.11.0 // indirect
-	golang.org/x/crypto v0.1.0 // indirect
+	golang.org/x/crypto v0.5.0 // indirect
 )
 
 require (
