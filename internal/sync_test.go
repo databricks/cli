@@ -326,7 +326,7 @@ func TestAccIncrementalFileOverwritesFolder(t *testing.T) {
 	assert.NoError(t, err)
 	f := testfile.CreateFile(t, localFilePath)
 	defer f.Close(t)
-	assertSync.remoteDirContent(ctx, "", append(repoFiles, ".gitignore"))
+	assertSync.remoteDirContent(ctx, "", append(repoFiles, ".gitignore", "foo"))
 	assertSync.remoteDirContent(ctx, "foo", []string{"bar.txt"})
 	assertSync.snapshotContains(append(repoFiles, ".gitignore", filepath.FromSlash("foo/bar.txt")))
 
