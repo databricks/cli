@@ -47,7 +47,7 @@ func New(ctx context.Context, opts SyncOptions) (*Sync, error) {
 	}
 
 	// Verify that the remote path we're about to synchronize to is valid and allowed.
-	err = ensureRemotePathIsUsable(ctx, opts.WorkspaceClient, opts.RemotePath)
+	err = EnsureRemotePathIsUsable(ctx, opts.WorkspaceClient, opts.RemotePath)
 	if err != nil {
 		return nil, err
 	}
