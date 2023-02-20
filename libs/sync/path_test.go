@@ -37,3 +37,19 @@ func TestPathNestedUnderBasePaths(t *testing.T) {
 	assert.NoError(t, checkPathNestedUnderBasePaths(&me, "/Users/jane@doe.com/./foo"))
 	assert.NoError(t, checkPathNestedUnderBasePaths(&me, "/Users/jane@doe.com/foo/bar/qux"))
 }
+
+func TestPathToRepoPath(t *testing.T) {
+	me := scim.User{
+		UserName: "jane@doe.com",
+	}
+
+	assert.Equal(t, "/Repos/jane@doe.com/foo", repoPathForPath(&me, "/Repos/jane@doe.com/foo/bar/qux"))
+	assert.Equal(t, "/Repos/jane@doe.com/foo", repoPathForPath(&me, "/Repos/jane@doe.com/foo/bar"))
+	assert.Equal(t, "/Repos/jane@doe.com/foo", repoPathForPath(&me, "/Repos/jane@doe.com/foo"))
+
+	// We expect this function to be called with a path nested under the user's repo path.
+	// If this is not the case it should return the input verbatim (albeit cleaned).
+	assert.Equal(t, "/Repos/jane@doe.com", repoPathForPath(&me, "/Repos/jane@doe.com"))
+	assert.Equal(t, "/Repos/hello@world.com/foo/bar/qux", repoPathForPath(&me, "/Repos/hello@world.com/foo/bar/qux"))
+	assert.Equal(t, "/Repos/hello@world.com/foo/bar/qux", repoPathForPath(&me, "/Repos/hello@world.com/foo/bar/qux/."))
+}

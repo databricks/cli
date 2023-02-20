@@ -461,3 +461,71 @@ func TestAccIncrementalSyncPythonNotebookDelete(t *testing.T) {
 	f.Remove(t)
 	assertSync.remoteDirContent(ctx, "", append(repoFiles, ".gitignore"))
 }
+
+func TestAccSyncEnsureRemotePathIsUsableIfRepoDoesntExist(t *testing.T) {
+	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+
+	wsc := databricks.Must(databricks.NewWorkspaceClient())
+	ctx := context.Background()
+
+	me, err := wsc.CurrentUser.Me(ctx)
+	require.NoError(t, err)
+
+	// Hypothetical repo path doesn't exist.
+	nonExistingRepoPath := fmt.Sprintf("/Repos/%s/%s", me.UserName, RandomName("doesnt-exist-"))
+	err = sync.EnsureRemotePathIsUsable(ctx, wsc, nonExistingRepoPath)
+	assert.ErrorContains(t, err, " does not exist; please create it first")
+
+	// Paths nested under a hypothetical repo path should yield the same error.
+	nestedPath := path.Join(nonExistingRepoPath, "nested/directory")
+	err = sync.EnsureRemotePathIsUsable(ctx, wsc, nestedPath)
+	assert.ErrorContains(t, err, " does not exist; please create it first")
+}
+
+func TestAccSyncEnsureRemotePathIsUsableIfRepoExists(t *testing.T) {
+	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+
+	wsc := databricks.Must(databricks.NewWorkspaceClient())
+	ctx := context.Background()
+	_, remoteRepoPath := setupRepo(t, wsc, ctx)
+
+	// Repo itself is usable.
+	err := sync.EnsureRemotePathIsUsable(ctx, wsc, remoteRepoPath)
+	assert.NoError(t, err)
+
+	// Path nested under repo path is usable.
+	nestedPath := path.Join(remoteRepoPath, "nested/directory")
+	err = sync.EnsureRemotePathIsUsable(ctx, wsc, nestedPath)
+	assert.NoError(t, err)
+
+	// Verify that the directory has been created.
+	info, err := wsc.Workspace.GetStatusByPath(ctx, nestedPath)
+	require.NoError(t, err)
+	require.Equal(t, workspace.ObjectTypeDirectory, info.ObjectType)
+}
+
+func TestAccSyncEnsureRemotePathIsUsableInWorkspace(t *testing.T) {
+	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+
+	wsc := databricks.Must(databricks.NewWorkspaceClient())
+	ctx := context.Background()
+	me, err := wsc.CurrentUser.Me(ctx)
+	require.NoError(t, err)
+
+	remotePath := fmt.Sprintf("/Users/%s/%s", me.UserName, RandomName("ensure-path-exists-test-"))
+	err = sync.EnsureRemotePathIsUsable(ctx, wsc, remotePath)
+	assert.NoError(t, err)
+
+	// Clean up directory after test.
+	defer func() {
+		err := wsc.Workspace.Delete(ctx, workspace.Delete{
+			Path: remotePath,
+		})
+		assert.NoError(t, err)
+	}()
+
+	// Verify that the directory has been created.
+	info, err := wsc.Workspace.GetStatusByPath(ctx, remotePath)
+	require.NoError(t, err)
+	require.Equal(t, workspace.ObjectTypeDirectory, info.ObjectType)
+}
