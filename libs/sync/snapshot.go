@@ -79,7 +79,7 @@ func GetFileName(host, remotePath string) string {
 func SnapshotPath(opts *SyncOptions) (string, error) {
 	snapshotDir := filepath.Join(opts.SnapshotBasePath, syncSnapshotDirName)
 	if _, err := os.Stat(snapshotDir); os.IsNotExist(err) {
-		err = os.Mkdir(snapshotDir, os.ModeDir|os.ModePerm)
+		err = os.MkdirAll(snapshotDir, 0755)
 		if err != nil {
 			return "", fmt.Errorf("failed to create config directory: %s", err)
 		}
