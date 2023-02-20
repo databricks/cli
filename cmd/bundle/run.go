@@ -40,6 +40,27 @@ var runCmd = &cobra.Command{
 
 		return nil
 	},
+
+	ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		if len(args) > 0 {
+			return nil, cobra.ShellCompDirectiveNoFileComp
+		}
+
+		err := root.MustConfigureBundle(cmd, args)
+		if err != nil {
+			cobra.CompErrorln(err.Error())
+			return nil, cobra.ShellCompDirectiveError
+		}
+
+		// No completion in the context of a bundle.
+		// Source and destination paths are taken from bundle configuration.
+		b := bundle.GetOrNil(cmd.Context())
+		if b == nil {
+			return nil, cobra.ShellCompDirectiveNoFileComp
+		}
+
+		return run.ResourceCompletions(b), cobra.ShellCompDirectiveNoFileComp
+	},
 }
 
 func init() {

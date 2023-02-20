@@ -31,3 +31,31 @@ func ResourceKeys(b *bundle.Bundle) (keyOnly RunnerLookup, keyWithType RunnerLoo
 	}
 	return
 }
+
+// ResourceCompletions returns a list of keys that unambiguously reference resources in the bundle.
+func ResourceCompletions(b *bundle.Bundle) []string {
+	seen := make(map[string]bool)
+	comps := []string{}
+	keyOnly, keyWithType := ResourceKeys(b)
+
+	// First add resources that can be identified by key alone.
+	for k, v := range keyOnly {
+		// Invariant: len(v) >= 1. See [ResourceKeys].
+		if len(v) == 1 {
+			seen[v[0].Key()] = true
+			comps = append(comps, k)
+		}
+	}
+
+	// Then add resources that can only be identified by their type and key.
+	for k, v := range keyWithType {
+		// Invariant: len(v) == 1. See [ResourceKeys].
+		_, ok := seen[v[0].Key()]
+		if ok {
+			continue
+		}
+		comps = append(comps, k)
+	}
+
+	return comps
+}
