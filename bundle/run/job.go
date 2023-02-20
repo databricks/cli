@@ -109,8 +109,8 @@ func (r *jobRunner) logRun(ctx context.Context, runId int64) {
 	red := color.New(color.FgRed).SprintFunc()
 	green := color.New(color.FgGreen).SprintFunc()
 	yellow := color.New(color.FgYellow).SprintFunc()
-	var errorPrefix = fmt.Sprintf("%s [%s]", red("[ERROR]"), r.Key())
-	var infoPrefix = fmt.Sprintf("%s [%s]", "[INFO]", r.Key())
+	errorPrefix := fmt.Sprintf("%s [%s]", red("[ERROR]"), r.Key())
+	infoPrefix := fmt.Sprintf("%s [%s]", "[INFO]", r.Key())
 	run, err := w.Jobs.GetRun(ctx, jobs.GetRun{
 		RunId: runId,
 	})
