@@ -76,6 +76,7 @@ func TestProcessRootIncludesSingleGlob(t *testing.T) {
 	assert.NotContains(t, names, "ProcessInclude(bundle.yml)")
 	assert.Contains(t, names, "ProcessInclude(a.yml)")
 	assert.Contains(t, names, "ProcessInclude(b.yml)")
+	assert.Equal(t, []string{"a.yml", "b.yml"}, bundle.Config.Include)
 }
 
 func TestProcessRootIncludesMultiGlob(t *testing.T) {
@@ -102,6 +103,7 @@ func TestProcessRootIncludesMultiGlob(t *testing.T) {
 
 	assert.Contains(t, names, "ProcessInclude(a1.yml)")
 	assert.Contains(t, names, "ProcessInclude(b1.yml)")
+	assert.Equal(t, []string{"a1.yml", "b1.yml"}, bundle.Config.Include)
 }
 
 func TestProcessRootIncludesRemoveDups(t *testing.T) {
@@ -121,4 +123,5 @@ func TestProcessRootIncludesRemoveDups(t *testing.T) {
 	require.NoError(t, err)
 	assert.Len(t, ms, 1)
 	assert.Equal(t, "ProcessInclude(a.yml)", ms[0].Name())
+	assert.Equal(t, []string{"a.yml"}, bundle.Config.Include)
 }

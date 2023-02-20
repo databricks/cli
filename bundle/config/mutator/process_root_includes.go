@@ -30,6 +30,10 @@ func (m *processRootIncludes) Apply(_ context.Context, b *bundle.Bundle) ([]bund
 		config.FileName: true,
 	}
 
+	// Maintain list of files in order of files being loaded.
+	// This is stored in the bundle configuration for observability.
+	var files []string
+
 	// For each glob, find all files to load.
 	// Ordering of the list of globs is maintained in the output.
 	// For matches that appear in multiple globs, only the first is kept.
@@ -61,10 +65,14 @@ func (m *processRootIncludes) Apply(_ context.Context, b *bundle.Bundle) ([]bund
 
 		// Add matches to list of mutators to return.
 		slices.Sort(includes)
+		files = append(files, includes...)
 		for _, include := range includes {
 			out = append(out, ProcessInclude(filepath.Join(b.Config.Path, include), include))
 		}
 	}
+
+	// Swap out the original includes list with the expanded globs.
+	b.Config.Include = files
 
 	return out, nil
 }
