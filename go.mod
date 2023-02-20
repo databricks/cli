@@ -13,7 +13,7 @@ require (
 	github.com/spf13/cobra v1.6.1 // Apache 2.0
 	github.com/stretchr/testify v1.8.1 // MIT
 	github.com/whilp/git-urls v1.0.0 // MIT
-	golang.org/x/mod v0.7.0 // BSD-3-Clause
+	golang.org/x/mod v0.8.0 // BSD-3-Clause
 	gopkg.in/ini.v1 v1.67.0 // Apache 2.0
 )
 
