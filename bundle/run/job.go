@@ -186,7 +186,7 @@ func (r *jobRunner) Run(ctx context.Context, opts *Options) error {
 	w := r.bundle.WorkspaceClient()
 
 	run, err := w.Jobs.RunNowAndWait(ctx, *req, retries.Timeout[jobs.Run](jobRunTimeout), update)
-	if runId != nil {
+	if err != nil && runId != nil {
 		r.logFailedTasks(ctx, *runId)
 
 	}
