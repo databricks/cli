@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/bricks/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/fatih/color"
 	flag "github.com/spf13/pflag"
 )
 
@@ -92,6 +93,56 @@ type jobRunner struct {
 	job    *resources.Job
 }
 
+func isFailed(task jobs.RunTask) bool {
+	return task.State.LifeCycleState == jobs.RunLifeCycleStateInternalError ||
+		(task.State.LifeCycleState == jobs.RunLifeCycleStateTerminated &&
+			task.State.ResultState == jobs.RunResultStateFailed)
+}
+
+func isSuccess(task jobs.RunTask) bool {
+	return task.State.LifeCycleState == jobs.RunLifeCycleStateTerminated &&
+		task.State.ResultState == jobs.RunResultStateSuccess
+}
+
+func (r *jobRunner) logFailedTasks(ctx context.Context, runId int64) {
+	w := r.bundle.WorkspaceClient()
+	red := color.New(color.FgRed).SprintFunc()
+	green := color.New(color.FgGreen).SprintFunc()
+	yellow := color.New(color.FgYellow).SprintFunc()
+	errorPrefix := fmt.Sprintf("%s [%s]", red("[ERROR]"), r.Key())
+	infoPrefix := fmt.Sprintf("%s [%s]", "[INFO]", r.Key())
+	run, err := w.Jobs.GetRun(ctx, jobs.GetRun{
+		RunId: runId,
+	})
+	if err != nil {
+		log.Printf("%s failed to log job run. Error: %s", errorPrefix, err)
+		return
+	}
+	if run.State.ResultState == jobs.RunResultStateSuccess {
+		return
+	}
+	for _, task := range run.Tasks {
+		if isSuccess(task) {
+			log.Printf("%s task %s completed successfully", infoPrefix, green(task.TaskKey))
+		} else if isFailed(task) {
+			taskInfo, err := w.Jobs.GetRunOutput(ctx, jobs.GetRunOutput{
+				RunId: task.RunId,
+			})
+			if err != nil {
+				log.Printf("%s task %s failed. Unable to fetch error trace: %s",
+					errorPrefix, red(task.TaskKey), err)
+				continue
+			}
+			log.Printf("%s Task %s failed!\nError:\n%s\nTrace:\n%s", errorPrefix,
+				red(task.TaskKey), taskInfo.Error, taskInfo.ErrorTrace)
+		} else {
+			log.Printf("%s task %s is in state %s", infoPrefix,
+				yellow(task.TaskKey), task.State.LifeCycleState)
+		}
+	}
+
+}
+
 func (r *jobRunner) Run(ctx context.Context, opts *Options) error {
 	jobID, err := strconv.ParseInt(r.job.ID, 10, 64)
 	if err != nil {
@@ -100,6 +151,7 @@ func (r *jobRunner) Run(ctx context.Context, opts *Options) error {
 
 	var prefix = fmt.Sprintf("[INFO] [%s]", r.Key())
 	var prevState *jobs.RunState
+	var runId *int64
 
 	// This function is called each time the function below polls the run status.
 	update := func(info *retries.Info[jobs.Run]) {
@@ -121,6 +173,9 @@ func (r *jobRunner) Run(ctx context.Context, opts *Options) error {
 			log.Printf("%s Run status: %s", prefix, info.Info.State.LifeCycleState)
 			prevState = state
 		}
+		if runId == nil {
+			runId = &i.RunId
+		}
 	}
 
 	req, err := opts.Job.toPayload(jobID)
@@ -129,7 +184,12 @@ func (r *jobRunner) Run(ctx context.Context, opts *Options) error {
 	}
 
 	w := r.bundle.WorkspaceClient()
+
 	run, err := w.Jobs.RunNowAndWait(ctx, *req, retries.Timeout[jobs.Run](jobRunTimeout), update)
+	if err != nil && runId != nil {
+		r.logFailedTasks(ctx, *runId)
+
+	}
 	if err != nil {
 		return err
 	}

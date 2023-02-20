@@ -18,6 +18,7 @@ require (
 )
 
 require (
+	github.com/fatih/color v1.14.1
 	github.com/google/uuid v1.3.0
 	github.com/hashicorp/go-version v1.6.0
 	github.com/hashicorp/hc-install v0.5.0
@@ -29,6 +30,8 @@ require (
 
 require (
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
+	github.com/mattn/go-colorable v0.1.13 // indirect
+	github.com/mattn/go-isatty v0.0.17 // indirect
 	github.com/zclconf/go-cty v1.11.0 // indirect
 	golang.org/x/crypto v0.5.0 // indirect
 )
