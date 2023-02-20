@@ -104,7 +104,7 @@ func isSuccess(task jobs.RunTask) bool {
 		task.State.ResultState == jobs.RunResultStateSuccess
 }
 
-func (r *jobRunner) logRun(ctx context.Context, runId int64) {
+func (r *jobRunner) logFailedTasks(ctx context.Context, runId int64) {
 	w := r.bundle.WorkspaceClient()
 	red := color.New(color.FgRed).SprintFunc()
 	green := color.New(color.FgGreen).SprintFunc()
@@ -119,7 +119,6 @@ func (r *jobRunner) logRun(ctx context.Context, runId int64) {
 		return
 	}
 	if run.State.ResultState == jobs.RunResultStateSuccess {
-		log.Printf("%s all tasks executed successfully", infoPrefix)
 		return
 	}
 	for _, task := range run.Tasks {
@@ -187,10 +186,8 @@ func (r *jobRunner) Run(ctx context.Context, opts *Options) error {
 	w := r.bundle.WorkspaceClient()
 
 	run, err := w.Jobs.RunNowAndWait(ctx, *req, retries.Timeout[jobs.Run](jobRunTimeout), update)
-	if runId == nil {
-		log.Printf("%s runId unavailable. Skipping logging job run", prefix)
-	} else {
-		r.logRun(ctx, *runId)
+	if runId != nil {
+		r.logFailedTasks(ctx, *runId)
 
 	}
 	if err != nil {
