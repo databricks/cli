@@ -3,6 +3,7 @@ package filer
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -65,8 +66,8 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 	err = w.apiClient.Do(ctx, http.MethodPost, urlPath, body, nil)
 
 	// If we got an API error we deal with it below.
-	aerr, ok := err.(apierr.APIError)
-	if !ok {
+	var aerr *apierr.APIError
+	if !errors.As(err, &aerr) {
 		return err
 	}
 

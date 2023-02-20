@@ -19,7 +19,7 @@ func TestConvertJob(t *testing.T) {
 			JobClusters: []jobs.JobCluster{
 				{
 					JobClusterKey: "key",
-					NewCluster: &clusters.CreateCluster{
+					NewCluster: &clusters.BaseClusterInfo{
 						SparkVersion: "10.4.x-scala2.12",
 					},
 				},
