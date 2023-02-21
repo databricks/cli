@@ -54,6 +54,8 @@ func Detect(path string) (notebook bool, language workspace.Language, err error)
 	case ".sql":
 		header = "-- Databricks notebook source"
 		language = workspace.LanguageSql
+	case ".ipynb":
+		return DetectJupyter(path)
 	default:
 		return false, "", nil
 	}
