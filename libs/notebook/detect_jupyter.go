@@ -15,10 +15,10 @@ type jupyterDatabricksMetadata struct {
 
 // See https://nbformat.readthedocs.io/en/latest/format_description.html#top-level-structure.
 type jupyter struct {
+	Cells         []json.RawMessage          `json:"cells,omitempty"`
 	Metadata      map[string]json.RawMessage `json:"metadata,omitempty"`
 	NbFormatMajor int                        `json:"nbformat"`
 	NbFormatMinor int                        `json:"nbformat_minor"`
-	Cells         json.RawMessage            `json:"cells,omitempty"`
 }
 
 // resolveLanguage looks at Databricks specific metadata to figure out the language of the notebook.
@@ -71,8 +71,8 @@ func DetectJupyter(path string) (notebook bool, language workspace.Language, err
 		return false, "", fmt.Errorf("%s: error loading Jupyter notebook file: %w", path, err)
 	}
 
-	// Not a Jupyter notebook if the cells field or the metadata isn't defined.
-	if len(nb.Cells) == 0 || nb.Metadata == nil {
+	// Not a Jupyter notebook if the cells or metadata fields aren't defined.
+	if nb.Cells == nil || nb.Metadata == nil {
 		return false, "", fmt.Errorf("%s: invalid Jupyter notebook file", path)
 	}
 
