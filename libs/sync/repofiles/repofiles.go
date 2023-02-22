@@ -51,7 +51,9 @@ func (r *RepoFiles) readLocal(relativePath string) ([]byte, error) {
 }
 
 func (r *RepoFiles) writeRemote(ctx context.Context, relativePath string, content []byte) error {
-	apiClient, err := client.New(r.workspaceClient.Config)
+	apiClientConfig := r.workspaceClient.Config
+	apiClientConfig.HTTPTimeoutSeconds = 600
+	apiClient, err := client.New(apiClientConfig)
 	if err != nil {
 		return err
 	}
