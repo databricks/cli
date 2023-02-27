@@ -58,6 +58,8 @@ type Schema struct {
 //
 //   - []MyStruct               ->   {type: object, properties: {}, additionalProperties: false}
 //     for details visit: https://json-schema.org/understanding-json-schema/reference/object.html#properties
+
+// TODO: Remove docs parsing form here
 func New(golangType reflect.Type, docs *Docs) (*Schema, error) {
 	tracker := newTracker()
 	schema, err := safeToSchema(golangType, docs, "", tracker)
@@ -187,7 +189,7 @@ func toSchema(golangType reflect.Type, docs *Docs, tracker *tracker) (*Schema, e
 	schema := &Schema{Type: rootJavascriptType}
 
 	if docs != nil {
-		schema.Description = *docs.Description
+		schema.Description = docs.Description
 	}
 
 	// case array/slice
@@ -197,7 +199,11 @@ func toSchema(golangType reflect.Type, docs *Docs, tracker *tracker) (*Schema, e
 		if err != nil {
 			return nil, err
 		}
-		elemProps, err := safeToSchema(elemGolangType, docs, "", tracker)
+		var childDocs *Docs
+		if docs != nil {
+			childDocs = docs.Items
+		}
+		elemProps, err := safeToSchema(elemGolangType, childDocs, "", tracker)
 		if err != nil {
 			return nil, err
 		}
@@ -215,7 +221,11 @@ func toSchema(golangType reflect.Type, docs *Docs, tracker *tracker) (*Schema, e
 		if golangType.Key().Kind() != reflect.String {
 			return nil, fmt.Errorf("only string keyed maps allowed")
 		}
-		schema.AdditionalProperties, err = safeToSchema(golangType.Elem(), docs, "", tracker)
+		var childDocs *Docs
+		if docs != nil {
+			childDocs = docs.AdditionalProperties
+		}
+		schema.AdditionalProperties, err = safeToSchema(golangType.Elem(), childDocs, "", tracker)
 		if err != nil {
 			return nil, err
 		}
