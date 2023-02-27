@@ -9,7 +9,7 @@ import (
 
 type Docs struct {
 	Description *string          `json:"description"`
-	Children    map[string]*Docs `json:"children"`
+	Properties  map[string]*Docs `json:"properties"`
 }
 
 func LoadDocs(path string) (*Docs, error) {

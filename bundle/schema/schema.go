@@ -240,7 +240,7 @@ func toSchema(golangType reflect.Type, docs *Docs, tracker *tracker) (*Schema, e
 			// get docs for the child if they exist
 			var childDocs *Docs
 			if docs != nil {
-				if val, ok := docs.Children[childName]; ok {
+				if val, ok := docs.Properties[childName]; ok {
 					childDocs = val
 				}
 			}

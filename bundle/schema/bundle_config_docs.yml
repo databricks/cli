@@ -1,10 +1,10 @@
 description: Root of the bundle config
-children:
+properties:
   bundle:
     description: |
       Bundle contains details about this bundle, such as its name,
       version of the spec (TODO), default cluster, default warehouse, etc.
-    children:
+    properties:
       environment:
         description: Environment is set by the mutator that selects the environment.
 

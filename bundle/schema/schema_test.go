@@ -1066,7 +1066,7 @@ func TestDocIngestionInSchema(t *testing.T) {
 	s := func(s string) *string { return &s }
 	docs := &Docs{
 		Description: s("docs for root"),
-		Children: map[string]*Docs{
+		Properties: map[string]*Docs{
 			"my_struct": {
 				Description: s("docs for my struct"),
 			},
@@ -1075,7 +1075,7 @@ func TestDocIngestionInSchema(t *testing.T) {
 			},
 			"my_slice": {
 				Description: s("docs for my slice"),
-				Children: map[string]*Docs{
+				Properties: map[string]*Docs{
 					"guava": {
 						Description: s("docs for guava"),
 					},
@@ -1086,7 +1086,7 @@ func TestDocIngestionInSchema(t *testing.T) {
 			},
 			"my_map": {
 				Description: s("docs for my map"),
-				Children: map[string]*Docs{
+				Properties: map[string]*Docs{
 					"apple": {
 						Description: s("docs for apple"),
 					},
