@@ -187,7 +187,7 @@ func toSchema(golangType reflect.Type, docs *Docs, tracker *tracker) (*Schema, e
 	schema := &Schema{Type: rootJavascriptType}
 
 	if docs != nil {
-		schema.Description = docs.Documentation
+		schema.Description = *docs.Documentation
 	}
 
 	// case array/slice
@@ -241,7 +241,7 @@ func toSchema(golangType reflect.Type, docs *Docs, tracker *tracker) (*Schema, e
 			var childDocs *Docs
 			if docs != nil {
 				if val, ok := docs.Children[childName]; ok {
-					childDocs = &val
+					childDocs = val
 				}
 			}
 

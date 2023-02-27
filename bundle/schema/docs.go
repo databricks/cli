@@ -8,8 +8,8 @@ import (
 )
 
 type Docs struct {
-	Documentation string          `json:"documentation"`
-	Children      map[string]Docs `json:"children"`
+	Documentation *string          `json:"documentation"`
+	Children      map[string]*Docs `json:"children"`
 }
 
 func LoadDocs(path string) (*Docs, error) {

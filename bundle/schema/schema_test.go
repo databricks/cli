@@ -1063,34 +1063,35 @@ func TestFieldsWithoutOmitEmptyAreRequired(t *testing.T) {
 }
 
 func TestDocIngestionInSchema(t *testing.T) {
+	s := func(s string) *string { return &s }
 	docs := &Docs{
-		Documentation: "docs for root",
-		Children: map[string]Docs{
+		Documentation: s("docs for root"),
+		Children: map[string]*Docs{
 			"my_struct": {
-				Documentation: "docs for my struct",
+				Documentation: s("docs for my struct"),
 			},
 			"my_val": {
-				Documentation: "docs for my val",
+				Documentation: s("docs for my val"),
 			},
 			"my_slice": {
-				Documentation: "docs for my slice",
-				Children: map[string]Docs{
+				Documentation: s("docs for my slice"),
+				Children: map[string]*Docs{
 					"guava": {
-						Documentation: "docs for guava",
+						Documentation: s("docs for guava"),
 					},
 					"pineapple": {
-						Documentation: "docs for pineapple",
+						Documentation: s("docs for pineapple"),
 					},
 				},
 			},
 			"my_map": {
-				Documentation: "docs for my map",
-				Children: map[string]Docs{
+				Documentation: s("docs for my map"),
+				Children: map[string]*Docs{
 					"apple": {
-						Documentation: "docs for apple",
+						Documentation: s("docs for apple"),
 					},
 					"mango": {
-						Documentation: "docs for mango",
+						Documentation: s("docs for mango"),
 					},
 				},
 			},
