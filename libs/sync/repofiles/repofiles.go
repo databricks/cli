@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"path"
 	"path/filepath"
@@ -61,9 +62,8 @@ func (r *RepoFiles) writeRemote(ctx context.Context, relativePath string, conten
 	if err != nil {
 		return err
 	}
-	apiPath := fmt.Sprintf(
-		"/api/2.0/workspace-files/import-file/%s?overwrite=true",
-		strings.TrimLeft(remotePath, "/"))
+	escapedPath := url.QueryEscape(strings.TrimLeft(remotePath, "/"))
+	apiPath := fmt.Sprintf("/api/2.0/workspace-files/import-file/%s?overwrite=true", escapedPath)
 
 	err = apiClient.Do(ctx, http.MethodPost, apiPath, content, nil)
 
