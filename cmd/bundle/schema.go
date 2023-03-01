@@ -14,7 +14,7 @@ var schemaCmd = &cobra.Command{
 	Short: "Generate JSON Schema for bundle configuration",
 
 	RunE: func(cmd *cobra.Command, args []string) error {
-		docs, err := schema.BundleDocs(openapiPath)
+		docs, err := schema.BundleDocs(openapi)
 		if err != nil {
 			return err
 		}
@@ -31,10 +31,7 @@ var schemaCmd = &cobra.Command{
 	},
 }
 
-// TODO: remove, this variable is probably not needed
-var openapiPath string
-
 func init() {
 	AddCommand(schemaCmd)
-	schemaCmd.Flags().StringVar(&openapiPath, "openapi", "", "path to a databricks openapi spec")
+	schemaCmd.Flags().StringVar(&openapi, "openapi", "", "path to a databricks openapi spec")
 }
