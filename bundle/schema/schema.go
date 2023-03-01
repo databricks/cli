@@ -37,7 +37,7 @@ type Schema struct {
 	Required []string `json:"required,omitempty"`
 
 	// URI to a json schema
-	Refernce *string `json:"$ref,omitempty"`
+	Reference *string `json:"$ref,omitempty"`
 }
 
 // This function translates golang types into json schema. Here is the mapping

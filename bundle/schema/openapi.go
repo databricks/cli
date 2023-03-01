@@ -22,12 +22,12 @@ func (spec *openapi) readSchema(path string) (*Schema, error) {
 	if !ok {
 		return nil, fmt.Errorf("[ERROR] schema with path %s not found in openapi spec", path)
 	}
-	if schema.Refernce != nil {
+	if schema.Reference != nil {
 		return nil, fmt.Errorf("[ERROR] schema with root level references are not supported")
 	}
 	for k, v := range schema.Properties {
-		if v.Refernce != nil {
-			childSchema, err := spec.readSchema(*v.Refernce)
+		if v.Reference != nil {
+			childSchema, err := spec.readSchema(*v.Reference)
 			if err != nil {
 				return nil, err
 			}
@@ -35,8 +35,8 @@ func (spec *openapi) readSchema(path string) (*Schema, error) {
 			schema.Properties[k] = childSchema
 		}
 	}
-	if schema.Items != nil && schema.Items.Refernce != nil {
-		childSchema, err := spec.readSchema(*schema.Items.Refernce)
+	if schema.Items != nil && schema.Items.Reference != nil {
+		childSchema, err := spec.readSchema(*schema.Items.Reference)
 		if err != nil {
 			return nil, err
 		}
@@ -44,8 +44,8 @@ func (spec *openapi) readSchema(path string) (*Schema, error) {
 		schema.Items = childSchema
 	}
 	additionalProperties, ok := schema.AdditionalProperties.(*Schema)
-	if ok && additionalProperties.Refernce != nil {
-		childSchema, err := spec.readSchema(*additionalProperties.Refernce)
+	if ok && additionalProperties.Reference != nil {
+		childSchema, err := spec.readSchema(*additionalProperties.Reference)
 		if err != nil {
 			return nil, err
 		}
