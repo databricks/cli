@@ -51,7 +51,7 @@
         "description": "",
         "properties": {
           "artifacts": {
-            "description": "",
+            "description": "Artifacts contains a description of all code artifacts in this bundle.",
             "additionalproperties": {
               "description": "",
               "properties": {
@@ -76,10 +76,10 @@
             }
           },
           "bundle": {
-            "description": "",
+            "description": "Bundle contains details about this bundle, such as its name,\nversion of the spec (TODO), default cluster, default warehouse, etc.\n",
             "properties": {
               "environment": {
-                "description": ""
+                "description": "Environment is set by the mutator that selects the environment."
               },
               "name": {
                 "description": ""
@@ -98,33 +98,41 @@
             "description": ""
           },
           "resources": {
-            "description": "",
+            "description": "Specification of databricks resources to instantiate",
             "properties": {
               "jobs": {
-                "description": "",
+                "description": "List of job definations",
                 "additionalproperties": {
                   "description": "",
                   "properties": {
+                    "continuous": {
+                      "description": "An optional continuous property for this job. The continuous property will ensure that there is always one run executing. Only one of `schedule` and `continuous` can be used.",
+                      "properties": {
+                        "pause_status": {
+                          "description": "Indicate whether the continuous execution of the job is paused or not. Defaults to UNPAUSED."
+                        }
+                      }
+                    },
                     "email_notifications": {
-                      "description": "",
+                      "description": "An optional set of email addresses that is notified when runs of this job begin or complete as well as when this job is deleted. The default behavior is to not send any emails.",
                       "properties": {
                         "no_alert_for_skipped_runs": {
-                          "description": ""
+                          "description": "If true, do not send email to recipients specified in `on_failure` if the run is skipped."
                         },
                         "on_failure": {
-                          "description": "",
+                          "description": "A list of email addresses to be notified when a run unsuccessfully completes. A run is considered to have completed unsuccessfully if it ends with an `INTERNAL_ERROR` `life_cycle_state` or a `SKIPPED`, `FAILED`, or `TIMED_OUT` result_state. If this is not specified on job creation, reset, or update the list is empty, and notifications are not sent.",
                           "items": {
                             "description": ""
                           }
                         },
                         "on_start": {
-                          "description": "",
+                          "description": "A list of email addresses to be notified when a run begins. If not specified on job creation, reset, or update, the list is empty, and notifications are not sent.",
                           "items": {
                             "description": ""
                           }
                         },
                         "on_success": {
-                          "description": "",
+                          "description": "A list of email addresses to be notified when a run successfully completes. A run is considered to have completed successfully if it ends with a `TERMINATED` `life_cycle_state` and a `SUCCESSFUL` result_state. If not specified on job creation, reset, or update, the list is empty, and notifications are not sent.",
                           "items": {
                             "description": ""
                           }
@@ -132,819 +140,79 @@
                       }
                     },
                     "format": {
-                      "description": ""
+                      "description": "Used to tell what is the format of the job. This field is ignored in Create/Update/Reset calls. When using the Jobs API 2.1 this value is always set to `\"MULTI_TASK\"`."
                     },
                     "git_source": {
-                      "description": "",
+                      "description": "An optional specification for a remote repository containing the notebooks used by this job's notebook tasks.",
                       "properties": {
                         "git_branch": {
-                          "description": ""
+                          "description": "Name of the branch to be checked out and used by this job.\nThis field cannot be specified in conjunction with git_tag or git_commit.\n\nThe maximum length is 255 characters.\n"
                         },
                         "git_commit": {
-                          "description": ""
+                          "description": "Commit to be checked out and used by this job. This field cannot be specified in conjunction with git_branch or git_tag.\nThe maximum length is 64 characters."
                         },
                         "git_provider": {
-                          "description": ""
+                          "description": "Unique identifier of the service used to host the Git repository. The value is case insensitive."
                         },
                         "git_snapshot": {
                           "description": "",
                           "properties": {
                             "used_commit": {
-                              "description": ""
+                              "description": "Commit that was used to execute the run. If git_branch was specified, this points to the HEAD of the branch at the time of the run; if git_tag was specified, this points to the commit the tag points to."
                             }
                           }
                         },
                         "git_tag": {
-                          "description": ""
+                          "description": "Name of the tag to be checked out and used by this job.\nThis field cannot be specified in conjunction with git_branch or git_commit.\n\nThe maximum length is 255 characters.\n"
                         },
                         "git_url": {
-                          "description": ""
+                          "description": "URL of the repository to be cloned by this job.\nThe maximum length is 300 characters."
                         }
                       }
                     },
-                    "id": {
-                      "description": ""
-                    },
                     "job_clusters": {
-                      "description": "",
+                      "description": "A list of job cluster specifications that can be shared and reused by tasks of this job. Libraries cannot be declared in a shared job cluster. You must declare dependent libraries in task settings.",
                       "items": {
-                        "description": "",
-                        "properties": {
-                          "job_cluster_key": {
-                            "description": ""
-                          },
-                          "new_cluster": {
-                            "description": "",
-                            "properties": {
-                              "autoscale": {
-                                "description": "",
-                                "properties": {
-                                  "max_workers": {
-                                    "description": ""
-                                  },
-                                  "min_workers": {
-                                    "description": ""
-                                  }
-                                }
-                              },
-                              "autotermination_minutes": {
-                                "description": ""
-                              },
-                              "aws_attributes": {
-                                "description": "",
-                                "properties": {
-                                  "availability": {
-                                    "description": ""
-                                  },
-                                  "ebs_volume_count": {
-                                    "description": ""
-                                  },
-                                  "ebs_volume_iops": {
-                                    "description": ""
-                                  },
-                                  "ebs_volume_size": {
-                                    "description": ""
-                                  },
-                                  "ebs_volume_throughput": {
-                                    "description": ""
-                                  },
-                                  "ebs_volume_type": {
-                                    "description": ""
-                                  },
-                                  "first_on_demand": {
-                                    "description": ""
-                                  },
-                                  "instance_profile_arn": {
-                                    "description": ""
-                                  },
-                                  "spot_bid_price_percent": {
-                                    "description": ""
-                                  },
-                                  "zone_id": {
-                                    "description": ""
-                                  }
-                                }
-                              },
-                              "azure_attributes": {
-                                "description": "",
-                                "properties": {
-                                  "availability": {
-                                    "description": ""
-                                  },
-                                  "first_on_demand": {
-                                    "description": ""
-                                  },
-                                  "log_analytics_info": {
-                                    "description": "",
-                                    "properties": {
-                                      "log_analytics_primary_key": {
-                                        "description": ""
-                                      },
-                                      "log_analytics_workspace_id": {
-                                        "description": ""
-                                      }
-                                    }
-                                  },
-                                  "spot_bid_max_price": {
-                                    "description": ""
-                                  }
-                                }
-                              },
-                              "cluster_log_conf": {
-                                "description": "",
-                                "properties": {
-                                  "dbfs": {
-                                    "description": "",
-                                    "properties": {
-                                      "destination": {
-                                        "description": ""
-                                      }
-                                    }
-                                  },
-                                  "s3": {
-                                    "description": "",
-                                    "properties": {
-                                      "canned_acl": {
-                                        "description": ""
-                                      },
-                                      "destination": {
-                                        "description": ""
-                                      },
-                                      "enable_encryption": {
-                                        "description": ""
-                                      },
-                                      "encryption_type": {
-                                        "description": ""
-                                      },
-                                      "endpoint": {
-                                        "description": ""
-                                      },
-                                      "kms_key": {
-                                        "description": ""
-                                      },
-                                      "region": {
-                                        "description": ""
-                                      }
-                                    }
-                                  }
-                                }
-                              },
-                              "cluster_name": {
-                                "description": ""
-                              },
-                              "cluster_source": {
-                                "description": ""
-                              },
-                              "custom_tags": {
-                                "description": "",
-                                "additionalproperties": {
-                                  "description": ""
-                                }
-                              },
-                              "driver_instance_pool_id": {
-                                "description": ""
-                              },
-                              "driver_node_type_id": {
-                                "description": ""
-                              },
-                              "enable_elastic_disk": {
-                                "description": ""
-                              },
-                              "enable_local_disk_encryption": {
-                                "description": ""
-                              },
-                              "gcp_attributes": {
-                                "description": "",
-                                "properties": {
-                                  "availability": {
-                                    "description": ""
-                                  },
-                                  "boot_disk_size": {
-                                    "description": ""
-                                  },
-                                  "google_service_account": {
-                                    "description": ""
-                                  }
-                                }
-                              },
-                              "instance_pool_id": {
-                                "description": ""
-                              },
-                              "node_type_id": {
-                                "description": ""
-                              },
-                              "num_workers": {
-                                "description": ""
-                              },
-                              "policy_id": {
-                                "description": ""
-                              },
-                              "runtime_engine": {
-                                "description": ""
-                              },
-                              "spark_conf": {
-                                "description": "",
-                                "additionalproperties": {
-                                  "description": ""
-                                }
-                              },
-                              "spark_env_vars": {
-                                "description": "",
-                                "additionalproperties": {
-                                  "description": ""
-                                }
-                              },
-                              "spark_version": {
-                                "description": ""
-                              },
-                              "ssh_public_keys": {
-                                "description": "",
-                                "items": {
-                                  "description": ""
-                                }
-                              },
-                              "workload_type": {
-                                "description": "",
-                                "properties": {
-                                  "clients": {
-                                    "description": "",
-                                    "properties": {
-                                      "jobs": {
-                                        "description": ""
-                                      },
-                                      "notebooks": {
-                                        "description": ""
-                                      }
-                                    }
-                                  }
-                                }
-                              }
-                            }
-                          }
-                        }
+                        "description": ""
                       }
                     },
                     "max_concurrent_runs": {
-                      "description": ""
+                      "description": "An optional maximum allowed number of concurrent runs of the job.\n\nSet this value if you want to be able to execute multiple runs of the same job concurrently. This is useful for example if you trigger your job on a frequent schedule and want to allow consecutive runs to overlap with each other, or if you want to trigger multiple runs which differ by their input parameters.\n\nThis setting affects only new runs. For example, suppose the job’s concurrency is 4 and there are 4 concurrent active runs. Then setting the concurrency to 3 won’t kill any of the active runs. However, from then on, new runs are skipped unless there are fewer than 3 active runs.\n\nThis value cannot exceed 1000\\. Setting this value to 0 causes all new runs to be skipped. The default behavior is to allow only 1 concurrent run."
                     },
                     "name": {
-                      "description": ""
+                      "description": "An optional name for the job."
                     },
                     "schedule": {
-                      "description": "",
+                      "description": "An optional periodic schedule for this job. The default behavior is that the job only runs when triggered by clicking “Run Now” in the Jobs UI or sending an API request to `runNow`.",
                       "properties": {
                         "pause_status": {
-                          "description": ""
+                          "description": "Indicate whether this schedule is paused or not."
                         },
                         "quartz_cron_expression": {
-                          "description": ""
+                          "description": "A Cron expression using Quartz syntax that describes the schedule for a job.\nSee [Cron Trigger](http://www.quartz-scheduler.org/documentation/quartz-2.3.0/tutorials/crontrigger.html)\nfor details. This field is required.\"\n"
                         },
                         "timezone_id": {
-                          "description": ""
+                          "description": "A Java timezone ID. The schedule for a job is resolved with respect to this timezone.\nSee [Java TimeZone](https://docs.oracle.com/javase/7/docs/api/java/util/TimeZone.html) for details.\nThis field is required.\n"
                         }
                       }
                     },
                     "tags": {
-                      "description": "",
-                      "additionalproperties": {
+                      "description": "A map of tags associated with the job. These are forwarded to the cluster as cluster tags for jobs clusters, and are subject to the same limitations as cluster tags. A maximum of 25 tags can be added to the job."
+                    },
+                    "tasks": {
+                      "description": "A list of task specifications to be executed by this job.",
+                      "items": {
                         "description": ""
                       }
                     },
-                    "tasks": {
-                      "description": "",
-                      "items": {
-                        "description": "",
-                        "properties": {
-                          "dbt_task": {
-                            "description": "",
-                            "properties": {
-                              "catalog": {
-                                "description": ""
-                              },
-                              "commands": {
-                                "description": "",
-                                "items": {
-                                  "description": ""
-                                }
-                              },
-                              "profiles_directory": {
-                                "description": ""
-                              },
-                              "project_directory": {
-                                "description": ""
-                              },
-                              "schema": {
-                                "description": ""
-                              },
-                              "warehouse_id": {
-                                "description": ""
-                              }
-                            }
-                          },
-                          "depends_on": {
-                            "description": "",
-                            "items": {
-                              "description": "",
-                              "properties": {
-                                "task_key": {
-                                  "description": ""
-                                }
-                              }
-                            }
-                          },
-                          "description": {
-                            "description": ""
-                          },
-                          "email_notifications": {
-                            "description": "",
-                            "properties": {
-                              "no_alert_for_skipped_runs": {
-                                "description": ""
-                              },
-                              "on_failure": {
-                                "description": "",
-                                "items": {
-                                  "description": ""
-                                }
-                              },
-                              "on_start": {
-                                "description": "",
-                                "items": {
-                                  "description": ""
-                                }
-                              },
-                              "on_success": {
-                                "description": "",
-                                "items": {
-                                  "description": ""
-                                }
-                              }
-                            }
-                          },
-                          "existing_cluster_id": {
-                            "description": ""
-                          },
-                          "job_cluster_key": {
-                            "description": ""
-                          },
-                          "libraries": {
-                            "description": "",
-                            "items": {
-                              "description": "",
-                              "properties": {
-                                "cran": {
-                                  "description": "",
-                                  "properties": {
-                                    "package": {
-                                      "description": ""
-                                    },
-                                    "repo": {
-                                      "description": ""
-                                    }
-                                  }
-                                },
-                                "egg": {
-                                  "description": ""
-                                },
-                                "jar": {
-                                  "description": ""
-                                },
-                                "maven": {
-                                  "description": "",
-                                  "properties": {
-                                    "coordinates": {
-                                      "description": ""
-                                    },
-                                    "exclusions": {
-                                      "description": "",
-                                      "items": {
-                                        "description": ""
-                                      }
-                                    },
-                                    "repo": {
-                                      "description": ""
-                                    }
-                                  }
-                                },
-                                "pypi": {
-                                  "description": "",
-                                  "properties": {
-                                    "package": {
-                                      "description": ""
-                                    },
-                                    "repo": {
-                                      "description": ""
-                                    }
-                                  }
-                                },
-                                "whl": {
-                                  "description": ""
-                                }
-                              }
-                            }
-                          },
-                          "max_retries": {
-                            "description": ""
-                          },
-                          "min_retry_interval_millis": {
-                            "description": ""
-                          },
-                          "new_cluster": {
-                            "description": "",
-                            "properties": {
-                              "autoscale": {
-                                "description": "",
-                                "properties": {
-                                  "max_workers": {
-                                    "description": ""
-                                  },
-                                  "min_workers": {
-                                    "description": ""
-                                  }
-                                }
-                              },
-                              "autotermination_minutes": {
-                                "description": ""
-                              },
-                              "aws_attributes": {
-                                "description": "",
-                                "properties": {
-                                  "availability": {
-                                    "description": ""
-                                  },
-                                  "ebs_volume_count": {
-                                    "description": ""
-                                  },
-                                  "ebs_volume_iops": {
-                                    "description": ""
-                                  },
-                                  "ebs_volume_size": {
-                                    "description": ""
-                                  },
-                                  "ebs_volume_throughput": {
-                                    "description": ""
-                                  },
-                                  "ebs_volume_type": {
-                                    "description": ""
-                                  },
-                                  "first_on_demand": {
-                                    "description": ""
-                                  },
-                                  "instance_profile_arn": {
-                                    "description": ""
-                                  },
-                                  "spot_bid_price_percent": {
-                                    "description": ""
-                                  },
-                                  "zone_id": {
-                                    "description": ""
-                                  }
-                                }
-                              },
-                              "azure_attributes": {
-                                "description": "",
-                                "properties": {
-                                  "availability": {
-                                    "description": ""
-                                  },
-                                  "first_on_demand": {
-                                    "description": ""
-                                  },
-                                  "log_analytics_info": {
-                                    "description": "",
-                                    "properties": {
-                                      "log_analytics_primary_key": {
-                                        "description": ""
-                                      },
-                                      "log_analytics_workspace_id": {
-                                        "description": ""
-                                      }
-                                    }
-                                  },
-                                  "spot_bid_max_price": {
-                                    "description": ""
-                                  }
-                                }
-                              },
-                              "cluster_log_conf": {
-                                "description": "",
-                                "properties": {
-                                  "dbfs": {
-                                    "description": "",
-                                    "properties": {
-                                      "destination": {
-                                        "description": ""
-                                      }
-                                    }
-                                  },
-                                  "s3": {
-                                    "description": "",
-                                    "properties": {
-                                      "canned_acl": {
-                                        "description": ""
-                                      },
-                                      "destination": {
-                                        "description": ""
-                                      },
-                                      "enable_encryption": {
-                                        "description": ""
-                                      },
-                                      "encryption_type": {
-                                        "description": ""
-                                      },
-                                      "endpoint": {
-                                        "description": ""
-                                      },
-                                      "kms_key": {
-                                        "description": ""
-                                      },
-                                      "region": {
-                                        "description": ""
-                                      }
-                                    }
-                                  }
-                                }
-                              },
-                              "cluster_name": {
-                                "description": ""
-                              },
-                              "cluster_source": {
-                                "description": ""
-                              },
-                              "custom_tags": {
-                                "description": "",
-                                "additionalproperties": {
-                                  "description": ""
-                                }
-                              },
-                              "driver_instance_pool_id": {
-                                "description": ""
-                              },
-                              "driver_node_type_id": {
-                                "description": ""
-                              },
-                              "enable_elastic_disk": {
-                                "description": ""
-                              },
-                              "enable_local_disk_encryption": {
-                                "description": ""
-                              },
-                              "gcp_attributes": {
-                                "description": "",
-                                "properties": {
-                                  "availability": {
-                                    "description": ""
-                                  },
-                                  "boot_disk_size": {
-                                    "description": ""
-                                  },
-                                  "google_service_account": {
-                                    "description": ""
-                                  }
-                                }
-                              },
-                              "instance_pool_id": {
-                                "description": ""
-                              },
-                              "node_type_id": {
-                                "description": ""
-                              },
-                              "num_workers": {
-                                "description": ""
-                              },
-                              "policy_id": {
-                                "description": ""
-                              },
-                              "runtime_engine": {
-                                "description": ""
-                              },
-                              "spark_conf": {
-                                "description": "",
-                                "additionalproperties": {
-                                  "description": ""
-                                }
-                              },
-                              "spark_env_vars": {
-                                "description": "",
-                                "additionalproperties": {
-                                  "description": ""
-                                }
-                              },
-                              "spark_version": {
-                                "description": ""
-                              },
-                              "ssh_public_keys": {
-                                "description": "",
-                                "items": {
-                                  "description": ""
-                                }
-                              },
-                              "workload_type": {
-                                "description": "",
-                                "properties": {
-                                  "clients": {
-                                    "description": "",
-                                    "properties": {
-                                      "jobs": {
-                                        "description": ""
-                                      },
-                                      "notebooks": {
-                                        "description": ""
-                                      }
-                                    }
-                                  }
-                                }
-                              }
-                            }
-                          },
-                          "notebook_task": {
-                            "description": "",
-                            "properties": {
-                              "base_parameters": {
-                                "description": "",
-                                "additionalproperties": {
-                                  "description": ""
-                                }
-                              },
-                              "notebook_path": {
-                                "description": ""
-                              },
-                              "source": {
-                                "description": ""
-                              }
-                            }
-                          },
-                          "pipeline_task": {
-                            "description": "",
-                            "properties": {
-                              "full_refresh": {
-                                "description": ""
-                              },
-                              "pipeline_id": {
-                                "description": ""
-                              }
-                            }
-                          },
-                          "python_wheel_task": {
-                            "description": "",
-                            "properties": {
-                              "entry_point": {
-                                "description": ""
-                              },
-                              "named_parameters": {
-                                "description": "",
-                                "additionalproperties": {
-                                  "description": ""
-                                }
-                              },
-                              "package_name": {
-                                "description": ""
-                              },
-                              "parameters": {
-                                "description": "",
-                                "items": {
-                                  "description": ""
-                                }
-                              }
-                            }
-                          },
-                          "retry_on_timeout": {
-                            "description": ""
-                          },
-                          "spark_jar_task": {
-                            "description": "",
-                            "properties": {
-                              "jar_uri": {
-                                "description": ""
-                              },
-                              "main_class_name": {
-                                "description": ""
-                              },
-                              "parameters": {
-                                "description": "",
-                                "items": {
-                                  "description": ""
-                                }
-                              }
-                            }
-                          },
-                          "spark_python_task": {
-                            "description": "",
-                            "properties": {
-                              "parameters": {
-                                "description": "",
-                                "items": {
-                                  "description": ""
-                                }
-                              },
-                              "python_file": {
-                                "description": ""
-                              }
-                            }
-                          },
-                          "spark_submit_task": {
-                            "description": "",
-                            "properties": {
-                              "parameters": {
-                                "description": "",
-                                "items": {
-                                  "description": ""
-                                }
-                              }
-                            }
-                          },
-                          "sql_task": {
-                            "description": "",
-                            "properties": {
-                              "alert": {
-                                "description": "",
-                                "properties": {
-                                  "alert_id": {
-                                    "description": ""
-                                  },
-                                  "pause_subscriptions": {
-                                    "description": ""
-                                  },
-                                  "subscriptions": {
-                                    "description": "",
-                                    "items": {
-                                      "description": "",
-                                      "properties": {
-                                        "destination_id": {
-                                          "description": ""
-                                        },
-                                        "user_name": {
-                                          "description": ""
-                                        }
-                                      }
-                                    }
-                                  }
-                                }
-                              },
-                              "dashboard": {
-                                "description": "",
-                                "properties": {
-                                  "custom_subject": {
-                                    "description": ""
-                                  },
-                                  "dashboard_id": {
-                                    "description": ""
-                                  },
-                                  "pause_subscriptions": {
-                                    "description": ""
-                                  },
-                                  "subscriptions": {
-                                    "description": "",
-                                    "items": {
-                                      "description": "",
-                                      "properties": {
-                                        "destination_id": {
-                                          "description": ""
-                                        },
-                                        "user_name": {
-                                          "description": ""
-                                        }
-                                      }
-                                    }
-                                  }
-                                }
-                              },
-                              "parameters": {
-                                "description": "",
-                                "additionalproperties": {
-                                  "description": ""
-                                }
-                              },
-                              "query": {
-                                "description": "",
-                                "properties": {
-                                  "query_id": {
-                                    "description": ""
-                                  }
-                                }
-                              },
-                              "warehouse_id": {
-                                "description": ""
-                              }
-                            }
-                          },
-                          "task_key": {
-                            "description": ""
-                          },
-                          "timeout_seconds": {
-                            "description": ""
-                          }
-                        }
-                      }
-                    },
                     "timeout_seconds": {
-                      "description": ""
+                      "description": "An optional timeout applied to each run of this job. The default behavior is to have no timeout."
                     },
                     "webhook_notifications": {
-                      "description": "",
+                      "description": "A collection of system notification IDs to notify when the run begins or completes. The default behavior is to not send any system notifications.",
                       "properties": {
                         "on_failure": {
-                          "description": "",
+                          "description": "An optional list of system notification IDs to call when the run fails. A maximum of 3 destinations can be specified for the `on_failure` property.",
                           "items": {
                             "description": "",
                             "properties": {
@@ -955,7 +223,7 @@
                           }
                         },
                         "on_start": {
-                          "description": "",
+                          "description": "An optional list of system notification IDs to call when the run starts. A maximum of 3 destinations can be specified for the `on_start` property.",
                           "items": {
                             "description": "",
                             "properties": {
@@ -966,7 +234,7 @@
                           }
                         },
                         "on_success": {
-                          "description": "",
+                          "description": "An optional list of system notification IDs to call when the run completes successfully. A maximum of 3 destinations can be specified for the `on_success` property.",
                           "items": {
                             "description": "",
                             "properties": {
@@ -982,222 +250,45 @@
                 }
               },
               "pipelines": {
-                "description": "",
+                "description": "List of pipeline definations",
                 "additionalproperties": {
                   "description": "",
                   "properties": {
                     "catalog": {
-                      "description": ""
+                      "description": "Catalog in UC to add tables to. If target is specified, tables in this pipeline will be\npublished to a \"target\" schema inside catalog (i.e. \u003ccatalog\u003e.\u003ctarget\u003e.\u003ctable\u003e)."
                     },
                     "channel": {
-                      "description": ""
+                      "description": "DLT Release Channel that specifies which version to use."
                     },
                     "clusters": {
-                      "description": "",
+                      "description": "Cluster settings for this pipeline deployment.",
                       "items": {
-                        "description": "",
-                        "properties": {
-                          "apply_policy_default_values": {
-                            "description": ""
-                          },
-                          "autoscale": {
-                            "description": "",
-                            "properties": {
-                              "max_workers": {
-                                "description": ""
-                              },
-                              "min_workers": {
-                                "description": ""
-                              }
-                            }
-                          },
-                          "aws_attributes": {
-                            "description": "",
-                            "properties": {
-                              "availability": {
-                                "description": ""
-                              },
-                              "ebs_volume_count": {
-                                "description": ""
-                              },
-                              "ebs_volume_iops": {
-                                "description": ""
-                              },
-                              "ebs_volume_size": {
-                                "description": ""
-                              },
-                              "ebs_volume_throughput": {
-                                "description": ""
-                              },
-                              "ebs_volume_type": {
-                                "description": ""
-                              },
-                              "first_on_demand": {
-                                "description": ""
-                              },
-                              "instance_profile_arn": {
-                                "description": ""
-                              },
-                              "spot_bid_price_percent": {
-                                "description": ""
-                              },
-                              "zone_id": {
-                                "description": ""
-                              }
-                            }
-                          },
-                          "azure_attributes": {
-                            "description": "",
-                            "properties": {
-                              "availability": {
-                                "description": ""
-                              },
-                              "first_on_demand": {
-                                "description": ""
-                              },
-                              "log_analytics_info": {
-                                "description": "",
-                                "properties": {
-                                  "log_analytics_primary_key": {
-                                    "description": ""
-                                  },
-                                  "log_analytics_workspace_id": {
-                                    "description": ""
-                                  }
-                                }
-                              },
-                              "spot_bid_max_price": {
-                                "description": ""
-                              }
-                            }
-                          },
-                          "cluster_log_conf": {
-                            "description": "",
-                            "properties": {
-                              "dbfs": {
-                                "description": "",
-                                "properties": {
-                                  "destination": {
-                                    "description": ""
-                                  }
-                                }
-                              },
-                              "s3": {
-                                "description": "",
-                                "properties": {
-                                  "canned_acl": {
-                                    "description": ""
-                                  },
-                                  "destination": {
-                                    "description": ""
-                                  },
-                                  "enable_encryption": {
-                                    "description": ""
-                                  },
-                                  "encryption_type": {
-                                    "description": ""
-                                  },
-                                  "endpoint": {
-                                    "description": ""
-                                  },
-                                  "kms_key": {
-                                    "description": ""
-                                  },
-                                  "region": {
-                                    "description": ""
-                                  }
-                                }
-                              }
-                            }
-                          },
-                          "custom_tags": {
-                            "description": "",
-                            "additionalproperties": {
-                              "description": ""
-                            }
-                          },
-                          "driver_instance_pool_id": {
-                            "description": ""
-                          },
-                          "driver_node_type_id": {
-                            "description": ""
-                          },
-                          "gcp_attributes": {
-                            "description": "",
-                            "properties": {
-                              "availability": {
-                                "description": ""
-                              },
-                              "boot_disk_size": {
-                                "description": ""
-                              },
-                              "google_service_account": {
-                                "description": ""
-                              }
-                            }
-                          },
-                          "instance_pool_id": {
-                            "description": ""
-                          },
-                          "label": {
-                            "description": ""
-                          },
-                          "node_type_id": {
-                            "description": ""
-                          },
-                          "num_workers": {
-                            "description": ""
-                          },
-                          "policy_id": {
-                            "description": ""
-                          },
-                          "spark_conf": {
-                            "description": "",
-                            "additionalproperties": {
-                              "description": ""
-                            }
-                          },
-                          "spark_env_vars": {
-                            "description": "",
-                            "additionalproperties": {
-                              "description": ""
-                            }
-                          },
-                          "ssh_public_keys": {
-                            "description": "",
-                            "items": {
-                              "description": ""
-                            }
-                          }
-                        }
-                      }
-                    },
-                    "configuration": {
-                      "description": "",
-                      "additionalproperties": {
                         "description": ""
                       }
                     },
+                    "configuration": {
+                      "description": "String-String configuration for this pipeline execution."
+                    },
                     "continuous": {
-                      "description": ""
+                      "description": "Whether the pipeline is continuous or triggered. This replaces `trigger`."
                     },
                     "development": {
-                      "description": ""
+                      "description": "Whether the pipeline is in Development mode. Defaults to false."
                     },
                     "edition": {
-                      "description": ""
+                      "description": "Pipeline product edition."
                     },
                     "filters": {
-                      "description": "",
+                      "description": "Filters on which Pipeline packages to include in the deployed graph.",
                       "properties": {
                         "exclude": {
-                          "description": "",
+                          "description": "Paths to exclude.",
                           "items": {
                             "description": ""
                           }
                         },
                         "include": {
-                          "description": "",
+                          "description": "Paths to include.",
                           "items": {
                             "description": ""
                           }
@@ -1205,61 +296,28 @@
                       }
                     },
                     "id": {
-                      "description": ""
+                      "description": "Unique identifier for this pipeline."
                     },
                     "libraries": {
-                      "description": "",
+                      "description": "Libraries or code needed by this deployment.",
                       "items": {
-                        "description": "",
-                        "properties": {
-                          "jar": {
-                            "description": ""
-                          },
-                          "maven": {
-                            "description": "",
-                            "properties": {
-                              "coordinates": {
-                                "description": ""
-                              },
-                              "exclusions": {
-                                "description": "",
-                                "items": {
-                                  "description": ""
-                                }
-                              },
-                              "repo": {
-                                "description": ""
-                              }
-                            }
-                          },
-                          "notebook": {
-                            "description": "",
-                            "properties": {
-                              "path": {
-                                "description": ""
-                              }
-                            }
-                          },
-                          "whl": {
-                            "description": ""
-                          }
-                        }
+                        "description": ""
                       }
                     },
                     "name": {
-                      "description": ""
+                      "description": "Friendly identifier for this pipeline."
                     },
                     "photon": {
-                      "description": ""
+                      "description": "Whether Photon is enabled for this pipeline."
                     },
                     "storage": {
-                      "description": ""
+                      "description": "DBFS root directory for storing checkpoints and tables."
                     },
                     "target": {
-                      "description": ""
+                      "description": "Target schema (database) to add tables in this pipeline to."
                     },
                     "trigger": {
-                      "description": "",
+                      "description": "Which pipeline trigger to use. Deprecated: Use `continuous` instead.",
                       "properties": {
                         "cron": {
                           "description": "",

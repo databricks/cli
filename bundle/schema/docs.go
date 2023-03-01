@@ -3,6 +3,7 @@ package schema
 import (
 	_ "embed"
 	"encoding/json"
+	"fmt"
 	"os"
 	"reflect"
 
@@ -53,7 +54,21 @@ func BundleDocs(openapiSpecPath string) (*Docs, error) {
 			return nil, err
 		}
 	}
+	docs.refreshEnvironmentsDocs()
 	return docs, nil
+}
+
+func (docs *Docs) refreshEnvironmentsDocs() error {
+	environmentsDocs, ok := docs.Properties["environments"]
+	if !ok || environmentsDocs.AdditionalProperties == nil {
+		return fmt.Errorf("invalid environments descriptions")
+	}
+	environmentProperties := environmentsDocs.AdditionalProperties.Properties
+	propertiesToCopy := []string{"artifacts", "bundle", "resources", "workspace"}
+	for _, p := range propertiesToCopy {
+		environmentProperties[p] = docs.Properties[p]
+	}
+	return nil
 }
 
 func initializeBundleDocs() (*Docs, error) {
