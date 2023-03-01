@@ -15,6 +15,16 @@ func TestSchemaToDocs(t *testing.T) {
 		Properties: map[string]*Schema{
 			"foo": {Type: "number", Description: "foo doc"},
 			"bar": {Type: "string"},
+			"octave": {
+				Type:                 "object",
+				AdditionalProperties: &Schema{Type: "number"},
+				Description:          "octave docs",
+			},
+			"scales": {
+				Type: "object",
+				Description: "scale docs",
+				Items: &Schema{Type: "string"},
+			},
 		},
 	}
 	docs := schemaToDocs(schema)
@@ -30,6 +40,18 @@ func TestSchemaToDocs(t *testing.T) {
 				},
 				"foo": {
 					"description": "foo doc"
+				},
+				"octave": {
+					"description": "octave docs",
+					"additionalproperties": {
+						"description": ""
+					}
+				},
+				"scales": {
+					"description": "scale docs",
+					"items": {
+						"description": ""
+					}
 				}
 			}
 		}`
