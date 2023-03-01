@@ -1,0 +1,3199 @@
+{
+  "type": "object",
+  "description": "Root of the bundle config",
+  "properties": {
+    "artifacts": {
+      "type": "object",
+      "description": "Artifacts contains a description of all code artifacts in this bundle.",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "notebook": {
+            "type": "object",
+            "properties": {
+              "language": {
+                "type": "string"
+              },
+              "local_path": {
+                "type": "string"
+              },
+              "path": {
+                "type": "string"
+              },
+              "remote_path": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "path"
+            ]
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "bundle": {
+      "type": "object",
+      "description": "Bundle contains details about this bundle, such as its name,\nversion of the spec (TODO), default cluster, default warehouse, etc.\n",
+      "properties": {
+        "environment": {
+          "type": "string",
+          "description": "Environment is set by the mutator that selects the environment."
+        },
+        "name": {
+          "type": "string"
+        },
+        "terraform": {
+          "type": "object",
+          "properties": {
+            "exec_path": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "exec_path"
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "name"
+      ]
+    },
+    "environments": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "artifacts": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "notebook": {
+                  "type": "object",
+                  "properties": {
+                    "language": {
+                      "type": "string"
+                    },
+                    "local_path": {
+                      "type": "string"
+                    },
+                    "path": {
+                      "type": "string"
+                    },
+                    "remote_path": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "path"
+                  ]
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "bundle": {
+            "type": "object",
+            "properties": {
+              "environment": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "terraform": {
+                "type": "object",
+                "properties": {
+                  "exec_path": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false,
+                "required": [
+                  "exec_path"
+                ]
+              }
+            },
+            "additionalProperties": false,
+            "required": [
+              "name"
+            ]
+          },
+          "default": {
+            "type": "boolean"
+          },
+          "resources": {
+            "type": "object",
+            "properties": {
+              "jobs": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "object",
+                  "properties": {
+                    "email_notifications": {
+                      "type": "object",
+                      "properties": {
+                        "no_alert_for_skipped_runs": {
+                          "type": "boolean"
+                        },
+                        "on_failure": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "on_start": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "on_success": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    "format": {
+                      "type": "string"
+                    },
+                    "git_source": {
+                      "type": "object",
+                      "properties": {
+                        "git_branch": {
+                          "type": "string"
+                        },
+                        "git_commit": {
+                          "type": "string"
+                        },
+                        "git_provider": {
+                          "type": "string"
+                        },
+                        "git_snapshot": {
+                          "type": "object",
+                          "properties": {
+                            "used_commit": {
+                              "type": "string"
+                            }
+                          },
+                          "additionalProperties": false
+                        },
+                        "git_tag": {
+                          "type": "string"
+                        },
+                        "git_url": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false,
+                      "required": [
+                        "git_provider",
+                        "git_url"
+                      ]
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "job_clusters": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "job_cluster_key": {
+                            "type": "string"
+                          },
+                          "new_cluster": {
+                            "type": "object",
+                            "properties": {
+                              "autoscale": {
+                                "type": "object",
+                                "properties": {
+                                  "max_workers": {
+                                    "type": "number"
+                                  },
+                                  "min_workers": {
+                                    "type": "number"
+                                  }
+                                },
+                                "additionalProperties": false,
+                                "required": [
+                                  "max_workers",
+                                  "min_workers"
+                                ]
+                              },
+                              "autotermination_minutes": {
+                                "type": "number"
+                              },
+                              "aws_attributes": {
+                                "type": "object",
+                                "properties": {
+                                  "availability": {
+                                    "type": "string"
+                                  },
+                                  "ebs_volume_count": {
+                                    "type": "number"
+                                  },
+                                  "ebs_volume_iops": {
+                                    "type": "number"
+                                  },
+                                  "ebs_volume_size": {
+                                    "type": "number"
+                                  },
+                                  "ebs_volume_throughput": {
+                                    "type": "number"
+                                  },
+                                  "ebs_volume_type": {
+                                    "type": "string"
+                                  },
+                                  "first_on_demand": {
+                                    "type": "number"
+                                  },
+                                  "instance_profile_arn": {
+                                    "type": "string"
+                                  },
+                                  "spot_bid_price_percent": {
+                                    "type": "number"
+                                  },
+                                  "zone_id": {
+                                    "type": "string"
+                                  }
+                                },
+                                "additionalProperties": false
+                              },
+                              "azure_attributes": {
+                                "type": "object",
+                                "properties": {
+                                  "availability": {
+                                    "type": "string"
+                                  },
+                                  "first_on_demand": {
+                                    "type": "number"
+                                  },
+                                  "log_analytics_info": {
+                                    "type": "object",
+                                    "properties": {
+                                      "log_analytics_primary_key": {
+                                        "type": "string"
+                                      },
+                                      "log_analytics_workspace_id": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "additionalProperties": false
+                                  },
+                                  "spot_bid_max_price": {
+                                    "type": "number"
+                                  }
+                                },
+                                "additionalProperties": false
+                              },
+                              "cluster_log_conf": {
+                                "type": "object",
+                                "properties": {
+                                  "dbfs": {
+                                    "type": "object",
+                                    "properties": {
+                                      "destination": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "additionalProperties": false
+                                  },
+                                  "s3": {
+                                    "type": "object",
+                                    "properties": {
+                                      "canned_acl": {
+                                        "type": "string"
+                                      },
+                                      "destination": {
+                                        "type": "string"
+                                      },
+                                      "enable_encryption": {
+                                        "type": "boolean"
+                                      },
+                                      "encryption_type": {
+                                        "type": "string"
+                                      },
+                                      "endpoint": {
+                                        "type": "string"
+                                      },
+                                      "kms_key": {
+                                        "type": "string"
+                                      },
+                                      "region": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "additionalProperties": false
+                                  }
+                                },
+                                "additionalProperties": false
+                              },
+                              "cluster_name": {
+                                "type": "string"
+                              },
+                              "cluster_source": {
+                                "type": "string"
+                              },
+                              "custom_tags": {
+                                "type": "object",
+                                "additionalProperties": {
+                                  "type": "string"
+                                }
+                              },
+                              "driver_instance_pool_id": {
+                                "type": "string"
+                              },
+                              "driver_node_type_id": {
+                                "type": "string"
+                              },
+                              "enable_elastic_disk": {
+                                "type": "boolean"
+                              },
+                              "enable_local_disk_encryption": {
+                                "type": "boolean"
+                              },
+                              "gcp_attributes": {
+                                "type": "object",
+                                "properties": {
+                                  "availability": {
+                                    "type": "string"
+                                  },
+                                  "boot_disk_size": {
+                                    "type": "number"
+                                  },
+                                  "google_service_account": {
+                                    "type": "string"
+                                  }
+                                },
+                                "additionalProperties": false
+                              },
+                              "instance_pool_id": {
+                                "type": "string"
+                              },
+                              "node_type_id": {
+                                "type": "string"
+                              },
+                              "num_workers": {
+                                "type": "number"
+                              },
+                              "policy_id": {
+                                "type": "string"
+                              },
+                              "runtime_engine": {
+                                "type": "string"
+                              },
+                              "spark_conf": {
+                                "type": "object",
+                                "additionalProperties": {
+                                  "type": "string"
+                                }
+                              },
+                              "spark_env_vars": {
+                                "type": "object",
+                                "additionalProperties": {
+                                  "type": "string"
+                                }
+                              },
+                              "spark_version": {
+                                "type": "string"
+                              },
+                              "ssh_public_keys": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              },
+                              "workload_type": {
+                                "type": "object",
+                                "properties": {
+                                  "clients": {
+                                    "type": "object",
+                                    "properties": {
+                                      "jobs": {
+                                        "type": "boolean"
+                                      },
+                                      "notebooks": {
+                                        "type": "boolean"
+                                      }
+                                    },
+                                    "additionalProperties": false
+                                  }
+                                },
+                                "additionalProperties": false
+                              }
+                            },
+                            "additionalProperties": false
+                          }
+                        },
+                        "additionalProperties": false,
+                        "required": [
+                          "job_cluster_key"
+                        ]
+                      }
+                    },
+                    "max_concurrent_runs": {
+                      "type": "number"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "schedule": {
+                      "type": "object",
+                      "properties": {
+                        "pause_status": {
+                          "type": "string"
+                        },
+                        "quartz_cron_expression": {
+                          "type": "string"
+                        },
+                        "timezone_id": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false,
+                      "required": [
+                        "quartz_cron_expression",
+                        "timezone_id"
+                      ]
+                    },
+                    "tags": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "string"
+                      }
+                    },
+                    "tasks": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "dbt_task": {
+                            "type": "object",
+                            "properties": {
+                              "catalog": {
+                                "type": "string"
+                              },
+                              "commands": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              },
+                              "profiles_directory": {
+                                "type": "string"
+                              },
+                              "project_directory": {
+                                "type": "string"
+                              },
+                              "schema": {
+                                "type": "string"
+                              },
+                              "warehouse_id": {
+                                "type": "string"
+                              }
+                            },
+                            "additionalProperties": false,
+                            "required": [
+                              "commands"
+                            ]
+                          },
+                          "depends_on": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "task_key": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            }
+                          },
+                          "description": {
+                            "type": "string"
+                          },
+                          "email_notifications": {
+                            "type": "object",
+                            "properties": {
+                              "no_alert_for_skipped_runs": {
+                                "type": "boolean"
+                              },
+                              "on_failure": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              },
+                              "on_start": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              },
+                              "on_success": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "existing_cluster_id": {
+                            "type": "string"
+                          },
+                          "job_cluster_key": {
+                            "type": "string"
+                          },
+                          "libraries": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "cran": {
+                                  "type": "object",
+                                  "properties": {
+                                    "package": {
+                                      "type": "string"
+                                    },
+                                    "repo": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "additionalProperties": false,
+                                  "required": [
+                                    "package"
+                                  ]
+                                },
+                                "egg": {
+                                  "type": "string"
+                                },
+                                "jar": {
+                                  "type": "string"
+                                },
+                                "maven": {
+                                  "type": "object",
+                                  "properties": {
+                                    "coordinates": {
+                                      "type": "string"
+                                    },
+                                    "exclusions": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "repo": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "additionalProperties": false,
+                                  "required": [
+                                    "coordinates"
+                                  ]
+                                },
+                                "pypi": {
+                                  "type": "object",
+                                  "properties": {
+                                    "package": {
+                                      "type": "string"
+                                    },
+                                    "repo": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "additionalProperties": false,
+                                  "required": [
+                                    "package"
+                                  ]
+                                },
+                                "whl": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            }
+                          },
+                          "max_retries": {
+                            "type": "number"
+                          },
+                          "min_retry_interval_millis": {
+                            "type": "number"
+                          },
+                          "new_cluster": {
+                            "type": "object",
+                            "properties": {
+                              "autoscale": {
+                                "type": "object",
+                                "properties": {
+                                  "max_workers": {
+                                    "type": "number"
+                                  },
+                                  "min_workers": {
+                                    "type": "number"
+                                  }
+                                },
+                                "additionalProperties": false,
+                                "required": [
+                                  "max_workers",
+                                  "min_workers"
+                                ]
+                              },
+                              "autotermination_minutes": {
+                                "type": "number"
+                              },
+                              "aws_attributes": {
+                                "type": "object",
+                                "properties": {
+                                  "availability": {
+                                    "type": "string"
+                                  },
+                                  "ebs_volume_count": {
+                                    "type": "number"
+                                  },
+                                  "ebs_volume_iops": {
+                                    "type": "number"
+                                  },
+                                  "ebs_volume_size": {
+                                    "type": "number"
+                                  },
+                                  "ebs_volume_throughput": {
+                                    "type": "number"
+                                  },
+                                  "ebs_volume_type": {
+                                    "type": "string"
+                                  },
+                                  "first_on_demand": {
+                                    "type": "number"
+                                  },
+                                  "instance_profile_arn": {
+                                    "type": "string"
+                                  },
+                                  "spot_bid_price_percent": {
+                                    "type": "number"
+                                  },
+                                  "zone_id": {
+                                    "type": "string"
+                                  }
+                                },
+                                "additionalProperties": false
+                              },
+                              "azure_attributes": {
+                                "type": "object",
+                                "properties": {
+                                  "availability": {
+                                    "type": "string"
+                                  },
+                                  "first_on_demand": {
+                                    "type": "number"
+                                  },
+                                  "log_analytics_info": {
+                                    "type": "object",
+                                    "properties": {
+                                      "log_analytics_primary_key": {
+                                        "type": "string"
+                                      },
+                                      "log_analytics_workspace_id": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "additionalProperties": false
+                                  },
+                                  "spot_bid_max_price": {
+                                    "type": "number"
+                                  }
+                                },
+                                "additionalProperties": false
+                              },
+                              "cluster_log_conf": {
+                                "type": "object",
+                                "properties": {
+                                  "dbfs": {
+                                    "type": "object",
+                                    "properties": {
+                                      "destination": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "additionalProperties": false
+                                  },
+                                  "s3": {
+                                    "type": "object",
+                                    "properties": {
+                                      "canned_acl": {
+                                        "type": "string"
+                                      },
+                                      "destination": {
+                                        "type": "string"
+                                      },
+                                      "enable_encryption": {
+                                        "type": "boolean"
+                                      },
+                                      "encryption_type": {
+                                        "type": "string"
+                                      },
+                                      "endpoint": {
+                                        "type": "string"
+                                      },
+                                      "kms_key": {
+                                        "type": "string"
+                                      },
+                                      "region": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "additionalProperties": false
+                                  }
+                                },
+                                "additionalProperties": false
+                              },
+                              "cluster_name": {
+                                "type": "string"
+                              },
+                              "cluster_source": {
+                                "type": "string"
+                              },
+                              "custom_tags": {
+                                "type": "object",
+                                "additionalProperties": {
+                                  "type": "string"
+                                }
+                              },
+                              "driver_instance_pool_id": {
+                                "type": "string"
+                              },
+                              "driver_node_type_id": {
+                                "type": "string"
+                              },
+                              "enable_elastic_disk": {
+                                "type": "boolean"
+                              },
+                              "enable_local_disk_encryption": {
+                                "type": "boolean"
+                              },
+                              "gcp_attributes": {
+                                "type": "object",
+                                "properties": {
+                                  "availability": {
+                                    "type": "string"
+                                  },
+                                  "boot_disk_size": {
+                                    "type": "number"
+                                  },
+                                  "google_service_account": {
+                                    "type": "string"
+                                  }
+                                },
+                                "additionalProperties": false
+                              },
+                              "instance_pool_id": {
+                                "type": "string"
+                              },
+                              "node_type_id": {
+                                "type": "string"
+                              },
+                              "num_workers": {
+                                "type": "number"
+                              },
+                              "policy_id": {
+                                "type": "string"
+                              },
+                              "runtime_engine": {
+                                "type": "string"
+                              },
+                              "spark_conf": {
+                                "type": "object",
+                                "additionalProperties": {
+                                  "type": "string"
+                                }
+                              },
+                              "spark_env_vars": {
+                                "type": "object",
+                                "additionalProperties": {
+                                  "type": "string"
+                                }
+                              },
+                              "spark_version": {
+                                "type": "string"
+                              },
+                              "ssh_public_keys": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              },
+                              "workload_type": {
+                                "type": "object",
+                                "properties": {
+                                  "clients": {
+                                    "type": "object",
+                                    "properties": {
+                                      "jobs": {
+                                        "type": "boolean"
+                                      },
+                                      "notebooks": {
+                                        "type": "boolean"
+                                      }
+                                    },
+                                    "additionalProperties": false
+                                  }
+                                },
+                                "additionalProperties": false
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "notebook_task": {
+                            "type": "object",
+                            "properties": {
+                              "base_parameters": {
+                                "type": "object",
+                                "additionalProperties": {
+                                  "type": "string"
+                                }
+                              },
+                              "notebook_path": {
+                                "type": "string"
+                              },
+                              "source": {
+                                "type": "string"
+                              }
+                            },
+                            "additionalProperties": false,
+                            "required": [
+                              "notebook_path"
+                            ]
+                          },
+                          "pipeline_task": {
+                            "type": "object",
+                            "properties": {
+                              "full_refresh": {
+                                "type": "boolean"
+                              },
+                              "pipeline_id": {
+                                "type": "string"
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "python_wheel_task": {
+                            "type": "object",
+                            "properties": {
+                              "entry_point": {
+                                "type": "string"
+                              },
+                              "named_parameters": {
+                                "type": "object",
+                                "additionalProperties": {
+                                  "type": "string"
+                                }
+                              },
+                              "package_name": {
+                                "type": "string"
+                              },
+                              "parameters": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "retry_on_timeout": {
+                            "type": "boolean"
+                          },
+                          "spark_jar_task": {
+                            "type": "object",
+                            "properties": {
+                              "jar_uri": {
+                                "type": "string"
+                              },
+                              "main_class_name": {
+                                "type": "string"
+                              },
+                              "parameters": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "spark_python_task": {
+                            "type": "object",
+                            "properties": {
+                              "parameters": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              },
+                              "python_file": {
+                                "type": "string"
+                              }
+                            },
+                            "additionalProperties": false,
+                            "required": [
+                              "python_file"
+                            ]
+                          },
+                          "spark_submit_task": {
+                            "type": "object",
+                            "properties": {
+                              "parameters": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "sql_task": {
+                            "type": "object",
+                            "properties": {
+                              "alert": {
+                                "type": "object",
+                                "properties": {
+                                  "alert_id": {
+                                    "type": "string"
+                                  },
+                                  "pause_subscriptions": {
+                                    "type": "boolean"
+                                  },
+                                  "subscriptions": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "destination_id": {
+                                          "type": "string"
+                                        },
+                                        "user_name": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "additionalProperties": false
+                                    }
+                                  }
+                                },
+                                "additionalProperties": false,
+                                "required": [
+                                  "alert_id"
+                                ]
+                              },
+                              "dashboard": {
+                                "type": "object",
+                                "properties": {
+                                  "custom_subject": {
+                                    "type": "string"
+                                  },
+                                  "dashboard_id": {
+                                    "type": "string"
+                                  },
+                                  "pause_subscriptions": {
+                                    "type": "boolean"
+                                  },
+                                  "subscriptions": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "destination_id": {
+                                          "type": "string"
+                                        },
+                                        "user_name": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "additionalProperties": false
+                                    }
+                                  }
+                                },
+                                "additionalProperties": false,
+                                "required": [
+                                  "dashboard_id"
+                                ]
+                              },
+                              "parameters": {
+                                "type": "object",
+                                "additionalProperties": {
+                                  "type": "string"
+                                }
+                              },
+                              "query": {
+                                "type": "object",
+                                "properties": {
+                                  "query_id": {
+                                    "type": "string"
+                                  }
+                                },
+                                "additionalProperties": false,
+                                "required": [
+                                  "query_id"
+                                ]
+                              },
+                              "warehouse_id": {
+                                "type": "string"
+                              }
+                            },
+                            "additionalProperties": false,
+                            "required": [
+                              "warehouse_id"
+                            ]
+                          },
+                          "task_key": {
+                            "type": "string"
+                          },
+                          "timeout_seconds": {
+                            "type": "number"
+                          }
+                        },
+                        "additionalProperties": false,
+                        "required": [
+                          "task_key"
+                        ]
+                      }
+                    },
+                    "timeout_seconds": {
+                      "type": "number"
+                    },
+                    "webhook_notifications": {
+                      "type": "object",
+                      "properties": {
+                        "on_failure": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              }
+                            },
+                            "additionalProperties": false
+                          }
+                        },
+                        "on_start": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              }
+                            },
+                            "additionalProperties": false
+                          }
+                        },
+                        "on_success": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              }
+                            },
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "pipelines": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "object",
+                  "properties": {
+                    "catalog": {
+                      "type": "string"
+                    },
+                    "channel": {
+                      "type": "string"
+                    },
+                    "clusters": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "apply_policy_default_values": {
+                            "type": "boolean"
+                          },
+                          "autoscale": {
+                            "type": "object",
+                            "properties": {
+                              "max_workers": {
+                                "type": "number"
+                              },
+                              "min_workers": {
+                                "type": "number"
+                              }
+                            },
+                            "additionalProperties": false,
+                            "required": [
+                              "max_workers",
+                              "min_workers"
+                            ]
+                          },
+                          "aws_attributes": {
+                            "type": "object",
+                            "properties": {
+                              "availability": {
+                                "type": "string"
+                              },
+                              "ebs_volume_count": {
+                                "type": "number"
+                              },
+                              "ebs_volume_iops": {
+                                "type": "number"
+                              },
+                              "ebs_volume_size": {
+                                "type": "number"
+                              },
+                              "ebs_volume_throughput": {
+                                "type": "number"
+                              },
+                              "ebs_volume_type": {
+                                "type": "string"
+                              },
+                              "first_on_demand": {
+                                "type": "number"
+                              },
+                              "instance_profile_arn": {
+                                "type": "string"
+                              },
+                              "spot_bid_price_percent": {
+                                "type": "number"
+                              },
+                              "zone_id": {
+                                "type": "string"
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "azure_attributes": {
+                            "type": "object",
+                            "properties": {
+                              "availability": {
+                                "type": "string"
+                              },
+                              "first_on_demand": {
+                                "type": "number"
+                              },
+                              "log_analytics_info": {
+                                "type": "object",
+                                "properties": {
+                                  "log_analytics_primary_key": {
+                                    "type": "string"
+                                  },
+                                  "log_analytics_workspace_id": {
+                                    "type": "string"
+                                  }
+                                },
+                                "additionalProperties": false
+                              },
+                              "spot_bid_max_price": {
+                                "type": "number"
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "cluster_log_conf": {
+                            "type": "object",
+                            "properties": {
+                              "dbfs": {
+                                "type": "object",
+                                "properties": {
+                                  "destination": {
+                                    "type": "string"
+                                  }
+                                },
+                                "additionalProperties": false
+                              },
+                              "s3": {
+                                "type": "object",
+                                "properties": {
+                                  "canned_acl": {
+                                    "type": "string"
+                                  },
+                                  "destination": {
+                                    "type": "string"
+                                  },
+                                  "enable_encryption": {
+                                    "type": "boolean"
+                                  },
+                                  "encryption_type": {
+                                    "type": "string"
+                                  },
+                                  "endpoint": {
+                                    "type": "string"
+                                  },
+                                  "kms_key": {
+                                    "type": "string"
+                                  },
+                                  "region": {
+                                    "type": "string"
+                                  }
+                                },
+                                "additionalProperties": false
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "custom_tags": {
+                            "type": "object",
+                            "additionalProperties": {
+                              "type": "string"
+                            }
+                          },
+                          "driver_instance_pool_id": {
+                            "type": "string"
+                          },
+                          "driver_node_type_id": {
+                            "type": "string"
+                          },
+                          "gcp_attributes": {
+                            "type": "object",
+                            "properties": {
+                              "availability": {
+                                "type": "string"
+                              },
+                              "boot_disk_size": {
+                                "type": "number"
+                              },
+                              "google_service_account": {
+                                "type": "string"
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "instance_pool_id": {
+                            "type": "string"
+                          },
+                          "label": {
+                            "type": "string"
+                          },
+                          "node_type_id": {
+                            "type": "string"
+                          },
+                          "num_workers": {
+                            "type": "number"
+                          },
+                          "policy_id": {
+                            "type": "string"
+                          },
+                          "spark_conf": {
+                            "type": "object",
+                            "additionalProperties": {
+                              "type": "string"
+                            }
+                          },
+                          "spark_env_vars": {
+                            "type": "object",
+                            "additionalProperties": {
+                              "type": "string"
+                            }
+                          },
+                          "ssh_public_keys": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "additionalProperties": false
+                      }
+                    },
+                    "configuration": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "string"
+                      }
+                    },
+                    "continuous": {
+                      "type": "boolean"
+                    },
+                    "development": {
+                      "type": "boolean"
+                    },
+                    "edition": {
+                      "type": "string"
+                    },
+                    "filters": {
+                      "type": "object",
+                      "properties": {
+                        "exclude": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "include": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "libraries": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "jar": {
+                            "type": "string"
+                          },
+                          "maven": {
+                            "type": "object",
+                            "properties": {
+                              "coordinates": {
+                                "type": "string"
+                              },
+                              "exclusions": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              },
+                              "repo": {
+                                "type": "string"
+                              }
+                            },
+                            "additionalProperties": false,
+                            "required": [
+                              "coordinates"
+                            ]
+                          },
+                          "notebook": {
+                            "type": "object",
+                            "properties": {
+                              "path": {
+                                "type": "string"
+                              }
+                            },
+                            "additionalProperties": false
+                          },
+                          "whl": {
+                            "type": "string"
+                          }
+                        },
+                        "additionalProperties": false
+                      }
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "photon": {
+                      "type": "boolean"
+                    },
+                    "storage": {
+                      "type": "string"
+                    },
+                    "target": {
+                      "type": "string"
+                    },
+                    "trigger": {
+                      "type": "object",
+                      "properties": {
+                        "cron": {
+                          "type": "object",
+                          "properties": {
+                            "quartz_cron_schedule": {
+                              "type": "string"
+                            },
+                            "timezone_id": {
+                              "type": "string"
+                            }
+                          },
+                          "additionalProperties": false
+                        },
+                        "manual": {}
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            },
+            "additionalProperties": false
+          },
+          "workspace": {
+            "type": "object",
+            "properties": {
+              "artifact_path": {
+                "type": "object",
+                "properties": {
+                  "dbfs": {
+                    "type": "string"
+                  },
+                  "workspace": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              },
+              "azure_client_id": {
+                "type": "string"
+              },
+              "azure_environment": {
+                "type": "string"
+              },
+              "azure_login_app_id": {
+                "type": "string"
+              },
+              "azure_tenant_id": {
+                "type": "string"
+              },
+              "azure_use_msi": {
+                "type": "boolean"
+              },
+              "azure_workspace_resource_id": {
+                "type": "string"
+              },
+              "current_user": {
+                "type": "object",
+                "properties": {
+                  "active": {
+                    "type": "boolean"
+                  },
+                  "displayName": {
+                    "type": "string"
+                  },
+                  "emails": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "$ref": {
+                          "type": "string"
+                        },
+                        "display": {
+                          "type": "string"
+                        },
+                        "primary": {
+                          "type": "boolean"
+                        },
+                        "type": {
+                          "type": "string"
+                        },
+                        "value": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "entitlements": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "$ref": {
+                          "type": "string"
+                        },
+                        "display": {
+                          "type": "string"
+                        },
+                        "primary": {
+                          "type": "boolean"
+                        },
+                        "type": {
+                          "type": "string"
+                        },
+                        "value": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "externalId": {
+                    "type": "string"
+                  },
+                  "groups": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "$ref": {
+                          "type": "string"
+                        },
+                        "display": {
+                          "type": "string"
+                        },
+                        "primary": {
+                          "type": "boolean"
+                        },
+                        "type": {
+                          "type": "string"
+                        },
+                        "value": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "object",
+                    "properties": {
+                      "familyName": {
+                        "type": "string"
+                      },
+                      "givenName": {
+                        "type": "string"
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "roles": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "$ref": {
+                          "type": "string"
+                        },
+                        "display": {
+                          "type": "string"
+                        },
+                        "primary": {
+                          "type": "boolean"
+                        },
+                        "type": {
+                          "type": "string"
+                        },
+                        "value": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "userName": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              },
+              "file_path": {
+                "type": "object",
+                "properties": {
+                  "dbfs": {
+                    "type": "string"
+                  },
+                  "workspace": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              },
+              "google_service_account": {
+                "type": "string"
+              },
+              "host": {
+                "type": "string"
+              },
+              "profile": {
+                "type": "string"
+              },
+              "root": {
+                "type": "string"
+              },
+              "state_path": {
+                "type": "object",
+                "properties": {
+                  "dbfs": {
+                    "type": "string"
+                  },
+                  "workspace": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "include": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "resources": {
+      "type": "object",
+      "description": "Specification of databricks resources to instantiate",
+      "properties": {
+        "jobs": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "email_notifications": {
+                "type": "object",
+                "description": "An optional set of email addresses that is notified when runs of this job begin or complete as well as when this job is deleted. The default behavior is to not send any emails.",
+                "properties": {
+                  "no_alert_for_skipped_runs": {
+                    "type": "boolean",
+                    "description": "If true, do not send email to recipients specified in `on_failure` if the run is skipped."
+                  },
+                  "on_failure": {
+                    "type": "array",
+                    "description": "A list of email addresses to be notified when a run unsuccessfully completes. A run is considered to have completed unsuccessfully if it ends with an `INTERNAL_ERROR` `life_cycle_state` or a `SKIPPED`, `FAILED`, or `TIMED_OUT` result_state. If this is not specified on job creation, reset, or update the list is empty, and notifications are not sent.",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "on_start": {
+                    "type": "array",
+                    "description": "A list of email addresses to be notified when a run begins. If not specified on job creation, reset, or update, the list is empty, and notifications are not sent.",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "on_success": {
+                    "type": "array",
+                    "description": "A list of email addresses to be notified when a run successfully completes. A run is considered to have completed successfully if it ends with a `TERMINATED` `life_cycle_state` and a `SUCCESSFUL` result_state. If not specified on job creation, reset, or update, the list is empty, and notifications are not sent.",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "additionalProperties": false
+              },
+              "format": {
+                "type": "string",
+                "description": "Used to tell what is the format of the job. This field is ignored in Create/Update/Reset calls. When using the Jobs API 2.1 this value is always set to `\"MULTI_TASK\"`."
+              },
+              "git_source": {
+                "type": "object",
+                "description": "An optional specification for a remote repository containing the notebooks used by this job's notebook tasks.",
+                "properties": {
+                  "git_branch": {
+                    "type": "string",
+                    "description": "Name of the branch to be checked out and used by this job.\nThis field cannot be specified in conjunction with git_tag or git_commit.\n\nThe maximum length is 255 characters.\n"
+                  },
+                  "git_commit": {
+                    "type": "string",
+                    "description": "Commit to be checked out and used by this job. This field cannot be specified in conjunction with git_branch or git_tag.\nThe maximum length is 64 characters."
+                  },
+                  "git_provider": {
+                    "type": "string",
+                    "description": "Unique identifier of the service used to host the Git repository. The value is case insensitive."
+                  },
+                  "git_snapshot": {
+                    "type": "object",
+                    "properties": {
+                      "used_commit": {
+                        "type": "string",
+                        "description": "Commit that was used to execute the run. If git_branch was specified, this points to the HEAD of the branch at the time of the run; if git_tag was specified, this points to the commit the tag points to."
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "git_tag": {
+                    "type": "string",
+                    "description": "Name of the tag to be checked out and used by this job.\nThis field cannot be specified in conjunction with git_branch or git_commit.\n\nThe maximum length is 255 characters.\n"
+                  },
+                  "git_url": {
+                    "type": "string",
+                    "description": "URL of the repository to be cloned by this job.\nThe maximum length is 300 characters."
+                  }
+                },
+                "additionalProperties": false,
+                "required": [
+                  "git_provider",
+                  "git_url"
+                ]
+              },
+              "id": {
+                "type": "string",
+                "description": "The canonical identifier of the job"
+              },
+              "job_clusters": {
+                "type": "array",
+                "description": "A list of job cluster specifications that can be shared and reused by tasks of this job. Libraries cannot be declared in a shared job cluster. You must declare dependent libraries in task settings.",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "job_cluster_key": {
+                      "type": "string"
+                    },
+                    "new_cluster": {
+                      "type": "object",
+                      "properties": {
+                        "autoscale": {
+                          "type": "object",
+                          "properties": {
+                            "max_workers": {
+                              "type": "number"
+                            },
+                            "min_workers": {
+                              "type": "number"
+                            }
+                          },
+                          "additionalProperties": false,
+                          "required": [
+                            "max_workers",
+                            "min_workers"
+                          ]
+                        },
+                        "autotermination_minutes": {
+                          "type": "number"
+                        },
+                        "aws_attributes": {
+                          "type": "object",
+                          "properties": {
+                            "availability": {
+                              "type": "string"
+                            },
+                            "ebs_volume_count": {
+                              "type": "number"
+                            },
+                            "ebs_volume_iops": {
+                              "type": "number"
+                            },
+                            "ebs_volume_size": {
+                              "type": "number"
+                            },
+                            "ebs_volume_throughput": {
+                              "type": "number"
+                            },
+                            "ebs_volume_type": {
+                              "type": "string"
+                            },
+                            "first_on_demand": {
+                              "type": "number"
+                            },
+                            "instance_profile_arn": {
+                              "type": "string"
+                            },
+                            "spot_bid_price_percent": {
+                              "type": "number"
+                            },
+                            "zone_id": {
+                              "type": "string"
+                            }
+                          },
+                          "additionalProperties": false
+                        },
+                        "azure_attributes": {
+                          "type": "object",
+                          "properties": {
+                            "availability": {
+                              "type": "string"
+                            },
+                            "first_on_demand": {
+                              "type": "number"
+                            },
+                            "log_analytics_info": {
+                              "type": "object",
+                              "properties": {
+                                "log_analytics_primary_key": {
+                                  "type": "string"
+                                },
+                                "log_analytics_workspace_id": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "spot_bid_max_price": {
+                              "type": "number"
+                            }
+                          },
+                          "additionalProperties": false
+                        },
+                        "cluster_log_conf": {
+                          "type": "object",
+                          "properties": {
+                            "dbfs": {
+                              "type": "object",
+                              "properties": {
+                                "destination": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "s3": {
+                              "type": "object",
+                              "properties": {
+                                "canned_acl": {
+                                  "type": "string"
+                                },
+                                "destination": {
+                                  "type": "string"
+                                },
+                                "enable_encryption": {
+                                  "type": "boolean"
+                                },
+                                "encryption_type": {
+                                  "type": "string"
+                                },
+                                "endpoint": {
+                                  "type": "string"
+                                },
+                                "kms_key": {
+                                  "type": "string"
+                                },
+                                "region": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            }
+                          },
+                          "additionalProperties": false
+                        },
+                        "cluster_name": {
+                          "type": "string"
+                        },
+                        "cluster_source": {
+                          "type": "string"
+                        },
+                        "custom_tags": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "string"
+                          }
+                        },
+                        "driver_instance_pool_id": {
+                          "type": "string"
+                        },
+                        "driver_node_type_id": {
+                          "type": "string"
+                        },
+                        "enable_elastic_disk": {
+                          "type": "boolean"
+                        },
+                        "enable_local_disk_encryption": {
+                          "type": "boolean"
+                        },
+                        "gcp_attributes": {
+                          "type": "object",
+                          "properties": {
+                            "availability": {
+                              "type": "string"
+                            },
+                            "boot_disk_size": {
+                              "type": "number"
+                            },
+                            "google_service_account": {
+                              "type": "string"
+                            }
+                          },
+                          "additionalProperties": false
+                        },
+                        "instance_pool_id": {
+                          "type": "string"
+                        },
+                        "node_type_id": {
+                          "type": "string"
+                        },
+                        "num_workers": {
+                          "type": "number"
+                        },
+                        "policy_id": {
+                          "type": "string"
+                        },
+                        "runtime_engine": {
+                          "type": "string"
+                        },
+                        "spark_conf": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "string"
+                          }
+                        },
+                        "spark_env_vars": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "string"
+                          }
+                        },
+                        "spark_version": {
+                          "type": "string"
+                        },
+                        "ssh_public_keys": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "workload_type": {
+                          "type": "object",
+                          "properties": {
+                            "clients": {
+                              "type": "object",
+                              "properties": {
+                                "jobs": {
+                                  "type": "boolean"
+                                },
+                                "notebooks": {
+                                  "type": "boolean"
+                                }
+                              },
+                              "additionalProperties": false
+                            }
+                          },
+                          "additionalProperties": false
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "job_cluster_key"
+                  ]
+                }
+              },
+              "max_concurrent_runs": {
+                "type": "number",
+                "description": "An optional maximum allowed number of concurrent runs of the job.\n\nSet this value if you want to be able to execute multiple runs of the same job concurrently. This is useful for example if you trigger your job on a frequent schedule and want to allow consecutive runs to overlap with each other, or if you want to trigger multiple runs which differ by their input parameters.\n\nThis setting affects only new runs. For example, suppose the job’s concurrency is 4 and there are 4 concurrent active runs. Then setting the concurrency to 3 won’t kill any of the active runs. However, from then on, new runs are skipped unless there are fewer than 3 active runs.\n\nThis value cannot exceed 1000\\. Setting this value to 0 causes all new runs to be skipped. The default behavior is to allow only 1 concurrent run."
+              },
+              "name": {
+                "type": "string",
+                "description": "An optional name for the job."
+              },
+              "schedule": {
+                "type": "object",
+                "description": "An optional periodic schedule for this job. The default behavior is that the job only runs when triggered by clicking “Run Now” in the Jobs UI or sending an API request to `runNow`.",
+                "properties": {
+                  "pause_status": {
+                    "type": "string",
+                    "description": "Indicate whether this schedule is paused or not."
+                  },
+                  "quartz_cron_expression": {
+                    "type": "string",
+                    "description": "A Cron expression using Quartz syntax that describes the schedule for a job.\nSee [Cron Trigger](http://www.quartz-scheduler.org/documentation/quartz-2.3.0/tutorials/crontrigger.html)\nfor details. This field is required.\"\n"
+                  },
+                  "timezone_id": {
+                    "type": "string",
+                    "description": "A Java timezone ID. The schedule for a job is resolved with respect to this timezone.\nSee [Java TimeZone](https://docs.oracle.com/javase/7/docs/api/java/util/TimeZone.html) for details.\nThis field is required.\n"
+                  }
+                },
+                "additionalProperties": false,
+                "required": [
+                  "quartz_cron_expression",
+                  "timezone_id"
+                ]
+              },
+              "tags": {
+                "type": "object",
+                "description": "A map of tags associated with the job. These are forwarded to the cluster as cluster tags for jobs clusters, and are subject to the same limitations as cluster tags. A maximum of 25 tags can be added to the job.",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              },
+              "tasks": {
+                "type": "array",
+                "description": "A list of task specifications to be executed by this job.",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "dbt_task": {
+                      "type": "object",
+                      "properties": {
+                        "catalog": {
+                          "type": "string"
+                        },
+                        "commands": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "profiles_directory": {
+                          "type": "string"
+                        },
+                        "project_directory": {
+                          "type": "string"
+                        },
+                        "schema": {
+                          "type": "string"
+                        },
+                        "warehouse_id": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false,
+                      "required": [
+                        "commands"
+                      ]
+                    },
+                    "depends_on": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "task_key": {
+                            "type": "string"
+                          }
+                        },
+                        "additionalProperties": false
+                      }
+                    },
+                    "description": {
+                      "type": "string"
+                    },
+                    "email_notifications": {
+                      "type": "object",
+                      "properties": {
+                        "no_alert_for_skipped_runs": {
+                          "type": "boolean"
+                        },
+                        "on_failure": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "on_start": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "on_success": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    "existing_cluster_id": {
+                      "type": "string"
+                    },
+                    "job_cluster_key": {
+                      "type": "string"
+                    },
+                    "libraries": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "cran": {
+                            "type": "object",
+                            "properties": {
+                              "package": {
+                                "type": "string"
+                              },
+                              "repo": {
+                                "type": "string"
+                              }
+                            },
+                            "additionalProperties": false,
+                            "required": [
+                              "package"
+                            ]
+                          },
+                          "egg": {
+                            "type": "string"
+                          },
+                          "jar": {
+                            "type": "string"
+                          },
+                          "maven": {
+                            "type": "object",
+                            "properties": {
+                              "coordinates": {
+                                "type": "string"
+                              },
+                              "exclusions": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              },
+                              "repo": {
+                                "type": "string"
+                              }
+                            },
+                            "additionalProperties": false,
+                            "required": [
+                              "coordinates"
+                            ]
+                          },
+                          "pypi": {
+                            "type": "object",
+                            "properties": {
+                              "package": {
+                                "type": "string"
+                              },
+                              "repo": {
+                                "type": "string"
+                              }
+                            },
+                            "additionalProperties": false,
+                            "required": [
+                              "package"
+                            ]
+                          },
+                          "whl": {
+                            "type": "string"
+                          }
+                        },
+                        "additionalProperties": false
+                      }
+                    },
+                    "max_retries": {
+                      "type": "number"
+                    },
+                    "min_retry_interval_millis": {
+                      "type": "number"
+                    },
+                    "new_cluster": {
+                      "type": "object",
+                      "properties": {
+                        "autoscale": {
+                          "type": "object",
+                          "properties": {
+                            "max_workers": {
+                              "type": "number"
+                            },
+                            "min_workers": {
+                              "type": "number"
+                            }
+                          },
+                          "additionalProperties": false,
+                          "required": [
+                            "max_workers",
+                            "min_workers"
+                          ]
+                        },
+                        "autotermination_minutes": {
+                          "type": "number"
+                        },
+                        "aws_attributes": {
+                          "type": "object",
+                          "properties": {
+                            "availability": {
+                              "type": "string"
+                            },
+                            "ebs_volume_count": {
+                              "type": "number"
+                            },
+                            "ebs_volume_iops": {
+                              "type": "number"
+                            },
+                            "ebs_volume_size": {
+                              "type": "number"
+                            },
+                            "ebs_volume_throughput": {
+                              "type": "number"
+                            },
+                            "ebs_volume_type": {
+                              "type": "string"
+                            },
+                            "first_on_demand": {
+                              "type": "number"
+                            },
+                            "instance_profile_arn": {
+                              "type": "string"
+                            },
+                            "spot_bid_price_percent": {
+                              "type": "number"
+                            },
+                            "zone_id": {
+                              "type": "string"
+                            }
+                          },
+                          "additionalProperties": false
+                        },
+                        "azure_attributes": {
+                          "type": "object",
+                          "properties": {
+                            "availability": {
+                              "type": "string"
+                            },
+                            "first_on_demand": {
+                              "type": "number"
+                            },
+                            "log_analytics_info": {
+                              "type": "object",
+                              "properties": {
+                                "log_analytics_primary_key": {
+                                  "type": "string"
+                                },
+                                "log_analytics_workspace_id": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "spot_bid_max_price": {
+                              "type": "number"
+                            }
+                          },
+                          "additionalProperties": false
+                        },
+                        "cluster_log_conf": {
+                          "type": "object",
+                          "properties": {
+                            "dbfs": {
+                              "type": "object",
+                              "properties": {
+                                "destination": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            },
+                            "s3": {
+                              "type": "object",
+                              "properties": {
+                                "canned_acl": {
+                                  "type": "string"
+                                },
+                                "destination": {
+                                  "type": "string"
+                                },
+                                "enable_encryption": {
+                                  "type": "boolean"
+                                },
+                                "encryption_type": {
+                                  "type": "string"
+                                },
+                                "endpoint": {
+                                  "type": "string"
+                                },
+                                "kms_key": {
+                                  "type": "string"
+                                },
+                                "region": {
+                                  "type": "string"
+                                }
+                              },
+                              "additionalProperties": false
+                            }
+                          },
+                          "additionalProperties": false
+                        },
+                        "cluster_name": {
+                          "type": "string"
+                        },
+                        "cluster_source": {
+                          "type": "string"
+                        },
+                        "custom_tags": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "string"
+                          }
+                        },
+                        "driver_instance_pool_id": {
+                          "type": "string"
+                        },
+                        "driver_node_type_id": {
+                          "type": "string"
+                        },
+                        "enable_elastic_disk": {
+                          "type": "boolean"
+                        },
+                        "enable_local_disk_encryption": {
+                          "type": "boolean"
+                        },
+                        "gcp_attributes": {
+                          "type": "object",
+                          "properties": {
+                            "availability": {
+                              "type": "string"
+                            },
+                            "boot_disk_size": {
+                              "type": "number"
+                            },
+                            "google_service_account": {
+                              "type": "string"
+                            }
+                          },
+                          "additionalProperties": false
+                        },
+                        "instance_pool_id": {
+                          "type": "string"
+                        },
+                        "node_type_id": {
+                          "type": "string"
+                        },
+                        "num_workers": {
+                          "type": "number"
+                        },
+                        "policy_id": {
+                          "type": "string"
+                        },
+                        "runtime_engine": {
+                          "type": "string"
+                        },
+                        "spark_conf": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "string"
+                          }
+                        },
+                        "spark_env_vars": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "string"
+                          }
+                        },
+                        "spark_version": {
+                          "type": "string"
+                        },
+                        "ssh_public_keys": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "workload_type": {
+                          "type": "object",
+                          "properties": {
+                            "clients": {
+                              "type": "object",
+                              "properties": {
+                                "jobs": {
+                                  "type": "boolean"
+                                },
+                                "notebooks": {
+                                  "type": "boolean"
+                                }
+                              },
+                              "additionalProperties": false
+                            }
+                          },
+                          "additionalProperties": false
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    "notebook_task": {
+                      "type": "object",
+                      "properties": {
+                        "base_parameters": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "string"
+                          }
+                        },
+                        "notebook_path": {
+                          "type": "string"
+                        },
+                        "source": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false,
+                      "required": [
+                        "notebook_path"
+                      ]
+                    },
+                    "pipeline_task": {
+                      "type": "object",
+                      "properties": {
+                        "full_refresh": {
+                          "type": "boolean"
+                        },
+                        "pipeline_id": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    "python_wheel_task": {
+                      "type": "object",
+                      "properties": {
+                        "entry_point": {
+                          "type": "string"
+                        },
+                        "named_parameters": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "string"
+                          }
+                        },
+                        "package_name": {
+                          "type": "string"
+                        },
+                        "parameters": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    "retry_on_timeout": {
+                      "type": "boolean"
+                    },
+                    "spark_jar_task": {
+                      "type": "object",
+                      "properties": {
+                        "jar_uri": {
+                          "type": "string"
+                        },
+                        "main_class_name": {
+                          "type": "string"
+                        },
+                        "parameters": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    "spark_python_task": {
+                      "type": "object",
+                      "properties": {
+                        "parameters": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "python_file": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false,
+                      "required": [
+                        "python_file"
+                      ]
+                    },
+                    "spark_submit_task": {
+                      "type": "object",
+                      "properties": {
+                        "parameters": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    "sql_task": {
+                      "type": "object",
+                      "properties": {
+                        "alert": {
+                          "type": "object",
+                          "properties": {
+                            "alert_id": {
+                              "type": "string"
+                            },
+                            "pause_subscriptions": {
+                              "type": "boolean"
+                            },
+                            "subscriptions": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "destination_id": {
+                                    "type": "string"
+                                  },
+                                  "user_name": {
+                                    "type": "string"
+                                  }
+                                },
+                                "additionalProperties": false
+                              }
+                            }
+                          },
+                          "additionalProperties": false,
+                          "required": [
+                            "alert_id"
+                          ]
+                        },
+                        "dashboard": {
+                          "type": "object",
+                          "properties": {
+                            "custom_subject": {
+                              "type": "string"
+                            },
+                            "dashboard_id": {
+                              "type": "string"
+                            },
+                            "pause_subscriptions": {
+                              "type": "boolean"
+                            },
+                            "subscriptions": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "destination_id": {
+                                    "type": "string"
+                                  },
+                                  "user_name": {
+                                    "type": "string"
+                                  }
+                                },
+                                "additionalProperties": false
+                              }
+                            }
+                          },
+                          "additionalProperties": false,
+                          "required": [
+                            "dashboard_id"
+                          ]
+                        },
+                        "parameters": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "string"
+                          }
+                        },
+                        "query": {
+                          "type": "object",
+                          "properties": {
+                            "query_id": {
+                              "type": "string"
+                            }
+                          },
+                          "additionalProperties": false,
+                          "required": [
+                            "query_id"
+                          ]
+                        },
+                        "warehouse_id": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false,
+                      "required": [
+                        "warehouse_id"
+                      ]
+                    },
+                    "task_key": {
+                      "type": "string"
+                    },
+                    "timeout_seconds": {
+                      "type": "number"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "task_key"
+                  ]
+                }
+              },
+              "timeout_seconds": {
+                "type": "number",
+                "description": "An optional timeout applied to each run of this job. The default behavior is to have no timeout."
+              },
+              "webhook_notifications": {
+                "type": "object",
+                "description": "A collection of system notification IDs to notify when the run begins or completes. The default behavior is to not send any system notifications.",
+                "properties": {
+                  "on_failure": {
+                    "type": "array",
+                    "description": "An optional list of system notification IDs to call when the run fails. A maximum of 3 destinations can be specified for the `on_failure` property.",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "on_start": {
+                    "type": "array",
+                    "description": "An optional list of system notification IDs to call when the run starts. A maximum of 3 destinations can be specified for the `on_start` property.",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "on_success": {
+                    "type": "array",
+                    "description": "An optional list of system notification IDs to call when the run completes successfully. A maximum of 3 destinations can be specified for the `on_success` property.",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "pipelines": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "catalog": {
+                "type": "string"
+              },
+              "channel": {
+                "type": "string"
+              },
+              "clusters": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "apply_policy_default_values": {
+                      "type": "boolean"
+                    },
+                    "autoscale": {
+                      "type": "object",
+                      "properties": {
+                        "max_workers": {
+                          "type": "number"
+                        },
+                        "min_workers": {
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false,
+                      "required": [
+                        "max_workers",
+                        "min_workers"
+                      ]
+                    },
+                    "aws_attributes": {
+                      "type": "object",
+                      "properties": {
+                        "availability": {
+                          "type": "string"
+                        },
+                        "ebs_volume_count": {
+                          "type": "number"
+                        },
+                        "ebs_volume_iops": {
+                          "type": "number"
+                        },
+                        "ebs_volume_size": {
+                          "type": "number"
+                        },
+                        "ebs_volume_throughput": {
+                          "type": "number"
+                        },
+                        "ebs_volume_type": {
+                          "type": "string"
+                        },
+                        "first_on_demand": {
+                          "type": "number"
+                        },
+                        "instance_profile_arn": {
+                          "type": "string"
+                        },
+                        "spot_bid_price_percent": {
+                          "type": "number"
+                        },
+                        "zone_id": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    "azure_attributes": {
+                      "type": "object",
+                      "properties": {
+                        "availability": {
+                          "type": "string"
+                        },
+                        "first_on_demand": {
+                          "type": "number"
+                        },
+                        "log_analytics_info": {
+                          "type": "object",
+                          "properties": {
+                            "log_analytics_primary_key": {
+                              "type": "string"
+                            },
+                            "log_analytics_workspace_id": {
+                              "type": "string"
+                            }
+                          },
+                          "additionalProperties": false
+                        },
+                        "spot_bid_max_price": {
+                          "type": "number"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    "cluster_log_conf": {
+                      "type": "object",
+                      "properties": {
+                        "dbfs": {
+                          "type": "object",
+                          "properties": {
+                            "destination": {
+                              "type": "string"
+                            }
+                          },
+                          "additionalProperties": false
+                        },
+                        "s3": {
+                          "type": "object",
+                          "properties": {
+                            "canned_acl": {
+                              "type": "string"
+                            },
+                            "destination": {
+                              "type": "string"
+                            },
+                            "enable_encryption": {
+                              "type": "boolean"
+                            },
+                            "encryption_type": {
+                              "type": "string"
+                            },
+                            "endpoint": {
+                              "type": "string"
+                            },
+                            "kms_key": {
+                              "type": "string"
+                            },
+                            "region": {
+                              "type": "string"
+                            }
+                          },
+                          "additionalProperties": false
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    "custom_tags": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "string"
+                      }
+                    },
+                    "driver_instance_pool_id": {
+                      "type": "string"
+                    },
+                    "driver_node_type_id": {
+                      "type": "string"
+                    },
+                    "gcp_attributes": {
+                      "type": "object",
+                      "properties": {
+                        "availability": {
+                          "type": "string"
+                        },
+                        "boot_disk_size": {
+                          "type": "number"
+                        },
+                        "google_service_account": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    "instance_pool_id": {
+                      "type": "string"
+                    },
+                    "label": {
+                      "type": "string"
+                    },
+                    "node_type_id": {
+                      "type": "string"
+                    },
+                    "num_workers": {
+                      "type": "number"
+                    },
+                    "policy_id": {
+                      "type": "string"
+                    },
+                    "spark_conf": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "string"
+                      }
+                    },
+                    "spark_env_vars": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "string"
+                      }
+                    },
+                    "ssh_public_keys": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "configuration": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              },
+              "continuous": {
+                "type": "boolean"
+              },
+              "development": {
+                "type": "boolean"
+              },
+              "edition": {
+                "type": "string"
+              },
+              "filters": {
+                "type": "object",
+                "properties": {
+                  "exclude": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "include": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "additionalProperties": false
+              },
+              "id": {
+                "type": "string"
+              },
+              "libraries": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "jar": {
+                      "type": "string"
+                    },
+                    "maven": {
+                      "type": "object",
+                      "properties": {
+                        "coordinates": {
+                          "type": "string"
+                        },
+                        "exclusions": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "repo": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false,
+                      "required": [
+                        "coordinates"
+                      ]
+                    },
+                    "notebook": {
+                      "type": "object",
+                      "properties": {
+                        "path": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    },
+                    "whl": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "name": {
+                "type": "string"
+              },
+              "photon": {
+                "type": "boolean"
+              },
+              "storage": {
+                "type": "string"
+              },
+              "target": {
+                "type": "string"
+              },
+              "trigger": {
+                "type": "object",
+                "properties": {
+                  "cron": {
+                    "type": "object",
+                    "properties": {
+                      "quartz_cron_schedule": {
+                        "type": "string"
+                      },
+                      "timezone_id": {
+                        "type": "string"
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "manual": {}
+                },
+                "additionalProperties": false
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "workspace": {
+      "type": "object",
+      "properties": {
+        "artifact_path": {
+          "type": "object",
+          "properties": {
+            "dbfs": {
+              "type": "string"
+            },
+            "workspace": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "azure_client_id": {
+          "type": "string"
+        },
+        "azure_environment": {
+          "type": "string"
+        },
+        "azure_login_app_id": {
+          "type": "string"
+        },
+        "azure_tenant_id": {
+          "type": "string"
+        },
+        "azure_use_msi": {
+          "type": "boolean"
+        },
+        "azure_workspace_resource_id": {
+          "type": "string"
+        },
+        "current_user": {
+          "type": "object",
+          "properties": {
+            "active": {
+              "type": "boolean"
+            },
+            "displayName": {
+              "type": "string"
+            },
+            "emails": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "$ref": {
+                    "type": "string"
+                  },
+                  "display": {
+                    "type": "string"
+                  },
+                  "primary": {
+                    "type": "boolean"
+                  },
+                  "type": {
+                    "type": "string"
+                  },
+                  "value": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "entitlements": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "$ref": {
+                    "type": "string"
+                  },
+                  "display": {
+                    "type": "string"
+                  },
+                  "primary": {
+                    "type": "boolean"
+                  },
+                  "type": {
+                    "type": "string"
+                  },
+                  "value": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "externalId": {
+              "type": "string"
+            },
+            "groups": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "$ref": {
+                    "type": "string"
+                  },
+                  "display": {
+                    "type": "string"
+                  },
+                  "primary": {
+                    "type": "boolean"
+                  },
+                  "type": {
+                    "type": "string"
+                  },
+                  "value": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "id": {
+              "type": "string"
+            },
+            "name": {
+              "type": "object",
+              "properties": {
+                "familyName": {
+                  "type": "string"
+                },
+                "givenName": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false
+            },
+            "roles": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "$ref": {
+                    "type": "string"
+                  },
+                  "display": {
+                    "type": "string"
+                  },
+                  "primary": {
+                    "type": "boolean"
+                  },
+                  "type": {
+                    "type": "string"
+                  },
+                  "value": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "userName": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "file_path": {
+          "type": "object",
+          "properties": {
+            "dbfs": {
+              "type": "string"
+            },
+            "workspace": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "google_service_account": {
+          "type": "string"
+        },
+        "host": {
+          "type": "string"
+        },
+        "profile": {
+          "type": "string"
+        },
+        "root": {
+          "type": "string"
+        },
+        "state_path": {
+          "type": "object",
+          "properties": {
+            "dbfs": {
+              "type": "string"
+            },
+            "workspace": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "bundle",
+    "workspace"
+  ]
+}

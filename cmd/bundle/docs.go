@@ -12,11 +12,10 @@ var docsCmd = &cobra.Command{
 	Short: "Generate JSON Schema docs for bundle config",
 
 	RunE: func(cmd *cobra.Command, args []string) error {
-		docs, err := schema.InitializeBundleDocs()
+		docs, err := schema.BundleDocs(openapi)
 		if err != nil {
 			return err
 		}
-		docs.Properties["resources"] = nil
 		jsonSchema, err := json.MarshalIndent(docs, "", "  ")
 		if err != nil {
 			return err
@@ -26,6 +25,9 @@ var docsCmd = &cobra.Command{
 	},
 }
 
+var openapi string
+
 func init() {
 	AddCommand(docsCmd)
+	docsCmd.Flags().StringVar(&openapi, "openapi", "", "path to a databricks openapi spec")
 }

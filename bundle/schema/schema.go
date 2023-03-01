@@ -35,6 +35,9 @@ type Schema struct {
 	// Required properties for the object. Any fields missing the "omitempty"
 	// json tag will be included
 	Required []string `json:"required,omitempty"`
+
+	// URI to a json schema
+	Refernce *string `json:"$ref,omitempty"`
 }
 
 // This function translates golang types into json schema. Here is the mapping

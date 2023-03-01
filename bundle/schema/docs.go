@@ -2,6 +2,7 @@ package schema
 
 import (
 	_ "embed"
+	"encoding/json"
 	"os"
 	"reflect"
 
@@ -29,28 +30,46 @@ func LoadDocs(path string) (*Docs, error) {
 	return &docs, nil
 }
 
-//go:embed bundle_config_docs.yml
+//go:embed docs/bundle_descriptions.json
 var bundleDocs []byte
 
-func GetBundleDocs() (*Docs, error) {
-	docs := Docs{}
-	err := yaml.Unmarshal(bundleDocs, &docs)
+func BundleDocs(openapiSpecPath string) (*Docs, error) {
+	docs, err := initializeBundleDocs()
 	if err != nil {
 		return nil, err
 	}
-	return &docs, nil
+	if openapiSpecPath != "" {
+		openapiSpec, err := os.ReadFile(openapiSpecPath)
+		if err != nil {
+			return nil, err
+		}
+		spec := &openapi{}
+		err = json.Unmarshal(openapiSpec, spec)
+		if err != nil {
+			return nil, err
+		}
+		docs.Properties["resources"], err = spec.ResourcesDocs()
+		if err != nil {
+			return nil, err
+		}
+	}
+	return docs, nil
 }
 
-func InitializeBundleDocs() (*Docs, error) {
-	savedDocs := Docs{}
-	err := yaml.Unmarshal(bundleDocs, &savedDocs)
+func initializeBundleDocs() (*Docs, error) {
+	// load embedded descriptions
+	embedded := Docs{}
+	err := yaml.Unmarshal(bundleDocs, &embedded)
 	if err != nil {
 		return nil, err
 	}
-	schema, err := New(reflect.TypeOf(config.Root{}), &savedDocs)
+	// generate schema with the embedded descriptions
+	schema, err := New(reflect.TypeOf(config.Root{}), &embedded)
 	if err != nil {
 		return nil, err
 	}
+	// converting the schema back to docs. This creates empty descriptions
+	// for any properties that were missing in the embedded descriptions
 	docs := schemaToDocs(schema)
 	return docs, nil
 }
