@@ -14,7 +14,7 @@ type Docs struct {
 	Description          string           `json:"description"`
 	Properties           map[string]*Docs `json:"properties,omitempty"`
 	Items                *Docs            `json:"items,omitempty"`
-	AdditionalProperties *Docs            `json:"additionalProperties,omitempty"`
+	AdditionalProperties *Docs            `json:"additionalproperties,omitempty"`
 }
 
 func LoadDocs(path string) (*Docs, error) {

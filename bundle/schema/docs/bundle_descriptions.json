@@ -3,7 +3,7 @@
   "properties": {
     "artifacts": {
       "description": "Artifacts contains a description of all code artifacts in this bundle.",
-      "additionalProperties": {
+      "additionalproperties": {
         "description": "",
         "properties": {
           "notebook": {
@@ -47,12 +47,12 @@
     },
     "environments": {
       "description": "",
-      "additionalProperties": {
+      "additionalproperties": {
         "description": "",
         "properties": {
           "artifacts": {
             "description": "",
-            "additionalProperties": {
+            "additionalproperties": {
               "description": "",
               "properties": {
                 "notebook": {
@@ -102,7 +102,7 @@
             "properties": {
               "jobs": {
                 "description": "",
-                "additionalProperties": {
+                "additionalproperties": {
                   "description": "",
                   "properties": {
                     "email_notifications": {
@@ -297,7 +297,7 @@
                               },
                               "custom_tags": {
                                 "description": "",
-                                "additionalProperties": {
+                                "additionalproperties": {
                                   "description": ""
                                 }
                               },
@@ -344,13 +344,13 @@
                               },
                               "spark_conf": {
                                 "description": "",
-                                "additionalProperties": {
+                                "additionalproperties": {
                                   "description": ""
                                 }
                               },
                               "spark_env_vars": {
                                 "description": "",
-                                "additionalProperties": {
+                                "additionalproperties": {
                                   "description": ""
                                 }
                               },
@@ -406,7 +406,7 @@
                     },
                     "tags": {
                       "description": "",
-                      "additionalProperties": {
+                      "additionalproperties": {
                         "description": ""
                       }
                     },
@@ -673,7 +673,7 @@
                               },
                               "custom_tags": {
                                 "description": "",
-                                "additionalProperties": {
+                                "additionalproperties": {
                                   "description": ""
                                 }
                               },
@@ -720,13 +720,13 @@
                               },
                               "spark_conf": {
                                 "description": "",
-                                "additionalProperties": {
+                                "additionalproperties": {
                                   "description": ""
                                 }
                               },
                               "spark_env_vars": {
                                 "description": "",
-                                "additionalProperties": {
+                                "additionalproperties": {
                                   "description": ""
                                 }
                               },
@@ -762,7 +762,7 @@
                             "properties": {
                               "base_parameters": {
                                 "description": "",
-                                "additionalProperties": {
+                                "additionalproperties": {
                                   "description": ""
                                 }
                               },
@@ -793,7 +793,7 @@
                               },
                               "named_parameters": {
                                 "description": "",
-                                "additionalProperties": {
+                                "additionalproperties": {
                                   "description": ""
                                 }
                               },
@@ -911,7 +911,7 @@
                               },
                               "parameters": {
                                 "description": "",
-                                "additionalProperties": {
+                                "additionalproperties": {
                                   "description": ""
                                 }
                               },
@@ -983,7 +983,7 @@
               },
               "pipelines": {
                 "description": "",
-                "additionalProperties": {
+                "additionalproperties": {
                   "description": "",
                   "properties": {
                     "catalog": {
@@ -1112,7 +1112,7 @@
                           },
                           "custom_tags": {
                             "description": "",
-                            "additionalProperties": {
+                            "additionalproperties": {
                               "description": ""
                             }
                           },
@@ -1153,13 +1153,13 @@
                           },
                           "spark_conf": {
                             "description": "",
-                            "additionalProperties": {
+                            "additionalproperties": {
                               "description": ""
                             }
                           },
                           "spark_env_vars": {
                             "description": "",
-                            "additionalProperties": {
+                            "additionalproperties": {
                               "description": ""
                             }
                           },
@@ -1174,7 +1174,7 @@
                     },
                     "configuration": {
                       "description": "",
-                      "additionalProperties": {
+                      "additionalproperties": {
                         "description": ""
                       }
                     },
@@ -1487,7 +1487,7 @@
       "properties": {
         "jobs": {
           "description": "List of job definations",
-          "additionalProperties": {
+          "additionalproperties": {
             "description": "",
             "properties": {
               "continuous": {
@@ -1636,7 +1636,7 @@
         },
         "pipelines": {
           "description": "List of pipeline definations",
-          "additionalProperties": {
+          "additionalproperties": {
             "description": "",
             "properties": {
               "catalog": {
