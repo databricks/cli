@@ -55,21 +55,36 @@ func (spec *openapi) readSchema(path string) (*Schema, error) {
 	return schema, nil
 }
 
-// TODO: Add description for id here
 func (spec *openapi) jobsDocs() (*Docs, error) {
 	jobSettingsSchema, err := spec.readSchema(SchemaPathPrefix + "jobs.JobSettings")
 	if err != nil {
 		return nil, err
 	}
 	jobDocs := schemaToDocs(jobSettingsSchema)
-	jobDocs.Properties["id"] = &Docs{
-		Description: "the canonical identifier of the job",
-	}
+	// TODO: add description for id if needed.
+	// Tracked in https://databricks.atlassian.net/browse/DECO-558
 	jobsDocs := &Docs{
-		Description:          "list of job definations",
+		Description:          "List of job definations",
 		AdditionalProperties: jobDocs,
 	}
 	return jobsDocs, nil
+}
+
+// TODO: add readme with how to add documentation, and how this works
+
+func (spec *openapi) pipelinesDocs() (*Docs, error) {
+	pipelineSpecSchema, err := spec.readSchema(SchemaPathPrefix + "pipelines.PipelineSpec")
+	if err != nil {
+		return nil, err
+	}
+	pipelineDocs := schemaToDocs(pipelineSpecSchema)
+	// TODO: Two fields in resources.Pipeline have the json tag id. Clarify the
+	// semantics and then add a description if needed. (https://databricks.atlassian.net/browse/DECO-558)
+	pipelinesDocs := &Docs{
+		Description:          "List of pipeline definations",
+		AdditionalProperties: pipelineDocs,
+	}
+	return pipelinesDocs, nil
 }
 
 func (spec *openapi) ResourcesDocs() (*Docs, error) {
@@ -77,11 +92,16 @@ func (spec *openapi) ResourcesDocs() (*Docs, error) {
 	if err != nil {
 		return nil, err
 	}
+	pipelinesDocs, err := spec.pipelinesDocs()
+	if err != nil {
+		return nil, err
+	}
 
 	return &Docs{
-		Description: "specification of databricks resources to instantiate",
+		Description: "Specification of databricks resources to instantiate",
 		Properties: map[string]*Docs{
-			"jobs": jobsDocs,
+			"jobs":      jobsDocs,
+			"pipelines": pipelinesDocs,
 		},
 	}, nil
 }
