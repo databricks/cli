@@ -9,7 +9,7 @@ import (
 
 var docsCmd = &cobra.Command{
 	Use:   "docs",
-	Short: "Generate JSON Schema docs for bundle config",
+	Short: "Generate json schema descriptions for bundle config",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		docs, err := schema.BundleDocs(openapi)
 		if err != nil {

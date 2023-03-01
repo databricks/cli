@@ -1,7 +1,6 @@
 package schema
 
 import (
-	_ "embed"
 	"fmt"
 	"strings"
 )
@@ -27,30 +26,30 @@ func (spec *openapi) readSchema(path string) (*Schema, error) {
 	}
 	for k, v := range schema.Properties {
 		if v.Reference != nil {
-			childSchema, err := spec.readSchema(*v.Reference)
+			refSchema, err := spec.readSchema(*v.Reference)
 			if err != nil {
 				return nil, err
 			}
-			childSchema.Description = v.Description
-			schema.Properties[k] = childSchema
+			refSchema.Description = v.Description
+			schema.Properties[k] = refSchema
 		}
 	}
 	if schema.Items != nil && schema.Items.Reference != nil {
-		childSchema, err := spec.readSchema(*schema.Items.Reference)
+		refSchema, err := spec.readSchema(*schema.Items.Reference)
 		if err != nil {
 			return nil, err
 		}
-		childSchema.Description = schema.Items.Description
-		schema.Items = childSchema
+		refSchema.Description = schema.Items.Description
+		schema.Items = refSchema
 	}
 	additionalProperties, ok := schema.AdditionalProperties.(*Schema)
 	if ok && additionalProperties.Reference != nil {
-		childSchema, err := spec.readSchema(*additionalProperties.Reference)
+		refSchema, err := spec.readSchema(*additionalProperties.Reference)
 		if err != nil {
 			return nil, err
 		}
-		childSchema.Description = additionalProperties.Description
-		schema.AdditionalProperties = childSchema
+		refSchema.Description = additionalProperties.Description
+		schema.AdditionalProperties = refSchema
 	}
 	return schema, nil
 }
@@ -69,8 +68,6 @@ func (spec *openapi) jobsDocs() (*Docs, error) {
 	}
 	return jobsDocs, nil
 }
-
-// TODO: add readme with how to add documentation, and how this works
 
 func (spec *openapi) pipelinesDocs() (*Docs, error) {
 	pipelineSpecSchema, err := spec.readSchema(SchemaPathPrefix + "pipelines.PipelineSpec")
