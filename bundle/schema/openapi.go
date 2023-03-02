@@ -15,47 +15,106 @@ type openapi struct {
 
 const SchemaPathPrefix = "#/components/schemas/"
 
-func (spec *openapi) readSchema(path string) (*Schema, error) {
+func (spec *openapi) readShallowSchema(path string) (*Schema, error) {
 	schemaKey := strings.TrimPrefix(path, SchemaPathPrefix)
 	schema, ok := spec.Components.Schemas[schemaKey]
 	if !ok {
 		return nil, fmt.Errorf("[ERROR] schema with path %s not found in openapi spec", path)
 	}
-	if schema.Reference != nil {
-		return nil, fmt.Errorf("[ERROR] schema with root level references are not supported")
-	}
-	for k, v := range schema.Properties {
-		if v.Reference != nil {
-			refSchema, err := spec.readSchema(*v.Reference)
-			if err != nil {
-				return nil, err
-			}
-			refSchema.Description = v.Description
-			schema.Properties[k] = refSchema
-		}
-	}
-	if schema.Items != nil && schema.Items.Reference != nil {
-		refSchema, err := spec.readSchema(*schema.Items.Reference)
-		if err != nil {
-			return nil, err
-		}
-		refSchema.Description = schema.Items.Description
-		schema.Items = refSchema
-	}
-	additionalProperties, ok := schema.AdditionalProperties.(*Schema)
-	if ok && additionalProperties.Reference != nil {
-		refSchema, err := spec.readSchema(*additionalProperties.Reference)
-		if err != nil {
-			return nil, err
-		}
-		refSchema.Description = additionalProperties.Description
-		schema.AdditionalProperties = refSchema
-	}
 	return schema, nil
 }
 
+// TODO: can use (and maybe need to use) openapi for require (eg. jobs_cluster_key)
+
+// safe againt loops in refs
+func (spec *openapi) safeResolveRefs(root *Schema, seenRefs map[string]struct{}) (*Schema, error) {
+	if root.Reference == nil {
+		return spec.traverseSchema(root, seenRefs)
+	}
+	if _, ok := seenRefs[*root.Reference]; ok {
+		return nil, fmt.Errorf("references loop detected")
+	}
+	ref := *root.Reference
+	description := root.Description
+	seenRefs[ref] = struct{}{}
+	root.Reference = nil
+
+	// unroll one level of reference
+	selfRef, err := spec.readShallowSchema(ref)
+	if err != nil {
+		return nil, err
+	}
+	root = selfRef
+	root.Description = description
+
+	// traverse again to find new references
+	root, err = spec.traverseSchema(root, seenRefs)
+	if err != nil {
+		return nil, err
+	}
+	delete(seenRefs, ref)
+	return root, err
+}
+
+// TODO: add test for error with loop
+func (spec *openapi) traverseSchema(root *Schema, seenRefs map[string]struct{}) (*Schema, error) {
+	// case primitive (or invalid)
+	if root.Type != Object && root.Type != Array {
+		return root, nil
+	}
+	// only root references are resolved
+	if root.Reference != nil {
+		return spec.safeResolveRefs(root, seenRefs)
+	}
+	// case struct
+	if len(root.Properties) > 0 {
+		for k, v := range root.Properties {
+			childSchema, err := spec.safeResolveRefs(v, seenRefs)
+			if err != nil {
+				return nil, err
+			}
+			root.Properties[k] = childSchema
+		}
+	}
+	// case array
+	if root.Items != nil {
+		itemsSchema, err := spec.safeResolveRefs(root.Items, seenRefs)
+		if err != nil {
+			return nil, err
+		}
+		root.Items = itemsSchema
+	}
+	// case map
+	additionionalProperties, ok := root.AdditionalProperties.(*Schema)
+	if ok && additionionalProperties != nil {
+		valueSchema, err := spec.safeResolveRefs(additionionalProperties, seenRefs)
+		if err != nil {
+			return nil, err
+		}
+		root.AdditionalProperties = valueSchema
+	}
+	return root, nil
+}
+
+func (spec *openapi) readResolvedSchema(path string) (*Schema, error) {
+	root, err := spec.readShallowSchema(path)
+	if err != nil {
+		return nil, err
+	}
+	seenRefs := make(map[string]struct{})
+	root, err = spec.safeResolveRefs(root, seenRefs)
+	if err != nil {
+		trace := ""
+		for k, _ := range seenRefs {
+			trace += k + " -> "
+		}
+		return nil, fmt.Errorf("schema ref trace: %s. Error: %s", trace, err)
+	}
+	return root, nil
+}
+
 func (spec *openapi) jobsDocs() (*Docs, error) {
-	jobSettingsSchema, err := spec.readSchema(SchemaPathPrefix + "jobs.JobSettings")
+	jobSettingsSchema, err := spec.readResolvedSchema(SchemaPathPrefix + "jobs.JobSettings")
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +129,7 @@ func (spec *openapi) jobsDocs() (*Docs, error) {
 }
 
 func (spec *openapi) pipelinesDocs() (*Docs, error) {
-	pipelineSpecSchema, err := spec.readSchema(SchemaPathPrefix + "pipelines.PipelineSpec")
+	pipelineSpecSchema, err := spec.readResolvedSchema(SchemaPathPrefix + "pipelines.PipelineSpec")
 	if err != nil {
 		return nil, err
 	}

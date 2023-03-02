@@ -49,10 +49,16 @@ func BundleDocs(openapiSpecPath string) (*Docs, error) {
 		if err != nil {
 			return nil, err
 		}
-		docs.Properties["resources"], err = spec.ResourcesDocs()
+
+		resourcesDocs, err := spec.ResourcesDocs()
 		if err != nil {
 			return nil, err
 		}
+		resourceSchema, err := New(reflect.TypeOf(config.Resources{}), resourcesDocs)
+		if err != nil {
+			return nil, err
+		}
+		docs.Properties["resources"] = schemaToDocs(resourceSchema)
 	}
 	docs.refreshEnvironmentsDocs()
 	return docs, nil
@@ -60,7 +66,8 @@ func BundleDocs(openapiSpecPath string) (*Docs, error) {
 
 func (docs *Docs) refreshEnvironmentsDocs() error {
 	environmentsDocs, ok := docs.Properties["environments"]
-	if !ok || environmentsDocs.AdditionalProperties == nil {
+	if !ok || environmentsDocs.AdditionalProperties == nil ||
+		environmentsDocs.AdditionalProperties.Properties == nil {
 		return fmt.Errorf("invalid environments descriptions")
 	}
 	environmentProperties := environmentsDocs.AdditionalProperties.Properties

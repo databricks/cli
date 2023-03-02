@@ -38,7 +38,7 @@ func TestReadSchemaForObject(t *testing.T) {
 			},
 		},
 	}
-	fruitsSchema, err := spec.readSchema("#/components/schemas/fruits")
+	fruitsSchema, err := spec.readResolvedSchema("#/components/schemas/fruits")
 	require.NoError(t, err)
 
 	fruitsSchemaJson, err := json.MarshalIndent(fruitsSchema, "		", "	")
@@ -87,7 +87,7 @@ func TestReadSchemaForArray(t *testing.T) {
 		},
 	}
 
-	fruitsSchema, err := spec.readSchema("#/components/schemas/fruits")
+	fruitsSchema, err := spec.readResolvedSchema("#/components/schemas/fruits")
 	require.NoError(t, err)
 
 	fruitsSchemaJson, err := json.MarshalIndent(fruitsSchema, "		", "	")
@@ -126,7 +126,7 @@ func TestReadSchemaForMap(t *testing.T) {
 		},
 	}
 
-	fruitsSchema, err := spec.readSchema("#/components/schemas/fruits")
+	fruitsSchema, err := spec.readResolvedSchema("#/components/schemas/fruits")
 	require.NoError(t, err)
 
 	fruitsSchemaJson, err := json.MarshalIndent(fruitsSchema, "		", "	")
@@ -159,6 +159,6 @@ func TestReadSchemaErrorForTopLevelReference(t *testing.T) {
 		},
 	}
 
-	_, err := spec.readSchema("#/components/schemas/fruits")
+	_, err := spec.readResolvedSchema("#/components/schemas/fruits")
 	assert.ErrorContains(t, err, "schema with root level references are not supported")
 }
