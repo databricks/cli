@@ -33,3 +33,7 @@ Every time the command...
 * checks the file system for changes, you'll see a `start` event.
 * starts or completes a mutation of a file, you'll see a `progress` event.
 * completes a set of mutations, you'll see a `complete` event.
+
+Every JSON object has a sequence number in the `seq` field that associates it with a synchronization run.
+
+Progress events have a `progress` number field between 0 and 1 indicating how far the operation has progressed.
