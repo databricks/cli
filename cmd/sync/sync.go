@@ -3,7 +3,6 @@ package sync
 import (
 	"flag"
 	"fmt"
-	"log"
 	"path/filepath"
 	"time"
 
@@ -98,7 +97,6 @@ var syncCmd = &cobra.Command{
 
 		switch output {
 		case flags.OutputText:
-			log.Printf("[INFO] Remote file sync location: %v", opts.RemotePath)
 			go logOutput(ctx, s.Events())
 		case flags.OutputJSON:
 			go jsonOutput(ctx, s.Events(), cmd.OutOrStdout())
