@@ -2,9 +2,7 @@ package sync
 
 import (
 	"context"
-	"log"
 
-	"github.com/databricks/bricks/libs/sync/repofiles"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -12,7 +10,7 @@ import (
 // rate limits
 const MaxRequestsInFlight = 20
 
-func syncCallback(ctx context.Context, repoFiles *repofiles.RepoFiles) func(localDiff diff) error {
+func syncCallback(ctx context.Context, s *Sync) func(localDiff diff) error {
 	return func(d diff) error {
 		// Abstraction over wait groups which allows you to get the errors
 		// returned in goroutines
@@ -28,11 +26,12 @@ func syncCallback(ctx context.Context, repoFiles *repofiles.RepoFiles) func(loca
 			// is evaluated
 			remoteNameCopy := remoteName
 			g.Go(func() error {
-				err := repoFiles.DeleteFile(ctx, remoteNameCopy)
+				s.notifyProgress(ctx, EventActionDelete, remoteNameCopy, 0.0)
+				err := s.repoFiles.DeleteFile(ctx, remoteNameCopy)
 				if err != nil {
 					return err
 				}
-				log.Printf("[INFO] Deleted %s", remoteNameCopy)
+				s.notifyProgress(ctx, EventActionDelete, remoteNameCopy, 1.0)
 				return nil
 			})
 		}
@@ -40,11 +39,12 @@ func syncCallback(ctx context.Context, repoFiles *repofiles.RepoFiles) func(loca
 			// Copy of localName created to make this safe for concurrent use.
 			localRelativePathCopy := localRelativePath
 			g.Go(func() error {
-				err := repoFiles.PutFile(ctx, localRelativePathCopy)
+				s.notifyProgress(ctx, EventActionPut, localRelativePathCopy, 0.0)
+				err := s.repoFiles.PutFile(ctx, localRelativePathCopy)
 				if err != nil {
 					return err
 				}
-				log.Printf("[INFO] Uploaded %s", localRelativePathCopy)
+				s.notifyProgress(ctx, EventActionPut, localRelativePathCopy, 1.0)
 				return nil
 			})
 		}

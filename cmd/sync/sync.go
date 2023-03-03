@@ -9,6 +9,7 @@ import (
 
 	"github.com/databricks/bricks/bundle"
 	"github.com/databricks/bricks/cmd/root"
+	"github.com/databricks/bricks/libs/flags"
 	"github.com/databricks/bricks/libs/sync"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/spf13/cobra"
@@ -95,7 +96,13 @@ var syncCmd = &cobra.Command{
 			return err
 		}
 
-		log.Printf("[INFO] Remote file sync location: %v", opts.RemotePath)
+		switch output {
+		case flags.OutputText:
+			log.Printf("[INFO] Remote file sync location: %v", opts.RemotePath)
+			go logOutput(ctx, s.Events())
+		case flags.OutputJSON:
+			go jsonOutput(ctx, s.Events(), cmd.OutOrStdout())
+		}
 
 		if watch {
 			return s.RunContinuous(ctx)
@@ -136,10 +143,12 @@ var syncCmd = &cobra.Command{
 var interval time.Duration
 var full bool
 var watch bool
+var output flags.Output = flags.OutputText
 
 func init() {
 	root.RootCmd.AddCommand(syncCmd)
 	syncCmd.Flags().DurationVar(&interval, "interval", 1*time.Second, "file system polling interval (for --watch)")
 	syncCmd.Flags().BoolVar(&full, "full", false, "perform full synchronization (default is incremental)")
 	syncCmd.Flags().BoolVar(&watch, "watch", false, "watch local file system for changes")
+	syncCmd.Flags().Var(&output, "output", "type of output to produce (default is text)")
 }
