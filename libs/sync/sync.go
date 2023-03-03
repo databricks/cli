@@ -97,6 +97,10 @@ func (s *Sync) Events() <-chan Event {
 }
 
 func (s *Sync) notifyStart(ctx context.Context, d diff) {
+	// If this is not the initial iteration we can ignore no-ops.
+	if s.seq > 0 && d.IsEmpty() {
+		return
+	}
 	s.notifier.Notify(ctx, newEventStart(s.seq, d.put, d.delete))
 }
 
@@ -105,6 +109,10 @@ func (s *Sync) notifyProgress(ctx context.Context, action EventAction, path stri
 }
 
 func (s *Sync) notifyComplete(ctx context.Context, d diff) {
+	// If this is not the initial iteration we can ignore no-ops.
+	if s.seq > 0 && d.IsEmpty() {
+		return
+	}
 	s.notifier.Notify(ctx, newEventComplete(s.seq, d.put, d.delete))
 	s.seq++
 }
