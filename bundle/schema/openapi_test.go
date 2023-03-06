@@ -188,3 +188,59 @@ func TestRootReferenceIsResolved(t *testing.T) {
 	t.Log("[DEBUG] expected: ", expected)
 	assert.Equal(t, expected, string(fruitsSchemaJson))
 }
+
+func TestSelfReferenceLoopErrors(t *testing.T) {
+	s := func(s string) *string { return &s }
+	spec := &openapi{
+		Components: &Components{
+			Schemas: map[string]*Schema{
+				"fruits": {
+					Type:        "object",
+					Description: "foo fighters fighting fruits",
+					Reference:   s("#/components/schemas/foo"),
+				},
+				"foo": {
+					Type:        "object",
+					Description: "this description is ignored",
+					Properties: map[string]*Schema{
+						"bar": {
+							Type:      "object",
+							Reference: s("#/components/schemas/foo"),
+						},
+					},
+				},
+			},
+		},
+	}
+
+	_, err := spec.readResolvedSchema("#/components/schemas/fruits")
+	assert.ErrorContains(t, err, "references loop detected. schema ref trace: #/components/schemas/fruits -> #/components/schemas/foo")
+}
+
+func TestCrossReferenceLoopErrors(t *testing.T) {
+	s := func(s string) *string { return &s }
+	spec := &openapi{
+		Components: &Components{
+			Schemas: map[string]*Schema{
+				"fruits": {
+					Type:        "object",
+					Description: "foo fighters fighting fruits",
+					Reference:   s("#/components/schemas/foo"),
+				},
+				"foo": {
+					Type:        "object",
+					Description: "this description is ignored",
+					Properties: map[string]*Schema{
+						"bar": {
+							Type:      "object",
+							Reference: s("#/components/schemas/fruits"),
+						},
+					},
+				},
+			},
+		},
+	}
+
+	_, err := spec.readResolvedSchema("#/components/schemas/fruits")
+	assert.ErrorContains(t, err, "references loop detected. schema ref trace: #/components/schemas/fruits -> #/components/schemas/foo")
+}

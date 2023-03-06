@@ -19,7 +19,7 @@ func (spec *openapi) readShallowSchema(path string) (*Schema, error) {
 	schemaKey := strings.TrimPrefix(path, SchemaPathPrefix)
 	schema, ok := spec.Components.Schemas[schemaKey]
 	if !ok {
-		return nil, fmt.Errorf("[ERROR] schema with path %s not found in openapi spec", path)
+		return nil, fmt.Errorf("schema with path %s not found in openapi spec", path)
 	}
 	return schema, nil
 }
@@ -31,7 +31,11 @@ func (spec *openapi) safeResolveRefs(root *Schema, seenRefs map[string]struct{})
 	if root.Reference == nil {
 		return spec.traverseSchema(root, seenRefs)
 	}
-	if _, ok := seenRefs[*root.Reference]; ok {
+	key := *root.Reference
+	_, ok := seenRefs[key]
+	if ok {
+		// self reference loops can be supported however the logic is non-trivial because
+		// cross refernce loops are not allowed (see: http://json-schema.org/understanding-json-schema/structuring.html#recursion)
 		return nil, fmt.Errorf("references loop detected")
 	}
 	ref := *root.Reference
@@ -102,13 +106,20 @@ func (spec *openapi) readResolvedSchema(path string) (*Schema, error) {
 		return nil, err
 	}
 	seenRefs := make(map[string]struct{})
+	seenRefs[path] = struct{}{}
 	root, err = spec.safeResolveRefs(root, seenRefs)
 	if err != nil {
 		trace := ""
+		count := 0
 		for k := range seenRefs {
+			if count == len(seenRefs)-1 {
+				trace += k
+				break
+			}
 			trace += k + " -> "
+			count++
 		}
-		return nil, fmt.Errorf("schema ref trace: %s. Error: %s", trace, err)
+		return nil, fmt.Errorf("%s. schema ref trace: %s", err, trace)
 	}
 	return root, nil
 }
