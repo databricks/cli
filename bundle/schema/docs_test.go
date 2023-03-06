@@ -21,9 +21,9 @@ func TestSchemaToDocs(t *testing.T) {
 				Description:          "octave docs",
 			},
 			"scales": {
-				Type: "object",
+				Type:        "object",
 				Description: "scale docs",
-				Items: &Schema{Type: "string"},
+				Items:       &Schema{Type: "string"},
 			},
 		},
 	}

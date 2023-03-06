@@ -105,7 +105,7 @@ func (spec *openapi) readResolvedSchema(path string) (*Schema, error) {
 	root, err = spec.safeResolveRefs(root, seenRefs)
 	if err != nil {
 		trace := ""
-		for k, _ := range seenRefs {
+		for k := range seenRefs {
 			trace += k + " -> "
 		}
 		return nil, fmt.Errorf("schema ref trace: %s. Error: %s", trace, err)
