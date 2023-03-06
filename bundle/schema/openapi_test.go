@@ -146,19 +146,45 @@ func TestReadSchemaForMap(t *testing.T) {
 	assert.Equal(t, expected, string(fruitsSchemaJson))
 }
 
-func TestReadSchemaErrorForTopLevelReference(t *testing.T) {
+func TestRootReferenceIsResolved(t *testing.T) {
 	s := func(s string) *string { return &s }
 	spec := &openapi{
 		Components: &Components{
 			Schemas: map[string]*Schema{
 				"fruits": {
-					Type:      "object",
-					Reference: s("#/foo"),
+					Type:        "object",
+					Description: "foo fighters fighting fruits",
+					Reference:   s("#/components/schemas/foo"),
+				},
+				"foo": {
+					Type:        "object",
+					Description: "this description is ignored",
+					Properties: map[string]*Schema{
+						"abc": {
+							Type: String,
+						},
+					},
 				},
 			},
 		},
 	}
 
-	_, err := spec.readResolvedSchema("#/components/schemas/fruits")
-	assert.ErrorContains(t, err, "schema with root level references are not supported")
+	schema, err := spec.readResolvedSchema("#/components/schemas/fruits")
+	require.NoError(t, err)
+	fruitsSchemaJson, err := json.MarshalIndent(schema, "		", "	")
+	require.NoError(t, err)
+
+	expected := `{
+			"type": "object",
+			"description": "foo fighters fighting fruits",
+			"properties": {
+				"abc": {
+					"type": "string"
+				}
+			}
+		}`
+
+	t.Log("[DEBUG] actual: ", string(fruitsSchemaJson))
+	t.Log("[DEBUG] expected: ", expected)
+	assert.Equal(t, expected, string(fruitsSchemaJson))
 }
