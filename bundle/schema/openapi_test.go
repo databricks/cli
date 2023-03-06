@@ -244,3 +244,125 @@ func TestCrossReferenceLoopErrors(t *testing.T) {
 	_, err := spec.readResolvedSchema("#/components/schemas/fruits")
 	assert.ErrorContains(t, err, "references loop detected. schema ref trace: #/components/schemas/fruits -> #/components/schemas/foo")
 }
+
+func TestReferenceResolutionForMapInObject(t *testing.T) {
+	s := func(s string) *string { return &s }
+	spec := &openapi{
+		Components: &Components{
+			Schemas: map[string]*Schema{
+				"fruits": {
+					Type:        "object",
+					Description: "fruits that are cool",
+					Properties: map[string]*Schema{
+						"mangos": {
+							Type:        "object",
+							Reference:   s("#/components/schemas/mango"),
+							Description: "multiple mangos",
+						},
+						"guava": {
+							Type:        "string",
+							Description: "a guava for my schema",
+						},
+					},
+				},
+				"mango": {
+					Type: "object",
+					AdditionalProperties: &Schema{
+						Description: "a single mango",
+						Reference:   s("#/components/schemas/foo"),
+					},
+				},
+				"foo": {Type: "number"},
+			},
+		},
+	}
+	fruitsSchema, err := spec.readResolvedSchema("#/components/schemas/fruits")
+	require.NoError(t, err)
+
+	fruitsSchemaJson, err := json.MarshalIndent(fruitsSchema, "		", "	")
+	require.NoError(t, err)
+
+	expected := `{
+			"type": "object",
+			"description": "fruits that are cool",
+			"properties": {
+				"guava": {
+					"type": "string",
+					"description": "a guava for my schema"
+				},
+				"mangos": {
+					"type": "object",
+					"description": "multiple mangos",
+					"additionalProperties": {
+						"type": "number",
+						"description": "a single mango"
+					}
+				}
+			}
+		}`
+
+	t.Log("[DEBUG] actual: ", string(fruitsSchemaJson))
+	t.Log("[DEBUG] expected: ", expected)
+	assert.Equal(t, expected, string(fruitsSchemaJson))
+}
+
+func TestReferenceResolutionForArrayInObject(t *testing.T) {
+	s := func(s string) *string { return &s }
+	spec := &openapi{
+		Components: &Components{
+			Schemas: map[string]*Schema{
+				"fruits": {
+					Type:        "object",
+					Description: "fruits that are cool",
+					Properties: map[string]*Schema{
+						"mangos": {
+							Type:        "object",
+							Reference:   s("#/components/schemas/mango"),
+							Description: "multiple mangos",
+						},
+						"guava": {
+							Type:        "string",
+							Description: "a guava for my schema",
+						},
+					},
+				},
+				"mango": {
+					Type: "object",
+					Items: &Schema{
+						Description: "a single mango",
+						Reference:   s("#/components/schemas/foo"),
+					},
+				},
+				"foo": {Type: "number"},
+			},
+		},
+	}
+	fruitsSchema, err := spec.readResolvedSchema("#/components/schemas/fruits")
+	require.NoError(t, err)
+
+	fruitsSchemaJson, err := json.MarshalIndent(fruitsSchema, "		", "	")
+	require.NoError(t, err)
+
+	expected := `{
+			"type": "object",
+			"description": "fruits that are cool",
+			"properties": {
+				"guava": {
+					"type": "string",
+					"description": "a guava for my schema"
+				},
+				"mangos": {
+					"type": "object",
+					"description": "multiple mangos",
+					"items": {
+						"type": "number",
+						"description": "a single mango"
+					}
+				}
+			}
+		}`
+
+	t.Log("[DEBUG] actual: ", string(fruitsSchemaJson))
+	t.Log("[DEBUG] expected: ", expected)
+	assert.Equal(t, expected, string(fruitsSchemaJson))
+}
