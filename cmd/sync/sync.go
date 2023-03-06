@@ -148,5 +148,5 @@ func init() {
 	syncCmd.Flags().DurationVar(&interval, "interval", 1*time.Second, "file system polling interval (for --watch)")
 	syncCmd.Flags().BoolVar(&full, "full", false, "perform full synchronization (default is incremental)")
 	syncCmd.Flags().BoolVar(&watch, "watch", false, "watch local file system for changes")
-	syncCmd.Flags().Var(&output, "output", "type of output to produce (default is text)")
+	syncCmd.Flags().Var(&output, "output", "type of output format")
 }

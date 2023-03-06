@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/bricks/libs/sync"
 )
 
+// Read synchronization events and write them as JSON to the specified writer (typically stdout).
 func jsonOutput(ctx context.Context, ch <-chan sync.Event, w io.Writer) {
 	enc := json.NewEncoder(w)
 	for {
@@ -19,11 +20,17 @@ func jsonOutput(ctx context.Context, ch <-chan sync.Event, w io.Writer) {
 			if !ok {
 				return
 			}
-			enc.Encode(e)
+			err := enc.Encode(e)
+			// These are plain structs so this must always work.
+			// Panic on error so that a violation of this assumption does not go undetected.
+			if err != nil {
+				panic(err)
+			}
 		}
 	}
 }
 
+// Read synchronization events and log them at the INFO level.
 func logOutput(ctx context.Context, ch <-chan sync.Event) {
 	for {
 		select {
