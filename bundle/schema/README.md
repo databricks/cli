@@ -14,13 +14,13 @@ These descriptions are rendered in the inline documentation in an IDE
 ### SOP: Add schema descriptions for new fields in bundle config
 
 1. You can autogenerate empty descriptions for the new fields by running
-`bricks bundle docs > ~/bricks/bundle/schema/docs/bundle_descriptions.json`
+`bricks bundle schema --only-docs > ~/bricks/bundle/schema/docs/bundle_descriptions.json`
 2. Manually edit bundle_descriptions.json to add your descriptions
-3. Again run `bricks bundle docs > ~/bricks/bundle/schema/docs/bundle_descriptions.json` to copy over any applicable descriptions to `environments`
+3. Again run `bricks bundle schema --only-docs > ~/bricks/bundle/schema/docs/bundle_descriptions.json` to copy over any applicable descriptions to `environments`
 4. push to repo
 
 
 ### SOP: Update descriptions in resources from a newer openapi spec
 
-1. Run `bricks bundle docs --openapi PATH_TO_SPEC > ~/bricks/bundle/schema/docs/bundle_descriptions.json`
+1. Run `bricks bundle schema --only-docs --openapi PATH_TO_SPEC > ~/bricks/bundle/schema/docs/bundle_descriptions.json`
 2. push to repo

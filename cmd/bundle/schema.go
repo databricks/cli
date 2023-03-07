@@ -22,16 +22,26 @@ var schemaCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		jsonSchema, err := json.MarshalIndent(schema, "", "  ")
+		result, err := json.MarshalIndent(schema, "", "  ")
 		if err != nil {
 			return err
 		}
-		cmd.OutOrStdout().Write(jsonSchema)
+		if onlyDocs {
+			result, err = json.MarshalIndent(docs, "", "  ")
+			if err != nil {
+				return err
+			}
+		}
+		cmd.OutOrStdout().Write(result)
 		return nil
 	},
 }
 
+var openapi string
+var onlyDocs bool
+
 func init() {
 	AddCommand(schemaCmd)
 	schemaCmd.Flags().StringVar(&openapi, "openapi", "", "path to a databricks openapi spec")
+	schemaCmd.Flags().BoolVar(&onlyDocs, "only-docs", false, "only generate descriptions for the schema")
 }
