@@ -1,6 +1,8 @@
 package config
 
 import (
+	"os"
+
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/scim"
 )
@@ -84,4 +86,8 @@ func (w *Workspace) Client() (*databricks.WorkspaceClient, error) {
 	}
 
 	return databricks.NewWorkspaceClient(&config)
+}
+
+func init() {
+	os.Setenv("BRICKS_CLI_PATH", os.Args[0])
 }
