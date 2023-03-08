@@ -36,4 +36,5 @@ Every time the command...
 
 Every JSON object has a sequence number in the `seq` field that associates it with a synchronization run.
 
-Progress events have a `progress` floating point number field between 0 and 1 indicating how far the operation has progressed. 0 means the operation started, 0.5 means the operation is halfway complete and 1 means the operation has completed
+Progress events have a `progress` floating point number field between 0 and 1 indicating how far the operation has progressed.
+A value of 0 means the operation has started and 1 means the operation has completed.
