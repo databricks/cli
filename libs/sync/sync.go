@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"sync"
 	"time"
 
 	"github.com/databricks/bricks/libs/git"
@@ -33,6 +32,10 @@ type Sync struct {
 	fileSet   *git.FileSet
 	snapshot  *Snapshot
 	repoFiles *repofiles.RepoFiles
+
+	// Synchronization progress events are sent to this event notifier.
+	notifier EventNotifier
+	seq      int
 }
 
 // New initializes and returns a new [Sync] instance.
@@ -82,12 +85,40 @@ func New(ctx context.Context, opts SyncOptions) (*Sync, error) {
 		fileSet:   fileSet,
 		snapshot:  snapshot,
 		repoFiles: repoFiles,
+		notifier:  &NopNotifier{},
+		seq:       0,
 	}, nil
 }
 
+func (s *Sync) Events() <-chan Event {
+	ch := make(chan Event, MaxRequestsInFlight)
+	s.notifier = &ChannelNotifier{ch}
+	return ch
+}
+
+func (s *Sync) notifyStart(ctx context.Context, d diff) {
+	// If this is not the initial iteration we can ignore no-ops.
+	if s.seq > 0 && d.IsEmpty() {
+		return
+	}
+	s.notifier.Notify(ctx, newEventStart(s.seq, d.put, d.delete))
+}
+
+func (s *Sync) notifyProgress(ctx context.Context, action EventAction, path string, progress float32) {
+	s.notifier.Notify(ctx, newEventProgress(s.seq, action, path, progress))
+}
+
+func (s *Sync) notifyComplete(ctx context.Context, d diff) {
+	// If this is not the initial iteration we can ignore no-ops.
+	if s.seq > 0 && d.IsEmpty() {
+		return
+	}
+	s.notifier.Notify(ctx, newEventComplete(s.seq, d.put, d.delete))
+	s.seq++
+}
+
 func (s *Sync) RunOnce(ctx context.Context) error {
-	repoFiles := repofiles.Create(s.RemotePath, s.LocalPath, s.WorkspaceClient)
-	applyDiff := syncCallback(ctx, repoFiles)
+	applyDiff := syncCallback(ctx, s)
 
 	// tradeoff: doing portable monitoring only due to macOS max descriptor manual ulimit setting requirement
 	// https://github.com/gorakhargosh/watchdog/blob/master/src/watchdog/observers/kqueue.py#L394-L418
@@ -101,11 +132,13 @@ func (s *Sync) RunOnce(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+
+	s.notifyStart(ctx, change)
 	if change.IsEmpty() {
+		s.notifyComplete(ctx, change)
 		return nil
 	}
 
-	log.Printf("[INFO] Action: %v", change)
 	err = applyDiff(change)
 	if err != nil {
 		return err
@@ -117,12 +150,11 @@ func (s *Sync) RunOnce(ctx context.Context) error {
 		return err
 	}
 
+	s.notifyComplete(ctx, change)
 	return nil
 }
 
 func (s *Sync) RunContinuous(ctx context.Context) error {
-	var once sync.Once
-
 	ticker := time.NewTicker(s.PollInterval)
 	defer ticker.Stop()
 
@@ -135,10 +167,6 @@ func (s *Sync) RunContinuous(ctx context.Context) error {
 			if err != nil {
 				return err
 			}
-
-			once.Do(func() {
-				log.Printf("[INFO] Initial Sync Complete")
-			})
 		}
 	}
 }
