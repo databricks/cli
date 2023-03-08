@@ -118,8 +118,6 @@ func (s *Sync) notifyComplete(ctx context.Context, d diff) {
 }
 
 func (s *Sync) RunOnce(ctx context.Context) error {
-	applyDiff := syncCallback(ctx, s)
-
 	// tradeoff: doing portable monitoring only due to macOS max descriptor manual ulimit setting requirement
 	// https://github.com/gorakhargosh/watchdog/blob/master/src/watchdog/observers/kqueue.py#L394-L418
 	all, err := s.fileSet.All()
@@ -139,7 +137,7 @@ func (s *Sync) RunOnce(ctx context.Context) error {
 		return nil
 	}
 
-	err = applyDiff(change)
+	err = s.applyDiff(ctx, change)
 	if err != nil {
 		return err
 	}
