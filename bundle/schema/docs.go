@@ -8,6 +8,7 @@ import (
 	"reflect"
 
 	"github.com/databricks/bricks/bundle/config"
+	"github.com/databricks/databricks-sdk-go/openapi"
 	"gopkg.in/yaml.v3"
 )
 
@@ -44,13 +45,16 @@ func BundleDocs(openapiSpecPath string) (*Docs, error) {
 		if err != nil {
 			return nil, err
 		}
-		spec := &openapi{}
+		spec := &openapi.Specification{}
 		err = json.Unmarshal(openapiSpec, spec)
 		if err != nil {
 			return nil, err
 		}
-
-		resourcesDocs, err := spec.ResourcesDocs()
+		openapiReader := &OpenapiReader{
+			OpenapiSpec: spec,
+			Memo:        make(map[string]*Schema),
+		}
+		resourcesDocs, err := openapiReader.ResourcesDocs()
 		if err != nil {
 			return nil, err
 		}

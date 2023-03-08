@@ -4,32 +4,49 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+
+	"github.com/databricks/databricks-sdk-go/openapi"
 )
 
-type Components struct {
-	Schemas map[string]*Schema `json:"schemas"`
-}
-
-type openapi struct {
-	Components *Components `json:"components"`
+type OpenapiReader struct {
+	OpenapiSpec *openapi.Specification
+	Memo        map[string]*Schema
 }
 
 const SchemaPathPrefix = "#/components/schemas/"
 
-func (spec *openapi) readOpenapiSchema(path string) (*Schema, error) {
-	// check path is present in openapi spec
+func (reader *OpenapiReader) readOpenapiSchema(path string) (*Schema, error) {
 	schemaKey := strings.TrimPrefix(path, SchemaPathPrefix)
-	schema, ok := spec.Components.Schemas[schemaKey]
+
+	// return early if we already have a computed schema
+	memoSchema, ok := reader.Memo[schemaKey]
+	if ok {
+		return memoSchema, nil
+	}
+
+	// check path is present in openapi spec
+	openapiSchema, ok := reader.OpenapiSpec.Components.Schemas[schemaKey]
 	if !ok {
 		return nil, fmt.Errorf("schema with path %s not found in openapi spec", path)
+	}
+
+	// convert openapi schema to the native schema struct
+	bytes, err := json.Marshal(*openapiSchema)
+	if err != nil {
+		return nil, err
+	}
+	jsonSchema := &Schema{}
+	err = json.Unmarshal(bytes, jsonSchema)
+	if err != nil {
+		return nil, err
 	}
 
 	// A hack to convert a map[string]interface{} to *Schema
 	// We rely on the type of a AdditionalProperties in downstream functions
 	// to do reference interpolation
-	_, ok = schema.AdditionalProperties.(map[string]interface{})
+	_, ok = jsonSchema.AdditionalProperties.(map[string]interface{})
 	if ok {
-		b, err := json.Marshal(schema.AdditionalProperties)
+		b, err := json.Marshal(jsonSchema.AdditionalProperties)
 		if err != nil {
 			return nil, err
 		}
@@ -38,16 +55,17 @@ func (spec *openapi) readOpenapiSchema(path string) (*Schema, error) {
 		if err != nil {
 			return nil, err
 		}
-		schema.AdditionalProperties = additionalProperties
+		jsonSchema.AdditionalProperties = additionalProperties
 	}
 
-	return schema, nil
+	// store read schema into memo
+	reader.Memo[schemaKey] = jsonSchema
+
+	return jsonSchema, nil
 }
 
-// TODO: can use (and maybe need to use) openapi for require (eg. jobs_cluster_key)
-
 // safe againt loops in refs
-func (spec *openapi) safeResolveRefs(root *Schema, seenRefs map[string]struct{}) (*Schema, error) {
+func (spec *OpenapiReader) safeResolveRefs(root *Schema, seenRefs map[string]struct{}) (*Schema, error) {
 	if root.Reference == nil {
 		return spec.traverseSchema(root, seenRefs)
 	}
@@ -61,6 +79,9 @@ func (spec *openapi) safeResolveRefs(root *Schema, seenRefs map[string]struct{})
 	ref := *root.Reference
 	description := root.Description
 	seenRefs[ref] = struct{}{}
+
+	// Mark reference nil, so we do not traverse this again. This is tracked
+	// in the memo
 	root.Reference = nil
 
 	// unroll one level of reference
@@ -80,8 +101,7 @@ func (spec *openapi) safeResolveRefs(root *Schema, seenRefs map[string]struct{})
 	return root, err
 }
 
-// TODO: add test for error with loop
-func (spec *openapi) traverseSchema(root *Schema, seenRefs map[string]struct{}) (*Schema, error) {
+func (spec *OpenapiReader) traverseSchema(root *Schema, seenRefs map[string]struct{}) (*Schema, error) {
 	// case primitive (or invalid)
 	if root.Type != Object && root.Type != Array {
 		return root, nil
@@ -120,7 +140,7 @@ func (spec *openapi) traverseSchema(root *Schema, seenRefs map[string]struct{}) 
 	return root, nil
 }
 
-func (spec *openapi) readResolvedSchema(path string) (*Schema, error) {
+func (spec *OpenapiReader) readResolvedSchema(path string) (*Schema, error) {
 	root, err := spec.readOpenapiSchema(path)
 	if err != nil {
 		return nil, err
@@ -144,7 +164,7 @@ func (spec *openapi) readResolvedSchema(path string) (*Schema, error) {
 	return root, nil
 }
 
-func (spec *openapi) jobsDocs() (*Docs, error) {
+func (spec *OpenapiReader) jobsDocs() (*Docs, error) {
 	jobSettingsSchema, err := spec.readResolvedSchema(SchemaPathPrefix + "jobs.JobSettings")
 	if err != nil {
 		return nil, err
@@ -159,7 +179,7 @@ func (spec *openapi) jobsDocs() (*Docs, error) {
 	return jobsDocs, nil
 }
 
-func (spec *openapi) pipelinesDocs() (*Docs, error) {
+func (spec *OpenapiReader) pipelinesDocs() (*Docs, error) {
 	pipelineSpecSchema, err := spec.readResolvedSchema(SchemaPathPrefix + "pipelines.PipelineSpec")
 	if err != nil {
 		return nil, err
@@ -174,7 +194,7 @@ func (spec *openapi) pipelinesDocs() (*Docs, error) {
 	return pipelinesDocs, nil
 }
 
-func (spec *openapi) ResourcesDocs() (*Docs, error) {
+func (spec *OpenapiReader) ResourcesDocs() (*Docs, error) {
 	jobsDocs, err := spec.jobsDocs()
 	if err != nil {
 		return nil, err

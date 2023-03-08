@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/databricks/databricks-sdk-go/openapi"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -43,11 +44,15 @@ func TestReadSchemaForObject(t *testing.T) {
 		}
 	}
 	`
-	spec := &openapi{}
+	spec := &openapi.Specification{}
+	reader := &OpenapiReader{
+		OpenapiSpec: spec,
+		Memo:        make(map[string]*Schema),
+	}
 	err := json.Unmarshal([]byte(specString), spec)
 	require.NoError(t, err)
 
-	fruitsSchema, err := spec.readResolvedSchema("#/components/schemas/fruits")
+	fruitsSchema, err := reader.readResolvedSchema("#/components/schemas/fruits")
 	require.NoError(t, err)
 
 	fruitsSchemaJson, err := json.MarshalIndent(fruitsSchema, "		", "	")
@@ -97,11 +102,15 @@ func TestReadSchemaForArray(t *testing.T) {
 			}
 		}
 	}`
-	spec := &openapi{}
+	spec := &openapi.Specification{}
+	reader := &OpenapiReader{
+		OpenapiSpec: spec,
+		Memo:        make(map[string]*Schema),
+	}
 	err := json.Unmarshal([]byte(specString), spec)
 	require.NoError(t, err)
 
-	fruitsSchema, err := spec.readResolvedSchema("#/components/schemas/fruits")
+	fruitsSchema, err := reader.readResolvedSchema("#/components/schemas/fruits")
 	require.NoError(t, err)
 
 	fruitsSchemaJson, err := json.MarshalIndent(fruitsSchema, "		", "	")
@@ -139,11 +148,15 @@ func TestReadSchemaForMap(t *testing.T) {
 			}
 		}
 	}`
-	spec := &openapi{}
+	spec := &openapi.Specification{}
+	reader := &OpenapiReader{
+		OpenapiSpec: spec,
+		Memo:        make(map[string]*Schema),
+	}
 	err := json.Unmarshal([]byte(specString), spec)
 	require.NoError(t, err)
 
-	fruitsSchema, err := spec.readResolvedSchema("#/components/schemas/fruits")
+	fruitsSchema, err := reader.readResolvedSchema("#/components/schemas/fruits")
 	require.NoError(t, err)
 
 	fruitsSchemaJson, err := json.MarshalIndent(fruitsSchema, "		", "	")
@@ -184,11 +197,15 @@ func TestRootReferenceIsResolved(t *testing.T) {
 			}
 		}
 	}`
-	spec := &openapi{}
+	spec := &openapi.Specification{}
+	reader := &OpenapiReader{
+		OpenapiSpec: spec,
+		Memo:        make(map[string]*Schema),
+	}
 	err := json.Unmarshal([]byte(specString), spec)
 	require.NoError(t, err)
 
-	schema, err := spec.readResolvedSchema("#/components/schemas/fruits")
+	schema, err := reader.readResolvedSchema("#/components/schemas/fruits")
 	require.NoError(t, err)
 	fruitsSchemaJson, err := json.MarshalIndent(schema, "		", "	")
 	require.NoError(t, err)
@@ -230,11 +247,15 @@ func TestSelfReferenceLoopErrors(t *testing.T) {
 			}
 		}
 	}`
-	spec := &openapi{}
+	spec := &openapi.Specification{}
+	reader := &OpenapiReader{
+		OpenapiSpec: spec,
+		Memo:        make(map[string]*Schema),
+	}
 	err := json.Unmarshal([]byte(specString), spec)
 	require.NoError(t, err)
 
-	_, err = spec.readResolvedSchema("#/components/schemas/fruits")
+	_, err = reader.readResolvedSchema("#/components/schemas/fruits")
 	assert.ErrorContains(t, err, "references loop detected. schema ref trace: #/components/schemas/fruits -> #/components/schemas/foo")
 }
 
@@ -260,11 +281,15 @@ func TestCrossReferenceLoopErrors(t *testing.T) {
 			}
 		}
 	}`
-	spec := &openapi{}
+	spec := &openapi.Specification{}
+	reader := &OpenapiReader{
+		OpenapiSpec: spec,
+		Memo:        make(map[string]*Schema),
+	}
 	err := json.Unmarshal([]byte(specString), spec)
 	require.NoError(t, err)
 
-	_, err = spec.readResolvedSchema("#/components/schemas/fruits")
+	_, err = reader.readResolvedSchema("#/components/schemas/fruits")
 	assert.ErrorContains(t, err, "references loop detected. schema ref trace: #/components/schemas/fruits -> #/components/schemas/foo")
 }
 
@@ -301,11 +326,15 @@ func TestReferenceResolutionForMapInObject(t *testing.T) {
 			}
 		}
 	}`
-	spec := &openapi{}
+	spec := &openapi.Specification{}
+	reader := &OpenapiReader{
+		OpenapiSpec: spec,
+		Memo:        make(map[string]*Schema),
+	}
 	err := json.Unmarshal([]byte(specString), spec)
 	require.NoError(t, err)
 
-	fruitsSchema, err := spec.readResolvedSchema("#/components/schemas/fruits")
+	fruitsSchema, err := reader.readResolvedSchema("#/components/schemas/fruits")
 	require.NoError(t, err)
 
 	fruitsSchemaJson, err := json.MarshalIndent(fruitsSchema, "		", "	")
@@ -367,11 +396,15 @@ func TestReferenceResolutionForArrayInObject(t *testing.T) {
 			}
 		}
 	}`
-	spec := &openapi{}
+	spec := &openapi.Specification{}
+	reader := &OpenapiReader{
+		OpenapiSpec: spec,
+		Memo:        make(map[string]*Schema),
+	}
 	err := json.Unmarshal([]byte(specString), spec)
 	require.NoError(t, err)
 
-	fruitsSchema, err := spec.readResolvedSchema("#/components/schemas/fruits")
+	fruitsSchema, err := reader.readResolvedSchema("#/components/schemas/fruits")
 	require.NoError(t, err)
 
 	fruitsSchemaJson, err := json.MarshalIndent(fruitsSchema, "		", "	")
