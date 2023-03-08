@@ -9,35 +9,44 @@ import (
 )
 
 func TestReadSchemaForObject(t *testing.T) {
-	s := func(s string) *string { return &s }
-	spec := &openapi{
-		Components: &Components{
-			Schemas: map[string]*Schema{
+	specString := `
+	{
+		"components": {
+			"schemas": {
+				"foo": {
+					"type": "number"
+				},
 				"fruits": {
-					Type:        "object",
-					Description: "fruits that are cool",
-					Properties: map[string]*Schema{
-						"mango": {
-							Type:        "object",
-							Reference:   s("#/components/schemas/mango"),
-							Description: "a mango for my schema",
-						},
+					"type": "object",
+					"description": "fruits that are cool",
+					"properties": {
 						"guava": {
-							Type:        "string",
-							Description: "a guava for my schema",
+							"type": "string",
+							"description": "a guava for my schema"
 						},
-					},
+						"mango": {
+							"type": "object",
+							"description": "a mango for my schema",
+							"$ref": "#/components/schemas/mango"
+						}
+					}
 				},
 				"mango": {
-					Type: "object",
-					Properties: map[string]*Schema{
-						"foo": {Reference: s("#/components/schemas/foo")},
-					},
-				},
-				"foo": {Type: "number"},
-			},
-		},
+					"type": "object",
+					"properties": {
+						"foo": {
+							"$ref": "#/components/schemas/foo"
+						}
+					}
+				}
+			}
+		}
 	}
+	`
+	spec := &openapi{}
+	err := json.Unmarshal([]byte(specString), spec)
+	require.NoError(t, err)
+
 	fruitsSchema, err := spec.readResolvedSchema("#/components/schemas/fruits")
 	require.NoError(t, err)
 
@@ -70,22 +79,27 @@ func TestReadSchemaForObject(t *testing.T) {
 }
 
 func TestReadSchemaForArray(t *testing.T) {
-	s := func(s string) *string { return &s }
-	spec := &openapi{
-		Components: &Components{
-			Schemas: map[string]*Schema{
+	specString := `
+	{
+		"components": {
+			"schemas": {
 				"fruits": {
-					Type:        "object",
-					Description: "fruits that are cool",
-					Items: &Schema{
-						Description: "some papayas, because papayas are fruits too",
-						Reference:   s("#/components/schemas/papaya"),
-					},
+					"type": "object",
+					"description": "fruits that are cool",
+					"items": {
+						"description": "some papayas, because papayas are fruits too",
+						"$ref": "#/components/schemas/papaya"
+					}
 				},
-				"papaya": {Type: "number"},
-			},
-		},
-	}
+				"papaya": {
+					"type": "number"
+				}
+			}
+		}
+	}`
+	spec := &openapi{}
+	err := json.Unmarshal([]byte(specString), spec)
+	require.NoError(t, err)
 
 	fruitsSchema, err := spec.readResolvedSchema("#/components/schemas/fruits")
 	require.NoError(t, err)
@@ -108,23 +122,26 @@ func TestReadSchemaForArray(t *testing.T) {
 }
 
 func TestReadSchemaForMap(t *testing.T) {
-	s := func(s string) *string { return &s }
-	spec := &openapi{
-		Components: &Components{
-			Schemas: map[string]*Schema{
+	specString := `{
+		"components": {
+			"schemas": {
 				"fruits": {
-					Type:        "object",
-					Description: "fruits that are meh",
-					AdditionalProperties: &Schema{
-						Type:        "number",
-						Description: "watermelons. watermelons.",
-						Reference:   s("#/components/schemas/watermelon"),
-					},
+					"type": "object",
+					"description": "fruits that are meh",
+					"additionalProperties": {
+						"description": "watermelons. watermelons.",
+						"$ref": "#/components/schemas/watermelon"
+					}
 				},
-				"watermelon": {Type: "number"},
-			},
-		},
-	}
+				"watermelon": {
+					"type": "number"
+				}
+			}
+		}
+	}`
+	spec := &openapi{}
+	err := json.Unmarshal([]byte(specString), spec)
+	require.NoError(t, err)
 
 	fruitsSchema, err := spec.readResolvedSchema("#/components/schemas/fruits")
 	require.NoError(t, err)
@@ -147,27 +164,29 @@ func TestReadSchemaForMap(t *testing.T) {
 }
 
 func TestRootReferenceIsResolved(t *testing.T) {
-	s := func(s string) *string { return &s }
-	spec := &openapi{
-		Components: &Components{
-			Schemas: map[string]*Schema{
-				"fruits": {
-					Type:        "object",
-					Description: "foo fighters fighting fruits",
-					Reference:   s("#/components/schemas/foo"),
-				},
+	specString := `{
+		"components": {
+			"schemas": {
 				"foo": {
-					Type:        "object",
-					Description: "this description is ignored",
-					Properties: map[string]*Schema{
+					"type": "object",
+					"description": "this description is ignored",
+					"properties": {
 						"abc": {
-							Type: String,
-						},
-					},
+							"type": "string"
+						}
+					}
 				},
-			},
-		},
-	}
+				"fruits": {
+					"type": "object",
+					"description": "foo fighters fighting fruits",
+					"$ref": "#/components/schemas/foo"
+				}
+			}
+		}
+	}`
+	spec := &openapi{}
+	err := json.Unmarshal([]byte(specString), spec)
+	require.NoError(t, err)
 
 	schema, err := spec.readResolvedSchema("#/components/schemas/fruits")
 	require.NoError(t, err)
@@ -190,92 +209,102 @@ func TestRootReferenceIsResolved(t *testing.T) {
 }
 
 func TestSelfReferenceLoopErrors(t *testing.T) {
-	s := func(s string) *string { return &s }
-	spec := &openapi{
-		Components: &Components{
-			Schemas: map[string]*Schema{
-				"fruits": {
-					Type:        "object",
-					Description: "foo fighters fighting fruits",
-					Reference:   s("#/components/schemas/foo"),
-				},
+	specString := `{
+		"components": {
+			"schemas": {
 				"foo": {
-					Type:        "object",
-					Description: "this description is ignored",
-					Properties: map[string]*Schema{
+					"type": "object",
+					"description": "this description is ignored",
+					"properties": {
 						"bar": {
-							Type:      "object",
-							Reference: s("#/components/schemas/foo"),
-						},
-					},
+							"type": "object",
+							"$ref": "#/components/schemas/foo"
+						}
+					}
 				},
-			},
-		},
-	}
+				"fruits": {
+					"type": "object",
+					"description": "foo fighters fighting fruits",
+					"$ref": "#/components/schemas/foo"
+				}
+			}
+		}
+	}`
+	spec := &openapi{}
+	err := json.Unmarshal([]byte(specString), spec)
+	require.NoError(t, err)
 
-	_, err := spec.readResolvedSchema("#/components/schemas/fruits")
+	_, err = spec.readResolvedSchema("#/components/schemas/fruits")
 	assert.ErrorContains(t, err, "references loop detected. schema ref trace: #/components/schemas/fruits -> #/components/schemas/foo")
 }
 
 func TestCrossReferenceLoopErrors(t *testing.T) {
-	s := func(s string) *string { return &s }
-	spec := &openapi{
-		Components: &Components{
-			Schemas: map[string]*Schema{
-				"fruits": {
-					Type:        "object",
-					Description: "foo fighters fighting fruits",
-					Reference:   s("#/components/schemas/foo"),
-				},
+	specString := `{
+		"components": {
+			"schemas": {
 				"foo": {
-					Type:        "object",
-					Description: "this description is ignored",
-					Properties: map[string]*Schema{
+					"type": "object",
+					"description": "this description is ignored",
+					"properties": {
 						"bar": {
-							Type:      "object",
-							Reference: s("#/components/schemas/fruits"),
-						},
-					},
+							"type": "object",
+							"$ref": "#/components/schemas/fruits"
+						}
+					}
 				},
-			},
-		},
-	}
+				"fruits": {
+					"type": "object",
+					"description": "foo fighters fighting fruits",
+					"$ref": "#/components/schemas/foo"
+				}
+			}
+		}
+	}`
+	spec := &openapi{}
+	err := json.Unmarshal([]byte(specString), spec)
+	require.NoError(t, err)
 
-	_, err := spec.readResolvedSchema("#/components/schemas/fruits")
+	_, err = spec.readResolvedSchema("#/components/schemas/fruits")
 	assert.ErrorContains(t, err, "references loop detected. schema ref trace: #/components/schemas/fruits -> #/components/schemas/foo")
 }
 
 func TestReferenceResolutionForMapInObject(t *testing.T) {
-	s := func(s string) *string { return &s }
-	spec := &openapi{
-		Components: &Components{
-			Schemas: map[string]*Schema{
+	specString := `
+	{
+		"components": {
+			"schemas": {
+				"foo": {
+					"type": "number"
+				},
 				"fruits": {
-					Type:        "object",
-					Description: "fruits that are cool",
-					Properties: map[string]*Schema{
-						"mangos": {
-							Type:        "object",
-							Reference:   s("#/components/schemas/mango"),
-							Description: "multiple mangos",
-						},
+					"type": "object",
+					"description": "fruits that are cool",
+					"properties": {
 						"guava": {
-							Type:        "string",
-							Description: "a guava for my schema",
+							"type": "string",
+							"description": "a guava for my schema"
 						},
-					},
+						"mangos": {
+							"type": "object",
+							"description": "multiple mangos",
+							"$ref": "#/components/schemas/mango"
+						}
+					}
 				},
 				"mango": {
-					Type: "object",
-					AdditionalProperties: &Schema{
-						Description: "a single mango",
-						Reference:   s("#/components/schemas/foo"),
-					},
-				},
-				"foo": {Type: "number"},
-			},
-		},
-	}
+					"type": "object",
+					"additionalProperties": {
+						"description": "a single mango",
+						"$ref": "#/components/schemas/foo"
+					}
+				}
+			}
+		}
+	}`
+	spec := &openapi{}
+	err := json.Unmarshal([]byte(specString), spec)
+	require.NoError(t, err)
+
 	fruitsSchema, err := spec.readResolvedSchema("#/components/schemas/fruits")
 	require.NoError(t, err)
 
@@ -307,36 +336,41 @@ func TestReferenceResolutionForMapInObject(t *testing.T) {
 }
 
 func TestReferenceResolutionForArrayInObject(t *testing.T) {
-	s := func(s string) *string { return &s }
-	spec := &openapi{
-		Components: &Components{
-			Schemas: map[string]*Schema{
+	specString := `{
+		"components": {
+			"schemas": {
+				"foo": {
+					"type": "number"
+				},
 				"fruits": {
-					Type:        "object",
-					Description: "fruits that are cool",
-					Properties: map[string]*Schema{
-						"mangos": {
-							Type:        "object",
-							Reference:   s("#/components/schemas/mango"),
-							Description: "multiple mangos",
-						},
+					"type": "object",
+					"description": "fruits that are cool",
+					"properties": {
 						"guava": {
-							Type:        "string",
-							Description: "a guava for my schema",
+							"type": "string",
+							"description": "a guava for my schema"
 						},
-					},
+						"mangos": {
+							"type": "object",
+							"description": "multiple mangos",
+							"$ref": "#/components/schemas/mango"
+						}
+					}
 				},
 				"mango": {
-					Type: "object",
-					Items: &Schema{
-						Description: "a single mango",
-						Reference:   s("#/components/schemas/foo"),
-					},
-				},
-				"foo": {Type: "number"},
-			},
-		},
-	}
+					"type": "object",
+					"items": {
+						"description": "a single mango",
+						"$ref": "#/components/schemas/foo"
+					}
+				}
+			}
+		}
+	}`
+	spec := &openapi{}
+	err := json.Unmarshal([]byte(specString), spec)
+	require.NoError(t, err)
+
 	fruitsSchema, err := spec.readResolvedSchema("#/components/schemas/fruits")
 	require.NoError(t, err)
 

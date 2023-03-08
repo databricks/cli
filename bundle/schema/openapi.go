@@ -1,6 +1,7 @@
 package schema
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 )
@@ -15,12 +16,31 @@ type openapi struct {
 
 const SchemaPathPrefix = "#/components/schemas/"
 
-func (spec *openapi) readShallowSchema(path string) (*Schema, error) {
+func (spec *openapi) readOpenapiSchema(path string) (*Schema, error) {
+	// check path is present in openapi spec
 	schemaKey := strings.TrimPrefix(path, SchemaPathPrefix)
 	schema, ok := spec.Components.Schemas[schemaKey]
 	if !ok {
 		return nil, fmt.Errorf("schema with path %s not found in openapi spec", path)
 	}
+
+	// A hack to convert a map[string]interface{} to *Schema
+	// We rely on the type of a AdditionalProperties in downstream functions
+	// to do reference interpolation
+	_, ok = schema.AdditionalProperties.(map[string]interface{})
+	if ok {
+		b, err := json.Marshal(schema.AdditionalProperties)
+		if err != nil {
+			return nil, err
+		}
+		additionalProperties := &Schema{}
+		err = json.Unmarshal(b, additionalProperties)
+		if err != nil {
+			return nil, err
+		}
+		schema.AdditionalProperties = additionalProperties
+	}
+
 	return schema, nil
 }
 
@@ -44,7 +64,7 @@ func (spec *openapi) safeResolveRefs(root *Schema, seenRefs map[string]struct{})
 	root.Reference = nil
 
 	// unroll one level of reference
-	selfRef, err := spec.readShallowSchema(ref)
+	selfRef, err := spec.readOpenapiSchema(ref)
 	if err != nil {
 		return nil, err
 	}
@@ -101,7 +121,7 @@ func (spec *openapi) traverseSchema(root *Schema, seenRefs map[string]struct{}) 
 }
 
 func (spec *openapi) readResolvedSchema(path string) (*Schema, error) {
-	root, err := spec.readShallowSchema(path)
+	root, err := spec.readOpenapiSchema(path)
 	if err != nil {
 		return nil, err
 	}
