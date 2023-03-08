@@ -22,7 +22,7 @@ This makes the command ignore any pre-existing snapshot and create a new one upo
 ## Output
 
 The sync command produces either text or JSON output.
-Text output is intended to be humand readable and prints the file names that the command operates on.
+Text output is intended to be human readable and prints the file names that the command operates on.
 JSON output is intended to be machine readable.
 
 ### JSON output
@@ -31,9 +31,9 @@ If selected, this produces line-delimited JSON objects with a `type` field as di
 
 Every time the command...
 * checks the file system for changes, you'll see a `start` event.
-* starts or completes a mutation of a file, you'll see a `progress` event.
-* completes a set of mutations, you'll see a `complete` event.
+* starts or completes a create/update/delete of a file, you'll see a `progress` event.
+* completes a set of create/update/delete file operations, you'll see a `complete` event.
 
 Every JSON object has a sequence number in the `seq` field that associates it with a synchronization run.
 
-Progress events have a `progress` number field between 0 and 1 indicating how far the operation has progressed.
+Progress events have a `progress` floating point number field between 0 and 1 indicating how far the operation has progressed. 0 means the operation started, 0.5 means the operation is halfway complete and 1 means the operation has completed
