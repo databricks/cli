@@ -81,11 +81,17 @@ func TestEventProgressJSON(t *testing.T) {
 	e = newEventProgress(0, EventActionPut, "path", 0.0)
 	jsonEqual(t, `{"seq": 0, "type": "progress", "action": "put", "path": "path", "progress": 0.0}`, e)
 
+	e = newEventProgress(0, EventActionPut, "path", 0.5)
+	jsonEqual(t, `{"seq": 0, "type": "progress", "action": "put", "path": "path", "progress": 0.5}`, e)
+
 	e = newEventProgress(1, EventActionPut, "path", 1.0)
 	jsonEqual(t, `{"seq": 1, "type": "progress", "action": "put", "path": "path", "progress": 1.0}`, e)
 
 	e = newEventProgress(2, EventActionDelete, "path", 0.0)
 	jsonEqual(t, `{"seq": 2, "type": "progress", "action": "delete", "path": "path", "progress": 0.0}`, e)
+
+	e = newEventProgress(2, EventActionDelete, "path", 0.5)
+	jsonEqual(t, `{"seq": 2, "type": "progress", "action": "delete", "path": "path", "progress": 0.5}`, e)
 
 	e = newEventProgress(3, EventActionDelete, "path", 1.0)
 	jsonEqual(t, `{"seq": 3, "type": "progress", "action": "delete", "path": "path", "progress": 1.0}`, e)
