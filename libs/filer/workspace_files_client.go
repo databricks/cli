@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"path"
 	"strings"
 
@@ -53,7 +54,7 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 	overwrite := slices.Contains(mode, OverwriteIfExists)
 	urlPath := fmt.Sprintf(
 		"/api/2.0/workspace-files/import-file/%s?overwrite=%t",
-		strings.TrimLeft(absPath, "/"),
+		url.QueryEscape(strings.TrimLeft(absPath, "/")),
 		overwrite,
 	)
 
