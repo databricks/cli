@@ -52,11 +52,11 @@
         line-height: 28px;
       }
 
-      a { 
-        color: #C4CCD6; 
+      a {
+        color: #C4CCD6;
       }
 
-      a:hover { 
+      a:hover {
         color: #90A5B1;
       }
 
@@ -91,7 +91,7 @@
         <div class="content">{{ .ErrorDescription }}</div>
         <!-- {{ else }} -->
         <div class="title">Authenticated</div>
-        <div class="content">Go to <a href="https://{{.Host}}">{{.Host}}</a></div>
+        <div class="content">Go to <a href="{{.Host}}">{{.Host}}</a></div>
         <!-- {{ end }} -->
         <div class="content">
           You can close this tab. Or go to <a href="https://docs.databricks.com/dev-tools/index-cli.html">documentation</a>
