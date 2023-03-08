@@ -32,7 +32,7 @@ If selected, this produces line-delimited JSON objects with a `type` field as di
 Every time the command...
 * checks the file system for changes, you'll see a `start` event.
 * starts or completes a create/update/delete of a file, you'll see a `progress` event.
-* completes a set of mutations, you'll see a `complete` event.
+* completes a set of create/update/delete file operations, you'll see a `complete` event.
 
 Every JSON object has a sequence number in the `seq` field that associates it with a synchronization run.
 
