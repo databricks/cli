@@ -22,7 +22,7 @@ This makes the command ignore any pre-existing snapshot and create a new one upo
 ## Output
 
 The sync command produces either text or JSON output.
-Text output is intended to be humand readable and prints the file names that the command operates on.
+Text output is intended to be human readable and prints the file names that the command operates on.
 JSON output is intended to be machine readable.
 
 ### JSON output
