@@ -9,7 +9,7 @@ import (
 
 type EventType string
 
-var (
+const (
 	EventTypeStart    = EventType("start")
 	EventTypeProgress = EventType("progress")
 	EventTypeComplete = EventType("complete")
@@ -17,7 +17,7 @@ var (
 
 type EventAction string
 
-var (
+const (
 	EventActionPut    = EventAction("put")
 	EventActionDelete = EventAction("delete")
 )
