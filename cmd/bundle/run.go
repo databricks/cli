@@ -21,7 +21,6 @@ var runCmd = &cobra.Command{
 		b := bundle.Get(cmd.Context())
 		err := bundle.Apply(cmd.Context(), b, []bundle.Mutator{
 			phases.Initialize(),
-			terraform.Initialize(),
 			terraform.Load(),
 		})
 		if err != nil {
