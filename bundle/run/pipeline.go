@@ -34,13 +34,44 @@ type pipelineEventOrigin struct {
 }
 
 type pipelineEvent struct {
-	Error   *pipelineEventError `json:"error"`
-	Message string              `json:"message"`
-	Origin  pipelineEventOrigin `json:"origin"`
+	Error     *pipelineEventError `json:"error"`
+	Message   string              `json:"message"`
+	Origin    pipelineEventOrigin `json:"origin"`
+	EventType string              `json:"event_type"`
 }
 
 type pipelineEventsResponse struct {
 	Events []pipelineEvent `json:"events"`
+}
+
+func filterEventsByUpdateId(events []pipelineEvent, updateId string) []pipelineEvent {
+	result := []pipelineEvent{}
+	for i := 0; i < len(events); i++ {
+		if events[i].Origin.UpdateId == updateId {
+			result = append(result, events[i])
+		}
+	}
+	return result
+}
+
+func (r *pipelineRunner) logEvent(event pipelineEvent) {
+	red := color.New(color.FgRed).SprintFunc()
+	errorPrefix := red("[ERROR]")
+	pipelineKeyPrefix := red(fmt.Sprintf("[%s]", r.Key()))
+	eventTypePrefix := red(fmt.Sprintf("[%s]", event.EventType))
+	logString := errorPrefix + pipelineKeyPrefix + eventTypePrefix
+	if event.Message != "" {
+		logString += fmt.Sprintf(" %s\n", event.Message)
+	}
+	if event.Error != nil && len(event.Error.Exceptions) > 0 {
+		logString += "trace for most recent exception: \n"
+		for i := 0; i < len(event.Error.Exceptions); i++ {
+			logString += fmt.Sprintf("%s\n", event.Error.Exceptions[i].Message)
+		}
+	}
+	if logString != errorPrefix {
+		log.Print(logString)
+	}
 }
 
 func (r *pipelineRunner) logErrorEvent(ctx context.Context, pipelineId string, updateId string) error {
@@ -55,38 +86,14 @@ func (r *pipelineRunner) logErrorEvent(ctx context.Context, pipelineId string, u
 	if err != nil {
 		return err
 	}
-	if len(res.Events) == 0 {
-		return nil
-	}
-	var latestEvent *pipelineEvent
 	// Note: For a 100 percent correct solution we should use the pagination token to find
 	// a last event which took place for updateId incase it's not present in the first 100 events.
 	// However the probablity of the error event not being present in the last 100 events
 	// for the pipeline are should be very close 0, and this would not be worth the additional
 	// complexity and latency cost for that extremely rare edge case
-	for i := 0; i < len(res.Events); i++ {
-		if res.Events[i].Origin.UpdateId == updateId {
-			latestEvent = &res.Events[i]
-			break
-		}
-	}
-	if latestEvent == nil {
-		return nil
-	}
-	red := color.New(color.FgRed).SprintFunc()
-	errorPrefix := fmt.Sprintf("%s [%s]", red("[ERROR]"), r.Key())
-	logString := errorPrefix
-	if latestEvent.Message != "" {
-		logString += fmt.Sprintf(" %s\n", latestEvent.Message)
-	}
-	if latestEvent.Error != nil && len(latestEvent.Error.Exceptions) > 0 {
-		logString += "trace for most recent exception: \n"
-		for i := 0; i < len(latestEvent.Error.Exceptions); i++ {
-			logString += fmt.Sprintf("%s\n", latestEvent.Error.Exceptions[i].Message)
-		}
-	}
-	if logString != errorPrefix {
-		log.Print(logString)
+	updateEvents := filterEventsByUpdateId(res.Events, updateId)
+	for i := 0; i < len(updateEvents); i++ {
+		r.logEvent(updateEvents[i])
 	}
 	return nil
 }
