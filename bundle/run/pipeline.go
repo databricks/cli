@@ -61,7 +61,7 @@ func (r *pipelineRunner) logErrorEvent(ctx context.Context, pipelineId string, u
 	var latestEvent *pipelineEvent
 	// Note: For a 100 percent correct solution we should use the pagination token to find
 	// a last event which took place for updateId incase it's not present in the first 100 events.
-	// However the changes of the error event not being present in the last 100 events
+	// However the probablity of the error event not being present in the last 100 events
 	// for the pipeline are should be very close 0, and this would not be worth the additional
 	// complexity and latency cost for that extremely rare edge case
 	for i := 0; i < len(res.Events); i++ {
