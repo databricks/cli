@@ -19,7 +19,7 @@ import (
 )
 
 // TODO: Use a sdk implementation of this API once it's incorporated in the openapi
-// spec. https://databricks.atlassian.net/browse/DECO-573
+// spec. https://github.com/databricks/bricks/issues/243
 type pipelineEventErrorException struct {
 	ClassName string `json:"class_name"`
 	Message   string `json:"message"`
