@@ -106,7 +106,7 @@
                   "description": "",
                   "properties": {
                     "email_notifications": {
-                      "description": "An optional set of email addresses that is notified when runs of this task begin or complete as well as when this task is deleted. The default behavior is to not send any emails.",
+                      "description": "An optional set of email addresses that is notified when runs of this job begin or complete as well as when this job is deleted. The default behavior is to not send any emails.",
                       "properties": {
                         "no_alert_for_skipped_runs": {
                           "description": "If true, do not send email to recipients specified in `on_failure` if the run is skipped."
@@ -174,7 +174,7 @@
                             "description": "A unique name for the job cluster. This field is required and must be unique within the job.\n`JobTaskSettings` may refer to this field to determine which cluster to launch for the task execution."
                           },
                           "new_cluster": {
-                            "description": "If new_cluster, a description of a cluster that is created for only for this task.",
+                            "description": "If new_cluster, a description of a cluster that is created for each task.",
                             "properties": {
                               "autoscale": {
                                 "description": "Parameters needed in order to automatically scale clusters up and down based on load.\nNote: autoscaling works best with DB runtime versions 3.0 or later.",
@@ -456,7 +456,7 @@
                             "description": "An optional description for this task.\nThe maximum length is 4096 bytes."
                           },
                           "email_notifications": {
-                            "description": "An optional set of email addresses that is notified when runs of this task begin or complete as well as when this task is deleted. The default behavior is to not send any emails.",
+                            "description": "An optional set of email addresses that is notified when runs of this job begin or complete as well as when this job is deleted. The default behavior is to not send any emails.",
                             "properties": {
                               "no_alert_for_skipped_runs": {
                                 "description": "If true, do not send email to recipients specified in `on_failure` if the run is skipped."
@@ -550,7 +550,7 @@
                             "description": "An optional minimal interval in milliseconds between the start of the failed run and the subsequent retry run. The default behavior is that unsuccessful runs are immediately retried."
                           },
                           "new_cluster": {
-                            "description": "If new_cluster, a description of a cluster that is created for only for this task.",
+                            "description": "If new_cluster, a description of a cluster that is created for each task.",
                             "properties": {
                               "autoscale": {
                                 "description": "Parameters needed in order to automatically scale clusters up and down based on load.\nNote: autoscaling works best with DB runtime versions 3.0 or later.",
@@ -1491,7 +1491,7 @@
             "description": "",
             "properties": {
               "email_notifications": {
-                "description": "An optional set of email addresses that is notified when runs of this task begin or complete as well as when this task is deleted. The default behavior is to not send any emails.",
+                "description": "An optional set of email addresses that is notified when runs of this job begin or complete as well as when this job is deleted. The default behavior is to not send any emails.",
                 "properties": {
                   "no_alert_for_skipped_runs": {
                     "description": "If true, do not send email to recipients specified in `on_failure` if the run is skipped."
@@ -1559,7 +1559,7 @@
                       "description": "A unique name for the job cluster. This field is required and must be unique within the job.\n`JobTaskSettings` may refer to this field to determine which cluster to launch for the task execution."
                     },
                     "new_cluster": {
-                      "description": "If new_cluster, a description of a cluster that is created for only for this task.",
+                      "description": "If new_cluster, a description of a cluster that is created for each task.",
                       "properties": {
                         "autoscale": {
                           "description": "Parameters needed in order to automatically scale clusters up and down based on load.\nNote: autoscaling works best with DB runtime versions 3.0 or later.",
@@ -1841,7 +1841,7 @@
                       "description": "An optional description for this task.\nThe maximum length is 4096 bytes."
                     },
                     "email_notifications": {
-                      "description": "An optional set of email addresses that is notified when runs of this task begin or complete as well as when this task is deleted. The default behavior is to not send any emails.",
+                      "description": "An optional set of email addresses that is notified when runs of this job begin or complete as well as when this job is deleted. The default behavior is to not send any emails.",
                       "properties": {
                         "no_alert_for_skipped_runs": {
                           "description": "If true, do not send email to recipients specified in `on_failure` if the run is skipped."
@@ -1935,7 +1935,7 @@
                       "description": "An optional minimal interval in milliseconds between the start of the failed run and the subsequent retry run. The default behavior is that unsuccessful runs are immediately retried."
                     },
                     "new_cluster": {
-                      "description": "If new_cluster, a description of a cluster that is created for only for this task.",
+                      "description": "If new_cluster, a description of a cluster that is created for each task.",
                       "properties": {
                         "autoscale": {
                           "description": "Parameters needed in order to automatically scale clusters up and down based on load.\nNote: autoscaling works best with DB runtime versions 3.0 or later.",

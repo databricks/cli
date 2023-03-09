@@ -9,7 +9,6 @@ import (
 
 	"github.com/databricks/bricks/bundle/config"
 	"github.com/databricks/databricks-sdk-go/openapi"
-	"gopkg.in/yaml.v3"
 )
 
 // A subset of Schema struct
@@ -73,7 +72,7 @@ func (docs *Docs) refreshEnvironmentsDocs() error {
 func initializeBundleDocs() (*Docs, error) {
 	// load embedded descriptions
 	embedded := Docs{}
-	err := yaml.Unmarshal(bundleDocs, &embedded)
+	err := json.Unmarshal(bundleDocs, &embedded)
 	if err != nil {
 		return nil, err
 	}
