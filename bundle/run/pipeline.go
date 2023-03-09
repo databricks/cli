@@ -205,7 +205,10 @@ func (r *pipelineRunner) Run(ctx context.Context, opts *Options) error {
 		}
 		if state == pipelines.UpdateInfoStateFailed {
 			log.Printf("%s Update has failed!", prefix)
-			r.logErrorEvent(ctx, pipelineID, updateID)
+			err := r.logErrorEvent(ctx, pipelineID, updateID)
+			if err != nil {
+				return err
+			}
 			return fmt.Errorf("update failed")
 		}
 		if state == pipelines.UpdateInfoStateCompleted {
