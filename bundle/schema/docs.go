@@ -12,6 +12,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// A subset of Schema struct
 type Docs struct {
 	Description          string           `json:"description"`
 	Properties           map[string]*Docs `json:"properties,omitempty"`
@@ -87,7 +88,9 @@ func initializeBundleDocs() (*Docs, error) {
 	return docs, nil
 }
 
+// *Docs are a subset of *Schema, this function selects that subset
 func schemaToDocs(schema *Schema) *Docs {
+	// terminate recursion if schema is nil
 	if schema == nil {
 		return nil
 	}
