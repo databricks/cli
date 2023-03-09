@@ -92,7 +92,7 @@ func (r *pipelineRunner) logErrorEvent(ctx context.Context, pipelineId string, u
 	// for the pipeline are should be very close 0, and this would not be worth the additional
 	// complexity and latency cost for that extremely rare edge case
 	updateEvents := filterEventsByUpdateId(res.Events, updateId)
-	for i := 0; i < len(updateEvents); i++ {
+	for i := len(updateEvents) - 1; i >= 0; i-- {
 		r.logEvent(updateEvents[i])
 	}
 	return nil
