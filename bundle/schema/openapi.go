@@ -65,9 +65,9 @@ func (reader *OpenapiReader) readOpenapiSchema(path string) (*Schema, error) {
 }
 
 // safe againt loops in refs
-func (spec *OpenapiReader) safeResolveRefs(root *Schema, seenRefs map[string]struct{}) (*Schema, error) {
+func (reader *OpenapiReader) safeResolveRefs(root *Schema, seenRefs map[string]struct{}) (*Schema, error) {
 	if root.Reference == nil {
-		return spec.traverseSchema(root, seenRefs)
+		return reader.traverseSchema(root, seenRefs)
 	}
 	key := *root.Reference
 	_, ok := seenRefs[key]
@@ -85,7 +85,7 @@ func (spec *OpenapiReader) safeResolveRefs(root *Schema, seenRefs map[string]str
 	root.Reference = nil
 
 	// unroll one level of reference
-	selfRef, err := spec.readOpenapiSchema(ref)
+	selfRef, err := reader.readOpenapiSchema(ref)
 	if err != nil {
 		return nil, err
 	}
@@ -93,7 +93,7 @@ func (spec *OpenapiReader) safeResolveRefs(root *Schema, seenRefs map[string]str
 	root.Description = description
 
 	// traverse again to find new references
-	root, err = spec.traverseSchema(root, seenRefs)
+	root, err = reader.traverseSchema(root, seenRefs)
 	if err != nil {
 		return nil, err
 	}
@@ -101,19 +101,19 @@ func (spec *OpenapiReader) safeResolveRefs(root *Schema, seenRefs map[string]str
 	return root, err
 }
 
-func (spec *OpenapiReader) traverseSchema(root *Schema, seenRefs map[string]struct{}) (*Schema, error) {
+func (reader *OpenapiReader) traverseSchema(root *Schema, seenRefs map[string]struct{}) (*Schema, error) {
 	// case primitive (or invalid)
 	if root.Type != Object && root.Type != Array {
 		return root, nil
 	}
 	// only root references are resolved
 	if root.Reference != nil {
-		return spec.safeResolveRefs(root, seenRefs)
+		return reader.safeResolveRefs(root, seenRefs)
 	}
 	// case struct
 	if len(root.Properties) > 0 {
 		for k, v := range root.Properties {
-			childSchema, err := spec.safeResolveRefs(v, seenRefs)
+			childSchema, err := reader.safeResolveRefs(v, seenRefs)
 			if err != nil {
 				return nil, err
 			}
@@ -122,7 +122,7 @@ func (spec *OpenapiReader) traverseSchema(root *Schema, seenRefs map[string]stru
 	}
 	// case array
 	if root.Items != nil {
-		itemsSchema, err := spec.safeResolveRefs(root.Items, seenRefs)
+		itemsSchema, err := reader.safeResolveRefs(root.Items, seenRefs)
 		if err != nil {
 			return nil, err
 		}
@@ -131,7 +131,7 @@ func (spec *OpenapiReader) traverseSchema(root *Schema, seenRefs map[string]stru
 	// case map
 	additionionalProperties, ok := root.AdditionalProperties.(*Schema)
 	if ok && additionionalProperties != nil {
-		valueSchema, err := spec.safeResolveRefs(additionionalProperties, seenRefs)
+		valueSchema, err := reader.safeResolveRefs(additionionalProperties, seenRefs)
 		if err != nil {
 			return nil, err
 		}
@@ -140,14 +140,14 @@ func (spec *OpenapiReader) traverseSchema(root *Schema, seenRefs map[string]stru
 	return root, nil
 }
 
-func (spec *OpenapiReader) readResolvedSchema(path string) (*Schema, error) {
-	root, err := spec.readOpenapiSchema(path)
+func (reader *OpenapiReader) readResolvedSchema(path string) (*Schema, error) {
+	root, err := reader.readOpenapiSchema(path)
 	if err != nil {
 		return nil, err
 	}
 	seenRefs := make(map[string]struct{})
 	seenRefs[path] = struct{}{}
-	root, err = spec.safeResolveRefs(root, seenRefs)
+	root, err = reader.safeResolveRefs(root, seenRefs)
 	if err != nil {
 		trace := ""
 		count := 0
@@ -164,8 +164,8 @@ func (spec *OpenapiReader) readResolvedSchema(path string) (*Schema, error) {
 	return root, nil
 }
 
-func (spec *OpenapiReader) jobsDocs() (*Docs, error) {
-	jobSettingsSchema, err := spec.readResolvedSchema(SchemaPathPrefix + "jobs.JobSettings")
+func (reader *OpenapiReader) jobsDocs() (*Docs, error) {
+	jobSettingsSchema, err := reader.readResolvedSchema(SchemaPathPrefix + "jobs.JobSettings")
 	if err != nil {
 		return nil, err
 	}
@@ -179,8 +179,8 @@ func (spec *OpenapiReader) jobsDocs() (*Docs, error) {
 	return jobsDocs, nil
 }
 
-func (spec *OpenapiReader) pipelinesDocs() (*Docs, error) {
-	pipelineSpecSchema, err := spec.readResolvedSchema(SchemaPathPrefix + "pipelines.PipelineSpec")
+func (reader *OpenapiReader) pipelinesDocs() (*Docs, error) {
+	pipelineSpecSchema, err := reader.readResolvedSchema(SchemaPathPrefix + "pipelines.PipelineSpec")
 	if err != nil {
 		return nil, err
 	}
@@ -194,12 +194,12 @@ func (spec *OpenapiReader) pipelinesDocs() (*Docs, error) {
 	return pipelinesDocs, nil
 }
 
-func (spec *OpenapiReader) ResourcesDocs() (*Docs, error) {
-	jobsDocs, err := spec.jobsDocs()
+func (reader *OpenapiReader) ResourcesDocs() (*Docs, error) {
+	jobsDocs, err := reader.jobsDocs()
 	if err != nil {
 		return nil, err
 	}
-	pipelinesDocs, err := spec.pipelinesDocs()
+	pipelinesDocs, err := reader.pipelinesDocs()
 	if err != nil {
 		return nil, err
 	}
