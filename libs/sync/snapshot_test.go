@@ -249,6 +249,42 @@ func TestErrorWhenIdenticalRemoteName(t *testing.T) {
 	assert.ErrorContains(t, err, "both foo and foo.py point to the same remote file location foo. Please remove one of them from your local project")
 }
 
+func TestNoErrorRenameWithIdenticalRemoteName(t *testing.T) {
+	// Create temp project dir
+	projectDir := t.TempDir()
+	fileSet, err := git.NewFileSet(projectDir)
+	require.NoError(t, err)
+	state := Snapshot{
+		LastUpdatedTimes:   make(map[string]time.Time),
+		LocalToRemoteNames: make(map[string]string),
+		RemoteToLocalNames: make(map[string]string),
+	}
+
+	// upload should work since they point to different destinations
+	pythonFoo := testfile.CreateFile(t, filepath.Join(projectDir, "foo.py"))
+	defer pythonFoo.Close(t)
+	pythonFoo.Overwrite(t, "# Databricks notebook source\n")
+	files, err := fileSet.All()
+	assert.NoError(t, err)
+	change, err := state.diff(files)
+	assert.NoError(t, err)
+	assert.Len(t, change.delete, 0)
+	assert.Len(t, change.put, 1)
+	assert.Contains(t, change.put, "foo.py")
+
+	pythonFoo.Remove(t)
+	sqlFoo := testfile.CreateFile(t, filepath.Join(projectDir, "foo.sql"))
+	sqlFoo.Overwrite(t, "-- Databricks notebook source\n")
+	files, err = fileSet.All()
+	assert.NoError(t, err)
+	change, err = state.diff(files)
+	assert.NoError(t, err)
+	assert.Len(t, change.delete, 1)
+	assert.Len(t, change.put, 1)
+	assert.Contains(t, change.put, "foo.sql")
+	assert.Contains(t, change.delete, "foo")
+}
+
 func defaultOptions(t *testing.T) *SyncOptions {
 	return &SyncOptions{
 		Host:             "www.foobar.com",
