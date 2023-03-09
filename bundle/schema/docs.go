@@ -19,19 +19,6 @@ type Docs struct {
 	AdditionalProperties *Docs            `json:"additionalproperties,omitempty"`
 }
 
-func LoadDocs(path string) (*Docs, error) {
-	bytes, err := os.ReadFile(path)
-	if err != nil {
-		return nil, err
-	}
-	docs := Docs{}
-	err = yaml.Unmarshal(bytes, &docs)
-	if err != nil {
-		return nil, err
-	}
-	return &docs, nil
-}
-
 //go:embed docs/bundle_descriptions.json
 var bundleDocs []byte
 
