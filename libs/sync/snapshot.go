@@ -211,7 +211,7 @@ func (s *Snapshot) diff(all []fileset.File) (change diff, err error) {
 				change.delete = append(change.delete, oldRemoteName)
 				delete(remoteToLocalNames, oldRemoteName)
 			}
-			
+
 			// We cannot allow two local files in the project to point to the same
 			// remote path
 			prevLocalName, ok := remoteToLocalNames[remoteName]
