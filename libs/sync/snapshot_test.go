@@ -272,6 +272,7 @@ func TestNoErrorRenameWithIdenticalRemoteName(t *testing.T) {
 	assert.Len(t, change.put, 1)
 	assert.Contains(t, change.put, "foo.py")
 
+	pythonFoo.Close()
 	pythonFoo.Remove(t)
 	sqlFoo := testfile.CreateFile(t, filepath.Join(projectDir, "foo.sql"))
 	sqlFoo.Overwrite(t, "-- Databricks notebook source\n")
