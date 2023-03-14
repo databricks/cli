@@ -3,6 +3,8 @@ package flags
 import (
 	"fmt"
 	"strings"
+
+	"github.com/spf13/cobra"
 )
 
 // Output controls how the CLI should produce its output.
@@ -36,4 +38,12 @@ func (f *Output) Set(s string) error {
 
 func (f *Output) Type() string {
 	return "type"
+}
+
+// Complete is the Cobra compatible completion function for this flag.
+func (f *Output) Complete(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	return []string{
+		OutputText.String(),
+		OutputJSON.String(),
+	}, cobra.ShellCompDirectiveNoFileComp
 }

@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/atotto/clipboard v0.1.4
-	github.com/databricks/databricks-sdk-go v0.4.1
+	github.com/databricks/databricks-sdk-go v0.4.2-0.20230314091928-2f3f83a6fe4a
 	github.com/ghodss/yaml v1.0.0 // MIT + NOTICE
 	github.com/manifoldco/promptui v0.9.0 // BSD-3-Clause license
 	github.com/mitchellh/go-homedir v1.1.0 // MIT
@@ -24,7 +24,7 @@ require (
 	github.com/hashicorp/hc-install v0.5.0
 	github.com/hashicorp/terraform-exec v0.18.1
 	github.com/hashicorp/terraform-json v0.16.0
-	golang.org/x/exp v0.0.0-20221031165847-c99f073a8326
+	golang.org/x/exp v0.0.0-20230310171629-522b1b587ee0
 	golang.org/x/sync v0.1.0
 )
 
@@ -56,9 +56,9 @@ require (
 	golang.org/x/sys v0.6.0 // indirect
 	golang.org/x/text v0.8.0
 	golang.org/x/time v0.3.0 // indirect
-	google.golang.org/api v0.111.0 // indirect
+	google.golang.org/api v0.112.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/genproto v0.0.0-20230223222841-637eb2293923 // indirect
+	google.golang.org/genproto v0.0.0-20230303212802-e74f57abe488 // indirect
 	google.golang.org/grpc v1.53.0 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect

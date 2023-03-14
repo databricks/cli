@@ -3,9 +3,7 @@ package root
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
-	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -28,34 +26,11 @@ var RootCmd = &cobra.Command{
 		// Configure our user agent with the command that's about to be executed.
 		ctx = withCommandInUserAgent(ctx, cmd)
 		ctx = withUpstreamInUserAgent(ctx)
+
+		// Configure default logger.
+		ctx = initializeLogger(ctx, cmd)
 		cmd.SetContext(ctx)
-
-		if Verbose {
-			logLevel = append(logLevel, "[DEBUG]")
-		}
-		log.SetOutput(&logLevel)
 	},
-
-	// Uncomment the following line if your bare application
-	// has an action associated with it:
-}
-
-// TODO: replace with zerolog
-type levelWriter []string
-
-var logLevel = levelWriter{"[INFO]", "[ERROR]", "[WARN]"}
-
-// Verbose means additional debug information, like API logs
-var Verbose bool
-
-func (lw *levelWriter) Write(p []byte) (n int, err error) {
-	a := string(p)
-	for _, l := range *lw {
-		if strings.Contains(a, l) {
-			return os.Stderr.Write(p)
-		}
-	}
-	return
 }
 
 // Wrap flag errors to include the usage string.
@@ -77,5 +52,4 @@ func Execute() {
 func init() {
 	RootCmd.SetFlagErrorFunc(flagErrorFunc)
 	// flags available for every child command
-	RootCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "v", false, "print debug logs")
 }
