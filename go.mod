@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/atotto/clipboard v0.1.4
-	github.com/databricks/databricks-sdk-go v0.4.2-0.20230314091928-2f3f83a6fe4a
+	github.com/databricks/databricks-sdk-go v0.5.0
 	github.com/ghodss/yaml v1.0.0 // MIT + NOTICE
 	github.com/manifoldco/promptui v0.9.0 // BSD-3-Clause license
 	github.com/mitchellh/go-homedir v1.1.0 // MIT
@@ -18,7 +18,7 @@ require (
 )
 
 require (
-	github.com/fatih/color v1.14.1
+	github.com/fatih/color v1.15.0
 	github.com/google/uuid v1.3.0
 	github.com/hashicorp/go-version v1.6.0
 	github.com/hashicorp/hc-install v0.5.0
@@ -62,5 +62,5 @@ require (
 	google.golang.org/grpc v1.53.0 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-	gopkg.in/yaml.v3 v3.0.1
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
