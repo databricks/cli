@@ -23,12 +23,12 @@ var RootCmd = &cobra.Command{
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		ctx := cmd.Context()
 
+		// Configure default logger.
+		ctx = initializeLogger(ctx, cmd)
+
 		// Configure our user agent with the command that's about to be executed.
 		ctx = withCommandInUserAgent(ctx, cmd)
 		ctx = withUpstreamInUserAgent(ctx)
-
-		// Configure default logger.
-		ctx = initializeLogger(ctx, cmd)
 		cmd.SetContext(ctx)
 	},
 }
