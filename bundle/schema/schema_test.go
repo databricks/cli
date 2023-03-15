@@ -1062,60 +1062,31 @@ func TestFieldsWithoutOmitEmptyAreRequired(t *testing.T) {
 	assert.Equal(t, expectedSchema, string(jsonSchema))
 }
 
-func TestDocIngestionInSchema(t *testing.T) {
+func TestDocIngestionForObject(t *testing.T) {
 	docs := &Docs{
-		Documentation: "docs for root",
-		Children: map[string]Docs{
+		Description: "docs for root",
+		Properties: map[string]*Docs{
 			"my_struct": {
-				Documentation: "docs for my struct",
-			},
-			"my_val": {
-				Documentation: "docs for my val",
-			},
-			"my_slice": {
-				Documentation: "docs for my slice",
-				Children: map[string]Docs{
-					"guava": {
-						Documentation: "docs for guava",
+				Description: "docs for my struct",
+				Properties: map[string]*Docs{
+					"a": {
+						Description: "docs for a",
 					},
-					"pineapple": {
-						Documentation: "docs for pineapple",
-					},
-				},
-			},
-			"my_map": {
-				Documentation: "docs for my map",
-				Children: map[string]Docs{
-					"apple": {
-						Documentation: "docs for apple",
-					},
-					"mango": {
-						Documentation: "docs for mango",
+					"c": {
+						Description: "docs for c which does not exist on my_struct",
 					},
 				},
 			},
 		},
 	}
 
-	type Foo struct {
-		Apple int `json:"apple"`
-		Mango int `json:"mango"`
-	}
-
-	type Bar struct {
-		Guava     int `json:"guava"`
-		Pineapple int `json:"pineapple"`
-	}
-
 	type MyStruct struct {
 		A string `json:"a"`
+		B int    `json:"b"`
 	}
 
 	type Root struct {
-		MyStruct *MyStruct       `json:"my_struct"`
-		MyVal    int             `json:"my_val"`
-		MySlice  []Bar           `json:"my_slice"`
-		MyMap    map[string]*Foo `json:"my_map"`
+		MyStruct *MyStruct `json:"my_struct"`
 	}
 
 	elem := Root{}
@@ -1131,29 +1102,82 @@ func TestDocIngestionInSchema(t *testing.T) {
 			"type": "object",
 			"description": "docs for root",
 			"properties": {
-				"my_map": {
+				"my_struct": {
 					"type": "object",
-					"description": "docs for my map",
-					"additionalProperties": {
-						"type": "object",
-						"description": "docs for my map",
-						"properties": {
-							"apple": {
-								"type": "number",
-								"description": "docs for apple"
-							},
-							"mango": {
-								"type": "number",
-								"description": "docs for mango"
-							}
+					"description": "docs for my struct",
+					"properties": {
+						"a": {
+							"type": "string",
+							"description": "docs for a"
 						},
-						"additionalProperties": false,
-						"required": [
-							"apple",
-							"mango"
-						]
-					}
+						"b": {
+							"type": "number"
+						}
+					},
+					"additionalProperties": false,
+					"required": [
+						"a",
+						"b"
+					]
+				}
+			},
+			"additionalProperties": false,
+			"required": [
+				"my_struct"
+			]
+		}`
+
+	t.Log("[DEBUG] actual: ", string(jsonSchema))
+	t.Log("[DEBUG] expected: ", expectedSchema)
+
+	assert.Equal(t, expectedSchema, string(jsonSchema))
+}
+
+func TestDocIngestionForSlice(t *testing.T) {
+	docs := &Docs{
+		Description: "docs for root",
+		Properties: map[string]*Docs{
+			"my_slice": {
+				Description: "docs for my slice",
+				Items: &Docs{
+					Properties: map[string]*Docs{
+						"guava": {
+							Description: "docs for guava",
+						},
+						"pineapple": {
+							Description: "docs for pineapple",
+						},
+						"watermelon": {
+							Description: "docs for watermelon which does not exist in schema",
+						},
+					},
 				},
+			},
+		},
+	}
+
+	type Bar struct {
+		Guava     int `json:"guava"`
+		Pineapple int `json:"pineapple"`
+	}
+
+	type Root struct {
+		MySlice []Bar `json:"my_slice"`
+	}
+
+	elem := Root{}
+
+	schema, err := New(reflect.TypeOf(elem), docs)
+	require.NoError(t, err)
+
+	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
+	assert.NoError(t, err)
+
+	expectedSchema :=
+		`{
+			"type": "object",
+			"description": "docs for root",
+			"properties": {
 				"my_slice": {
 					"type": "array",
 					"description": "docs for my slice",
@@ -1175,20 +1199,130 @@ func TestDocIngestionInSchema(t *testing.T) {
 							"pineapple"
 						]
 					}
-				},
-				"my_struct": {
-					"type": "object",
-					"description": "docs for my struct",
-					"properties": {
-						"a": {
-							"type": "string"
-						}
+				}
+			},
+			"additionalProperties": false,
+			"required": [
+				"my_slice"
+			]
+		}`
+
+	t.Log("[DEBUG] actual: ", string(jsonSchema))
+	t.Log("[DEBUG] expected: ", expectedSchema)
+
+	assert.Equal(t, expectedSchema, string(jsonSchema))
+}
+
+func TestDocIngestionForMap(t *testing.T) {
+	docs := &Docs{
+		Description: "docs for root",
+		Properties: map[string]*Docs{
+			"my_map": {
+				Description: "docs for my map",
+				AdditionalProperties: &Docs{
+					Properties: map[string]*Docs{
+						"apple": {
+							Description: "docs for apple",
+						},
+						"mango": {
+							Description: "docs for mango",
+						},
+						"watermelon": {
+							Description: "docs for watermelon which does not exist in schema",
+						},
+						"papaya": {
+							Description: "docs for papaya which does not exist in schema",
+						},
 					},
-					"additionalProperties": false,
-					"required": [
-						"a"
-					]
 				},
+			},
+		},
+	}
+
+	type Foo struct {
+		Apple int `json:"apple"`
+		Mango int `json:"mango"`
+	}
+
+	type Root struct {
+		MyMap map[string]*Foo `json:"my_map"`
+	}
+
+	elem := Root{}
+
+	schema, err := New(reflect.TypeOf(elem), docs)
+	require.NoError(t, err)
+
+	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
+	assert.NoError(t, err)
+
+	expectedSchema :=
+		`{
+			"type": "object",
+			"description": "docs for root",
+			"properties": {
+				"my_map": {
+					"type": "object",
+					"description": "docs for my map",
+					"additionalProperties": {
+						"type": "object",
+						"properties": {
+							"apple": {
+								"type": "number",
+								"description": "docs for apple"
+							},
+							"mango": {
+								"type": "number",
+								"description": "docs for mango"
+							}
+						},
+						"additionalProperties": false,
+						"required": [
+							"apple",
+							"mango"
+						]
+					}
+				}
+			},
+			"additionalProperties": false,
+			"required": [
+				"my_map"
+			]
+		}`
+
+	t.Log("[DEBUG] actual: ", string(jsonSchema))
+	t.Log("[DEBUG] expected: ", expectedSchema)
+
+	assert.Equal(t, expectedSchema, string(jsonSchema))
+}
+
+func TestDocIngestionForTopLevelPrimitive(t *testing.T) {
+	docs := &Docs{
+		Description: "docs for root",
+		Properties: map[string]*Docs{
+			"my_val": {
+				Description: "docs for my val",
+			},
+		},
+	}
+
+	type Root struct {
+		MyVal int `json:"my_val"`
+	}
+
+	elem := Root{}
+
+	schema, err := New(reflect.TypeOf(elem), docs)
+	require.NoError(t, err)
+
+	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
+	assert.NoError(t, err)
+
+	expectedSchema :=
+		`{
+			"type": "object",
+			"description": "docs for root",
+			"properties": {
 				"my_val": {
 					"type": "number",
 					"description": "docs for my val"
@@ -1196,10 +1330,7 @@ func TestDocIngestionInSchema(t *testing.T) {
 			},
 			"additionalProperties": false,
 			"required": [
-				"my_struct",
-				"my_val",
-				"my_slice",
-				"my_map"
+				"my_val"
 			]
 		}`
 
