@@ -62,7 +62,7 @@ func (r *RepoFiles) writeRemote(ctx context.Context, relativePath string, conten
 	if err != nil {
 		return err
 	}
-	escapedPath := url.QueryEscape(strings.TrimLeft(remotePath, "/"))
+	escapedPath := url.PathEscape(strings.TrimLeft(remotePath, "/"))
 	apiPath := fmt.Sprintf("/api/2.0/workspace-files/import-file/%s?overwrite=true", escapedPath)
 
 	err = apiClient.Do(ctx, http.MethodPost, apiPath, content, nil)
