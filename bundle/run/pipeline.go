@@ -4,48 +4,18 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"net/http"
 	"strings"
 	"time"
 
-	"net/url"
-
 	"github.com/databricks/bricks/bundle"
 	"github.com/databricks/bricks/bundle/config/resources"
-	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/fatih/color"
 	flag "github.com/spf13/pflag"
 )
 
-// TODO: Use a sdk implementation of this API once it's incorporated in the openapi
-// spec. https://github.com/databricks/bricks/issues/243
-type pipelineEventErrorException struct {
-	ClassName string `json:"class_name"`
-	Message   string `json:"message"`
-}
-
-type pipelineEventError struct {
-	Exceptions []pipelineEventErrorException `json:"exceptions"`
-}
-
-type pipelineEventOrigin struct {
-	UpdateId string `json:"update_id"`
-}
-
-type pipelineEvent struct {
-	Error     *pipelineEventError `json:"error"`
-	Message   string              `json:"message"`
-	Origin    pipelineEventOrigin `json:"origin"`
-	EventType string              `json:"event_type"`
-}
-
-type pipelineEventsResponse struct {
-	Events []pipelineEvent `json:"events"`
-}
-
-func filterEventsByUpdateId(events []pipelineEvent, updateId string) []pipelineEvent {
-	result := []pipelineEvent{}
+func filterEventsByUpdateId(events []pipelines.PipelineEvent, updateId string) []pipelines.PipelineEvent {
+	result := []pipelines.PipelineEvent{}
 	for i := 0; i < len(events); i++ {
 		if events[i].Origin.UpdateId == updateId {
 			result = append(result, events[i])
@@ -54,7 +24,7 @@ func filterEventsByUpdateId(events []pipelineEvent, updateId string) []pipelineE
 	return result
 }
 
-func (r *pipelineRunner) logEvent(event pipelineEvent) {
+func (r *pipelineRunner) logEvent(event pipelines.PipelineEvent) {
 	red := color.New(color.FgRed).SprintFunc()
 	errorPrefix := red("[ERROR]")
 	pipelineKeyPrefix := red(fmt.Sprintf("[%s]", r.Key()))
@@ -75,14 +45,13 @@ func (r *pipelineRunner) logEvent(event pipelineEvent) {
 }
 
 func (r *pipelineRunner) logErrorEvent(ctx context.Context, pipelineId string, updateId string) error {
-	apiClient, err := client.New(r.bundle.WorkspaceClient().Config)
-	if err != nil {
-		return err
-	}
-	filter := url.QueryEscape(`level='ERROR'`)
-	apiPath := fmt.Sprintf("/api/2.0/pipelines/%s/events?filter=%s&max_results=100", pipelineId, filter)
-	res := pipelineEventsResponse{}
-	err = apiClient.Do(ctx, http.MethodGet, apiPath, nil, &res)
+
+	w := r.bundle.WorkspaceClient()
+	res, err := w.Pipelines.Impl().ListPipelineEvents(ctx, pipelines.ListPipelineEvents{
+		Filter:     `level='ERROR'`,
+		MaxResults: 100,
+		PipelineId: pipelineId,
+	})
 	if err != nil {
 		return err
 	}

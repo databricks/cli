@@ -4,16 +4,16 @@ go 1.18
 
 require (
 	github.com/atotto/clipboard v0.1.4
-	github.com/databricks/databricks-sdk-go v0.3.2
+	github.com/databricks/databricks-sdk-go v0.5.0
 	github.com/ghodss/yaml v1.0.0 // MIT + NOTICE
 	github.com/manifoldco/promptui v0.9.0 // BSD-3-Clause license
 	github.com/mitchellh/go-homedir v1.1.0 // MIT
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8 // BSD-2-Clause
 	github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06 // MIT
 	github.com/spf13/cobra v1.6.1 // Apache 2.0
-	github.com/stretchr/testify v1.8.1 // MIT
+	github.com/stretchr/testify v1.8.2 // MIT
 	github.com/whilp/git-urls v1.0.0 // MIT
-	golang.org/x/mod v0.8.0 // BSD-3-Clause
+	golang.org/x/mod v0.9.0 // BSD-3-Clause
 	gopkg.in/ini.v1 v1.67.0 // Apache 2.0
 )
 
@@ -50,14 +50,14 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/spf13/pflag v1.0.5
 	go.opencensus.io v0.24.0 // indirect
-	golang.org/x/net v0.7.0 // indirect
-	golang.org/x/oauth2 v0.5.0
-	golang.org/x/sys v0.5.0 // indirect
-	golang.org/x/text v0.7.0
-	golang.org/x/time v0.0.0-20210723032227-1f47c861a9ac // indirect
-	google.golang.org/api v0.110.0 // indirect
+	golang.org/x/net v0.8.0 // indirect
+	golang.org/x/oauth2 v0.6.0
+	golang.org/x/sys v0.6.0 // indirect
+	golang.org/x/text v0.8.0
+	golang.org/x/time v0.3.0 // indirect
+	google.golang.org/api v0.112.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/genproto v0.0.0-20230209215440-0dfe4f8abfcc // indirect
+	google.golang.org/genproto v0.0.0-20230303212802-e74f57abe488 // indirect
 	google.golang.org/grpc v1.53.0 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
