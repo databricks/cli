@@ -65,20 +65,19 @@ func (reader *OpenapiReader) readOpenapiSchema(path string) (*Schema, error) {
 }
 
 // safe againt loops in refs
-func (reader *OpenapiReader) safeResolveRefs(root *Schema, seenRefs map[string]struct{}) (*Schema, error) {
+func (reader *OpenapiReader) safeResolveRefs(root *Schema, tracker *tracker) (*Schema, error) {
 	if root.Reference == nil {
-		return reader.traverseSchema(root, seenRefs)
+		return reader.traverseSchema(root, tracker)
 	}
 	key := *root.Reference
-	_, ok := seenRefs[key]
-	if ok {
+	if tracker.hasCycle(key) {
 		// self reference loops can be supported however the logic is non-trivial because
 		// cross refernce loops are not allowed (see: http://json-schema.org/understanding-json-schema/structuring.html#recursion)
 		return nil, fmt.Errorf("references loop detected")
 	}
 	ref := *root.Reference
 	description := root.Description
-	seenRefs[ref] = struct{}{}
+	tracker.push(ref, ref)
 
 	// Mark reference nil, so we do not traverse this again. This is tracked
 	// in the memo
@@ -93,27 +92,27 @@ func (reader *OpenapiReader) safeResolveRefs(root *Schema, seenRefs map[string]s
 	root.Description = description
 
 	// traverse again to find new references
-	root, err = reader.traverseSchema(root, seenRefs)
+	root, err = reader.traverseSchema(root, tracker)
 	if err != nil {
 		return nil, err
 	}
-	delete(seenRefs, ref)
+	tracker.pop(ref)
 	return root, err
 }
 
-func (reader *OpenapiReader) traverseSchema(root *Schema, seenRefs map[string]struct{}) (*Schema, error) {
+func (reader *OpenapiReader) traverseSchema(root *Schema, tracker *tracker) (*Schema, error) {
 	// case primitive (or invalid)
 	if root.Type != Object && root.Type != Array {
 		return root, nil
 	}
 	// only root references are resolved
 	if root.Reference != nil {
-		return reader.safeResolveRefs(root, seenRefs)
+		return reader.safeResolveRefs(root, tracker)
 	}
 	// case struct
 	if len(root.Properties) > 0 {
 		for k, v := range root.Properties {
-			childSchema, err := reader.safeResolveRefs(v, seenRefs)
+			childSchema, err := reader.safeResolveRefs(v, tracker)
 			if err != nil {
 				return nil, err
 			}
@@ -122,7 +121,7 @@ func (reader *OpenapiReader) traverseSchema(root *Schema, seenRefs map[string]st
 	}
 	// case array
 	if root.Items != nil {
-		itemsSchema, err := reader.safeResolveRefs(root.Items, seenRefs)
+		itemsSchema, err := reader.safeResolveRefs(root.Items, tracker)
 		if err != nil {
 			return nil, err
 		}
@@ -131,7 +130,7 @@ func (reader *OpenapiReader) traverseSchema(root *Schema, seenRefs map[string]st
 	// case map
 	additionionalProperties, ok := root.AdditionalProperties.(*Schema)
 	if ok && additionionalProperties != nil {
-		valueSchema, err := reader.safeResolveRefs(additionionalProperties, seenRefs)
+		valueSchema, err := reader.safeResolveRefs(additionionalProperties, tracker)
 		if err != nil {
 			return nil, err
 		}
@@ -145,21 +144,11 @@ func (reader *OpenapiReader) readResolvedSchema(path string) (*Schema, error) {
 	if err != nil {
 		return nil, err
 	}
-	seenRefs := make(map[string]struct{})
-	seenRefs[path] = struct{}{}
-	root, err = reader.safeResolveRefs(root, seenRefs)
+	tracker := newTracker()
+	tracker.push(path, path)
+	root, err = reader.safeResolveRefs(root, tracker)
 	if err != nil {
-		trace := ""
-		count := 0
-		for k := range seenRefs {
-			if count == len(seenRefs)-1 {
-				trace += k
-				break
-			}
-			trace += k + " -> "
-			count++
-		}
-		return nil, fmt.Errorf("%s. schema ref trace: %s", err, trace)
+		return nil, tracker.errWithTrace(err.Error(), "")
 	}
 	return root, nil
 }

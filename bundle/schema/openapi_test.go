@@ -225,7 +225,7 @@ func TestRootReferenceIsResolved(t *testing.T) {
 	assert.Equal(t, expected, string(fruitsSchemaJson))
 }
 
-func TestSelfReferenceLoopErrors(t *testing.T) {
+func TestSelfReferenceLoopErrorS(t *testing.T) {
 	specString := `{
 		"components": {
 			"schemas": {
@@ -256,7 +256,7 @@ func TestSelfReferenceLoopErrors(t *testing.T) {
 	require.NoError(t, err)
 
 	_, err = reader.readResolvedSchema("#/components/schemas/fruits")
-	assert.ErrorContains(t, err, "references loop detected. schema ref trace: #/components/schemas/fruits -> #/components/schemas/foo")
+	assert.ErrorContains(t, err, "references loop detected. traversal trace:  -> #/components/schemas/fruits -> #/components/schemas/foo")
 }
 
 func TestCrossReferenceLoopErrors(t *testing.T) {
@@ -290,7 +290,7 @@ func TestCrossReferenceLoopErrors(t *testing.T) {
 	require.NoError(t, err)
 
 	_, err = reader.readResolvedSchema("#/components/schemas/fruits")
-	assert.ErrorContains(t, err, "references loop detected. schema ref trace: #/components/schemas/fruits -> #/components/schemas/foo")
+	assert.ErrorContains(t, err, "references loop detected. traversal trace:  -> #/components/schemas/fruits -> #/components/schemas/foo")
 }
 
 func TestReferenceResolutionForMapInObject(t *testing.T) {
