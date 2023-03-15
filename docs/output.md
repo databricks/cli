@@ -1,10 +1,10 @@
-# Priciples for CLI output
+# Principles for CLI output
 
 There are four types of output:
 1. Command output
-1. Command error
-1. Progress reporting
-1. Logging
+2. Command error
+3. Progress reporting
+4. Logging
 
 We try to adhere to the following rules:
 * On success, the command's primary output is written to standard output.
