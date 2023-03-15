@@ -47,14 +47,7 @@ func (r *pipelineRunner) logEvent(event pipelines.PipelineEvent) {
 func (r *pipelineRunner) logErrorEvent(ctx context.Context, pipelineId string, updateId string) error {
 
 	w := r.bundle.WorkspaceClient()
-	res, err := w.Pipelines.Impl().ListPipelineEvents(ctx, pipelines.ListPipelineEvents{
-		Filter:     `level='ERROR'`,
-		MaxResults: 100,
-		PipelineId: pipelineId,
-	})
-	if err != nil {
-		return err
-	}
+
 	// Note: For a 100 percent correct and complete solution we should use the
 	// w.Pipelines.ListPipelineEventsAll method to find all relevant events. However the
 	// probablity of the relevant last error event not being present in the most
@@ -64,6 +57,14 @@ func (r *pipelineRunner) logErrorEvent(ctx context.Context, pipelineId string, u
 	// Otherwise for long lived pipelines, there can be a lot of unnecessary
 	// latency due to multiple pagination API calls needed underneath the hood for
 	// ListPipelineEventsAll
+	res, err := w.Pipelines.Impl().ListPipelineEvents(ctx, pipelines.ListPipelineEvents{
+		Filter:     `level='ERROR'`,
+		MaxResults: 100,
+		PipelineId: pipelineId,
+	})
+	if err != nil {
+		return err
+	}
 	updateEvents := filterEventsByUpdateId(res.Events, updateId)
 	for i := len(updateEvents) - 1; i >= 0; i-- {
 		r.logEvent(updateEvents[i])
