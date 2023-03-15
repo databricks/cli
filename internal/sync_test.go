@@ -291,6 +291,48 @@ func TestAccNestedFolderSync(t *testing.T) {
 	assertSync.snapshotContains(append(repoFiles, ".gitignore"))
 }
 
+func TestAccNestedSpacePlusAndHashAreEscapedSync(t *testing.T) {
+	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+
+	wsc := databricks.Must(databricks.NewWorkspaceClient())
+	ctx := context.Background()
+
+	localRepoPath, remoteRepoPath := setupRepo(t, wsc, ctx)
+
+	// Run `bricks sync` in the background.
+	c := NewCobraTestRunner(t, "sync", localRepoPath, remoteRepoPath, "--watch")
+	c.RunBackground()
+
+	assertSync := assertSync{
+		t:          t,
+		c:          c,
+		w:          wsc,
+		localRoot:  localRepoPath,
+		remoteRoot: remoteRepoPath,
+	}
+
+	// .gitignore is created by the sync process to enforce .databricks is not synced
+	assertSync.remoteDirContent(ctx, "", append(repoFiles, ".gitignore"))
+
+	// New file
+	localFilePath := filepath.Join(localRepoPath, "dir1/a b+c/c+d e/e+f g#i.txt")
+	err := os.MkdirAll(filepath.Dir(localFilePath), 0o755)
+	assert.NoError(t, err)
+	f := testfile.CreateFile(t, localFilePath)
+	defer f.Close(t)
+	assertSync.remoteDirContent(ctx, "", append(repoFiles, ".gitignore", "dir1"))
+	assertSync.remoteDirContent(ctx, "dir1", []string{"a b+c"})
+	assertSync.remoteDirContent(ctx, "dir1/a b+c", []string{"c+d e"})
+	assertSync.remoteDirContent(ctx, "dir1/a b+c/c+d e", []string{"e+f g#i.txt"})
+	assertSync.snapshotContains(append(repoFiles, ".gitignore", filepath.FromSlash("dir1/a b+c/c+d e/e+f g#i.txt")))
+
+	// delete
+	f.Remove(t)
+	// directories are not cleaned up right now. This is not ideal
+	assertSync.remoteDirContent(ctx, "dir1/a b+c/c+d e", []string{})
+	assertSync.snapshotContains(append(repoFiles, ".gitignore"))
+}
+
 // sync does not clean up empty directories from the workspace file system.
 // This is a check for the edge case when a user does the following:
 //

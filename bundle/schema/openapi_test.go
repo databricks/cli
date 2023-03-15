@@ -225,7 +225,7 @@ func TestRootReferenceIsResolved(t *testing.T) {
 	assert.Equal(t, expected, string(fruitsSchemaJson))
 }
 
-func TestSelfReferenceLoopErrorS(t *testing.T) {
+func TestSelfReferenceLoopErrors(t *testing.T) {
 	specString := `{
 		"components": {
 			"schemas": {
