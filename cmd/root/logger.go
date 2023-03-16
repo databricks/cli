@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/databricks/bricks/libs/flags"
-	"github.com/databricks/bricks/libs/logger"
+	"github.com/databricks/bricks/libs/log"
 	"github.com/spf13/cobra"
 	"golang.org/x/exp/slog"
 )
@@ -13,7 +13,7 @@ func initializeLogger(ctx context.Context, cmd *cobra.Command) (context.Context,
 	opts := slog.HandlerOptions{}
 	opts.Level = logLevel.Level()
 	opts.AddSource = true
-	opts.ReplaceAttr = logger.ReplaceLevelAttr
+	opts.ReplaceAttr = log.ReplaceLevelAttr
 
 	// Open the underlying log file if the user configured an actual file to log to.
 	err := logFile.Open()
@@ -32,7 +32,7 @@ func initializeLogger(ctx context.Context, cmd *cobra.Command) (context.Context,
 	}
 
 	slog.SetDefault(slog.New(handler))
-	return logger.NewContext(ctx, slog.Default()), nil
+	return log.NewContext(ctx, slog.Default()), nil
 }
 
 var logFile = flags.NewLogFileFlag()

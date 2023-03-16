@@ -4,19 +4,19 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/databricks/bricks/libs/logger"
+	"github.com/databricks/bricks/libs/log"
 	"github.com/spf13/cobra"
 	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slog"
 )
 
 var levels = map[string]slog.Level{
-	"trace":    logger.LevelTrace,
-	"debug":    logger.LevelDebug,
-	"info":     logger.LevelInfo,
-	"warn":     logger.LevelWarn,
-	"error":    logger.LevelError,
-	"disabled": logger.LevelDisabled,
+	"trace":    log.LevelTrace,
+	"debug":    log.LevelDebug,
+	"info":     log.LevelInfo,
+	"warn":     log.LevelWarn,
+	"error":    log.LevelError,
+	"disabled": log.LevelDisabled,
 }
 
 type LogLevelFlag struct {
@@ -25,7 +25,7 @@ type LogLevelFlag struct {
 
 func NewLogLevelFlag() LogLevelFlag {
 	return LogLevelFlag{
-		l: logger.LevelDisabled,
+		l: log.LevelDisabled,
 	}
 }
 
