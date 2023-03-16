@@ -14,7 +14,7 @@ import (
 type slogAdapter struct{}
 
 func (s slogAdapter) Enabled(ctx context.Context, level sdk.Level) bool {
-	logger := Get(ctx)
+	logger := GetLogger(ctx)
 	switch level {
 	case sdk.LevelTrace:
 		return logger.Enabled(ctx, LevelTrace)
@@ -44,7 +44,7 @@ func (s slogAdapter) log(logger *slog.Logger, ctx context.Context, level slog.Le
 }
 
 func (s slogAdapter) Tracef(ctx context.Context, format string, v ...any) {
-	logger := Get(ctx)
+	logger := GetLogger(ctx)
 	if !logger.Enabled(ctx, LevelTrace) {
 		return
 	}
@@ -52,7 +52,7 @@ func (s slogAdapter) Tracef(ctx context.Context, format string, v ...any) {
 }
 
 func (s slogAdapter) Debugf(ctx context.Context, format string, v ...any) {
-	logger := Get(ctx)
+	logger := GetLogger(ctx)
 	if !logger.Enabled(ctx, LevelDebug) {
 		return
 	}
@@ -60,7 +60,7 @@ func (s slogAdapter) Debugf(ctx context.Context, format string, v ...any) {
 }
 
 func (s slogAdapter) Infof(ctx context.Context, format string, v ...any) {
-	logger := Get(ctx)
+	logger := GetLogger(ctx)
 	if !logger.Enabled(ctx, LevelInfo) {
 		return
 	}
@@ -68,7 +68,7 @@ func (s slogAdapter) Infof(ctx context.Context, format string, v ...any) {
 }
 
 func (s slogAdapter) Warnf(ctx context.Context, format string, v ...any) {
-	logger := Get(ctx)
+	logger := GetLogger(ctx)
 	if !logger.Enabled(ctx, LevelWarn) {
 		return
 	}
@@ -76,7 +76,7 @@ func (s slogAdapter) Warnf(ctx context.Context, format string, v ...any) {
 }
 
 func (s slogAdapter) Errorf(ctx context.Context, format string, v ...any) {
-	logger := Get(ctx)
+	logger := GetLogger(ctx)
 	if !logger.Enabled(ctx, LevelError) {
 		return
 	}

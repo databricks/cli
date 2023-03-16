@@ -9,9 +9,9 @@ import (
 	"golang.org/x/exp/slog"
 )
 
-// Get returns either the logger configured on the context,
+// GetLogger returns either the logger configured on the context,
 // or the global logger if one isn't defined.
-func Get(ctx context.Context) *slog.Logger {
+func GetLogger(ctx context.Context) *slog.Logger {
 	logger, ok := FromContext(ctx)
 	if !ok {
 		logger = slog.Default()
@@ -33,7 +33,7 @@ func log(logger *slog.Logger, ctx context.Context, level slog.Level, msg string)
 
 // Tracef logs a formatted string using the context-local or global logger.
 func Tracef(ctx context.Context, format string, v ...any) {
-	logger := Get(ctx)
+	logger := GetLogger(ctx)
 	if !logger.Enabled(ctx, LevelTrace) {
 		return
 	}
@@ -42,7 +42,7 @@ func Tracef(ctx context.Context, format string, v ...any) {
 
 // Debugf logs a formatted string using the context-local or global logger.
 func Debugf(ctx context.Context, format string, v ...any) {
-	logger := Get(ctx)
+	logger := GetLogger(ctx)
 	if !logger.Enabled(ctx, LevelDebug) {
 		return
 	}
@@ -51,7 +51,7 @@ func Debugf(ctx context.Context, format string, v ...any) {
 
 // Infof logs a formatted string using the context-local or global logger.
 func Infof(ctx context.Context, format string, v ...any) {
-	logger := Get(ctx)
+	logger := GetLogger(ctx)
 	if !logger.Enabled(ctx, LevelInfo) {
 		return
 	}
@@ -60,7 +60,7 @@ func Infof(ctx context.Context, format string, v ...any) {
 
 // Warnf logs a formatted string using the context-local or global logger.
 func Warnf(ctx context.Context, format string, v ...any) {
-	logger := Get(ctx)
+	logger := GetLogger(ctx)
 	if !logger.Enabled(ctx, LevelWarn) {
 		return
 	}
@@ -69,7 +69,7 @@ func Warnf(ctx context.Context, format string, v ...any) {
 
 // Errorf logs a formatted string using the context-local or global logger.
 func Errorf(ctx context.Context, format string, v ...any) {
-	logger := Get(ctx)
+	logger := GetLogger(ctx)
 	if !logger.Enabled(ctx, LevelError) {
 		return
 	}
