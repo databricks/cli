@@ -66,6 +66,8 @@ func (r *pipelineRunner) logErrorEvent(ctx context.Context, pipelineId string, u
 		return err
 	}
 	updateEvents := filterEventsByUpdateId(res.Events, updateId)
+	// The events API returns most recent events first. We iterate in a reverse order
+	// to print the events chronologically
 	for i := len(updateEvents) - 1; i >= 0; i-- {
 		r.logEvent(updateEvents[i])
 	}
