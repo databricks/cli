@@ -96,6 +96,14 @@ func (s *Sync) Events() <-chan Event {
 	return ch
 }
 
+func (s *Sync) Close() {
+	if s.notifier == nil {
+		return
+	}
+	s.notifier.Close()
+	s.notifier = nil
+}
+
 func (s *Sync) notifyStart(ctx context.Context, d diff) {
 	// If this is not the initial iteration we can ignore no-ops.
 	if s.seq > 0 && d.IsEmpty() {

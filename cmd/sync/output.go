@@ -1,10 +1,10 @@
 package sync
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
 	"io"
-	"log"
 
 	"github.com/databricks/bricks/libs/sync"
 )
@@ -30,8 +30,10 @@ func jsonOutput(ctx context.Context, ch <-chan sync.Event, w io.Writer) {
 	}
 }
 
-// Read synchronization events and log them at the INFO level.
-func logOutput(ctx context.Context, ch <-chan sync.Event) {
+// Read synchronization events and write them as text to the specified writer (typically stdout).
+func textOutput(ctx context.Context, ch <-chan sync.Event, w io.Writer) {
+	bw := bufio.NewWriter(w)
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -43,7 +45,9 @@ func logOutput(ctx context.Context, ch <-chan sync.Event) {
 			// Log only if something actually happened.
 			// Sync events produce an empty string if nothing happened.
 			if str := e.String(); str != "" {
-				log.Printf("[INFO] %s", e.String())
+				bw.WriteString(str)
+				bw.WriteString("\r\n")
+				bw.Flush()
 			}
 		}
 	}
