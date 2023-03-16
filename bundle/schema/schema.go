@@ -65,7 +65,7 @@ func New(golangType reflect.Type, docs *Docs) (*Schema, error) {
 	tracker := newTracker()
 	schema, err := safeToSchema(golangType, docs, "", tracker)
 	if err != nil {
-		return nil, tracker.errWithTrace(err.Error())
+		return nil, tracker.errWithTrace(err.Error(), "root")
 	}
 	return schema, nil
 }

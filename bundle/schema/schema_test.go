@@ -662,17 +662,17 @@ func TestEmbeddedStructSchema(t *testing.T) {
 func TestErrorWithTrace(t *testing.T) {
 	tracker := newTracker()
 	dummyType := reflect.TypeOf(struct{}{})
-	err := tracker.errWithTrace("with empty trace")
-	assert.ErrorContains(t, err, "[ERROR] with empty trace. traversal trace: root")
+	err := tracker.errWithTrace("with empty trace", "root")
+	assert.ErrorContains(t, err, "with empty trace. traversal trace: root")
 
 	tracker.push(dummyType, "resources")
-	err = tracker.errWithTrace("with depth = 1")
-	assert.ErrorContains(t, err, "[ERROR] with depth = 1. traversal trace: root -> resources")
+	err = tracker.errWithTrace("with depth = 1", "root")
+	assert.ErrorContains(t, err, "with depth = 1. traversal trace: root -> resources")
 
 	tracker.push(dummyType, "pipelines")
 	tracker.push(dummyType, "datasets")
-	err = tracker.errWithTrace("with depth = 4")
-	assert.ErrorContains(t, err, "[ERROR] with depth = 4. traversal trace: root -> resources -> pipelines -> datasets")
+	err = tracker.errWithTrace("with depth = 4", "root")
+	assert.ErrorContains(t, err, "with depth = 4. traversal trace: root -> resources -> pipelines -> datasets")
 }
 
 func TestNonAnnotatedFieldsAreSkipped(t *testing.T) {
@@ -1356,7 +1356,7 @@ func TestErrorIfStructRefersToItself(t *testing.T) {
 
 	elem := Foo{}
 	_, err := New(reflect.TypeOf(elem), nil)
-	assert.ErrorContains(t, err, "ERROR] cycle detected. traversal trace: root -> my_foo")
+	assert.ErrorContains(t, err, "cycle detected. traversal trace: root -> my_foo")
 }
 
 func TestErrorIfStructHasLoop(t *testing.T) {
@@ -1373,7 +1373,7 @@ func TestErrorIfStructHasLoop(t *testing.T) {
 
 	elem := Apple{}
 	_, err := New(reflect.TypeOf(elem), nil)
-	assert.ErrorContains(t, err, "[ERROR] cycle detected. traversal trace: root -> my_mango -> my_guava -> my_papaya -> my_apple")
+	assert.ErrorContains(t, err, "cycle detected. traversal trace: root -> my_mango -> my_guava -> my_papaya -> my_apple")
 }
 
 func TestInterfaceGeneratesEmptySchema(t *testing.T) {
