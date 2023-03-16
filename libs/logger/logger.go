@@ -47,7 +47,6 @@ func Debugf(ctx context.Context, format string, v ...any) {
 		return
 	}
 	log(logger, ctx, LevelDebug, fmt.Sprintf(format, v...))
-
 }
 
 // Infof logs a formatted string using the context-local or global logger.
