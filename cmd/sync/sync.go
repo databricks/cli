@@ -1,9 +1,12 @@
 package sync
 
 import (
+	"context"
 	"flag"
 	"fmt"
+	"io"
 	"path/filepath"
+	stdsync "sync"
 	"time"
 
 	"github.com/databricks/bricks/bundle"
@@ -95,18 +98,32 @@ var syncCmd = &cobra.Command{
 			return err
 		}
 
+		var outputFunc func(context.Context, <-chan sync.Event, io.Writer)
 		switch output {
 		case flags.OutputText:
-			go logOutput(ctx, s.Events())
+			outputFunc = textOutput
 		case flags.OutputJSON:
-			go jsonOutput(ctx, s.Events(), cmd.OutOrStdout())
+			outputFunc = jsonOutput
+		}
+
+		var wg stdsync.WaitGroup
+		if outputFunc != nil {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				outputFunc(ctx, s.Events(), cmd.OutOrStdout())
+			}()
 		}
 
 		if watch {
-			return s.RunContinuous(ctx)
+			err = s.RunContinuous(ctx)
+		} else {
+			err = s.RunOnce(ctx)
 		}
 
-		return s.RunOnce(ctx)
+		s.Close()
+		wg.Wait()
+		return err
 	},
 
 	ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {

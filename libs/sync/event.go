@@ -142,6 +142,7 @@ func newEventComplete(seq int, put []string, delete []string) Event {
 
 type EventNotifier interface {
 	Notify(ctx context.Context, event Event)
+	Close()
 }
 
 // ChannelNotifier implements [EventNotifier] and sends events to its channel.
@@ -156,9 +157,17 @@ func (n *ChannelNotifier) Notify(ctx context.Context, e Event) {
 	}
 }
 
+func (n *ChannelNotifier) Close() {
+	close(n.ch)
+}
+
 // NopNotifier implements [EventNotifier] and does nothing.
 type NopNotifier struct{}
 
 func (n *NopNotifier) Notify(ctx context.Context, e Event) {
 	// Discard
+}
+
+func (n *NopNotifier) Close() {
+	// Nothing to do
 }
