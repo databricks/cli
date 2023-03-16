@@ -55,5 +55,9 @@ func Execute() {
 
 func init() {
 	RootCmd.SetFlagErrorFunc(flagErrorFunc)
-	// flags available for every child command
+
+	// The VS Code extension passes `-v` in debug mode and must be changed
+	// to use the new flags in `./logger.go` prior to removing this flag.
+	RootCmd.PersistentFlags().BoolP("verbose", "v", false, "")
+	RootCmd.PersistentFlags().MarkHidden("verbose")
 }
