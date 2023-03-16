@@ -9,10 +9,16 @@ import (
 	"golang.org/x/exp/slog"
 )
 
-func initializeLogger(ctx context.Context, cmd *cobra.Command) context.Context {
+func initializeLogger(ctx context.Context, cmd *cobra.Command) (context.Context, error) {
 	opts := slog.HandlerOptions{}
 	opts.Level = logLevel.Level()
 	opts.AddSource = true
+
+	// Open the underlying log file if the user configured an actual file to log to.
+	err := logFile.Open()
+	if err != nil {
+		return nil, err
+	}
 
 	var handler slog.Handler
 	switch logOutput {
@@ -25,7 +31,7 @@ func initializeLogger(ctx context.Context, cmd *cobra.Command) context.Context {
 	}
 
 	slog.SetDefault(slog.New(handler))
-	return logger.NewContext(ctx, slog.Default())
+	return logger.NewContext(ctx, slog.Default()), nil
 }
 
 var logFile = flags.NewLogFileFlag()

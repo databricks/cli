@@ -20,16 +20,20 @@ var RootCmd = &cobra.Command{
 	// The usage string is include in [flagErrorFunc] for flag errors only.
 	SilenceUsage: true,
 
-	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 
 		// Configure default logger.
-		ctx = initializeLogger(ctx, cmd)
+		ctx, err := initializeLogger(ctx, cmd)
+		if err != nil {
+			return err
+		}
 
 		// Configure our user agent with the command that's about to be executed.
 		ctx = withCommandInUserAgent(ctx, cmd)
 		ctx = withUpstreamInUserAgent(ctx)
 		cmd.SetContext(ctx)
+		return nil
 	},
 }
 

@@ -52,9 +52,11 @@ func TestLogFileFlagSetNewFile(t *testing.T) {
 
 	// Configure flag.
 	f := NewLogFileFlag()
-	defer f.Close()
 	err = f.Set(path)
 	require.NoError(t, err)
+	err = f.Open()
+	require.NoError(t, err)
+	defer f.Close()
 
 	// Writer must be the underlying file.
 	w := f.Writer()
@@ -76,16 +78,18 @@ func TestLogFileFlagSetExistingFile(t *testing.T) {
 	// Add some contents to temporary file.
 	file, err := os.Create(path)
 	require.NoError(t, err)
-	_, err = file.WriteString("some content\n")
+	_, err = file.WriteString("a\n")
 	require.NoError(t, err)
 	err = file.Close()
 	require.NoError(t, err)
 
 	// Configure flag.
 	f := NewLogFileFlag()
-	defer f.Close()
 	err = f.Set(path)
 	require.NoError(t, err)
+	err = f.Open()
+	require.NoError(t, err)
+	defer f.Close()
 
 	// Writer must be the underlying file.
 	w := f.Writer()
@@ -95,4 +99,28 @@ func TestLogFileFlagSetExistingFile(t *testing.T) {
 
 	// String must be equal to the path.
 	assert.Equal(t, path, f.String())
+
+	// Write more contents.
+	_, err = w.Write([]byte("b\n"))
+	require.NoError(t, err)
+
+	// Verify that the contents was appended to the file.
+	buf, err := os.ReadFile(path)
+	require.NoError(t, err)
+	assert.Equal(t, "a\nb\n", string(buf))
+}
+
+func TestLogFileFlagSetBadPath(t *testing.T) {
+	var err error
+
+	// Synthesize path that doesn't exist.
+	dir := t.TempDir()
+	path := filepath.Join(dir, "invalid/logfile")
+
+	// Configure flag.
+	f := NewLogFileFlag()
+	err = f.Set(path)
+	require.NoError(t, err)
+	err = f.Open()
+	assert.Error(t, err)
 }
