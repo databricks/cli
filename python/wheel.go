@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"path"
 	"strings"
 
+	"github.com/databricks/bricks/libs/log"
 	"github.com/databricks/bricks/project"
 	"github.com/databricks/databricks-sdk-go/service/dbfs"
 )
@@ -24,7 +24,7 @@ func BuildWheel(ctx context.Context, dir string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	log.Printf("[DEBUG] Built wheel: %s", out)
+	log.Debugf(ctx, "Built wheel: %s", out)
 
 	// and cleanup afterwards
 	silentlyCleanupWheelFolder(".")
@@ -93,12 +93,12 @@ func silentlyCleanupWheelFolder(dir string) {
 func silentChildWithSuffix(dir, suffix string) string {
 	f, err := os.Open(dir)
 	if err != nil {
-		log.Printf("[DEBUG] open dir %s: %s", dir, err)
+		log.Debugf(context.Background(), "open dir %s: %s", dir, err)
 		return ""
 	}
 	entries, err := f.ReadDir(0)
 	if err != nil {
-		log.Printf("[DEBUG] read dir %s: %s", dir, err)
+		log.Debugf(context.Background(), "read dir %s: %s", dir, err)
 		// todo: log
 		return ""
 	}

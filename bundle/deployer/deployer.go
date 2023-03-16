@@ -3,11 +3,11 @@ package deployer
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/databricks/bricks/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/hashicorp/terraform-exec/tfexec"
 )
@@ -138,30 +138,30 @@ func (d *Deployer) ApplyTerraformConfig(ctx context.Context, configPath, terrafo
 	defer func() {
 		applyErr = d.Unlock(ctx)
 		if applyErr != nil {
-			log.Printf("[ERROR] failed to unlock deployment mutex: %s", applyErr)
+			log.Errorf(ctx, "failed to unlock deployment mutex: %s", applyErr)
 		}
 	}()
 
 	applyErr = d.LoadTerraformState(ctx)
 	if applyErr != nil {
-		log.Printf("[DEBUG] failed to load terraform state from workspace: %s", applyErr)
+		log.Debugf(ctx, "failed to load terraform state from workspace: %s", applyErr)
 		return Failed, applyErr
 	}
 
 	tf, applyErr := tfexec.NewTerraform(configPath, terraformBinaryPath)
 	if applyErr != nil {
-		log.Printf("[DEBUG] failed to construct terraform object: %s", applyErr)
+		log.Debugf(ctx, "failed to construct terraform object: %s", applyErr)
 		return Failed, applyErr
 	}
 
 	isPlanNotEmpty, applyErr := tf.Plan(ctx)
 	if applyErr != nil {
-		log.Printf("[DEBUG] failed to compute terraform plan: %s", applyErr)
+		log.Debugf(ctx, "failed to compute terraform plan: %s", applyErr)
 		return Failed, applyErr
 	}
 
 	if !isPlanNotEmpty {
-		log.Printf("[DEBUG] terraform plan returned a empty diff")
+		log.Debugf(ctx, "terraform plan returned a empty diff")
 		return NoChanges, nil
 	}
 
@@ -170,16 +170,16 @@ func (d *Deployer) ApplyTerraformConfig(ctx context.Context, configPath, terrafo
 	saveStateErr := d.SaveTerraformState(ctx)
 
 	if applyErr != nil && saveStateErr != nil {
-		log.Printf("[ERROR] terraform apply failed: %s", applyErr)
-		log.Printf("[ERROR] failed to upload terraform state after partial terraform apply: %s", saveStateErr)
+		log.Errorf(ctx, "terraform apply failed: %s", applyErr)
+		log.Errorf(ctx, "failed to upload terraform state after partial terraform apply: %s", saveStateErr)
 		return PartialButUntracked, fmt.Errorf("deploymented failed: %s", applyErr)
 	}
 	if applyErr != nil {
-		log.Printf("[ERROR] terraform apply failed: %s", applyErr)
+		log.Errorf(ctx, "terraform apply failed: %s", applyErr)
 		return Partial, fmt.Errorf("deploymented failed: %s", applyErr)
 	}
 	if saveStateErr != nil {
-		log.Printf("[ERROR] failed to upload terraform state after completing terraform apply: %s", saveStateErr)
+		log.Errorf(ctx, "failed to upload terraform state after completing terraform apply: %s", saveStateErr)
 		return CompleteButUntracked, fmt.Errorf("failed to upload terraform state file: %s", saveStateErr)
 	}
 	return Complete, nil

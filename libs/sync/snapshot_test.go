@@ -1,6 +1,7 @@
 package sync
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -296,7 +297,7 @@ func defaultOptions(t *testing.T) *SyncOptions {
 
 func TestNewSnapshotDefaults(t *testing.T) {
 	opts := defaultOptions(t)
-	snapshot, err := newSnapshot(opts)
+	snapshot, err := newSnapshot(context.Background(), opts)
 	require.NoError(t, err)
 
 	assert.Equal(t, LatestSnapshotVersion, snapshot.Version)
@@ -325,7 +326,7 @@ func TestOldSnapshotInvalidation(t *testing.T) {
 	snapshotFile.Close(t)
 
 	// assert snapshot did not get loaded
-	snapshot, err := loadOrNewSnapshot(opts)
+	snapshot, err := loadOrNewSnapshot(context.Background(), opts)
 	require.NoError(t, err)
 	assert.True(t, snapshot.New)
 }
@@ -347,7 +348,7 @@ func TestNoVersionSnapshotInvalidation(t *testing.T) {
 	snapshotFile.Close(t)
 
 	// assert snapshot did not get loaded
-	snapshot, err := loadOrNewSnapshot(opts)
+	snapshot, err := loadOrNewSnapshot(context.Background(), opts)
 	require.NoError(t, err)
 	assert.True(t, snapshot.New)
 }
@@ -370,7 +371,7 @@ func TestLatestVersionSnapshotGetsLoaded(t *testing.T) {
 	snapshotFile.Close(t)
 
 	// assert snapshot gets loaded
-	snapshot, err := loadOrNewSnapshot(opts)
+	snapshot, err := loadOrNewSnapshot(context.Background(), opts)
 	require.NoError(t, err)
 	assert.False(t, snapshot.New)
 	assert.Equal(t, LatestSnapshotVersion, snapshot.Version)

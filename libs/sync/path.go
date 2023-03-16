@@ -3,10 +3,10 @@ package sync
 import (
 	"context"
 	"fmt"
-	"log"
 	"path"
 	"strings"
 
+	"github.com/databricks/bricks/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/scim"
@@ -101,8 +101,9 @@ func EnsureRemotePathIsUsable(ctx context.Context, wsc *databricks.WorkspaceClie
 		}
 	}
 
-	log.Printf(
-		"[DEBUG] Path %s has type %s (ID: %d)",
+	log.Debugf(
+		ctx,
+		"Path %s has type %s (ID: %d)",
 		info.Path,
 		strings.ToLower(info.ObjectType.String()),
 		info.ObjectId,
