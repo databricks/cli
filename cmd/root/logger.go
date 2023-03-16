@@ -2,6 +2,7 @@ package root
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/databricks/bricks/libs/flags"
 	"github.com/databricks/bricks/libs/log"
@@ -28,7 +29,7 @@ func initializeLogger(ctx context.Context, cmd *cobra.Command) (context.Context,
 	case flags.OutputText:
 		handler = opts.NewTextHandler(logFile.Writer())
 	default:
-		panic("invalid log output: " + logOutput)
+		return nil, fmt.Errorf("invalid log output: %s", logOutput)
 	}
 
 	slog.SetDefault(slog.New(handler))
