@@ -3,9 +3,7 @@ package root
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
-	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -22,40 +20,21 @@ var RootCmd = &cobra.Command{
 	// The usage string is include in [flagErrorFunc] for flag errors only.
 	SilenceUsage: true,
 
-	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
+
+		// Configure default logger.
+		ctx, err := initializeLogger(ctx, cmd)
+		if err != nil {
+			return err
+		}
 
 		// Configure our user agent with the command that's about to be executed.
 		ctx = withCommandInUserAgent(ctx, cmd)
 		ctx = withUpstreamInUserAgent(ctx)
 		cmd.SetContext(ctx)
-
-		if Verbose {
-			logLevel = append(logLevel, "[DEBUG]")
-		}
-		log.SetOutput(&logLevel)
+		return nil
 	},
-
-	// Uncomment the following line if your bare application
-	// has an action associated with it:
-}
-
-// TODO: replace with zerolog
-type levelWriter []string
-
-var logLevel = levelWriter{"[INFO]", "[ERROR]", "[WARN]"}
-
-// Verbose means additional debug information, like API logs
-var Verbose bool
-
-func (lw *levelWriter) Write(p []byte) (n int, err error) {
-	a := string(p)
-	for _, l := range *lw {
-		if strings.Contains(a, l) {
-			return os.Stderr.Write(p)
-		}
-	}
-	return
 }
 
 // Wrap flag errors to include the usage string.
@@ -76,6 +55,9 @@ func Execute() {
 
 func init() {
 	RootCmd.SetFlagErrorFunc(flagErrorFunc)
-	// flags available for every child command
-	RootCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "v", false, "print debug logs")
+
+	// The VS Code extension passes `-v` in debug mode and must be changed
+	// to use the new flags in `./logger.go` prior to removing this flag.
+	RootCmd.PersistentFlags().BoolP("verbose", "v", false, "")
+	RootCmd.PersistentFlags().MarkHidden("verbose")
 }

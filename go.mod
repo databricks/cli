@@ -24,7 +24,7 @@ require (
 	github.com/hashicorp/hc-install v0.5.0
 	github.com/hashicorp/terraform-exec v0.18.1
 	github.com/hashicorp/terraform-json v0.16.0
-	golang.org/x/exp v0.0.0-20221031165847-c99f073a8326
+	golang.org/x/exp v0.0.0-20230310171629-522b1b587ee0
 	golang.org/x/sync v0.1.0
 )
 
