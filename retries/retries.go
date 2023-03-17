@@ -3,10 +3,11 @@ package retries
 import (
 	"context"
 	"fmt"
-	"log"
 	"math/rand"
 	"strings"
 	"time"
+
+	"github.com/databricks/bricks/libs/log"
 )
 
 type Err struct {
@@ -61,7 +62,7 @@ func Wait(pctx context.Context, timeout time.Duration, fn WaitFn) error {
 		jitter := rand.Intn(int(maxJitter)-int(minJitter)+1) + int(minJitter)
 		wait += time.Duration(jitter)
 		timer := time.NewTimer(wait)
-		log.Printf("[TRACE] %s. Sleeping %s",
+		log.Tracef(ctx, "%s. Sleeping %s",
 			strings.TrimSuffix(res.Err.Error(), "."),
 			wait.Round(time.Millisecond))
 		select {

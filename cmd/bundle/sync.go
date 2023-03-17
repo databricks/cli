@@ -2,12 +2,12 @@ package bundle
 
 import (
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/databricks/bricks/bundle"
 	"github.com/databricks/bricks/bundle/phases"
 	"github.com/databricks/bricks/cmd/root"
+	"github.com/databricks/bricks/libs/log"
 	"github.com/databricks/bricks/libs/sync"
 	"github.com/spf13/cobra"
 )
@@ -58,7 +58,7 @@ var syncCmd = &cobra.Command{
 			return err
 		}
 
-		log.Printf("[INFO] Remote file sync location: %v", opts.RemotePath)
+		log.Infof(ctx, "Remote file sync location: %v", opts.RemotePath)
 
 		if watch {
 			return s.RunContinuous(ctx)

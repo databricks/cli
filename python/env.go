@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"strings"
 
+	"github.com/databricks/bricks/libs/log"
 	"golang.org/x/mod/semver"
 )
 
@@ -49,7 +49,7 @@ func DependencyFromSpec(raw string) (d Dependency) {
 	// TODO: write a normal parser for this
 	rawSplit := strings.Split(raw, "==")
 	if len(rawSplit) != 2 {
-		log.Printf("[DEBUG] Skipping invalid dep: %s", raw)
+		log.Debugf(context.Background(), "Skipping invalid dep: %s", raw)
 		return
 	}
 	d.Name = rawSplit[0]
