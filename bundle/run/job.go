@@ -166,10 +166,10 @@ func (r *jobRunner) Run(ctx context.Context, opts *Options) error {
 
 		// Log the job run URL as soon as it is available.
 		if prevState == nil {
-			log.Infof(ctx, "%s Run available at %s", info.Info.RunPageUrl)
+			log.Infof(ctx, "Run available at %s", info.Info.RunPageUrl)
 		}
 		if prevState == nil || prevState.LifeCycleState != state.LifeCycleState {
-			log.Infof(ctx, "%s Run status: %s", info.Info.State.LifeCycleState)
+			log.Infof(ctx, "Run status: %s", info.Info.State.LifeCycleState)
 			prevState = state
 		}
 		if runId == nil {
@@ -196,22 +196,22 @@ func (r *jobRunner) Run(ctx context.Context, opts *Options) error {
 	switch run.State.ResultState {
 	// The run was canceled at user request.
 	case jobs.RunResultStateCanceled:
-		log.Infof(ctx, "%s Run was cancelled!")
+		log.Infof(ctx, "Run was cancelled!")
 		return fmt.Errorf("run canceled: %s", run.State.StateMessage)
 
 	// The task completed with an error.
 	case jobs.RunResultStateFailed:
-		log.Infof(ctx, "%s Run has failed!")
+		log.Infof(ctx, "Run has failed!")
 		return fmt.Errorf("run failed: %s", run.State.StateMessage)
 
 	// The task completed successfully.
 	case jobs.RunResultStateSuccess:
-		log.Infof(ctx, "%s Run has completed successfully!")
+		log.Infof(ctx, "Run has completed successfully!")
 		return nil
 
 	// The run was stopped after reaching the timeout.
 	case jobs.RunResultStateTimedout:
-		log.Infof(ctx, "%s Run has timed out!")
+		log.Infof(ctx, "Run has timed out!")
 		return fmt.Errorf("run timed out: %s", run.State.StateMessage)
 	}
 
