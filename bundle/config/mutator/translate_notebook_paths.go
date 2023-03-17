@@ -3,7 +3,6 @@ package mutator
 import (
 	"context"
 	"fmt"
-	"os"
 	"path"
 	"path/filepath"
 	"strings"
@@ -35,10 +34,6 @@ func (m *translateNotebookPaths) rewritePath(b *bundle.Bundle, p *string) error 
 	absPath := filepath.Join(b.Config.Path, relPath)
 	nb, _, err := notebook.Detect(absPath)
 	if err != nil {
-		// Ignore if this file doesn't exist. Maybe it's an absolute workspace path?
-		if os.IsNotExist(err) {
-			return nil
-		}
 		return fmt.Errorf("unable to determine if %s is a notebook: %w", relPath, err)
 	}
 

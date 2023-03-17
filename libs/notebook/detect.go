@@ -3,6 +3,8 @@ package notebook
 import (
 	"bufio"
 	"bytes"
+	"errors"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -38,6 +40,10 @@ func readHeader(path string) ([]byte, error) {
 // If it is, it returns the notebook language.
 func Detect(path string) (notebook bool, language workspace.Language, err error) {
 	header := ""
+
+	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
+		return false, "", fmt.Errorf("file %s does not exist", path)
+	}
 
 	// Determine which header to expect based on filename extension.
 	ext := strings.ToLower(filepath.Ext(path))
