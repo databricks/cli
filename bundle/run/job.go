@@ -146,9 +146,6 @@ func (r *jobRunner) Run(ctx context.Context, opts *Options) error {
 		return fmt.Errorf("job ID is not an integer: %s", r.job.ID)
 	}
 
-	// Include resource key in logger.
-	ctx = log.NewContext(ctx, log.GetLogger(ctx).With("resource", r.Key()))
-
 	var prevState *jobs.RunState
 	var runId *int64
 
@@ -182,8 +179,9 @@ func (r *jobRunner) Run(ctx context.Context, opts *Options) error {
 		return err
 	}
 
+	// Include resource key in logger.
+	ctx = log.NewContext(ctx, log.GetLogger(ctx).With("resource", r.Key()))
 	w := r.bundle.WorkspaceClient()
-
 	run, err := w.Jobs.RunNowAndWait(ctx, *req, retries.Timeout[jobs.Run](jobRunTimeout), update)
 	if err != nil && runId != nil {
 		r.logFailedTasks(ctx, *runId)
