@@ -2,7 +2,10 @@ package sync
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 
+	"github.com/databricks/bricks/libs/filer"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -21,7 +24,7 @@ func (s *Sync) applyDelete(ctx context.Context, group *errgroup.Group, remoteNam
 
 	group.Go(func() error {
 		s.notifyProgress(ctx, EventActionDelete, remoteName, 0.0)
-		err := s.repoFiles.DeleteFile(ctx, remoteName)
+		err := s.filer.Delete(ctx, remoteName)
 		if err != nil {
 			return err
 		}
@@ -41,8 +44,15 @@ func (s *Sync) applyPut(ctx context.Context, group *errgroup.Group, localName st
 	}
 
 	group.Go(func() error {
+		file, err := os.Open(filepath.Join(s.LocalPath, localName))
+		if err != nil {
+			return err
+		}
+
+		defer file.Close()
+
 		s.notifyProgress(ctx, EventActionPut, localName, 0.0)
-		err := s.repoFiles.PutFile(ctx, localName)
+		err = s.filer.Write(ctx, localName, file, filer.OverwriteIfExists, filer.CreateParentDirectories)
 		if err != nil {
 			return err
 		}
