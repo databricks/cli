@@ -21,7 +21,7 @@ func TestNotebookOutputToString(t *testing.T) {
 
 	actualFoo, err := taskFoo.String()
 	require.NoError(t, err)
-	assert.Equal(t, "foo\n [truncated...]", actualFoo)
+	assert.Equal(t, "foo\n[truncated...]", actualFoo)
 
 	actualBar, err := taskBar.String()
 	require.NoError(t, err)
@@ -40,7 +40,7 @@ func TestLogsOutputToString(t *testing.T) {
 
 	actualFoo, err := taskFoo.String()
 	require.NoError(t, err)
-	assert.Equal(t, "foo\n [truncated...]", actualFoo)
+	assert.Equal(t, "foo\n[truncated...]", actualFoo)
 
 	actualBar, err := taskBar.String()
 	require.NoError(t, err)

@@ -25,7 +25,7 @@ func structToString(val interface{}) (string, error) {
 
 func (out *NotebookOutput) String() (string, error) {
 	if out.Truncated {
-		return fmt.Sprintf("%s\n [truncated...]", out.Result), nil
+		return fmt.Sprintf("%s\n[truncated...]", out.Result), nil
 	}
 	return out.Result, nil
 }
@@ -40,7 +40,7 @@ func (out *SqlOutput) String() (string, error) {
 
 func (out *LogsOutput) String() (string, error) {
 	if out.LogsTruncated {
-		return fmt.Sprintf("%s\n [truncated...]", out.Logs), nil
+		return fmt.Sprintf("%s\n[truncated...]", out.Logs), nil
 	}
 	return out.Logs, nil
 }

@@ -44,13 +44,13 @@ var runCmd = &cobra.Command{
 				if err != nil {
 					return err
 				}
-				fmt.Print(resultString)
+				cmd.OutOrStdout().Write([]byte(resultString))
 			case flags.OutputJSON:
 				b, err := json.MarshalIndent(output, "", "  ")
 				if err != nil {
 					return err
 				}
-				fmt.Print(string(b))
+				cmd.OutOrStdout().Write(b)
 			default:
 				return fmt.Errorf("unknown output type %s", outputType)
 			}

@@ -3,8 +3,10 @@ package run
 import (
 	"context"
 	"fmt"
+	"sort"
 
 	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"golang.org/x/exp/maps"
 )
 
 type JobOutput struct {
@@ -25,8 +27,11 @@ func (out *JobOutput) String() (string, error) {
 	}
 	result := "=======\n"
 	result += fmt.Sprintf("Run url: %s\n", out.RunPageUrl)
-	for k, v := range out.Tasks {
-		taskString, err := v.String()
+	taskKeys := maps.Keys(out.Tasks)
+	sort.Strings(taskKeys)
+
+	for _, k := range taskKeys {
+		taskString, err := out.Tasks[k].String()
 		if err != nil {
 			return "", nil
 		}

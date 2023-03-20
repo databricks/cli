@@ -22,7 +22,7 @@ func TestSingleTaskJobOutputToString(t *testing.T) {
 
 	actual, err := myJob.String()
 	require.NoError(t, err)
-	expected := "foo\n [truncated...]"
+	expected := "foo\n[truncated...]"
 	assert.Equal(t, expected, actual)
 }
 
@@ -46,17 +46,7 @@ func TestMultiTaskJobOutputToString(t *testing.T) {
 	actual, err := myJob.String()
 	require.NoError(t, err)
 
-	expected1 := `=======
-Run url: my_job_url
-=======
-Task my_foo_task:
-foo
- [truncated...]
-=======
-Task my_bar_task:
-bar
-`
-	expected2 := `=======
+	expected := `=======
 Run url: my_job_url
 =======
 Task my_bar_task:
@@ -64,10 +54,9 @@ bar
 =======
 Task my_foo_task:
 foo
- [truncated...]
+[truncated...]
 `
-	//  two possibilties since map traversal is random
-	assert.True(t, actual == expected1 || actual == expected2)
+	assert.Equal(t, expected, actual)
 }
 
 func TestNotebookOutputToRunOutput(t *testing.T) {
