@@ -83,7 +83,7 @@ func TestConvertJobTaskLibraries(t *testing.T) {
 
 func TestConvertModel(t *testing.T) {
 	var src = resources.MlflowModel{
-		RegisteredModelDatabricks: &mlflow.RegisteredModelDatabricks{
+		RegisteredModel: &mlflow.RegisteredModel{
 			Name:        "name",
 			Description: "description",
 			Tags: []mlflow.RegisteredModelTag{
