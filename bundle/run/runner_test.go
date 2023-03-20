@@ -1,17 +1,12 @@
 package run
 
 import (
-	"context"
-	"fmt"
 	"testing"
 
 	"github.com/databricks/bricks/bundle"
 	"github.com/databricks/bricks/bundle/config"
 	"github.com/databricks/bricks/bundle/config/resources"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestFindNoResources(t *testing.T) {
