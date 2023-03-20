@@ -3,7 +3,8 @@ package resources
 import "github.com/databricks/databricks-sdk-go/service/jobs"
 
 type Job struct {
-	ID string `json:"id,omitempty"`
+	ID          string       `json:"id,omitempty"`
+	Permissions []Permission `json:"permissions,omitempty"`
 
 	*jobs.JobSettings
 }
