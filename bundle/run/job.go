@@ -143,10 +143,10 @@ func (r *jobRunner) logFailedTasks(ctx context.Context, runId int64) {
 
 }
 
-func (r *jobRunner) Run(ctx context.Context, opts *Options) error {
+func (r *jobRunner) Run(ctx context.Context, opts *Options) (RunOutput, error) {
 	jobID, err := strconv.ParseInt(r.job.ID, 10, 64)
 	if err != nil {
-		return fmt.Errorf("job ID is not an integer: %s", r.job.ID)
+		return nil, fmt.Errorf("job ID is not an integer: %s", r.job.ID)
 	}
 
 	var prefix = fmt.Sprintf("[INFO] [%s]", r.Key())
@@ -180,7 +180,7 @@ func (r *jobRunner) Run(ctx context.Context, opts *Options) error {
 
 	req, err := opts.Job.toPayload(jobID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	w := r.bundle.WorkspaceClient()
@@ -191,30 +191,34 @@ func (r *jobRunner) Run(ctx context.Context, opts *Options) error {
 
 	}
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	switch run.State.ResultState {
 	// The run was canceled at user request.
 	case jobs.RunResultStateCanceled:
 		log.Printf("%s Run was cancelled!", prefix)
-		return fmt.Errorf("run canceled: %s", run.State.StateMessage)
+		return nil, fmt.Errorf("run canceled: %s", run.State.StateMessage)
 
 	// The task completed with an error.
 	case jobs.RunResultStateFailed:
 		log.Printf("%s Run has failed!", prefix)
-		return fmt.Errorf("run failed: %s", run.State.StateMessage)
+		return nil, fmt.Errorf("run failed: %s", run.State.StateMessage)
 
 	// The task completed successfully.
 	case jobs.RunResultStateSuccess:
 		log.Printf("%s Run has completed successfully!", prefix)
-		return nil
+		jobOutput, err := r.GetJobOutput(ctx, *runId)
+		if err != nil {
+			return nil, err
+		}
+		return jobOutput, nil
 
 	// The run was stopped after reaching the timeout.
 	case jobs.RunResultStateTimedout:
 		log.Printf("%s Run has timed out!", prefix)
-		return fmt.Errorf("run timed out: %s", run.State.StateMessage)
+		return nil, fmt.Errorf("run timed out: %s", run.State.StateMessage)
 	}
 
-	return err
+	return nil, err
 }

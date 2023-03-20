@@ -1,11 +1,15 @@
 package bundle
 
 import (
+	"encoding/json"
+	"fmt"
+
 	"github.com/databricks/bricks/bundle"
 	"github.com/databricks/bricks/bundle/deploy/terraform"
 	"github.com/databricks/bricks/bundle/phases"
 	"github.com/databricks/bricks/bundle/run"
 	"github.com/databricks/bricks/cmd/root"
+	"github.com/databricks/bricks/libs/flags"
 	"github.com/spf13/cobra"
 )
 
@@ -32,11 +36,30 @@ var runCmd = &cobra.Command{
 			return err
 		}
 
-		err = runner.Run(cmd.Context(), &runOptions)
+		// TODO: address in PR that I chose not to add output-task flag
+		// Rather the right thing to do would be maye
+		output, err := runner.Run(cmd.Context(), &runOptions)
+		if output != nil {
+			switch outputType {
+			case flags.OutputText:
+				resultString, err := output.String()
+				if err != nil {
+					return err
+				}
+				fmt.Print(resultString)
+			case flags.OutputJSON:
+				b, err := json.MarshalIndent(output, "", "  ")
+				if err != nil {
+					return err
+				}
+				fmt.Print(string(b))
+			default:
+				return fmt.Errorf("unknown output type %s", outputType)
+			}
+		}
 		if err != nil {
 			return err
 		}
-
 		return nil
 	},
 
@@ -62,7 +85,10 @@ var runCmd = &cobra.Command{
 	},
 }
 
+var outputType flags.Output = flags.OutputText
+
 func init() {
 	runOptions.Define(runCmd.Flags())
 	rootCmd.AddCommand(runCmd)
+	runCmd.Flags().Var(&outputType, "output", "type of output format")
 }

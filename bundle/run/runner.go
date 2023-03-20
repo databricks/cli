@@ -14,6 +14,10 @@ func (k key) Key() string {
 	return string(k)
 }
 
+type RunOutput interface {
+	String() (string, error)
+}
+
 // Runner defines the interface for a runnable resource (or workload).
 type Runner interface {
 	// Key returns the fully qualified (unique) identifier for this runnable resource.
@@ -21,7 +25,7 @@ type Runner interface {
 	Key() string
 
 	// Run the underlying worklow.
-	Run(ctx context.Context, opts *Options) error
+	Run(ctx context.Context, opts *Options) (RunOutput, error)
 }
 
 // Find locates a runner matching the specified argument.
