@@ -32,6 +32,7 @@ type Resources struct {
 	MlflowExperiment         map[string]*ResourceMlflowExperiment         `json:"databricks_mlflow_experiment,omitempty"`
 	MlflowModel              map[string]*ResourceMlflowModel              `json:"databricks_mlflow_model,omitempty"`
 	MlflowWebhook            map[string]*ResourceMlflowWebhook            `json:"databricks_mlflow_webhook,omitempty"`
+	ModelServing             map[string]*ResourceModelServing             `json:"databricks_model_serving,omitempty"`
 	Mount                    map[string]*ResourceMount                    `json:"databricks_mount,omitempty"`
 	MwsCredentials           map[string]*ResourceMwsCredentials           `json:"databricks_mws_credentials,omitempty"`
 	MwsCustomerManagedKeys   map[string]*ResourceMwsCustomerManagedKeys   `json:"databricks_mws_customer_managed_keys,omitempty"`
@@ -47,6 +48,7 @@ type Resources struct {
 	PermissionAssignment     map[string]*ResourcePermissionAssignment     `json:"databricks_permission_assignment,omitempty"`
 	Permissions              map[string]*ResourcePermissions              `json:"databricks_permissions,omitempty"`
 	Pipeline                 map[string]*ResourcePipeline                 `json:"databricks_pipeline,omitempty"`
+	Provider                 map[string]*ResourceProvider                 `json:"databricks_provider,omitempty"`
 	Recipient                map[string]*ResourceRecipient                `json:"databricks_recipient,omitempty"`
 	Repo                     map[string]*ResourceRepo                     `json:"databricks_repo,omitempty"`
 	Schema                   map[string]*ResourceSchema                   `json:"databricks_schema,omitempty"`
@@ -57,6 +59,7 @@ type Resources struct {
 	ServicePrincipalRole     map[string]*ResourceServicePrincipalRole     `json:"databricks_service_principal_role,omitempty"`
 	ServicePrincipalSecret   map[string]*ResourceServicePrincipalSecret   `json:"databricks_service_principal_secret,omitempty"`
 	Share                    map[string]*ResourceShare                    `json:"databricks_share,omitempty"`
+	SqlAlert                 map[string]*ResourceSqlAlert                 `json:"databricks_sql_alert,omitempty"`
 	SqlDashboard             map[string]*ResourceSqlDashboard             `json:"databricks_sql_dashboard,omitempty"`
 	SqlEndpoint              map[string]*ResourceSqlEndpoint              `json:"databricks_sql_endpoint,omitempty"`
 	SqlGlobalConfig          map[string]*ResourceSqlGlobalConfig          `json:"databricks_sql_global_config,omitempty"`
@@ -104,6 +107,7 @@ func NewResources() *Resources {
 		MlflowExperiment:         make(map[string]*ResourceMlflowExperiment),
 		MlflowModel:              make(map[string]*ResourceMlflowModel),
 		MlflowWebhook:            make(map[string]*ResourceMlflowWebhook),
+		ModelServing:             make(map[string]*ResourceModelServing),
 		Mount:                    make(map[string]*ResourceMount),
 		MwsCredentials:           make(map[string]*ResourceMwsCredentials),
 		MwsCustomerManagedKeys:   make(map[string]*ResourceMwsCustomerManagedKeys),
@@ -119,6 +123,7 @@ func NewResources() *Resources {
 		PermissionAssignment:     make(map[string]*ResourcePermissionAssignment),
 		Permissions:              make(map[string]*ResourcePermissions),
 		Pipeline:                 make(map[string]*ResourcePipeline),
+		Provider:                 make(map[string]*ResourceProvider),
 		Recipient:                make(map[string]*ResourceRecipient),
 		Repo:                     make(map[string]*ResourceRepo),
 		Schema:                   make(map[string]*ResourceSchema),
@@ -129,6 +134,7 @@ func NewResources() *Resources {
 		ServicePrincipalRole:     make(map[string]*ResourceServicePrincipalRole),
 		ServicePrincipalSecret:   make(map[string]*ResourceServicePrincipalSecret),
 		Share:                    make(map[string]*ResourceShare),
+		SqlAlert:                 make(map[string]*ResourceSqlAlert),
 		SqlDashboard:             make(map[string]*ResourceSqlDashboard),
 		SqlEndpoint:              make(map[string]*ResourceSqlEndpoint),
 		SqlGlobalConfig:          make(map[string]*ResourceSqlGlobalConfig),

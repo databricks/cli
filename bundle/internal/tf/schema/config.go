@@ -12,6 +12,7 @@ type Config struct {
 	AzureTenantId            string `json:"azure_tenant_id,omitempty"`
 	AzureUseMsi              bool   `json:"azure_use_msi,omitempty"`
 	AzureWorkspaceResourceId string `json:"azure_workspace_resource_id,omitempty"`
+	BricksCliPath            string `json:"bricks_cli_path,omitempty"`
 	ClientId                 string `json:"client_id,omitempty"`
 	ClientSecret             string `json:"client_secret,omitempty"`
 	ConfigFile               string `json:"config_file,omitempty"`
@@ -24,8 +25,8 @@ type Config struct {
 	Password                 string `json:"password,omitempty"`
 	Profile                  string `json:"profile,omitempty"`
 	RateLimit                int    `json:"rate_limit,omitempty"`
+	RetryTimeoutSeconds      int    `json:"retry_timeout_seconds,omitempty"`
 	SkipVerify               bool   `json:"skip_verify,omitempty"`
 	Token                    string `json:"token,omitempty"`
-	TokenEndpoint            string `json:"token_endpoint,omitempty"`
 	Username                 string `json:"username,omitempty"`
 }
