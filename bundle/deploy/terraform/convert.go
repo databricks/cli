@@ -81,6 +81,18 @@ func BundleToTerraform(config *config.Root) *schema.Root {
 		tfroot.Resource.Pipeline[k] = &dst
 	}
 
+	for k, src := range config.Resources.Models {
+		var dst schema.ResourceMlflowModel
+		conv(src, &dst)
+		tfroot.Resource.MlflowModel[k] = &dst
+	}
+
+	for k, src := range config.Resources.Experiments {
+		var dst schema.ResourceMlflowExperiment
+		conv(src, &dst)
+		tfroot.Resource.MlflowExperiment[k] = &dst
+	}
+
 	return tfroot
 }
 
@@ -112,6 +124,18 @@ func TerraformToBundle(state *tfjson.State, config *config.Root) error {
 			cur := config.Resources.Pipelines[resource.Name]
 			conv(tmp, &cur)
 			config.Resources.Pipelines[resource.Name] = cur
+		case "databricks_mlflow_model":
+			var tmp schema.ResourceMlflowModel
+			conv(resource.AttributeValues, &tmp)
+			cur := config.Resources.Models[resource.Name]
+			conv(tmp, &cur)
+			config.Resources.Models[resource.Name] = cur
+		case "databricks_mlflow_experiment":
+			var tmp schema.ResourceMlflowExperiment
+			conv(resource.AttributeValues, &tmp)
+			cur := config.Resources.Experiments[resource.Name]
+			conv(tmp, &cur)
+			config.Resources.Experiments[resource.Name] = cur
 		default:
 			return fmt.Errorf("missing mapping for %s", resource.Type)
 		}
