@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/clusters"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/libraries"
+	"github.com/databricks/databricks-sdk-go/service/mlflow"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -78,4 +79,61 @@ func TestConvertJobTaskLibraries(t *testing.T) {
 	require.Len(t, out.Resource.Job["my_job"].Task, 1)
 	require.Len(t, out.Resource.Job["my_job"].Task[0].Library, 1)
 	assert.Equal(t, "mlflow", out.Resource.Job["my_job"].Task[0].Library[0].Pypi.Package)
+}
+
+func TestConvertModel(t *testing.T) {
+	var src = resources.MlflowModel{
+		RegisteredModel: &mlflow.RegisteredModel{
+			Name:        "name",
+			Description: "description",
+			Tags: []mlflow.RegisteredModelTag{
+				{
+					Key:   "k1",
+					Value: "v1",
+				},
+				{
+					Key:   "k2",
+					Value: "v2",
+				},
+			},
+		},
+	}
+
+	var config = config.Root{
+		Resources: config.Resources{
+			Models: map[string]*resources.MlflowModel{
+				"my_model": &src,
+			},
+		},
+	}
+
+	out := BundleToTerraform(&config)
+	assert.Equal(t, "name", out.Resource.MlflowModel["my_model"].Name)
+	assert.Equal(t, "description", out.Resource.MlflowModel["my_model"].Description)
+	assert.Len(t, out.Resource.MlflowModel["my_model"].Tags, 2)
+	assert.Equal(t, "k1", out.Resource.MlflowModel["my_model"].Tags[0].Key)
+	assert.Equal(t, "v1", out.Resource.MlflowModel["my_model"].Tags[0].Value)
+	assert.Equal(t, "k2", out.Resource.MlflowModel["my_model"].Tags[1].Key)
+	assert.Equal(t, "v2", out.Resource.MlflowModel["my_model"].Tags[1].Value)
+	assert.Nil(t, out.Data)
+}
+
+func TestConvertExperiment(t *testing.T) {
+	var src = resources.MlflowExperiment{
+		Experiment: &mlflow.Experiment{
+			Name: "name",
+		},
+	}
+
+	var config = config.Root{
+		Resources: config.Resources{
+			Experiments: map[string]*resources.MlflowExperiment{
+				"my_experiment": &src,
+			},
+		},
+	}
+
+	out := BundleToTerraform(&config)
+	assert.Equal(t, "name", out.Resource.MlflowExperiment["my_experiment"].Name)
+	assert.Nil(t, out.Data)
 }
