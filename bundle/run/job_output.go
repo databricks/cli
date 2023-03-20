@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sort"
 
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"golang.org/x/exp/maps"
 )
@@ -42,8 +43,7 @@ func (out *JobOutput) String() (string, error) {
 	return result, nil
 }
 
-func (r *jobRunner) GetJobOutput(ctx context.Context, runId int64) (*JobOutput, error) {
-	w := r.bundle.WorkspaceClient()
+func GetJobOutput(ctx context.Context, w *databricks.WorkspaceClient, runId int64) (*JobOutput, error) {
 	jobRun, err := w.Jobs.GetRun(ctx, jobs.GetRun{
 		RunId: runId,
 	})

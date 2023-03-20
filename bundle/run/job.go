@@ -205,7 +205,7 @@ func (r *jobRunner) Run(ctx context.Context, opts *Options) (RunOutput, error) {
 	// The task completed successfully.
 	case jobs.RunResultStateSuccess:
 		log.Infof(ctx, "Run has completed successfully!")
-		return r.GetJobOutput(ctx, *runId)
+		return r.GetJobOutput(ctx, r.bundle.WorkspaceClient(), *runId)
 
 	// The run was stopped after reaching the timeout.
 	case jobs.RunResultStateTimedout:
