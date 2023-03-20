@@ -68,7 +68,6 @@ foo
 `
 	//  two possibilties since map traversal is random
 	assert.True(t, actual == expected1 || actual == expected2)
-	assert.Equal(t, expected1, actual)
 }
 
 func TestNotebookOutputToRunOutput(t *testing.T) {

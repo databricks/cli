@@ -87,32 +87,3 @@ func TestFindSingleArgWithType(t *testing.T) {
 	_, err := Find(b, "jobs.key")
 	assert.NoError(t, err)
 }
-
-func TestFoo(t *testing.T) {
-	w, err := databricks.NewWorkspaceClient(
-		&databricks.Config{
-			Profile: "DEFAULT",
-		},
-	)
-	require.NoError(t, err)
-
-	runInfo, err := w.Jobs.GetRun(context.TODO(), jobs.GetRun{
-		RunId: 19000091,
-	})
-	require.NoError(t, err)
-
-	// a, err := w.Jobs.GetRunOutput(context.TODO(), jobs.GetRunOutput{
-	// 	RunId: 19000091,
-	// })
-	// require.NoError(t, err)
-
-	result, err := w.Jobs.GetRunOutput(context.TODO(), jobs.GetRunOutput{
-		RunId: 19000915,
-	})
-	require.NoError(t, err)
-
-	fmt.Println("[DEBUG] GetRun job: ", runInfo)
-	// fmt.Println("[DEBUG] GetRun a: ", a)
-	fmt.Println("[DEBUG] GetRunOutput task: ", result)
-	assert.True(t, false)
-}
