@@ -8,13 +8,17 @@ type DataSources struct {
 	AwsCrossaccountPolicy map[string]*DataSourceAwsCrossaccountPolicy `json:"databricks_aws_crossaccount_policy,omitempty"`
 	Catalogs              map[string]*DataSourceCatalogs              `json:"databricks_catalogs,omitempty"`
 	Cluster               map[string]*DataSourceCluster               `json:"databricks_cluster,omitempty"`
+	ClusterPolicy         map[string]*DataSourceClusterPolicy         `json:"databricks_cluster_policy,omitempty"`
 	Clusters              map[string]*DataSourceClusters              `json:"databricks_clusters,omitempty"`
 	CurrentUser           map[string]*DataSourceCurrentUser           `json:"databricks_current_user,omitempty"`
 	DbfsFile              map[string]*DataSourceDbfsFile              `json:"databricks_dbfs_file,omitempty"`
 	DbfsFilePaths         map[string]*DataSourceDbfsFilePaths         `json:"databricks_dbfs_file_paths,omitempty"`
+	Directory             map[string]*DataSourceDirectory             `json:"databricks_directory,omitempty"`
 	Group                 map[string]*DataSourceGroup                 `json:"databricks_group,omitempty"`
+	InstancePool          map[string]*DataSourceInstancePool          `json:"databricks_instance_pool,omitempty"`
 	Job                   map[string]*DataSourceJob                   `json:"databricks_job,omitempty"`
 	Jobs                  map[string]*DataSourceJobs                  `json:"databricks_jobs,omitempty"`
+	MwsCredentials        map[string]*DataSourceMwsCredentials        `json:"databricks_mws_credentials,omitempty"`
 	MwsWorkspaces         map[string]*DataSourceMwsWorkspaces         `json:"databricks_mws_workspaces,omitempty"`
 	NodeType              map[string]*DataSourceNodeType              `json:"databricks_node_type,omitempty"`
 	Notebook              map[string]*DataSourceNotebook              `json:"databricks_notebook,omitempty"`
@@ -40,13 +44,17 @@ func NewDataSources() *DataSources {
 		AwsCrossaccountPolicy: make(map[string]*DataSourceAwsCrossaccountPolicy),
 		Catalogs:              make(map[string]*DataSourceCatalogs),
 		Cluster:               make(map[string]*DataSourceCluster),
+		ClusterPolicy:         make(map[string]*DataSourceClusterPolicy),
 		Clusters:              make(map[string]*DataSourceClusters),
 		CurrentUser:           make(map[string]*DataSourceCurrentUser),
 		DbfsFile:              make(map[string]*DataSourceDbfsFile),
 		DbfsFilePaths:         make(map[string]*DataSourceDbfsFilePaths),
+		Directory:             make(map[string]*DataSourceDirectory),
 		Group:                 make(map[string]*DataSourceGroup),
+		InstancePool:          make(map[string]*DataSourceInstancePool),
 		Job:                   make(map[string]*DataSourceJob),
 		Jobs:                  make(map[string]*DataSourceJobs),
+		MwsCredentials:        make(map[string]*DataSourceMwsCredentials),
 		MwsWorkspaces:         make(map[string]*DataSourceMwsWorkspaces),
 		NodeType:              make(map[string]*DataSourceNodeType),
 		Notebook:              make(map[string]*DataSourceNotebook),

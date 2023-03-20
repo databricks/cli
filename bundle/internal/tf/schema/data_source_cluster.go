@@ -94,8 +94,20 @@ type DataSourceClusterClusterInfoGcpAttributes struct {
 	ZoneId                  string `json:"zone_id,omitempty"`
 }
 
+type DataSourceClusterClusterInfoInitScriptsAbfss struct {
+	Destination string `json:"destination,omitempty"`
+}
+
 type DataSourceClusterClusterInfoInitScriptsDbfs struct {
 	Destination string `json:"destination"`
+}
+
+type DataSourceClusterClusterInfoInitScriptsFile struct {
+	Destination string `json:"destination,omitempty"`
+}
+
+type DataSourceClusterClusterInfoInitScriptsGcs struct {
+	Destination string `json:"destination,omitempty"`
 }
 
 type DataSourceClusterClusterInfoInitScriptsS3 struct {
@@ -109,8 +121,11 @@ type DataSourceClusterClusterInfoInitScriptsS3 struct {
 }
 
 type DataSourceClusterClusterInfoInitScripts struct {
-	Dbfs *DataSourceClusterClusterInfoInitScriptsDbfs `json:"dbfs,omitempty"`
-	S3   *DataSourceClusterClusterInfoInitScriptsS3   `json:"s3,omitempty"`
+	Abfss *DataSourceClusterClusterInfoInitScriptsAbfss `json:"abfss,omitempty"`
+	Dbfs  *DataSourceClusterClusterInfoInitScriptsDbfs  `json:"dbfs,omitempty"`
+	File  *DataSourceClusterClusterInfoInitScriptsFile  `json:"file,omitempty"`
+	Gcs   *DataSourceClusterClusterInfoInitScriptsGcs   `json:"gcs,omitempty"`
+	S3    *DataSourceClusterClusterInfoInitScriptsS3    `json:"s3,omitempty"`
 }
 
 type DataSourceClusterClusterInfoTerminationReason struct {
@@ -166,7 +181,8 @@ type DataSourceClusterClusterInfo struct {
 }
 
 type DataSourceCluster struct {
-	ClusterId   string                        `json:"cluster_id"`
+	ClusterId   string                        `json:"cluster_id,omitempty"`
+	ClusterName string                        `json:"cluster_name,omitempty"`
 	Id          string                        `json:"id,omitempty"`
 	ClusterInfo *DataSourceClusterClusterInfo `json:"cluster_info,omitempty"`
 }
