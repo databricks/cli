@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -14,6 +13,7 @@ import (
 	"encoding/hex"
 
 	"github.com/databricks/bricks/libs/fileset"
+	"github.com/databricks/bricks/libs/log"
 	"github.com/databricks/bricks/libs/notebook"
 )
 
@@ -88,7 +88,7 @@ func SnapshotPath(opts *SyncOptions) (string, error) {
 	return filepath.Join(snapshotDir, fileName), nil
 }
 
-func newSnapshot(opts *SyncOptions) (*Snapshot, error) {
+func newSnapshot(ctx context.Context, opts *SyncOptions) (*Snapshot, error) {
 	path, err := SnapshotPath(opts)
 	if err != nil {
 		return nil, err
@@ -126,8 +126,8 @@ func (s *Snapshot) Save(ctx context.Context) error {
 	return nil
 }
 
-func loadOrNewSnapshot(opts *SyncOptions) (*Snapshot, error) {
-	snapshot, err := newSnapshot(opts)
+func loadOrNewSnapshot(ctx context.Context, opts *SyncOptions) (*Snapshot, error) {
+	snapshot, err := newSnapshot(ctx, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -150,8 +150,8 @@ func loadOrNewSnapshot(opts *SyncOptions) (*Snapshot, error) {
 
 	// invalidate old snapshot with schema versions
 	if fromDisk.Version != LatestSnapshotVersion {
-		log.Printf("Did not load existing snapshot because its version is %s while the latest version is %s", snapshot.Version, LatestSnapshotVersion)
-		return newSnapshot(opts)
+		log.Warnf(ctx, "Did not load existing snapshot because its version is %s while the latest version is %s", snapshot.Version, LatestSnapshotVersion)
+		return newSnapshot(ctx, opts)
 	}
 
 	// unmarshal again over the existing snapshot instance

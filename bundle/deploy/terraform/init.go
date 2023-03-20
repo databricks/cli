@@ -3,13 +3,13 @@ package terraform
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
 
 	"github.com/databricks/bricks/bundle"
 	"github.com/databricks/bricks/bundle/config"
+	"github.com/databricks/bricks/libs/log"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/hc-install/product"
 	"github.com/hashicorp/hc-install/releases"
@@ -30,7 +30,7 @@ func (m *initialize) findExecPath(ctx context.Context, b *bundle.Bundle, tf *con
 			return "", err
 		}
 		tf.ExecPath = execPath
-		log.Printf("[DEBUG] Using Terraform at %s", tf.ExecPath)
+		log.Debugf(ctx, "Using Terraform at %s", tf.ExecPath)
 		return tf.ExecPath, nil
 	}
 
@@ -47,7 +47,7 @@ func (m *initialize) findExecPath(ctx context.Context, b *bundle.Bundle, tf *con
 	}
 	if err == nil {
 		tf.ExecPath = execPath
-		log.Printf("[DEBUG] Using Terraform at %s", tf.ExecPath)
+		log.Debugf(ctx, "Using Terraform at %s", tf.ExecPath)
 		return tf.ExecPath, nil
 	}
 
@@ -63,7 +63,7 @@ func (m *initialize) findExecPath(ctx context.Context, b *bundle.Bundle, tf *con
 	}
 
 	tf.ExecPath = execPath
-	log.Printf("[DEBUG] Using Terraform at %s", tf.ExecPath)
+	log.Debugf(ctx, "Using Terraform at %s", tf.ExecPath)
 	return tf.ExecPath, nil
 }
 

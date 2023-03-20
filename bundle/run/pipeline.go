@@ -3,14 +3,13 @@ package run
 import (
 	"context"
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
 	"github.com/databricks/bricks/bundle"
 	"github.com/databricks/bricks/bundle/config/resources"
+	"github.com/databricks/bricks/libs/log"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
-	"github.com/fatih/color"
 	flag "github.com/spf13/pflag"
 )
 
@@ -24,12 +23,8 @@ func filterEventsByUpdateId(events []pipelines.PipelineEvent, updateId string) [
 	return result
 }
 
-func (r *pipelineRunner) logEvent(event pipelines.PipelineEvent) {
-	red := color.New(color.FgRed).SprintFunc()
-	errorPrefix := red("[ERROR]")
-	pipelineKeyPrefix := red(fmt.Sprintf("[%s]", r.Key()))
-	eventTypePrefix := red(fmt.Sprintf("[%s]", event.EventType))
-	logString := errorPrefix + pipelineKeyPrefix + eventTypePrefix
+func (r *pipelineRunner) logEvent(ctx context.Context, event pipelines.PipelineEvent) {
+	logString := ""
 	if event.Message != "" {
 		logString += fmt.Sprintf(" %s\n", event.Message)
 	}
@@ -39,13 +34,12 @@ func (r *pipelineRunner) logEvent(event pipelines.PipelineEvent) {
 			logString += fmt.Sprintf("%s\n", event.Error.Exceptions[i].Message)
 		}
 	}
-	if logString != errorPrefix {
-		log.Print(logString)
+	if logString != "" {
+		log.Errorf(ctx, fmt.Sprintf("[%s] %s", event.EventType, logString))
 	}
 }
 
 func (r *pipelineRunner) logErrorEvent(ctx context.Context, pipelineId string, updateId string) error {
-
 	w := r.bundle.WorkspaceClient()
 
 	// Note: For a 100 percent correct and complete solution we should use the
@@ -69,7 +63,7 @@ func (r *pipelineRunner) logErrorEvent(ctx context.Context, pipelineId string, u
 	// The events API returns most recent events first. We iterate in a reverse order
 	// to print the events chronologically
 	for i := len(updateEvents) - 1; i >= 0; i-- {
-		r.logEvent(updateEvents[i])
+		r.logEvent(ctx, updateEvents[i])
 	}
 	return nil
 }
@@ -140,13 +134,14 @@ type pipelineRunner struct {
 }
 
 func (r *pipelineRunner) Run(ctx context.Context, opts *Options) (RunOutput, error) {
-	var prefix = fmt.Sprintf("[INFO] [%s]", r.Key())
 	var pipelineID = r.pipeline.ID
 
+	// Include resource key in logger.
+	ctx = log.NewContext(ctx, log.GetLogger(ctx).With("resource", r.Key()))
 	w := r.bundle.WorkspaceClient()
 	_, err := w.Pipelines.GetByPipelineId(ctx, pipelineID)
 	if err != nil {
-		log.Printf("[WARN] Cannot get pipeline: %s", err)
+		log.Warnf(ctx, "Cannot get pipeline: %s", err)
 		return nil, err
 	}
 
@@ -164,7 +159,7 @@ func (r *pipelineRunner) Run(ctx context.Context, opts *Options) (RunOutput, err
 
 	// Log the pipeline update URL as soon as it is available.
 	updateUrl := fmt.Sprintf("%s/#joblist/pipelines/%s/updates/%s", w.Config.Host, pipelineID, updateID)
-	log.Printf("%s Update available at %s", prefix, updateUrl)
+	log.Infof(ctx, "Update available at %s", updateUrl)
 
 	// Poll update for completion and post status.
 	// Note: there is no "StartUpdateAndWait" wrapper for this API.
@@ -178,16 +173,16 @@ func (r *pipelineRunner) Run(ctx context.Context, opts *Options) (RunOutput, err
 		// Log only if the current state is different from the previous state.
 		state := update.Update.State
 		if prevState == nil || *prevState != state {
-			log.Printf("%s Update status: %s", prefix, state)
+			log.Infof(ctx, "Update status: %s", state)
 			prevState = &state
 		}
 
 		if state == pipelines.UpdateInfoStateCanceled {
-			log.Printf("%s Update was cancelled!", prefix)
+			log.Infof(ctx, "Update was cancelled!")
 			return nil, fmt.Errorf("update cancelled")
 		}
 		if state == pipelines.UpdateInfoStateFailed {
-			log.Printf("%s Update has failed!", prefix)
+			log.Infof(ctx, "Update has failed!")
 			err := r.logErrorEvent(ctx, pipelineID, updateID)
 			if err != nil {
 				return nil, err
@@ -195,7 +190,7 @@ func (r *pipelineRunner) Run(ctx context.Context, opts *Options) (RunOutput, err
 			return nil, fmt.Errorf("update failed")
 		}
 		if state == pipelines.UpdateInfoStateCompleted {
-			log.Printf("%s Update has completed successfully!", prefix)
+			log.Infof(ctx, "Update has completed successfully!")
 			return nil, nil
 		}
 

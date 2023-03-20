@@ -150,7 +150,7 @@ const DeploymentStateRemoteLocation = "dbfs:/FileStore/deployment-state"
 // 	if err != nil {
 // 		return err
 // 	}
-// 	log.Printf("[DEBUG] remote serial is %d", serialDeployed)
+// 	log.Debugf(ctx, "remote serial is %d", serialDeployed)
 // 	local, err := d.openLocalState()
 // 	if err != nil {
 // 		return err

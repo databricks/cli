@@ -3,12 +3,12 @@ package run
 import (
 	"context"
 	"fmt"
-	"log"
 	"strconv"
 	"time"
 
 	"github.com/databricks/bricks/bundle"
 	"github.com/databricks/bricks/bundle/config/resources"
+	"github.com/databricks/bricks/libs/log"
 	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/fatih/color"
@@ -109,13 +109,11 @@ func (r *jobRunner) logFailedTasks(ctx context.Context, runId int64) {
 	red := color.New(color.FgRed).SprintFunc()
 	green := color.New(color.FgGreen).SprintFunc()
 	yellow := color.New(color.FgYellow).SprintFunc()
-	errorPrefix := fmt.Sprintf("%s [%s]", red("[ERROR]"), r.Key())
-	infoPrefix := fmt.Sprintf("%s [%s]", "[INFO]", r.Key())
 	run, err := w.Jobs.GetRun(ctx, jobs.GetRun{
 		RunId: runId,
 	})
 	if err != nil {
-		log.Printf("%s failed to log job run. Error: %s", errorPrefix, err)
+		log.Errorf(ctx, "failed to log job run. Error: %s", err)
 		return
 	}
 	if run.State.ResultState == jobs.RunResultStateSuccess {
@@ -123,20 +121,19 @@ func (r *jobRunner) logFailedTasks(ctx context.Context, runId int64) {
 	}
 	for _, task := range run.Tasks {
 		if isSuccess(task) {
-			log.Printf("%s task %s completed successfully", infoPrefix, green(task.TaskKey))
+			log.Infof(ctx, "task %s completed successfully", green(task.TaskKey))
 		} else if isFailed(task) {
 			taskInfo, err := w.Jobs.GetRunOutput(ctx, jobs.GetRunOutput{
 				RunId: task.RunId,
 			})
 			if err != nil {
-				log.Printf("%s task %s failed. Unable to fetch error trace: %s",
-					errorPrefix, red(task.TaskKey), err)
+				log.Errorf(ctx, "task %s failed. Unable to fetch error trace: %s", red(task.TaskKey), err)
 				continue
 			}
-			log.Printf("%s Task %s failed!\nError:\n%s\nTrace:\n%s", errorPrefix,
+			log.Errorf(ctx, "Task %s failed!\nError:\n%s\nTrace:\n%s",
 				red(task.TaskKey), taskInfo.Error, taskInfo.ErrorTrace)
 		} else {
-			log.Printf("%s task %s is in state %s", infoPrefix,
+			log.Infof(ctx, "task %s is in state %s",
 				yellow(task.TaskKey), task.State.LifeCycleState)
 		}
 	}
@@ -149,7 +146,6 @@ func (r *jobRunner) Run(ctx context.Context, opts *Options) (RunOutput, error) {
 		return nil, fmt.Errorf("job ID is not an integer: %s", r.job.ID)
 	}
 
-	var prefix = fmt.Sprintf("[INFO] [%s]", r.Key())
 	var prevState *jobs.RunState
 	var runId *int64
 
@@ -167,10 +163,10 @@ func (r *jobRunner) Run(ctx context.Context, opts *Options) (RunOutput, error) {
 
 		// Log the job run URL as soon as it is available.
 		if prevState == nil {
-			log.Printf("%s Run available at %s", prefix, info.Info.RunPageUrl)
+			log.Infof(ctx, "Run available at %s", info.Info.RunPageUrl)
 		}
 		if prevState == nil || prevState.LifeCycleState != state.LifeCycleState {
-			log.Printf("%s Run status: %s", prefix, info.Info.State.LifeCycleState)
+			log.Infof(ctx, "Run status: %s", info.Info.State.LifeCycleState)
 			prevState = state
 		}
 		if runId == nil {
@@ -183,8 +179,9 @@ func (r *jobRunner) Run(ctx context.Context, opts *Options) (RunOutput, error) {
 		return nil, err
 	}
 
+	// Include resource key in logger.
+	ctx = log.NewContext(ctx, log.GetLogger(ctx).With("resource", r.Key()))
 	w := r.bundle.WorkspaceClient()
-
 	run, err := w.Jobs.RunNowAndWait(ctx, *req, retries.Timeout[jobs.Run](jobRunTimeout), update)
 	if err != nil && runId != nil {
 		r.logFailedTasks(ctx, *runId)
@@ -197,17 +194,17 @@ func (r *jobRunner) Run(ctx context.Context, opts *Options) (RunOutput, error) {
 	switch run.State.ResultState {
 	// The run was canceled at user request.
 	case jobs.RunResultStateCanceled:
-		log.Printf("%s Run was cancelled!", prefix)
+		log.Infof(ctx, "Run was cancelled!")
 		return nil, fmt.Errorf("run canceled: %s", run.State.StateMessage)
 
 	// The task completed with an error.
 	case jobs.RunResultStateFailed:
-		log.Printf("%s Run has failed!", prefix)
+		log.Infof(ctx, "Run has failed!")
 		return nil, fmt.Errorf("run failed: %s", run.State.StateMessage)
 
 	// The task completed successfully.
 	case jobs.RunResultStateSuccess:
-		log.Printf("%s Run has completed successfully!", prefix)
+		log.Infof(ctx, "Run has completed successfully!")
 		jobOutput, err := r.GetJobOutput(ctx, *runId)
 		if err != nil {
 			return nil, err
@@ -216,7 +213,7 @@ func (r *jobRunner) Run(ctx context.Context, opts *Options) (RunOutput, error) {
 
 	// The run was stopped after reaching the timeout.
 	case jobs.RunResultStateTimedout:
-		log.Printf("%s Run has timed out!", prefix)
+		log.Infof(ctx, "Run has timed out!")
 		return nil, fmt.Errorf("run timed out: %s", run.State.StateMessage)
 	}
 

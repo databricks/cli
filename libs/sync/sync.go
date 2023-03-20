@@ -3,10 +3,10 @@ package sync
 import (
 	"context"
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/databricks/bricks/libs/git"
+	"github.com/databricks/bricks/libs/log"
 	"github.com/databricks/bricks/libs/sync/repofiles"
 	"github.com/databricks/databricks-sdk-go"
 )
@@ -66,12 +66,12 @@ func New(ctx context.Context, opts SyncOptions) (*Sync, error) {
 	// For incremental sync, we try to load an existing snapshot to start from.
 	var snapshot *Snapshot
 	if opts.Full {
-		snapshot, err = newSnapshot(&opts)
+		snapshot, err = newSnapshot(ctx, &opts)
 		if err != nil {
 			return nil, fmt.Errorf("unable to instantiate new sync snapshot: %w", err)
 		}
 	} else {
-		snapshot, err = loadOrNewSnapshot(&opts)
+		snapshot, err = loadOrNewSnapshot(ctx, &opts)
 		if err != nil {
 			return nil, fmt.Errorf("unable to load sync snapshot: %w", err)
 		}
@@ -94,6 +94,14 @@ func (s *Sync) Events() <-chan Event {
 	ch := make(chan Event, MaxRequestsInFlight)
 	s.notifier = &ChannelNotifier{ch}
 	return ch
+}
+
+func (s *Sync) Close() {
+	if s.notifier == nil {
+		return
+	}
+	s.notifier.Close()
+	s.notifier = nil
 }
 
 func (s *Sync) notifyStart(ctx context.Context, d diff) {
@@ -122,7 +130,7 @@ func (s *Sync) RunOnce(ctx context.Context) error {
 	// https://github.com/gorakhargosh/watchdog/blob/master/src/watchdog/observers/kqueue.py#L394-L418
 	all, err := s.fileSet.All()
 	if err != nil {
-		log.Printf("[ERROR] cannot list files: %s", err)
+		log.Errorf(ctx, "cannot list files: %s", err)
 		return err
 	}
 
@@ -144,7 +152,7 @@ func (s *Sync) RunOnce(ctx context.Context) error {
 
 	err = s.snapshot.Save(ctx)
 	if err != nil {
-		log.Printf("[ERROR] cannot store snapshot: %s", err)
+		log.Errorf(ctx, "cannot store snapshot: %s", err)
 		return err
 	}
 
