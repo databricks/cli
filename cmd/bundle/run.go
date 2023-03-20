@@ -36,8 +36,6 @@ var runCmd = &cobra.Command{
 			return err
 		}
 
-		// TODO: address in PR that I chose not to add output-task flag
-		// Rather the right thing to do would be maye
 		output, err := runner.Run(cmd.Context(), &runOptions)
 		if output != nil {
 			switch outputType {
