@@ -72,7 +72,7 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 	}
 
 	// Special handling of this error only if it is an API error.
-	var aerr apierr.APIError
+	var aerr *apierr.APIError
 	if !errors.As(err, &aerr) {
 		return err
 	}
@@ -122,7 +122,7 @@ func (w *WorkspaceFilesClient) Read(ctx context.Context, name string) (io.Reader
 	}
 
 	// Special handling of this error only if it is an API error.
-	var aerr apierr.APIError
+	var aerr *apierr.APIError
 	if !errors.As(err, &aerr) {
 		return nil, err
 	}
@@ -151,7 +151,7 @@ func (w *WorkspaceFilesClient) Delete(ctx context.Context, name string) error {
 	}
 
 	// Special handling of this error only if it is an API error.
-	var aerr apierr.APIError
+	var aerr *apierr.APIError
 	if !errors.As(err, &aerr) {
 		return err
 	}
