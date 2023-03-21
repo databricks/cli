@@ -153,7 +153,7 @@ func TestJobNotebookDoesNotExistError(t *testing.T) {
 	}
 
 	_, err := mutator.TranslateNotebookPaths().Apply(context.Background(), bundle)
-	assert.ErrorContains(t, err, "notebook ./doesnt_exist.py not found.")
+	assert.ErrorContains(t, err, "notebook ./doesnt_exist.py not found")
 }
 
 func TestPipelineNotebookDoesNotExistError(t *testing.T) {
@@ -181,5 +181,5 @@ func TestPipelineNotebookDoesNotExistError(t *testing.T) {
 	}
 
 	_, err := mutator.TranslateNotebookPaths().Apply(context.Background(), bundle)
-	assert.ErrorContains(t, err, "notebook ./doesnt_exist.py not found.")
+	assert.ErrorContains(t, err, "notebook ./doesnt_exist.py not found")
 }
