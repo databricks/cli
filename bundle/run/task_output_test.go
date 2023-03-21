@@ -21,7 +21,7 @@ func TestNotebookOutputToString(t *testing.T) {
 
 	actualFoo, err := taskFoo.String()
 	require.NoError(t, err)
-	assert.Equal(t, "foo\n[truncated...]", actualFoo)
+	assert.Equal(t, "foo\n[truncated...]\n", actualFoo)
 
 	actualBar, err := taskBar.String()
 	require.NoError(t, err)
@@ -40,7 +40,7 @@ func TestLogsOutputToString(t *testing.T) {
 
 	actualFoo, err := taskFoo.String()
 	require.NoError(t, err)
-	assert.Equal(t, "foo\n[truncated...]", actualFoo)
+	assert.Equal(t, "foo\n[truncated...]\n", actualFoo)
 
 	actualBar, err := taskBar.String()
 	require.NoError(t, err)
@@ -54,7 +54,7 @@ func TestDbtOutputToString(t *testing.T) {
 	}
 
 	actual, err := task.String()
-	expected := `==== Task Output ====
+	expected := `Dbt Task Output:
 {
   "artifacts_headers": {
     "a": "b",
@@ -76,7 +76,7 @@ func TestSqlOutputToString(t *testing.T) {
 	}
 
 	actual, err := task.String()
-	expected := `==== Task Output ====
+	expected := `SQL Task Output:
 {
   "query_output": {
     "output_link": "a",

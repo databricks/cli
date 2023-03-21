@@ -15,14 +15,14 @@ func TestSingleTaskJobOutputToString(t *testing.T) {
 	}
 	myJob := JobOutput{
 		RunPageUrl: "my_job_url",
-		Tasks: map[string]RunOutput{
+		TaskOutputs: map[string]RunOutput{
 			"my_notebook_task": &taskNotebook,
 		},
 	}
 
 	actual, err := myJob.String()
 	require.NoError(t, err)
-	expected := "foo\n[truncated...]"
+	expected := "foo\n[truncated...]\n"
 	assert.Equal(t, expected, actual)
 }
 
@@ -37,7 +37,7 @@ func TestMultiTaskJobOutputToString(t *testing.T) {
 	}
 	myJob := JobOutput{
 		RunPageUrl: "my_job_url",
-		Tasks: map[string]RunOutput{
+		TaskOutputs: map[string]RunOutput{
 			"my_foo_task": &taskFoo,
 			"my_bar_task": &taskBar,
 		},
@@ -46,8 +46,7 @@ func TestMultiTaskJobOutputToString(t *testing.T) {
 	actual, err := myJob.String()
 	require.NoError(t, err)
 
-	expected := `==== Job Output ====
-Run url: my_job_url
+	expected := `Run URL: my_job_url
 =======
 Task my_bar_task:
 bar
@@ -55,6 +54,7 @@ bar
 Task my_foo_task:
 foo
 [truncated...]
+
 `
 	assert.Equal(t, expected, actual)
 }

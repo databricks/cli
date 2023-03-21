@@ -12,29 +12,31 @@ import (
 )
 
 type JobOutput struct {
+	// URL of the job run
 	RunPageUrl string
-	Tasks      map[string]RunOutput
+
+	// output for tasks with a non empty output
+	TaskOutputs map[string]RunOutput
 }
 
 // TODO: Print the output respecting the execution order (https://github.com/databricks/bricks/issues/259)
 func (out *JobOutput) String() (string, error) {
-	if len(out.Tasks) == 0 {
+	if len(out.TaskOutputs) == 0 {
 		return "", nil
 	}
 	// When only one task, just return that output without any formatting
-	if len(out.Tasks) == 1 {
-		for _, v := range out.Tasks {
+	if len(out.TaskOutputs) == 1 {
+		for _, v := range out.TaskOutputs {
 			return v.String()
 		}
 	}
 	result := strings.Builder{}
-	result.WriteString("==== Job Output ====\n")
-	result.WriteString(fmt.Sprintf("Run url: %s\n", out.RunPageUrl))
+	result.WriteString(fmt.Sprintf("Run URL: %s\n", out.RunPageUrl))
 
-	taskKeys := maps.Keys(out.Tasks)
+	taskKeys := maps.Keys(out.TaskOutputs)
 	sort.Strings(taskKeys)
 	for _, k := range taskKeys {
-		taskString, err := out.Tasks[k].String()
+		taskString, err := out.TaskOutputs[k].String()
 		if err != nil {
 			return "", nil
 		}
@@ -53,7 +55,7 @@ func getJobOutput(ctx context.Context, w *databricks.WorkspaceClient, runId int6
 		return nil, err
 	}
 	result := &JobOutput{
-		Tasks: make(map[string]RunOutput),
+		TaskOutputs: make(map[string]RunOutput),
 	}
 	result.RunPageUrl = jobRun.RunPageUrl
 
@@ -64,7 +66,7 @@ func getJobOutput(ctx context.Context, w *databricks.WorkspaceClient, runId int6
 		if err != nil {
 			return nil, err
 		}
-		result.Tasks[task.TaskKey] = toRunOutput(jobRunOutput)
+		result.TaskOutputs[task.TaskKey] = toRunOutput(jobRunOutput)
 	}
 	return result, nil
 }
