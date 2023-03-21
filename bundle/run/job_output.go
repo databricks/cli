@@ -13,10 +13,10 @@ import (
 
 type JobOutput struct {
 	// URL of the job run
-	RunPageUrl string
+	RunPageUrl string `json:"run_page_url"`
 
 	// output for tasks with a non empty output
-	TaskOutputs map[string]RunOutput
+	TaskOutputs map[string]RunOutput `json:"task_outputs"`
 }
 
 // TODO: Print the output respecting the execution order (https://github.com/databricks/bricks/issues/259)
