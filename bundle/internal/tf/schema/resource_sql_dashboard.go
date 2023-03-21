@@ -3,7 +3,8 @@
 package schema
 
 type ResourceSqlDashboard struct {
-	Id   string   `json:"id,omitempty"`
-	Name string   `json:"name"`
-	Tags []string `json:"tags,omitempty"`
+	Id     string   `json:"id,omitempty"`
+	Name   string   `json:"name"`
+	Parent string   `json:"parent,omitempty"`
+	Tags   []string `json:"tags,omitempty"`
 }

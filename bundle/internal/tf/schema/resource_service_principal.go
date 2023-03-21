@@ -11,6 +11,10 @@ type ResourceServicePrincipal struct {
 	DisplayName             string `json:"display_name,omitempty"`
 	ExternalId              string `json:"external_id,omitempty"`
 	Force                   bool   `json:"force,omitempty"`
+	ForceDeleteHomeDir      bool   `json:"force_delete_home_dir,omitempty"`
+	ForceDeleteRepos        bool   `json:"force_delete_repos,omitempty"`
+	Home                    string `json:"home,omitempty"`
 	Id                      string `json:"id,omitempty"`
+	Repos                   string `json:"repos,omitempty"`
 	WorkspaceAccess         bool   `json:"workspace_access,omitempty"`
 }

@@ -11,4 +11,5 @@ type ResourceSchema struct {
 	Name         string            `json:"name"`
 	Owner        string            `json:"owner,omitempty"`
 	Properties   map[string]string `json:"properties,omitempty"`
+	StorageRoot  string            `json:"storage_root,omitempty"`
 }

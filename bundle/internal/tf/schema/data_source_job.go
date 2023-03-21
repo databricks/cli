@@ -2,7 +2,12 @@
 
 package schema
 
+type DataSourceJobJobSettingsSettingsContinuous struct {
+	PauseStatus string `json:"pause_status,omitempty"`
+}
+
 type DataSourceJobJobSettingsSettingsDbtTask struct {
+	Catalog           string   `json:"catalog,omitempty"`
 	Commands          []string `json:"commands"`
 	ProfilesDirectory string   `json:"profiles_directory,omitempty"`
 	ProjectDirectory  string   `json:"project_directory,omitempty"`
@@ -67,6 +72,17 @@ type DataSourceJobJobSettingsSettingsJobClusterNewClusterClusterLogConf struct {
 	S3   *DataSourceJobJobSettingsSettingsJobClusterNewClusterClusterLogConfS3   `json:"s3,omitempty"`
 }
 
+type DataSourceJobJobSettingsSettingsJobClusterNewClusterClusterMountInfoNetworkFilesystemInfo struct {
+	MountOptions  string `json:"mount_options,omitempty"`
+	ServerAddress string `json:"server_address"`
+}
+
+type DataSourceJobJobSettingsSettingsJobClusterNewClusterClusterMountInfo struct {
+	LocalMountDirPath     string                                                                                     `json:"local_mount_dir_path"`
+	RemoteMountDirPath    string                                                                                     `json:"remote_mount_dir_path,omitempty"`
+	NetworkFilesystemInfo *DataSourceJobJobSettingsSettingsJobClusterNewClusterClusterMountInfoNetworkFilesystemInfo `json:"network_filesystem_info,omitempty"`
+}
+
 type DataSourceJobJobSettingsSettingsJobClusterNewClusterDockerImageBasicAuth struct {
 	Password string `json:"password"`
 	Username string `json:"username"`
@@ -83,6 +99,10 @@ type DataSourceJobJobSettingsSettingsJobClusterNewClusterGcpAttributes struct {
 	GoogleServiceAccount    string `json:"google_service_account,omitempty"`
 	UsePreemptibleExecutors bool   `json:"use_preemptible_executors,omitempty"`
 	ZoneId                  string `json:"zone_id,omitempty"`
+}
+
+type DataSourceJobJobSettingsSettingsJobClusterNewClusterInitScriptsAbfss struct {
+	Destination string `json:"destination,omitempty"`
 }
 
 type DataSourceJobJobSettingsSettingsJobClusterNewClusterInitScriptsDbfs struct {
@@ -108,10 +128,11 @@ type DataSourceJobJobSettingsSettingsJobClusterNewClusterInitScriptsS3 struct {
 }
 
 type DataSourceJobJobSettingsSettingsJobClusterNewClusterInitScripts struct {
-	Dbfs *DataSourceJobJobSettingsSettingsJobClusterNewClusterInitScriptsDbfs `json:"dbfs,omitempty"`
-	File *DataSourceJobJobSettingsSettingsJobClusterNewClusterInitScriptsFile `json:"file,omitempty"`
-	Gcs  *DataSourceJobJobSettingsSettingsJobClusterNewClusterInitScriptsGcs  `json:"gcs,omitempty"`
-	S3   *DataSourceJobJobSettingsSettingsJobClusterNewClusterInitScriptsS3   `json:"s3,omitempty"`
+	Abfss *DataSourceJobJobSettingsSettingsJobClusterNewClusterInitScriptsAbfss `json:"abfss,omitempty"`
+	Dbfs  *DataSourceJobJobSettingsSettingsJobClusterNewClusterInitScriptsDbfs  `json:"dbfs,omitempty"`
+	File  *DataSourceJobJobSettingsSettingsJobClusterNewClusterInitScriptsFile  `json:"file,omitempty"`
+	Gcs   *DataSourceJobJobSettingsSettingsJobClusterNewClusterInitScriptsGcs   `json:"gcs,omitempty"`
+	S3    *DataSourceJobJobSettingsSettingsJobClusterNewClusterInitScriptsS3    `json:"s3,omitempty"`
 }
 
 type DataSourceJobJobSettingsSettingsJobClusterNewClusterWorkloadTypeClients struct {
@@ -124,35 +145,36 @@ type DataSourceJobJobSettingsSettingsJobClusterNewClusterWorkloadType struct {
 }
 
 type DataSourceJobJobSettingsSettingsJobClusterNewCluster struct {
-	ApplyPolicyDefaultValues  bool                                                                 `json:"apply_policy_default_values,omitempty"`
-	AutoterminationMinutes    int                                                                  `json:"autotermination_minutes,omitempty"`
-	ClusterId                 string                                                               `json:"cluster_id,omitempty"`
-	ClusterName               string                                                               `json:"cluster_name,omitempty"`
-	CustomTags                map[string]string                                                    `json:"custom_tags,omitempty"`
-	DataSecurityMode          string                                                               `json:"data_security_mode,omitempty"`
-	DriverInstancePoolId      string                                                               `json:"driver_instance_pool_id,omitempty"`
-	DriverNodeTypeId          string                                                               `json:"driver_node_type_id,omitempty"`
-	EnableElasticDisk         bool                                                                 `json:"enable_elastic_disk,omitempty"`
-	EnableLocalDiskEncryption bool                                                                 `json:"enable_local_disk_encryption,omitempty"`
-	IdempotencyToken          string                                                               `json:"idempotency_token,omitempty"`
-	InstancePoolId            string                                                               `json:"instance_pool_id,omitempty"`
-	NodeTypeId                string                                                               `json:"node_type_id,omitempty"`
-	NumWorkers                int                                                                  `json:"num_workers"`
-	PolicyId                  string                                                               `json:"policy_id,omitempty"`
-	RuntimeEngine             string                                                               `json:"runtime_engine,omitempty"`
-	SingleUserName            string                                                               `json:"single_user_name,omitempty"`
-	SparkConf                 map[string]string                                                    `json:"spark_conf,omitempty"`
-	SparkEnvVars              map[string]string                                                    `json:"spark_env_vars,omitempty"`
-	SparkVersion              string                                                               `json:"spark_version"`
-	SshPublicKeys             []string                                                             `json:"ssh_public_keys,omitempty"`
-	Autoscale                 *DataSourceJobJobSettingsSettingsJobClusterNewClusterAutoscale       `json:"autoscale,omitempty"`
-	AwsAttributes             *DataSourceJobJobSettingsSettingsJobClusterNewClusterAwsAttributes   `json:"aws_attributes,omitempty"`
-	AzureAttributes           *DataSourceJobJobSettingsSettingsJobClusterNewClusterAzureAttributes `json:"azure_attributes,omitempty"`
-	ClusterLogConf            *DataSourceJobJobSettingsSettingsJobClusterNewClusterClusterLogConf  `json:"cluster_log_conf,omitempty"`
-	DockerImage               *DataSourceJobJobSettingsSettingsJobClusterNewClusterDockerImage     `json:"docker_image,omitempty"`
-	GcpAttributes             *DataSourceJobJobSettingsSettingsJobClusterNewClusterGcpAttributes   `json:"gcp_attributes,omitempty"`
-	InitScripts               []DataSourceJobJobSettingsSettingsJobClusterNewClusterInitScripts    `json:"init_scripts,omitempty"`
-	WorkloadType              *DataSourceJobJobSettingsSettingsJobClusterNewClusterWorkloadType    `json:"workload_type,omitempty"`
+	ApplyPolicyDefaultValues  bool                                                                   `json:"apply_policy_default_values,omitempty"`
+	AutoterminationMinutes    int                                                                    `json:"autotermination_minutes,omitempty"`
+	ClusterId                 string                                                                 `json:"cluster_id,omitempty"`
+	ClusterName               string                                                                 `json:"cluster_name,omitempty"`
+	CustomTags                map[string]string                                                      `json:"custom_tags,omitempty"`
+	DataSecurityMode          string                                                                 `json:"data_security_mode,omitempty"`
+	DriverInstancePoolId      string                                                                 `json:"driver_instance_pool_id,omitempty"`
+	DriverNodeTypeId          string                                                                 `json:"driver_node_type_id,omitempty"`
+	EnableElasticDisk         bool                                                                   `json:"enable_elastic_disk,omitempty"`
+	EnableLocalDiskEncryption bool                                                                   `json:"enable_local_disk_encryption,omitempty"`
+	IdempotencyToken          string                                                                 `json:"idempotency_token,omitempty"`
+	InstancePoolId            string                                                                 `json:"instance_pool_id,omitempty"`
+	NodeTypeId                string                                                                 `json:"node_type_id,omitempty"`
+	NumWorkers                int                                                                    `json:"num_workers"`
+	PolicyId                  string                                                                 `json:"policy_id,omitempty"`
+	RuntimeEngine             string                                                                 `json:"runtime_engine,omitempty"`
+	SingleUserName            string                                                                 `json:"single_user_name,omitempty"`
+	SparkConf                 map[string]string                                                      `json:"spark_conf,omitempty"`
+	SparkEnvVars              map[string]string                                                      `json:"spark_env_vars,omitempty"`
+	SparkVersion              string                                                                 `json:"spark_version"`
+	SshPublicKeys             []string                                                               `json:"ssh_public_keys,omitempty"`
+	Autoscale                 *DataSourceJobJobSettingsSettingsJobClusterNewClusterAutoscale         `json:"autoscale,omitempty"`
+	AwsAttributes             *DataSourceJobJobSettingsSettingsJobClusterNewClusterAwsAttributes     `json:"aws_attributes,omitempty"`
+	AzureAttributes           *DataSourceJobJobSettingsSettingsJobClusterNewClusterAzureAttributes   `json:"azure_attributes,omitempty"`
+	ClusterLogConf            *DataSourceJobJobSettingsSettingsJobClusterNewClusterClusterLogConf    `json:"cluster_log_conf,omitempty"`
+	ClusterMountInfo          []DataSourceJobJobSettingsSettingsJobClusterNewClusterClusterMountInfo `json:"cluster_mount_info,omitempty"`
+	DockerImage               *DataSourceJobJobSettingsSettingsJobClusterNewClusterDockerImage       `json:"docker_image,omitempty"`
+	GcpAttributes             *DataSourceJobJobSettingsSettingsJobClusterNewClusterGcpAttributes     `json:"gcp_attributes,omitempty"`
+	InitScripts               []DataSourceJobJobSettingsSettingsJobClusterNewClusterInitScripts      `json:"init_scripts,omitempty"`
+	WorkloadType              *DataSourceJobJobSettingsSettingsJobClusterNewClusterWorkloadType      `json:"workload_type,omitempty"`
 }
 
 type DataSourceJobJobSettingsSettingsJobCluster struct {
@@ -226,6 +248,17 @@ type DataSourceJobJobSettingsSettingsNewClusterClusterLogConf struct {
 	S3   *DataSourceJobJobSettingsSettingsNewClusterClusterLogConfS3   `json:"s3,omitempty"`
 }
 
+type DataSourceJobJobSettingsSettingsNewClusterClusterMountInfoNetworkFilesystemInfo struct {
+	MountOptions  string `json:"mount_options,omitempty"`
+	ServerAddress string `json:"server_address"`
+}
+
+type DataSourceJobJobSettingsSettingsNewClusterClusterMountInfo struct {
+	LocalMountDirPath     string                                                                           `json:"local_mount_dir_path"`
+	RemoteMountDirPath    string                                                                           `json:"remote_mount_dir_path,omitempty"`
+	NetworkFilesystemInfo *DataSourceJobJobSettingsSettingsNewClusterClusterMountInfoNetworkFilesystemInfo `json:"network_filesystem_info,omitempty"`
+}
+
 type DataSourceJobJobSettingsSettingsNewClusterDockerImageBasicAuth struct {
 	Password string `json:"password"`
 	Username string `json:"username"`
@@ -242,6 +275,10 @@ type DataSourceJobJobSettingsSettingsNewClusterGcpAttributes struct {
 	GoogleServiceAccount    string `json:"google_service_account,omitempty"`
 	UsePreemptibleExecutors bool   `json:"use_preemptible_executors,omitempty"`
 	ZoneId                  string `json:"zone_id,omitempty"`
+}
+
+type DataSourceJobJobSettingsSettingsNewClusterInitScriptsAbfss struct {
+	Destination string `json:"destination,omitempty"`
 }
 
 type DataSourceJobJobSettingsSettingsNewClusterInitScriptsDbfs struct {
@@ -267,10 +304,11 @@ type DataSourceJobJobSettingsSettingsNewClusterInitScriptsS3 struct {
 }
 
 type DataSourceJobJobSettingsSettingsNewClusterInitScripts struct {
-	Dbfs *DataSourceJobJobSettingsSettingsNewClusterInitScriptsDbfs `json:"dbfs,omitempty"`
-	File *DataSourceJobJobSettingsSettingsNewClusterInitScriptsFile `json:"file,omitempty"`
-	Gcs  *DataSourceJobJobSettingsSettingsNewClusterInitScriptsGcs  `json:"gcs,omitempty"`
-	S3   *DataSourceJobJobSettingsSettingsNewClusterInitScriptsS3   `json:"s3,omitempty"`
+	Abfss *DataSourceJobJobSettingsSettingsNewClusterInitScriptsAbfss `json:"abfss,omitempty"`
+	Dbfs  *DataSourceJobJobSettingsSettingsNewClusterInitScriptsDbfs  `json:"dbfs,omitempty"`
+	File  *DataSourceJobJobSettingsSettingsNewClusterInitScriptsFile  `json:"file,omitempty"`
+	Gcs   *DataSourceJobJobSettingsSettingsNewClusterInitScriptsGcs   `json:"gcs,omitempty"`
+	S3    *DataSourceJobJobSettingsSettingsNewClusterInitScriptsS3    `json:"s3,omitempty"`
 }
 
 type DataSourceJobJobSettingsSettingsNewClusterWorkloadTypeClients struct {
@@ -283,40 +321,42 @@ type DataSourceJobJobSettingsSettingsNewClusterWorkloadType struct {
 }
 
 type DataSourceJobJobSettingsSettingsNewCluster struct {
-	ApplyPolicyDefaultValues  bool                                                       `json:"apply_policy_default_values,omitempty"`
-	AutoterminationMinutes    int                                                        `json:"autotermination_minutes,omitempty"`
-	ClusterId                 string                                                     `json:"cluster_id,omitempty"`
-	ClusterName               string                                                     `json:"cluster_name,omitempty"`
-	CustomTags                map[string]string                                          `json:"custom_tags,omitempty"`
-	DataSecurityMode          string                                                     `json:"data_security_mode,omitempty"`
-	DriverInstancePoolId      string                                                     `json:"driver_instance_pool_id,omitempty"`
-	DriverNodeTypeId          string                                                     `json:"driver_node_type_id,omitempty"`
-	EnableElasticDisk         bool                                                       `json:"enable_elastic_disk,omitempty"`
-	EnableLocalDiskEncryption bool                                                       `json:"enable_local_disk_encryption,omitempty"`
-	IdempotencyToken          string                                                     `json:"idempotency_token,omitempty"`
-	InstancePoolId            string                                                     `json:"instance_pool_id,omitempty"`
-	NodeTypeId                string                                                     `json:"node_type_id,omitempty"`
-	NumWorkers                int                                                        `json:"num_workers"`
-	PolicyId                  string                                                     `json:"policy_id,omitempty"`
-	RuntimeEngine             string                                                     `json:"runtime_engine,omitempty"`
-	SingleUserName            string                                                     `json:"single_user_name,omitempty"`
-	SparkConf                 map[string]string                                          `json:"spark_conf,omitempty"`
-	SparkEnvVars              map[string]string                                          `json:"spark_env_vars,omitempty"`
-	SparkVersion              string                                                     `json:"spark_version"`
-	SshPublicKeys             []string                                                   `json:"ssh_public_keys,omitempty"`
-	Autoscale                 *DataSourceJobJobSettingsSettingsNewClusterAutoscale       `json:"autoscale,omitempty"`
-	AwsAttributes             *DataSourceJobJobSettingsSettingsNewClusterAwsAttributes   `json:"aws_attributes,omitempty"`
-	AzureAttributes           *DataSourceJobJobSettingsSettingsNewClusterAzureAttributes `json:"azure_attributes,omitempty"`
-	ClusterLogConf            *DataSourceJobJobSettingsSettingsNewClusterClusterLogConf  `json:"cluster_log_conf,omitempty"`
-	DockerImage               *DataSourceJobJobSettingsSettingsNewClusterDockerImage     `json:"docker_image,omitempty"`
-	GcpAttributes             *DataSourceJobJobSettingsSettingsNewClusterGcpAttributes   `json:"gcp_attributes,omitempty"`
-	InitScripts               []DataSourceJobJobSettingsSettingsNewClusterInitScripts    `json:"init_scripts,omitempty"`
-	WorkloadType              *DataSourceJobJobSettingsSettingsNewClusterWorkloadType    `json:"workload_type,omitempty"`
+	ApplyPolicyDefaultValues  bool                                                         `json:"apply_policy_default_values,omitempty"`
+	AutoterminationMinutes    int                                                          `json:"autotermination_minutes,omitempty"`
+	ClusterId                 string                                                       `json:"cluster_id,omitempty"`
+	ClusterName               string                                                       `json:"cluster_name,omitempty"`
+	CustomTags                map[string]string                                            `json:"custom_tags,omitempty"`
+	DataSecurityMode          string                                                       `json:"data_security_mode,omitempty"`
+	DriverInstancePoolId      string                                                       `json:"driver_instance_pool_id,omitempty"`
+	DriverNodeTypeId          string                                                       `json:"driver_node_type_id,omitempty"`
+	EnableElasticDisk         bool                                                         `json:"enable_elastic_disk,omitempty"`
+	EnableLocalDiskEncryption bool                                                         `json:"enable_local_disk_encryption,omitempty"`
+	IdempotencyToken          string                                                       `json:"idempotency_token,omitempty"`
+	InstancePoolId            string                                                       `json:"instance_pool_id,omitempty"`
+	NodeTypeId                string                                                       `json:"node_type_id,omitempty"`
+	NumWorkers                int                                                          `json:"num_workers"`
+	PolicyId                  string                                                       `json:"policy_id,omitempty"`
+	RuntimeEngine             string                                                       `json:"runtime_engine,omitempty"`
+	SingleUserName            string                                                       `json:"single_user_name,omitempty"`
+	SparkConf                 map[string]string                                            `json:"spark_conf,omitempty"`
+	SparkEnvVars              map[string]string                                            `json:"spark_env_vars,omitempty"`
+	SparkVersion              string                                                       `json:"spark_version"`
+	SshPublicKeys             []string                                                     `json:"ssh_public_keys,omitempty"`
+	Autoscale                 *DataSourceJobJobSettingsSettingsNewClusterAutoscale         `json:"autoscale,omitempty"`
+	AwsAttributes             *DataSourceJobJobSettingsSettingsNewClusterAwsAttributes     `json:"aws_attributes,omitempty"`
+	AzureAttributes           *DataSourceJobJobSettingsSettingsNewClusterAzureAttributes   `json:"azure_attributes,omitempty"`
+	ClusterLogConf            *DataSourceJobJobSettingsSettingsNewClusterClusterLogConf    `json:"cluster_log_conf,omitempty"`
+	ClusterMountInfo          []DataSourceJobJobSettingsSettingsNewClusterClusterMountInfo `json:"cluster_mount_info,omitempty"`
+	DockerImage               *DataSourceJobJobSettingsSettingsNewClusterDockerImage       `json:"docker_image,omitempty"`
+	GcpAttributes             *DataSourceJobJobSettingsSettingsNewClusterGcpAttributes     `json:"gcp_attributes,omitempty"`
+	InitScripts               []DataSourceJobJobSettingsSettingsNewClusterInitScripts      `json:"init_scripts,omitempty"`
+	WorkloadType              *DataSourceJobJobSettingsSettingsNewClusterWorkloadType      `json:"workload_type,omitempty"`
 }
 
 type DataSourceJobJobSettingsSettingsNotebookTask struct {
 	BaseParameters map[string]string `json:"base_parameters,omitempty"`
 	NotebookPath   string            `json:"notebook_path"`
+	Source         string            `json:"source,omitempty"`
 }
 
 type DataSourceJobJobSettingsSettingsPipelineTask struct {
@@ -352,6 +392,7 @@ type DataSourceJobJobSettingsSettingsSparkSubmitTask struct {
 }
 
 type DataSourceJobJobSettingsSettingsTaskDbtTask struct {
+	Catalog           string   `json:"catalog,omitempty"`
 	Commands          []string `json:"commands"`
 	ProfilesDirectory string   `json:"profiles_directory,omitempty"`
 	ProjectDirectory  string   `json:"project_directory,omitempty"`
@@ -437,6 +478,17 @@ type DataSourceJobJobSettingsSettingsTaskNewClusterClusterLogConf struct {
 	S3   *DataSourceJobJobSettingsSettingsTaskNewClusterClusterLogConfS3   `json:"s3,omitempty"`
 }
 
+type DataSourceJobJobSettingsSettingsTaskNewClusterClusterMountInfoNetworkFilesystemInfo struct {
+	MountOptions  string `json:"mount_options,omitempty"`
+	ServerAddress string `json:"server_address"`
+}
+
+type DataSourceJobJobSettingsSettingsTaskNewClusterClusterMountInfo struct {
+	LocalMountDirPath     string                                                                               `json:"local_mount_dir_path"`
+	RemoteMountDirPath    string                                                                               `json:"remote_mount_dir_path,omitempty"`
+	NetworkFilesystemInfo *DataSourceJobJobSettingsSettingsTaskNewClusterClusterMountInfoNetworkFilesystemInfo `json:"network_filesystem_info,omitempty"`
+}
+
 type DataSourceJobJobSettingsSettingsTaskNewClusterDockerImageBasicAuth struct {
 	Password string `json:"password"`
 	Username string `json:"username"`
@@ -453,6 +505,10 @@ type DataSourceJobJobSettingsSettingsTaskNewClusterGcpAttributes struct {
 	GoogleServiceAccount    string `json:"google_service_account,omitempty"`
 	UsePreemptibleExecutors bool   `json:"use_preemptible_executors,omitempty"`
 	ZoneId                  string `json:"zone_id,omitempty"`
+}
+
+type DataSourceJobJobSettingsSettingsTaskNewClusterInitScriptsAbfss struct {
+	Destination string `json:"destination,omitempty"`
 }
 
 type DataSourceJobJobSettingsSettingsTaskNewClusterInitScriptsDbfs struct {
@@ -478,10 +534,11 @@ type DataSourceJobJobSettingsSettingsTaskNewClusterInitScriptsS3 struct {
 }
 
 type DataSourceJobJobSettingsSettingsTaskNewClusterInitScripts struct {
-	Dbfs *DataSourceJobJobSettingsSettingsTaskNewClusterInitScriptsDbfs `json:"dbfs,omitempty"`
-	File *DataSourceJobJobSettingsSettingsTaskNewClusterInitScriptsFile `json:"file,omitempty"`
-	Gcs  *DataSourceJobJobSettingsSettingsTaskNewClusterInitScriptsGcs  `json:"gcs,omitempty"`
-	S3   *DataSourceJobJobSettingsSettingsTaskNewClusterInitScriptsS3   `json:"s3,omitempty"`
+	Abfss *DataSourceJobJobSettingsSettingsTaskNewClusterInitScriptsAbfss `json:"abfss,omitempty"`
+	Dbfs  *DataSourceJobJobSettingsSettingsTaskNewClusterInitScriptsDbfs  `json:"dbfs,omitempty"`
+	File  *DataSourceJobJobSettingsSettingsTaskNewClusterInitScriptsFile  `json:"file,omitempty"`
+	Gcs   *DataSourceJobJobSettingsSettingsTaskNewClusterInitScriptsGcs   `json:"gcs,omitempty"`
+	S3    *DataSourceJobJobSettingsSettingsTaskNewClusterInitScriptsS3    `json:"s3,omitempty"`
 }
 
 type DataSourceJobJobSettingsSettingsTaskNewClusterWorkloadTypeClients struct {
@@ -494,40 +551,42 @@ type DataSourceJobJobSettingsSettingsTaskNewClusterWorkloadType struct {
 }
 
 type DataSourceJobJobSettingsSettingsTaskNewCluster struct {
-	ApplyPolicyDefaultValues  bool                                                           `json:"apply_policy_default_values,omitempty"`
-	AutoterminationMinutes    int                                                            `json:"autotermination_minutes,omitempty"`
-	ClusterId                 string                                                         `json:"cluster_id,omitempty"`
-	ClusterName               string                                                         `json:"cluster_name,omitempty"`
-	CustomTags                map[string]string                                              `json:"custom_tags,omitempty"`
-	DataSecurityMode          string                                                         `json:"data_security_mode,omitempty"`
-	DriverInstancePoolId      string                                                         `json:"driver_instance_pool_id,omitempty"`
-	DriverNodeTypeId          string                                                         `json:"driver_node_type_id,omitempty"`
-	EnableElasticDisk         bool                                                           `json:"enable_elastic_disk,omitempty"`
-	EnableLocalDiskEncryption bool                                                           `json:"enable_local_disk_encryption,omitempty"`
-	IdempotencyToken          string                                                         `json:"idempotency_token,omitempty"`
-	InstancePoolId            string                                                         `json:"instance_pool_id,omitempty"`
-	NodeTypeId                string                                                         `json:"node_type_id,omitempty"`
-	NumWorkers                int                                                            `json:"num_workers"`
-	PolicyId                  string                                                         `json:"policy_id,omitempty"`
-	RuntimeEngine             string                                                         `json:"runtime_engine,omitempty"`
-	SingleUserName            string                                                         `json:"single_user_name,omitempty"`
-	SparkConf                 map[string]string                                              `json:"spark_conf,omitempty"`
-	SparkEnvVars              map[string]string                                              `json:"spark_env_vars,omitempty"`
-	SparkVersion              string                                                         `json:"spark_version"`
-	SshPublicKeys             []string                                                       `json:"ssh_public_keys,omitempty"`
-	Autoscale                 *DataSourceJobJobSettingsSettingsTaskNewClusterAutoscale       `json:"autoscale,omitempty"`
-	AwsAttributes             *DataSourceJobJobSettingsSettingsTaskNewClusterAwsAttributes   `json:"aws_attributes,omitempty"`
-	AzureAttributes           *DataSourceJobJobSettingsSettingsTaskNewClusterAzureAttributes `json:"azure_attributes,omitempty"`
-	ClusterLogConf            *DataSourceJobJobSettingsSettingsTaskNewClusterClusterLogConf  `json:"cluster_log_conf,omitempty"`
-	DockerImage               *DataSourceJobJobSettingsSettingsTaskNewClusterDockerImage     `json:"docker_image,omitempty"`
-	GcpAttributes             *DataSourceJobJobSettingsSettingsTaskNewClusterGcpAttributes   `json:"gcp_attributes,omitempty"`
-	InitScripts               []DataSourceJobJobSettingsSettingsTaskNewClusterInitScripts    `json:"init_scripts,omitempty"`
-	WorkloadType              *DataSourceJobJobSettingsSettingsTaskNewClusterWorkloadType    `json:"workload_type,omitempty"`
+	ApplyPolicyDefaultValues  bool                                                             `json:"apply_policy_default_values,omitempty"`
+	AutoterminationMinutes    int                                                              `json:"autotermination_minutes,omitempty"`
+	ClusterId                 string                                                           `json:"cluster_id,omitempty"`
+	ClusterName               string                                                           `json:"cluster_name,omitempty"`
+	CustomTags                map[string]string                                                `json:"custom_tags,omitempty"`
+	DataSecurityMode          string                                                           `json:"data_security_mode,omitempty"`
+	DriverInstancePoolId      string                                                           `json:"driver_instance_pool_id,omitempty"`
+	DriverNodeTypeId          string                                                           `json:"driver_node_type_id,omitempty"`
+	EnableElasticDisk         bool                                                             `json:"enable_elastic_disk,omitempty"`
+	EnableLocalDiskEncryption bool                                                             `json:"enable_local_disk_encryption,omitempty"`
+	IdempotencyToken          string                                                           `json:"idempotency_token,omitempty"`
+	InstancePoolId            string                                                           `json:"instance_pool_id,omitempty"`
+	NodeTypeId                string                                                           `json:"node_type_id,omitempty"`
+	NumWorkers                int                                                              `json:"num_workers"`
+	PolicyId                  string                                                           `json:"policy_id,omitempty"`
+	RuntimeEngine             string                                                           `json:"runtime_engine,omitempty"`
+	SingleUserName            string                                                           `json:"single_user_name,omitempty"`
+	SparkConf                 map[string]string                                                `json:"spark_conf,omitempty"`
+	SparkEnvVars              map[string]string                                                `json:"spark_env_vars,omitempty"`
+	SparkVersion              string                                                           `json:"spark_version"`
+	SshPublicKeys             []string                                                         `json:"ssh_public_keys,omitempty"`
+	Autoscale                 *DataSourceJobJobSettingsSettingsTaskNewClusterAutoscale         `json:"autoscale,omitempty"`
+	AwsAttributes             *DataSourceJobJobSettingsSettingsTaskNewClusterAwsAttributes     `json:"aws_attributes,omitempty"`
+	AzureAttributes           *DataSourceJobJobSettingsSettingsTaskNewClusterAzureAttributes   `json:"azure_attributes,omitempty"`
+	ClusterLogConf            *DataSourceJobJobSettingsSettingsTaskNewClusterClusterLogConf    `json:"cluster_log_conf,omitempty"`
+	ClusterMountInfo          []DataSourceJobJobSettingsSettingsTaskNewClusterClusterMountInfo `json:"cluster_mount_info,omitempty"`
+	DockerImage               *DataSourceJobJobSettingsSettingsTaskNewClusterDockerImage       `json:"docker_image,omitempty"`
+	GcpAttributes             *DataSourceJobJobSettingsSettingsTaskNewClusterGcpAttributes     `json:"gcp_attributes,omitempty"`
+	InitScripts               []DataSourceJobJobSettingsSettingsTaskNewClusterInitScripts      `json:"init_scripts,omitempty"`
+	WorkloadType              *DataSourceJobJobSettingsSettingsTaskNewClusterWorkloadType      `json:"workload_type,omitempty"`
 }
 
 type DataSourceJobJobSettingsSettingsTaskNotebookTask struct {
 	BaseParameters map[string]string `json:"base_parameters,omitempty"`
 	NotebookPath   string            `json:"notebook_path"`
+	Source         string            `json:"source,omitempty"`
 }
 
 type DataSourceJobJobSettingsSettingsTaskPipelineTask struct {
@@ -627,6 +686,7 @@ type DataSourceJobJobSettingsSettings struct {
 	RetryOnTimeout         bool                                                  `json:"retry_on_timeout,omitempty"`
 	Tags                   map[string]string                                     `json:"tags,omitempty"`
 	TimeoutSeconds         int                                                   `json:"timeout_seconds,omitempty"`
+	Continuous             *DataSourceJobJobSettingsSettingsContinuous           `json:"continuous,omitempty"`
 	DbtTask                *DataSourceJobJobSettingsSettingsDbtTask              `json:"dbt_task,omitempty"`
 	EmailNotifications     *DataSourceJobJobSettingsSettingsEmailNotifications   `json:"email_notifications,omitempty"`
 	GitSource              *DataSourceJobJobSettingsSettingsGitSource            `json:"git_source,omitempty"`
@@ -655,5 +715,6 @@ type DataSourceJob struct {
 	Id          string                    `json:"id,omitempty"`
 	JobId       string                    `json:"job_id,omitempty"`
 	JobName     string                    `json:"job_name,omitempty"`
+	Name        string                    `json:"name,omitempty"`
 	JobSettings *DataSourceJobJobSettings `json:"job_settings,omitempty"`
 }
