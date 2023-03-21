@@ -2,6 +2,8 @@ package bundle
 
 import (
 	"context"
+
+	"github.com/databricks/bricks/libs/log"
 )
 
 // Mutator is the interface type that mutates a bundle's configuration or internal state.
@@ -17,17 +19,33 @@ type Mutator interface {
 	Apply(context.Context, *Bundle) ([]Mutator, error)
 }
 
+// applyMutator calls apply on the specified mutator given a bundle.
+// Any mutators this call returns are applied recursively.
+func applyMutator(ctx context.Context, b *Bundle, m Mutator) error {
+	ctx = log.NewContext(ctx, log.GetLogger(ctx).With("mutator", m.Name()))
+
+	log.Debugf(ctx, "Apply")
+	ms, err := m.Apply(ctx, b)
+	if err != nil {
+		log.Errorf(ctx, "Error: %s", err)
+		return err
+	}
+
+	// Apply recursively.
+	err = Apply(ctx, b, ms)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func Apply(ctx context.Context, b *Bundle, ms []Mutator) error {
 	if len(ms) == 0 {
 		return nil
 	}
 	for _, m := range ms {
-		ms_, err := m.Apply(ctx, b)
-		if err != nil {
-			return err
-		}
-		// Apply recursively.
-		err = Apply(ctx, b, ms_)
+		err := applyMutator(ctx, b, m)
 		if err != nil {
 			return err
 		}
