@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -26,21 +27,22 @@ func (out *JobOutput) String() (string, error) {
 			return v.String()
 		}
 	}
-	result := "=======\n"
-	result += fmt.Sprintf("Run url: %s\n", out.RunPageUrl)
+	result := strings.Builder{}
+	result.WriteString("=======\n")
+	result.WriteString(fmt.Sprintf("Run url: %s\n", out.RunPageUrl))
+
 	taskKeys := maps.Keys(out.Tasks)
 	sort.Strings(taskKeys)
-
 	for _, k := range taskKeys {
 		taskString, err := out.Tasks[k].String()
 		if err != nil {
 			return "", nil
 		}
-		result += "=======\n"
-		result += fmt.Sprintf("Task %s:\n", k)
-		result += fmt.Sprintf("%s\n", taskString)
+		result.WriteString("=======\n")
+		result.WriteString(fmt.Sprintf("Task %s:\n", k))
+		result.WriteString(fmt.Sprintf("%s\n", taskString))
 	}
-	return result, nil
+	return result.String(), nil
 }
 
 func GetJobOutput(ctx context.Context, w *databricks.WorkspaceClient, runId int64) (*JobOutput, error) {
