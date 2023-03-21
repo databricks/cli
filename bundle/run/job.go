@@ -192,7 +192,7 @@ func (r *jobRunner) Run(ctx context.Context, opts *Options) (RunOutput, error) {
 	}
 	if run.State.LifeCycleState == jobs.RunLifeCycleStateSkipped {
 		log.Infof(ctx, "Run was skipped!")
-		return fmt.Errorf("run skipped: %s", run.State.StateMessage)
+		return nil, fmt.Errorf("run skipped: %s", run.State.StateMessage)
 	}
 
 	switch run.State.ResultState {
