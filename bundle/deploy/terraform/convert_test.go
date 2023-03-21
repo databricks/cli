@@ -68,6 +68,10 @@ func TestConvertJobPermissions(t *testing.T) {
 	out := BundleToTerraform(&config)
 	assert.NotEmpty(t, out.Resource.Permissions["job_my_job"].JobId)
 	assert.Len(t, out.Resource.Permissions["job_my_job"].AccessControl, 1)
+
+	p := out.Resource.Permissions["job_my_job"].AccessControl[0]
+	assert.Equal(t, "jane@doe.com", p.UserName)
+	assert.Equal(t, "CAN_VIEW", p.PermissionLevel)
 }
 
 func TestConvertJobTaskLibraries(t *testing.T) {
@@ -125,6 +129,10 @@ func TestConvertPipelinePermissions(t *testing.T) {
 	out := BundleToTerraform(&config)
 	assert.NotEmpty(t, out.Resource.Permissions["pipeline_my_pipeline"].PipelineId)
 	assert.Len(t, out.Resource.Permissions["pipeline_my_pipeline"].AccessControl, 1)
+
+	p := out.Resource.Permissions["pipeline_my_pipeline"].AccessControl[0]
+	assert.Equal(t, "jane@doe.com", p.UserName)
+	assert.Equal(t, "CAN_VIEW", p.PermissionLevel)
 }
 
 func TestConvertModel(t *testing.T) {
@@ -168,7 +176,7 @@ func TestConvertModelPermissions(t *testing.T) {
 	var src = resources.MlflowModel{
 		Permissions: []resources.Permission{
 			{
-				Level:    "CAN_VIEW",
+				Level:    "CAN_READ",
 				UserName: "jane@doe.com",
 			},
 		},
@@ -185,6 +193,10 @@ func TestConvertModelPermissions(t *testing.T) {
 	out := BundleToTerraform(&config)
 	assert.NotEmpty(t, out.Resource.Permissions["mlflow_model_my_model"].RegisteredModelId)
 	assert.Len(t, out.Resource.Permissions["mlflow_model_my_model"].AccessControl, 1)
+
+	p := out.Resource.Permissions["mlflow_model_my_model"].AccessControl[0]
+	assert.Equal(t, "jane@doe.com", p.UserName)
+	assert.Equal(t, "CAN_READ", p.PermissionLevel)
 }
 
 func TestConvertExperiment(t *testing.T) {
@@ -211,7 +223,7 @@ func TestConvertExperimentPermissions(t *testing.T) {
 	var src = resources.MlflowExperiment{
 		Permissions: []resources.Permission{
 			{
-				Level:    "CAN_VIEW",
+				Level:    "CAN_READ",
 				UserName: "jane@doe.com",
 			},
 		},
@@ -228,4 +240,9 @@ func TestConvertExperimentPermissions(t *testing.T) {
 	out := BundleToTerraform(&config)
 	assert.NotEmpty(t, out.Resource.Permissions["mlflow_experiment_my_experiment"].ExperimentId)
 	assert.Len(t, out.Resource.Permissions["mlflow_experiment_my_experiment"].AccessControl, 1)
+
+	p := out.Resource.Permissions["mlflow_experiment_my_experiment"].AccessControl[0]
+	assert.Equal(t, "jane@doe.com", p.UserName)
+	assert.Equal(t, "CAN_READ", p.PermissionLevel)
+
 }
