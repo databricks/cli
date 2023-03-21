@@ -139,7 +139,6 @@ func TestJobNotebookDoesNotExistError(t *testing.T) {
 					"job": {
 						JobSettings: &jobs.JobSettings{
 							Tasks: []jobs.JobTaskSettings{
-
 								{
 									NotebookTask: &jobs.NotebookTask{
 										NotebookPath: "./doesnt_exist.py",
