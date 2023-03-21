@@ -10,4 +10,7 @@ type ResourceCatalog struct {
 	Name         string            `json:"name"`
 	Owner        string            `json:"owner,omitempty"`
 	Properties   map[string]string `json:"properties,omitempty"`
+	ProviderName string            `json:"provider_name,omitempty"`
+	ShareName    string            `json:"share_name,omitempty"`
+	StorageRoot  string            `json:"storage_root,omitempty"`
 }

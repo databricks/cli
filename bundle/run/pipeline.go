@@ -133,7 +133,7 @@ type pipelineRunner struct {
 	pipeline *resources.Pipeline
 }
 
-func (r *pipelineRunner) Run(ctx context.Context, opts *Options) error {
+func (r *pipelineRunner) Run(ctx context.Context, opts *Options) (RunOutput, error) {
 	var pipelineID = r.pipeline.ID
 
 	// Include resource key in logger.
@@ -142,17 +142,17 @@ func (r *pipelineRunner) Run(ctx context.Context, opts *Options) error {
 	_, err := w.Pipelines.GetByPipelineId(ctx, pipelineID)
 	if err != nil {
 		log.Warnf(ctx, "Cannot get pipeline: %s", err)
-		return err
+		return nil, err
 	}
 
 	req, err := opts.Pipeline.toPayload(pipelineID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	res, err := w.Pipelines.StartUpdate(ctx, *req)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	updateID := res.UpdateId
@@ -167,7 +167,7 @@ func (r *pipelineRunner) Run(ctx context.Context, opts *Options) error {
 	for {
 		update, err := w.Pipelines.GetUpdateByPipelineIdAndUpdateId(ctx, pipelineID, updateID)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		// Log only if the current state is different from the previous state.
@@ -179,19 +179,19 @@ func (r *pipelineRunner) Run(ctx context.Context, opts *Options) error {
 
 		if state == pipelines.UpdateInfoStateCanceled {
 			log.Infof(ctx, "Update was cancelled!")
-			return fmt.Errorf("update cancelled")
+			return nil, fmt.Errorf("update cancelled")
 		}
 		if state == pipelines.UpdateInfoStateFailed {
 			log.Infof(ctx, "Update has failed!")
 			err := r.logErrorEvent(ctx, pipelineID, updateID)
 			if err != nil {
-				return err
+				return nil, err
 			}
-			return fmt.Errorf("update failed")
+			return nil, fmt.Errorf("update failed")
 		}
 		if state == pipelines.UpdateInfoStateCompleted {
 			log.Infof(ctx, "Update has completed successfully!")
-			return nil
+			return nil, nil
 		}
 
 		time.Sleep(time.Second)

@@ -6,24 +6,42 @@ type ResourceSqlQueryParameterDate struct {
 	Value string `json:"value"`
 }
 
+type ResourceSqlQueryParameterDateRangeRange struct {
+	End   string `json:"end"`
+	Start string `json:"start"`
+}
+
 type ResourceSqlQueryParameterDateRange struct {
-	Value string `json:"value"`
+	Value string                                   `json:"value,omitempty"`
+	Range *ResourceSqlQueryParameterDateRangeRange `json:"range,omitempty"`
 }
 
 type ResourceSqlQueryParameterDatetime struct {
 	Value string `json:"value"`
 }
 
+type ResourceSqlQueryParameterDatetimeRangeRange struct {
+	End   string `json:"end"`
+	Start string `json:"start"`
+}
+
 type ResourceSqlQueryParameterDatetimeRange struct {
-	Value string `json:"value"`
+	Value string                                       `json:"value,omitempty"`
+	Range *ResourceSqlQueryParameterDatetimeRangeRange `json:"range,omitempty"`
 }
 
 type ResourceSqlQueryParameterDatetimesec struct {
 	Value string `json:"value"`
 }
 
+type ResourceSqlQueryParameterDatetimesecRangeRange struct {
+	End   string `json:"end"`
+	Start string `json:"start"`
+}
+
 type ResourceSqlQueryParameterDatetimesecRange struct {
-	Value string `json:"value"`
+	Value string                                          `json:"value,omitempty"`
+	Range *ResourceSqlQueryParameterDatetimesecRangeRange `json:"range,omitempty"`
 }
 
 type ResourceSqlQueryParameterEnumMultiple struct {
@@ -104,6 +122,7 @@ type ResourceSqlQuery struct {
 	Description  string                      `json:"description,omitempty"`
 	Id           string                      `json:"id,omitempty"`
 	Name         string                      `json:"name"`
+	Parent       string                      `json:"parent,omitempty"`
 	Query        string                      `json:"query"`
 	RunAsRole    string                      `json:"run_as_role,omitempty"`
 	Tags         []string                    `json:"tags,omitempty"`
