@@ -49,13 +49,19 @@ func TestDetectCallsDetectJupyter(t *testing.T) {
 }
 
 func TestDetectUnknownExtension(t *testing.T) {
-	nb, _, err := Detect("./testdata/doesntexist.foobar")
+	_, _, err := Detect("./testdata/doesntexist.foobar")
+	assert.True(t, os.IsNotExist(err))
+
+	nb, _, err := Detect("./testdata/unknown_extension.foobar")
 	require.NoError(t, err)
 	assert.False(t, nb)
 }
 
 func TestDetectNoExtension(t *testing.T) {
-	nb, _, err := Detect("./testdata/doesntexist")
+	_, _, err := Detect("./testdata/doesntexist")
+	assert.True(t, os.IsNotExist(err))
+
+	nb, _, err := Detect("./testdata/no_extension")
 	require.NoError(t, err)
 	assert.False(t, nb)
 }

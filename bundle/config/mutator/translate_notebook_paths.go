@@ -26,6 +26,10 @@ func (m *translateNotebookPaths) Name() string {
 }
 
 func (m *translateNotebookPaths) rewritePath(b *bundle.Bundle, p *string) error {
+	// We assume absolute paths point to a location in the workspace
+	if path.IsAbs(*p) {
+		return nil
+	}
 	relPath := path.Clean(*p)
 	if interp, ok := m.seen[relPath]; ok {
 		*p = interp
@@ -34,14 +38,12 @@ func (m *translateNotebookPaths) rewritePath(b *bundle.Bundle, p *string) error 
 
 	absPath := filepath.Join(b.Config.Path, relPath)
 	nb, _, err := notebook.Detect(absPath)
+	if os.IsNotExist(err) {
+		return fmt.Errorf("notebook %s not found: %w", *p, err)
+	}
 	if err != nil {
-		// Ignore if this file doesn't exist. Maybe it's an absolute workspace path?
-		if os.IsNotExist(err) {
-			return nil
-		}
 		return fmt.Errorf("unable to determine if %s is a notebook: %w", relPath, err)
 	}
-
 	if !nb {
 		return fmt.Errorf("file at %s is not a notebook", relPath)
 	}

@@ -39,6 +39,14 @@ func readHeader(path string) ([]byte, error) {
 func Detect(path string) (notebook bool, language workspace.Language, err error) {
 	header := ""
 
+	buf, err := readHeader(path)
+	if err != nil {
+		return false, "", err
+	}
+	scanner := bufio.NewScanner(bytes.NewReader(buf))
+	scanner.Scan()
+	fileHeader := scanner.Text()
+
 	// Determine which header to expect based on filename extension.
 	ext := strings.ToLower(filepath.Ext(path))
 	switch ext {
@@ -60,14 +68,7 @@ func Detect(path string) (notebook bool, language workspace.Language, err error)
 		return false, "", nil
 	}
 
-	buf, err := readHeader(path)
-	if err != nil {
-		return false, "", err
-	}
-
-	scanner := bufio.NewScanner(bytes.NewReader(buf))
-	scanner.Scan()
-	if scanner.Text() != header {
+	if fileHeader != header {
 		return false, "", nil
 	}
 
