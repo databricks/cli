@@ -43,7 +43,7 @@ func TestNotebookPaths(t *testing.T) {
 								},
 								{
 									NotebookTask: &jobs.NotebookTask{
-										NotebookPath: "./doesnt_exist.py",
+										NotebookPath: "/Users/jane.doe@databricks.com/doesnt_exist.py",
 									},
 								},
 								{
@@ -71,7 +71,7 @@ func TestNotebookPaths(t *testing.T) {
 								},
 								{
 									Notebook: &pipelines.NotebookLibrary{
-										Path: "./doesnt_exist.py",
+										Path: "/Users/jane.doe@databricks.com/doesnt_exist.py",
 									},
 								},
 								{
@@ -101,7 +101,7 @@ func TestNotebookPaths(t *testing.T) {
 	)
 	assert.Equal(
 		t,
-		"./doesnt_exist.py",
+		"/Users/jane.doe@databricks.com/doesnt_exist.py",
 		bundle.Config.Resources.Jobs["job"].Tasks[1].NotebookTask.NotebookPath,
 	)
 	assert.Equal(
@@ -118,7 +118,7 @@ func TestNotebookPaths(t *testing.T) {
 	)
 	assert.Equal(
 		t,
-		"./doesnt_exist.py",
+		"/Users/jane.doe@databricks.com/doesnt_exist.py",
 		bundle.Config.Resources.Pipelines["pipeline"].Libraries[1].Notebook.Path,
 	)
 	assert.Equal(
@@ -126,4 +126,61 @@ func TestNotebookPaths(t *testing.T) {
 		"${workspace.file_path.workspace}/my_pipeline_notebook",
 		bundle.Config.Resources.Pipelines["pipeline"].Libraries[2].Notebook.Path,
 	)
+}
+
+func TestJobNotebookDoesNotExistError(t *testing.T) {
+	dir := t.TempDir()
+
+	bundle := &bundle.Bundle{
+		Config: config.Root{
+			Path: dir,
+			Resources: config.Resources{
+				Jobs: map[string]*resources.Job{
+					"job": {
+						JobSettings: &jobs.JobSettings{
+							Tasks: []jobs.JobTaskSettings{
+
+								{
+									NotebookTask: &jobs.NotebookTask{
+										NotebookPath: "./doesnt_exist.py",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	_, err := mutator.TranslateNotebookPaths().Apply(context.Background(), bundle)
+	assert.ErrorContains(t, err, "notebook ./doesnt_exist.py not found.")
+}
+
+func TestPipelineNotebookDoesNotExistError(t *testing.T) {
+	dir := t.TempDir()
+
+	bundle := &bundle.Bundle{
+		Config: config.Root{
+			Path: dir,
+			Resources: config.Resources{
+				Pipelines: map[string]*resources.Pipeline{
+					"pipeline": {
+						PipelineSpec: &pipelines.PipelineSpec{
+							Libraries: []pipelines.PipelineLibrary{
+								{
+									Notebook: &pipelines.NotebookLibrary{
+										Path: "./doesnt_exist.py",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	_, err := mutator.TranslateNotebookPaths().Apply(context.Background(), bundle)
+	assert.ErrorContains(t, err, "notebook ./doesnt_exist.py not found.")
 }
