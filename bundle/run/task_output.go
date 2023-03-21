@@ -20,7 +20,7 @@ func structToString(val interface{}) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return string(b), nil
+	return fmt.Sprintf("=======\n%s", string(b)), nil
 }
 
 func (out *NotebookOutput) String() (string, error) {
