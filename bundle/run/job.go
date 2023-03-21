@@ -140,10 +140,10 @@ func (r *jobRunner) logFailedTasks(ctx context.Context, runId int64) {
 
 }
 
-func (r *jobRunner) Run(ctx context.Context, opts *Options) error {
+func (r *jobRunner) Run(ctx context.Context, opts *Options) (RunOutput, error) {
 	jobID, err := strconv.ParseInt(r.job.ID, 10, 64)
 	if err != nil {
-		return fmt.Errorf("job ID is not an integer: %s", r.job.ID)
+		return nil, fmt.Errorf("job ID is not an integer: %s", r.job.ID)
 	}
 
 	var prevState *jobs.RunState
@@ -176,7 +176,7 @@ func (r *jobRunner) Run(ctx context.Context, opts *Options) error {
 
 	req, err := opts.Job.toPayload(jobID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Include resource key in logger.
@@ -188,34 +188,34 @@ func (r *jobRunner) Run(ctx context.Context, opts *Options) error {
 
 	}
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if run.State.LifeCycleState == jobs.RunLifeCycleStateSkipped {
 		log.Infof(ctx, "Run was skipped!")
-		return fmt.Errorf("run skipped: %s", run.State.StateMessage)
+		return nil, fmt.Errorf("run skipped: %s", run.State.StateMessage)
 	}
 
 	switch run.State.ResultState {
 	// The run was canceled at user request.
 	case jobs.RunResultStateCanceled:
 		log.Infof(ctx, "Run was cancelled!")
-		return fmt.Errorf("run canceled: %s", run.State.StateMessage)
+		return nil, fmt.Errorf("run canceled: %s", run.State.StateMessage)
 
 	// The task completed with an error.
 	case jobs.RunResultStateFailed:
 		log.Infof(ctx, "Run has failed!")
-		return fmt.Errorf("run failed: %s", run.State.StateMessage)
+		return nil, fmt.Errorf("run failed: %s", run.State.StateMessage)
 
 	// The task completed successfully.
 	case jobs.RunResultStateSuccess:
 		log.Infof(ctx, "Run has completed successfully!")
-		return nil
+		return getJobOutput(ctx, r.bundle.WorkspaceClient(), *runId)
 
 	// The run was stopped after reaching the timeout.
 	case jobs.RunResultStateTimedout:
 		log.Infof(ctx, "Run has timed out!")
-		return fmt.Errorf("run timed out: %s", run.State.StateMessage)
+		return nil, fmt.Errorf("run timed out: %s", run.State.StateMessage)
 	}
 
-	return err
+	return nil, err
 }
