@@ -20,7 +20,7 @@ func structToString(val interface{}) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprintf("=======\n%s", string(b)), nil
+	return fmt.Sprintf("==== Task Output ====\n%s", string(b)), nil
 }
 
 func (out *NotebookOutput) String() (string, error) {
@@ -45,26 +45,26 @@ func (out *LogsOutput) String() (string, error) {
 	return out.Logs, nil
 }
 
-func toRunOutput(output jobs.RunOutput) (RunOutput, error) {
-	if output.NotebookOutput != nil {
+func toRunOutput(output *jobs.RunOutput) RunOutput {
+	switch {
+	case output.NotebookOutput != nil:
 		result := NotebookOutput(*output.NotebookOutput)
-		return &result, nil
-	}
-	if output.DbtOutput != nil {
+		return &result
+	case output.DbtOutput != nil:
 		result := DbtOutput(*output.DbtOutput)
-		return &result, nil
-	}
-	if output.SqlOutput != nil {
+		return &result
+
+	case output.SqlOutput != nil:
 		result := SqlOutput(*output.SqlOutput)
-		return &result, nil
-	}
+		return &result
 	// Corresponds to JAR, python script and python wheel tasks
-	if output.Logs != "" {
+	case output.Logs != "":
 		result := LogsOutput{
 			Logs:          output.Logs,
 			LogsTruncated: output.LogsTruncated,
 		}
-		return &result, nil
+		return &result
+	default:
+		return nil
 	}
-	return nil, fmt.Errorf("unable to parse task output for task %s", output.Metadata.RunName)
 }

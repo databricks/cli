@@ -54,7 +54,8 @@ func TestDbtOutputToString(t *testing.T) {
 	}
 
 	actual, err := task.String()
-	expected := `{
+	expected := `==== Task Output ====
+{
   "artifacts_headers": {
     "a": "b",
     "c": "d"
@@ -75,7 +76,8 @@ func TestSqlOutputToString(t *testing.T) {
 	}
 
 	actual, err := task.String()
-	expected := `{
+	expected := `==== Task Output ====
+{
   "query_output": {
     "output_link": "a",
     "query_text": "b",

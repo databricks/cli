@@ -28,7 +28,7 @@ func (out *JobOutput) String() (string, error) {
 		}
 	}
 	result := strings.Builder{}
-	result.WriteString("=======\n")
+	result.WriteString("==== Job Output ====\n")
 	result.WriteString(fmt.Sprintf("Run url: %s\n", out.RunPageUrl))
 
 	taskKeys := maps.Keys(out.Tasks)
@@ -64,11 +64,7 @@ func getJobOutput(ctx context.Context, w *databricks.WorkspaceClient, runId int6
 		if err != nil {
 			return nil, err
 		}
-		taskRunOutput, err := toRunOutput(*jobRunOutput)
-		if err != nil {
-			return nil, err
-		}
-		result.Tasks[task.TaskKey] = taskRunOutput
+		result.Tasks[task.TaskKey] = toRunOutput(jobRunOutput)
 	}
 	return result, nil
 }

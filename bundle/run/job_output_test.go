@@ -46,7 +46,7 @@ func TestMultiTaskJobOutputToString(t *testing.T) {
 	actual, err := myJob.String()
 	require.NoError(t, err)
 
-	expected := `=======
+	expected := `==== Job Output ====
 Run url: my_job_url
 =======
 Task my_bar_task:
@@ -60,7 +60,7 @@ foo
 }
 
 func TestNotebookOutputToRunOutput(t *testing.T) {
-	jobOutput := jobs.RunOutput{
+	jobOutput := &jobs.RunOutput{
 		NotebookOutput: &jobs.NotebookOutput{
 			Result:    "foo",
 			Truncated: true,
@@ -68,8 +68,7 @@ func TestNotebookOutputToRunOutput(t *testing.T) {
 		Logs:          "hello :)",
 		LogsTruncated: true,
 	}
-	actual, err := toRunOutput(jobOutput)
-	require.NoError(t, err)
+	actual := toRunOutput(jobOutput)
 
 	expected := &NotebookOutput{
 		Result:    "foo",
@@ -79,14 +78,13 @@ func TestNotebookOutputToRunOutput(t *testing.T) {
 }
 
 func TestDbtOutputToRunOutput(t *testing.T) {
-	jobOutput := jobs.RunOutput{
+	jobOutput := &jobs.RunOutput{
 		DbtOutput: &jobs.DbtOutput{
 			ArtifactsLink: "foo",
 		},
 		Logs: "hello :)",
 	}
-	actual, err := toRunOutput(jobOutput)
-	require.NoError(t, err)
+	actual := toRunOutput(jobOutput)
 
 	expected := &DbtOutput{
 		ArtifactsLink: "foo",
@@ -95,7 +93,7 @@ func TestDbtOutputToRunOutput(t *testing.T) {
 }
 
 func TestSqlOutputToRunOutput(t *testing.T) {
-	jobOutput := jobs.RunOutput{
+	jobOutput := &jobs.RunOutput{
 		SqlOutput: &jobs.SqlOutput{
 			QueryOutput: &jobs.SqlQueryOutput{
 				OutputLink: "foo",
@@ -103,8 +101,7 @@ func TestSqlOutputToRunOutput(t *testing.T) {
 		},
 		Logs: "hello :)",
 	}
-	actual, err := toRunOutput(jobOutput)
-	require.NoError(t, err)
+	actual := toRunOutput(jobOutput)
 
 	expected := &SqlOutput{
 		QueryOutput: &jobs.SqlQueryOutput{
@@ -115,12 +112,11 @@ func TestSqlOutputToRunOutput(t *testing.T) {
 }
 
 func TestLogOutputToRunOutput(t *testing.T) {
-	jobOutput := jobs.RunOutput{
+	jobOutput := &jobs.RunOutput{
 		Logs:          "hello :)",
 		LogsTruncated: true,
 	}
-	actual, err := toRunOutput(jobOutput)
-	require.NoError(t, err)
+	actual := toRunOutput(jobOutput)
 
 	expected := &LogsOutput{
 		Logs:          "hello :)",
