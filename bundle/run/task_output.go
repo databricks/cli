@@ -11,8 +11,8 @@ type NotebookOutput jobs.NotebookOutput
 type DbtOutput jobs.DbtOutput
 type SqlOutput jobs.SqlOutput
 type LogsOutput struct {
-	Logs          string
-	LogsTruncated bool
+	Logs          string `json:"logs"`
+	LogsTruncated bool   `json:"logs_truncated"`
 }
 
 func structToString(val interface{}) (string, error) {
