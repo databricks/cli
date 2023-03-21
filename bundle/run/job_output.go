@@ -45,7 +45,7 @@ func (out *JobOutput) String() (string, error) {
 	return result.String(), nil
 }
 
-func GetJobOutput(ctx context.Context, w *databricks.WorkspaceClient, runId int64) (*JobOutput, error) {
+func getJobOutput(ctx context.Context, w *databricks.WorkspaceClient, runId int64) (*JobOutput, error) {
 	jobRun, err := w.Jobs.GetRun(ctx, jobs.GetRun{
 		RunId: runId,
 	})
