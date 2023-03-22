@@ -5,6 +5,7 @@ import (
 	"context"
 
 	"github.com/databricks/bricks/bundle"
+	"github.com/databricks/bricks/libs/log"
 )
 
 // This phase type groups mutators that belong to a lifecycle phase.
@@ -25,6 +26,7 @@ func (p *phase) Name() string {
 	return p.name
 }
 
-func (p *phase) Apply(context.Context, *bundle.Bundle) ([]bundle.Mutator, error) {
+func (p *phase) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator, error) {
+	log.Infof(ctx, "Phase: %s", p.Name())
 	return p.mutators, nil
 }
