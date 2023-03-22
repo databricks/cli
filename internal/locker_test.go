@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/databricks/bricks/bundle/deployer"
+	lockpkg "github.com/databricks/bricks/libs/locker"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/repos"
 	"github.com/stretchr/testify/assert"
@@ -52,13 +52,13 @@ func TestAccLock(t *testing.T) {
 
 	// Keep single locker unlocked.
 	// We use this to check on the current lock through GetActiveLockState.
-	locker, err := deployer.CreateLocker("humpty.dumpty@databricks.com", remoteProjectRoot, wsc)
+	locker, err := lockpkg.CreateLocker("humpty.dumpty@databricks.com", remoteProjectRoot, wsc)
 	require.NoError(t, err)
 
 	lockerErrs := make([]error, numConcurrentLocks)
-	lockers := make([]*deployer.Locker, numConcurrentLocks)
+	lockers := make([]*lockpkg.Locker, numConcurrentLocks)
 	for i := 0; i < numConcurrentLocks; i++ {
-		lockers[i], err = deployer.CreateLocker("humpty.dumpty@databricks.com", remoteProjectRoot, wsc)
+		lockers[i], err = lockpkg.CreateLocker("humpty.dumpty@databricks.com", remoteProjectRoot, wsc)
 		require.NoError(t, err)
 	}
 
