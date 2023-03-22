@@ -21,7 +21,10 @@ func initializeLogger(ctx context.Context, cmd *cobra.Command) (context.Context,
 	opts := slog.HandlerOptions{}
 	opts.Level = logLevel.Level()
 	opts.AddSource = true
-	opts.ReplaceAttr = log.ReplaceLevelAttr
+	opts.ReplaceAttr = log.ReplaceAttrFunctions{
+		log.ReplaceLevelAttr,
+		log.ReplaceSourceAttr,
+	}.ReplaceAttr
 
 	// Open the underlying log file if the user configured an actual file to log to.
 	err := logFile.Open()
