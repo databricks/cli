@@ -4,6 +4,7 @@ import (
 	"github.com/databricks/bricks/bundle"
 	"github.com/databricks/bricks/bundle/artifacts"
 	"github.com/databricks/bricks/bundle/deploy/files"
+	"github.com/databricks/bricks/bundle/deploy/lock"
 	"github.com/databricks/bricks/bundle/deploy/terraform"
 )
 
@@ -12,11 +13,13 @@ func Deploy() bundle.Mutator {
 	return newPhase(
 		"deploy",
 		[]bundle.Mutator{
+			lock.Acquire(),
 			files.Upload(),
 			artifacts.UploadAll(),
 			terraform.Interpolate(),
 			terraform.Write(),
 			terraform.Apply(),
+			lock.Release(),
 		},
 	)
 }

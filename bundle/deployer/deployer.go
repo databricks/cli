@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/databricks/bricks/libs/locker"
 	"github.com/databricks/bricks/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/hashicorp/terraform-exec/tfexec"
@@ -61,7 +62,7 @@ type Deployer struct {
 	localRoot  string
 	remoteRoot string
 	env        string
-	locker     *Locker
+	locker     *locker.Locker
 	wsc        *databricks.WorkspaceClient
 }
 
@@ -70,7 +71,7 @@ func Create(ctx context.Context, env, localRoot, remoteRoot string, wsc *databri
 	if err != nil {
 		return nil, err
 	}
-	newLocker, err := CreateLocker(user.UserName, remoteRoot, wsc)
+	newLocker, err := locker.CreateLocker(user.UserName, remoteRoot, wsc)
 	if err != nil {
 		return nil, err
 	}

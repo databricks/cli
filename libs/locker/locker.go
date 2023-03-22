@@ -1,4 +1,4 @@
-package deployer
+package locker
 
 import (
 	"bytes"
@@ -183,7 +183,7 @@ func (locker *Locker) Unlock(ctx context.Context) error {
 
 func (locker *Locker) RemotePath() string {
 	// Note: remote paths are scoped to `targetDir`. Also see [CreateLocker].
-	return ".bundle/deploy.lock"
+	return "deploy.lock"
 }
 
 func CreateLocker(user string, targetDir string, w *databricks.WorkspaceClient) (*Locker, error) {

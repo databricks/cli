@@ -12,6 +12,7 @@ import (
 	"sync"
 
 	"github.com/databricks/bricks/bundle/config"
+	"github.com/databricks/bricks/libs/locker"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/hashicorp/terraform-exec/tfexec"
 )
@@ -26,6 +27,9 @@ type Bundle struct {
 
 	// Stores an initialized copy of this bundle's Terraform wrapper.
 	Terraform *tfexec.Terraform
+
+	// Stores the locker responsible for acquiring/releasing a deployment lock.
+	Locker *locker.Locker
 }
 
 func Load(path string) (*Bundle, error) {

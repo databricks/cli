@@ -4,6 +4,12 @@ type Terraform struct {
 	ExecPath string `json:"exec_path"`
 }
 
+type Lock struct {
+	// Force acquisition of deployment lock even if it is currently held.
+	// This may be necessary if a prior deployment failed to release the lock.
+	Force bool `json:"force"`
+}
+
 type Bundle struct {
 	Name string `json:"name"`
 
@@ -21,4 +27,7 @@ type Bundle struct {
 	// Terraform holds configuration related to Terraform.
 	// For example, where to find the binary, which version to use, etc.
 	Terraform *Terraform `json:"terraform,omitempty"`
+
+	// Lock configures the bundle's locking behavior on deployment.
+	Lock Lock `json:"lock"`
 }
