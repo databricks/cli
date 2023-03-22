@@ -19,7 +19,7 @@ func (m *release) Name() string {
 
 func (m *release) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator, error) {
 	// Return early if locking is disabled.
-	if !b.Config.Workspace.Lock.IsEnabled() {
+	if !b.Config.Bundle.Lock.IsEnabled() {
 		log.Infof(ctx, "Skipping; locking is disabled")
 		return nil, nil
 	}

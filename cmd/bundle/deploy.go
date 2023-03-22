@@ -16,7 +16,7 @@ var deployCmd = &cobra.Command{
 		b := bundle.Get(cmd.Context())
 
 		// If `--force` is specified, force acquisition of the deployment lock.
-		b.Config.Workspace.Lock.Force = force
+		b.Config.Bundle.Lock.Force = force
 
 		return bundle.Apply(cmd.Context(), b, []bundle.Mutator{
 			phases.Initialize(),

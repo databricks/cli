@@ -21,4 +21,7 @@ type Bundle struct {
 	// Terraform holds configuration related to Terraform.
 	// For example, where to find the binary, which version to use, etc.
 	Terraform *Terraform `json:"terraform,omitempty"`
+
+	// Lock configures locking behavior on deployment.
+	Lock Lock `json:"lock"`
 }
