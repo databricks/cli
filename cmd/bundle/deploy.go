@@ -15,8 +15,8 @@ var deployCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		b := bundle.Get(cmd.Context())
 
-		// If the user
-		b.Config.Bundle.Lock.Force = force
+		// If `--force` is specified, force acquisition of the deployment lock.
+		b.Config.Workspace.Lock.Force = force
 
 		return bundle.Apply(cmd.Context(), b, []bundle.Mutator{
 			phases.Initialize(),

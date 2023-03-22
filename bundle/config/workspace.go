@@ -20,6 +20,22 @@ func (p PathLike) IsSet() bool {
 	return p.Workspace != "" || p.DBFS != ""
 }
 
+type Lock struct {
+	// Enabled toggles deployment lock. True by default.
+	Enabled *bool `json:"enabled"`
+
+	// Force acquisition of deployment lock even if it is currently held.
+	// This may be necessary if a prior deployment failed to release the lock.
+	Force bool `json:"force"`
+}
+
+func (lock Lock) IsEnabled() bool {
+	if lock.Enabled != nil {
+		return *lock.Enabled
+	}
+	return true
+}
+
 // Workspace defines configurables at the workspace level.
 type Workspace struct {
 	// Unified authentication attributes.
@@ -65,6 +81,9 @@ type Workspace struct {
 	// Remote path for deployment state.
 	// This defaults to "${workspace.root}/state".
 	StatePath PathLike `json:"state_path,omitempty"`
+
+	// Lock configures locking behavior on deployment.
+	Lock Lock `json:"lock"`
 }
 
 func (w *Workspace) Client() (*databricks.WorkspaceClient, error) {
