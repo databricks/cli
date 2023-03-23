@@ -4,6 +4,9 @@
 ## Tests
 <!-- How is this tested? -->
 
-## Tickets
-<!-- Jira ticket number if any. Example: DECO-Number -->
+## Public Tickets
+<!--
+Link to public tickets (if any). Please don't mention internal tickets.
+-->
+N/A
 
