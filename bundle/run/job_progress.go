@@ -49,6 +49,7 @@ func NewJobProgressLogger(mode flags.ProgressLogFormat) *JobProgressLogger {
 	}
 }
 
+// TODO: Log all progress logs in debug logs. (https://github.com/databricks/bricks/issues/278)
 func (l *JobProgressLogger) Log(event *JobProgressEvent) {
 	if l.prevState != nil && l.prevState.LifeCycleState == event.State.LifeCycleState &&
 		l.prevState.ResultState == event.State.ResultState {

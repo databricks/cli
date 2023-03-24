@@ -48,3 +48,5 @@ func (p *ProgressLogFormat) Set(s string) error {
 func (p *ProgressLogFormat) Type() string {
 	return "format"
 }
+
+// TODO: register autocomplete suggestions for cobra: https://github.com/databricks/bricks/issues/279
