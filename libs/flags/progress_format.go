@@ -2,8 +2,8 @@ package flags
 
 import (
 	"fmt"
+	"os"
 	"strings"
-	"syscall"
 
 	"golang.org/x/term"
 )
@@ -19,7 +19,7 @@ func (p *ProgressLogFormat) String() string {
 }
 
 func NewProgressLogFormat() ProgressLogFormat {
-	if term.IsTerminal(syscall.Stderr) {
+	if term.IsTerminal(int(os.Stderr.Fd())) {
 		return ModeInplace
 	}
 	return ModeAppend
