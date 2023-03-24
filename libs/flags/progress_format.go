@@ -40,7 +40,7 @@ func (p *ProgressLogFormat) Set(s string) error {
 			ModeInplace.String(),
 			ModeJson.String(),
 		}
-		return fmt.Errorf("accepted arguments are %s", strings.Join(valid, " , "))
+		return fmt.Errorf("accepted arguments are [%s]", strings.Join(valid, ", "))
 	}
 	return nil
 }
