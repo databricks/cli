@@ -18,6 +18,7 @@ require (
 )
 
 require (
+	github.com/briandowns/spinner v1.23.0
 	github.com/fatih/color v1.15.0
 	github.com/google/uuid v1.3.0
 	github.com/hashicorp/go-version v1.6.0
@@ -35,6 +36,7 @@ require (
 	github.com/mattn/go-isatty v0.0.17 // indirect
 	github.com/zclconf/go-cty v1.13.0 // indirect
 	golang.org/x/crypto v0.5.0 // indirect
+	golang.org/x/term v0.6.0 // indirect
 )
 
 require (

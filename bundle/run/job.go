@@ -9,7 +9,6 @@ import (
 	"github.com/databricks/bricks/bundle"
 	"github.com/databricks/bricks/bundle/config/resources"
 	"github.com/databricks/bricks/libs/log"
-	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/fatih/color"
 	flag "github.com/spf13/pflag"
@@ -146,33 +145,33 @@ func (r *jobRunner) Run(ctx context.Context, opts *Options) (RunOutput, error) {
 		return nil, fmt.Errorf("job ID is not an integer: %s", r.job.ID)
 	}
 
-	var prevState *jobs.RunState
+	// var prevState *jobs.RunState
 	var runId *int64
 
 	// This function is called each time the function below polls the run status.
-	update := func(info *retries.Info[jobs.Run]) {
-		i := info.Info
-		if i == nil {
-			return
-		}
+	// update := func(info *retries.Info[jobs.Run]) {
+	// 	i := info.Info
+	// 	if i == nil {
+	// 		return
+	// 	}
 
-		state := i.State
-		if state == nil {
-			return
-		}
+	// 	state := i.State
+	// 	if state == nil {
+	// 		return
+	// 	}
 
-		// Log the job run URL as soon as it is available.
-		if prevState == nil {
-			log.Infof(ctx, "Run available at %s", info.Info.RunPageUrl)
-		}
-		if prevState == nil || prevState.LifeCycleState != state.LifeCycleState {
-			log.Infof(ctx, "Run status: %s", info.Info.State.LifeCycleState)
-			prevState = state
-		}
-		if runId == nil {
-			runId = &i.RunId
-		}
-	}
+	// 	// Log the job run URL as soon as it is available.
+	// 	if prevState == nil {
+	// 		log.Infof(ctx, "Run available at %s", info.Info.RunPageUrl)
+	// 	}
+	// 	if prevState == nil || prevState.LifeCycleState != state.LifeCycleState {
+	// 		log.Infof(ctx, "Run status: %s", info.Info.State.LifeCycleState)
+	// 		prevState = state
+	// 	}
+	// 	if runId == nil {
+	// 		runId = &i.RunId
+	// 	}
+	// }
 
 	req, err := opts.Job.toPayload(jobID)
 	if err != nil {
@@ -182,7 +181,9 @@ func (r *jobRunner) Run(ctx context.Context, opts *Options) (RunOutput, error) {
 	// Include resource key in logger.
 	ctx = log.NewContext(ctx, log.GetLogger(ctx).With("resource", r.Key()))
 	w := r.bundle.WorkspaceClient()
-	run, err := w.Jobs.RunNowAndWait(ctx, *req, retries.Timeout[jobs.Run](jobRunTimeout), update)
+	// run, err := w.Jobs.RunNowAndWait(ctx, *req, retries.Timeout[jobs.Run](jobRunTimeout), update)
+	run, err := RunWithProgressEvents(ctx, w, *req)
+	// TODO: Check lifecycle state directly. OR be better about it in pollStatusCallback
 	if err != nil && runId != nil {
 		r.logFailedTasks(ctx, *runId)
 
