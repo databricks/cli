@@ -9,11 +9,15 @@ import (
 	"strings"
 
 	"github.com/databricks/bricks/bundle"
+	"github.com/databricks/bricks/libs/git"
 	"github.com/databricks/bricks/libs/notebook"
+	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
 type translateNotebookPaths struct {
 	seen map[string]string
+
+	repository *git.Repository
 }
 
 // TranslateNotebookPaths converts paths to local notebook files into paths in the workspace file system.
@@ -25,11 +29,12 @@ func (m *translateNotebookPaths) Name() string {
 	return "TranslateNotebookPaths"
 }
 
-func (m *translateNotebookPaths) rewritePath(b *bundle.Bundle, p *string) error {
+func (m *translateNotebookPaths) rewritePath(b *bundle.Bundle, relativeToRepositoryRoot bool, p *string) error {
 	// We assume absolute paths point to a location in the workspace
 	if path.IsAbs(*p) {
 		return nil
 	}
+
 	relPath := path.Clean(*p)
 	if interp, ok := m.seen[relPath]; ok {
 		*p = interp
@@ -49,12 +54,23 @@ func (m *translateNotebookPaths) rewritePath(b *bundle.Bundle, p *string) error 
 	}
 
 	// Upon import, notebooks are stripped of their extension.
-	withoutExt := strings.TrimSuffix(relPath, filepath.Ext(relPath))
+	// The extension is needed in both branches below.
+	ext := filepath.Ext(relPath)
 
-	// We have a notebook on our hands! It will be available under the file path.
-	interp := fmt.Sprintf("${workspace.file_path.workspace}/%s", withoutExt)
-	*p = interp
-	m.seen[relPath] = interp
+	// We either rewrite the path to be relative to the Git repository root
+	// if the job definition uses a Git source, or we rewrite the path to
+	// an absolute workspace path under the location where notebooks are uploaded.
+	if relativeToRepositoryRoot {
+		gitRelPath, err := filepath.Rel(m.repository.Root(), absPath)
+		if err != nil {
+			return fmt.Errorf("unable to derive path relative to repository root: %w", err)
+		}
+		*p = filepath.ToSlash(strings.TrimSuffix(gitRelPath, ext))
+	} else {
+		*p = "${workspace.file_path.workspace}/" + filepath.ToSlash(strings.TrimSuffix(relPath, ext))
+	}
+
+	m.seen[relPath] = *p
 	return nil
 }
 
@@ -62,15 +78,32 @@ func (m *translateNotebookPaths) Apply(_ context.Context, b *bundle.Bundle) ([]b
 	m.seen = make(map[string]string)
 
 	for _, job := range b.Config.Resources.Jobs {
+		// If the job has a Git source defined, rewrite paths to be relative to repository root.
+		relativeToGitRepository := job.GitSource != nil && job.GitSource.GitUrl != ""
+		if relativeToGitRepository && m.repository == nil {
+			repository, err := b.GitRepository()
+			if err != nil {
+				return nil, err
+			}
+
+			m.repository = repository
+		}
+
 		for i := 0; i < len(job.Tasks); i++ {
 			task := &job.Tasks[i]
 			if task.NotebookTask == nil {
 				continue
 			}
 
-			err := m.rewritePath(b, &task.NotebookTask.NotebookPath)
+			err := m.rewritePath(b, relativeToGitRepository, &task.NotebookTask.NotebookPath)
 			if err != nil {
 				return nil, err
+			}
+
+			if relativeToGitRepository {
+				task.NotebookTask.Source = jobs.NotebookTaskSourceGit
+			} else {
+				task.NotebookTask.Source = jobs.NotebookTaskSourceWorkspace
 			}
 		}
 	}
@@ -82,7 +115,7 @@ func (m *translateNotebookPaths) Apply(_ context.Context, b *bundle.Bundle) ([]b
 				continue
 			}
 
-			err := m.rewritePath(b, &library.Notebook.Path)
+			err := m.rewritePath(b, false, &library.Notebook.Path)
 			if err != nil {
 				return nil, err
 			}

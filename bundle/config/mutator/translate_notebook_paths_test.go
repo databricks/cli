@@ -17,6 +17,8 @@ import (
 )
 
 func touchFile(t *testing.T, path string) {
+	err := os.MkdirAll(filepath.Dir(path), 0755)
+	require.NoError(t, err)
 	f, err := os.Create(path)
 	require.NoError(t, err)
 	f.WriteString("# Databricks notebook source\n")
@@ -125,6 +127,53 @@ func TestNotebookPaths(t *testing.T) {
 		t,
 		"${workspace.file_path.workspace}/my_pipeline_notebook",
 		bundle.Config.Resources.Pipelines["pipeline"].Libraries[2].Notebook.Path,
+	)
+}
+
+func TestNotebookGitPaths(t *testing.T) {
+	dir := t.TempDir()
+	err := os.MkdirAll(filepath.Join(dir, ".git"), 0755)
+	require.NoError(t, err)
+	nested := filepath.Join(dir, "nested")
+	touchFile(t, filepath.Join(nested, "my_job_notebook.py"))
+
+	bundle := &bundle.Bundle{
+		Config: config.Root{
+			Path: nested,
+			Resources: config.Resources{
+				Jobs: map[string]*resources.Job{
+					"job": {
+						JobSettings: &jobs.JobSettings{
+							GitSource: &jobs.GitSource{
+								GitUrl: "nonempty",
+							},
+							Tasks: []jobs.JobTaskSettings{
+								{
+									NotebookTask: &jobs.NotebookTask{
+										NotebookPath: "./my_job_notebook.py",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	_, err = mutator.TranslateNotebookPaths().Apply(context.Background(), bundle)
+	require.NoError(t, err)
+
+	// Assert that the path in the tasks is now relative to the Git repository root.
+	assert.Equal(
+		t,
+		"nested/my_job_notebook",
+		bundle.Config.Resources.Jobs["job"].Tasks[0].NotebookTask.NotebookPath,
+	)
+	assert.Equal(
+		t,
+		"GIT",
+		bundle.Config.Resources.Jobs["job"].Tasks[0].NotebookTask.Source.String(),
 	)
 }
 
