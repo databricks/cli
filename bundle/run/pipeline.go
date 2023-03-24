@@ -133,7 +133,7 @@ type pipelineRunner struct {
 	pipeline *resources.Pipeline
 }
 
-func (r *pipelineRunner) Run(ctx context.Context, opts *Options) (RunOutput, error) {
+func (r *pipelineRunner) Run(ctx context.Context, opts *Options, progressLoggerMode ProgressLoggerMode) (RunOutput, error) {
 	var pipelineID = r.pipeline.ID
 
 	// Include resource key in logger.

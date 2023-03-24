@@ -140,7 +140,7 @@ func (r *jobRunner) logFailedTasks(ctx context.Context, runId int64) {
 
 }
 
-func (r *jobRunner) Run(ctx context.Context, opts *Options) (RunOutput, error) {
+func (r *jobRunner) Run(ctx context.Context, opts *Options, progressLoggerMode ProgressLoggerMode) (RunOutput, error) {
 	jobID, err := strconv.ParseInt(r.job.ID, 10, 64)
 	if err != nil {
 		return nil, fmt.Errorf("job ID is not an integer: %s", r.job.ID)
@@ -148,6 +148,8 @@ func (r *jobRunner) Run(ctx context.Context, opts *Options) (RunOutput, error) {
 
 	var prevState *jobs.RunState
 	var runId *int64
+
+	progressLogger := NewJobProgressLogger(progressLoggerMode)
 
 	// This function is called each time the function below polls the run status.
 	update := func(info *retries.Info[jobs.Run]) {
@@ -160,6 +162,16 @@ func (r *jobRunner) Run(ctx context.Context, opts *Options) (RunOutput, error) {
 		if state == nil {
 			return
 		}
+
+		// log progress events
+		progressLogger.Log(&JobProgressEvent{
+			Timestamp:  time.Now(),
+			JobId:      i.JobId,
+			RunId:      i.RunId,
+			RunName:    i.RunName,
+			State:      *i.State,
+			RunPageURL: i.RunPageUrl,
+		})
 
 		// Log the job run URL as soon as it is available.
 		if prevState == nil {
@@ -185,7 +197,6 @@ func (r *jobRunner) Run(ctx context.Context, opts *Options) (RunOutput, error) {
 	run, err := w.Jobs.RunNowAndWait(ctx, *req, retries.Timeout[jobs.Run](jobRunTimeout), update)
 	if err != nil && runId != nil {
 		r.logFailedTasks(ctx, *runId)
-
 	}
 	if err != nil {
 		return nil, err

@@ -36,7 +36,7 @@ var runCmd = &cobra.Command{
 			return err
 		}
 
-		output, err := runner.Run(cmd.Context(), &runOptions)
+		output, err := runner.Run(cmd.Context(), &runOptions, progressLogsType)
 		if err != nil {
 			return err
 		}
@@ -84,9 +84,11 @@ var runCmd = &cobra.Command{
 }
 
 var outputType flags.Output = flags.OutputText
+var progressLogsType string
 
 func init() {
 	runOptions.Define(runCmd.Flags())
 	rootCmd.AddCommand(runCmd)
 	runCmd.Flags().Var(&outputType, "output", "type of output format")
+	runCmd.Flags().StringVar(&progressLogsType, "progress", "", "progress log formatting mode. available modes: [append, inplace, json]")
 }
