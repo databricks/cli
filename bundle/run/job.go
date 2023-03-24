@@ -8,6 +8,7 @@ import (
 
 	"github.com/databricks/bricks/bundle"
 	"github.com/databricks/bricks/bundle/config/resources"
+	"github.com/databricks/bricks/libs/flags"
 	"github.com/databricks/bricks/libs/log"
 	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -137,22 +138,38 @@ func (r *jobRunner) logFailedTasks(ctx context.Context, runId int64) {
 				yellow(task.TaskKey), task.State.LifeCycleState)
 		}
 	}
-
 }
 
-func (r *jobRunner) Run(ctx context.Context, opts *Options) (RunOutput, error) {
-	jobID, err := strconv.ParseInt(r.job.ID, 10, 64)
-	if err != nil {
-		return nil, fmt.Errorf("job ID is not an integer: %s", r.job.ID)
-	}
-
+func debugLogger(ctx context.Context, runId *int64) func(info *retries.Info[jobs.Run]) {
 	var prevState *jobs.RunState
-	var runId *int64
+	return func(info *retries.Info[jobs.Run]) {
+		i := info.Info
+		if i == nil {
+			return
+		}
 
-	progressLogger := NewJobProgressLogger(opts.ProgressFormat)
+		state := i.State
+		if state == nil {
+			return
+		}
 
-	// This function is called each time the function below polls the run status.
-	update := func(info *retries.Info[jobs.Run]) {
+		// Log the job run URL as soon as it is available.
+		if prevState == nil {
+			log.Infof(ctx, "Run available at %s", info.Info.RunPageUrl)
+		}
+		if prevState == nil || prevState.LifeCycleState != state.LifeCycleState {
+			log.Infof(ctx, "Run status: %s", info.Info.State.LifeCycleState)
+			prevState = state
+		}
+		if *runId == 0 {
+			*runId = i.RunId
+		}
+	}
+}
+
+func progressLogger(format flags.ProgressLogFormat) func(info *retries.Info[jobs.Run]) {
+	progressLogger := NewJobProgressLogger(format)
+	return func(info *retries.Info[jobs.Run]) {
 		i := info.Info
 		if i == nil {
 			return
@@ -172,20 +189,18 @@ func (r *jobRunner) Run(ctx context.Context, opts *Options) (RunOutput, error) {
 			State:      *i.State,
 			RunPageURL: i.RunPageUrl,
 		})
+	}
+}
 
-		// Log the job run URL as soon as it is available.
-		if prevState == nil {
-			log.Infof(ctx, "Run available at %s", info.Info.RunPageUrl)
-		}
-		if prevState == nil || prevState.LifeCycleState != state.LifeCycleState {
-			log.Infof(ctx, "Run status: %s", info.Info.State.LifeCycleState)
-			prevState = state
-		}
-		if runId == nil {
-			runId = &i.RunId
-		}
+func (r *jobRunner) Run(ctx context.Context, opts *Options) (RunOutput, error) {
+	jobID, err := strconv.ParseInt(r.job.ID, 10, 64)
+	if err != nil {
+		return nil, fmt.Errorf("job ID is not an integer: %s", r.job.ID)
 	}
 
+	runId := new(int64)
+
+	// construct request payload from cmd line flags args
 	req, err := opts.Job.toPayload(jobID)
 	if err != nil {
 		return nil, err
@@ -193,8 +208,15 @@ func (r *jobRunner) Run(ctx context.Context, opts *Options) (RunOutput, error) {
 
 	// Include resource key in logger.
 	ctx = log.NewContext(ctx, log.GetLogger(ctx).With("resource", r.Key()))
+
 	w := r.bundle.WorkspaceClient()
-	run, err := w.Jobs.RunNowAndWait(ctx, *req, retries.Timeout[jobs.Run](jobRunTimeout), update)
+
+	// callback to log status updates. Called on every poll request
+	debugLogger := debugLogger(ctx, runId)
+	// callback to log progress events. Called on every poll request
+	progressLogger := progressLogger(opts.ProgressFormat)
+
+	run, err := w.Jobs.RunNowAndWait(ctx, *req, retries.Timeout[jobs.Run](jobRunTimeout), debugLogger, progressLogger)
 	if err != nil && runId != nil {
 		r.logFailedTasks(ctx, *runId)
 	}
