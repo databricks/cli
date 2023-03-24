@@ -140,7 +140,7 @@ func (r *jobRunner) logFailedTasks(ctx context.Context, runId int64) {
 
 }
 
-func (r *jobRunner) Run(ctx context.Context, opts *Options, progressLoggerMode ProgressLoggerMode) (RunOutput, error) {
+func (r *jobRunner) Run(ctx context.Context, opts *Options) (RunOutput, error) {
 	jobID, err := strconv.ParseInt(r.job.ID, 10, 64)
 	if err != nil {
 		return nil, fmt.Errorf("job ID is not an integer: %s", r.job.ID)
@@ -149,7 +149,7 @@ func (r *jobRunner) Run(ctx context.Context, opts *Options, progressLoggerMode P
 	var prevState *jobs.RunState
 	var runId *int64
 
-	progressLogger := NewJobProgressLogger(progressLoggerMode)
+	progressLogger := NewJobProgressLogger(opts.ProgressFormat)
 
 	// This function is called each time the function below polls the run status.
 	update := func(info *retries.Info[jobs.Run]) {

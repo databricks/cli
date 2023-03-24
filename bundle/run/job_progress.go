@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/databricks/bricks/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
@@ -37,18 +38,12 @@ func (event *JobProgressEvent) String() string {
 	return result.String()
 }
 
-type ProgressLoggerMode string
-
-var ModeAppend = ProgressLoggerMode("append")
-var ModeInplace = ProgressLoggerMode("inplace")
-var ModeJson = ProgressLoggerMode("json")
-
 type JobProgressLogger struct {
-	Mode      ProgressLoggerMode
+	Mode      flags.ProgressLogFormat
 	prevState *jobs.RunState
 }
 
-func NewJobProgressLogger(mode ProgressLoggerMode) *JobProgressLogger {
+func NewJobProgressLogger(mode flags.ProgressLogFormat) *JobProgressLogger {
 	return &JobProgressLogger{
 		Mode: mode,
 	}
@@ -59,13 +54,10 @@ func (l *JobProgressLogger) Log(event *JobProgressEvent) {
 		l.prevState.ResultState == event.State.ResultState {
 		return
 	}
-	if l.prevState != nil && l.Mode == ModeInplace {
+	if l.prevState != nil && l.Mode == flags.ModeInplace {
 		fmt.Fprint(os.Stderr, "\033[1F]")
 	}
-	// if l.prevState != nil && l.Mode == ModeAppend {
-	// 	fmt.Fprint(os.Stderr, "\n")
-	// }
-	if l.Mode == ModeJson {
+	if l.Mode == flags.ModeJson {
 		b, err := json.MarshalIndent(event, "", "  ")
 		if err != nil {
 			// we panic because there we cannot catch this in json.RunNowAndWait
@@ -77,7 +69,3 @@ func (l *JobProgressLogger) Log(event *JobProgressEvent) {
 	}
 	l.prevState = &event.State
 }
-
-// func (l *JobProgressLogger) LogNewLine() {
-// 	fmt.Fprint(os.Stderr, "\n")
-// }
