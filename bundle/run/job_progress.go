@@ -12,12 +12,12 @@ import (
 )
 
 type JobProgressEvent struct {
-	Timestamp  time.Time
-	JobId      int64
-	RunId      int64
-	RunName    string
-	State      jobs.RunState
-	RunPageURL string
+	Timestamp  time.Time     `json:"timestamp"`
+	JobId      int64         `json:"job_id"`
+	RunId      int64         `json:"run_id"`
+	RunName    string        `json:"run_name"`
+	State      jobs.RunState `json:"state"`
+	RunPageURL string        `json:"run_page_url"`
 }
 
 func (event *JobProgressEvent) String() string {
