@@ -12,5 +12,4 @@ type Options struct {
 func (o *Options) Define(fs *flag.FlagSet) {
 	o.Job.Define(fs)
 	o.Pipeline.Define(fs)
-
 }
