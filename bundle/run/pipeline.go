@@ -8,7 +8,9 @@ import (
 
 	"github.com/databricks/bricks/bundle"
 	"github.com/databricks/bricks/bundle/config/resources"
+	"github.com/databricks/bricks/libs/flags"
 	"github.com/databricks/bricks/libs/log"
+	"github.com/databricks/bricks/libs/progress"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	flag "github.com/spf13/pflag"
 )
@@ -156,6 +158,17 @@ func (r *pipelineRunner) Run(ctx context.Context, opts *Options) (RunOutput, err
 	}
 
 	updateID := res.UpdateId
+	updateTracker := NewUpdateTracker(pipelineID, updateID, w)
+	progressLogger, ok := progress.FromContext(ctx)
+
+	// Inplace logger mode is not supported for pipelines right now
+	if progressLogger.Mode == flags.ModeInplace {
+		progressLogger.Mode = flags.ModeAppend
+	}
+
+	if !ok {
+		return nil, fmt.Errorf("no progress logger found")
+	}
 
 	// Log the pipeline update URL as soon as it is available.
 	updateUrl := fmt.Sprintf("%s/#joblist/pipelines/%s/updates/%s", w.Config.Host, pipelineID, updateID)
@@ -165,6 +178,15 @@ func (r *pipelineRunner) Run(ctx context.Context, opts *Options) (RunOutput, err
 	// Note: there is no "StartUpdateAndWait" wrapper for this API.
 	var prevState *pipelines.UpdateInfoState
 	for {
+		events, err := updateTracker.Events(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, event := range events {
+			progressLogger.Log(&event)
+			log.Infof(ctx, event.String())
+		}
+
 		update, err := w.Pipelines.GetUpdateByPipelineIdAndUpdateId(ctx, pipelineID, updateID)
 		if err != nil {
 			return nil, err
