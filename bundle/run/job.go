@@ -200,7 +200,7 @@ func logProgressCallback(ctx context.Context, progressLogger *progress.Logger) f
 		progressLogger.Log(event)
 
 		// log progress events in using the default logger
-		ctx = log.NewContext(ctx, log.GetLogger(ctx).With("event_type", "progress_event_job"))
+		ctx = log.NewContext(ctx, log.GetLogger(ctx).With("event_type", "job_run_state_transition"))
 		log.Infof(ctx, event.String())
 	}
 }
