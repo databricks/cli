@@ -140,7 +140,7 @@ func (r *jobRunner) logFailedTasks(ctx context.Context, runId int64) {
 	}
 }
 
-func debugLogger(ctx context.Context, runId *int64) func(info *retries.Info[jobs.Run]) {
+func logDebugCallback(ctx context.Context, runId *int64) func(info *retries.Info[jobs.Run]) {
 	var prevState *jobs.RunState
 	return func(info *retries.Info[jobs.Run]) {
 		i := info.Info
@@ -167,8 +167,7 @@ func debugLogger(ctx context.Context, runId *int64) func(info *retries.Info[jobs
 	}
 }
 
-func progressLogger(format flags.ProgressLogFormat) func(info *retries.Info[jobs.Run]) {
-	progressLogger := NewJobProgressLogger(format)
+func logProgressCallback(progressLogger *JobProgressLogger) func(info *retries.Info[jobs.Run]) {
 	return func(info *retries.Info[jobs.Run]) {
 		i := info.Info
 		if i == nil {
@@ -211,12 +210,18 @@ func (r *jobRunner) Run(ctx context.Context, opts *Options) (RunOutput, error) {
 
 	w := r.bundle.WorkspaceClient()
 
-	// callback to log status updates. Called on every poll request
-	debugLogger := debugLogger(ctx, runId)
-	// callback to log progress events. Called on every poll request
-	progressLogger := progressLogger(opts.ProgressFormat)
+	// callback to log status updates to the universal log destrination.
+	// Called on every poll request
+	logDebug := logDebugCallback(ctx, runId)
 
-	run, err := w.Jobs.RunNowAndWait(ctx, *req, retries.Timeout[jobs.Run](jobRunTimeout), debugLogger, progressLogger)
+	// callback to log progress events. Called on every poll request
+	progressLogger, err := NewJobProgressLogger(opts.ProgressFormat, flags.LogLevel.String(), flags.LogFile.String())
+	if err != nil {
+		return nil, err
+	}
+	logProgress := logProgressCallback(progressLogger)
+
+	run, err := w.Jobs.RunNowAndWait(ctx, *req, retries.Timeout[jobs.Run](jobRunTimeout), logDebug, logProgress)
 	if err != nil && runId != nil {
 		r.logFailedTasks(ctx, *runId)
 	}

@@ -43,10 +43,13 @@ type JobProgressLogger struct {
 	prevState *jobs.RunState
 }
 
-func NewJobProgressLogger(mode flags.ProgressLogFormat) *JobProgressLogger {
+func NewJobProgressLogger(mode flags.ProgressLogFormat, logLevel string, logFile string) (*JobProgressLogger, error) {
+	if mode == flags.ModeInplace && logLevel != "disabled" && logFile == "stderr" {
+		return nil, fmt.Errorf("inplace progress logging cannot be used when log-file is stderr")
+	}
 	return &JobProgressLogger{
 		Mode: mode,
-	}
+	}, nil
 }
 
 // TODO: Log all progress logs in debug logs. (https://github.com/databricks/bricks/issues/278)

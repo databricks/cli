@@ -19,7 +19,7 @@ func (p *ProgressLogFormat) String() string {
 }
 
 func NewProgressLogFormat() ProgressLogFormat {
-	if term.IsTerminal(int(os.Stderr.Fd())) {
+	if term.IsTerminal(int(os.Stderr.Fd())) && LogFile.String() != "stderr" {
 		return ModeInplace
 	}
 	return ModeAppend
