@@ -167,7 +167,7 @@ func logDebugCallback(ctx context.Context, runId *int64) func(info *retries.Info
 	}
 }
 
-func logProgressCallback(progressLogger *JobProgressLogger) func(info *retries.Info[jobs.Run]) {
+func logProgressCallback(ctx context.Context, progressLogger *JobProgressLogger) func(info *retries.Info[jobs.Run]) {
 	return func(info *retries.Info[jobs.Run]) {
 		i := info.Info
 		if i == nil {
@@ -179,15 +179,21 @@ func logProgressCallback(progressLogger *JobProgressLogger) func(info *retries.I
 			return
 		}
 
-		// log progress events
-		progressLogger.Log(&JobProgressEvent{
+		event := &JobProgressEvent{
 			Timestamp:  time.Now(),
 			JobId:      i.JobId,
 			RunId:      i.RunId,
 			RunName:    i.RunName,
 			State:      *i.State,
 			RunPageURL: i.RunPageUrl,
-		})
+		}
+
+		// log progress events to stderr
+		progressLogger.Log(event)
+
+		// log progress events in using the default logger
+		ctx = log.NewContext(ctx, log.GetLogger(ctx).With("event_type", "progress_event_job"))
+		log.Infof(ctx, event.String())
 	}
 }
 
@@ -219,7 +225,7 @@ func (r *jobRunner) Run(ctx context.Context, opts *Options) (RunOutput, error) {
 	if err != nil {
 		return nil, err
 	}
-	logProgress := logProgressCallback(progressLogger)
+	logProgress := logProgressCallback(ctx, progressLogger)
 
 	run, err := w.Jobs.RunNowAndWait(ctx, *req, retries.Timeout[jobs.Run](jobRunTimeout), logDebug, logProgress)
 	if err != nil && runId != nil {
