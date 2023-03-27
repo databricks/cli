@@ -3,6 +3,8 @@ package flags
 import (
 	"fmt"
 	"strings"
+
+	"github.com/spf13/cobra"
 )
 
 type ProgressLogFormat string
@@ -42,6 +44,15 @@ func (p *ProgressLogFormat) Set(s string) error {
 
 func (p *ProgressLogFormat) Type() string {
 	return "format"
+}
+
+// Complete is the Cobra compatible completion function for this flag.
+func (f *ProgressLogFormat) Complete(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	return []string{
+		"append",
+		"inplace",
+		"json",
+	}, cobra.ShellCompDirectiveDefault
 }
 
 // TODO: register autocomplete suggestions for cobra: https://github.com/databricks/bricks/issues/279

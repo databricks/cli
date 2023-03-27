@@ -45,4 +45,5 @@ func init() {
 		progressFormat.Set(v)
 	}
 	RootCmd.PersistentFlags().Var(&progressFormat, "progress-format", "format for progress logs (append, inplace, json)")
+	RootCmd.RegisterFlagCompletionFunc("progress-format", progressFormat.Complete)
 }
