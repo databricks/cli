@@ -1,4 +1,4 @@
-package run
+package pipeline
 
 import (
 	"context"
@@ -9,9 +9,9 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 )
 
-type PipelineProgressEvent pipelines.PipelineEvent
+type ProgressEvent pipelines.PipelineEvent
 
-func (event *PipelineProgressEvent) String() string {
+func (event *ProgressEvent) String() string {
 	result := strings.Builder{}
 
 	result.WriteString(event.Timestamp + " ")
@@ -57,7 +57,7 @@ func NewUpdateTracker(pipelineId string, updateId string, w *databricks.Workspac
 // # If a user needs the complete logs, they can always visit the run URL
 //
 // NOTE: Incase we want inplace logging, then we will need to implement pagination
-func (l *UpdateTracker) Events(ctx context.Context) ([]PipelineProgressEvent, error) {
+func (l *UpdateTracker) Events(ctx context.Context) ([]ProgressEvent, error) {
 	// create filter to fetch only new events
 	filter := ""
 	if l.LatestEventTimestamp != "" {
@@ -75,11 +75,11 @@ func (l *UpdateTracker) Events(ctx context.Context) ([]PipelineProgressEvent, er
 	}
 
 	// filter out update_progress and flow_progress events
-	result := make([]PipelineProgressEvent, 0)
+	result := make([]ProgressEvent, 0)
 	for _, event := range response.Events {
 		if event.Origin.UpdateId == l.UpdateId && (event.EventType == "flow_progress" ||
 			event.EventType == "update_progress") {
-			result = append(result, PipelineProgressEvent(event))
+			result = append(result, ProgressEvent(event))
 		}
 	}
 

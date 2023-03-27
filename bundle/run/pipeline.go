@@ -8,6 +8,7 @@ import (
 
 	"github.com/databricks/bricks/bundle"
 	"github.com/databricks/bricks/bundle/config/resources"
+	"github.com/databricks/bricks/bundle/run/pipeline"
 	"github.com/databricks/bricks/libs/flags"
 	"github.com/databricks/bricks/libs/log"
 	"github.com/databricks/bricks/libs/progress"
@@ -158,7 +159,7 @@ func (r *pipelineRunner) Run(ctx context.Context, opts *Options) (RunOutput, err
 	}
 
 	updateID := res.UpdateId
-	updateTracker := NewUpdateTracker(pipelineID, updateID, w)
+	updateTracker := pipeline.NewUpdateTracker(pipelineID, updateID, w)
 	progressLogger, ok := progress.FromContext(ctx)
 
 	// Inplace logger mode is not supported for pipelines right now
