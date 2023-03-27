@@ -29,7 +29,7 @@ func TestNoErrorOnDisabledLogLevel(t *testing.T) {
 func TestNoErrorOnNonStderrLogFile(t *testing.T) {
 	logLevel.Set("info")
 	logFile.Set("stdout")
-	progressFormat.Set("inplace")
+	progressFormat.Set("append")
 	_, err := initializeProgressLogger(context.TODO())
 	assert.NoError(t, err)
 }
