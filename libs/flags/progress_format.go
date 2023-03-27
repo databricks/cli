@@ -2,10 +2,7 @@ package flags
 
 import (
 	"fmt"
-	"os"
 	"strings"
-
-	"golang.org/x/term"
 )
 
 type ProgressLogFormat string
@@ -13,16 +10,14 @@ type ProgressLogFormat string
 var ModeAppend = ProgressLogFormat("append")
 var ModeInplace = ProgressLogFormat("inplace")
 var ModeJson = ProgressLogFormat("json")
+var ModeDefault = ProgressLogFormat("default")
 
 func (p *ProgressLogFormat) String() string {
 	return string(*p)
 }
 
 func NewProgressLogFormat() ProgressLogFormat {
-	if term.IsTerminal(int(os.Stderr.Fd())) && LogFile.String() != "stderr" {
-		return ModeInplace
-	}
-	return ModeAppend
+	return ModeDefault
 }
 
 func (p *ProgressLogFormat) Set(s string) error {

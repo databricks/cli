@@ -8,8 +8,8 @@ import (
 
 	"github.com/databricks/bricks/bundle"
 	"github.com/databricks/bricks/bundle/config/resources"
-	"github.com/databricks/bricks/libs/flags"
 	"github.com/databricks/bricks/libs/log"
+	"github.com/databricks/bricks/libs/progress"
 	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/fatih/color"
@@ -167,7 +167,8 @@ func logDebugCallback(ctx context.Context, runId *int64) func(info *retries.Info
 	}
 }
 
-func logProgressCallback(ctx context.Context, progressLogger *JobProgressLogger) func(info *retries.Info[jobs.Run]) {
+func logProgressCallback(ctx context.Context, progressLogger *progress.Logger) func(info *retries.Info[jobs.Run]) {
+	var prevState *jobs.RunState
 	return func(info *retries.Info[jobs.Run]) {
 		i := info.Info
 		if i == nil {
@@ -177,6 +178,13 @@ func logProgressCallback(ctx context.Context, progressLogger *JobProgressLogger)
 		state := i.State
 		if state == nil {
 			return
+		}
+
+		if prevState != nil && prevState.LifeCycleState == state.LifeCycleState &&
+			prevState.ResultState == state.ResultState {
+			return
+		} else {
+			prevState = state
 		}
 
 		event := &JobProgressEvent{
@@ -216,14 +224,14 @@ func (r *jobRunner) Run(ctx context.Context, opts *Options) (RunOutput, error) {
 
 	w := r.bundle.WorkspaceClient()
 
-	// callback to log status updates to the universal log destrination.
+	// callback to log status updates to the universal log destination.
 	// Called on every poll request
 	logDebug := logDebugCallback(ctx, runId)
 
 	// callback to log progress events. Called on every poll request
-	progressLogger, err := NewJobProgressLogger(opts.ProgressFormat, flags.LogLevel.String(), flags.LogFile.String())
-	if err != nil {
-		return nil, err
+	progressLogger, ok := progress.FromContext(ctx)
+	if !ok {
+		return nil, fmt.Errorf("no progress logger found")
 	}
 	logProgress := logProgressCallback(ctx, progressLogger)
 

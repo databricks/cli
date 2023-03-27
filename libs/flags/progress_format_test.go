@@ -8,7 +8,7 @@ import (
 
 func TestProgressFormatNonTtyDefault(t *testing.T) {
 	format := NewProgressLogFormat()
-	assert.Equal(t, format, ModeAppend)
+	assert.Equal(t, format, ModeDefault)
 }
 
 func TestProgressFormatSet(t *testing.T) {

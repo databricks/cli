@@ -8,8 +8,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var LogFile = NewLogFileFlag()
-
 // Abstract over files that are already open (e.g. stderr) and
 // files that need to be opened before use.
 type logFile interface {

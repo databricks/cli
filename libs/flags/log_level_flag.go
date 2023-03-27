@@ -10,8 +10,6 @@ import (
 	"golang.org/x/exp/slog"
 )
 
-var LogLevel = NewLogLevelFlag()
-
 var levels = map[string]slog.Level{
 	"trace":    log.LevelTrace,
 	"debug":    log.LevelDebug,

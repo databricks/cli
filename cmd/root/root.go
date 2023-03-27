@@ -24,7 +24,13 @@ var RootCmd = &cobra.Command{
 		ctx := cmd.Context()
 
 		// Configure default logger.
-		ctx, err := initializeLogger(ctx, cmd)
+		ctx, err := initializeLogger(ctx)
+		if err != nil {
+			return err
+		}
+
+		// Configure progress logger
+		ctx, err = initializeProgressLogger(ctx)
 		if err != nil {
 			return err
 		}
