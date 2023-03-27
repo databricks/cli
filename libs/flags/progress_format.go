@@ -54,5 +54,3 @@ func (f *ProgressLogFormat) Complete(cmd *cobra.Command, args []string, toComple
 		"json",
 	}, cobra.ShellCompDirectiveDefault
 }
-
-// TODO: register autocomplete suggestions for cobra: https://github.com/databricks/bricks/issues/279
