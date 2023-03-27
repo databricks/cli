@@ -2,7 +2,6 @@ package progress
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"os"
 
@@ -12,21 +11,24 @@ import (
 type Logger struct {
 	Mode   flags.ProgressLogFormat
 	Writer io.Writer
+
+	isFirstEvent bool
 }
 
 func NewLogger(mode flags.ProgressLogFormat) *Logger {
-	if mode == flags.ModeInplace {
-		fmt.Fprintln(os.Stderr, "")
-	}
 	return &Logger{
-		Mode:   mode,
-		Writer: os.Stderr,
+		Mode:         mode,
+		Writer:       os.Stderr,
+		isFirstEvent: true,
 	}
 }
 
 func (l *Logger) Log(event Event) {
 	switch l.Mode {
 	case flags.ModeInplace:
+		if l.isFirstEvent {
+			l.Writer.Write([]byte("\n"))
+		}
 		l.Writer.Write([]byte("\033[1F"))
 		l.Writer.Write([]byte(event.String()))
 		l.Writer.Write([]byte("\n"))
@@ -49,4 +51,5 @@ func (l *Logger) Log(event Event) {
 		// jobs.RunNowAndWait
 		panic("unknown progress logger mode: " + l.Mode.String())
 	}
+	l.isFirstEvent = false
 }
