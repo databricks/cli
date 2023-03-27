@@ -29,12 +29,13 @@ func TestNoErrorOnDisabledLogLevel(t *testing.T) {
 func TestNoErrorOnNonStderrLogFile(t *testing.T) {
 	logLevel.Set("info")
 	logFile.Set("stdout")
-	progressFormat.Set("append")
+	progressFormat.Set("inplace")
 	_, err := initializeProgressLogger(context.TODO())
 	assert.NoError(t, err)
 }
 
 func TestDefaultLoggerModeResolution(t *testing.T) {
+	progressFormat = flags.NewProgressLogFormat()
 	require.Equal(t, progressFormat, flags.ModeDefault)
 	ctx, err := initializeProgressLogger(context.TODO())
 	require.NoError(t, err)
