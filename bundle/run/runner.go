@@ -8,6 +8,8 @@ import (
 	"github.com/databricks/bricks/bundle"
 )
 
+// TODO: refactor this package into service specific implementatoins. Its
+// getting bloated. (https://github.com/databricks/bricks/issues/282)
 type key string
 
 func (k key) Key() string {
