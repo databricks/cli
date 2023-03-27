@@ -3,13 +3,15 @@ package progress
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/databricks/bricks/libs/flags"
 )
 
 type Logger struct {
-	Mode flags.ProgressLogFormat
+	Mode   flags.ProgressLogFormat
+	Writer io.Writer
 }
 
 func NewLogger(mode flags.ProgressLogFormat) *Logger {
@@ -17,15 +19,17 @@ func NewLogger(mode flags.ProgressLogFormat) *Logger {
 		fmt.Fprintln(os.Stderr, "")
 	}
 	return &Logger{
-		Mode: mode,
+		Mode:   mode,
+		Writer: os.Stderr,
 	}
 }
 
 func (l *Logger) Log(event Event) {
 	switch l.Mode {
 	case flags.ModeInplace:
-		fmt.Fprint(os.Stderr, "\033[1F")
-		fmt.Fprintln(os.Stderr, event.String())
+		l.Writer.Write([]byte("\033[1F"))
+		l.Writer.Write([]byte(event.String()))
+		l.Writer.Write([]byte("\n"))
 
 	case flags.ModeJson:
 		b, err := json.MarshalIndent(event, "", "  ")
@@ -33,10 +37,12 @@ func (l *Logger) Log(event Event) {
 			// we panic because there we cannot catch this in jobs.RunNowAndWait
 			panic(err)
 		}
-		fmt.Fprintln(os.Stderr, string(b))
+		l.Writer.Write([]byte(b))
+		l.Writer.Write([]byte("\n"))
 
 	case flags.ModeAppend:
-		fmt.Fprintln(os.Stderr, event.String())
+		l.Writer.Write([]byte(event.String()))
+		l.Writer.Write([]byte("\n"))
 
 	default:
 		// we panic because errors are not captured in some log sides like

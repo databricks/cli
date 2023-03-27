@@ -37,7 +37,6 @@ func initializeProgressLogger(ctx context.Context) (context.Context, error) {
 
 var progressFormat = flags.NewProgressLogFormat()
 
-// TODO: configure autocomplete
 func init() {
 	// Configure defaults from environment, if applicable.
 	// If the provided value is invalid it is ignored.
