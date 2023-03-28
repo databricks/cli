@@ -45,8 +45,8 @@ func initializeLogger(ctx context.Context) (context.Context, error) {
 	return log.NewContext(ctx, slog.Default()), nil
 }
 
-var logLevel = flags.NewLogLevelFlag()
 var logFile = flags.NewLogFileFlag()
+var logLevel = flags.NewLogLevelFlag()
 var logOutput = flags.OutputText
 
 func init() {
