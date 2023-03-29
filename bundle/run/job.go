@@ -140,6 +140,19 @@ func (r *jobRunner) logFailedTasks(ctx context.Context, runId int64) {
 	}
 }
 
+func pullRunIdCallback(runId *int64) func(info *retries.Info[jobs.Run]) {
+	return func(info *retries.Info[jobs.Run]) {
+		i := info.Info
+		if i == nil {
+			return
+		}
+
+		if *runId == 0 {
+			*runId = i.RunId
+		}
+	}
+}
+
 func logDebugCallback(ctx context.Context, runId *int64) func(info *retries.Info[jobs.Run]) {
 	var prevState *jobs.RunState
 	return func(info *retries.Info[jobs.Run]) {
@@ -160,9 +173,6 @@ func logDebugCallback(ctx context.Context, runId *int64) func(info *retries.Info
 		if prevState == nil || prevState.LifeCycleState != state.LifeCycleState {
 			log.Infof(ctx, "Run status: %s", info.Info.State.LifeCycleState)
 			prevState = state
-		}
-		if *runId == 0 {
-			*runId = i.RunId
 		}
 	}
 }
@@ -223,6 +233,9 @@ func (r *jobRunner) Run(ctx context.Context, opts *Options) (RunOutput, error) {
 
 	w := r.bundle.WorkspaceClient()
 
+	// gets the run id from inside Jobs.RunNowAndWait
+	pullRunId := pullRunIdCallback(runId)
+
 	// callback to log status updates to the universal log destination.
 	// Called on every poll request
 	logDebug := logDebugCallback(ctx, runId)
@@ -234,7 +247,8 @@ func (r *jobRunner) Run(ctx context.Context, opts *Options) (RunOutput, error) {
 	}
 	logProgress := logProgressCallback(ctx, progressLogger)
 
-	run, err := w.Jobs.RunNowAndWait(ctx, *req, retries.Timeout[jobs.Run](jobRunTimeout), logDebug, logProgress)
+	run, err := w.Jobs.RunNowAndWait(ctx, *req,
+		retries.Timeout[jobs.Run](jobRunTimeout), pullRunId, logDebug, logProgress)
 	if err != nil && runId != nil {
 		r.logFailedTasks(ctx, *runId)
 	}

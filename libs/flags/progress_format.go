@@ -9,10 +9,12 @@ import (
 
 type ProgressLogFormat string
 
-var ModeAppend = ProgressLogFormat("append")
-var ModeInplace = ProgressLogFormat("inplace")
-var ModeJson = ProgressLogFormat("json")
-var ModeDefault = ProgressLogFormat("default")
+var (
+	ModeAppend  = ProgressLogFormat("append")
+	ModeInplace = ProgressLogFormat("inplace")
+	ModeJson    = ProgressLogFormat("json")
+	ModeDefault = ProgressLogFormat("default")
+)
 
 func (p *ProgressLogFormat) String() string {
 	return string(*p)
@@ -52,5 +54,5 @@ func (f *ProgressLogFormat) Complete(cmd *cobra.Command, args []string, toComple
 		"append",
 		"inplace",
 		"json",
-	}, cobra.ShellCompDirectiveDefault
+	}, cobra.ShellCompDirectiveNoFileComp
 }
