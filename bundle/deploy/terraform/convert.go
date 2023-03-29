@@ -52,7 +52,6 @@ func convPermission(ac resources.Permission) schema.ResourcePermissionsAccessCon
 func BundleToTerraform(config *config.Root) *schema.Root {
 	tfroot := schema.NewRoot()
 	tfroot.Provider = schema.NewProviders()
-	tfroot.Provider.Databricks.Profile = config.Workspace.Profile
 	tfroot.Resource = schema.NewResources()
 
 	for k, src := range config.Resources.Jobs {
