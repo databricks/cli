@@ -3,7 +3,9 @@ package config
 import (
 	"os"
 
+	"github.com/databricks/bricks/libs/databrickscfg"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/service/scim"
 )
 
@@ -68,7 +70,7 @@ type Workspace struct {
 }
 
 func (w *Workspace) Client() (*databricks.WorkspaceClient, error) {
-	config := databricks.Config{
+	cfg := databricks.Config{
 		// Generic
 		Host:    w.Host,
 		Profile: w.Profile,
@@ -85,7 +87,19 @@ func (w *Workspace) Client() (*databricks.WorkspaceClient, error) {
 		AzureLoginAppID:  w.AzureLoginAppID,
 	}
 
-	return databricks.NewWorkspaceClient(&config)
+	// If only the host is configured, we try and unambiguously match it to
+	// a profile in the user's databrickscfg file. Override the default loaders.
+	cfg.Loaders = []config.Loader{
+		// Defaults.
+		config.ConfigAttributes,
+		config.KnownConfigLoader{},
+
+		// Our loader that resolves a profile from the host alone.
+		// This only kicks in if the above loaders don't configure auth.
+		databrickscfg.ResolveProfileFromHost,
+	}
+
+	return databricks.NewWorkspaceClient(&cfg)
 }
 
 func init() {
