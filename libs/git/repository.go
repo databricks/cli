@@ -32,6 +32,11 @@ type Repository struct {
 	ignore map[string][]ignoreRules
 }
 
+// Root returns the repository root.
+func (r *Repository) Root() string {
+	return r.rootPath
+}
+
 // loadConfig loads and combines user specific and repository specific configuration files.
 func (r *Repository) loadConfig() (*config, error) {
 	config, err := globalGitConfig()
