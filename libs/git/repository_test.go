@@ -26,6 +26,9 @@ func TestRepository(t *testing.T) {
 	tr := testRepository{t, repo}
 	require.NoError(t, err)
 
+	// Check that the root path is real.
+	assert.True(t, filepath.IsAbs(repo.Root()))
+
 	// Check that top level ignores work.
 	assert.True(t, tr.Ignore(".DS_Store"))
 	assert.True(t, tr.Ignore("foo.pyc"))
