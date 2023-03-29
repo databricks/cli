@@ -18,7 +18,9 @@ func Deploy() bundle.Mutator {
 			artifacts.UploadAll(),
 			terraform.Interpolate(),
 			terraform.Write(),
+			terraform.StatePull(),
 			terraform.Apply(),
+			terraform.StatePush(),
 			lock.Release(),
 		},
 	)
