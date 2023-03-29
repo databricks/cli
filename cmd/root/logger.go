@@ -7,7 +7,6 @@ import (
 
 	"github.com/databricks/bricks/libs/flags"
 	"github.com/databricks/bricks/libs/log"
-	"github.com/spf13/cobra"
 	"golang.org/x/exp/slog"
 )
 
@@ -17,7 +16,7 @@ const (
 	envBricksLogFormat = "BRICKS_LOG_FORMAT"
 )
 
-func initializeLogger(ctx context.Context, cmd *cobra.Command) (context.Context, error) {
+func initializeLogger(ctx context.Context) (context.Context, error) {
 	opts := slog.HandlerOptions{}
 	opts.Level = logLevel.Level()
 	opts.AddSource = true

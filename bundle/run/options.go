@@ -1,6 +1,8 @@
 package run
 
-import flag "github.com/spf13/pflag"
+import (
+	flag "github.com/spf13/pflag"
+)
 
 type Options struct {
 	Job      JobOptions

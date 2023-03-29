@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/bricks/bundle"
 	"github.com/databricks/bricks/bundle/config/resources"
 	"github.com/databricks/bricks/libs/log"
+	"github.com/databricks/bricks/libs/progress"
 	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/fatih/color"
@@ -137,20 +138,24 @@ func (r *jobRunner) logFailedTasks(ctx context.Context, runId int64) {
 				yellow(task.TaskKey), task.State.LifeCycleState)
 		}
 	}
-
 }
 
-func (r *jobRunner) Run(ctx context.Context, opts *Options) (RunOutput, error) {
-	jobID, err := strconv.ParseInt(r.job.ID, 10, 64)
-	if err != nil {
-		return nil, fmt.Errorf("job ID is not an integer: %s", r.job.ID)
+func pullRunIdCallback(runId *int64) func(info *retries.Info[jobs.Run]) {
+	return func(info *retries.Info[jobs.Run]) {
+		i := info.Info
+		if i == nil {
+			return
+		}
+
+		if *runId == 0 {
+			*runId = i.RunId
+		}
 	}
+}
 
+func logDebugCallback(ctx context.Context, runId *int64) func(info *retries.Info[jobs.Run]) {
 	var prevState *jobs.RunState
-	var runId *int64
-
-	// This function is called each time the function below polls the run status.
-	update := func(info *retries.Info[jobs.Run]) {
+	return func(info *retries.Info[jobs.Run]) {
 		i := info.Info
 		if i == nil {
 			return
@@ -169,11 +174,55 @@ func (r *jobRunner) Run(ctx context.Context, opts *Options) (RunOutput, error) {
 			log.Infof(ctx, "Run status: %s", info.Info.State.LifeCycleState)
 			prevState = state
 		}
-		if runId == nil {
-			runId = &i.RunId
+	}
+}
+
+func logProgressCallback(ctx context.Context, progressLogger *progress.Logger) func(info *retries.Info[jobs.Run]) {
+	var prevState *jobs.RunState
+	return func(info *retries.Info[jobs.Run]) {
+		i := info.Info
+		if i == nil {
+			return
 		}
+
+		state := i.State
+		if state == nil {
+			return
+		}
+
+		if prevState != nil && prevState.LifeCycleState == state.LifeCycleState &&
+			prevState.ResultState == state.ResultState {
+			return
+		} else {
+			prevState = state
+		}
+
+		event := &JobProgressEvent{
+			Timestamp:  time.Now(),
+			JobId:      i.JobId,
+			RunId:      i.RunId,
+			RunName:    i.RunName,
+			State:      *i.State,
+			RunPageURL: i.RunPageUrl,
+		}
+
+		// log progress events to stderr
+		progressLogger.Log(event)
+
+		// log progress events in using the default logger
+		log.Infof(ctx, event.String())
+	}
+}
+
+func (r *jobRunner) Run(ctx context.Context, opts *Options) (RunOutput, error) {
+	jobID, err := strconv.ParseInt(r.job.ID, 10, 64)
+	if err != nil {
+		return nil, fmt.Errorf("job ID is not an integer: %s", r.job.ID)
 	}
 
+	runId := new(int64)
+
+	// construct request payload from cmd line flags args
 	req, err := opts.Job.toPayload(jobID)
 	if err != nil {
 		return nil, err
@@ -181,11 +230,27 @@ func (r *jobRunner) Run(ctx context.Context, opts *Options) (RunOutput, error) {
 
 	// Include resource key in logger.
 	ctx = log.NewContext(ctx, log.GetLogger(ctx).With("resource", r.Key()))
+
 	w := r.bundle.WorkspaceClient()
-	run, err := w.Jobs.RunNowAndWait(ctx, *req, retries.Timeout[jobs.Run](jobRunTimeout), update)
+
+	// gets the run id from inside Jobs.RunNowAndWait
+	pullRunId := pullRunIdCallback(runId)
+
+	// callback to log status updates to the universal log destination.
+	// Called on every poll request
+	logDebug := logDebugCallback(ctx, runId)
+
+	// callback to log progress events. Called on every poll request
+	progressLogger, ok := progress.FromContext(ctx)
+	if !ok {
+		return nil, fmt.Errorf("no progress logger found")
+	}
+	logProgress := logProgressCallback(ctx, progressLogger)
+
+	run, err := w.Jobs.RunNowAndWait(ctx, *req,
+		retries.Timeout[jobs.Run](jobRunTimeout), pullRunId, logDebug, logProgress)
 	if err != nil && runId != nil {
 		r.logFailedTasks(ctx, *runId)
-
 	}
 	if err != nil {
 		return nil, err
