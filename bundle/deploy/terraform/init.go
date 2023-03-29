@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/databricks/bricks/bundle"
 	"github.com/databricks/bricks/bundle/config"
@@ -14,6 +15,7 @@ import (
 	"github.com/hashicorp/hc-install/product"
 	"github.com/hashicorp/hc-install/releases"
 	"github.com/hashicorp/terraform-exec/tfexec"
+	"golang.org/x/exp/maps"
 )
 
 type initialize struct{}
@@ -85,6 +87,18 @@ func (m *initialize) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Muta
 	}
 
 	tf, err := tfexec.NewTerraform(workingDir, execPath)
+	if err != nil {
+		return nil, err
+	}
+
+	env, err := b.AuthEnv()
+	if err != nil {
+		return nil, err
+	}
+
+	// Configure environment variables for auth for Terraform to use.
+	log.Debugf(ctx, "Environment variables for Terraform: %s", strings.Join(maps.Keys(env), ", "))
+	err = tf.SetEnv(env)
 	if err != nil {
 		return nil, err
 	}
