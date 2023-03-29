@@ -55,7 +55,7 @@ func (l profileFromHostLoader) Configure(cfg *config.Config) error {
 		matching = append(matching, section)
 	}
 
-	// Iff there are no matching sections, we don't do anything.
+	// If there are no matching sections, we don't do anything.
 	if len(matching) == 0 {
 		return nil
 	}
