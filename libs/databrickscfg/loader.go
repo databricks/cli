@@ -60,7 +60,7 @@ func (l profileFromHostLoader) Configure(cfg *config.Config) error {
 		return nil
 	}
 
-	// Iff there are multiple matching sections, let the user know it is impossible
+	// If there are multiple matching sections, let the user know it is impossible
 	// to unambiguously select a profile to use.
 	if len(matching) > 1 {
 		var names []string
