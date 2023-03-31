@@ -24,10 +24,15 @@ func NewFileSet(root string) (*FileSet, error) {
 		return nil, err
 	}
 	fs.SetIgnorer(v)
-	return &FileSet{
+	rootFileSet := &FileSet{
 		fileset: fs,
 		view:    v,
-	}, nil
+	}
+	err = rootFileSet.EnsureValidGitIgnoreExists()
+	if err != nil {
+		return nil, err
+	}
+	return rootFileSet, nil
 }
 
 func (f *FileSet) IgnoreFile(file string) (bool, error) {

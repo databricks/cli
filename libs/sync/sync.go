@@ -44,10 +44,6 @@ func New(ctx context.Context, opts SyncOptions) (*Sync, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = fileSet.EnsureValidGitIgnoreExists()
-	if err != nil {
-		return nil, err
-	}
 
 	// Verify that the remote path we're about to synchronize to is valid and allowed.
 	err = EnsureRemotePathIsUsable(ctx, opts.WorkspaceClient, opts.RemotePath)
