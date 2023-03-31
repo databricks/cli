@@ -7,3 +7,5 @@ root.*
 
 # Directory pattern.
 ignoredirectory/
+
+.databricks
