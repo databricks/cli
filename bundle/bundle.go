@@ -7,13 +7,17 @@
 package bundle
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"sync"
 
 	"github.com/databricks/bricks/bundle/config"
+	"github.com/databricks/bricks/folders"
+	"github.com/databricks/bricks/libs/git"
 	"github.com/databricks/bricks/libs/locker"
 	"github.com/databricks/databricks-sdk-go"
+	sdkconfig "github.com/databricks/databricks-sdk-go/config"
 	"github.com/hashicorp/terraform-exec/tfexec"
 )
 
@@ -114,4 +118,44 @@ func (b *Bundle) CacheDir(paths ...string) (string, error) {
 	}
 
 	return dir, nil
+}
+
+func (b *Bundle) GitRepository() (*git.Repository, error) {
+	rootPath, err := folders.FindDirWithLeaf(b.Config.Path, ".git")
+	if err != nil {
+		return nil, fmt.Errorf("unable to locate repository root: %w", err)
+	}
+
+	return git.NewRepository(rootPath)
+}
+
+// AuthEnv returns a map with environment variables and their values
+// derived from the workspace client configuration that was resolved
+// in the context of this bundle.
+//
+// This map can be used to configure authentication for tools that
+// we call into from this bundle context.
+func (b *Bundle) AuthEnv() (map[string]string, error) {
+	if b.client == nil {
+		return nil, fmt.Errorf("workspace client not initialized yet")
+	}
+
+	cfg := b.client.Config
+	out := make(map[string]string)
+	for _, attr := range sdkconfig.ConfigAttributes {
+		// Ignore profile so that downstream tools don't try and reload
+		// the profile even though we know the current configuration is valid.
+		if attr.Name == "profile" {
+			continue
+		}
+		if len(attr.EnvVars) == 0 {
+			continue
+		}
+		if attr.IsZero(cfg) {
+			continue
+		}
+		out[attr.EnvVars[0]] = attr.GetString(cfg)
+	}
+
+	return out, nil
 }

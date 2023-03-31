@@ -52,7 +52,6 @@ func convPermission(ac resources.Permission) schema.ResourcePermissionsAccessCon
 func BundleToTerraform(config *config.Root) *schema.Root {
 	tfroot := schema.NewRoot()
 	tfroot.Provider = schema.NewProviders()
-	tfroot.Provider.Databricks.Profile = config.Workspace.Profile
 	tfroot.Resource = schema.NewResources()
 
 	for k, src := range config.Resources.Jobs {
@@ -194,6 +193,8 @@ func TerraformToBundle(state *tfjson.State, config *config.Root) error {
 			cur := config.Resources.Experiments[resource.Name]
 			conv(tmp, &cur)
 			config.Resources.Experiments[resource.Name] = cur
+		case "databricks_permissions":
+			// Ignore; no need to pull these back into the configuration.
 		default:
 			return fmt.Errorf("missing mapping for %s", resource.Type)
 		}

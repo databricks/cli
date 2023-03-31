@@ -3,7 +3,8 @@ name: release-snapshot
 on:
   push:
     branches:
-      - main
+      - "main"
+      - "demo-*"
 
   workflow_dispatch:
 
