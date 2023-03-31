@@ -1,6 +1,7 @@
 package git
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -43,6 +44,13 @@ func (f *FileSet) Root() string {
 
 func (f *FileSet) All() ([]fileset.File, error) {
 	f.view.repo.taintIgnoreRules()
+	ign, err := f.view.IgnoreDirectory(".databricks")
+	if err != nil {
+		return nil, err
+	}
+	if !ign {
+		return nil, fmt.Errorf("cannot sync because .databricks is not present in .gitignore")
+	}
 	return f.fileset.All()
 }
 
