@@ -18,10 +18,10 @@ func (event *ProgressEvent) String() string {
 	result.WriteString(event.EventType + " ")
 
 	// add name of the subject flow/pipeline
-	if event.EventType == "flow_progress" {
+	switch event.EventType {
+	case "flow_progress":
 		result.WriteString(event.Origin.FlowName + " ")
-	}
-	if event.EventType == "update_progress" {
+	case "update_progress":
 		result.WriteString(event.Origin.PipelineName + " ")
 	}
 	result.WriteString(event.Level.String() + " ")
@@ -77,8 +77,10 @@ func (l *UpdateTracker) Events(ctx context.Context) ([]ProgressEvent, error) {
 	// filter out update_progress and flow_progress events
 	result := make([]ProgressEvent, 0)
 	for _, event := range response.Events {
-		if event.Origin.UpdateId == l.UpdateId && (event.EventType == "flow_progress" ||
-			event.EventType == "update_progress") {
+		if event.Origin.UpdateId != l.UpdateId {
+			continue
+		}
+		if event.EventType == "flow_progress" || event.EventType == "update_progress" {
 			result = append(result, ProgressEvent(event))
 		}
 	}

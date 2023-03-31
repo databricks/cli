@@ -163,12 +163,12 @@ func (r *pipelineRunner) Run(ctx context.Context, opts *Options) (RunOutput, err
 	// setup progress logger and tracker to query events
 	updateTracker := pipeline.NewUpdateTracker(pipelineID, updateID, w)
 	progressLogger, ok := progress.FromContext(ctx)
+	if !ok {
+		return nil, fmt.Errorf("no progress logger found")
+	}
 	// Inplace logger mode is not supported for pipelines right now
 	if progressLogger.Mode == flags.ModeInplace {
 		progressLogger.Mode = flags.ModeAppend
-	}
-	if !ok {
-		return nil, fmt.Errorf("no progress logger found")
 	}
 
 	// Log the pipeline update URL as soon as it is available.
