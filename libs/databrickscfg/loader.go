@@ -27,7 +27,7 @@ func (l profileFromHostLoader) Configure(cfg *config.Config) error {
 		return nil
 	}
 
-	configFile, err := LoadFile(cfg.ConfigFile)
+	configFile, err := config.LoadFile(cfg.ConfigFile)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil
