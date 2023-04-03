@@ -34,6 +34,9 @@ type Bundle struct {
 
 	// Stores the locker responsible for acquiring/releasing a deployment lock.
 	Locker *locker.Locker
+
+	// User has manually confirmed to destroy the deployed resources
+	ConfirmDestroy bool
 }
 
 func Load(path string) (*Bundle, error) {
