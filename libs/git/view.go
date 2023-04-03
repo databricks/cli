@@ -1,6 +1,7 @@
 package git
 
 import (
+	"os"
 	"path/filepath"
 	"strings"
 )
@@ -86,8 +87,40 @@ func NewView(path string) (*View, error) {
 		return nil, err
 	}
 
-	return &View{
+	view := &View{
 		repo:       repo,
 		targetPath: targetPath,
-	}, nil
+	}
+
+	// Add .databricks to .gitgnore if missing
+	view.ensureValidGitIgnore()
+
+	// We should never upload .databricks to workspace
+	view.repo.AddIgnoreRule(newStringIgnoreRules([]string{
+		".databricks",
+	}))
+
+	return view, nil
+}
+
+func (v *View) ensureValidGitIgnore() error {
+	// TODO: test whether this works for subdirectories
+	// 1. test .databricks is added root
+	// 2. test .databricks is added subdir
+	ign, err := v.Ignore(".databricks")
+	if err != nil {
+		return err
+	}
+	if ign {
+		return nil
+	}
+	gitIgnorePath := filepath.Join(v.repo.Root(), v.targetPath, ".gitignore")
+	file, err := os.OpenFile(gitIgnorePath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	_, err = file.WriteString("\n.databricks\n")
+	return err
 }

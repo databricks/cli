@@ -13,8 +13,6 @@ import (
 	"sync"
 
 	"github.com/databricks/bricks/bundle/config"
-	"github.com/databricks/bricks/folders"
-	"github.com/databricks/bricks/libs/git"
 	"github.com/databricks/bricks/libs/locker"
 	"github.com/databricks/databricks-sdk-go"
 	sdkconfig "github.com/databricks/databricks-sdk-go/config"
@@ -118,15 +116,6 @@ func (b *Bundle) CacheDir(paths ...string) (string, error) {
 	}
 
 	return dir, nil
-}
-
-func (b *Bundle) GitRepository() (*git.Repository, error) {
-	rootPath, err := folders.FindDirWithLeaf(b.Config.Path, ".git")
-	if err != nil {
-		return nil, fmt.Errorf("unable to locate repository root: %w", err)
-	}
-
-	return git.NewRepository(rootPath)
 }
 
 // AuthEnv returns a map with environment variables and their values

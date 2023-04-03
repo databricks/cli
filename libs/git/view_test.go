@@ -11,11 +11,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func copyTestdata(t *testing.T) string {
+func copyTestdata(t *testing.T, name string) string {
 	tempDir := t.TempDir()
 
-	// Copy everything under "testdata" to temporary directory.
-	err := filepath.WalkDir("testdata", func(path string, d fs.DirEntry, err error) error {
+	// Copy everything under testdata ${name} to temporary directory.
+	err := filepath.WalkDir(name, func(path string, d fs.DirEntry, err error) error {
 		require.NoError(t, err)
 
 		if d.IsDir() {
@@ -41,8 +41,8 @@ func copyTestdata(t *testing.T) string {
 	return filepath.Join(tempDir, "testdata")
 }
 
-func createFakeRepo(t *testing.T) string {
-	absPath := copyTestdata(t)
+func createFakeRepo(t *testing.T, testdataName string) string {
+	absPath := copyTestdata(t, testdataName)
 
 	// Add .git directory to make it look like a Git repository.
 	err := os.Mkdir(filepath.Join(absPath, ".git"), 0755)
@@ -88,13 +88,13 @@ func TestViewRootInBricksRepo(t *testing.T) {
 }
 
 func TestViewRootInTempRepo(t *testing.T) {
-	v, err := NewView(createFakeRepo(t))
+	v, err := NewView(createFakeRepo(t, "testdata"))
 	require.NoError(t, err)
 	testViewAtRoot(t, testView{t, v})
 }
 
 func TestViewRootInTempDir(t *testing.T) {
-	v, err := NewView(copyTestdata(t))
+	v, err := NewView(copyTestdata(t, "testdata"))
 	require.NoError(t, err)
 	testViewAtRoot(t, testView{t, v})
 }
@@ -123,14 +123,14 @@ func TestViewAInBricksRepo(t *testing.T) {
 }
 
 func TestViewAInTempRepo(t *testing.T) {
-	v, err := NewView(filepath.Join(createFakeRepo(t), "a"))
+	v, err := NewView(filepath.Join(createFakeRepo(t, "testdata"), "a"))
 	require.NoError(t, err)
 	testViewAtA(t, testView{t, v})
 }
 
 func TestViewAInTempDir(t *testing.T) {
 	// Since this is not a fake repo it should not traverse up the tree.
-	v, err := NewView(filepath.Join(copyTestdata(t), "a"))
+	v, err := NewView(filepath.Join(copyTestdata(t, "testdata"), "a"))
 	require.NoError(t, err)
 	tv := testView{t, v}
 
@@ -173,14 +173,14 @@ func TestViewABInBricksRepo(t *testing.T) {
 }
 
 func TestViewABInTempRepo(t *testing.T) {
-	v, err := NewView(filepath.Join(createFakeRepo(t), "a", "b"))
+	v, err := NewView(filepath.Join(createFakeRepo(t, "testdata"), "a", "b"))
 	require.NoError(t, err)
 	testViewAtAB(t, testView{t, v})
 }
 
 func TestViewABInTempDir(t *testing.T) {
 	// Since this is not a fake repo it should not traverse up the tree.
-	v, err := NewView(filepath.Join(copyTestdata(t), "a", "b"))
+	v, err := NewView(filepath.Join(copyTestdata(t, "testdata"), "a", "b"))
 	tv := testView{t, v}
 	require.NoError(t, err)
 
@@ -197,4 +197,93 @@ func TestViewABInTempDir(t *testing.T) {
 	assert.True(t, tv.Ignore("b.sh"))
 	assert.True(t, tv.Ignore("b_double"))
 	assert.False(t, tv.Ignore("newfile"))
+}
+
+func TestViewDoesNotChangeGitignoreIfCacheDirAlreadyIgnoredAtRoot(t *testing.T) {
+	expected, err := os.ReadFile("./testdata/.gitignore")
+	require.NoError(t, err)
+
+	repoPath := createFakeRepo(t, "testdata")
+
+	// Since root .gitignore already has .databricks, there should be no edits
+	// to root .gitignore
+	_, err = NewView(repoPath)
+	require.NoError(t, err)
+
+	actual, err := os.ReadFile(filepath.Join(repoPath, ".gitignore"))
+	require.NoError(t, err)
+
+	assert.Equal(t, string(expected), string(actual))
+}
+
+func TestViewDoesNotChangeGitignoreIfCacheDirAlreadyIgnoredInSubdir(t *testing.T) {
+	expected, err := os.ReadFile("./testdata/a/.gitignore")
+	require.NoError(t, err)
+
+	repoPath := createFakeRepo(t, "testdata")
+
+	// Since root .gitignore already has .databricks, there should be no edits
+	// to a/.gitignore
+	v, err := NewView(filepath.Join(repoPath, "a"))
+	require.NoError(t, err)
+
+	actual, err := os.ReadFile(filepath.Join(repoPath, v.targetPath, ".gitignore"))
+	require.NoError(t, err)
+
+	assert.Equal(t, string(expected), string(actual))
+}
+
+func TestViewAddsGitignoreWithCacheDir(t *testing.T) {
+	repoPath := createFakeRepo(t, "testdata")
+	err := os.Remove(filepath.Join(repoPath, ".gitignore"))
+	assert.NoError(t, err)
+
+	// Since root .gitignore was deleted, new view adds .databricks to root .gitignore
+	_, err = NewView(repoPath)
+	require.NoError(t, err)
+
+	actual, err := os.ReadFile(filepath.Join(repoPath, ".gitignore"))
+	require.NoError(t, err)
+
+	assert.Contains(t, string(actual), "\n.databricks\n")
+}
+
+func TestViewAddsGitignoreWithCacheDirAtSubdir(t *testing.T) {
+	repoPath := createFakeRepo(t, "testdata")
+	err := os.Remove(filepath.Join(repoPath, ".gitignore"))
+	require.NoError(t, err)
+
+	// Since root .gitignore was deleted, new view adds .databricks to a/.gitignore
+	v, err := NewView(filepath.Join(repoPath, "a"))
+	require.NoError(t, err)
+
+	actual, err := os.ReadFile(filepath.Join(repoPath, v.targetPath, ".gitignore"))
+	require.NoError(t, err)
+
+	// created .gitignore has cache dir listed
+	assert.Contains(t, string(actual), "\n.databricks\n")
+	assert.NoFileExists(t, filepath.Join(repoPath, ".gitignore"))
+}
+
+func TestViewAlwaysIgnoresCacheDir(t *testing.T) {
+	repoPath := createFakeRepo(t, "testdata")
+
+	v, err := NewView(repoPath)
+	require.NoError(t, err)
+
+	// Delete root .gitignore which contains .databricks entry
+	err = os.Remove(filepath.Join(repoPath, ".gitignore"))
+	require.NoError(t, err)
+
+	// taint rules to reload .gitignore
+	v.repo.taintIgnoreRules()
+
+	// assert .databricks is still being ignored
+	ign1, err := v.IgnoreDirectory(".databricks")
+	require.NoError(t, err)
+	assert.True(t, ign1)
+
+	ign2, err := v.IgnoreDirectory("a/.databricks")
+	require.NoError(t, err)
+	assert.True(t, ign2)
 }

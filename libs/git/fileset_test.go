@@ -32,10 +32,3 @@ func TestFileSetNonCleanRoot(t *testing.T) {
 	require.NoError(t, err)
 	assert.Len(t, files, 6)
 }
-
-func TestErrorOnRemovingCacheDirFromGItIgnore(t *testing.T) {
-	fileSet, err := NewFileSet("./testdata_invalid_ignore")
-	require.NoError(t, err)
-	_, err = fileSet.All()
-	assert.ErrorContains(t, err, "cannot sync because .databricks is not present in .gitignore")
-}
