@@ -95,7 +95,8 @@ func NewView(path string) (*View, error) {
 	// Add .databricks to .gitgnore if missing
 	view.ensureValidGitIgnore()
 
-	// We should never upload .databricks to workspace
+	// Hard code .databricks ignore pattern so that we never sync it (irrespective)
+	// of .gitignore patterns
 	view.repo.AddIgnoreRule(newStringIgnoreRules([]string{
 		".databricks",
 	}))
@@ -104,16 +105,17 @@ func NewView(path string) (*View, error) {
 }
 
 func (v *View) ensureValidGitIgnore() error {
-	// TODO: test whether this works for subdirectories
-	// 1. test .databricks is added root
-	// 2. test .databricks is added subdir
 	ign, err := v.Ignore(".databricks")
 	if err != nil {
 		return err
 	}
+
+	// return early if .databricks is already being ignored
 	if ign {
 		return nil
 	}
+
+	// Create .gitignore with .databricks entry
 	gitIgnorePath := filepath.Join(v.repo.Root(), v.targetPath, ".gitignore")
 	file, err := os.OpenFile(gitIgnorePath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
