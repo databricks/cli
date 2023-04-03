@@ -93,7 +93,7 @@ func (w *Workspace) Client() (*databricks.WorkspaceClient, error) {
 	cfg.Loaders = []config.Loader{
 		// Defaults.
 		config.ConfigAttributes,
-		config.KnownConfigLoader{},
+		config.ConfigFile,
 
 		// Our loader that resolves a profile from the host alone.
 		// This only kicks in if the above loaders don't configure auth.
