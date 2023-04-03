@@ -58,10 +58,13 @@ func (f *FileSet) EnsureValidGitIgnoreExists() error {
 	if err != nil {
 		return err
 	}
+
+	// return early if .databricks is already being ignored
 	if ign {
 		return nil
 	}
 
+	// Create .gitignore with .databricks entry
 	gitIgnorePath := filepath.Join(f.fileset.Root(), ".gitignore")
 	file, err := os.OpenFile(gitIgnorePath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {

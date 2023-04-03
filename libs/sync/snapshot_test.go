@@ -47,13 +47,12 @@ func TestDiff(t *testing.T) {
 	change, err := state.diff(files)
 	assert.NoError(t, err)
 	assert.Len(t, change.delete, 0)
-	assert.Len(t, change.put, 3)
+	assert.Len(t, change.put, 2)
 	assert.Contains(t, change.put, "hello.txt")
 	assert.Contains(t, change.put, "world.txt")
-	assert.Contains(t, change.put, ".gitignore")
-	assertKeysOfMap(t, state.LastUpdatedTimes, []string{"hello.txt", "world.txt", ".gitignore"})
-	assert.Equal(t, map[string]string{"hello.txt": "hello.txt", "world.txt": "world.txt", ".gitignore": ".gitignore"}, state.LocalToRemoteNames)
-	assert.Equal(t, map[string]string{"hello.txt": "hello.txt", "world.txt": "world.txt", ".gitignore": ".gitignore"}, state.RemoteToLocalNames)
+	assertKeysOfMap(t, state.LastUpdatedTimes, []string{"hello.txt", "world.txt"})
+	assert.Equal(t, map[string]string{"hello.txt": "hello.txt", "world.txt": "world.txt"}, state.LocalToRemoteNames)
+	assert.Equal(t, map[string]string{"hello.txt": "hello.txt", "world.txt": "world.txt"}, state.RemoteToLocalNames)
 
 	// world.txt is editted
 	f2.Overwrite(t, "bunnies are cute.")
@@ -66,9 +65,9 @@ func TestDiff(t *testing.T) {
 	assert.Len(t, change.delete, 0)
 	assert.Len(t, change.put, 1)
 	assert.Contains(t, change.put, "world.txt")
-	assertKeysOfMap(t, state.LastUpdatedTimes, []string{"hello.txt", "world.txt", ".gitignore"})
-	assert.Equal(t, map[string]string{"hello.txt": "hello.txt", "world.txt": "world.txt", ".gitignore": ".gitignore"}, state.LocalToRemoteNames)
-	assert.Equal(t, map[string]string{"hello.txt": "hello.txt", "world.txt": "world.txt", ".gitignore": ".gitignore"}, state.RemoteToLocalNames)
+	assertKeysOfMap(t, state.LastUpdatedTimes, []string{"hello.txt", "world.txt"})
+	assert.Equal(t, map[string]string{"hello.txt": "hello.txt", "world.txt": "world.txt"}, state.LocalToRemoteNames)
+	assert.Equal(t, map[string]string{"hello.txt": "hello.txt", "world.txt": "world.txt"}, state.RemoteToLocalNames)
 
 	// hello.txt is deleted
 	f1.Remove(t)
@@ -80,9 +79,9 @@ func TestDiff(t *testing.T) {
 	assert.Len(t, change.delete, 1)
 	assert.Len(t, change.put, 0)
 	assert.Contains(t, change.delete, "hello.txt")
-	assertKeysOfMap(t, state.LastUpdatedTimes, []string{"world.txt", ".gitignore"})
-	assert.Equal(t, map[string]string{"world.txt": "world.txt", ".gitignore": ".gitignore"}, state.LocalToRemoteNames)
-	assert.Equal(t, map[string]string{"world.txt": "world.txt", ".gitignore": ".gitignore"}, state.RemoteToLocalNames)
+	assertKeysOfMap(t, state.LastUpdatedTimes, []string{"world.txt"})
+	assert.Equal(t, map[string]string{"world.txt": "world.txt"}, state.LocalToRemoteNames)
+	assert.Equal(t, map[string]string{"world.txt": "world.txt"}, state.RemoteToLocalNames)
 }
 
 func TestSymlinkDiff(t *testing.T) {
@@ -109,9 +108,7 @@ func TestSymlinkDiff(t *testing.T) {
 	assert.NoError(t, err)
 	change, err := state.diff(files)
 	assert.NoError(t, err)
-	assert.Len(t, change.put, 2)
-	assert.Contains(t, change.put, ".gitignore")
-	assert.Contains(t, change.put, "foo/hello.txt")
+	assert.Len(t, change.put, 1)
 }
 
 func TestFolderDiff(t *testing.T) {
@@ -136,8 +133,7 @@ func TestFolderDiff(t *testing.T) {
 	change, err := state.diff(files)
 	assert.NoError(t, err)
 	assert.Len(t, change.delete, 0)
-	assert.Len(t, change.put, 2)
-	assert.Contains(t, change.put, ".gitignore")
+	assert.Len(t, change.put, 1)
 	assert.Contains(t, change.put, "foo/bar.py")
 
 	f1.Remove(t)
@@ -171,12 +167,11 @@ func TestPythonNotebookDiff(t *testing.T) {
 	change, err := state.diff(files)
 	assert.NoError(t, err)
 	assert.Len(t, change.delete, 0)
-	assert.Len(t, change.put, 2)
+	assert.Len(t, change.put, 1)
 	assert.Contains(t, change.put, "foo.py")
-	assert.Contains(t, change.put, ".gitignore")
-	assertKeysOfMap(t, state.LastUpdatedTimes, []string{"foo.py", ".gitignore"})
-	assert.Equal(t, map[string]string{"foo.py": "foo", ".gitignore": ".gitignore"}, state.LocalToRemoteNames)
-	assert.Equal(t, map[string]string{"foo": "foo.py", ".gitignore": ".gitignore"}, state.RemoteToLocalNames)
+	assertKeysOfMap(t, state.LastUpdatedTimes, []string{"foo.py"})
+	assert.Equal(t, map[string]string{"foo.py": "foo"}, state.LocalToRemoteNames)
+	assert.Equal(t, map[string]string{"foo": "foo.py"}, state.RemoteToLocalNames)
 
 	// Case 2: notebook foo.py is converted to python script by removing
 	// magic keyword
@@ -189,9 +184,9 @@ func TestPythonNotebookDiff(t *testing.T) {
 	assert.Len(t, change.put, 1)
 	assert.Contains(t, change.put, "foo.py")
 	assert.Contains(t, change.delete, "foo")
-	assertKeysOfMap(t, state.LastUpdatedTimes, []string{"foo.py", ".gitignore"})
-	assert.Equal(t, map[string]string{"foo.py": "foo.py", ".gitignore": ".gitignore"}, state.LocalToRemoteNames)
-	assert.Equal(t, map[string]string{"foo.py": "foo.py", ".gitignore": ".gitignore"}, state.RemoteToLocalNames)
+	assertKeysOfMap(t, state.LastUpdatedTimes, []string{"foo.py"})
+	assert.Equal(t, map[string]string{"foo.py": "foo.py"}, state.LocalToRemoteNames)
+	assert.Equal(t, map[string]string{"foo.py": "foo.py"}, state.RemoteToLocalNames)
 
 	// Case 3: Python script foo.py is converted to a databricks notebook
 	foo.Overwrite(t, "# Databricks notebook source\nprint(\"def\")")
@@ -203,9 +198,9 @@ func TestPythonNotebookDiff(t *testing.T) {
 	assert.Len(t, change.put, 1)
 	assert.Contains(t, change.put, "foo.py")
 	assert.Contains(t, change.delete, "foo.py")
-	assertKeysOfMap(t, state.LastUpdatedTimes, []string{"foo.py", ".gitignore"})
-	assert.Equal(t, map[string]string{"foo.py": "foo", ".gitignore": ".gitignore"}, state.LocalToRemoteNames)
-	assert.Equal(t, map[string]string{"foo": "foo.py", ".gitignore": ".gitignore"}, state.RemoteToLocalNames)
+	assertKeysOfMap(t, state.LastUpdatedTimes, []string{"foo.py"})
+	assert.Equal(t, map[string]string{"foo.py": "foo"}, state.LocalToRemoteNames)
+	assert.Equal(t, map[string]string{"foo": "foo.py"}, state.RemoteToLocalNames)
 
 	// Case 4: Python notebook foo.py is deleted, and its remote name is used in change.delete
 	foo.Remove(t)
@@ -217,9 +212,9 @@ func TestPythonNotebookDiff(t *testing.T) {
 	assert.Len(t, change.delete, 1)
 	assert.Len(t, change.put, 0)
 	assert.Contains(t, change.delete, "foo")
-	assertKeysOfMap(t, state.LastUpdatedTimes, []string{".gitignore"})
-	assert.Equal(t, map[string]string{".gitignore": ".gitignore"}, state.LocalToRemoteNames)
-	assert.Equal(t, map[string]string{".gitignore": ".gitignore"}, state.RemoteToLocalNames)
+	assert.Len(t, state.LastUpdatedTimes, 0)
+	assert.Equal(t, map[string]string{}, state.LocalToRemoteNames)
+	assert.Equal(t, map[string]string{}, state.RemoteToLocalNames)
 }
 
 func TestErrorWhenIdenticalRemoteName(t *testing.T) {
@@ -243,10 +238,9 @@ func TestErrorWhenIdenticalRemoteName(t *testing.T) {
 	change, err := state.diff(files)
 	assert.NoError(t, err)
 	assert.Len(t, change.delete, 0)
-	assert.Len(t, change.put, 3)
+	assert.Len(t, change.put, 2)
 	assert.Contains(t, change.put, "foo.py")
 	assert.Contains(t, change.put, "foo")
-	assert.Contains(t, change.put, ".gitignore")
 
 	// errors out because they point to the same destination
 	pythonFoo.Overwrite(t, "# Databricks notebook source\nprint(\"def\")")
@@ -276,9 +270,8 @@ func TestNoErrorRenameWithIdenticalRemoteName(t *testing.T) {
 	change, err := state.diff(files)
 	assert.NoError(t, err)
 	assert.Len(t, change.delete, 0)
-	assert.Len(t, change.put, 2)
+	assert.Len(t, change.put, 1)
 	assert.Contains(t, change.put, "foo.py")
-	assert.Contains(t, change.put, ".gitignore")
 
 	pythonFoo.Remove(t)
 	sqlFoo := testfile.CreateFile(t, filepath.Join(projectDir, "foo.sql"))
