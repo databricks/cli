@@ -170,6 +170,6 @@ func NewRepository(path string) (*Repository, error) {
 	return repo, nil
 }
 
-func (r *Repository) AddIgnoreRule(rule ignoreRules) {
+func (r *Repository) addIgnoreRule(rule ignoreRules) {
 	r.ignore["."] = append(r.ignore["."], rule)
 }

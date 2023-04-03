@@ -97,7 +97,7 @@ func NewView(path string) (*View, error) {
 
 	// Hard code .databricks ignore pattern so that we never sync it (irrespective)
 	// of .gitignore patterns
-	view.repo.AddIgnoreRule(newStringIgnoreRules([]string{
+	view.repo.addIgnoreRule(newStringIgnoreRules([]string{
 		".databricks",
 	}))
 
