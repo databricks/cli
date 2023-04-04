@@ -201,18 +201,7 @@ func (a *PersistentAuth) oauth2Config() (*oauth2.Config, error) {
 	// taxonomy of all scopes ready and implemented.
 	scopes := []string{
 		"offline_access",
-		"unity-catalog",
-		"accounts",
-		"clusters",
-		"mlflow",
-		"scim",
-		"sql",
-	}
-	if a.AccountID != "" {
-		scopes = []string{
-			"offline_access",
-			"accounts",
-		}
+		"all-apis",
 	}
 	endpoints, err := a.oidcEndpoints()
 	if err != nil {
