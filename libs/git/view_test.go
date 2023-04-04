@@ -1,4 +1,4 @@
-package git
+package git 
 
 import (
 	"io"
@@ -200,10 +200,10 @@ func TestViewABInTempDir(t *testing.T) {
 }
 
 func TestViewDoesNotChangeGitignoreIfCacheDirAlreadyIgnoredAtRoot(t *testing.T) {
-	expected, err := os.ReadFile("./testdata_ignore/.gitignore")
+	expected, err := os.ReadFile("./testdata_view_ignore/.gitignore")
 	require.NoError(t, err)
 
-	repoPath := createFakeRepo(t, "testdata_ignore")
+	repoPath := createFakeRepo(t, "testdata_view_ignore")
 
 	// Since root .gitignore already has .databricks, there should be no edits
 	// to root .gitignore
@@ -220,10 +220,10 @@ func TestViewDoesNotChangeGitignoreIfCacheDirAlreadyIgnoredAtRoot(t *testing.T) 
 }
 
 func TestViewDoesNotChangeGitignoreIfCacheDirAlreadyIgnoredInSubdir(t *testing.T) {
-	expected, err := os.ReadFile("./testdata_ignore/a/.gitignore")
+	expected, err := os.ReadFile("./testdata_view_ignore/a/.gitignore")
 	require.NoError(t, err)
 
-	repoPath := createFakeRepo(t, "testdata_ignore")
+	repoPath := createFakeRepo(t, "testdata_view_ignore")
 
 	// Since root .gitignore already has .databricks, there should be no edits
 	// to a/.gitignore
