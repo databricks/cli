@@ -1,9 +1,6 @@
 package git
 
 import (
-	"os"
-	"path/filepath"
-
 	"github.com/databricks/bricks/libs/fileset"
 )
 
@@ -51,29 +48,6 @@ func (f *FileSet) RecursiveListFiles(dir string) ([]fileset.File, error) {
 	return f.fileset.RecursiveListFiles(dir)
 }
 
-// Only call this function for a bricks project root
-// since it will create a .gitignore file if missing
 func (f *FileSet) EnsureValidGitIgnoreExists() error {
-	ign, err := f.view.IgnoreDirectory(".databricks")
-	if err != nil {
-		return err
-	}
-	if ign {
-		return nil
-	}
-
-	gitIgnorePath := filepath.Join(f.fileset.Root(), ".gitignore")
-	file, err := os.OpenFile(gitIgnorePath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	_, err = file.WriteString("\n.databricks\n")
-	if err != nil {
-		return err
-	}
-
-	f.view.repo.taintIgnoreRules()
-	return nil
+	return f.view.EnsureValidGitIgnoreExists()
 }

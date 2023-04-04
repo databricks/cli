@@ -169,3 +169,7 @@ func NewRepository(path string) (*Repository, error) {
 
 	return repo, nil
 }
+
+func (r *Repository) addIgnoreRule(rule ignoreRules) {
+	r.ignore["."] = append(r.ignore["."], rule)
+}
