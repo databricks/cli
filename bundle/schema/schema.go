@@ -238,6 +238,11 @@ func toSchema(golangType reflect.Type, docs *Docs, tracker *tracker) (*Schema, e
 		properties := map[string]*Schema{}
 		required := []string{}
 		for _, child := range children {
+			bundleTag := child.Tag.Get("bundle")
+			if bundleTag == "readonly" {
+				continue
+			}
+
 			// get child json tags
 			childJsonTag := strings.Split(child.Tag.Get("json"), ",")
 			childName := childJsonTag[0]

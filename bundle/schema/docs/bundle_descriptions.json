@@ -9,16 +9,7 @@
           "notebook": {
             "description": "",
             "properties": {
-              "language": {
-                "description": ""
-              },
-              "local_path": {
-                "description": ""
-              },
               "path": {
-                "description": ""
-              },
-              "remote_path": {
                 "description": ""
               }
             }
@@ -29,30 +20,8 @@
     "bundle": {
       "description": "Bundle contains details about this bundle, such as its name,\nversion of the spec (TODO), default cluster, default warehouse, etc.\n",
       "properties": {
-        "environment": {
-          "description": "Environment is set by the mutator that selects the environment."
-        },
-        "lock": {
-          "description": "",
-          "properties": {
-            "enabled": {
-              "description": ""
-            },
-            "force": {
-              "description": ""
-            }
-          }
-        },
         "name": {
           "description": ""
-        },
-        "terraform": {
-          "description": "",
-          "properties": {
-            "exec_path": {
-              "description": ""
-            }
-          }
         }
       }
     },
@@ -69,16 +38,7 @@
                 "notebook": {
                   "description": "",
                   "properties": {
-                    "language": {
-                      "description": ""
-                    },
-                    "local_path": {
-                      "description": ""
-                    },
                     "path": {
-                      "description": ""
-                    },
-                    "remote_path": {
                       "description": ""
                     }
                   }
@@ -89,30 +49,8 @@
           "bundle": {
             "description": "Bundle contains details about this bundle, such as its name,\nversion of the spec (TODO), default cluster, default warehouse, etc.\n",
             "properties": {
-              "environment": {
-                "description": "Environment is set by the mutator that selects the environment."
-              },
-              "lock": {
-                "description": "",
-                "properties": {
-                  "enabled": {
-                    "description": ""
-                  },
-                  "force": {
-                    "description": ""
-                  }
-                }
-              },
               "name": {
                 "description": ""
-              },
-              "terraform": {
-                "description": "",
-                "properties": {
-                  "exec_path": {
-                    "description": ""
-                  }
-                }
               }
             }
           },
@@ -251,9 +189,6 @@
                           "description": "URL of the repository to be cloned by this job.\nThe maximum length is 300 characters."
                         }
                       }
-                    },
-                    "id": {
-                      "description": ""
                     },
                     "job_clusters": {
                       "description": "A list of job cluster specifications that can be shared and reused by tasks of this job. Libraries cannot be declared in a shared job cluster. You must declare dependent libraries in task settings.",
@@ -1581,129 +1516,6 @@
               "azure_workspace_resource_id": {
                 "description": ""
               },
-              "current_user": {
-                "description": "",
-                "properties": {
-                  "active": {
-                    "description": ""
-                  },
-                  "displayName": {
-                    "description": ""
-                  },
-                  "emails": {
-                    "description": "",
-                    "items": {
-                      "description": "",
-                      "properties": {
-                        "$ref": {
-                          "description": ""
-                        },
-                        "display": {
-                          "description": ""
-                        },
-                        "primary": {
-                          "description": ""
-                        },
-                        "type": {
-                          "description": ""
-                        },
-                        "value": {
-                          "description": ""
-                        }
-                      }
-                    }
-                  },
-                  "entitlements": {
-                    "description": "",
-                    "items": {
-                      "description": "",
-                      "properties": {
-                        "$ref": {
-                          "description": ""
-                        },
-                        "display": {
-                          "description": ""
-                        },
-                        "primary": {
-                          "description": ""
-                        },
-                        "type": {
-                          "description": ""
-                        },
-                        "value": {
-                          "description": ""
-                        }
-                      }
-                    }
-                  },
-                  "externalId": {
-                    "description": ""
-                  },
-                  "groups": {
-                    "description": "",
-                    "items": {
-                      "description": "",
-                      "properties": {
-                        "$ref": {
-                          "description": ""
-                        },
-                        "display": {
-                          "description": ""
-                        },
-                        "primary": {
-                          "description": ""
-                        },
-                        "type": {
-                          "description": ""
-                        },
-                        "value": {
-                          "description": ""
-                        }
-                      }
-                    }
-                  },
-                  "id": {
-                    "description": ""
-                  },
-                  "name": {
-                    "description": "",
-                    "properties": {
-                      "familyName": {
-                        "description": ""
-                      },
-                      "givenName": {
-                        "description": ""
-                      }
-                    }
-                  },
-                  "roles": {
-                    "description": "",
-                    "items": {
-                      "description": "",
-                      "properties": {
-                        "$ref": {
-                          "description": ""
-                        },
-                        "display": {
-                          "description": ""
-                        },
-                        "primary": {
-                          "description": ""
-                        },
-                        "type": {
-                          "description": ""
-                        },
-                        "value": {
-                          "description": ""
-                        }
-                      }
-                    }
-                  },
-                  "userName": {
-                    "description": ""
-                  }
-                }
-              },
               "file_path": {
                 "description": "",
                 "properties": {
@@ -1881,9 +1693,6 @@
                     "description": "URL of the repository to be cloned by this job.\nThe maximum length is 300 characters."
                   }
                 }
-              },
-              "id": {
-                "description": ""
               },
               "job_clusters": {
                 "description": "A list of job cluster specifications that can be shared and reused by tasks of this job. Libraries cannot be declared in a shared job cluster. You must declare dependent libraries in task settings.",
@@ -3210,129 +3019,6 @@
         },
         "azure_workspace_resource_id": {
           "description": ""
-        },
-        "current_user": {
-          "description": "",
-          "properties": {
-            "active": {
-              "description": ""
-            },
-            "displayName": {
-              "description": ""
-            },
-            "emails": {
-              "description": "",
-              "items": {
-                "description": "",
-                "properties": {
-                  "$ref": {
-                    "description": ""
-                  },
-                  "display": {
-                    "description": ""
-                  },
-                  "primary": {
-                    "description": ""
-                  },
-                  "type": {
-                    "description": ""
-                  },
-                  "value": {
-                    "description": ""
-                  }
-                }
-              }
-            },
-            "entitlements": {
-              "description": "",
-              "items": {
-                "description": "",
-                "properties": {
-                  "$ref": {
-                    "description": ""
-                  },
-                  "display": {
-                    "description": ""
-                  },
-                  "primary": {
-                    "description": ""
-                  },
-                  "type": {
-                    "description": ""
-                  },
-                  "value": {
-                    "description": ""
-                  }
-                }
-              }
-            },
-            "externalId": {
-              "description": ""
-            },
-            "groups": {
-              "description": "",
-              "items": {
-                "description": "",
-                "properties": {
-                  "$ref": {
-                    "description": ""
-                  },
-                  "display": {
-                    "description": ""
-                  },
-                  "primary": {
-                    "description": ""
-                  },
-                  "type": {
-                    "description": ""
-                  },
-                  "value": {
-                    "description": ""
-                  }
-                }
-              }
-            },
-            "id": {
-              "description": ""
-            },
-            "name": {
-              "description": "",
-              "properties": {
-                "familyName": {
-                  "description": ""
-                },
-                "givenName": {
-                  "description": ""
-                }
-              }
-            },
-            "roles": {
-              "description": "",
-              "items": {
-                "description": "",
-                "properties": {
-                  "$ref": {
-                    "description": ""
-                  },
-                  "display": {
-                    "description": ""
-                  },
-                  "primary": {
-                    "description": ""
-                  },
-                  "type": {
-                    "description": ""
-                  },
-                  "value": {
-                    "description": ""
-                  }
-                }
-              }
-            },
-            "userName": {
-              "description": ""
-            }
-          }
         },
         "file_path": {
           "description": "",
