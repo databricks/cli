@@ -239,7 +239,10 @@ func TestViewAddsGitignoreWithCacheDir(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Since root .gitignore was deleted, new view adds .databricks to root .gitignore
-	_, err = NewView(repoPath)
+	v, err := NewView(repoPath)
+	require.NoError(t, err)
+
+	err = v.EnsureValidGitIgnoreExists()
 	require.NoError(t, err)
 
 	actual, err := os.ReadFile(filepath.Join(repoPath, ".gitignore"))
@@ -257,6 +260,9 @@ func TestViewAddsGitignoreWithCacheDirAtSubdir(t *testing.T) {
 	v, err := NewView(filepath.Join(repoPath, "a"))
 	require.NoError(t, err)
 
+	err = v.EnsureValidGitIgnoreExists()
+	require.NoError(t, err)
+
 	actual, err := os.ReadFile(filepath.Join(repoPath, v.targetPath, ".gitignore"))
 	require.NoError(t, err)
 
@@ -269,6 +275,9 @@ func TestViewAlwaysIgnoresCacheDir(t *testing.T) {
 	repoPath := createFakeRepo(t, "testdata")
 
 	v, err := NewView(repoPath)
+	require.NoError(t, err)
+
+	err = v.EnsureValidGitIgnoreExists()
 	require.NoError(t, err)
 
 	// Delete root .gitignore which contains .databricks entry
