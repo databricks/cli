@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/databricks/bricks/libs/cmdio"
 	"github.com/databricks/bricks/libs/flags"
-	"github.com/databricks/bricks/libs/progress"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -39,7 +39,7 @@ func TestDefaultLoggerModeResolution(t *testing.T) {
 	require.Equal(t, progressFormat, flags.ModeDefault)
 	ctx, err := initializeProgressLogger(context.Background())
 	require.NoError(t, err)
-	logger, ok := progress.FromContext(ctx)
+	logger, ok := cmdio.FromContext(ctx)
 	assert.True(t, ok)
 	assert.Equal(t, logger.Mode, flags.ModeAppend)
 }

@@ -4,8 +4,8 @@ import (
 	"github.com/databricks/bricks/bundle"
 	"github.com/databricks/bricks/bundle/phases"
 	"github.com/databricks/bricks/cmd/root"
+	"github.com/databricks/bricks/libs/cmdio"
 	"github.com/databricks/bricks/libs/flags"
-	"github.com/databricks/bricks/libs/progress"
 	"github.com/spf13/cobra"
 )
 
@@ -30,7 +30,10 @@ var destroyCmd = &cobra.Command{
 		// If `--force` is specified, force acquisition of the deployment lock.
 		b.Config.Bundle.Lock.Force = force
 
-		ctx := progress.NewContext(cmd.Context(), progress.NewLogger(flags.ModeAppend))
+		// TODO: add tty check here
+		// TODO: json logs
+
+		ctx := cmdio.NewContext(cmd.Context(), cmdio.NewLogger(flags.ModeAppend))
 		return bundle.Apply(ctx, b, []bundle.Mutator{
 			phases.Initialize(),
 			phases.Build(),

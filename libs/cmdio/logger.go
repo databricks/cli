@@ -1,6 +1,7 @@
-package progress
+package cmdio
 
 import (
+	"bufio"
 	"encoding/json"
 	"io"
 	"os"
@@ -9,7 +10,9 @@ import (
 )
 
 type Logger struct {
-	Mode   flags.ProgressLogFormat
+	Mode flags.ProgressLogFormat
+
+	Reader bufio.Reader
 	Writer io.Writer
 
 	isFirstEvent bool
@@ -19,7 +22,23 @@ func NewLogger(mode flags.ProgressLogFormat) *Logger {
 	return &Logger{
 		Mode:         mode,
 		Writer:       os.Stderr,
+		Reader:       *bufio.NewReader(os.Stdin),
 		isFirstEvent: true,
+	}
+}
+
+func (l *Logger) Ask(question string) (bool, error) {
+	l.Writer.Write([]byte(question))
+	ans, err := l.Reader.ReadString('\n')
+
+	if err != nil {
+		return false, err
+	}
+
+	if ans == "y\n" {
+		return true, nil
+	} else {
+		return false, nil
 	}
 }
 
