@@ -115,6 +115,13 @@ func (m *translatePaths) translatePipelineLibrary(b *bundle.Bundle, library *pip
 		}
 	}
 
+	if library.File != nil {
+		err = m.rewritePath(b, &library.File.Path, m.translateFilePath)
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 

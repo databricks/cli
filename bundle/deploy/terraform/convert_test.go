@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/libraries"
 	"github.com/databricks/databricks-sdk-go/service/mlflow"
+	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -106,6 +107,39 @@ func TestConvertJobTaskLibraries(t *testing.T) {
 	require.Len(t, out.Resource.Job["my_job"].Task, 1)
 	require.Len(t, out.Resource.Job["my_job"].Task[0].Library, 1)
 	assert.Equal(t, "mlflow", out.Resource.Job["my_job"].Task[0].Library[0].Pypi.Package)
+}
+
+func TestConvertPipeline(t *testing.T) {
+	var src = resources.Pipeline{
+		PipelineSpec: &pipelines.PipelineSpec{
+			Name: "my pipeline",
+			Libraries: []pipelines.PipelineLibrary{
+				{
+					Notebook: &pipelines.NotebookLibrary{
+						Path: "notebook path",
+					},
+				},
+				{
+					File: &pipelines.FileLibrary{
+						Path: "file path",
+					},
+				},
+			},
+		},
+	}
+
+	var config = config.Root{
+		Resources: config.Resources{
+			Pipelines: map[string]*resources.Pipeline{
+				"my_pipeline": &src,
+			},
+		},
+	}
+
+	out := BundleToTerraform(&config)
+	assert.Equal(t, "my pipeline", out.Resource.Pipeline["my_pipeline"].Name)
+	assert.Len(t, out.Resource.Pipeline["my_pipeline"].Library, 2)
+	assert.Nil(t, out.Data)
 }
 
 func TestConvertPipelinePermissions(t *testing.T) {
