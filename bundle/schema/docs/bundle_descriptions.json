@@ -9,16 +9,7 @@
           "notebook": {
             "description": "",
             "properties": {
-              "language": {
-                "description": ""
-              },
-              "local_path": {
-                "description": ""
-              },
               "path": {
-                "description": ""
-              },
-              "remote_path": {
                 "description": ""
               }
             }
@@ -29,19 +20,8 @@
     "bundle": {
       "description": "Bundle contains details about this bundle, such as its name,\nversion of the spec (TODO), default cluster, default warehouse, etc.\n",
       "properties": {
-        "environment": {
-          "description": "Environment is set by the mutator that selects the environment."
-        },
         "name": {
           "description": ""
-        },
-        "terraform": {
-          "description": "",
-          "properties": {
-            "exec_path": {
-              "description": ""
-            }
-          }
         }
       }
     },
@@ -58,16 +38,7 @@
                 "notebook": {
                   "description": "",
                   "properties": {
-                    "language": {
-                      "description": ""
-                    },
-                    "local_path": {
-                      "description": ""
-                    },
                     "path": {
-                      "description": ""
-                    },
-                    "remote_path": {
                       "description": ""
                     }
                   }
@@ -78,19 +49,8 @@
           "bundle": {
             "description": "Bundle contains details about this bundle, such as its name,\nversion of the spec (TODO), default cluster, default warehouse, etc.\n",
             "properties": {
-              "environment": {
-                "description": "Environment is set by the mutator that selects the environment."
-              },
               "name": {
                 "description": ""
-              },
-              "terraform": {
-                "description": "",
-                "properties": {
-                  "exec_path": {
-                    "description": ""
-                  }
-                }
               }
             }
           },
@@ -100,11 +60,79 @@
           "resources": {
             "description": "Specification of databricks resources to instantiate",
             "properties": {
+              "experiments": {
+                "description": "",
+                "additionalproperties": {
+                  "description": "",
+                  "properties": {
+                    "artifact_location": {
+                      "description": ""
+                    },
+                    "creation_time": {
+                      "description": ""
+                    },
+                    "experiment_id": {
+                      "description": ""
+                    },
+                    "last_update_time": {
+                      "description": ""
+                    },
+                    "lifecycle_stage": {
+                      "description": ""
+                    },
+                    "name": {
+                      "description": ""
+                    },
+                    "permissions": {
+                      "description": "",
+                      "items": {
+                        "description": "",
+                        "properties": {
+                          "group_name": {
+                            "description": ""
+                          },
+                          "level": {
+                            "description": ""
+                          },
+                          "service_principal_name": {
+                            "description": ""
+                          },
+                          "user_name": {
+                            "description": ""
+                          }
+                        }
+                      }
+                    },
+                    "tags": {
+                      "description": "",
+                      "items": {
+                        "description": "",
+                        "properties": {
+                          "key": {
+                            "description": ""
+                          },
+                          "value": {
+                            "description": ""
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
               "jobs": {
                 "description": "List of job definations",
                 "additionalproperties": {
                   "description": "",
                   "properties": {
+                    "continuous": {
+                      "description": "",
+                      "properties": {
+                        "pause_status": {
+                          "description": ""
+                        }
+                      }
+                    },
                     "email_notifications": {
                       "description": "An optional set of email addresses that is notified when runs of this job begin or complete as well as when this job is deleted. The default behavior is to not send any emails.",
                       "properties": {
@@ -161,9 +189,6 @@
                           "description": "URL of the repository to be cloned by this job.\nThe maximum length is 300 characters."
                         }
                       }
-                    },
-                    "id": {
-                      "description": ""
                     },
                     "job_clusters": {
                       "description": "A list of job cluster specifications that can be shared and reused by tasks of this job. Libraries cannot be declared in a shared job cluster. You must declare dependent libraries in task settings.",
@@ -389,6 +414,26 @@
                     },
                     "name": {
                       "description": "An optional name for the job."
+                    },
+                    "permissions": {
+                      "description": "",
+                      "items": {
+                        "description": "",
+                        "properties": {
+                          "group_name": {
+                            "description": ""
+                          },
+                          "level": {
+                            "description": ""
+                          },
+                          "service_principal_name": {
+                            "description": ""
+                          },
+                          "user_name": {
+                            "description": ""
+                          }
+                        }
+                      }
                     },
                     "schedule": {
                       "description": "An optional periodic schedule for this job. The default behavior is that the job only runs when triggered by clicking “Run Now” in the Jobs UI or sending an API request to `runNow`.",
@@ -940,6 +985,28 @@
                     "timeout_seconds": {
                       "description": "An optional timeout applied to each run of this job. The default behavior is to have no timeout."
                     },
+                    "trigger": {
+                      "description": "",
+                      "properties": {
+                        "file_arrival": {
+                          "description": "",
+                          "properties": {
+                            "min_time_between_trigger_seconds": {
+                              "description": ""
+                            },
+                            "url": {
+                              "description": ""
+                            },
+                            "wait_after_last_change_seconds": {
+                              "description": ""
+                            }
+                          }
+                        },
+                        "pause_status": {
+                          "description": ""
+                        }
+                      }
+                    },
                     "webhook_notifications": {
                       "description": "A collection of system notification IDs to notify when the run begins or completes. The default behavior is to not send any system notifications.",
                       "properties": {
@@ -977,6 +1044,121 @@
                           }
                         }
                       }
+                    }
+                  }
+                }
+              },
+              "models": {
+                "description": "",
+                "additionalproperties": {
+                  "description": "",
+                  "properties": {
+                    "creation_timestamp": {
+                      "description": ""
+                    },
+                    "description": {
+                      "description": ""
+                    },
+                    "last_updated_timestamp": {
+                      "description": ""
+                    },
+                    "latest_versions": {
+                      "description": "",
+                      "items": {
+                        "description": "",
+                        "properties": {
+                          "creation_timestamp": {
+                            "description": ""
+                          },
+                          "current_stage": {
+                            "description": ""
+                          },
+                          "description": {
+                            "description": ""
+                          },
+                          "last_updated_timestamp": {
+                            "description": ""
+                          },
+                          "name": {
+                            "description": ""
+                          },
+                          "run_id": {
+                            "description": ""
+                          },
+                          "run_link": {
+                            "description": ""
+                          },
+                          "source": {
+                            "description": ""
+                          },
+                          "status": {
+                            "description": ""
+                          },
+                          "status_message": {
+                            "description": ""
+                          },
+                          "tags": {
+                            "description": "",
+                            "items": {
+                              "description": "",
+                              "properties": {
+                                "key": {
+                                  "description": ""
+                                },
+                                "value": {
+                                  "description": ""
+                                }
+                              }
+                            }
+                          },
+                          "user_id": {
+                            "description": ""
+                          },
+                          "version": {
+                            "description": ""
+                          }
+                        }
+                      }
+                    },
+                    "name": {
+                      "description": ""
+                    },
+                    "permissions": {
+                      "description": "",
+                      "items": {
+                        "description": "",
+                        "properties": {
+                          "group_name": {
+                            "description": ""
+                          },
+                          "level": {
+                            "description": ""
+                          },
+                          "service_principal_name": {
+                            "description": ""
+                          },
+                          "user_name": {
+                            "description": ""
+                          }
+                        }
+                      }
+                    },
+                    "tags": {
+                      "description": "",
+                      "items": {
+                        "description": "",
+                        "properties": {
+                          "key": {
+                            "description": ""
+                          },
+                          "value": {
+                            "description": ""
+                          }
+                        }
+                      }
+                    },
+                    "user_id": {
+                      "description": ""
                     }
                   }
                 }
@@ -1249,6 +1431,26 @@
                     "name": {
                       "description": "Friendly identifier for this pipeline."
                     },
+                    "permissions": {
+                      "description": "",
+                      "items": {
+                        "description": "",
+                        "properties": {
+                          "group_name": {
+                            "description": ""
+                          },
+                          "level": {
+                            "description": ""
+                          },
+                          "service_principal_name": {
+                            "description": ""
+                          },
+                          "user_name": {
+                            "description": ""
+                          }
+                        }
+                      }
+                    },
                     "photon": {
                       "description": "Whether Photon is enabled for this pipeline."
                     },
@@ -1314,129 +1516,6 @@
               "azure_workspace_resource_id": {
                 "description": ""
               },
-              "current_user": {
-                "description": "",
-                "properties": {
-                  "active": {
-                    "description": ""
-                  },
-                  "displayName": {
-                    "description": ""
-                  },
-                  "emails": {
-                    "description": "",
-                    "items": {
-                      "description": "",
-                      "properties": {
-                        "$ref": {
-                          "description": ""
-                        },
-                        "display": {
-                          "description": ""
-                        },
-                        "primary": {
-                          "description": ""
-                        },
-                        "type": {
-                          "description": ""
-                        },
-                        "value": {
-                          "description": ""
-                        }
-                      }
-                    }
-                  },
-                  "entitlements": {
-                    "description": "",
-                    "items": {
-                      "description": "",
-                      "properties": {
-                        "$ref": {
-                          "description": ""
-                        },
-                        "display": {
-                          "description": ""
-                        },
-                        "primary": {
-                          "description": ""
-                        },
-                        "type": {
-                          "description": ""
-                        },
-                        "value": {
-                          "description": ""
-                        }
-                      }
-                    }
-                  },
-                  "externalId": {
-                    "description": ""
-                  },
-                  "groups": {
-                    "description": "",
-                    "items": {
-                      "description": "",
-                      "properties": {
-                        "$ref": {
-                          "description": ""
-                        },
-                        "display": {
-                          "description": ""
-                        },
-                        "primary": {
-                          "description": ""
-                        },
-                        "type": {
-                          "description": ""
-                        },
-                        "value": {
-                          "description": ""
-                        }
-                      }
-                    }
-                  },
-                  "id": {
-                    "description": ""
-                  },
-                  "name": {
-                    "description": "",
-                    "properties": {
-                      "familyName": {
-                        "description": ""
-                      },
-                      "givenName": {
-                        "description": ""
-                      }
-                    }
-                  },
-                  "roles": {
-                    "description": "",
-                    "items": {
-                      "description": "",
-                      "properties": {
-                        "$ref": {
-                          "description": ""
-                        },
-                        "display": {
-                          "description": ""
-                        },
-                        "primary": {
-                          "description": ""
-                        },
-                        "type": {
-                          "description": ""
-                        },
-                        "value": {
-                          "description": ""
-                        }
-                      }
-                    }
-                  },
-                  "userName": {
-                    "description": ""
-                  }
-                }
-              },
               "file_path": {
                 "description": "",
                 "properties": {
@@ -1485,11 +1564,79 @@
     "resources": {
       "description": "Specification of databricks resources to instantiate",
       "properties": {
+        "experiments": {
+          "description": "",
+          "additionalproperties": {
+            "description": "",
+            "properties": {
+              "artifact_location": {
+                "description": ""
+              },
+              "creation_time": {
+                "description": ""
+              },
+              "experiment_id": {
+                "description": ""
+              },
+              "last_update_time": {
+                "description": ""
+              },
+              "lifecycle_stage": {
+                "description": ""
+              },
+              "name": {
+                "description": ""
+              },
+              "permissions": {
+                "description": "",
+                "items": {
+                  "description": "",
+                  "properties": {
+                    "group_name": {
+                      "description": ""
+                    },
+                    "level": {
+                      "description": ""
+                    },
+                    "service_principal_name": {
+                      "description": ""
+                    },
+                    "user_name": {
+                      "description": ""
+                    }
+                  }
+                }
+              },
+              "tags": {
+                "description": "",
+                "items": {
+                  "description": "",
+                  "properties": {
+                    "key": {
+                      "description": ""
+                    },
+                    "value": {
+                      "description": ""
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
         "jobs": {
           "description": "List of job definations",
           "additionalproperties": {
             "description": "",
             "properties": {
+              "continuous": {
+                "description": "",
+                "properties": {
+                  "pause_status": {
+                    "description": ""
+                  }
+                }
+              },
               "email_notifications": {
                 "description": "An optional set of email addresses that is notified when runs of this job begin or complete as well as when this job is deleted. The default behavior is to not send any emails.",
                 "properties": {
@@ -1546,9 +1693,6 @@
                     "description": "URL of the repository to be cloned by this job.\nThe maximum length is 300 characters."
                   }
                 }
-              },
-              "id": {
-                "description": ""
               },
               "job_clusters": {
                 "description": "A list of job cluster specifications that can be shared and reused by tasks of this job. Libraries cannot be declared in a shared job cluster. You must declare dependent libraries in task settings.",
@@ -1774,6 +1918,26 @@
               },
               "name": {
                 "description": "An optional name for the job."
+              },
+              "permissions": {
+                "description": "",
+                "items": {
+                  "description": "",
+                  "properties": {
+                    "group_name": {
+                      "description": ""
+                    },
+                    "level": {
+                      "description": ""
+                    },
+                    "service_principal_name": {
+                      "description": ""
+                    },
+                    "user_name": {
+                      "description": ""
+                    }
+                  }
+                }
               },
               "schedule": {
                 "description": "An optional periodic schedule for this job. The default behavior is that the job only runs when triggered by clicking “Run Now” in the Jobs UI or sending an API request to `runNow`.",
@@ -2325,6 +2489,28 @@
               "timeout_seconds": {
                 "description": "An optional timeout applied to each run of this job. The default behavior is to have no timeout."
               },
+              "trigger": {
+                "description": "",
+                "properties": {
+                  "file_arrival": {
+                    "description": "",
+                    "properties": {
+                      "min_time_between_trigger_seconds": {
+                        "description": ""
+                      },
+                      "url": {
+                        "description": ""
+                      },
+                      "wait_after_last_change_seconds": {
+                        "description": ""
+                      }
+                    }
+                  },
+                  "pause_status": {
+                    "description": ""
+                  }
+                }
+              },
               "webhook_notifications": {
                 "description": "A collection of system notification IDs to notify when the run begins or completes. The default behavior is to not send any system notifications.",
                 "properties": {
@@ -2362,6 +2548,121 @@
                     }
                   }
                 }
+              }
+            }
+          }
+        },
+        "models": {
+          "description": "",
+          "additionalproperties": {
+            "description": "",
+            "properties": {
+              "creation_timestamp": {
+                "description": ""
+              },
+              "description": {
+                "description": ""
+              },
+              "last_updated_timestamp": {
+                "description": ""
+              },
+              "latest_versions": {
+                "description": "",
+                "items": {
+                  "description": "",
+                  "properties": {
+                    "creation_timestamp": {
+                      "description": ""
+                    },
+                    "current_stage": {
+                      "description": ""
+                    },
+                    "description": {
+                      "description": ""
+                    },
+                    "last_updated_timestamp": {
+                      "description": ""
+                    },
+                    "name": {
+                      "description": ""
+                    },
+                    "run_id": {
+                      "description": ""
+                    },
+                    "run_link": {
+                      "description": ""
+                    },
+                    "source": {
+                      "description": ""
+                    },
+                    "status": {
+                      "description": ""
+                    },
+                    "status_message": {
+                      "description": ""
+                    },
+                    "tags": {
+                      "description": "",
+                      "items": {
+                        "description": "",
+                        "properties": {
+                          "key": {
+                            "description": ""
+                          },
+                          "value": {
+                            "description": ""
+                          }
+                        }
+                      }
+                    },
+                    "user_id": {
+                      "description": ""
+                    },
+                    "version": {
+                      "description": ""
+                    }
+                  }
+                }
+              },
+              "name": {
+                "description": ""
+              },
+              "permissions": {
+                "description": "",
+                "items": {
+                  "description": "",
+                  "properties": {
+                    "group_name": {
+                      "description": ""
+                    },
+                    "level": {
+                      "description": ""
+                    },
+                    "service_principal_name": {
+                      "description": ""
+                    },
+                    "user_name": {
+                      "description": ""
+                    }
+                  }
+                }
+              },
+              "tags": {
+                "description": "",
+                "items": {
+                  "description": "",
+                  "properties": {
+                    "key": {
+                      "description": ""
+                    },
+                    "value": {
+                      "description": ""
+                    }
+                  }
+                }
+              },
+              "user_id": {
+                "description": ""
               }
             }
           }
@@ -2634,6 +2935,26 @@
               "name": {
                 "description": "Friendly identifier for this pipeline."
               },
+              "permissions": {
+                "description": "",
+                "items": {
+                  "description": "",
+                  "properties": {
+                    "group_name": {
+                      "description": ""
+                    },
+                    "level": {
+                      "description": ""
+                    },
+                    "service_principal_name": {
+                      "description": ""
+                    },
+                    "user_name": {
+                      "description": ""
+                    }
+                  }
+                }
+              },
               "photon": {
                 "description": "Whether Photon is enabled for this pipeline."
               },
@@ -2698,129 +3019,6 @@
         },
         "azure_workspace_resource_id": {
           "description": ""
-        },
-        "current_user": {
-          "description": "",
-          "properties": {
-            "active": {
-              "description": ""
-            },
-            "displayName": {
-              "description": ""
-            },
-            "emails": {
-              "description": "",
-              "items": {
-                "description": "",
-                "properties": {
-                  "$ref": {
-                    "description": ""
-                  },
-                  "display": {
-                    "description": ""
-                  },
-                  "primary": {
-                    "description": ""
-                  },
-                  "type": {
-                    "description": ""
-                  },
-                  "value": {
-                    "description": ""
-                  }
-                }
-              }
-            },
-            "entitlements": {
-              "description": "",
-              "items": {
-                "description": "",
-                "properties": {
-                  "$ref": {
-                    "description": ""
-                  },
-                  "display": {
-                    "description": ""
-                  },
-                  "primary": {
-                    "description": ""
-                  },
-                  "type": {
-                    "description": ""
-                  },
-                  "value": {
-                    "description": ""
-                  }
-                }
-              }
-            },
-            "externalId": {
-              "description": ""
-            },
-            "groups": {
-              "description": "",
-              "items": {
-                "description": "",
-                "properties": {
-                  "$ref": {
-                    "description": ""
-                  },
-                  "display": {
-                    "description": ""
-                  },
-                  "primary": {
-                    "description": ""
-                  },
-                  "type": {
-                    "description": ""
-                  },
-                  "value": {
-                    "description": ""
-                  }
-                }
-              }
-            },
-            "id": {
-              "description": ""
-            },
-            "name": {
-              "description": "",
-              "properties": {
-                "familyName": {
-                  "description": ""
-                },
-                "givenName": {
-                  "description": ""
-                }
-              }
-            },
-            "roles": {
-              "description": "",
-              "items": {
-                "description": "",
-                "properties": {
-                  "$ref": {
-                    "description": ""
-                  },
-                  "display": {
-                    "description": ""
-                  },
-                  "primary": {
-                    "description": ""
-                  },
-                  "type": {
-                    "description": ""
-                  },
-                  "value": {
-                    "description": ""
-                  }
-                }
-              }
-            },
-            "userName": {
-              "description": ""
-            }
-          }
         },
         "file_path": {
           "description": "",

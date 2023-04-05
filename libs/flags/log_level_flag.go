@@ -25,9 +25,7 @@ type LogLevelFlag struct {
 
 func NewLogLevelFlag() LogLevelFlag {
 	return LogLevelFlag{
-		// Note: we log at INFO level by default until
-		// we implement progress reporting to stdout/stderr.
-		l: log.LevelInfo,
+		l: log.LevelDisabled,
 	}
 }
 

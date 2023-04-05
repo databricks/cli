@@ -16,21 +16,33 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func touchFile(t *testing.T, path string) {
+func touchNotebookFile(t *testing.T, path string) {
 	f, err := os.Create(path)
 	require.NoError(t, err)
 	f.WriteString("# Databricks notebook source\n")
 	f.Close()
 }
 
-func TestNotebookPaths(t *testing.T) {
+func touchEmptyFile(t *testing.T, path string) {
+	f, err := os.Create(path)
+	require.NoError(t, err)
+	f.Close()
+}
+
+func TestTranslatePaths(t *testing.T) {
 	dir := t.TempDir()
-	touchFile(t, filepath.Join(dir, "my_job_notebook.py"))
-	touchFile(t, filepath.Join(dir, "my_pipeline_notebook.py"))
+	touchNotebookFile(t, filepath.Join(dir, "my_job_notebook.py"))
+	touchNotebookFile(t, filepath.Join(dir, "my_pipeline_notebook.py"))
+	touchEmptyFile(t, filepath.Join(dir, "my_python_file.py"))
 
 	bundle := &bundle.Bundle{
 		Config: config.Root{
 			Path: dir,
+			Workspace: config.Workspace{
+				FilePath: config.PathLike{
+					Workspace: "/bundle",
+				},
+			},
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job": {
@@ -54,6 +66,11 @@ func TestNotebookPaths(t *testing.T) {
 								{
 									PythonWheelTask: &jobs.PythonWheelTask{
 										PackageName: "foo",
+									},
+								},
+								{
+									SparkPythonTask: &jobs.SparkPythonTask{
+										PythonFile: "./my_python_file.py",
 									},
 								},
 							},
@@ -90,13 +107,13 @@ func TestNotebookPaths(t *testing.T) {
 		},
 	}
 
-	_, err := mutator.TranslateNotebookPaths().Apply(context.Background(), bundle)
+	_, err := mutator.TranslatePaths().Apply(context.Background(), bundle)
 	require.NoError(t, err)
 
 	// Assert that the path in the tasks now refer to the artifact.
 	assert.Equal(
 		t,
-		"${workspace.file_path.workspace}/my_job_notebook",
+		"/bundle/my_job_notebook",
 		bundle.Config.Resources.Jobs["job"].Tasks[0].NotebookTask.NotebookPath,
 	)
 	assert.Equal(
@@ -106,14 +123,19 @@ func TestNotebookPaths(t *testing.T) {
 	)
 	assert.Equal(
 		t,
-		"${workspace.file_path.workspace}/my_job_notebook",
+		"/bundle/my_job_notebook",
 		bundle.Config.Resources.Jobs["job"].Tasks[2].NotebookTask.NotebookPath,
+	)
+	assert.Equal(
+		t,
+		"/bundle/my_python_file.py",
+		bundle.Config.Resources.Jobs["job"].Tasks[4].SparkPythonTask.PythonFile,
 	)
 
 	// Assert that the path in the libraries now refer to the artifact.
 	assert.Equal(
 		t,
-		"${workspace.file_path.workspace}/my_pipeline_notebook",
+		"/bundle/my_pipeline_notebook",
 		bundle.Config.Resources.Pipelines["pipeline"].Libraries[0].Notebook.Path,
 	)
 	assert.Equal(
@@ -123,7 +145,7 @@ func TestNotebookPaths(t *testing.T) {
 	)
 	assert.Equal(
 		t,
-		"${workspace.file_path.workspace}/my_pipeline_notebook",
+		"/bundle/my_pipeline_notebook",
 		bundle.Config.Resources.Pipelines["pipeline"].Libraries[2].Notebook.Path,
 	)
 }
@@ -152,8 +174,36 @@ func TestJobNotebookDoesNotExistError(t *testing.T) {
 		},
 	}
 
-	_, err := mutator.TranslateNotebookPaths().Apply(context.Background(), bundle)
-	assert.ErrorContains(t, err, "notebook ./doesnt_exist.py not found")
+	_, err := mutator.TranslatePaths().Apply(context.Background(), bundle)
+	assert.EqualError(t, err, "notebook ./doesnt_exist.py not found")
+}
+
+func TestJobFileDoesNotExistError(t *testing.T) {
+	dir := t.TempDir()
+
+	bundle := &bundle.Bundle{
+		Config: config.Root{
+			Path: dir,
+			Resources: config.Resources{
+				Jobs: map[string]*resources.Job{
+					"job": {
+						JobSettings: &jobs.JobSettings{
+							Tasks: []jobs.JobTaskSettings{
+								{
+									SparkPythonTask: &jobs.SparkPythonTask{
+										PythonFile: "./doesnt_exist.py",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	_, err := mutator.TranslatePaths().Apply(context.Background(), bundle)
+	assert.EqualError(t, err, "file ./doesnt_exist.py not found")
 }
 
 func TestPipelineNotebookDoesNotExistError(t *testing.T) {
@@ -180,6 +230,6 @@ func TestPipelineNotebookDoesNotExistError(t *testing.T) {
 		},
 	}
 
-	_, err := mutator.TranslateNotebookPaths().Apply(context.Background(), bundle)
-	assert.ErrorContains(t, err, "notebook ./doesnt_exist.py not found")
+	_, err := mutator.TranslatePaths().Apply(context.Background(), bundle)
+	assert.EqualError(t, err, "notebook ./doesnt_exist.py not found")
 }

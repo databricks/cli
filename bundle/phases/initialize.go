@@ -18,11 +18,11 @@ func Initialize() bundle.Mutator {
 			mutator.DefineDefaultWorkspaceRoot(),
 			mutator.ExpandWorkspaceRoot(),
 			mutator.DefineDefaultWorkspacePaths(),
-			mutator.TranslateNotebookPaths(),
 			interpolation.Interpolate(
 				interpolation.IncludeLookupsInPath("bundle"),
 				interpolation.IncludeLookupsInPath("workspace"),
 			),
+			mutator.TranslatePaths(),
 			terraform.Initialize(),
 		},
 	)

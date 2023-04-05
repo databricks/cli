@@ -50,7 +50,7 @@ type Workspace struct {
 
 	// CurrentUser holds the current user.
 	// This is set after configuration initialization.
-	CurrentUser *scim.User `json:"current_user,omitempty"`
+	CurrentUser *scim.User `json:"current_user,omitempty" bundle:"readonly"`
 
 	// Remote base path for deployment state, for artifacts, as synchronization target.
 	// This defaults to "~/.bundle/${bundle.name}/${bundle.environment}" where "~" expands to
@@ -93,7 +93,7 @@ func (w *Workspace) Client() (*databricks.WorkspaceClient, error) {
 	cfg.Loaders = []config.Loader{
 		// Defaults.
 		config.ConfigAttributes,
-		config.KnownConfigLoader{},
+		config.ConfigFile,
 
 		// Our loader that resolves a profile from the host alone.
 		// This only kicks in if the above loaders don't configure auth.

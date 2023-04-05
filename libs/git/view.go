@@ -1,6 +1,7 @@
 package git
 
 import (
+	"os"
 	"path/filepath"
 	"strings"
 )
@@ -90,4 +91,38 @@ func NewView(path string) (*View, error) {
 		repo:       repo,
 		targetPath: targetPath,
 	}, nil
+}
+
+func (v *View) EnsureValidGitIgnoreExists() error {
+	ign, err := v.IgnoreDirectory(".databricks")
+	if err != nil {
+		return err
+	}
+
+	// return early if .databricks is already being ignored
+	if ign {
+		return nil
+	}
+
+	// Create .gitignore with .databricks entry
+	gitIgnorePath := filepath.Join(v.repo.Root(), v.targetPath, ".gitignore")
+	file, err := os.OpenFile(gitIgnorePath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	// Hard code .databricks ignore pattern so that we never sync it (irrespective)
+	// of .gitignore patterns
+	v.repo.addIgnoreRule(newStringIgnoreRules([]string{
+		".databricks",
+	}))
+
+	_, err = file.WriteString("\n.databricks\n")
+	if err != nil {
+		return err
+	}
+
+	v.repo.taintIgnoreRules()
+	return nil
 }

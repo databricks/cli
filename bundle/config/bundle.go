@@ -16,12 +16,12 @@ type Bundle struct {
 	// DefaultWarehouse string `json:"default_warehouse,omitempty"`
 
 	// Environment is set by the mutator that selects the environment.
-	Environment string `json:"environment,omitempty"`
+	Environment string `json:"environment,omitempty" bundle:"readonly"`
 
 	// Terraform holds configuration related to Terraform.
 	// For example, where to find the binary, which version to use, etc.
-	Terraform *Terraform `json:"terraform,omitempty"`
+	Terraform *Terraform `json:"terraform,omitempty" bundle:"readonly"`
 
 	// Lock configures locking behavior on deployment.
-	Lock Lock `json:"lock"`
+	Lock Lock `json:"lock" bundle:"readonly"`
 }

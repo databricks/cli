@@ -80,7 +80,7 @@ func TestProjectInitializationDoesNotAddCacheDirToGitIgnoreIfAlreadyPresent(t *t
 
 	gitIgnorePath := filepath.Join(projectDir, ".gitignore")
 
-	err = os.WriteFile(gitIgnorePath, []byte("/.databricks/"), 0o644)
+	err = os.WriteFile(gitIgnorePath, []byte(".databricks"), 0o644)
 	assert.NoError(t, err)
 
 	_, err = Initialize(context.Background(), projectDir, DefaultEnvironment)

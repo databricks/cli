@@ -12,9 +12,9 @@ type NotebookArtifact struct {
 	Path string `json:"path"`
 
 	// Language is detected during build step.
-	Language workspace.Language `json:"language,omitempty"`
+	Language workspace.Language `json:"language,omitempty" bundle:"readonly"`
 
 	// Paths are synthesized during build step.
-	LocalPath  string `json:"local_path,omitempty"`
-	RemotePath string `json:"remote_path,omitempty"`
+	LocalPath  string `json:"local_path,omitempty" bundle:"readonly"`
+	RemotePath string `json:"remote_path,omitempty" bundle:"readonly"`
 }
