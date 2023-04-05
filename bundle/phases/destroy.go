@@ -2,6 +2,7 @@ package phases
 
 import (
 	"github.com/databricks/bricks/bundle"
+	"github.com/databricks/bricks/bundle/deploy/files"
 	"github.com/databricks/bricks/bundle/deploy/lock"
 	"github.com/databricks/bricks/bundle/deploy/terraform"
 )
@@ -18,6 +19,7 @@ func Destroy() bundle.Mutator {
 			terraform.Destroy(),
 			terraform.StatePush(),
 			lock.Release(),
+			files.Delete(),
 		},
 	)
 }

@@ -13,7 +13,7 @@ import (
 	tfjson "github.com/hashicorp/terraform-json"
 )
 
-// TODO: This is temperory. Come up with a robust way to log mutator progress and
+// TODO: This is temporary. Come up with a robust way to log mutator progress and
 // status events
 type PlanResourceChange struct {
 	ResourceType string `json:"resource_type"`
