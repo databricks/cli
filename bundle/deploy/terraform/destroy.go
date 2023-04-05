@@ -91,8 +91,6 @@ func (w *destroy) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator
 		return nil, err
 	}
 
-	// TODO: Add is term detection
-
 	// Ask for confirmation, if needed
 	if !b.Plan.ConfirmApply {
 		red := color.New(color.FgRed).SprintFunc()

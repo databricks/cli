@@ -57,7 +57,7 @@ func (p *plan) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator, e
 	return nil, nil
 }
 
-// Apply returns a [bundle.Mutator] that runs the equivalent of `terraform apply`
+// Plan returns a [bundle.Mutator] that runs the equivalent of `terraform plan -out ./plan`
 // from the bundle's ephemeral working directory for Terraform.
 func Plan(goal PlanGoal) bundle.Mutator {
 	return &plan{
