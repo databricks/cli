@@ -119,8 +119,8 @@ func (w *destroy) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator
 	return nil, nil
 }
 
-// Destroy returns a [bundle.Mutator] that runs the equivalent of `terraform destroy`
-// from the bundle's ephemeral working directory for Terraform.
+// Destroy returns a [bundle.Mutator] that runs the conceptual equivalent of
+// `terraform destroy ./plan` from the bundle's ephemeral working directory for Terraform.
 func Destroy() bundle.Mutator {
 	return &destroy{}
 }
