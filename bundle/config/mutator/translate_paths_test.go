@@ -99,6 +99,11 @@ func TestTranslatePaths(t *testing.T) {
 								{
 									Jar: "foo",
 								},
+								{
+									File: &pipelines.FileLibrary{
+										Path: "./my_python_file.py",
+									},
+								},
 							},
 						},
 					},
@@ -147,6 +152,11 @@ func TestTranslatePaths(t *testing.T) {
 		t,
 		"/bundle/my_pipeline_notebook",
 		bundle.Config.Resources.Pipelines["pipeline"].Libraries[2].Notebook.Path,
+	)
+	assert.Equal(
+		t,
+		"/bundle/my_python_file.py",
+		bundle.Config.Resources.Pipelines["pipeline"].Libraries[4].File.Path,
 	)
 }
 
