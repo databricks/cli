@@ -36,6 +36,9 @@ func (out *JobOutput) String() (string, error) {
 	taskKeys := maps.Keys(out.TaskOutputs)
 	sort.Strings(taskKeys)
 	for _, k := range taskKeys {
+		if out.TaskOutputs[k] == nil {
+			continue
+		}
 		taskString, err := out.TaskOutputs[k].String()
 		if err != nil {
 			return "", nil
