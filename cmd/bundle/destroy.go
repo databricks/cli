@@ -1,23 +1,17 @@
 package bundle
 
 import (
+	"fmt"
+	"os"
+
 	"github.com/databricks/bricks/bundle"
 	"github.com/databricks/bricks/bundle/phases"
 	"github.com/databricks/bricks/cmd/root"
 	"github.com/databricks/bricks/libs/cmdio"
 	"github.com/databricks/bricks/libs/flags"
 	"github.com/spf13/cobra"
+	"golang.org/x/term"
 )
-
-// TODO: do we need ci/cd for non-tty
-
-// TODO:
-// 1. Delete resources
-// 2. Delete files - need tracking dirs for this
-// 3. Delete artifacts
-// 4. What about running resources
-
-// TODO: json logs?
 
 var destroyCmd = &cobra.Command{
 	Use:   "destroy",
@@ -30,8 +24,14 @@ var destroyCmd = &cobra.Command{
 		// If `--force` is specified, force acquisition of the deployment lock.
 		b.Config.Bundle.Lock.Force = force
 
-		// TODO: add tty check here
-		// TODO: json logs
+		// If `--auto-approve`` is specified, we skip confirmation checks
+		b.AutoApprove = autoApprove
+
+		// we require auto-approve for non tty terminals since interactive consent
+		// is not possible
+		if !term.IsTerminal(int(os.Stderr.Fd())) && !autoApprove {
+			return fmt.Errorf("please specify --auto-approve to skip interactive confirmation checks for non tty consoles")
+		}
 
 		ctx := cmdio.NewContext(cmd.Context(), cmdio.NewLogger(flags.ModeAppend))
 		return bundle.Apply(ctx, b, []bundle.Mutator{
@@ -42,9 +42,9 @@ var destroyCmd = &cobra.Command{
 	},
 }
 
-var skipConfirmation bool
+var autoApprove bool
 
 func init() {
 	AddCommand(destroyCmd)
-	deployCmd.Flags().BoolVar(&skipConfirmation, "skip-confirmation", false, "skip confirmation before destroy")
+	destroyCmd.Flags().BoolVar(&autoApprove, "auto-approve", false, "Skip interactive approvals for deleting resources and files")
 }

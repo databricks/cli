@@ -37,6 +37,10 @@ type Bundle struct {
 	Locker *locker.Locker
 
 	Plan *terraform.Plan
+
+	// if true, we skip approval checks for deploy, destroy resources and delete
+	// files
+	AutoApprove bool
 }
 
 func Load(path string) (*Bundle, error) {

@@ -70,7 +70,7 @@ func (w *destroy) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator
 	}
 
 	if b.Plan.IsEmpty {
-		fmt.Fprintln(os.Stderr, "No resources to destroy, skipping destroy!")
+		fmt.Fprintln(os.Stderr, "No resources to destroy!")
 		return nil, nil
 	}
 

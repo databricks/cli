@@ -8,14 +8,13 @@ import (
 )
 
 // The destroy phase deletes artifacts and resources.
-// TODO: force lock workaround. Error message on lock acquisition is misleading
 func Destroy() bundle.Mutator {
 	return newPhase(
 		"destroy",
 		[]bundle.Mutator{
 			lock.Acquire(),
 			terraform.StatePull(),
-			terraform.Plan(true),
+			terraform.Plan(terraform.PlanGoal("destroy")),
 			terraform.Destroy(),
 			terraform.StatePush(),
 			lock.Release(),

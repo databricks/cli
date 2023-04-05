@@ -10,8 +10,15 @@ import (
 	"github.com/hashicorp/terraform-exec/tfexec"
 )
 
+type PlanGoal string
+
+var (
+	PlanDeploy  = PlanGoal("deploy")
+	PlanDestroy = PlanGoal("destroy")
+)
+
 type plan struct {
-	destroy bool
+	goal PlanGoal
 }
 
 func (p *plan) Name() string {
@@ -35,16 +42,16 @@ func (p *plan) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator, e
 		return nil, err
 	}
 	planPath := filepath.Join(tfDir, "plan")
-	notEmpty, err := tf.Plan(ctx, tfexec.Destroy(p.destroy), tfexec.Out(planPath))
+	destroy := p.goal == PlanDestroy
+	notEmpty, err := tf.Plan(ctx, tfexec.Destroy(destroy), tfexec.Out(planPath))
 	if err != nil {
 		return nil, err
 	}
 
 	// Set plan in main bundle struct for downstream mutators
-	// TODO: allow bypass using cmd line flag
 	b.Plan = &terraform.Plan{
 		Path:         planPath,
-		ConfirmApply: false,
+		ConfirmApply: b.AutoApprove,
 		IsEmpty:      !notEmpty,
 	}
 	return nil, nil
@@ -52,8 +59,8 @@ func (p *plan) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator, e
 
 // Apply returns a [bundle.Mutator] that runs the equivalent of `terraform apply`
 // from the bundle's ephemeral working directory for Terraform.
-func Plan(destroy bool) bundle.Mutator {
+func Plan(goal PlanGoal) bundle.Mutator {
 	return &plan{
-		destroy: destroy,
+		goal: goal,
 	}
 }
