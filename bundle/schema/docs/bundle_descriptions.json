@@ -1507,22 +1507,22 @@
                 }
               },
               "azure_client_id": {
-                "description": ""
+                "description": "Configurable using `ARM_CLIENT_ID` environment variable"
               },
               "azure_environment": {
-                "description": ""
+                "description": "Azure environment, one of (Public, UsGov, China, Germany).Configurable using `ARM_ENVIRONMENT` environment variable"
               },
               "azure_login_app_id": {
-                "description": ""
+                "description": "Azure Login Application ID. Configurable using `DATABRICKS_AZURE_LOGIN_APP_ID` environment variable"
               },
               "azure_tenant_id": {
-                "description": ""
+                "description": "Configurable using `ARM_TENANT_ID` environment variable"
               },
               "azure_use_msi": {
-                "description": ""
+                "description": "Configurable using `ARM_USE_MSI` environment variable"
               },
               "azure_workspace_resource_id": {
-                "description": ""
+                "description": "Azure Resource Manager ID for Azure Databricks workspace. Configurable using `DATABRICKS_AZURE_RESOURCE_ID` environment variable"
               },
               "file_path": {
                 "description": "Remote path to synchronize local files artifacts to. This defaults to `${workspace.root}/files`",
@@ -1536,13 +1536,13 @@
                 }
               },
               "google_service_account": {
-                "description": ""
+                "description": "Configurable using `DATABRICKS_GOOGLE_SERVICE_ACCOUNT` environment variable"
               },
               "host": {
-                "description": "Host url of the workspace"
+                "description": "Host url of the workspace. Configurable using `DATABRICKS_HOST` environment variable"
               },
               "profile": {
-                "description": "Name of the profile to use. Typically configured in ~/.databrickscfg"
+                "description": "Connection profile to use. By default profiles are specified in ~/.databrickscfg. Configurable using `DATABRICKS_CONFIG_PROFILE` environment variable"
               },
               "root": {
                 "description": "Base location for synchronizing files, artifacts and state. Defaults to `/Users/jane@doe.com/.bundle/${bundle.name}/${bundle.environment}`"
@@ -3019,22 +3019,22 @@
           }
         },
         "azure_client_id": {
-          "description": ""
+          "description": "Configurable using `ARM_CLIENT_ID` environment variable"
         },
         "azure_environment": {
-          "description": ""
+          "description": "Azure environment, one of (Public, UsGov, China, Germany).Configurable using `ARM_ENVIRONMENT` environment variable"
         },
         "azure_login_app_id": {
-          "description": ""
+          "description": "Azure Login Application ID. Configurable using `DATABRICKS_AZURE_LOGIN_APP_ID` environment variable"
         },
         "azure_tenant_id": {
-          "description": ""
+          "description": "Configurable using `ARM_TENANT_ID` environment variable"
         },
         "azure_use_msi": {
-          "description": ""
+          "description": "Configurable using `ARM_USE_MSI` environment variable"
         },
         "azure_workspace_resource_id": {
-          "description": ""
+          "description": "Azure Resource Manager ID for Azure Databricks workspace. Configurable using `DATABRICKS_AZURE_RESOURCE_ID` environment variable"
         },
         "file_path": {
           "description": "Remote path to synchronize local files artifacts to. This defaults to `${workspace.root}/files`",
@@ -3048,13 +3048,13 @@
           }
         },
         "google_service_account": {
-          "description": ""
+          "description": "Configurable using `DATABRICKS_GOOGLE_SERVICE_ACCOUNT` environment variable"
         },
         "host": {
-          "description": "Host url of the workspace"
+          "description": "Host url of the workspace. Configurable using `DATABRICKS_HOST` environment variable"
         },
         "profile": {
-          "description": "Name of the profile to use. Typically configured in ~/.databrickscfg"
+          "description": "Connection profile to use. By default profiles are specified in ~/.databrickscfg. Configurable using `DATABRICKS_CONFIG_PROFILE` environment variable"
         },
         "root": {
           "description": "Base location for synchronizing files, artifacts and state. Defaults to `/Users/jane@doe.com/.bundle/${bundle.name}/${bundle.environment}`"
