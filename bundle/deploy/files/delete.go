@@ -24,12 +24,6 @@ func (m *delete) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator,
 
 	cmdio.LogMutatorEvent(ctx, m.Name(), cmdio.MutatorRunning, "Starting deletion of remote bundle files")
 	cmdio.LogMutatorEvent(ctx, m.Name(), cmdio.MutatorRunning, fmt.Sprintf("Bundle remote deployment location: %s", b.Config.Workspace.Root))
-	// logger, ok := cmdio.FromContext(ctx)
-	// if !ok {
-	// 	return nil, fmt.Errorf("no logger found at destroy mutator")
-	// }
-	// bytes, _ := json.MarshalIndent(logger, "", "  ")
-	// fmt.Println("\n\n\n\n\n" + string(bytes) + "\n\n\n\n\n\n")
 
 	red := color.New(color.FgRed).SprintFunc()
 	if !b.AutoApprove {

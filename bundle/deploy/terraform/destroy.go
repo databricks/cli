@@ -15,7 +15,8 @@ func (w *destroy) logDestroyPlan(ctx context.Context, changes []*tfjson.Resource
 	cmdio.LogMutatorEvent(ctx, w.Name(), cmdio.MutatorRunning, "The following resources will be removed: ")
 	for _, c := range changes {
 		if c.Change.Actions.Delete() {
-			cmdio.Log(ctx, &ResourceChange{
+			cmdio.Log(ctx, &PlanResourceChange{
+				Type:         "plan_resource_change",
 				ResourceType: c.Type,
 				Action:       "delete",
 				ResourceName: c.Name,

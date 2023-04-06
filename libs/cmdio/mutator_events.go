@@ -11,6 +11,7 @@ const (
 )
 
 type MutatorEvent struct {
+	Type    string           `json:"type"`
 	Status  MutatorEventType `json:"status"`
 	Source  string           `json:"source"`
 	Message string           `json:"message"`
@@ -26,6 +27,7 @@ func LogMutatorEvent(ctx context.Context, name string, eventType MutatorEventTyp
 		logger = Default()
 	}
 	logger.Log(&MutatorEvent{
+		Type:    "mutator_event",
 		Status:  eventType,
 		Source:  name,
 		Message: message,
