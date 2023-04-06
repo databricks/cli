@@ -8,8 +8,8 @@ import (
 
 	"github.com/databricks/bricks/bundle"
 	"github.com/databricks/bricks/bundle/config/resources"
+	"github.com/databricks/bricks/libs/cmdio"
 	"github.com/databricks/bricks/libs/log"
-	"github.com/databricks/bricks/libs/progress"
 	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/fatih/color"
@@ -177,7 +177,7 @@ func logDebugCallback(ctx context.Context, runId *int64) func(info *retries.Info
 	}
 }
 
-func logProgressCallback(ctx context.Context, progressLogger *progress.Logger) func(info *retries.Info[jobs.Run]) {
+func logProgressCallback(ctx context.Context, progressLogger *cmdio.Logger) func(info *retries.Info[jobs.Run]) {
 	var prevState *jobs.RunState
 	return func(info *retries.Info[jobs.Run]) {
 		i := info.Info
@@ -241,7 +241,7 @@ func (r *jobRunner) Run(ctx context.Context, opts *Options) (RunOutput, error) {
 	logDebug := logDebugCallback(ctx, runId)
 
 	// callback to log progress events. Called on every poll request
-	progressLogger, ok := progress.FromContext(ctx)
+	progressLogger, ok := cmdio.FromContext(ctx)
 	if !ok {
 		return nil, fmt.Errorf("no progress logger found")
 	}

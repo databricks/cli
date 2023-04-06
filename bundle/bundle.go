@@ -16,6 +16,7 @@ import (
 	"github.com/databricks/bricks/folders"
 	"github.com/databricks/bricks/libs/git"
 	"github.com/databricks/bricks/libs/locker"
+	"github.com/databricks/bricks/libs/terraform"
 	"github.com/databricks/databricks-sdk-go"
 	sdkconfig "github.com/databricks/databricks-sdk-go/config"
 	"github.com/hashicorp/terraform-exec/tfexec"
@@ -34,6 +35,12 @@ type Bundle struct {
 
 	// Stores the locker responsible for acquiring/releasing a deployment lock.
 	Locker *locker.Locker
+
+	Plan *terraform.Plan
+
+	// if true, we skip approval checks for deploy, destroy resources and delete
+	// files
+	AutoApprove bool
 }
 
 func Load(path string) (*Bundle, error) {

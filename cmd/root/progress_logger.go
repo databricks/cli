@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/databricks/bricks/libs/cmdio"
 	"github.com/databricks/bricks/libs/flags"
-	"github.com/databricks/bricks/libs/progress"
 	"golang.org/x/term"
 )
 
@@ -31,8 +31,8 @@ func initializeProgressLogger(ctx context.Context) (context.Context, error) {
 		format = resolveModeDefault(format)
 	}
 
-	progressLogger := progress.NewLogger(format)
-	return progress.NewContext(ctx, progressLogger), nil
+	progressLogger := cmdio.NewLogger(format)
+	return cmdio.NewContext(ctx, progressLogger), nil
 }
 
 var progressFormat = flags.NewProgressLogFormat()
