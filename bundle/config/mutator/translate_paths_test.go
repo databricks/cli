@@ -24,6 +24,8 @@ func touchNotebookFile(t *testing.T, path string) {
 }
 
 func touchEmptyFile(t *testing.T, path string) {
+	err := os.MkdirAll(filepath.Dir(path), 0700)
+	require.NoError(t, err)
 	f, err := os.Create(path)
 	require.NoError(t, err)
 	f.Close()
@@ -157,6 +159,73 @@ func TestTranslatePaths(t *testing.T) {
 		t,
 		"/bundle/my_python_file.py",
 		bundle.Config.Resources.Pipelines["pipeline"].Libraries[4].File.Path,
+	)
+}
+
+func TestTranslatePathsInSubdirectories(t *testing.T) {
+	dir := t.TempDir()
+	touchEmptyFile(t, filepath.Join(dir, "job", "my_python_file.py"))
+	touchEmptyFile(t, filepath.Join(dir, "pipeline", "my_python_file.py"))
+
+	bundle := &bundle.Bundle{
+		Config: config.Root{
+			Path: dir,
+			Workspace: config.Workspace{
+				FilePath: config.PathLike{
+					Workspace: "/bundle",
+				},
+			},
+			Resources: config.Resources{
+				Jobs: map[string]*resources.Job{
+					"job": {
+						Paths: resources.Paths{
+							ConfigFilePath: "job/resource.yml",
+						},
+						JobSettings: &jobs.JobSettings{
+							Tasks: []jobs.JobTaskSettings{
+								{
+									SparkPythonTask: &jobs.SparkPythonTask{
+										PythonFile: "./my_python_file.py",
+									},
+								},
+							},
+						},
+					},
+				},
+				Pipelines: map[string]*resources.Pipeline{
+					"pipeline": {
+						Paths: resources.Paths{
+							ConfigFilePath: "pipeline/resource.yml",
+						},
+
+						PipelineSpec: &pipelines.PipelineSpec{
+							Libraries: []pipelines.PipelineLibrary{
+								{
+									File: &pipelines.FileLibrary{
+										Path: "./my_python_file.py",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	_, err := mutator.TranslatePaths().Apply(context.Background(), bundle)
+	require.NoError(t, err)
+
+	assert.Equal(
+		t,
+		"/bundle/job/my_python_file.py",
+		bundle.Config.Resources.Jobs["job"].Tasks[0].SparkPythonTask.PythonFile,
+	)
+
+	assert.Equal(
+		t,
+		"/bundle/pipeline/my_python_file.py",
+		bundle.Config.Resources.Pipelines["pipeline"].Libraries[0].File.Path,
 	)
 }
 

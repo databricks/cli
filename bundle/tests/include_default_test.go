@@ -16,5 +16,7 @@ func TestIncludeDefault(t *testing.T) {
 	sort.Strings(keys)
 	assert.Equal(t, []string{"my_first_job", "my_second_job"}, keys)
 	assert.Equal(t, "1", b.Config.Resources.Jobs["my_first_job"].ID)
+	assert.Equal(t, "my_first_job/resource.yml", b.Config.Resources.Jobs["my_first_job"].ConfigFilePath)
 	assert.Equal(t, "2", b.Config.Resources.Jobs["my_second_job"].ID)
+	assert.Equal(t, "my_second_job/resource.yml", b.Config.Resources.Jobs["my_second_job"].ConfigFilePath)
 }

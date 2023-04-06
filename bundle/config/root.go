@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -12,6 +13,11 @@ import (
 const FileName = "bundle.yml"
 
 type Root struct {
+	// File contains the file path to the configuration file that
+	// was loaded into this instance. It is an internal only variable
+	// that is used to track where resources are defined.
+	File string `json:"-"`
+
 	// Path contains the directory path to the root of the bundle.
 	// It is set when loading `bundle.yml`.
 	Path string `json:"-"`
@@ -56,7 +62,6 @@ func Load(path string) (*Root, error) {
 
 	// If we were given a directory, assume this is the bundle root.
 	if stat.IsDir() {
-		r.Path = path
 		path = filepath.Join(path, FileName)
 	}
 
@@ -67,8 +72,21 @@ func Load(path string) (*Root, error) {
 	return &r, nil
 }
 
-func (r *Root) Load(file string) error {
-	raw, err := os.ReadFile(file)
+// SetConfigFilePath configures the path that its configuration
+// was loaded from in configuration leafs that require it.
+func (r *Root) SetConfigFilePath(path string) {
+	r.Resources.SetConfigFilePath(path)
+	if r.Environments != nil {
+		for _, env := range r.Environments {
+			if env.Resources != nil {
+				env.Resources.SetConfigFilePath(path)
+			}
+		}
+	}
+}
+
+func (r *Root) Load(path string) error {
+	raw, err := os.ReadFile(path)
 	if err != nil {
 		return err
 	}
@@ -76,10 +94,33 @@ func (r *Root) Load(file string) error {
 	if err != nil {
 		return err
 	}
+	r.File = filepath.Base(path)
+	r.Path = filepath.Dir(path)
+	r.SetConfigFilePath(r.File)
 	return nil
 }
 
 func (r *Root) Merge(other *Root) error {
+	if r.Path == "" {
+		// This shouldn't ever happen as we merge into the root configuration
+		// which, per the above function, will always have a path configured.
+		return fmt.Errorf("target root config does not have a path configured")
+	}
+
+	// Compute relative path from bundle root to the specified configuration.
+	relPath, err := filepath.Rel(r.Path, filepath.Join(other.Path, other.File))
+	if err != nil {
+		return err
+	}
+
+	// Resources defined in the specified configuration may contain paths that
+	// are relative to the location of the specified configuration.
+	other.SetConfigFilePath(relPath)
+
+	// TODO: when hooking into merge semantics, disallow setting file and path on the target instance.
+	other.File = ""
+	other.Path = ""
+
 	// TODO: define and test semantics for merging.
 	return mergo.MergeWithOverwrite(r, other)
 }
