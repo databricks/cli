@@ -19,7 +19,8 @@ var destroyCmd = &cobra.Command{
 
 	PreRunE: root.MustConfigureBundle,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		b := bundle.Get(cmd.Context())
+		ctx := cmd.Context()
+		b := bundle.Get(ctx)
 
 		// If `--force` is specified, force acquisition of the deployment lock.
 		b.Config.Bundle.Lock.Force = force
@@ -33,7 +34,18 @@ var destroyCmd = &cobra.Command{
 			return fmt.Errorf("please specify --auto-approve to skip interactive confirmation checks for non tty consoles")
 		}
 
-		ctx := cmdio.NewContext(cmd.Context(), cmdio.NewLogger(flags.ModeAppend))
+		// Check auto-approve is selected for json logging
+		logger, ok := cmdio.FromContext(ctx)
+		if !ok {
+			return fmt.Errorf("progress logger not found")
+		}
+		if logger.Mode == flags.ModeJson && !autoApprove {
+			return fmt.Errorf("please specify --auto-approve since selected logging format is json")
+		}
+
+		// Inplace logging not supported for bundle destroy
+		ctx = cmdio.DisableInplace(ctx)
+
 		return bundle.Apply(ctx, b, []bundle.Mutator{
 			phases.Initialize(),
 			phases.Build(),

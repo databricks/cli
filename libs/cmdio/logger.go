@@ -2,6 +2,7 @@ package cmdio
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"io"
 	"os"
@@ -9,6 +10,7 @@ import (
 	"github.com/databricks/bricks/libs/flags"
 )
 
+// This is the interface for all io interactions with a user
 type Logger struct {
 	Mode flags.ProgressLogFormat
 
@@ -25,6 +27,31 @@ func NewLogger(mode flags.ProgressLogFormat) *Logger {
 		Reader:       *bufio.NewReader(os.Stdin),
 		isFirstEvent: true,
 	}
+}
+
+func Default() *Logger {
+	return &Logger{
+		Mode:         flags.ModeJson,
+		Writer:       os.Stderr,
+		Reader:       *bufio.NewReader(os.Stdin),
+		isFirstEvent: true,
+	}
+}
+
+func Log(ctx context.Context, event Event) {
+	logger, ok := FromContext(ctx)
+	if !ok {
+		logger = Default()
+	}
+	logger.Log(event)
+}
+
+func Ask(ctx context.Context, question string) (bool, error) {
+	logger, ok := FromContext(ctx)
+	if !ok {
+		logger = Default()
+	}
+	return logger.Ask(question)
 }
 
 func (l *Logger) Ask(question string) (bool, error) {

@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/databricks/bricks/bundle"
+	"github.com/databricks/bricks/libs/cmdio"
 	"github.com/databricks/bricks/libs/terraform"
 	"github.com/hashicorp/terraform-exec/tfexec"
 )
@@ -31,6 +32,8 @@ func (p *plan) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator, e
 		return nil, fmt.Errorf("terraform not initialized")
 	}
 
+	cmdio.LogMutatorEvent(ctx, p.Name(), cmdio.MutatorRunning, "Started plan computation")
+
 	err := tf.Init(ctx, tfexec.Upgrade(true))
 	if err != nil {
 		return nil, fmt.Errorf("terraform init: %w", err)
@@ -54,6 +57,7 @@ func (p *plan) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator, e
 		ConfirmApply: b.AutoApprove,
 		IsEmpty:      !notEmpty,
 	}
+	cmdio.LogMutatorEvent(ctx, p.Name(), cmdio.MutatorCompleted, fmt.Sprintf("Planning complete and persisted at %s\n", planPath))
 	return nil, nil
 }
 

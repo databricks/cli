@@ -3,7 +3,6 @@ package files
 import (
 	"context"
 	"fmt"
-	"os"
 
 	"github.com/databricks/bricks/bundle"
 	"github.com/databricks/bricks/libs/cmdio"
@@ -23,16 +22,18 @@ func (m *delete) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator,
 		return nil, nil
 	}
 
-	// interface to io with the user
-	logger, ok := cmdio.FromContext(ctx)
-	if !ok {
-		return nil, fmt.Errorf("no logger found")
-	}
-	red := color.New(color.FgRed).SprintFunc()
+	cmdio.LogMutatorEvent(ctx, m.Name(), cmdio.MutatorRunning, "Starting deletion of remote bundle files")
+	cmdio.LogMutatorEvent(ctx, m.Name(), cmdio.MutatorRunning, fmt.Sprintf("Bundle remote deployment location: %s", b.Config.Workspace.Root))
+	// logger, ok := cmdio.FromContext(ctx)
+	// if !ok {
+	// 	return nil, fmt.Errorf("no logger found at destroy mutator")
+	// }
+	// bytes, _ := json.MarshalIndent(logger, "", "  ")
+	// fmt.Println("\n\n\n\n\n" + string(bytes) + "\n\n\n\n\n\n")
 
-	fmt.Fprintf(os.Stderr, "\nRemote directory %s will be deleted\n", b.Config.Workspace.Root)
+	red := color.New(color.FgRed).SprintFunc()
 	if !b.AutoApprove {
-		proceed, err := logger.Ask(fmt.Sprintf("%s and all files in it will be %s Proceed?: ", b.Config.Workspace.Root, red("deleted permanently!")))
+		proceed, err := cmdio.Ask(ctx, fmt.Sprintf("\n%s and all files in it will be %s Proceed?: ", b.Config.Workspace.Root, red("deleted permanently!")))
 		if err != nil {
 			return nil, err
 		}
@@ -49,7 +50,7 @@ func (m *delete) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator,
 		return nil, err
 	}
 
-	fmt.Println("Successfully deleted files!")
+	cmdio.LogMutatorEvent(ctx, m.Name(), cmdio.MutatorCompleted, "Successfully deleted files!")
 	return nil, nil
 }
 

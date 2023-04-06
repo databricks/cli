@@ -7,6 +7,7 @@ import (
 	"github.com/databricks/bricks/libs/log"
 )
 
+// TODO: initialize cmd loader and create a global flag for it.
 type release struct{}
 
 func Release() bundle.Mutator {
