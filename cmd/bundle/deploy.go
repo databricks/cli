@@ -4,6 +4,7 @@ import (
 	"github.com/databricks/bricks/bundle"
 	"github.com/databricks/bricks/bundle/phases"
 	"github.com/databricks/bricks/cmd/root"
+	"github.com/databricks/bricks/libs/cmdio"
 	"github.com/spf13/cobra"
 )
 
@@ -13,12 +14,16 @@ var deployCmd = &cobra.Command{
 
 	PreRunE: root.MustConfigureBundle,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		b := bundle.Get(cmd.Context())
+		ctx := cmd.Context()
+		b := bundle.Get(ctx)
 
 		// If `--force` is specified, force acquisition of the deployment lock.
 		b.Config.Bundle.Lock.Force = force
 
-		return bundle.Apply(cmd.Context(), b, []bundle.Mutator{
+		// deployment does not support inplace logging
+		ctx = cmdio.DisableInplace(ctx)
+
+		return bundle.Apply(ctx, b, []bundle.Mutator{
 			phases.Initialize(),
 			phases.Build(),
 			phases.Deploy(),

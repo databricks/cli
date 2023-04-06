@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/databricks/bricks/bundle"
+	"github.com/databricks/bricks/libs/cmdio"
 	"github.com/hashicorp/terraform-exec/tfexec"
 )
 
@@ -20,6 +21,8 @@ func (w *apply) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator, 
 		return nil, fmt.Errorf("terraform not initialized")
 	}
 
+	cmdio.LogMutatorEvent(ctx, w.Name(), cmdio.MutatorRunning, "Starting resource deployment")
+
 	err := tf.Init(ctx, tfexec.Upgrade(true))
 	if err != nil {
 		return nil, fmt.Errorf("terraform init: %w", err)
@@ -30,6 +33,7 @@ func (w *apply) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator, 
 		return nil, fmt.Errorf("terraform apply: %w", err)
 	}
 
+	cmdio.LogMutatorEvent(ctx, w.Name(), cmdio.MutatorCompleted, "Resource deployment completed!\n")
 	return nil, nil
 }
 

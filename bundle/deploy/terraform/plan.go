@@ -32,7 +32,7 @@ func (p *plan) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator, e
 		return nil, fmt.Errorf("terraform not initialized")
 	}
 
-	cmdio.LogMutatorEvent(ctx, p.Name(), cmdio.MutatorRunning, "Started plan computation")
+	cmdio.LogMutatorEvent(ctx, p.Name(), cmdio.MutatorRunning, "Starting plan computation")
 
 	err := tf.Init(ctx, tfexec.Upgrade(true))
 	if err != nil {
