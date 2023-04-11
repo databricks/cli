@@ -9,10 +9,11 @@ import (
 
 // lsCmd represents the ls command
 var lsCmd = &cobra.Command{
-	Use:   "ls <dir-name>",
-	Short: "Lists files",
-	Long:  `Lists files`,
-	Args:  cobra.ExactArgs(1),
+	Use:    "ls <dir-name>",
+	Short:  "Lists files",
+	Long:   `Lists files`,
+	Args:   cobra.ExactArgs(1),
+	Hidden: true,
 
 	PreRunE: project.Configure,
 	Run: func(cmd *cobra.Command, args []string) {

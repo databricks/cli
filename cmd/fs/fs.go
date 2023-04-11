@@ -7,9 +7,10 @@ import (
 
 // fsCmd represents the fs command
 var fsCmd = &cobra.Command{
-	Use:   "fs",
-	Short: "Filesystem related commands",
-	Long:  `Commands to do DBFS operations.`,
+	Use:    "fs",
+	Short:  "Filesystem related commands",
+	Long:   `Commands to do DBFS operations.`,
+	Hidden: true,
 }
 
 func init() {
