@@ -54,7 +54,7 @@ func (m *delete) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator,
 	if err != nil {
 		return nil, err
 	}
-	err = sync.Destroy(ctx)
+	err = sync.DestroySnapshot(ctx)
 	if err != nil {
 		return nil, err
 	}

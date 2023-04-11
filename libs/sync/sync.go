@@ -160,7 +160,7 @@ func (s *Sync) RunOnce(ctx context.Context) error {
 	return nil
 }
 
-func (s *Sync) Destroy(ctx context.Context) error {
+func (s *Sync) DestroySnapshot(ctx context.Context) error {
 	return s.snapshot.Destroy(ctx)
 }
 
