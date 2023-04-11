@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/databricks/bricks/libs/log"
-	"github.com/databricks/bricks/project"
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/dbfs"
 )
 
@@ -63,7 +63,10 @@ func UploadWheelToDBFSWithPEP503(ctx context.Context, dir string) (string, error
 	// extra index URLs. See more pointers at https://stackoverflow.com/q/30889494/277035
 	dbfsLoc := fmt.Sprintf("%s/%s/%s", DBFSWheelLocation, dist.NormalizedName(), path.Base(wheel))
 
-	wsc := project.Get(ctx).WorkspacesClient()
+	wsc, err := databricks.NewWorkspaceClient(&databricks.Config{})
+	if err != nil {
+		return "", err
+	}
 	wf, err := os.Open(wheel)
 	if err != nil {
 		return "", err
