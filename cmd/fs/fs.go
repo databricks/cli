@@ -1,6 +1,8 @@
 package fs
 
 import (
+	"fmt"
+
 	"github.com/databricks/bricks/cmd/root"
 	"github.com/spf13/cobra"
 )
@@ -10,18 +12,12 @@ var fsCmd = &cobra.Command{
 	Use:   "fs",
 	Short: "Filesystem related commands",
 	Long:  `Commands to do DBFS operations.`,
+
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return fmt.Errorf("TODO")
+	},
 }
 
 func init() {
 	root.RootCmd.AddCommand(fsCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// fsCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// fsCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
