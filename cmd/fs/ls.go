@@ -8,9 +8,10 @@ import (
 
 // lsCmd represents the ls command
 var lsCmd = &cobra.Command{
-	Use:   "ls <dir-name>",
-	Short: "Lists files",
-	Long:  `Lists files`,
+	Use:    "ls <dir-name>",
+	Short:  "Lists files",
+	Long:   `Lists files`,
+	Hidden: true,
 
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("TODO")
