@@ -46,6 +46,8 @@ var destroyCmd = &cobra.Command{
 		// Inplace logging not supported for bundle destroy
 		ctx = cmdio.DisableInplace(ctx)
 
+		// TODO: protect against inplace logging here
+
 		return bundle.Apply(ctx, b, []bundle.Mutator{
 			phases.Initialize(),
 			phases.Build(),

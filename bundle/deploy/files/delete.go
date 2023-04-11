@@ -23,7 +23,7 @@ func (m *delete) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator,
 	}
 
 	cmdio.LogMutatorEvent(ctx, m.Name(), cmdio.MutatorRunning, "Starting deletion of remote bundle files")
-	cmdio.LogMutatorEvent(ctx, m.Name(), cmdio.MutatorRunning, fmt.Sprintf("Bundle remote deployment location: %s", b.Config.Workspace.Root))
+	cmdio.LogMutatorEvent(ctx, m.Name(), cmdio.MutatorRunning, fmt.Sprintf("\nRemote directory %s will be deleted: %s", b.Config.Workspace.Root))
 
 	red := color.New(color.FgRed).SprintFunc()
 	if !b.AutoApprove {
