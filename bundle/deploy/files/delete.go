@@ -49,6 +49,16 @@ func (m *delete) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator,
 		return nil, err
 	}
 
+	// Clean up sync snapshot file
+	sync, err := getSync(ctx, b)
+	if err != nil {
+		return nil, err
+	}
+	err = sync.DestroySnapshot(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	fmt.Println("Successfully deleted files!")
 	return nil, nil
 }
