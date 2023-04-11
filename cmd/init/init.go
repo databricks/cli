@@ -21,6 +21,7 @@ var initCmd = &cobra.Command{
 	Use:   "init",
 	Short: "Project starter templates",
 	Long:  `Generate project templates`,
+	Hidden: true,
 
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if project.IsDatabricksProject() {
