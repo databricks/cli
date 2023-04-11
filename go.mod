@@ -6,8 +6,6 @@ require (
 	github.com/atotto/clipboard v0.1.4
 	github.com/databricks/databricks-sdk-go v0.7.0
 	github.com/ghodss/yaml v1.0.0 // MIT + NOTICE
-	github.com/manifoldco/promptui v0.9.0 // BSD-3-Clause license
-	github.com/mitchellh/go-homedir v1.1.0 // MIT
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8 // BSD-2-Clause
 	github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06 // MIT
 	github.com/spf13/cobra v1.7.0 // Apache 2.0
@@ -41,7 +39,6 @@ require (
 require (
 	cloud.google.com/go/compute v1.19.0 // indirect
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
-	github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e // indirect
 	github.com/golang/protobuf v1.5.3 // indirect

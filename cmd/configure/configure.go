@@ -7,9 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/databricks/bricks/cmd/prompt"
 	"github.com/databricks/bricks/cmd/root"
-	"github.com/databricks/bricks/project"
 	"github.com/spf13/cobra"
 	"gopkg.in/ini.v1"
 )
@@ -20,7 +18,7 @@ type Configs struct {
 	Profile string `ini:"-"`
 }
 
-var noInteractive, tokenMode bool
+var tokenMode bool
 
 func (cfg *Configs) loadNonInteractive(cmd *cobra.Command) error {
 	host, err := cmd.Flags().GetString("host")
@@ -40,53 +38,6 @@ func (cfg *Configs) loadNonInteractive(cmd *cobra.Command) error {
 	if n != 1 {
 		return fmt.Errorf("exactly 1 argument required")
 	}
-	return nil
-}
-
-func (cfg *Configs) loadInteractive(cmd *cobra.Command) error {
-	res := prompt.Results{}
-	questions := prompt.Questions{}
-
-	host, err := cmd.Flags().GetString("host")
-	if err != nil || host == "" {
-		questions = append(questions, prompt.Text{
-			Key:   "host",
-			Label: "Databricks Host",
-			Default: func(res prompt.Results) string {
-				return cfg.Host
-			},
-			Callback: func(ans prompt.Answer, config *project.Config, res prompt.Results) {
-				cfg.Host = ans.Value
-			},
-		})
-	} else {
-		cfg.Host = host
-	}
-
-	if tokenMode {
-		questions = append(questions, prompt.Text{
-			Key:   "token",
-			Label: "Databricks Token",
-			Default: func(res prompt.Results) string {
-				return cfg.Token
-			},
-			Callback: func(ans prompt.Answer, config *project.Config, res prompt.Results) {
-				cfg.Token = ans.Value
-			},
-		})
-	}
-
-	err = questions.Ask(res)
-	if err != nil {
-		return err
-	}
-
-	for _, answer := range res {
-		if answer.Callback != nil {
-			answer.Callback(answer, nil, res)
-		}
-	}
-
 	return nil
 }
 
@@ -136,11 +87,7 @@ var configureCmd = &cobra.Command{
 			return fmt.Errorf("unmarshal loaded config: %w", err)
 		}
 
-		if noInteractive {
-			err = cfg.loadNonInteractive(cmd)
-		} else {
-			err = cfg.loadInteractive(cmd)
-		}
+		err = cfg.loadNonInteractive(cmd)
 		if err != nil {
 			return fmt.Errorf("reading configs: %w", err)
 		}
@@ -172,7 +119,6 @@ var configureCmd = &cobra.Command{
 func init() {
 	root.RootCmd.AddCommand(configureCmd)
 	configureCmd.Flags().BoolVarP(&tokenMode, "token", "t", false, "Configure using Databricks Personal Access Token")
-	configureCmd.Flags().BoolVar(&noInteractive, "no-interactive", false, "Don't show interactive prompts for inputs. Read directly from stdin.")
 	configureCmd.Flags().String("host", "", "Host to connect to.")
 	configureCmd.Flags().String("profile", "DEFAULT", "CLI connection profile to use.")
 }
