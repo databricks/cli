@@ -29,7 +29,7 @@ var RootCmd = &cobra.Command{
 		// Configure default logger.
 		ctx, err := initializeLogger(ctx)
 		if err != nil {
-			os.Exit(1)
+			return err
 		}
 		log.Infof(ctx, "process args: [%s]", strings.Join(os.Args, ", "))
 		log.Infof(ctx, "version: %s", build.GetInfo().Version)
@@ -70,8 +70,6 @@ func Execute() {
 
 func init() {
 	RootCmd.SetFlagErrorFunc(flagErrorFunc)
-
-	cobra.OnFinalize()
 
 	// The VS Code extension passes `-v` in debug mode and must be changed
 	// to use the new flags in `./logger.go` prior to removing this flag.
