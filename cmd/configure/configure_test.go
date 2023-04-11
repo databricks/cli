@@ -52,7 +52,7 @@ func TestDefaultConfigureNoInteractive(t *testing.T) {
 	})
 	os.Stdin = inp
 
-	root.RootCmd.SetArgs([]string{"configure", "--token", "--no-interactive", "--host", "host"})
+	root.RootCmd.SetArgs([]string{"configure", "--token", "--host", "host"})
 
 	err := root.RootCmd.ExecuteContext(ctx)
 	assert.NoError(t, err)
@@ -84,7 +84,7 @@ func TestConfigFileFromEnvNoInteractive(t *testing.T) {
 	t.Cleanup(func() { os.Stdin = oldStdin })
 	os.Stdin = inp
 
-	root.RootCmd.SetArgs([]string{"configure", "--token", "--no-interactive", "--host", "host"})
+	root.RootCmd.SetArgs([]string{"configure", "--token", "--host", "host"})
 
 	err := root.RootCmd.ExecuteContext(ctx)
 	assert.NoError(t, err)
@@ -112,7 +112,7 @@ func TestCustomProfileConfigureNoInteractive(t *testing.T) {
 	t.Cleanup(func() { os.Stdin = oldStdin })
 	os.Stdin = inp
 
-	root.RootCmd.SetArgs([]string{"configure", "--token", "--no-interactive", "--host", "host", "--profile", "CUSTOM"})
+	root.RootCmd.SetArgs([]string{"configure", "--token", "--host", "host", "--profile", "CUSTOM"})
 
 	err := root.RootCmd.ExecuteContext(ctx)
 	assert.NoError(t, err)
