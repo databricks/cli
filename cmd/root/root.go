@@ -33,15 +33,10 @@ var RootCmd = &cobra.Command{
 			return err
 		}
 
-		// Update root command's context to include the initialized logger. This
-		// is used to log exit codes and any error once execution of the command
-		// is completed
-		cmd.Root().SetContext(ctx)
-
 		logger := log.GetLogger(ctx)
 		logger.Info("start",
 			slog.String("version", build.GetInfo().Version),
-			slog.String("args", fmt.Sprintf("[%s]", strings.Join(os.Args, ", "))))
+			slog.String("args", strings.Join(os.Args, ", ")))
 
 		// Configure progress logger
 		ctx, err = initializeProgressLogger(ctx)
@@ -54,9 +49,6 @@ var RootCmd = &cobra.Command{
 		ctx = withUpstreamInUserAgent(ctx)
 		cmd.SetContext(ctx)
 		return nil
-	},
-	PersistentPostRun: func(cmd *cobra.Command, args []string) {
-		log.Infof(cmd.Context(), "completed command execution")
 	},
 }
 
@@ -71,15 +63,25 @@ func Execute() {
 	// TODO: deferred panic recovery
 	ctx := context.Background()
 
-	err := RootCmd.ExecuteContext(ctx)
-	if err != nil {
-		logger, ok := log.FromContext(RootCmd.Context())
-		// We only log the error if logger initialization succeeded
-		if ok {
-			logger.Info("command execution failed",
+	// Run the command
+	cmd, err := RootCmd.ExecuteContextC(ctx)
+
+	// Log exit status and error
+	// We only log if logger initialization succeeded and is stored in command
+	// context
+	logger, ok := log.FromContext(cmd.Context())
+	if ok {
+		if err == nil {
+			logger.Info("completed execution",
+				slog.String("exit_code", "0"))
+		} else {
+			logger.Error("failed execution",
 				slog.String("exit_code", "1"),
 				slog.String("error", err.Error()))
 		}
+	}
+
+	if err != nil {
 		os.Exit(1)
 	}
 }
