@@ -69,7 +69,6 @@ func Load(path string) (*Root, error) {
 // SetConfigFilePath configures the path that its configuration
 // was loaded from in configuration leafs that require it.
 func (r *Root) SetConfigFilePath(path string) {
-	r.Path = filepath.Dir(path)
 	r.Resources.SetConfigFilePath(path)
 	if r.Environments != nil {
 		for _, env := range r.Environments {
@@ -89,6 +88,7 @@ func (r *Root) Load(path string) error {
 	if err != nil {
 		return err
 	}
+	r.Path = filepath.Dir(path)
 	r.SetConfigFilePath(path)
 	return nil
 }

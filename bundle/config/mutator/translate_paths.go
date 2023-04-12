@@ -27,6 +27,15 @@ func (m *translatePaths) Name() string {
 	return "TranslatePaths"
 }
 
+// rewritePath converts a given relative path to a stable remote workspace path.
+//
+// It takes these arguments:
+//   - The argument `dir` is the directory relative to which the given relative path is.
+//   - The given relative path is both passed and written back through `*p`.
+//   - The argument `fn` is a function that performs the actual rewriting logic.
+//     This logic is different between regular files or notebooks.
+//
+// The function returns an error if it is impossible to rewrite the given relative path.
 func (m *translatePaths) rewritePath(
 	dir string,
 	b *bundle.Bundle,
