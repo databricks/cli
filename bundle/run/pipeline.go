@@ -172,7 +172,8 @@ func (r *pipelineRunner) Run(ctx context.Context, opts *Options) (RunOutput, err
 	}
 
 	// Log the pipeline update URL as soon as it is available.
-	progressLogger.Log(pipeline.NewUpdateUrlEvent(w.Config.Host, updateID, pipelineID))
+	updateUrl := fmt.Sprintf("%s/#joblist/pipelines/%s/updates/%s", w.Config.Host, pipelineID, updateID)
+	log.Infof(ctx, "Update available at %s", updateUrl)
 
 	// Poll update for completion and post status.
 	// Note: there is no "StartUpdateAndWait" wrapper for this API.
