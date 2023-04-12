@@ -30,9 +30,9 @@ func (m *delete) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator,
 	}
 	red := color.New(color.FgRed).SprintFunc()
 
-	fmt.Fprintf(os.Stderr, "\nRemote directory %s will be deleted\n", b.Config.Workspace.Root)
+	fmt.Fprintf(os.Stderr, "\nRemote directory %s will be deleted\n", b.Config.Workspace.RootPath)
 	if !b.AutoApprove {
-		proceed, err := logger.Ask(fmt.Sprintf("%s and all files in it will be %s Proceed?: ", b.Config.Workspace.Root, red("deleted permanently!")))
+		proceed, err := logger.Ask(fmt.Sprintf("%s and all files in it will be %s Proceed?: ", b.Config.Workspace.RootPath, red("deleted permanently!")))
 		if err != nil {
 			return nil, err
 		}
@@ -42,7 +42,7 @@ func (m *delete) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator,
 	}
 
 	err := b.WorkspaceClient().Workspace.Delete(ctx, workspace.Delete{
-		Path:      b.Config.Workspace.Root,
+		Path:      b.Config.Workspace.RootPath,
 		Recursive: true,
 	})
 	if err != nil {

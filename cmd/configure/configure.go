@@ -42,8 +42,9 @@ func (cfg *Configs) loadNonInteractive(cmd *cobra.Command) error {
 }
 
 var configureCmd = &cobra.Command{
-	Use:   "configure",
-	Short: "Configure authentication",
+	Use:    "configure",
+	Short:  "Configure authentication",
+	Hidden: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		profile, err := cmd.Flags().GetString("profile")
 		if err != nil {
