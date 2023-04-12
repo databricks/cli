@@ -4,8 +4,12 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
+	"github.com/databricks/bricks/internal/build"
+	"github.com/databricks/bricks/libs/log"
 	"github.com/spf13/cobra"
+	"golang.org/x/exp/slog"
 )
 
 // RootCmd represents the base command when called without any subcommands
@@ -28,6 +32,11 @@ var RootCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+
+		logger := log.GetLogger(ctx)
+		logger.Info("start",
+			slog.String("version", build.GetInfo().Version),
+			slog.String("args", strings.Join(os.Args, ", ")))
 
 		// Configure progress logger
 		ctx, err = initializeProgressLogger(ctx)
@@ -53,7 +62,24 @@ func flagErrorFunc(c *cobra.Command, err error) error {
 func Execute() {
 	// TODO: deferred panic recovery
 	ctx := context.Background()
-	err := RootCmd.ExecuteContext(ctx)
+
+	// Run the command
+	cmd, err := RootCmd.ExecuteContextC(ctx)
+
+	// Log exit status and error
+	// We only log if logger initialization succeeded and is stored in command
+	// context
+	if logger, ok := log.FromContext(cmd.Context()); ok {
+		if err == nil {
+			logger.Info("completed execution",
+				slog.String("exit_code", "0"))
+		} else {
+			logger.Error("failed execution",
+				slog.String("exit_code", "1"),
+				slog.String("error", err.Error()))
+		}
+	}
+
 	if err != nil {
 		os.Exit(1)
 	}
