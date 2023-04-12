@@ -18,7 +18,7 @@ func TestFlowProgressEventToString(t *testing.T) {
 		},
 		Timestamp: "2023-03-27T23:30:36.122Z",
 	}
-	assert.Equal(t, "2023-03-27T23:30:36.122Z flow_progress my_flow INFO my_message", event.String())
+	assert.Equal(t, `2023-03-27T23:30:36.122Z flow_progress   INFO "my_message"`, event.String())
 }
 
 func TestUpdateProgressEventToString(t *testing.T) {
@@ -32,5 +32,5 @@ func TestUpdateProgressEventToString(t *testing.T) {
 		},
 		Timestamp: "2023-03-27T23:30:36.122Z",
 	}
-	assert.Equal(t, "2023-03-27T23:30:36.122Z update_progress my_pipeline ERROR my_message", event.String())
+	assert.Equal(t, `2023-03-27T23:30:36.122Z update_progress ERROR "my_message"`, event.String())
 }
