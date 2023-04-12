@@ -84,7 +84,7 @@ jobs:
     runs-on: ubuntu-latest
 
     # Nightly release may only be updated for commits to the main branch.
-    if: github.ref == 'refs/heads/main'
+    # if: github.ref == 'refs/heads/main'
 
     steps:
       - name: Download binaries
