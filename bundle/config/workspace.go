@@ -10,19 +10,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/scim"
 )
 
-type PathLike struct {
-	// Workspace contains a WSFS path.
-	Workspace string `json:"workspace,omitempty"`
-
-	// DBFS contains a DBFS path.
-	DBFS string `json:"dbfs,omitempty"`
-}
-
-// IsSet returns whether either path is non-nil.
-func (p PathLike) IsSet() bool {
-	return p.Workspace != "" || p.DBFS != ""
-}
-
 // Workspace defines configurables at the workspace level.
 type Workspace struct {
 	// Unified authentication attributes.
@@ -52,22 +39,22 @@ type Workspace struct {
 	// This is set after configuration initialization.
 	CurrentUser *scim.User `json:"current_user,omitempty" bundle:"readonly"`
 
-	// Remote base path for deployment state, for artifacts, as synchronization target.
+	// Remote workspace base path for deployment state, for artifacts, as synchronization target.
 	// This defaults to "~/.bundle/${bundle.name}/${bundle.environment}" where "~" expands to
 	// the current user's home directory in the workspace (e.g. `/Users/jane@doe.com`).
-	Root string `json:"root,omitempty"`
+	RootPath string `json:"root_path,omitempty"`
 
-	// Remote path to synchronize local files to.
+	// Remote workspace path to synchronize local files to.
 	// This defaults to "${workspace.root}/files".
-	FilePath PathLike `json:"file_path,omitempty"`
+	FilePath string `json:"file_path,omitempty"`
 
-	// Remote path for build artifacts.
+	// Remote workspace path for build artifacts.
 	// This defaults to "${workspace.root}/artifacts".
-	ArtifactPath PathLike `json:"artifact_path,omitempty"`
+	ArtifactPath string `json:"artifact_path,omitempty"`
 
-	// Remote path for deployment state.
+	// Remote workspace path for deployment state.
 	// This defaults to "${workspace.root}/state".
-	StatePath PathLike `json:"state_path,omitempty"`
+	StatePath string `json:"state_path,omitempty"`
 }
 
 func (w *Workspace) Client() (*databricks.WorkspaceClient, error) {

@@ -127,7 +127,7 @@ func (m *translatePaths) translatePipelineLibrary(b *bundle.Bundle, library *pip
 
 func (m *translatePaths) Apply(_ context.Context, b *bundle.Bundle) ([]bundle.Mutator, error) {
 	m.seen = make(map[string]string)
-	m.filePath = b.Config.Workspace.FilePath.Workspace
+	m.filePath = b.Config.Workspace.FilePath
 
 	for _, job := range b.Config.Resources.Jobs {
 		for i := 0; i < len(job.Tasks); i++ {

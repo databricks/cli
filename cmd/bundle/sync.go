@@ -20,7 +20,7 @@ func syncOptionsFromBundle(cmd *cobra.Command, b *bundle.Bundle) (*sync.SyncOpti
 
 	opts := sync.SyncOptions{
 		LocalPath:    b.Config.Path,
-		RemotePath:   b.Config.Workspace.FilePath.Workspace,
+		RemotePath:   b.Config.Workspace.FilePath,
 		Full:         full,
 		PollInterval: interval,
 

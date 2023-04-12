@@ -22,9 +22,7 @@ func TestSyncOptionsFromBundle(t *testing.T) {
 			},
 
 			Workspace: config.Workspace{
-				FilePath: config.PathLike{
-					Workspace: "/Users/jane@doe.com/path",
-				},
+				FilePath: "/Users/jane@doe.com/path",
 			},
 		},
 	}

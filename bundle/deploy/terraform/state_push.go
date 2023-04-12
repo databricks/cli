@@ -17,7 +17,7 @@ func (l *statePush) Name() string {
 }
 
 func (l *statePush) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator, error) {
-	f, err := filer.NewWorkspaceFilesClient(b.WorkspaceClient(), b.Config.Workspace.StatePath.Workspace)
+	f, err := filer.NewWorkspaceFilesClient(b.WorkspaceClient(), b.Config.Workspace.StatePath)
 	if err != nil {
 		return nil, err
 	}

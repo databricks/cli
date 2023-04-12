@@ -39,9 +39,7 @@ func TestTranslatePaths(t *testing.T) {
 		Config: config.Root{
 			Path: dir,
 			Workspace: config.Workspace{
-				FilePath: config.PathLike{
-					Workspace: "/bundle",
-				},
+				FilePath: "/bundle",
 			},
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{

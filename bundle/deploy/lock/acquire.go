@@ -20,7 +20,7 @@ func (m *acquire) Name() string {
 
 func (m *acquire) init(b *bundle.Bundle) error {
 	user := b.Config.Workspace.CurrentUser.UserName
-	dir := b.Config.Workspace.StatePath.Workspace
+	dir := b.Config.Workspace.StatePath
 	l, err := locker.CreateLocker(user, dir, b.WorkspaceClient())
 	if err != nil {
 		return err
