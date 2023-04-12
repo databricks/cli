@@ -1499,7 +1499,7 @@
                 "description": "Remote path to synchronize build artifacts to. This defaults to `${workspace.root}/artifacts`",
                 "properties": {
                   "dbfs": {
-                    "description": "DBFS path"
+                    "description": "The DBFS path."
                   },
                   "workspace": {
                     "description": "Workspace file system path"
