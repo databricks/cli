@@ -54,26 +54,26 @@ jobs:
         with:
           name: bricks_darwin_snapshot
           path: |
-            dist/bricks_darwin_*
+            dist/bricks_darwin_*/
 
       - name: Upload Linux binaries
         uses: actions/upload-artifact@v3
         with:
           name: bricks_linux_snapshot
           path: |
-            dist/bricks_linux_*
+            dist/bricks_linux_*/
 
       - name: Upload Windows binaries
         uses: actions/upload-artifact@v3
         with:
           name: bricks_windows_snapshot
           path: |
-            dist/bricks_windows_*
+            dist/bricks_windows_*/
 
       - name: Update nightly release
 
         # Nightly release may only be updated for commits to the main branch.
-        if: github.ref == 'refs/heads/main'
+        # if: github.ref == 'refs/heads/main'
 
         uses: softprops/action-gh-release@v1
         with:
@@ -87,7 +87,7 @@ jobs:
       - name: Update nightly tag
 
         # Nightly release may only be updated for commits to the main branch.
-        if: github.ref == 'refs/heads/main'
+        # if: github.ref == 'refs/heads/main'
 
         run: |
           git tag nightly
