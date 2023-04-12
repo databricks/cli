@@ -41,7 +41,7 @@ func TestTranslatePaths(t *testing.T) {
 		Config: config.Root{
 			Path: dir,
 			Workspace: config.Workspace{
-				FilePath: "/bundle",
+				FilesPath: "/bundle",
 			},
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
@@ -175,9 +175,7 @@ func TestTranslatePathsInSubdirectories(t *testing.T) {
 		Config: config.Root{
 			Path: dir,
 			Workspace: config.Workspace{
-				FilePath: config.PathLike{
-					Workspace: "/bundle",
-				},
+				FilesPath: "/bundle",
 			},
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
@@ -240,9 +238,7 @@ func TestTranslatePathsOutsideBundleRoot(t *testing.T) {
 		Config: config.Root{
 			Path: dir,
 			Workspace: config.Workspace{
-				FilePath: config.PathLike{
-					Workspace: "/bundle",
-				},
+				FilesPath: "/bundle",
 			},
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{

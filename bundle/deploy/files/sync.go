@@ -16,7 +16,7 @@ func getSync(ctx context.Context, b *bundle.Bundle) (*sync.Sync, error) {
 
 	opts := sync.SyncOptions{
 		LocalPath:  b.Config.Path,
-		RemotePath: b.Config.Workspace.FilePath,
+		RemotePath: b.Config.Workspace.FilesPath,
 		Full:       false,
 
 		SnapshotBasePath: cacheDir,

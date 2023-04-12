@@ -64,7 +64,7 @@ func (m *build) Apply(_ context.Context, b *bundle.Bundle) ([]bundle.Mutator, er
 	}
 
 	// Check that an artifact path is defined.
-	remotePath := b.Config.Workspace.ArtifactPath
+	remotePath := b.Config.Workspace.ArtifactsPath
 	if remotePath == "" {
 		return nil, fmt.Errorf("remote artifact path not configured")
 	}
