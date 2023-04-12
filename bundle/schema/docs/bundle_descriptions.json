@@ -31,7 +31,7 @@
         "description": "",
         "properties": {
           "artifacts": {
-            "description": "Artifacts contains a description of all code artifacts in this bundle.",
+            "description": "A description of all code artifacts in this bundle.",
             "additionalproperties": {
               "description": "",
               "properties": {
@@ -39,7 +39,7 @@
                   "description": "",
                   "properties": {
                     "path": {
-                      "description": "Relative path to the local artifact"
+                      "description": ""
                     }
                   }
                 }
@@ -58,7 +58,7 @@
             "description": ""
           },
           "resources": {
-            "description": "Collection of Databricks resources to deploy (e.g. jobs, pipelines, etc.).",
+            "description": "Collection of Databricks resources to deploy.",
             "properties": {
               "experiments": {
                 "description": "List of MLflow experiments",
@@ -1496,15 +1496,7 @@
             "description": "Configures which workspace to connect to and locations for files, state, and similar locations within the workspace file tree.",
             "properties": {
               "artifact_path": {
-                "description": "Remote path to synchronize build artifacts to. This defaults to `${workspace.root}/artifacts`",
-                "properties": {
-                  "dbfs": {
-                    "description": "The DBFS path."
-                  },
-                  "workspace": {
-                    "description": "Workspace file system path"
-                  }
-                }
+                "description": "The remote path to synchronize build artifacts to. This defaults to `${workspace.root}/artifacts`"
               },
               "azure_client_id": {
                 "description": ""
@@ -1513,7 +1505,7 @@
                 "description": "Azure environment, one of (Public, UsGov, China, Germany)."
               },
               "azure_login_app_id": {
-                "description": "Azure Login Application ID"
+                "description": "Azure Login Application ID."
               },
               "azure_tenant_id": {
                 "description": ""
@@ -1525,15 +1517,7 @@
                 "description": "Azure Resource Manager ID for Azure Databricks workspace."
               },
               "file_path": {
-                "description": "Remote path to synchronize local files artifacts to. This defaults to `${workspace.root}/files`",
-                "properties": {
-                  "dbfs": {
-                    "description": "DBFS path"
-                  },
-                  "workspace": {
-                    "description": "Workspace file system path"
-                  }
-                }
+                "description": "The remote path to synchronize local files artifacts to. This defaults to `${workspace.root}/files`"
               },
               "google_service_account": {
                 "description": ""
@@ -1544,19 +1528,11 @@
               "profile": {
                 "description": "Connection profile to use. By default profiles are specified in ~/.databrickscfg."
               },
-              "root": {
-                "description": "Base location for synchronizing files, artifacts and state. Defaults to `/Users/jane@doe.com/.bundle/${bundle.name}/${bundle.environment}`"
+              "root_path": {
+                "description": "The base location for synchronizing files, artifacts and state. Defaults to `/Users/jane@doe.com/.bundle/${bundle.name}/${bundle.environment}`"
               },
               "state_path": {
-                "description": "Remote path to synchronize bundle state to. This defaults to `${workspace.root}/state`",
-                "properties": {
-                  "dbfs": {
-                    "description": "DBFS path"
-                  },
-                  "workspace": {
-                    "description": "Workspace file system path"
-                  }
-                }
+                "description": "The remote path to synchronize bundle state to. This defaults to `${workspace.root}/state`"
               }
             }
           }
@@ -1570,10 +1546,10 @@
       }
     },
     "resources": {
-      "description": "Description of all Databricks resources to deploy in this bundle (e.g. jobs, pipelines, etc.).",
+      "description": "Collection of Databricks resources to deploy.",
       "properties": {
         "experiments": {
-          "description": "List of mlflow experiments",
+          "description": "List of MLflow experiments",
           "additionalproperties": {
             "description": "",
             "properties": {
@@ -3005,18 +2981,10 @@
       }
     },
     "workspace": {
-      "description": "Configures which workspace to connect to and locations for files, state etc in the workspace file tree",
+      "description": "Configures which workspace to connect to and locations for files, state, and similar locations within the workspace file tree.",
       "properties": {
         "artifact_path": {
-          "description": "Remote path to synchronize build artifacts to. This defaults to `${workspace.root}/artifacts`",
-          "properties": {
-            "dbfs": {
-              "description": "DBFS path"
-            },
-            "workspace": {
-              "description": "Workspace file system path"
-            }
-          }
+          "description": "The remote path to synchronize build artifacts to. This defaults to `${workspace.root}/artifacts`"
         },
         "azure_client_id": {
           "description": ""
@@ -3037,15 +3005,7 @@
           "description": "Azure Resource Manager ID for Azure Databricks workspace."
         },
         "file_path": {
-          "description": "Remote path to synchronize local files artifacts to. This defaults to `${workspace.root}/files`",
-          "properties": {
-            "dbfs": {
-              "description": "DBFS path"
-            },
-            "workspace": {
-              "description": "Workspace file system path"
-            }
-          }
+          "description": "The remote path to synchronize local files artifacts to. This defaults to `${workspace.root}/files`"
         },
         "google_service_account": {
           "description": ""
@@ -3056,19 +3016,11 @@
         "profile": {
           "description": "Connection profile to use. By default profiles are specified in ~/.databrickscfg."
         },
-        "root": {
-          "description": "Base location for synchronizing files, artifacts and state. Defaults to `/Users/jane@doe.com/.bundle/${bundle.name}/${bundle.environment}`"
+        "root_path": {
+          "description": "The base location for synchronizing files, artifacts and state. Defaults to `/Users/jane@doe.com/.bundle/${bundle.name}/${bundle.environment}`"
         },
         "state_path": {
-          "description": "Remote path to synchronize bundle state to. This defaults to `${workspace.root}/state`",
-          "properties": {
-            "dbfs": {
-              "description": "DBFS path"
-            },
-            "workspace": {
-              "description": "Workspace file system path"
-            }
-          }
+          "description": "The remote path to synchronize bundle state to. This defaults to `${workspace.root}/state`"
         }
       }
     }
