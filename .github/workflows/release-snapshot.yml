@@ -73,7 +73,7 @@ jobs:
       - name: Update nightly release
 
         # Nightly release may only be updated for commits to the main branch.
-        # if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main'
 
         uses: softprops/action-gh-release@v1
         with:
