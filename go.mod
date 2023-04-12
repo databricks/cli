@@ -3,7 +3,6 @@ module github.com/databricks/bricks
 go 1.18
 
 require (
-	github.com/atotto/clipboard v0.1.4
 	github.com/databricks/databricks-sdk-go v0.7.0
 	github.com/ghodss/yaml v1.0.0 // MIT + NOTICE
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8 // BSD-2-Clause
