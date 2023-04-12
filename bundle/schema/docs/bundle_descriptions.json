@@ -18,10 +18,10 @@
       }
     },
     "bundle": {
-      "description": "Details about this bundle",
+      "description": "The details for this bundle.",
       "properties": {
         "name": {
-          "description": "Name of the bundle"
+          "description": "The name of the bundle."
         }
       }
     },
@@ -47,10 +47,10 @@
             }
           },
           "bundle": {
-            "description": "Details about this bundle",
+            "description": "The details for this bundle.",
             "properties": {
               "name": {
-                "description": "Name of the bundle"
+                "description": "The name of the bundle."
               }
             }
           },
