@@ -21,7 +21,7 @@ func (m *expandWorkspaceRoot) Name() string {
 }
 
 func (m *expandWorkspaceRoot) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator, error) {
-	root := b.Config.Workspace.Root
+	root := b.Config.Workspace.RootPath
 	if root == "" {
 		return nil, fmt.Errorf("unable to expand workspace root: workspace root not defined")
 	}
@@ -33,7 +33,7 @@ func (m *expandWorkspaceRoot) Apply(ctx context.Context, b *bundle.Bundle) ([]bu
 
 	if strings.HasPrefix(root, "~/") {
 		home := fmt.Sprintf("/Users/%s", currentUser.UserName)
-		b.Config.Workspace.Root = path.Join(home, root[2:])
+		b.Config.Workspace.RootPath = path.Join(home, root[2:])
 	}
 
 	return nil, nil

@@ -64,7 +64,7 @@ func (m *translatePaths) rewritePath(
 	}
 
 	// Prefix remote path with its remote root path.
-	remotePath = path.Join(b.Config.Workspace.FilePath.Workspace, filepath.ToSlash(remotePath))
+	remotePath = path.Join(b.Config.Workspace.FilesPath, filepath.ToSlash(remotePath))
 
 	// Convert local path into workspace path via specified function.
 	interp, err := fn(*p, localPath, filepath.ToSlash(remotePath))

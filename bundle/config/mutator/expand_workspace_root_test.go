@@ -19,13 +19,13 @@ func TestExpandWorkspaceRoot(t *testing.T) {
 				CurrentUser: &scim.User{
 					UserName: "jane@doe.com",
 				},
-				Root: "~/foo",
+				RootPath: "~/foo",
 			},
 		},
 	}
 	_, err := mutator.ExpandWorkspaceRoot().Apply(context.Background(), bundle)
 	require.NoError(t, err)
-	assert.Equal(t, "/Users/jane@doe.com/foo", bundle.Config.Workspace.Root)
+	assert.Equal(t, "/Users/jane@doe.com/foo", bundle.Config.Workspace.RootPath)
 }
 
 func TestExpandWorkspaceRootDoesNothing(t *testing.T) {
@@ -35,13 +35,13 @@ func TestExpandWorkspaceRootDoesNothing(t *testing.T) {
 				CurrentUser: &scim.User{
 					UserName: "jane@doe.com",
 				},
-				Root: "/Users/charly@doe.com/foo",
+				RootPath: "/Users/charly@doe.com/foo",
 			},
 		},
 	}
 	_, err := mutator.ExpandWorkspaceRoot().Apply(context.Background(), bundle)
 	require.NoError(t, err)
-	assert.Equal(t, "/Users/charly@doe.com/foo", bundle.Config.Workspace.Root)
+	assert.Equal(t, "/Users/charly@doe.com/foo", bundle.Config.Workspace.RootPath)
 }
 
 func TestExpandWorkspaceRootWithoutRoot(t *testing.T) {
@@ -62,7 +62,7 @@ func TestExpandWorkspaceRootWithoutCurrentUser(t *testing.T) {
 	bundle := &bundle.Bundle{
 		Config: config.Root{
 			Workspace: config.Workspace{
-				Root: "~/foo",
+				RootPath: "~/foo",
 			},
 		},
 	}
