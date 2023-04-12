@@ -40,6 +40,9 @@ jobs:
             ${{ steps.cache.outputs.GOCACHE }}
           key: release-${{ runner.os }}-go-${{ steps.go.outputs.go-version }}-${{ hashFiles('go.sum', '.goreleaser.yaml') }}
 
+      - name: Hide nightly tag to outsmart GoReleaser
+        run: git tag -d nightly
+
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v4
         with:
