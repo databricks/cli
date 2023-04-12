@@ -40,8 +40,8 @@ jobs:
             ${{ steps.cache.outputs.GOCACHE }}
           key: release-${{ runner.os }}-go-${{ steps.go.outputs.go-version }}-${{ hashFiles('go.sum', '.goreleaser.yaml') }}
 
-      - name: Hide nightly tag to outsmart GoReleaser
-        run: git tag -d nightly
+      - name: Hide snapshot tag to outsmart GoReleaser
+        run: git tag -d snapshot || true
 
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v4
@@ -70,25 +70,25 @@ jobs:
           path: |
             dist/bricks_windows_*/
 
-      - name: Update nightly release
+      - name: Update snapshot tag
 
-        # Nightly release may only be updated for commits to the main branch.
+        # Snapshot release may only be updated for commits to the main branch.
+        if: github.ref == 'refs/heads/main'
+
+        run: |
+          git tag snapshot
+          git push origin snapshot --force
+
+      - name: Update snapshot release
+
+        # Snapshot release may only be updated for commits to the main branch.
         if: github.ref == 'refs/heads/main'
 
         uses: softprops/action-gh-release@v1
         with:
-          name: Nightly
+          name: Snapshot
           prerelease: true
-          tag_name: nightly
+          tag_name: snapshot
           token: ${{ secrets.GITHUB_TOKEN }}
           files: |
             dist/bricks*.zip
-
-      - name: Update nightly tag
-
-        # Nightly release may only be updated for commits to the main branch.
-        if: github.ref == 'refs/heads/main'
-
-        run: |
-          git tag nightly
-          git push origin nightly --force
