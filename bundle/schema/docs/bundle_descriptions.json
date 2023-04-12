@@ -1493,7 +1493,7 @@
             }
           },
           "workspace": {
-            "description": "Configures which workspace to connect to and locations for files, state etc in the workspace file tree",
+            "description": "Configures which workspace to connect to and locations for files, state, and similar locations within the workspace file tree.",
             "properties": {
               "artifact_path": {
                 "description": "Remote path to synchronize build artifacts to. This defaults to `${workspace.root}/artifacts`",
