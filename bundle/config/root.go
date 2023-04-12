@@ -14,7 +14,7 @@ const FileName = "bundle.yml"
 type Root struct {
 	// Path contains the directory path to the root of the bundle.
 	// It is set when loading `bundle.yml`.
-	Path string `json:"-"`
+	Path string `json:"-" bundle:"readonly"`
 
 	// Bundle contains details about this bundle, such as its name,
 	// version of the spec (TODO), default cluster, default warehouse, etc.
@@ -56,7 +56,6 @@ func Load(path string) (*Root, error) {
 
 	// If we were given a directory, assume this is the bundle root.
 	if stat.IsDir() {
-		r.Path = path
 		path = filepath.Join(path, FileName)
 	}
 
@@ -67,8 +66,21 @@ func Load(path string) (*Root, error) {
 	return &r, nil
 }
 
-func (r *Root) Load(file string) error {
-	raw, err := os.ReadFile(file)
+// SetConfigFilePath configures the path that its configuration
+// was loaded from in configuration leafs that require it.
+func (r *Root) SetConfigFilePath(path string) {
+	r.Resources.SetConfigFilePath(path)
+	if r.Environments != nil {
+		for _, env := range r.Environments {
+			if env.Resources != nil {
+				env.Resources.SetConfigFilePath(path)
+			}
+		}
+	}
+}
+
+func (r *Root) Load(path string) error {
+	raw, err := os.ReadFile(path)
 	if err != nil {
 		return err
 	}
@@ -76,10 +88,15 @@ func (r *Root) Load(file string) error {
 	if err != nil {
 		return err
 	}
+	r.Path = filepath.Dir(path)
+	r.SetConfigFilePath(path)
 	return nil
 }
 
 func (r *Root) Merge(other *Root) error {
+	// TODO: when hooking into merge semantics, disallow setting path on the target instance.
+	other.Path = ""
+
 	// TODO: define and test semantics for merging.
 	return mergo.MergeWithOverwrite(r, other)
 }

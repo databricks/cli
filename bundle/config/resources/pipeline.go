@@ -6,5 +6,7 @@ type Pipeline struct {
 	ID          string       `json:"id,omitempty" bundle:"readonly"`
 	Permissions []Permission `json:"permissions,omitempty"`
 
+	Paths
+
 	*pipelines.PipelineSpec
 }
