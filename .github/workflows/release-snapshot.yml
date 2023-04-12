@@ -66,3 +66,15 @@ jobs:
           name: bricks_windows_snapshot
           path: |
             dist/bricks_windows_*
+
+  nightly:
+    needs:
+      - goreleaser
+
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download binaries
+        uses: actions/download-artifact@v3
+
+      - name: List binaries
+        run: find .
