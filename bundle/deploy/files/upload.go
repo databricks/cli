@@ -6,7 +6,6 @@ import (
 
 	"github.com/databricks/bricks/bundle"
 	"github.com/databricks/bricks/libs/cmdio"
-	sync "github.com/databricks/bricks/libs/sync"
 )
 
 type upload struct{}
@@ -16,22 +15,8 @@ func (m *upload) Name() string {
 }
 
 func (m *upload) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator, error) {
-	cacheDir, err := b.CacheDir()
-	if err != nil {
-		return nil, fmt.Errorf("cannot get bundle cache directory: %w", err)
-	}
 	cmdio.LogMutatorEvent(ctx, m.Name(), cmdio.MutatorRunning, "Uploading bundle files")
-
-	opts := sync.SyncOptions{
-		LocalPath:  b.Config.Path,
-		RemotePath: b.Config.Workspace.FilePath.Workspace,
-		Full:       false,
-
-		SnapshotBasePath: cacheDir,
-		WorkspaceClient:  b.WorkspaceClient(),
-	}
-
-	sync, err := sync.New(ctx, opts)
+	sync, err := getSync(ctx, b)
 	if err != nil {
 		return nil, err
 	}
@@ -41,7 +26,7 @@ func (m *upload) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator,
 		return nil, err
 	}
 
-	cmdio.LogMutatorEvent(ctx, m.Name(), cmdio.MutatorCompleted, fmt.Sprintf("Uploaded bundle files at %s\n", b.Config.Workspace.FilePath.Workspace))
+	cmdio.LogMutatorEvent(ctx, m.Name(), cmdio.MutatorCompleted, fmt.Sprintf("Uploaded bundle files at %s\n", b.Config.Workspace.FilesPath))
 	return nil, nil
 }
 

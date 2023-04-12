@@ -15,37 +15,31 @@ func TestDefineDefaultWorkspacePaths(t *testing.T) {
 	bundle := &bundle.Bundle{
 		Config: config.Root{
 			Workspace: config.Workspace{
-				Root: "/",
+				RootPath: "/",
 			},
 		},
 	}
 	_, err := mutator.DefineDefaultWorkspacePaths().Apply(context.Background(), bundle)
 	require.NoError(t, err)
-	assert.Equal(t, "/files", bundle.Config.Workspace.FilePath.Workspace)
-	assert.Equal(t, "/artifacts", bundle.Config.Workspace.ArtifactPath.Workspace)
-	assert.Equal(t, "/state", bundle.Config.Workspace.StatePath.Workspace)
+	assert.Equal(t, "/files", bundle.Config.Workspace.FilesPath)
+	assert.Equal(t, "/artifacts", bundle.Config.Workspace.ArtifactsPath)
+	assert.Equal(t, "/state", bundle.Config.Workspace.StatePath)
 }
 
 func TestDefineDefaultWorkspacePathsAlreadySet(t *testing.T) {
 	bundle := &bundle.Bundle{
 		Config: config.Root{
 			Workspace: config.Workspace{
-				Root: "/",
-				FilePath: config.PathLike{
-					Workspace: "/foo/bar",
-				},
-				ArtifactPath: config.PathLike{
-					Workspace: "/foo/bar",
-				},
-				StatePath: config.PathLike{
-					Workspace: "/foo/bar",
-				},
+				RootPath:      "/",
+				FilesPath:     "/foo/bar",
+				ArtifactsPath: "/foo/bar",
+				StatePath:     "/foo/bar",
 			},
 		},
 	}
 	_, err := mutator.DefineDefaultWorkspacePaths().Apply(context.Background(), bundle)
 	require.NoError(t, err)
-	assert.Equal(t, "/foo/bar", bundle.Config.Workspace.FilePath.Workspace)
-	assert.Equal(t, "/foo/bar", bundle.Config.Workspace.ArtifactPath.Workspace)
-	assert.Equal(t, "/foo/bar", bundle.Config.Workspace.StatePath.Workspace)
+	assert.Equal(t, "/foo/bar", bundle.Config.Workspace.FilesPath)
+	assert.Equal(t, "/foo/bar", bundle.Config.Workspace.ArtifactsPath)
+	assert.Equal(t, "/foo/bar", bundle.Config.Workspace.StatePath)
 }

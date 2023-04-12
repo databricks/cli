@@ -160,6 +160,10 @@ func (s *Sync) RunOnce(ctx context.Context) error {
 	return nil
 }
 
+func (s *Sync) DestroySnapshot(ctx context.Context) error {
+	return s.snapshot.Destroy(ctx)
+}
+
 func (s *Sync) RunContinuous(ctx context.Context) error {
 	ticker := time.NewTicker(s.PollInterval)
 	defer ticker.Stop()

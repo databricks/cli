@@ -44,7 +44,7 @@ func TestBundleMustLoadSuccess(t *testing.T) {
 	t.Setenv(envBundleRoot, "./tests/basic")
 	b, err := MustLoad()
 	require.NoError(t, err)
-	assert.Equal(t, "./tests/basic", b.Config.Path)
+	assert.Equal(t, "tests/basic", filepath.ToSlash(b.Config.Path))
 }
 
 func TestBundleMustLoadFailureWithEnv(t *testing.T) {
@@ -63,7 +63,7 @@ func TestBundleTryLoadSuccess(t *testing.T) {
 	t.Setenv(envBundleRoot, "./tests/basic")
 	b, err := TryLoad()
 	require.NoError(t, err)
-	assert.Equal(t, "./tests/basic", b.Config.Path)
+	assert.Equal(t, "tests/basic", filepath.ToSlash(b.Config.Path))
 }
 
 func TestBundleTryLoadFailureWithEnv(t *testing.T) {

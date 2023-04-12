@@ -6,5 +6,7 @@ type Job struct {
 	ID          string       `json:"id,omitempty" bundle:"readonly"`
 	Permissions []Permission `json:"permissions,omitempty"`
 
+	Paths
+
 	*jobs.JobSettings
 }

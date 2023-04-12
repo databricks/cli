@@ -23,11 +23,11 @@ func (m *delete) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator,
 	}
 
 	cmdio.LogMutatorEvent(ctx, m.Name(), cmdio.MutatorRunning, "Starting deletion of remote bundle files")
-	cmdio.LogMutatorEvent(ctx, m.Name(), cmdio.MutatorRunning, fmt.Sprintf("Bundle remote directory is %s", b.Config.Workspace.Root))
+	cmdio.LogMutatorEvent(ctx, m.Name(), cmdio.MutatorRunning, fmt.Sprintf("Bundle remote directory is %s", b.Config.Workspace.RootPath))
 
 	red := color.New(color.FgRed).SprintFunc()
 	if !b.AutoApprove {
-		proceed, err := cmdio.Ask(ctx, fmt.Sprintf("\n%s and all files in it will be %s Proceed?: ", b.Config.Workspace.Root, red("deleted permanently!")))
+		proceed, err := cmdio.Ask(ctx, fmt.Sprintf("\n%s and all files in it will be %s Proceed?: ", b.Config.Workspace.RootPath, red("deleted permanently!")))
 		if err != nil {
 			return nil, err
 		}
@@ -37,13 +37,24 @@ func (m *delete) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator,
 	}
 
 	err := b.WorkspaceClient().Workspace.Delete(ctx, workspace.Delete{
-		Path:      b.Config.Workspace.Root,
+		Path:      b.Config.Workspace.RootPath,
 		Recursive: true,
 	})
 	if err != nil {
 		return nil, err
 	}
 
+	// Clean up sync snapshot file
+	sync, err := getSync(ctx, b)
+	if err != nil {
+		return nil, err
+	}
+	err = sync.DestroySnapshot(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// log completion
 	cmdio.LogMutatorEvent(ctx, m.Name(), cmdio.MutatorCompleted, "Successfully deleted files!")
 	return nil, nil
 }
