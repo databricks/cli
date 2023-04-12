@@ -1,6 +1,7 @@
 package config_tests
 
 import (
+	"path/filepath"
 	"sort"
 	"testing"
 
@@ -15,6 +16,12 @@ func TestIncludeDefault(t *testing.T) {
 	keys := maps.Keys(b.Config.Resources.Jobs)
 	sort.Strings(keys)
 	assert.Equal(t, []string{"my_first_job", "my_second_job"}, keys)
-	assert.Equal(t, "1", b.Config.Resources.Jobs["my_first_job"].ID)
-	assert.Equal(t, "2", b.Config.Resources.Jobs["my_second_job"].ID)
+
+	first := b.Config.Resources.Jobs["my_first_job"]
+	assert.Equal(t, "1", first.ID)
+	assert.Equal(t, "include_default/my_first_job/resource.yml", filepath.ToSlash(first.ConfigFilePath))
+
+	second := b.Config.Resources.Jobs["my_second_job"]
+	assert.Equal(t, "2", second.ID)
+	assert.Equal(t, "include_default/my_second_job/resource.yml", filepath.ToSlash(second.ConfigFilePath))
 }

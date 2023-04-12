@@ -32,12 +32,14 @@ func TestRootLoad(t *testing.T) {
 
 func TestRootMergeStruct(t *testing.T) {
 	root := &Root{
+		Path: "path",
 		Workspace: Workspace{
 			Host:    "foo",
 			Profile: "profile",
 		},
 	}
 	other := &Root{
+		Path: "path",
 		Workspace: Workspace{
 			Host: "bar",
 		},
@@ -49,6 +51,7 @@ func TestRootMergeStruct(t *testing.T) {
 
 func TestRootMergeMap(t *testing.T) {
 	root := &Root{
+		Path: "path",
 		Environments: map[string]*Environment{
 			"development": {
 				Workspace: &Workspace{
@@ -59,6 +62,7 @@ func TestRootMergeMap(t *testing.T) {
 		},
 	}
 	other := &Root{
+		Path: "path",
 		Environments: map[string]*Environment{
 			"development": {
 				Workspace: &Workspace{
