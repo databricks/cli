@@ -11,21 +11,21 @@ import (
 
 type ProgressEvent pipelines.PipelineEvent
 
-const MaxEventTypeLength = 15
-
 func (event *ProgressEvent) String() string {
 	result := strings.Builder{}
 
 	result.WriteString(event.Timestamp + " ")
 	result.WriteString(event.EventType + " ")
 
-	// We add whitespace for events with character count less than
-	// this to make the rendering more pretty
-	if len(event.EventType) < MaxEventTypeLength {
-		result.WriteString(strings.Repeat(" ", MaxEventTypeLength-len(event.EventType)))
+	// add name of the subject flow/pipeline
+	switch event.EventType {
+	case "flow_progress":
+		result.WriteString(event.Origin.FlowName + " ")
+	case "update_progress":
+		result.WriteString(event.Origin.PipelineName + " ")
 	}
 	result.WriteString(event.Level.String() + " ")
-	result.WriteString(fmt.Sprintf(`"%s"`, event.Message))
+	result.WriteString(event.Message)
 
 	return result.String()
 }
@@ -59,9 +59,9 @@ func NewUpdateTracker(pipelineId string, updateId string, w *databricks.Workspac
 // NOTE: Incase we want inplace logging, then we will need to implement pagination
 func (l *UpdateTracker) Events(ctx context.Context) ([]ProgressEvent, error) {
 	// create filter to fetch only new events
-	filter := fmt.Sprintf(`update_id = '%s'`, l.UpdateId)
+	filter := ""
 	if l.LatestEventTimestamp != "" {
-		filter = fmt.Sprintf(`update_id = '%s' AND timestamp > '%s'`, l.UpdateId, l.LatestEventTimestamp)
+		filter = fmt.Sprintf(`timestamp > '%s'`, l.LatestEventTimestamp)
 	}
 
 	// we only check the most recent 100 events for progress
@@ -74,11 +74,12 @@ func (l *UpdateTracker) Events(ctx context.Context) ([]ProgressEvent, error) {
 		return nil, err
 	}
 
+	// filter out update_progress and flow_progress events
 	result := make([]ProgressEvent, 0)
-	// we iterate in reverse to return events in chronological order
-	for i := len(response.Events) - 1; i >= 0; i-- {
-		event := response.Events[i]
-		// filter to only include update_progress and flow_progress events
+	for _, event := range response.Events {
+		if event.Origin.UpdateId != l.UpdateId {
+			continue
+		}
 		if event.EventType == "flow_progress" || event.EventType == "update_progress" {
 			result = append(result, ProgressEvent(event))
 		}
@@ -86,8 +87,7 @@ func (l *UpdateTracker) Events(ctx context.Context) ([]ProgressEvent, error) {
 
 	// update latest event timestamp for next time
 	if len(result) > 0 {
-		l.LatestEventTimestamp = result[len(result)-1].Timestamp
+		l.LatestEventTimestamp = result[0].Timestamp
 	}
-
 	return result, nil
 }
