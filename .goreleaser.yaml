@@ -51,9 +51,6 @@ archives:
   # file name then additional logic to clean up older builds would be needed.
   name_template: '{{ .ProjectName }}_{{ if not .IsSnapshot }}{{ .Version }}_{{ end }}{{ .Os }}_{{ .Arch }}'
 
-  # Skip inclusion of README in archive.
-  files: []
-
 checksum:
   name_template: '{{ .ProjectName }}_{{ .Version }}_SHA256SUMS'
   algorithm: sha256
