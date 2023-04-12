@@ -69,8 +69,7 @@ func Execute() {
 	// Log exit status and error
 	// We only log if logger initialization succeeded and is stored in command
 	// context
-	logger, ok := log.FromContext(cmd.Context())
-	if ok {
+	if logger, ok := log.FromContext(cmd.Context()); ok {
 		if err == nil {
 			logger.Info("completed execution",
 				slog.String("exit_code", "0"))
