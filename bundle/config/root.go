@@ -12,10 +12,6 @@ import (
 const FileName = "bundle.yml"
 
 type Root struct {
-	// ConfigFilePath contains the file path to the configuration file that was loaded into this instance.
-	// It is an internal only variable that is used to track where resources are defined.
-	ConfigFilePath string `json:"-" bundle:"readonly"`
-
 	// Path contains the directory path to the root of the bundle.
 	// It is set when loading `bundle.yml`.
 	Path string `json:"-" bundle:"readonly"`
@@ -73,7 +69,6 @@ func Load(path string) (*Root, error) {
 // SetConfigFilePath configures the path that its configuration
 // was loaded from in configuration leafs that require it.
 func (r *Root) SetConfigFilePath(path string) {
-	r.ConfigFilePath = path
 	r.Path = filepath.Dir(path)
 	r.Resources.SetConfigFilePath(path)
 	if r.Environments != nil {
@@ -99,8 +94,7 @@ func (r *Root) Load(path string) error {
 }
 
 func (r *Root) Merge(other *Root) error {
-	// TODO: when hooking into merge semantics, disallow setting file and path on the target instance.
-	other.ConfigFilePath = ""
+	// TODO: when hooking into merge semantics, disallow setting path on the target instance.
 	other.Path = ""
 
 	// TODO: define and test semantics for merging.
