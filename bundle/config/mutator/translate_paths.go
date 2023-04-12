@@ -31,7 +31,7 @@ func (m *translatePaths) rewritePath(
 	dir string,
 	b *bundle.Bundle,
 	p *string,
-	fn func(literal, localPath, remotePath string) (string, error),
+	fn func(localPath, remotePath string) (string, error),
 ) error {
 	// We assume absolute paths point to a location in the workspace
 	if path.IsAbs(filepath.ToSlash(*p)) {
@@ -58,7 +58,7 @@ func (m *translatePaths) rewritePath(
 	remotePath = path.Join(b.Config.Workspace.FilePath.Workspace, filepath.ToSlash(remotePath))
 
 	// Convert local path into workspace path via specified function.
-	interp, err := fn(*p, localPath, filepath.ToSlash(remotePath))
+	interp, err := fn(localPath, filepath.ToSlash(remotePath))
 	if err != nil {
 		return err
 	}
@@ -68,10 +68,10 @@ func (m *translatePaths) rewritePath(
 	return nil
 }
 
-func (m *translatePaths) translateNotebookPath(literal, localPath, remotePath string) (string, error) {
+func (m *translatePaths) translateNotebookPath(localPath, remotePath string) (string, error) {
 	nb, _, err := notebook.Detect(localPath)
 	if os.IsNotExist(err) {
-		return "", fmt.Errorf("notebook %s not found", literal)
+		return "", fmt.Errorf("notebook %s not found", localPath)
 	}
 	if err != nil {
 		return "", fmt.Errorf("unable to determine if %s is a notebook: %w", localPath, err)
@@ -84,10 +84,10 @@ func (m *translatePaths) translateNotebookPath(literal, localPath, remotePath st
 	return strings.TrimSuffix(remotePath, filepath.Ext(localPath)), nil
 }
 
-func (m *translatePaths) translateFilePath(literal, localPath, remotePath string) (string, error) {
+func (m *translatePaths) translateFilePath(localPath, remotePath string) (string, error) {
 	_, err := os.Stat(localPath)
 	if os.IsNotExist(err) {
-		return "", fmt.Errorf("file %s not found", literal)
+		return "", fmt.Errorf("file %s not found", localPath)
 	}
 	if err != nil {
 		return "", fmt.Errorf("unable to access %s: %w", localPath, err)
