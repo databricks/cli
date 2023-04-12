@@ -83,3 +83,12 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           files: |
             dist/bricks*.zip
+
+      - name: Update nightly tag
+
+        # Nightly release may only be updated for commits to the main branch.
+        if: github.ref == 'refs/heads/main'
+
+        run: |
+          git tag nightly
+          git push origin nightly --force
