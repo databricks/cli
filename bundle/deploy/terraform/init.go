@@ -96,6 +96,12 @@ func (m *initialize) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Muta
 		return nil, err
 	}
 
+	// Include $HOME in set of environment variables to pass along.
+	home, ok := os.LookupEnv("HOME")
+	if ok {
+		env["HOME"] = home
+	}
+
 	// Configure environment variables for auth for Terraform to use.
 	log.Debugf(ctx, "Environment variables for Terraform: %s", strings.Join(maps.Keys(env), ", "))
 	err = tf.SetEnv(env)
