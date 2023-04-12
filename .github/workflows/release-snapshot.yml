@@ -70,14 +70,34 @@ jobs:
           path: |
             dist/bricks_windows_*
 
+      - name: Upload archives
+        uses: actions/upload-artifact@v3
+        with:
+          name: bricks_archives
+          path: |
+            dist/bricks*.zip
+
   nightly:
     needs:
       - goreleaser
 
     runs-on: ubuntu-latest
+
+    # Nightly release may only be updated for commits to the main branch.
+    if: github.ref == 'refs/heads/main'
+
     steps:
       - name: Download binaries
         uses: actions/download-artifact@v3
+        with:
+          name: bricks_archives
 
-      - name: List binaries
-        run: find .
+      - name: Update nightly release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: Nightly
+          prerelease: true
+          tag_name: nightly
+          token: ${{ secrets.GITHUB_TOKEN }}
+          files: |
+            dist/bricks*.zip
