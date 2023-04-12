@@ -61,7 +61,7 @@
             "description": "Collection of Databricks resources to deploy (e.g. jobs, pipelines, etc.).",
             "properties": {
               "experiments": {
-                "description": "List of mlflow experiments",
+                "description": "List of MLflow experiments",
                 "additionalproperties": {
                   "description": "",
                   "properties": {
