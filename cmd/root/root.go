@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/bricks/internal/build"
 	"github.com/databricks/bricks/libs/log"
 	"github.com/spf13/cobra"
+	"golang.org/x/exp/slog"
 )
 
 // RootCmd represents the base command when called without any subcommands
@@ -31,8 +32,16 @@ var RootCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		log.Infof(ctx, "process args: [%s]", strings.Join(os.Args, ", "))
-		log.Infof(ctx, "version: %s", build.GetInfo().Version)
+
+		// Update root command's context to include the initialized logger. This
+		// is used to log exit codes and any error once execution of the command
+		// is completed
+		cmd.Root().SetContext(ctx)
+
+		logger := log.GetLogger(ctx)
+		logger.Info("start",
+			slog.String("version", build.GetInfo().Version),
+			slog.String("args", fmt.Sprintf("[%s]", strings.Join(os.Args, ", "))))
 
 		// Configure progress logger
 		ctx, err = initializeProgressLogger(ctx)
@@ -45,6 +54,9 @@ var RootCmd = &cobra.Command{
 		ctx = withUpstreamInUserAgent(ctx)
 		cmd.SetContext(ctx)
 		return nil
+	},
+	PersistentPostRun: func(cmd *cobra.Command, args []string) {
+		log.Infof(cmd.Context(), "completed command execution")
 	},
 }
 
@@ -61,11 +73,15 @@ func Execute() {
 
 	err := RootCmd.ExecuteContext(ctx)
 	if err != nil {
-		log.Errorf(RootCmd.Context(), err.Error())
-		log.Errorf(RootCmd.Context(), "exit code: 1")
+		logger, ok := log.FromContext(RootCmd.Context())
+		// We only log the error if logger initialization succeeded
+		if ok {
+			logger.Info("command execution failed",
+				slog.String("exit_code", "1"),
+				slog.String("error", err.Error()))
+		}
 		os.Exit(1)
 	}
-	log.Infof(RootCmd.Context(), "exit code: 0")
 }
 
 func init() {
