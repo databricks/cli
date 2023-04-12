@@ -1049,7 +1049,7 @@
                 }
               },
               "models": {
-                "description": "List of mlflow models",
+                "description": "List of MLflow models",
                 "additionalproperties": {
                   "description": "",
                   "properties": {
@@ -2537,7 +2537,7 @@
           }
         },
         "models": {
-          "description": "List of mlflow models",
+          "description": "List of MLflow models",
           "additionalproperties": {
             "description": "",
             "properties": {
