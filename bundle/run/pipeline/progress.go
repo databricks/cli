@@ -19,8 +19,6 @@ func (event *ProgressEvent) String() string {
 	// Print event type with some padding to make output more pretty
 	result.WriteString(fmt.Sprintf("%-15s", event.EventType) + " ")
 
-	// We add whitespace for events with character count less than
-	// this to make the rendering more pretty
 	result.WriteString(event.Level.String() + " ")
 	result.WriteString(fmt.Sprintf(`"%s"`, event.Message))
 
