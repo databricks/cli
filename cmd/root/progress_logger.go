@@ -12,12 +12,11 @@ import (
 
 const envBricksProgressFormat = "BRICKS_PROGRESS_FORMAT"
 
-func resolveModeDefault(format flags.ProgressLogFormat) flags.ProgressLogFormat {
-	if (logLevel.String() == "disabled" || logFile.String() != "stderr") &&
-		term.IsTerminal(int(os.Stderr.Fd())) {
-		return flags.ModeInplace
-	}
-	return flags.ModeAppend
+// Inplace logging is supported as default only if debug logger does not log to
+// stderr and stderr is a tty
+func isInplaceSupported() bool {
+	return (logLevel.String() == "disabled" || logFile.String() != "stderr") &&
+		term.IsTerminal(int(os.Stderr.Fd()))
 }
 
 func initializeProgressLogger(ctx context.Context) (context.Context, error) {
@@ -26,12 +25,7 @@ func initializeProgressLogger(ctx context.Context) (context.Context, error) {
 		return nil, fmt.Errorf("inplace progress logging cannot be used when log-file is stderr")
 	}
 
-	format := progressFormat
-	if format == flags.ModeDefault {
-		format = resolveModeDefault(format)
-	}
-
-	progressLogger := cmdio.NewLogger(format)
+	progressLogger := cmdio.NewLogger(progressFormat, isInplaceSupported())
 	return cmdio.NewContext(ctx, progressLogger), nil
 }
 

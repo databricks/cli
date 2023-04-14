@@ -241,6 +241,7 @@ func (r *jobRunner) Run(ctx context.Context, opts *Options) (RunOutput, error) {
 	logDebug := logDebugCallback(ctx, runId)
 
 	// callback to log progress events. Called on every poll request
+	cmdio.TryResolveDefaultToInplace(ctx)
 	progressLogger, ok := cmdio.FromContext(ctx)
 	if !ok {
 		return nil, fmt.Errorf("no progress logger found")

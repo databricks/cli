@@ -8,7 +8,6 @@ import (
 	"github.com/databricks/bricks/bundle/phases"
 	"github.com/databricks/bricks/cmd/root"
 	"github.com/databricks/bricks/libs/cmdio"
-	"github.com/databricks/bricks/libs/flags"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 )
@@ -33,7 +32,9 @@ var destroyCmd = &cobra.Command{
 			return fmt.Errorf("please specify --auto-approve to skip interactive confirmation checks for non tty consoles")
 		}
 
-		ctx := cmdio.NewContext(cmd.Context(), cmdio.NewLogger(flags.ModeAppend))
+		ctx := cmd.Context()
+		cmdio.ResolveDefaultToAppend(ctx)
+		// TODO: disable inplace progress logging here
 		return bundle.Apply(ctx, b, []bundle.Mutator{
 			phases.Initialize(),
 			phases.Build(),

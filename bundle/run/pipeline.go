@@ -10,7 +10,6 @@ import (
 	"github.com/databricks/bricks/bundle/config/resources"
 	"github.com/databricks/bricks/bundle/run/pipeline"
 	"github.com/databricks/bricks/libs/cmdio"
-	"github.com/databricks/bricks/libs/flags"
 	"github.com/databricks/bricks/libs/log"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	flag "github.com/spf13/pflag"
@@ -162,13 +161,13 @@ func (r *pipelineRunner) Run(ctx context.Context, opts *Options) (RunOutput, err
 
 	// setup progress logger and tracker to query events
 	updateTracker := pipeline.NewUpdateTracker(pipelineID, updateID, w)
+
+	// Resolve and fetch progress logger
+	cmdio.ResolveDefaultToAppend(ctx)
+	// TODO: disable inplace progress logging here
 	progressLogger, ok := cmdio.FromContext(ctx)
 	if !ok {
 		return nil, fmt.Errorf("no progress logger found")
-	}
-	// Inplace logger mode is not supported for pipelines right now
-	if progressLogger.Mode == flags.ModeInplace {
-		progressLogger.Mode = flags.ModeAppend
 	}
 
 	// Log the pipeline update URL as soon as it is available.
