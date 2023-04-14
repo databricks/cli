@@ -5,7 +5,6 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/databricks/bricks/bundle/config/resources"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -93,26 +92,4 @@ func TestDuplicateIdOnMergeReturnsError(t *testing.T) {
 
 	err = root.Merge(other)
 	assert.ErrorContains(t, err, "multiple resources named foo (job at ./testdata/duplicate_resource_name_in_subconfiguration/bundle.yml, pipeline at ./testdata/duplicate_resource_name_in_subconfiguration/resources.yml)")
-}
-
-func TestRootMergeDetectsDuplicateIds(t *testing.T) {
-	root := &Root{
-		Resources: Resources{
-			Jobs: map[string]*resources.Job{
-				"foo": {},
-			},
-			Pipelines: map[string]*resources.Pipeline{
-				"bar": {},
-			},
-		},
-	}
-	other := &Root{
-		Resources: Resources{
-			Models: map[string]*resources.MlflowModel{
-				"bar": {},
-			},
-		},
-	}
-	err := root.Merge(other)
-	assert.ErrorContains(t, err, "duplicate identifier bar")
 }
