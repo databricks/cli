@@ -11,19 +11,16 @@ import (
 
 type ProgressEvent pipelines.PipelineEvent
 
-const MaxEventTypeLength = 15
-
 func (event *ProgressEvent) String() string {
 	result := strings.Builder{}
 
 	result.WriteString(event.Timestamp + " ")
-	result.WriteString(event.EventType + " ")
+
+	// Print event type with some padding to make output more pretty
+	result.WriteString(fmt.Sprintf("%-15s", event.EventType) + " ")
 
 	// We add whitespace for events with character count less than
 	// this to make the rendering more pretty
-	if len(event.EventType) < MaxEventTypeLength {
-		result.WriteString(strings.Repeat(" ", MaxEventTypeLength-len(event.EventType)))
-	}
 	result.WriteString(event.Level.String() + " ")
 	result.WriteString(fmt.Sprintf(`"%s"`, event.Message))
 
