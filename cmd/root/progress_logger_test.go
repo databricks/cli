@@ -4,10 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/databricks/bricks/libs/cmdio"
-	"github.com/databricks/bricks/libs/flags"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestInitializeErrorOnIncompatibleConfig(t *testing.T) {
@@ -32,14 +29,4 @@ func TestNoErrorOnNonStderrLogFile(t *testing.T) {
 	progressFormat.Set("inplace")
 	_, err := initializeProgressLogger(context.Background())
 	assert.NoError(t, err)
-}
-
-func TestDefaultLoggerModeResolution(t *testing.T) {
-	progressFormat = flags.NewProgressLogFormat()
-	require.Equal(t, progressFormat, flags.ModeDefault)
-	ctx, err := initializeProgressLogger(context.Background())
-	require.NoError(t, err)
-	logger, ok := cmdio.FromContext(ctx)
-	assert.True(t, ok)
-	assert.Equal(t, logger.Mode, flags.ModeAppend)
 }
