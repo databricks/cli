@@ -2,8 +2,6 @@ package config
 
 import (
 	"encoding/json"
-	"os"
-	"path/filepath"
 	"reflect"
 	"testing"
 
@@ -79,26 +77,22 @@ func TestRootMergeMap(t *testing.T) {
 }
 
 func TestDuplicateIdOnLoadReturnsError(t *testing.T) {
-	dir := t.TempDir()
-	root := &Root{
-		Resources: Resources{
-			Jobs: map[string]*resources.Job{
-				"foo": {},
-				"bar": {},
-			},
-			Pipelines: map[string]*resources.Pipeline{
-				"foo": {},
-			},
-		},
-	}
-	b, err := json.Marshal(root)
+	root := &Root{}
+	err := root.Load("./testdata/duplicate_resource_names_in_root/bundle.yml")
+	assert.ErrorContains(t, err, "multiple resources named foo (job at ./testdata/duplicate_resource_names_in_root/bundle.yml, pipeline at ./testdata/duplicate_resource_names_in_root/bundle.yml)")
+}
+
+func TestDuplicateIdOnMergeReturnsError(t *testing.T) {
+	root := &Root{}
+	err := root.Load("./testdata/duplicate_resource_name_in_subconfiguration/bundle.yml")
 	require.NoError(t, err)
 
-	err = os.WriteFile(filepath.Join(dir, "bundle.yml"), b, os.ModePerm)
+	other := &Root{}
+	err = other.Load("./testdata/duplicate_resource_name_in_subconfiguration/resources.yml")
 	require.NoError(t, err)
 
-	err = root.Load(filepath.Join(dir, "bundle.yml"))
-	assert.ErrorContains(t, err, "duplicate identifier foo")
+	err = root.Merge(other)
+	assert.ErrorContains(t, err, "multiple resources named foo (job at ./testdata/duplicate_resource_name_in_subconfiguration/bundle.yml, pipeline at ./testdata/duplicate_resource_name_in_subconfiguration/resources.yml)")
 }
 
 func TestRootMergeDetectsDuplicateIds(t *testing.T) {

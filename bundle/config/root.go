@@ -116,34 +116,21 @@ func (r *Root) Load(path string) error {
 		return err
 	}
 
-	// check there are no duplicate identifiers in the config instance
-	_, err = r.listIds()
-	if err != nil {
-		return err
-	}
-
 	r.Path = filepath.Dir(path)
 	r.SetConfigFilePath(path)
-	return nil
+
+	_, err = r.Resources.VerifyUniqueResourceIdentifiers()
+	return err
 }
 
 func (r *Root) Merge(other *Root) error {
 	// TODO: when hooking into merge semantics, disallow setting path on the target instance.
 	other.Path = ""
 
-	// Check for duplicate resource identifiers
-	rootIds, err := r.listIds()
+	// Check for safe merge, protecting against duplicate resource identifiers
+	err := r.Resources.VerifySafeMerge(&other.Resources)
 	if err != nil {
 		return err
-	}
-	otherIds, err := other.listIds()
-	if err != nil {
-		return err
-	}
-	for k := range rootIds {
-		if _, ok := otherIds[k]; ok {
-			return fmt.Errorf("duplicate identifier %s", k)
-		}
 	}
 
 	// TODO: define and test semantics for merging.
