@@ -56,7 +56,6 @@ func (r *Resources) VerifyUniqueResourceIdentifiers() (*UniqueResourceIdTracker,
 	}
 	for k := range r.Pipelines {
 		if _, ok := tracker.Type[k]; ok {
-
 			return tracker, fmt.Errorf("multiple resources named %s (%s at %s, %s at %s)",
 				k,
 				tracker.Type[k],
