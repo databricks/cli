@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -79,6 +80,32 @@ func (r *Root) SetConfigFilePath(path string) {
 	}
 }
 
+func (r *Root) listIds() (map[string]struct{}, error) {
+	result := map[string]struct{}{}
+	for k, _ := range r.Resources.Jobs {
+		result[k] = struct{}{}
+	}
+	for k, _ := range r.Resources.Pipelines {
+		if _, ok := result[k]; ok {
+			return nil, fmt.Errorf("duplicate identifier %s", k)
+		}
+		result[k] = struct{}{}
+	}
+	for k, _ := range r.Resources.Models {
+		if _, ok := result[k]; ok {
+			return nil, fmt.Errorf("duplicate identifier %s", k)
+		}
+		result[k] = struct{}{}
+	}
+	for k, _ := range r.Resources.Experiments {
+		if _, ok := result[k]; ok {
+			return nil, fmt.Errorf("duplicate identifier %s", k)
+		}
+		result[k] = struct{}{}
+	}
+	return result, nil
+}
+
 func (r *Root) Load(path string) error {
 	raw, err := os.ReadFile(path)
 	if err != nil {
@@ -88,6 +115,13 @@ func (r *Root) Load(path string) error {
 	if err != nil {
 		return err
 	}
+
+	// check there are no duplicate identifiers in the config instance
+	_, err = r.listIds()
+	if err != nil {
+		return err
+	}
+
 	r.Path = filepath.Dir(path)
 	r.SetConfigFilePath(path)
 	return nil
@@ -96,6 +130,21 @@ func (r *Root) Load(path string) error {
 func (r *Root) Merge(other *Root) error {
 	// TODO: when hooking into merge semantics, disallow setting path on the target instance.
 	other.Path = ""
+
+	// Check for duplicate resource identifiers
+	rootIds, err := r.listIds()
+	if err != nil {
+		return err
+	}
+	otherIds, err := other.listIds()
+	if err != nil {
+		return err
+	}
+	for k := range rootIds {
+		if _, ok := otherIds[k]; ok {
+			return fmt.Errorf("duplicate identifier %s", k)
+		}
+	}
 
 	// TODO: define and test semantics for merging.
 	return mergo.MergeWithOverwrite(r, other)
