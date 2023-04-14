@@ -8,7 +8,8 @@ import (
 
 	"github.com/databricks/bricks/bundle"
 	"github.com/databricks/bricks/bundle/config/resources"
-	"github.com/databricks/bricks/bundle/run/pipeline"
+	"github.com/databricks/bricks/bundle/run/output"
+	"github.com/databricks/bricks/bundle/run/progress"
 	"github.com/databricks/bricks/libs/cmdio"
 	"github.com/databricks/bricks/libs/flags"
 	"github.com/databricks/bricks/libs/log"
@@ -136,7 +137,7 @@ type pipelineRunner struct {
 	pipeline *resources.Pipeline
 }
 
-func (r *pipelineRunner) Run(ctx context.Context, opts *Options) (RunOutput, error) {
+func (r *pipelineRunner) Run(ctx context.Context, opts *Options) (output.RunOutput, error) {
 	var pipelineID = r.pipeline.ID
 
 	// Include resource key in logger.
@@ -161,7 +162,7 @@ func (r *pipelineRunner) Run(ctx context.Context, opts *Options) (RunOutput, err
 	updateID := res.UpdateId
 
 	// setup progress logger and tracker to query events
-	updateTracker := pipeline.NewUpdateTracker(pipelineID, updateID, w)
+	updateTracker := progress.NewUpdateTracker(pipelineID, updateID, w)
 	progressLogger, ok := cmdio.FromContext(ctx)
 	if !ok {
 		return nil, fmt.Errorf("no progress logger found")
@@ -172,7 +173,7 @@ func (r *pipelineRunner) Run(ctx context.Context, opts *Options) (RunOutput, err
 	}
 
 	// Log the pipeline update URL as soon as it is available.
-	progressLogger.Log(pipeline.NewUpdateUrlEvent(w.Config.Host, updateID, pipelineID))
+	progressLogger.Log(progress.NewUpdateUrlEvent(w.Config.Host, updateID, pipelineID))
 
 	// Poll update for completion and post status.
 	// Note: there is no "StartUpdateAndWait" wrapper for this API.
