@@ -58,7 +58,7 @@ func (l *UpdateTracker) Events(ctx context.Context) ([]ProgressEvent, error) {
 	// create filter to fetch only new events
 	filter := fmt.Sprintf(`update_id = '%s'`, l.UpdateId)
 	if l.LatestEventTimestamp != "" {
-		filter = fmt.Sprintf(`update_id = '%s' AND timestamp > '%s'`, l.UpdateId, l.LatestEventTimestamp)
+		filter = filter + fmt.Sprintf(" AND timestamp > '%s'", l.LatestEventTimestamp)
 	}
 
 	// we only check the most recent 100 events for progress
