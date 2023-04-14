@@ -46,9 +46,16 @@ func (l *Logger) Log(event Event) {
 	switch l.Mode {
 	case flags.ModeInplace:
 		if l.isFirstEvent {
-			l.Writer.Write([]byte("\n"))
+			// save cursor location
+			l.Writer.Write([]byte("\033[s"))
 		}
-		l.Writer.Write([]byte("\033[1F"))
+
+		// move cursor to saved location
+		l.Writer.Write([]byte("\033[u"))
+
+		// clear from cursor to end of screen
+		l.Writer.Write([]byte("\033[0J"))
+
 		l.Writer.Write([]byte(event.String()))
 		l.Writer.Write([]byte("\n"))
 
