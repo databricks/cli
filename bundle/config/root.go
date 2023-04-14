@@ -1,7 +1,6 @@
 package config
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 
@@ -78,32 +77,6 @@ func (r *Root) SetConfigFilePath(path string) {
 			}
 		}
 	}
-}
-
-func (r *Root) listIds() (map[string]struct{}, error) {
-	result := map[string]struct{}{}
-	for k := range r.Resources.Jobs {
-		result[k] = struct{}{}
-	}
-	for k := range r.Resources.Pipelines {
-		if _, ok := result[k]; ok {
-			return nil, fmt.Errorf("duplicate identifier %s", k)
-		}
-		result[k] = struct{}{}
-	}
-	for k := range r.Resources.Models {
-		if _, ok := result[k]; ok {
-			return nil, fmt.Errorf("duplicate identifier %s", k)
-		}
-		result[k] = struct{}{}
-	}
-	for k := range r.Resources.Experiments {
-		if _, ok := result[k]; ok {
-			return nil, fmt.Errorf("duplicate identifier %s", k)
-		}
-		result[k] = struct{}{}
-	}
-	return result, nil
 }
 
 func (r *Root) Load(path string) error {
