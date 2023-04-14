@@ -12,9 +12,6 @@ import (
 )
 
 type JobOutput struct {
-	// URL of the job run
-	RunPageUrl string `json:"run_page_url"`
-
 	// output for tasks with a non empty output
 	TaskOutputs map[string]RunOutput `json:"task_outputs"`
 }
@@ -31,7 +28,7 @@ func (out *JobOutput) String() (string, error) {
 		}
 	}
 	result := strings.Builder{}
-	result.WriteString(fmt.Sprintf("Run URL: %s\n", out.RunPageUrl))
+	result.WriteString("Output:\n")
 
 	taskKeys := maps.Keys(out.TaskOutputs)
 	sort.Strings(taskKeys)
@@ -60,8 +57,6 @@ func GetJobOutput(ctx context.Context, w *databricks.WorkspaceClient, runId int6
 	result := &JobOutput{
 		TaskOutputs: make(map[string]RunOutput),
 	}
-	result.RunPageUrl = jobRun.RunPageUrl
-
 	for _, task := range jobRun.Tasks {
 		jobRunOutput, err := w.Jobs.GetRunOutput(ctx, jobs.GetRunOutput{
 			RunId: task.RunId,

@@ -204,12 +204,11 @@ func logProgressCallback(ctx context.Context, progressLogger *cmdio.Logger) func
 		}
 
 		event := &progress.JobProgressEvent{
-			Timestamp:  time.Now(),
-			JobId:      i.JobId,
-			RunId:      i.RunId,
-			RunName:    i.RunName,
-			State:      *i.State,
-			RunPageURL: i.RunPageUrl,
+			Timestamp: time.Now(),
+			JobId:     i.JobId,
+			RunId:     i.RunId,
+			RunName:   i.RunName,
+			State:     *i.State,
 		}
 
 		// log progress events to stderr

@@ -15,5 +15,5 @@ func NewJobRunUrlEvent(url string) *JobRunUrlEvent {
 }
 
 func (event *JobRunUrlEvent) String() string {
-	return fmt.Sprintf("The job run can be found at %s\n", event.Url)
+	return fmt.Sprintf("Run Url: %s\n", event.Url)
 }
