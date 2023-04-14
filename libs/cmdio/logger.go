@@ -79,8 +79,9 @@ func (l *Logger) writeInplace(event Event) {
 func (l *Logger) LogPreRun(event Event) {
 	if l.Mode == flags.ModeJson {
 		l.writeJson(event)
+	} else {
+		l.writeAppend(event)
 	}
-	l.writeAppend(event)
 }
 
 func (l *Logger) Log(event Event) {
