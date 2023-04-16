@@ -19,5 +19,5 @@ func NewUpdateUrlEvent(host, updateId, pipelineId string) *UpdateUrlEvent {
 }
 
 func (event *UpdateUrlEvent) String() string {
-	return fmt.Sprintf("The update can be found at %s\n", event.Url)
+	return fmt.Sprintf("Update URL: %s\n", event.Url)
 }
