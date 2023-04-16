@@ -1,4 +1,4 @@
-package run
+package output
 
 import (
 	"context"
@@ -50,7 +50,7 @@ func (out *JobOutput) String() (string, error) {
 	return result.String(), nil
 }
 
-func getJobOutput(ctx context.Context, w *databricks.WorkspaceClient, runId int64) (*JobOutput, error) {
+func GetJobOutput(ctx context.Context, w *databricks.WorkspaceClient, runId int64) (*JobOutput, error) {
 	jobRun, err := w.Jobs.GetRun(ctx, jobs.GetRun{
 		RunId: runId,
 	})

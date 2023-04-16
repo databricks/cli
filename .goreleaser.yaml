@@ -44,7 +44,13 @@ builds:
   binary: '{{ .ProjectName }}'
 archives:
 - format: zip
-  name_template: '{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}'
+
+  # Include version in archive only for release builds and not for snapshot builds.
+  # Snapshot archives must have a stable file name such that the artifacts in the nightly
+  # release are automatically overwritten. If the snapshot version is included in the
+  # file name then additional logic to clean up older builds would be needed.
+  name_template: '{{ .ProjectName }}_{{ if not .IsSnapshot }}{{ .Version }}_{{ end }}{{ .Os }}_{{ .Arch }}'
+
 checksum:
   name_template: '{{ .ProjectName }}_{{ .Version }}_SHA256SUMS'
   algorithm: sha256

@@ -128,7 +128,7 @@ func (s *Snapshot) Save(ctx context.Context) error {
 
 func (s *Snapshot) Destroy(ctx context.Context) error {
 	err := os.Remove(s.SnapshotPath)
-	if err != nil {
+	if err != nil && !os.IsNotExist(err) {
 		return fmt.Errorf("failed to destroy sync snapshot file: %s", err)
 	}
 	return nil
