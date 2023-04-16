@@ -30,7 +30,7 @@ func NewLogger(mode flags.ProgressLogFormat) *Logger {
 
 func (l *Logger) Ask(question string) (bool, error) {
 	if l.Mode == flags.ModeJson {
-		return false, fmt.Errorf("question prompts is not supported in json mode")
+		return false, fmt.Errorf("question prompts are not supported in json mode")
 	}
 
 	l.Writer.Write([]byte(question))
