@@ -3,6 +3,7 @@ package cmdio
 import (
 	"bufio"
 	"encoding/json"
+	"fmt"
 	"io"
 	"os"
 
@@ -28,6 +29,10 @@ func NewLogger(mode flags.ProgressLogFormat) *Logger {
 }
 
 func (l *Logger) Ask(question string) (bool, error) {
+	if l.Mode == flags.ModeJson {
+		return false, fmt.Errorf("question prompts is not supported in json mode")
+	}
+
 	l.Writer.Write([]byte(question))
 	ans, err := l.Reader.ReadString('\n')
 
