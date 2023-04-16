@@ -42,9 +42,10 @@ var destroyCmd = &cobra.Command{
 		if logger.Mode == flags.ModeJson && !autoApprove {
 			return fmt.Errorf("please specify --auto-approve since selected logging format is json")
 		}
-
-		// Inplace logging not supported for bundle destroy
-		ctx = cmdio.DisableInplace(ctx)
+		// TODO: remove once state for inplace support is moved to events
+		if logger.Mode == flags.ModeInplace {
+			logger.Mode = flags.ModeAppend
+		}
 
 		return bundle.Apply(ctx, b, []bundle.Mutator{
 			phases.Initialize(),

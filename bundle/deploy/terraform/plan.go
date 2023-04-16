@@ -32,7 +32,8 @@ func (p *plan) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator, e
 		return nil, fmt.Errorf("terraform not initialized")
 	}
 
-	cmdio.LogMutatorEvent(ctx, p.Name(), cmdio.MutatorRunning, "Starting plan computation")
+	// Log planning started
+	cmdio.Log(ctx, NewPlanningStartedEvent())
 
 	err := tf.Init(ctx, tfexec.Upgrade(true))
 	if err != nil {
@@ -46,8 +47,11 @@ func (p *plan) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator, e
 	}
 	planPath := filepath.Join(tfDir, "plan")
 	destroy := p.goal == PlanDestroy
+
 	notEmpty, err := tf.Plan(ctx, tfexec.Destroy(destroy), tfexec.Out(planPath))
 	if err != nil {
+		// Log planning failed
+		cmdio.Log(ctx, NewPlanningFailedEvent())
 		return nil, err
 	}
 
@@ -57,7 +61,9 @@ func (p *plan) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator, e
 		ConfirmApply: b.AutoApprove,
 		IsEmpty:      !notEmpty,
 	}
-	cmdio.LogMutatorEvent(ctx, p.Name(), cmdio.MutatorCompleted, fmt.Sprintf("Planning complete and persisted at %s\n", planPath))
+
+	// Log planning completed
+	cmdio.Log(ctx, NewPlanningCompletedEvent(planPath))
 	return nil, nil
 }
 

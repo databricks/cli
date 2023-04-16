@@ -2,7 +2,6 @@ package files
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/databricks/bricks/bundle"
 	"github.com/databricks/bricks/libs/cmdio"
@@ -15,18 +14,20 @@ func (m *upload) Name() string {
 }
 
 func (m *upload) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator, error) {
-	cmdio.LogMutatorEvent(ctx, m.Name(), cmdio.MutatorRunning, "Uploading bundle files")
+	cmdio.Log(ctx, NewUploadStartedEvent())
 	sync, err := getSync(ctx, b)
 	if err != nil {
+		cmdio.Log(ctx, NewDeleteFailedEvent())
 		return nil, err
 	}
 
 	err = sync.RunOnce(ctx)
 	if err != nil {
+		cmdio.Log(ctx, NewDeleteFailedEvent())
 		return nil, err
 	}
 
-	cmdio.LogMutatorEvent(ctx, m.Name(), cmdio.MutatorCompleted, fmt.Sprintf("Uploaded bundle files at %s\n", b.Config.Workspace.FilesPath))
+	cmdio.Log(ctx, NewUploadCompletedEvent(b.Config.Workspace.FilesPath))
 	return nil, nil
 }
 

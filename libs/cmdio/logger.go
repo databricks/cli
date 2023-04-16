@@ -12,11 +12,18 @@ import (
 
 // This is the interface for all io interactions with a user
 type Logger struct {
+	// Mode for the logger. One of (append, inplace, json).
 	Mode flags.ProgressLogFormat
 
+	// Input stream (eg. stdin). Answers to questions prompted using the Ask() method
+	// are read from here
 	Reader bufio.Reader
+
+	// Output stream where the logger writes to
 	Writer io.Writer
 
+	// If true, indicates no events have been printed by the logger yet. Used
+	// by inplace logging for formatting
 	isFirstEvent bool
 }
 
@@ -31,7 +38,7 @@ func NewLogger(mode flags.ProgressLogFormat) *Logger {
 
 func Default() *Logger {
 	return &Logger{
-		Mode:         flags.ModeJson,
+		Mode:         flags.ModeAppend,
 		Writer:       os.Stderr,
 		Reader:       *bufio.NewReader(os.Stdin),
 		isFirstEvent: true,

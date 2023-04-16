@@ -1,10 +1,13 @@
 package bundle
 
 import (
+	"fmt"
+
 	"github.com/databricks/bricks/bundle"
 	"github.com/databricks/bricks/bundle/phases"
 	"github.com/databricks/bricks/cmd/root"
 	"github.com/databricks/bricks/libs/cmdio"
+	"github.com/databricks/bricks/libs/flags"
 	"github.com/spf13/cobra"
 )
 
@@ -20,8 +23,14 @@ var deployCmd = &cobra.Command{
 		// If `--force` is specified, force acquisition of the deployment lock.
 		b.Config.Bundle.Lock.Force = force
 
-		// deployment does not support inplace logging
-		ctx = cmdio.DisableInplace(ctx)
+		// TODO: remove once state for inplace support is moved to events
+		logger, ok := cmdio.FromContext(ctx)
+		if !ok {
+			return fmt.Errorf("progress logger not found")
+		}
+		if logger.Mode == flags.ModeInplace {
+			logger.Mode = flags.ModeAppend
+		}
 
 		return bundle.Apply(ctx, b, []bundle.Mutator{
 			phases.Initialize(),
