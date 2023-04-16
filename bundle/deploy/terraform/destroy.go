@@ -12,7 +12,7 @@ import (
 )
 
 func (w *destroy) logDestroyPlan(ctx context.Context, changes []*tfjson.ResourceChange) error {
-	cmdio.Log(ctx, NewDestroyPlanWarningEvent())
+	cmdio.Log(ctx, NewDestroyPlanWarningMessage())
 	for _, c := range changes {
 		if c.Change.Actions.Delete() {
 			cmdio.Log(ctx, &PlanResourceChange{

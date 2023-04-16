@@ -66,9 +66,9 @@ func NewDestroySkippedEvent() *DestroyEvent {
 	}
 }
 
-func NewDestroyPlanWarningEvent() *DestroyEvent {
+func NewDestroyPlanWarningMessage() *DestroyEvent {
 	return &DestroyEvent{
-		Type:    "terraform_destroy_plan_warning_event",
+		Type:    "terraform_destroy_plan_warning_message",
 		Message: "The following resources will be removed:",
 	}
 }
