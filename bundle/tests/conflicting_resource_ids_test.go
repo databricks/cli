@@ -2,6 +2,8 @@ package config_tests
 
 import (
 	"context"
+	"fmt"
+	"path/filepath"
 	"testing"
 
 	"github.com/databricks/bricks/bundle"
@@ -12,19 +14,24 @@ import (
 
 func TestConflictingResourceIdsNoSubconfig(t *testing.T) {
 	_, err := bundle.Load("./conflicting_resource_ids/no_subconfigurations")
-	assert.ErrorContains(t, err, "multiple resources named foo (job at conflicting_resource_ids/no_subconfigurations/bundle.yml, pipeline at conflicting_resource_ids/no_subconfigurations/bundle.yml)")
+	bundleConfigPath := filepath.ToSlash("conflicting_resource_ids/no_subconfigurations/bundle.yml")
+	assert.ErrorContains(t, err, fmt.Sprintf("multiple resources named foo (job at %s, pipeline at %s)", bundleConfigPath, bundleConfigPath))
 }
 
 func TestConflictingResourceIdsOneSubconfig(t *testing.T) {
 	b, err := bundle.Load("./conflicting_resource_ids/one_subconfiguration")
 	require.NoError(t, err)
 	err = bundle.Apply(context.Background(), b, mutator.DefaultMutators())
-	assert.ErrorContains(t, err, "multiple resources named foo (job at conflicting_resource_ids/one_subconfiguration/bundle.yml, pipeline at conflicting_resource_ids/one_subconfiguration/resources.yml)")
+	bundleConfigPath := filepath.ToSlash("conflicting_resource_ids/one_subconfiguration/bundle.yml")
+	resourcesConfigPath := filepath.ToSlash("conflicting_resource_ids/one_subconfiguration/resources.yml")
+	assert.ErrorContains(t, err, fmt.Sprintf("multiple resources named foo (job at %s, pipeline at %s)", bundleConfigPath, resourcesConfigPath))
 }
 
 func TestConflictingResourceIdsTwoSubconfigs(t *testing.T) {
 	b, err := bundle.Load("./conflicting_resource_ids/two_subconfigurations")
 	require.NoError(t, err)
 	err = bundle.Apply(context.Background(), b, mutator.DefaultMutators())
-	assert.ErrorContains(t, err, "multiple resources named foo (job at conflicting_resource_ids/two_subconfigurations/resources1.yml, pipeline at conflicting_resource_ids/two_subconfigurations/resources2.yml)")
+	resources1ConfigPath := filepath.ToSlash("conflicting_resource_ids/two_subconfigurations/resources1.yml")
+	resources2ConfigPath := filepath.ToSlash("conflicting_resource_ids/two_subconfigurations/resources2.yml")
+	assert.ErrorContains(t, err, fmt.Sprintf("multiple resources named foo (job at %s, pipeline at %s)", resources1ConfigPath, resources2ConfigPath))
 }
