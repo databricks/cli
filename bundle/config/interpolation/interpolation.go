@@ -63,7 +63,11 @@ func (s *stringField) interpolate(fns []LookupFunction, lookup map[string]string
 }
 
 type accumulator struct {
+	// all string fields in the bundle config
 	strings map[string]*stringField
+
+	// contains path -> resolve string mapping for string fields in the config
+	memo map[string]string
 }
 
 // jsonFieldName returns the name in a field's `json` tag.
@@ -138,25 +142,7 @@ func (a *accumulator) walk(scope []string, rv reflect.Value, s setter) {
 	}
 }
 
-// Gathers the strings for a list of paths.
-// The fields in these paths may not depend on other fields,
-// as we don't support full DAG lookup yet (only single level).
-func (a *accumulator) gather(paths []string) (map[string]string, error) {
-	var out = make(map[string]string)
-	for _, path := range paths {
-		f, ok := a.strings[path]
-		if !ok {
-			return nil, fmt.Errorf("%s is not defined", path)
-		}
-		deps := f.dependsOn()
-		if len(deps) > 0 {
-			return nil, fmt.Errorf("%s depends on %s", path, strings.Join(deps, ", "))
-		}
-		out[path] = f.Get()
-	}
-	return out, nil
-}
-
+// walk and gather all string fields in the config
 func (a *accumulator) start(v any) {
 	rv := reflect.ValueOf(v)
 	if rv.Type().Kind() != reflect.Pointer {
@@ -168,25 +154,85 @@ func (a *accumulator) start(v any) {
 	}
 
 	a.strings = make(map[string]*stringField)
+	a.memo = make(map[string]string)
 	a.walk([]string{}, rv, nilSetter{})
 }
 
-func (a *accumulator) expand(fns ...LookupFunction) error {
-	for path, v := range a.strings {
-		ds := v.dependsOn()
-		if len(ds) == 0 {
-			continue
+func contains(s []string, e string) bool {
+	for _, a := range s {
+		if a == e {
+			return true
 		}
+	}
+	return false
+}
 
-		// Create map to be used for interpolation
-		m, err := a.gather(ds)
-		if err != nil {
-			return fmt.Errorf("cannot interpolate %s: %w", path, err)
-		}
-
-		v.interpolate(fns, m)
+func (a *accumulator) SafeResolve(path string, seenPaths *[]string, fns ...LookupFunction) error {
+	// error if there is a loop in variable interpolation
+	if contains(*seenPaths, path) {
+		return fmt.Errorf("cycle retected in field resolution: %s -> %s", strings.Join(*seenPaths, " -> "), path)
 	}
 
+	// add path to seenPaths
+	*seenPaths = append(*seenPaths, path)
+
+	// resolve the string field at path
+	err := a.Resolve(path, *seenPaths, fns...)
+	if err != nil {
+		return err
+	}
+
+	// remove path from seenPaths
+	*seenPaths = (*seenPaths)[:len(*seenPaths)-1]
+	return nil
+}
+
+// recursively interpolate variables in a depth first manner
+func (a *accumulator) Resolve(path string, seenPaths []string, fns ...LookupFunction) error {
+	// return early if the path is already resolved
+	if _, ok := a.memo[path]; ok {
+		return nil
+	}
+
+	// fetch the string node to resolve
+	rootField, ok := a.strings[path]
+	if !ok {
+		return fmt.Errorf("could not find string field with path %s", path)
+	}
+
+	// return early if the string field has no variables to interpolate
+	if len(rootField.dependsOn()) == 0 {
+		a.memo[path] = rootField.Get()
+		return nil
+	}
+
+	// resolve all variables refered in the root string field
+	childFieldPaths := rootField.dependsOn()
+	for _, childFieldPath := range childFieldPaths {
+		// recursive resolve variables in the child fields
+		err := a.SafeResolve(childFieldPath, &seenPaths, fns...)
+		if err != nil {
+			return err
+		}
+	}
+
+	// interpolate root string once all variables required are resolved
+	rootField.interpolate(fns, a.memo)
+
+	// record interpolated string in memo
+	a.memo[path] = rootField.Get()
+	return nil
+}
+
+// Interpolate all string fields in the config
+func (a *accumulator) expand(fns ...LookupFunction) error {
+	seenPaths := make([]string, 0)
+	for path := range a.strings {
+		err := a.SafeResolve(path, &seenPaths, fns...)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 

@@ -1,6 +1,7 @@
 package interpolation
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -96,4 +97,37 @@ func TestInterpolationWithMap(t *testing.T) {
 	assert.Equal(t, "a", f.A)
 	assert.Equal(t, "a", f.F["a"])
 	assert.Equal(t, "a", f.F["b"])
+}
+
+func TestRecursiveInterpolationVariables(t *testing.T) {
+	f := foo{
+		A: "a",
+		B: "(${a})",
+		C: "${a} ${b}",
+	}
+
+	err := expand(&f)
+	require.NoError(t, err)
+
+	assert.Equal(t, "a", f.A)
+	assert.Equal(t, "(a)", f.B)
+	assert.Equal(t, "a (a)", f.C)
+}
+
+func TestInterpolationVariableLoopError(t *testing.T) {
+	d := "${b}"
+	f := foo{
+		A: "a",
+		B: "${c}",
+		C: "${d}",
+		D: &d,
+	}
+
+	err := expand(&f)
+	assert.ErrorContains(t, err, "cycle retected in field resolution:")
+
+	// could be all possiblities since map traversal in golang is randomized
+	assert.True(t, strings.Contains(err.Error(), "b -> c -> d -> b") ||
+			strings.Contains(err.Error(), "c -> d -> b -> c") ||
+			strings.Contains(err.Error(), "d -> b -> c -> d"))
 }
