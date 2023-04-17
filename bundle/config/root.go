@@ -88,14 +88,23 @@ func (r *Root) Load(path string) error {
 	if err != nil {
 		return err
 	}
+
 	r.Path = filepath.Dir(path)
 	r.SetConfigFilePath(path)
-	return nil
+
+	_, err = r.Resources.VerifyUniqueResourceIdentifiers()
+	return err
 }
 
 func (r *Root) Merge(other *Root) error {
 	// TODO: when hooking into merge semantics, disallow setting path on the target instance.
 	other.Path = ""
+
+	// Check for safe merge, protecting against duplicate resource identifiers
+	err := r.Resources.VerifySafeMerge(&other.Resources)
+	if err != nil {
+		return err
+	}
 
 	// TODO: define and test semantics for merging.
 	return mergo.MergeWithOverwrite(r, other)
