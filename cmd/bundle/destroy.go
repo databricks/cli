@@ -33,8 +33,16 @@ var destroyCmd = &cobra.Command{
 			return fmt.Errorf("please specify --auto-approve to skip interactive confirmation checks for non tty consoles")
 		}
 
-		ctx := cmdio.NewContext(cmd.Context(), cmdio.NewLogger(flags.ModeAppend))
-		return bundle.Apply(ctx, b, []bundle.Mutator{
+		// TODO: remove once state for inplace is moved to event
+		logger, ok := cmdio.FromContext(cmd.Context())
+		if !ok {
+			return fmt.Errorf("progress logger not found")
+		}
+		if logger.Mode == flags.ModeInplace {
+			logger.Mode = flags.ModeAppend
+		}
+
+		return bundle.Apply(cmd.Context(), b, []bundle.Mutator{
 			phases.Initialize(),
 			phases.Build(),
 			phases.Destroy(),
