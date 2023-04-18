@@ -195,19 +195,19 @@ func (a *accumulator) Resolve(path string, seenPaths []string, fns ...LookupFunc
 	}
 
 	// fetch the string node to resolve
-	rootField, ok := a.strings[path]
+	currentField, ok := a.strings[path]
 	if !ok {
 		return fmt.Errorf("could not find string field with path %s", path)
 	}
 
 	// return early if the string field has no variables to interpolate
-	if len(rootField.dependsOn()) == 0 {
-		a.memo[path] = rootField.Get()
+	if len(currentField.dependsOn()) == 0 {
+		a.memo[path] = currentField.Get()
 		return nil
 	}
 
 	// resolve all variables refered in the root string field
-	childFieldPaths := rootField.dependsOn()
+	childFieldPaths := currentField.dependsOn()
 	for _, childFieldPath := range childFieldPaths {
 		// recursive resolve variables in the child fields
 		err := a.SafeResolve(childFieldPath, &seenPaths, fns...)
@@ -217,10 +217,10 @@ func (a *accumulator) Resolve(path string, seenPaths []string, fns ...LookupFunc
 	}
 
 	// interpolate root string once all variables required are resolved
-	rootField.interpolate(fns, a.memo)
+	currentField.interpolate(fns, a.memo)
 
 	// record interpolated string in memo
-	a.memo[path] = rootField.Get()
+	a.memo[path] = currentField.Get()
 	return nil
 }
 
