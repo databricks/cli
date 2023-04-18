@@ -3,7 +3,6 @@ package files
 import (
 	"context"
 	"fmt"
-	"os"
 
 	"github.com/databricks/bricks/bundle"
 	"github.com/databricks/bricks/libs/cmdio"
@@ -23,16 +22,12 @@ func (m *delete) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator,
 		return nil, nil
 	}
 
-	// interface to io with the user
-	logger, ok := cmdio.FromContext(ctx)
-	if !ok {
-		return nil, fmt.Errorf("no logger found")
-	}
-	red := color.New(color.FgRed).SprintFunc()
+	cmdio.LogString(ctx, "Starting deletion of remote bundle files")
+	cmdio.LogString(ctx, fmt.Sprintf("Bundle remote directory is %s", b.Config.Workspace.RootPath))
 
-	fmt.Fprintf(os.Stderr, "\nRemote directory %s will be deleted\n", b.Config.Workspace.RootPath)
+	red := color.New(color.FgRed).SprintFunc()
 	if !b.AutoApprove {
-		proceed, err := logger.Ask(fmt.Sprintf("%s and all files in it will be %s Proceed?: ", b.Config.Workspace.RootPath, red("deleted permanently!")))
+		proceed, err := cmdio.Ask(ctx, fmt.Sprintf("\n%s and all files in it will be %s Proceed?: ", b.Config.Workspace.RootPath, red("deleted permanently!")))
 		if err != nil {
 			return nil, err
 		}
@@ -59,7 +54,8 @@ func (m *delete) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator,
 		return nil, err
 	}
 
-	fmt.Println("Successfully deleted files!")
+	cmdio.LogString(ctx, fmt.Sprintf("Deleted snapshot file at %s", sync.SnapshotPath()))
+	cmdio.LogString(ctx, "Successfully deleted files!")
 	return nil, nil
 }
 
