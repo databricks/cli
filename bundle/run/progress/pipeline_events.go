@@ -2,26 +2,26 @@ package progress
 
 import "fmt"
 
-type UpdateUrlEvent struct {
+type PipelineUpdateUrlEvent struct {
 	Type       string `json:"type"`
 	UpdateId   string `json:"update_id"`
 	PipelineId string `json:"pipeline_id"`
 	Url        string `json:"url"`
 }
 
-func NewUpdateUrlEvent(host, updateId, pipelineId string) *UpdateUrlEvent {
-	return &UpdateUrlEvent{
-		Type:       "update_url",
+func NewPipelineUpdateUrlEvent(host, updateId, pipelineId string) *PipelineUpdateUrlEvent {
+	return &PipelineUpdateUrlEvent{
+		Type:       "pipeline_update_url",
 		UpdateId:   updateId,
 		PipelineId: pipelineId,
 		Url:        fmt.Sprintf("%s/#joblist/pipelines/%s/updates/%s", host, pipelineId, updateId),
 	}
 }
 
-func (event *UpdateUrlEvent) String() string {
-	return fmt.Sprintf("The update can be found at %s\n", event.Url)
+func (event *PipelineUpdateUrlEvent) String() string {
+	return fmt.Sprintf("The pipeline update can be found at %s\n", event.Url)
 }
 
-func (event *UpdateUrlEvent) IsInplaceSupported() bool {
+func (event *PipelineUpdateUrlEvent) IsInplaceSupported() bool {
 	return false
 }
