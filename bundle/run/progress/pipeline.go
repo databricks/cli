@@ -25,6 +25,10 @@ func (event *ProgressEvent) String() string {
 	return result.String()
 }
 
+func (event *ProgressEvent) IsInplaceSupported() bool {
+	return false
+}
+
 // TODO: Add inplace logging to pipelines. https://github.com/databricks/bricks/issues/280
 type UpdateTracker struct {
 	UpdateId             string

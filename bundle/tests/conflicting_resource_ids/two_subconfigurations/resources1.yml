@@ -1,0 +1,4 @@
+resources:
+  jobs:
+    foo:
+      name: job foo

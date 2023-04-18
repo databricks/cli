@@ -195,6 +195,10 @@ func logProgressCallback(ctx context.Context, progressLogger *cmdio.Logger) func
 			return
 		}
 
+		if prevState == nil {
+			progressLogger.Log(progress.NewJobRunUrlEvent(i.RunPageUrl))
+		}
+
 		if prevState != nil && prevState.LifeCycleState == state.LifeCycleState &&
 			prevState.ResultState == state.ResultState {
 			return
@@ -203,12 +207,11 @@ func logProgressCallback(ctx context.Context, progressLogger *cmdio.Logger) func
 		}
 
 		event := &progress.JobProgressEvent{
-			Timestamp:  time.Now(),
-			JobId:      i.JobId,
-			RunId:      i.RunId,
-			RunName:    i.RunName,
-			State:      *i.State,
-			RunPageURL: i.RunPageUrl,
+			Timestamp: time.Now(),
+			JobId:     i.JobId,
+			RunId:     i.RunId,
+			RunName:   i.RunName,
+			State:     *i.State,
 		}
 
 		// log progress events to stderr

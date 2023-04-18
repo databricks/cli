@@ -19,7 +19,6 @@ func TestJobProgressEventString(t *testing.T) {
 			ResultState:    jobs.RunResultStateSuccess,
 			StateMessage:   "state_message",
 		},
-		RunPageURL: "run_url",
 	}
-	assert.Equal(t, "-0001-11-30 00:00:00 run_name TERMINATED SUCCESS state_message run_url", event.String())
+	assert.Equal(t, "-0001-11-30 00:00:00 \"run_name\" TERMINATED SUCCESS state_message", event.String())
 }
