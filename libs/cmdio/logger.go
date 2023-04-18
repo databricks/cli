@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"os"
 
@@ -72,6 +73,10 @@ func Ask(ctx context.Context, question string) (bool, error) {
 }
 
 func (l *Logger) Ask(question string) (bool, error) {
+	if l.Mode == flags.ModeJson {
+		return false, fmt.Errorf("question prompts are not supported in json mode")
+	}
+
 	l.Writer.Write([]byte(question))
 	ans, err := l.Reader.ReadString('\n')
 
