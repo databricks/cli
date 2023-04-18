@@ -33,3 +33,7 @@ func (event *JobProgressEvent) String() string {
 	result.WriteString(event.RunPageURL)
 	return result.String()
 }
+
+func (event *JobProgressEvent) IsInplaceSupported() bool {
+	return true
+}
