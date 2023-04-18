@@ -74,20 +74,14 @@ func (l *Logger) writeInplace(event Event) {
 	l.isFirstEvent = false
 }
 
-// This is used to log information about the run before any of the progress logs are
-// printed.
-func (l *Logger) LogPreRun(event Event) {
-	if l.Mode == flags.ModeJson {
-		l.writeJson(event)
-	} else {
-		l.writeAppend(event)
-	}
-}
-
 func (l *Logger) Log(event Event) {
 	switch l.Mode {
 	case flags.ModeInplace:
-		l.writeInplace(event)
+		if event.IsInplaceSupported() {
+			l.writeInplace(event)
+		} else {
+			l.writeAppend(event)
+		}
 
 	case flags.ModeJson:
 		l.writeJson(event)
