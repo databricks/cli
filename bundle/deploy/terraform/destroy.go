@@ -3,6 +3,7 @@ package terraform
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/databricks/bricks/bundle"
 	"github.com/databricks/bricks/libs/cmdio"
@@ -11,7 +12,37 @@ import (
 	tfjson "github.com/hashicorp/terraform-json"
 )
 
-func (w *destroy) logDestroyPlan(ctx context.Context, changes []*tfjson.ResourceChange) error {
+type PlanResourceChange struct {
+	ResourceType string `json:"resource_type"`
+	Action       string `json:"action"`
+	ResourceName string `json:"resource_name"`
+}
+
+func (c *PlanResourceChange) String() string {
+	result := strings.Builder{}
+	switch c.Action {
+	case "delete":
+		result.WriteString("  delete ")
+	default:
+		result.WriteString(c.Action + " ")
+	}
+	switch c.ResourceType {
+	case "databricks_job":
+		result.WriteString("job ")
+	case "databricks_pipeline":
+		result.WriteString("pipeline ")
+	default:
+		result.WriteString(c.ResourceType + " ")
+	}
+	result.WriteString(c.ResourceName)
+	return result.String()
+}
+
+func (c *PlanResourceChange) IsInplaceSupported() bool {
+	return false
+}
+
+func logDestroyPlan(ctx context.Context, changes []*tfjson.ResourceChange) error {
 	cmdio.LogString(ctx, "The following resources will be removed:")
 	for _, c := range changes {
 		if c.Change.Actions.Delete() {
@@ -50,7 +81,7 @@ func (w *destroy) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator
 	}
 
 	// print the resources that will be destroyed
-	err = w.logDestroyPlan(ctx, plan.ResourceChanges)
+	err = logDestroyPlan(ctx, plan.ResourceChanges)
 	if err != nil {
 		return nil, err
 	}
