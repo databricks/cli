@@ -164,6 +164,10 @@ func (s *Sync) DestroySnapshot(ctx context.Context) error {
 	return s.snapshot.Destroy(ctx)
 }
 
+func (s *Sync) SnapshotPath() string {
+	return s.snapshot.SnapshotPath
+}
+
 func (s *Sync) RunContinuous(ctx context.Context) error {
 	ticker := time.NewTicker(s.PollInterval)
 	defer ticker.Stop()

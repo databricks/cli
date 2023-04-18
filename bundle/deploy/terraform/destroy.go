@@ -3,7 +3,6 @@ package terraform
 import (
 	"context"
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/databricks/bricks/bundle"
@@ -13,8 +12,6 @@ import (
 	tfjson "github.com/hashicorp/terraform-json"
 )
 
-// TODO: This is temporary. Come up with a robust way to log mutator progress and
-// status events
 type PlanResourceChange struct {
 	ResourceType string `json:"resource_type"`
 	Action       string `json:"action"`
@@ -45,12 +42,11 @@ func (c *PlanResourceChange) IsInplaceSupported() bool {
 	return false
 }
 
-func logDestroyPlan(l *cmdio.Logger, changes []*tfjson.ResourceChange) error {
-	// TODO: remove once we have mutator logging in place
-	fmt.Fprintln(os.Stderr, "The following resources will be removed: ")
+func logDestroyPlan(ctx context.Context, changes []*tfjson.ResourceChange) error {
+	cmdio.LogString(ctx, "The following resources will be removed:")
 	for _, c := range changes {
 		if c.Change.Actions.Delete() {
-			l.Log(&PlanResourceChange{
+			cmdio.Log(ctx, &PlanResourceChange{
 				ResourceType: c.Type,
 				Action:       "delete",
 				ResourceName: c.Name,
@@ -67,14 +63,9 @@ func (w *destroy) Name() string {
 }
 
 func (w *destroy) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator, error) {
-	// interface to io with the user
-	logger, ok := cmdio.FromContext(ctx)
-	if !ok {
-		return nil, fmt.Errorf("no logger found")
-	}
-
+	// return early if plan is empty
 	if b.Plan.IsEmpty {
-		fmt.Fprintln(os.Stderr, "No resources to destroy!")
+		cmdio.LogString(ctx, "No resources to destroy in plan. Skipping destroy!")
 		return nil, nil
 	}
 
@@ -90,7 +81,7 @@ func (w *destroy) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator
 	}
 
 	// print the resources that will be destroyed
-	err = logDestroyPlan(logger, plan.ResourceChanges)
+	err = logDestroyPlan(ctx, plan.ResourceChanges)
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +89,7 @@ func (w *destroy) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator
 	// Ask for confirmation, if needed
 	if !b.Plan.ConfirmApply {
 		red := color.New(color.FgRed).SprintFunc()
-		b.Plan.ConfirmApply, err = logger.Ask(fmt.Sprintf("\nThis will permanently %s resources! Proceed? [y/n]: ", red("destroy")))
+		b.Plan.ConfirmApply, err = cmdio.Ask(ctx, fmt.Sprintf("\nThis will permanently %s resources! Proceed? [y/n]: ", red("destroy")))
 		if err != nil {
 			return nil, err
 		}
@@ -113,13 +104,15 @@ func (w *destroy) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator
 		return nil, fmt.Errorf("no plan found")
 	}
 
+	cmdio.LogString(ctx, "Starting to destroy resources")
+
 	// Apply terraform according to the computed destroy plan
 	err = tf.Apply(ctx, tfexec.DirOrPlan(b.Plan.Path))
 	if err != nil {
 		return nil, fmt.Errorf("terraform destroy: %w", err)
 	}
 
-	fmt.Fprintln(os.Stderr, "Successfully destroyed resources!")
+	cmdio.LogString(ctx, "Successfully destroyed resources!")
 	return nil, nil
 }
 
