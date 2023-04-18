@@ -32,7 +32,6 @@ func (p *plan) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator, e
 		return nil, fmt.Errorf("terraform not initialized")
 	}
 
-	// Log planning started
 	cmdio.LogString(ctx, "Starting plan computation")
 
 	err := tf.Init(ctx, tfexec.Upgrade(true))
@@ -60,7 +59,6 @@ func (p *plan) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator, e
 		IsEmpty:      !notEmpty,
 	}
 
-	// Log planning completed
 	cmdio.LogString(ctx, fmt.Sprintf("Planning complete and persisted at %s\n", planPath))
 	return nil, nil
 }

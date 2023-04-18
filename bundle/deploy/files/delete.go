@@ -22,7 +22,6 @@ func (m *delete) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator,
 		return nil, nil
 	}
 
-	// log started
 	cmdio.LogString(ctx, "Starting deletion of remote bundle files")
 	cmdio.LogString(ctx, fmt.Sprintf("Bundle remote directory is %s", b.Config.Workspace.RootPath))
 
