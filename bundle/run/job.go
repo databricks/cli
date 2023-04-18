@@ -133,6 +133,9 @@ func (r *jobRunner) logFailedTasks(ctx context.Context, runId int64) {
 				log.Errorf(ctx, "task %s failed. Unable to fetch error trace: %s", red(task.TaskKey), err)
 				continue
 			}
+			if progressLogger, ok := cmdio.FromContext(ctx); ok {
+				progressLogger.Log(progress.NewTaskErrorEvent(task.TaskKey, taskInfo.Error, taskInfo.ErrorTrace))
+			}
 			log.Errorf(ctx, "Task %s failed!\nError:\n%s\nTrace:\n%s",
 				red(task.TaskKey), taskInfo.Error, taskInfo.ErrorTrace)
 		} else {
