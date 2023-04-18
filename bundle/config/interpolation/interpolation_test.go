@@ -128,6 +128,6 @@ func TestInterpolationVariableLoopError(t *testing.T) {
 
 	// could be all possiblities since map traversal in golang is randomized
 	assert.True(t, strings.Contains(err.Error(), "b -> c -> d -> b") ||
-			strings.Contains(err.Error(), "c -> d -> b -> c") ||
-			strings.Contains(err.Error(), "d -> b -> c -> d"))
+		strings.Contains(err.Error(), "c -> d -> b -> c") ||
+		strings.Contains(err.Error(), "d -> b -> c -> d"))
 }
