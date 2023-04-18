@@ -41,6 +41,10 @@ func (c *PlanResourceChange) String() string {
 	return result.String()
 }
 
+func (c *PlanResourceChange) IsInplaceSupported() bool {
+	return false
+}
+
 func logDestroyPlan(l *cmdio.Logger, changes []*tfjson.ResourceChange) error {
 	// TODO: remove once we have mutator logging in place
 	fmt.Fprintln(os.Stderr, "The following resources will be removed: ")
