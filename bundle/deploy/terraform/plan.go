@@ -33,7 +33,7 @@ func (p *plan) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator, e
 	}
 
 	// Log planning started
-	cmdio.Log(ctx, NewPlanningStartedEvent())
+	cmdio.LogString(ctx, "Starting plan computation")
 
 	err := tf.Init(ctx, tfexec.Upgrade(true))
 	if err != nil {
@@ -50,8 +50,6 @@ func (p *plan) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator, e
 
 	notEmpty, err := tf.Plan(ctx, tfexec.Destroy(destroy), tfexec.Out(planPath))
 	if err != nil {
-		// Log planning failed
-		cmdio.Log(ctx, NewPlanningFailedEvent())
 		return nil, err
 	}
 
@@ -63,7 +61,7 @@ func (p *plan) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator, e
 	}
 
 	// Log planning completed
-	cmdio.Log(ctx, NewPlanningCompletedEvent(planPath))
+	cmdio.LogString(ctx, fmt.Sprintf("Planning complete and persisted at %s\n", planPath))
 	return nil, nil
 }
 

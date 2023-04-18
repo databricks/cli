@@ -21,7 +21,7 @@ func (w *apply) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator, 
 		return nil, fmt.Errorf("terraform not initialized")
 	}
 
-	cmdio.Log(ctx, NewApplyStartedEvent())
+	cmdio.LogString(ctx, "Starting resource deployment")
 
 	err := tf.Init(ctx, tfexec.Upgrade(true))
 	if err != nil {
@@ -30,11 +30,10 @@ func (w *apply) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator, 
 
 	err = tf.Apply(ctx)
 	if err != nil {
-		cmdio.Log(ctx, NewApplyFailedEvent())
 		return nil, fmt.Errorf("terraform apply: %w", err)
 	}
 
-	cmdio.Log(ctx, NewApplyCompletedEvent())
+	cmdio.LogString(ctx, "Resource deployment completed!")
 	return nil, nil
 }
 

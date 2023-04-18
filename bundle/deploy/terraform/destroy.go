@@ -12,11 +12,10 @@ import (
 )
 
 func (w *destroy) logDestroyPlan(ctx context.Context, changes []*tfjson.ResourceChange) error {
-	cmdio.Log(ctx, NewDestroyPlanWarningMessage())
+	cmdio.LogString(ctx, "The following resources will be removed:")
 	for _, c := range changes {
 		if c.Change.Actions.Delete() {
 			cmdio.Log(ctx, &PlanResourceChange{
-				Type:         "plan_resource_change",
 				ResourceType: c.Type,
 				Action:       "delete",
 				ResourceName: c.Name,
@@ -35,7 +34,7 @@ func (w *destroy) Name() string {
 func (w *destroy) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator, error) {
 	// return early if plan is empty
 	if b.Plan.IsEmpty {
-		cmdio.Log(ctx, NewDestroySkippedEvent())
+		cmdio.LogString(ctx, "No resources to destroy in plan. Skipping destroy!")
 		return nil, nil
 	}
 
@@ -74,16 +73,15 @@ func (w *destroy) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator
 		return nil, fmt.Errorf("no plan found")
 	}
 
-	cmdio.Log(ctx, NewDestroyStartEvent())
+	cmdio.LogString(ctx, "Starting to destroy resources")
 
 	// Apply terraform according to the computed destroy plan
 	err = tf.Apply(ctx, tfexec.DirOrPlan(b.Plan.Path))
 	if err != nil {
-		cmdio.Log(ctx, NewDestroyFailedEvent())
 		return nil, fmt.Errorf("terraform destroy: %w", err)
 	}
 
-	cmdio.Log(ctx, NewDestroyCompletedEvent())
+	cmdio.LogString(ctx, "Successfully destroyed resources!")
 	return nil, nil
 }
 

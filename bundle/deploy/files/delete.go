@@ -23,8 +23,8 @@ func (m *delete) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator,
 	}
 
 	// log started
-	cmdio.Log(ctx, NewDeleteStartedEvent())
-	cmdio.Log(ctx, NewDeleteRemoteDirInfoEvent(b.Config.Workspace.RootPath))
+	cmdio.LogString(ctx, "Starting deletion of remote bundle files")
+	cmdio.LogString(ctx, fmt.Sprintf("Bundle remote directory is %s", b.Config.Workspace.RootPath))
 
 	red := color.New(color.FgRed).SprintFunc()
 	if !b.AutoApprove {
@@ -42,8 +42,6 @@ func (m *delete) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator,
 		Recursive: true,
 	})
 	if err != nil {
-		// log failed
-		cmdio.Log(ctx, NewDeleteFailedEvent())
 		return nil, err
 	}
 
@@ -56,11 +54,9 @@ func (m *delete) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator,
 	if err != nil {
 		return nil, err
 	}
-	// log snapshot file deleted
-	cmdio.Log(ctx, NewDeletedSnapshotEvent(sync.SnapshotPath()))
 
-	// log completion
-	cmdio.Log(ctx, NewDeleteCompletedEvent())
+	cmdio.LogString(ctx, fmt.Sprintf("Deleted snapshot file at %s", sync.SnapshotPath()))
+	cmdio.LogString(ctx, "Successfully deleted files!")
 	return nil, nil
 }
 

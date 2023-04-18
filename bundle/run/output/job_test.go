@@ -14,7 +14,6 @@ func TestSingleTaskJobOutputToString(t *testing.T) {
 		Truncated: true,
 	}
 	myJob := JobOutput{
-		RunPageUrl: "my_job_url",
 		TaskOutputs: map[string]RunOutput{
 			"my_notebook_task": &taskNotebook,
 		},
@@ -36,7 +35,6 @@ func TestMultiTaskJobOutputToString(t *testing.T) {
 		LogsTruncated: false,
 	}
 	myJob := JobOutput{
-		RunPageUrl: "my_job_url",
 		TaskOutputs: map[string]RunOutput{
 			"my_foo_task": &taskFoo,
 			"my_bar_task": &taskBar,
@@ -46,7 +44,7 @@ func TestMultiTaskJobOutputToString(t *testing.T) {
 	actual, err := myJob.String()
 	require.NoError(t, err)
 
-	expected := `Run URL: my_job_url
+	expected := `Output:
 =======
 Task my_bar_task:
 bar

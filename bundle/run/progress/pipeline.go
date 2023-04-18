@@ -13,7 +13,6 @@ type ProgressEvent pipelines.PipelineEvent
 
 func (event *ProgressEvent) String() string {
 	result := strings.Builder{}
-
 	result.WriteString(event.Timestamp + " ")
 
 	// Print event type with some padding to make output more pretty
@@ -22,7 +21,17 @@ func (event *ProgressEvent) String() string {
 	result.WriteString(event.Level.String() + " ")
 	result.WriteString(fmt.Sprintf(`"%s"`, event.Message))
 
+	// construct error string
+	if event.Error != nil {
+		for _, exception := range event.Error.Exceptions {
+			result.WriteString(fmt.Sprintf("\n%s", exception.Message))
+		}
+	}
 	return result.String()
+}
+
+func (event *ProgressEvent) IsInplaceSupported() bool {
+	return false
 }
 
 // TODO: Add inplace logging to pipelines. https://github.com/databricks/bricks/issues/280
