@@ -15,5 +15,9 @@ func NewJobRunUrlEvent(url string) *JobRunUrlEvent {
 }
 
 func (event *JobRunUrlEvent) String() string {
-	return fmt.Sprintf("Run Url: %s\n", event.Url)
+	return fmt.Sprintf("Run URL: %s\n", event.Url)
+}
+
+func (event *JobRunUrlEvent) IsInplaceSupported() bool {
+	return false
 }
