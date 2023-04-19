@@ -30,7 +30,7 @@ func (m *delete) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator,
 	red := color.New(color.FgRed).SprintFunc()
 	if !b.AutoApprove {
 		cmdio.LogString(ctx, fmt.Sprintf("\n%s and all files in it will be %s.", b.Config.Workspace.RootPath, red("deleted permanently!")))
-		proceed, err := cmdio.Ask(ctx, "Proceed with deletion?: ")
+		proceed, err := cmdio.Ask(ctx, "Proceed with deletion? [y/n]: ")
 		if err != nil {
 			return nil, err
 		}
@@ -57,7 +57,7 @@ func (m *delete) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator,
 		return nil, err
 	}
 
-	cmdio.LogString(ctx, fmt.Sprintf("\n Deleted snapshot file at %s", sync.SnapshotPath()))
+	cmdio.LogString(ctx, fmt.Sprintf("\nDeleted snapshot file at %s", sync.SnapshotPath()))
 	cmdio.LogString(ctx, "Successfully deleted files!")
 	return nil, nil
 }
