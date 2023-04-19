@@ -64,6 +64,16 @@ func LogString(ctx context.Context, message string) {
 	})
 }
 
+func LogError(ctx context.Context, err error) {
+	logger, ok := FromContext(ctx)
+	if !ok {
+		logger = Default()
+	}
+	logger.Log(&ErrorEvent{
+		Error: err.Error(),
+	})
+}
+
 func Ask(ctx context.Context, question string) (bool, error) {
 	logger, ok := FromContext(ctx)
 	if !ok {

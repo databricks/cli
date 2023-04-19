@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/databricks/bricks/internal/build"
+	"github.com/databricks/bricks/libs/cmdio"
 	"github.com/databricks/bricks/libs/log"
 	"github.com/spf13/cobra"
 	"golang.org/x/exp/slog"
@@ -23,6 +24,10 @@ var RootCmd = &cobra.Command{
 	// is specified and not when runtime errors occur (e.g. resource not found).
 	// The usage string is include in [flagErrorFunc] for flag errors only.
 	SilenceUsage: true,
+
+	// Silence errors so that they are not logged by cobra. We log any errors
+	// downstream using the cmdio logger which allows us to support json logging
+	SilenceErrors: true,
 
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
@@ -65,6 +70,11 @@ func Execute() {
 
 	// Run the command
 	cmd, err := RootCmd.ExecuteContextC(ctx)
+	if err != nil {
+		// If cmdio logger initialization succeeds, then this function logs with the
+		// initialized cmdio logger, otherwise with the default cmdio logger
+		cmdio.LogError(cmd.Context(), err)
+	}
 
 	// Log exit status and error
 	// We only log if logger initialization succeeded and is stored in command
