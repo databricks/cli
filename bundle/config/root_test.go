@@ -74,3 +74,22 @@ func TestRootMergeMap(t *testing.T) {
 	assert.NoError(t, root.Merge(other))
 	assert.Equal(t, &Workspace{Host: "bar", Profile: "profile"}, root.Environments["development"].Workspace)
 }
+
+func TestDuplicateIdOnLoadReturnsError(t *testing.T) {
+	root := &Root{}
+	err := root.Load("./testdata/duplicate_resource_names_in_root/bundle.yml")
+	assert.ErrorContains(t, err, "multiple resources named foo (job at ./testdata/duplicate_resource_names_in_root/bundle.yml, pipeline at ./testdata/duplicate_resource_names_in_root/bundle.yml)")
+}
+
+func TestDuplicateIdOnMergeReturnsError(t *testing.T) {
+	root := &Root{}
+	err := root.Load("./testdata/duplicate_resource_name_in_subconfiguration/bundle.yml")
+	require.NoError(t, err)
+
+	other := &Root{}
+	err = other.Load("./testdata/duplicate_resource_name_in_subconfiguration/resources.yml")
+	require.NoError(t, err)
+
+	err = root.Merge(other)
+	assert.ErrorContains(t, err, "multiple resources named foo (job at ./testdata/duplicate_resource_name_in_subconfiguration/bundle.yml, pipeline at ./testdata/duplicate_resource_name_in_subconfiguration/resources.yml)")
+}
