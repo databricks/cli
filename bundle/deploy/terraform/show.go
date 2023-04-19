@@ -35,15 +35,6 @@ func (m *showPlan) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutato
 	// compute bundle specific change events
 	changeEvents := make([]*ResourceChangeEvent, 0)
 	for _, change := range plan.ResourceChanges {
-		if change.Change == nil {
-			continue
-		}
-		if change.Change.Actions.Replace() {
-			b.Plan.IsReplacingResource = true
-		}
-		if change.Change.Actions.Delete() {
-			b.Plan.IsDeletingResource = true
-		}
 		event := toResourceChangeEvent(change)
 		if event == nil {
 			continue
@@ -59,6 +50,12 @@ func (m *showPlan) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutato
 	// log resource changes
 	cmdio.LogString(ctx, "The following resource changes will be applied:")
 	for _, event := range changeEvents {
+		if event.Action == ActionDelete {
+			b.Plan.IsDeletingResource = true
+		}
+		if event.Action == ActionReplace {
+			b.Plan.IsReplacingResource = true
+		}
 		cmdio.Log(ctx, event)
 	}
 	cmdio.LogNewline(ctx)

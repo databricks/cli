@@ -16,8 +16,6 @@ func (m *delete) Name() string {
 	return "files.Delete"
 }
 
-// TODO: autoapprove and tty detection for destroy. Don't allow destroy without auto-approve otherwise. Note this is a breaking change
-
 func (m *delete) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator, error) {
 	// Do not delete files if terraform destroy was not consented
 	if !b.Plan.IsEmpty && !b.Plan.ConfirmApply {

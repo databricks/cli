@@ -12,36 +12,30 @@ import (
 type ResourceChangeEvent struct {
 	Name         string `json:"name"`
 	ResourceType string `json:"resource_type"`
-	Action       string `json:"action"`
+	Action       Action `json:"action"`
 }
 
-func toAction(actions tfjson.Actions) string {
-	action := "no-op"
+type Action string
+
+const (
+	ActionCreate  = Action("create")
+	ActionUpdate  = Action("update")
+	ActionDelete  = Action("delete")
+	ActionReplace = Action("replace")
+	ActionNoop    = Action("no-op")
+)
+
+func toAction(actions tfjson.Actions) Action {
+	action := ActionNoop
 	switch {
 	case actions.Create():
-		action = "create"
-	case actions.Read():
-		action = "read"
+		action = ActionCreate
 	case actions.Update():
-		action = "update"
+		action = ActionUpdate
 	case actions.Delete():
-		action = "delete"
+		action = ActionDelete
 	case actions.Replace():
-		action = "replace"
-	}
-
-	red := color.New(color.FgRed).SprintFunc()
-	green := color.New(color.FgGreen).SprintFunc()
-	yellow := color.New(color.FgYellow).SprintFunc()
-	isTty := term.IsTerminal(int(os.Stderr.Fd()))
-	if isTty && action == "create" {
-		action = green(action)
-	}
-	if isTty && action == "delete" {
-		action = red(action)
-	}
-	if isTty && action == "replace" {
-		action = yellow(action)
+		action = ActionReplace
 	}
 	return action
 }
@@ -89,7 +83,24 @@ func toResourceChangeEvent(change *tfjson.ResourceChange) *ResourceChangeEvent {
 }
 
 func (event *ResourceChangeEvent) String() string {
-	return strings.Join([]string{" ", string(event.Action), event.ResourceType, event.Name}, " ")
+	action := string(event.Action)
+
+	// color create, replace and delete events
+	red := color.New(color.FgRed).SprintFunc()
+	green := color.New(color.FgGreen).SprintFunc()
+	yellow := color.New(color.FgYellow).SprintFunc()
+	isTty := term.IsTerminal(int(os.Stderr.Fd()))
+	if isTty && action == "create" {
+		action = green(action)
+	}
+	if isTty && action == "delete" {
+		action = red(action)
+	}
+	if isTty && action == "replace" {
+		action = yellow(action)
+	}
+
+	return strings.Join([]string{" ", action, event.ResourceType, event.Name}, " ")
 }
 
 func (event *ResourceChangeEvent) IsInplaceSupported() bool {
