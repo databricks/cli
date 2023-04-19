@@ -72,9 +72,14 @@ func (w *apply) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator, 
 		return nil, fmt.Errorf("no plan found")
 	}
 
-	cmdio.LogString(ctx, "\nStarting resource deployment")
+	if w.goal == ApplyDeploy {
+		cmdio.LogString(ctx, "\nStarting resource deployment")
+	}
+	if w.goal == ApplyDestroy {
+		cmdio.LogString(ctx, "\nStarting resource destruction")
+	}
 
-	// Apply terraform according to the computed destroy plan
+	// Apply terraform according to the computed plan
 	err = tf.Apply(ctx, tfexec.DirOrPlan(b.Plan.Path))
 	if err != nil {
 		return nil, fmt.Errorf("terraform apply: %w", err)

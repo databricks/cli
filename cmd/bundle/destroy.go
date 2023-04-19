@@ -13,8 +13,6 @@ import (
 	"golang.org/x/term"
 )
 
-// TODO: note possibility of aliases
-
 var destroyCmd = &cobra.Command{
 	Use:   "destroy",
 	Short: "Destroy deployed bundle resources",
