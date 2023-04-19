@@ -26,7 +26,7 @@ func (m *upload) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator,
 		return nil, err
 	}
 
-	cmdio.LogString(ctx, fmt.Sprintf("Uploaded bundle files at %s!\n", b.Config.Workspace.FilesPath))
+	cmdio.LogString(ctx, fmt.Sprintf("Uploaded bundle files at %s\n", b.Config.Workspace.FilesPath))
 	return nil, nil
 }
 

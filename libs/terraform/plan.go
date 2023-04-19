@@ -10,4 +10,10 @@ type Plan struct {
 
 	// If true, the plan is empty and applying it will not do anything
 	IsEmpty bool
+
+	// If true, there are one or more resources in plan that will be re-created
+	IsReplacingResource bool
+
+	// if true, there are one or more resources in plan that will be destroyed
+	IsDeletingResource bool
 }

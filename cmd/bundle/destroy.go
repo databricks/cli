@@ -13,6 +13,8 @@ import (
 	"golang.org/x/term"
 )
 
+// TODO: note possibility of aliases
+
 var destroyCmd = &cobra.Command{
 	Use:   "destroy",
 	Short: "Destroy deployed bundle resources",
@@ -51,9 +53,8 @@ var destroyCmd = &cobra.Command{
 	},
 }
 
-var autoApprove bool
-
 func init() {
 	AddCommand(destroyCmd)
-	destroyCmd.Flags().BoolVar(&autoApprove, "auto-approve", false, "Skip interactive approvals for deleting resources and files")
+	destroyCmd.Flags().BoolVar(&autoApprove, "auto-approve", false, "Skip interactive approvals")
+	destroyCmd.Flags().BoolVar(&force, "force", false, "Force acquisition of deployment lock.")
 }

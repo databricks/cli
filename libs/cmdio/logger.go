@@ -63,6 +63,14 @@ func LogString(ctx context.Context, message string) {
 	})
 }
 
+func LogNewline(ctx context.Context) {
+	logger, ok := FromContext(ctx)
+	if !ok {
+		logger = Default()
+	}
+	logger.Log(&NewlineEvent{})
+}
+
 func Ask(ctx context.Context, question string) (bool, error) {
 	logger, ok := FromContext(ctx)
 	if !ok {

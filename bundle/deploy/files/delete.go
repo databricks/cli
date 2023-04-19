@@ -16,18 +16,21 @@ func (m *delete) Name() string {
 	return "files.Delete"
 }
 
+// TODO: autoapprove and tty detection for destroy. Don't allow destroy without auto-approve otherwise. Note this is a breaking change
+
 func (m *delete) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator, error) {
 	// Do not delete files if terraform destroy was not consented
 	if !b.Plan.IsEmpty && !b.Plan.ConfirmApply {
 		return nil, nil
 	}
 
-	cmdio.LogString(ctx, "Starting deletion of remote bundle files")
+	cmdio.LogString(ctx, "\nStarting deletion of remote bundle files")
 	cmdio.LogString(ctx, fmt.Sprintf("Bundle remote directory is %s", b.Config.Workspace.RootPath))
 
 	red := color.New(color.FgRed).SprintFunc()
 	if !b.AutoApprove {
-		proceed, err := cmdio.Ask(ctx, fmt.Sprintf("\n%s and all files in it will be %s Proceed?: ", b.Config.Workspace.RootPath, red("deleted permanently!")))
+		cmdio.LogString(ctx, fmt.Sprintf("\n%s and all files in it will be %s.", b.Config.Workspace.RootPath, red("deleted permanently!")))
+		proceed, err := cmdio.Ask(ctx, "Proceed with deletion?: ")
 		if err != nil {
 			return nil, err
 		}
@@ -54,7 +57,7 @@ func (m *delete) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator,
 		return nil, err
 	}
 
-	cmdio.LogString(ctx, fmt.Sprintf("Deleted snapshot file at %s", sync.SnapshotPath()))
+	cmdio.LogString(ctx, fmt.Sprintf("\n Deleted snapshot file at %s", sync.SnapshotPath()))
 	cmdio.LogString(ctx, "Successfully deleted files!")
 	return nil, nil
 }
