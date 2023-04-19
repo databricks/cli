@@ -1,0 +1,10 @@
+bundle:
+  name: foo ${workspace.profile}
+
+workspace:
+  profile: bar
+
+resources:
+  jobs:
+    my_job:
+      name: "${bundle.name} | ${workspace.profile}"

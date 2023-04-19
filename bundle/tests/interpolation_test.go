@@ -1,0 +1,23 @@
+package config_tests
+
+import (
+	"context"
+	"testing"
+
+	"github.com/databricks/bricks/bundle"
+	"github.com/databricks/bricks/bundle/config/interpolation"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestInterpolation(t *testing.T) {
+	b := load(t, "./interpolation")
+	err := bundle.Apply(context.Background(), b, []bundle.Mutator{
+		interpolation.Interpolate(
+			interpolation.IncludeLookupsInPath("bundle"),
+			interpolation.IncludeLookupsInPath("workspace"),
+		)})
+	require.NoError(t, err)
+	assert.Equal(t, "foo bar", b.Config.Bundle.Name)
+	assert.Equal(t, "foo bar | bar", b.Config.Resources.Jobs["my_job"].Name)
+}
