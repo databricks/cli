@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"reflect"
 	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/databricks/bricks/bundle"
+	"golang.org/x/exp/slices"
 )
 
 const Delimiter = "."
@@ -66,7 +68,10 @@ type accumulator struct {
 	// all string fields in the bundle config
 	strings map[string]*stringField
 
-	// contains path -> resolve string mapping for string fields in the config
+	// contains path -> resolved_string mapping for string fields in the config
+	// The resolved strings will NOT contain any variable references that could
+	// have been resolved, however there might still be references that cannot
+	// be resolved
 	memo map[string]string
 }
 
@@ -158,35 +163,6 @@ func (a *accumulator) start(v any) {
 	a.walk([]string{}, rv, nilSetter{})
 }
 
-func contains(s []string, e string) bool {
-	for _, a := range s {
-		if a == e {
-			return true
-		}
-	}
-	return false
-}
-
-func (a *accumulator) SafeResolve(path string, seenPaths *[]string, fns ...LookupFunction) error {
-	// error if there is a loop in variable interpolation
-	if contains(*seenPaths, path) {
-		return fmt.Errorf("cycle retected in field resolution: %s -> %s", strings.Join(*seenPaths, " -> "), path)
-	}
-
-	// add path to seenPaths
-	*seenPaths = append(*seenPaths, path)
-
-	// resolve the string field at path
-	err := a.Resolve(path, *seenPaths, fns...)
-	if err != nil {
-		return err
-	}
-
-	// remove path from seenPaths
-	*seenPaths = (*seenPaths)[:len(*seenPaths)-1]
-	return nil
-}
-
 // recursively interpolate variables in a depth first manner
 func (a *accumulator) Resolve(path string, seenPaths []string, fns ...LookupFunction) error {
 	// return early if the path is already resolved
@@ -195,40 +171,53 @@ func (a *accumulator) Resolve(path string, seenPaths []string, fns ...LookupFunc
 	}
 
 	// fetch the string node to resolve
-	currentField, ok := a.strings[path]
+	field, ok := a.strings[path]
 	if !ok {
 		return fmt.Errorf("could not find string field with path %s", path)
 	}
 
 	// return early if the string field has no variables to interpolate
-	if len(currentField.dependsOn()) == 0 {
-		a.memo[path] = currentField.Get()
+	if len(field.dependsOn()) == 0 {
+		a.memo[path] = field.Get()
 		return nil
 	}
 
 	// resolve all variables refered in the root string field
-	childFieldPaths := currentField.dependsOn()
-	for _, childFieldPath := range childFieldPaths {
+	for _, childFieldPath := range field.dependsOn() {
+		// error if there is a loop in variable interpolation
+		if slices.Contains(seenPaths, childFieldPath) {
+			return fmt.Errorf("cycle detected in field resolution: %s", strings.Join(append(seenPaths, childFieldPath), " -> "))
+		}
+
 		// recursive resolve variables in the child fields
-		err := a.SafeResolve(childFieldPath, &seenPaths, fns...)
+		err := a.Resolve(childFieldPath, append(seenPaths, childFieldPath), fns...)
 		if err != nil {
 			return err
 		}
 	}
 
-	// interpolate root string once all variables required are resolved
-	currentField.interpolate(fns, a.memo)
+	// interpolate root string once all variable references in it have been resolved
+	field.interpolate(fns, a.memo)
 
 	// record interpolated string in memo
-	a.memo[path] = currentField.Get()
+	a.memo[path] = field.Get()
 	return nil
 }
 
 // Interpolate all string fields in the config
 func (a *accumulator) expand(fns ...LookupFunction) error {
 	seenPaths := make([]string, 0)
+
+	// sorting paths for stable order of iteration
+	paths := make([]string, 0, len(a.strings))
 	for path := range a.strings {
-		err := a.SafeResolve(path, &seenPaths, fns...)
+		paths = append(paths, path)
+	}
+	sort.Strings(paths)
+
+	// iterate over paths for all strings fields in the config
+	for _, path := range paths {
+		err := a.Resolve(path, append(seenPaths, path), fns...)
 		if err != nil {
 			return err
 		}
