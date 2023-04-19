@@ -69,7 +69,7 @@ func TestUpdateErrorIgnoredForWarnEvents(t *testing.T) {
 		Error: &pipelines.ErrorDetail{
 			Exceptions: []pipelines.SerializedException{
 				{
-					Message: "parsing error",
+					Message: "THIS IS IGNORED",
 				},
 			},
 		},
