@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/databricks/bricks/bundle"
+	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
 )
 
@@ -206,18 +207,13 @@ func (a *accumulator) Resolve(path string, seenPaths []string, fns ...LookupFunc
 
 // Interpolate all string fields in the config
 func (a *accumulator) expand(fns ...LookupFunction) error {
-	seenPaths := make([]string, 0)
-
 	// sorting paths for stable order of iteration
-	paths := make([]string, 0, len(a.strings))
-	for path := range a.strings {
-		paths = append(paths, path)
-	}
+	paths := maps.Keys(a.strings)
 	sort.Strings(paths)
 
 	// iterate over paths for all strings fields in the config
 	for _, path := range paths {
-		err := a.Resolve(path, append(seenPaths, path), fns...)
+		err := a.Resolve(path, []string{path}, fns...)
 		if err != nil {
 			return err
 		}
