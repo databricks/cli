@@ -9,6 +9,15 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 )
 
+// The dlt backend computes events for pipeline runs which are accessable through
+// the 2.0/pipelines/{pipeline_id}/events API
+//
+// There are 4 levels for these events: ("ERROR", "WARN", "INFO", "METRICS")
+//
+// Here's short introduction to a few important events we display on the console:
+//
+// 1. `update_progress`: A state transition occured for the entire pipeline update
+// 2. `flow_progress`: A state transition occured for a single flow in the pipeine
 type ProgressEvent pipelines.PipelineEvent
 
 func (event *ProgressEvent) String() string {
@@ -21,8 +30,8 @@ func (event *ProgressEvent) String() string {
 	result.WriteString(event.Level.String() + " ")
 	result.WriteString(fmt.Sprintf(`"%s"`, event.Message))
 
-	// construct error string
-	if event.Error != nil {
+	// construct error string if level=`Error`
+	if event.Level == pipelines.EventLevelError && event.Error != nil {
 		for _, exception := range event.Error.Exceptions {
 			result.WriteString(fmt.Sprintf("\n%s", exception.Message))
 		}
