@@ -22,11 +22,11 @@ const (
 	ActionUpdate  = Action("update")
 	ActionDelete  = Action("delete")
 	ActionReplace = Action("replace")
-	ActionNoop    = Action("no-op")
+	ActionNoOp    = Action("no-op")
 )
 
 func toAction(actions tfjson.Actions) Action {
-	action := ActionNoop
+	action := ActionNoOp
 	switch {
 	case actions.Create():
 		action = ActionCreate

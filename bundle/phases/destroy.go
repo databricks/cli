@@ -14,9 +14,9 @@ func Destroy() bundle.Mutator {
 		[]bundle.Mutator{
 			lock.Acquire(),
 			terraform.StatePull(),
-			terraform.Plan("destroy"),
+			terraform.Plan(terraform.PlanDestroy),
 			terraform.ShowPlan(),
-			terraform.Apply("destroy"),
+			terraform.Apply(terraform.ApplyDestroy),
 			terraform.StatePush(),
 			lock.Release(),
 			files.Delete(),

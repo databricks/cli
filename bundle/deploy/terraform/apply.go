@@ -28,10 +28,10 @@ func (w *apply) Name() string {
 func (w *apply) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator, error) {
 	// return early if plan is empty
 	if b.Plan.IsEmpty {
-		if w.goal == ApplyDeploy {
+		switch w.goal {
+		case ApplyDeploy:
 			cmdio.LogString(ctx, "No resource changes to apply. Skipping deploy!")
-		}
-		if w.goal == ApplyDestroy {
+		case ApplyDestroy:
 			cmdio.LogString(ctx, "No resources to destroy in plan. Skipping destroy!")
 		}
 		return nil, nil
@@ -72,10 +72,10 @@ func (w *apply) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator, 
 		return nil, fmt.Errorf("no plan found")
 	}
 
-	if w.goal == ApplyDeploy {
+	switch w.goal {
+	case ApplyDeploy:
 		cmdio.LogString(ctx, "\nStarting resource deployment")
-	}
-	if w.goal == ApplyDestroy {
+	case ApplyDestroy:
 		cmdio.LogString(ctx, "\nStarting resource destruction")
 	}
 
@@ -85,10 +85,10 @@ func (w *apply) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator, 
 		return nil, fmt.Errorf("terraform apply: %w", err)
 	}
 
-	if w.goal == ApplyDeploy {
+	switch w.goal {
+	case ApplyDeploy:
 		cmdio.LogString(ctx, "Successfully deployed resources!")
-	}
-	if w.goal == ApplyDestroy {
+	case ApplyDestroy:
 		cmdio.LogString(ctx, "Successfully destroyed resources!")
 	}
 	return nil, nil

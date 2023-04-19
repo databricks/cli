@@ -23,14 +23,14 @@ var deployCmd = &cobra.Command{
 		b := bundle.Get(cmd.Context())
 
 		// If `--force` is specified, force acquisition of the deployment lock.
-		b.Config.Bundle.Lock.Force = force
+		b.Config.Bundle.Lock.Force = forceDeploy
 
 		// If `--auto-approve`` is specified, we skip confirmation checks
-		b.AutoApprove = autoApprove
+		b.AutoApprove = autoApproveDeploy
 
 		// we require auto-approve for non tty terminals since interactive consent
 		// is not possible
-		if !term.IsTerminal(int(os.Stderr.Fd())) && !autoApprove {
+		if !term.IsTerminal(int(os.Stderr.Fd())) && !autoApproveDeploy {
 			return fmt.Errorf("please specify --auto-approve to skip interactive confirmation checks for non tty consoles")
 		}
 
@@ -39,7 +39,7 @@ var deployCmd = &cobra.Command{
 		if !ok {
 			return fmt.Errorf("progress logger not found")
 		}
-		if logger.Mode == flags.ModeJson && !autoApprove {
+		if logger.Mode == flags.ModeJson && !autoApproveDeploy {
 			return fmt.Errorf("please specify --auto-approve since selected logging format is json")
 		}
 
@@ -51,12 +51,12 @@ var deployCmd = &cobra.Command{
 	},
 }
 
-var force bool
+var forceDeploy bool
 
-var autoApprove bool
+var autoApproveDeploy bool
 
 func init() {
 	AddCommand(deployCmd)
-	deployCmd.Flags().BoolVar(&force, "force", false, "Force acquisition of deployment lock.")
-	deployCmd.Flags().BoolVar(&autoApprove, "auto-approve", false, "Skip interactive approvals")
+	deployCmd.Flags().BoolVar(&forceDeploy, "force", false, "Force acquisition of deployment lock.")
+	deployCmd.Flags().BoolVar(&autoApproveDeploy, "auto-approve", false, "Skip interactive approvals")
 }
