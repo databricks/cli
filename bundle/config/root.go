@@ -20,6 +20,10 @@ type Root struct {
 	// version of the spec (TODO), default cluster, default warehouse, etc.
 	Bundle Bundle `json:"bundle"`
 
+	// Contains git config information like current commit, current branch and
+	// origin url. Automatically loaded by reading .git directory if not specified
+	GitConfig GitConfig `json:"git_config,omitempty"`
+
 	// Include specifies a list of patterns of file names to load and
 	// merge into the this configuration. If not set in `bundle.yml`,
 	// it defaults to loading `*.yml` and `*/*.yml`.
