@@ -1,28 +1,25 @@
-# Bricks CLI 🧱 [![build](https://github.com/databricks/bricks/workflows/build/badge.svg?branch=main)](https://github.com/databricks/bricks/actions?query=workflow%3Abuild+branch%3Amain)
+# Bricks CLI
 
-_Where's "data"? Secured by the unity catalog. Projects build lifecycle is secured by `bricks` 🧱_
+[![build](https://github.com/databricks/bricks/workflows/build/badge.svg?branch=main)](https://github.com/databricks/bricks/actions?query=workflow%3Abuild+branch%3Amain)
 
-This is an early PoC at this stage. `make build` (or [download the latest from releases page](https://github.com/databricks/bricks/releases)).
+This project is in private preview.
 
-Reuses authentication from Databricks CLI. And terraform provider. See details here: https://registry.terraform.io/providers/databrickslabs/databricks/latest/docs#environment-variables
+Documentation is available at https://docs.databricks.com/dev-tools/cli/bricks-cli.html.
 
-Supports:
-* Databricks CLI
-* Databricks CLI Profiles
-* Azure CLI Auth
-* Azure MSI Auth
-* Azure SPN Auth
-* Google OIDC Auth
-* Direct `DATABRICKS_HOST`, `DATABRICKS_TOKEN` or `DATABRICKS_USERNAME` + `DATABRICKS_PASSWORD` variables.
+## Installation
 
-What works:
+This CLI is packaged as a dependency-free binary executable and may be located in any directory.
 
-* `./bricks fs ls /`
-* `./bricks test`
-* `./bricks launch test.py`
+For convenient access, copy the `bricks` binary to any directory listed in `$PATH`.
 
-What doesn't work:
+Confirm the binary works by executing `bricks version`.
 
-* Everything else.
+## Authentication
 
-This project reuses some code from Databricks Terraform Provider
+This CLI follows the Databricks Unified Authentication principles.
+
+You can find a detailed description at https://github.com/databricks/databricks-sdk-go#authentication.
+
+## Databricks Asset Bundles
+
+tbd
