@@ -9,7 +9,7 @@ import (
 	"github.com/databricks/bricks/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/service/scim"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
@@ -29,7 +29,7 @@ func isPathNestedUnder(child, parent string) bool {
 }
 
 // Check if the specified path is nested under one of the allowed base paths.
-func checkPathNestedUnderBasePaths(me *scim.User, p string) error {
+func checkPathNestedUnderBasePaths(me *iam.User, p string) error {
 	validBasePaths := []string{
 		path.Clean(fmt.Sprintf("/Users/%s", me.UserName)),
 		path.Clean(fmt.Sprintf("/Repos/%s", me.UserName)),
@@ -49,7 +49,7 @@ func checkPathNestedUnderBasePaths(me *scim.User, p string) error {
 	return nil
 }
 
-func repoPathForPath(me *scim.User, remotePath string) string {
+func repoPathForPath(me *iam.User, remotePath string) string {
 	base := path.Clean(fmt.Sprintf("/Repos/%s", me.UserName))
 	remotePath = path.Clean(remotePath)
 	for strings.HasPrefix(path.Dir(remotePath), base) && path.Dir(remotePath) != base {
