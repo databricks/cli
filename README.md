@@ -19,7 +19,3 @@ Confirm the binary works by executing `bricks version`.
 This CLI follows the Databricks Unified Authentication principles.
 
 You can find a detailed description at https://github.com/databricks/databricks-sdk-go#authentication.
-
-## Databricks Asset Bundles
-
-tbd
