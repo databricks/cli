@@ -4,12 +4,12 @@ package {{.SnakeName}}
 
 import (
     "github.com/databricks/bricks/lib/ui"
-	"github.com/databricks/bricks/project"
 	"github.com/databricks/databricks-sdk-go/service/{{.Package.Name}}"
 	"github.com/spf13/cobra"
 )
 
-{{if not .MatchesPackageName}}
+{{- $includes := dict "command-execution" "no" "dbfs" "no" -}}
+{{if not (eq (getOrDefault $includes .KebabName "yes") "yes") }}
 	{{template "service" .}}
 {{else}}
 	{{skipThisFile}}
@@ -24,7 +24,6 @@ var Cmd = &cobra.Command{
     {{- end}}
 }
 
-{{- if not (eq .Name "CommandExecution") -}}
 {{range .Methods}}
 // start {{.KebabName}} command
 
@@ -148,7 +147,6 @@ var {{.CamelName}}Cmd = &cobra.Command{
 		{{- end -}}
 	},
 }
-{{end}}
 {{end}}
 
 // end service {{.Name}}{{end}}
