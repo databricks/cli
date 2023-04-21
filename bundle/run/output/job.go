@@ -48,7 +48,7 @@ func (out *JobOutput) String() (string, error) {
 }
 
 func GetJobOutput(ctx context.Context, w *databricks.WorkspaceClient, runId int64) (*JobOutput, error) {
-	jobRun, err := w.Jobs.GetRun(ctx, jobs.GetRun{
+	jobRun, err := w.Jobs.GetRun(ctx, jobs.GetRunRequest{
 		RunId: runId,
 	})
 	if err != nil {
@@ -58,7 +58,7 @@ func GetJobOutput(ctx context.Context, w *databricks.WorkspaceClient, runId int6
 		TaskOutputs: make(map[string]RunOutput),
 	}
 	for _, task := range jobRun.Tasks {
-		jobRunOutput, err := w.Jobs.GetRunOutput(ctx, jobs.GetRunOutput{
+		jobRunOutput, err := w.Jobs.GetRunOutput(ctx, jobs.GetRunOutputRequest{
 			RunId: task.RunId,
 		})
 		if err != nil {

@@ -3,12 +3,12 @@ package sync
 import (
 	"testing"
 
-	"github.com/databricks/databricks-sdk-go/service/scim"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestPathNestedUnderBasePaths(t *testing.T) {
-	me := scim.User{
+	me := iam.User{
 		UserName: "jane@doe.com",
 	}
 
@@ -39,7 +39,7 @@ func TestPathNestedUnderBasePaths(t *testing.T) {
 }
 
 func TestPathToRepoPath(t *testing.T) {
-	me := scim.User{
+	me := iam.User{
 		UserName: "jane@doe.com",
 	}
 
