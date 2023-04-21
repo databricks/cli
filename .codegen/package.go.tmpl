@@ -1,0 +1,28 @@
+// Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+
+package {{.Name}}
+
+import (
+    {{range .Services}}{{if not .MatchesPackageName}}
+	"github.com/databricks/bricks/cmd/{{.Package.Name}}/{{.KebabName}}"{{end}}{{end}}
+	"github.com/spf13/cobra"
+)
+
+{{if .MainService -}}
+    {{load ".codegen/service.go.tmpl"}}
+    {{template "service" .MainService}}
+{{- else -}}
+var Cmd = &cobra.Command{
+	Use:   "{{.Name}}",
+    {{if .Description -}}
+    Short: `{{.Summary | without "`"}}`,
+	Long: `{{.Comment  "  " 80 | without "`"}}`,
+    {{- end}}
+}
+{{end}}
+
+func init() {
+    Cmd.PersistentFlags().String("profile", "", "~/.databrickscfg profile")
+    {{range .Services}}{{if not .MatchesPackageName}}
+    Cmd.AddCommand({{.SnakeName}}.Cmd){{end}}{{end}}
+}

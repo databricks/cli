@@ -1,0 +1,14 @@
+// Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+
+package cmd
+
+import (
+	"github.com/databricks/bricks/cmd/root"
+    {{range .Packages}}
+	"github.com/databricks/bricks/cmd/{{.Name}}"{{end}}
+)
+
+func init() {
+    {{range .Packages}}
+	root.RootCmd.AddCommand({{.Name}}.Cmd){{end}}
+}
