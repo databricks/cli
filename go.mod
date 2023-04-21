@@ -3,8 +3,10 @@ module github.com/databricks/bricks
 go 1.18
 
 require (
+	github.com/briandowns/spinner v1.23.0
 	github.com/databricks/databricks-sdk-go v0.8.0
 	github.com/ghodss/yaml v1.0.0 // MIT + NOTICE
+	github.com/nwidger/jsoncolor v0.3.2
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8 // BSD-2-Clause
 	github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06 // MIT
 	github.com/spf13/cobra v1.7.0 // Apache 2.0
@@ -26,8 +28,11 @@ require (
 	golang.org/x/term v0.7.0
 )
 
+require github.com/manifoldco/promptui v0.9.0 // indirect
+
 require (
 	github.com/apparentlymart/go-textseg/v13 v13.0.0 // indirect
+	github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e // indirect
 	github.com/google/s2a-go v0.1.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect

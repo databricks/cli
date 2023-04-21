@@ -1,10 +1,7 @@
 {
     "formatter": "go run golang.org/x/tools/cmd/goimports@latest -w $FILENAMES && go fmt ./...",
-    "packages": {
-        ".codegen/package.go.tmpl": "cmd/{{.Name}}/{{.Name}}.go"
-    },
     "services": {
-        ".codegen/service.go.tmpl": "cmd/{{.Package.Name}}/{{.KebabName}}/{{.KebabName}}.go"
+        ".codegen/service.go.tmpl": "cmd/{{if .IsAccounts}}account/{{end}}{{.KebabName}}/{{.KebabName}}.go"
     },
     "batch": {
         ".codegen/cmd.go.tmpl": "cmd/cmd.go"

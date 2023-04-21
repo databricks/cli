@@ -3,13 +3,11 @@ package sdk
 import (
 	"context"
 	"errors"
-	"os"
 
 	"github.com/databricks/bricks/lib/ui"
-	"github.com/databricks/bricks/project"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
-	"github.com/databricks/databricks-sdk-go/service/scim"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/spf13/cobra"
 )
 
@@ -66,59 +64,6 @@ TRY_AUTH: // or try picking a config profile dynamically
 	return nil
 }
 
-func PreWorkspaceClient(cmd *cobra.Command, args []string) error {
-	cfg := &config.Config{}
-
-	// command-line flag takes precedence
-	profileFlag := cmd.Flag("profile")
-	if profileFlag != nil {
-		cfg.Profile = profileFlag.Value.String()
-	}
-
-	// otherwise we load profile from databricks.yml
-	if cfg.Profile == "" && project.IsDatabricksProject() {
-		err := project.Configure(cmd, args)
-		if err != nil {
-			return err
-		}
-		prjConfig := project.Get(cmd.Context()).WorkspacesClient().Config
-		cfg.Profile = prjConfig.Profile
-	}
-
-TRY_AUTH: // or try picking a config profile dynamically
-	ctx := cmd.Context()
-	w, err := databricks.NewWorkspaceClient((*databricks.Config)(cfg))
-	if err != nil {
-		return err
-	}
-	// get current user identity also to verify validity of configuration
-	me, err := w.CurrentUser.Me(ctx)
-	if ui.Interactive && errors.Is(err, config.ErrCannotConfigureAuth) {
-		profile, err := askForWorkspaceProfile()
-		if errors.Is(err, os.ErrNotExist) {
-			root := cmd.Root()
-			root.SetArgs([]string{"configure", "--token"})
-			err = root.Execute()
-			if err != nil {
-				return err
-			}
-			goto TRY_AUTH
-		}
-		if err != nil {
-			return err
-		}
-		cfg = &config.Config{Profile: profile}
-		goto TRY_AUTH
-	}
-	if err != nil {
-		return err
-	}
-	ctx = context.WithValue(ctx, &currentUser, me)
-	ctx = context.WithValue(ctx, &workspaceClient, w)
-	cmd.SetContext(ctx)
-	return nil
-}
-
 func WorkspaceClient(ctx context.Context) *databricks.WorkspaceClient {
 	return ctx.Value(&workspaceClient).(*databricks.WorkspaceClient)
 }
@@ -127,6 +72,6 @@ func AccountClient(ctx context.Context) *databricks.AccountClient {
 	return ctx.Value(&accountClient).(*databricks.AccountClient)
 }
 
-func Me(ctx context.Context) *scim.User {
-	return ctx.Value(&currentUser).(*scim.User)
+func Me(ctx context.Context) *iam.User {
+	return ctx.Value(&currentUser).(*iam.User)
 }

@@ -4,12 +4,13 @@ package {{.SnakeName}}
 
 import (
     "github.com/databricks/bricks/lib/ui"
+	"github.com/databricks/bricks/cmd/root"
 	"github.com/databricks/databricks-sdk-go/service/{{.Package.Name}}"
 	"github.com/spf13/cobra"
 )
 
-{{- $includes := dict "command-execution" "no" "dbfs" "no" -}}
-{{if not (eq (getOrDefault $includes .KebabName "yes") "yes") }}
+{{- $excludes := list "command-execution" "statement-execution" "dbfs" "dbsql-permissions" -}}
+{{if not (in $excludes .KebabName) }}
 	{{template "service" .}}
 {{else}}
 	{{skipThisFile}}
@@ -67,7 +68,7 @@ var {{.CamelName}}Cmd = &cobra.Command{
     {{end}}
 	Annotations: map[string]string{},{{if and (not $hasIdPrompt) $hasPosArgs }}
 	Args: cobra.ExactArgs({{len .Request.RequiredFields}}),{{end}}
-	PreRunE: sdk.{{if .Service.IsAccounts}}PreAccountClient{{else}}PreWorkspaceClient{{end}},
+	PreRunE: root.TryWorkspaceClient,{{if .Service.IsAccounts}} // FIXME: accounts client{{end}}
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		{{if .Service.IsAccounts}}a := sdk.AccountClient(ctx){{else}}w := sdk.WorkspaceClient(ctx){{end}}

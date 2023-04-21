@@ -88,6 +88,13 @@ func TryConfigureBundle(cmd *cobra.Command, args []string) error {
 	return configureBundle(cmd, args, bundle.TryLoad)
 }
 
+// BundleOrProfile tries configuring WorkspaceClient either from Bundle
+// or from profile
+func TryWorkspaceClient(cmd *cobra.Command, args []string) error {
+	// TODO: add config profile
+	return configureBundle(cmd, args, bundle.TryLoad)
+}
+
 // environmentCompletion executes to autocomplete the argument to the environment flag.
 func environmentCompletion(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 	b, err := loadBundle(cmd, args, bundle.MustLoad)

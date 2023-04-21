@@ -2,13 +2,15 @@
 
 package cmd
 
+{{$excludes := list "command-execution" "statement-execution" "dbfs" "dbsql-permissions"}}
+
 import (
 	"github.com/databricks/bricks/cmd/root"
-    {{range .Packages}}
-	"github.com/databricks/bricks/cmd/{{.Name}}"{{end}}
+    {{range .Services}}{{if not .IsAccounts}}{{if not (in $excludes .KebabName) }}
+	{{.SnakeName}} "github.com/databricks/bricks/cmd/{{.KebabName}}"{{end}}{{end}}{{end}}
 )
 
 func init() {
-    {{range .Packages}}
-	root.RootCmd.AddCommand({{.Name}}.Cmd){{end}}
+    {{range .Services}}{{if not .IsAccounts}}{{if not (in $excludes .KebabName) }}
+	root.RootCmd.AddCommand({{.SnakeName}}.Cmd){{end}}{{end}}{{end}}
 }
