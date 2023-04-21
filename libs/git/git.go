@@ -25,18 +25,12 @@ var (
 	ErrRemoteOriginUrlNotDefined = fmt.Errorf("git origin url is not defined in .git/config")
 )
 
-// write tests that assert that this works for windows too. A black box test should
-// do the trick
-// TODO: add tests for different cases like
-// 1. No git repo
-// 2. checked into a branch, but no commits
-// 3. checked into a branch, but with commits
-// 4. checked into a commit
-// 5. origin does not exist, some other default is used
-// 6. some research into if there are other edge cases to test here
-
-func NewConfigLoader(path string) (*configLoader, error) {
-	root, err := folders.FindDirWithLeaf(path, ".git")
+func NewConfigLoader() (*configLoader, error) {
+	wd, err := os.Getwd()
+	if err != nil {
+		return nil, err
+	}
+	root, err := folders.FindDirWithLeaf(wd, ".git")
 	if err != nil {
 		return nil, err
 	}

@@ -94,7 +94,7 @@ func (r *Root) Load(path string) error {
 	}
 
 	// load and merge git metadata
-	gitConfig, err := LoadGitConfig(filepath.Dir(path))
+	gitConfig, err := LoadGitConfig()
 	if err != nil {
 		return nil
 	}

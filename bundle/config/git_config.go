@@ -8,8 +8,8 @@ type GitConfig struct {
 	Commit    string `json:"commit"`
 }
 
-func LoadGitConfig(path string) (*GitConfig, error) {
-	l, err := git.NewConfigLoader(path)
+func LoadGitConfig() (*GitConfig, error) {
+	l, err := git.NewConfigLoader()
 
 	// return early if the project is not a repository
 	if err == git.ErrNotARepository {
