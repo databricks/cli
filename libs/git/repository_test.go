@@ -194,3 +194,21 @@ func TestRepositoryGitConfigForSshUrl(t *testing.T) {
 	repo.assertCommit("")
 	repo.assertOriginUrl("https://foo.com/databricks/bar")
 }
+
+func TestRepositoryGitConfigWhenNotARepo(t *testing.T) {
+	tmp := t.TempDir()
+	repo, err := NewRepository(tmp)
+	require.NoError(t, err)
+
+	branch, err := repo.CurrentBranch()
+	assert.NoError(t, err)
+	assert.Equal(t, "", branch)
+
+	commit, err := repo.LatestCommit()
+	assert.NoError(t, err)
+	assert.Equal(t, "", commit)
+
+	originUrl, err := repo.OriginUrl()
+	assert.NoError(t, err)
+	assert.Equal(t, "", originUrl)
+}
