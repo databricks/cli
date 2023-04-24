@@ -3,6 +3,7 @@ package mutator
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 
 	"github.com/databricks/bricks/bundle"
 	"github.com/databricks/bricks/bundle/config"
@@ -30,5 +31,6 @@ func (m *processInclude) Apply(_ context.Context, b *bundle.Bundle) ([]bundle.Mu
 	if err != nil {
 		return nil, err
 	}
-	return nil, b.Config.Merge(this)
+	configDir := filepath.Dir(m.relPath)
+	return []bundle.Mutator{LoadGitMetadata(configDir)}, b.Config.Merge(this)
 }

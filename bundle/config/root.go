@@ -20,10 +20,6 @@ type Root struct {
 	// version of the spec (TODO), default cluster, default warehouse, etc.
 	Bundle Bundle `json:"bundle"`
 
-	// Contains git config information like current commit, current branch and
-	// origin url. Automatically loaded by reading .git directory if not specified
-	GitConfig GitConfig `json:"git_config,omitempty"`
-
 	// Include specifies a list of patterns of file names to load and
 	// merge into the this configuration. If not set in `bundle.yml`,
 	// it defaults to loading `*.yml` and `*/*.yml`.
@@ -93,13 +89,6 @@ func (r *Root) Load(path string) error {
 		return err
 	}
 
-	// load and merge git metadata
-	gitConfig, err := LoadGitConfig()
-	if err != nil {
-		return nil
-	}
-	r.MergeGitConfig(gitConfig)
-
 	r.Path = filepath.Dir(path)
 	r.SetConfigFilePath(path)
 
@@ -119,25 +108,6 @@ func (r *Root) Merge(other *Root) error {
 
 	// TODO: define and test semantics for merging.
 	return mergo.MergeWithOverwrite(r, other)
-}
-
-func (r *Root) MergeGitConfig(gitConfig *GitConfig) error {
-	// git config may be empty if the project is not a repo
-	if gitConfig == nil {
-		return nil
-	}
-
-	// assign without overriding user set values
-	if r.GitConfig.Branch == "" {
-		r.GitConfig.Branch = gitConfig.Branch
-	}
-	if r.GitConfig.Commit == "" {
-		r.GitConfig.Commit = gitConfig.Commit
-	}
-	if r.GitConfig.RemoteUrl == "" {
-		r.GitConfig.RemoteUrl = gitConfig.RemoteUrl
-	}
-	return nil
 }
 
 func (r *Root) MergeEnvironment(env *Environment) error {

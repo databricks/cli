@@ -9,7 +9,6 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/databricks/bricks/folders"
 	giturls "github.com/whilp/git-urls"
 	"gopkg.in/ini.v1"
 )
@@ -25,19 +24,7 @@ var (
 	ErrRemoteOriginUrlNotDefined = fmt.Errorf("git origin url is not defined in .git/config")
 )
 
-func NewConfigLoader() (*configLoader, error) {
-	wd, err := os.Getwd()
-	if err != nil {
-		return nil, err
-	}
-	root, err := folders.FindDirWithLeaf(wd, ".git")
-	if err != nil {
-		return nil, err
-	}
-	gitDirPath := filepath.Join(root, ".git")
-	if _, err := os.Stat(gitDirPath); os.IsNotExist(err) {
-		return nil, ErrNotARepository
-	}
+func NewConfigLoader(gitDirPath string) (*configLoader, error) {
 	return &configLoader{
 		gitDirPath: gitDirPath,
 	}, nil
