@@ -32,5 +32,5 @@ func (m *processInclude) Apply(_ context.Context, b *bundle.Bundle) ([]bundle.Mu
 		return nil, err
 	}
 	configDir := filepath.Dir(m.relPath)
-	return []bundle.Mutator{LoadGitMetadata(configDir)}, b.Config.Merge(this)
+	return []bundle.Mutator{LoadGitConfig(configDir)}, b.Config.Merge(this)
 }

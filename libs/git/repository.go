@@ -2,6 +2,7 @@ package git
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"path"
 	"path/filepath"
@@ -30,11 +31,74 @@ type Repository struct {
 	// Note: prefixes use the forward slash instead of the
 	// OS-specific path separator. This matches Git convention.
 	ignore map[string][]ignoreRules
+
+	config *config
 }
 
 // Root returns the repository root.
 func (r *Repository) Root() string {
 	return r.rootPath
+}
+
+// TODO: what happens here if the cwd is not inside a repository?
+func (r *Repository) CurrentBranch() (string, error) {
+	// load .git/HEAD
+	head, err := LoadHead(filepath.Join(r.rootPath, ".git", "HEAD"))
+	if err != nil {
+		return "", err
+	}
+
+	// case: when a git object like commit,tag or remote branch is checked out
+	if head.Type == HeadTypeSHA1 {
+		return "", nil
+	}
+	return head.CurrentBranch()
+}
+
+func (r *Repository) LatestCommit() (string, error) {
+	// load .git/HEAD
+	head, err := LoadHead(filepath.Join(r.rootPath, ".git", "HEAD"))
+	if err != nil {
+		return "", err
+	}
+
+	// case: when a git object like commit,tag or remote branch is checked out
+	if head.Type == HeadTypeSHA1 {
+		return head.Content, nil
+	}
+
+	// read reference from .git/HEAD
+	refPath, err := head.ReferencePath()
+	if err != nil {
+		return "", err
+	}
+	refHead, err := LoadHead(filepath.Join(r.rootPath, ".git", refPath))
+	if err != nil {
+		return "", err
+	}
+	if refHead.Type != HeadTypeSHA1 {
+		return "", fmt.Errorf("git reference at %s was expected to be a SHA-1 commit id", refPath)
+	}
+	return refHead.Content, nil
+}
+
+func (r *Repository) OriginUrl() (string, error) {
+	rawUrl, ok := r.config.variables["remote.origin.url"]
+	if !ok {
+		// return empty string if origin url is not defined
+		return "", nil
+	}
+	originUrl, err := url.Parse(rawUrl)
+	if err != nil {
+		return "", err
+	}
+	// if current repo is checked out with a SSH key
+	if originUrl.Scheme != "https" {
+		originUrl.Scheme = "https"
+	}
+	// Remove `.git` suffix, if present.
+	originUrl.Path = strings.TrimSuffix(originUrl.Path, ".git")
+	return originUrl.String(), nil
 }
 
 // loadConfig loads and combines user specific and repository specific configuration files.
@@ -144,6 +208,7 @@ func NewRepository(path string) (*Repository, error) {
 		// Error doesn't need to be rewrapped.
 		return nil, err
 	}
+	repo.config = config
 
 	coreExcludesPath, err := config.coreExcludesFile()
 	if err != nil {
