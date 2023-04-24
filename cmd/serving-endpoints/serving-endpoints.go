@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/bricks/cmd/root"
 	"github.com/databricks/bricks/lib/jsonflag"
 	"github.com/databricks/bricks/lib/ui"
+	"github.com/databricks/bricks/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/serving"
 	"github.com/spf13/cobra"
@@ -63,7 +64,7 @@ var buildLogsCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		return ui.Render(cmd, response)
+		return cmdio.Render(ctx, response)
 	},
 }
 
@@ -120,13 +121,13 @@ var createCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			return ui.Render(cmd, info)
+			return cmdio.Render(ctx, info)
 		}
 		response, err := w.ServingEndpoints.Create(ctx, createReq)
 		if err != nil {
 			return err
 		}
-		return ui.Render(cmd, response)
+		return cmdio.Render(ctx, response)
 	},
 }
 
@@ -225,7 +226,7 @@ var getCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		return ui.Render(cmd, response)
+		return cmdio.Render(ctx, response)
 	},
 }
 
@@ -250,7 +251,7 @@ var listCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		return ui.Render(cmd, response)
+		return cmdio.Render(ctx, response)
 	},
 }
 
@@ -285,7 +286,7 @@ var logsCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		return ui.Render(cmd, response)
+		return cmdio.Render(ctx, response)
 	},
 }
 
@@ -316,7 +317,7 @@ var queryCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		return ui.Render(cmd, response)
+		return cmdio.Render(ctx, response)
 	},
 }
 
@@ -380,13 +381,13 @@ var updateConfigCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			return ui.Render(cmd, info)
+			return cmdio.Render(ctx, info)
 		}
 		response, err := w.ServingEndpoints.UpdateConfig(ctx, updateConfigReq)
 		if err != nil {
 			return err
 		}
-		return ui.Render(cmd, response)
+		return cmdio.Render(ctx, response)
 	},
 }
 

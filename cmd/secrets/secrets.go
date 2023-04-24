@@ -7,7 +7,7 @@ import (
 
 	"github.com/databricks/bricks/cmd/root"
 	"github.com/databricks/bricks/lib/jsonflag"
-	"github.com/databricks/bricks/lib/ui"
+	"github.com/databricks/bricks/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/spf13/cobra"
 )
@@ -223,7 +223,7 @@ var getAclCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		return ui.Render(cmd, response)
+		return cmdio.Render(ctx, response)
 	},
 }
 
@@ -261,7 +261,7 @@ var listAclsCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		return ui.Render(cmd, response)
+		return cmdio.Render(ctx, response)
 	},
 }
 
@@ -291,7 +291,7 @@ var listScopesCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		return ui.Render(cmd, response)
+		return cmdio.Render(ctx, response)
 	},
 }
 
@@ -331,7 +331,7 @@ var listSecretsCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		return ui.Render(cmd, response)
+		return cmdio.Render(ctx, response)
 	},
 }
 

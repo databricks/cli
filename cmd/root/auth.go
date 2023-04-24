@@ -45,7 +45,7 @@ func MustAccountClient(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return err
 		}
-		var items []Profile
+		var items []profile
 		for _, v := range profiles {
 			if v.AccountID == "" {
 				continue
@@ -121,13 +121,13 @@ TRY_AUTH: // or try picking a config profile dynamically
 	return nil
 }
 
-type Profile struct {
+type profile struct {
 	Name      string
 	Host      string
 	AccountID string
 }
 
-func (p Profile) Cloud() string {
+func (p profile) Cloud() string {
 	if strings.Contains(p.Host, ".azuredatabricks.net") {
 		return "Azure"
 	}
@@ -137,7 +137,7 @@ func (p Profile) Cloud() string {
 	return "AWS"
 }
 
-func loadProfiles() (profiles []Profile, err error) {
+func loadProfiles() (profiles []profile, err error) {
 	homedir, err := os.UserHomeDir()
 	if err != nil {
 		return nil, fmt.Errorf("cannot find homedir: %w", err)
@@ -154,7 +154,7 @@ func loadProfiles() (profiles []Profile, err error) {
 			// invalid profile
 			continue
 		}
-		profiles = append(profiles, Profile{
+		profiles = append(profiles, profile{
 			Name:      v.Name(),
 			Host:      host,
 			AccountID: all["account_id"],
@@ -168,7 +168,7 @@ func askForWorkspaceProfile() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	var items []Profile
+	var items []profile
 	for _, v := range profiles {
 		if v.AccountID != "" {
 			continue
@@ -197,7 +197,7 @@ func askForAccountProfile() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	var items []Profile
+	var items []profile
 	for _, v := range profiles {
 		if v.AccountID == "" {
 			continue

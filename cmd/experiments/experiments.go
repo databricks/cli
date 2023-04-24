@@ -7,7 +7,7 @@ import (
 
 	"github.com/databricks/bricks/cmd/root"
 	"github.com/databricks/bricks/lib/jsonflag"
-	"github.com/databricks/bricks/lib/ui"
+	"github.com/databricks/bricks/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/spf13/cobra"
 )
@@ -58,7 +58,7 @@ var createExperimentCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		return ui.Render(cmd, response)
+		return cmdio.Render(ctx, response)
 	},
 }
 
@@ -103,7 +103,7 @@ var createRunCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		return ui.Render(cmd, response)
+		return cmdio.Render(ctx, response)
 	},
 }
 
@@ -247,7 +247,7 @@ var getByNameCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		return ui.Render(cmd, response)
+		return cmdio.Render(ctx, response)
 	},
 }
 
@@ -280,7 +280,7 @@ var getExperimentCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		return ui.Render(cmd, response)
+		return cmdio.Render(ctx, response)
 	},
 }
 
@@ -318,7 +318,7 @@ var getHistoryCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		return ui.Render(cmd, response)
+		return cmdio.Render(ctx, response)
 	},
 }
 
@@ -358,7 +358,7 @@ var getRunCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		return ui.Render(cmd, response)
+		return cmdio.Render(ctx, response)
 	},
 }
 
@@ -396,7 +396,7 @@ var listArtifactsCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		return ui.Render(cmd, response)
+		return cmdio.Render(ctx, response)
 	},
 }
 
@@ -432,7 +432,7 @@ var listExperimentsCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		return ui.Render(cmd, response)
+		return cmdio.Render(ctx, response)
 	},
 }
 
@@ -747,7 +747,7 @@ var searchExperimentsCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		return ui.Render(cmd, response)
+		return cmdio.Render(ctx, response)
 	},
 }
 
@@ -793,7 +793,7 @@ var searchRunsCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		return ui.Render(cmd, response)
+		return cmdio.Render(ctx, response)
 	},
 }
 
@@ -938,7 +938,7 @@ var updateRunCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		return ui.Render(cmd, response)
+		return cmdio.Render(ctx, response)
 	},
 }
 

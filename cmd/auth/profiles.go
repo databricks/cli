@@ -2,7 +2,6 @@ package auth
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -10,6 +9,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/databricks/bricks/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
@@ -97,6 +97,12 @@ func (c *profileMetadata) Load(ctx context.Context) {
 var profilesCmd = &cobra.Command{
 	Use:   "profiles",
 	Short: "Lists profiles from ~/.databrickscfg",
+	Annotations: map[string]string{
+		"template": cmdio.Heredoc(`
+		{{white "Name"}}	{{white "Host"}}	{{white "Valid"}}
+		{{range .Profiles}}{{.Name | green}}	{{.Host|white}}	{{bool .Valid}}
+		{{end}}`),
+	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		var profiles []*profileMetadata
 		iniFile, err := getDatabricksCfg()
@@ -126,14 +132,9 @@ var profilesCmd = &cobra.Command{
 			profiles = append(profiles, profile)
 		}
 		wg.Wait()
-		raw, err := json.MarshalIndent(map[string]any{
-			"profiles": profiles,
-		}, "", "  ")
-		if err != nil {
-			return err
-		}
-		cmd.OutOrStdout().Write(raw)
-		return nil
+		return cmdio.Render(cmd.Context(), struct {
+			Profiles []*profileMetadata `json:"profiles"`
+		}{profiles})
 	},
 }
 

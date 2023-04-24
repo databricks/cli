@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/bricks/cmd/root"
 	"github.com/databricks/bricks/lib/jsonflag"
 	"github.com/databricks/bricks/lib/ui"
+	"github.com/databricks/bricks/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/spf13/cobra"
@@ -167,13 +168,13 @@ var createCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			return ui.Render(cmd, info)
+			return cmdio.Render(ctx, info)
 		}
 		response, err := w.Clusters.Create(ctx, createReq)
 		if err != nil {
 			return err
 		}
-		return ui.Render(cmd, response)
+		return cmdio.Render(ctx, response)
 	},
 }
 
@@ -239,7 +240,7 @@ var deleteCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			return ui.Render(cmd, info)
+			return cmdio.Render(ctx, info)
 		}
 		err = w.Clusters.Delete(ctx, deleteReq)
 		if err != nil {
@@ -335,7 +336,7 @@ var editCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			return ui.Render(cmd, info)
+			return cmdio.Render(ctx, info)
 		}
 		err = w.Clusters.Edit(ctx, editReq)
 		if err != nil {
@@ -388,7 +389,7 @@ var eventsCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		return ui.Render(cmd, response)
+		return cmdio.Render(ctx, response)
 	},
 }
 
@@ -441,7 +442,7 @@ var getCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		return ui.Render(cmd, response)
+		return cmdio.Render(ctx, response)
 	},
 }
 
@@ -483,7 +484,7 @@ var listCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		return ui.Render(cmd, response)
+		return cmdio.Render(ctx, response)
 	},
 }
 
@@ -511,7 +512,7 @@ var listNodeTypesCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		return ui.Render(cmd, response)
+		return cmdio.Render(ctx, response)
 	},
 }
 
@@ -539,7 +540,7 @@ var listZonesCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		return ui.Render(cmd, response)
+		return cmdio.Render(ctx, response)
 	},
 }
 
@@ -696,7 +697,7 @@ var resizeCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			return ui.Render(cmd, info)
+			return cmdio.Render(ctx, info)
 		}
 		err = w.Clusters.Resize(ctx, resizeReq)
 		if err != nil {
@@ -768,7 +769,7 @@ var restartCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			return ui.Render(cmd, info)
+			return cmdio.Render(ctx, info)
 		}
 		err = w.Clusters.Restart(ctx, restartReq)
 		if err != nil {
@@ -802,7 +803,7 @@ var sparkVersionsCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		return ui.Render(cmd, response)
+		return cmdio.Render(ctx, response)
 	},
 }
 
@@ -872,7 +873,7 @@ var startCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			return ui.Render(cmd, info)
+			return cmdio.Render(ctx, info)
 		}
 		err = w.Clusters.Start(ctx, startReq)
 		if err != nil {

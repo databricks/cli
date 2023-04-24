@@ -7,7 +7,7 @@ import (
 
 	"github.com/databricks/bricks/cmd/root"
 	"github.com/databricks/bricks/lib/jsonflag"
-	"github.com/databricks/bricks/lib/ui"
+	"github.com/databricks/bricks/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/spf13/cobra"
 )
@@ -56,7 +56,7 @@ var approveTransitionRequestCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		return ui.Render(cmd, response)
+		return cmdio.Render(ctx, response)
 	},
 }
 
@@ -93,7 +93,7 @@ var createCommentCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		return ui.Render(cmd, response)
+		return cmdio.Render(ctx, response)
 	},
 }
 
@@ -137,7 +137,7 @@ var createModelCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		return ui.Render(cmd, response)
+		return cmdio.Render(ctx, response)
 	},
 }
 
@@ -181,7 +181,7 @@ var createModelVersionCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		return ui.Render(cmd, response)
+		return cmdio.Render(ctx, response)
 	},
 }
 
@@ -221,7 +221,7 @@ var createTransitionRequestCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		return ui.Render(cmd, response)
+		return cmdio.Render(ctx, response)
 	},
 }
 
@@ -270,7 +270,7 @@ var createWebhookCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		return ui.Render(cmd, response)
+		return cmdio.Render(ctx, response)
 	},
 }
 
@@ -553,7 +553,7 @@ var getLatestVersionsCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		return ui.Render(cmd, response)
+		return cmdio.Render(ctx, response)
 	},
 }
 
@@ -590,7 +590,7 @@ var getModelCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		return ui.Render(cmd, response)
+		return cmdio.Render(ctx, response)
 	},
 }
 
@@ -624,7 +624,7 @@ var getModelVersionCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		return ui.Render(cmd, response)
+		return cmdio.Render(ctx, response)
 	},
 }
 
@@ -658,7 +658,7 @@ var getModelVersionDownloadUriCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		return ui.Render(cmd, response)
+		return cmdio.Render(ctx, response)
 	},
 }
 
@@ -694,7 +694,7 @@ var listModelsCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		return ui.Render(cmd, response)
+		return cmdio.Render(ctx, response)
 	},
 }
 
@@ -728,7 +728,7 @@ var listTransitionRequestsCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		return ui.Render(cmd, response)
+		return cmdio.Render(ctx, response)
 	},
 }
 
@@ -771,7 +771,7 @@ var listWebhooksCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		return ui.Render(cmd, response)
+		return cmdio.Render(ctx, response)
 	},
 }
 
@@ -811,7 +811,7 @@ var rejectTransitionRequestCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		return ui.Render(cmd, response)
+		return cmdio.Render(ctx, response)
 	},
 }
 
@@ -846,7 +846,7 @@ var renameModelCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		return ui.Render(cmd, response)
+		return cmdio.Render(ctx, response)
 	},
 }
 
@@ -888,7 +888,7 @@ var searchModelVersionsCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		return ui.Render(cmd, response)
+		return cmdio.Render(ctx, response)
 	},
 }
 
@@ -930,7 +930,7 @@ var searchModelsCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		return ui.Render(cmd, response)
+		return cmdio.Render(ctx, response)
 	},
 }
 
@@ -1038,7 +1038,7 @@ var testRegistryWebhookCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		return ui.Render(cmd, response)
+		return cmdio.Render(ctx, response)
 	},
 }
 
@@ -1086,7 +1086,7 @@ var transitionStageCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		return ui.Render(cmd, response)
+		return cmdio.Render(ctx, response)
 	},
 }
 
@@ -1120,7 +1120,7 @@ var updateCommentCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		return ui.Render(cmd, response)
+		return cmdio.Render(ctx, response)
 	},
 }
 

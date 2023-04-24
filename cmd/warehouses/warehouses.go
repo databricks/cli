@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/bricks/cmd/root"
 	"github.com/databricks/bricks/lib/jsonflag"
 	"github.com/databricks/bricks/lib/ui"
+	"github.com/databricks/bricks/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/spf13/cobra"
@@ -92,13 +93,13 @@ var createCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			return ui.Render(cmd, info)
+			return cmdio.Render(ctx, info)
 		}
 		response, err := w.Warehouses.Create(ctx, createReq)
 		if err != nil {
 			return err
 		}
-		return ui.Render(cmd, response)
+		return cmdio.Render(ctx, response)
 	},
 }
 
@@ -168,7 +169,7 @@ var deleteCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			return ui.Render(cmd, info)
+			return cmdio.Render(ctx, info)
 		}
 		err = w.Warehouses.Delete(ctx, deleteReq)
 		if err != nil {
@@ -249,7 +250,7 @@ var editCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			return ui.Render(cmd, info)
+			return cmdio.Render(ctx, info)
 		}
 		err = w.Warehouses.Edit(ctx, editReq)
 		if err != nil {
@@ -307,7 +308,7 @@ var getCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		return ui.Render(cmd, response)
+		return cmdio.Render(ctx, response)
 	},
 }
 
@@ -335,7 +336,7 @@ var getWorkspaceWarehouseConfigCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		return ui.Render(cmd, response)
+		return cmdio.Render(ctx, response)
 	},
 }
 
@@ -369,7 +370,7 @@ var listCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		return ui.Render(cmd, response)
+		return cmdio.Render(ctx, response)
 	},
 }
 
@@ -488,7 +489,7 @@ var startCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			return ui.Render(cmd, info)
+			return cmdio.Render(ctx, info)
 		}
 		err = w.Warehouses.Start(ctx, startReq)
 		if err != nil {
@@ -564,7 +565,7 @@ var stopCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			return ui.Render(cmd, info)
+			return cmdio.Render(ctx, info)
 		}
 		err = w.Warehouses.Stop(ctx, stopReq)
 		if err != nil {

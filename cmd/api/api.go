@@ -1,13 +1,13 @@
 package api
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
 	"strings"
 
 	"github.com/databricks/bricks/cmd/root"
+	"github.com/databricks/bricks/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
@@ -53,7 +53,15 @@ func makeCommand(method string) *cobra.Command {
 				return err
 			}
 
-			api, err := client.New(&config.Config{})
+			cfg := &config.Config{}
+
+			// command-line flag can specify the profile in use
+			profileFlag := cmd.Flag("profile")
+			if profileFlag != nil {
+				cfg.Profile = profileFlag.Value.String()
+			}
+
+			api, err := client.New(cfg)
 			if err != nil {
 				return err
 			}
@@ -61,14 +69,7 @@ func makeCommand(method string) *cobra.Command {
 			if err != nil {
 				return err
 			}
-
-			if response != nil {
-				enc := json.NewEncoder(cmd.OutOrStdout())
-				enc.SetIndent("", "  ")
-				enc.Encode(response)
-			}
-
-			return nil
+			return cmdio.Render(cmd.Context(), response)
 		},
 	}
 

@@ -4,6 +4,7 @@ package {{.SnakeName}}
 
 import (
     "github.com/databricks/bricks/lib/ui"
+    "github.com/databricks/bricks/libs/cmdio"
 	"github.com/databricks/bricks/cmd/root"
 	"github.com/databricks/databricks-sdk-go/service/{{.Package.Name}}"
 	"github.com/spf13/cobra"
@@ -136,7 +137,7 @@ var {{.CamelName}}Cmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			return ui.Render(cmd, info)
+			return cmdio.Render(ctx, info)
 		}
 		{{end -}}
 		{{if .Response}}response, err :={{else}}err ={{end}} {{if .Service.IsAccounts}}a{{else}}w{{end}}.{{if eq .Service.Package.Name "scim" -}}
@@ -146,7 +147,7 @@ var {{.CamelName}}Cmd = &cobra.Command{
 			return err
 		}
         {{if .Response -}}
-		return ui.Render(cmd, response)
+		return cmdio.Render(ctx, response)
 		{{else -}}
 		return nil
 		{{- end -}}
