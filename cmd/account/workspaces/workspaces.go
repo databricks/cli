@@ -143,7 +143,7 @@ var deleteCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			id, err := ui.PromptValue(cmd.InOrStdin(), names, "Workspace ID")
+			id, err := cmdio.Select(ctx, names, "Workspace ID")
 			if err != nil {
 				return err
 			}
@@ -205,7 +205,7 @@ var getCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			id, err := ui.PromptValue(cmd.InOrStdin(), names, "Workspace ID")
+			id, err := cmdio.Select(ctx, names, "Workspace ID")
 			if err != nil {
 				return err
 			}
@@ -408,7 +408,7 @@ var updateCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			id, err := ui.PromptValue(cmd.InOrStdin(), names, "Workspace ID")
+			id, err := cmdio.Select(ctx, names, "Workspace ID")
 			if err != nil {
 				return err
 			}

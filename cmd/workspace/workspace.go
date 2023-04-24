@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/databricks/bricks/cmd/root"
-	"github.com/databricks/bricks/lib/ui"
 	"github.com/databricks/bricks/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/spf13/cobra"
@@ -58,7 +57,7 @@ var deleteCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			id, err := ui.PromptValue(cmd.InOrStdin(), names, "The absolute path of the notebook or directory")
+			id, err := cmdio.Select(ctx, names, "The absolute path of the notebook or directory")
 			if err != nil {
 				return err
 			}
@@ -114,7 +113,7 @@ var exportCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			id, err := ui.PromptValue(cmd.InOrStdin(), names, "The absolute path of the object or directory")
+			id, err := cmdio.Select(ctx, names, "The absolute path of the object or directory")
 			if err != nil {
 				return err
 			}
@@ -161,7 +160,7 @@ var getStatusCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			id, err := ui.PromptValue(cmd.InOrStdin(), names, "The absolute path of the notebook or directory")
+			id, err := cmdio.Select(ctx, names, "The absolute path of the notebook or directory")
 			if err != nil {
 				return err
 			}
@@ -215,7 +214,7 @@ var importCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			id, err := ui.PromptValue(cmd.InOrStdin(), names, "The absolute path of the object or directory")
+			id, err := cmdio.Select(ctx, names, "The absolute path of the object or directory")
 			if err != nil {
 				return err
 			}
@@ -265,7 +264,7 @@ var listCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			id, err := ui.PromptValue(cmd.InOrStdin(), names, "The absolute path of the notebook or directory")
+			id, err := cmdio.Select(ctx, names, "The absolute path of the notebook or directory")
 			if err != nil {
 				return err
 			}
@@ -316,7 +315,7 @@ var mkdirsCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			id, err := ui.PromptValue(cmd.InOrStdin(), names, "The absolute path of the directory")
+			id, err := cmdio.Select(ctx, names, "The absolute path of the directory")
 			if err != nil {
 				return err
 			}

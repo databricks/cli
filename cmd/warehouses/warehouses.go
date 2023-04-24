@@ -136,7 +136,7 @@ var deleteCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			id, err := ui.PromptValue(cmd.InOrStdin(), names, "Required")
+			id, err := cmdio.Select(ctx, names, "Required")
 			if err != nil {
 				return err
 			}
@@ -293,7 +293,7 @@ var getCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			id, err := ui.PromptValue(cmd.InOrStdin(), names, "Required")
+			id, err := cmdio.Select(ctx, names, "Required")
 			if err != nil {
 				return err
 			}
@@ -456,7 +456,7 @@ var startCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			id, err := ui.PromptValue(cmd.InOrStdin(), names, "Required")
+			id, err := cmdio.Select(ctx, names, "Required")
 			if err != nil {
 				return err
 			}
@@ -532,7 +532,7 @@ var stopCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			id, err := ui.PromptValue(cmd.InOrStdin(), names, "Required")
+			id, err := cmdio.Select(ctx, names, "Required")
 			if err != nil {
 				return err
 			}

@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/databricks/bricks/cmd/root"
-	"github.com/databricks/bricks/lib/ui"
 	"github.com/databricks/bricks/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/spf13/cobra"
@@ -56,7 +55,7 @@ var createCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			id, err := ui.PromptValue(cmd.InOrStdin(), names, "Git provider")
+			id, err := cmdio.Select(ctx, names, "Git provider")
 			if err != nil {
 				return err
 			}
@@ -102,7 +101,7 @@ var deleteCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			id, err := ui.PromptValue(cmd.InOrStdin(), names, "The ID for the corresponding credential to access")
+			id, err := cmdio.Select(ctx, names, "The ID for the corresponding credential to access")
 			if err != nil {
 				return err
 			}
@@ -151,7 +150,7 @@ var getCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			id, err := ui.PromptValue(cmd.InOrStdin(), names, "The ID for the corresponding credential to access")
+			id, err := cmdio.Select(ctx, names, "The ID for the corresponding credential to access")
 			if err != nil {
 				return err
 			}
@@ -232,7 +231,7 @@ var updateCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			id, err := ui.PromptValue(cmd.InOrStdin(), names, "The ID for the corresponding credential to access")
+			id, err := cmdio.Select(ctx, names, "The ID for the corresponding credential to access")
 			if err != nil {
 				return err
 			}

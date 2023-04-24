@@ -214,7 +214,7 @@ var deleteCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			id, err := ui.PromptValue(cmd.InOrStdin(), names, "The cluster to be terminated")
+			id, err := cmdio.Select(ctx, names, "The cluster to be terminated")
 			if err != nil {
 				return err
 			}
@@ -427,7 +427,7 @@ var getCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			id, err := ui.PromptValue(cmd.InOrStdin(), names, "The cluster about which to retrieve information")
+			id, err := cmdio.Select(ctx, names, "The cluster about which to retrieve information")
 			if err != nil {
 				return err
 			}
@@ -576,7 +576,7 @@ var permanentDeleteCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			id, err := ui.PromptValue(cmd.InOrStdin(), names, "The cluster to be deleted")
+			id, err := cmdio.Select(ctx, names, "The cluster to be deleted")
 			if err != nil {
 				return err
 			}
@@ -624,7 +624,7 @@ var pinCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			id, err := ui.PromptValue(cmd.InOrStdin(), names, "<needs content added>")
+			id, err := cmdio.Select(ctx, names, "<needs content added>")
 			if err != nil {
 				return err
 			}
@@ -743,7 +743,7 @@ var restartCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			id, err := ui.PromptValue(cmd.InOrStdin(), names, "The cluster to be started")
+			id, err := cmdio.Select(ctx, names, "The cluster to be started")
 			if err != nil {
 				return err
 			}
@@ -847,7 +847,7 @@ var startCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			id, err := ui.PromptValue(cmd.InOrStdin(), names, "The cluster to be started")
+			id, err := cmdio.Select(ctx, names, "The cluster to be started")
 			if err != nil {
 				return err
 			}
@@ -912,7 +912,7 @@ var unpinCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			id, err := ui.PromptValue(cmd.InOrStdin(), names, "<needs content added>")
+			id, err := cmdio.Select(ctx, names, "<needs content added>")
 			if err != nil {
 				return err
 			}

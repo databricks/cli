@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/databricks/bricks/cmd/root"
-	"github.com/databricks/bricks/lib/ui"
 	"github.com/databricks/bricks/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/spf13/cobra"
@@ -57,7 +56,7 @@ var deleteCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			id, err := ui.PromptValue(cmd.InOrStdin(), names, "Full name of the table")
+			id, err := cmdio.Select(ctx, names, "Full name of the table")
 			if err != nil {
 				return err
 			}
@@ -109,7 +108,7 @@ var getCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			id, err := ui.PromptValue(cmd.InOrStdin(), names, "Full name of the table")
+			id, err := cmdio.Select(ctx, names, "Full name of the table")
 			if err != nil {
 				return err
 			}
@@ -213,7 +212,7 @@ var listSummariesCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			id, err := ui.PromptValue(cmd.InOrStdin(), names, "Name of parent catalog for tables of interest")
+			id, err := cmdio.Select(ctx, names, "Name of parent catalog for tables of interest")
 			if err != nil {
 				return err
 			}

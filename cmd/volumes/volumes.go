@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/databricks/bricks/cmd/root"
-	"github.com/databricks/bricks/lib/ui"
 	"github.com/databricks/bricks/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/spf13/cobra"
@@ -115,7 +114,7 @@ var deleteCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			id, err := ui.PromptValue(cmd.InOrStdin(), names, "The three-level (fully qualified) name of the volume")
+			id, err := cmdio.Select(ctx, names, "The three-level (fully qualified) name of the volume")
 			if err != nil {
 				return err
 			}
@@ -210,7 +209,7 @@ var readCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			id, err := ui.PromptValue(cmd.InOrStdin(), names, "The three-level (fully qualified) name of the volume")
+			id, err := cmdio.Select(ctx, names, "The three-level (fully qualified) name of the volume")
 			if err != nil {
 				return err
 			}
@@ -267,7 +266,7 @@ var updateCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			id, err := ui.PromptValue(cmd.InOrStdin(), names, "The three-level (fully qualified) name of the volume")
+			id, err := cmdio.Select(ctx, names, "The three-level (fully qualified) name of the volume")
 			if err != nil {
 				return err
 			}

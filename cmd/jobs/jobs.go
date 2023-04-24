@@ -65,7 +65,7 @@ var cancelAllRunsCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			id, err := ui.PromptValue(cmd.InOrStdin(), names, "The canonical identifier of the job to cancel all runs of")
+			id, err := cmdio.Select(ctx, names, "The canonical identifier of the job to cancel all runs of")
 			if err != nil {
 				return err
 			}
@@ -121,7 +121,7 @@ var cancelRunCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			id, err := ui.PromptValue(cmd.InOrStdin(), names, "This field is required")
+			id, err := cmdio.Select(ctx, names, "This field is required")
 			if err != nil {
 				return err
 			}
@@ -246,7 +246,7 @@ var deleteCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			id, err := ui.PromptValue(cmd.InOrStdin(), names, "The canonical identifier of the job to delete")
+			id, err := cmdio.Select(ctx, names, "The canonical identifier of the job to delete")
 			if err != nil {
 				return err
 			}
@@ -295,7 +295,7 @@ var deleteRunCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			id, err := ui.PromptValue(cmd.InOrStdin(), names, "The canonical identifier of the run for which to retrieve the metadata")
+			id, err := cmdio.Select(ctx, names, "The canonical identifier of the run for which to retrieve the metadata")
 			if err != nil {
 				return err
 			}
@@ -346,7 +346,7 @@ var exportRunCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			id, err := ui.PromptValue(cmd.InOrStdin(), names, "The canonical identifier for the run")
+			id, err := cmdio.Select(ctx, names, "The canonical identifier for the run")
 			if err != nil {
 				return err
 			}
@@ -395,7 +395,7 @@ var getCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			id, err := ui.PromptValue(cmd.InOrStdin(), names, "The canonical identifier of the job to retrieve information about")
+			id, err := cmdio.Select(ctx, names, "The canonical identifier of the job to retrieve information about")
 			if err != nil {
 				return err
 			}
@@ -452,7 +452,7 @@ var getRunCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			id, err := ui.PromptValue(cmd.InOrStdin(), names, "The canonical identifier of the run for which to retrieve the metadata")
+			id, err := cmdio.Select(ctx, names, "The canonical identifier of the run for which to retrieve the metadata")
 			if err != nil {
 				return err
 			}
@@ -510,7 +510,7 @@ var getRunOutputCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			id, err := ui.PromptValue(cmd.InOrStdin(), names, "The canonical identifier for the run")
+			id, err := cmdio.Select(ctx, names, "The canonical identifier for the run")
 			if err != nil {
 				return err
 			}
@@ -785,7 +785,7 @@ var runNowCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			id, err := ui.PromptValue(cmd.InOrStdin(), names, "The ID of the job to be executed")
+			id, err := cmdio.Select(ctx, names, "The ID of the job to be executed")
 			if err != nil {
 				return err
 			}

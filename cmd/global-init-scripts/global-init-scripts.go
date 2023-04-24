@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/databricks/bricks/cmd/root"
-	"github.com/databricks/bricks/lib/ui"
 	"github.com/databricks/bricks/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/spf13/cobra"
@@ -90,7 +89,7 @@ var deleteCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			id, err := ui.PromptValue(cmd.InOrStdin(), names, "The ID of the global init script")
+			id, err := cmdio.Select(ctx, names, "The ID of the global init script")
 			if err != nil {
 				return err
 			}
@@ -136,7 +135,7 @@ var getCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			id, err := ui.PromptValue(cmd.InOrStdin(), names, "The ID of the global init script")
+			id, err := cmdio.Select(ctx, names, "The ID of the global init script")
 			if err != nil {
 				return err
 			}

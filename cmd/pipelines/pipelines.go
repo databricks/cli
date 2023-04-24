@@ -117,7 +117,7 @@ var deleteCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			id, err := ui.PromptValue(cmd.InOrStdin(), names, "")
+			id, err := cmdio.Select(ctx, names, "")
 			if err != nil {
 				return err
 			}
@@ -167,7 +167,7 @@ var getCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			id, err := ui.PromptValue(cmd.InOrStdin(), names, "")
+			id, err := cmdio.Select(ctx, names, "")
 			if err != nil {
 				return err
 			}
@@ -336,7 +336,7 @@ var listUpdatesCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			id, err := ui.PromptValue(cmd.InOrStdin(), names, "The pipeline to return updates for")
+			id, err := cmdio.Select(ctx, names, "The pipeline to return updates for")
 			if err != nil {
 				return err
 			}
@@ -388,7 +388,7 @@ var resetCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			id, err := ui.PromptValue(cmd.InOrStdin(), names, "")
+			id, err := cmdio.Select(ctx, names, "")
 			if err != nil {
 				return err
 			}
@@ -500,7 +500,7 @@ var stopCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			id, err := ui.PromptValue(cmd.InOrStdin(), names, "")
+			id, err := cmdio.Select(ctx, names, "")
 			if err != nil {
 				return err
 			}

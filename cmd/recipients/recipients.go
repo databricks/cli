@@ -7,7 +7,6 @@ import (
 
 	"github.com/databricks/bricks/cmd/root"
 	"github.com/databricks/bricks/lib/jsonflag"
-	"github.com/databricks/bricks/lib/ui"
 	"github.com/databricks/bricks/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go/service/sharing"
 	"github.com/spf13/cobra"
@@ -98,7 +97,7 @@ var deleteCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			id, err := ui.PromptValue(cmd.InOrStdin(), names, "Name of the recipient")
+			id, err := cmdio.Select(ctx, names, "Name of the recipient")
 			if err != nil {
 				return err
 			}
@@ -146,7 +145,7 @@ var getCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			id, err := ui.PromptValue(cmd.InOrStdin(), names, "Name of the recipient")
+			id, err := cmdio.Select(ctx, names, "Name of the recipient")
 			if err != nil {
 				return err
 			}
@@ -268,7 +267,7 @@ var sharePermissionsCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			id, err := ui.PromptValue(cmd.InOrStdin(), names, "The name of the Recipient")
+			id, err := cmdio.Select(ctx, names, "The name of the Recipient")
 			if err != nil {
 				return err
 			}

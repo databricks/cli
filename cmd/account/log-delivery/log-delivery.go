@@ -7,7 +7,6 @@ import (
 
 	"github.com/databricks/bricks/cmd/root"
 	"github.com/databricks/bricks/lib/jsonflag"
-	"github.com/databricks/bricks/lib/ui"
 	"github.com/databricks/bricks/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go/service/billing"
 	"github.com/spf13/cobra"
@@ -170,7 +169,7 @@ var getCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			id, err := ui.PromptValue(cmd.InOrStdin(), names, "Databricks log delivery configuration ID")
+			id, err := cmdio.Select(ctx, names, "Databricks log delivery configuration ID")
 			if err != nil {
 				return err
 			}

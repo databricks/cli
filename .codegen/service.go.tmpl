@@ -81,7 +81,7 @@ var {{.CamelName}}Cmd = &cobra.Command{
 				if err != nil {
 					return err
 				}
-				id, err := ui.PromptValue(cmd.InOrStdin(), names, "{{range .Request.RequiredFields}}{{.Summary | trimSuffix "."}}{{end}}")
+				id, err := cmdio.Select(ctx, names, "{{range .Request.RequiredFields}}{{.Summary | trimSuffix "."}}{{end}}")
 				if err != nil {
 					return err
 				}
