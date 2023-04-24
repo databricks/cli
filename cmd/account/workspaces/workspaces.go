@@ -8,7 +8,6 @@ import (
 
 	"github.com/databricks/bricks/cmd/root"
 	"github.com/databricks/bricks/lib/jsonflag"
-	"github.com/databricks/bricks/lib/ui"
 	"github.com/databricks/bricks/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/provisioning"
@@ -85,7 +84,7 @@ var createCmd = &cobra.Command{
 		createReq.WorkspaceName = args[0]
 
 		if !createNoWait {
-			spinner := ui.StartSpinner()
+			spinner := cmdio.Spinner(ctx)
 			info, err := a.Workspaces.CreateAndWait(ctx, createReq,
 				retries.Timeout[provisioning.Workspace](createTimeout),
 				func(i *retries.Info[provisioning.Workspace]) {
@@ -93,9 +92,9 @@ var createCmd = &cobra.Command{
 						return
 					}
 					statusMessage := i.Info.WorkspaceStatusMessage
-					spinner.Suffix = " " + statusMessage
+					spinner <- statusMessage
 				})
-			spinner.Stop()
+			close(spinner)
 			if err != nil {
 				return err
 			}
@@ -423,7 +422,7 @@ var updateCmd = &cobra.Command{
 		}
 
 		if !updateNoWait {
-			spinner := ui.StartSpinner()
+			spinner := cmdio.Spinner(ctx)
 			info, err := a.Workspaces.UpdateAndWait(ctx, updateReq,
 				retries.Timeout[provisioning.Workspace](updateTimeout),
 				func(i *retries.Info[provisioning.Workspace]) {
@@ -431,9 +430,9 @@ var updateCmd = &cobra.Command{
 						return
 					}
 					statusMessage := i.Info.WorkspaceStatusMessage
-					spinner.Suffix = " " + statusMessage
+					spinner <- statusMessage
 				})
-			spinner.Stop()
+			close(spinner)
 			if err != nil {
 				return err
 			}

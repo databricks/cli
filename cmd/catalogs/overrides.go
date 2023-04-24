@@ -1,9 +1,9 @@
 package catalogs
 
-import "github.com/databricks/bricks/lib/ui"
+import "github.com/databricks/bricks/libs/cmdio"
 
 func init() {
-	listCmd.Annotations["template"] = ui.Heredoc(`
+	listCmd.Annotations["template"] = cmdio.Heredoc(`
 	{{white "Name"}}	{{white "Type"}}	{{white "Comment"}}
 	{{range .}}{{.Name|green}}	{{blue "%s" .CatalogType}}	{{.Comment}}
 	{{end}}`)

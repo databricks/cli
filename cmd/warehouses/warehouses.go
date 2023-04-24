@@ -8,7 +8,6 @@ import (
 
 	"github.com/databricks/bricks/cmd/root"
 	"github.com/databricks/bricks/lib/jsonflag"
-	"github.com/databricks/bricks/lib/ui"
 	"github.com/databricks/bricks/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/sql"
@@ -72,7 +71,7 @@ var createCmd = &cobra.Command{
 		}
 
 		if !createNoWait {
-			spinner := ui.StartSpinner()
+			spinner := cmdio.Spinner(ctx)
 			info, err := w.Warehouses.CreateAndWait(ctx, createReq,
 				retries.Timeout[sql.GetWarehouseResponse](createTimeout),
 				func(i *retries.Info[sql.GetWarehouseResponse]) {
@@ -87,9 +86,9 @@ var createCmd = &cobra.Command{
 					if i.Info.Health != nil {
 						statusMessage = i.Info.Health.Summary
 					}
-					spinner.Suffix = " " + statusMessage
+					spinner <- statusMessage
 				})
-			spinner.Stop()
+			close(spinner)
 			if err != nil {
 				return err
 			}
@@ -148,7 +147,7 @@ var deleteCmd = &cobra.Command{
 		deleteReq.Id = args[0]
 
 		if !deleteNoWait {
-			spinner := ui.StartSpinner()
+			spinner := cmdio.Spinner(ctx)
 			info, err := w.Warehouses.DeleteAndWait(ctx, deleteReq,
 				retries.Timeout[sql.GetWarehouseResponse](deleteTimeout),
 				func(i *retries.Info[sql.GetWarehouseResponse]) {
@@ -163,9 +162,9 @@ var deleteCmd = &cobra.Command{
 					if i.Info.Health != nil {
 						statusMessage = i.Info.Health.Summary
 					}
-					spinner.Suffix = " " + statusMessage
+					spinner <- statusMessage
 				})
-			spinner.Stop()
+			close(spinner)
 			if err != nil {
 				return err
 			}
@@ -229,7 +228,7 @@ var editCmd = &cobra.Command{
 		editReq.Id = args[0]
 
 		if !editNoWait {
-			spinner := ui.StartSpinner()
+			spinner := cmdio.Spinner(ctx)
 			info, err := w.Warehouses.EditAndWait(ctx, editReq,
 				retries.Timeout[sql.GetWarehouseResponse](editTimeout),
 				func(i *retries.Info[sql.GetWarehouseResponse]) {
@@ -244,9 +243,9 @@ var editCmd = &cobra.Command{
 					if i.Info.Health != nil {
 						statusMessage = i.Info.Health.Summary
 					}
-					spinner.Suffix = " " + statusMessage
+					spinner <- statusMessage
 				})
-			spinner.Stop()
+			close(spinner)
 			if err != nil {
 				return err
 			}
@@ -468,7 +467,7 @@ var startCmd = &cobra.Command{
 		startReq.Id = args[0]
 
 		if !startNoWait {
-			spinner := ui.StartSpinner()
+			spinner := cmdio.Spinner(ctx)
 			info, err := w.Warehouses.StartAndWait(ctx, startReq,
 				retries.Timeout[sql.GetWarehouseResponse](startTimeout),
 				func(i *retries.Info[sql.GetWarehouseResponse]) {
@@ -483,9 +482,9 @@ var startCmd = &cobra.Command{
 					if i.Info.Health != nil {
 						statusMessage = i.Info.Health.Summary
 					}
-					spinner.Suffix = " " + statusMessage
+					spinner <- statusMessage
 				})
-			spinner.Stop()
+			close(spinner)
 			if err != nil {
 				return err
 			}
@@ -544,7 +543,7 @@ var stopCmd = &cobra.Command{
 		stopReq.Id = args[0]
 
 		if !stopNoWait {
-			spinner := ui.StartSpinner()
+			spinner := cmdio.Spinner(ctx)
 			info, err := w.Warehouses.StopAndWait(ctx, stopReq,
 				retries.Timeout[sql.GetWarehouseResponse](stopTimeout),
 				func(i *retries.Info[sql.GetWarehouseResponse]) {
@@ -559,9 +558,9 @@ var stopCmd = &cobra.Command{
 					if i.Info.Health != nil {
 						statusMessage = i.Info.Health.Summary
 					}
-					spinner.Suffix = " " + statusMessage
+					spinner <- statusMessage
 				})
-			spinner.Stop()
+			close(spinner)
 			if err != nil {
 				return err
 			}

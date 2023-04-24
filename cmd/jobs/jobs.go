@@ -8,7 +8,6 @@ import (
 
 	"github.com/databricks/bricks/cmd/root"
 	"github.com/databricks/bricks/lib/jsonflag"
-	"github.com/databricks/bricks/lib/ui"
 	"github.com/databricks/bricks/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -136,7 +135,7 @@ var cancelRunCmd = &cobra.Command{
 		}
 
 		if !cancelRunNoWait {
-			spinner := ui.StartSpinner()
+			spinner := cmdio.Spinner(ctx)
 			info, err := w.Jobs.CancelRunAndWait(ctx, cancelRunReq,
 				retries.Timeout[jobs.Run](cancelRunTimeout),
 				func(i *retries.Info[jobs.Run]) {
@@ -151,9 +150,9 @@ var cancelRunCmd = &cobra.Command{
 					if i.Info.State != nil {
 						statusMessage = i.Info.State.StateMessage
 					}
-					spinner.Suffix = " " + statusMessage
+					spinner <- statusMessage
 				})
-			spinner.Stop()
+			close(spinner)
 			if err != nil {
 				return err
 			}
@@ -664,7 +663,7 @@ var repairRunCmd = &cobra.Command{
 		}
 
 		if !repairRunNoWait {
-			spinner := ui.StartSpinner()
+			spinner := cmdio.Spinner(ctx)
 			info, err := w.Jobs.RepairRunAndWait(ctx, repairRunReq,
 				retries.Timeout[jobs.Run](repairRunTimeout),
 				func(i *retries.Info[jobs.Run]) {
@@ -679,9 +678,9 @@ var repairRunCmd = &cobra.Command{
 					if i.Info.State != nil {
 						statusMessage = i.Info.State.StateMessage
 					}
-					spinner.Suffix = " " + statusMessage
+					spinner <- statusMessage
 				})
-			spinner.Stop()
+			close(spinner)
 			if err != nil {
 				return err
 			}
@@ -804,7 +803,7 @@ var runNowCmd = &cobra.Command{
 		}
 
 		if !runNowNoWait {
-			spinner := ui.StartSpinner()
+			spinner := cmdio.Spinner(ctx)
 			info, err := w.Jobs.RunNowAndWait(ctx, runNowReq,
 				retries.Timeout[jobs.Run](runNowTimeout),
 				func(i *retries.Info[jobs.Run]) {
@@ -819,9 +818,9 @@ var runNowCmd = &cobra.Command{
 					if i.Info.State != nil {
 						statusMessage = i.Info.State.StateMessage
 					}
-					spinner.Suffix = " " + statusMessage
+					spinner <- statusMessage
 				})
-			spinner.Stop()
+			close(spinner)
 			if err != nil {
 				return err
 			}
@@ -881,7 +880,7 @@ var submitCmd = &cobra.Command{
 		}
 
 		if !submitNoWait {
-			spinner := ui.StartSpinner()
+			spinner := cmdio.Spinner(ctx)
 			info, err := w.Jobs.SubmitAndWait(ctx, submitReq,
 				retries.Timeout[jobs.Run](submitTimeout),
 				func(i *retries.Info[jobs.Run]) {
@@ -896,9 +895,9 @@ var submitCmd = &cobra.Command{
 					if i.Info.State != nil {
 						statusMessage = i.Info.State.StateMessage
 					}
-					spinner.Suffix = " " + statusMessage
+					spinner <- statusMessage
 				})
-			spinner.Stop()
+			close(spinner)
 			if err != nil {
 				return err
 			}

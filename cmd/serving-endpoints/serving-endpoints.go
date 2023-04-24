@@ -8,7 +8,6 @@ import (
 
 	"github.com/databricks/bricks/cmd/root"
 	"github.com/databricks/bricks/lib/jsonflag"
-	"github.com/databricks/bricks/lib/ui"
 	"github.com/databricks/bricks/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/serving"
@@ -106,7 +105,7 @@ var createCmd = &cobra.Command{
 		}
 
 		if !createNoWait {
-			spinner := ui.StartSpinner()
+			spinner := cmdio.Spinner(ctx)
 			info, err := w.ServingEndpoints.CreateAndWait(ctx, createReq,
 				retries.Timeout[serving.ServingEndpointDetailed](createTimeout),
 				func(i *retries.Info[serving.ServingEndpointDetailed]) {
@@ -115,9 +114,9 @@ var createCmd = &cobra.Command{
 					}
 					status := i.Info.State.ConfigUpdate
 					statusMessage := fmt.Sprintf("current status: %s", status)
-					spinner.Suffix = " " + statusMessage
+					spinner <- statusMessage
 				})
-			spinner.Stop()
+			close(spinner)
 			if err != nil {
 				return err
 			}
@@ -366,7 +365,7 @@ var updateConfigCmd = &cobra.Command{
 		updateConfigReq.Name = args[1]
 
 		if !updateConfigNoWait {
-			spinner := ui.StartSpinner()
+			spinner := cmdio.Spinner(ctx)
 			info, err := w.ServingEndpoints.UpdateConfigAndWait(ctx, updateConfigReq,
 				retries.Timeout[serving.ServingEndpointDetailed](updateConfigTimeout),
 				func(i *retries.Info[serving.ServingEndpointDetailed]) {
@@ -375,9 +374,9 @@ var updateConfigCmd = &cobra.Command{
 					}
 					status := i.Info.State.ConfigUpdate
 					statusMessage := fmt.Sprintf("current status: %s", status)
-					spinner.Suffix = " " + statusMessage
+					spinner <- statusMessage
 				})
-			spinner.Stop()
+			close(spinner)
 			if err != nil {
 				return err
 			}

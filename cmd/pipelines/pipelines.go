@@ -8,7 +8,6 @@ import (
 
 	"github.com/databricks/bricks/cmd/root"
 	"github.com/databricks/bricks/lib/jsonflag"
-	"github.com/databricks/bricks/lib/ui"
 	"github.com/databricks/bricks/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
@@ -400,7 +399,7 @@ var resetCmd = &cobra.Command{
 		resetReq.PipelineId = args[0]
 
 		if !resetNoWait {
-			spinner := ui.StartSpinner()
+			spinner := cmdio.Spinner(ctx)
 			info, err := w.Pipelines.ResetAndWait(ctx, resetReq,
 				retries.Timeout[pipelines.GetPipelineResponse](resetTimeout),
 				func(i *retries.Info[pipelines.GetPipelineResponse]) {
@@ -408,9 +407,9 @@ var resetCmd = &cobra.Command{
 						return
 					}
 					statusMessage := i.Info.Cause
-					spinner.Suffix = " " + statusMessage
+					spinner <- statusMessage
 				})
-			spinner.Stop()
+			close(spinner)
 			if err != nil {
 				return err
 			}
@@ -512,7 +511,7 @@ var stopCmd = &cobra.Command{
 		stopReq.PipelineId = args[0]
 
 		if !stopNoWait {
-			spinner := ui.StartSpinner()
+			spinner := cmdio.Spinner(ctx)
 			info, err := w.Pipelines.StopAndWait(ctx, stopReq,
 				retries.Timeout[pipelines.GetPipelineResponse](stopTimeout),
 				func(i *retries.Info[pipelines.GetPipelineResponse]) {
@@ -520,9 +519,9 @@ var stopCmd = &cobra.Command{
 						return
 					}
 					statusMessage := i.Info.Cause
-					spinner.Suffix = " " + statusMessage
+					spinner <- statusMessage
 				})
-			spinner.Stop()
+			close(spinner)
 			if err != nil {
 				return err
 			}

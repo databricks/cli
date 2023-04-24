@@ -1,9 +1,9 @@
 package repos
 
-import "github.com/databricks/bricks/lib/ui"
+import "github.com/databricks/bricks/libs/cmdio"
 
 func init() {
-	listCmd.Annotations["template"] = ui.Heredoc(`
+	listCmd.Annotations["template"] = cmdio.Heredoc(`
 	{{range .}}{{green "%d" .Id}}	{{.Path}}	{{.Branch|blue}}	{{.Url|cyan}}
 	{{end}}`)
 }

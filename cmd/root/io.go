@@ -35,7 +35,7 @@ func initializeIO(cmd *cobra.Command) error {
 		template = cmd.Annotations["template"]
 	}
 
-	cmdIO := cmdio.NewIO(outputType, cmd.InOrStdin(), cmd.OutOrStdout(), template)
+	cmdIO := cmdio.NewIO(outputType, cmd.InOrStdin(), cmd.OutOrStdout(), cmd.ErrOrStderr(), template)
 	ctx := cmdio.InContext(cmd.Context(), cmdIO)
 	cmd.SetContext(ctx)
 

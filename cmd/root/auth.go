@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/databricks/bricks/bundle"
-	"github.com/databricks/bricks/lib/ui"
+	"github.com/databricks/bricks/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/service/iam"
@@ -59,7 +59,7 @@ func MustAccountClient(cmd *cobra.Command, args []string) error {
 
 TRY_AUTH: // or try picking a config profile dynamically
 	a, err := databricks.NewAccountClient((*databricks.Config)(cfg))
-	if ui.Interactive && errors.Is(err, databricks.ErrNotAccountClient) {
+	if cmdio.IsInteractive(cmd.Context()) && errors.Is(err, databricks.ErrNotAccountClient) {
 		profile, err := askForAccountProfile()
 		if err != nil {
 			return err
@@ -104,7 +104,7 @@ TRY_AUTH: // or try picking a config profile dynamically
 	}
 	// get current user identity also to verify validity of configuration
 	me, err := w.CurrentUser.Me(ctx)
-	if ui.Interactive && errors.Is(err, config.ErrCannotConfigureAuth) {
+	if cmdio.IsInteractive(ctx) && errors.Is(err, config.ErrCannotConfigureAuth) {
 		profile, err := askForWorkspaceProfile()
 		if err != nil {
 			return err

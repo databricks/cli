@@ -1,10 +1,10 @@
 package query_history
 
-import "github.com/databricks/bricks/lib/ui"
+import "github.com/databricks/bricks/libs/cmdio"
 
 func init() {
 	// TODO: figure out the right format
-	listCmd.Annotations["template"] = ui.Heredoc(`
+	listCmd.Annotations["template"] = cmdio.Heredoc(`
 	{{range .}}{{.UserName}}	{{white "%s" .Status}}	{{.QueryText}}
 	{{end}}`)
 }

@@ -8,7 +8,6 @@ import (
 
 	"github.com/databricks/bricks/cmd/root"
 	"github.com/databricks/bricks/lib/jsonflag"
-	"github.com/databricks/bricks/lib/ui"
 	"github.com/databricks/bricks/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/compute"
@@ -154,7 +153,7 @@ var createCmd = &cobra.Command{
 		createReq.SparkVersion = args[0]
 
 		if !createNoWait {
-			spinner := ui.StartSpinner()
+			spinner := cmdio.Spinner(ctx)
 			info, err := w.Clusters.CreateAndWait(ctx, createReq,
 				retries.Timeout[compute.ClusterInfo](createTimeout),
 				func(i *retries.Info[compute.ClusterInfo]) {
@@ -162,9 +161,9 @@ var createCmd = &cobra.Command{
 						return
 					}
 					statusMessage := i.Info.StateMessage
-					spinner.Suffix = " " + statusMessage
+					spinner <- statusMessage
 				})
-			spinner.Stop()
+			close(spinner)
 			if err != nil {
 				return err
 			}
@@ -226,7 +225,7 @@ var deleteCmd = &cobra.Command{
 		deleteReq.ClusterId = args[0]
 
 		if !deleteNoWait {
-			spinner := ui.StartSpinner()
+			spinner := cmdio.Spinner(ctx)
 			info, err := w.Clusters.DeleteAndWait(ctx, deleteReq,
 				retries.Timeout[compute.ClusterInfo](deleteTimeout),
 				func(i *retries.Info[compute.ClusterInfo]) {
@@ -234,9 +233,9 @@ var deleteCmd = &cobra.Command{
 						return
 					}
 					statusMessage := i.Info.StateMessage
-					spinner.Suffix = " " + statusMessage
+					spinner <- statusMessage
 				})
-			spinner.Stop()
+			close(spinner)
 			if err != nil {
 				return err
 			}
@@ -322,7 +321,7 @@ var editCmd = &cobra.Command{
 		editReq.SparkVersion = args[1]
 
 		if !editNoWait {
-			spinner := ui.StartSpinner()
+			spinner := cmdio.Spinner(ctx)
 			info, err := w.Clusters.EditAndWait(ctx, editReq,
 				retries.Timeout[compute.ClusterInfo](editTimeout),
 				func(i *retries.Info[compute.ClusterInfo]) {
@@ -330,9 +329,9 @@ var editCmd = &cobra.Command{
 						return
 					}
 					statusMessage := i.Info.StateMessage
-					spinner.Suffix = " " + statusMessage
+					spinner <- statusMessage
 				})
-			spinner.Stop()
+			close(spinner)
 			if err != nil {
 				return err
 			}
@@ -683,7 +682,7 @@ var resizeCmd = &cobra.Command{
 		resizeReq.ClusterId = args[0]
 
 		if !resizeNoWait {
-			spinner := ui.StartSpinner()
+			spinner := cmdio.Spinner(ctx)
 			info, err := w.Clusters.ResizeAndWait(ctx, resizeReq,
 				retries.Timeout[compute.ClusterInfo](resizeTimeout),
 				func(i *retries.Info[compute.ClusterInfo]) {
@@ -691,9 +690,9 @@ var resizeCmd = &cobra.Command{
 						return
 					}
 					statusMessage := i.Info.StateMessage
-					spinner.Suffix = " " + statusMessage
+					spinner <- statusMessage
 				})
-			spinner.Stop()
+			close(spinner)
 			if err != nil {
 				return err
 			}
@@ -755,7 +754,7 @@ var restartCmd = &cobra.Command{
 		restartReq.ClusterId = args[0]
 
 		if !restartNoWait {
-			spinner := ui.StartSpinner()
+			spinner := cmdio.Spinner(ctx)
 			info, err := w.Clusters.RestartAndWait(ctx, restartReq,
 				retries.Timeout[compute.ClusterInfo](restartTimeout),
 				func(i *retries.Info[compute.ClusterInfo]) {
@@ -763,9 +762,9 @@ var restartCmd = &cobra.Command{
 						return
 					}
 					statusMessage := i.Info.StateMessage
-					spinner.Suffix = " " + statusMessage
+					spinner <- statusMessage
 				})
-			spinner.Stop()
+			close(spinner)
 			if err != nil {
 				return err
 			}
@@ -859,7 +858,7 @@ var startCmd = &cobra.Command{
 		startReq.ClusterId = args[0]
 
 		if !startNoWait {
-			spinner := ui.StartSpinner()
+			spinner := cmdio.Spinner(ctx)
 			info, err := w.Clusters.StartAndWait(ctx, startReq,
 				retries.Timeout[compute.ClusterInfo](startTimeout),
 				func(i *retries.Info[compute.ClusterInfo]) {
@@ -867,9 +866,9 @@ var startCmd = &cobra.Command{
 						return
 					}
 					statusMessage := i.Info.StateMessage
-					spinner.Suffix = " " + statusMessage
+					spinner <- statusMessage
 				})
-			spinner.Stop()
+			close(spinner)
 			if err != nil {
 				return err
 			}

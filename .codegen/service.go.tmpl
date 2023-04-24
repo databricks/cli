@@ -107,7 +107,7 @@ var {{.CamelName}}Cmd = &cobra.Command{
 		{{end}}
 		{{if $wait -}}
 		if !{{.CamelName}}NoWait {
-			spinner := ui.StartSpinner()
+			spinner := cmdio.Spinner(ctx)
 			info, err := {{if .Service.IsAccounts}}a{{else}}w{{end}}.{{.Service.PascalName}}.{{.PascalName}}AndWait(ctx{{if .Request}}, {{.CamelName}}Req{{end}},
 				retries.Timeout[{{.Service.Package.Name}}.{{.Wait.Poll.Response.PascalName}}]({{.CamelName}}Timeout),
 				func(i *retries.Info[{{.Service.Package.Name}}.{{.Wait.Poll.Response.PascalName}}]) {
@@ -131,9 +131,9 @@ var {{.CamelName}}Cmd = &cobra.Command{
 					status := i.Info{{range .Wait.StatusPath}}.{{.PascalName}}{{end}}
 					statusMessage := fmt.Sprintf("current status: %s", status)
 					{{- end}}
-					spinner.Suffix = " " + statusMessage
+					spinner <- statusMessage
 				})
-			spinner.Stop()
+			close(spinner)
 			if err != nil {
 				return err
 			}

@@ -4,9 +4,12 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"math/rand"
 	"os"
 	"strings"
+	"time"
 
+	"github.com/briandowns/spinner"
 	"github.com/databricks/bricks/libs/flags"
 	"github.com/fatih/color"
 	"github.com/manifoldco/promptui"
@@ -14,22 +17,32 @@ import (
 	"golang.org/x/exp/slices"
 )
 
+// cmdIO is the private instance, that is not supposed to be accessed
+// outside of `cmdio` package. Use the public package-level functions
+// to access the inner state.
 type cmdIO struct {
 	interactive  bool
 	outputFormat flags.Output
 	template     string
 	in           io.Reader
 	out          io.Writer
+	err          io.Writer
 }
 
-func NewIO(outputFormat flags.Output, in io.Reader, out io.Writer, template string) *cmdIO {
+func NewIO(outputFormat flags.Output, in io.Reader, out io.Writer, err io.Writer, template string) *cmdIO {
 	return &cmdIO{
 		interactive:  !color.NoColor,
 		outputFormat: outputFormat,
 		template:     template,
 		in:           in,
 		out:          out,
+		err:          err,
 	}
+}
+
+func IsInteractive(ctx context.Context) bool {
+	c := fromContext(ctx)
+	return c.interactive
 }
 
 func (c *cmdIO) IsTTY() bool {
@@ -103,6 +116,43 @@ func Select[V any](ctx context.Context, names map[string]V, label string) (id st
 		stringNames[k] = fmt.Sprint(v)
 	}
 	return c.Select(stringNames, label)
+}
+
+func (c *cmdIO) Spinner(ctx context.Context) chan string {
+	var sp *spinner.Spinner
+	if c.interactive {
+		rand.Seed(time.Now().UnixMilli())
+		charset := spinner.CharSets[rand.Intn(11)]
+		sp = spinner.New(charset, 200*time.Millisecond,
+			spinner.WithWriter(c.err),
+			spinner.WithColor("green"))
+		sp.Start()
+	}
+	updates := make(chan string)
+	go func() {
+		if c.interactive {
+			defer sp.Stop()
+		}
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case x, hasMore := <-updates:
+				if c.interactive {
+					sp.Suffix = " " + x
+				}
+				if !hasMore {
+					return
+				}
+			}
+		}
+	}()
+	return updates
+}
+
+func Spinner(ctx context.Context) chan string {
+	c := fromContext(ctx)
+	return c.Spinner(ctx)
 }
 
 type cmdIOType int
