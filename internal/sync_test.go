@@ -19,7 +19,6 @@ import (
 	"github.com/databricks/bricks/libs/testfile"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/client"
-	"github.com/databricks/databricks-sdk-go/service/repos"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -37,7 +36,7 @@ func setupRepo(t *testing.T, wsc *databricks.WorkspaceClient, ctx context.Contex
 	require.NoError(t, err)
 	repoPath := fmt.Sprintf("/Repos/%s/%s", me.UserName, RandomName("empty-repo-sync-integration-"))
 
-	repoInfo, err := wsc.Repos.Create(ctx, repos.CreateRepo{
+	repoInfo, err := wsc.Repos.Create(ctx, workspace.CreateRepo{
 		Path:     repoPath,
 		Url:      repoUrl,
 		Provider: "gitHub",
@@ -71,13 +70,13 @@ type assertSync struct {
 func (a *assertSync) remoteDirContent(ctx context.Context, relativeDir string, expectedFiles []string) {
 	remoteDir := path.Join(a.remoteRoot, relativeDir)
 	a.c.Eventually(func() bool {
-		objects, err := a.w.Workspace.ListAll(ctx, workspace.List{
+		objects, err := a.w.Workspace.ListAll(ctx, workspace.ListWorkspaceRequest{
 			Path: remoteDir,
 		})
 		require.NoError(a.t, err)
 		return len(objects) == len(expectedFiles)
 	}, 30*time.Second, 5*time.Second)
-	objects, err := a.w.Workspace.ListAll(ctx, workspace.List{
+	objects, err := a.w.Workspace.ListAll(ctx, workspace.ListWorkspaceRequest{
 		Path: remoteDir,
 	})
 	require.NoError(a.t, err)

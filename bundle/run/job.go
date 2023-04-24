@@ -112,7 +112,7 @@ func (r *jobRunner) logFailedTasks(ctx context.Context, runId int64) {
 	red := color.New(color.FgRed).SprintFunc()
 	green := color.New(color.FgGreen).SprintFunc()
 	yellow := color.New(color.FgYellow).SprintFunc()
-	run, err := w.Jobs.GetRun(ctx, jobs.GetRun{
+	run, err := w.Jobs.GetRun(ctx, jobs.GetRunRequest{
 		RunId: runId,
 	})
 	if err != nil {
@@ -126,7 +126,7 @@ func (r *jobRunner) logFailedTasks(ctx context.Context, runId int64) {
 		if isSuccess(task) {
 			log.Infof(ctx, "task %s completed successfully", green(task.TaskKey))
 		} else if isFailed(task) {
-			taskInfo, err := w.Jobs.GetRunOutput(ctx, jobs.GetRunOutput{
+			taskInfo, err := w.Jobs.GetRunOutput(ctx, jobs.GetRunOutputRequest{
 				RunId: task.RunId,
 			})
 			if err != nil {

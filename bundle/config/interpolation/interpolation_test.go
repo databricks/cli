@@ -97,3 +97,31 @@ func TestInterpolationWithMap(t *testing.T) {
 	assert.Equal(t, "a", f.F["a"])
 	assert.Equal(t, "a", f.F["b"])
 }
+
+func TestInterpolationWithResursiveVariableReferences(t *testing.T) {
+	f := foo{
+		A: "a",
+		B: "(${a})",
+		C: "${a} ${b}",
+	}
+
+	err := expand(&f)
+	require.NoError(t, err)
+
+	assert.Equal(t, "a", f.A)
+	assert.Equal(t, "(a)", f.B)
+	assert.Equal(t, "a (a)", f.C)
+}
+
+func TestInterpolationVariableLoopError(t *testing.T) {
+	d := "${b}"
+	f := foo{
+		A: "a",
+		B: "${c}",
+		C: "${d}",
+		D: &d,
+	}
+
+	err := expand(&f)
+	assert.ErrorContains(t, err, "cycle detected in field resolution: b -> c -> d -> b")
+}

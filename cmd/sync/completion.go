@@ -18,7 +18,7 @@ func fetchDirs(ctx context.Context, wsc *databricks.WorkspaceClient, path string
 	go func() {
 		defer close(ch)
 
-		files, err := wsc.Workspace.ListAll(ctx, workspace.List{
+		files, err := wsc.Workspace.ListAll(ctx, workspace.ListWorkspaceRequest{
 			Path: path,
 		})
 		if err != nil {

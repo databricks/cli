@@ -24,7 +24,7 @@ build: vendor
 
 snapshot:
 	@echo "✓ Building dev snapshot"
-	@goreleaser build --snapshot --rm-dist --single-target
+	@goreleaser build --snapshot --clean --single-target
 
 vendor:
 	@echo "✓ Filling vendor folder with library code ..."

@@ -5,10 +5,9 @@ import (
 
 	"github.com/databricks/bricks/bundle/config"
 	"github.com/databricks/bricks/bundle/config/resources"
-	"github.com/databricks/databricks-sdk-go/service/clusters"
+	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
-	"github.com/databricks/databricks-sdk-go/service/libraries"
-	"github.com/databricks/databricks-sdk-go/service/mlflow"
+	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -21,7 +20,7 @@ func TestConvertJob(t *testing.T) {
 			JobClusters: []jobs.JobCluster{
 				{
 					JobClusterKey: "key",
-					NewCluster: &clusters.BaseClusterInfo{
+					NewCluster: &compute.BaseClusterInfo{
 						SparkVersion: "10.4.x-scala2.12",
 					},
 				},
@@ -82,9 +81,9 @@ func TestConvertJobTaskLibraries(t *testing.T) {
 			Tasks: []jobs.JobTaskSettings{
 				{
 					TaskKey: "key",
-					Libraries: []libraries.Library{
+					Libraries: []compute.Library{
 						{
-							Pypi: &libraries.PythonPyPiLibrary{
+							Pypi: &compute.PythonPyPiLibrary{
 								Package: "mlflow",
 							},
 						},
@@ -171,10 +170,10 @@ func TestConvertPipelinePermissions(t *testing.T) {
 
 func TestConvertModel(t *testing.T) {
 	var src = resources.MlflowModel{
-		RegisteredModel: &mlflow.RegisteredModel{
+		Model: &ml.Model{
 			Name:        "name",
 			Description: "description",
-			Tags: []mlflow.RegisteredModelTag{
+			Tags: []ml.ModelTag{
 				{
 					Key:   "k1",
 					Value: "v1",
@@ -235,7 +234,7 @@ func TestConvertModelPermissions(t *testing.T) {
 
 func TestConvertExperiment(t *testing.T) {
 	var src = resources.MlflowExperiment{
-		Experiment: &mlflow.Experiment{
+		Experiment: &ml.Experiment{
 			Name: "name",
 		},
 	}

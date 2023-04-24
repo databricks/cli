@@ -1,1 +1,0 @@
-spark.sql('show tables').show()

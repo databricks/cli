@@ -10,7 +10,7 @@ import (
 
 	"github.com/databricks/bricks/libs/log"
 	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/service/dbfs"
+	"github.com/databricks/databricks-sdk-go/service/files"
 )
 
 func BuildWheel(ctx context.Context, dir string) (string, error) {
@@ -72,7 +72,7 @@ func UploadWheelToDBFSWithPEP503(ctx context.Context, dir string) (string, error
 		return "", err
 	}
 	defer wf.Close()
-	h, err := wsc.Dbfs.Open(ctx, dbfsLoc, dbfs.FileModeOverwrite|dbfs.FileModeWrite)
+	h, err := wsc.Dbfs.Open(ctx, dbfsLoc, files.FileModeOverwrite|files.FileModeWrite)
 	if err != nil {
 		return "", err
 	}
