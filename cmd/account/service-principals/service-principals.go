@@ -1,6 +1,6 @@
 // Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
 
-package account_users
+package service_principals
 
 import (
 	"fmt"
@@ -13,24 +13,19 @@ import (
 )
 
 var Cmd = &cobra.Command{
-	Use:   "account-users",
-	Short: `User identities recognized by Databricks and represented by email addresses.`,
-	Long: `User identities recognized by Databricks and represented by email addresses.
-  
-  Databricks recommends using SCIM provisioning to sync users and groups
-  automatically from your identity provider to your Databricks Account. SCIM
-  streamlines onboarding a new employee or team by using your identity provider
-  to create users and groups in Databricks Account and give them the proper
-  level of access. When a user leaves your organization or no longer needs
-  access to Databricks Account, admins can terminate the user in your identity
-  provider and that user’s account will also be removed from Databricks
-  Account. This ensures a consistent offboarding process and prevents
-  unauthorized users from accessing sensitive data.`,
+	Use:   "service-principals",
+	Short: `Identities for use with jobs, automated tools, and systems such as scripts, apps, and CI/CD platforms.`,
+	Long: `Identities for use with jobs, automated tools, and systems such as scripts,
+  apps, and CI/CD platforms. Databricks recommends creating service principals
+  to run production jobs or modify production data. If all processes that act on
+  production data run with service principals, interactive users do not need any
+  write, delete, or modify privileges in production. This eliminates the risk of
+  a user overwriting production data by accident.`,
 }
 
 // start create command
 
-var createReq iam.User
+var createReq iam.ServicePrincipal
 var createJson jsonflag.JsonFlag
 
 func init() {
@@ -39,25 +34,22 @@ func init() {
 	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	createCmd.Flags().BoolVar(&createReq.Active, "active", createReq.Active, `If this user is active.`)
+	createCmd.Flags().StringVar(&createReq.ApplicationId, "application-id", createReq.ApplicationId, `UUID relating to the service principal.`)
 	createCmd.Flags().StringVar(&createReq.DisplayName, "display-name", createReq.DisplayName, `String that represents a concatenation of given and family names.`)
-	// TODO: array: emails
 	// TODO: array: entitlements
 	createCmd.Flags().StringVar(&createReq.ExternalId, "external-id", createReq.ExternalId, ``)
 	// TODO: array: groups
-	createCmd.Flags().StringVar(&createReq.Id, "id", createReq.Id, `Databricks user ID.`)
-	// TODO: complex arg: name
+	createCmd.Flags().StringVar(&createReq.Id, "id", createReq.Id, `Databricks service principal ID.`)
 	// TODO: array: roles
-	createCmd.Flags().StringVar(&createReq.UserName, "user-name", createReq.UserName, `Email address of the Databricks user.`)
 
 }
 
 var createCmd = &cobra.Command{
 	Use:   "create",
-	Short: `Create a new user.`,
-	Long: `Create a new user.
+	Short: `Create a service principal.`,
+	Long: `Create a service principal.
   
-  Creates a new user in the Databricks Account. This new user will also be added
-  to the Databricks account.`,
+  Creates a new service principal in the Databricks Account.`,
 
 	Annotations: map[string]string{},
 	PreRunE:     root.MustAccountClient,
@@ -70,7 +62,7 @@ var createCmd = &cobra.Command{
 		}
 		createReq.Id = args[0]
 
-		response, err := a.AccountUsers.Create(ctx, createReq)
+		response, err := a.ServicePrincipals.Create(ctx, createReq)
 		if err != nil {
 			return err
 		}
@@ -80,7 +72,7 @@ var createCmd = &cobra.Command{
 
 // start delete command
 
-var deleteReq iam.DeleteAccountUserRequest
+var deleteReq iam.DeleteAccountServicePrincipalRequest
 
 func init() {
 	Cmd.AddCommand(deleteCmd)
@@ -90,11 +82,10 @@ func init() {
 
 var deleteCmd = &cobra.Command{
 	Use:   "delete ID",
-	Short: `Delete a user.`,
-	Long: `Delete a user.
+	Short: `Delete a service principal.`,
+	Long: `Delete a service principal.
   
-  Deletes a user. Deleting a user from a Databricks Account also removes objects
-  associated with the user.`,
+  Delete a single service principal in the Databricks Account.`,
 
 	Annotations: map[string]string{},
 	PreRunE:     root.MustAccountClient,
@@ -102,22 +93,22 @@ var deleteCmd = &cobra.Command{
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
 		if len(args) == 0 {
-			names, err := a.Users.UserUserNameToIdMap(ctx, iam.ListAccountUsersRequest{})
+			names, err := a.ServicePrincipals.ServicePrincipalDisplayNameToIdMap(ctx, iam.ListAccountServicePrincipalsRequest{})
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "Unique ID for a user in the Databricks Account")
+			id, err := cmdio.Select(ctx, names, "Unique ID for a service principal in the Databricks Account")
 			if err != nil {
 				return err
 			}
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have unique id for a user in the databricks account")
+			return fmt.Errorf("expected to have unique id for a service principal in the databricks account")
 		}
 		deleteReq.Id = args[0]
 
-		err = a.AccountUsers.Delete(ctx, deleteReq)
+		err = a.ServicePrincipals.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
@@ -127,7 +118,7 @@ var deleteCmd = &cobra.Command{
 
 // start get command
 
-var getReq iam.GetAccountUserRequest
+var getReq iam.GetAccountServicePrincipalRequest
 
 func init() {
 	Cmd.AddCommand(getCmd)
@@ -137,10 +128,11 @@ func init() {
 
 var getCmd = &cobra.Command{
 	Use:   "get ID",
-	Short: `Get user details.`,
-	Long: `Get user details.
+	Short: `Get service principal details.`,
+	Long: `Get service principal details.
   
-  Gets information for a specific user in Databricks Account.`,
+  Gets the details for a single service principal define in the Databricks
+  Account.`,
 
 	Annotations: map[string]string{},
 	PreRunE:     root.MustAccountClient,
@@ -148,22 +140,22 @@ var getCmd = &cobra.Command{
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
 		if len(args) == 0 {
-			names, err := a.Users.UserUserNameToIdMap(ctx, iam.ListAccountUsersRequest{})
+			names, err := a.ServicePrincipals.ServicePrincipalDisplayNameToIdMap(ctx, iam.ListAccountServicePrincipalsRequest{})
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "Unique ID for a user in the Databricks Account")
+			id, err := cmdio.Select(ctx, names, "Unique ID for a service principal in the Databricks Account")
 			if err != nil {
 				return err
 			}
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have unique id for a user in the databricks account")
+			return fmt.Errorf("expected to have unique id for a service principal in the databricks account")
 		}
 		getReq.Id = args[0]
 
-		response, err := a.AccountUsers.Get(ctx, getReq)
+		response, err := a.ServicePrincipals.Get(ctx, getReq)
 		if err != nil {
 			return err
 		}
@@ -173,7 +165,7 @@ var getCmd = &cobra.Command{
 
 // start list command
 
-var listReq iam.ListAccountUsersRequest
+var listReq iam.ListAccountServicePrincipalsRequest
 
 func init() {
 	Cmd.AddCommand(listCmd)
@@ -191,10 +183,10 @@ func init() {
 
 var listCmd = &cobra.Command{
 	Use:   "list",
-	Short: `List users.`,
-	Long: `List users.
+	Short: `List service principals.`,
+	Long: `List service principals.
   
-  Gets details for all the users associated with a Databricks Account.`,
+  Gets the set of service principals associated with a Databricks Account.`,
 
 	Annotations: map[string]string{},
 	Args:        cobra.ExactArgs(0),
@@ -203,7 +195,7 @@ var listCmd = &cobra.Command{
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
 
-		response, err := a.AccountUsers.ListAll(ctx, listReq)
+		response, err := a.ServicePrincipals.ListAll(ctx, listReq)
 		if err != nil {
 			return err
 		}
@@ -227,11 +219,11 @@ func init() {
 
 var patchCmd = &cobra.Command{
 	Use:   "patch",
-	Short: `Update user details.`,
-	Long: `Update user details.
+	Short: `Update service principal details.`,
+	Long: `Update service principal details.
   
-  Partially updates a user resource by applying the supplied operations on
-  specific user attributes.`,
+  Partially updates the details of a single service principal in the Databricks
+  Account.`,
 
 	Annotations: map[string]string{},
 	PreRunE:     root.MustAccountClient,
@@ -244,7 +236,7 @@ var patchCmd = &cobra.Command{
 		}
 		patchReq.Id = args[0]
 
-		err = a.AccountUsers.Patch(ctx, patchReq)
+		err = a.ServicePrincipals.Patch(ctx, patchReq)
 		if err != nil {
 			return err
 		}
@@ -254,7 +246,7 @@ var patchCmd = &cobra.Command{
 
 // start update command
 
-var updateReq iam.User
+var updateReq iam.ServicePrincipal
 var updateJson jsonflag.JsonFlag
 
 func init() {
@@ -263,24 +255,24 @@ func init() {
 	updateCmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	updateCmd.Flags().BoolVar(&updateReq.Active, "active", updateReq.Active, `If this user is active.`)
+	updateCmd.Flags().StringVar(&updateReq.ApplicationId, "application-id", updateReq.ApplicationId, `UUID relating to the service principal.`)
 	updateCmd.Flags().StringVar(&updateReq.DisplayName, "display-name", updateReq.DisplayName, `String that represents a concatenation of given and family names.`)
-	// TODO: array: emails
 	// TODO: array: entitlements
 	updateCmd.Flags().StringVar(&updateReq.ExternalId, "external-id", updateReq.ExternalId, ``)
 	// TODO: array: groups
-	updateCmd.Flags().StringVar(&updateReq.Id, "id", updateReq.Id, `Databricks user ID.`)
-	// TODO: complex arg: name
+	updateCmd.Flags().StringVar(&updateReq.Id, "id", updateReq.Id, `Databricks service principal ID.`)
 	// TODO: array: roles
-	updateCmd.Flags().StringVar(&updateReq.UserName, "user-name", updateReq.UserName, `Email address of the Databricks user.`)
 
 }
 
 var updateCmd = &cobra.Command{
 	Use:   "update",
-	Short: `Replace a user.`,
-	Long: `Replace a user.
+	Short: `Replace service principal.`,
+	Long: `Replace service principal.
   
-  Replaces a user's information with the data supplied in request.`,
+  Updates the details of a single service principal.
+  
+  This action replaces the existing service principal with the same name.`,
 
 	Annotations: map[string]string{},
 	PreRunE:     root.MustAccountClient,
@@ -293,7 +285,7 @@ var updateCmd = &cobra.Command{
 		}
 		updateReq.Id = args[0]
 
-		err = a.AccountUsers.Update(ctx, updateReq)
+		err = a.ServicePrincipals.Update(ctx, updateReq)
 		if err != nil {
 			return err
 		}
@@ -301,4 +293,4 @@ var updateCmd = &cobra.Command{
 	},
 }
 
-// end service AccountUsers
+// end service AccountServicePrincipals

@@ -1,9 +1,10 @@
 {
     "formatter": "go run golang.org/x/tools/cmd/goimports@latest -w $FILENAMES && go fmt ./...",
     "services": {
-        ".codegen/service.go.tmpl": "cmd/{{if .IsAccounts}}account/{{end}}{{.KebabName}}/{{.KebabName}}.go"
+        ".codegen/service.go.tmpl": "cmd/{{if .IsAccounts}}account/{{end}}{{(.TrimPrefix \"account\").KebabName}}/{{(.TrimPrefix \"account\").KebabName}}.go"
     },
     "batch": {
-        ".codegen/cmd.go.tmpl": "cmd/cmd.go"
+        ".codegen/cmd.go.tmpl": "cmd/cmd.go",
+        ".codegen/account-cmd.go.tmpl": "cmd/account/cmd.go"
     }
 }

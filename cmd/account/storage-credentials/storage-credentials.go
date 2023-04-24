@@ -1,6 +1,6 @@
 // Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
 
-package account_storage_credentials
+package storage_credentials
 
 import (
 	"github.com/databricks/bricks/cmd/root"
@@ -11,7 +11,7 @@ import (
 )
 
 var Cmd = &cobra.Command{
-	Use:   "account-storage-credentials",
+	Use:   "storage-credentials",
 	Short: `These APIs manage storage credentials for a particular metastore.`,
 	Long:  `These APIs manage storage credentials for a particular metastore.`,
 }
@@ -60,7 +60,7 @@ var createCmd = &cobra.Command{
 		createReq.Name = args[0]
 		createReq.MetastoreId = args[1]
 
-		response, err := a.AccountStorageCredentials.Create(ctx, createReq)
+		response, err := a.StorageCredentials.Create(ctx, createReq)
 		if err != nil {
 			return err
 		}
@@ -96,7 +96,7 @@ var getCmd = &cobra.Command{
 		getReq.MetastoreId = args[0]
 		getReq.Name = args[1]
 
-		response, err := a.AccountStorageCredentials.Get(ctx, getReq)
+		response, err := a.StorageCredentials.Get(ctx, getReq)
 		if err != nil {
 			return err
 		}
@@ -130,7 +130,7 @@ var listCmd = &cobra.Command{
 		a := root.AccountClient(ctx)
 		listReq.MetastoreId = args[0]
 
-		response, err := a.AccountStorageCredentials.List(ctx, listReq)
+		response, err := a.StorageCredentials.List(ctx, listReq)
 		if err != nil {
 			return err
 		}

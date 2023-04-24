@@ -1,6 +1,6 @@
 // Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
 
-package account_groups
+package groups
 
 import (
 	"fmt"
@@ -13,7 +13,7 @@ import (
 )
 
 var Cmd = &cobra.Command{
-	Use:   "account-groups",
+	Use:   "groups",
 	Short: `Groups simplify identity management, making it easier to assign access to Databricks Account, data, and other securable objects.`,
 	Long: `Groups simplify identity management, making it easier to assign access to
   Databricks Account, data, and other securable objects.
@@ -63,7 +63,7 @@ var createCmd = &cobra.Command{
 		}
 		createReq.Id = args[0]
 
-		response, err := a.AccountGroups.Create(ctx, createReq)
+		response, err := a.Groups.Create(ctx, createReq)
 		if err != nil {
 			return err
 		}
@@ -109,7 +109,7 @@ var deleteCmd = &cobra.Command{
 		}
 		deleteReq.Id = args[0]
 
-		err = a.AccountGroups.Delete(ctx, deleteReq)
+		err = a.Groups.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
@@ -155,7 +155,7 @@ var getCmd = &cobra.Command{
 		}
 		getReq.Id = args[0]
 
-		response, err := a.AccountGroups.Get(ctx, getReq)
+		response, err := a.Groups.Get(ctx, getReq)
 		if err != nil {
 			return err
 		}
@@ -195,7 +195,7 @@ var listCmd = &cobra.Command{
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
 
-		response, err := a.AccountGroups.ListAll(ctx, listReq)
+		response, err := a.Groups.ListAll(ctx, listReq)
 		if err != nil {
 			return err
 		}
@@ -235,7 +235,7 @@ var patchCmd = &cobra.Command{
 		}
 		patchReq.Id = args[0]
 
-		err = a.AccountGroups.Patch(ctx, patchReq)
+		err = a.Groups.Patch(ctx, patchReq)
 		if err != nil {
 			return err
 		}
@@ -281,7 +281,7 @@ var updateCmd = &cobra.Command{
 		}
 		updateReq.Id = args[0]
 
-		err = a.AccountGroups.Update(ctx, updateReq)
+		err = a.Groups.Update(ctx, updateReq)
 		if err != nil {
 			return err
 		}

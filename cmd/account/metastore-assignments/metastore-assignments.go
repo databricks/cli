@@ -1,6 +1,6 @@
 // Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
 
-package account_metastore_assignments
+package metastore_assignments
 
 import (
 	"fmt"
@@ -12,7 +12,7 @@ import (
 )
 
 var Cmd = &cobra.Command{
-	Use:   "account-metastore-assignments",
+	Use:   "metastore-assignments",
 	Short: `These APIs manage metastore assignments to a workspace.`,
 	Long:  `These APIs manage metastore assignments to a workspace.`,
 }
@@ -47,7 +47,7 @@ var createCmd = &cobra.Command{
 			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[2])
 		}
 
-		response, err := a.AccountMetastoreAssignments.Create(ctx, createReq)
+		response, err := a.MetastoreAssignments.Create(ctx, createReq)
 		if err != nil {
 			return err
 		}
@@ -85,7 +85,7 @@ var deleteCmd = &cobra.Command{
 		}
 		deleteReq.MetastoreId = args[1]
 
-		err = a.AccountMetastoreAssignments.Delete(ctx, deleteReq)
+		err = a.MetastoreAssignments.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
@@ -124,7 +124,7 @@ var getCmd = &cobra.Command{
 			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
 		}
 
-		response, err := a.AccountMetastoreAssignments.Get(ctx, getReq)
+		response, err := a.MetastoreAssignments.Get(ctx, getReq)
 		if err != nil {
 			return err
 		}
@@ -158,7 +158,7 @@ var listCmd = &cobra.Command{
 		a := root.AccountClient(ctx)
 		listReq.MetastoreId = args[0]
 
-		response, err := a.AccountMetastoreAssignments.List(ctx, listReq)
+		response, err := a.MetastoreAssignments.List(ctx, listReq)
 		if err != nil {
 			return err
 		}
@@ -199,7 +199,7 @@ var updateCmd = &cobra.Command{
 		}
 		updateReq.MetastoreId = args[1]
 
-		response, err := a.AccountMetastoreAssignments.Update(ctx, updateReq)
+		response, err := a.MetastoreAssignments.Update(ctx, updateReq)
 		if err != nil {
 			return err
 		}

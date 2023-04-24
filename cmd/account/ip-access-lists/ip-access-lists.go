@@ -1,6 +1,6 @@
 // Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
 
-package account_ip_access_lists
+package ip_access_lists
 
 import (
 	"fmt"
@@ -13,7 +13,7 @@ import (
 )
 
 var Cmd = &cobra.Command{
-	Use:   "account-ip-access-lists",
+	Use:   "ip-access-lists",
 	Short: `The Accounts IP Access List API enables account admins to configure IP access lists for access to the account console.`,
 	Long: `The Accounts IP Access List API enables account admins to configure IP access
   lists for access to the account console.
@@ -90,7 +90,7 @@ var createCmd = &cobra.Command{
 			return fmt.Errorf("invalid IP_ADDRESSES: %s", args[2])
 		}
 
-		response, err := a.AccountIpAccessLists.Create(ctx, createReq)
+		response, err := a.IpAccessLists.Create(ctx, createReq)
 		if err != nil {
 			return err
 		}
@@ -136,7 +136,7 @@ var deleteCmd = &cobra.Command{
 		}
 		deleteReq.IpAccessListId = args[0]
 
-		err = a.AccountIpAccessLists.Delete(ctx, deleteReq)
+		err = a.IpAccessLists.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
@@ -182,7 +182,7 @@ var getCmd = &cobra.Command{
 		}
 		getReq.IpAccessListId = args[0]
 
-		response, err := a.AccountIpAccessLists.Get(ctx, getReq)
+		response, err := a.IpAccessLists.Get(ctx, getReq)
 		if err != nil {
 			return err
 		}
@@ -209,7 +209,7 @@ var listCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-		response, err := a.AccountIpAccessLists.ListAll(ctx)
+		response, err := a.IpAccessLists.ListAll(ctx)
 		if err != nil {
 			return err
 		}
@@ -271,7 +271,7 @@ var replaceCmd = &cobra.Command{
 		}
 		replaceReq.IpAccessListId = args[4]
 
-		err = a.AccountIpAccessLists.Replace(ctx, replaceReq)
+		err = a.IpAccessLists.Replace(ctx, replaceReq)
 		if err != nil {
 			return err
 		}
@@ -337,7 +337,7 @@ var updateCmd = &cobra.Command{
 		}
 		updateReq.IpAccessListId = args[4]
 
-		err = a.AccountIpAccessLists.Update(ctx, updateReq)
+		err = a.IpAccessLists.Update(ctx, updateReq)
 		if err != nil {
 			return err
 		}

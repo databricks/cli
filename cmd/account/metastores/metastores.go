@@ -1,6 +1,6 @@
 // Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
 
-package account_metastores
+package metastores
 
 import (
 	"github.com/databricks/bricks/cmd/root"
@@ -10,7 +10,7 @@ import (
 )
 
 var Cmd = &cobra.Command{
-	Use:   "account-metastores",
+	Use:   "metastores",
 	Short: `These APIs manage Unity Catalog metastores for an account.`,
 	Long: `These APIs manage Unity Catalog metastores for an account. A metastore
   contains catalogs that can be associated with workspaces`,
@@ -44,7 +44,7 @@ var createCmd = &cobra.Command{
 		createReq.Name = args[0]
 		createReq.StorageRoot = args[1]
 
-		response, err := a.AccountMetastores.Create(ctx, createReq)
+		response, err := a.Metastores.Create(ctx, createReq)
 		if err != nil {
 			return err
 		}
@@ -78,7 +78,7 @@ var deleteCmd = &cobra.Command{
 		a := root.AccountClient(ctx)
 		deleteReq.MetastoreId = args[0]
 
-		err = a.AccountMetastores.Delete(ctx, deleteReq)
+		err = a.Metastores.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
@@ -112,7 +112,7 @@ var getCmd = &cobra.Command{
 		a := root.AccountClient(ctx)
 		getReq.MetastoreId = args[0]
 
-		response, err := a.AccountMetastores.Get(ctx, getReq)
+		response, err := a.Metastores.Get(ctx, getReq)
 		if err != nil {
 			return err
 		}
@@ -139,7 +139,7 @@ var listCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-		response, err := a.AccountMetastores.List(ctx)
+		response, err := a.Metastores.List(ctx)
 		if err != nil {
 			return err
 		}
@@ -181,7 +181,7 @@ var updateCmd = &cobra.Command{
 		updateReq.MetastoreId = args[0]
 		updateReq.Id = args[1]
 
-		response, err := a.AccountMetastores.Update(ctx, updateReq)
+		response, err := a.Metastores.Update(ctx, updateReq)
 		if err != nil {
 			return err
 		}

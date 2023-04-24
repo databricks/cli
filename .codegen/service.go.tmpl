@@ -1,6 +1,6 @@
 // Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
 
-package {{.SnakeName}}
+package {{(.TrimPrefix "account").SnakeName}}
 
 import (
     "github.com/databricks/bricks/lib/ui"
@@ -19,7 +19,7 @@ import (
 
 {{define "service"}}
 var Cmd = &cobra.Command{
-	Use:   "{{.KebabName}}",
+	Use:   "{{(.TrimPrefix "account").KebabName}}",
     {{if .Description -}}
     Short: `{{.Summary | without "`"}}`,
 	Long: `{{.Comment  "  " 80 | without "`"}}`,
@@ -77,7 +77,7 @@ var {{.CamelName}}Cmd = &cobra.Command{
 		{{- if .Request -}}
 			{{if $hasIdPrompt}}
 				if len(args) == 0 {
-				names, err := {{if .Service.IsAccounts}}a{{else}}w{{end}}.{{.Service.PascalName | trimPrefix "Account"}}.{{.Service.List.NamedIdMap.PascalName}}(ctx{{if .Service.List.Request}}, {{.Service.Package.Name}}.{{.Service.List.Request.PascalName}}{}{{end}})
+				names, err := {{if .Service.IsAccounts}}a{{else}}w{{end}}.{{(.Service.TrimPrefix "account").PascalName}}.{{.Service.List.NamedIdMap.PascalName}}(ctx{{if .Service.List.Request}}, {{.Service.Package.Name}}.{{.Service.List.Request.PascalName}}{}{{end}})
 				if err != nil {
 					return err
 				}
@@ -140,9 +140,7 @@ var {{.CamelName}}Cmd = &cobra.Command{
 			return cmdio.Render(ctx, info)
 		}
 		{{end -}}
-		{{if .Response}}response, err :={{else}}err ={{end}} {{if .Service.IsAccounts}}a{{else}}w{{end}}.{{if eq .Service.Package.Name "scim" -}}
-			{{.Service.PascalName | trimPrefix "Account"}}
-		{{- else}}{{.Service.PascalName}}{{end}}.{{.PascalName}}{{if .Pagination}}All{{end}}(ctx{{if .Request}}, {{.CamelName}}Req{{end}})
+		{{if .Response}}response, err :={{else}}err ={{end}} {{if .Service.IsAccounts}}a{{else}}w{{end}}.{{(.Service.TrimPrefix "account").PascalName}}.{{.PascalName}}{{if .Pagination}}All{{end}}(ctx{{if .Request}}, {{.CamelName}}Req{{end}})
 		if err != nil {
 			return err
 		}
