@@ -84,5 +84,5 @@ func (head *Head) CurrentBranch() (string, error) {
 	if !strings.HasPrefix(normalizeRefPath, ReferencePathPrefix) {
 		return "", fmt.Errorf("reference path %s does not have expected prefix %s", normalizeRefPath, ReferencePathPrefix)
 	}
-	return strings.TrimPrefix(refPath, ReferencePathPrefix), nil
+	return strings.TrimPrefix(normalizeRefPath, ReferencePathPrefix), nil
 }
