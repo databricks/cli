@@ -78,7 +78,7 @@ func (l *UpdateTracker) Events(ctx context.Context) ([]ProgressEvent, error) {
 	}
 
 	// we only check the most recent 100 events for progress
-	response, err := l.w.Pipelines.Impl().ListPipelineEvents(ctx, pipelines.ListPipelineEvents{
+	response, err := l.w.Pipelines.Impl().ListPipelineEvents(ctx, pipelines.ListPipelineEventsRequest{
 		PipelineId: l.PipelineId,
 		MaxResults: 100,
 		Filter:     filter,

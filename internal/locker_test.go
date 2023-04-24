@@ -11,7 +11,7 @@ import (
 
 	lockpkg "github.com/databricks/bricks/libs/locker"
 	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/service/repos"
+	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -26,7 +26,7 @@ func createRemoteTestProject(t *testing.T, projectNamePrefix string, wsc *databr
 	assert.NoError(t, err)
 
 	remoteProjectRoot := fmt.Sprintf("/Repos/%s/%s", me.UserName, RandomName(projectNamePrefix))
-	repoInfo, err := wsc.Repos.Create(ctx, repos.CreateRepo{
+	repoInfo, err := wsc.Repos.Create(ctx, workspace.CreateRepo{
 		Path:     remoteProjectRoot,
 		Url:      EmptyRepoUrl,
 		Provider: "gitHub",

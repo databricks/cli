@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/databricks/bricks/internal/build"
+	"github.com/databricks/bricks/libs/cmdio"
 	"github.com/databricks/bricks/libs/log"
 	"github.com/spf13/cobra"
 	"golang.org/x/exp/slog"
@@ -15,14 +16,16 @@ import (
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
 	Use:   "bricks",
-	Short: "Databricks project lifecycle management",
-	Long:  `Where's "data"? Secured by the unity catalog. Projects build lifecycle is secured by bricks`,
+	Short: "Bricks CLI",
 
 	// Cobra prints the usage string to stderr if a command returns an error.
 	// This usage string should only be displayed if an invalid combination of flags
 	// is specified and not when runtime errors occur (e.g. resource not found).
 	// The usage string is include in [flagErrorFunc] for flag errors only.
 	SilenceUsage: true,
+
+	// Silence error printing by cobra. Errors are printed through cmdio.
+	SilenceErrors: true,
 
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
@@ -65,6 +68,11 @@ func Execute() {
 
 	// Run the command
 	cmd, err := RootCmd.ExecuteContextC(ctx)
+	if err != nil {
+		// If cmdio logger initialization succeeds, then this function logs with the
+		// initialized cmdio logger, otherwise with the default cmdio logger
+		cmdio.LogError(cmd.Context(), err)
+	}
 
 	// Log exit status and error
 	// We only log if logger initialization succeeded and is stored in command

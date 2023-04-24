@@ -3,7 +3,7 @@ module github.com/databricks/bricks
 go 1.18
 
 require (
-	github.com/databricks/databricks-sdk-go v0.7.0
+	github.com/databricks/databricks-sdk-go v0.8.0
 	github.com/ghodss/yaml v1.0.0 // MIT + NOTICE
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8 // BSD-2-Clause
 	github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06 // MIT
@@ -28,6 +28,7 @@ require (
 
 require (
 	github.com/apparentlymart/go-textseg/v13 v13.0.0 // indirect
+	github.com/google/s2a-go v0.1.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.17 // indirect
@@ -48,14 +49,14 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/spf13/pflag v1.0.5
 	go.opencensus.io v0.24.0 // indirect
-	golang.org/x/net v0.8.0 // indirect
-	golang.org/x/oauth2 v0.6.0
+	golang.org/x/net v0.9.0 // indirect
+	golang.org/x/oauth2 v0.7.0
 	golang.org/x/sys v0.7.0 // indirect
 	golang.org/x/text v0.9.0
 	golang.org/x/time v0.3.0 // indirect
-	google.golang.org/api v0.115.0 // indirect
+	google.golang.org/api v0.118.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/genproto v0.0.0-20230331144136-dcfb400f0633 // indirect
+	google.golang.org/genproto v0.0.0-20230403163135-c38d8f061ccd // indirect
 	google.golang.org/grpc v1.54.0 // indirect
 	google.golang.org/protobuf v1.30.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
