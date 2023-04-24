@@ -39,6 +39,9 @@ func isSHA1(s string) bool {
 func LoadHead(path string) (*Head, error) {
 	// read head file content
 	b, err := os.ReadFile(path)
+	if os.IsNotExist(err) {
+		return nil, nil
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -68,7 +71,7 @@ func (head *Head) ReferencePath() (string, error) {
 	if head.Type != HeadTypeReference {
 		return "", fmt.Errorf("HEAD is not a git reference")
 	}
-	refPath := strings.TrimPrefix(head.Content, ReferencePathPrefix)
+	refPath := strings.TrimPrefix(head.Content, ReferencePrefix)
 	return filepath.FromSlash(refPath), nil
 }
 
@@ -80,5 +83,5 @@ func (head *Head) CurrentBranch() (string, error) {
 	if !strings.HasPrefix(refPath, ReferencePathPrefix) {
 		return "", fmt.Errorf("reference path %s does not have expected prefix %s", refPath, ReferencePathPrefix)
 	}
-	return strings.TrimSuffix(refPath, ReferencePathPrefix), nil
+	return strings.TrimPrefix(refPath, ReferencePathPrefix), nil
 }

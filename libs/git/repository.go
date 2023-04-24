@@ -2,13 +2,13 @@ package git
 
 import (
 	"fmt"
-	"net/url"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
 
 	"github.com/databricks/bricks/folders"
+	giturls "github.com/whilp/git-urls"
 )
 
 const gitIgnoreFileName = ".gitignore"
@@ -47,6 +47,9 @@ func (r *Repository) CurrentBranch() (string, error) {
 	if err != nil {
 		return "", err
 	}
+	if head == nil {
+		return "", nil
+	}
 
 	// case: when a git object like commit,tag or remote branch is checked out
 	if head.Type == HeadTypeSHA1 {
@@ -60,6 +63,10 @@ func (r *Repository) LatestCommit() (string, error) {
 	head, err := LoadHead(filepath.Join(r.rootPath, ".git", "HEAD"))
 	if err != nil {
 		return "", err
+	}
+	if head == nil {
+		// return empty string when head file does not exist
+		return "", nil
 	}
 
 	// case: when a git object like commit,tag or remote branch is checked out
@@ -76,6 +83,10 @@ func (r *Repository) LatestCommit() (string, error) {
 	if err != nil {
 		return "", err
 	}
+	if refHead == nil {
+		// return empty string when head file does not exist
+		return "", nil
+	}
 	if refHead.Type != HeadTypeSHA1 {
 		return "", fmt.Errorf("git reference at %s was expected to be a SHA-1 commit id", refPath)
 	}
@@ -88,13 +99,17 @@ func (r *Repository) OriginUrl() (string, error) {
 		// return empty string if origin url is not defined
 		return "", nil
 	}
-	originUrl, err := url.Parse(rawUrl)
+	originUrl, err := giturls.Parse(rawUrl)
 	if err != nil {
 		return "", err
 	}
 	// if current repo is checked out with a SSH key
 	if originUrl.Scheme != "https" {
 		originUrl.Scheme = "https"
+	}
+	// `git@` is not required for HTTPS
+	if originUrl.User != nil {
+		originUrl.User = nil
 	}
 	// Remove `.git` suffix, if present.
 	originUrl.Path = strings.TrimSuffix(originUrl.Path, ".git")
