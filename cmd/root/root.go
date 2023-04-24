@@ -25,8 +25,7 @@ var RootCmd = &cobra.Command{
 	// The usage string is include in [flagErrorFunc] for flag errors only.
 	SilenceUsage: true,
 
-	// Silence errors so that they are not logged by cobra. We log any errors
-	// downstream using the cmdio logger which allows us to support json logging
+	// Silence error printing by cobra. Errors are printed through cmdio.
 	SilenceErrors: true,
 
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
