@@ -4,7 +4,6 @@ package o_auth_enrollment
 
 import (
 	"github.com/databricks/bricks/cmd/root"
-	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
 	"github.com/databricks/databricks-sdk-go/service/oauth2"
 	"github.com/spf13/cobra"
@@ -49,10 +48,10 @@ var createCmd = &cobra.Command{
 
 	Annotations: map[string]string{},
 	Args:        cobra.ExactArgs(0),
-	PreRunE:     root.TryWorkspaceClient, // FIXME: accounts client
+	PreRunE:     root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		a := sdk.AccountClient(ctx)
+		a := root.AccountClient(ctx)
 
 		err = a.OAuthEnrollment.Create(ctx, createReq)
 		if err != nil {
@@ -80,10 +79,10 @@ var getCmd = &cobra.Command{
   OAuth enrollment status is enabled.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient, // FIXME: accounts client
+	PreRunE:     root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		a := sdk.AccountClient(ctx)
+		a := root.AccountClient(ctx)
 		response, err := a.OAuthEnrollment.Get(ctx)
 		if err != nil {
 			return err

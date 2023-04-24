@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/databricks/bricks/cmd/root"
-	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/spf13/cobra"
@@ -51,10 +50,10 @@ var assignCmd = &cobra.Command{
 
 	Annotations: map[string]string{},
 	Args:        cobra.ExactArgs(3),
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		assignReq.MetastoreId = args[0]
 		assignReq.DefaultCatalogName = args[1]
 		_, err = fmt.Sscan(args[2], &assignReq.WorkspaceId)
@@ -91,10 +90,10 @@ var createCmd = &cobra.Command{
 
 	Annotations: map[string]string{},
 	Args:        cobra.ExactArgs(2),
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		createReq.Name = args[0]
 		createReq.StorageRoot = args[1]
 
@@ -121,10 +120,10 @@ var currentCmd = &cobra.Command{
   Gets the metastore assignment for the workspace being accessed.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		response, err := w.Metastores.Current(ctx)
 		if err != nil {
 			return err
@@ -153,10 +152,10 @@ var deleteCmd = &cobra.Command{
   Deletes a metastore. The caller must be a metastore admin.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		if len(args) == 0 {
 			names, err := w.Metastores.MetastoreInfoNameToMetastoreIdMap(ctx)
 			if err != nil {
@@ -200,10 +199,10 @@ var getCmd = &cobra.Command{
   admin to retrieve this info.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		if len(args) == 0 {
 			names, err := w.Metastores.MetastoreInfoNameToMetastoreIdMap(ctx)
 			if err != nil {
@@ -245,10 +244,10 @@ var listCmd = &cobra.Command{
   specific ordering of the elements in the array.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		response, err := w.Metastores.ListAll(ctx)
 		if err != nil {
 			return err
@@ -276,10 +275,10 @@ var maintenanceCmd = &cobra.Command{
 
 	Annotations: map[string]string{},
 	Args:        cobra.ExactArgs(2),
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		maintenanceReq.MetastoreId = args[0]
 		_, err = fmt.Sscan(args[1], &maintenanceReq.Enable)
 		if err != nil {
@@ -310,10 +309,10 @@ var summaryCmd = &cobra.Command{
   credential, the cloud vendor, the cloud region, and the global metastore ID.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		response, err := w.Metastores.Summary(ctx)
 		if err != nil {
 			return err
@@ -341,10 +340,10 @@ var unassignCmd = &cobra.Command{
 
 	Annotations: map[string]string{},
 	Args:        cobra.ExactArgs(2),
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		_, err = fmt.Sscan(args[0], &unassignReq.WorkspaceId)
 		if err != nil {
 			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
@@ -387,10 +386,10 @@ var updateCmd = &cobra.Command{
 
 	Annotations: map[string]string{},
 	Args:        cobra.ExactArgs(2),
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		updateReq.MetastoreId = args[0]
 		updateReq.Id = args[1]
 
@@ -427,10 +426,10 @@ var updateAssignmentCmd = &cobra.Command{
 
 	Annotations: map[string]string{},
 	Args:        cobra.ExactArgs(2),
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		_, err = fmt.Sscan(args[0], &updateAssignmentReq.WorkspaceId)
 		if err != nil {
 			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])

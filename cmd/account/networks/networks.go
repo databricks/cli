@@ -7,7 +7,6 @@ import (
 
 	"github.com/databricks/bricks/cmd/root"
 	"github.com/databricks/bricks/lib/jsonflag"
-	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
 	"github.com/databricks/databricks-sdk-go/service/provisioning"
 	"github.com/spf13/cobra"
@@ -48,10 +47,10 @@ var createCmd = &cobra.Command{
   pre-existing VPC and subnets.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient, // FIXME: accounts client
+	PreRunE:     root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		a := sdk.AccountClient(ctx)
+		a := root.AccountClient(ctx)
 		err = createJson.Unmarshall(&createReq)
 		if err != nil {
 			return err
@@ -89,10 +88,10 @@ var deleteCmd = &cobra.Command{
   platform.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient, // FIXME: accounts client
+	PreRunE:     root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		a := sdk.AccountClient(ctx)
+		a := root.AccountClient(ctx)
 		if len(args) == 0 {
 			names, err := a.Networks.NetworkNetworkNameToNetworkIdMap(ctx)
 			if err != nil {
@@ -136,10 +135,10 @@ var getCmd = &cobra.Command{
   resources.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient, // FIXME: accounts client
+	PreRunE:     root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		a := sdk.AccountClient(ctx)
+		a := root.AccountClient(ctx)
 		if len(args) == 0 {
 			names, err := a.Networks.NetworkNetworkNameToNetworkIdMap(ctx)
 			if err != nil {
@@ -183,10 +182,10 @@ var listCmd = &cobra.Command{
   platform.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient, // FIXME: accounts client
+	PreRunE:     root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		a := sdk.AccountClient(ctx)
+		a := root.AccountClient(ctx)
 		response, err := a.Networks.List(ctx)
 		if err != nil {
 			return err

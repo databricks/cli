@@ -8,7 +8,6 @@ import (
 
 	"github.com/databricks/bricks/cmd/root"
 	"github.com/databricks/bricks/lib/jsonflag"
-	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
 	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
@@ -73,10 +72,10 @@ var createCmd = &cobra.Command{
   If successful, this method returns the ID of the new pipeline.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		err = createJson.Unmarshall(&createReq)
 		if err != nil {
 			return err
@@ -108,10 +107,10 @@ var deleteCmd = &cobra.Command{
   Deletes a pipeline.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		if len(args) == 0 {
 			names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
 			if err != nil {
@@ -158,10 +157,10 @@ var getCmd = &cobra.Command{
 	Long:  `Get a pipeline.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		if len(args) == 0 {
 			names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
 			if err != nil {
@@ -178,20 +177,6 @@ var getCmd = &cobra.Command{
 		}
 		getReq.PipelineId = args[0]
 
-		if !getNoWait {
-			spinner := ui.StartSpinner()
-			info, err := w.Pipelines.GetAndWait(ctx, getReq,
-				retries.Timeout[pipelines.GetPipelineResponse](getTimeout),
-				func(i *retries.Info[pipelines.GetPipelineResponse]) {
-					statusMessage := i.Info.Cause
-					spinner.Suffix = " " + statusMessage
-				})
-			spinner.Stop()
-			if err != nil {
-				return err
-			}
-			return ui.Render(cmd, info)
-		}
 		response, err := w.Pipelines.Get(ctx, getReq)
 		if err != nil {
 			return err
@@ -219,10 +204,10 @@ var getUpdateCmd = &cobra.Command{
 
 	Annotations: map[string]string{},
 	Args:        cobra.ExactArgs(2),
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		getUpdateReq.PipelineId = args[0]
 		getUpdateReq.UpdateId = args[1]
 
@@ -259,10 +244,10 @@ var listPipelineEventsCmd = &cobra.Command{
   Retrieves events for a pipeline.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		err = listPipelineEventsJson.Unmarshall(&listPipelineEventsReq)
 		if err != nil {
 			return err
@@ -302,10 +287,10 @@ var listPipelinesCmd = &cobra.Command{
   Lists pipelines defined in the Delta Live Tables system.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		err = listPipelinesJson.Unmarshall(&listPipelinesReq)
 		if err != nil {
 			return err
@@ -341,10 +326,10 @@ var listUpdatesCmd = &cobra.Command{
   List updates for an active pipeline.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		if len(args) == 0 {
 			names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
 			if err != nil {
@@ -393,10 +378,10 @@ var resetCmd = &cobra.Command{
   Resets a pipeline.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		if len(args) == 0 {
 			names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
 			if err != nil {
@@ -418,6 +403,9 @@ var resetCmd = &cobra.Command{
 			info, err := w.Pipelines.ResetAndWait(ctx, resetReq,
 				retries.Timeout[pipelines.GetPipelineResponse](resetTimeout),
 				func(i *retries.Info[pipelines.GetPipelineResponse]) {
+					if i.Info == nil {
+						return
+					}
 					statusMessage := i.Info.Cause
 					spinner.Suffix = " " + statusMessage
 				})
@@ -460,10 +448,10 @@ var startUpdateCmd = &cobra.Command{
   Starts or queues a pipeline update.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		err = startUpdateJson.Unmarshall(&startUpdateReq)
 		if err != nil {
 			return err
@@ -502,10 +490,10 @@ var stopCmd = &cobra.Command{
   Stops a pipeline.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		if len(args) == 0 {
 			names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
 			if err != nil {
@@ -527,6 +515,9 @@ var stopCmd = &cobra.Command{
 			info, err := w.Pipelines.StopAndWait(ctx, stopReq,
 				retries.Timeout[pipelines.GetPipelineResponse](stopTimeout),
 				func(i *retries.Info[pipelines.GetPipelineResponse]) {
+					if i.Info == nil {
+						return
+					}
 					statusMessage := i.Info.Cause
 					spinner.Suffix = " " + statusMessage
 				})
@@ -583,10 +574,10 @@ var updateCmd = &cobra.Command{
   Updates a pipeline with the supplied configuration.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		err = updateJson.Unmarshall(&updateReq)
 		if err != nil {
 			return err

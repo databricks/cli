@@ -4,7 +4,6 @@ package recipient_activation
 
 import (
 	"github.com/databricks/bricks/cmd/root"
-	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
 	"github.com/databricks/databricks-sdk-go/service/sharing"
 	"github.com/spf13/cobra"
@@ -35,10 +34,10 @@ var getActivationUrlInfoCmd = &cobra.Command{
 
 	Annotations: map[string]string{},
 	Args:        cobra.ExactArgs(1),
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		getActivationUrlInfoReq.ActivationUrl = args[0]
 
 		err = w.RecipientActivation.GetActivationUrlInfo(ctx, getActivationUrlInfoReq)
@@ -69,10 +68,10 @@ var retrieveTokenCmd = &cobra.Command{
 
 	Annotations: map[string]string{},
 	Args:        cobra.ExactArgs(1),
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		retrieveTokenReq.ActivationUrl = args[0]
 
 		response, err := w.RecipientActivation.RetrieveToken(ctx, retrieveTokenReq)

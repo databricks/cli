@@ -7,7 +7,6 @@ import (
 
 	"github.com/databricks/bricks/cmd/root"
 	"github.com/databricks/bricks/lib/jsonflag"
-	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/spf13/cobra"
@@ -61,10 +60,10 @@ var createCmd = &cobra.Command{
   to the Databricks account.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient, // FIXME: accounts client
+	PreRunE:     root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		a := sdk.AccountClient(ctx)
+		a := root.AccountClient(ctx)
 		err = createJson.Unmarshall(&createReq)
 		if err != nil {
 			return err
@@ -98,10 +97,10 @@ var deleteCmd = &cobra.Command{
   associated with the user.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient, // FIXME: accounts client
+	PreRunE:     root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		a := sdk.AccountClient(ctx)
+		a := root.AccountClient(ctx)
 		if len(args) == 0 {
 			names, err := a.Users.UserUserNameToIdMap(ctx, iam.ListAccountUsersRequest{})
 			if err != nil {
@@ -144,10 +143,10 @@ var getCmd = &cobra.Command{
   Gets information for a specific user in Databricks Account.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient, // FIXME: accounts client
+	PreRunE:     root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		a := sdk.AccountClient(ctx)
+		a := root.AccountClient(ctx)
 		if len(args) == 0 {
 			names, err := a.Users.UserUserNameToIdMap(ctx, iam.ListAccountUsersRequest{})
 			if err != nil {
@@ -199,10 +198,10 @@ var listCmd = &cobra.Command{
 
 	Annotations: map[string]string{},
 	Args:        cobra.ExactArgs(0),
-	PreRunE:     root.TryWorkspaceClient, // FIXME: accounts client
+	PreRunE:     root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		a := sdk.AccountClient(ctx)
+		a := root.AccountClient(ctx)
 
 		response, err := a.AccountUsers.ListAll(ctx, listReq)
 		if err != nil {
@@ -235,10 +234,10 @@ var patchCmd = &cobra.Command{
   specific user attributes.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient, // FIXME: accounts client
+	PreRunE:     root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		a := sdk.AccountClient(ctx)
+		a := root.AccountClient(ctx)
 		err = patchJson.Unmarshall(&patchReq)
 		if err != nil {
 			return err
@@ -284,10 +283,10 @@ var updateCmd = &cobra.Command{
   Replaces a user's information with the data supplied in request.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient, // FIXME: accounts client
+	PreRunE:     root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		a := sdk.AccountClient(ctx)
+		a := root.AccountClient(ctx)
 		err = updateJson.Unmarshall(&updateReq)
 		if err != nil {
 			return err

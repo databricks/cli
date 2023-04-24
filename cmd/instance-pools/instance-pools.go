@@ -7,7 +7,6 @@ import (
 
 	"github.com/databricks/bricks/cmd/root"
 	"github.com/databricks/bricks/lib/jsonflag"
-	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/spf13/cobra"
@@ -68,10 +67,10 @@ var createCmd = &cobra.Command{
   Creates a new instance pool using idle and ready-to-use cloud instances.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		err = createJson.Unmarshall(&createReq)
 		if err != nil {
 			return err
@@ -106,10 +105,10 @@ var deleteCmd = &cobra.Command{
   terminated asynchronously.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		if len(args) == 0 {
 			names, err := w.InstancePools.InstancePoolAndStatsInstancePoolNameToInstancePoolIdMap(ctx)
 			if err != nil {
@@ -166,10 +165,10 @@ var editCmd = &cobra.Command{
   Modifies the configuration of an existing instance pool.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		err = editJson.Unmarshall(&editReq)
 		if err != nil {
 			return err
@@ -204,10 +203,10 @@ var getCmd = &cobra.Command{
   Retrieve the information for an instance pool based on its identifier.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		if len(args) == 0 {
 			names, err := w.InstancePools.InstancePoolAndStatsInstancePoolNameToInstancePoolIdMap(ctx)
 			if err != nil {
@@ -247,10 +246,10 @@ var listCmd = &cobra.Command{
   Gets a list of instance pools with their statistics.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		response, err := w.InstancePools.ListAll(ctx)
 		if err != nil {
 			return err

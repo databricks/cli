@@ -7,7 +7,6 @@ import (
 
 	"github.com/databricks/bricks/cmd/root"
 	"github.com/databricks/bricks/lib/jsonflag"
-	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/spf13/cobra"
@@ -38,10 +37,10 @@ var approveTransitionRequestCmd = &cobra.Command{
 
 	Annotations: map[string]string{},
 	Args:        cobra.ExactArgs(4),
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		approveTransitionRequestReq.Name = args[0]
 		approveTransitionRequestReq.Version = args[1]
 		_, err = fmt.Sscan(args[2], &approveTransitionRequestReq.Stage)
@@ -82,10 +81,10 @@ var createCommentCmd = &cobra.Command{
 
 	Annotations: map[string]string{},
 	Args:        cobra.ExactArgs(3),
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		createCommentReq.Name = args[0]
 		createCommentReq.Version = args[1]
 		createCommentReq.Comment = args[2]
@@ -124,10 +123,10 @@ var createModelCmd = &cobra.Command{
   exists.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		err = createModelJson.Unmarshall(&createModelReq)
 		if err != nil {
 			return err
@@ -167,10 +166,10 @@ var createModelVersionCmd = &cobra.Command{
   Creates a model version.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		err = createModelVersionJson.Unmarshall(&createModelVersionReq)
 		if err != nil {
 			return err
@@ -207,10 +206,10 @@ var createTransitionRequestCmd = &cobra.Command{
 
 	Annotations: map[string]string{},
 	Args:        cobra.ExactArgs(3),
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		createTransitionRequestReq.Name = args[0]
 		createTransitionRequestReq.Version = args[1]
 		_, err = fmt.Sscan(args[2], &createTransitionRequestReq.Stage)
@@ -254,10 +253,10 @@ var createWebhookCmd = &cobra.Command{
   Creates a registry webhook.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		err = createWebhookJson.Unmarshall(&createWebhookReq)
 		if err != nil {
 			return err
@@ -294,10 +293,10 @@ var deleteCommentCmd = &cobra.Command{
 
 	Annotations: map[string]string{},
 	Args:        cobra.ExactArgs(1),
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		deleteCommentReq.Id = args[0]
 
 		err = w.ModelRegistry.DeleteComment(ctx, deleteCommentReq)
@@ -327,10 +326,10 @@ var deleteModelCmd = &cobra.Command{
 
 	Annotations: map[string]string{},
 	Args:        cobra.ExactArgs(1),
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		deleteModelReq.Name = args[0]
 
 		err = w.ModelRegistry.DeleteModel(ctx, deleteModelReq)
@@ -360,10 +359,10 @@ var deleteModelTagCmd = &cobra.Command{
 
 	Annotations: map[string]string{},
 	Args:        cobra.ExactArgs(2),
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		deleteModelTagReq.Name = args[0]
 		deleteModelTagReq.Key = args[1]
 
@@ -394,10 +393,10 @@ var deleteModelVersionCmd = &cobra.Command{
 
 	Annotations: map[string]string{},
 	Args:        cobra.ExactArgs(2),
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		deleteModelVersionReq.Name = args[0]
 		deleteModelVersionReq.Version = args[1]
 
@@ -428,10 +427,10 @@ var deleteModelVersionTagCmd = &cobra.Command{
 
 	Annotations: map[string]string{},
 	Args:        cobra.ExactArgs(3),
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		deleteModelVersionTagReq.Name = args[0]
 		deleteModelVersionTagReq.Version = args[1]
 		deleteModelVersionTagReq.Key = args[2]
@@ -465,10 +464,10 @@ var deleteTransitionRequestCmd = &cobra.Command{
 
 	Annotations: map[string]string{},
 	Args:        cobra.ExactArgs(4),
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		deleteTransitionRequestReq.Name = args[0]
 		deleteTransitionRequestReq.Version = args[1]
 		deleteTransitionRequestReq.Stage = args[2]
@@ -505,10 +504,10 @@ var deleteWebhookCmd = &cobra.Command{
 
 	Annotations: map[string]string{},
 	Args:        cobra.ExactArgs(0),
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 
 		err = w.ModelRegistry.DeleteWebhook(ctx, deleteWebhookReq)
 		if err != nil {
@@ -540,10 +539,10 @@ var getLatestVersionsCmd = &cobra.Command{
   Gets the latest version of a registered model.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		err = getLatestVersionsJson.Unmarshall(&getLatestVersionsReq)
 		if err != nil {
 			return err
@@ -581,10 +580,10 @@ var getModelCmd = &cobra.Command{
 
 	Annotations: map[string]string{},
 	Args:        cobra.ExactArgs(1),
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		getModelReq.Name = args[0]
 
 		response, err := w.ModelRegistry.GetModel(ctx, getModelReq)
@@ -614,10 +613,10 @@ var getModelVersionCmd = &cobra.Command{
 
 	Annotations: map[string]string{},
 	Args:        cobra.ExactArgs(2),
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		getModelVersionReq.Name = args[0]
 		getModelVersionReq.Version = args[1]
 
@@ -648,10 +647,10 @@ var getModelVersionDownloadUriCmd = &cobra.Command{
 
 	Annotations: map[string]string{},
 	Args:        cobra.ExactArgs(2),
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		getModelVersionDownloadUriReq.Name = args[0]
 		getModelVersionDownloadUriReq.Version = args[1]
 
@@ -686,10 +685,10 @@ var listModelsCmd = &cobra.Command{
 
 	Annotations: map[string]string{},
 	Args:        cobra.ExactArgs(0),
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 
 		response, err := w.ModelRegistry.ListModelsAll(ctx, listModelsReq)
 		if err != nil {
@@ -718,10 +717,10 @@ var listTransitionRequestsCmd = &cobra.Command{
 
 	Annotations: map[string]string{},
 	Args:        cobra.ExactArgs(2),
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		listTransitionRequestsReq.Name = args[0]
 		listTransitionRequestsReq.Version = args[1]
 
@@ -759,10 +758,10 @@ var listWebhooksCmd = &cobra.Command{
   Lists all registry webhooks.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		err = listWebhooksJson.Unmarshall(&listWebhooksReq)
 		if err != nil {
 			return err
@@ -797,10 +796,10 @@ var rejectTransitionRequestCmd = &cobra.Command{
 
 	Annotations: map[string]string{},
 	Args:        cobra.ExactArgs(3),
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		rejectTransitionRequestReq.Name = args[0]
 		rejectTransitionRequestReq.Version = args[1]
 		_, err = fmt.Sscan(args[2], &rejectTransitionRequestReq.Stage)
@@ -837,10 +836,10 @@ var renameModelCmd = &cobra.Command{
 
 	Annotations: map[string]string{},
 	Args:        cobra.ExactArgs(1),
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		renameModelReq.Name = args[0]
 
 		response, err := w.ModelRegistry.RenameModel(ctx, renameModelReq)
@@ -876,10 +875,10 @@ var searchModelVersionsCmd = &cobra.Command{
   Searches for specific model versions based on the supplied __filter__.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		err = searchModelVersionsJson.Unmarshall(&searchModelVersionsReq)
 		if err != nil {
 			return err
@@ -918,10 +917,10 @@ var searchModelsCmd = &cobra.Command{
   Search for registered models based on the specified __filter__.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		err = searchModelsJson.Unmarshall(&searchModelsReq)
 		if err != nil {
 			return err
@@ -954,10 +953,10 @@ var setModelTagCmd = &cobra.Command{
 
 	Annotations: map[string]string{},
 	Args:        cobra.ExactArgs(3),
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		setModelTagReq.Name = args[0]
 		setModelTagReq.Key = args[1]
 		setModelTagReq.Value = args[2]
@@ -989,10 +988,10 @@ var setModelVersionTagCmd = &cobra.Command{
 
 	Annotations: map[string]string{},
 	Args:        cobra.ExactArgs(4),
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		setModelVersionTagReq.Name = args[0]
 		setModelVersionTagReq.Version = args[1]
 		setModelVersionTagReq.Key = args[2]
@@ -1029,10 +1028,10 @@ var testRegistryWebhookCmd = &cobra.Command{
 
 	Annotations: map[string]string{},
 	Args:        cobra.ExactArgs(1),
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		testRegistryWebhookReq.Id = args[0]
 
 		response, err := w.ModelRegistry.TestRegistryWebhook(ctx, testRegistryWebhookReq)
@@ -1068,10 +1067,10 @@ var transitionStageCmd = &cobra.Command{
 
 	Annotations: map[string]string{},
 	Args:        cobra.ExactArgs(4),
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		transitionStageReq.Name = args[0]
 		transitionStageReq.Version = args[1]
 		_, err = fmt.Sscan(args[2], &transitionStageReq.Stage)
@@ -1110,10 +1109,10 @@ var updateCommentCmd = &cobra.Command{
 
 	Annotations: map[string]string{},
 	Args:        cobra.ExactArgs(2),
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		updateCommentReq.Id = args[0]
 		updateCommentReq.Comment = args[1]
 
@@ -1146,10 +1145,10 @@ var updateModelCmd = &cobra.Command{
 
 	Annotations: map[string]string{},
 	Args:        cobra.ExactArgs(1),
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		updateModelReq.Name = args[0]
 
 		err = w.ModelRegistry.UpdateModel(ctx, updateModelReq)
@@ -1181,10 +1180,10 @@ var updateModelVersionCmd = &cobra.Command{
 
 	Annotations: map[string]string{},
 	Args:        cobra.ExactArgs(2),
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		updateModelVersionReq.Name = args[0]
 		updateModelVersionReq.Version = args[1]
 
@@ -1224,10 +1223,10 @@ var updateWebhookCmd = &cobra.Command{
   Updates a registry webhook.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		err = updateWebhookJson.Unmarshall(&updateWebhookReq)
 		if err != nil {
 			return err

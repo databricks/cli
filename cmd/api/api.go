@@ -14,8 +14,9 @@ import (
 )
 
 var apiCmd = &cobra.Command{
-	Use:   "api",
-	Short: "Perform Databricks API call",
+	Use:    "api",
+	Short:  "Perform Databricks API call",
+	Hidden: true,
 }
 
 func requestBody(arg string) (any, error) {

@@ -7,7 +7,6 @@ import (
 
 	"github.com/databricks/bricks/cmd/root"
 	"github.com/databricks/bricks/lib/jsonflag"
-	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/spf13/cobra"
@@ -56,10 +55,10 @@ var createCmd = &cobra.Command{
   **Note**: You cannot add a visualization until you create the query.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		err = createJson.Unmarshall(&createReq)
 		if err != nil {
 			return err
@@ -93,10 +92,10 @@ var deleteCmd = &cobra.Command{
   deleted after 30 days.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		if len(args) == 0 {
 			names, err := w.Queries.QueryNameToIdMap(ctx, sql.ListQueriesRequest{})
 			if err != nil {
@@ -140,10 +139,10 @@ var getCmd = &cobra.Command{
   information about the currently authenticated user.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		if len(args) == 0 {
 			names, err := w.Queries.QueryNameToIdMap(ctx, sql.ListQueriesRequest{})
 			if err != nil {
@@ -193,10 +192,10 @@ var listCmd = &cobra.Command{
 
 	Annotations: map[string]string{},
 	Args:        cobra.ExactArgs(0),
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 
 		response, err := w.Queries.ListAll(ctx, listReq)
 		if err != nil {
@@ -225,10 +224,10 @@ var restoreCmd = &cobra.Command{
   list views and searches. You can use restored queries for alerts.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		if len(args) == 0 {
 			names, err := w.Queries.QueryNameToIdMap(ctx, sql.ListQueriesRequest{})
 			if err != nil {
@@ -281,10 +280,10 @@ var updateCmd = &cobra.Command{
   **Note**: You cannot undo this operation.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		err = updateJson.Unmarshall(&updateReq)
 		if err != nil {
 			return err

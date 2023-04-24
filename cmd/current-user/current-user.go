@@ -4,7 +4,6 @@ package current_user
 
 import (
 	"github.com/databricks/bricks/cmd/root"
-	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
 	"github.com/spf13/cobra"
 )
@@ -31,10 +30,10 @@ var meCmd = &cobra.Command{
   Get details about the current method caller's identity.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		response, err := w.CurrentUser.Me(ctx)
 		if err != nil {
 			return err

@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/databricks/bricks/cmd/root"
-	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
 	"github.com/databricks/databricks-sdk-go/service/settings"
 	"github.com/spf13/cobra"
@@ -41,10 +40,10 @@ var createOboTokenCmd = &cobra.Command{
 
 	Annotations: map[string]string{},
 	Args:        cobra.ExactArgs(2),
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		createOboTokenReq.ApplicationId = args[0]
 		_, err = fmt.Sscan(args[1], &createOboTokenReq.LifetimeSeconds)
 		if err != nil {
@@ -77,10 +76,10 @@ var deleteCmd = &cobra.Command{
   Deletes a token, specified by its ID.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		if len(args) == 0 {
 			names, err := w.TokenManagement.PublicTokenInfoCommentToTokenIdMap(ctx, settings.ListTokenManagementRequest{})
 			if err != nil {
@@ -123,10 +122,10 @@ var getCmd = &cobra.Command{
   Gets information about a token, specified by its ID.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		if len(args) == 0 {
 			names, err := w.TokenManagement.PublicTokenInfoCommentToTokenIdMap(ctx, settings.ListTokenManagementRequest{})
 			if err != nil {
@@ -173,10 +172,10 @@ var listCmd = &cobra.Command{
 
 	Annotations: map[string]string{},
 	Args:        cobra.ExactArgs(0),
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 
 		response, err := w.TokenManagement.ListAll(ctx, listReq)
 		if err != nil {

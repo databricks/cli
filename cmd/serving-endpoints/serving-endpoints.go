@@ -8,7 +8,6 @@ import (
 
 	"github.com/databricks/bricks/cmd/root"
 	"github.com/databricks/bricks/lib/jsonflag"
-	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
 	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/serving"
@@ -53,10 +52,10 @@ var buildLogsCmd = &cobra.Command{
 
 	Annotations: map[string]string{},
 	Args:        cobra.ExactArgs(2),
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		buildLogsReq.Name = args[0]
 		buildLogsReq.ServedModelName = args[1]
 
@@ -91,10 +90,10 @@ var createCmd = &cobra.Command{
 	Long:  `Create a new serving endpoint.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		err = createJson.Unmarshall(&createReq)
 		if err != nil {
 			return err
@@ -110,6 +109,9 @@ var createCmd = &cobra.Command{
 			info, err := w.ServingEndpoints.CreateAndWait(ctx, createReq,
 				retries.Timeout[serving.ServingEndpointDetailed](createTimeout),
 				func(i *retries.Info[serving.ServingEndpointDetailed]) {
+					if i.Info == nil {
+						return
+					}
 					status := i.Info.State.ConfigUpdate
 					statusMessage := fmt.Sprintf("current status: %s", status)
 					spinner.Suffix = " " + statusMessage
@@ -145,10 +147,10 @@ var deleteCmd = &cobra.Command{
 
 	Annotations: map[string]string{},
 	Args:        cobra.ExactArgs(1),
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		deleteReq.Name = args[0]
 
 		err = w.ServingEndpoints.Delete(ctx, deleteReq)
@@ -180,10 +182,10 @@ var exportMetricsCmd = &cobra.Command{
 
 	Annotations: map[string]string{},
 	Args:        cobra.ExactArgs(1),
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		exportMetricsReq.Name = args[0]
 
 		err = w.ServingEndpoints.ExportMetrics(ctx, exportMetricsReq)
@@ -213,10 +215,10 @@ var getCmd = &cobra.Command{
 
 	Annotations: map[string]string{},
 	Args:        cobra.ExactArgs(1),
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		getReq.Name = args[0]
 
 		response, err := w.ServingEndpoints.Get(ctx, getReq)
@@ -240,10 +242,10 @@ var listCmd = &cobra.Command{
 	Long:  `Retrieve all serving endpoints.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		response, err := w.ServingEndpoints.List(ctx)
 		if err != nil {
 			return err
@@ -272,10 +274,10 @@ var logsCmd = &cobra.Command{
 
 	Annotations: map[string]string{},
 	Args:        cobra.ExactArgs(2),
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		logsReq.Name = args[0]
 		logsReq.ServedModelName = args[1]
 
@@ -304,10 +306,10 @@ var queryCmd = &cobra.Command{
 
 	Annotations: map[string]string{},
 	Args:        cobra.ExactArgs(1),
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		queryReq.Name = args[0]
 
 		response, err := w.ServingEndpoints.Query(ctx, queryReq)
@@ -348,10 +350,10 @@ var updateConfigCmd = &cobra.Command{
   current update completes or fails.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		err = updateConfigJson.Unmarshall(&updateConfigReq)
 		if err != nil {
 			return err
@@ -367,6 +369,9 @@ var updateConfigCmd = &cobra.Command{
 			info, err := w.ServingEndpoints.UpdateConfigAndWait(ctx, updateConfigReq,
 				retries.Timeout[serving.ServingEndpointDetailed](updateConfigTimeout),
 				func(i *retries.Info[serving.ServingEndpointDetailed]) {
+					if i.Info == nil {
+						return
+					}
 					status := i.Info.State.ConfigUpdate
 					statusMessage := fmt.Sprintf("current status: %s", status)
 					spinner.Suffix = " " + statusMessage

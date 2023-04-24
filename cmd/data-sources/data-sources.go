@@ -4,7 +4,6 @@ package data_sources
 
 import (
 	"github.com/databricks/bricks/cmd/root"
-	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
 	"github.com/spf13/cobra"
 )
@@ -41,10 +40,10 @@ var listCmd = &cobra.Command{
   you need only a SQL warehouse's id to create new queries against it.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		response, err := w.DataSources.List(ctx)
 		if err != nil {
 			return err

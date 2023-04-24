@@ -7,7 +7,6 @@ import (
 
 	"github.com/databricks/bricks/cmd/root"
 	"github.com/databricks/bricks/lib/jsonflag"
-	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
 	"github.com/databricks/databricks-sdk-go/service/billing"
 	"github.com/spf13/cobra"
@@ -125,10 +124,10 @@ var createCmd = &cobra.Command{
   [Deliver and access billable usage logs]: https://docs.databricks.com/administration-guide/account-settings/billable-usage-delivery.html`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient, // FIXME: accounts client
+	PreRunE:     root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		a := sdk.AccountClient(ctx)
+		a := root.AccountClient(ctx)
 		err = createJson.Unmarshall(&createReq)
 		if err != nil {
 			return err
@@ -161,10 +160,10 @@ var getCmd = &cobra.Command{
   specified by ID.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient, // FIXME: accounts client
+	PreRunE:     root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		a := sdk.AccountClient(ctx)
+		a := root.AccountClient(ctx)
 		if len(args) == 0 {
 			names, err := a.LogDelivery.LogDeliveryConfigurationConfigNameToConfigIdMap(ctx, billing.ListLogDeliveryRequest{})
 			if err != nil {
@@ -213,10 +212,10 @@ var listCmd = &cobra.Command{
 
 	Annotations: map[string]string{},
 	Args:        cobra.ExactArgs(0),
-	PreRunE:     root.TryWorkspaceClient, // FIXME: accounts client
+	PreRunE:     root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		a := sdk.AccountClient(ctx)
+		a := root.AccountClient(ctx)
 
 		response, err := a.LogDelivery.ListAll(ctx, listReq)
 		if err != nil {
@@ -249,10 +248,10 @@ var patchStatusCmd = &cobra.Command{
 
 	Annotations: map[string]string{},
 	Args:        cobra.ExactArgs(2),
-	PreRunE:     root.TryWorkspaceClient, // FIXME: accounts client
+	PreRunE:     root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		a := sdk.AccountClient(ctx)
+		a := root.AccountClient(ctx)
 		_, err = fmt.Sscan(args[0], &patchStatusReq.Status)
 		if err != nil {
 			return fmt.Errorf("invalid STATUS: %s", args[0])

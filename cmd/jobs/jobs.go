@@ -8,7 +8,6 @@ import (
 
 	"github.com/databricks/bricks/cmd/root"
 	"github.com/databricks/bricks/lib/jsonflag"
-	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
 	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -56,10 +55,10 @@ var cancelAllRunsCmd = &cobra.Command{
   doesn't prevent new runs from being started.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		if len(args) == 0 {
 			names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
 			if err != nil {
@@ -112,10 +111,10 @@ var cancelRunCmd = &cobra.Command{
   running when this request completes.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		if len(args) == 0 {
 			names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
 			if err != nil {
@@ -140,6 +139,9 @@ var cancelRunCmd = &cobra.Command{
 			info, err := w.Jobs.CancelRunAndWait(ctx, cancelRunReq,
 				retries.Timeout[jobs.Run](cancelRunTimeout),
 				func(i *retries.Info[jobs.Run]) {
+					if i.Info == nil {
+						return
+					}
 					if i.Info.State == nil {
 						return
 					}
@@ -199,10 +201,10 @@ var createCmd = &cobra.Command{
   Create a new job.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		err = createJson.Unmarshall(&createReq)
 		if err != nil {
 			return err
@@ -234,10 +236,10 @@ var deleteCmd = &cobra.Command{
   Deletes a job.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		if len(args) == 0 {
 			names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
 			if err != nil {
@@ -283,10 +285,10 @@ var deleteRunCmd = &cobra.Command{
   Deletes a non-active run. Returns an error if the run is active.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		if len(args) == 0 {
 			names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
 			if err != nil {
@@ -334,10 +336,10 @@ var exportRunCmd = &cobra.Command{
   Export and retrieve the job run task.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		if len(args) == 0 {
 			names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
 			if err != nil {
@@ -383,10 +385,10 @@ var getCmd = &cobra.Command{
   Retrieves the details for a single job.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		if len(args) == 0 {
 			names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
 			if err != nil {
@@ -440,10 +442,10 @@ var getRunCmd = &cobra.Command{
   Retrieve the metadata of a run.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		if len(args) == 0 {
 			names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
 			if err != nil {
@@ -463,27 +465,6 @@ var getRunCmd = &cobra.Command{
 			return fmt.Errorf("invalid RUN_ID: %s", args[0])
 		}
 
-		if !getRunNoWait {
-			spinner := ui.StartSpinner()
-			info, err := w.Jobs.GetRunAndWait(ctx, getRunReq,
-				retries.Timeout[jobs.Run](getRunTimeout),
-				func(i *retries.Info[jobs.Run]) {
-					if i.Info.State == nil {
-						return
-					}
-					status := i.Info.State.LifeCycleState
-					statusMessage := fmt.Sprintf("current status: %s", status)
-					if i.Info.State != nil {
-						statusMessage = i.Info.State.StateMessage
-					}
-					spinner.Suffix = " " + statusMessage
-				})
-			spinner.Stop()
-			if err != nil {
-				return err
-			}
-			return ui.Render(cmd, info)
-		}
 		response, err := w.Jobs.GetRun(ctx, getRunReq)
 		if err != nil {
 			return err
@@ -519,10 +500,10 @@ var getRunOutputCmd = &cobra.Command{
   60 days, you must save old run results before they expire.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		if len(args) == 0 {
 			names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
 			if err != nil {
@@ -574,10 +555,10 @@ var listCmd = &cobra.Command{
 
 	Annotations: map[string]string{},
 	Args:        cobra.ExactArgs(0),
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 
 		response, err := w.Jobs.ListAll(ctx, listReq)
 		if err != nil {
@@ -616,10 +597,10 @@ var listRunsCmd = &cobra.Command{
 
 	Annotations: map[string]string{},
 	Args:        cobra.ExactArgs(0),
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 
 		response, err := w.Jobs.ListRunsAll(ctx, listRunsReq)
 		if err != nil {
@@ -668,10 +649,10 @@ var repairRunCmd = &cobra.Command{
   for the original job run.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		err = repairRunJson.Unmarshall(&repairRunReq)
 		if err != nil {
 			return err
@@ -686,6 +667,9 @@ var repairRunCmd = &cobra.Command{
 			info, err := w.Jobs.RepairRunAndWait(ctx, repairRunReq,
 				retries.Timeout[jobs.Run](repairRunTimeout),
 				func(i *retries.Info[jobs.Run]) {
+					if i.Info == nil {
+						return
+					}
 					if i.Info.State == nil {
 						return
 					}
@@ -731,10 +715,10 @@ var resetCmd = &cobra.Command{
   update job settings partially.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		err = resetJson.Unmarshall(&resetReq)
 		if err != nil {
 			return err
@@ -791,10 +775,10 @@ var runNowCmd = &cobra.Command{
   Run a job and return the run_id of the triggered run.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		if len(args) == 0 {
 			names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
 			if err != nil {
@@ -823,6 +807,9 @@ var runNowCmd = &cobra.Command{
 			info, err := w.Jobs.RunNowAndWait(ctx, runNowReq,
 				retries.Timeout[jobs.Run](runNowTimeout),
 				func(i *retries.Info[jobs.Run]) {
+					if i.Info == nil {
+						return
+					}
 					if i.Info.State == nil {
 						return
 					}
@@ -883,10 +870,10 @@ var submitCmd = &cobra.Command{
   submitted.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		err = submitJson.Unmarshall(&submitReq)
 		if err != nil {
 			return err
@@ -897,6 +884,9 @@ var submitCmd = &cobra.Command{
 			info, err := w.Jobs.SubmitAndWait(ctx, submitReq,
 				retries.Timeout[jobs.Run](submitTimeout),
 				func(i *retries.Info[jobs.Run]) {
+					if i.Info == nil {
+						return
+					}
 					if i.Info.State == nil {
 						return
 					}
@@ -945,10 +935,10 @@ var updateCmd = &cobra.Command{
   to overwrite all job settings.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		err = updateJson.Unmarshall(&updateReq)
 		if err != nil {
 			return err

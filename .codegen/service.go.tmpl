@@ -60,6 +60,7 @@ func init() {
 {{- $hasSinglePosArg := and $hasPosArgs (eq 1 (len .Request.RequiredFields)) -}}
 {{- $serviceHasNamedIdMap := and .Service.List .Service.List.NamedIdMap -}}
 {{- $hasIdPrompt := and $hasSinglePosArg $serviceHasNamedIdMap -}}
+{{- $wait := and .Wait (and (not .IsCrudRead) (not (eq .SnakeName "get_run"))) -}}
 var {{.CamelName}}Cmd = &cobra.Command{
 	Use: "{{.KebabName}}{{if $hasPosArgs}}{{range .Request.RequiredFields}} {{.ConstantName}}{{end}}{{end}}",
 	{{if .Description -}}
@@ -68,10 +69,10 @@ var {{.CamelName}}Cmd = &cobra.Command{
     {{end}}
 	Annotations: map[string]string{},{{if and (not $hasIdPrompt) $hasPosArgs }}
 	Args: cobra.ExactArgs({{len .Request.RequiredFields}}),{{end}}
-	PreRunE: root.TryWorkspaceClient,{{if .Service.IsAccounts}} // FIXME: accounts client{{end}}
+	PreRunE: root.Must{{if .Service.IsAccounts}}Account{{else}}Workspace{{end}}Client,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		{{if .Service.IsAccounts}}a := sdk.AccountClient(ctx){{else}}w := sdk.WorkspaceClient(ctx){{end}}
+		{{if .Service.IsAccounts}}a := root.AccountClient(ctx){{else}}w := root.WorkspaceClient(ctx){{end}}
 		{{- if .Request -}}
 			{{if $hasIdPrompt}}
 				if len(args) == 0 {
@@ -103,12 +104,15 @@ var {{.CamelName}}Cmd = &cobra.Command{
 				{{$method.CamelName}}Req.{{$field.PascalName}} = args[{{$arg}}]
 				{{- end -}}{{end}}
 		{{end}}
-		{{if .Wait -}}
+		{{if $wait -}}
 		if !{{.CamelName}}NoWait {
 			spinner := ui.StartSpinner()
 			info, err := {{if .Service.IsAccounts}}a{{else}}w{{end}}.{{.Service.PascalName}}.{{.PascalName}}AndWait(ctx{{if .Request}}, {{.CamelName}}Req{{end}},
 				retries.Timeout[{{.Service.Package.Name}}.{{.Wait.Poll.Response.PascalName}}]({{.CamelName}}Timeout),
 				func(i *retries.Info[{{.Service.Package.Name}}.{{.Wait.Poll.Response.PascalName}}]) {
+					if i.Info == nil {
+						return
+					}
 					{{if .Wait.MessagePath -}}
 					{{if .Wait.ComplexMessagePath -}}
 					if i.Info.{{.Wait.MessagePathHead.PascalName}} == nil {

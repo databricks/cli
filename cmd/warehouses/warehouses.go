@@ -8,7 +8,6 @@ import (
 
 	"github.com/databricks/bricks/cmd/root"
 	"github.com/databricks/bricks/lib/jsonflag"
-	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
 	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/sql"
@@ -62,10 +61,10 @@ var createCmd = &cobra.Command{
   Creates a new SQL warehouse.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		err = createJson.Unmarshall(&createReq)
 		if err != nil {
 			return err
@@ -76,6 +75,9 @@ var createCmd = &cobra.Command{
 			info, err := w.Warehouses.CreateAndWait(ctx, createReq,
 				retries.Timeout[sql.GetWarehouseResponse](createTimeout),
 				func(i *retries.Info[sql.GetWarehouseResponse]) {
+					if i.Info == nil {
+						return
+					}
 					if i.Info.Health == nil {
 						return
 					}
@@ -124,10 +126,10 @@ var deleteCmd = &cobra.Command{
   Deletes a SQL warehouse.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		if len(args) == 0 {
 			names, err := w.Warehouses.EndpointInfoNameToIdMap(ctx, sql.ListWarehousesRequest{})
 			if err != nil {
@@ -149,6 +151,9 @@ var deleteCmd = &cobra.Command{
 			info, err := w.Warehouses.DeleteAndWait(ctx, deleteReq,
 				retries.Timeout[sql.GetWarehouseResponse](deleteTimeout),
 				func(i *retries.Info[sql.GetWarehouseResponse]) {
+					if i.Info == nil {
+						return
+					}
 					if i.Info.Health == nil {
 						return
 					}
@@ -212,10 +217,10 @@ var editCmd = &cobra.Command{
   Updates the configuration for a SQL warehouse.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		err = editJson.Unmarshall(&editReq)
 		if err != nil {
 			return err
@@ -227,6 +232,9 @@ var editCmd = &cobra.Command{
 			info, err := w.Warehouses.EditAndWait(ctx, editReq,
 				retries.Timeout[sql.GetWarehouseResponse](editTimeout),
 				func(i *retries.Info[sql.GetWarehouseResponse]) {
+					if i.Info == nil {
+						return
+					}
 					if i.Info.Health == nil {
 						return
 					}
@@ -275,10 +283,10 @@ var getCmd = &cobra.Command{
   Gets the information for a single SQL warehouse.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		if len(args) == 0 {
 			names, err := w.Warehouses.EndpointInfoNameToIdMap(ctx, sql.ListWarehousesRequest{})
 			if err != nil {
@@ -295,27 +303,6 @@ var getCmd = &cobra.Command{
 		}
 		getReq.Id = args[0]
 
-		if !getNoWait {
-			spinner := ui.StartSpinner()
-			info, err := w.Warehouses.GetAndWait(ctx, getReq,
-				retries.Timeout[sql.GetWarehouseResponse](getTimeout),
-				func(i *retries.Info[sql.GetWarehouseResponse]) {
-					if i.Info.Health == nil {
-						return
-					}
-					status := i.Info.State
-					statusMessage := fmt.Sprintf("current status: %s", status)
-					if i.Info.Health != nil {
-						statusMessage = i.Info.Health.Summary
-					}
-					spinner.Suffix = " " + statusMessage
-				})
-			spinner.Stop()
-			if err != nil {
-				return err
-			}
-			return ui.Render(cmd, info)
-		}
 		response, err := w.Warehouses.Get(ctx, getReq)
 		if err != nil {
 			return err
@@ -340,10 +327,10 @@ var getWorkspaceWarehouseConfigCmd = &cobra.Command{
   a workspace.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		response, err := w.Warehouses.GetWorkspaceWarehouseConfig(ctx)
 		if err != nil {
 			return err
@@ -373,10 +360,10 @@ var listCmd = &cobra.Command{
 
 	Annotations: map[string]string{},
 	Args:        cobra.ExactArgs(0),
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 
 		response, err := w.Warehouses.ListAll(ctx, listReq)
 		if err != nil {
@@ -418,10 +405,10 @@ var setWorkspaceWarehouseConfigCmd = &cobra.Command{
   a workspace.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		err = setWorkspaceWarehouseConfigJson.Unmarshall(&setWorkspaceWarehouseConfigReq)
 		if err != nil {
 			return err
@@ -459,10 +446,10 @@ var startCmd = &cobra.Command{
   Starts a SQL warehouse.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		if len(args) == 0 {
 			names, err := w.Warehouses.EndpointInfoNameToIdMap(ctx, sql.ListWarehousesRequest{})
 			if err != nil {
@@ -484,6 +471,9 @@ var startCmd = &cobra.Command{
 			info, err := w.Warehouses.StartAndWait(ctx, startReq,
 				retries.Timeout[sql.GetWarehouseResponse](startTimeout),
 				func(i *retries.Info[sql.GetWarehouseResponse]) {
+					if i.Info == nil {
+						return
+					}
 					if i.Info.Health == nil {
 						return
 					}
@@ -532,10 +522,10 @@ var stopCmd = &cobra.Command{
   Stops a SQL warehouse.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		w := sdk.WorkspaceClient(ctx)
+		w := root.WorkspaceClient(ctx)
 		if len(args) == 0 {
 			names, err := w.Warehouses.EndpointInfoNameToIdMap(ctx, sql.ListWarehousesRequest{})
 			if err != nil {
@@ -557,6 +547,9 @@ var stopCmd = &cobra.Command{
 			info, err := w.Warehouses.StopAndWait(ctx, stopReq,
 				retries.Timeout[sql.GetWarehouseResponse](stopTimeout),
 				func(i *retries.Info[sql.GetWarehouseResponse]) {
+					if i.Info == nil {
+						return
+					}
 					if i.Info.Health == nil {
 						return
 					}

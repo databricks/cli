@@ -8,7 +8,6 @@ import (
 
 	"github.com/databricks/bricks/cmd/root"
 	"github.com/databricks/bricks/lib/jsonflag"
-	"github.com/databricks/bricks/lib/sdk"
 	"github.com/databricks/bricks/lib/ui"
 	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/provisioning"
@@ -74,10 +73,10 @@ var createCmd = &cobra.Command{
   workspace becomes available when the status changes to RUNNING.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient, // FIXME: accounts client
+	PreRunE:     root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		a := sdk.AccountClient(ctx)
+		a := root.AccountClient(ctx)
 		err = createJson.Unmarshall(&createReq)
 		if err != nil {
 			return err
@@ -89,6 +88,9 @@ var createCmd = &cobra.Command{
 			info, err := a.Workspaces.CreateAndWait(ctx, createReq,
 				retries.Timeout[provisioning.Workspace](createTimeout),
 				func(i *retries.Info[provisioning.Workspace]) {
+					if i.Info == nil {
+						return
+					}
 					statusMessage := i.Info.WorkspaceStatusMessage
 					spinner.Suffix = " " + statusMessage
 				})
@@ -131,10 +133,10 @@ var deleteCmd = &cobra.Command{
   account.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient, // FIXME: accounts client
+	PreRunE:     root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		a := sdk.AccountClient(ctx)
+		a := root.AccountClient(ctx)
 		if len(args) == 0 {
 			names, err := a.Workspaces.WorkspaceWorkspaceNameToWorkspaceIdMap(ctx)
 			if err != nil {
@@ -193,10 +195,10 @@ var getCmd = &cobra.Command{
   [Create a new workspace using the Account API]: http://docs.databricks.com/administration-guide/account-api/new-workspace.html`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient, // FIXME: accounts client
+	PreRunE:     root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		a := sdk.AccountClient(ctx)
+		a := root.AccountClient(ctx)
 		if len(args) == 0 {
 			names, err := a.Workspaces.WorkspaceWorkspaceNameToWorkspaceIdMap(ctx)
 			if err != nil {
@@ -243,10 +245,10 @@ var listCmd = &cobra.Command{
   account.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient, // FIXME: accounts client
+	PreRunE:     root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		a := sdk.AccountClient(ctx)
+		a := root.AccountClient(ctx)
 		response, err := a.Workspaces.List(ctx)
 		if err != nil {
 			return err
@@ -396,10 +398,10 @@ var updateCmd = &cobra.Command{
   [Create a new workspace using the Account API]: http://docs.databricks.com/administration-guide/account-api/new-workspace.html`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.TryWorkspaceClient, // FIXME: accounts client
+	PreRunE:     root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
-		a := sdk.AccountClient(ctx)
+		a := root.AccountClient(ctx)
 		if len(args) == 0 {
 			names, err := a.Workspaces.WorkspaceWorkspaceNameToWorkspaceIdMap(ctx)
 			if err != nil {
@@ -424,6 +426,9 @@ var updateCmd = &cobra.Command{
 			info, err := a.Workspaces.UpdateAndWait(ctx, updateReq,
 				retries.Timeout[provisioning.Workspace](updateTimeout),
 				func(i *retries.Info[provisioning.Workspace]) {
+					if i.Info == nil {
+						return
+					}
 					statusMessage := i.Info.WorkspaceStatusMessage
 					spinner.Suffix = " " + statusMessage
 				})
