@@ -12,9 +12,9 @@ type HeadType string
 
 const (
 	// a reference of the format `ref: refs/heads/my-branch-name`
-	HeadTypeReference = "reference"
+	HeadTypeReference = HeadType("reference")
 	// A hexadecimal encoded SHA1 hash
-	HeadTypeSHA1 = "sha-1"
+	HeadTypeSHA1 = HeadType("sha-1")
 )
 
 // relevant documentation about git references:
@@ -58,7 +58,7 @@ func LoadHead(path string) (*Head, error) {
 	case isSHA1(content):
 		headType = HeadTypeSHA1
 	default:
-		return nil, fmt.Errorf("unrecognized format for git HEAD: %s", content)
+		return nil, fmt.Errorf("unknown format for git HEAD: %s", content)
 	}
 
 	return &Head{
