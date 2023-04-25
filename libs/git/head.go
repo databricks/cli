@@ -10,6 +10,9 @@ import (
 
 type HeadType string
 
+var ErrNotAReference = fmt.Errorf("HEAD is not a git reference")
+var ErrNotABranch = fmt.Errorf("HEAD is not a reference to a git branch")
+
 const (
 	// a reference of the format `ref: refs/heads/my-branch-name`
 	HeadTypeReference = HeadType("reference")
@@ -69,7 +72,7 @@ func LoadHead(path string) (*Head, error) {
 
 func (head *Head) ReferencePath() (string, error) {
 	if head.Type != HeadTypeReference {
-		return "", fmt.Errorf("HEAD is not a git reference")
+		return "", ErrNotAReference
 	}
 	refPath := strings.TrimPrefix(head.Content, ReferencePrefix)
 	return filepath.FromSlash(refPath), nil
@@ -77,6 +80,9 @@ func (head *Head) ReferencePath() (string, error) {
 
 func (head *Head) CurrentBranch() (string, error) {
 	refPath, err := head.ReferencePath()
+	if err == ErrNotAReference {
+		return "", ErrNotABranch
+	}
 	if err != nil {
 		return "", err
 	}

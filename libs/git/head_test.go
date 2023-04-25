@@ -16,7 +16,7 @@ func TestHeadReferencePathForObjectID(t *testing.T) {
 		Content: strings.Repeat("a", 40),
 	}
 	_, err := head.ReferencePath()
-	assert.ErrorContains(t, err, "HEAD is not a git reference")
+	assert.ErrorIs(t, err, ErrNotAReference)
 }
 
 func TestHeadCurrentBranchForObjectID(t *testing.T) {
@@ -25,7 +25,7 @@ func TestHeadCurrentBranchForObjectID(t *testing.T) {
 		Content: strings.Repeat("a", 40),
 	}
 	_, err := head.CurrentBranch()
-	assert.ErrorContains(t, err, "HEAD is not a git reference")
+	assert.ErrorIs(t, err, ErrNotABranch)
 }
 
 func TestHeadCurrentBranchForReference(t *testing.T) {
