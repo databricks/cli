@@ -50,7 +50,7 @@ func TestHeadReferencePathForReference(t *testing.T) {
 
 func TestHeadLoadingForObjectID(t *testing.T) {
 	tmp := t.TempDir()
-	f, err := os.OpenFile(filepath.Join(tmp, "HEAD"), os.O_CREATE|os.O_WRONLY, os.ModePerm)
+	f, err := os.Create(filepath.Join(tmp, "HEAD"))
 	require.NoError(t, err)
 	defer f.Close()
 	f.WriteString(strings.Repeat("e", 40) + "\r\n")
