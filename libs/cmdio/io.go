@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"math/rand"
 	"os"
 	"strings"
 	"time"
@@ -21,6 +20,8 @@ import (
 // outside of `cmdio` package. Use the public package-level functions
 // to access the inner state.
 type cmdIO struct {
+	// states if we are in the interactive mode
+	// e.g. if stdout is a terminal
 	interactive  bool
 	outputFormat flags.Output
 	template     string
@@ -45,6 +46,7 @@ func IsInteractive(ctx context.Context) bool {
 	return c.interactive
 }
 
+// IsTTY detects if stdout is a terminal. It assumes that stderr is terminal as well
 func (c *cmdIO) IsTTY() bool {
 	f, ok := c.out.(*os.File)
 	if !ok {
@@ -121,8 +123,7 @@ func Select[V any](ctx context.Context, names map[string]V, label string) (id st
 func (c *cmdIO) Spinner(ctx context.Context) chan string {
 	var sp *spinner.Spinner
 	if c.interactive {
-		rand.Seed(time.Now().UnixMilli())
-		charset := spinner.CharSets[rand.Intn(11)]
+		charset := spinner.CharSets[11]
 		sp = spinner.New(charset, 200*time.Millisecond,
 			spinner.WithWriter(c.err),
 			spinner.WithColor("green"))
@@ -139,6 +140,8 @@ func (c *cmdIO) Spinner(ctx context.Context) chan string {
 				return
 			case x, hasMore := <-updates:
 				if c.interactive {
+					// `sp`` access is isolated to this method,
+					// so it's safe to update it from this goroutine.
 					sp.Suffix = " " + x
 				}
 				if !hasMore {
