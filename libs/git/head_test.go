@@ -45,7 +45,7 @@ func TestHeadReferencePathForReference(t *testing.T) {
 	}
 	path, err := head.ReferencePath()
 	assert.NoError(t, err)
-	assert.Equal(t, "refs/heads/my-branch", path)
+	assert.Equal(t, filepath.FromSlash("refs/heads/my-branch"), path)
 }
 
 func TestHeadLoadingForObjectID(t *testing.T) {
