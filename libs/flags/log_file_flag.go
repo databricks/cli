@@ -22,6 +22,10 @@ type nopLogFile struct {
 	f *os.File
 }
 
+func (f *nopLogFile) Noop() {
+	// noop, just for the interface
+}
+
 func (f *nopLogFile) Writer() io.Writer {
 	return f.f
 }

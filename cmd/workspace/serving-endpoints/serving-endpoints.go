@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/databricks/bricks/cmd/root"
-	"github.com/databricks/bricks/lib/jsonflag"
 	"github.com/databricks/bricks/libs/cmdio"
+	"github.com/databricks/bricks/libs/flags"
 	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/serving"
 	"github.com/spf13/cobra"
@@ -70,7 +70,7 @@ var buildLogsCmd = &cobra.Command{
 // start create command
 
 var createReq serving.CreateServingEndpoint
-var createJson jsonflag.JsonFlag
+var createJson flags.JsonFlag
 var createSkipWait bool
 var createTimeout time.Duration
 
@@ -323,7 +323,7 @@ var queryCmd = &cobra.Command{
 // start update-config command
 
 var updateConfigReq serving.EndpointCoreConfigInput
-var updateConfigJson jsonflag.JsonFlag
+var updateConfigJson flags.JsonFlag
 var updateConfigSkipWait bool
 var updateConfigTimeout time.Duration
 

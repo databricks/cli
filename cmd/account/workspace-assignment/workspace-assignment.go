@@ -6,8 +6,8 @@ import (
 	"fmt"
 
 	"github.com/databricks/bricks/cmd/root"
-	"github.com/databricks/bricks/lib/jsonflag"
 	"github.com/databricks/bricks/libs/cmdio"
+	"github.com/databricks/bricks/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/spf13/cobra"
 )
@@ -136,7 +136,7 @@ var listCmd = &cobra.Command{
 // start update command
 
 var updateReq iam.UpdateWorkspaceAssignments
-var updateJson jsonflag.JsonFlag
+var updateJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(updateCmd)

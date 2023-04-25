@@ -1,4 +1,4 @@
-package jsonflag
+package flags
 
 import (
 	"encoding/json"

@@ -3,8 +3,8 @@
 package {{(.TrimPrefix "account").SnakeName}}
 
 import (
-    "github.com/databricks/bricks/lib/ui"
     "github.com/databricks/bricks/libs/cmdio"
+    "github.com/databricks/bricks/libs/flags"
 	"github.com/databricks/bricks/cmd/root"
 	"github.com/databricks/databricks-sdk-go/service/{{.Package.Name}}"
 	"github.com/spf13/cobra"
@@ -30,7 +30,7 @@ var Cmd = &cobra.Command{
 // start {{.KebabName}} command
 
 {{if .Request}}var {{.CamelName}}Req {{.Service.Package.Name}}.{{.Request.PascalName}}
-{{if not .Request.IsOnlyPrimitiveFields}}var {{.CamelName}}Json jsonflag.JsonFlag{{end}}
+{{if not .Request.IsOnlyPrimitiveFields}}var {{.CamelName}}Json flags.JsonFlag{{end}}
 {{- end}}
 {{if .Wait}}var {{.CamelName}}SkipWait bool
 var {{.CamelName}}Timeout time.Duration{{end}}

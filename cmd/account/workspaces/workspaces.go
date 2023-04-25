@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/databricks/bricks/cmd/root"
-	"github.com/databricks/bricks/lib/jsonflag"
 	"github.com/databricks/bricks/libs/cmdio"
+	"github.com/databricks/bricks/libs/flags"
 	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/provisioning"
 	"github.com/spf13/cobra"
@@ -30,7 +30,7 @@ var Cmd = &cobra.Command{
 // start create command
 
 var createReq provisioning.CreateWorkspaceRequest
-var createJson jsonflag.JsonFlag
+var createJson flags.JsonFlag
 var createSkipWait bool
 var createTimeout time.Duration
 

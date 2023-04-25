@@ -6,8 +6,8 @@ import (
 	"fmt"
 
 	"github.com/databricks/bricks/cmd/root"
-	"github.com/databricks/bricks/lib/jsonflag"
 	"github.com/databricks/bricks/libs/cmdio"
+	"github.com/databricks/bricks/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/provisioning"
 	"github.com/spf13/cobra"
 )
@@ -22,7 +22,7 @@ var Cmd = &cobra.Command{
 // start create command
 
 var createReq provisioning.CreateNetworkRequest
-var createJson jsonflag.JsonFlag
+var createJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(createCmd)

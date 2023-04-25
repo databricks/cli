@@ -3,42 +3,23 @@ package api
 import (
 	"fmt"
 	"net/http"
-	"os"
 	"strings"
 
 	"github.com/databricks/bricks/cmd/root"
 	"github.com/databricks/bricks/libs/cmdio"
+	"github.com/databricks/bricks/libs/flags"
 	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
 )
 
 var apiCmd = &cobra.Command{
-	Use:    "api",
-	Short:  "Perform Databricks API call",
-	Hidden: true,
-}
-
-func requestBody(arg string) (any, error) {
-	if arg == "" {
-		return nil, nil
-	}
-
-	// Load request from file if it starts with '@' (like curl).
-	if arg[0] == '@' {
-		path := arg[1:]
-		buf, err := os.ReadFile(path)
-		if err != nil {
-			return nil, fmt.Errorf("error reading %s: %w", path, err)
-		}
-		return buf, nil
-	}
-
-	return arg, nil
+	Use:   "api",
+	Short: "Perform Databricks API call",
 }
 
 func makeCommand(method string) *cobra.Command {
-	var bodyArgument string
+	var payload flags.JsonFlag
 
 	command := &cobra.Command{
 		Use:   strings.ToLower(method),
@@ -46,9 +27,9 @@ func makeCommand(method string) *cobra.Command {
 		Short: fmt.Sprintf("Perform %s request", method),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var path = args[0]
-			var response any
 
-			request, err := requestBody(bodyArgument)
+			var request any
+			err := payload.Unmarshall(&request)
 			if err != nil {
 				return err
 			}
@@ -65,6 +46,8 @@ func makeCommand(method string) *cobra.Command {
 			if err != nil {
 				return err
 			}
+
+			var response any
 			err = api.Do(cmd.Context(), method, path, request, &response)
 			if err != nil {
 				return err
@@ -73,7 +56,7 @@ func makeCommand(method string) *cobra.Command {
 		},
 	}
 
-	command.Flags().StringVar(&bodyArgument, "body", "", "Request body")
+	command.Flags().Var(&payload, "json", `either inline JSON string or @path/to/file.json with request body`)
 	return command
 }
 

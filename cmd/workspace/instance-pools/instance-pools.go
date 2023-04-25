@@ -6,8 +6,8 @@ import (
 	"fmt"
 
 	"github.com/databricks/bricks/cmd/root"
-	"github.com/databricks/bricks/lib/jsonflag"
 	"github.com/databricks/bricks/libs/cmdio"
+	"github.com/databricks/bricks/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/spf13/cobra"
 )
@@ -38,7 +38,7 @@ var Cmd = &cobra.Command{
 // start create command
 
 var createReq compute.CreateInstancePool
-var createJson jsonflag.JsonFlag
+var createJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(createCmd)
@@ -136,7 +136,7 @@ var deleteCmd = &cobra.Command{
 // start edit command
 
 var editReq compute.EditInstancePool
-var editJson jsonflag.JsonFlag
+var editJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(editCmd)

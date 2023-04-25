@@ -6,8 +6,8 @@ import (
 	"fmt"
 
 	"github.com/databricks/bricks/cmd/root"
-	"github.com/databricks/bricks/lib/jsonflag"
 	"github.com/databricks/bricks/libs/cmdio"
+	"github.com/databricks/bricks/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/spf13/cobra"
 )
@@ -116,7 +116,7 @@ var clusterStatusCmd = &cobra.Command{
 // start install command
 
 var installReq compute.InstallLibraries
-var installJson jsonflag.JsonFlag
+var installJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(installCmd)
@@ -163,7 +163,7 @@ var installCmd = &cobra.Command{
 // start uninstall command
 
 var uninstallReq compute.UninstallLibraries
-var uninstallJson jsonflag.JsonFlag
+var uninstallJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(uninstallCmd)

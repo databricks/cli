@@ -4,8 +4,8 @@ package permissions
 
 import (
 	"github.com/databricks/bricks/cmd/root"
-	"github.com/databricks/bricks/lib/jsonflag"
 	"github.com/databricks/bricks/libs/cmdio"
+	"github.com/databricks/bricks/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/spf13/cobra"
 )
@@ -89,7 +89,7 @@ var getPermissionLevelsCmd = &cobra.Command{
 // start set command
 
 var setReq iam.PermissionsRequest
-var setJson jsonflag.JsonFlag
+var setJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(setCmd)
@@ -131,7 +131,7 @@ var setCmd = &cobra.Command{
 // start update command
 
 var updateReq iam.PermissionsRequest
-var updateJson jsonflag.JsonFlag
+var updateJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(updateCmd)

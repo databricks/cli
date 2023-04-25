@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/databricks/bricks/cmd/root"
-	"github.com/databricks/bricks/lib/jsonflag"
 	"github.com/databricks/bricks/libs/cmdio"
+	"github.com/databricks/bricks/libs/flags"
 	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/spf13/cobra"
@@ -25,7 +25,7 @@ var Cmd = &cobra.Command{
 // start create command
 
 var createReq sql.CreateWarehouseRequest
-var createJson jsonflag.JsonFlag
+var createJson flags.JsonFlag
 var createSkipWait bool
 var createTimeout time.Duration
 
@@ -181,7 +181,7 @@ var deleteCmd = &cobra.Command{
 // start edit command
 
 var editReq sql.EditWarehouseRequest
-var editJson jsonflag.JsonFlag
+var editJson flags.JsonFlag
 var editSkipWait bool
 var editTimeout time.Duration
 
@@ -376,7 +376,7 @@ var listCmd = &cobra.Command{
 // start set-workspace-warehouse-config command
 
 var setWorkspaceWarehouseConfigReq sql.SetWorkspaceWarehouseConfigRequest
-var setWorkspaceWarehouseConfigJson jsonflag.JsonFlag
+var setWorkspaceWarehouseConfigJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(setWorkspaceWarehouseConfigCmd)

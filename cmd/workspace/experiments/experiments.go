@@ -6,8 +6,8 @@ import (
 	"fmt"
 
 	"github.com/databricks/bricks/cmd/root"
-	"github.com/databricks/bricks/lib/jsonflag"
 	"github.com/databricks/bricks/libs/cmdio"
+	"github.com/databricks/bricks/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/spf13/cobra"
 )
@@ -19,7 +19,7 @@ var Cmd = &cobra.Command{
 // start create-experiment command
 
 var createExperimentReq ml.CreateExperiment
-var createExperimentJson jsonflag.JsonFlag
+var createExperimentJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(createExperimentCmd)
@@ -65,7 +65,7 @@ var createExperimentCmd = &cobra.Command{
 // start create-run command
 
 var createRunReq ml.CreateRun
-var createRunJson jsonflag.JsonFlag
+var createRunJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(createRunCmd)
@@ -439,7 +439,7 @@ var listExperimentsCmd = &cobra.Command{
 // start log-batch command
 
 var logBatchReq ml.LogBatch
-var logBatchJson jsonflag.JsonFlag
+var logBatchJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(logBatchCmd)
@@ -711,7 +711,7 @@ var restoreRunCmd = &cobra.Command{
 // start search-experiments command
 
 var searchExperimentsReq ml.SearchExperiments
-var searchExperimentsJson jsonflag.JsonFlag
+var searchExperimentsJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(searchExperimentsCmd)
@@ -754,7 +754,7 @@ var searchExperimentsCmd = &cobra.Command{
 // start search-runs command
 
 var searchRunsReq ml.SearchRuns
-var searchRunsJson jsonflag.JsonFlag
+var searchRunsJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(searchRunsCmd)

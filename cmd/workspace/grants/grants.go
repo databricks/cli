@@ -6,8 +6,8 @@ import (
 	"fmt"
 
 	"github.com/databricks/bricks/cmd/root"
-	"github.com/databricks/bricks/lib/jsonflag"
 	"github.com/databricks/bricks/libs/cmdio"
+	"github.com/databricks/bricks/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/spf13/cobra"
 )
@@ -109,7 +109,7 @@ var getEffectiveCmd = &cobra.Command{
 // start update command
 
 var updateReq catalog.UpdatePermissions
-var updateJson jsonflag.JsonFlag
+var updateJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(updateCmd)

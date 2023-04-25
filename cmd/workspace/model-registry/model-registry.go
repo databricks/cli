@@ -6,8 +6,8 @@ import (
 	"fmt"
 
 	"github.com/databricks/bricks/cmd/root"
-	"github.com/databricks/bricks/lib/jsonflag"
 	"github.com/databricks/bricks/libs/cmdio"
+	"github.com/databricks/bricks/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/spf13/cobra"
 )
@@ -100,7 +100,7 @@ var createCommentCmd = &cobra.Command{
 // start create-model command
 
 var createModelReq ml.CreateModelRequest
-var createModelJson jsonflag.JsonFlag
+var createModelJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(createModelCmd)
@@ -144,7 +144,7 @@ var createModelCmd = &cobra.Command{
 // start create-model-version command
 
 var createModelVersionReq ml.CreateModelVersionRequest
-var createModelVersionJson jsonflag.JsonFlag
+var createModelVersionJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(createModelVersionCmd)
@@ -228,7 +228,7 @@ var createTransitionRequestCmd = &cobra.Command{
 // start create-webhook command
 
 var createWebhookReq ml.CreateRegistryWebhook
-var createWebhookJson jsonflag.JsonFlag
+var createWebhookJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(createWebhookCmd)
@@ -520,7 +520,7 @@ var deleteWebhookCmd = &cobra.Command{
 // start get-latest-versions command
 
 var getLatestVersionsReq ml.GetLatestVersionsRequest
-var getLatestVersionsJson jsonflag.JsonFlag
+var getLatestVersionsJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(getLatestVersionsCmd)
@@ -735,7 +735,7 @@ var listTransitionRequestsCmd = &cobra.Command{
 // start list-webhooks command
 
 var listWebhooksReq ml.ListWebhooksRequest
-var listWebhooksJson jsonflag.JsonFlag
+var listWebhooksJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(listWebhooksCmd)
@@ -853,7 +853,7 @@ var renameModelCmd = &cobra.Command{
 // start search-model-versions command
 
 var searchModelVersionsReq ml.SearchModelVersionsRequest
-var searchModelVersionsJson jsonflag.JsonFlag
+var searchModelVersionsJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(searchModelVersionsCmd)
@@ -895,7 +895,7 @@ var searchModelVersionsCmd = &cobra.Command{
 // start search-models command
 
 var searchModelsReq ml.SearchModelsRequest
-var searchModelsJson jsonflag.JsonFlag
+var searchModelsJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(searchModelsCmd)
@@ -1198,7 +1198,7 @@ var updateModelVersionCmd = &cobra.Command{
 // start update-webhook command
 
 var updateWebhookReq ml.UpdateRegistryWebhook
-var updateWebhookJson jsonflag.JsonFlag
+var updateWebhookJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(updateWebhookCmd)

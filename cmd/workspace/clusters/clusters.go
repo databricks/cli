@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/databricks/bricks/cmd/root"
-	"github.com/databricks/bricks/lib/jsonflag"
 	"github.com/databricks/bricks/libs/cmdio"
+	"github.com/databricks/bricks/libs/flags"
 	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/spf13/cobra"
@@ -84,7 +84,7 @@ var changeOwnerCmd = &cobra.Command{
 // start create command
 
 var createReq compute.CreateCluster
-var createJson jsonflag.JsonFlag
+var createJson flags.JsonFlag
 var createSkipWait bool
 var createTimeout time.Duration
 
@@ -252,7 +252,7 @@ var deleteCmd = &cobra.Command{
 // start edit command
 
 var editReq compute.EditCluster
-var editJson jsonflag.JsonFlag
+var editJson flags.JsonFlag
 var editSkipWait bool
 var editTimeout time.Duration
 
@@ -348,7 +348,7 @@ var editCmd = &cobra.Command{
 // start events command
 
 var eventsReq compute.GetEvents
-var eventsJson jsonflag.JsonFlag
+var eventsJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(eventsCmd)
@@ -645,7 +645,7 @@ var pinCmd = &cobra.Command{
 // start resize command
 
 var resizeReq compute.ResizeCluster
-var resizeJson jsonflag.JsonFlag
+var resizeJson flags.JsonFlag
 var resizeSkipWait bool
 var resizeTimeout time.Duration
 

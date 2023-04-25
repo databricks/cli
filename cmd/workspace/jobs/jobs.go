@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/databricks/bricks/cmd/root"
-	"github.com/databricks/bricks/lib/jsonflag"
 	"github.com/databricks/bricks/libs/cmdio"
+	"github.com/databricks/bricks/libs/flags"
 	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/spf13/cobra"
@@ -169,7 +169,7 @@ var cancelRunCmd = &cobra.Command{
 // start create command
 
 var createReq jobs.CreateJob
-var createJson jsonflag.JsonFlag
+var createJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(createCmd)
@@ -613,7 +613,7 @@ var listRunsCmd = &cobra.Command{
 // start repair-run command
 
 var repairRunReq jobs.RepairRun
-var repairRunJson jsonflag.JsonFlag
+var repairRunJson flags.JsonFlag
 var repairRunSkipWait bool
 var repairRunTimeout time.Duration
 
@@ -697,7 +697,7 @@ var repairRunCmd = &cobra.Command{
 // start reset command
 
 var resetReq jobs.ResetJob
-var resetJson jsonflag.JsonFlag
+var resetJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(resetCmd)
@@ -743,7 +743,7 @@ var resetCmd = &cobra.Command{
 // start run-now command
 
 var runNowReq jobs.RunNow
-var runNowJson jsonflag.JsonFlag
+var runNowJson flags.JsonFlag
 var runNowSkipWait bool
 var runNowTimeout time.Duration
 
@@ -837,7 +837,7 @@ var runNowCmd = &cobra.Command{
 // start submit command
 
 var submitReq jobs.SubmitRun
-var submitJson jsonflag.JsonFlag
+var submitJson flags.JsonFlag
 var submitSkipWait bool
 var submitTimeout time.Duration
 
@@ -914,7 +914,7 @@ var submitCmd = &cobra.Command{
 // start update command
 
 var updateReq jobs.UpdateJob
-var updateJson jsonflag.JsonFlag
+var updateJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(updateCmd)

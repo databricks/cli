@@ -6,8 +6,8 @@ import (
 	"fmt"
 
 	"github.com/databricks/bricks/cmd/root"
-	"github.com/databricks/bricks/lib/jsonflag"
 	"github.com/databricks/bricks/libs/cmdio"
+	"github.com/databricks/bricks/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/spf13/cobra"
 )
@@ -31,7 +31,7 @@ var Cmd = &cobra.Command{
 // start create command
 
 var createReq iam.User
-var createJson jsonflag.JsonFlag
+var createJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(createCmd)
@@ -214,7 +214,7 @@ var listCmd = &cobra.Command{
 // start patch command
 
 var patchReq iam.PartialUpdate
-var patchJson jsonflag.JsonFlag
+var patchJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(patchCmd)
@@ -255,7 +255,7 @@ var patchCmd = &cobra.Command{
 // start update command
 
 var updateReq iam.User
-var updateJson jsonflag.JsonFlag
+var updateJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(updateCmd)

@@ -6,8 +6,8 @@ import (
 	"fmt"
 
 	"github.com/databricks/bricks/cmd/root"
-	"github.com/databricks/bricks/lib/jsonflag"
 	"github.com/databricks/bricks/libs/cmdio"
+	"github.com/databricks/bricks/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/spf13/cobra"
 )
@@ -33,7 +33,7 @@ var Cmd = &cobra.Command{
 // start create command
 
 var createReq catalog.CreateStorageCredential
-var createJson jsonflag.JsonFlag
+var createJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(createCmd)
@@ -213,7 +213,7 @@ var listCmd = &cobra.Command{
 // start update command
 
 var updateReq catalog.UpdateStorageCredential
-var updateJson jsonflag.JsonFlag
+var updateJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(updateCmd)
@@ -263,7 +263,7 @@ var updateCmd = &cobra.Command{
 // start validate command
 
 var validateReq catalog.ValidateStorageCredential
-var validateJson jsonflag.JsonFlag
+var validateJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(validateCmd)

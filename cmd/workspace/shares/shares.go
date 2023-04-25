@@ -4,8 +4,8 @@ package shares
 
 import (
 	"github.com/databricks/bricks/cmd/root"
-	"github.com/databricks/bricks/lib/jsonflag"
 	"github.com/databricks/bricks/libs/cmdio"
+	"github.com/databricks/bricks/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/sharing"
 	"github.com/spf13/cobra"
 )
@@ -189,7 +189,7 @@ var sharePermissionsCmd = &cobra.Command{
 // start update command
 
 var updateReq sharing.UpdateShare
-var updateJson jsonflag.JsonFlag
+var updateJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(updateCmd)
@@ -245,7 +245,7 @@ var updateCmd = &cobra.Command{
 // start update-permissions command
 
 var updatePermissionsReq sharing.UpdateSharePermissions
-var updatePermissionsJson jsonflag.JsonFlag
+var updatePermissionsJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(updatePermissionsCmd)

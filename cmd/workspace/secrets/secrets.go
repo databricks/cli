@@ -6,8 +6,8 @@ import (
 	"fmt"
 
 	"github.com/databricks/bricks/cmd/root"
-	"github.com/databricks/bricks/lib/jsonflag"
 	"github.com/databricks/bricks/libs/cmdio"
+	"github.com/databricks/bricks/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/spf13/cobra"
 )
@@ -32,7 +32,7 @@ var Cmd = &cobra.Command{
 // start create-scope command
 
 var createScopeReq workspace.CreateScope
-var createScopeJson jsonflag.JsonFlag
+var createScopeJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(createScopeCmd)

@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/databricks/bricks/cmd/root"
-	"github.com/databricks/bricks/lib/jsonflag"
 	"github.com/databricks/bricks/libs/cmdio"
+	"github.com/databricks/bricks/libs/flags"
 	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/spf13/cobra"
@@ -36,7 +36,7 @@ var Cmd = &cobra.Command{
 // start create command
 
 var createReq pipelines.CreatePipeline
-var createJson jsonflag.JsonFlag
+var createJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(createCmd)
@@ -222,7 +222,7 @@ var getUpdateCmd = &cobra.Command{
 // start list-pipeline-events command
 
 var listPipelineEventsReq pipelines.ListPipelineEventsRequest
-var listPipelineEventsJson jsonflag.JsonFlag
+var listPipelineEventsJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(listPipelineEventsCmd)
@@ -265,7 +265,7 @@ var listPipelineEventsCmd = &cobra.Command{
 // start list-pipelines command
 
 var listPipelinesReq pipelines.ListPipelinesRequest
-var listPipelinesJson jsonflag.JsonFlag
+var listPipelinesJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(listPipelinesCmd)
@@ -426,7 +426,7 @@ var resetCmd = &cobra.Command{
 // start start-update command
 
 var startUpdateReq pipelines.StartUpdate
-var startUpdateJson jsonflag.JsonFlag
+var startUpdateJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(startUpdateCmd)
@@ -538,7 +538,7 @@ var stopCmd = &cobra.Command{
 // start update command
 
 var updateReq pipelines.EditPipeline
-var updateJson jsonflag.JsonFlag
+var updateJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(updateCmd)
