@@ -40,7 +40,6 @@ func (r *Repository) Root() string {
 	return r.rootPath
 }
 
-// TODO: what happens here if the cwd is not inside a repository?
 func (r *Repository) CurrentBranch() (string, error) {
 	// load .git/HEAD
 	head, err := LoadHead(filepath.Join(r.rootPath, ".git", "HEAD"))

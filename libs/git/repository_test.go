@@ -15,9 +15,6 @@ import (
 type testRepository struct {
 	t *testing.T
 	r *Repository
-
-	// path to repo root
-	path string
 }
 
 func newTestRepository(t *testing.T) *testRepository {
@@ -50,14 +47,13 @@ func newTestRepository(t *testing.T) *testRepository {
 	require.NoError(t, err)
 
 	return &testRepository{
-		t:    t,
-		r:    repo,
-		path: tmp,
+		t: t,
+		r: repo,
 	}
 }
 
 func (testRepo *testRepository) checkoutCommit(commitId string) {
-	f, err := os.OpenFile(filepath.Join(testRepo.path, ".git", "HEAD"), os.O_WRONLY|os.O_TRUNC, os.ModePerm)
+	f, err := os.OpenFile(filepath.Join(testRepo.r.rootPath, ".git", "HEAD"), os.O_WRONLY|os.O_TRUNC, os.ModePerm)
 	require.NoError(testRepo.t, err)
 	defer f.Close()
 
@@ -67,7 +63,7 @@ func (testRepo *testRepository) checkoutCommit(commitId string) {
 
 func (testRepo *testRepository) addBranch(name string, latestCommit string) {
 	// create dir for branch head reference
-	branchDir := filepath.Join(testRepo.path, ".git", "refs", "heads")
+	branchDir := filepath.Join(testRepo.r.rootPath, ".git", "refs", "heads")
 	err := os.MkdirAll(branchDir, os.ModePerm)
 	require.NoError(testRepo.t, err)
 
@@ -82,7 +78,7 @@ func (testRepo *testRepository) addBranch(name string, latestCommit string) {
 }
 
 func (testRepo *testRepository) checkoutBranch(name string) {
-	f, err := os.OpenFile(filepath.Join(testRepo.path, ".git", "HEAD"), os.O_WRONLY|os.O_TRUNC, os.ModePerm)
+	f, err := os.OpenFile(filepath.Join(testRepo.r.rootPath, ".git", "HEAD"), os.O_WRONLY|os.O_TRUNC, os.ModePerm)
 	require.NoError(testRepo.t, err)
 	defer f.Close()
 
@@ -92,7 +88,7 @@ func (testRepo *testRepository) checkoutBranch(name string) {
 
 // add remote origin url to test repo
 func (testRepo *testRepository) addOriginUrl(url string) {
-	f, err := os.OpenFile(filepath.Join(testRepo.path, ".git", "config"), os.O_WRONLY|os.O_TRUNC, os.ModePerm)
+	f, err := os.OpenFile(filepath.Join(testRepo.r.rootPath, ".git", "config"), os.O_WRONLY|os.O_TRUNC, os.ModePerm)
 	require.NoError(testRepo.t, err)
 	defer f.Close()
 
@@ -134,7 +130,7 @@ func (testRepo *testRepository) assertOriginUrl(expected string) {
 func TestRepository(t *testing.T) {
 	// Load this repository as test.
 	repo, err := NewRepository("../..")
-	tr := testRepository{t, repo, repo.rootPath}
+	tr := testRepository{t, repo}
 	require.NoError(t, err)
 
 	// Check that the root path is real.
