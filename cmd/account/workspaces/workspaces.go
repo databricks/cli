@@ -83,28 +83,28 @@ var createCmd = &cobra.Command{
 		}
 		createReq.WorkspaceName = args[0]
 
-		if !createNoWait {
-			spinner := cmdio.Spinner(ctx)
-			info, err := a.Workspaces.CreateAndWait(ctx, createReq,
-				retries.Timeout[provisioning.Workspace](createTimeout),
-				func(i *retries.Info[provisioning.Workspace]) {
-					if i.Info == nil {
-						return
-					}
-					statusMessage := i.Info.WorkspaceStatusMessage
-					spinner <- statusMessage
-				})
-			close(spinner)
+		if createNoWait {
+			response, err := a.Workspaces.Create(ctx, createReq)
 			if err != nil {
 				return err
 			}
-			return cmdio.Render(ctx, info)
+			return cmdio.Render(ctx, response)
 		}
-		response, err := a.Workspaces.Create(ctx, createReq)
+		spinner := cmdio.Spinner(ctx)
+		info, err := a.Workspaces.CreateAndWait(ctx, createReq,
+			retries.Timeout[provisioning.Workspace](createTimeout),
+			func(i *retries.Info[provisioning.Workspace]) {
+				if i.Info == nil {
+					return
+				}
+				statusMessage := i.Info.WorkspaceStatusMessage
+				spinner <- statusMessage
+			})
+		close(spinner)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return cmdio.Render(ctx, info)
 	},
 }
 
@@ -421,28 +421,28 @@ var updateCmd = &cobra.Command{
 			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
 		}
 
-		if !updateNoWait {
-			spinner := cmdio.Spinner(ctx)
-			info, err := a.Workspaces.UpdateAndWait(ctx, updateReq,
-				retries.Timeout[provisioning.Workspace](updateTimeout),
-				func(i *retries.Info[provisioning.Workspace]) {
-					if i.Info == nil {
-						return
-					}
-					statusMessage := i.Info.WorkspaceStatusMessage
-					spinner <- statusMessage
-				})
-			close(spinner)
+		if updateNoWait {
+			err = a.Workspaces.Update(ctx, updateReq)
 			if err != nil {
 				return err
 			}
-			return cmdio.Render(ctx, info)
+			return nil
 		}
-		err = a.Workspaces.Update(ctx, updateReq)
+		spinner := cmdio.Spinner(ctx)
+		info, err := a.Workspaces.UpdateAndWait(ctx, updateReq,
+			retries.Timeout[provisioning.Workspace](updateTimeout),
+			func(i *retries.Info[provisioning.Workspace]) {
+				if i.Info == nil {
+					return
+				}
+				statusMessage := i.Info.WorkspaceStatusMessage
+				spinner <- statusMessage
+			})
+		close(spinner)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, info)
 	},
 }
 

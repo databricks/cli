@@ -106,54 +106,59 @@ var {{.CamelName}}Cmd = &cobra.Command{
 				{{- end -}}{{end}}
 		{{end}}
 		{{if $wait -}}
-		if !{{.CamelName}}NoWait {
-			spinner := cmdio.Spinner(ctx)
-			info, err := {{if .Service.IsAccounts}}a{{else}}w{{end}}.{{.Service.PascalName}}.{{.PascalName}}AndWait(ctx{{if .Request}}, {{.CamelName}}Req{{end}},
-				retries.Timeout[{{.Service.Package.Name}}.{{.Wait.Poll.Response.PascalName}}]({{.CamelName}}Timeout),
-				func(i *retries.Info[{{.Service.Package.Name}}.{{.Wait.Poll.Response.PascalName}}]) {
-					if i.Info == nil {
-						return
-					}
-					{{if .Wait.MessagePath -}}
-					{{if .Wait.ComplexMessagePath -}}
-					if i.Info.{{.Wait.MessagePathHead.PascalName}} == nil {
-						return
-					}
-					status := i.Info{{range .Wait.StatusPath}}.{{.PascalName}}{{end}}
-					statusMessage := fmt.Sprintf("current status: %s", status)
-					if i.Info.{{.Wait.MessagePathHead.PascalName}} != nil {
-						statusMessage = i.Info{{range .Wait.MessagePath}}.{{.PascalName}}{{end}}
-					}
-					{{- else -}}
-					statusMessage := i.Info{{range .Wait.MessagePath}}.{{.PascalName}}{{end}}
-					{{- end}}
-					{{- else -}}
-					status := i.Info{{range .Wait.StatusPath}}.{{.PascalName}}{{end}}
-					statusMessage := fmt.Sprintf("current status: %s", status)
-					{{- end}}
-					spinner <- statusMessage
-				})
-			close(spinner)
-			if err != nil {
-				return err
-			}
-			return cmdio.Render(ctx, info)
+		if {{.CamelName}}NoWait {
+			{{template "method-call" .}}
 		}
+		spinner := cmdio.Spinner(ctx)
+		info, err := {{if .Service.IsAccounts}}a{{else}}w{{end}}.{{.Service.PascalName}}.{{.PascalName}}AndWait(ctx{{if .Request}}, {{.CamelName}}Req{{end}},
+			retries.Timeout[{{.Service.Package.Name}}.{{.Wait.Poll.Response.PascalName}}]({{.CamelName}}Timeout),
+			func(i *retries.Info[{{.Service.Package.Name}}.{{.Wait.Poll.Response.PascalName}}]) {
+				if i.Info == nil {
+					return
+				}
+				{{if .Wait.MessagePath -}}
+				{{if .Wait.ComplexMessagePath -}}
+				if i.Info.{{.Wait.MessagePathHead.PascalName}} == nil {
+					return
+				}
+				status := i.Info{{range .Wait.StatusPath}}.{{.PascalName}}{{end}}
+				statusMessage := fmt.Sprintf("current status: %s", status)
+				if i.Info.{{.Wait.MessagePathHead.PascalName}} != nil {
+					statusMessage = i.Info{{range .Wait.MessagePath}}.{{.PascalName}}{{end}}
+				}
+				{{- else -}}
+				statusMessage := i.Info{{range .Wait.MessagePath}}.{{.PascalName}}{{end}}
+				{{- end}}
+				{{- else -}}
+				status := i.Info{{range .Wait.StatusPath}}.{{.PascalName}}{{end}}
+				statusMessage := fmt.Sprintf("current status: %s", status)
+				{{- end}}
+				spinner <- statusMessage
+			})
+		close(spinner)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, info)
+		{{- else -}}
+		{{template "method-call" .}}
 		{{end -}}
+	},
+}
+{{end}}
+// end service {{.Name}}{{end}}
+
+{{- define "method-call" -}}
 		{{if .Response}}response, err :={{else}}err ={{end}} {{if .Service.IsAccounts}}a{{else}}w{{end}}.{{(.Service.TrimPrefix "account").PascalName}}.{{.PascalName}}{{if .Pagination}}All{{end}}(ctx{{if .Request}}, {{.CamelName}}Req{{end}})
 		if err != nil {
 			return err
 		}
         {{if .Response -}}
 		return cmdio.Render(ctx, response)
-		{{else -}}
+		{{- else -}}
 		return nil
 		{{- end -}}
-	},
-}
-{{end}}
-
-// end service {{.Name}}{{end}}
+{{- end -}}
 
 {{- define "arg-type" -}}
 	{{- if .IsString}}StringVar

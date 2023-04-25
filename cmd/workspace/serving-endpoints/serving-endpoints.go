@@ -104,29 +104,29 @@ var createCmd = &cobra.Command{
 			return fmt.Errorf("invalid CONFIG: %s", args[1])
 		}
 
-		if !createNoWait {
-			spinner := cmdio.Spinner(ctx)
-			info, err := w.ServingEndpoints.CreateAndWait(ctx, createReq,
-				retries.Timeout[serving.ServingEndpointDetailed](createTimeout),
-				func(i *retries.Info[serving.ServingEndpointDetailed]) {
-					if i.Info == nil {
-						return
-					}
-					status := i.Info.State.ConfigUpdate
-					statusMessage := fmt.Sprintf("current status: %s", status)
-					spinner <- statusMessage
-				})
-			close(spinner)
+		if createNoWait {
+			response, err := w.ServingEndpoints.Create(ctx, createReq)
 			if err != nil {
 				return err
 			}
-			return cmdio.Render(ctx, info)
+			return cmdio.Render(ctx, response)
 		}
-		response, err := w.ServingEndpoints.Create(ctx, createReq)
+		spinner := cmdio.Spinner(ctx)
+		info, err := w.ServingEndpoints.CreateAndWait(ctx, createReq,
+			retries.Timeout[serving.ServingEndpointDetailed](createTimeout),
+			func(i *retries.Info[serving.ServingEndpointDetailed]) {
+				if i.Info == nil {
+					return
+				}
+				status := i.Info.State.ConfigUpdate
+				statusMessage := fmt.Sprintf("current status: %s", status)
+				spinner <- statusMessage
+			})
+		close(spinner)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return cmdio.Render(ctx, info)
 	},
 }
 
@@ -364,29 +364,29 @@ var updateConfigCmd = &cobra.Command{
 		}
 		updateConfigReq.Name = args[1]
 
-		if !updateConfigNoWait {
-			spinner := cmdio.Spinner(ctx)
-			info, err := w.ServingEndpoints.UpdateConfigAndWait(ctx, updateConfigReq,
-				retries.Timeout[serving.ServingEndpointDetailed](updateConfigTimeout),
-				func(i *retries.Info[serving.ServingEndpointDetailed]) {
-					if i.Info == nil {
-						return
-					}
-					status := i.Info.State.ConfigUpdate
-					statusMessage := fmt.Sprintf("current status: %s", status)
-					spinner <- statusMessage
-				})
-			close(spinner)
+		if updateConfigNoWait {
+			response, err := w.ServingEndpoints.UpdateConfig(ctx, updateConfigReq)
 			if err != nil {
 				return err
 			}
-			return cmdio.Render(ctx, info)
+			return cmdio.Render(ctx, response)
 		}
-		response, err := w.ServingEndpoints.UpdateConfig(ctx, updateConfigReq)
+		spinner := cmdio.Spinner(ctx)
+		info, err := w.ServingEndpoints.UpdateConfigAndWait(ctx, updateConfigReq,
+			retries.Timeout[serving.ServingEndpointDetailed](updateConfigTimeout),
+			func(i *retries.Info[serving.ServingEndpointDetailed]) {
+				if i.Info == nil {
+					return
+				}
+				status := i.Info.State.ConfigUpdate
+				statusMessage := fmt.Sprintf("current status: %s", status)
+				spinner <- statusMessage
+			})
+		close(spinner)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return cmdio.Render(ctx, info)
 	},
 }
 

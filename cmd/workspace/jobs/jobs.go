@@ -134,35 +134,35 @@ var cancelRunCmd = &cobra.Command{
 			return fmt.Errorf("invalid RUN_ID: %s", args[0])
 		}
 
-		if !cancelRunNoWait {
-			spinner := cmdio.Spinner(ctx)
-			info, err := w.Jobs.CancelRunAndWait(ctx, cancelRunReq,
-				retries.Timeout[jobs.Run](cancelRunTimeout),
-				func(i *retries.Info[jobs.Run]) {
-					if i.Info == nil {
-						return
-					}
-					if i.Info.State == nil {
-						return
-					}
-					status := i.Info.State.LifeCycleState
-					statusMessage := fmt.Sprintf("current status: %s", status)
-					if i.Info.State != nil {
-						statusMessage = i.Info.State.StateMessage
-					}
-					spinner <- statusMessage
-				})
-			close(spinner)
+		if cancelRunNoWait {
+			err = w.Jobs.CancelRun(ctx, cancelRunReq)
 			if err != nil {
 				return err
 			}
-			return cmdio.Render(ctx, info)
+			return nil
 		}
-		err = w.Jobs.CancelRun(ctx, cancelRunReq)
+		spinner := cmdio.Spinner(ctx)
+		info, err := w.Jobs.CancelRunAndWait(ctx, cancelRunReq,
+			retries.Timeout[jobs.Run](cancelRunTimeout),
+			func(i *retries.Info[jobs.Run]) {
+				if i.Info == nil {
+					return
+				}
+				if i.Info.State == nil {
+					return
+				}
+				status := i.Info.State.LifeCycleState
+				statusMessage := fmt.Sprintf("current status: %s", status)
+				if i.Info.State != nil {
+					statusMessage = i.Info.State.StateMessage
+				}
+				spinner <- statusMessage
+			})
+		close(spinner)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, info)
 	},
 }
 
@@ -662,35 +662,35 @@ var repairRunCmd = &cobra.Command{
 			return fmt.Errorf("invalid RUN_ID: %s", args[0])
 		}
 
-		if !repairRunNoWait {
-			spinner := cmdio.Spinner(ctx)
-			info, err := w.Jobs.RepairRunAndWait(ctx, repairRunReq,
-				retries.Timeout[jobs.Run](repairRunTimeout),
-				func(i *retries.Info[jobs.Run]) {
-					if i.Info == nil {
-						return
-					}
-					if i.Info.State == nil {
-						return
-					}
-					status := i.Info.State.LifeCycleState
-					statusMessage := fmt.Sprintf("current status: %s", status)
-					if i.Info.State != nil {
-						statusMessage = i.Info.State.StateMessage
-					}
-					spinner <- statusMessage
-				})
-			close(spinner)
+		if repairRunNoWait {
+			response, err := w.Jobs.RepairRun(ctx, repairRunReq)
 			if err != nil {
 				return err
 			}
-			return cmdio.Render(ctx, info)
+			return cmdio.Render(ctx, response)
 		}
-		response, err := w.Jobs.RepairRun(ctx, repairRunReq)
+		spinner := cmdio.Spinner(ctx)
+		info, err := w.Jobs.RepairRunAndWait(ctx, repairRunReq,
+			retries.Timeout[jobs.Run](repairRunTimeout),
+			func(i *retries.Info[jobs.Run]) {
+				if i.Info == nil {
+					return
+				}
+				if i.Info.State == nil {
+					return
+				}
+				status := i.Info.State.LifeCycleState
+				statusMessage := fmt.Sprintf("current status: %s", status)
+				if i.Info.State != nil {
+					statusMessage = i.Info.State.StateMessage
+				}
+				spinner <- statusMessage
+			})
+		close(spinner)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return cmdio.Render(ctx, info)
 	},
 }
 
@@ -802,35 +802,35 @@ var runNowCmd = &cobra.Command{
 			return fmt.Errorf("invalid JOB_ID: %s", args[0])
 		}
 
-		if !runNowNoWait {
-			spinner := cmdio.Spinner(ctx)
-			info, err := w.Jobs.RunNowAndWait(ctx, runNowReq,
-				retries.Timeout[jobs.Run](runNowTimeout),
-				func(i *retries.Info[jobs.Run]) {
-					if i.Info == nil {
-						return
-					}
-					if i.Info.State == nil {
-						return
-					}
-					status := i.Info.State.LifeCycleState
-					statusMessage := fmt.Sprintf("current status: %s", status)
-					if i.Info.State != nil {
-						statusMessage = i.Info.State.StateMessage
-					}
-					spinner <- statusMessage
-				})
-			close(spinner)
+		if runNowNoWait {
+			response, err := w.Jobs.RunNow(ctx, runNowReq)
 			if err != nil {
 				return err
 			}
-			return cmdio.Render(ctx, info)
+			return cmdio.Render(ctx, response)
 		}
-		response, err := w.Jobs.RunNow(ctx, runNowReq)
+		spinner := cmdio.Spinner(ctx)
+		info, err := w.Jobs.RunNowAndWait(ctx, runNowReq,
+			retries.Timeout[jobs.Run](runNowTimeout),
+			func(i *retries.Info[jobs.Run]) {
+				if i.Info == nil {
+					return
+				}
+				if i.Info.State == nil {
+					return
+				}
+				status := i.Info.State.LifeCycleState
+				statusMessage := fmt.Sprintf("current status: %s", status)
+				if i.Info.State != nil {
+					statusMessage = i.Info.State.StateMessage
+				}
+				spinner <- statusMessage
+			})
+		close(spinner)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return cmdio.Render(ctx, info)
 	},
 }
 
@@ -879,35 +879,35 @@ var submitCmd = &cobra.Command{
 			return err
 		}
 
-		if !submitNoWait {
-			spinner := cmdio.Spinner(ctx)
-			info, err := w.Jobs.SubmitAndWait(ctx, submitReq,
-				retries.Timeout[jobs.Run](submitTimeout),
-				func(i *retries.Info[jobs.Run]) {
-					if i.Info == nil {
-						return
-					}
-					if i.Info.State == nil {
-						return
-					}
-					status := i.Info.State.LifeCycleState
-					statusMessage := fmt.Sprintf("current status: %s", status)
-					if i.Info.State != nil {
-						statusMessage = i.Info.State.StateMessage
-					}
-					spinner <- statusMessage
-				})
-			close(spinner)
+		if submitNoWait {
+			response, err := w.Jobs.Submit(ctx, submitReq)
 			if err != nil {
 				return err
 			}
-			return cmdio.Render(ctx, info)
+			return cmdio.Render(ctx, response)
 		}
-		response, err := w.Jobs.Submit(ctx, submitReq)
+		spinner := cmdio.Spinner(ctx)
+		info, err := w.Jobs.SubmitAndWait(ctx, submitReq,
+			retries.Timeout[jobs.Run](submitTimeout),
+			func(i *retries.Info[jobs.Run]) {
+				if i.Info == nil {
+					return
+				}
+				if i.Info.State == nil {
+					return
+				}
+				status := i.Info.State.LifeCycleState
+				statusMessage := fmt.Sprintf("current status: %s", status)
+				if i.Info.State != nil {
+					statusMessage = i.Info.State.StateMessage
+				}
+				spinner <- statusMessage
+			})
+		close(spinner)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return cmdio.Render(ctx, info)
 	},
 }
 

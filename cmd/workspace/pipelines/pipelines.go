@@ -398,28 +398,28 @@ var resetCmd = &cobra.Command{
 		}
 		resetReq.PipelineId = args[0]
 
-		if !resetNoWait {
-			spinner := cmdio.Spinner(ctx)
-			info, err := w.Pipelines.ResetAndWait(ctx, resetReq,
-				retries.Timeout[pipelines.GetPipelineResponse](resetTimeout),
-				func(i *retries.Info[pipelines.GetPipelineResponse]) {
-					if i.Info == nil {
-						return
-					}
-					statusMessage := i.Info.Cause
-					spinner <- statusMessage
-				})
-			close(spinner)
+		if resetNoWait {
+			err = w.Pipelines.Reset(ctx, resetReq)
 			if err != nil {
 				return err
 			}
-			return cmdio.Render(ctx, info)
+			return nil
 		}
-		err = w.Pipelines.Reset(ctx, resetReq)
+		spinner := cmdio.Spinner(ctx)
+		info, err := w.Pipelines.ResetAndWait(ctx, resetReq,
+			retries.Timeout[pipelines.GetPipelineResponse](resetTimeout),
+			func(i *retries.Info[pipelines.GetPipelineResponse]) {
+				if i.Info == nil {
+					return
+				}
+				statusMessage := i.Info.Cause
+				spinner <- statusMessage
+			})
+		close(spinner)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, info)
 	},
 }
 
@@ -510,28 +510,28 @@ var stopCmd = &cobra.Command{
 		}
 		stopReq.PipelineId = args[0]
 
-		if !stopNoWait {
-			spinner := cmdio.Spinner(ctx)
-			info, err := w.Pipelines.StopAndWait(ctx, stopReq,
-				retries.Timeout[pipelines.GetPipelineResponse](stopTimeout),
-				func(i *retries.Info[pipelines.GetPipelineResponse]) {
-					if i.Info == nil {
-						return
-					}
-					statusMessage := i.Info.Cause
-					spinner <- statusMessage
-				})
-			close(spinner)
+		if stopNoWait {
+			err = w.Pipelines.Stop(ctx, stopReq)
 			if err != nil {
 				return err
 			}
-			return cmdio.Render(ctx, info)
+			return nil
 		}
-		err = w.Pipelines.Stop(ctx, stopReq)
+		spinner := cmdio.Spinner(ctx)
+		info, err := w.Pipelines.StopAndWait(ctx, stopReq,
+			retries.Timeout[pipelines.GetPipelineResponse](stopTimeout),
+			func(i *retries.Info[pipelines.GetPipelineResponse]) {
+				if i.Info == nil {
+					return
+				}
+				statusMessage := i.Info.Cause
+				spinner <- statusMessage
+			})
+		close(spinner)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, info)
 	},
 }
 

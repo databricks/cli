@@ -152,28 +152,28 @@ var createCmd = &cobra.Command{
 		}
 		createReq.SparkVersion = args[0]
 
-		if !createNoWait {
-			spinner := cmdio.Spinner(ctx)
-			info, err := w.Clusters.CreateAndWait(ctx, createReq,
-				retries.Timeout[compute.ClusterInfo](createTimeout),
-				func(i *retries.Info[compute.ClusterInfo]) {
-					if i.Info == nil {
-						return
-					}
-					statusMessage := i.Info.StateMessage
-					spinner <- statusMessage
-				})
-			close(spinner)
+		if createNoWait {
+			response, err := w.Clusters.Create(ctx, createReq)
 			if err != nil {
 				return err
 			}
-			return cmdio.Render(ctx, info)
+			return cmdio.Render(ctx, response)
 		}
-		response, err := w.Clusters.Create(ctx, createReq)
+		spinner := cmdio.Spinner(ctx)
+		info, err := w.Clusters.CreateAndWait(ctx, createReq,
+			retries.Timeout[compute.ClusterInfo](createTimeout),
+			func(i *retries.Info[compute.ClusterInfo]) {
+				if i.Info == nil {
+					return
+				}
+				statusMessage := i.Info.StateMessage
+				spinner <- statusMessage
+			})
+		close(spinner)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return cmdio.Render(ctx, info)
 	},
 }
 
@@ -224,28 +224,28 @@ var deleteCmd = &cobra.Command{
 		}
 		deleteReq.ClusterId = args[0]
 
-		if !deleteNoWait {
-			spinner := cmdio.Spinner(ctx)
-			info, err := w.Clusters.DeleteAndWait(ctx, deleteReq,
-				retries.Timeout[compute.ClusterInfo](deleteTimeout),
-				func(i *retries.Info[compute.ClusterInfo]) {
-					if i.Info == nil {
-						return
-					}
-					statusMessage := i.Info.StateMessage
-					spinner <- statusMessage
-				})
-			close(spinner)
+		if deleteNoWait {
+			err = w.Clusters.Delete(ctx, deleteReq)
 			if err != nil {
 				return err
 			}
-			return cmdio.Render(ctx, info)
+			return nil
 		}
-		err = w.Clusters.Delete(ctx, deleteReq)
+		spinner := cmdio.Spinner(ctx)
+		info, err := w.Clusters.DeleteAndWait(ctx, deleteReq,
+			retries.Timeout[compute.ClusterInfo](deleteTimeout),
+			func(i *retries.Info[compute.ClusterInfo]) {
+				if i.Info == nil {
+					return
+				}
+				statusMessage := i.Info.StateMessage
+				spinner <- statusMessage
+			})
+		close(spinner)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, info)
 	},
 }
 
@@ -320,28 +320,28 @@ var editCmd = &cobra.Command{
 		editReq.ClusterId = args[0]
 		editReq.SparkVersion = args[1]
 
-		if !editNoWait {
-			spinner := cmdio.Spinner(ctx)
-			info, err := w.Clusters.EditAndWait(ctx, editReq,
-				retries.Timeout[compute.ClusterInfo](editTimeout),
-				func(i *retries.Info[compute.ClusterInfo]) {
-					if i.Info == nil {
-						return
-					}
-					statusMessage := i.Info.StateMessage
-					spinner <- statusMessage
-				})
-			close(spinner)
+		if editNoWait {
+			err = w.Clusters.Edit(ctx, editReq)
 			if err != nil {
 				return err
 			}
-			return cmdio.Render(ctx, info)
+			return nil
 		}
-		err = w.Clusters.Edit(ctx, editReq)
+		spinner := cmdio.Spinner(ctx)
+		info, err := w.Clusters.EditAndWait(ctx, editReq,
+			retries.Timeout[compute.ClusterInfo](editTimeout),
+			func(i *retries.Info[compute.ClusterInfo]) {
+				if i.Info == nil {
+					return
+				}
+				statusMessage := i.Info.StateMessage
+				spinner <- statusMessage
+			})
+		close(spinner)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, info)
 	},
 }
 
@@ -681,28 +681,28 @@ var resizeCmd = &cobra.Command{
 		}
 		resizeReq.ClusterId = args[0]
 
-		if !resizeNoWait {
-			spinner := cmdio.Spinner(ctx)
-			info, err := w.Clusters.ResizeAndWait(ctx, resizeReq,
-				retries.Timeout[compute.ClusterInfo](resizeTimeout),
-				func(i *retries.Info[compute.ClusterInfo]) {
-					if i.Info == nil {
-						return
-					}
-					statusMessage := i.Info.StateMessage
-					spinner <- statusMessage
-				})
-			close(spinner)
+		if resizeNoWait {
+			err = w.Clusters.Resize(ctx, resizeReq)
 			if err != nil {
 				return err
 			}
-			return cmdio.Render(ctx, info)
+			return nil
 		}
-		err = w.Clusters.Resize(ctx, resizeReq)
+		spinner := cmdio.Spinner(ctx)
+		info, err := w.Clusters.ResizeAndWait(ctx, resizeReq,
+			retries.Timeout[compute.ClusterInfo](resizeTimeout),
+			func(i *retries.Info[compute.ClusterInfo]) {
+				if i.Info == nil {
+					return
+				}
+				statusMessage := i.Info.StateMessage
+				spinner <- statusMessage
+			})
+		close(spinner)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, info)
 	},
 }
 
@@ -753,28 +753,28 @@ var restartCmd = &cobra.Command{
 		}
 		restartReq.ClusterId = args[0]
 
-		if !restartNoWait {
-			spinner := cmdio.Spinner(ctx)
-			info, err := w.Clusters.RestartAndWait(ctx, restartReq,
-				retries.Timeout[compute.ClusterInfo](restartTimeout),
-				func(i *retries.Info[compute.ClusterInfo]) {
-					if i.Info == nil {
-						return
-					}
-					statusMessage := i.Info.StateMessage
-					spinner <- statusMessage
-				})
-			close(spinner)
+		if restartNoWait {
+			err = w.Clusters.Restart(ctx, restartReq)
 			if err != nil {
 				return err
 			}
-			return cmdio.Render(ctx, info)
+			return nil
 		}
-		err = w.Clusters.Restart(ctx, restartReq)
+		spinner := cmdio.Spinner(ctx)
+		info, err := w.Clusters.RestartAndWait(ctx, restartReq,
+			retries.Timeout[compute.ClusterInfo](restartTimeout),
+			func(i *retries.Info[compute.ClusterInfo]) {
+				if i.Info == nil {
+					return
+				}
+				statusMessage := i.Info.StateMessage
+				spinner <- statusMessage
+			})
+		close(spinner)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, info)
 	},
 }
 
@@ -857,28 +857,28 @@ var startCmd = &cobra.Command{
 		}
 		startReq.ClusterId = args[0]
 
-		if !startNoWait {
-			spinner := cmdio.Spinner(ctx)
-			info, err := w.Clusters.StartAndWait(ctx, startReq,
-				retries.Timeout[compute.ClusterInfo](startTimeout),
-				func(i *retries.Info[compute.ClusterInfo]) {
-					if i.Info == nil {
-						return
-					}
-					statusMessage := i.Info.StateMessage
-					spinner <- statusMessage
-				})
-			close(spinner)
+		if startNoWait {
+			err = w.Clusters.Start(ctx, startReq)
 			if err != nil {
 				return err
 			}
-			return cmdio.Render(ctx, info)
+			return nil
 		}
-		err = w.Clusters.Start(ctx, startReq)
+		spinner := cmdio.Spinner(ctx)
+		info, err := w.Clusters.StartAndWait(ctx, startReq,
+			retries.Timeout[compute.ClusterInfo](startTimeout),
+			func(i *retries.Info[compute.ClusterInfo]) {
+				if i.Info == nil {
+					return
+				}
+				statusMessage := i.Info.StateMessage
+				spinner <- statusMessage
+			})
+		close(spinner)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, info)
 	},
 }
 

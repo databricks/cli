@@ -70,35 +70,35 @@ var createCmd = &cobra.Command{
 			return err
 		}
 
-		if !createNoWait {
-			spinner := cmdio.Spinner(ctx)
-			info, err := w.Warehouses.CreateAndWait(ctx, createReq,
-				retries.Timeout[sql.GetWarehouseResponse](createTimeout),
-				func(i *retries.Info[sql.GetWarehouseResponse]) {
-					if i.Info == nil {
-						return
-					}
-					if i.Info.Health == nil {
-						return
-					}
-					status := i.Info.State
-					statusMessage := fmt.Sprintf("current status: %s", status)
-					if i.Info.Health != nil {
-						statusMessage = i.Info.Health.Summary
-					}
-					spinner <- statusMessage
-				})
-			close(spinner)
+		if createNoWait {
+			response, err := w.Warehouses.Create(ctx, createReq)
 			if err != nil {
 				return err
 			}
-			return cmdio.Render(ctx, info)
+			return cmdio.Render(ctx, response)
 		}
-		response, err := w.Warehouses.Create(ctx, createReq)
+		spinner := cmdio.Spinner(ctx)
+		info, err := w.Warehouses.CreateAndWait(ctx, createReq,
+			retries.Timeout[sql.GetWarehouseResponse](createTimeout),
+			func(i *retries.Info[sql.GetWarehouseResponse]) {
+				if i.Info == nil {
+					return
+				}
+				if i.Info.Health == nil {
+					return
+				}
+				status := i.Info.State
+				statusMessage := fmt.Sprintf("current status: %s", status)
+				if i.Info.Health != nil {
+					statusMessage = i.Info.Health.Summary
+				}
+				spinner <- statusMessage
+			})
+		close(spinner)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return cmdio.Render(ctx, info)
 	},
 }
 
@@ -146,35 +146,35 @@ var deleteCmd = &cobra.Command{
 		}
 		deleteReq.Id = args[0]
 
-		if !deleteNoWait {
-			spinner := cmdio.Spinner(ctx)
-			info, err := w.Warehouses.DeleteAndWait(ctx, deleteReq,
-				retries.Timeout[sql.GetWarehouseResponse](deleteTimeout),
-				func(i *retries.Info[sql.GetWarehouseResponse]) {
-					if i.Info == nil {
-						return
-					}
-					if i.Info.Health == nil {
-						return
-					}
-					status := i.Info.State
-					statusMessage := fmt.Sprintf("current status: %s", status)
-					if i.Info.Health != nil {
-						statusMessage = i.Info.Health.Summary
-					}
-					spinner <- statusMessage
-				})
-			close(spinner)
+		if deleteNoWait {
+			err = w.Warehouses.Delete(ctx, deleteReq)
 			if err != nil {
 				return err
 			}
-			return cmdio.Render(ctx, info)
+			return nil
 		}
-		err = w.Warehouses.Delete(ctx, deleteReq)
+		spinner := cmdio.Spinner(ctx)
+		info, err := w.Warehouses.DeleteAndWait(ctx, deleteReq,
+			retries.Timeout[sql.GetWarehouseResponse](deleteTimeout),
+			func(i *retries.Info[sql.GetWarehouseResponse]) {
+				if i.Info == nil {
+					return
+				}
+				if i.Info.Health == nil {
+					return
+				}
+				status := i.Info.State
+				statusMessage := fmt.Sprintf("current status: %s", status)
+				if i.Info.Health != nil {
+					statusMessage = i.Info.Health.Summary
+				}
+				spinner <- statusMessage
+			})
+		close(spinner)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, info)
 	},
 }
 
@@ -227,35 +227,35 @@ var editCmd = &cobra.Command{
 		}
 		editReq.Id = args[0]
 
-		if !editNoWait {
-			spinner := cmdio.Spinner(ctx)
-			info, err := w.Warehouses.EditAndWait(ctx, editReq,
-				retries.Timeout[sql.GetWarehouseResponse](editTimeout),
-				func(i *retries.Info[sql.GetWarehouseResponse]) {
-					if i.Info == nil {
-						return
-					}
-					if i.Info.Health == nil {
-						return
-					}
-					status := i.Info.State
-					statusMessage := fmt.Sprintf("current status: %s", status)
-					if i.Info.Health != nil {
-						statusMessage = i.Info.Health.Summary
-					}
-					spinner <- statusMessage
-				})
-			close(spinner)
+		if editNoWait {
+			err = w.Warehouses.Edit(ctx, editReq)
 			if err != nil {
 				return err
 			}
-			return cmdio.Render(ctx, info)
+			return nil
 		}
-		err = w.Warehouses.Edit(ctx, editReq)
+		spinner := cmdio.Spinner(ctx)
+		info, err := w.Warehouses.EditAndWait(ctx, editReq,
+			retries.Timeout[sql.GetWarehouseResponse](editTimeout),
+			func(i *retries.Info[sql.GetWarehouseResponse]) {
+				if i.Info == nil {
+					return
+				}
+				if i.Info.Health == nil {
+					return
+				}
+				status := i.Info.State
+				statusMessage := fmt.Sprintf("current status: %s", status)
+				if i.Info.Health != nil {
+					statusMessage = i.Info.Health.Summary
+				}
+				spinner <- statusMessage
+			})
+		close(spinner)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, info)
 	},
 }
 
@@ -466,35 +466,35 @@ var startCmd = &cobra.Command{
 		}
 		startReq.Id = args[0]
 
-		if !startNoWait {
-			spinner := cmdio.Spinner(ctx)
-			info, err := w.Warehouses.StartAndWait(ctx, startReq,
-				retries.Timeout[sql.GetWarehouseResponse](startTimeout),
-				func(i *retries.Info[sql.GetWarehouseResponse]) {
-					if i.Info == nil {
-						return
-					}
-					if i.Info.Health == nil {
-						return
-					}
-					status := i.Info.State
-					statusMessage := fmt.Sprintf("current status: %s", status)
-					if i.Info.Health != nil {
-						statusMessage = i.Info.Health.Summary
-					}
-					spinner <- statusMessage
-				})
-			close(spinner)
+		if startNoWait {
+			err = w.Warehouses.Start(ctx, startReq)
 			if err != nil {
 				return err
 			}
-			return cmdio.Render(ctx, info)
+			return nil
 		}
-		err = w.Warehouses.Start(ctx, startReq)
+		spinner := cmdio.Spinner(ctx)
+		info, err := w.Warehouses.StartAndWait(ctx, startReq,
+			retries.Timeout[sql.GetWarehouseResponse](startTimeout),
+			func(i *retries.Info[sql.GetWarehouseResponse]) {
+				if i.Info == nil {
+					return
+				}
+				if i.Info.Health == nil {
+					return
+				}
+				status := i.Info.State
+				statusMessage := fmt.Sprintf("current status: %s", status)
+				if i.Info.Health != nil {
+					statusMessage = i.Info.Health.Summary
+				}
+				spinner <- statusMessage
+			})
+		close(spinner)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, info)
 	},
 }
 
@@ -542,35 +542,35 @@ var stopCmd = &cobra.Command{
 		}
 		stopReq.Id = args[0]
 
-		if !stopNoWait {
-			spinner := cmdio.Spinner(ctx)
-			info, err := w.Warehouses.StopAndWait(ctx, stopReq,
-				retries.Timeout[sql.GetWarehouseResponse](stopTimeout),
-				func(i *retries.Info[sql.GetWarehouseResponse]) {
-					if i.Info == nil {
-						return
-					}
-					if i.Info.Health == nil {
-						return
-					}
-					status := i.Info.State
-					statusMessage := fmt.Sprintf("current status: %s", status)
-					if i.Info.Health != nil {
-						statusMessage = i.Info.Health.Summary
-					}
-					spinner <- statusMessage
-				})
-			close(spinner)
+		if stopNoWait {
+			err = w.Warehouses.Stop(ctx, stopReq)
 			if err != nil {
 				return err
 			}
-			return cmdio.Render(ctx, info)
+			return nil
 		}
-		err = w.Warehouses.Stop(ctx, stopReq)
+		spinner := cmdio.Spinner(ctx)
+		info, err := w.Warehouses.StopAndWait(ctx, stopReq,
+			retries.Timeout[sql.GetWarehouseResponse](stopTimeout),
+			func(i *retries.Info[sql.GetWarehouseResponse]) {
+				if i.Info == nil {
+					return
+				}
+				if i.Info.Health == nil {
+					return
+				}
+				status := i.Info.State
+				statusMessage := fmt.Sprintf("current status: %s", status)
+				if i.Info.Health != nil {
+					statusMessage = i.Info.Health.Summary
+				}
+				spinner <- statusMessage
+			})
+		close(spinner)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, info)
 	},
 }
 
