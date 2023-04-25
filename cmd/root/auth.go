@@ -225,13 +225,25 @@ func askForAccountProfile() (string, error) {
 }
 
 func WorkspaceClient(ctx context.Context) *databricks.WorkspaceClient {
-	return ctx.Value(&workspaceClient).(*databricks.WorkspaceClient)
+	w, ok := ctx.Value(&workspaceClient).(*databricks.WorkspaceClient)
+	if !ok {
+		panic("cannot get *databricks.WorkspaceClient. Please report it as a bug")
+	}
+	return w
 }
 
 func AccountClient(ctx context.Context) *databricks.AccountClient {
-	return ctx.Value(&accountClient).(*databricks.AccountClient)
+	a, ok := ctx.Value(&accountClient).(*databricks.AccountClient)
+	if !ok {
+		panic("cannot get *databricks.AccountClient. Please report it as a bug")
+	}
+	return a
 }
 
 func Me(ctx context.Context) *iam.User {
-	return ctx.Value(&currentUser).(*iam.User)
+	me, ok := ctx.Value(&currentUser).(*iam.User)
+	if !ok {
+		panic("cannot get current user. Please report it as a bug")
+	}
+	return me
 }
