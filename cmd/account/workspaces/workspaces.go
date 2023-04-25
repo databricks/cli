@@ -31,13 +31,13 @@ var Cmd = &cobra.Command{
 
 var createReq provisioning.CreateWorkspaceRequest
 var createJson jsonflag.JsonFlag
-var createNoWait bool
+var createSkipWait bool
 var createTimeout time.Duration
 
 func init() {
 	Cmd.AddCommand(createCmd)
 
-	createCmd.Flags().BoolVar(&createNoWait, "no-wait", createNoWait, `do not wait to reach RUNNING state`)
+	createCmd.Flags().BoolVar(&createSkipWait, "no-wait", createSkipWait, `do not wait to reach RUNNING state`)
 	createCmd.Flags().DurationVar(&createTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
 	// TODO: short flags
 	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -83,7 +83,7 @@ var createCmd = &cobra.Command{
 		}
 		createReq.WorkspaceName = args[0]
 
-		if createNoWait {
+		if createSkipWait {
 			response, err := a.Workspaces.Create(ctx, createReq)
 			if err != nil {
 				return err
@@ -261,13 +261,13 @@ var listCmd = &cobra.Command{
 
 var updateReq provisioning.UpdateWorkspaceRequest
 
-var updateNoWait bool
+var updateSkipWait bool
 var updateTimeout time.Duration
 
 func init() {
 	Cmd.AddCommand(updateCmd)
 
-	updateCmd.Flags().BoolVar(&updateNoWait, "no-wait", updateNoWait, `do not wait to reach RUNNING state`)
+	updateCmd.Flags().BoolVar(&updateSkipWait, "no-wait", updateSkipWait, `do not wait to reach RUNNING state`)
 	updateCmd.Flags().DurationVar(&updateTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
 	// TODO: short flags
 
@@ -421,7 +421,7 @@ var updateCmd = &cobra.Command{
 			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
 		}
 
-		if updateNoWait {
+		if updateSkipWait {
 			err = a.Workspaces.Update(ctx, updateReq)
 			if err != nil {
 				return err

@@ -139,13 +139,13 @@ var deleteCmd = &cobra.Command{
 
 var getReq pipelines.GetPipelineRequest
 
-var getNoWait bool
+var getSkipWait bool
 var getTimeout time.Duration
 
 func init() {
 	Cmd.AddCommand(getCmd)
 
-	getCmd.Flags().BoolVar(&getNoWait, "no-wait", getNoWait, `do not wait to reach RUNNING state`)
+	getCmd.Flags().BoolVar(&getSkipWait, "no-wait", getSkipWait, `do not wait to reach RUNNING state`)
 	getCmd.Flags().DurationVar(&getTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
 	// TODO: short flags
 
@@ -358,13 +358,13 @@ var listUpdatesCmd = &cobra.Command{
 
 var resetReq pipelines.ResetRequest
 
-var resetNoWait bool
+var resetSkipWait bool
 var resetTimeout time.Duration
 
 func init() {
 	Cmd.AddCommand(resetCmd)
 
-	resetCmd.Flags().BoolVar(&resetNoWait, "no-wait", resetNoWait, `do not wait to reach RUNNING state`)
+	resetCmd.Flags().BoolVar(&resetSkipWait, "no-wait", resetSkipWait, `do not wait to reach RUNNING state`)
 	resetCmd.Flags().DurationVar(&resetTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
 	// TODO: short flags
 
@@ -398,7 +398,7 @@ var resetCmd = &cobra.Command{
 		}
 		resetReq.PipelineId = args[0]
 
-		if resetNoWait {
+		if resetSkipWait {
 			err = w.Pipelines.Reset(ctx, resetReq)
 			if err != nil {
 				return err
@@ -470,13 +470,13 @@ var startUpdateCmd = &cobra.Command{
 
 var stopReq pipelines.StopRequest
 
-var stopNoWait bool
+var stopSkipWait bool
 var stopTimeout time.Duration
 
 func init() {
 	Cmd.AddCommand(stopCmd)
 
-	stopCmd.Flags().BoolVar(&stopNoWait, "no-wait", stopNoWait, `do not wait to reach IDLE state`)
+	stopCmd.Flags().BoolVar(&stopSkipWait, "no-wait", stopSkipWait, `do not wait to reach IDLE state`)
 	stopCmd.Flags().DurationVar(&stopTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach IDLE state`)
 	// TODO: short flags
 
@@ -510,7 +510,7 @@ var stopCmd = &cobra.Command{
 		}
 		stopReq.PipelineId = args[0]
 
-		if stopNoWait {
+		if stopSkipWait {
 			err = w.Pipelines.Stop(ctx, stopReq)
 			if err != nil {
 				return err

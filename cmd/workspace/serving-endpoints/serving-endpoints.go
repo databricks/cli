@@ -71,13 +71,13 @@ var buildLogsCmd = &cobra.Command{
 
 var createReq serving.CreateServingEndpoint
 var createJson jsonflag.JsonFlag
-var createNoWait bool
+var createSkipWait bool
 var createTimeout time.Duration
 
 func init() {
 	Cmd.AddCommand(createCmd)
 
-	createCmd.Flags().BoolVar(&createNoWait, "no-wait", createNoWait, `do not wait to reach NOT_UPDATING state`)
+	createCmd.Flags().BoolVar(&createSkipWait, "no-wait", createSkipWait, `do not wait to reach NOT_UPDATING state`)
 	createCmd.Flags().DurationVar(&createTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach NOT_UPDATING state`)
 	// TODO: short flags
 	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -104,7 +104,7 @@ var createCmd = &cobra.Command{
 			return fmt.Errorf("invalid CONFIG: %s", args[1])
 		}
 
-		if createNoWait {
+		if createSkipWait {
 			response, err := w.ServingEndpoints.Create(ctx, createReq)
 			if err != nil {
 				return err
@@ -324,13 +324,13 @@ var queryCmd = &cobra.Command{
 
 var updateConfigReq serving.EndpointCoreConfigInput
 var updateConfigJson jsonflag.JsonFlag
-var updateConfigNoWait bool
+var updateConfigSkipWait bool
 var updateConfigTimeout time.Duration
 
 func init() {
 	Cmd.AddCommand(updateConfigCmd)
 
-	updateConfigCmd.Flags().BoolVar(&updateConfigNoWait, "no-wait", updateConfigNoWait, `do not wait to reach NOT_UPDATING state`)
+	updateConfigCmd.Flags().BoolVar(&updateConfigSkipWait, "no-wait", updateConfigSkipWait, `do not wait to reach NOT_UPDATING state`)
 	updateConfigCmd.Flags().DurationVar(&updateConfigTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach NOT_UPDATING state`)
 	// TODO: short flags
 	updateConfigCmd.Flags().Var(&updateConfigJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -364,7 +364,7 @@ var updateConfigCmd = &cobra.Command{
 		}
 		updateConfigReq.Name = args[1]
 
-		if updateConfigNoWait {
+		if updateConfigSkipWait {
 			response, err := w.ServingEndpoints.UpdateConfig(ctx, updateConfigReq)
 			if err != nil {
 				return err

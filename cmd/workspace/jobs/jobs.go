@@ -90,13 +90,13 @@ var cancelAllRunsCmd = &cobra.Command{
 
 var cancelRunReq jobs.CancelRun
 
-var cancelRunNoWait bool
+var cancelRunSkipWait bool
 var cancelRunTimeout time.Duration
 
 func init() {
 	Cmd.AddCommand(cancelRunCmd)
 
-	cancelRunCmd.Flags().BoolVar(&cancelRunNoWait, "no-wait", cancelRunNoWait, `do not wait to reach TERMINATED or SKIPPED state`)
+	cancelRunCmd.Flags().BoolVar(&cancelRunSkipWait, "no-wait", cancelRunSkipWait, `do not wait to reach TERMINATED or SKIPPED state`)
 	cancelRunCmd.Flags().DurationVar(&cancelRunTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach TERMINATED or SKIPPED state`)
 	// TODO: short flags
 
@@ -134,7 +134,7 @@ var cancelRunCmd = &cobra.Command{
 			return fmt.Errorf("invalid RUN_ID: %s", args[0])
 		}
 
-		if cancelRunNoWait {
+		if cancelRunSkipWait {
 			err = w.Jobs.CancelRun(ctx, cancelRunReq)
 			if err != nil {
 				return err
@@ -420,13 +420,13 @@ var getCmd = &cobra.Command{
 
 var getRunReq jobs.GetRunRequest
 
-var getRunNoWait bool
+var getRunSkipWait bool
 var getRunTimeout time.Duration
 
 func init() {
 	Cmd.AddCommand(getRunCmd)
 
-	getRunCmd.Flags().BoolVar(&getRunNoWait, "no-wait", getRunNoWait, `do not wait to reach TERMINATED or SKIPPED state`)
+	getRunCmd.Flags().BoolVar(&getRunSkipWait, "no-wait", getRunSkipWait, `do not wait to reach TERMINATED or SKIPPED state`)
 	getRunCmd.Flags().DurationVar(&getRunTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach TERMINATED or SKIPPED state`)
 	// TODO: short flags
 
@@ -614,13 +614,13 @@ var listRunsCmd = &cobra.Command{
 
 var repairRunReq jobs.RepairRun
 var repairRunJson jsonflag.JsonFlag
-var repairRunNoWait bool
+var repairRunSkipWait bool
 var repairRunTimeout time.Duration
 
 func init() {
 	Cmd.AddCommand(repairRunCmd)
 
-	repairRunCmd.Flags().BoolVar(&repairRunNoWait, "no-wait", repairRunNoWait, `do not wait to reach TERMINATED or SKIPPED state`)
+	repairRunCmd.Flags().BoolVar(&repairRunSkipWait, "no-wait", repairRunSkipWait, `do not wait to reach TERMINATED or SKIPPED state`)
 	repairRunCmd.Flags().DurationVar(&repairRunTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach TERMINATED or SKIPPED state`)
 	// TODO: short flags
 	repairRunCmd.Flags().Var(&repairRunJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -662,7 +662,7 @@ var repairRunCmd = &cobra.Command{
 			return fmt.Errorf("invalid RUN_ID: %s", args[0])
 		}
 
-		if repairRunNoWait {
+		if repairRunSkipWait {
 			response, err := w.Jobs.RepairRun(ctx, repairRunReq)
 			if err != nil {
 				return err
@@ -744,13 +744,13 @@ var resetCmd = &cobra.Command{
 
 var runNowReq jobs.RunNow
 var runNowJson jsonflag.JsonFlag
-var runNowNoWait bool
+var runNowSkipWait bool
 var runNowTimeout time.Duration
 
 func init() {
 	Cmd.AddCommand(runNowCmd)
 
-	runNowCmd.Flags().BoolVar(&runNowNoWait, "no-wait", runNowNoWait, `do not wait to reach TERMINATED or SKIPPED state`)
+	runNowCmd.Flags().BoolVar(&runNowSkipWait, "no-wait", runNowSkipWait, `do not wait to reach TERMINATED or SKIPPED state`)
 	runNowCmd.Flags().DurationVar(&runNowTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach TERMINATED or SKIPPED state`)
 	// TODO: short flags
 	runNowCmd.Flags().Var(&runNowJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -802,7 +802,7 @@ var runNowCmd = &cobra.Command{
 			return fmt.Errorf("invalid JOB_ID: %s", args[0])
 		}
 
-		if runNowNoWait {
+		if runNowSkipWait {
 			response, err := w.Jobs.RunNow(ctx, runNowReq)
 			if err != nil {
 				return err
@@ -838,13 +838,13 @@ var runNowCmd = &cobra.Command{
 
 var submitReq jobs.SubmitRun
 var submitJson jsonflag.JsonFlag
-var submitNoWait bool
+var submitSkipWait bool
 var submitTimeout time.Duration
 
 func init() {
 	Cmd.AddCommand(submitCmd)
 
-	submitCmd.Flags().BoolVar(&submitNoWait, "no-wait", submitNoWait, `do not wait to reach TERMINATED or SKIPPED state`)
+	submitCmd.Flags().BoolVar(&submitSkipWait, "no-wait", submitSkipWait, `do not wait to reach TERMINATED or SKIPPED state`)
 	submitCmd.Flags().DurationVar(&submitTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach TERMINATED or SKIPPED state`)
 	// TODO: short flags
 	submitCmd.Flags().Var(&submitJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -879,7 +879,7 @@ var submitCmd = &cobra.Command{
 			return err
 		}
 
-		if submitNoWait {
+		if submitSkipWait {
 			response, err := w.Jobs.Submit(ctx, submitReq)
 			if err != nil {
 				return err

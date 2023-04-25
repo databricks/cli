@@ -32,13 +32,13 @@ var Cmd = &cobra.Command{
 {{if .Request}}var {{.CamelName}}Req {{.Service.Package.Name}}.{{.Request.PascalName}}
 {{if not .Request.IsOnlyPrimitiveFields}}var {{.CamelName}}Json jsonflag.JsonFlag{{end}}
 {{- end}}
-{{if .Wait}}var {{.CamelName}}NoWait bool
+{{if .Wait}}var {{.CamelName}}SkipWait bool
 var {{.CamelName}}Timeout time.Duration{{end}}
 
 func init() {
     Cmd.AddCommand({{.CamelName}}Cmd)
 	{{if .Wait}}
-	{{.CamelName}}Cmd.Flags().BoolVar(&{{.CamelName}}NoWait, "no-wait", {{.CamelName}}NoWait, `do not wait to reach {{range $i, $e := .Wait.Success}}{{if $i}} or {{end}}{{.Content}}{{end}} state`)
+	{{.CamelName}}Cmd.Flags().BoolVar(&{{.CamelName}}SkipWait, "no-wait", {{.CamelName}}SkipWait, `do not wait to reach {{range $i, $e := .Wait.Success}}{{if $i}} or {{end}}{{.Content}}{{end}} state`)
 	{{.CamelName}}Cmd.Flags().DurationVar(&{{.CamelName}}Timeout, "timeout", {{.Wait.Timeout}}*time.Minute, `maximum amount of time to reach {{range $i, $e := .Wait.Success}}{{if $i}} or {{end}}{{.Content}}{{end}} state`)
 	{{end -}}
     {{if .Request}}// TODO: short flags
@@ -106,7 +106,7 @@ var {{.CamelName}}Cmd = &cobra.Command{
 				{{- end -}}{{end}}
 		{{end}}
 		{{if $wait -}}
-		if {{.CamelName}}NoWait {
+		if {{.CamelName}}SkipWait {
 			{{template "method-call" .}}
 		}
 		spinner := cmdio.Spinner(ctx)

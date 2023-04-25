@@ -85,13 +85,13 @@ var changeOwnerCmd = &cobra.Command{
 
 var createReq compute.CreateCluster
 var createJson jsonflag.JsonFlag
-var createNoWait bool
+var createSkipWait bool
 var createTimeout time.Duration
 
 func init() {
 	Cmd.AddCommand(createCmd)
 
-	createCmd.Flags().BoolVar(&createNoWait, "no-wait", createNoWait, `do not wait to reach RUNNING state`)
+	createCmd.Flags().BoolVar(&createSkipWait, "no-wait", createSkipWait, `do not wait to reach RUNNING state`)
 	createCmd.Flags().DurationVar(&createTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
 	// TODO: short flags
 	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -152,7 +152,7 @@ var createCmd = &cobra.Command{
 		}
 		createReq.SparkVersion = args[0]
 
-		if createNoWait {
+		if createSkipWait {
 			response, err := w.Clusters.Create(ctx, createReq)
 			if err != nil {
 				return err
@@ -181,13 +181,13 @@ var createCmd = &cobra.Command{
 
 var deleteReq compute.DeleteCluster
 
-var deleteNoWait bool
+var deleteSkipWait bool
 var deleteTimeout time.Duration
 
 func init() {
 	Cmd.AddCommand(deleteCmd)
 
-	deleteCmd.Flags().BoolVar(&deleteNoWait, "no-wait", deleteNoWait, `do not wait to reach TERMINATED state`)
+	deleteCmd.Flags().BoolVar(&deleteSkipWait, "no-wait", deleteSkipWait, `do not wait to reach TERMINATED state`)
 	deleteCmd.Flags().DurationVar(&deleteTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach TERMINATED state`)
 	// TODO: short flags
 
@@ -224,7 +224,7 @@ var deleteCmd = &cobra.Command{
 		}
 		deleteReq.ClusterId = args[0]
 
-		if deleteNoWait {
+		if deleteSkipWait {
 			err = w.Clusters.Delete(ctx, deleteReq)
 			if err != nil {
 				return err
@@ -253,13 +253,13 @@ var deleteCmd = &cobra.Command{
 
 var editReq compute.EditCluster
 var editJson jsonflag.JsonFlag
-var editNoWait bool
+var editSkipWait bool
 var editTimeout time.Duration
 
 func init() {
 	Cmd.AddCommand(editCmd)
 
-	editCmd.Flags().BoolVar(&editNoWait, "no-wait", editNoWait, `do not wait to reach RUNNING state`)
+	editCmd.Flags().BoolVar(&editSkipWait, "no-wait", editSkipWait, `do not wait to reach RUNNING state`)
 	editCmd.Flags().DurationVar(&editTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
 	// TODO: short flags
 	editCmd.Flags().Var(&editJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -320,7 +320,7 @@ var editCmd = &cobra.Command{
 		editReq.ClusterId = args[0]
 		editReq.SparkVersion = args[1]
 
-		if editNoWait {
+		if editSkipWait {
 			err = w.Clusters.Edit(ctx, editReq)
 			if err != nil {
 				return err
@@ -396,13 +396,13 @@ var eventsCmd = &cobra.Command{
 
 var getReq compute.GetClusterRequest
 
-var getNoWait bool
+var getSkipWait bool
 var getTimeout time.Duration
 
 func init() {
 	Cmd.AddCommand(getCmd)
 
-	getCmd.Flags().BoolVar(&getNoWait, "no-wait", getNoWait, `do not wait to reach RUNNING state`)
+	getCmd.Flags().BoolVar(&getSkipWait, "no-wait", getSkipWait, `do not wait to reach RUNNING state`)
 	getCmd.Flags().DurationVar(&getTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
 	// TODO: short flags
 
@@ -646,13 +646,13 @@ var pinCmd = &cobra.Command{
 
 var resizeReq compute.ResizeCluster
 var resizeJson jsonflag.JsonFlag
-var resizeNoWait bool
+var resizeSkipWait bool
 var resizeTimeout time.Duration
 
 func init() {
 	Cmd.AddCommand(resizeCmd)
 
-	resizeCmd.Flags().BoolVar(&resizeNoWait, "no-wait", resizeNoWait, `do not wait to reach RUNNING state`)
+	resizeCmd.Flags().BoolVar(&resizeSkipWait, "no-wait", resizeSkipWait, `do not wait to reach RUNNING state`)
 	resizeCmd.Flags().DurationVar(&resizeTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
 	// TODO: short flags
 	resizeCmd.Flags().Var(&resizeJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -681,7 +681,7 @@ var resizeCmd = &cobra.Command{
 		}
 		resizeReq.ClusterId = args[0]
 
-		if resizeNoWait {
+		if resizeSkipWait {
 			err = w.Clusters.Resize(ctx, resizeReq)
 			if err != nil {
 				return err
@@ -710,13 +710,13 @@ var resizeCmd = &cobra.Command{
 
 var restartReq compute.RestartCluster
 
-var restartNoWait bool
+var restartSkipWait bool
 var restartTimeout time.Duration
 
 func init() {
 	Cmd.AddCommand(restartCmd)
 
-	restartCmd.Flags().BoolVar(&restartNoWait, "no-wait", restartNoWait, `do not wait to reach RUNNING state`)
+	restartCmd.Flags().BoolVar(&restartSkipWait, "no-wait", restartSkipWait, `do not wait to reach RUNNING state`)
 	restartCmd.Flags().DurationVar(&restartTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
 	// TODO: short flags
 
@@ -753,7 +753,7 @@ var restartCmd = &cobra.Command{
 		}
 		restartReq.ClusterId = args[0]
 
-		if restartNoWait {
+		if restartSkipWait {
 			err = w.Clusters.Restart(ctx, restartReq)
 			if err != nil {
 				return err
@@ -810,13 +810,13 @@ var sparkVersionsCmd = &cobra.Command{
 
 var startReq compute.StartCluster
 
-var startNoWait bool
+var startSkipWait bool
 var startTimeout time.Duration
 
 func init() {
 	Cmd.AddCommand(startCmd)
 
-	startCmd.Flags().BoolVar(&startNoWait, "no-wait", startNoWait, `do not wait to reach RUNNING state`)
+	startCmd.Flags().BoolVar(&startSkipWait, "no-wait", startSkipWait, `do not wait to reach RUNNING state`)
 	startCmd.Flags().DurationVar(&startTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
 	// TODO: short flags
 
@@ -857,7 +857,7 @@ var startCmd = &cobra.Command{
 		}
 		startReq.ClusterId = args[0]
 
-		if startNoWait {
+		if startSkipWait {
 			err = w.Clusters.Start(ctx, startReq)
 			if err != nil {
 				return err

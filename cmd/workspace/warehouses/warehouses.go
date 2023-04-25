@@ -26,13 +26,13 @@ var Cmd = &cobra.Command{
 
 var createReq sql.CreateWarehouseRequest
 var createJson jsonflag.JsonFlag
-var createNoWait bool
+var createSkipWait bool
 var createTimeout time.Duration
 
 func init() {
 	Cmd.AddCommand(createCmd)
 
-	createCmd.Flags().BoolVar(&createNoWait, "no-wait", createNoWait, `do not wait to reach RUNNING state`)
+	createCmd.Flags().BoolVar(&createSkipWait, "no-wait", createSkipWait, `do not wait to reach RUNNING state`)
 	createCmd.Flags().DurationVar(&createTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
 	// TODO: short flags
 	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -70,7 +70,7 @@ var createCmd = &cobra.Command{
 			return err
 		}
 
-		if createNoWait {
+		if createSkipWait {
 			response, err := w.Warehouses.Create(ctx, createReq)
 			if err != nil {
 				return err
@@ -106,13 +106,13 @@ var createCmd = &cobra.Command{
 
 var deleteReq sql.DeleteWarehouseRequest
 
-var deleteNoWait bool
+var deleteSkipWait bool
 var deleteTimeout time.Duration
 
 func init() {
 	Cmd.AddCommand(deleteCmd)
 
-	deleteCmd.Flags().BoolVar(&deleteNoWait, "no-wait", deleteNoWait, `do not wait to reach DELETED state`)
+	deleteCmd.Flags().BoolVar(&deleteSkipWait, "no-wait", deleteSkipWait, `do not wait to reach DELETED state`)
 	deleteCmd.Flags().DurationVar(&deleteTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach DELETED state`)
 	// TODO: short flags
 
@@ -146,7 +146,7 @@ var deleteCmd = &cobra.Command{
 		}
 		deleteReq.Id = args[0]
 
-		if deleteNoWait {
+		if deleteSkipWait {
 			err = w.Warehouses.Delete(ctx, deleteReq)
 			if err != nil {
 				return err
@@ -182,13 +182,13 @@ var deleteCmd = &cobra.Command{
 
 var editReq sql.EditWarehouseRequest
 var editJson jsonflag.JsonFlag
-var editNoWait bool
+var editSkipWait bool
 var editTimeout time.Duration
 
 func init() {
 	Cmd.AddCommand(editCmd)
 
-	editCmd.Flags().BoolVar(&editNoWait, "no-wait", editNoWait, `do not wait to reach RUNNING state`)
+	editCmd.Flags().BoolVar(&editSkipWait, "no-wait", editSkipWait, `do not wait to reach RUNNING state`)
 	editCmd.Flags().DurationVar(&editTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
 	// TODO: short flags
 	editCmd.Flags().Var(&editJson, "json", `either inline JSON string or @path/to/file.json with request body`)
@@ -227,7 +227,7 @@ var editCmd = &cobra.Command{
 		}
 		editReq.Id = args[0]
 
-		if editNoWait {
+		if editSkipWait {
 			err = w.Warehouses.Edit(ctx, editReq)
 			if err != nil {
 				return err
@@ -263,13 +263,13 @@ var editCmd = &cobra.Command{
 
 var getReq sql.GetWarehouseRequest
 
-var getNoWait bool
+var getSkipWait bool
 var getTimeout time.Duration
 
 func init() {
 	Cmd.AddCommand(getCmd)
 
-	getCmd.Flags().BoolVar(&getNoWait, "no-wait", getNoWait, `do not wait to reach RUNNING state`)
+	getCmd.Flags().BoolVar(&getSkipWait, "no-wait", getSkipWait, `do not wait to reach RUNNING state`)
 	getCmd.Flags().DurationVar(&getTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
 	// TODO: short flags
 
@@ -426,13 +426,13 @@ var setWorkspaceWarehouseConfigCmd = &cobra.Command{
 
 var startReq sql.StartRequest
 
-var startNoWait bool
+var startSkipWait bool
 var startTimeout time.Duration
 
 func init() {
 	Cmd.AddCommand(startCmd)
 
-	startCmd.Flags().BoolVar(&startNoWait, "no-wait", startNoWait, `do not wait to reach RUNNING state`)
+	startCmd.Flags().BoolVar(&startSkipWait, "no-wait", startSkipWait, `do not wait to reach RUNNING state`)
 	startCmd.Flags().DurationVar(&startTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
 	// TODO: short flags
 
@@ -466,7 +466,7 @@ var startCmd = &cobra.Command{
 		}
 		startReq.Id = args[0]
 
-		if startNoWait {
+		if startSkipWait {
 			err = w.Warehouses.Start(ctx, startReq)
 			if err != nil {
 				return err
@@ -502,13 +502,13 @@ var startCmd = &cobra.Command{
 
 var stopReq sql.StopRequest
 
-var stopNoWait bool
+var stopSkipWait bool
 var stopTimeout time.Duration
 
 func init() {
 	Cmd.AddCommand(stopCmd)
 
-	stopCmd.Flags().BoolVar(&stopNoWait, "no-wait", stopNoWait, `do not wait to reach STOPPED state`)
+	stopCmd.Flags().BoolVar(&stopSkipWait, "no-wait", stopSkipWait, `do not wait to reach STOPPED state`)
 	stopCmd.Flags().DurationVar(&stopTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach STOPPED state`)
 	// TODO: short flags
 
@@ -542,7 +542,7 @@ var stopCmd = &cobra.Command{
 		}
 		stopReq.Id = args[0]
 
-		if stopNoWait {
+		if stopSkipWait {
 			err = w.Warehouses.Stop(ctx, stopReq)
 			if err != nil {
 				return err
