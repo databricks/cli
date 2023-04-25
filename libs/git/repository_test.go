@@ -88,7 +88,8 @@ func (testRepo *testRepository) checkoutBranch(name string) {
 
 // add remote origin url to test repo
 func (testRepo *testRepository) addOriginUrl(url string) {
-	f, err := os.OpenFile(filepath.Join(testRepo.r.rootPath, ".git", "config"), os.O_WRONLY|os.O_TRUNC, os.ModePerm)
+	// open config in append mode
+	f, err := os.OpenFile(filepath.Join(testRepo.r.rootPath, ".git", "config"), os.O_WRONLY|os.O_APPEND, os.ModePerm)
 	require.NoError(testRepo.t, err)
 	defer f.Close()
 
