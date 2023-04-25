@@ -63,7 +63,7 @@ func (c *cmdIO) Render(v any) error {
 		return renderJson(c.out, v)
 	case flags.OutputText:
 		if c.template != "" {
-			return newFunction(c.out, c.template, v)
+			return renderTemplate(c.out, c.template, v)
 		}
 		return renderJson(c.out, v)
 	default:

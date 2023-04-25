@@ -11,6 +11,9 @@ import (
 	"github.com/nwidger/jsoncolor"
 )
 
+// Heredoc is the equivalent of compute.TrimLeadingWhitespace
+// (command-execution API helper from SDK), except it's more
+// friendly to non-printable characters.
 func Heredoc(tmpl string) (trimmed string) {
 	lines := strings.Split(tmpl, "\n")
 	leadingWhitespace := 1<<31 - 1
@@ -49,7 +52,7 @@ func renderJson(w io.Writer, v any) error {
 	return err
 }
 
-func newFunction(w io.Writer, tmpl string, v any) error {
+func renderTemplate(w io.Writer, tmpl string, v any) error {
 	tw := tabwriter.NewWriter(w, 0, 4, 2, ' ', 0)
 	t, err := template.New("command").Funcs(template.FuncMap{
 		"black":   color.BlackString,
@@ -103,10 +106,6 @@ func fancyJSON(v any) ([]byte, error) {
 	f.NullColor = color.New(color.FgMagenta)
 	f.FieldColor = color.New(color.FgWhite, color.Bold)
 	f.FieldQuoteColor = color.New(color.FgWhite)
-	// KeyColor:        color.New(color.FgWhite),
-	// StringColor:     color.New(color.FgGreen),
-	// BoolColor:       color.New(),
-	// NullColor:       color.New(),
 
 	return jsoncolor.MarshalIndentWithFormatter(v, "", "  ", f)
 }
