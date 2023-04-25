@@ -1,6 +1,6 @@
 // Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
 
-package workspace
+package cmd
 
 import (
 	"github.com/databricks/bricks/cmd/root"
@@ -53,6 +53,7 @@ import (
 )
 
 func init() {
+
 	root.RootCmd.AddCommand(alerts.Cmd)
 	root.RootCmd.AddCommand(catalogs.Cmd)
 	root.RootCmd.AddCommand(cluster_policies.Cmd)

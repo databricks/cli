@@ -1,7 +1,6 @@
 package main
 
 import (
-	_ "github.com/databricks/bricks/cmd/workspace"
 	_ "github.com/databricks/bricks/cmd/account"
 	_ "github.com/databricks/bricks/cmd/api"
 	_ "github.com/databricks/bricks/cmd/auth"
@@ -12,6 +11,7 @@ import (
 	"github.com/databricks/bricks/cmd/root"
 	_ "github.com/databricks/bricks/cmd/sync"
 	_ "github.com/databricks/bricks/cmd/version"
+	_ "github.com/databricks/bricks/cmd/workspace"
 )
 
 func main() {

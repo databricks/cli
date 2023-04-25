@@ -7,7 +7,7 @@ package cmd
 import (
 	"github.com/databricks/bricks/cmd/root"
     {{range .Services}}{{if not .IsAccounts}}{{if not (in $excludes .KebabName) }}
-	{{.SnakeName}} "github.com/databricks/bricks/cmd/{{.KebabName}}"{{end}}{{end}}{{end}}
+	{{.SnakeName}} "github.com/databricks/bricks/cmd/workspace/{{.KebabName}}"{{end}}{{end}}{{end}}
 )
 
 func init() {

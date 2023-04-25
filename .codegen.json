@@ -4,7 +4,7 @@
         ".codegen/service.go.tmpl": "cmd/{{if .IsAccounts}}account{{else}}workspace{{end}}/{{(.TrimPrefix \"account\").KebabName}}/{{(.TrimPrefix \"account\").KebabName}}.go"
     },
     "batch": {
-        ".codegen/cmd.go.tmpl": "cmd/workspace/cmd.go",
-        ".codegen/account-cmd.go.tmpl": "cmd/account/cmd.go"
+        ".codegen/cmds-workspace.go.tmpl": "cmd/workspace/cmd.go",
+        ".codegen/cmds-account.go.tmpl": "cmd/account/cmd.go"
     }
 }
