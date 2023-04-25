@@ -1,0 +1,7 @@
+variables:
+  a: foo
+  b: bar
+
+
+bundle:
+  name: "name: ${variables.a} ${variables.b} ${variables.c}"
