@@ -99,9 +99,8 @@ func (testRepo *testRepository) addOriginUrl(url string) {
 	require.NoError(testRepo.t, err)
 
 	// reload config to reflect the remote url
-	config, err := testRepo.r.loadConfig()
+	err = testRepo.r.loadConfig()
 	require.NoError(testRepo.t, err)
-	testRepo.r.config = config
 }
 
 func (testRepo *testRepository) Ignore(relPath string) bool {

@@ -101,16 +101,17 @@ func (r *Repository) OriginUrl() (string, error) {
 }
 
 // loadConfig loads and combines user specific and repository specific configuration files.
-func (r *Repository) loadConfig() (*config, error) {
+func (r *Repository) loadConfig() error {
 	config, err := globalGitConfig()
 	if err != nil {
-		return nil, fmt.Errorf("unable to load user specific gitconfig: %w", err)
+		return fmt.Errorf("unable to load user specific gitconfig: %w", err)
 	}
 	err = config.loadFile(filepath.Join(r.rootPath, ".git/config"))
 	if err != nil {
-		return nil, fmt.Errorf("unable to load repository specific gitconfig: %w", err)
+		return fmt.Errorf("unable to load repository specific gitconfig: %w", err)
 	}
-	return config, nil
+	r.config = config
+	return nil
 }
 
 // newIgnoreFile constructs a new [ignoreRules] implementation backed by
@@ -202,14 +203,13 @@ func NewRepository(path string) (*Repository, error) {
 		ignore:   make(map[string][]ignoreRules),
 	}
 
-	config, err := repo.loadConfig()
+	err = repo.loadConfig()
 	if err != nil {
 		// Error doesn't need to be rewrapped.
 		return nil, err
 	}
-	repo.config = config
 
-	coreExcludesPath, err := config.coreExcludesFile()
+	coreExcludesPath, err := repo.config.coreExcludesFile()
 	if err != nil {
 		return nil, fmt.Errorf("unable to access core excludes file: %w", err)
 	}
