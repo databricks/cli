@@ -189,7 +189,7 @@ func TestRepositoryGitConfigForSshUrl(t *testing.T) {
 
 	repo.assertBranch("main")
 	repo.assertCommit("")
-	repo.assertOriginUrl("https://foo.com/databricks/bar")
+	repo.assertOriginUrl("git@foo.com:databricks/bar.git")
 }
 
 func TestRepositoryGitConfigWhenNotARepo(t *testing.T) {

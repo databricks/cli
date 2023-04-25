@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/databricks/bricks/folders"
-	giturls "github.com/whilp/git-urls"
 )
 
 const gitIgnoreFileName = ".gitignore"
@@ -93,26 +92,12 @@ func (r *Repository) LatestCommit() (string, error) {
 }
 
 func (r *Repository) OriginUrl() (string, error) {
-	rawUrl, ok := r.config.variables["remote.origin.url"]
+	url, ok := r.config.variables["remote.origin.url"]
 	if !ok {
 		// return empty string if origin url is not defined
 		return "", nil
 	}
-	originUrl, err := giturls.Parse(rawUrl)
-	if err != nil {
-		return "", err
-	}
-	// if current repo is checked out with a SSH key
-	if originUrl.Scheme != "https" {
-		originUrl.Scheme = "https"
-	}
-	// `git@` is not required for HTTPS
-	if originUrl.User != nil {
-		originUrl.User = nil
-	}
-	// Remove `.git` suffix, if present.
-	originUrl.Path = strings.TrimSuffix(originUrl.Path, ".git")
-	return originUrl.String(), nil
+	return url, nil
 }
 
 // loadConfig loads and combines user specific and repository specific configuration files.
