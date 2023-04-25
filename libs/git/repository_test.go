@@ -40,7 +40,7 @@ func newTestRepository(t *testing.T) *testRepository {
 	require.NoError(t, err)
 	defer f2.Close()
 
-	_, err = f2.WriteString(`ref: refs/heads/master`)
+	_, err = f2.WriteString(`ref: refs/heads/main`)
 	require.NoError(t, err)
 
 	repo, err := NewRepository(tmp)
@@ -149,7 +149,7 @@ func TestRepository(t *testing.T) {
 
 func TestRepositoryGitConfigForEmptyRepo(t *testing.T) {
 	repo := newTestRepository(t)
-	repo.assertBranch("master")
+	repo.assertBranch("main")
 	repo.assertCommit("")
 	repo.assertOriginUrl("")
 }
@@ -158,7 +158,7 @@ func TestRepositoryGitConfig(t *testing.T) {
 	repo := newTestRepository(t)
 	repo.addBranch("foo", strings.Repeat("1", 40))
 	repo.addBranch("bar", strings.Repeat("2", 40))
-	repo.assertBranch("master")
+	repo.assertBranch("main")
 	repo.assertCommit("")
 	repo.assertOriginUrl("")
 
@@ -187,7 +187,7 @@ func TestRepositoryGitConfigForSshUrl(t *testing.T) {
 	repo := newTestRepository(t)
 	repo.addOriginUrl(`git@foo.com:databricks/bar.git`)
 
-	repo.assertBranch("master")
+	repo.assertBranch("main")
 	repo.assertCommit("")
 	repo.assertOriginUrl("https://foo.com/databricks/bar")
 }

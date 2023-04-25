@@ -40,12 +40,12 @@ func (m *loadGitConfig) Apply(_ context.Context, b *bundle.Bundle) ([]bundle.Mut
 		b.Config.Bundle.Git.Commit = commit
 	}
 	// load origin url if undefined
-	if b.Config.Bundle.Git.RemoteUrl == "" {
+	if b.Config.Bundle.Git.RemoteURL == "" {
 		remoteUrl, err := repo.OriginUrl()
 		if err != nil {
 			return nil, err
 		}
-		b.Config.Bundle.Git.RemoteUrl = remoteUrl
+		b.Config.Bundle.Git.RemoteURL = remoteUrl
 	}
 	return nil, nil
 }

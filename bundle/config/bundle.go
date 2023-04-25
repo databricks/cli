@@ -25,7 +25,7 @@ type Bundle struct {
 	// Lock configures locking behavior on deployment.
 	Lock Lock `json:"lock" bundle:"readonly"`
 
-	// Contains git config information like current commit, current branch and
+	// Contains Git information like current commit, current branch and
 	// origin url. Automatically loaded by reading .git directory if not specified
 	Git Git `json:"git"`
 }
