@@ -122,8 +122,7 @@ func (testRepo *testRepository) assertCommit(expected string) {
 }
 
 func (testRepo *testRepository) assertOriginUrl(expected string) {
-	originUrl, err := testRepo.r.OriginUrl()
-	assert.NoError(testRepo.t, err)
+	originUrl := testRepo.r.OriginUrl()
 	assert.Equal(testRepo.t, expected, originUrl)
 }
 
@@ -204,7 +203,6 @@ func TestRepositoryGitConfigWhenNotARepo(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "", commit)
 
-	originUrl, err := repo.OriginUrl()
-	assert.NoError(t, err)
+	originUrl := repo.OriginUrl()
 	assert.Equal(t, "", originUrl)
 }

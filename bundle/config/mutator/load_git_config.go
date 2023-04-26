@@ -8,17 +8,17 @@ import (
 	"github.com/databricks/bricks/libs/log"
 )
 
-type loadGitConfig struct{}
+type loadGitDetails struct{}
 
-func LoadGitConfig() *loadGitConfig {
-	return &loadGitConfig{}
+func LoadGitDetails() *loadGitDetails {
+	return &loadGitDetails{}
 }
 
-func (m *loadGitConfig) Name() string {
-	return "LoadGitConfig"
+func (m *loadGitDetails) Name() string {
+	return "LoadGitDetails"
 }
 
-func (m *loadGitConfig) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator, error) {
+func (m *loadGitDetails) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator, error) {
 	// Load relevant git repository
 	repo, err := git.NewRepository(b.Config.Path)
 	if err != nil {
@@ -44,12 +44,8 @@ func (m *loadGitConfig) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.M
 	}
 	// load origin url if undefined
 	if b.Config.Bundle.Git.RemoteURL == "" {
-		remoteUrl, err := repo.OriginUrl()
-		if err != nil {
-			log.Warnf(ctx, "failed to load remote url: %s", err)
-		} else {
-			b.Config.Bundle.Git.RemoteURL = remoteUrl
-		}
+		remoteUrl := repo.OriginUrl()
+		b.Config.Bundle.Git.RemoteURL = remoteUrl
 	}
 	return nil, nil
 }

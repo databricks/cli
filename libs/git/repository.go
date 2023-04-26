@@ -31,6 +31,10 @@ type Repository struct {
 	// OS-specific path separator. This matches Git convention.
 	ignore map[string][]ignoreRules
 
+	// config contains a merged view of the user specific and the repository
+	// specific git configuration loaded from .git/config files.
+	//
+	// Also see: https://git-scm.com/docs/git-config.
 	config *config
 }
 
@@ -41,63 +45,59 @@ func (r *Repository) Root() string {
 
 func (r *Repository) CurrentBranch() (string, error) {
 	// load .git/HEAD
-	head, err := LoadHead(filepath.Join(r.rootPath, ".git", "HEAD"))
+	ref, err := LoadReferenceFile(filepath.Join(r.rootPath, ".git", "HEAD"))
 	if err != nil {
 		return "", err
 	}
-	if head == nil {
+	if ref == nil {
 		return "", nil
 	}
 
 	// case: when a git object like commit,tag or remote branch is checked out
-	if head.Type == HeadTypeSHA1 {
+	if ref.Type == ReferenceTypeSHA1 {
 		return "", nil
 	}
-	return head.CurrentBranch()
+	return ref.CurrentBranch()
 }
 
 func (r *Repository) LatestCommit() (string, error) {
 	// load .git/HEAD
-	head, err := LoadHead(filepath.Join(r.rootPath, ".git", "HEAD"))
+	ref, err := LoadReferenceFile(filepath.Join(r.rootPath, ".git", "HEAD"))
 	if err != nil {
 		return "", err
 	}
-	if head == nil {
+	if ref == nil {
 		// return empty string when head file does not exist
 		return "", nil
 	}
 
 	// case: when a git object like commit,tag or remote branch is checked out
-	if head.Type == HeadTypeSHA1 {
-		return head.Content, nil
+	if ref.Type == ReferenceTypeSHA1 {
+		return ref.Content, nil
 	}
 
 	// read reference from .git/HEAD
-	refPath, err := head.ReferencePath()
+	branchHeadPath, err := ref.ReferencePath()
 	if err != nil {
 		return "", err
 	}
-	refHead, err := LoadHead(filepath.Join(r.rootPath, ".git", refPath))
+	branchHeadRef, err := LoadReferenceFile(filepath.Join(r.rootPath, ".git", branchHeadPath))
 	if err != nil {
 		return "", err
 	}
-	if refHead == nil {
+	if branchHeadRef == nil {
 		// return empty string when head file does not exist
 		return "", nil
 	}
-	if refHead.Type != HeadTypeSHA1 {
-		return "", fmt.Errorf("git reference at %s was expected to be a SHA-1 commit id", refPath)
+	if branchHeadRef.Type != ReferenceTypeSHA1 {
+		return "", fmt.Errorf("git reference at %s was expected to be a SHA-1 commit id", branchHeadPath)
 	}
-	return refHead.Content, nil
+	return branchHeadRef.Content, nil
 }
 
-func (r *Repository) OriginUrl() (string, error) {
-	url, ok := r.config.variables["remote.origin.url"]
-	if !ok {
-		// return empty string if origin url is not defined
-		return "", nil
-	}
-	return url, nil
+// return origin url if it's defined, otherwise an empty string
+func (r *Repository) OriginUrl() string {
+	return r.config.variables["remote.origin.url"]
 }
 
 // loadConfig loads and combines user specific and repository specific configuration files.

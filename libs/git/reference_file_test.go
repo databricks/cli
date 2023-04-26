@@ -11,8 +11,8 @@ import (
 )
 
 func TestHeadReferencePathForObjectID(t *testing.T) {
-	head := &Head{
-		Type:    HeadTypeSHA1,
+	head := &Reference{
+		Type:    ReferenceTypeSHA1,
 		Content: strings.Repeat("a", 40),
 	}
 	_, err := head.ReferencePath()
@@ -20,8 +20,8 @@ func TestHeadReferencePathForObjectID(t *testing.T) {
 }
 
 func TestHeadCurrentBranchForObjectID(t *testing.T) {
-	head := &Head{
-		Type:    HeadTypeSHA1,
+	head := &Reference{
+		Type:    ReferenceTypeSHA1,
 		Content: strings.Repeat("a", 40),
 	}
 	_, err := head.CurrentBranch()
@@ -29,8 +29,8 @@ func TestHeadCurrentBranchForObjectID(t *testing.T) {
 }
 
 func TestHeadCurrentBranchForReference(t *testing.T) {
-	head := &Head{
-		Type:    HeadTypeReference,
+	head := &Reference{
+		Type:    ReferenceTypePointer,
 		Content: `ref: refs/heads/my-branch`,
 	}
 	branch, err := head.CurrentBranch()
@@ -39,8 +39,8 @@ func TestHeadCurrentBranchForReference(t *testing.T) {
 }
 
 func TestHeadReferencePathForReference(t *testing.T) {
-	head := &Head{
-		Type:    HeadTypeReference,
+	head := &Reference{
+		Type:    ReferenceTypePointer,
 		Content: `ref: refs/heads/my-branch`,
 	}
 	path, err := head.ReferencePath()
@@ -55,9 +55,9 @@ func TestHeadLoadingForObjectID(t *testing.T) {
 	defer f.Close()
 	f.WriteString(strings.Repeat("e", 40) + "\r\n")
 
-	head, err := LoadHead(filepath.Join(tmp, "HEAD"))
+	head, err := LoadReferenceFile(filepath.Join(tmp, "HEAD"))
 	assert.NoError(t, err)
-	assert.Equal(t, HeadTypeSHA1, head.Type)
+	assert.Equal(t, ReferenceTypeSHA1, head.Type)
 	assert.Equal(t, strings.Repeat("e", 40), head.Content)
 }
 
@@ -68,9 +68,9 @@ func TestHeadLoadingForReference(t *testing.T) {
 	defer f.Close()
 	f.WriteString("ref: refs/heads/foo\n")
 
-	head, err := LoadHead(filepath.Join(tmp, "HEAD"))
+	head, err := LoadReferenceFile(filepath.Join(tmp, "HEAD"))
 	assert.NoError(t, err)
-	assert.Equal(t, HeadTypeReference, head.Type)
+	assert.Equal(t, ReferenceTypePointer, head.Type)
 	assert.Equal(t, "ref: refs/heads/foo", head.Content)
 }
 
@@ -81,6 +81,20 @@ func TestHeadLoadingFailsForInvalidContent(t *testing.T) {
 	defer f.Close()
 	f.WriteString("abc")
 
-	_, err = LoadHead(filepath.Join(tmp, "HEAD"))
+	_, err = LoadReferenceFile(filepath.Join(tmp, "HEAD"))
 	assert.ErrorContains(t, err, "unknown format for git HEAD")
+}
+
+func TestIsSha1(t *testing.T) {
+	a := strings.Repeat("0", 40)
+	b := strings.Repeat("f", 40)
+	c := strings.Repeat("0", 39)
+	d := strings.Repeat("F", 40)
+	e := strings.Repeat("0", 41)
+
+	assert.True(t, isSHA1(a))
+	assert.True(t, isSHA1(b))
+	assert.False(t, isSHA1(c))
+	assert.False(t, isSHA1(d))
+	assert.False(t, isSHA1(e))
 }

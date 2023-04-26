@@ -9,7 +9,7 @@ func DefaultMutators() []bundle.Mutator {
 		DefineDefaultInclude(),
 		ProcessRootIncludes(),
 		DefineDefaultEnvironment(),
-		LoadGitConfig(),
+		LoadGitDetails(),
 	}
 }
 
