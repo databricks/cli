@@ -12,8 +12,7 @@ func TestOutputFlag(t *testing.T) {
 
 	// Invalid
 	err = f.Set("foo")
-	assert.Error(t, err)
-	assert.ErrorContains(t, err, "accepted arguments are text and json")
+	assert.EqualError(t, err, "accepted arguments are json and text")
 
 	// Lowercase
 	err = f.Set("text")

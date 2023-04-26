@@ -10,9 +10,9 @@ import (
 // Output controls how the CLI should produce its output.
 type Output string
 
-var (
-	OutputText = Output("text")
-	OutputJSON = Output("json")
+const (
+	OutputText Output = "text"
+	OutputJSON Output = "json"
 )
 
 func (f *Output) String() string {
@@ -22,16 +22,10 @@ func (f *Output) String() string {
 func (f *Output) Set(s string) error {
 	lower := strings.ToLower(s)
 	switch lower {
-	case OutputText.String():
-		*f = Output(OutputText.String())
-	case OutputJSON.String():
-		*f = Output(OutputJSON.String())
+	case `json`, `text`:
+		*f = Output(lower)
 	default:
-		valid := []string{
-			OutputText.String(),
-			OutputJSON.String(),
-		}
-		return fmt.Errorf("accepted arguments are %s", strings.Join(valid, " and "))
+		return fmt.Errorf("accepted arguments are json and text")
 	}
 	return nil
 }
@@ -43,7 +37,7 @@ func (f *Output) Type() string {
 // Complete is the Cobra compatible completion function for this flag.
 func (f *Output) Complete(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 	return []string{
-		OutputText.String(),
-		OutputJSON.String(),
+		fmt.Sprint(OutputText),
+		fmt.Sprint(OutputJSON),
 	}, cobra.ShellCompDirectiveNoFileComp
 }
