@@ -146,7 +146,7 @@ var createCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		err = createJson.Unmarshall(&createReq)
+		err = createJson.Unmarshal(&createReq)
 		if err != nil {
 			return err
 		}
@@ -313,7 +313,7 @@ var editCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		err = editJson.Unmarshall(&editReq)
+		err = editJson.Unmarshal(&editReq)
 		if err != nil {
 			return err
 		}
@@ -378,7 +378,7 @@ var eventsCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		err = eventsJson.Unmarshall(&eventsReq)
+		err = eventsJson.Unmarshal(&eventsReq)
 		if err != nil {
 			return err
 		}
@@ -675,7 +675,7 @@ var resizeCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		err = resizeJson.Unmarshall(&resizeReq)
+		err = resizeJson.Unmarshal(&resizeReq)
 		if err != nil {
 			return err
 		}

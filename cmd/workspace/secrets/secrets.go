@@ -59,7 +59,7 @@ var createScopeCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		err = createScopeJson.Unmarshall(&createScopeReq)
+		err = createScopeJson.Unmarshal(&createScopeReq)
 		if err != nil {
 			return err
 		}

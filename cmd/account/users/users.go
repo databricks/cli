@@ -64,7 +64,7 @@ var createCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-		err = createJson.Unmarshall(&createReq)
+		err = createJson.Unmarshal(&createReq)
 		if err != nil {
 			return err
 		}
@@ -238,7 +238,7 @@ var patchCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-		err = patchJson.Unmarshall(&patchReq)
+		err = patchJson.Unmarshal(&patchReq)
 		if err != nil {
 			return err
 		}
@@ -287,7 +287,7 @@ var updateCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-		err = updateJson.Unmarshall(&updateReq)
+		err = updateJson.Unmarshal(&updateReq)
 		if err != nil {
 			return err
 		}

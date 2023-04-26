@@ -48,7 +48,7 @@ var createExperimentCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		err = createExperimentJson.Unmarshall(&createExperimentReq)
+		err = createExperimentJson.Unmarshal(&createExperimentReq)
 		if err != nil {
 			return err
 		}
@@ -94,7 +94,7 @@ var createRunCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		err = createRunJson.Unmarshall(&createRunReq)
+		err = createRunJson.Unmarshal(&createRunReq)
 		if err != nil {
 			return err
 		}
@@ -501,7 +501,7 @@ var logBatchCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		err = logBatchJson.Unmarshall(&logBatchReq)
+		err = logBatchJson.Unmarshal(&logBatchReq)
 		if err != nil {
 			return err
 		}
@@ -738,7 +738,7 @@ var searchExperimentsCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		err = searchExperimentsJson.Unmarshall(&searchExperimentsReq)
+		err = searchExperimentsJson.Unmarshal(&searchExperimentsReq)
 		if err != nil {
 			return err
 		}
@@ -784,7 +784,7 @@ var searchRunsCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		err = searchRunsJson.Unmarshall(&searchRunsReq)
+		err = searchRunsJson.Unmarshal(&searchRunsReq)
 		if err != nil {
 			return err
 		}

@@ -29,7 +29,7 @@ func makeCommand(method string) *cobra.Command {
 			var path = args[0]
 
 			var request any
-			err := payload.Unmarshall(&request)
+			err := payload.Unmarshal(&request)
 			if err != nil {
 				return err
 			}

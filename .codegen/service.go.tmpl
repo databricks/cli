@@ -90,7 +90,7 @@ var {{.CamelName}}Cmd = &cobra.Command{
 			if len(args) != 1 {
 				return fmt.Errorf("expected to have {{range .Request.RequiredFields}}{{.Summary | trimSuffix "." | lower}}{{end}}")
 			}{{end}}{{if not .Request.IsOnlyPrimitiveFields}}
-				err = {{.CamelName}}Json.Unmarshall(&{{.CamelName}}Req)
+				err = {{.CamelName}}Json.Unmarshal(&{{.CamelName}}Req)
 				if err != nil {
 					return err
 				}

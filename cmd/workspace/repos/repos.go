@@ -56,7 +56,7 @@ var createCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		err = createJson.Unmarshall(&createReq)
+		err = createJson.Unmarshal(&createReq)
 		if err != nil {
 			return err
 		}
@@ -234,7 +234,7 @@ var updateCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		err = updateJson.Unmarshall(&updateReq)
+		err = updateJson.Unmarshal(&updateReq)
 		if err != nil {
 			return err
 		}

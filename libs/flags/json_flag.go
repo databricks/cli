@@ -29,7 +29,7 @@ func (j *JsonFlag) Set(v string) error {
 	return nil
 }
 
-func (j *JsonFlag) Unmarshall(v any) error {
+func (j *JsonFlag) Unmarshal(v any) error {
 	if j.raw == nil {
 		return nil
 	}

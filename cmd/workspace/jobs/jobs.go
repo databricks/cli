@@ -205,7 +205,7 @@ var createCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		err = createJson.Unmarshall(&createReq)
+		err = createJson.Unmarshal(&createReq)
 		if err != nil {
 			return err
 		}
@@ -653,7 +653,7 @@ var repairRunCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		err = repairRunJson.Unmarshall(&repairRunReq)
+		err = repairRunJson.Unmarshal(&repairRunReq)
 		if err != nil {
 			return err
 		}
@@ -719,7 +719,7 @@ var resetCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		err = resetJson.Unmarshall(&resetReq)
+		err = resetJson.Unmarshal(&resetReq)
 		if err != nil {
 			return err
 		}
@@ -793,7 +793,7 @@ var runNowCmd = &cobra.Command{
 		if len(args) != 1 {
 			return fmt.Errorf("expected to have the id of the job to be executed")
 		}
-		err = runNowJson.Unmarshall(&runNowReq)
+		err = runNowJson.Unmarshal(&runNowReq)
 		if err != nil {
 			return err
 		}
@@ -874,7 +874,7 @@ var submitCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		err = submitJson.Unmarshall(&submitReq)
+		err = submitJson.Unmarshal(&submitReq)
 		if err != nil {
 			return err
 		}
@@ -939,7 +939,7 @@ var updateCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		err = updateJson.Unmarshall(&updateReq)
+		err = updateJson.Unmarshal(&updateReq)
 		if err != nil {
 			return err
 		}

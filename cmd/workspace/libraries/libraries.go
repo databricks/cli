@@ -142,7 +142,7 @@ var installCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		err = installJson.Unmarshall(&installReq)
+		err = installJson.Unmarshal(&installReq)
 		if err != nil {
 			return err
 		}
@@ -186,7 +186,7 @@ var uninstallCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		err = uninstallJson.Unmarshall(&uninstallReq)
+		err = uninstallJson.Unmarshal(&uninstallReq)
 		if err != nil {
 			return err
 		}

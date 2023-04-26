@@ -14,7 +14,7 @@ func TestJsonFlagEmpty(t *testing.T) {
 	var body JsonFlag
 
 	var request any
-	err := body.Unmarshall(&request)
+	err := body.Unmarshal(&request)
 
 	assert.Equal(t, "JSON (0 bytes)", body.String())
 	assert.NoError(t, err)
@@ -28,7 +28,7 @@ func TestJsonFlagInline(t *testing.T) {
 	assert.NoError(t, err)
 
 	var request any
-	err = body.Unmarshall(&request)
+	err = body.Unmarshal(&request)
 	assert.NoError(t, err)
 
 	assert.Equal(t, "JSON (14 bytes)", body.String())
@@ -42,7 +42,7 @@ func TestJsonFlagError(t *testing.T) {
 	assert.NoError(t, err)
 
 	var request any
-	err = body.Unmarshall(&request)
+	err = body.Unmarshal(&request)
 	assert.EqualError(t, err, "unexpected end of JSON input")
 	assert.Equal(t, "JSON (7 bytes)", body.String())
 }
@@ -65,7 +65,7 @@ func TestJsonFlagFile(t *testing.T) {
 	err := body.Set(fmt.Sprintf("@%s", fpath))
 	require.NoError(t, err)
 
-	err = body.Unmarshall(&request)
+	err = body.Unmarshal(&request)
 	require.NoError(t, err)
 
 	assert.Equal(t, "hello world", request)

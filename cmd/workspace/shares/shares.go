@@ -228,7 +228,7 @@ var updateCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		err = updateJson.Unmarshall(&updateReq)
+		err = updateJson.Unmarshal(&updateReq)
 		if err != nil {
 			return err
 		}
@@ -272,7 +272,7 @@ var updatePermissionsCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		err = updatePermissionsJson.Unmarshall(&updatePermissionsReq)
+		err = updatePermissionsJson.Unmarshal(&updatePermissionsReq)
 		if err != nil {
 			return err
 		}

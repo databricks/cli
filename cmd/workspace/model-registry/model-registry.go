@@ -127,7 +127,7 @@ var createModelCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		err = createModelJson.Unmarshall(&createModelReq)
+		err = createModelJson.Unmarshal(&createModelReq)
 		if err != nil {
 			return err
 		}
@@ -170,7 +170,7 @@ var createModelVersionCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		err = createModelVersionJson.Unmarshall(&createModelVersionReq)
+		err = createModelVersionJson.Unmarshal(&createModelVersionReq)
 		if err != nil {
 			return err
 		}
@@ -257,7 +257,7 @@ var createWebhookCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		err = createWebhookJson.Unmarshall(&createWebhookReq)
+		err = createWebhookJson.Unmarshal(&createWebhookReq)
 		if err != nil {
 			return err
 		}
@@ -543,7 +543,7 @@ var getLatestVersionsCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		err = getLatestVersionsJson.Unmarshall(&getLatestVersionsReq)
+		err = getLatestVersionsJson.Unmarshal(&getLatestVersionsReq)
 		if err != nil {
 			return err
 		}
@@ -762,7 +762,7 @@ var listWebhooksCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		err = listWebhooksJson.Unmarshall(&listWebhooksReq)
+		err = listWebhooksJson.Unmarshal(&listWebhooksReq)
 		if err != nil {
 			return err
 		}
@@ -879,7 +879,7 @@ var searchModelVersionsCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		err = searchModelVersionsJson.Unmarshall(&searchModelVersionsReq)
+		err = searchModelVersionsJson.Unmarshal(&searchModelVersionsReq)
 		if err != nil {
 			return err
 		}
@@ -921,7 +921,7 @@ var searchModelsCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		err = searchModelsJson.Unmarshall(&searchModelsReq)
+		err = searchModelsJson.Unmarshal(&searchModelsReq)
 		if err != nil {
 			return err
 		}
@@ -1227,7 +1227,7 @@ var updateWebhookCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		err = updateWebhookJson.Unmarshall(&updateWebhookReq)
+		err = updateWebhookJson.Unmarshal(&updateWebhookReq)
 		if err != nil {
 			return err
 		}
