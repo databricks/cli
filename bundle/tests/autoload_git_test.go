@@ -11,5 +11,5 @@ func TestGitConfig(t *testing.T) {
 	assert.Equal(t, "foo", b.Config.Bundle.Git.Branch)
 	sshUrl := "git@github.com:databricks/bricks.git"
 	httpsUrl := "https://github.com/databricks/bricks"
-	assert.Contains(t, []string{sshUrl, httpsUrl}, b.Config.Bundle.Git.RemoteURL)
+	assert.Contains(t, []string{sshUrl, httpsUrl}, b.Config.Bundle.Git.OriginURL)
 }

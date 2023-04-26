@@ -43,9 +43,9 @@ func (m *loadGitDetails) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.
 		}
 	}
 	// load origin url if undefined
-	if b.Config.Bundle.Git.RemoteURL == "" {
+	if b.Config.Bundle.Git.OriginURL == "" {
 		remoteUrl := repo.OriginUrl()
-		b.Config.Bundle.Git.RemoteURL = remoteUrl
+		b.Config.Bundle.Git.OriginURL = remoteUrl
 	}
 	return nil, nil
 }
