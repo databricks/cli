@@ -30,6 +30,12 @@ type Repository struct {
 	// Note: prefixes use the forward slash instead of the
 	// OS-specific path separator. This matches Git convention.
 	ignore map[string][]ignoreRules
+
+	// config contains a merged view of the user specific and the repository
+	// specific git configuration loaded from .git/config files.
+	//
+	// Also see: https://git-scm.com/docs/git-config.
+	config *config
 }
 
 // Root returns the repository root.
@@ -37,17 +43,75 @@ func (r *Repository) Root() string {
 	return r.rootPath
 }
 
+func (r *Repository) CurrentBranch() (string, error) {
+	// load .git/HEAD
+	ref, err := LoadReferenceFile(filepath.Join(r.rootPath, ".git", "HEAD"))
+	if err != nil {
+		return "", err
+	}
+	if ref == nil {
+		return "", nil
+	}
+
+	// case: when a git object like commit,tag or remote branch is checked out
+	if ref.Type == ReferenceTypeSHA1 {
+		return "", nil
+	}
+	return ref.CurrentBranch()
+}
+
+func (r *Repository) LatestCommit() (string, error) {
+	// load .git/HEAD
+	ref, err := LoadReferenceFile(filepath.Join(r.rootPath, ".git", "HEAD"))
+	if err != nil {
+		return "", err
+	}
+	if ref == nil {
+		// return empty string when head file does not exist
+		return "", nil
+	}
+
+	// case: when a git object like commit,tag or remote branch is checked out
+	if ref.Type == ReferenceTypeSHA1 {
+		return ref.Content, nil
+	}
+
+	// read reference from .git/HEAD
+	branchHeadPath, err := ref.ResolvePath()
+	if err != nil {
+		return "", err
+	}
+	branchHeadRef, err := LoadReferenceFile(filepath.Join(r.rootPath, ".git", branchHeadPath))
+	if err != nil {
+		return "", err
+	}
+	if branchHeadRef == nil {
+		// return empty string when head file does not exist
+		return "", nil
+	}
+	if branchHeadRef.Type != ReferenceTypeSHA1 {
+		return "", fmt.Errorf("git reference at %s was expected to be a SHA-1 commit id", branchHeadPath)
+	}
+	return branchHeadRef.Content, nil
+}
+
+// return origin url if it's defined, otherwise an empty string
+func (r *Repository) OriginUrl() string {
+	return r.config.variables["remote.origin.url"]
+}
+
 // loadConfig loads and combines user specific and repository specific configuration files.
-func (r *Repository) loadConfig() (*config, error) {
+func (r *Repository) loadConfig() error {
 	config, err := globalGitConfig()
 	if err != nil {
-		return nil, fmt.Errorf("unable to load user specific gitconfig: %w", err)
+		return fmt.Errorf("unable to load user specific gitconfig: %w", err)
 	}
 	err = config.loadFile(filepath.Join(r.rootPath, ".git/config"))
 	if err != nil {
-		return nil, fmt.Errorf("unable to load repository specific gitconfig: %w", err)
+		return fmt.Errorf("unable to load repository specific gitconfig: %w", err)
 	}
-	return config, nil
+	r.config = config
+	return nil
 }
 
 // newIgnoreFile constructs a new [ignoreRules] implementation backed by
@@ -139,13 +203,13 @@ func NewRepository(path string) (*Repository, error) {
 		ignore:   make(map[string][]ignoreRules),
 	}
 
-	config, err := repo.loadConfig()
+	err = repo.loadConfig()
 	if err != nil {
 		// Error doesn't need to be rewrapped.
 		return nil, err
 	}
 
-	coreExcludesPath, err := config.coreExcludesFile()
+	coreExcludesPath, err := repo.config.coreExcludesFile()
 	if err != nil {
 		return nil, fmt.Errorf("unable to access core excludes file: %w", err)
 	}
