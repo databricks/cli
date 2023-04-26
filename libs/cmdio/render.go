@@ -55,6 +55,9 @@ func renderJson(w io.Writer, v any) error {
 func renderTemplate(w io.Writer, tmpl string, v any) error {
 	tw := tabwriter.NewWriter(w, 0, 4, 2, ' ', 0)
 	t, err := template.New("command").Funcs(template.FuncMap{
+		// we render colored output if stdout is TTY, otherwise we render text.
+		// in the future we'll check if we can explicitly check for stderr being
+		// a TTY
 		"black":   color.BlackString,
 		"white":   color.WhiteString,
 		"red":     color.RedString,
