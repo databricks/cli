@@ -1,7 +1,7 @@
 package config
 
 type Git struct {
-	Branch    string `json:"branch"`
-	RemoteURL string `json:"remote_url"`
-	Commit    string `json:"commit" bundle:"readonly"`
+	Branch    string `json:"branch,omitempty"`
+	RemoteURL string `json:"remote_url,omitempty"`
+	Commit    string `json:"commit,omitempty" bundle:"readonly"`
 }
