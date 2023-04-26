@@ -29,7 +29,7 @@ type Reference struct {
 }
 
 const ReferencePrefix = "ref: "
-const ReferencePathPrefix = "refs/heads/"
+const HeadPathPrefix = "refs/heads/"
 
 // asserts if a string is a 40 character hexadecimal encoded string
 func isSHA1(s string) bool {
@@ -38,7 +38,7 @@ func isSHA1(s string) bool {
 }
 
 func LoadReferenceFile(path string) (*Reference, error) {
-	// read head file content
+	// read referebce file content
 	b, err := os.ReadFile(path)
 	if os.IsNotExist(err) {
 		return nil, nil
@@ -67,7 +67,9 @@ func LoadReferenceFile(path string) (*Reference, error) {
 	}, nil
 }
 
-func (ref *Reference) ReferencePath() (string, error) {
+// resolves the path to the secondary reference file pointd to. eg: if the file
+// contents are `ref: a/b/c`, then this function returns `a/b/c`
+func (ref *Reference) ResolvePath() (string, error) {
 	if ref.Type != ReferenceTypePointer {
 		return "", ErrNotAReferencePointer
 	}
@@ -75,8 +77,10 @@ func (ref *Reference) ReferencePath() (string, error) {
 	return filepath.FromSlash(refPath), nil
 }
 
+// resolves the name of the current branch from the reference file content. For example
+// `ref: refs/heads/my-branch` returns `my-branch`
 func (ref *Reference) CurrentBranch() (string, error) {
-	branchRefPath, err := ref.ReferencePath()
+	branchRefPath, err := ref.ResolvePath()
 	if err == ErrNotAReferencePointer {
 		return "", ErrNotABranch
 	}
@@ -85,8 +89,8 @@ func (ref *Reference) CurrentBranch() (string, error) {
 	}
 	// normalize branch ref path to work accross different operating systems
 	branchRefPath = filepath.ToSlash(branchRefPath)
-	if !strings.HasPrefix(branchRefPath, ReferencePathPrefix) {
-		return "", fmt.Errorf("reference path %s does not have expected prefix %s", branchRefPath, ReferencePathPrefix)
+	if !strings.HasPrefix(branchRefPath, HeadPathPrefix) {
+		return "", fmt.Errorf("reference path %s does not have expected prefix %s", branchRefPath, HeadPathPrefix)
 	}
-	return strings.TrimPrefix(branchRefPath, ReferencePathPrefix), nil
+	return strings.TrimPrefix(branchRefPath, HeadPathPrefix), nil
 }

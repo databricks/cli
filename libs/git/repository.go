@@ -77,7 +77,7 @@ func (r *Repository) LatestCommit() (string, error) {
 	}
 
 	// read reference from .git/HEAD
-	branchHeadPath, err := ref.ReferencePath()
+	branchHeadPath, err := ref.ResolvePath()
 	if err != nil {
 		return "", err
 	}

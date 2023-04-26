@@ -10,71 +10,71 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestHeadReferencePathForObjectID(t *testing.T) {
-	head := &Reference{
+func TestReferenceReferencePathForObjectID(t *testing.T) {
+	ref := &Reference{
 		Type:    ReferenceTypeSHA1,
 		Content: strings.Repeat("a", 40),
 	}
-	_, err := head.ReferencePath()
+	_, err := ref.ResolvePath()
 	assert.ErrorIs(t, err, ErrNotAReferencePointer)
 }
 
-func TestHeadCurrentBranchForObjectID(t *testing.T) {
-	head := &Reference{
+func TestReferenceCurrentBranchForObjectID(t *testing.T) {
+	ref := &Reference{
 		Type:    ReferenceTypeSHA1,
 		Content: strings.Repeat("a", 40),
 	}
-	_, err := head.CurrentBranch()
+	_, err := ref.CurrentBranch()
 	assert.ErrorIs(t, err, ErrNotABranch)
 }
 
-func TestHeadCurrentBranchForReference(t *testing.T) {
-	head := &Reference{
+func TestReferenceCurrentBranchForReference(t *testing.T) {
+	ref := &Reference{
 		Type:    ReferenceTypePointer,
 		Content: `ref: refs/heads/my-branch`,
 	}
-	branch, err := head.CurrentBranch()
+	branch, err := ref.CurrentBranch()
 	assert.NoError(t, err)
 	assert.Equal(t, "my-branch", branch)
 }
 
-func TestHeadReferencePathForReference(t *testing.T) {
-	head := &Reference{
+func TestReferenceReferencePathForReference(t *testing.T) {
+	ref := &Reference{
 		Type:    ReferenceTypePointer,
 		Content: `ref: refs/heads/my-branch`,
 	}
-	path, err := head.ReferencePath()
+	path, err := ref.ResolvePath()
 	assert.NoError(t, err)
 	assert.Equal(t, filepath.FromSlash("refs/heads/my-branch"), path)
 }
 
-func TestHeadLoadingForObjectID(t *testing.T) {
+func TestReferenceLoadingForObjectID(t *testing.T) {
 	tmp := t.TempDir()
 	f, err := os.Create(filepath.Join(tmp, "HEAD"))
 	require.NoError(t, err)
 	defer f.Close()
 	f.WriteString(strings.Repeat("e", 40) + "\r\n")
 
-	head, err := LoadReferenceFile(filepath.Join(tmp, "HEAD"))
+	ref, err := LoadReferenceFile(filepath.Join(tmp, "HEAD"))
 	assert.NoError(t, err)
-	assert.Equal(t, ReferenceTypeSHA1, head.Type)
-	assert.Equal(t, strings.Repeat("e", 40), head.Content)
+	assert.Equal(t, ReferenceTypeSHA1, ref.Type)
+	assert.Equal(t, strings.Repeat("e", 40), ref.Content)
 }
 
-func TestHeadLoadingForReference(t *testing.T) {
+func TestReferenceLoadingForReference(t *testing.T) {
 	tmp := t.TempDir()
 	f, err := os.OpenFile(filepath.Join(tmp, "HEAD"), os.O_CREATE|os.O_WRONLY, os.ModePerm)
 	require.NoError(t, err)
 	defer f.Close()
 	f.WriteString("ref: refs/heads/foo\n")
 
-	head, err := LoadReferenceFile(filepath.Join(tmp, "HEAD"))
+	ref, err := LoadReferenceFile(filepath.Join(tmp, "HEAD"))
 	assert.NoError(t, err)
-	assert.Equal(t, ReferenceTypePointer, head.Type)
-	assert.Equal(t, "ref: refs/heads/foo", head.Content)
+	assert.Equal(t, ReferenceTypePointer, ref.Type)
+	assert.Equal(t, "ref: refs/heads/foo", ref.Content)
 }
 
-func TestHeadLoadingFailsForInvalidContent(t *testing.T) {
+func TestReferenceLoadingFailsForInvalidContent(t *testing.T) {
 	tmp := t.TempDir()
 	f, err := os.OpenFile(filepath.Join(tmp, "HEAD"), os.O_CREATE|os.O_WRONLY, os.ModePerm)
 	require.NoError(t, err)
@@ -85,7 +85,7 @@ func TestHeadLoadingFailsForInvalidContent(t *testing.T) {
 	assert.ErrorContains(t, err, "unknown format for git HEAD")
 }
 
-func TestIsSha1(t *testing.T) {
+func TestReferenceIsSha1(t *testing.T) {
 	a := strings.Repeat("0", 40)
 	b := strings.Repeat("f", 40)
 	c := strings.Repeat("0", 39)
