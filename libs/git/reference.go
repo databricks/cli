@@ -10,7 +10,7 @@ import (
 
 type ReferenceType string
 
-var ErrNotAReference = fmt.Errorf("HEAD is not a git reference")
+var ErrNotAReferencePointer = fmt.Errorf("HEAD does not point to another reference")
 var ErrNotABranch = fmt.Errorf("HEAD is not a reference to a git branch")
 
 const (
@@ -51,25 +51,25 @@ func LoadReferenceFile(path string) (*Reference, error) {
 	content := strings.TrimRight(string(b), "\r\n")
 
 	// determine HEAD type
-	var refFileType ReferenceType
+	var refType ReferenceType
 	switch {
 	case strings.HasPrefix(content, ReferencePrefix):
-		refFileType = ReferenceTypePointer
+		refType = ReferenceTypePointer
 	case isSHA1(content):
-		refFileType = ReferenceTypeSHA1
+		refType = ReferenceTypeSHA1
 	default:
 		return nil, fmt.Errorf("unknown format for git HEAD: %s", content)
 	}
 
 	return &Reference{
-		Type:    refFileType,
+		Type:    refType,
 		Content: content,
 	}, nil
 }
 
 func (ref *Reference) ReferencePath() (string, error) {
 	if ref.Type != ReferenceTypePointer {
-		return "", ErrNotAReference
+		return "", ErrNotAReferencePointer
 	}
 	refPath := strings.TrimPrefix(ref.Content, ReferencePrefix)
 	return filepath.FromSlash(refPath), nil
@@ -77,7 +77,7 @@ func (ref *Reference) ReferencePath() (string, error) {
 
 func (ref *Reference) CurrentBranch() (string, error) {
 	branchRefPath, err := ref.ReferencePath()
-	if err == ErrNotAReference {
+	if err == ErrNotAReferencePointer {
 		return "", ErrNotABranch
 	}
 	if err != nil {

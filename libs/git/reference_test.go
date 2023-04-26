@@ -16,7 +16,7 @@ func TestHeadReferencePathForObjectID(t *testing.T) {
 		Content: strings.Repeat("a", 40),
 	}
 	_, err := head.ReferencePath()
-	assert.ErrorIs(t, err, ErrNotAReference)
+	assert.ErrorIs(t, err, ErrNotAReferencePointer)
 }
 
 func TestHeadCurrentBranchForObjectID(t *testing.T) {
