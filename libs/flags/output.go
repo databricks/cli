@@ -23,7 +23,7 @@ func (f *Output) Set(s string) error {
 	lower := strings.ToLower(s)
 	switch lower {
 	case `json`, `text`:
-		*f = Output(s)
+		*f = Output(lower)
 	default:
 		return fmt.Errorf("accepted arguments are json and text")
 	}
