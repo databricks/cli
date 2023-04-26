@@ -78,7 +78,7 @@ TRY_AUTH: // or try picking a config profile dynamically
 func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 	cfg := &config.Config{}
 
-	// command-line flag takes precedence
+	// command-line flag takes precedence over environment variable
 	profileFlag := cmd.Flag("profile")
 	if profileFlag != nil {
 		cfg.Profile = profileFlag.Value.String()

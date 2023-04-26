@@ -13,6 +13,12 @@ const envBricksOutputFormat = "BRICKS_OUTPUT_FORMAT"
 var outputType flags.Output = flags.OutputText
 
 func init() {
+	// Configure defaults from environment, if applicable.
+	// If the provided value is invalid it is ignored.
+	if v, ok := os.LookupEnv(envBricksOutputFormat); ok {
+		outputType.Set(v)
+	}
+
 	RootCmd.PersistentFlags().VarP(&outputType, "output", "o", "output type: text or json")
 }
 
@@ -21,14 +27,6 @@ func OutputType() flags.Output {
 }
 
 func initializeIO(cmd *cobra.Command) error {
-	output := os.Getenv(envBricksOutputFormat)
-	if output != "" {
-		err := outputType.Set(output)
-		if err != nil {
-			return err
-		}
-	}
-
 	var template string
 	if cmd.Annotations != nil {
 		// rely on zeroval being an empty string
