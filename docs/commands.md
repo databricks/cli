@@ -74,7 +74,6 @@
     - [bricks experiments list-artifacts - Get all artifacts.](#bricks-experiments-list-artifacts---get-all-artifacts)
     - [bricks experiments list-experiments - List experiments.](#bricks-experiments-list-experiments---list-experiments)
     - [bricks experiments log-batch - Log a batch.](#bricks-experiments-log-batch---log-a-batch)
-- [Request Limits](#request-limits)
     - [bricks experiments log-metric - Log a metric.](#bricks-experiments-log-metric---log-a-metric)
     - [bricks experiments log-model - Log a model.](#bricks-experiments-log-model---log-a-model)
     - [bricks experiments log-param - Log a param.](#bricks-experiments-log-param---log-a-param)
