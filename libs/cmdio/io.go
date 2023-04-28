@@ -46,6 +46,16 @@ func IsInteractive(ctx context.Context) bool {
 	return c.interactive
 }
 
+// IsTTY detects if io.Writer is a terminal.
+func IsTTY(w io.Writer) bool {
+	f, ok := w.(*os.File)
+	if !ok {
+		return false
+	}
+	fd := f.Fd()
+	return isatty.IsTerminal(fd) || isatty.IsCygwinTerminal(fd)
+}
+
 // IsTTY detects if stdout is a terminal. It assumes that stderr is terminal as well
 func (c *cmdIO) IsTTY() bool {
 	f, ok := c.out.(*os.File)
