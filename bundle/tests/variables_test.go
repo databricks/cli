@@ -16,7 +16,7 @@ func TestVariables(t *testing.T) {
 	t.Setenv("BUNDLE_VAR_C", "world")
 	b := load(t, "./variables")
 	err := bundle.Apply(context.Background(), b, []bundle.Mutator{
-		mutator.LoadVariablesFromEnvionment(),
+		mutator.SetVariables(),
 		interpolation.Interpolate(
 			interpolation.IncludeLookupsInPath("bundle"),
 			interpolation.IncludeLookupsInPath("workspace"),
@@ -32,7 +32,7 @@ func TestVariables(t *testing.T) {
 func TestVariablesWhenUndefinedVarIsUsed(t *testing.T) {
 	b := load(t, "./variables")
 	err := bundle.Apply(context.Background(), b, []bundle.Mutator{
-		mutator.LoadVariablesFromEnvionment(),
+		mutator.SetVariables(),
 		interpolation.Interpolate(
 			interpolation.IncludeLookupsInPath("bundle"),
 			interpolation.IncludeLookupsInPath("workspace"),

@@ -1,8 +1,10 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/ghodss/yaml"
 	"github.com/imdario/mergo"
@@ -18,7 +20,7 @@ type Root struct {
 
 	// Contains user defined variables, either defined in the bundle config or
 	// loaded through env vars
-	Variables map[string]string `json:"variables"`
+	Variables map[string]*Variable `json:"variables"`
 
 	// Bundle contains details about this bundle, such as its name,
 	// version of the spec (TODO), default cluster, default warehouse, etc.
@@ -81,6 +83,29 @@ func (r *Root) SetConfigFilePath(path string) {
 			}
 		}
 	}
+}
+
+// Initializes variables from any values from the command line flag
+// Input has to be a string of the form `foo=bar`. In this case the variable with
+// name `foo` is assigned the value `bar`
+func (r *Root) SetVariables(vars []string) error {
+	for _, variable := range vars {
+		varComponents := strings.Split(variable, "=")
+		if len(varComponents) != 2 {
+			return fmt.Errorf("variable assignment %s has unexpected format", variable)
+		}
+		varName := varComponents[0]
+		varValue := varComponents[1]
+
+		if _, ok := r.Variables[varName]; !ok {
+			return fmt.Errorf("variable %s has not been defined", varName)
+		}
+		err := r.Variables[varName].Set(varValue)
+		if err != nil {
+			return fmt.Errorf("failed to assign %s to %s: %s", varValue, varName, err)
+		}
+	}
+	return nil
 }
 
 func (r *Root) Load(path string) error {

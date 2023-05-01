@@ -50,3 +50,23 @@ func IncludeLookupsInPath(include ...string) LookupFunction {
 		return DefaultLookup(path, lookup)
 	}
 }
+
+const VariableReferencePrefix = "var."
+
+// IncludeVariableLookups is a lookup function that resolves variable lookups to
+// their value. ${var.foo} is resolved to ${variables.foo.value}
+func IncludeVariableLookups() LookupFunction {
+	return func(path string, lookup map[string]string) (string, error) {
+		if !strings.HasPrefix(path, VariableReferencePrefix) {
+			return "", ErrSkipInterpolation
+		}
+
+		variableName := strings.TrimPrefix(path, VariableReferencePrefix)
+		if strings.Count(variableName, ".") > 0 {
+			return "", fmt.Errorf("only single level of variable resolution is supported. %s has multiple", path)
+		}
+
+		valuePath := strings.Join([]string{"variables", variableName, "value"}, ".")
+		return DefaultLookup(valuePath, lookup)
+	}
+}

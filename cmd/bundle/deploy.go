@@ -15,6 +15,9 @@ var deployCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		b := bundle.Get(cmd.Context())
 
+		// Initialize variables from command line values
+		b.Config.SetVariables(deployVariables)
+
 		// If `--force` is specified, force acquisition of the deployment lock.
 		b.Config.Bundle.Lock.Force = force
 
@@ -28,7 +31,10 @@ var deployCmd = &cobra.Command{
 
 var force bool
 
+var deployVariables []string
+
 func init() {
 	AddCommand(deployCmd)
 	deployCmd.Flags().BoolVar(&force, "force", false, "Force acquisition of deployment lock.")
+	deployCmd.Flags().StringSliceVar(&deployVariables, "var", []string{}, "set variable values to use during deployment")
 }
