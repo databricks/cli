@@ -185,6 +185,15 @@ func (a *accumulator) Resolve(path string, seenPaths []string, fns ...LookupFunc
 
 	// resolve all variables refered in the root string field
 	for _, childFieldPath := range field.dependsOn() {
+		// expand child path if it's an alias for a variable
+		if isVariableReference(childFieldPath) {
+			var err error
+			childFieldPath, err = expandVariable(childFieldPath)
+			if err != nil {
+				return err
+			}
+		}
+
 		// error if there is a loop in variable interpolation
 		if slices.Contains(seenPaths, childFieldPath) {
 			return fmt.Errorf("cycle detected in field resolution: %s", strings.Join(append(seenPaths, childFieldPath), " -> "))

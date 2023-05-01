@@ -4,6 +4,7 @@ import (
 	"github.com/databricks/bricks/bundle"
 	"github.com/databricks/bricks/bundle/phases"
 	"github.com/databricks/bricks/cmd/root"
+	"github.com/databricks/bricks/libs/flags"
 	"github.com/spf13/cobra"
 )
 
@@ -36,5 +37,5 @@ var deployVariables []string
 func init() {
 	AddCommand(deployCmd)
 	deployCmd.Flags().BoolVar(&force, "force", false, "Force acquisition of deployment lock.")
-	deployCmd.Flags().StringSliceVar(&deployVariables, "var", []string{}, "set variable values to use during deployment")
+	flags.AddVariableFlag(deployCmd, &deployVariables)
 }

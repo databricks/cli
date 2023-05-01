@@ -23,6 +23,10 @@ var runCmd = &cobra.Command{
 	PreRunE: root.MustConfigureBundle,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		b := bundle.Get(cmd.Context())
+
+		// Initialize variables from command line values
+		b.Config.SetVariables(runVariables)
+
 		err := bundle.Apply(cmd.Context(), b, []bundle.Mutator{
 			phases.Initialize(),
 			terraform.Interpolate(),
@@ -86,7 +90,10 @@ var runCmd = &cobra.Command{
 	},
 }
 
+var runVariables []string
+
 func init() {
 	runOptions.Define(runCmd.Flags())
 	rootCmd.AddCommand(runCmd)
+	flags.AddVariableFlag(runCmd, &runVariables)
 }

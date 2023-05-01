@@ -9,14 +9,12 @@ type VariableType string
 // TODO: make destroy work without requiring variables to be entered
 const (
 	VariableTypeString = VariableType("string")
-	VariableTypeBool   = VariableType("bool")
-	VariableTypeInt    = VariableType("number")
 )
 
 // Input variables for the bundle config
 type Variable struct {
 	// A default value which then makes the variable optional
-	Default any `json:"default,omitempty"`
+	Default *string `json:"default,omitempty"`
 
 	// Type for this variable. Support types are:
 	//
@@ -34,18 +32,7 @@ type Variable struct {
 	// 3. default value defined in bundle config
 	// 4. Throw error, since if no default value is defined, then the variable
 	//    is required
-	Value any `json:"value,omitempty" bundle:"readonly"`
-}
-
-// value being assigned has to be a string
-// TODO: maybe remote name from here? name is not being assigned anyways
-func (v *Variable) setString(val any) error {
-	stringVal, ok := val.(string)
-	if !ok {
-		return fmt.Errorf("string variable should be assigned a string value")
-	}
-	v.Value = stringVal
-	return nil
+	Value *string `json:"value,omitempty" bundle:"readonly"`
 }
 
 // True if the variable has been assigned a default value. Variables without a
@@ -60,13 +47,13 @@ func (v *Variable) HasValue() bool {
 	return v.Value != nil
 }
 
-func (v *Variable) Set(val any) error {
+func (v *Variable) Set(val string) error {
 	if v.HasValue() {
-		return fmt.Errorf("variable has already been assigned value %s", v.Value)
+		return fmt.Errorf("variable has already been assigned value: %s", *v.Value)
 	}
 	switch v.Type {
 	case VariableTypeString:
-		v.setString(val)
+		v.Value = &val
 
 	default:
 		return fmt.Errorf("unsupported type %s", v.Type)
