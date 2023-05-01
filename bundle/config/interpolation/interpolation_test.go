@@ -3,6 +3,7 @@ package interpolation
 import (
 	"testing"
 
+	"github.com/databricks/bricks/bundle/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -31,7 +32,7 @@ type foo struct {
 func expand(v any) error {
 	a := accumulator{}
 	a.start(v)
-	return a.expand(DefaultLookup)
+	return a.expand(IncludeVariableLookups(), DefaultLookup)
 }
 
 func TestInterpolationVariables(t *testing.T) {
@@ -124,4 +125,71 @@ func TestInterpolationVariableLoopError(t *testing.T) {
 
 	err := expand(&f)
 	assert.ErrorContains(t, err, "cycle detected in field resolution: b -> c -> d -> b")
+}
+
+func TestInterpolationForVariables(t *testing.T) {
+	foo := "abc"
+	bar := "${var.foo} def"
+	apple := "${var.foo} ${var.bar}"
+	config := config.Root{
+		Variables: map[string]*config.Variable{
+			"foo": {
+				Value: &foo,
+			},
+			"bar": {
+				Value: &bar,
+			},
+			"apple": {
+				Value: &apple,
+			},
+		},
+		Bundle: config.Bundle{
+			Name: "${var.apple} ${var.foo}",
+		},
+	}
+
+	err := expand(&config)
+	assert.NoError(t, err)
+	assert.Equal(t, "abc", *(config.Variables["foo"].Value))
+	assert.Equal(t, "abc def", *(config.Variables["bar"].Value))
+	assert.Equal(t, "abc abc def", *(config.Variables["apple"].Value))
+	assert.Equal(t, "abc abc def abc", config.Bundle.Name)
+}
+
+func TestInterpolationLoopForVariables(t *testing.T) {
+	foo := "${var.bar}"
+	bar := "${var.foo}"
+	config := config.Root{
+		Variables: map[string]*config.Variable{
+			"foo": {
+				Value: &foo,
+			},
+			"bar": {
+				Value: &bar,
+			},
+		},
+		Bundle: config.Bundle{
+			Name: "${var.foo}",
+		},
+	}
+
+	err := expand(&config)
+	assert.ErrorContains(t, err, "cycle detected in field resolution: bundle.name -> variables.foo.value -> variables.bar.value -> variables.foo.value")
+}
+
+func TestInterpolationInvalidVariableReference(t *testing.T) {
+	foo := "abc"
+	config := config.Root{
+		Variables: map[string]*config.Variable{
+			"foo": {
+				Value: &foo,
+			},
+		},
+		Bundle: config.Bundle{
+			Name: "${vars.foo}",
+		},
+	}
+
+	err := expand(&config)
+	assert.ErrorContains(t, err, "could not resolve reference vars.foo")
 }

@@ -23,7 +23,7 @@ var destroyCmd = &cobra.Command{
 		b := bundle.Get(ctx)
 
 		// Initialize variables from command line values
-		b.Config.SetVariables(destroyVariables)
+		b.Config.InitializeVariables(destroyVariables)
 
 		// If `--force` is specified, force acquisition of the deployment lock.
 		b.Config.Bundle.Lock.Force = force

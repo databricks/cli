@@ -41,7 +41,7 @@ var syncCmd = &cobra.Command{
 		b := bundle.Get(cmd.Context())
 
 		// Initialize variables from command line values
-		b.Config.SetVariables(syncVariables)
+		b.Config.InitializeVariables(syncVariables)
 
 		// Run initialize phase to make sure paths are set.
 		err := bundle.Apply(cmd.Context(), b, []bundle.Mutator{

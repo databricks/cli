@@ -93,3 +93,49 @@ func TestDuplicateIdOnMergeReturnsError(t *testing.T) {
 	err = root.Merge(other)
 	assert.ErrorContains(t, err, "multiple resources named foo (job at ./testdata/duplicate_resource_name_in_subconfiguration/bundle.yml, pipeline at ./testdata/duplicate_resource_name_in_subconfiguration/resources.yml)")
 }
+
+func TestInitializeVariables(t *testing.T) {
+	fooDefault := "abc"
+	root := &Root{
+		Variables: map[string]*Variable{
+			"foo": {
+				Default: &fooDefault,
+				Type:    "string",
+			},
+			"bar": {
+				Type: "string",
+			},
+		},
+	}
+
+	err := root.InitializeVariables([]string{"foo=123", "bar=456"})
+	assert.NoError(t, err)
+	assert.Equal(t, "123", *(root.Variables["foo"].Value))
+	assert.Equal(t, "456", *(root.Variables["bar"].Value))
+}
+
+func TestInitializeVariablesInvalidFormat(t *testing.T) {
+	root := &Root{
+		Variables: map[string]*Variable{
+			"foo": {
+				Type: "string",
+			},
+		},
+	}
+
+	err := root.InitializeVariables([]string{"foo=123=567"})
+	assert.ErrorContains(t, err, "variable assignment foo=123=567 has unexpected format")
+}
+
+func TestInitializeVariablesUndefinedVariables(t *testing.T) {
+	root := &Root{
+		Variables: map[string]*Variable{
+			"foo": {
+				Type: "string",
+			},
+		},
+	}
+
+	err := root.InitializeVariables([]string{"bar=567"})
+	assert.ErrorContains(t, err, "variable bar has not been defined")
+}

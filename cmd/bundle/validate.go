@@ -19,7 +19,7 @@ var validateCmd = &cobra.Command{
 		b := bundle.Get(cmd.Context())
 
 		// Initialize variables from command line values
-		b.Config.SetVariables(validateVariables)
+		b.Config.InitializeVariables(validateVariables)
 
 		err := bundle.Apply(cmd.Context(), b, []bundle.Mutator{
 			phases.Initialize(),

@@ -85,10 +85,10 @@ func (r *Root) SetConfigFilePath(path string) {
 	}
 }
 
-// Initializes variables from any values from the command line flag
+// Initializes variables using values passed from the command line flag
 // Input has to be a string of the form `foo=bar`. In this case the variable with
 // name `foo` is assigned the value `bar`
-func (r *Root) SetVariables(vars []string) error {
+func (r *Root) InitializeVariables(vars []string) error {
 	for _, variable := range vars {
 		varComponents := strings.Split(variable, "=")
 		if len(varComponents) != 2 {

@@ -17,7 +17,7 @@ var deployCmd = &cobra.Command{
 		b := bundle.Get(cmd.Context())
 
 		// Initialize variables from command line values
-		b.Config.SetVariables(deployVariables)
+		b.Config.InitializeVariables(deployVariables)
 
 		// If `--force` is specified, force acquisition of the deployment lock.
 		b.Config.Bundle.Lock.Force = force

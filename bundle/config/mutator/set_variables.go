@@ -17,6 +17,7 @@ func SetVariables() bundle.Mutator {
 	return &setVariables{}
 }
 
+// maybe load variables?
 func (m *setVariables) Name() string {
 	return "SetVariables"
 }
