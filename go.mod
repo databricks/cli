@@ -14,7 +14,7 @@ require (
 	github.com/hashicorp/terraform-json v0.16.0 // MPL 2.0
 	github.com/imdario/mergo v0.3.13 // BSD-3-Clause
 	github.com/manifoldco/promptui v0.9.0 // BSD-3-Clause
-	github.com/mattn/go-isatty v0.0.17 // MIT
+	github.com/mattn/go-isatty v0.0.18 // MIT
 	github.com/nwidger/jsoncolor v0.3.2 // MIT
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8 // BSD-2-Clause
 	github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06 // MIT
