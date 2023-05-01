@@ -1,0 +1,172 @@
+// Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+
+package {{(.TrimPrefix "account").SnakeName}}
+
+import (
+    "github.com/databricks/bricks/libs/cmdio"
+    "github.com/databricks/bricks/libs/flags"
+	"github.com/databricks/bricks/cmd/root"
+	"github.com/databricks/databricks-sdk-go/service/{{.Package.Name}}"
+	"github.com/spf13/cobra"
+)
+
+{{- $excludes := list "command-execution" "statement-execution" "dbfs" "dbsql-permissions" -}}
+{{if not (in $excludes .KebabName) }}
+	{{template "service" .}}
+{{else}}
+	{{skipThisFile}}
+{{end}}
+
+{{define "service"}}
+var Cmd = &cobra.Command{
+	Use:   "{{(.TrimPrefix "account").KebabName}}",
+    {{if .Description -}}
+    Short: `{{.Summary | without "`"}}`,
+	Long: `{{.Comment  "  " 80 | without "`"}}`,
+    {{- end}}
+}
+
+{{range .Methods}}
+// start {{.KebabName}} command
+
+{{if .Request}}var {{.CamelName}}Req {{.Service.Package.Name}}.{{.Request.PascalName}}
+{{if not .Request.IsOnlyPrimitiveFields}}var {{.CamelName}}Json flags.JsonFlag{{end}}
+{{- end}}
+{{if .Wait}}var {{.CamelName}}SkipWait bool
+var {{.CamelName}}Timeout time.Duration{{end}}
+
+func init() {
+    Cmd.AddCommand({{.CamelName}}Cmd)
+	{{if .Wait}}
+	{{.CamelName}}Cmd.Flags().BoolVar(&{{.CamelName}}SkipWait, "no-wait", {{.CamelName}}SkipWait, `do not wait to reach {{range $i, $e := .Wait.Success}}{{if $i}} or {{end}}{{.Content}}{{end}} state`)
+	{{.CamelName}}Cmd.Flags().DurationVar(&{{.CamelName}}Timeout, "timeout", {{.Wait.Timeout}}*time.Minute, `maximum amount of time to reach {{range $i, $e := .Wait.Success}}{{if $i}} or {{end}}{{.Content}}{{end}} state`)
+	{{end -}}
+    {{if .Request}}// TODO: short flags
+	{{if not .Request.IsOnlyPrimitiveFields}}{{.CamelName}}Cmd.Flags().Var(&{{.CamelName}}Json, "json", `either inline JSON string or @path/to/file.json with request body`){{end}}
+    {{$method := .}}
+    {{range .Request.Fields -}}
+		{{- if not .Required -}}
+			{{if .Entity.IsObject }}// TODO: complex arg: {{.Name}}
+			{{else if .Entity.IsAny }}// TODO: any: {{.Name}}
+			{{else if .Entity.ArrayValue }}// TODO: array: {{.Name}}
+			{{else if .Entity.MapValue }}// TODO: map via StringToStringVar: {{.Name}}
+			{{else if .Entity.Enum }}{{$method.CamelName}}Cmd.Flags().Var(&{{$method.CamelName}}Req.{{.PascalName}}, "{{.KebabName}}", `{{.Summary | without "`"}}`)
+			{{else}}{{$method.CamelName}}Cmd.Flags().{{template "arg-type" .Entity}}(&{{$method.CamelName}}Req.{{.PascalName}}, "{{.KebabName}}", {{$method.CamelName}}Req.{{.PascalName}}, `{{.Summary | without "`"}}`)
+			{{end}}
+		{{- end -}}
+    {{- end}}
+    {{end}}
+}
+{{ $hasPosArgs := and .Request (or .Request.IsOnlyPrimitiveFields (eq .PascalName "RunNow")) -}}
+{{- $hasSinglePosArg := and $hasPosArgs (eq 1 (len .Request.RequiredFields)) -}}
+{{- $serviceHasNamedIdMap := and .Service.List .Service.List.NamedIdMap -}}
+{{- $hasIdPrompt := and $hasSinglePosArg $serviceHasNamedIdMap -}}
+{{- $wait := and .Wait (and (not .IsCrudRead) (not (eq .SnakeName "get_run"))) -}}
+var {{.CamelName}}Cmd = &cobra.Command{
+	Use: "{{.KebabName}}{{if $hasPosArgs}}{{range .Request.RequiredFields}} {{.ConstantName}}{{end}}{{end}}",
+	{{if .Description -}}
+    Short: `{{.Summary | without "`"}}`,
+	Long: `{{.Comment  "  " 80 | without "`"}}`,
+    {{end}}
+	Annotations: map[string]string{},{{if and (not $hasIdPrompt) $hasPosArgs }}
+	Args: cobra.ExactArgs({{len .Request.RequiredFields}}),{{end}}
+	PreRunE: root.Must{{if .Service.IsAccounts}}Account{{else}}Workspace{{end}}Client,
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		{{if .Service.IsAccounts}}a := root.AccountClient(ctx){{else}}w := root.WorkspaceClient(ctx){{end}}
+		{{- if .Request -}}
+			{{if $hasIdPrompt}}
+				if len(args) == 0 {
+				names, err := {{if .Service.IsAccounts}}a{{else}}w{{end}}.{{(.Service.TrimPrefix "account").PascalName}}.{{.Service.List.NamedIdMap.PascalName}}(ctx{{if .Service.List.Request}}, {{.Service.Package.Name}}.{{.Service.List.Request.PascalName}}{}{{end}})
+				if err != nil {
+					return err
+				}
+				id, err := cmdio.Select(ctx, names, "{{range .Request.RequiredFields}}{{.Summary | trimSuffix "."}}{{end}}")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
+			}
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have {{range .Request.RequiredFields}}{{.Summary | trimSuffix "." | lower}}{{end}}")
+			}{{end}}{{if not .Request.IsOnlyPrimitiveFields}}
+				err = {{.CamelName}}Json.Unmarshal(&{{.CamelName}}Req)
+				if err != nil {
+					return err
+				}
+			{{- end -}}
+			{{$method := .}}
+			{{- range $arg, $field := .Request.RequiredFields}}
+				{{if not $field.Entity.IsString -}}
+				_, err = fmt.Sscan(args[{{$arg}}], &{{$method.CamelName}}Req.{{$field.PascalName}})
+				if err != nil {
+					return fmt.Errorf("invalid {{$field.ConstantName}}: %s", args[{{$arg}}])
+				}{{else -}}
+				{{$method.CamelName}}Req.{{$field.PascalName}} = args[{{$arg}}]
+				{{- end -}}{{end}}
+		{{end}}
+		{{if $wait -}}
+		if {{.CamelName}}SkipWait {
+			{{template "method-call" .}}
+		}
+		spinner := cmdio.Spinner(ctx)
+		info, err := {{if .Service.IsAccounts}}a{{else}}w{{end}}.{{.Service.PascalName}}.{{.PascalName}}AndWait(ctx{{if .Request}}, {{.CamelName}}Req{{end}},
+			retries.Timeout[{{.Service.Package.Name}}.{{.Wait.Poll.Response.PascalName}}]({{.CamelName}}Timeout),
+			func(i *retries.Info[{{.Service.Package.Name}}.{{.Wait.Poll.Response.PascalName}}]) {
+				if i.Info == nil {
+					return
+				}
+				{{if .Wait.MessagePath -}}
+				{{if .Wait.ComplexMessagePath -}}
+				if i.Info.{{.Wait.MessagePathHead.PascalName}} == nil {
+					return
+				}
+				status := i.Info{{range .Wait.StatusPath}}.{{.PascalName}}{{end}}
+				statusMessage := fmt.Sprintf("current status: %s", status)
+				if i.Info.{{.Wait.MessagePathHead.PascalName}} != nil {
+					statusMessage = i.Info{{range .Wait.MessagePath}}.{{.PascalName}}{{end}}
+				}
+				{{- else -}}
+				statusMessage := i.Info{{range .Wait.MessagePath}}.{{.PascalName}}{{end}}
+				{{- end}}
+				{{- else -}}
+				status := i.Info{{range .Wait.StatusPath}}.{{.PascalName}}{{end}}
+				statusMessage := fmt.Sprintf("current status: %s", status)
+				{{- end}}
+				spinner <- statusMessage
+			})
+		close(spinner)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, info)
+		{{- else -}}
+		{{template "method-call" .}}
+		{{end -}}
+	},
+}
+{{end}}
+// end service {{.Name}}{{end}}
+
+{{- define "method-call" -}}
+		{{if .Response}}response, err :={{else}}err ={{end}} {{if .Service.IsAccounts}}a{{else}}w{{end}}.{{(.Service.TrimPrefix "account").PascalName}}.{{.PascalName}}{{if .Pagination}}All{{end}}(ctx{{if .Request}}, {{.CamelName}}Req{{end}})
+		if err != nil {
+			return err
+		}
+        {{if .Response -}}
+		return cmdio.Render(ctx, response)
+		{{- else -}}
+		return nil
+		{{- end -}}
+{{- end -}}
+
+{{- define "arg-type" -}}
+	{{- if .IsString}}StringVar
+	{{- else if .IsBool}}BoolVar
+	{{- else if .IsInt64}}Int64Var
+	{{- else if .IsFloat64}}Float64Var
+	{{- else if .IsInt}}IntVar
+	{{- else if .Enum }}StringVar
+	{{- else}}/* NOT PRIMITIVE */
+	{{- end -}}
+{{- end -}}

@@ -41,11 +41,11 @@ func TestAccApiPost(t *testing.T) {
 
 	// Post to mkdir
 	{
-		RequireSuccessfulRun(t, "api", "post", "--body=@"+requestPath, "/api/2.0/dbfs/mkdirs")
+		RequireSuccessfulRun(t, "api", "post", "--json=@"+requestPath, "/api/2.0/dbfs/mkdirs")
 	}
 
 	// Post to delete
 	{
-		RequireSuccessfulRun(t, "api", "post", "--body=@"+requestPath, "/api/2.0/dbfs/delete")
+		RequireSuccessfulRun(t, "api", "post", "--json=@"+requestPath, "/api/2.0/dbfs/delete")
 	}
 }

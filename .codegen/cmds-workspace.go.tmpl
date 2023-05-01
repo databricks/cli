@@ -1,0 +1,16 @@
+// Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+
+package cmd
+
+{{$excludes := list "command-execution" "statement-execution" "dbfs" "dbsql-permissions"}}
+
+import (
+	"github.com/databricks/bricks/cmd/root"
+    {{range .Services}}{{if not .IsAccounts}}{{if not (in $excludes .KebabName) }}
+	{{.SnakeName}} "github.com/databricks/bricks/cmd/workspace/{{.KebabName}}"{{end}}{{end}}{{end}}
+)
+
+func init() {
+    {{range .Services}}{{if not .IsAccounts}}{{if not (in $excludes .KebabName) }}
+	root.RootCmd.AddCommand({{.SnakeName}}.Cmd){{end}}{{end}}{{end}}
+}

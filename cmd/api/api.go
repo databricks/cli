@@ -1,13 +1,13 @@
 package api
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
 	"strings"
 
 	"github.com/databricks/bricks/cmd/root"
+	"github.com/databricks/bricks/libs/cmdio"
+	"github.com/databricks/bricks/libs/flags"
 	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
@@ -18,26 +18,8 @@ var apiCmd = &cobra.Command{
 	Short: "Perform Databricks API call",
 }
 
-func requestBody(arg string) (any, error) {
-	if arg == "" {
-		return nil, nil
-	}
-
-	// Load request from file if it starts with '@' (like curl).
-	if arg[0] == '@' {
-		path := arg[1:]
-		buf, err := os.ReadFile(path)
-		if err != nil {
-			return nil, fmt.Errorf("error reading %s: %w", path, err)
-		}
-		return buf, nil
-	}
-
-	return arg, nil
-}
-
 func makeCommand(method string) *cobra.Command {
-	var bodyArgument string
+	var payload flags.JsonFlag
 
 	command := &cobra.Command{
 		Use:   strings.ToLower(method),
@@ -45,33 +27,36 @@ func makeCommand(method string) *cobra.Command {
 		Short: fmt.Sprintf("Perform %s request", method),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var path = args[0]
+
+			var request any
+			err := payload.Unmarshal(&request)
+			if err != nil {
+				return err
+			}
+
+			cfg := &config.Config{}
+
+			// command-line flag can specify the profile in use
+			profileFlag := cmd.Flag("profile")
+			if profileFlag != nil {
+				cfg.Profile = profileFlag.Value.String()
+			}
+
+			api, err := client.New(cfg)
+			if err != nil {
+				return err
+			}
+
 			var response any
-
-			request, err := requestBody(bodyArgument)
-			if err != nil {
-				return err
-			}
-
-			api, err := client.New(&config.Config{})
-			if err != nil {
-				return err
-			}
 			err = api.Do(cmd.Context(), method, path, request, &response)
 			if err != nil {
 				return err
 			}
-
-			if response != nil {
-				enc := json.NewEncoder(cmd.OutOrStdout())
-				enc.SetIndent("", "  ")
-				enc.Encode(response)
-			}
-
-			return nil
+			return cmdio.Render(cmd.Context(), response)
 		},
 	}
 
-	command.Flags().StringVar(&bodyArgument, "body", "", "Request body")
+	command.Flags().Var(&payload, "json", `either inline JSON string or @path/to/file.json with request body`)
 	return command
 }
 

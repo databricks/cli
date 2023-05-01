@@ -1,0 +1,4 @@
+bundle:
+  name: autoload git config test
+  git:
+    branch: foo

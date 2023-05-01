@@ -46,6 +46,16 @@ var RootCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+		// set context, so that initializeIO can have the current context
+		cmd.SetContext(ctx)
+
+		// Configure command IO
+		err = initializeIO(cmd)
+		if err != nil {
+			return err
+		}
+		// get the context back
+		ctx = cmd.Context()
 
 		// Configure our user agent with the command that's about to be executed.
 		ctx = withCommandInUserAgent(ctx, cmd)
