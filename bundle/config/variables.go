@@ -15,7 +15,7 @@ type Variable struct {
 	// A default value which then makes the variable optional
 	Default *string `json:"default,omitempty"`
 
-	// Type for this variable. Support types are:
+	// Type for this variable. Supported types are:
 	//
 	// 1. String
 	Type VariableType `json:"type"`
