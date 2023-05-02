@@ -36,7 +36,7 @@ func setVariable(v *config.Variable, name string) error {
 		return nil
 	}
 
-	// case: Set the varliable to it's default value
+	// case: Set the variable to its default value
 	if v.HasDefault() {
 		err := v.Set(*v.Default)
 		if err != nil {
