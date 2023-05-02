@@ -12,31 +12,23 @@ import (
 )
 
 func TestVariables(t *testing.T) {
-	t.Setenv("BUNDLE_VAR_B", "bar_from_env")
-	t.Setenv("BUNDLE_VAR_C", "world")
+	t.Setenv("BUNDLE_VAR_b", "def")
 	b := load(t, "./variables")
 	err := bundle.Apply(context.Background(), b, []bundle.Mutator{
 		mutator.SetVariables(),
 		interpolation.Interpolate(
-			interpolation.IncludeLookupsInPath("bundle"),
-			interpolation.IncludeLookupsInPath("workspace"),
-			interpolation.IncludeLookupsInPath("variables"),
+			interpolation.IncludeVariableLookups(),
 		)})
 	require.NoError(t, err)
-	assert.Equal(t, "name: foo bar_from_env world", b.Config.Bundle.Name)
-	assert.Equal(t, "foo", b.Config.Variables["a"])
-	assert.Equal(t, "bar_from_env", b.Config.Variables["b"])
-	assert.Equal(t, "world", b.Config.Variables["c"])
+	assert.Equal(t, "abc def", b.Config.Bundle.Name)
 }
 
-func TestVariablesWhenUndefinedVarIsUsed(t *testing.T) {
+func TestVariablesLoadingFailsWhenRequiredVariableIsNotSpecified(t *testing.T) {
 	b := load(t, "./variables")
 	err := bundle.Apply(context.Background(), b, []bundle.Mutator{
 		mutator.SetVariables(),
 		interpolation.Interpolate(
-			interpolation.IncludeLookupsInPath("bundle"),
-			interpolation.IncludeLookupsInPath("workspace"),
-			interpolation.IncludeLookupsInPath("variables"),
+			interpolation.IncludeVariableLookups(),
 		)})
-	assert.ErrorContains(t, err, "could not resolve reference variables.c")
+	assert.ErrorContains(t, err, "no value assigned to required variable b. Assignment can be done through the \"--var\" flag or by setting the BUNDLE_VAR_b environment variable")
 }

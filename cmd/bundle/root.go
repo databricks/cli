@@ -17,5 +17,4 @@ func AddCommand(cmd *cobra.Command) {
 
 func init() {
 	root.RootCmd.AddCommand(rootCmd)
-	rootCmd.PersistentFlags().StringSlice("var", []string{}, "Set value for a variable defined in config. For example: `--var=\"foo=bar\"")
 }

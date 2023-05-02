@@ -1,7 +1,12 @@
 variables:
-  a: foo
-  b: bar
+  a:
+    description: optional variable
+    type: string
+    default: abc
 
+  b:
+    description: required variable
+    type: string
 
 bundle:
-  name: "name: ${variables.a} ${variables.b} ${variables.c}"
+  name: ${var.a} ${var.b}

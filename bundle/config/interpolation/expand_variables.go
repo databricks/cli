@@ -17,7 +17,6 @@ func isVariableReference(s string) bool {
 
 // Expands variable references of the form `var.foo` to `variables.foo.value`
 // Errors out if input string is not in the correct format
-// TODO: add tests for this
 func expandVariable(s string) (string, error) {
 	if !isVariableReference(s) {
 		return "", fmt.Errorf("%s is not a valid variable reference", s)

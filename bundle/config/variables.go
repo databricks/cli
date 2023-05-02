@@ -6,7 +6,6 @@ import (
 
 type VariableType string
 
-// TODO: make destroy work without requiring variables to be entered
 const (
 	VariableTypeString = VariableType("string")
 )
@@ -37,7 +36,6 @@ type Variable struct {
 
 // True if the variable has been assigned a default value. Variables without a
 // a default value are by defination required
-// TODO: test whether this works with empty strings
 func (v *Variable) HasDefault() bool {
 	return v.Default != nil
 }
