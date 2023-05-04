@@ -27,8 +27,6 @@ var deployCmd = &cobra.Command{
 
 var force bool
 
-var deployVariables []string
-
 func init() {
 	AddCommand(deployCmd)
 	deployCmd.Flags().BoolVar(&force, "force", false, "Force acquisition of deployment lock.")

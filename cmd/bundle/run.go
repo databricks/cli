@@ -87,8 +87,6 @@ var runCmd = &cobra.Command{
 	},
 }
 
-var runVariables []string
-
 func init() {
 	runOptions.Define(runCmd.Flags())
 	rootCmd.AddCommand(runCmd)

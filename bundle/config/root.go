@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/databricks/bricks/bundle/config/variables"
 	"github.com/ghodss/yaml"
 	"github.com/imdario/mergo"
 )
@@ -20,7 +21,7 @@ type Root struct {
 
 	// Contains user defined variables, either defined in the bundle config or
 	// loaded through env vars
-	Variables map[string]*Variable `json:"variables"`
+	Variables map[string]*variables.Variable `json:"variables"`
 
 	// Bundle contains details about this bundle, such as its name,
 	// version of the spec (TODO), default cluster, default warehouse, etc.

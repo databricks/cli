@@ -51,7 +51,6 @@ var destroyCmd = &cobra.Command{
 }
 
 var autoApprove bool
-var destroyVariables []string
 
 func init() {
 	AddCommand(destroyCmd)

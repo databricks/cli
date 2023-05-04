@@ -70,7 +70,6 @@ var syncCmd = &cobra.Command{
 var interval time.Duration
 var full bool
 var watch bool
-var syncVariables []string
 
 func init() {
 	AddCommand(syncCmd)
