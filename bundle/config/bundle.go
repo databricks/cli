@@ -27,5 +27,5 @@ type Bundle struct {
 
 	// Contains Git information like current commit, current branch and
 	// origin url. Automatically loaded by reading .git directory if not specified
-	Git Git `json:"git"`
+	Git Git `json:"git,omitempty"`
 }
