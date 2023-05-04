@@ -1,9 +1,9 @@
 package flags
 
-import "github.com/spf13/cobra"
+// import "github.com/spf13/cobra"
 
-const variableFlagDescription = `set values for variables defined in bundle config. Example: --var="foo=bar"`
+// const variableFlagDescription =
 
-func AddVariableFlag(cmd *cobra.Command, p *[]string) {
-	cmd.Flags().StringSliceVar(p, "var", []string{}, variableFlagDescription)
-}
+// func AddVariableFlag(cmd *cobra.Command, p *[]string) {
+// 	cmd.Flags().StringSliceVar(p, "var", []string{}, variableFlagDescription)
+// }

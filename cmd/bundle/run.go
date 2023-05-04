@@ -20,12 +20,9 @@ var runCmd = &cobra.Command{
 	Short: "Run a workload (e.g. a job or a pipeline)",
 
 	Args:    cobra.ExactArgs(1),
-	PreRunE: root.MustConfigureBundle,
+	PreRunE: ConfigureBundleWithVariables,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		b := bundle.Get(cmd.Context())
-
-		// Initialize variables from command line values
-		b.Config.InitializeVariables(runVariables)
 
 		err := bundle.Apply(cmd.Context(), b, []bundle.Mutator{
 			phases.Initialize(),
@@ -95,5 +92,4 @@ var runVariables []string
 func init() {
 	runOptions.Define(runCmd.Flags())
 	rootCmd.AddCommand(runCmd)
-	flags.AddVariableFlag(runCmd, &runVariables)
 }

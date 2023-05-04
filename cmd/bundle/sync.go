@@ -6,8 +6,6 @@ import (
 
 	"github.com/databricks/bricks/bundle"
 	"github.com/databricks/bricks/bundle/phases"
-	"github.com/databricks/bricks/cmd/root"
-	"github.com/databricks/bricks/libs/flags"
 	"github.com/databricks/bricks/libs/log"
 	"github.com/databricks/bricks/libs/sync"
 	"github.com/spf13/cobra"
@@ -36,12 +34,9 @@ var syncCmd = &cobra.Command{
 	Short: "Synchronize bundle tree to the workspace",
 	Args:  cobra.NoArgs,
 
-	PreRunE: root.MustConfigureBundle,
+	PreRunE: ConfigureBundleWithVariables,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		b := bundle.Get(cmd.Context())
-
-		// Initialize variables from command line values
-		b.Config.InitializeVariables(syncVariables)
 
 		// Run initialize phase to make sure paths are set.
 		err := bundle.Apply(cmd.Context(), b, []bundle.Mutator{
@@ -82,5 +77,4 @@ func init() {
 	syncCmd.Flags().DurationVar(&interval, "interval", 1*time.Second, "file system polling interval (for --watch)")
 	syncCmd.Flags().BoolVar(&full, "full", false, "perform full synchronization (default is incremental)")
 	syncCmd.Flags().BoolVar(&watch, "watch", false, "watch local file system for changes")
-	flags.AddVariableFlag(syncCmd, &syncVariables)
 }
