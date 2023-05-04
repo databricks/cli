@@ -1,12 +1,10 @@
 variables:
   a:
     description: optional variable
-    type: string
     default: abc
 
   b:
     description: required variable
-    type: string
 
 bundle:
   name: ${var.a} ${var.b}

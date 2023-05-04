@@ -99,11 +99,11 @@ func TestInitializeVariables(t *testing.T) {
 	root := &Root{
 		Variables: map[string]*Variable{
 			"foo": {
-				Default: &fooDefault,
-				Type:    "string",
+				Default:     &fooDefault,
+				Description: "an optional variable since default is defined",
 			},
 			"bar": {
-				Type: "string",
+				Description: "a required variable",
 			},
 		},
 	}
@@ -118,7 +118,7 @@ func TestInitializeVariablesInvalidFormat(t *testing.T) {
 	root := &Root{
 		Variables: map[string]*Variable{
 			"foo": {
-				Type: "string",
+				Description: "a variable called foo",
 			},
 		},
 	}
@@ -131,7 +131,7 @@ func TestInitializeVariablesUndefinedVariables(t *testing.T) {
 	root := &Root{
 		Variables: map[string]*Variable{
 			"foo": {
-				Type: "string",
+				Description: "A required variable",
 			},
 		},
 	}

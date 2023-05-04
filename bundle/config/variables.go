@@ -4,21 +4,10 @@ import (
 	"fmt"
 )
 
-type VariableType string
-
-const (
-	VariableTypeString = VariableType("string")
-)
-
 // Input variables for the bundle config
 type Variable struct {
 	// A default value which then makes the variable optional
 	Default *string `json:"default,omitempty"`
-
-	// Type for this variable. Supported types are:
-	//
-	// 1. String
-	Type VariableType `json:"type"`
 
 	// Documentation for this input variable
 	Description string `json:"description,omitempty"`
@@ -49,12 +38,6 @@ func (v *Variable) Set(val string) error {
 	if v.HasValue() {
 		return fmt.Errorf("variable has already been assigned value: %s", *v.Value)
 	}
-	switch v.Type {
-	case VariableTypeString:
-		v.Value = &val
-
-	default:
-		return fmt.Errorf("unsupported type %s", v.Type)
-	}
+	v.Value = &val
 	return nil
 }
