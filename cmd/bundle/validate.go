@@ -16,9 +16,6 @@ var validateCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		b := bundle.Get(cmd.Context())
 
-		// Initialize variables from command line values
-		b.Config.InitializeVariables(validateVariables)
-
 		err := bundle.Apply(cmd.Context(), b, []bundle.Mutator{
 			phases.Initialize(),
 		})
@@ -34,8 +31,6 @@ var validateCmd = &cobra.Command{
 		return nil
 	},
 }
-
-var validateVariables []string
 
 func init() {
 	AddCommand(validateCmd)
