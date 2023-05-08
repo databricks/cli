@@ -15,7 +15,7 @@ func TestSingleTaskJobOutputToString(t *testing.T) {
 	}
 	myJob := JobOutput{
 		TaskOutputs: []TaskOutput{
-			{Name: "my_notebook_task", Output: &taskNotebook, EndTime: 0},
+			{TaskKey: "my_notebook_task", Output: &taskNotebook, EndTime: 0},
 		},
 	}
 
@@ -36,8 +36,8 @@ func TestMultiTaskJobOutputToString(t *testing.T) {
 	}
 	myJob := JobOutput{
 		TaskOutputs: []TaskOutput{
-			{Name: "my_bar_task", Output: &taskBar, EndTime: 0},
-			{Name: "my_foo_task", Output: &taskFoo, EndTime: 0},
+			{TaskKey: "my_bar_task", Output: &taskBar, EndTime: 0},
+			{TaskKey: "my_foo_task", Output: &taskFoo, EndTime: 0},
 		},
 	}
 
@@ -69,9 +69,9 @@ func TestTaskJobOutputOrderToString(t *testing.T) {
 	}
 	myJob := JobOutput{
 		TaskOutputs: []TaskOutput{
-			{Name: "my_baz_task", Output: &taskBaz, EndTime: 1683553233331},
-			{Name: "my_bar_task", Output: &taskBar, EndTime: 1683553223508},
-			{Name: "my_foo_task", Output: &taskFoo, EndTime: 1683553217598},
+			{TaskKey: "my_baz_task", Output: &taskBaz, EndTime: 1683553233331},
+			{TaskKey: "my_bar_task", Output: &taskBar, EndTime: 1683553223508},
+			{TaskKey: "my_foo_task", Output: &taskFoo, EndTime: 1683553217598},
 		},
 	}
 

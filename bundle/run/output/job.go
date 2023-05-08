@@ -11,7 +11,7 @@ import (
 )
 
 type TaskOutput struct {
-	Name    string
+	TaskKey string
 	Output  RunOutput
 	EndTime int64
 }
@@ -46,7 +46,7 @@ func (out *JobOutput) String() (string, error) {
 			return "", nil
 		}
 		result.WriteString("=======\n")
-		result.WriteString(fmt.Sprintf("Task %s:\n", v.Name))
+		result.WriteString(fmt.Sprintf("Task %s:\n", v.TaskKey))
 		result.WriteString(fmt.Sprintf("%s\n", taskString))
 	}
 	return result.String(), nil
@@ -69,7 +69,7 @@ func GetJobOutput(ctx context.Context, w *databricks.WorkspaceClient, runId int6
 		if err != nil {
 			return nil, err
 		}
-		task := TaskOutput{Name: task.TaskKey, Output: toRunOutput(jobRunOutput), EndTime: task.EndTime}
+		task := TaskOutput{TaskKey: task.TaskKey, Output: toRunOutput(jobRunOutput), EndTime: task.EndTime}
 		result.TaskOutputs = append(result.TaskOutputs, task)
 	}
 	return result, nil
