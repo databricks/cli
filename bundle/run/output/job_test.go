@@ -14,8 +14,8 @@ func TestSingleTaskJobOutputToString(t *testing.T) {
 		Truncated: true,
 	}
 	myJob := JobOutput{
-		TaskOutputs: map[string]RunOutput{
-			"my_notebook_task": &taskNotebook,
+		TaskOutputs: []TaskOutput{
+			{Name: "my_notebook_task", Output: &taskNotebook, EndTime: 0},
 		},
 	}
 
@@ -35,9 +35,9 @@ func TestMultiTaskJobOutputToString(t *testing.T) {
 		LogsTruncated: false,
 	}
 	myJob := JobOutput{
-		TaskOutputs: map[string]RunOutput{
-			"my_foo_task": &taskFoo,
-			"my_bar_task": &taskBar,
+		TaskOutputs: []TaskOutput{
+			{Name: "my_bar_task", Output: &taskBar, EndTime: 0},
+			{Name: "my_foo_task", Output: &taskFoo, EndTime: 0},
 		},
 	}
 
@@ -53,6 +53,41 @@ Task my_foo_task:
 foo
 [truncated...]
 
+`
+	assert.Equal(t, expected, actual)
+}
+
+func TestTaskJobOutputOrderToString(t *testing.T) {
+	taskFoo := NotebookOutput{
+		Result: "foo",
+	}
+	taskBar := LogsOutput{
+		Logs: "bar",
+	}
+	taskBaz := LogsOutput{
+		Logs: "baz",
+	}
+	myJob := JobOutput{
+		TaskOutputs: []TaskOutput{
+			{Name: "my_baz_task", Output: &taskBaz, EndTime: 1683553233331},
+			{Name: "my_bar_task", Output: &taskBar, EndTime: 1683553223508},
+			{Name: "my_foo_task", Output: &taskFoo, EndTime: 1683553217598},
+		},
+	}
+
+	actual, err := myJob.String()
+	require.NoError(t, err)
+
+	expected := `Output:
+=======
+Task my_foo_task:
+foo
+=======
+Task my_bar_task:
+bar
+=======
+Task my_baz_task:
+baz
 `
 	assert.Equal(t, expected, actual)
 }
