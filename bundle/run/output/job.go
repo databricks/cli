@@ -8,15 +8,20 @@ import (
 
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
-	"golang.org/x/exp/maps"
 )
+
+type TaskOutput struct {
+	TaskKey string
+	Output  RunOutput
+	EndTime int64
+}
 
 type JobOutput struct {
 	// output for tasks with a non empty output
-	TaskOutputs map[string]RunOutput `json:"task_outputs"`
+	TaskOutputs []TaskOutput `json:"task_outputs"`
 }
 
-// TODO: Print the output respecting the execution order (https://github.com/databricks/bricks/issues/259)
+// Returns tasks output in text form sorted in execution order based on task end time
 func (out *JobOutput) String() (string, error) {
 	if len(out.TaskOutputs) == 0 {
 		return "", nil
@@ -24,24 +29,24 @@ func (out *JobOutput) String() (string, error) {
 	// When only one task, just return that output without any formatting
 	if len(out.TaskOutputs) == 1 {
 		for _, v := range out.TaskOutputs {
-			return v.String()
+			return v.Output.String()
 		}
 	}
 	result := strings.Builder{}
 	result.WriteString("Output:\n")
-
-	taskKeys := maps.Keys(out.TaskOutputs)
-	sort.Strings(taskKeys)
-	for _, k := range taskKeys {
-		if out.TaskOutputs[k] == nil {
+	sort.Slice(out.TaskOutputs, func(i, j int) bool {
+		return out.TaskOutputs[i].EndTime < out.TaskOutputs[j].EndTime
+	})
+	for _, v := range out.TaskOutputs {
+		if v.Output == nil {
 			continue
 		}
-		taskString, err := out.TaskOutputs[k].String()
+		taskString, err := v.Output.String()
 		if err != nil {
 			return "", nil
 		}
 		result.WriteString("=======\n")
-		result.WriteString(fmt.Sprintf("Task %s:\n", k))
+		result.WriteString(fmt.Sprintf("Task %s:\n", v.TaskKey))
 		result.WriteString(fmt.Sprintf("%s\n", taskString))
 	}
 	return result.String(), nil
@@ -55,7 +60,7 @@ func GetJobOutput(ctx context.Context, w *databricks.WorkspaceClient, runId int6
 		return nil, err
 	}
 	result := &JobOutput{
-		TaskOutputs: make(map[string]RunOutput),
+		TaskOutputs: make([]TaskOutput, len(jobRun.Tasks)),
 	}
 	for _, task := range jobRun.Tasks {
 		jobRunOutput, err := w.Jobs.GetRunOutput(ctx, jobs.GetRunOutputRequest{
@@ -64,7 +69,8 @@ func GetJobOutput(ctx context.Context, w *databricks.WorkspaceClient, runId int6
 		if err != nil {
 			return nil, err
 		}
-		result.TaskOutputs[task.TaskKey] = toRunOutput(jobRunOutput)
+		task := TaskOutput{TaskKey: task.TaskKey, Output: toRunOutput(jobRunOutput), EndTime: task.EndTime}
+		result.TaskOutputs = append(result.TaskOutputs, task)
 	}
 	return result, nil
 }
