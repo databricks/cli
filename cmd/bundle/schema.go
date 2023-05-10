@@ -14,9 +14,6 @@ var schemaCmd = &cobra.Command{
 	Short: "Generate JSON Schema for bundle configuration",
 
 	RunE: func(cmd *cobra.Command, args []string) error {
-		// mark the --var flag as hidden since it's not relevant to this command
-		cmd.Flags().MarkHidden("var")
-
 		docs, err := schema.BundleDocs(openapi)
 		if err != nil {
 			return err
