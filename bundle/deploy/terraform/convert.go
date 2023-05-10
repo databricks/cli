@@ -154,14 +154,6 @@ func BundleToTerraform(config *config.Root) *schema.Root {
 }
 
 func TerraformToBundle(state *tfjson.State, config *config.Root) error {
-	if state.Values == nil {
-		return fmt.Errorf("state.Values not set")
-	}
-
-	if state.Values.RootModule == nil {
-		return fmt.Errorf("state.Values.RootModule not set")
-	}
-
 	for _, resource := range state.Values.RootModule.Resources {
 		// Limit to resources.
 		if resource.Mode != tfjson.ManagedResourceMode {
