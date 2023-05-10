@@ -10,7 +10,7 @@ func ConfigureBundleWithVariables(cmd *cobra.Command, args []string) error {
 	// Load bundle config and apply environment
 	err := root.MustConfigureBundle(cmd, args)
 	if err != nil {
-		return nil
+		return err
 	}
 
 	// Initialize variables by assigning them values passed as command line flags
