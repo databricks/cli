@@ -2,7 +2,7 @@ package bundle
 
 import (
 	"context"
-	"errors"
+	"fmt"
 )
 
 type DeferredMutator struct {
@@ -24,11 +24,19 @@ func Defer(mutators []Mutator, onFinishOrError []Mutator) []Mutator {
 }
 
 func (d *DeferredMutator) Apply(ctx context.Context, b *Bundle) ([]Mutator, error) {
-	err := Apply(ctx, b, d.mutators)
+	mainErr := Apply(ctx, b, d.mutators)
 	errOnFinish := Apply(ctx, b, d.onFinishOrError)
+	var err error = nil
 
-	if err != nil || errOnFinish != nil {
-		return nil, errors.Join(err, errOnFinish)
+	if mainErr != nil {
+		err = mainErr
 	}
-	return nil, nil
+	if errOnFinish != nil {
+		if err == nil {
+			err = errOnFinish
+		} else {
+			err = fmt.Errorf("%w\n%w", err, errOnFinish)
+		}
+	}
+	return nil, err
 }
