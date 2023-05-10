@@ -1,0 +1,123 @@
+package mutator
+
+import (
+	"context"
+	"os"
+	"testing"
+
+	"github.com/databricks/bricks/bundle"
+	"github.com/databricks/bricks/bundle/config"
+	"github.com/databricks/bricks/bundle/config/variables"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestSetVariableFromProcessEnvVar(t *testing.T) {
+	defaultVal := "default"
+	variable := variables.Variable{
+		Description: "a test variable",
+		Default:     &defaultVal,
+	}
+
+	// set value for variable as an environment variable
+	err := os.Setenv("BUNDLE_VAR_foo", "process-env")
+	defer os.Unsetenv("BUNDLE_VAR_foo")
+	require.NoError(t, err)
+
+	err = setVariable(&variable, "foo")
+	require.NoError(t, err)
+	assert.Equal(t, *variable.Value, "process-env")
+}
+
+func TestSetVariableUsingDefaultValue(t *testing.T) {
+	defaultVal := "default"
+	variable := variables.Variable{
+		Description: "a test variable",
+		Default:     &defaultVal,
+	}
+
+	err := setVariable(&variable, "foo")
+	require.NoError(t, err)
+	assert.Equal(t, *variable.Value, "default")
+}
+
+func TestSetVariableWhenAlreadyAValueIsAssigned(t *testing.T) {
+	defaultVal := "default"
+	val := "assigned-value"
+	variable := variables.Variable{
+		Description: "a test variable",
+		Default:     &defaultVal,
+		Value:       &val,
+	}
+
+	// since a value is already assigned to the variable, it would not be overridden
+	// by the default value
+	err := setVariable(&variable, "foo")
+	require.NoError(t, err)
+	assert.Equal(t, *variable.Value, "assigned-value")
+}
+
+func TestSetVariableEnvVarValueDoesNotOverridePresetValue(t *testing.T) {
+	defaultVal := "default"
+	val := "assigned-value"
+	variable := variables.Variable{
+		Description: "a test variable",
+		Default:     &defaultVal,
+		Value:       &val,
+	}
+
+	// set value for variable as an environment variable
+	err := os.Setenv("BUNDLE_VAR_foo", "process-env")
+	defer os.Unsetenv("BUNDLE_VAR_foo")
+	require.NoError(t, err)
+
+	// since a value is already assigned to the variable, it would not be overridden
+	// by the value from environment
+	err = setVariable(&variable, "foo")
+	require.NoError(t, err)
+	assert.Equal(t, *variable.Value, "assigned-value")
+}
+
+func TestSetVariablesErrorsIfAValueCouldNotBeResolved(t *testing.T) {
+	variable := variables.Variable{
+		Description: "a test variable with no default",
+	}
+
+	// fails because we could not resolve a value for the variable
+	err := setVariable(&variable, "foo")
+	assert.ErrorContains(t, err, "no value assigned to required variable foo. Assignment can be done through the \"--var\" flag or by setting the BUNDLE_VAR_foo environment variable")
+}
+
+func TestSetVariablesMutator(t *testing.T) {
+	defaultValForA := "default-a"
+	defaultValForB := "default-b"
+	valForC := "assigned-val-c"
+	bundle := &bundle.Bundle{
+		Config: config.Root{
+			Variables: map[string]*variables.Variable{
+				"a": {
+					Description: "resolved to default value",
+					Default:     &defaultValForA,
+				},
+				"b": {
+					Description: "resolved from environment vairables",
+					Default:     &defaultValForB,
+				},
+				"c": {
+					Description: "has already been assigned a value",
+					Value:       &valForC,
+				},
+			},
+		},
+	}
+
+	err := os.Setenv("BUNDLE_VAR_b", "env-var-b")
+	defer os.Unsetenv("BUNDLE_VAR_b")
+	require.NoError(t, err)
+
+	_, err = SetVariables().Apply(context.Background(), bundle)
+	require.NoError(t, err)
+	assert.Equal(t, "default-a", *bundle.Config.Variables["a"].Value)
+	assert.Equal(t, "env-var-b", *bundle.Config.Variables["b"].Value)
+	assert.Equal(t, "assigned-val-c", *bundle.Config.Variables["c"].Value)
+}
