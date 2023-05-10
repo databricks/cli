@@ -28,10 +28,11 @@ func setVariable(v *variables.Variable, name string) error {
 	}
 
 	// case: read and set variable value from process environment
-	if val, ok := os.LookupEnv(bundleVarPrefix + name); ok {
+	envVarName := bundleVarPrefix + name
+	if val, ok := os.LookupEnv(envVarName); ok {
 		err := v.Set(val)
 		if err != nil {
-			return fmt.Errorf("failed to assign %s to %s with error: %w", val, name, err)
+			return fmt.Errorf(`failed to assign value "%s" to variable %s from environment variable %s with error: %w`, val, name, envVarName, err)
 		}
 		return nil
 	}
@@ -40,7 +41,7 @@ func setVariable(v *variables.Variable, name string) error {
 	if v.HasDefault() {
 		err := v.Set(*v.Default)
 		if err != nil {
-			return fmt.Errorf("failed to assign %s to %s with error: %w", *v.Default, name, err)
+			return fmt.Errorf(`failed to assign default value from config "%s" to variable %s with error: %w`, *v.Default, name, err)
 		}
 		return nil
 	}
