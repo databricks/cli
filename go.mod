@@ -12,7 +12,7 @@ require (
 	github.com/hashicorp/hc-install v0.5.1 // MPL 2.0
 	github.com/hashicorp/terraform-exec v0.18.1 // MPL 2.0
 	github.com/hashicorp/terraform-json v0.16.0 // MPL 2.0
-	github.com/imdario/mergo v0.3.13 // BSD-3-Clause
+	github.com/imdario/mergo v0.3.15 // BSD-3-Clause
 	github.com/manifoldco/promptui v0.9.0 // BSD-3-Clause
 	github.com/mattn/go-isatty v0.0.18 // MIT
 	github.com/nwidger/jsoncolor v0.3.2 // MIT
