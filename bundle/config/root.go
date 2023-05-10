@@ -19,9 +19,8 @@ type Root struct {
 	// It is set when loading `bundle.yml`.
 	Path string `json:"-" bundle:"readonly"`
 
-	// Contains user defined variables, either defined in the bundle config or
-	// loaded through env vars
-	Variables map[string]*variables.Variable `json:"variables"`
+	// Contains user defined variables
+	Variables map[string]*variables.Variable `json:"variables,omitempty"`
 
 	// Bundle contains details about this bundle, such as its name,
 	// version of the spec (TODO), default cluster, default warehouse, etc.
