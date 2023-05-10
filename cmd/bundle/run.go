@@ -23,7 +23,6 @@ var runCmd = &cobra.Command{
 	PreRunE: ConfigureBundleWithVariables,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		b := bundle.Get(cmd.Context())
-
 		err := bundle.Apply(cmd.Context(), b, []bundle.Mutator{
 			phases.Initialize(),
 			terraform.Interpolate(),

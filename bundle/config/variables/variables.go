@@ -6,7 +6,7 @@ import (
 
 const VariableReferencePrefix = "var"
 
-// Input variables for the bundle config
+// An input variable for the bundle config
 type Variable struct {
 	// A default value which then makes the variable optional
 	Default *string `json:"default,omitempty"`

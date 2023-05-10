@@ -13,7 +13,7 @@ func ConfigureBundleWithVariables(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	// Initial variable values command line args
+	// Initialize variables by assigning them values passed as command line flags
 	b := bundle.Get(cmd.Context())
 	return b.Config.InitializeVariables(variables)
 }
