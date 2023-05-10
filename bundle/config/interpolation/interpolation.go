@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/databricks/bricks/bundle"
+	"github.com/databricks/bricks/bundle/config/variables"
 	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
 )
@@ -127,6 +128,13 @@ func (a *accumulator) walk(scope []string, rv reflect.Value, s setter) {
 	case reflect.String:
 		path := strings.Join(scope, Delimiter)
 		a.strings[path] = newStringField(path, anyGetter{rv}, s)
+
+		// register alias for variable value. `var.foo` would be the alias for
+		// `variables.foo.value`
+		if len(scope) == 3 && scope[0] == "variables" && scope[2] == "value" {
+			aliasPath := strings.Join([]string{variables.VariableReferencePrefix, scope[1]}, Delimiter)
+			a.strings[aliasPath] = a.strings[path]
+		}
 	case reflect.Struct:
 		a.walkStruct(scope, rv)
 	case reflect.Map:
@@ -185,15 +193,6 @@ func (a *accumulator) Resolve(path string, seenPaths []string, fns ...LookupFunc
 
 	// resolve all variables refered in the root string field
 	for _, childFieldPath := range field.dependsOn() {
-		// expand child path if it's an alias for a variable
-		if isVariableReference(childFieldPath) {
-			var err error
-			childFieldPath, err = expandVariable(childFieldPath)
-			if err != nil {
-				return err
-			}
-		}
-
 		// error if there is a loop in variable interpolation
 		if slices.Contains(seenPaths, childFieldPath) {
 			return fmt.Errorf("cycle detected in field resolution: %s", strings.Join(append(seenPaths, childFieldPath), " -> "))

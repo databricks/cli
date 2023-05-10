@@ -4,6 +4,8 @@ import (
 	"fmt"
 )
 
+const VariableReferencePrefix = "var"
+
 // Input variables for the bundle config
 type Variable struct {
 	// A default value which then makes the variable optional

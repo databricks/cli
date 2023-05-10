@@ -33,7 +33,7 @@ type foo struct {
 func expand(v any) error {
 	a := accumulator{}
 	a.start(v)
-	return a.expand(IncludeVariableLookups(), DefaultLookup)
+	return a.expand(DefaultLookup)
 }
 
 func TestInterpolationVariables(t *testing.T) {
@@ -175,7 +175,7 @@ func TestInterpolationLoopForVariables(t *testing.T) {
 	}
 
 	err := expand(&config)
-	assert.ErrorContains(t, err, "cycle detected in field resolution: bundle.name -> variables.foo.value -> variables.bar.value -> variables.foo.value")
+	assert.ErrorContains(t, err, "cycle detected in field resolution: bundle.name -> var.foo -> var.bar -> var.foo")
 }
 
 func TestInterpolationInvalidVariableReference(t *testing.T) {

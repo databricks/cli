@@ -50,18 +50,3 @@ func IncludeLookupsInPath(include ...string) LookupFunction {
 		return DefaultLookup(path, lookup)
 	}
 }
-
-// IncludeVariableLookups is a lookup function that resolves variable lookups to
-// their value. ${var.foo} is resolved to ${variables.foo.value}
-func IncludeVariableLookups() LookupFunction {
-	return func(path string, lookup map[string]string) (string, error) {
-		if !isVariableReference(path) {
-			return "", ErrSkipInterpolation
-		}
-		expandedPath, err := expandVariable(path)
-		if err != nil {
-			return "", err
-		}
-		return DefaultLookup(expandedPath, lookup)
-	}
-}

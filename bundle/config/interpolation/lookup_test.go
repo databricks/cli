@@ -79,24 +79,3 @@ func TestIncludePathMultiple(t *testing.T) {
 	assert.Equal(t, "1", tmp.C["ax"])
 	assert.Equal(t, "2", tmp.C["bx"])
 }
-
-func TestIncludeVariableLookups(t *testing.T) {
-	f := IncludeVariableLookups()
-
-	_, err := f("abc.def", nil)
-	assert.ErrorIs(t, err, ErrSkipInterpolation)
-
-	_, err = f("var.", nil)
-	assert.ErrorIs(t, err, ErrSkipInterpolation)
-
-	_, err = f("variables.foo.value", map[string]string{
-		"variables.foo.value": "abc",
-	})
-	assert.ErrorIs(t, err, ErrSkipInterpolation)
-
-	ans, err := f("var.foo", map[string]string{
-		"variables.foo.value": "abc",
-	})
-	assert.NoError(t, err)
-	assert.Equal(t, "abc", ans)
-}
