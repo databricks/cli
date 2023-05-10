@@ -47,6 +47,8 @@ func setVariable(v *variables.Variable, name string) error {
 	}
 
 	// We should have had a value to set for the variable at this point.
+	// TODO: use cmdio to request values for unassigned variables if current
+	// terminal is a tty. Tracked in https://github.com/databricks/bricks/issues/379
 	return fmt.Errorf(`no value assigned to required variable %s. Assignment can be done through the "--var" flag or by setting the %s environment variable`, name, bundleVarPrefix+name)
 }
 
