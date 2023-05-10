@@ -115,7 +115,7 @@ func TestInitializeVariables(t *testing.T) {
 	assert.Equal(t, "456", *(root.Variables["bar"].Value))
 }
 
-func TestInitializeVariablesInvalidFormat(t *testing.T) {
+func TestInitializeVariablesWithAnEqualSignInValue(t *testing.T) {
 	root := &Root{
 		Variables: map[string]*variables.Variable{
 			"foo": {
@@ -125,7 +125,21 @@ func TestInitializeVariablesInvalidFormat(t *testing.T) {
 	}
 
 	err := root.InitializeVariables([]string{"foo=123=567"})
-	assert.ErrorContains(t, err, "variable assignment foo=123=567 has unexpected format")
+	assert.NoError(t, err)
+	assert.Equal(t, "123=567", *(root.Variables["foo"].Value))
+}
+
+func TestInitializeVariablesInvalidFormat(t *testing.T) {
+	root := &Root{
+		Variables: map[string]*variables.Variable{
+			"foo": {
+				Description: "a variable called foo",
+			},
+		},
+	}
+
+	err := root.InitializeVariables([]string{"foo"})
+	assert.ErrorContains(t, err, "unexpected flag value for variable assignment: foo")
 }
 
 func TestInitializeVariablesUndefinedVariables(t *testing.T) {

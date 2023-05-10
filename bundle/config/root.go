@@ -90,19 +90,19 @@ func (r *Root) SetConfigFilePath(path string) {
 // name `foo` is assigned the value `bar`
 func (r *Root) InitializeVariables(vars []string) error {
 	for _, variable := range vars {
-		varComponents := strings.Split(variable, "=")
-		if len(varComponents) != 2 {
-			return fmt.Errorf("variable assignment %s has unexpected format", variable)
+		parsedVariable := strings.SplitN(variable, "=", 2)
+		if len(parsedVariable) != 2 {
+			return fmt.Errorf("unexpected flag value for variable assignment: %s", variable)
 		}
-		varName := varComponents[0]
-		varValue := varComponents[1]
+		name := parsedVariable[0]
+		val := parsedVariable[1]
 
-		if _, ok := r.Variables[varName]; !ok {
-			return fmt.Errorf("variable %s has not been defined", varName)
+		if _, ok := r.Variables[name]; !ok {
+			return fmt.Errorf("variable %s has not been defined", name)
 		}
-		err := r.Variables[varName].Set(varValue)
+		err := r.Variables[name].Set(val)
 		if err != nil {
-			return fmt.Errorf("failed to assign %s to %s: %s", varValue, varName, err)
+			return fmt.Errorf("failed to assign %s to %s: %s", val, name, err)
 		}
 	}
 	return nil
