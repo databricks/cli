@@ -26,17 +26,16 @@ func Defer(mutators []Mutator, onFinishOrError []Mutator) []Mutator {
 func (d *DeferredMutator) Apply(ctx context.Context, b *Bundle) ([]Mutator, error) {
 	mainErr := Apply(ctx, b, d.mutators)
 	errOnFinish := Apply(ctx, b, d.onFinishOrError)
-	var err error = nil
+	if mainErr == nil && errOnFinish == nil {
+		return nil, nil
+	}
 
+	err := fmt.Errorf("Error")
 	if mainErr != nil {
-		err = mainErr
+		err = fmt.Errorf("%w\n%v", err, mainErr)
 	}
 	if errOnFinish != nil {
-		if err == nil {
-			err = errOnFinish
-		} else {
-			err = fmt.Errorf("%w\n%w", err, errOnFinish)
-		}
+		err = fmt.Errorf("%w\n%v", err, errOnFinish)
 	}
 	return nil, err
 }
