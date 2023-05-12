@@ -15,9 +15,9 @@ func Destroy() bundle.Mutator {
 		terraform.Plan(terraform.PlanGoal("destroy")),
 		terraform.Destroy(),
 		terraform.StatePush(),
+		files.Delete(),
 	}, []bundle.Mutator{
 		lock.Release(),
-		files.Delete(),
 	})
 
 	return newPhase(

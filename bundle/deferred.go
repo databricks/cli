@@ -2,40 +2,36 @@ package bundle
 
 import (
 	"context"
-	"fmt"
+
+	"github.com/databricks/bricks/libs/errors"
 )
+
+
 
 type DeferredMutator struct {
 	mutators        []Mutator
-	onFinishOrError []Mutator
+	finally []Mutator
 }
 
 func (d *DeferredMutator) Name() string {
 	return "deferred"
 }
 
-func Defer(mutators []Mutator, onFinishOrError []Mutator) []Mutator {
+func Defer(mutators []Mutator, finally []Mutator) []Mutator {
 	return []Mutator{
 		&DeferredMutator{
 			mutators:        mutators,
-			onFinishOrError: onFinishOrError,
+			finally: finally,
 		},
 	}
 }
 
 func (d *DeferredMutator) Apply(ctx context.Context, b *Bundle) ([]Mutator, error) {
 	mainErr := Apply(ctx, b, d.mutators)
-	errOnFinish := Apply(ctx, b, d.onFinishOrError)
-	if mainErr == nil && errOnFinish == nil {
-		return nil, nil
+	errOnFinish := Apply(ctx, b, d.finally)
+	if mainErr != nil || errOnFinish != nil {
+		return nil, errors.FromMany(mainErr, errOnFinish)
 	}
 
-	err := fmt.Errorf("Error")
-	if mainErr != nil {
-		err = fmt.Errorf("%w\n%v", err, mainErr)
-	}
-	if errOnFinish != nil {
-		err = fmt.Errorf("%w\n%v", err, errOnFinish)
-	}
-	return nil, err
+	return nil, nil
 }

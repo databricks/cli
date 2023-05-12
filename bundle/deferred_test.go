@@ -27,10 +27,10 @@ func TestDeferredMutatorWhenAllMutatorsSucceed(t *testing.T) {
 	m2 := &testMutator{}
 	m3 := &testMutator{}
 	cleanup := &testMutator{}
-	deferred_mutator := Defer([]Mutator{m1, m2, m3}, []Mutator{cleanup})
+	deferredMutator := Defer([]Mutator{m1, m2, m3}, []Mutator{cleanup})
 
 	bundle := &Bundle{}
-	err := Apply(context.Background(), bundle, deferred_mutator)
+	err := Apply(context.Background(), bundle, deferredMutator)
 	assert.NoError(t, err)
 
 	assert.Equal(t, 1, m1.applyCalled)
@@ -44,10 +44,10 @@ func TestDeferredMutatorWhenFirstFails(t *testing.T) {
 	m2 := &testMutator{}
 	mErr := &mutatorWithError{errorMsg: "mutator error occurred"}
 	cleanup := &testMutator{}
-	deferred_mutator := Defer([]Mutator{mErr, m1, m2}, []Mutator{cleanup})
+	deferredMutator := Defer([]Mutator{mErr, m1, m2}, []Mutator{cleanup})
 
 	bundle := &Bundle{}
-	err := Apply(context.Background(), bundle, deferred_mutator)
+	err := Apply(context.Background(), bundle, deferredMutator)
 	assert.ErrorContains(t, err, "mutator error occurred")
 
 	assert.Equal(t, 1, mErr.applyCalled)
@@ -61,10 +61,10 @@ func TestDeferredMutatorWhenMiddleOneFails(t *testing.T) {
 	m2 := &testMutator{}
 	mErr := &mutatorWithError{errorMsg: "mutator error occurred"}
 	cleanup := &testMutator{}
-	deferred_mutator := Defer([]Mutator{m1, mErr, m2}, []Mutator{cleanup})
+	deferredMutator := Defer([]Mutator{m1, mErr, m2}, []Mutator{cleanup})
 
 	bundle := &Bundle{}
-	err := Apply(context.Background(), bundle, deferred_mutator)
+	err := Apply(context.Background(), bundle, deferredMutator)
 	assert.ErrorContains(t, err, "mutator error occurred")
 
 	assert.Equal(t, 1, m1.applyCalled)
@@ -78,10 +78,10 @@ func TestDeferredMutatorWhenLastOneFails(t *testing.T) {
 	m2 := &testMutator{}
 	mErr := &mutatorWithError{errorMsg: "mutator error occurred"}
 	cleanup := &testMutator{}
-	deferred_mutator := Defer([]Mutator{m1, m2, mErr}, []Mutator{cleanup})
+	deferredMutator := Defer([]Mutator{m1, m2, mErr}, []Mutator{cleanup})
 
 	bundle := &Bundle{}
-	err := Apply(context.Background(), bundle, deferred_mutator)
+	err := Apply(context.Background(), bundle, deferredMutator)
 	assert.ErrorContains(t, err, "mutator error occurred")
 
 	assert.Equal(t, 1, m1.applyCalled)
@@ -95,10 +95,10 @@ func TestDeferredMutatorCombinesErrorMessages(t *testing.T) {
 	m2 := &testMutator{}
 	mErr := &mutatorWithError{errorMsg: "mutator error occurred"}
 	cleanupErr := &mutatorWithError{errorMsg: "cleanup error occurred"}
-	deferred_mutator := Defer([]Mutator{m1, m2, mErr}, []Mutator{cleanupErr})
+	deferredMutator := Defer([]Mutator{m1, m2, mErr}, []Mutator{cleanupErr})
 
 	bundle := &Bundle{}
-	err := Apply(context.Background(), bundle, deferred_mutator)
+	err := Apply(context.Background(), bundle, deferredMutator)
 	assert.ErrorContains(t, err, "mutator error occurred\ncleanup error occurred")
 
 	assert.Equal(t, 1, m1.applyCalled)
