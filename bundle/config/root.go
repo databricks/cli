@@ -175,5 +175,17 @@ func (r *Root) MergeEnvironment(env *Environment) error {
 		}
 	}
 
+	if env.Variables != nil {
+		for k, v := range env.Variables {
+			variable, ok := r.Variables[k]
+			if !ok {
+				return fmt.Errorf("variable %s is not defined but is assigned a value", k)
+			}
+			// we only allow overrides of the default value for a variable
+			defaultVal := v
+			variable.Default = &defaultVal
+		}
+	}
+
 	return nil
 }

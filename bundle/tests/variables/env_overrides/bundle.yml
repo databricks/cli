@@ -1,0 +1,32 @@
+variables:
+  a:
+    description: optional variable
+    default: default-a
+
+  b:
+    description: required variable
+
+bundle:
+  name: test bundle
+
+workspace:
+  profile: ${var.a} ${var.b}
+
+environments:
+  env-with-single-variable-override:
+    variables:
+      b: dev-b
+
+  env-missing-a-required-variable-assignment:
+    variables:
+      a: staging-a
+
+  env-with-two-variable-overrides:
+    variables:
+      a: prod-a
+      b: prod-b
+
+  env-using-an-undefined-variable:
+    variables:
+      c: prod-c
+      b: prod-b
