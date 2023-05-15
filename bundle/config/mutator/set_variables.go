@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/databricks/bricks/bundle"
-	"github.com/databricks/bricks/bundle/config/variables"
+	"github.com/databricks/bricks/bundle/config/variable"
 )
 
 const bundleVarPrefix = "BUNDLE_VAR_"
@@ -21,7 +21,7 @@ func (m *setVariables) Name() string {
 	return "SetVariables"
 }
 
-func setVariable(v *variables.Variable, name string) error {
+func setVariable(v *variable.Variable, name string) error {
 	// case: variable already has value initialized, so skip
 	if v.HasValue() {
 		return nil

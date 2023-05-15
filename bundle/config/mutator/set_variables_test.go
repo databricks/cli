@@ -6,14 +6,14 @@ import (
 
 	"github.com/databricks/bricks/bundle"
 	"github.com/databricks/bricks/bundle/config"
-	"github.com/databricks/bricks/bundle/config/variables"
+	"github.com/databricks/bricks/bundle/config/variable"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestSetVariableFromProcessEnvVar(t *testing.T) {
 	defaultVal := "default"
-	variable := variables.Variable{
+	variable := variable.Variable{
 		Description: "a test variable",
 		Default:     &defaultVal,
 	}
@@ -28,7 +28,7 @@ func TestSetVariableFromProcessEnvVar(t *testing.T) {
 
 func TestSetVariableUsingDefaultValue(t *testing.T) {
 	defaultVal := "default"
-	variable := variables.Variable{
+	variable := variable.Variable{
 		Description: "a test variable",
 		Default:     &defaultVal,
 	}
@@ -41,7 +41,7 @@ func TestSetVariableUsingDefaultValue(t *testing.T) {
 func TestSetVariableWhenAlreadyAValueIsAssigned(t *testing.T) {
 	defaultVal := "default"
 	val := "assigned-value"
-	variable := variables.Variable{
+	variable := variable.Variable{
 		Description: "a test variable",
 		Default:     &defaultVal,
 		Value:       &val,
@@ -57,7 +57,7 @@ func TestSetVariableWhenAlreadyAValueIsAssigned(t *testing.T) {
 func TestSetVariableEnvVarValueDoesNotOverridePresetValue(t *testing.T) {
 	defaultVal := "default"
 	val := "assigned-value"
-	variable := variables.Variable{
+	variable := variable.Variable{
 		Description: "a test variable",
 		Default:     &defaultVal,
 		Value:       &val,
@@ -74,7 +74,7 @@ func TestSetVariableEnvVarValueDoesNotOverridePresetValue(t *testing.T) {
 }
 
 func TestSetVariablesErrorsIfAValueCouldNotBeResolved(t *testing.T) {
-	variable := variables.Variable{
+	variable := variable.Variable{
 		Description: "a test variable with no default",
 	}
 
@@ -89,7 +89,7 @@ func TestSetVariablesMutator(t *testing.T) {
 	valForC := "assigned-val-c"
 	bundle := &bundle.Bundle{
 		Config: config.Root{
-			Variables: map[string]*variables.Variable{
+			Variables: map[string]*variable.Variable{
 				"a": {
 					Description: "resolved to default value",
 					Default:     &defaultValForA,

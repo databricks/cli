@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/databricks/bricks/bundle/config/variables"
+	"github.com/databricks/bricks/bundle/config/variable"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -98,7 +98,7 @@ func TestDuplicateIdOnMergeReturnsError(t *testing.T) {
 func TestInitializeVariables(t *testing.T) {
 	fooDefault := "abc"
 	root := &Root{
-		Variables: map[string]*variables.Variable{
+		Variables: map[string]*variable.Variable{
 			"foo": {
 				Default:     &fooDefault,
 				Description: "an optional variable since default is defined",
@@ -117,7 +117,7 @@ func TestInitializeVariables(t *testing.T) {
 
 func TestInitializeVariablesWithAnEqualSignInValue(t *testing.T) {
 	root := &Root{
-		Variables: map[string]*variables.Variable{
+		Variables: map[string]*variable.Variable{
 			"foo": {
 				Description: "a variable called foo",
 			},
@@ -131,7 +131,7 @@ func TestInitializeVariablesWithAnEqualSignInValue(t *testing.T) {
 
 func TestInitializeVariablesInvalidFormat(t *testing.T) {
 	root := &Root{
-		Variables: map[string]*variables.Variable{
+		Variables: map[string]*variable.Variable{
 			"foo": {
 				Description: "a variable called foo",
 			},
@@ -144,7 +144,7 @@ func TestInitializeVariablesInvalidFormat(t *testing.T) {
 
 func TestInitializeVariablesUndefinedVariables(t *testing.T) {
 	root := &Root{
-		Variables: map[string]*variables.Variable{
+		Variables: map[string]*variable.Variable{
 			"foo": {
 				Description: "A required variable",
 			},

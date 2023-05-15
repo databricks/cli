@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/databricks/bricks/bundle"
-	"github.com/databricks/bricks/bundle/config/variables"
+	"github.com/databricks/bricks/bundle/config/variable"
 	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
 )
@@ -132,7 +132,7 @@ func (a *accumulator) walk(scope []string, rv reflect.Value, s setter) {
 		// register alias for variable value. `var.foo` would be the alias for
 		// `variables.foo.value`
 		if len(scope) == 3 && scope[0] == "variables" && scope[2] == "value" {
-			aliasPath := strings.Join([]string{variables.VariableReferencePrefix, scope[1]}, Delimiter)
+			aliasPath := strings.Join([]string{variable.VariableReferencePrefix, scope[1]}, Delimiter)
 			a.strings[aliasPath] = a.strings[path]
 		}
 	case reflect.Struct:

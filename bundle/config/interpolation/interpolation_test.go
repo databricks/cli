@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/databricks/bricks/bundle/config"
-	"github.com/databricks/bricks/bundle/config/variables"
+	"github.com/databricks/bricks/bundle/config/variable"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -133,7 +133,7 @@ func TestInterpolationForVariables(t *testing.T) {
 	bar := "${var.foo} def"
 	apple := "${var.foo} ${var.bar}"
 	config := config.Root{
-		Variables: map[string]*variables.Variable{
+		Variables: map[string]*variable.Variable{
 			"foo": {
 				Value: &foo,
 			},
@@ -161,7 +161,7 @@ func TestInterpolationLoopForVariables(t *testing.T) {
 	foo := "${var.bar}"
 	bar := "${var.foo}"
 	config := config.Root{
-		Variables: map[string]*variables.Variable{
+		Variables: map[string]*variable.Variable{
 			"foo": {
 				Value: &foo,
 			},
@@ -181,7 +181,7 @@ func TestInterpolationLoopForVariables(t *testing.T) {
 func TestInterpolationInvalidVariableReference(t *testing.T) {
 	foo := "abc"
 	config := config.Root{
-		Variables: map[string]*variables.Variable{
+		Variables: map[string]*variable.Variable{
 			"foo": {
 				Value: &foo,
 			},
