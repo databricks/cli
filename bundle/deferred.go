@@ -3,7 +3,7 @@ package bundle
 import (
 	"context"
 
-	"github.com/databricks/bricks/libs/errors"
+	"github.com/databricks/bricks/libs/errs"
 )
 
 type DeferredMutator struct {
@@ -28,7 +28,7 @@ func (d *DeferredMutator) Apply(ctx context.Context, b *Bundle) ([]Mutator, erro
 	mainErr := Apply(ctx, b, d.mutators)
 	errOnFinish := Apply(ctx, b, d.finally)
 	if mainErr != nil || errOnFinish != nil {
-		return nil, errors.FromMany(mainErr, errOnFinish)
+		return nil, errs.FromMany(mainErr, errOnFinish)
 	}
 
 	return nil, nil
