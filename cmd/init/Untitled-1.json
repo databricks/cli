@@ -1,0 +1,21 @@
+{
+    "foo": {
+        "type": "string",
+        "default": "abc",
+        "validation": ["regex ^[abcd]*$"]
+    },
+    "bar": {
+        "type": "integer",
+        "default": 123,
+        "validation": ["greaterThan 5", "lessThan 10"]
+    },
+    "isAws": {
+        "type": "boolean",
+        "default": true
+    },
+    "project_name": {
+        "type": "string",
+        "default": "my_project",
+        "validation": ["startsWith my_"]
+    }
+}

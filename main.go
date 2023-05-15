@@ -8,6 +8,7 @@ import (
 	_ "github.com/databricks/bricks/cmd/bundle/debug"
 	_ "github.com/databricks/bricks/cmd/configure"
 	_ "github.com/databricks/bricks/cmd/fs"
+	_ "github.com/databricks/bricks/cmd/init"
 	"github.com/databricks/bricks/cmd/root"
 	_ "github.com/databricks/bricks/cmd/sync"
 	_ "github.com/databricks/bricks/cmd/version"
