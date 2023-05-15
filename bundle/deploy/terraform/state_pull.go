@@ -42,8 +42,12 @@ func (l *statePull) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutat
 	}
 
 	// Expect the state file to live under dir.
-	local, err := os.OpenFile(filepath.Join(dir, TerraformStateFileName), os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
+	local, err := os.OpenFile(filepath.Join(dir, TerraformStateFileName), os.O_CREATE|os.O_WRONLY|os.O_EXCL, 0600)
 	if err != nil {
+		if os.IsExist(err) {
+			log.Infof(ctx, "Local state file exists, skipping write remote state")
+			return nil, nil
+		}
 		return nil, err
 	}
 
