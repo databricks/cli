@@ -6,11 +6,9 @@ import (
 	"github.com/databricks/bricks/libs/errors"
 )
 
-
-
 type DeferredMutator struct {
-	mutators        []Mutator
-	finally []Mutator
+	mutators []Mutator
+	finally  []Mutator
 }
 
 func (d *DeferredMutator) Name() string {
@@ -20,8 +18,8 @@ func (d *DeferredMutator) Name() string {
 func Defer(mutators []Mutator, finally []Mutator) []Mutator {
 	return []Mutator{
 		&DeferredMutator{
-			mutators:        mutators,
-			finally: finally,
+			mutators: mutators,
+			finally:  finally,
 		},
 	}
 }
