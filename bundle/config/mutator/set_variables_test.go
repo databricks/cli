@@ -2,7 +2,6 @@ package mutator
 
 import (
 	"context"
-	"os"
 	"testing"
 
 	"github.com/databricks/bricks/bundle"
@@ -20,11 +19,9 @@ func TestSetVariableFromProcessEnvVar(t *testing.T) {
 	}
 
 	// set value for variable as an environment variable
-	err := os.Setenv("BUNDLE_VAR_foo", "process-env")
-	defer os.Unsetenv("BUNDLE_VAR_foo")
-	require.NoError(t, err)
+	t.Setenv("BUNDLE_VAR_foo", "process-env")
 
-	err = setVariable(&variable, "foo")
+	err := setVariable(&variable, "foo")
 	require.NoError(t, err)
 	assert.Equal(t, *variable.Value, "process-env")
 }
@@ -67,13 +64,11 @@ func TestSetVariableEnvVarValueDoesNotOverridePresetValue(t *testing.T) {
 	}
 
 	// set value for variable as an environment variable
-	err := os.Setenv("BUNDLE_VAR_foo", "process-env")
-	defer os.Unsetenv("BUNDLE_VAR_foo")
-	require.NoError(t, err)
+	t.Setenv("BUNDLE_VAR_foo", "process-env")
 
 	// since a value is already assigned to the variable, it would not be overridden
 	// by the value from environment
-	err = setVariable(&variable, "foo")
+	err := setVariable(&variable, "foo")
 	require.NoError(t, err)
 	assert.Equal(t, *variable.Value, "assigned-value")
 }
@@ -111,11 +106,9 @@ func TestSetVariablesMutator(t *testing.T) {
 		},
 	}
 
-	err := os.Setenv("BUNDLE_VAR_b", "env-var-b")
-	defer os.Unsetenv("BUNDLE_VAR_b")
-	require.NoError(t, err)
+	t.Setenv("BUNDLE_VAR_b", "env-var-b")
 
-	_, err = SetVariables().Apply(context.Background(), bundle)
+	_, err := SetVariables().Apply(context.Background(), bundle)
 	require.NoError(t, err)
 	assert.Equal(t, "default-a", *bundle.Config.Variables["a"].Value)
 	assert.Equal(t, "env-var-b", *bundle.Config.Variables["b"].Value)
