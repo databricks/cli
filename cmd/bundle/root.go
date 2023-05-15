@@ -19,5 +19,5 @@ var variables []string
 
 func init() {
 	root.RootCmd.AddCommand(rootCmd)
-	rootCmd.PersistentFlags().StringSliceVar(&variables, "var", []string{}, `set values for variables defined in bundle config. Example: --var="foo=bar"`)
+	AddVariableFlag(rootCmd)
 }

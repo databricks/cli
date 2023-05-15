@@ -17,3 +17,7 @@ func ConfigureBundleWithVariables(cmd *cobra.Command, args []string) error {
 	b := bundle.Get(cmd.Context())
 	return b.Config.InitializeVariables(variables)
 }
+
+func AddVariableFlag(cmd *cobra.Command) {
+	cmd.PersistentFlags().StringSliceVar(&variables, "var", []string{}, `set values for variables defined in bundle config. Example: --var="foo=bar"`)
+}
