@@ -6,7 +6,6 @@ import (
 
 	"github.com/databricks/bricks/bundle"
 	"github.com/databricks/bricks/bundle/phases"
-	"github.com/databricks/bricks/cmd/root"
 	"github.com/databricks/bricks/libs/cmdio"
 	"github.com/databricks/bricks/libs/flags"
 	"github.com/spf13/cobra"
@@ -17,7 +16,7 @@ var destroyCmd = &cobra.Command{
 	Use:   "destroy",
 	Short: "Destroy deployed bundle resources",
 
-	PreRunE: root.MustConfigureBundle,
+	PreRunE: ConfigureBundleWithVariables,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		b := bundle.Get(ctx)

@@ -4,6 +4,7 @@ import (
 	"github.com/databricks/bricks/bundle"
 	"github.com/databricks/bricks/bundle/config/interpolation"
 	"github.com/databricks/bricks/bundle/config/mutator"
+	"github.com/databricks/bricks/bundle/config/variable"
 	"github.com/databricks/bricks/bundle/deploy/terraform"
 )
 
@@ -18,9 +19,11 @@ func Initialize() bundle.Mutator {
 			mutator.DefineDefaultWorkspaceRoot(),
 			mutator.ExpandWorkspaceRoot(),
 			mutator.DefineDefaultWorkspacePaths(),
+			mutator.SetVariables(),
 			interpolation.Interpolate(
 				interpolation.IncludeLookupsInPath("bundle"),
 				interpolation.IncludeLookupsInPath("workspace"),
+				interpolation.IncludeLookupsInPath(variable.VariableReferencePrefix),
 			),
 			mutator.TranslatePaths(),
 			terraform.Initialize(),

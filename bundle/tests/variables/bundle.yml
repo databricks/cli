@@ -1,0 +1,10 @@
+variables:
+  a:
+    description: optional variable
+    default: abc
+
+  b:
+    description: required variable
+
+bundle:
+  name: ${var.a} ${var.b}

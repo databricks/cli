@@ -1,9 +1,12 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
+	"github.com/databricks/bricks/bundle/config/variable"
 	"github.com/ghodss/yaml"
 	"github.com/imdario/mergo"
 )
@@ -15,6 +18,9 @@ type Root struct {
 	// Path contains the directory path to the root of the bundle.
 	// It is set when loading `bundle.yml`.
 	Path string `json:"-" bundle:"readonly"`
+
+	// Contains user defined variables
+	Variables map[string]*variable.Variable `json:"variables,omitempty"`
 
 	// Bundle contains details about this bundle, such as its name,
 	// version of the spec (TODO), default cluster, default warehouse, etc.
@@ -77,6 +83,29 @@ func (r *Root) SetConfigFilePath(path string) {
 			}
 		}
 	}
+}
+
+// Initializes variables using values passed from the command line flag
+// Input has to be a string of the form `foo=bar`. In this case the variable with
+// name `foo` is assigned the value `bar`
+func (r *Root) InitializeVariables(vars []string) error {
+	for _, variable := range vars {
+		parsedVariable := strings.SplitN(variable, "=", 2)
+		if len(parsedVariable) != 2 {
+			return fmt.Errorf("unexpected flag value for variable assignment: %s", variable)
+		}
+		name := parsedVariable[0]
+		val := parsedVariable[1]
+
+		if _, ok := r.Variables[name]; !ok {
+			return fmt.Errorf("variable %s has not been defined", name)
+		}
+		err := r.Variables[name].Set(val)
+		if err != nil {
+			return fmt.Errorf("failed to assign %s to %s: %s", val, name, err)
+		}
+	}
+	return nil
 }
 
 func (r *Root) Load(path string) error {

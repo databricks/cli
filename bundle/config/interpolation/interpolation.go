@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/databricks/bricks/bundle"
+	"github.com/databricks/bricks/bundle/config/variable"
 	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
 )
@@ -127,6 +128,13 @@ func (a *accumulator) walk(scope []string, rv reflect.Value, s setter) {
 	case reflect.String:
 		path := strings.Join(scope, Delimiter)
 		a.strings[path] = newStringField(path, anyGetter{rv}, s)
+
+		// register alias for variable value. `var.foo` would be the alias for
+		// `variables.foo.value`
+		if len(scope) == 3 && scope[0] == "variables" && scope[2] == "value" {
+			aliasPath := strings.Join([]string{variable.VariableReferencePrefix, scope[1]}, Delimiter)
+			a.strings[aliasPath] = a.strings[path]
+		}
 	case reflect.Struct:
 		a.walkStruct(scope, rv)
 	case reflect.Map:
@@ -174,7 +182,7 @@ func (a *accumulator) Resolve(path string, seenPaths []string, fns ...LookupFunc
 	// fetch the string node to resolve
 	field, ok := a.strings[path]
 	if !ok {
-		return fmt.Errorf("could not find string field with path %s", path)
+		return fmt.Errorf("could not resolve reference %s", path)
 	}
 
 	// return early if the string field has no variables to interpolate

@@ -5,7 +5,6 @@ import (
 
 	"github.com/databricks/bricks/bundle"
 	"github.com/databricks/bricks/bundle/phases"
-	"github.com/databricks/bricks/cmd/root"
 	"github.com/spf13/cobra"
 )
 
@@ -13,9 +12,10 @@ var validateCmd = &cobra.Command{
 	Use:   "validate",
 	Short: "Validate configuration",
 
-	PreRunE: root.MustConfigureBundle,
+	PreRunE: ConfigureBundleWithVariables,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		b := bundle.Get(cmd.Context())
+
 		err := bundle.Apply(cmd.Context(), b, []bundle.Mutator{
 			phases.Initialize(),
 		})
