@@ -182,8 +182,7 @@ func (r *Root) MergeEnvironment(env *Environment) error {
 				return fmt.Errorf("variable %s is not defined but is assigned a value", k)
 			}
 			// we only allow overrides of the default value for a variable
-			var defaultVal string
-			defaultVal = v
+			defaultVal := v
 			variable.Default = &defaultVal
 		}
 	}

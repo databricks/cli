@@ -34,7 +34,7 @@ func TestVariablesLoadingFailsWhenRequiredVariableIsNotSpecified(t *testing.T) {
 	assert.ErrorContains(t, err, "no value assigned to required variable b. Assignment can be done through the \"--var\" flag or by setting the BUNDLE_VAR_b environment variable")
 }
 
-func TestVariablesConfigEnvironmentOverride(t *testing.T) {
+func TestVariablesEnvironmentsBlockOverride(t *testing.T) {
 	b := load(t, "./variables/env_overrides")
 	err := bundle.Apply(context.Background(), b, []bundle.Mutator{
 		mutator.SelectEnvironment("env-with-single-variable-override"),
@@ -46,7 +46,7 @@ func TestVariablesConfigEnvironmentOverride(t *testing.T) {
 	assert.Equal(t, "default-a dev-b", b.Config.Workspace.Profile)
 }
 
-func TestVariablesConfigEnvironmentOverrideForMultipleVariables(t *testing.T) {
+func TestVariablesEnvironmentsBlockOverrideForMultipleVariables(t *testing.T) {
 	b := load(t, "./variables/env_overrides")
 	err := bundle.Apply(context.Background(), b, []bundle.Mutator{
 		mutator.SelectEnvironment("env-with-two-variable-overrides"),
@@ -58,7 +58,7 @@ func TestVariablesConfigEnvironmentOverrideForMultipleVariables(t *testing.T) {
 	assert.Equal(t, "prod-a prod-b", b.Config.Workspace.Profile)
 }
 
-func TestVariablesConfigEnvironmentOverrideWithProcessEnvVars(t *testing.T) {
+func TestVariablesEnvironmentsBlockOverrideWithProcessEnvVars(t *testing.T) {
 	t.Setenv("BUNDLE_VAR_b", "env-var-b")
 	b := load(t, "./variables/env_overrides")
 	err := bundle.Apply(context.Background(), b, []bundle.Mutator{
@@ -71,7 +71,7 @@ func TestVariablesConfigEnvironmentOverrideWithProcessEnvVars(t *testing.T) {
 	assert.Equal(t, "prod-a env-var-b", b.Config.Workspace.Profile)
 }
 
-func TestVariablesConfigEnvironmentOverrideWithMissingVariables(t *testing.T) {
+func TestVariablesEnvironmentsBlockOverrideWithMissingVariables(t *testing.T) {
 	b := load(t, "./variables/env_overrides")
 	err := bundle.Apply(context.Background(), b, []bundle.Mutator{
 		mutator.SelectEnvironment("env-missing-a-required-variable-assignment"),
@@ -82,7 +82,7 @@ func TestVariablesConfigEnvironmentOverrideWithMissingVariables(t *testing.T) {
 	assert.ErrorContains(t, err, "no value assigned to required variable b. Assignment can be done through the \"--var\" flag or by setting the BUNDLE_VAR_b environment variable")
 }
 
-func TestVariablesOverridingUndefinedVariableInConfigEnvironment(t *testing.T) {
+func TestVariablesEnvironmentsBlockOverrideWithUndefinedVariables(t *testing.T) {
 	b := load(t, "./variables/env_overrides")
 	err := bundle.Apply(context.Background(), b, []bundle.Mutator{
 		mutator.SelectEnvironment("env-using-an-undefined-variable"),

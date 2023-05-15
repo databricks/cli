@@ -15,8 +15,8 @@ type Environment struct {
 
 	Resources *Resources `json:"resources,omitempty"`
 
-	// Allows bundle config authors to override default variables for a variable
-	// Note, you can only override the default, not redefine or define a new variable scoped
-	// to  a single environment
+	// Override default values for defined variables
+	// Does not permit defining new variables or redefining existing ones
+	// in the scope of an environment
 	Variables map[string]string `json:"variables,omitempty"`
 }
