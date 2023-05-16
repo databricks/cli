@@ -10,18 +10,21 @@ import (
 
 // The deploy phase deploys artifacts and resources.
 func Deploy() bundle.Mutator {
+	deployPhase := bundle.Defer([]bundle.Mutator{
+		lock.Acquire(),
+		files.Upload(),
+		artifacts.UploadAll(),
+		terraform.Interpolate(),
+		terraform.Write(),
+		terraform.StatePull(),
+		terraform.Apply(),
+		terraform.StatePush(),
+	}, []bundle.Mutator{
+		lock.Release(),
+	})
+
 	return newPhase(
 		"deploy",
-		[]bundle.Mutator{
-			lock.Acquire(),
-			files.Upload(),
-			artifacts.UploadAll(),
-			terraform.Interpolate(),
-			terraform.Write(),
-			terraform.StatePull(),
-			terraform.Apply(),
-			terraform.StatePush(),
-			lock.Release(),
-		},
+		deployPhase,
 	)
 }

@@ -42,10 +42,20 @@ func (l *statePull) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutat
 	}
 
 	// Expect the state file to live under dir.
-	local, err := os.OpenFile(filepath.Join(dir, TerraformStateFileName), os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
+	local, err := os.OpenFile(filepath.Join(dir, TerraformStateFileName), os.O_CREATE|os.O_RDWR, 0600)
 	if err != nil {
 		return nil, err
 	}
+	defer local.Close()
+
+	if !IsLocalStateStale(local, remote) {
+		log.Infof(ctx, "Local state is the same or newer, ignoring remote state")
+		return nil, nil
+	}
+
+	// Truncating the file before writing
+	local.Truncate(0)
+	local.Seek(0, 0)
 
 	// Write file to disk.
 	log.Infof(ctx, "Writing remote state file to local cache directory")
