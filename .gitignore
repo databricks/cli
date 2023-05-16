@@ -6,7 +6,7 @@
 *.dll
 *.so
 *.dylib
-bricks
+cli
 
 # Test binary, built with `go test -c`
 *.test
