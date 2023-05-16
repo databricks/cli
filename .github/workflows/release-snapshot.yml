@@ -52,23 +52,23 @@ jobs:
       - name: Upload macOS binaries
         uses: actions/upload-artifact@v3
         with:
-          name: bricks_darwin_snapshot
+          name: cli_darwin_snapshot
           path: |
-            dist/databricks_cli_darwin_*/
+            dist/*_darwin_*/
 
       - name: Upload Linux binaries
         uses: actions/upload-artifact@v3
         with:
-          name: bricks_linux_snapshot
+          name: cli_linux_snapshot
           path: |
-            dist/databricks_cli_linux_*/
+            dist/*_linux_*/
 
       - name: Upload Windows binaries
         uses: actions/upload-artifact@v3
         with:
-          name: bricks_windows_snapshot
+          name: cli_windows_snapshot
           path: |
-            dist/databricks_cli_windows_*/
+            dist/*_windows_*/
 
       - name: Update snapshot tag
 
