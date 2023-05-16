@@ -4,8 +4,8 @@ package phases
 import (
 	"context"
 
-	"github.com/databricks/bricks/bundle"
-	"github.com/databricks/bricks/libs/log"
+	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/libs/log"
 )
 
 // This phase type groups mutators that belong to a lifecycle phase.

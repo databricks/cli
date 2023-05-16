@@ -15,7 +15,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/databricks/bricks/libs/auth/cache"
+	"github.com/databricks/cli/libs/auth/cache"
 	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/pkg/browser"
 	"golang.org/x/oauth2"

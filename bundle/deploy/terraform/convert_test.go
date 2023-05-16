@@ -3,8 +3,8 @@ package terraform
 import (
 	"testing"
 
-	"github.com/databricks/bricks/bundle/config"
-	"github.com/databricks/bricks/bundle/config/resources"
+	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"

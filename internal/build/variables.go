@@ -1,6 +1,6 @@
 package build
 
-var buildProjectName string = "bricks"
+var buildProjectName string = "cli"
 var buildVersion string = ""
 
 var buildBranch string = "undefined"

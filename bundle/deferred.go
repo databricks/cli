@@ -3,7 +3,7 @@ package bundle
 import (
 	"context"
 
-	"github.com/databricks/bricks/libs/errs"
+	"github.com/databricks/cli/libs/errs"
 )
 
 type DeferredMutator struct {

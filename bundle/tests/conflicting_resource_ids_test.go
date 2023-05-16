@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/databricks/bricks/bundle"
-	"github.com/databricks/bricks/bundle/config/mutator"
+	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

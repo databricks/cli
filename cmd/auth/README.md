@@ -6,8 +6,8 @@ Simplified description of [PKCE](https://oauth.net/2/pkce/) implementation:
 sequenceDiagram
     autonumber
     actor User
-    
-    User ->> CLI: type `bricks auth login HOST`
+
+    User ->> CLI: type `databricks auth login HOST`
     CLI ->>+ HOST: request OIDC endpoints
     HOST ->>- CLI: auth & token endpoints
     CLI ->> CLI: start embedded server to consume redirects (lock)
@@ -28,9 +28,9 @@ sequenceDiagram
 sequenceDiagram
     autonumber
     actor User
-    
-    User ->> CLI: type `bricks token HOST`
-    
+
+    User ->> CLI: type `databricks token HOST`
+
     CLI ->> CLI: acquire lock (same local addr as redirect server)
     CLI ->>+ Token cache: read token
 
@@ -44,7 +44,7 @@ sequenceDiagram
     Token Endpoint ->>- CLI: JWT (refreshed)
     CLI ->> Token cache: save JWT (refreshed)
     CLI ->> User: JWT (refreshed)
-    
+
     option no auth for host
     CLI -X User: no auth configured
     end

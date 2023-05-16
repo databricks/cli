@@ -3,7 +3,7 @@ package flags
 import (
 	"testing"
 
-	"github.com/databricks/bricks/libs/log"
+	"github.com/databricks/cli/libs/log"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

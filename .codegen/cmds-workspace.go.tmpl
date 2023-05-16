@@ -5,9 +5,9 @@ package cmd
 {{$excludes := list "command-execution" "statement-execution" "dbfs" "dbsql-permissions"}}
 
 import (
-	"github.com/databricks/bricks/cmd/root"
+	"github.com/databricks/cli/cmd/root"
     {{range .Services}}{{if not .IsAccounts}}{{if not (in $excludes .KebabName) }}
-	{{.SnakeName}} "github.com/databricks/bricks/cmd/workspace/{{.KebabName}}"{{end}}{{end}}{{end}}
+	{{.SnakeName}} "github.com/databricks/cli/cmd/workspace/{{.KebabName}}"{{end}}{{end}}{{end}}
 )
 
 func init() {

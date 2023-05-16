@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/databricks/bricks/bundle"
-	"github.com/databricks/bricks/bundle/config/interpolation"
+	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/interpolation"
 )
 
 // Rewrite variable references to resources into Terraform compatible format.

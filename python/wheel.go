@@ -8,7 +8,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/databricks/bricks/libs/log"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/files"
 )

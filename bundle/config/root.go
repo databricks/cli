@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/databricks/bricks/bundle/config/variable"
+	"github.com/databricks/cli/bundle/config/variable"
 	"github.com/ghodss/yaml"
 	"github.com/imdario/mergo"
 )

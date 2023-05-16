@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/databricks/bricks/libs/git"
-	"github.com/databricks/bricks/libs/log"
-	"github.com/databricks/bricks/libs/sync/repofiles"
+	"github.com/databricks/cli/libs/git"
+	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/sync/repofiles"
 	"github.com/databricks/databricks-sdk-go"
 )
 

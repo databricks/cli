@@ -9,10 +9,10 @@ import (
 	stdsync "sync"
 	"time"
 
-	"github.com/databricks/bricks/bundle"
-	"github.com/databricks/bricks/cmd/root"
-	"github.com/databricks/bricks/libs/flags"
-	"github.com/databricks/bricks/libs/sync"
+	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/cli/libs/sync"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/spf13/cobra"
 )
@@ -73,7 +73,7 @@ var syncCmd = &cobra.Command{
 		//
 		// To be uncommented and used once our VS Code extension is bundle aware.
 		// Until then, this could interfere with extension usage where a `bundle.yml` file is present.
-		// See https://github.com/databricks/bricks/pull/207.
+		// See https://github.com/databricks/cli/pull/207.
 		//
 		// b := bundle.GetOrNil(cmd.Context())
 		// if b != nil {

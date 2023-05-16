@@ -1,9 +1,9 @@
 package phases
 
 import (
-	"github.com/databricks/bricks/bundle"
-	"github.com/databricks/bricks/bundle/artifacts"
-	"github.com/databricks/bricks/bundle/config/interpolation"
+	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/artifacts"
+	"github.com/databricks/cli/bundle/config/interpolation"
 )
 
 // The build phase builds artifacts.

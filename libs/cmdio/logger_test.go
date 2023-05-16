@@ -3,7 +3,7 @@ package cmdio
 import (
 	"testing"
 
-	"github.com/databricks/bricks/libs/flags"
+	"github.com/databricks/cli/libs/flags"
 	"github.com/stretchr/testify/assert"
 )
 

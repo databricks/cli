@@ -3,9 +3,9 @@ package lock
 import (
 	"context"
 
-	"github.com/databricks/bricks/bundle"
-	"github.com/databricks/bricks/libs/locker"
-	"github.com/databricks/bricks/libs/log"
+	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/libs/locker"
+	"github.com/databricks/cli/libs/log"
 )
 
 type acquire struct{}

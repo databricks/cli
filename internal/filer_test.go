@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/databricks/bricks/libs/filer"
+	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/workspace"

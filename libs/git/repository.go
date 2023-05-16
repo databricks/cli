@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/databricks/bricks/folders"
+	"github.com/databricks/cli/folders"
 )
 
 const gitIgnoreFileName = ".gitignore"

@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/databricks/bricks/bundle"
-	"github.com/databricks/bricks/libs/cmdio"
-	"github.com/databricks/bricks/libs/terraform"
+	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/terraform"
 	"github.com/hashicorp/terraform-exec/tfexec"
 )
 

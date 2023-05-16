@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/databricks/bricks/libs/auth"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/spf13/cobra"
 )
 

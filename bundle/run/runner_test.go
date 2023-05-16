@@ -3,9 +3,9 @@ package run
 import (
 	"testing"
 
-	"github.com/databricks/bricks/bundle"
-	"github.com/databricks/bricks/bundle/config"
-	"github.com/databricks/bricks/bundle/config/resources"
+	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/stretchr/testify/assert"
 )
 

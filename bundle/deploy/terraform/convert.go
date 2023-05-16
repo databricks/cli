@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/databricks/bricks/bundle/config"
-	"github.com/databricks/bricks/bundle/config/resources"
-	"github.com/databricks/bricks/bundle/internal/tf/schema"
+	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/bundle/internal/tf/schema"
 	tfjson "github.com/hashicorp/terraform-json"
 )
 

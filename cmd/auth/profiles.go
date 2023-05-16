@@ -9,7 +9,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/databricks/bricks/libs/cmdio"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"

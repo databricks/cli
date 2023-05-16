@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/databricks/bricks/bundle"
+	"github.com/databricks/cli/bundle"
 )
 
 type selectEnvironment struct {

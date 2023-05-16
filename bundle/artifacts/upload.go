@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/databricks/bricks/bundle"
-	"github.com/databricks/bricks/bundle/artifacts/notebook"
+	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/artifacts/notebook"
 )
 
 func UploadAll() bundle.Mutator {

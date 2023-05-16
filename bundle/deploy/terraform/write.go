@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/databricks/bricks/bundle"
+	"github.com/databricks/cli/bundle"
 )
 
 type write struct{}

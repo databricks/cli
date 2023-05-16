@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/databricks/bricks/bundle"
+	"github.com/databricks/cli/bundle"
 	"golang.org/x/exp/maps"
 )
 

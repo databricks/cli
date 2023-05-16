@@ -78,7 +78,7 @@ func loadFromDatabricksCfg(cfg *config.Config) error {
 	}
 	profile, err := resolveSection(cfg, iniFile)
 	if err == ErrNoMatchingProfiles {
-		// it's also fine for Azure CLI or Bricks CLI, which
+		// it's also fine for Azure CLI or Databricks CLI, which
 		// are resolved by unified auth handling in the Go SDK.
 		return nil
 	}

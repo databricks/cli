@@ -5,8 +5,8 @@ import (
 	"os/exec"
 	"testing"
 
-	"github.com/databricks/bricks/bundle"
-	"github.com/databricks/bricks/bundle/config"
+	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/stretchr/testify/require"
 )
 
@@ -37,5 +37,5 @@ func TestLoadWithNoState(t *testing.T) {
 		Load(),
 	})
 
-	require.ErrorContains(t, err, "Did you forget to run 'bricks bundle deploy'")
+	require.ErrorContains(t, err, "Did you forget to run 'databricks bundle deploy'")
 }

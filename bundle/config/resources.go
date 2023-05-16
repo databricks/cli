@@ -3,7 +3,7 @@ package config
 import (
 	"fmt"
 
-	"github.com/databricks/bricks/bundle/config/resources"
+	"github.com/databricks/cli/bundle/config/resources"
 )
 
 // Resources defines Databricks resources associated with the bundle.

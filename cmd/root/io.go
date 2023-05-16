@@ -3,8 +3,8 @@ package root
 import (
 	"os"
 
-	"github.com/databricks/bricks/libs/cmdio"
-	"github.com/databricks/bricks/libs/flags"
+	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/flags"
 	"github.com/spf13/cobra"
 )
 

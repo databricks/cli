@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/databricks/bricks/bundle"
-	"github.com/databricks/bricks/bundle/config"
+	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 	"golang.org/x/exp/slices"
 )
 

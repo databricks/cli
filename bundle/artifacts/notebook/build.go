@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/databricks/bricks/bundle"
+	"github.com/databricks/cli/bundle"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 

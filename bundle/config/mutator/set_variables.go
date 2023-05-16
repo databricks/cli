@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/databricks/bricks/bundle"
-	"github.com/databricks/bricks/bundle/config/variable"
+	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/variable"
 )
 
 const bundleVarPrefix = "BUNDLE_VAR_"
@@ -48,7 +48,7 @@ func setVariable(v *variable.Variable, name string) error {
 
 	// We should have had a value to set for the variable at this point.
 	// TODO: use cmdio to request values for unassigned variables if current
-	// terminal is a tty. Tracked in https://github.com/databricks/bricks/issues/379
+	// terminal is a tty. Tracked in https://github.com/databricks/cli/issues/379
 	return fmt.Errorf(`no value assigned to required variable %s. Assignment can be done through the "--var" flag or by setting the %s environment variable`, name, bundleVarPrefix+name)
 }
 

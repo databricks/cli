@@ -6,12 +6,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/databricks/bricks/bundle"
-	"github.com/databricks/bricks/bundle/config/resources"
-	"github.com/databricks/bricks/bundle/run/output"
-	"github.com/databricks/bricks/bundle/run/progress"
-	"github.com/databricks/bricks/libs/cmdio"
-	"github.com/databricks/bricks/libs/log"
+	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/bundle/run/output"
+	"github.com/databricks/cli/bundle/run/progress"
+	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	flag "github.com/spf13/pflag"
 )

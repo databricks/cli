@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/databricks/bricks/bundle"
-	"github.com/databricks/bricks/bundle/phases"
-	"github.com/databricks/bricks/libs/log"
-	"github.com/databricks/bricks/libs/sync"
+	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/phases"
+	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/sync"
 	"github.com/spf13/cobra"
 )
 

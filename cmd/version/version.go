@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/databricks/bricks/cmd/root"
-	"github.com/databricks/bricks/internal/build"
+	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/internal/build"
 	"github.com/spf13/cobra"
 )
 

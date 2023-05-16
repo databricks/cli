@@ -1,6 +1,6 @@
-# Bricks CLI
+# Databricks CLI
 
-[![build](https://github.com/databricks/bricks/workflows/build/badge.svg?branch=main)](https://github.com/databricks/bricks/actions?query=workflow%3Abuild+branch%3Amain)
+[![build](https://github.com/databricks/cli/workflows/build/badge.svg?branch=main)](https://github.com/databricks/cli/actions?query=workflow%3Abuild+branch%3Amain)
 
 This project is in private preview.
 
@@ -12,9 +12,9 @@ Documentation is available at https://docs.databricks.com/dev-tools/cli/bricks-c
 
 This CLI is packaged as a dependency-free binary executable and may be located in any directory.
 
-For convenient access, copy the `bricks` binary to any directory listed in `$PATH`.
+For convenient access, copy the `databricks` binary to any directory listed in `$PATH`.
 
-Confirm the binary works by executing `bricks version`.
+Confirm the binary works by executing `databricks version`.
 
 ## Authentication
 

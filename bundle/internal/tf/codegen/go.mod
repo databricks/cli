@@ -1,4 +1,4 @@
-module github.com/databricks/bricks/bundle/internal/tf/codegen
+module github.com/databricks/cli/bundle/internal/tf/codegen
 
 go 1.18
 
