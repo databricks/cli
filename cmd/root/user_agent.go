@@ -6,5 +6,5 @@ import (
 )
 
 func init() {
-	useragent.WithProduct("bricks", build.GetInfo().Version)
+	useragent.WithProduct("cli", build.GetInfo().Version)
 }

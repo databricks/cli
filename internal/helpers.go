@@ -41,7 +41,7 @@ func RandomName(prefix ...string) string {
 	return string(b)
 }
 
-// Helper for running the bricks root command in the background.
+// Helper for running the root command in the background.
 // It ensures that the background goroutine terminates upon
 // test completion through cancelling the command context.
 type cobraTestRunner struct {
@@ -74,7 +74,7 @@ func (t *cobraTestRunner) RunBackground() {
 			// Make a copy of the buffer such that it remains "unread".
 			scanner := bufio.NewScanner(bytes.NewBuffer(t.stdout.Bytes()))
 			for scanner.Scan() {
-				t.Logf("[bricks stdout]: %s", scanner.Text())
+				t.Logf("[databricks stdout]: %s", scanner.Text())
 			}
 		}
 
@@ -82,7 +82,7 @@ func (t *cobraTestRunner) RunBackground() {
 			// Make a copy of the buffer such that it remains "unread".
 			scanner := bufio.NewScanner(bytes.NewBuffer(t.stderr.Bytes()))
 			for scanner.Scan() {
-				t.Logf("[bricks stderr]: %s", scanner.Text())
+				t.Logf("[databricks stderr]: %s", scanner.Text())
 			}
 		}
 

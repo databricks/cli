@@ -37,5 +37,5 @@ func TestLoadWithNoState(t *testing.T) {
 		Load(),
 	})
 
-	require.ErrorContains(t, err, "Did you forget to run 'bricks bundle deploy'")
+	require.ErrorContains(t, err, "Did you forget to run 'databricks bundle deploy'")
 }

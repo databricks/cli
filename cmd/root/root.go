@@ -15,8 +15,8 @@ import (
 
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
-	Use:   "bricks",
-	Short: "Bricks CLI",
+	Use:   "databricks",
+	Short: "Databricks CLI",
 
 	// Cobra prints the usage string to stderr if a command returns an error.
 	// This usage string should only be displayed if an invalid combination of flags

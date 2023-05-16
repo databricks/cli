@@ -34,7 +34,7 @@ func TestAccApiPost(t *testing.T) {
 		t.Skip("DBFS REST API is disabled on gcp")
 	}
 
-	dbfsPath := path.Join("/tmp/bricks/integration", RandomName("api-post"))
+	dbfsPath := path.Join("/tmp/databricks/integration", RandomName("api-post"))
 	requestPath := writeFile(t, "body.json", fmt.Sprintf(`{
 		"path": "%s"
 	}`, dbfsPath))

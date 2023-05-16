@@ -47,7 +47,7 @@ func (l *load) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator, e
 
 func ValidateState(state *tfjson.State) error {
 	if state.Values == nil {
-		return fmt.Errorf("no deployment state. Did you forget to run 'bricks bundle deploy'?")
+		return fmt.Errorf("no deployment state. Did you forget to run 'databricks bundle deploy'?")
 	}
 
 	if state.Values.RootModule == nil {

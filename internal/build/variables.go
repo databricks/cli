@@ -1,6 +1,6 @@
 package build
 
-var buildProjectName string = "bricks"
+var buildProjectName string = "databricks_cli"
 var buildVersion string = ""
 
 var buildBranch string = "undefined"
