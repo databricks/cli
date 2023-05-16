@@ -54,21 +54,21 @@ jobs:
         with:
           name: bricks_darwin_snapshot
           path: |
-            dist/bricks_darwin_*/
+            dist/databricks_cli_darwin_*/
 
       - name: Upload Linux binaries
         uses: actions/upload-artifact@v3
         with:
           name: bricks_linux_snapshot
           path: |
-            dist/bricks_linux_*/
+            dist/databricks_cli_linux_*/
 
       - name: Upload Windows binaries
         uses: actions/upload-artifact@v3
         with:
           name: bricks_windows_snapshot
           path: |
-            dist/bricks_windows_*/
+            dist/databricks_cli_windows_*/
 
       - name: Update snapshot tag
 
@@ -91,4 +91,4 @@ jobs:
           tag_name: snapshot
           token: ${{ secrets.GITHUB_TOKEN }}
           files: |
-            dist/bricks*.zip
+            dist/databricks_cli_*.zip
