@@ -46,6 +46,7 @@ func (l *statePull) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutat
 	if err != nil {
 		return nil, err
 	}
+	defer local.Close()
 
 	if !IsLocalStateStale(local, remote) {
 		log.Infof(ctx, "Local state is the same or newer, ignoring remote state")
