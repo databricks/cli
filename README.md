@@ -1,4 +1,4 @@
-# Bricks CLI
+# Databricks CLI
 
 [![build](https://github.com/databricks/cli/workflows/build/badge.svg?branch=main)](https://github.com/databricks/cli/actions?query=workflow%3Abuild+branch%3Amain)
 

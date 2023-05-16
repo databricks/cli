@@ -22,4 +22,4 @@
 
 ## 0.0.30
 
-* Initial preview release of the Bricks CLI.
+* Initial preview release of the Databricks CLI.
