@@ -1,455 +1,455 @@
-# Available `bricks` commands
+# Available `databricks` commands
 
-- [bricks alerts - The alerts API can be used to perform CRUD operations on alerts.](#bricks-alerts---the-alerts-api-can-be-used-to-perform-crud-operations-on-alerts)
-    - [bricks alerts create - Create an alert.](#bricks-alerts-create---create-an-alert)
-    - [bricks alerts delete - Delete an alert.](#bricks-alerts-delete---delete-an-alert)
-    - [bricks alerts get - Get an alert.](#bricks-alerts-get---get-an-alert)
-    - [bricks alerts list - Get alerts.](#bricks-alerts-list---get-alerts)
-    - [bricks alerts update - Update an alert.](#bricks-alerts-update---update-an-alert)
-- [bricks catalogs - A catalog is the first layer of Unity Catalog’s three-level namespace.](#bricks-catalogs---a-catalog-is-the-first-layer-of-unity-catalogs-three-level-namespace)
-    - [bricks catalogs create - Create a catalog.](#bricks-catalogs-create---create-a-catalog)
-    - [bricks catalogs delete - Delete a catalog.](#bricks-catalogs-delete---delete-a-catalog)
-    - [bricks catalogs get - Get a catalog.](#bricks-catalogs-get---get-a-catalog)
-    - [bricks catalogs list - List catalogs.](#bricks-catalogs-list---list-catalogs)
-    - [bricks catalogs update - Update a catalog.](#bricks-catalogs-update---update-a-catalog)
-- [bricks cluster-policies - Cluster policy limits the ability to configure clusters based on a set of rules.](#bricks-cluster-policies---cluster-policy-limits-the-ability-to-configure-clusters-based-on-a-set-of-rules)
-    - [bricks cluster-policies create - Create a new policy.](#bricks-cluster-policies-create---create-a-new-policy)
-    - [bricks cluster-policies delete - Delete a cluster policy.](#bricks-cluster-policies-delete---delete-a-cluster-policy)
-    - [bricks cluster-policies edit - Update a cluster policy.](#bricks-cluster-policies-edit---update-a-cluster-policy)
-    - [bricks cluster-policies get - Get entity.](#bricks-cluster-policies-get---get-entity)
-    - [bricks cluster-policies list - Get a cluster policy.](#bricks-cluster-policies-list---get-a-cluster-policy)
-- [bricks clusters - The Clusters API allows you to create, start, edit, list, terminate, and delete clusters.](#bricks-clusters---the-clusters-api-allows-you-to-create-start-edit-list-terminate-and-delete-clusters)
-    - [bricks clusters change-owner - Change cluster owner.](#bricks-clusters-change-owner---change-cluster-owner)
-    - [bricks clusters create - Create new cluster.](#bricks-clusters-create---create-new-cluster)
-    - [bricks clusters delete - Terminate cluster.](#bricks-clusters-delete---terminate-cluster)
-    - [bricks clusters edit - Update cluster configuration.](#bricks-clusters-edit---update-cluster-configuration)
-    - [bricks clusters events - List cluster activity events.](#bricks-clusters-events---list-cluster-activity-events)
-    - [bricks clusters get - Get cluster info.](#bricks-clusters-get---get-cluster-info)
-    - [bricks clusters list - List all clusters.](#bricks-clusters-list---list-all-clusters)
-    - [bricks clusters list-node-types - List node types.](#bricks-clusters-list-node-types---list-node-types)
-    - [bricks clusters list-zones - List availability zones.](#bricks-clusters-list-zones---list-availability-zones)
-    - [bricks clusters permanent-delete - Permanently delete cluster.](#bricks-clusters-permanent-delete---permanently-delete-cluster)
-    - [bricks clusters pin - Pin cluster.](#bricks-clusters-pin---pin-cluster)
-    - [bricks clusters resize - Resize cluster.](#bricks-clusters-resize---resize-cluster)
-    - [bricks clusters restart - Restart cluster.](#bricks-clusters-restart---restart-cluster)
-    - [bricks clusters spark-versions - List available Spark versions.](#bricks-clusters-spark-versions---list-available-spark-versions)
-    - [bricks clusters start - Start terminated cluster.](#bricks-clusters-start---start-terminated-cluster)
-    - [bricks clusters unpin - Unpin cluster.](#bricks-clusters-unpin---unpin-cluster)
-- [bricks account credentials - These commands manage credential configurations for this workspace.](#bricks-account-credentials---these-commands-manage-credential-configurations-for-this-workspace)
-    - [bricks account credentials create - Create credential configuration.](#bricks-account-credentials-create---create-credential-configuration)
-    - [bricks account credentials delete - Delete credential configuration.](#bricks-account-credentials-delete---delete-credential-configuration)
-    - [bricks account credentials get - Get credential configuration.](#bricks-account-credentials-get---get-credential-configuration)
-    - [bricks account credentials list - Get all credential configurations.](#bricks-account-credentials-list---get-all-credential-configurations)
-- [bricks current-user - command allows retrieving information about currently authenticated user or service principal.](#bricks-current-user---command-allows-retrieving-information-about-currently-authenticated-user-or-service-principal)
-    - [bricks current-user me - Get current user info.](#bricks-current-user-me---get-current-user-info)
-- [bricks account custom-app-integration - manage custom oauth app integrations.](#bricks-account-custom-app-integration---manage-custom-oauth-app-integrations)
-    - [bricks account custom-app-integration create - Create Custom OAuth App Integration.](#bricks-account-custom-app-integration-create---create-custom-oauth-app-integration)
-    - [bricks account custom-app-integration delete - Delete Custom OAuth App Integration.](#bricks-account-custom-app-integration-delete---delete-custom-oauth-app-integration)
-    - [bricks account custom-app-integration get - Get OAuth Custom App Integration.](#bricks-account-custom-app-integration-get---get-oauth-custom-app-integration)
-    - [bricks account custom-app-integration list - Get custom oauth app integrations.](#bricks-account-custom-app-integration-list---get-custom-oauth-app-integrations)
-    - [bricks account custom-app-integration update - Updates Custom OAuth App Integration.](#bricks-account-custom-app-integration-update---updates-custom-oauth-app-integration)
-- [bricks dashboards - Databricks SQL Dashboards](#bricks-dashboards---databricks-sql-dashboards)
-    - [bricks dashboards create - Create a dashboard object.](#bricks-dashboards-create---create-a-dashboard-object)
-    - [bricks dashboards delete - Remove a dashboard.](#bricks-dashboards-delete---remove-a-dashboard)
-    - [bricks dashboards get - Retrieve a definition.](#bricks-dashboards-get---retrieve-a-definition)
-    - [bricks dashboards list - Get dashboard objects.](#bricks-dashboards-list---get-dashboard-objects)
-    - [bricks dashboards restore - Restore a dashboard.](#bricks-dashboards-restore---restore-a-dashboard)
-- [bricks data-sources - command is provided to assist you in making new query objects.](#bricks-data-sources---command-is-provided-to-assist-you-in-making-new-query-objects)
-    - [bricks data-sources list - Get a list of SQL warehouses.](#bricks-data-sources-list---get-a-list-of-sql-warehouses)
-- [bricks account encryption-keys - manage encryption key configurations.](#bricks-account-encryption-keys---manage-encryption-key-configurations)
-    - [bricks account encryption-keys create - Create encryption key configuration.](#bricks-account-encryption-keys-create---create-encryption-key-configuration)
-    - [bricks account encryption-keys delete - Delete encryption key configuration.](#bricks-account-encryption-keys-delete---delete-encryption-key-configuration)
-    - [bricks account encryption-keys get - Get encryption key configuration.](#bricks-account-encryption-keys-get---get-encryption-key-configuration)
-    - [bricks account encryption-keys list - Get all encryption key configurations.](#bricks-account-encryption-keys-list---get-all-encryption-key-configurations)
-- [bricks experiments - Manage MLflow experiments](#bricks-experiments---manage-mlflow-experiments)
-    - [bricks experiments create-experiment - Create experiment.](#bricks-experiments-create-experiment---create-experiment)
-    - [bricks experiments create-run - Create a run.](#bricks-experiments-create-run---create-a-run)
-    - [bricks experiments delete-experiment - Delete an experiment.](#bricks-experiments-delete-experiment---delete-an-experiment)
-    - [bricks experiments delete-run - Delete a run.](#bricks-experiments-delete-run---delete-a-run)
-    - [bricks experiments delete-tag - Delete a tag.](#bricks-experiments-delete-tag---delete-a-tag)
-    - [bricks experiments get-by-name - Get metadata.](#bricks-experiments-get-by-name---get-metadata)
-    - [bricks experiments get-experiment - Get an experiment.](#bricks-experiments-get-experiment---get-an-experiment)
-    - [bricks experiments get-history - Get history of a given metric within a run.](#bricks-experiments-get-history---get-history-of-a-given-metric-within-a-run)
-    - [bricks experiments get-run - Get a run.](#bricks-experiments-get-run---get-a-run)
-    - [bricks experiments list-artifacts - Get all artifacts.](#bricks-experiments-list-artifacts---get-all-artifacts)
-    - [bricks experiments list-experiments - List experiments.](#bricks-experiments-list-experiments---list-experiments)
-    - [bricks experiments log-batch - Log a batch.](#bricks-experiments-log-batch---log-a-batch)
-    - [bricks experiments log-metric - Log a metric.](#bricks-experiments-log-metric---log-a-metric)
-    - [bricks experiments log-model - Log a model.](#bricks-experiments-log-model---log-a-model)
-    - [bricks experiments log-param - Log a param.](#bricks-experiments-log-param---log-a-param)
-    - [bricks experiments restore-experiment - Restores an experiment.](#bricks-experiments-restore-experiment---restores-an-experiment)
-    - [bricks experiments restore-run - Restore a run.](#bricks-experiments-restore-run---restore-a-run)
-    - [bricks experiments search-experiments - Search experiments.](#bricks-experiments-search-experiments---search-experiments)
-    - [bricks experiments search-runs - Search for runs.](#bricks-experiments-search-runs---search-for-runs)
-    - [bricks experiments set-experiment-tag - Set a tag.](#bricks-experiments-set-experiment-tag---set-a-tag)
-    - [bricks experiments set-tag - Set a tag.](#bricks-experiments-set-tag---set-a-tag)
-    - [bricks experiments update-experiment - Update an experiment.](#bricks-experiments-update-experiment---update-an-experiment)
-    - [bricks experiments update-run - Update a run.](#bricks-experiments-update-run---update-a-run)
-- [bricks external-locations - manage cloud storage path with a storage credential that authorizes access to it.](#bricks-external-locations---manage-cloud-storage-path-with-a-storage-credential-that-authorizes-access-to-it)
-    - [bricks external-locations create - Create an external location.](#bricks-external-locations-create---create-an-external-location)
-    - [bricks external-locations delete - Delete an external location.](#bricks-external-locations-delete---delete-an-external-location)
-    - [bricks external-locations get - Get an external location.](#bricks-external-locations-get---get-an-external-location)
-    - [bricks external-locations list - List external locations.](#bricks-external-locations-list---list-external-locations)
-    - [bricks external-locations update - Update an external location.](#bricks-external-locations-update---update-an-external-location)
-- [bricks functions - Functions implement User-Defined Functions UDFs in Unity Catalog.](#bricks-functions---functions-implement-user-defined-functions-udfs-in-unity-catalog)
-    - [bricks functions create - Create a function.](#bricks-functions-create---create-a-function)
-    - [bricks functions delete - Delete a function.](#bricks-functions-delete---delete-a-function)
-    - [bricks functions get - Get a function.](#bricks-functions-get---get-a-function)
-    - [bricks functions list - List functions.](#bricks-functions-list---list-functions)
-    - [bricks functions update - Update a function.](#bricks-functions-update---update-a-function)
-- [bricks git-credentials - Registers personal access token for Databricks to do operations on behalf of the user.](#bricks-git-credentials---registers-personal-access-token-for-databricks-to-do-operations-on-behalf-of-the-user)
-    - [bricks git-credentials create - Create a credential entry.](#bricks-git-credentials-create---create-a-credential-entry)
-    - [bricks git-credentials delete - Delete a credential.](#bricks-git-credentials-delete---delete-a-credential)
-    - [bricks git-credentials get - Get a credential entry.](#bricks-git-credentials-get---get-a-credential-entry)
-    - [bricks git-credentials list - Get Git credentials.](#bricks-git-credentials-list---get-git-credentials)
-    - [bricks git-credentials update - Update a credential.](#bricks-git-credentials-update---update-a-credential)
-- [bricks global-init-scripts - configure global initialization scripts for the workspace.](#bricks-global-init-scripts---configure-global-initialization-scripts-for-the-workspace)
-    - [bricks global-init-scripts create - Create init script.](#bricks-global-init-scripts-create---create-init-script)
-    - [bricks global-init-scripts delete - Delete init script.](#bricks-global-init-scripts-delete---delete-init-script)
-    - [bricks global-init-scripts get - Get an init script.](#bricks-global-init-scripts-get---get-an-init-script)
-    - [bricks global-init-scripts list - Get init scripts.](#bricks-global-init-scripts-list---get-init-scripts)
-    - [bricks global-init-scripts update - Update init script.](#bricks-global-init-scripts-update---update-init-script)
-- [bricks grants - Manage data access in Unity Catalog.](#bricks-grants---manage-data-access-in-unity-catalog)
-    - [bricks grants get - Get permissions.](#bricks-grants-get---get-permissions)
-    - [bricks grants get-effective - Get effective permissions.](#bricks-grants-get-effective---get-effective-permissions)
-    - [bricks grants update - Update permissions.](#bricks-grants-update---update-permissions)
-- [bricks groups - Groups for identity management.](#bricks-groups---groups-for-identity-management)
-    - [bricks groups create - Create a new group.](#bricks-groups-create---create-a-new-group)
-    - [bricks groups delete - Delete a group.](#bricks-groups-delete---delete-a-group)
-    - [bricks groups get - Get group details.](#bricks-groups-get---get-group-details)
-    - [bricks groups list - List group details.](#bricks-groups-list---list-group-details)
-    - [bricks groups patch - Update group details.](#bricks-groups-patch---update-group-details)
-    - [bricks groups update - Replace a group.](#bricks-groups-update---replace-a-group)
-- [bricks account groups - Account-level group management](#bricks-account-groups---account-level-group-management)
-    - [bricks account groups create - Create a new group.](#bricks-account-groups-create---create-a-new-group)
-    - [bricks account groups delete - Delete a group.](#bricks-account-groups-delete---delete-a-group)
-    - [bricks account groups get - Get group details.](#bricks-account-groups-get---get-group-details)
-    - [bricks account groups list - List group details.](#bricks-account-groups-list---list-group-details)
-    - [bricks account groups patch - Update group details.](#bricks-account-groups-patch---update-group-details)
-    - [bricks account groups update - Replace a group.](#bricks-account-groups-update---replace-a-group)
-- [bricks instance-pools - manage ready-to-use cloud instances which reduces a cluster start and auto-scaling times.](#bricks-instance-pools---manage-ready-to-use-cloud-instances-which-reduces-a-cluster-start-and-auto-scaling-times)
-    - [bricks instance-pools create - Create a new instance pool.](#bricks-instance-pools-create---create-a-new-instance-pool)
-    - [bricks instance-pools delete - Delete an instance pool.](#bricks-instance-pools-delete---delete-an-instance-pool)
-    - [bricks instance-pools edit - Edit an existing instance pool.](#bricks-instance-pools-edit---edit-an-existing-instance-pool)
-    - [bricks instance-pools get - Get instance pool information.](#bricks-instance-pools-get---get-instance-pool-information)
-    - [bricks instance-pools list - List instance pool info.](#bricks-instance-pools-list---list-instance-pool-info)
-- [bricks instance-profiles - Manage instance profiles that users can launch clusters with.](#bricks-instance-profiles---manage-instance-profiles-that-users-can-launch-clusters-with)
-    - [bricks instance-profiles add - Register an instance profile.](#bricks-instance-profiles-add---register-an-instance-profile)
-    - [bricks instance-profiles edit - Edit an instance profile.](#bricks-instance-profiles-edit---edit-an-instance-profile)
-    - [bricks instance-profiles list - List available instance profiles.](#bricks-instance-profiles-list---list-available-instance-profiles)
-    - [bricks instance-profiles remove - Remove the instance profile.](#bricks-instance-profiles-remove---remove-the-instance-profile)
-- [bricks ip-access-lists - enable admins to configure IP access lists.](#bricks-ip-access-lists---enable-admins-to-configure-ip-access-lists)
-    - [bricks ip-access-lists create - Create access list.](#bricks-ip-access-lists-create---create-access-list)
-    - [bricks ip-access-lists delete - Delete access list.](#bricks-ip-access-lists-delete---delete-access-list)
-    - [bricks ip-access-lists get - Get access list.](#bricks-ip-access-lists-get---get-access-list)
-    - [bricks ip-access-lists list - Get access lists.](#bricks-ip-access-lists-list---get-access-lists)
-    - [bricks ip-access-lists replace - Replace access list.](#bricks-ip-access-lists-replace---replace-access-list)
-    - [bricks ip-access-lists update - Update access list.](#bricks-ip-access-lists-update---update-access-list)
-- [bricks account ip-access-lists - The Accounts IP Access List API enables account admins to configure IP access lists for access to the account console.](#bricks-account-ip-access-lists---the-accounts-ip-access-list-api-enables-account-admins-to-configure-ip-access-lists-for-access-to-the-account-console)
-    - [bricks account ip-access-lists create - Create access list.](#bricks-account-ip-access-lists-create---create-access-list)
-    - [bricks account ip-access-lists delete - Delete access list.](#bricks-account-ip-access-lists-delete---delete-access-list)
-    - [bricks account ip-access-lists get - Get IP access list.](#bricks-account-ip-access-lists-get---get-ip-access-list)
-    - [bricks account ip-access-lists list - Get access lists.](#bricks-account-ip-access-lists-list---get-access-lists)
-    - [bricks account ip-access-lists replace - Replace access list.](#bricks-account-ip-access-lists-replace---replace-access-list)
-    - [bricks account ip-access-lists update - Update access list.](#bricks-account-ip-access-lists-update---update-access-list)
-- [bricks jobs - Manage Databricks Workflows.](#bricks-jobs---manage-databricks-workflows)
-    - [bricks jobs cancel-all-runs - Cancel all runs of a job.](#bricks-jobs-cancel-all-runs---cancel-all-runs-of-a-job)
-    - [bricks jobs cancel-run - Cancel a job run.](#bricks-jobs-cancel-run---cancel-a-job-run)
-    - [bricks jobs create - Create a new job.](#bricks-jobs-create---create-a-new-job)
-    - [bricks jobs delete - Delete a job.](#bricks-jobs-delete---delete-a-job)
-    - [bricks jobs delete-run - Delete a job run.](#bricks-jobs-delete-run---delete-a-job-run)
-    - [bricks jobs export-run - Export and retrieve a job run.](#bricks-jobs-export-run---export-and-retrieve-a-job-run)
-    - [bricks jobs get - Get a single job.](#bricks-jobs-get---get-a-single-job)
-    - [bricks jobs get-run - Get a single job run.](#bricks-jobs-get-run---get-a-single-job-run)
-    - [bricks jobs get-run-output - Get the output for a single run.](#bricks-jobs-get-run-output---get-the-output-for-a-single-run)
-    - [bricks jobs list - List all jobs.](#bricks-jobs-list---list-all-jobs)
-    - [bricks jobs list-runs - List runs for a job.](#bricks-jobs-list-runs---list-runs-for-a-job)
-    - [bricks jobs repair-run - Repair a job run.](#bricks-jobs-repair-run---repair-a-job-run)
-    - [bricks jobs reset - Overwrites all settings for a job.](#bricks-jobs-reset---overwrites-all-settings-for-a-job)
-    - [bricks jobs run-now - Trigger a new job run.](#bricks-jobs-run-now---trigger-a-new-job-run)
-    - [bricks jobs submit - Create and trigger a one-time run.](#bricks-jobs-submit---create-and-trigger-a-one-time-run)
-    - [bricks jobs update - Partially updates a job.](#bricks-jobs-update---partially-updates-a-job)
-- [bricks libraries - Manage libraries on a cluster.](#bricks-libraries---manage-libraries-on-a-cluster)
-    - [bricks libraries all-cluster-statuses - Get all statuses.](#bricks-libraries-all-cluster-statuses---get-all-statuses)
-    - [bricks libraries cluster-status - Get status.](#bricks-libraries-cluster-status---get-status)
-    - [bricks libraries install - Add a library.](#bricks-libraries-install---add-a-library)
-    - [bricks libraries uninstall - Uninstall libraries.](#bricks-libraries-uninstall---uninstall-libraries)
-- [bricks account log-delivery - These commands manage log delivery configurations for this account.](#bricks-account-log-delivery---these-commands-manage-log-delivery-configurations-for-this-account)
-    - [bricks account log-delivery create - Create a new log delivery configuration.](#bricks-account-log-delivery-create---create-a-new-log-delivery-configuration)
-    - [bricks account log-delivery get - Get log delivery configuration.](#bricks-account-log-delivery-get---get-log-delivery-configuration)
-    - [bricks account log-delivery list - Get all log delivery configurations.](#bricks-account-log-delivery-list---get-all-log-delivery-configurations)
-    - [bricks account log-delivery patch-status - Enable or disable log delivery configuration.](#bricks-account-log-delivery-patch-status---enable-or-disable-log-delivery-configuration)
-- [bricks account metastore-assignments - These commands manage metastore assignments to a workspace.](#bricks-account-metastore-assignments---these-commands-manage-metastore-assignments-to-a-workspace)
-    - [bricks account metastore-assignments create - Assigns a workspace to a metastore.](#bricks-account-metastore-assignments-create---assigns-a-workspace-to-a-metastore)
-    - [bricks account metastore-assignments delete - Delete a metastore assignment.](#bricks-account-metastore-assignments-delete---delete-a-metastore-assignment)
-    - [bricks account metastore-assignments get - Gets the metastore assignment for a workspace.](#bricks-account-metastore-assignments-get---gets-the-metastore-assignment-for-a-workspace)
-    - [bricks account metastore-assignments list - Get all workspaces assigned to a metastore.](#bricks-account-metastore-assignments-list---get-all-workspaces-assigned-to-a-metastore)
-    - [bricks account metastore-assignments update - Updates a metastore assignment to a workspaces.](#bricks-account-metastore-assignments-update---updates-a-metastore-assignment-to-a-workspaces)
-- [bricks metastores - Manage metastores in Unity Catalog.](#bricks-metastores---manage-metastores-in-unity-catalog)
-    - [bricks metastores assign - Create an assignment.](#bricks-metastores-assign---create-an-assignment)
-    - [bricks metastores create - Create a metastore.](#bricks-metastores-create---create-a-metastore)
-    - [bricks metastores current - Get metastore assignment for workspace.](#bricks-metastores-current---get-metastore-assignment-for-workspace)
-    - [bricks metastores delete - Delete a metastore.](#bricks-metastores-delete---delete-a-metastore)
-    - [bricks metastores get - Get a metastore.](#bricks-metastores-get---get-a-metastore)
-    - [bricks metastores list - List metastores.](#bricks-metastores-list---list-metastores)
-    - [bricks metastores maintenance - Enables or disables auto maintenance on the metastore.](#bricks-metastores-maintenance---enables-or-disables-auto-maintenance-on-the-metastore)
-    - [bricks metastores summary - Get a metastore summary.](#bricks-metastores-summary---get-a-metastore-summary)
-    - [bricks metastores unassign - Delete an assignment.](#bricks-metastores-unassign---delete-an-assignment)
-    - [bricks metastores update - Update a metastore.](#bricks-metastores-update---update-a-metastore)
-    - [bricks metastores update-assignment - Update an assignment.](#bricks-metastores-update-assignment---update-an-assignment)
-- [bricks account metastores - These commands manage Unity Catalog metastores for an account.](#bricks-account-metastores---these-commands-manage-unity-catalog-metastores-for-an-account)
-    - [bricks account metastores create - Create metastore.](#bricks-account-metastores-create---create-metastore)
-    - [bricks account metastores delete - Delete a metastore.](#bricks-account-metastores-delete---delete-a-metastore)
-    - [bricks account metastores get - Get a metastore.](#bricks-account-metastores-get---get-a-metastore)
-    - [bricks account metastores list - Get all metastores associated with an account.](#bricks-account-metastores-list---get-all-metastores-associated-with-an-account)
-    - [bricks account metastores update - Update a metastore.](#bricks-account-metastores-update---update-a-metastore)
-- [bricks model-registry - Expose commands for Model Registry.](#bricks-model-registry---expose-commands-for-model-registry)
-    - [bricks model-registry approve-transition-request - Approve transition request.](#bricks-model-registry-approve-transition-request---approve-transition-request)
-    - [bricks model-registry create-comment - Post a comment.](#bricks-model-registry-create-comment---post-a-comment)
-    - [bricks model-registry create-model - Create a model.](#bricks-model-registry-create-model---create-a-model)
-    - [bricks model-registry create-model-version - Create a model version.](#bricks-model-registry-create-model-version---create-a-model-version)
-    - [bricks model-registry create-transition-request - Make a transition request.](#bricks-model-registry-create-transition-request---make-a-transition-request)
-    - [bricks model-registry create-webhook - Create a webhook.](#bricks-model-registry-create-webhook---create-a-webhook)
-    - [bricks model-registry delete-comment - Delete a comment.](#bricks-model-registry-delete-comment---delete-a-comment)
-    - [bricks model-registry delete-model - Delete a model.](#bricks-model-registry-delete-model---delete-a-model)
-    - [bricks model-registry delete-model-tag - Delete a model tag.](#bricks-model-registry-delete-model-tag---delete-a-model-tag)
-    - [bricks model-registry delete-model-version - Delete a model version.](#bricks-model-registry-delete-model-version---delete-a-model-version)
-    - [bricks model-registry delete-model-version-tag - Delete a model version tag.](#bricks-model-registry-delete-model-version-tag---delete-a-model-version-tag)
-    - [bricks model-registry delete-transition-request - Delete a ransition request.](#bricks-model-registry-delete-transition-request---delete-a-ransition-request)
-    - [bricks model-registry delete-webhook - Delete a webhook.](#bricks-model-registry-delete-webhook---delete-a-webhook)
-    - [bricks model-registry get-latest-versions - Get the latest version.](#bricks-model-registry-get-latest-versions---get-the-latest-version)
-    - [bricks model-registry get-model - Get model.](#bricks-model-registry-get-model---get-model)
-    - [bricks model-registry get-model-version - Get a model version.](#bricks-model-registry-get-model-version---get-a-model-version)
-    - [bricks model-registry get-model-version-download-uri - Get a model version URI.](#bricks-model-registry-get-model-version-download-uri---get-a-model-version-uri)
-    - [bricks model-registry list-models - List models.](#bricks-model-registry-list-models---list-models)
-    - [bricks model-registry list-transition-requests - List transition requests.](#bricks-model-registry-list-transition-requests---list-transition-requests)
-    - [bricks model-registry list-webhooks - List registry webhooks.](#bricks-model-registry-list-webhooks---list-registry-webhooks)
-    - [bricks model-registry reject-transition-request - Reject a transition request.](#bricks-model-registry-reject-transition-request---reject-a-transition-request)
-    - [bricks model-registry rename-model - Rename a model.](#bricks-model-registry-rename-model---rename-a-model)
-    - [bricks model-registry search-model-versions - Searches model versions.](#bricks-model-registry-search-model-versions---searches-model-versions)
-    - [bricks model-registry search-models - Search models.](#bricks-model-registry-search-models---search-models)
-    - [bricks model-registry set-model-tag - Set a tag.](#bricks-model-registry-set-model-tag---set-a-tag)
-    - [bricks model-registry set-model-version-tag - Set a version tag.](#bricks-model-registry-set-model-version-tag---set-a-version-tag)
-    - [bricks model-registry test-registry-webhook - Test a webhook.](#bricks-model-registry-test-registry-webhook---test-a-webhook)
-    - [bricks model-registry transition-stage - Transition a stage.](#bricks-model-registry-transition-stage---transition-a-stage)
-    - [bricks model-registry update-comment - Update a comment.](#bricks-model-registry-update-comment---update-a-comment)
-    - [bricks model-registry update-model - Update model.](#bricks-model-registry-update-model---update-model)
-    - [bricks model-registry update-model-version - Update model version.](#bricks-model-registry-update-model-version---update-model-version)
-    - [bricks model-registry update-webhook - Update a webhook.](#bricks-model-registry-update-webhook---update-a-webhook)
-- [bricks account networks - Manage network configurations.](#bricks-account-networks---manage-network-configurations)
-    - [bricks account networks create - Create network configuration.](#bricks-account-networks-create---create-network-configuration)
-    - [bricks account networks delete - Delete a network configuration.](#bricks-account-networks-delete---delete-a-network-configuration)
-    - [bricks account networks get - Get a network configuration.](#bricks-account-networks-get---get-a-network-configuration)
-    - [bricks account networks list - Get all network configurations.](#bricks-account-networks-list---get-all-network-configurations)
-- [bricks account o-auth-enrollment - These commands enable administrators to enroll OAuth for their accounts, which is required for adding/using any OAuth published/custom application integration.](#bricks-account-o-auth-enrollment---these-commands-enable-administrators-to-enroll-oauth-for-their-accounts-which-is-required-for-addingusing-any-oauth-publishedcustom-application-integration)
-    - [bricks account o-auth-enrollment create - Create OAuth Enrollment request.](#bricks-account-o-auth-enrollment-create---create-oauth-enrollment-request)
-    - [bricks account o-auth-enrollment get - Get OAuth enrollment status.](#bricks-account-o-auth-enrollment-get---get-oauth-enrollment-status)
-- [bricks permissions - Manage access for various users on different objects and endpoints.](#bricks-permissions---manage-access-for-various-users-on-different-objects-and-endpoints)
-    - [bricks permissions get - Get object permissions.](#bricks-permissions-get---get-object-permissions)
-    - [bricks permissions get-permission-levels - Get permission levels.](#bricks-permissions-get-permission-levels---get-permission-levels)
-    - [bricks permissions set - Set permissions.](#bricks-permissions-set---set-permissions)
-    - [bricks permissions update - Update permission.](#bricks-permissions-update---update-permission)
-- [bricks pipelines - Manage Delta Live Tables from command-line.](#bricks-pipelines---manage-delta-live-tables-from-command-line)
-    - [bricks pipelines create - Create a pipeline.](#bricks-pipelines-create---create-a-pipeline)
-    - [bricks pipelines delete - Delete a pipeline.](#bricks-pipelines-delete---delete-a-pipeline)
-    - [bricks pipelines get - Get a pipeline.](#bricks-pipelines-get---get-a-pipeline)
-    - [bricks pipelines get-update - Get a pipeline update.](#bricks-pipelines-get-update---get-a-pipeline-update)
-    - [bricks pipelines list-pipeline-events - List pipeline events.](#bricks-pipelines-list-pipeline-events---list-pipeline-events)
-    - [bricks pipelines list-pipelines - List pipelines.](#bricks-pipelines-list-pipelines---list-pipelines)
-    - [bricks pipelines list-updates - List pipeline updates.](#bricks-pipelines-list-updates---list-pipeline-updates)
-    - [bricks pipelines reset - Reset a pipeline.](#bricks-pipelines-reset---reset-a-pipeline)
-    - [bricks pipelines start-update - Queue a pipeline update.](#bricks-pipelines-start-update---queue-a-pipeline-update)
-    - [bricks pipelines stop - Stop a pipeline.](#bricks-pipelines-stop---stop-a-pipeline)
-    - [bricks pipelines update - Edit a pipeline.](#bricks-pipelines-update---edit-a-pipeline)
-- [bricks policy-families - View available policy families.](#bricks-policy-families---view-available-policy-families)
-    - [bricks policy-families get - get cluster policy family.](#bricks-policy-families-get---get-cluster-policy-family)
-    - [bricks policy-families list - list policy families.](#bricks-policy-families-list---list-policy-families)
-- [bricks account private-access - PrivateLink settings.](#bricks-account-private-access---privatelink-settings)
-    - [bricks account private-access create - Create private access settings.](#bricks-account-private-access-create---create-private-access-settings)
-    - [bricks account private-access delete - Delete a private access settings object.](#bricks-account-private-access-delete---delete-a-private-access-settings-object)
-    - [bricks account private-access get - Get a private access settings object.](#bricks-account-private-access-get---get-a-private-access-settings-object)
-    - [bricks account private-access list - Get all private access settings objects.](#bricks-account-private-access-list---get-all-private-access-settings-objects)
-    - [bricks account private-access replace - Replace private access settings.](#bricks-account-private-access-replace---replace-private-access-settings)
-- [bricks providers - Delta Sharing Providers commands.](#bricks-providers---delta-sharing-providers-commands)
-    - [bricks providers create - Create an auth provider.](#bricks-providers-create---create-an-auth-provider)
-    - [bricks providers delete - Delete a provider.](#bricks-providers-delete---delete-a-provider)
-    - [bricks providers get - Get a provider.](#bricks-providers-get---get-a-provider)
-    - [bricks providers list - List providers.](#bricks-providers-list---list-providers)
-    - [bricks providers list-shares - List shares by Provider.](#bricks-providers-list-shares---list-shares-by-provider)
-    - [bricks providers update - Update a provider.](#bricks-providers-update---update-a-provider)
-- [bricks account published-app-integration - manage published OAuth app integrations like Tableau Cloud for Databricks in AWS cloud.](#bricks-account-published-app-integration---manage-published-oauth-app-integrations-like-tableau-cloud-for-databricks-in-aws-cloud)
-    - [bricks account published-app-integration create - Create Published OAuth App Integration.](#bricks-account-published-app-integration-create---create-published-oauth-app-integration)
-    - [bricks account published-app-integration delete - Delete Published OAuth App Integration.](#bricks-account-published-app-integration-delete---delete-published-oauth-app-integration)
-    - [bricks account published-app-integration get - Get OAuth Published App Integration.](#bricks-account-published-app-integration-get---get-oauth-published-app-integration)
-    - [bricks account published-app-integration list - Get published oauth app integrations.](#bricks-account-published-app-integration-list---get-published-oauth-app-integrations)
-    - [bricks account published-app-integration update - Updates Published OAuth App Integration.](#bricks-account-published-app-integration-update---updates-published-oauth-app-integration)
-- [bricks queries - These endpoints are used for CRUD operations on query definitions.](#bricks-queries---these-endpoints-are-used-for-crud-operations-on-query-definitions)
-    - [bricks queries create - Create a new query definition.](#bricks-queries-create---create-a-new-query-definition)
-    - [bricks queries delete - Delete a query.](#bricks-queries-delete---delete-a-query)
-    - [bricks queries get - Get a query definition.](#bricks-queries-get---get-a-query-definition)
-    - [bricks queries list - Get a list of queries.](#bricks-queries-list---get-a-list-of-queries)
-    - [bricks queries restore - Restore a query.](#bricks-queries-restore---restore-a-query)
-    - [bricks queries update - Change a query definition.](#bricks-queries-update---change-a-query-definition)
-- [bricks query-history - Access the history of queries through SQL warehouses.](#bricks-query-history---access-the-history-of-queries-through-sql-warehouses)
-    - [bricks query-history list - List Queries.](#bricks-query-history-list---list-queries)
-- [bricks recipient-activation - Delta Sharing recipient activation commands.](#bricks-recipient-activation---delta-sharing-recipient-activation-commands)
-    - [bricks recipient-activation get-activation-url-info - Get a share activation URL.](#bricks-recipient-activation-get-activation-url-info---get-a-share-activation-url)
-    - [bricks recipient-activation retrieve-token - Get an access token.](#bricks-recipient-activation-retrieve-token---get-an-access-token)
-- [bricks recipients - Delta Sharing recipients.](#bricks-recipients---delta-sharing-recipients)
-    - [bricks recipients create - Create a share recipient.](#bricks-recipients-create---create-a-share-recipient)
-    - [bricks recipients delete - Delete a share recipient.](#bricks-recipients-delete---delete-a-share-recipient)
-    - [bricks recipients get - Get a share recipient.](#bricks-recipients-get---get-a-share-recipient)
-    - [bricks recipients list - List share recipients.](#bricks-recipients-list---list-share-recipients)
-    - [bricks recipients rotate-token - Rotate a token.](#bricks-recipients-rotate-token---rotate-a-token)
-    - [bricks recipients share-permissions - Get recipient share permissions.](#bricks-recipients-share-permissions---get-recipient-share-permissions)
-    - [bricks recipients update - Update a share recipient.](#bricks-recipients-update---update-a-share-recipient)
-- [bricks repos - Manage their git repos.](#bricks-repos---manage-their-git-repos)
-    - [bricks repos create - Create a repo.](#bricks-repos-create---create-a-repo)
-    - [bricks repos delete - Delete a repo.](#bricks-repos-delete---delete-a-repo)
-    - [bricks repos get - Get a repo.](#bricks-repos-get---get-a-repo)
-    - [bricks repos list - Get repos.](#bricks-repos-list---get-repos)
-    - [bricks repos update - Update a repo.](#bricks-repos-update---update-a-repo)
-- [bricks schemas - Manage schemas in Unity Catalog.](#bricks-schemas---manage-schemas-in-unity-catalog)
-    - [bricks schemas create - Create a schema.](#bricks-schemas-create---create-a-schema)
-    - [bricks schemas delete - Delete a schema.](#bricks-schemas-delete---delete-a-schema)
-    - [bricks schemas get - Get a schema.](#bricks-schemas-get---get-a-schema)
-    - [bricks schemas list - List schemas.](#bricks-schemas-list---list-schemas)
-    - [bricks schemas update - Update a schema.](#bricks-schemas-update---update-a-schema)
-- [bricks secrets - manage secrets, secret scopes, and access permissions.](#bricks-secrets---manage-secrets-secret-scopes-and-access-permissions)
-    - [bricks secrets create-scope - Create a new secret scope.](#bricks-secrets-create-scope---create-a-new-secret-scope)
-    - [bricks secrets delete-acl - Delete an ACL.](#bricks-secrets-delete-acl---delete-an-acl)
-    - [bricks secrets delete-scope - Delete a secret scope.](#bricks-secrets-delete-scope---delete-a-secret-scope)
-    - [bricks secrets delete-secret - Delete a secret.](#bricks-secrets-delete-secret---delete-a-secret)
-    - [bricks secrets get-acl - Get secret ACL details.](#bricks-secrets-get-acl---get-secret-acl-details)
-    - [bricks secrets list-acls - Lists ACLs.](#bricks-secrets-list-acls---lists-acls)
-    - [bricks secrets list-scopes - List all scopes.](#bricks-secrets-list-scopes---list-all-scopes)
-    - [bricks secrets list-secrets - List secret keys.](#bricks-secrets-list-secrets---list-secret-keys)
-    - [bricks secrets put-acl - Create/update an ACL.](#bricks-secrets-put-acl---createupdate-an-acl)
-    - [bricks secrets put-secret - Add a secret.](#bricks-secrets-put-secret---add-a-secret)
-- [bricks service-principals - Manage service principals.](#bricks-service-principals---manage-service-principals)
-    - [bricks service-principals create - Create a service principal.](#bricks-service-principals-create---create-a-service-principal)
-    - [bricks service-principals delete - Delete a service principal.](#bricks-service-principals-delete---delete-a-service-principal)
-    - [bricks service-principals get - Get service principal details.](#bricks-service-principals-get---get-service-principal-details)
-    - [bricks service-principals list - List service principals.](#bricks-service-principals-list---list-service-principals)
-    - [bricks service-principals patch - Update service principal details.](#bricks-service-principals-patch---update-service-principal-details)
-    - [bricks service-principals update - Replace service principal.](#bricks-service-principals-update---replace-service-principal)
-- [bricks account service-principals - Manage service principals on the account level.](#bricks-account-service-principals---manage-service-principals-on-the-account-level)
-    - [bricks account service-principals create - Create a service principal.](#bricks-account-service-principals-create---create-a-service-principal)
-    - [bricks account service-principals delete - Delete a service principal.](#bricks-account-service-principals-delete---delete-a-service-principal)
-    - [bricks account service-principals get - Get service principal details.](#bricks-account-service-principals-get---get-service-principal-details)
-    - [bricks account service-principals list - List service principals.](#bricks-account-service-principals-list---list-service-principals)
-    - [bricks account service-principals patch - Update service principal details.](#bricks-account-service-principals-patch---update-service-principal-details)
-    - [bricks account service-principals update - Replace service principal.](#bricks-account-service-principals-update---replace-service-principal)
-- [bricks serving-endpoints - Manage model serving endpoints.](#bricks-serving-endpoints---manage-model-serving-endpoints)
-    - [bricks serving-endpoints build-logs - Retrieve the logs associated with building the model's environment for a given serving endpoint's served model.](#bricks-serving-endpoints-build-logs---retrieve-the-logs-associated-with-building-the-models-environment-for-a-given-serving-endpoints-served-model)
-    - [bricks serving-endpoints create - Create a new serving endpoint.](#bricks-serving-endpoints-create---create-a-new-serving-endpoint)
-    - [bricks serving-endpoints delete - Delete a serving endpoint.](#bricks-serving-endpoints-delete---delete-a-serving-endpoint)
-    - [bricks serving-endpoints export-metrics - Retrieve the metrics corresponding to a serving endpoint for the current time in Prometheus or OpenMetrics exposition format.](#bricks-serving-endpoints-export-metrics---retrieve-the-metrics-corresponding-to-a-serving-endpoint-for-the-current-time-in-prometheus-or-openmetrics-exposition-format)
-    - [bricks serving-endpoints get - Get a single serving endpoint.](#bricks-serving-endpoints-get---get-a-single-serving-endpoint)
-    - [bricks serving-endpoints list - Retrieve all serving endpoints.](#bricks-serving-endpoints-list---retrieve-all-serving-endpoints)
-    - [bricks serving-endpoints logs - Retrieve the most recent log lines associated with a given serving endpoint's served model.](#bricks-serving-endpoints-logs---retrieve-the-most-recent-log-lines-associated-with-a-given-serving-endpoints-served-model)
-    - [bricks serving-endpoints query - Query a serving endpoint with provided model input.](#bricks-serving-endpoints-query---query-a-serving-endpoint-with-provided-model-input)
-    - [bricks serving-endpoints update-config - Update a serving endpoint with a new config.](#bricks-serving-endpoints-update-config---update-a-serving-endpoint-with-a-new-config)
-- [bricks shares - Databricks Shares commands.](#bricks-shares---databricks-shares-commands)
-    - [bricks shares create - Create a share.](#bricks-shares-create---create-a-share)
-    - [bricks shares delete - Delete a share.](#bricks-shares-delete---delete-a-share)
-    - [bricks shares get - Get a share.](#bricks-shares-get---get-a-share)
-    - [bricks shares list - List shares.](#bricks-shares-list---list-shares)
-    - [bricks shares share-permissions - Get permissions.](#bricks-shares-share-permissions---get-permissions)
-    - [bricks shares update - Update a share.](#bricks-shares-update---update-a-share)
-    - [bricks shares update-permissions - Update permissions.](#bricks-shares-update-permissions---update-permissions)
-- [bricks account storage - Manage storage configurations for this workspace.](#bricks-account-storage---manage-storage-configurations-for-this-workspace)
-    - [bricks account storage create - Create new storage configuration.](#bricks-account-storage-create---create-new-storage-configuration)
-    - [bricks account storage delete - Delete storage configuration.](#bricks-account-storage-delete---delete-storage-configuration)
-    - [bricks account storage get - Get storage configuration.](#bricks-account-storage-get---get-storage-configuration)
-    - [bricks account storage list - Get all storage configurations.](#bricks-account-storage-list---get-all-storage-configurations)
-- [bricks storage-credentials - Manage storage credentials for Unity Catalog.](#bricks-storage-credentials---manage-storage-credentials-for-unity-catalog)
-    - [bricks storage-credentials create - Create a storage credential.](#bricks-storage-credentials-create---create-a-storage-credential)
-    - [bricks storage-credentials delete - Delete a credential.](#bricks-storage-credentials-delete---delete-a-credential)
-    - [bricks storage-credentials get - Get a credential.](#bricks-storage-credentials-get---get-a-credential)
-    - [bricks storage-credentials list - List credentials.](#bricks-storage-credentials-list---list-credentials)
-    - [bricks storage-credentials update - Update a credential.](#bricks-storage-credentials-update---update-a-credential)
-    - [bricks storage-credentials validate - Validate a storage credential.](#bricks-storage-credentials-validate---validate-a-storage-credential)
-- [bricks account storage-credentials - These commands manage storage credentials for a particular metastore.](#bricks-account-storage-credentials---these-commands-manage-storage-credentials-for-a-particular-metastore)
-    - [bricks account storage-credentials create - Create a storage credential.](#bricks-account-storage-credentials-create---create-a-storage-credential)
-    - [bricks account storage-credentials get - Gets the named storage credential.](#bricks-account-storage-credentials-get---gets-the-named-storage-credential)
-    - [bricks account storage-credentials list - Get all storage credentials assigned to a metastore.](#bricks-account-storage-credentials-list---get-all-storage-credentials-assigned-to-a-metastore)
-- [bricks table-constraints - Primary key and foreign key constraints encode relationships between fields in tables.](#bricks-table-constraints---primary-key-and-foreign-key-constraints-encode-relationships-between-fields-in-tables)
-    - [bricks table-constraints create - Create a table constraint.](#bricks-table-constraints-create---create-a-table-constraint)
-    - [bricks table-constraints delete - Delete a table constraint.](#bricks-table-constraints-delete---delete-a-table-constraint)
-- [bricks tables - A table resides in the third layer of Unity Catalog’s three-level namespace.](#bricks-tables---a-table-resides-in-the-third-layer-of-unity-catalogs-three-level-namespace)
-    - [bricks tables delete - Delete a table.](#bricks-tables-delete---delete-a-table)
-    - [bricks tables get - Get a table.](#bricks-tables-get---get-a-table)
-    - [bricks tables list - List tables.](#bricks-tables-list---list-tables)
-    - [bricks tables list-summaries - List table summaries.](#bricks-tables-list-summaries---list-table-summaries)
-- [bricks token-management - Enables administrators to get all tokens and delete tokens for other users.](#bricks-token-management---enables-administrators-to-get-all-tokens-and-delete-tokens-for-other-users)
-    - [bricks token-management create-obo-token - Create on-behalf token.](#bricks-token-management-create-obo-token---create-on-behalf-token)
-    - [bricks token-management delete - Delete a token.](#bricks-token-management-delete---delete-a-token)
-    - [bricks token-management get - Get token info.](#bricks-token-management-get---get-token-info)
-    - [bricks token-management list - List all tokens.](#bricks-token-management-list---list-all-tokens)
-- [bricks tokens - The Token API allows you to create, list, and revoke tokens that can be used to authenticate and access Databricks commandss.](#bricks-tokens---the-token-api-allows-you-to-create-list-and-revoke-tokens-that-can-be-used-to-authenticate-and-access-databricks-commandss)
-    - [bricks tokens create - Create a user token.](#bricks-tokens-create---create-a-user-token)
-    - [bricks tokens delete - Revoke token.](#bricks-tokens-delete---revoke-token)
-    - [bricks tokens list - List tokens.](#bricks-tokens-list---list-tokens)
-- [bricks users - Manage users on the workspace-level.](#bricks-users---manage-users-on-the-workspace-level)
-    - [bricks users create - Create a new user.](#bricks-users-create---create-a-new-user)
-    - [bricks users delete - Delete a user.](#bricks-users-delete---delete-a-user)
-    - [bricks users get - Get user details.](#bricks-users-get---get-user-details)
-    - [bricks users list - List users.](#bricks-users-list---list-users)
-    - [bricks users patch - Update user details.](#bricks-users-patch---update-user-details)
-    - [bricks users update - Replace a user.](#bricks-users-update---replace-a-user)
-- [bricks account users - Manage users on the accou](#bricks-account-users---manage-users-on-the-accou)
-    - [bricks account users create - Create a new user.](#bricks-account-users-create---create-a-new-user)
-    - [bricks account users delete - Delete a user.](#bricks-account-users-delete---delete-a-user)
-    - [bricks account users get - Get user details.](#bricks-account-users-get---get-user-details)
-    - [bricks account users list - List users.](#bricks-account-users-list---list-users)
-    - [bricks account users patch - Update user details.](#bricks-account-users-patch---update-user-details)
-    - [bricks account users update - Replace a user.](#bricks-account-users-update---replace-a-user)
-- [bricks account vpc-endpoints - Manage VPC endpoints.](#bricks-account-vpc-endpoints---manage-vpc-endpoints)
-    - [bricks account vpc-endpoints create - Create VPC endpoint configuration.](#bricks-account-vpc-endpoints-create---create-vpc-endpoint-configuration)
-    - [bricks account vpc-endpoints delete - Delete VPC endpoint configuration.](#bricks-account-vpc-endpoints-delete---delete-vpc-endpoint-configuration)
-    - [bricks account vpc-endpoints get - Get a VPC endpoint configuration.](#bricks-account-vpc-endpoints-get---get-a-vpc-endpoint-configuration)
-    - [bricks account vpc-endpoints list - Get all VPC endpoint configurations.](#bricks-account-vpc-endpoints-list---get-all-vpc-endpoint-configurations)
-- [bricks warehouses - Manage Databricks SQL warehouses.](#bricks-warehouses---manage-databricks-sql-warehouses)
-    - [bricks warehouses create - Create a warehouse.](#bricks-warehouses-create---create-a-warehouse)
-    - [bricks warehouses delete - Delete a warehouse.](#bricks-warehouses-delete---delete-a-warehouse)
-    - [bricks warehouses edit - Update a warehouse.](#bricks-warehouses-edit---update-a-warehouse)
-    - [bricks warehouses get - Get warehouse info.](#bricks-warehouses-get---get-warehouse-info)
-    - [bricks warehouses get-workspace-warehouse-config - Get the workspace configuration.](#bricks-warehouses-get-workspace-warehouse-config---get-the-workspace-configuration)
-    - [bricks warehouses list - List warehouses.](#bricks-warehouses-list---list-warehouses)
-    - [bricks warehouses set-workspace-warehouse-config - Set the workspace configuration.](#bricks-warehouses-set-workspace-warehouse-config---set-the-workspace-configuration)
-    - [bricks warehouses start - Start a warehouse.](#bricks-warehouses-start---start-a-warehouse)
-    - [bricks warehouses stop - Stop a warehouse.](#bricks-warehouses-stop---stop-a-warehouse)
-- [bricks workspace - The Workspace API allows you to list, import, export, and delete notebooks and folders.](#bricks-workspace---the-workspace-api-allows-you-to-list-import-export-and-delete-notebooks-and-folders)
-    - [bricks workspace delete - Delete a workspace object.](#bricks-workspace-delete---delete-a-workspace-object)
-    - [bricks workspace export - Export a workspace object.](#bricks-workspace-export---export-a-workspace-object)
-    - [bricks workspace get-status - Get status.](#bricks-workspace-get-status---get-status)
-    - [bricks workspace import - Import a workspace object.](#bricks-workspace-import---import-a-workspace-object)
-    - [bricks workspace list - List contents.](#bricks-workspace-list---list-contents)
-    - [bricks workspace mkdirs - Create a directory.](#bricks-workspace-mkdirs---create-a-directory)
-- [bricks account workspace-assignment - The Workspace Permission Assignment API allows you to manage workspace permissions for principals in your account.](#bricks-account-workspace-assignment---the-workspace-permission-assignment-api-allows-you-to-manage-workspace-permissions-for-principals-in-your-account)
-    - [bricks account workspace-assignment delete - Delete permissions assignment.](#bricks-account-workspace-assignment-delete---delete-permissions-assignment)
-    - [bricks account workspace-assignment get - List workspace permissions.](#bricks-account-workspace-assignment-get---list-workspace-permissions)
-    - [bricks account workspace-assignment list - Get permission assignments.](#bricks-account-workspace-assignment-list---get-permission-assignments)
-    - [bricks account workspace-assignment update - Create or update permissions assignment.](#bricks-account-workspace-assignment-update---create-or-update-permissions-assignment)
-- [bricks workspace-conf - command allows updating known workspace settings for advanced users.](#bricks-workspace-conf---command-allows-updating-known-workspace-settings-for-advanced-users)
-    - [bricks workspace-conf get-status - Check configuration status.](#bricks-workspace-conf-get-status---check-configuration-status)
-    - [bricks workspace-conf set-status - Enable/disable features.](#bricks-workspace-conf-set-status---enabledisable-features)
-- [bricks account workspaces - These commands manage workspaces for this account.](#bricks-account-workspaces---these-commands-manage-workspaces-for-this-account)
-    - [bricks account workspaces create - Create a new workspace.](#bricks-account-workspaces-create---create-a-new-workspace)
-    - [bricks account workspaces delete - Delete a workspace.](#bricks-account-workspaces-delete---delete-a-workspace)
-    - [bricks account workspaces get - Get a workspace.](#bricks-account-workspaces-get---get-a-workspace)
-    - [bricks account workspaces list - Get all workspaces.](#bricks-account-workspaces-list---get-all-workspaces)
-    - [bricks account workspaces update - Update workspace configuration.](#bricks-account-workspaces-update---update-workspace-configuration)
+- [databricks alerts - The alerts API can be used to perform CRUD operations on alerts.](#databricks-alerts---the-alerts-api-can-be-used-to-perform-crud-operations-on-alerts)
+    - [databricks alerts create - Create an alert.](#databricks-alerts-create---create-an-alert)
+    - [databricks alerts delete - Delete an alert.](#databricks-alerts-delete---delete-an-alert)
+    - [databricks alerts get - Get an alert.](#databricks-alerts-get---get-an-alert)
+    - [databricks alerts list - Get alerts.](#databricks-alerts-list---get-alerts)
+    - [databricks alerts update - Update an alert.](#databricks-alerts-update---update-an-alert)
+- [databricks catalogs - A catalog is the first layer of Unity Catalog’s three-level namespace.](#databricks-catalogs---a-catalog-is-the-first-layer-of-unity-catalogs-three-level-namespace)
+    - [databricks catalogs create - Create a catalog.](#databricks-catalogs-create---create-a-catalog)
+    - [databricks catalogs delete - Delete a catalog.](#databricks-catalogs-delete---delete-a-catalog)
+    - [databricks catalogs get - Get a catalog.](#databricks-catalogs-get---get-a-catalog)
+    - [databricks catalogs list - List catalogs.](#databricks-catalogs-list---list-catalogs)
+    - [databricks catalogs update - Update a catalog.](#databricks-catalogs-update---update-a-catalog)
+- [databricks cluster-policies - Cluster policy limits the ability to configure clusters based on a set of rules.](#databricks-cluster-policies---cluster-policy-limits-the-ability-to-configure-clusters-based-on-a-set-of-rules)
+    - [databricks cluster-policies create - Create a new policy.](#databricks-cluster-policies-create---create-a-new-policy)
+    - [databricks cluster-policies delete - Delete a cluster policy.](#databricks-cluster-policies-delete---delete-a-cluster-policy)
+    - [databricks cluster-policies edit - Update a cluster policy.](#databricks-cluster-policies-edit---update-a-cluster-policy)
+    - [databricks cluster-policies get - Get entity.](#databricks-cluster-policies-get---get-entity)
+    - [databricks cluster-policies list - Get a cluster policy.](#databricks-cluster-policies-list---get-a-cluster-policy)
+- [databricks clusters - The Clusters API allows you to create, start, edit, list, terminate, and delete clusters.](#databricks-clusters---the-clusters-api-allows-you-to-create-start-edit-list-terminate-and-delete-clusters)
+    - [databricks clusters change-owner - Change cluster owner.](#databricks-clusters-change-owner---change-cluster-owner)
+    - [databricks clusters create - Create new cluster.](#databricks-clusters-create---create-new-cluster)
+    - [databricks clusters delete - Terminate cluster.](#databricks-clusters-delete---terminate-cluster)
+    - [databricks clusters edit - Update cluster configuration.](#databricks-clusters-edit---update-cluster-configuration)
+    - [databricks clusters events - List cluster activity events.](#databricks-clusters-events---list-cluster-activity-events)
+    - [databricks clusters get - Get cluster info.](#databricks-clusters-get---get-cluster-info)
+    - [databricks clusters list - List all clusters.](#databricks-clusters-list---list-all-clusters)
+    - [databricks clusters list-node-types - List node types.](#databricks-clusters-list-node-types---list-node-types)
+    - [databricks clusters list-zones - List availability zones.](#databricks-clusters-list-zones---list-availability-zones)
+    - [databricks clusters permanent-delete - Permanently delete cluster.](#databricks-clusters-permanent-delete---permanently-delete-cluster)
+    - [databricks clusters pin - Pin cluster.](#databricks-clusters-pin---pin-cluster)
+    - [databricks clusters resize - Resize cluster.](#databricks-clusters-resize---resize-cluster)
+    - [databricks clusters restart - Restart cluster.](#databricks-clusters-restart---restart-cluster)
+    - [databricks clusters spark-versions - List available Spark versions.](#databricks-clusters-spark-versions---list-available-spark-versions)
+    - [databricks clusters start - Start terminated cluster.](#databricks-clusters-start---start-terminated-cluster)
+    - [databricks clusters unpin - Unpin cluster.](#databricks-clusters-unpin---unpin-cluster)
+- [databricks account credentials - These commands manage credential configurations for this workspace.](#databricks-account-credentials---these-commands-manage-credential-configurations-for-this-workspace)
+    - [databricks account credentials create - Create credential configuration.](#databricks-account-credentials-create---create-credential-configuration)
+    - [databricks account credentials delete - Delete credential configuration.](#databricks-account-credentials-delete---delete-credential-configuration)
+    - [databricks account credentials get - Get credential configuration.](#databricks-account-credentials-get---get-credential-configuration)
+    - [databricks account credentials list - Get all credential configurations.](#databricks-account-credentials-list---get-all-credential-configurations)
+- [databricks current-user - command allows retrieving information about currently authenticated user or service principal.](#databricks-current-user---command-allows-retrieving-information-about-currently-authenticated-user-or-service-principal)
+    - [databricks current-user me - Get current user info.](#databricks-current-user-me---get-current-user-info)
+- [databricks account custom-app-integration - manage custom oauth app integrations.](#databricks-account-custom-app-integration---manage-custom-oauth-app-integrations)
+    - [databricks account custom-app-integration create - Create Custom OAuth App Integration.](#databricks-account-custom-app-integration-create---create-custom-oauth-app-integration)
+    - [databricks account custom-app-integration delete - Delete Custom OAuth App Integration.](#databricks-account-custom-app-integration-delete---delete-custom-oauth-app-integration)
+    - [databricks account custom-app-integration get - Get OAuth Custom App Integration.](#databricks-account-custom-app-integration-get---get-oauth-custom-app-integration)
+    - [databricks account custom-app-integration list - Get custom oauth app integrations.](#databricks-account-custom-app-integration-list---get-custom-oauth-app-integrations)
+    - [databricks account custom-app-integration update - Updates Custom OAuth App Integration.](#databricks-account-custom-app-integration-update---updates-custom-oauth-app-integration)
+- [databricks dashboards - Databricks SQL Dashboards](#databricks-dashboards---databricks-sql-dashboards)
+    - [databricks dashboards create - Create a dashboard object.](#databricks-dashboards-create---create-a-dashboard-object)
+    - [databricks dashboards delete - Remove a dashboard.](#databricks-dashboards-delete---remove-a-dashboard)
+    - [databricks dashboards get - Retrieve a definition.](#databricks-dashboards-get---retrieve-a-definition)
+    - [databricks dashboards list - Get dashboard objects.](#databricks-dashboards-list---get-dashboard-objects)
+    - [databricks dashboards restore - Restore a dashboard.](#databricks-dashboards-restore---restore-a-dashboard)
+- [databricks data-sources - command is provided to assist you in making new query objects.](#databricks-data-sources---command-is-provided-to-assist-you-in-making-new-query-objects)
+    - [databricks data-sources list - Get a list of SQL warehouses.](#databricks-data-sources-list---get-a-list-of-sql-warehouses)
+- [databricks account encryption-keys - manage encryption key configurations.](#databricks-account-encryption-keys---manage-encryption-key-configurations)
+    - [databricks account encryption-keys create - Create encryption key configuration.](#databricks-account-encryption-keys-create---create-encryption-key-configuration)
+    - [databricks account encryption-keys delete - Delete encryption key configuration.](#databricks-account-encryption-keys-delete---delete-encryption-key-configuration)
+    - [databricks account encryption-keys get - Get encryption key configuration.](#databricks-account-encryption-keys-get---get-encryption-key-configuration)
+    - [databricks account encryption-keys list - Get all encryption key configurations.](#databricks-account-encryption-keys-list---get-all-encryption-key-configurations)
+- [databricks experiments - Manage MLflow experiments](#databricks-experiments---manage-mlflow-experiments)
+    - [databricks experiments create-experiment - Create experiment.](#databricks-experiments-create-experiment---create-experiment)
+    - [databricks experiments create-run - Create a run.](#databricks-experiments-create-run---create-a-run)
+    - [databricks experiments delete-experiment - Delete an experiment.](#databricks-experiments-delete-experiment---delete-an-experiment)
+    - [databricks experiments delete-run - Delete a run.](#databricks-experiments-delete-run---delete-a-run)
+    - [databricks experiments delete-tag - Delete a tag.](#databricks-experiments-delete-tag---delete-a-tag)
+    - [databricks experiments get-by-name - Get metadata.](#databricks-experiments-get-by-name---get-metadata)
+    - [databricks experiments get-experiment - Get an experiment.](#databricks-experiments-get-experiment---get-an-experiment)
+    - [databricks experiments get-history - Get history of a given metric within a run.](#databricks-experiments-get-history---get-history-of-a-given-metric-within-a-run)
+    - [databricks experiments get-run - Get a run.](#databricks-experiments-get-run---get-a-run)
+    - [databricks experiments list-artifacts - Get all artifacts.](#databricks-experiments-list-artifacts---get-all-artifacts)
+    - [databricks experiments list-experiments - List experiments.](#databricks-experiments-list-experiments---list-experiments)
+    - [databricks experiments log-batch - Log a batch.](#databricks-experiments-log-batch---log-a-batch)
+    - [databricks experiments log-metric - Log a metric.](#databricks-experiments-log-metric---log-a-metric)
+    - [databricks experiments log-model - Log a model.](#databricks-experiments-log-model---log-a-model)
+    - [databricks experiments log-param - Log a param.](#databricks-experiments-log-param---log-a-param)
+    - [databricks experiments restore-experiment - Restores an experiment.](#databricks-experiments-restore-experiment---restores-an-experiment)
+    - [databricks experiments restore-run - Restore a run.](#databricks-experiments-restore-run---restore-a-run)
+    - [databricks experiments search-experiments - Search experiments.](#databricks-experiments-search-experiments---search-experiments)
+    - [databricks experiments search-runs - Search for runs.](#databricks-experiments-search-runs---search-for-runs)
+    - [databricks experiments set-experiment-tag - Set a tag.](#databricks-experiments-set-experiment-tag---set-a-tag)
+    - [databricks experiments set-tag - Set a tag.](#databricks-experiments-set-tag---set-a-tag)
+    - [databricks experiments update-experiment - Update an experiment.](#databricks-experiments-update-experiment---update-an-experiment)
+    - [databricks experiments update-run - Update a run.](#databricks-experiments-update-run---update-a-run)
+- [databricks external-locations - manage cloud storage path with a storage credential that authorizes access to it.](#databricks-external-locations---manage-cloud-storage-path-with-a-storage-credential-that-authorizes-access-to-it)
+    - [databricks external-locations create - Create an external location.](#databricks-external-locations-create---create-an-external-location)
+    - [databricks external-locations delete - Delete an external location.](#databricks-external-locations-delete---delete-an-external-location)
+    - [databricks external-locations get - Get an external location.](#databricks-external-locations-get---get-an-external-location)
+    - [databricks external-locations list - List external locations.](#databricks-external-locations-list---list-external-locations)
+    - [databricks external-locations update - Update an external location.](#databricks-external-locations-update---update-an-external-location)
+- [databricks functions - Functions implement User-Defined Functions UDFs in Unity Catalog.](#databricks-functions---functions-implement-user-defined-functions-udfs-in-unity-catalog)
+    - [databricks functions create - Create a function.](#databricks-functions-create---create-a-function)
+    - [databricks functions delete - Delete a function.](#databricks-functions-delete---delete-a-function)
+    - [databricks functions get - Get a function.](#databricks-functions-get---get-a-function)
+    - [databricks functions list - List functions.](#databricks-functions-list---list-functions)
+    - [databricks functions update - Update a function.](#databricks-functions-update---update-a-function)
+- [databricks git-credentials - Registers personal access token for Databricks to do operations on behalf of the user.](#databricks-git-credentials---registers-personal-access-token-for-databricks-to-do-operations-on-behalf-of-the-user)
+    - [databricks git-credentials create - Create a credential entry.](#databricks-git-credentials-create---create-a-credential-entry)
+    - [databricks git-credentials delete - Delete a credential.](#databricks-git-credentials-delete---delete-a-credential)
+    - [databricks git-credentials get - Get a credential entry.](#databricks-git-credentials-get---get-a-credential-entry)
+    - [databricks git-credentials list - Get Git credentials.](#databricks-git-credentials-list---get-git-credentials)
+    - [databricks git-credentials update - Update a credential.](#databricks-git-credentials-update---update-a-credential)
+- [databricks global-init-scripts - configure global initialization scripts for the workspace.](#databricks-global-init-scripts---configure-global-initialization-scripts-for-the-workspace)
+    - [databricks global-init-scripts create - Create init script.](#databricks-global-init-scripts-create---create-init-script)
+    - [databricks global-init-scripts delete - Delete init script.](#databricks-global-init-scripts-delete---delete-init-script)
+    - [databricks global-init-scripts get - Get an init script.](#databricks-global-init-scripts-get---get-an-init-script)
+    - [databricks global-init-scripts list - Get init scripts.](#databricks-global-init-scripts-list---get-init-scripts)
+    - [databricks global-init-scripts update - Update init script.](#databricks-global-init-scripts-update---update-init-script)
+- [databricks grants - Manage data access in Unity Catalog.](#databricks-grants---manage-data-access-in-unity-catalog)
+    - [databricks grants get - Get permissions.](#databricks-grants-get---get-permissions)
+    - [databricks grants get-effective - Get effective permissions.](#databricks-grants-get-effective---get-effective-permissions)
+    - [databricks grants update - Update permissions.](#databricks-grants-update---update-permissions)
+- [databricks groups - Groups for identity management.](#databricks-groups---groups-for-identity-management)
+    - [databricks groups create - Create a new group.](#databricks-groups-create---create-a-new-group)
+    - [databricks groups delete - Delete a group.](#databricks-groups-delete---delete-a-group)
+    - [databricks groups get - Get group details.](#databricks-groups-get---get-group-details)
+    - [databricks groups list - List group details.](#databricks-groups-list---list-group-details)
+    - [databricks groups patch - Update group details.](#databricks-groups-patch---update-group-details)
+    - [databricks groups update - Replace a group.](#databricks-groups-update---replace-a-group)
+- [databricks account groups - Account-level group management](#databricks-account-groups---account-level-group-management)
+    - [databricks account groups create - Create a new group.](#databricks-account-groups-create---create-a-new-group)
+    - [databricks account groups delete - Delete a group.](#databricks-account-groups-delete---delete-a-group)
+    - [databricks account groups get - Get group details.](#databricks-account-groups-get---get-group-details)
+    - [databricks account groups list - List group details.](#databricks-account-groups-list---list-group-details)
+    - [databricks account groups patch - Update group details.](#databricks-account-groups-patch---update-group-details)
+    - [databricks account groups update - Replace a group.](#databricks-account-groups-update---replace-a-group)
+- [databricks instance-pools - manage ready-to-use cloud instances which reduces a cluster start and auto-scaling times.](#databricks-instance-pools---manage-ready-to-use-cloud-instances-which-reduces-a-cluster-start-and-auto-scaling-times)
+    - [databricks instance-pools create - Create a new instance pool.](#databricks-instance-pools-create---create-a-new-instance-pool)
+    - [databricks instance-pools delete - Delete an instance pool.](#databricks-instance-pools-delete---delete-an-instance-pool)
+    - [databricks instance-pools edit - Edit an existing instance pool.](#databricks-instance-pools-edit---edit-an-existing-instance-pool)
+    - [databricks instance-pools get - Get instance pool information.](#databricks-instance-pools-get---get-instance-pool-information)
+    - [databricks instance-pools list - List instance pool info.](#databricks-instance-pools-list---list-instance-pool-info)
+- [databricks instance-profiles - Manage instance profiles that users can launch clusters with.](#databricks-instance-profiles---manage-instance-profiles-that-users-can-launch-clusters-with)
+    - [databricks instance-profiles add - Register an instance profile.](#databricks-instance-profiles-add---register-an-instance-profile)
+    - [databricks instance-profiles edit - Edit an instance profile.](#databricks-instance-profiles-edit---edit-an-instance-profile)
+    - [databricks instance-profiles list - List available instance profiles.](#databricks-instance-profiles-list---list-available-instance-profiles)
+    - [databricks instance-profiles remove - Remove the instance profile.](#databricks-instance-profiles-remove---remove-the-instance-profile)
+- [databricks ip-access-lists - enable admins to configure IP access lists.](#databricks-ip-access-lists---enable-admins-to-configure-ip-access-lists)
+    - [databricks ip-access-lists create - Create access list.](#databricks-ip-access-lists-create---create-access-list)
+    - [databricks ip-access-lists delete - Delete access list.](#databricks-ip-access-lists-delete---delete-access-list)
+    - [databricks ip-access-lists get - Get access list.](#databricks-ip-access-lists-get---get-access-list)
+    - [databricks ip-access-lists list - Get access lists.](#databricks-ip-access-lists-list---get-access-lists)
+    - [databricks ip-access-lists replace - Replace access list.](#databricks-ip-access-lists-replace---replace-access-list)
+    - [databricks ip-access-lists update - Update access list.](#databricks-ip-access-lists-update---update-access-list)
+- [databricks account ip-access-lists - The Accounts IP Access List API enables account admins to configure IP access lists for access to the account console.](#databricks-account-ip-access-lists---the-accounts-ip-access-list-api-enables-account-admins-to-configure-ip-access-lists-for-access-to-the-account-console)
+    - [databricks account ip-access-lists create - Create access list.](#databricks-account-ip-access-lists-create---create-access-list)
+    - [databricks account ip-access-lists delete - Delete access list.](#databricks-account-ip-access-lists-delete---delete-access-list)
+    - [databricks account ip-access-lists get - Get IP access list.](#databricks-account-ip-access-lists-get---get-ip-access-list)
+    - [databricks account ip-access-lists list - Get access lists.](#databricks-account-ip-access-lists-list---get-access-lists)
+    - [databricks account ip-access-lists replace - Replace access list.](#databricks-account-ip-access-lists-replace---replace-access-list)
+    - [databricks account ip-access-lists update - Update access list.](#databricks-account-ip-access-lists-update---update-access-list)
+- [databricks jobs - Manage Databricks Workflows.](#databricks-jobs---manage-databricks-workflows)
+    - [databricks jobs cancel-all-runs - Cancel all runs of a job.](#databricks-jobs-cancel-all-runs---cancel-all-runs-of-a-job)
+    - [databricks jobs cancel-run - Cancel a job run.](#databricks-jobs-cancel-run---cancel-a-job-run)
+    - [databricks jobs create - Create a new job.](#databricks-jobs-create---create-a-new-job)
+    - [databricks jobs delete - Delete a job.](#databricks-jobs-delete---delete-a-job)
+    - [databricks jobs delete-run - Delete a job run.](#databricks-jobs-delete-run---delete-a-job-run)
+    - [databricks jobs export-run - Export and retrieve a job run.](#databricks-jobs-export-run---export-and-retrieve-a-job-run)
+    - [databricks jobs get - Get a single job.](#databricks-jobs-get---get-a-single-job)
+    - [databricks jobs get-run - Get a single job run.](#databricks-jobs-get-run---get-a-single-job-run)
+    - [databricks jobs get-run-output - Get the output for a single run.](#databricks-jobs-get-run-output---get-the-output-for-a-single-run)
+    - [databricks jobs list - List all jobs.](#databricks-jobs-list---list-all-jobs)
+    - [databricks jobs list-runs - List runs for a job.](#databricks-jobs-list-runs---list-runs-for-a-job)
+    - [databricks jobs repair-run - Repair a job run.](#databricks-jobs-repair-run---repair-a-job-run)
+    - [databricks jobs reset - Overwrites all settings for a job.](#databricks-jobs-reset---overwrites-all-settings-for-a-job)
+    - [databricks jobs run-now - Trigger a new job run.](#databricks-jobs-run-now---trigger-a-new-job-run)
+    - [databricks jobs submit - Create and trigger a one-time run.](#databricks-jobs-submit---create-and-trigger-a-one-time-run)
+    - [databricks jobs update - Partially updates a job.](#databricks-jobs-update---partially-updates-a-job)
+- [databricks libraries - Manage libraries on a cluster.](#databricks-libraries---manage-libraries-on-a-cluster)
+    - [databricks libraries all-cluster-statuses - Get all statuses.](#databricks-libraries-all-cluster-statuses---get-all-statuses)
+    - [databricks libraries cluster-status - Get status.](#databricks-libraries-cluster-status---get-status)
+    - [databricks libraries install - Add a library.](#databricks-libraries-install---add-a-library)
+    - [databricks libraries uninstall - Uninstall libraries.](#databricks-libraries-uninstall---uninstall-libraries)
+- [databricks account log-delivery - These commands manage log delivery configurations for this account.](#databricks-account-log-delivery---these-commands-manage-log-delivery-configurations-for-this-account)
+    - [databricks account log-delivery create - Create a new log delivery configuration.](#databricks-account-log-delivery-create---create-a-new-log-delivery-configuration)
+    - [databricks account log-delivery get - Get log delivery configuration.](#databricks-account-log-delivery-get---get-log-delivery-configuration)
+    - [databricks account log-delivery list - Get all log delivery configurations.](#databricks-account-log-delivery-list---get-all-log-delivery-configurations)
+    - [databricks account log-delivery patch-status - Enable or disable log delivery configuration.](#databricks-account-log-delivery-patch-status---enable-or-disable-log-delivery-configuration)
+- [databricks account metastore-assignments - These commands manage metastore assignments to a workspace.](#databricks-account-metastore-assignments---these-commands-manage-metastore-assignments-to-a-workspace)
+    - [databricks account metastore-assignments create - Assigns a workspace to a metastore.](#databricks-account-metastore-assignments-create---assigns-a-workspace-to-a-metastore)
+    - [databricks account metastore-assignments delete - Delete a metastore assignment.](#databricks-account-metastore-assignments-delete---delete-a-metastore-assignment)
+    - [databricks account metastore-assignments get - Gets the metastore assignment for a workspace.](#databricks-account-metastore-assignments-get---gets-the-metastore-assignment-for-a-workspace)
+    - [databricks account metastore-assignments list - Get all workspaces assigned to a metastore.](#databricks-account-metastore-assignments-list---get-all-workspaces-assigned-to-a-metastore)
+    - [databricks account metastore-assignments update - Updates a metastore assignment to a workspaces.](#databricks-account-metastore-assignments-update---updates-a-metastore-assignment-to-a-workspaces)
+- [databricks metastores - Manage metastores in Unity Catalog.](#databricks-metastores---manage-metastores-in-unity-catalog)
+    - [databricks metastores assign - Create an assignment.](#databricks-metastores-assign---create-an-assignment)
+    - [databricks metastores create - Create a metastore.](#databricks-metastores-create---create-a-metastore)
+    - [databricks metastores current - Get metastore assignment for workspace.](#databricks-metastores-current---get-metastore-assignment-for-workspace)
+    - [databricks metastores delete - Delete a metastore.](#databricks-metastores-delete---delete-a-metastore)
+    - [databricks metastores get - Get a metastore.](#databricks-metastores-get---get-a-metastore)
+    - [databricks metastores list - List metastores.](#databricks-metastores-list---list-metastores)
+    - [databricks metastores maintenance - Enables or disables auto maintenance on the metastore.](#databricks-metastores-maintenance---enables-or-disables-auto-maintenance-on-the-metastore)
+    - [databricks metastores summary - Get a metastore summary.](#databricks-metastores-summary---get-a-metastore-summary)
+    - [databricks metastores unassign - Delete an assignment.](#databricks-metastores-unassign---delete-an-assignment)
+    - [databricks metastores update - Update a metastore.](#databricks-metastores-update---update-a-metastore)
+    - [databricks metastores update-assignment - Update an assignment.](#databricks-metastores-update-assignment---update-an-assignment)
+- [databricks account metastores - These commands manage Unity Catalog metastores for an account.](#databricks-account-metastores---these-commands-manage-unity-catalog-metastores-for-an-account)
+    - [databricks account metastores create - Create metastore.](#databricks-account-metastores-create---create-metastore)
+    - [databricks account metastores delete - Delete a metastore.](#databricks-account-metastores-delete---delete-a-metastore)
+    - [databricks account metastores get - Get a metastore.](#databricks-account-metastores-get---get-a-metastore)
+    - [databricks account metastores list - Get all metastores associated with an account.](#databricks-account-metastores-list---get-all-metastores-associated-with-an-account)
+    - [databricks account metastores update - Update a metastore.](#databricks-account-metastores-update---update-a-metastore)
+- [databricks model-registry - Expose commands for Model Registry.](#databricks-model-registry---expose-commands-for-model-registry)
+    - [databricks model-registry approve-transition-request - Approve transition request.](#databricks-model-registry-approve-transition-request---approve-transition-request)
+    - [databricks model-registry create-comment - Post a comment.](#databricks-model-registry-create-comment---post-a-comment)
+    - [databricks model-registry create-model - Create a model.](#databricks-model-registry-create-model---create-a-model)
+    - [databricks model-registry create-model-version - Create a model version.](#databricks-model-registry-create-model-version---create-a-model-version)
+    - [databricks model-registry create-transition-request - Make a transition request.](#databricks-model-registry-create-transition-request---make-a-transition-request)
+    - [databricks model-registry create-webhook - Create a webhook.](#databricks-model-registry-create-webhook---create-a-webhook)
+    - [databricks model-registry delete-comment - Delete a comment.](#databricks-model-registry-delete-comment---delete-a-comment)
+    - [databricks model-registry delete-model - Delete a model.](#databricks-model-registry-delete-model---delete-a-model)
+    - [databricks model-registry delete-model-tag - Delete a model tag.](#databricks-model-registry-delete-model-tag---delete-a-model-tag)
+    - [databricks model-registry delete-model-version - Delete a model version.](#databricks-model-registry-delete-model-version---delete-a-model-version)
+    - [databricks model-registry delete-model-version-tag - Delete a model version tag.](#databricks-model-registry-delete-model-version-tag---delete-a-model-version-tag)
+    - [databricks model-registry delete-transition-request - Delete a ransition request.](#databricks-model-registry-delete-transition-request---delete-a-ransition-request)
+    - [databricks model-registry delete-webhook - Delete a webhook.](#databricks-model-registry-delete-webhook---delete-a-webhook)
+    - [databricks model-registry get-latest-versions - Get the latest version.](#databricks-model-registry-get-latest-versions---get-the-latest-version)
+    - [databricks model-registry get-model - Get model.](#databricks-model-registry-get-model---get-model)
+    - [databricks model-registry get-model-version - Get a model version.](#databricks-model-registry-get-model-version---get-a-model-version)
+    - [databricks model-registry get-model-version-download-uri - Get a model version URI.](#databricks-model-registry-get-model-version-download-uri---get-a-model-version-uri)
+    - [databricks model-registry list-models - List models.](#databricks-model-registry-list-models---list-models)
+    - [databricks model-registry list-transition-requests - List transition requests.](#databricks-model-registry-list-transition-requests---list-transition-requests)
+    - [databricks model-registry list-webhooks - List registry webhooks.](#databricks-model-registry-list-webhooks---list-registry-webhooks)
+    - [databricks model-registry reject-transition-request - Reject a transition request.](#databricks-model-registry-reject-transition-request---reject-a-transition-request)
+    - [databricks model-registry rename-model - Rename a model.](#databricks-model-registry-rename-model---rename-a-model)
+    - [databricks model-registry search-model-versions - Searches model versions.](#databricks-model-registry-search-model-versions---searches-model-versions)
+    - [databricks model-registry search-models - Search models.](#databricks-model-registry-search-models---search-models)
+    - [databricks model-registry set-model-tag - Set a tag.](#databricks-model-registry-set-model-tag---set-a-tag)
+    - [databricks model-registry set-model-version-tag - Set a version tag.](#databricks-model-registry-set-model-version-tag---set-a-version-tag)
+    - [databricks model-registry test-registry-webhook - Test a webhook.](#databricks-model-registry-test-registry-webhook---test-a-webhook)
+    - [databricks model-registry transition-stage - Transition a stage.](#databricks-model-registry-transition-stage---transition-a-stage)
+    - [databricks model-registry update-comment - Update a comment.](#databricks-model-registry-update-comment---update-a-comment)
+    - [databricks model-registry update-model - Update model.](#databricks-model-registry-update-model---update-model)
+    - [databricks model-registry update-model-version - Update model version.](#databricks-model-registry-update-model-version---update-model-version)
+    - [databricks model-registry update-webhook - Update a webhook.](#databricks-model-registry-update-webhook---update-a-webhook)
+- [databricks account networks - Manage network configurations.](#databricks-account-networks---manage-network-configurations)
+    - [databricks account networks create - Create network configuration.](#databricks-account-networks-create---create-network-configuration)
+    - [databricks account networks delete - Delete a network configuration.](#databricks-account-networks-delete---delete-a-network-configuration)
+    - [databricks account networks get - Get a network configuration.](#databricks-account-networks-get---get-a-network-configuration)
+    - [databricks account networks list - Get all network configurations.](#databricks-account-networks-list---get-all-network-configurations)
+- [databricks account o-auth-enrollment - These commands enable administrators to enroll OAuth for their accounts, which is required for adding/using any OAuth published/custom application integration.](#databricks-account-o-auth-enrollment---these-commands-enable-administrators-to-enroll-oauth-for-their-accounts-which-is-required-for-addingusing-any-oauth-publishedcustom-application-integration)
+    - [databricks account o-auth-enrollment create - Create OAuth Enrollment request.](#databricks-account-o-auth-enrollment-create---create-oauth-enrollment-request)
+    - [databricks account o-auth-enrollment get - Get OAuth enrollment status.](#databricks-account-o-auth-enrollment-get---get-oauth-enrollment-status)
+- [databricks permissions - Manage access for various users on different objects and endpoints.](#databricks-permissions---manage-access-for-various-users-on-different-objects-and-endpoints)
+    - [databricks permissions get - Get object permissions.](#databricks-permissions-get---get-object-permissions)
+    - [databricks permissions get-permission-levels - Get permission levels.](#databricks-permissions-get-permission-levels---get-permission-levels)
+    - [databricks permissions set - Set permissions.](#databricks-permissions-set---set-permissions)
+    - [databricks permissions update - Update permission.](#databricks-permissions-update---update-permission)
+- [databricks pipelines - Manage Delta Live Tables from command-line.](#databricks-pipelines---manage-delta-live-tables-from-command-line)
+    - [databricks pipelines create - Create a pipeline.](#databricks-pipelines-create---create-a-pipeline)
+    - [databricks pipelines delete - Delete a pipeline.](#databricks-pipelines-delete---delete-a-pipeline)
+    - [databricks pipelines get - Get a pipeline.](#databricks-pipelines-get---get-a-pipeline)
+    - [databricks pipelines get-update - Get a pipeline update.](#databricks-pipelines-get-update---get-a-pipeline-update)
+    - [databricks pipelines list-pipeline-events - List pipeline events.](#databricks-pipelines-list-pipeline-events---list-pipeline-events)
+    - [databricks pipelines list-pipelines - List pipelines.](#databricks-pipelines-list-pipelines---list-pipelines)
+    - [databricks pipelines list-updates - List pipeline updates.](#databricks-pipelines-list-updates---list-pipeline-updates)
+    - [databricks pipelines reset - Reset a pipeline.](#databricks-pipelines-reset---reset-a-pipeline)
+    - [databricks pipelines start-update - Queue a pipeline update.](#databricks-pipelines-start-update---queue-a-pipeline-update)
+    - [databricks pipelines stop - Stop a pipeline.](#databricks-pipelines-stop---stop-a-pipeline)
+    - [databricks pipelines update - Edit a pipeline.](#databricks-pipelines-update---edit-a-pipeline)
+- [databricks policy-families - View available policy families.](#databricks-policy-families---view-available-policy-families)
+    - [databricks policy-families get - get cluster policy family.](#databricks-policy-families-get---get-cluster-policy-family)
+    - [databricks policy-families list - list policy families.](#databricks-policy-families-list---list-policy-families)
+- [databricks account private-access - PrivateLink settings.](#databricks-account-private-access---privatelink-settings)
+    - [databricks account private-access create - Create private access settings.](#databricks-account-private-access-create---create-private-access-settings)
+    - [databricks account private-access delete - Delete a private access settings object.](#databricks-account-private-access-delete---delete-a-private-access-settings-object)
+    - [databricks account private-access get - Get a private access settings object.](#databricks-account-private-access-get---get-a-private-access-settings-object)
+    - [databricks account private-access list - Get all private access settings objects.](#databricks-account-private-access-list---get-all-private-access-settings-objects)
+    - [databricks account private-access replace - Replace private access settings.](#databricks-account-private-access-replace---replace-private-access-settings)
+- [databricks providers - Delta Sharing Providers commands.](#databricks-providers---delta-sharing-providers-commands)
+    - [databricks providers create - Create an auth provider.](#databricks-providers-create---create-an-auth-provider)
+    - [databricks providers delete - Delete a provider.](#databricks-providers-delete---delete-a-provider)
+    - [databricks providers get - Get a provider.](#databricks-providers-get---get-a-provider)
+    - [databricks providers list - List providers.](#databricks-providers-list---list-providers)
+    - [databricks providers list-shares - List shares by Provider.](#databricks-providers-list-shares---list-shares-by-provider)
+    - [databricks providers update - Update a provider.](#databricks-providers-update---update-a-provider)
+- [databricks account published-app-integration - manage published OAuth app integrations like Tableau Cloud for Databricks in AWS cloud.](#databricks-account-published-app-integration---manage-published-oauth-app-integrations-like-tableau-cloud-for-databricks-in-aws-cloud)
+    - [databricks account published-app-integration create - Create Published OAuth App Integration.](#databricks-account-published-app-integration-create---create-published-oauth-app-integration)
+    - [databricks account published-app-integration delete - Delete Published OAuth App Integration.](#databricks-account-published-app-integration-delete---delete-published-oauth-app-integration)
+    - [databricks account published-app-integration get - Get OAuth Published App Integration.](#databricks-account-published-app-integration-get---get-oauth-published-app-integration)
+    - [databricks account published-app-integration list - Get published oauth app integrations.](#databricks-account-published-app-integration-list---get-published-oauth-app-integrations)
+    - [databricks account published-app-integration update - Updates Published OAuth App Integration.](#databricks-account-published-app-integration-update---updates-published-oauth-app-integration)
+- [databricks queries - These endpoints are used for CRUD operations on query definitions.](#databricks-queries---these-endpoints-are-used-for-crud-operations-on-query-definitions)
+    - [databricks queries create - Create a new query definition.](#databricks-queries-create---create-a-new-query-definition)
+    - [databricks queries delete - Delete a query.](#databricks-queries-delete---delete-a-query)
+    - [databricks queries get - Get a query definition.](#databricks-queries-get---get-a-query-definition)
+    - [databricks queries list - Get a list of queries.](#databricks-queries-list---get-a-list-of-queries)
+    - [databricks queries restore - Restore a query.](#databricks-queries-restore---restore-a-query)
+    - [databricks queries update - Change a query definition.](#databricks-queries-update---change-a-query-definition)
+- [databricks query-history - Access the history of queries through SQL warehouses.](#databricks-query-history---access-the-history-of-queries-through-sql-warehouses)
+    - [databricks query-history list - List Queries.](#databricks-query-history-list---list-queries)
+- [databricks recipient-activation - Delta Sharing recipient activation commands.](#databricks-recipient-activation---delta-sharing-recipient-activation-commands)
+    - [databricks recipient-activation get-activation-url-info - Get a share activation URL.](#databricks-recipient-activation-get-activation-url-info---get-a-share-activation-url)
+    - [databricks recipient-activation retrieve-token - Get an access token.](#databricks-recipient-activation-retrieve-token---get-an-access-token)
+- [databricks recipients - Delta Sharing recipients.](#databricks-recipients---delta-sharing-recipients)
+    - [databricks recipients create - Create a share recipient.](#databricks-recipients-create---create-a-share-recipient)
+    - [databricks recipients delete - Delete a share recipient.](#databricks-recipients-delete---delete-a-share-recipient)
+    - [databricks recipients get - Get a share recipient.](#databricks-recipients-get---get-a-share-recipient)
+    - [databricks recipients list - List share recipients.](#databricks-recipients-list---list-share-recipients)
+    - [databricks recipients rotate-token - Rotate a token.](#databricks-recipients-rotate-token---rotate-a-token)
+    - [databricks recipients share-permissions - Get recipient share permissions.](#databricks-recipients-share-permissions---get-recipient-share-permissions)
+    - [databricks recipients update - Update a share recipient.](#databricks-recipients-update---update-a-share-recipient)
+- [databricks repos - Manage their git repos.](#databricks-repos---manage-their-git-repos)
+    - [databricks repos create - Create a repo.](#databricks-repos-create---create-a-repo)
+    - [databricks repos delete - Delete a repo.](#databricks-repos-delete---delete-a-repo)
+    - [databricks repos get - Get a repo.](#databricks-repos-get---get-a-repo)
+    - [databricks repos list - Get repos.](#databricks-repos-list---get-repos)
+    - [databricks repos update - Update a repo.](#databricks-repos-update---update-a-repo)
+- [databricks schemas - Manage schemas in Unity Catalog.](#databricks-schemas---manage-schemas-in-unity-catalog)
+    - [databricks schemas create - Create a schema.](#databricks-schemas-create---create-a-schema)
+    - [databricks schemas delete - Delete a schema.](#databricks-schemas-delete---delete-a-schema)
+    - [databricks schemas get - Get a schema.](#databricks-schemas-get---get-a-schema)
+    - [databricks schemas list - List schemas.](#databricks-schemas-list---list-schemas)
+    - [databricks schemas update - Update a schema.](#databricks-schemas-update---update-a-schema)
+- [databricks secrets - manage secrets, secret scopes, and access permissions.](#databricks-secrets---manage-secrets-secret-scopes-and-access-permissions)
+    - [databricks secrets create-scope - Create a new secret scope.](#databricks-secrets-create-scope---create-a-new-secret-scope)
+    - [databricks secrets delete-acl - Delete an ACL.](#databricks-secrets-delete-acl---delete-an-acl)
+    - [databricks secrets delete-scope - Delete a secret scope.](#databricks-secrets-delete-scope---delete-a-secret-scope)
+    - [databricks secrets delete-secret - Delete a secret.](#databricks-secrets-delete-secret---delete-a-secret)
+    - [databricks secrets get-acl - Get secret ACL details.](#databricks-secrets-get-acl---get-secret-acl-details)
+    - [databricks secrets list-acls - Lists ACLs.](#databricks-secrets-list-acls---lists-acls)
+    - [databricks secrets list-scopes - List all scopes.](#databricks-secrets-list-scopes---list-all-scopes)
+    - [databricks secrets list-secrets - List secret keys.](#databricks-secrets-list-secrets---list-secret-keys)
+    - [databricks secrets put-acl - Create/update an ACL.](#databricks-secrets-put-acl---createupdate-an-acl)
+    - [databricks secrets put-secret - Add a secret.](#databricks-secrets-put-secret---add-a-secret)
+- [databricks service-principals - Manage service principals.](#databricks-service-principals---manage-service-principals)
+    - [databricks service-principals create - Create a service principal.](#databricks-service-principals-create---create-a-service-principal)
+    - [databricks service-principals delete - Delete a service principal.](#databricks-service-principals-delete---delete-a-service-principal)
+    - [databricks service-principals get - Get service principal details.](#databricks-service-principals-get---get-service-principal-details)
+    - [databricks service-principals list - List service principals.](#databricks-service-principals-list---list-service-principals)
+    - [databricks service-principals patch - Update service principal details.](#databricks-service-principals-patch---update-service-principal-details)
+    - [databricks service-principals update - Replace service principal.](#databricks-service-principals-update---replace-service-principal)
+- [databricks account service-principals - Manage service principals on the account level.](#databricks-account-service-principals---manage-service-principals-on-the-account-level)
+    - [databricks account service-principals create - Create a service principal.](#databricks-account-service-principals-create---create-a-service-principal)
+    - [databricks account service-principals delete - Delete a service principal.](#databricks-account-service-principals-delete---delete-a-service-principal)
+    - [databricks account service-principals get - Get service principal details.](#databricks-account-service-principals-get---get-service-principal-details)
+    - [databricks account service-principals list - List service principals.](#databricks-account-service-principals-list---list-service-principals)
+    - [databricks account service-principals patch - Update service principal details.](#databricks-account-service-principals-patch---update-service-principal-details)
+    - [databricks account service-principals update - Replace service principal.](#databricks-account-service-principals-update---replace-service-principal)
+- [databricks serving-endpoints - Manage model serving endpoints.](#databricks-serving-endpoints---manage-model-serving-endpoints)
+    - [databricks serving-endpoints build-logs - Retrieve the logs associated with building the model's environment for a given serving endpoint's served model.](#databricks-serving-endpoints-build-logs---retrieve-the-logs-associated-with-building-the-models-environment-for-a-given-serving-endpoints-served-model)
+    - [databricks serving-endpoints create - Create a new serving endpoint.](#databricks-serving-endpoints-create---create-a-new-serving-endpoint)
+    - [databricks serving-endpoints delete - Delete a serving endpoint.](#databricks-serving-endpoints-delete---delete-a-serving-endpoint)
+    - [databricks serving-endpoints export-metrics - Retrieve the metrics corresponding to a serving endpoint for the current time in Prometheus or OpenMetrics exposition format.](#databricks-serving-endpoints-export-metrics---retrieve-the-metrics-corresponding-to-a-serving-endpoint-for-the-current-time-in-prometheus-or-openmetrics-exposition-format)
+    - [databricks serving-endpoints get - Get a single serving endpoint.](#databricks-serving-endpoints-get---get-a-single-serving-endpoint)
+    - [databricks serving-endpoints list - Retrieve all serving endpoints.](#databricks-serving-endpoints-list---retrieve-all-serving-endpoints)
+    - [databricks serving-endpoints logs - Retrieve the most recent log lines associated with a given serving endpoint's served model.](#databricks-serving-endpoints-logs---retrieve-the-most-recent-log-lines-associated-with-a-given-serving-endpoints-served-model)
+    - [databricks serving-endpoints query - Query a serving endpoint with provided model input.](#databricks-serving-endpoints-query---query-a-serving-endpoint-with-provided-model-input)
+    - [databricks serving-endpoints update-config - Update a serving endpoint with a new config.](#databricks-serving-endpoints-update-config---update-a-serving-endpoint-with-a-new-config)
+- [databricks shares - Databricks Shares commands.](#databricks-shares---databricks-shares-commands)
+    - [databricks shares create - Create a share.](#databricks-shares-create---create-a-share)
+    - [databricks shares delete - Delete a share.](#databricks-shares-delete---delete-a-share)
+    - [databricks shares get - Get a share.](#databricks-shares-get---get-a-share)
+    - [databricks shares list - List shares.](#databricks-shares-list---list-shares)
+    - [databricks shares share-permissions - Get permissions.](#databricks-shares-share-permissions---get-permissions)
+    - [databricks shares update - Update a share.](#databricks-shares-update---update-a-share)
+    - [databricks shares update-permissions - Update permissions.](#databricks-shares-update-permissions---update-permissions)
+- [databricks account storage - Manage storage configurations for this workspace.](#databricks-account-storage---manage-storage-configurations-for-this-workspace)
+    - [databricks account storage create - Create new storage configuration.](#databricks-account-storage-create---create-new-storage-configuration)
+    - [databricks account storage delete - Delete storage configuration.](#databricks-account-storage-delete---delete-storage-configuration)
+    - [databricks account storage get - Get storage configuration.](#databricks-account-storage-get---get-storage-configuration)
+    - [databricks account storage list - Get all storage configurations.](#databricks-account-storage-list---get-all-storage-configurations)
+- [databricks storage-credentials - Manage storage credentials for Unity Catalog.](#databricks-storage-credentials---manage-storage-credentials-for-unity-catalog)
+    - [databricks storage-credentials create - Create a storage credential.](#databricks-storage-credentials-create---create-a-storage-credential)
+    - [databricks storage-credentials delete - Delete a credential.](#databricks-storage-credentials-delete---delete-a-credential)
+    - [databricks storage-credentials get - Get a credential.](#databricks-storage-credentials-get---get-a-credential)
+    - [databricks storage-credentials list - List credentials.](#databricks-storage-credentials-list---list-credentials)
+    - [databricks storage-credentials update - Update a credential.](#databricks-storage-credentials-update---update-a-credential)
+    - [databricks storage-credentials validate - Validate a storage credential.](#databricks-storage-credentials-validate---validate-a-storage-credential)
+- [databricks account storage-credentials - These commands manage storage credentials for a particular metastore.](#databricks-account-storage-credentials---these-commands-manage-storage-credentials-for-a-particular-metastore)
+    - [databricks account storage-credentials create - Create a storage credential.](#databricks-account-storage-credentials-create---create-a-storage-credential)
+    - [databricks account storage-credentials get - Gets the named storage credential.](#databricks-account-storage-credentials-get---gets-the-named-storage-credential)
+    - [databricks account storage-credentials list - Get all storage credentials assigned to a metastore.](#databricks-account-storage-credentials-list---get-all-storage-credentials-assigned-to-a-metastore)
+- [databricks table-constraints - Primary key and foreign key constraints encode relationships between fields in tables.](#databricks-table-constraints---primary-key-and-foreign-key-constraints-encode-relationships-between-fields-in-tables)
+    - [databricks table-constraints create - Create a table constraint.](#databricks-table-constraints-create---create-a-table-constraint)
+    - [databricks table-constraints delete - Delete a table constraint.](#databricks-table-constraints-delete---delete-a-table-constraint)
+- [databricks tables - A table resides in the third layer of Unity Catalog’s three-level namespace.](#databricks-tables---a-table-resides-in-the-third-layer-of-unity-catalogs-three-level-namespace)
+    - [databricks tables delete - Delete a table.](#databricks-tables-delete---delete-a-table)
+    - [databricks tables get - Get a table.](#databricks-tables-get---get-a-table)
+    - [databricks tables list - List tables.](#databricks-tables-list---list-tables)
+    - [databricks tables list-summaries - List table summaries.](#databricks-tables-list-summaries---list-table-summaries)
+- [databricks token-management - Enables administrators to get all tokens and delete tokens for other users.](#databricks-token-management---enables-administrators-to-get-all-tokens-and-delete-tokens-for-other-users)
+    - [databricks token-management create-obo-token - Create on-behalf token.](#databricks-token-management-create-obo-token---create-on-behalf-token)
+    - [databricks token-management delete - Delete a token.](#databricks-token-management-delete---delete-a-token)
+    - [databricks token-management get - Get token info.](#databricks-token-management-get---get-token-info)
+    - [databricks token-management list - List all tokens.](#databricks-token-management-list---list-all-tokens)
+- [databricks tokens - The Token API allows you to create, list, and revoke tokens that can be used to authenticate and access Databricks commandss.](#databricks-tokens---the-token-api-allows-you-to-create-list-and-revoke-tokens-that-can-be-used-to-authenticate-and-access-databricks-commandss)
+    - [databricks tokens create - Create a user token.](#databricks-tokens-create---create-a-user-token)
+    - [databricks tokens delete - Revoke token.](#databricks-tokens-delete---revoke-token)
+    - [databricks tokens list - List tokens.](#databricks-tokens-list---list-tokens)
+- [databricks users - Manage users on the workspace-level.](#databricks-users---manage-users-on-the-workspace-level)
+    - [databricks users create - Create a new user.](#databricks-users-create---create-a-new-user)
+    - [databricks users delete - Delete a user.](#databricks-users-delete---delete-a-user)
+    - [databricks users get - Get user details.](#databricks-users-get---get-user-details)
+    - [databricks users list - List users.](#databricks-users-list---list-users)
+    - [databricks users patch - Update user details.](#databricks-users-patch---update-user-details)
+    - [databricks users update - Replace a user.](#databricks-users-update---replace-a-user)
+- [databricks account users - Manage users on the accou](#databricks-account-users---manage-users-on-the-accou)
+    - [databricks account users create - Create a new user.](#databricks-account-users-create---create-a-new-user)
+    - [databricks account users delete - Delete a user.](#databricks-account-users-delete---delete-a-user)
+    - [databricks account users get - Get user details.](#databricks-account-users-get---get-user-details)
+    - [databricks account users list - List users.](#databricks-account-users-list---list-users)
+    - [databricks account users patch - Update user details.](#databricks-account-users-patch---update-user-details)
+    - [databricks account users update - Replace a user.](#databricks-account-users-update---replace-a-user)
+- [databricks account vpc-endpoints - Manage VPC endpoints.](#databricks-account-vpc-endpoints---manage-vpc-endpoints)
+    - [databricks account vpc-endpoints create - Create VPC endpoint configuration.](#databricks-account-vpc-endpoints-create---create-vpc-endpoint-configuration)
+    - [databricks account vpc-endpoints delete - Delete VPC endpoint configuration.](#databricks-account-vpc-endpoints-delete---delete-vpc-endpoint-configuration)
+    - [databricks account vpc-endpoints get - Get a VPC endpoint configuration.](#databricks-account-vpc-endpoints-get---get-a-vpc-endpoint-configuration)
+    - [databricks account vpc-endpoints list - Get all VPC endpoint configurations.](#databricks-account-vpc-endpoints-list---get-all-vpc-endpoint-configurations)
+- [databricks warehouses - Manage Databricks SQL warehouses.](#databricks-warehouses---manage-databricks-sql-warehouses)
+    - [databricks warehouses create - Create a warehouse.](#databricks-warehouses-create---create-a-warehouse)
+    - [databricks warehouses delete - Delete a warehouse.](#databricks-warehouses-delete---delete-a-warehouse)
+    - [databricks warehouses edit - Update a warehouse.](#databricks-warehouses-edit---update-a-warehouse)
+    - [databricks warehouses get - Get warehouse info.](#databricks-warehouses-get---get-warehouse-info)
+    - [databricks warehouses get-workspace-warehouse-config - Get the workspace configuration.](#databricks-warehouses-get-workspace-warehouse-config---get-the-workspace-configuration)
+    - [databricks warehouses list - List warehouses.](#databricks-warehouses-list---list-warehouses)
+    - [databricks warehouses set-workspace-warehouse-config - Set the workspace configuration.](#databricks-warehouses-set-workspace-warehouse-config---set-the-workspace-configuration)
+    - [databricks warehouses start - Start a warehouse.](#databricks-warehouses-start---start-a-warehouse)
+    - [databricks warehouses stop - Stop a warehouse.](#databricks-warehouses-stop---stop-a-warehouse)
+- [databricks workspace - The Workspace API allows you to list, import, export, and delete notebooks and folders.](#databricks-workspace---the-workspace-api-allows-you-to-list-import-export-and-delete-notebooks-and-folders)
+    - [databricks workspace delete - Delete a workspace object.](#databricks-workspace-delete---delete-a-workspace-object)
+    - [databricks workspace export - Export a workspace object.](#databricks-workspace-export---export-a-workspace-object)
+    - [databricks workspace get-status - Get status.](#databricks-workspace-get-status---get-status)
+    - [databricks workspace import - Import a workspace object.](#databricks-workspace-import---import-a-workspace-object)
+    - [databricks workspace list - List contents.](#databricks-workspace-list---list-contents)
+    - [databricks workspace mkdirs - Create a directory.](#databricks-workspace-mkdirs---create-a-directory)
+- [databricks account workspace-assignment - The Workspace Permission Assignment API allows you to manage workspace permissions for principals in your account.](#databricks-account-workspace-assignment---the-workspace-permission-assignment-api-allows-you-to-manage-workspace-permissions-for-principals-in-your-account)
+    - [databricks account workspace-assignment delete - Delete permissions assignment.](#databricks-account-workspace-assignment-delete---delete-permissions-assignment)
+    - [databricks account workspace-assignment get - List workspace permissions.](#databricks-account-workspace-assignment-get---list-workspace-permissions)
+    - [databricks account workspace-assignment list - Get permission assignments.](#databricks-account-workspace-assignment-list---get-permission-assignments)
+    - [databricks account workspace-assignment update - Create or update permissions assignment.](#databricks-account-workspace-assignment-update---create-or-update-permissions-assignment)
+- [databricks workspace-conf - command allows updating known workspace settings for advanced users.](#databricks-workspace-conf---command-allows-updating-known-workspace-settings-for-advanced-users)
+    - [databricks workspace-conf get-status - Check configuration status.](#databricks-workspace-conf-get-status---check-configuration-status)
+    - [databricks workspace-conf set-status - Enable/disable features.](#databricks-workspace-conf-set-status---enabledisable-features)
+- [databricks account workspaces - These commands manage workspaces for this account.](#databricks-account-workspaces---these-commands-manage-workspaces-for-this-account)
+    - [databricks account workspaces create - Create a new workspace.](#databricks-account-workspaces-create---create-a-new-workspace)
+    - [databricks account workspaces delete - Delete a workspace.](#databricks-account-workspaces-delete---delete-a-workspace)
+    - [databricks account workspaces get - Get a workspace.](#databricks-account-workspaces-get---get-a-workspace)
+    - [databricks account workspaces list - Get all workspaces.](#databricks-account-workspaces-list---get-all-workspaces)
+    - [databricks account workspaces update - Update workspace configuration.](#databricks-account-workspaces-update---update-workspace-configuration)
 
 
-## `bricks alerts` - The alerts API can be used to perform CRUD operations on alerts.
+## `databricks alerts` - The alerts API can be used to perform CRUD operations on alerts.
 
 The alerts API can be used to perform CRUD operations on alerts. An alert is a Databricks SQL
 object that periodically runs a query, evaluates a condition of its result, and notifies one
 or more users and/or notification destinations if the condition was met.
 
-### `bricks alerts create` - Create an alert.
+### `databricks alerts create` - Create an alert.
 
 An alert is a Databricks SQL object that periodically runs a query, evaluates a condition of its result,
 and notifies users or notification destinations if the condition was met.
@@ -458,20 +458,20 @@ Flags:
  * `--json` - either inline JSON string or @path/to/file.json with request body * `--parent` - The identifier of the workspace folder containing the alert.
  * `--rearm` - Number of seconds after being triggered before the alert rearms itself and can be triggered again.
 
-### `bricks alerts delete` - Delete an alert.
+### `databricks alerts delete` - Delete an alert.
 
 Deletes an alert. Deleted alerts are no longer accessible and cannot be restored.
 **Note:** Unlike queries and dashboards, alerts cannot be moved to the trash.
 
-### `bricks alerts get` - Get an alert.
+### `databricks alerts get` - Get an alert.
 
 Gets an alert.
 
-### `bricks alerts list` - Get alerts.
+### `databricks alerts list` - Get alerts.
 
 Gets a list of alerts.
 
-### `bricks alerts update` - Update an alert.
+### `databricks alerts update` - Update an alert.
 
 Updates an alert.
 
@@ -479,7 +479,7 @@ Flags:
  * `--json` - either inline JSON string or @path/to/file.json with request body
  * `--rearm` - Number of seconds after being triggered before the alert rearms itself and can be triggered again.
 
-## `bricks catalogs` - A catalog is the first layer of Unity Catalog’s three-level namespace.
+## `databricks catalogs` - A catalog is the first layer of Unity Catalog’s three-level namespace.
 
 A catalog is the first layer of Unity Catalog’s three-level namespace. It’s used to organize
 your data assets. Users can see all catalogs on which they have been assigned the USE_CATALOG
@@ -489,7 +489,7 @@ In Unity Catalog, admins and data stewards manage users and their access to data
 across all of the workspaces in a Databricks account. Users in different workspaces can
 share access to the same data, depending on privileges granted centrally in Unity Catalog.
 
-### `bricks catalogs create` - Create a catalog.
+### `databricks catalogs create` - Create a catalog.
 
 Creates a new catalog instance in the parent metastore if the caller is a metastore admin or has the **CREATE_CATALOG** privilege.
 
@@ -500,25 +500,25 @@ Flags:
  * `--share-name` - The name of the share under the share provider.
  * `--storage-root` - Storage root URL for managed tables within catalog.
 
-### `bricks catalogs delete` - Delete a catalog.
+### `databricks catalogs delete` - Delete a catalog.
 
 Deletes the catalog that matches the supplied name. The caller must be a metastore admin or the owner of the catalog.
 
 Flags:
 * `--force` - Force deletion even if the catalog is not empty.
 
-### `bricks catalogs get` - Get a catalog.
+### `databricks catalogs get` - Get a catalog.
 
 Gets the specified catalog in a metastore. The caller must be a metastore admin, the owner of the catalog, or a user that has the **USE_CATALOG** privilege set for their account.
 
-### `bricks catalogs list` - List catalogs.
+### `databricks catalogs list` - List catalogs.
 
 Gets an array of catalogs in the metastore.
 If the caller is the metastore admin, all catalogs will be retrieved.
 Otherwise, only catalogs owned by the caller (or for which the caller has the **USE_CATALOG** privilege) will be retrieved.
 There is no guarantee of a specific ordering of the elements in the array.
 
-### `bricks catalogs update` - Update a catalog.
+### `databricks catalogs update` - Update a catalog.
 
 Updates the catalog that matches the supplied name.
 The caller must be either the owner of the catalog, or a metastore admin (when changing the owner field of the catalog).
@@ -529,7 +529,7 @@ Flags:
  * `--name` - Name of catalog.
  * `--owner` - Username of current owner of catalog.
 
-## `bricks cluster-policies` - Cluster policy limits the ability to configure clusters based on a set of rules.
+## `databricks cluster-policies` - Cluster policy limits the ability to configure clusters based on a set of rules.
 
 Cluster policy limits the ability to configure clusters based on a set of rules. The policy
 rules limit the attributes or attribute values available for cluster creation. Cluster
@@ -553,7 +553,7 @@ If no policies have been created in the workspace, the Policy drop-down does not
 Only admin users can create, edit, and delete policies.
 Admin users also have access to all policies.
 
-### `bricks cluster-policies create` - Create a new policy.
+### `databricks cluster-policies create` - Create a new policy.
 
 Creates a new policy with prescribed settings.
 
@@ -564,11 +564,11 @@ Flags:
  * `--policy-family-definition-overrides` - Policy definition JSON document expressed in Databricks Policy Definition Language.
  * `--policy-family-id` - ID of the policy family.
 
-### `bricks cluster-policies delete` - Delete a cluster policy.
+### `databricks cluster-policies delete` - Delete a cluster policy.
 
 Delete a policy for a cluster. Clusters governed by this policy can still run, but cannot be edited.
 
-### `bricks cluster-policies edit` - Update a cluster policy.
+### `databricks cluster-policies edit` - Update a cluster policy.
 
 Update an existing policy for cluster. This operation may make some clusters governed by the previous policy invalid.
 
@@ -579,11 +579,11 @@ Flags:
  * `--policy-family-definition-overrides` - Policy definition JSON document expressed in Databricks Policy Definition Language.
  * `--policy-family-id` - ID of the policy family.
 
-### `bricks cluster-policies get` - Get entity.
+### `databricks cluster-policies get` - Get entity.
 
 Get a cluster policy entity. Creation and editing is available to admins only.
 
-### `bricks cluster-policies list` - Get a cluster policy.
+### `databricks cluster-policies list` - Get a cluster policy.
 
 Returns a list of policies accessible by the requesting user.
 
@@ -591,7 +591,7 @@ Flags:
  * `--sort-column` - The cluster policy attribute to sort by.
  * `--sort-order` - The order in which the policies get listed.
 
-## `bricks clusters` - The Clusters API allows you to create, start, edit, list, terminate, and delete clusters.
+## `databricks clusters` - The Clusters API allows you to create, start, edit, list, terminate, and delete clusters.
 
 Databricks maps cluster node instance types to compute units known as DBUs. See the instance
 type pricing page for a list of the supported instance types and their corresponding DBUs.
@@ -614,11 +614,11 @@ clusters terminated in the last 30 days and up to 30 job clusters recently termi
 the job scheduler. To keep an all-purpose cluster configuration even after it has been
 terminated for more than 30 days, an administrator can pin a cluster to the cluster list.
 
-### `bricks clusters change-owner` - Change cluster owner.
+### `databricks clusters change-owner` - Change cluster owner.
 
 Change the owner of the cluster. You must be an admin to perform this operation.
 
-### `bricks clusters create` - Create new cluster.
+### `databricks clusters create` - Create new cluster.
 
 Creates a new Spark cluster. This method will acquire new instances from the cloud provider if necessary.
 This method is asynchronous; the returned `cluster_id` can be used to poll the cluster status.
@@ -649,7 +649,7 @@ Flags:
  * `--policy-id` - The ID of the cluster policy used to create the cluster if applicable.
  * `--runtime-engine` - Decides which runtime engine to be use, e.g.
 
-### `bricks clusters delete` - Terminate cluster.
+### `databricks clusters delete` - Terminate cluster.
 
 Terminates the Spark cluster with the specified ID. The cluster is removed asynchronously.
 Once the termination has completed, the cluster will be in a `TERMINATED` state.
@@ -659,7 +659,7 @@ Flags:
  * `--no-wait` - do not wait to reach TERMINATED state.
  * `--timeout` - maximum amount of time to reach TERMINATED state.
 
-### `bricks clusters edit` - Update cluster configuration.
+### `databricks clusters edit` - Update cluster configuration.
 
 Updates the configuration of a cluster to match the provided attributes and size.
 A cluster can be updated if it is in a `RUNNING` or `TERMINATED` state.
@@ -690,7 +690,7 @@ Flags:
  * `--policy-id` - The ID of the cluster policy used to create the cluster if applicable.
  * `--runtime-engine` - Decides which runtime engine to be use, e.g.
 
-### `bricks clusters events` - List cluster activity events.
+### `databricks clusters events` - List cluster activity events.
 
 Retrieves a list of events about the activity of a cluster.
 command is paginated. If there are more events to read, the response includes all the nparameters necessary to request
@@ -704,7 +704,7 @@ Flags:
  * `--order` - The order to list events in; either "ASC" or "DESC".
  * `--start-time` - The start time in epoch milliseconds.
 
-### `bricks clusters get` - Get cluster info.
+### `databricks clusters get` - Get cluster info.
 
 "Retrieves the information for a cluster given its identifier.
 Clusters can be described while they are running, or up to 60 days after they are terminated.
@@ -713,7 +713,7 @@ Flags:
  * `--no-wait` - do not wait to reach RUNNING state.
  * `--timeout` - maximum amount of time to reach RUNNING state.
 
-### `bricks clusters list` - List all clusters.
+### `databricks clusters list` - List all clusters.
 
 Return information about all pinned clusters, active clusters, up to 200 of the most recently terminated all-purpose clusters in
 the past 30 days, and up to 30 of the most recently terminated job clusters in the past 30 days.
@@ -725,29 +725,29 @@ all 45 terminated all-purpose clusters, and the 30 most recently terminated job 
 Flags:
  * `--can-use-client` - Filter clusters based on what type of client it can be used for.
 
-### `bricks clusters list-node-types` - List node types.
+### `databricks clusters list-node-types` - List node types.
 
 Returns a list of supported Spark node types. These node types can be used to launch a cluster.
 
-### `bricks clusters list-zones` - List availability zones.
+### `databricks clusters list-zones` - List availability zones.
 
 Returns a list of availability zones where clusters can be created in (For example, us-west-2a).
 These zones can be used to launch a cluster.
 
-### `bricks clusters permanent-delete` - Permanently delete cluster.
+### `databricks clusters permanent-delete` - Permanently delete cluster.
 
 Permanently deletes a Spark cluster. This cluster is terminated and resources are asynchronously removed.
 
 In addition, users will no longer see permanently deleted clusters in the cluster list, and API users can no longer
 perform any action on permanently deleted clusters.
 
-### `bricks clusters pin` - Pin cluster.
+### `databricks clusters pin` - Pin cluster.
 
 Pinning a cluster ensures that the cluster will always be returned by the ListClusters API.
 Pinning a cluster that is already pinned will have no effect.
 command can only be called by workspace admins.
 
-### `bricks clusters resize` - Resize cluster.
+### `databricks clusters resize` - Resize cluster.
 
 Resizes a cluster to have a desired number of workers. This will fail unless the cluster is in a `RUNNING` state.
 
@@ -757,7 +757,7 @@ Flags:
  * `--json` - either inline JSON string or @path/to/file.json with request body
  * `--num-workers` - Number of worker nodes that this cluster should have.
 
-### `bricks clusters restart` - Restart cluster.
+### `databricks clusters restart` - Restart cluster.
 
 Restarts a Spark cluster with the supplied ID. If the cluster is not currently in a `RUNNING` state, nothing will happen.
 
@@ -765,11 +765,11 @@ Flags:
  * `--no-wait` - do not wait to reach RUNNING state.
  * `--timeout` - maximum amount of time to reach RUNNING state.
 
-### `bricks clusters spark-versions` - List available Spark versions.
+### `databricks clusters spark-versions` - List available Spark versions.
 
 Returns the list of available Spark versions. These versions can be used to launch a cluster.
 
-### `bricks clusters start` - Start terminated cluster.
+### `databricks clusters start` - Start terminated cluster.
 
 Starts a terminated Spark cluster with the supplied ID.
 This works similar to `createCluster` except:
@@ -784,19 +784,19 @@ Flags:
  * `--no-wait` - do not wait to reach RUNNING state.
  * `--timeout` - maximum amount of time to reach RUNNING state.
 
-### `bricks clusters unpin` - Unpin cluster.
+### `databricks clusters unpin` - Unpin cluster.
 
 Unpinning a cluster will allow the cluster to eventually be removed from the ListClusters API.
 Unpinning a cluster that is not pinned will have no effect.
 command can only be called by workspace admins.
 
-## `bricks account credentials` - These commands manage credential configurations for this workspace.
+## `databricks account credentials` - These commands manage credential configurations for this workspace.
 
 Databricks needs access to a cross-account service IAM role in your AWS account so that Databricks can deploy clusters
 in the appropriate VPC for the new workspace. A credential configuration encapsulates this
 role information, and its ID is used when creating a new workspace.
 
-### `bricks account credentials create` - Create credential configuration.
+### `databricks account credentials create` - Create credential configuration.
 
 Creates a Databricks credential configuration that represents cloud cross-account credentials for a specified account. Databricks uses this to set up network infrastructure properly to host Databricks clusters. For your AWS IAM role, you need to trust the External ID (the Databricks Account API account ID)  in the returned credential object, and configure the required access policy.
 
@@ -807,30 +807,30 @@ For information about how to create a new workspace with command, see [Create a 
 Flags:
  * `--json` - either inline JSON string or @path/to/file.json with request body
 
-### `bricks account credentials delete` - Delete credential configuration.
+### `databricks account credentials delete` - Delete credential configuration.
 
 Deletes a Databricks credential configuration object for an account, both specified by ID. You cannot delete a credential that is associated with any workspace.
 
-### `bricks account credentials get` - Get credential configuration.
+### `databricks account credentials get` - Get credential configuration.
 
 Gets a Databricks credential configuration object for an account, both specified by ID.
 
-### `bricks account credentials list` - Get all credential configurations.
+### `databricks account credentials list` - Get all credential configurations.
 
 Gets all Databricks credential configurations associated with an account specified by ID.
 
-## `bricks current-user` - command allows retrieving information about currently authenticated user or service principal.
+## `databricks current-user` - command allows retrieving information about currently authenticated user or service principal.
 
 **NOTE** **this command may change**
 
 command allows retrieving information about currently authenticated user or
 service principal.
 
-### `bricks current-user me` - Get current user info.
+### `databricks current-user me` - Get current user info.
 
 Get details about the current method caller's identity.
 
-## `bricks account custom-app-integration` - manage custom oauth app integrations.
+## `databricks account custom-app-integration` - manage custom oauth app integrations.
 
 These commands enable administrators to manage custom oauth app integrations, which is required for
 adding/using Custom OAuth App Integration like Tableau Cloud for Databricks in AWS cloud.
@@ -838,7 +838,7 @@ adding/using Custom OAuth App Integration like Tableau Cloud for Databricks in A
 **Note:** You can only add/use the OAuth custom application integrations when OAuth enrollment
 status is enabled.
 
-### `bricks account custom-app-integration create` - Create Custom OAuth App Integration.
+### `databricks account custom-app-integration create` - Create Custom OAuth App Integration.
 
 Create Custom OAuth App Integration.
 
@@ -848,20 +848,20 @@ Flags:
  * `--json` - either inline JSON string or @path/to/file.json with request body
  * `--confidential` - indicates if an oauth client-secret should be generated.
 
-### `bricks account custom-app-integration delete` - Delete Custom OAuth App Integration.
+### `databricks account custom-app-integration delete` - Delete Custom OAuth App Integration.
 
 Delete an existing Custom OAuth App Integration.
 You can retrieve the custom oauth app integration via :method:get.
 
-### `bricks account custom-app-integration get` - Get OAuth Custom App Integration.
+### `databricks account custom-app-integration get` - Get OAuth Custom App Integration.
 
 Gets the Custom OAuth App Integration for the given integration id.
 
-### `bricks account custom-app-integration list` - Get custom oauth app integrations.
+### `databricks account custom-app-integration list` - Get custom oauth app integrations.
 
 Get the list of custom oauth app integrations for the specified Databricks Account
 
-### `bricks account custom-app-integration update` - Updates Custom OAuth App Integration.
+### `databricks account custom-app-integration update` - Updates Custom OAuth App Integration.
 
 Updates an existing custom OAuth App Integration.
 You can retrieve the custom oauth app integration via :method:get.
@@ -869,11 +869,11 @@ You can retrieve the custom oauth app integration via :method:get.
 Flags:
  * `--json` - either inline JSON string or @path/to/file.json with request body
 
-## `bricks dashboards` - Databricks SQL Dashboards
+## `databricks dashboards` - Databricks SQL Dashboards
 
 Manage SQL Dashboards from CLI.
 
-### `bricks dashboards create` - Create a dashboard object.
+### `databricks dashboards create` - Create a dashboard object.
 
 Flags:
  * `--json` - either inline JSON string or @path/to/file.json with request body
@@ -883,15 +883,15 @@ Flags:
  * `--name` - The title of this dashboard that appears in list views and at the top of the dashboard page.
  * `--parent` - The identifier of the workspace folder containing the dashboard.
 
-### `bricks dashboards delete` - Remove a dashboard.
+### `databricks dashboards delete` - Remove a dashboard.
 
 Moves a dashboard to the trash. Trashed dashboards do not appear in list views or searches, and cannot be shared.
 
-### `bricks dashboards get` - Retrieve a definition.
+### `databricks dashboards get` - Retrieve a definition.
 
 Returns a JSON representation of a dashboard object, including its visualization and query objects.
 
-### `bricks dashboards list` - Get dashboard objects.
+### `databricks dashboards list` - Get dashboard objects.
 
 Fetch a paginated list of dashboard objects.
 
@@ -901,11 +901,11 @@ Flags:
  * `--page-size` - Number of dashboards to return per page.
  * `--q` - Full text search term.
 
-### `bricks dashboards restore` - Restore a dashboard.
+### `databricks dashboards restore` - Restore a dashboard.
 
 A restored dashboard appears in list views and searches and can be shared.
 
-## `bricks data-sources` - command is provided to assist you in making new query objects.
+## `databricks data-sources` - command is provided to assist you in making new query objects.
 
 command is provided to assist you in making new query objects. When creating a query object,
 you may optionally specify a `data_source_id` for the SQL warehouse against which it will run.
@@ -916,13 +916,13 @@ command does not support searches. It returns the full list of SQL warehouses in
 workspace. We advise you to use any text editor, REST client, or `grep` to search the
 response from command for the name of your SQL warehouse as it appears in Databricks SQL.
 
-### `bricks data-sources list` - Get a list of SQL warehouses.
+### `databricks data-sources list` - Get a list of SQL warehouses.
 
 Retrieves a full list of SQL warehouses available in this workspace.
 All fields that appear in command response are enumerated for clarity.
 However, you need only a SQL warehouse's `id` to create new queries against it.
 
-## `bricks account encryption-keys` - manage encryption key configurations.
+## `databricks account encryption-keys` - manage encryption key configurations.
 
 These commands manage encryption key configurations for this workspace (optional). A key
 configuration encapsulates the AWS KMS key information and some information about how
@@ -939,7 +939,7 @@ Updating a running workspace with workspace storage encryption requires that the
 is on the E2 version of the platform. If you have an older workspace, it might not be on
 the E2 version of the platform. If you are not sure, contact your Databricks representative.
 
-### `bricks account encryption-keys create` - Create encryption key configuration.
+### `databricks account encryption-keys create` - Create encryption key configuration.
 
 Creates a customer-managed key configuration object for an account, specified by ID. This operation uploads a reference to a customer-managed key to Databricks. If the key is assigned as a workspace's customer-managed key for managed services, Databricks uses the key to encrypt the workspaces notebooks and secrets in the control plane, in addition to Databricks SQL queries and query history. If it is specified as a workspace's customer-managed key for workspace storage, the key encrypts the workspace's root S3 bucket (which contains the workspace's root DBFS and system data) and, optionally, cluster EBS volume data.
 
@@ -950,11 +950,11 @@ This operation is available only if your account is on the E2 version of the pla
 Flags:
  * `--json` - either inline JSON string or @path/to/file.json with request body
 
-### `bricks account encryption-keys delete` - Delete encryption key configuration.
+### `databricks account encryption-keys delete` - Delete encryption key configuration.
 
 Deletes a customer-managed key configuration object for an account. You cannot delete a configuration that is associated with a running workspace.
 
-### `bricks account encryption-keys get` - Get encryption key configuration.
+### `databricks account encryption-keys get` - Get encryption key configuration.
 
 Gets a customer-managed key configuration object for an account, specified by ID. This operation uploads a reference to a customer-managed key to Databricks. If assigned as a workspace's customer-managed key for managed services, Databricks uses the key to encrypt the workspaces notebooks and secrets in the control plane, in addition to Databricks SQL queries and query history. If it is specified as a workspace's customer-managed key for storage, the key encrypts the workspace's root S3 bucket (which contains the workspace's root DBFS and system data) and, optionally, cluster EBS volume data.
 
@@ -962,7 +962,7 @@ Gets a customer-managed key configuration object for an account, specified by ID
 
 This operation is available only if your account is on the E2 version of the platform.
 
-### `bricks account encryption-keys list` - Get all encryption key configurations.
+### `databricks account encryption-keys list` - Get all encryption key configurations.
 
 Gets all customer-managed key configuration objects for an account. If the key is specified as a workspace's managed services customer-managed key, Databricks uses the key to encrypt the workspace's notebooks and secrets in the control plane, in addition to Databricks SQL queries and query history. If the key is specified as a workspace's storage customer-managed key, the key is used to encrypt the workspace's root S3 bucket and optionally can encrypt cluster EBS volumes data in the data plane.
 
@@ -970,9 +970,9 @@ Gets all customer-managed key configuration objects for an account. If the key i
 
 This operation is available only if your account is on the E2 version of the platform.
 
-## `bricks experiments` - Manage MLflow experiments
+## `databricks experiments` - Manage MLflow experiments
 
-### `bricks experiments create-experiment` - Create experiment.
+### `databricks experiments create-experiment` - Create experiment.
 
 Creates an experiment with a name. Returns the ID of the newly created experiment.
 Validates that another experiment with the same name does not already exist and fails
@@ -984,7 +984,7 @@ Flags:
  * `--json` - either inline JSON string or @path/to/file.json with request body
  * `--artifact-location` - Location where all artifacts for the experiment are stored.
 
-### `bricks experiments create-run` - Create a run.
+### `databricks experiments create-run` - Create a run.
 
 Creates a new run within an experiment.
 A run is usually a single execution of a machine learning or data ETL pipeline.
@@ -996,20 +996,20 @@ Flags:
  * `--start-time` - Unix timestamp in milliseconds of when the run started.
  * `--user-id` - ID of the user executing the run.
 
-### `bricks experiments delete-experiment` - Delete an experiment.
+### `databricks experiments delete-experiment` - Delete an experiment.
 
 Marks an experiment and associated metadata, runs, metrics, params, and tags for deletion.
 If the experiment uses FileStore, artifacts associated with experiment are also deleted.
 
-### `bricks experiments delete-run` - Delete a run.
+### `databricks experiments delete-run` - Delete a run.
 
 Marks a run for deletion.
 
-### `bricks experiments delete-tag` - Delete a tag.
+### `databricks experiments delete-tag` - Delete a tag.
 
 Deletes a tag on a run. Tags are run metadata that can be updated during a run and after a run completes.
 
-### `bricks experiments get-by-name` - Get metadata.
+### `databricks experiments get-by-name` - Get metadata.
 
 Gets metadata for an experiment.
 
@@ -1018,14 +1018,14 @@ share the same name. If multiple deleted experiments share the same name, the AP
 
 Throws `RESOURCE_DOES_NOT_EXIST` if no experiment with the specified name exists.S
 
-### `bricks experiments get-experiment` - Get an experiment.
+### `databricks experiments get-experiment` - Get an experiment.
 
 Gets metadata for an experiment. This method works on deleted experiments.
 Flags:
 
 
 
-### `bricks experiments get-history` - Get history of a given metric within a run.
+### `databricks experiments get-history` - Get history of a given metric within a run.
 
 Gets a list of all values for the specified metric for a given run.
 
@@ -1034,7 +1034,7 @@ Flags:
  * `--run-id` - ID of the run from which to fetch metric values.
  * `--run-uuid` - [Deprecated, use run_id instead] ID of the run from which to fetch metric values.
 
-### `bricks experiments get-run` - Get a run.
+### `databricks experiments get-run` - Get a run.
 
 Gets the metadata, metrics, params, and tags for a run.
 In the case where multiple metrics with the same key are logged for a run, return only the value
@@ -1045,7 +1045,7 @@ If there are multiple values with the latest timestamp, return the maximum of th
 Flags:
  * `--run-uuid` - [Deprecated, use run_id instead] ID of the run to fetch.
 
-### `bricks experiments list-artifacts` - Get all artifacts.
+### `databricks experiments list-artifacts` - Get all artifacts.
 
 List artifacts for a run. Takes an optional `artifact_path` prefix. If it is specified, the response contains only artifacts with the specified prefix.",
 
@@ -1054,7 +1054,7 @@ Flags:
  * `--run-id` - ID of the run whose artifacts to list.
  * `--run-uuid` - [Deprecated, use run_id instead] ID of the run whose artifacts to list.
 
-### `bricks experiments list-experiments` - List experiments.
+### `databricks experiments list-experiments` - List experiments.
 
 List experiments.
 
@@ -1063,7 +1063,7 @@ Flags:
  * `--max-results` - Maximum number of experiments desired.
  * `--view-type` - Qualifier for type of experiments to be returned.
 
-### `bricks experiments log-batch` - Log a batch.
+### `databricks experiments log-batch` - Log a batch.
 
 Logs a batch of metrics, params, and tags for a run.
 If any data failed to be persisted, the server will respond with an error (non-200 status code).
@@ -1106,7 +1106,7 @@ Flags:
  * `--json` - either inline JSON string or @path/to/file.json with request body
  * `--run-id` - ID of the run to log under.
 
-### `bricks experiments log-metric` - Log a metric.
+### `databricks experiments log-metric` - Log a metric.
 
 Logs a metric for a run. A metric is a key-value pair (string key, float value) with an associated timestamp.
 Examples include the various metrics that represent ML model accuracy. A metric can be logged multiple times.
@@ -1116,7 +1116,7 @@ Flags:
  * `--run-uuid` - [Deprecated, use run_id instead] ID of the run under which to log the metric.
  * `--step` - Step at which to log the metric.
 
-### `bricks experiments log-model` - Log a model.
+### `databricks experiments log-model` - Log a model.
 
 **NOTE:** Experimental: command may change or be removed in a future release without warning.
 
@@ -1124,7 +1124,7 @@ Flags:
  * `--model-json` - MLmodel file in json format.
  * `--run-id` - ID of the run to log under.
 
-### `bricks experiments log-param` - Log a param.
+### `databricks experiments log-param` - Log a param.
 
 Logs a param used for a run. A param is a key-value pair (string key, string value).
 Examples include hyperparameters used for ML model training and constant dates and values used in an ETL pipeline.
@@ -1134,15 +1134,15 @@ Flags:
  * `--run-id` - ID of the run under which to log the param.
  * `--run-uuid` - [Deprecated, use run_id instead] ID of the run under which to log the param.
 
-### `bricks experiments restore-experiment` - Restores an experiment.
+### `databricks experiments restore-experiment` - Restores an experiment.
 
 Restore an experiment marked for deletion. This also restores associated metadata, runs, metrics, params, and tags. If experiment uses FileStore, underlying artifacts associated with experiment are also restored.  Throws `RESOURCE_DOES_NOT_EXIST` if experiment was never created or was permanently deleted.",
 
-### `bricks experiments restore-run` - Restore a run.
+### `databricks experiments restore-run` - Restore a run.
 
 Restores a deleted run.
 
-### `bricks experiments search-experiments` - Search experiments.
+### `databricks experiments search-experiments` - Search experiments.
 
 Searches for experiments that satisfy specified search criteria.
 
@@ -1152,7 +1152,7 @@ Flags:
  * `--max-results` - Maximum number of experiments desired.
  * `--view-type` - Qualifier for type of experiments to be returned.
 
-### `bricks experiments search-runs` - Search for runs.
+### `databricks experiments search-runs` - Search for runs.
 
 Searches for runs that satisfy expressions.
 
@@ -1164,11 +1164,11 @@ Flags:
  * `--max-results` - Maximum number of runs desired.
  * `--run-view-type` - Whether to display only active, only deleted, or all runs.
 
-### `bricks experiments set-experiment-tag` - Set a tag.
+### `databricks experiments set-experiment-tag` - Set a tag.
 
 Sets a tag on an experiment. Experiment tags are metadata that can be updated.
 
-### `bricks experiments set-tag` - Set a tag.
+### `databricks experiments set-tag` - Set a tag.
 
 Sets a tag on a run. Tags are run metadata that can be updated during a run and after
 a run completes.
@@ -1176,13 +1176,13 @@ Flags:
  * `--run-id` - ID of the run under which to log the tag.
  * `--run-uuid` - [Deprecated, use run_id instead] ID of the run under which to log the tag.
 
-### `bricks experiments update-experiment` - Update an experiment.
+### `databricks experiments update-experiment` - Update an experiment.
 
 Updates experiment metadata.
 Flags:
  * `--new-name` - If provided, the experiment's name is changed to the new name.
 
-### `bricks experiments update-run` - Update a run.
+### `databricks experiments update-run` - Update a run.
 
 Updates run metadata.
 Flags:
@@ -1191,7 +1191,7 @@ Flags:
  * `--run-uuid` - [Deprecated, use run_id instead] ID of the run to update.
  * `--status` - Updated status of the run.
 
-## `bricks external-locations` - manage cloud storage path with a storage credential that authorizes access to it.
+## `databricks external-locations` - manage cloud storage path with a storage credential that authorizes access to it.
 
 An external location is an object that combines a cloud storage path with a storage
 credential that authorizes access to the cloud storage path. Each external location is
@@ -1206,7 +1206,7 @@ directly.
 To create external locations, you must be a metastore admin or a user with the
 **CREATE_EXTERNAL_LOCATION** privilege.
 
-### `bricks external-locations create` - Create an external location.
+### `databricks external-locations create` - Create an external location.
 
 Creates a new external location entry in the metastore.
 The caller must be a metastore admin or have the **CREATE_EXTERNAL_LOCATION** privilege on both the metastore and the associated storage credential.
@@ -1216,24 +1216,24 @@ Flags:
  * `--read-only` - Indicates whether the external location is read-only.
  * `--skip-validation` - Skips validation of the storage credential associated with the external location.
 
-### `bricks external-locations delete` - Delete an external location.
+### `databricks external-locations delete` - Delete an external location.
 
 Deletes the specified external location from the metastore. The caller must be the owner of the external location.
 
 Flags:
  * `--force` - Force deletion even if there are dependent external tables or mounts.
 
-### `bricks external-locations get` - Get an external location.
+### `databricks external-locations get` - Get an external location.
 
 Gets an external location from the metastore. The caller must be either a metastore admin, the owner of the external location, or a user that has some privilege on the external location.
 
-### `bricks external-locations list` - List external locations.
+### `databricks external-locations list` - List external locations.
 
 Gets an array of external locations (__ExternalLocationInfo__ objects) from the metastore.
 The caller must be a metastore admin, the owner of the external location, or a user that has some privilege on the external location.
 There is no guarantee of a specific ordering of the elements in the array.
 
-### `bricks external-locations update` - Update an external location.
+### `databricks external-locations update` - Update an external location.
 
 Updates an external location in the metastore. The caller must be the owner of the external location, or be a metastore admin.
 In the second case, the admin can only update the name of the external location.
@@ -1247,12 +1247,12 @@ Flags:
  * `--read-only` - Indicates whether the external location is read-only.
  * `--url` - Path URL of the external location.
 
-## `bricks functions` - Functions implement User-Defined Functions (UDFs) in Unity Catalog.
+## `databricks functions` - Functions implement User-Defined Functions (UDFs) in Unity Catalog.
 
 The function implementation can be any SQL expression or Query, and it can be invoked wherever a table reference is allowed in a query.
 In Unity Catalog, a function resides at the same level as a table, so it can be referenced with the form __catalog_name__.__schema_name__.__function_name__.
 
-### `bricks functions create` - Create a function.
+### `databricks functions create` - Create a function.
 
 Creates a new function
 
@@ -1267,7 +1267,7 @@ Flags:
  * `--external-name` - External function name.
  * `--sql-path` - List of schemes whose objects can be referenced without qualification.
 
-### `bricks functions delete` - Delete a function.
+### `databricks functions delete` - Delete a function.
 
 Deletes the function that matches the supplied name.
 For the deletion to succeed, the user must satisfy one of the following conditions:
@@ -1278,7 +1278,7 @@ For the deletion to succeed, the user must satisfy one of the following conditio
 Flags:
  * `--force` - Force deletion even if the function is notempty.
 
-### `bricks functions get` - Get a function.
+### `databricks functions get` - Get a function.
 
 Gets a function from within a parent catalog and schema.
 For the fetch to succeed, the user must satisfy one of the following requirements:
@@ -1287,14 +1287,14 @@ For the fetch to succeed, the user must satisfy one of the following requirement
 - Have the **USE_CATALOG** privilege on the function's parent catalog and be the owner of the function
 - Have the **USE_CATALOG** privilege on the function's parent catalog, the **USE_SCHEMA** privilege on the function's parent schema, and the **EXECUTE** privilege on the function itself
 
-### `bricks functions list` - List functions.
+### `databricks functions list` - List functions.
 
 List functions within the specified parent catalog and schema.
 If the user is a metastore admin, all functions are returned in the output list.
 Otherwise, the user must have the **USE_CATALOG** privilege on the catalog and the **USE_SCHEMA** privilege on the schema, and the output list contains only functions for which either the user has the **EXECUTE** privilege or the user is the owner.
 There is no guarantee of a specific ordering of the elements in the array.
 
-### `bricks functions update` - Update a function.
+### `databricks functions update` - Update a function.
 
 Updates the function that matches the supplied name.
 Only the owner of the function can be updated. If the user is not a metastore admin, the user must be a member of the group that is the new function owner.
@@ -1306,11 +1306,11 @@ Only the owner of the function can be updated. If the user is not a metastore ad
 Flags:
  * `--owner` - Username of current owner of function.
 
-## `bricks git-credentials` - Registers personal access token for Databricks to do operations on behalf of the user.
+## `databricks git-credentials` - Registers personal access token for Databricks to do operations on behalf of the user.
 
 See [more info](https://docs.databricks.com/repos/get-access-tokens-from-git-provider.html).
 
-### `bricks git-credentials create` - Create a credential entry.
+### `databricks git-credentials create` - Create a credential entry.
 
 Creates a Git credential entry for the user. Only one Git credential per user is
 supported, so any attempts to create credentials if an entry already exists will
@@ -1321,19 +1321,19 @@ Flags:
  * `--git-username` - Git username.
  * `--personal-access-token` - The personal access token used to authenticate to the corresponding Git provider.
 
-### `bricks git-credentials delete` - Delete a credential.
+### `databricks git-credentials delete` - Delete a credential.
 
 Deletes the specified Git credential.
 
-### `bricks git-credentials get` - Get a credential entry.
+### `databricks git-credentials get` - Get a credential entry.
 
 Gets the Git credential with the specified credential ID.
 
-### `bricks git-credentials list` - Get Git credentials.
+### `databricks git-credentials list` - Get Git credentials.
 
 Lists the calling user's Git credentials. One credential per user is supported.
 
-### `bricks git-credentials update` - Update a credential.
+### `databricks git-credentials update` - Update a credential.
 
 Updates the specified Git credential.
 Flags:
@@ -1341,7 +1341,7 @@ Flags:
  * `--git-username` - Git username.
  * `--personal-access-token` - The personal access token used to authenticate to the corresponding Git provider.
 
-## `bricks global-init-scripts` - configure global initialization scripts for the workspace.
+## `databricks global-init-scripts` - configure global initialization scripts for the workspace.
 
 The Global Init Scripts API enables Workspace administrators to configure global
 initialization scripts for their workspace. These scripts run on every node in every cluster
@@ -1354,27 +1354,27 @@ the Apache Spark container fails to launch and init scripts with later position 
 If enough containers fail, the entire cluster fails with a `GLOBAL_INIT_SCRIPT_FAILURE`
 error code.
 
-### `bricks global-init-scripts create` - Create init script.
+### `databricks global-init-scripts create` - Create init script.
 
 Creates a new global init script in this workspace.
 Flags:
  * `--enabled` - Specifies whether the script is enabled.
  * `--position` - The position of a global init script, where 0 represents the first script to run, 1 is the second script to run, in ascending order.
 
-### `bricks global-init-scripts delete` - Delete init script.
+### `databricks global-init-scripts delete` - Delete init script.
 
 Deletes a global init script.
 
-### `bricks global-init-scripts get` - Get an init script.
+### `databricks global-init-scripts get` - Get an init script.
 
 Gets all the details of a script, including its Base64-encoded contents.
 
-### `bricks global-init-scripts list` - Get init scripts.
+### `databricks global-init-scripts list` - Get init scripts.
 
 Get a list of all global init scripts for this workspace. This returns all properties for each script but **not** the script contents.
 To retrieve the contents of a script, use the [get a global init script](#operation/get-script) operation.
 
-### `bricks global-init-scripts update` - Update init script.
+### `databricks global-init-scripts update` - Update init script.
 
 Updates a global init script, specifying only the fields to change. All fields are optional.
 Unspecified fields retain their current value.
@@ -1383,7 +1383,7 @@ Flags:
  * `--enabled` - Specifies whether the script is enabled.
  * `--position` - The position of a script, where 0 represents the first script to run, 1 is the second script to run, in ascending order.
 
-## `bricks grants` - Manage data access in Unity Catalog.
+## `databricks grants` - Manage data access in Unity Catalog.
 
 In Unity Catalog, data is secure by default. Initially, users have no access to data in
 a metastore. Access can be granted by either a metastore admin, the owner of an object, or
@@ -1395,27 +1395,27 @@ This means that granting a privilege on the catalog automatically grants the pri
 all current and future objects within the catalog. Similarly, privileges granted on a schema
 are inherited by all current and future objects within that schema.
 
-### `bricks grants get` - Get permissions.
+### `databricks grants get` - Get permissions.
 
 Gets the permissions for a securable.
 
 Flags:
  * `--principal` - If provided, only the permissions for the specified principal (user or group) are returned.
 
-### `bricks grants get-effective` - Get effective permissions.
+### `databricks grants get-effective` - Get effective permissions.
 
 Gets the effective permissions for a securable.
 Flags:
  * `--principal` - If provided, only the effective permissions for the specified principal (user or group) are returned.
 
-### `bricks grants update` - Update permissions.
+### `databricks grants update` - Update permissions.
 
 Updates the permissions for a securable.
 
 Flags:
  * `--json` - either inline JSON string or @path/to/file.json with request body
 
-## `bricks groups` - Groups for identity management.
+## `databricks groups` - Groups for identity management.
 
 Groups simplify identity management, making it easier to assign access to Databricks Workspace, data,
 and other securable objects.
@@ -1425,7 +1425,7 @@ Unity Catalog to groups, instead of to users individually. All Databricks Worksp
 assigned as members of groups, and members inherit permissions that are assigned to their
 group.
 
-### `bricks groups create` - Create a new group.
+### `databricks groups create` - Create a new group.
 
 Creates a group in the Databricks Workspace with a unique name, using the supplied group details.
 
@@ -1435,15 +1435,15 @@ Flags:
  * `--external-id` -
  * `--id` - Databricks group ID.
 
-### `bricks groups delete` - Delete a group.
+### `databricks groups delete` - Delete a group.
 
 Deletes a group from the Databricks Workspace.
 
-### `bricks groups get` - Get group details.
+### `databricks groups get` - Get group details.
 
 Gets the information for a specific group in the Databricks Workspace.
 
-### `bricks groups list` - List group details.
+### `databricks groups list` - List group details.
 
 Gets all details of the groups associated with the Databricks Workspace.
 
@@ -1456,14 +1456,14 @@ Flags:
  * `--sort-order` - The order to sort the results.
  * `--start-index` - Specifies the index of the first result.
 
-### `bricks groups patch` - Update group details.
+### `databricks groups patch` - Update group details.
 
 Partially updates the details of a group.
 
 Flags:
  * `--json` - either inline JSON string or @path/to/file.json with request body
 
-### `bricks groups update` - Replace a group.
+### `databricks groups update` - Replace a group.
 
 Updates the details of a group by replacing the entire group entity.
 
@@ -1473,7 +1473,7 @@ Flags:
  * `--external-id` -
  * `--id` - Databricks group ID.
 
-## `bricks account groups` - Account-level group management
+## `databricks account groups` - Account-level group management
 
 Groups simplify identity management, making it easier to assign access to Databricks Account, data,
 and other securable objects.
@@ -1483,7 +1483,7 @@ Unity Catalog to groups, instead of to users individually. All Databricks Accoun
 assigned as members of groups, and members inherit permissions that are assigned to their
 group.
 
-### `bricks account groups create` - Create a new group.
+### `databricks account groups create` - Create a new group.
 
 Creates a group in the Databricks Account with a unique name, using the supplied group details.
 
@@ -1493,15 +1493,15 @@ Flags:
  * `--external-id` -
  * `--id` - Databricks group ID.
 
-### `bricks account groups delete` - Delete a group.
+### `databricks account groups delete` - Delete a group.
 
 Deletes a group from the Databricks Account.
 
-### `bricks account groups get` - Get group details.
+### `databricks account groups get` - Get group details.
 
 Gets the information for a specific group in the Databricks Account.
 
-### `bricks account groups list` - List group details.
+### `databricks account groups list` - List group details.
 
 Gets all details of the groups associated with the Databricks Account.
 
@@ -1514,14 +1514,14 @@ Flags:
  * `--sort-order` - The order to sort the results.
  * `--start-index` - Specifies the index of the first result.
 
-### `bricks account groups patch` - Update group details.
+### `databricks account groups patch` - Update group details.
 
 Partially updates the details of a group.
 
 Flags:
  * `--json` - either inline JSON string or @path/to/file.json with request body
 
-### `bricks account groups update` - Replace a group.
+### `databricks account groups update` - Replace a group.
 
 Updates the details of a group by replacing the entire group entity.
 
@@ -1531,7 +1531,7 @@ Flags:
  * `--external-id` -
  * `--id` - Databricks group ID.
 
-## `bricks instance-pools` - manage ready-to-use cloud instances which reduces a cluster start and auto-scaling times.
+## `databricks instance-pools` - manage ready-to-use cloud instances which reduces a cluster start and auto-scaling times.
 
 Instance Pools API are used to create, edit, delete and list instance pools by using
 ready-to-use cloud instances which reduces a cluster start and auto-scaling times.
@@ -1549,7 +1549,7 @@ for both.
 Databricks does not charge DBUs while instances are idle in the pool. Instance provider
 billing does apply. See pricing.
 
-### `bricks instance-pools create` - Create a new instance pool.
+### `databricks instance-pools create` - Create a new instance pool.
 
 
 Creates a new instance pool using idle and ready-to-use cloud instances.
@@ -1561,11 +1561,11 @@ Flags:
  * `--max-capacity` - Maximum number of outstanding instances to keep in the pool, including both instances used by clusters and idle instances.
  * `--min-idle-instances` - Minimum number of idle instances to keep in the instance pool.
 
-### `bricks instance-pools delete` - Delete an instance pool.
+### `databricks instance-pools delete` - Delete an instance pool.
 
 Deletes the instance pool permanently. The idle instances in the pool are terminated asynchronously.
 
-### `bricks instance-pools edit` - Edit an existing instance pool.
+### `databricks instance-pools edit` - Edit an existing instance pool.
 
 Modifies the configuration of an existing instance pool.
 
@@ -1576,22 +1576,22 @@ Flags:
  * `--max-capacity` - Maximum number of outstanding instances to keep in the pool, including both instances used by clusters and idle instances.
  * `--min-idle-instances` - Minimum number of idle instances to keep in the instance pool.
 
-### `bricks instance-pools get` - Get instance pool information.
+### `databricks instance-pools get` - Get instance pool information.
 
 Retrieve the information for an instance pool based on its identifier.
 
-### `bricks instance-pools list` - List instance pool info.
+### `databricks instance-pools list` - List instance pool info.
 
 Gets a list of instance pools with their statistics.
 
-## `bricks instance-profiles` - Manage instance profiles that users can launch clusters with.
+## `databricks instance-profiles` - Manage instance profiles that users can launch clusters with.
 
 The Instance Profiles API allows admins to add, list, and remove instance profiles that users can launch
 clusters with. Regular users can list the instance profiles available to them.
 See [Secure access to S3 buckets](https://docs.databricks.com/administration-guide/cloud-configurations/aws/instance-profiles.html) using
 instance profiles for more information.
 
-### `bricks instance-profiles add` - Register an instance profile.
+### `databricks instance-profiles add` - Register an instance profile.
 
 In the UI, you can select the instance profile when launching clusters. command is only available to admin users.
 
@@ -1600,7 +1600,7 @@ Flags:
  * `--is-meta-instance-profile` - By default, Databricks validates that it has sufficient permissions to launch instances with the instance profile.
  * `--skip-validation` - By default, Databricks validates that it has sufficient permissions to launch instances with the instance profile.
 
-### `bricks instance-profiles edit` - Edit an instance profile.
+### `databricks instance-profiles edit` - Edit an instance profile.
 
 The only supported field to change is the optional IAM role ARN associated with
 the instance profile. It is required to specify the IAM role ARN if both of
@@ -1619,20 +1619,20 @@ Flags:
  * `--iam-role-arn` - The AWS IAM role ARN of the role associated with the instance profile.
  * `--is-meta-instance-profile` - By default, Databricks validates that it has sufficient permissions to launch instances with the instance profile.
 
-### `bricks instance-profiles list` - List available instance profiles.
+### `databricks instance-profiles list` - List available instance profiles.
 
 List the instance profiles that the calling user can use to launch a cluster.
 
 command is available to all users.
 
-### `bricks instance-profiles remove` - Remove the instance profile.
+### `databricks instance-profiles remove` - Remove the instance profile.
 
 Remove the instance profile with the provided ARN.
 Existing clusters with this instance profile will continue to function.
 
 command is only accessible to admin users.
 
-## `bricks ip-access-lists` - enable admins to configure IP access lists.
+## `databricks ip-access-lists` - enable admins to configure IP access lists.
 
 IP Access List enables admins to configure IP access lists.
 
@@ -1651,7 +1651,7 @@ For all allow lists and block lists combined, the workspace supports a maximum o
 
 After changes to the IP access list feature, it can take a few minutes for changes to take effect.
 
-### `bricks ip-access-lists create` - Create access list.
+### `databricks ip-access-lists create` - Create access list.
 
 Creates an IP access list for this workspace.
 
@@ -1670,19 +1670,19 @@ It can take a few minutes for the changes to take effect.
 Flags:
  * `--json` - either inline JSON string or @path/to/file.json with request body
 
-### `bricks ip-access-lists delete` - Delete access list.
+### `databricks ip-access-lists delete` - Delete access list.
 
 Deletes an IP access list, specified by its list ID.
 
-### `bricks ip-access-lists get` - Get access list.
+### `databricks ip-access-lists get` - Get access list.
 
 Gets an IP access list, specified by its list ID.
 
-### `bricks ip-access-lists list` - Get access lists.
+### `databricks ip-access-lists list` - Get access lists.
 
 Gets all IP access lists for the specified workspace.
 
-### `bricks ip-access-lists replace` - Replace access list.
+### `databricks ip-access-lists replace` - Replace access list.
 
 Replaces an IP access list, specified by its ID.
 
@@ -1701,7 +1701,7 @@ Flags:
  * `--json` - either inline JSON string or @path/to/file.json with request body
  * `--list-id` - Universally unique identifier (UUID) of the IP access list.
 
-### `bricks ip-access-lists update` - Update access list.
+### `databricks ip-access-lists update` - Update access list.
 
 Updates an existing IP access list, specified by its ID.
 
@@ -1721,7 +1721,7 @@ Flags:
  * `--json` - either inline JSON string or @path/to/file.json with request body
  * `--list-id` - Universally unique identifier (UUID) of the IP access list.
 
-## `bricks account ip-access-lists` - The Accounts IP Access List API enables account admins to configure IP access lists for access to the account console.
+## `databricks account ip-access-lists` - The Accounts IP Access List API enables account admins to configure IP access lists for access to the account console.
 
 The Accounts IP Access List API enables account admins to configure IP access lists for
 access to the account console.
@@ -1746,7 +1746,7 @@ values, where one CIDR counts as a single value.
 After changes to the account-level IP access lists, it can take a few minutes for changes
 to take effect.
 
-### `bricks account ip-access-lists create` - Create access list.
+### `databricks account ip-access-lists create` - Create access list.
 
 Creates an IP access list for the account.
 
@@ -1766,19 +1766,19 @@ It can take a few minutes for the changes to take effect.
 Flags:
  * `--json` - either inline JSON string or @path/to/file.json with request body
 
-### `bricks account ip-access-lists delete` - Delete access list.
+### `databricks account ip-access-lists delete` - Delete access list.
 
 Deletes an IP access list, specified by its list ID.
 
-### `bricks account ip-access-lists get` - Get IP access list.
+### `databricks account ip-access-lists get` - Get IP access list.
 
 Gets an IP access list, specified by its list ID.
 
-### `bricks account ip-access-lists list` - Get access lists.
+### `databricks account ip-access-lists list` - Get access lists.
 
 Gets all IP access lists for the specified account.
 
-### `bricks account ip-access-lists replace` - Replace access list.
+### `databricks account ip-access-lists replace` - Replace access list.
 
 Replaces an IP access list, specified by its ID.
 
@@ -1796,7 +1796,7 @@ Flags:
  * `--json` - either inline JSON string or @path/to/file.json with request body
  * `--list-id` - Universally unique identifier (UUID) of the IP access list.
 
-### `bricks account ip-access-lists update` - Update access list.
+### `databricks account ip-access-lists update` - Update access list.
 
 Updates an existing IP access list, specified by its ID.
 
@@ -1817,7 +1817,7 @@ Flags:
  * `--json` - either inline JSON string or @path/to/file.json with request body
  * `--list-id` - Universally unique identifier (UUID) of the IP access list.
 
-## `bricks jobs` - Manage Databricks Workflows.
+## `databricks jobs` - Manage Databricks Workflows.
 
 You can use a Databricks job to run a data processing or data analysis task in a Databricks
 cluster with scalable resources. Your job can consist of a single task or can be a large,
@@ -1831,12 +1831,12 @@ You should never hard code secrets or store them in plain text. Use the :service
 [Databricks CLI](https://docs.databricks.com/dev-tools/cli/index.html).
 Use the [Secrets utility](https://docs.databricks.com/dev-tools/databricks-utils.html#dbutils-secrets) to reference secrets in notebooks and jobs.
 
-### `bricks jobs cancel-all-runs` - Cancel all runs of a job.
+### `databricks jobs cancel-all-runs` - Cancel all runs of a job.
 
 Cancels all active runs of a job. The runs are canceled asynchronously, so it doesn't
 prevent new runs from being started.
 
-### `bricks jobs cancel-run` - Cancel a job run.
+### `databricks jobs cancel-run` - Cancel a job run.
 
 Cancels a job run. The run is canceled asynchronously, so it may still be running when
 this request completes.
@@ -1845,7 +1845,7 @@ Flags:
  * `--no-wait` - do not wait to reach TERMINATED or SKIPPED state.
  * `--timeout` - maximum amount of time to reach TERMINATED or SKIPPED state.
 
-### `bricks jobs create` - Create a new job.
+### `databricks jobs create` - Create a new job.
 
 Create a new job.
 
@@ -1856,26 +1856,26 @@ Flags:
  * `--name` - An optional name for the job.
  * `--timeout-seconds` - An optional timeout applied to each run of this job.
 
-### `bricks jobs delete` - Delete a job.
+### `databricks jobs delete` - Delete a job.
 
 Deletes a job.
 
-### `bricks jobs delete-run` - Delete a job run.
+### `databricks jobs delete-run` - Delete a job run.
 
 Deletes a non-active run. Returns an error if the run is active.
 
-### `bricks jobs export-run` - Export and retrieve a job run.
+### `databricks jobs export-run` - Export and retrieve a job run.
 
 Export and retrieve the job run task.
 
 Flags:
  * `--views-to-export` - Which views to export (CODE, DASHBOARDS, or ALL).
 
-### `bricks jobs get` - Get a single job.
+### `databricks jobs get` - Get a single job.
 
 Retrieves the details for a single job.
 
-### `bricks jobs get-run` - Get a single job run.
+### `databricks jobs get-run` - Get a single job run.
 
 Retrieve the metadata of a run.
 
@@ -1884,7 +1884,7 @@ Flags:
  * `--timeout` - maximum amount of time to reach TERMINATED or SKIPPED state.
  * `--include-history` - Whether to include the repair history in the response.
 
-### `bricks jobs get-run-output` - Get the output for a single run.
+### `databricks jobs get-run-output` - Get the output for a single run.
 
 Retrieve the output and metadata of a single task run. When a notebook task returns
 a value through the `dbutils.notebook.exit()` call, you can use this endpoint to retrieve
@@ -1896,7 +1896,7 @@ code 400 if the __run_id__ parameter is invalid. Runs are automatically removed 
 60 days. If you to want to reference them beyond 60 days, you must save old run results
 before they expire.
 
-### `bricks jobs list` - List all jobs.
+### `databricks jobs list` - List all jobs.
 
 Retrieves a list of jobs.
 
@@ -1906,7 +1906,7 @@ Flags:
  * `--name` - A filter on the list based on the exact (case insensitive) job name.
  * `--offset` - The offset of the first job to return, relative to the most recently created job.
 
-### `bricks jobs list-runs` - List runs for a job.
+### `databricks jobs list-runs` - List runs for a job.
 
 List runs in descending order by start time.
 
@@ -1921,7 +1921,7 @@ Flags:
  * `--start-time-from` - Show runs that started _at or after_ this value.
  * `--start-time-to` - Show runs that started _at or before_ this value.
 
-### `bricks jobs repair-run` - Repair a job run.
+### `databricks jobs repair-run` - Repair a job run.
 
 Re-run one or more tasks. Tasks are re-run as part of the original job run.
 They use the current job and task settings, and can be viewed in the history for the
@@ -1934,14 +1934,14 @@ Flags:
  * `--latest-repair-id` - The ID of the latest repair.
  * `--rerun-all-failed-tasks` - If true, repair all failed tasks.
 
-### `bricks jobs reset` - Overwrites all settings for a job.
+### `databricks jobs reset` - Overwrites all settings for a job.
 
 Overwrites all the settings for a specific job. Use the Update endpoint to update job settings partially.
 
 Flags:
  * `--json` - either inline JSON string or @path/to/file.json with request body
 
-### `bricks jobs run-now` - Trigger a new job run.
+### `databricks jobs run-now` - Trigger a new job run.
 
 Run a job and return the `run_id` of the triggered run.
 
@@ -1951,7 +1951,7 @@ Flags:
  * `--json` - either inline JSON string or @path/to/file.json with request body
  * `--idempotency-token` - An optional token to guarantee the idempotency of job run requests.
 
-### `bricks jobs submit` - Create and trigger a one-time run.
+### `databricks jobs submit` - Create and trigger a one-time run.
 
 Submit a one-time run. This endpoint allows you to submit a workload directly without
 creating a job. Runs submitted using this endpoint don’t display in the UI. Use the
@@ -1965,14 +1965,14 @@ Flags:
  * `--run-name` - An optional name for the run.
  * `--timeout-seconds` - An optional timeout applied to each run of this job.
 
-### `bricks jobs update` - Partially updates a job.
+### `databricks jobs update` - Partially updates a job.
 
 Add, update, or remove specific settings of an existing job. Use the ResetJob to overwrite all job settings.
 
 Flags:
  * `--json` - either inline JSON string or @path/to/file.json with request body
 
-## `bricks libraries` - Manage libraries on a cluster.
+## `databricks libraries` - Manage libraries on a cluster.
 
 The Libraries API allows you to install and uninstall libraries and get the status of
 libraries on a cluster.
@@ -1994,12 +1994,12 @@ When you uninstall a library from a cluster, the library is removed only when yo
 the cluster. Until you restart the cluster, the status of the uninstalled library appears
 as Uninstall pending restart.
 
-### `bricks libraries all-cluster-statuses` - Get all statuses.
+### `databricks libraries all-cluster-statuses` - Get all statuses.
 
 Get the status of all libraries on all clusters. A status will be available for all libraries installed on this cluster
 via the API or the libraries UI as well as libraries set to be installed on all clusters via the libraries UI.
 
-### `bricks libraries cluster-status` - Get status.
+### `databricks libraries cluster-status` - Get status.
 
 Get the status of libraries on a cluster. A status will be available for all libraries installed on this cluster via the API
 or the libraries UI as well as libraries set to be installed on all clusters via the libraries UI.
@@ -2014,7 +2014,7 @@ The order of returned libraries will be as follows.
 3. Libraries that were previously requested on this cluster or on all clusters, but now marked for removal.
   Within this group there is no order guarantee.
 
-### `bricks libraries install` - Add a library.
+### `databricks libraries install` - Add a library.
 
 Add libraries to be installed on a cluster.
 The installation is asynchronous; it happens in the background after the completion of this request.
@@ -2025,7 +2025,7 @@ the libraries set to be installed on all clusters via the libraries UI.
 Flags:
  * `--json` - either inline JSON string or @path/to/file.json with request body
 
-### `bricks libraries uninstall` - Uninstall libraries.
+### `databricks libraries uninstall` - Uninstall libraries.
 
 Set libraries to be uninstalled on a cluster. The libraries won't be uninstalled until the cluster is restarted.
 Uninstalling libraries that are not installed on the cluster will have no impact but is not an error.
@@ -2033,7 +2033,7 @@ Uninstalling libraries that are not installed on the cluster will have no impact
 Flags:
  * `--json` - either inline JSON string or @path/to/file.json with request body
 
-## `bricks account log-delivery` - These commands manage log delivery configurations for this account.
+## `databricks account log-delivery` - These commands manage log delivery configurations for this account.
 
 These commands manage log delivery configurations for this account. The two supported log types
 for command are _billable usage logs_ and _audit logs_. This feature is in Public Preview.
@@ -2088,7 +2088,7 @@ as well as account-level audit logs. See
 [Audit log delivery](https://docs.databricks.com/administration-guide/account-settings/audit-logs.html) for details.
 * Auditable events are typically available in logs within 15 minutes.
 
-### `bricks account log-delivery create` - Create a new log delivery configuration.
+### `databricks account log-delivery create` - Create a new log delivery configuration.
 
 Creates a new Databricks log delivery configuration to enable delivery of the specified type of logs to your storage location. This requires that you already created a [credential object](#operation/create-credential-config) (which encapsulates a cross-account service IAM role) and a [storage configuration object](#operation/create-storage-config) (which encapsulates an S3 bucket).
 
@@ -2101,11 +2101,11 @@ You cannot delete a log delivery configuration, but you can disable it (see [Ena
 Flags:
  * `--json` - either inline JSON string or @path/to/file.json with request body
 
-### `bricks account log-delivery get` - Get log delivery configuration.
+### `databricks account log-delivery get` - Get log delivery configuration.
 
 Gets a Databricks log delivery configuration object for an account, both specified by ID.
 
-### `bricks account log-delivery list` - Get all log delivery configurations.
+### `databricks account log-delivery list` - Get all log delivery configurations.
 
 Gets all Databricks log delivery configurations associated with an account specified by ID.
 
@@ -2114,33 +2114,33 @@ Flags:
  * `--status` - Filter by status `ENABLED` or `DISABLED`.
  * `--storage-configuration-id` - Filter by storage configuration ID.
 
-### `bricks account log-delivery patch-status` - Enable or disable log delivery configuration.
+### `databricks account log-delivery patch-status` - Enable or disable log delivery configuration.
 
 Enables or disables a log delivery configuration. Deletion of delivery configurations is not supported, so disable log delivery configurations that are no longer needed. Note that you can't re-enable a delivery configuration if this would violate the delivery configuration limits described under [Create log delivery](#operation/create-log-delivery-config).
 
-## `bricks account metastore-assignments` - These commands manage metastore assignments to a workspace.
+## `databricks account metastore-assignments` - These commands manage metastore assignments to a workspace.
 
 These commands manage metastore assignments to a workspace.
 
-### `bricks account metastore-assignments create` - Assigns a workspace to a metastore.
+### `databricks account metastore-assignments create` - Assigns a workspace to a metastore.
 
 Creates an assignment to a metastore for a workspace
 
-### `bricks account metastore-assignments delete` - Delete a metastore assignment.
+### `databricks account metastore-assignments delete` - Delete a metastore assignment.
 
 Deletes a metastore assignment to a workspace, leaving the workspace with no metastore.
 
-### `bricks account metastore-assignments get` - Gets the metastore assignment for a workspace.
+### `databricks account metastore-assignments get` - Gets the metastore assignment for a workspace.
 
 Gets the metastore assignment, if any, for the workspace specified by ID. If the workspace
 is assigned a metastore, the mappig will be returned. If no metastore is assigned to the
 workspace, the assignment will not be found and a 404 returned.
 
-### `bricks account metastore-assignments list` - Get all workspaces assigned to a metastore.
+### `databricks account metastore-assignments list` - Get all workspaces assigned to a metastore.
 
 Gets a list of all Databricks workspace IDs that have been assigned to given metastore.
 
-### `bricks account metastore-assignments update` - Updates a metastore assignment to a workspaces.
+### `databricks account metastore-assignments update` - Updates a metastore assignment to a workspaces.
 
 Updates an assignment to a metastore for a workspace. Currently, only the default catalog
 may be updated
@@ -2149,7 +2149,7 @@ Flags:
  * `--default-catalog-name` - The name of the default catalog for the metastore.
  * `--metastore-id` - The unique ID of the metastore.
 
-## `bricks metastores` - Manage metastores in Unity Catalog.
+## `databricks metastores` - Manage metastores in Unity Catalog.
 
 A metastore is the top-level container of objects in Unity Catalog. It stores data assets
 (tables and views) and the permissions that govern access to them. Databricks account admins
@@ -2164,52 +2164,52 @@ NOTE: This metastore is distinct from the metastore included in Databricks works
 created before Unity Catalog was released. If your workspace includes a legacy Hive
 metastore, the data in that metastore is available in a catalog named hive_metastore.
 
-### `bricks metastores assign` - Create an assignment.
+### `databricks metastores assign` - Create an assignment.
 
 Creates a new metastore assignment.
 If an assignment for the same __workspace_id__ exists, it will be overwritten by the new __metastore_id__ and
 __default_catalog_name__. The caller must be an account admin.
 
-### `bricks metastores create` - Create a metastore.
+### `databricks metastores create` - Create a metastore.
 
 Creates a new metastore based on a provided name and storage root path.
 
 Flags:
  * `--region` - Cloud region which the metastore serves (e.g., `us-west-2`, `westus`).
 
-### `bricks metastores current` - Get metastore assignment for workspace.
+### `databricks metastores current` - Get metastore assignment for workspace.
 
 Gets the metastore assignment for the workspace being accessed.
 
-### `bricks metastores delete` - Delete a metastore.
+### `databricks metastores delete` - Delete a metastore.
 
 Deletes a metastore. The caller must be a metastore admin.
 
 Flags:
  * `--force` - Force deletion even if the metastore is not empty.
 
-### `bricks metastores get` - Get a metastore.
+### `databricks metastores get` - Get a metastore.
 
 Gets a metastore that matches the supplied ID. The caller must be a metastore admin to retrieve this info.
 
-### `bricks metastores list` - List metastores.
+### `databricks metastores list` - List metastores.
 
 Gets an array of the available metastores (as __MetastoreInfo__ objects). The caller must be an admin to retrieve this info.
 There is no guarantee of a specific ordering of the elements in the array.
 
-### `bricks metastores maintenance` - Enables or disables auto maintenance on the metastore.
+### `databricks metastores maintenance` - Enables or disables auto maintenance on the metastore.
 
 Enables or disables auto maintenance on the metastore.
 
-### `bricks metastores summary` - Get a metastore summary.
+### `databricks metastores summary` - Get a metastore summary.
 
 Gets information about a metastore. This summary includes the storage credential, the cloud vendor, the cloud region, and the global metastore ID.
 
-### `bricks metastores unassign` - Delete an assignment.
+### `databricks metastores unassign` - Delete an assignment.
 
 Deletes a metastore assignment. The caller must be an account administrator.
 
-### `bricks metastores update` - Update a metastore.
+### `databricks metastores update` - Update a metastore.
 
 Updates information for a specific metastore. The caller must be a metastore admin.
 
@@ -2222,7 +2222,7 @@ Flags:
  * `--privilege-model-version` - Privilege model version of the metastore, of the form `major.minor` (e.g., `1.0`).
  * `--storage-root-credential-id` - UUID of storage credential to access the metastore storage_root.
 
-### `bricks metastores update-assignment` - Update an assignment.
+### `databricks metastores update-assignment` - Update an assignment.
 
 Updates a metastore assignment. This operation can be used to update __metastore_id__ or __default_catalog_name__
 for a specified Workspace, if the Workspace is already assigned a metastore.
@@ -2232,31 +2232,31 @@ Flags:
  * `--default-catalog-name` - The name of the default catalog for the metastore.
  * `--metastore-id` - The unique ID of the metastore.
 
-## `bricks account metastores` - These commands manage Unity Catalog metastores for an account.
+## `databricks account metastores` - These commands manage Unity Catalog metastores for an account.
 
 These commands manage Unity Catalog metastores for an account. A metastore contains catalogs
 that can be associated with workspaces
 
-### `bricks account metastores create` - Create metastore.
+### `databricks account metastores create` - Create metastore.
 
 Creates a Unity Catalog metastore.
 
 Flags:
  * `--region` - Cloud region which the metastore serves (e.g., `us-west-2`, `westus`).
 
-### `bricks account metastores delete` - Delete a metastore.
+### `databricks account metastores delete` - Delete a metastore.
 
 Deletes a Databricks Unity Catalog metastore for an account, both specified by ID.
 
-### `bricks account metastores get` - Get a metastore.
+### `databricks account metastores get` - Get a metastore.
 
 Gets a Databricks Unity Catalog metastore from an account, both specified by ID.
 
-### `bricks account metastores list` - Get all metastores associated with an account.
+### `databricks account metastores list` - Get all metastores associated with an account.
 
 Gets all Unity Catalog metastores associated with an account specified by ID.
 
-### `bricks account metastores update` - Update a metastore.
+### `databricks account metastores update` - Update a metastore.
 
 Updates an existing Unity Catalog metastore.
 
@@ -2269,21 +2269,21 @@ Flags:
  * `--privilege-model-version` - Privilege model version of the metastore, of the form `major.minor` (e.g., `1.0`).
  * `--storage-root-credential-id` - UUID of storage credential to access the metastore storage_root.
 
-## `bricks model-registry` - Expose commands for Model Registry.
+## `databricks model-registry` - Expose commands for Model Registry.
 
-### `bricks model-registry approve-transition-request` - Approve transition request.
+### `databricks model-registry approve-transition-request` - Approve transition request.
 
 Approves a model version stage transition request.
 
 Flags:
  * `--comment` - User-provided comment on the action.
 
-### `bricks model-registry create-comment` - Post a comment.
+### `databricks model-registry create-comment` - Post a comment.
 
 Posts a comment on a model version. A comment can be submitted either by a user or programmatically to display
 relevant information about the model. For example, test results or deployment errors.
 
-### `bricks model-registry create-model` - Create a model.
+### `databricks model-registry create-model` - Create a model.
 
 Creates a new registered model with the name specified in the request body.
 
@@ -2293,7 +2293,7 @@ Flags:
  * `--json` - either inline JSON string or @path/to/file.json with request body
  * `--description` - Optional description for registered model.
 
-### `bricks model-registry create-model-version` - Create a model version.
+### `databricks model-registry create-model-version` - Create a model version.
 
 Creates a model version.
 
@@ -2303,14 +2303,14 @@ Flags:
  * `--run-id` - MLflow run ID for correlation, if `source` was generated by an experiment run in MLflow tracking server.
  * `--run-link` - MLflow run link - this is the exact link of the run that generated this model version, potentially hosted at another instance of MLflow.
 
-### `bricks model-registry create-transition-request` - Make a transition request.
+### `databricks model-registry create-transition-request` - Make a transition request.
 
 Creates a model version stage transition request.
 
 Flags:
  * `--comment` - User-provided comment on the action.
 
-### `bricks model-registry create-webhook` - Create a webhook.
+### `databricks model-registry create-webhook` - Create a webhook.
 
 **NOTE**: This endpoint is in Public Preview.
 
@@ -2322,34 +2322,34 @@ Flags:
  * `--model-name` - Name of the model whose events would trigger this webhook.
  * `--status` - This describes an enum.
 
-### `bricks model-registry delete-comment` - Delete a comment.
+### `databricks model-registry delete-comment` - Delete a comment.
 
 Deletes a comment on a model version.
 
-### `bricks model-registry delete-model` - Delete a model.
+### `databricks model-registry delete-model` - Delete a model.
 
 Deletes a registered model.
 
-### `bricks model-registry delete-model-tag` - Delete a model tag.
+### `databricks model-registry delete-model-tag` - Delete a model tag.
 
 Deletes the tag for a registered model.
 
-### `bricks model-registry delete-model-version` - Delete a model version.
+### `databricks model-registry delete-model-version` - Delete a model version.
 
 Deletes a model version.
 
-### `bricks model-registry delete-model-version-tag` - Delete a model version tag.
+### `databricks model-registry delete-model-version-tag` - Delete a model version tag.
 
 Deletes a model version tag.
 
-### `bricks model-registry delete-transition-request` - Delete a ransition request.
+### `databricks model-registry delete-transition-request` - Delete a ransition request.
 
 Cancels a model version stage transition request.
 
 Flags:
  * `--comment` - User-provided comment on the action.
 
-### `bricks model-registry delete-webhook` - Delete a webhook.
+### `databricks model-registry delete-webhook` - Delete a webhook.
 
 **NOTE:** This endpoint is in Public Preview.
 
@@ -2358,27 +2358,27 @@ Deletes a registry webhook.
 Flags:
  * `--id` - Webhook ID required to delete a registry webhook.
 
-### `bricks model-registry get-latest-versions` - Get the latest version.
+### `databricks model-registry get-latest-versions` - Get the latest version.
 
 Gets the latest version of a registered model.
 
 Flags:
  * `--json` - either inline JSON string or @path/to/file.json with request body
 
-### `bricks model-registry get-model` - Get model.
+### `databricks model-registry get-model` - Get model.
 
 Get the details of a model. This is a Databricks Workspace version of the [MLflow endpoint](https://www.mlflow.org/docs/latest/rest-api.html#get-registeredmodel)
 that also returns the model's Databricks Workspace ID and the permission level of the requesting user on the model.
 
-### `bricks model-registry get-model-version` - Get a model version.
+### `databricks model-registry get-model-version` - Get a model version.
 
 Get a model version.
 
-### `bricks model-registry get-model-version-download-uri` - Get a model version URI.
+### `databricks model-registry get-model-version-download-uri` - Get a model version URI.
 
 Gets a URI to download the model version.
 
-### `bricks model-registry list-models` - List models.
+### `databricks model-registry list-models` - List models.
 
 Lists all available registered models, up to the limit specified in __max_results__.
 
@@ -2386,11 +2386,11 @@ Flags:
  * `--max-results` - Maximum number of registered models desired.
  * `--page-token` - Pagination token to go to the next page based on a previous query.
 
-### `bricks model-registry list-transition-requests` - List transition requests.
+### `databricks model-registry list-transition-requests` - List transition requests.
 
 Gets a list of all open stage transition requests for the model version.
 
-### `bricks model-registry list-webhooks` - List registry webhooks.
+### `databricks model-registry list-webhooks` - List registry webhooks.
 
 **NOTE:** This endpoint is in Public Preview.
 
@@ -2401,21 +2401,21 @@ Flags:
  * `--model-name` - If not specified, all webhooks associated with the specified events are listed, regardless of their associated model.
  * `--page-token` - Token indicating the page of artifact results to fetch.
 
-### `bricks model-registry reject-transition-request` - Reject a transition request.
+### `databricks model-registry reject-transition-request` - Reject a transition request.
 
 Rejects a model version stage transition request.
 
 Flags:
  * `--comment` - User-provided comment on the action.
 
-### `bricks model-registry rename-model` - Rename a model.
+### `databricks model-registry rename-model` - Rename a model.
 
 Renames a registered model.
 
 Flags:
  * `--new-name` - If provided, updates the name for this `registered_model`.
 
-### `bricks model-registry search-model-versions` - Searches model versions.
+### `databricks model-registry search-model-versions` - Searches model versions.
 
 Searches for specific model versions based on the supplied __filter__.
 
@@ -2424,7 +2424,7 @@ Flags:
  * `--filter` - String filter condition, like "name='my-model-name'".
  * `--max-results` - Maximum number of models desired.
 
-### `bricks model-registry search-models` - Search models.
+### `databricks model-registry search-models` - Search models.
 
 Search for registered models based on the specified __filter__.
 
@@ -2433,15 +2433,15 @@ Flags:
  * `--filter` - String filter condition, like "name LIKE 'my-model-name'".
  * `--max-results` - Maximum number of models desired.
 
-### `bricks model-registry set-model-tag` - Set a tag.
+### `databricks model-registry set-model-tag` - Set a tag.
 
 Sets a tag on a registered model.
 
-### `bricks model-registry set-model-version-tag` - Set a version tag.
+### `databricks model-registry set-model-version-tag` - Set a version tag.
 
 Sets a model version tag.
 
-### `bricks model-registry test-registry-webhook` - Test a webhook.
+### `databricks model-registry test-registry-webhook` - Test a webhook.
 
 **NOTE:** This endpoint is in Public Preview.
 
@@ -2450,7 +2450,7 @@ Tests a registry webhook.
 Flags:
  * `--event` - If `event` is specified, the test trigger uses the specified event.
 
-### `bricks model-registry transition-stage` - Transition a stage.
+### `databricks model-registry transition-stage` - Transition a stage.
 
 Transition a model version's stage. This is a Databricks Workspace version of the [MLflow endpoint](https://www.mlflow.org/docs/latest/rest-api.html#transition-modelversion-stage)
 that also accepts a comment associated with the transition to be recorded.",
@@ -2458,25 +2458,25 @@ that also accepts a comment associated with the transition to be recorded.",
 Flags:
  * `--comment` - User-provided comment on the action.
 
-### `bricks model-registry update-comment` - Update a comment.
+### `databricks model-registry update-comment` - Update a comment.
 
 Post an edit to a comment on a model version.
 
-### `bricks model-registry update-model` - Update model.
+### `databricks model-registry update-model` - Update model.
 
 Updates a registered model.
 
 Flags:
  * `--description` - If provided, updates the description for this `registered_model`.
 
-### `bricks model-registry update-model-version` - Update model version.
+### `databricks model-registry update-model-version` - Update model version.
 
 Updates the model version.
 
 Flags:
  * `--description` - If provided, updates the description for this `registered_model`.
 
-### `bricks model-registry update-webhook` - Update a webhook.
+### `databricks model-registry update-webhook` - Update a webhook.
 
 **NOTE:** This endpoint is in Public Preview.
 
@@ -2487,11 +2487,11 @@ Flags:
  * `--description` - User-specified description for the webhook.
  * `--status` - This describes an enum.
 
-## `bricks account networks` - Manage network configurations.
+## `databricks account networks` - Manage network configurations.
 
 These commands manage network configurations for customer-managed VPCs (optional). Its ID is used when creating a new workspace if you use customer-managed VPCs.
 
-### `bricks account networks create` - Create network configuration.
+### `databricks account networks create` - Create network configuration.
 
 Creates a Databricks network configuration that represents an VPC and its resources. The VPC will be used for new Databricks clusters. This requires a pre-existing VPC and subnets.
 
@@ -2499,30 +2499,30 @@ Flags:
  * `--json` - either inline JSON string or @path/to/file.json with request body
  * `--vpc-id` - The ID of the VPC associated with this network.
 
-### `bricks account networks delete` - Delete a network configuration.
+### `databricks account networks delete` - Delete a network configuration.
 
 Deletes a Databricks network configuration, which represents a cloud VPC and its resources. You cannot delete a network that is associated with a workspace.
 
 This operation is available only if your account is on the E2 version of the platform.
 
-### `bricks account networks get` - Get a network configuration.
+### `databricks account networks get` - Get a network configuration.
 
 Gets a Databricks network configuration, which represents a cloud VPC and its resources.
 
-### `bricks account networks list` - Get all network configurations.
+### `databricks account networks list` - Get all network configurations.
 
 Gets a list of all Databricks network configurations for an account, specified by ID.
 
 This operation is available only if your account is on the E2 version of the platform.
 
-## `bricks account o-auth-enrollment` - These commands enable administrators to enroll OAuth for their accounts, which is required for adding/using any OAuth published/custom application integration.
+## `databricks account o-auth-enrollment` - These commands enable administrators to enroll OAuth for their accounts, which is required for adding/using any OAuth published/custom application integration.
 
 These commands enable administrators to enroll OAuth for their accounts, which is required for adding/using any OAuth published/custom application integration.
 
 **Note:** Your account must be on the E2 version to use These commands, this is because OAuth
 is only supported on the E2 version.
 
-### `bricks account o-auth-enrollment create` - Create OAuth Enrollment request.
+### `databricks account o-auth-enrollment create` - Create OAuth Enrollment request.
 
 Create an OAuth Enrollment request to enroll OAuth for this account and optionally enable
 the OAuth integration for all the partner applications in the account.
@@ -2538,41 +2538,41 @@ actual enrollment take a few minutes, you can check the status via API :method:g
 Flags:
  * `--enable-all-published-apps` - If true, enable OAuth for all the published applications in the account.
 
-### `bricks account o-auth-enrollment get` - Get OAuth enrollment status.
+### `databricks account o-auth-enrollment get` - Get OAuth enrollment status.
 
 Gets the OAuth enrollment status for this Account.
 
 You can only add/use the OAuth published/custom application integrations when OAuth enrollment
 status is enabled.
 
-## `bricks permissions` - Manage access for various users on different objects and endpoints.
+## `databricks permissions` - Manage access for various users on different objects and endpoints.
 
 Permissions API are used to create read, write, edit, update and manage access for various
 users on different objects and endpoints.
 
-### `bricks permissions get` - Get object permissions.
+### `databricks permissions get` - Get object permissions.
 
 Gets the permission of an object. Objects can inherit permissions from their parent objects or root objects.
 
-### `bricks permissions get-permission-levels` - Get permission levels.
+### `databricks permissions get-permission-levels` - Get permission levels.
 
 Gets the permission levels that a user can have on an object.
 
-### `bricks permissions set` - Set permissions.
+### `databricks permissions set` - Set permissions.
 
 Sets permissions on object. Objects can inherit permissions from their parent objects and root objects.
 
 Flags:
  * `--json` - either inline JSON string or @path/to/file.json with request body
 
-### `bricks permissions update` - Update permission.
+### `databricks permissions update` - Update permission.
 
 Updates the permissions on an object.
 
 Flags:
  * `--json` - either inline JSON string or @path/to/file.json with request body
 
-## `bricks pipelines` - Manage Delta Live Tables from command-line.
+## `databricks pipelines` - Manage Delta Live Tables from command-line.
 
 The Delta Live Tables API allows you to create, edit, delete, start, and view details about
 pipelines.
@@ -2588,7 +2588,7 @@ processing step. You can also enforce data quality with Delta Live Tables expect
 Expectations allow you to define expected data quality and specify how to handle records that
 fail those expectations.
 
-### `bricks pipelines create` - Create a pipeline.
+### `databricks pipelines create` - Create a pipeline.
 
 Creates a new data processing pipeline based on the requested configuration. If successful, this method returns
 the ID of the new pipeline.
@@ -2608,21 +2608,21 @@ Flags:
  * `--storage` - DBFS root directory for storing checkpoints and tables.
  * `--target` - Target schema (database) to add tables in this pipeline to.
 
-### `bricks pipelines delete` - Delete a pipeline.
+### `databricks pipelines delete` - Delete a pipeline.
 
 Deletes a pipeline.
 
-### `bricks pipelines get` - Get a pipeline.
+### `databricks pipelines get` - Get a pipeline.
 
 Flags:
  * `--no-wait` - do not wait to reach RUNNING state.
  * `--timeout` - maximum amount of time to reach RUNNING state.
 
-### `bricks pipelines get-update` - Get a pipeline update.
+### `databricks pipelines get-update` - Get a pipeline update.
 
 Gets an update from an active pipeline.
 
-### `bricks pipelines list-pipeline-events` - List pipeline events.
+### `databricks pipelines list-pipeline-events` - List pipeline events.
 
 Retrieves events for a pipeline.
 
@@ -2632,7 +2632,7 @@ Flags:
  * `--max-results` - Max number of entries to return in a single page.
  * `--page-token` - Page token returned by previous call.
 
-### `bricks pipelines list-pipelines` - List pipelines.
+### `databricks pipelines list-pipelines` - List pipelines.
 
 Lists pipelines defined in the Delta Live Tables system.
 
@@ -2642,7 +2642,7 @@ Flags:
  * `--max-results` - The maximum number of entries to return in a single page.
  * `--page-token` - Page token returned by previous call.
 
-### `bricks pipelines list-updates` - List pipeline updates.
+### `databricks pipelines list-updates` - List pipeline updates.
 
 List updates for an active pipeline.
 
@@ -2651,7 +2651,7 @@ Flags:
  * `--page-token` - Page token returned by previous call.
  * `--until-update-id` - If present, returns updates until and including this update_id.
 
-### `bricks pipelines reset` - Reset a pipeline.
+### `databricks pipelines reset` - Reset a pipeline.
 
 Resets a pipeline.
 
@@ -2659,7 +2659,7 @@ Flags:
  * `--no-wait` - do not wait to reach RUNNING state.
  * `--timeout` - maximum amount of time to reach RUNNING state.
 
-### `bricks pipelines start-update` - Queue a pipeline update.
+### `databricks pipelines start-update` - Queue a pipeline update.
 
 Starts or queues a pipeline update.
 
@@ -2668,7 +2668,7 @@ Flags:
  * `--cause` -
  * `--full-refresh` - If true, this update will reset all tables before running.
 
-### `bricks pipelines stop` - Stop a pipeline.
+### `databricks pipelines stop` - Stop a pipeline.
 
 Stops a pipeline.
 
@@ -2676,7 +2676,7 @@ Flags:
  * `--no-wait` - do not wait to reach IDLE state.
  * `--timeout` - maximum amount of time to reach IDLE state.
 
-### `bricks pipelines update` - Edit a pipeline.
+### `databricks pipelines update` - Edit a pipeline.
 
 Updates a pipeline with the supplied configuration.
 
@@ -2696,7 +2696,7 @@ Flags:
  * `--storage` - DBFS root directory for storing checkpoints and tables.
  * `--target` - Target schema (database) to add tables in this pipeline to.
 
-## `bricks policy-families` - View available policy families.
+## `databricks policy-families` - View available policy families.
 
 View available policy families. A policy family contains a policy definition providing best
 practices for configuring clusters for a particular use case.
@@ -2708,21 +2708,21 @@ Policy families cannot be used directly to create clusters. Instead, you create 
 policies using a policy family. Cluster policies created using a policy family inherit the
 policy family's policy definition.
 
-### `bricks policy-families get` - get cluster policy family.
+### `databricks policy-families get` - get cluster policy family.
 
 Do it.
 
-### `bricks policy-families list` - list policy families.
+### `databricks policy-families list` - list policy families.
 
 Flags:
  * `--max-results` - The max number of policy families to return.
  * `--page-token` - A token that can be used to get the next page of results.
 
-## `bricks account private-access` - PrivateLink settings.
+## `databricks account private-access` - PrivateLink settings.
 
 These commands manage private access settings for this account.
 
-### `bricks account private-access create` - Create private access settings.
+### `databricks account private-access create` - Create private access settings.
 
 Creates a private access settings object, which specifies how your workspace is
 accessed over [AWS PrivateLink](https://aws.amazon.com/privatelink). To use AWS
@@ -2741,23 +2741,23 @@ Flags:
  * `--private-access-level` - The private access level controls which VPC endpoints can connect to the UI or API of any workspace that attaches this private access settings object.
  * `--public-access-enabled` - Determines if the workspace can be accessed over public internet.
 
-### `bricks account private-access delete` - Delete a private access settings object.
+### `databricks account private-access delete` - Delete a private access settings object.
 
 Deletes a private access settings object, which determines how your workspace is accessed over [AWS PrivateLink](https://aws.amazon.com/privatelink).
 
 Before configuring PrivateLink, read the [Databricks article about PrivateLink](https://docs.databricks.com/administration-guide/cloud-configurations/aws/privatelink.html).
 
-### `bricks account private-access get` - Get a private access settings object.
+### `databricks account private-access get` - Get a private access settings object.
 
 Gets a private access settings object, which specifies how your workspace is accessed over [AWS PrivateLink](https://aws.amazon.com/privatelink).
 
 Before configuring PrivateLink, read the [Databricks article about PrivateLink](https://docs.databricks.com/administration-guide/cloud-configurations/aws/privatelink.html).
 
-### `bricks account private-access list` - Get all private access settings objects.
+### `databricks account private-access list` - Get all private access settings objects.
 
 Gets a list of all private access settings objects for an account, specified by ID.
 
-### `bricks account private-access replace` - Replace private access settings.
+### `databricks account private-access replace` - Replace private access settings.
 
 Updates an existing private access settings object, which specifies how your workspace is
 accessed over [AWS PrivateLink](https://aws.amazon.com/privatelink). To use AWS
@@ -2783,11 +2783,11 @@ Flags:
  * `--private-access-level` - The private access level controls which VPC endpoints can connect to the UI or API of any workspace that attaches this private access settings object.
  * `--public-access-enabled` - Determines if the workspace can be accessed over public internet.
 
-## `bricks providers` - Delta Sharing Providers commands.
+## `databricks providers` - Delta Sharing Providers commands.
 
 Databricks Providers commands
 
-### `bricks providers create` - Create an auth provider.
+### `databricks providers create` - Create an auth provider.
 
 Creates a new authentication provider minimally based on a name and authentication type.
 The caller must be an admin on the metastore.
@@ -2796,15 +2796,15 @@ Flags:
  * `--comment` - Description about the provider.
  * `--recipient-profile-str` - This field is required when the __authentication_type__ is **TOKEN** or not provided.
 
-### `bricks providers delete` - Delete a provider.
+### `databricks providers delete` - Delete a provider.
 
 Deletes an authentication provider, if the caller is a metastore admin or is the owner of the provider.
 
-### `bricks providers get` - Get a provider.
+### `databricks providers get` - Get a provider.
 
 Gets a specific authentication provider. The caller must supply the name of the provider, and must either be a metastore admin or the owner of the provider.
 
-### `bricks providers list` - List providers.
+### `databricks providers list` - List providers.
 
 Gets an array of available authentication providers.
 The caller must either be a metastore admin or the owner of the providers.
@@ -2814,14 +2814,14 @@ There is no guarantee of a specific ordering of the elements in the array.
 Flags:
  * `--data-provider-global-metastore-id` - If not provided, all providers will be returned.
 
-### `bricks providers list-shares` - List shares by Provider.
+### `databricks providers list-shares` - List shares by Provider.
 
 Gets an array of a specified provider's shares within the metastore where:
 
   * the caller is a metastore admin, or
   * the caller is the owner.
 
-### `bricks providers update` - Update a provider.
+### `databricks providers update` - Update a provider.
 
 Updates the information for an authentication provider, if the caller is a metastore admin or is the owner of the provider.
 If the update changes the provider name, the caller must be both a metastore admin and the owner of the provider.
@@ -2832,7 +2832,7 @@ Flags:
  * `--owner` - Username of Provider owner.
  * `--recipient-profile-str` - This field is required when the __authentication_type__ is **TOKEN** or not provided.
 
-## `bricks account published-app-integration` - manage published OAuth app integrations like Tableau Cloud for Databricks in AWS cloud.
+## `databricks account published-app-integration` - manage published OAuth app integrations like Tableau Cloud for Databricks in AWS cloud.
 
 These commands enable administrators to manage published oauth app integrations, which is required for
 adding/using Published OAuth App Integration like Tableau Cloud for Databricks in AWS cloud.
@@ -2840,7 +2840,7 @@ adding/using Published OAuth App Integration like Tableau Cloud for Databricks i
 **Note:** You can only add/use the OAuth published application integrations when OAuth enrollment
 status is enabled.
 
-### `bricks account published-app-integration create` - Create Published OAuth App Integration.
+### `databricks account published-app-integration create` - Create Published OAuth App Integration.
 
 Create Published OAuth App Integration.
 
@@ -2850,32 +2850,32 @@ Flags:
  * `--json` - either inline JSON string or @path/to/file.json with request body
  * `--app-id` - app_id of the oauth published app integration.
 
-### `bricks account published-app-integration delete` - Delete Published OAuth App Integration.
+### `databricks account published-app-integration delete` - Delete Published OAuth App Integration.
 
 Delete an existing Published OAuth App Integration.
 You can retrieve the published oauth app integration via :method:get.
 
-### `bricks account published-app-integration get` - Get OAuth Published App Integration.
+### `databricks account published-app-integration get` - Get OAuth Published App Integration.
 
 Gets the Published OAuth App Integration for the given integration id.
 
-### `bricks account published-app-integration list` - Get published oauth app integrations.
+### `databricks account published-app-integration list` - Get published oauth app integrations.
 
 Get the list of published oauth app integrations for the specified Databricks Account
 
-### `bricks account published-app-integration update` - Updates Published OAuth App Integration.
+### `databricks account published-app-integration update` - Updates Published OAuth App Integration.
 
 Updates an existing published OAuth App Integration. You can retrieve the published oauth app integration via :method:get.
 
 Flags:
  * `--json` - either inline JSON string or @path/to/file.json with request body
 
-## `bricks queries` - These endpoints are used for CRUD operations on query definitions.
+## `databricks queries` - These endpoints are used for CRUD operations on query definitions.
 
 These endpoints are used for CRUD operations on query definitions. Query definitions include
 the target SQL warehouse, query text, name, description, tags, parameters, and visualizations.
 
-### `bricks queries create` - Create a new query definition.
+### `databricks queries create` - Create a new query definition.
 
 Creates a new query definition. Queries created with this endpoint belong to the authenticated user making the request.
 
@@ -2891,17 +2891,17 @@ Flags:
  * `--parent` - The identifier of the workspace folder containing the query.
  * `--query` - The text of the query.
 
-### `bricks queries delete` - Delete a query.
+### `databricks queries delete` - Delete a query.
 
 Moves a query to the trash.
 Trashed queries immediately disappear from searches and list views, and they cannot be used for alerts.
 The trash is deleted after 30 days.
 
-### `bricks queries get` - Get a query definition.
+### `databricks queries get` - Get a query definition.
 
 Retrieve a query object definition along with contextual permissions information about the currently authenticated user.
 
-### `bricks queries list` - Get a list of queries.
+### `databricks queries list` - Get a list of queries.
 
 Gets a list of queries. Optionally, this list can be filtered by a search term.
 
@@ -2911,12 +2911,12 @@ Flags:
  * `--page-size` - Number of queries to return per page.
  * `--q` - Full text search term.
 
-### `bricks queries restore` - Restore a query.
+### `databricks queries restore` - Restore a query.
 
 Restore a query that has been moved to the trash.
 A restored query appears in list views and searches. You can use restored queries for alerts.
 
-### `bricks queries update` - Change a query definition.
+### `databricks queries update` - Change a query definition.
 
 Modify this query definition.
 
@@ -2929,11 +2929,11 @@ Flags:
  * `--name` - The name or title of this query to display in list views.
  * `--query` - The text of the query.
 
-## `bricks query-history` - Access the history of queries through SQL warehouses.
+## `databricks query-history` - Access the history of queries through SQL warehouses.
 
 Access the history of queries through SQL warehouses.
 
-### `bricks query-history list` - List Queries.
+### `databricks query-history list` - List Queries.
 
 List the history of queries through SQL warehouses. You can filter by user ID, warehouse ID, status, and time range.
 
@@ -2943,23 +2943,23 @@ Flags:
  * `--max-results` - Limit the number of results returned in one page.
  * `--page-token` - A token that can be used to get the next page of results.
 
-## `bricks recipient-activation` - Delta Sharing recipient activation commands.
+## `databricks recipient-activation` - Delta Sharing recipient activation commands.
 
 Databricks Recipient Activation commands
 
-### `bricks recipient-activation get-activation-url-info` - Get a share activation URL.
+### `databricks recipient-activation get-activation-url-info` - Get a share activation URL.
 
 Gets an activation URL for a share.
 
-### `bricks recipient-activation retrieve-token` - Get an access token.
+### `databricks recipient-activation retrieve-token` - Get an access token.
 
 Retrieve access token with an activation url. This is a public API without any authentication.
 
-## `bricks recipients` - Delta Sharing recipients.
+## `databricks recipients` - Delta Sharing recipients.
 
 Databricks Recipients commands
 
-### `bricks recipients create` - Create a share recipient.
+### `databricks recipients create` - Create a share recipient.
 
 Creates a new recipient with the delta sharing authentication type in the metastore.
 The caller must be a metastore admin or has the **CREATE_RECIPIENT** privilege on the metastore.
@@ -2970,18 +2970,18 @@ Flags:
  * `--owner` - Username of the recipient owner.
  * `--sharing-code` - The one-time sharing code provided by the data recipient.
 
-### `bricks recipients delete` - Delete a share recipient.
+### `databricks recipients delete` - Delete a share recipient.
 
 Deletes the specified recipient from the metastore. The caller must be the owner of the recipient.
 
-### `bricks recipients get` - Get a share recipient.
+### `databricks recipients get` - Get a share recipient.
 
 Gets a share recipient from the metastore if:
 
   * the caller is the owner of the share recipient, or:
   * is a metastore admin
 
-### `bricks recipients list` - List share recipients.
+### `databricks recipients list` - List share recipients.
 
 Gets an array of all share recipients within the current metastore where:
 
@@ -2993,16 +2993,16 @@ There is no guarantee of a specific ordering of the elements in the array.
 Flags:
  * `--data-recipient-global-metastore-id` - If not provided, all recipients will be returned.
 
-### `bricks recipients rotate-token` - Rotate a token.
+### `databricks recipients rotate-token` - Rotate a token.
 
 Refreshes the specified recipient's delta sharing authentication token with the provided token info.
 The caller must be the owner of the recipient.
 
-### `bricks recipients share-permissions` - Get recipient share permissions.
+### `databricks recipients share-permissions` - Get recipient share permissions.
 
 Gets the share permissions for the specified Recipient. The caller must be a metastore admin or the owner of the Recipient.
 
-### `bricks recipients update` - Update a share recipient.
+### `databricks recipients update` - Update a share recipient.
 
 Updates an existing recipient in the metastore. The caller must be a metastore admin or the owner of the recipient.
 If the recipient name will be updated, the user must be both a metastore admin and the owner of the recipient.
@@ -3013,7 +3013,7 @@ Flags:
  * `--name` - Name of Recipient.
  * `--owner` - Username of the recipient owner.
 
-## `bricks repos` - Manage their git repos.
+## `databricks repos` - Manage their git repos.
 
 The Repos API allows users to manage their git repos. Users can use the API to access all
 repos that they have manage permissions on.
@@ -3026,7 +3026,7 @@ Within Repos you can develop code in notebooks or other files and follow data sc
 engineering code development best practices using Git for version control, collaboration,
 and CI/CD.
 
-### `bricks repos create` - Create a repo.
+### `databricks repos create` - Create a repo.
 
 Creates a repo in the workspace and links it to the remote Git repo specified.
 Note that repos created programmatically must be linked to a remote Git repo, unlike repos created in the browser.
@@ -3035,15 +3035,15 @@ Flags:
  * `--json` - either inline JSON string or @path/to/file.json with request body
  * `--path` - Desired path for the repo in the workspace.
 
-### `bricks repos delete` - Delete a repo.
+### `databricks repos delete` - Delete a repo.
 
 Deletes the specified repo.
 
-### `bricks repos get` - Get a repo.
+### `databricks repos get` - Get a repo.
 
 Returns the repo with the given repo ID.
 
-### `bricks repos list` - Get repos.
+### `databricks repos list` - Get repos.
 
 Returns repos that the calling user has Manage permissions on. Results are paginated with each page containing twenty repos.
 
@@ -3051,7 +3051,7 @@ Flags:
  * `--next-page-token` - Token used to get the next page of results.
  * `--path-prefix` - Filters repos that have paths starting with the given path prefix.
 
-### `bricks repos update` - Update a repo.
+### `databricks repos update` - Update a repo.
 
 Updates the repo to a different branch or tag, or updates the repo to the latest commit on the same branch.
 
@@ -3060,14 +3060,14 @@ Flags:
  * `--branch` - Branch that the local version of the repo is checked out to.
  * `--tag` - Tag that the local version of the repo is checked out to.
 
-## `bricks schemas` - Manage schemas in Unity Catalog.
+## `databricks schemas` - Manage schemas in Unity Catalog.
 
 A schema (also called a database) is the second layer of Unity Catalog’s three-level
 namespace. A schema organizes tables, views and functions. To access (or list) a table or view in
 a schema, users must have the USE_SCHEMA data permission on the schema and its parent catalog,
 and they must have the SELECT permission on the table or view.
 
-### `bricks schemas create` - Create a schema.
+### `databricks schemas create` - Create a schema.
 
 Creates a new schema for catalog in the Metatastore. The caller must be a metastore admin, or have the **CREATE_SCHEMA** privilege in the parent catalog.
 
@@ -3076,21 +3076,21 @@ Flags:
  * `--comment` - User-provided free-form text description.
  * `--storage-root` - Storage root URL for managed tables within schema.
 
-### `bricks schemas delete` - Delete a schema.
+### `databricks schemas delete` - Delete a schema.
 
 Deletes the specified schema from the parent catalog. The caller must be the owner of the schema or an owner of the parent catalog.
 
-### `bricks schemas get` - Get a schema.
+### `databricks schemas get` - Get a schema.
 
 Gets the specified schema within the metastore. The caller must be a metastore admin, the owner of the schema, or a user that has the **USE_SCHEMA** privilege on the schema.
 
-### `bricks schemas list` - List schemas.
+### `databricks schemas list` - List schemas.
 
 Gets an array of schemas for a catalog in the metastore. If the caller is the metastore admin or the owner of the parent catalog, all schemas for the catalog will be retrieved.
 Otherwise, only schemas owned by the caller (or for which the caller has the **USE_SCHEMA** privilege) will be retrieved.
 There is no guarantee of a specific ordering of the elements in the array.
 
-### `bricks schemas update` - Update a schema.
+### `databricks schemas update` - Update a schema.
 
 Updates a schema for a catalog. The caller must be the owner of the schema or a metastore admin.
 If the caller is a metastore admin, only the __owner__ field can be changed in the update.
@@ -3102,7 +3102,7 @@ Flags:
  * `--name` - Name of schema, relative to parent catalog.
  * `--owner` - Username of current owner of schema.
 
-## `bricks secrets` - manage secrets, secret scopes, and access permissions.
+## `databricks secrets` - manage secrets, secret scopes, and access permissions.
 
 The Secrets API allows you to manage secrets, secret scopes, and access permissions.
 
@@ -3114,7 +3114,7 @@ Administrators, secret creators, and users granted permission can read Databrick
 While Databricks makes an effort to redact secret values that might be displayed in notebooks,
 it is not possible to prevent such users from reading secrets.
 
-### `bricks secrets create-scope` - Create a new secret scope.
+### `databricks secrets create-scope` - Create a new secret scope.
 
 The scope name must consist of alphanumeric characters, dashes, underscores, and periods,
 and may not exceed 128 characters. The maximum number of scopes in a workspace is 100.
@@ -3124,7 +3124,7 @@ Flags:
  * `--initial-manage-principal` - The principal that is initially granted `MANAGE` permission to the created scope.
  * `--scope-backend-type` - The backend type the scope will be created with.
 
-### `bricks secrets delete-acl` - Delete an ACL.
+### `databricks secrets delete-acl` - Delete an ACL.
 
 Deletes the given ACL on the given scope.
 
@@ -3132,20 +3132,20 @@ Users must have the `MANAGE` permission to invoke command.
 Throws `RESOURCE_DOES_NOT_EXIST` if no such secret scope, principal, or ACL exists.
 Throws `PERMISSION_DENIED` if the user does not have permission to make command call.
 
-### `bricks secrets delete-scope` - Delete a secret scope.
+### `databricks secrets delete-scope` - Delete a secret scope.
 
 Deletes a secret scope.
 
 Throws `RESOURCE_DOES_NOT_EXIST` if the scope does not exist. Throws `PERMISSION_DENIED` if the user does not have permission to make command call.
 
-### `bricks secrets delete-secret` - Delete a secret.
+### `databricks secrets delete-secret` - Delete a secret.
 
 Deletes the secret stored in this secret scope. You must have `WRITE` or `MANAGE` permission on the secret scope.
 
 Throws `RESOURCE_DOES_NOT_EXIST` if no such secret scope or secret exists.
 Throws `PERMISSION_DENIED` if the user does not have permission to make command call.
 
-### `bricks secrets get-acl` - Get secret ACL details.
+### `databricks secrets get-acl` - Get secret ACL details.
 
 Gets the details about the given ACL, such as the group and permission.
 Users must have the `MANAGE` permission to invoke command.
@@ -3153,20 +3153,20 @@ Users must have the `MANAGE` permission to invoke command.
 Throws `RESOURCE_DOES_NOT_EXIST` if no such secret scope exists.
 Throws `PERMISSION_DENIED` if the user does not have permission to make command call.
 
-### `bricks secrets list-acls` - Lists ACLs.
+### `databricks secrets list-acls` - Lists ACLs.
 
 List the ACLs for a given secret scope. Users must have the `MANAGE` permission to invoke command.
 
 Throws `RESOURCE_DOES_NOT_EXIST` if no such secret scope exists.
 Throws `PERMISSION_DENIED` if the user does not have permission to make command call.
 
-### `bricks secrets list-scopes` - List all scopes.
+### `databricks secrets list-scopes` - List all scopes.
 
 Lists all secret scopes available in the workspace.
 
 Throws `PERMISSION_DENIED` if the user does not have permission to make command call.
 
-### `bricks secrets list-secrets` - List secret keys.
+### `databricks secrets list-secrets` - List secret keys.
 
 Lists the secret keys that are stored at this scope.
 This is a metadata-only operation; secret data cannot be retrieved using command.
@@ -3176,7 +3176,7 @@ The lastUpdatedTimestamp returned is in milliseconds since epoch.
 Throws `RESOURCE_DOES_NOT_EXIST` if no such secret scope exists.
 Throws `PERMISSION_DENIED` if the user does not have permission to make command call.
 
-### `bricks secrets put-acl` - Create/update an ACL.
+### `databricks secrets put-acl` - Create/update an ACL.
 
 Creates or overwrites the Access Control List (ACL) associated with the given principal (user or group) on the
 specified scope point.
@@ -3201,7 +3201,7 @@ Throws `RESOURCE_ALREADY_EXISTS` if a permission for the principal already exist
 Throws `INVALID_PARAMETER_VALUE` if the permission is invalid.
 Throws `PERMISSION_DENIED` if the user does not have permission to make command call.
 
-### `bricks secrets put-secret` - Add a secret.
+### `databricks secrets put-secret` - Add a secret.
 
 Inserts a secret under the provided scope with the given name.
 If a secret already exists with the same name, this command overwrites the existing secret's value.
@@ -3223,7 +3223,7 @@ Flags:
  * `--bytes-value` - If specified, value will be stored as bytes.
  * `--string-value` - If specified, note that the value will be stored in UTF-8 (MB4) form.
 
-## `bricks service-principals` - Manage service principals.
+## `databricks service-principals` - Manage service principals.
 
 Identities for use with jobs, automated tools, and systems such as scripts, apps, and
 CI/CD platforms. Databricks recommends creating service principals to run production jobs
@@ -3231,7 +3231,7 @@ or modify production data. If all processes that act on production data run with
 principals, interactive users do not need any write, delete, or modify privileges in
 production. This eliminates the risk of a user overwriting production data by accident.
 
-### `bricks service-principals create` - Create a service principal.
+### `databricks service-principals create` - Create a service principal.
 
 Creates a new service principal in the Databricks Workspace.
 
@@ -3243,15 +3243,15 @@ Flags:
  * `--external-id` -
  * `--id` - Databricks service principal ID.
 
-### `bricks service-principals delete` - Delete a service principal.
+### `databricks service-principals delete` - Delete a service principal.
 
 Delete a single service principal in the Databricks Workspace.
 
-### `bricks service-principals get` - Get service principal details.
+### `databricks service-principals get` - Get service principal details.
 
 Gets the details for a single service principal define in the Databricks Workspace.
 
-### `bricks service-principals list` - List service principals.
+### `databricks service-principals list` - List service principals.
 
 Gets the set of service principals associated with a Databricks Workspace.
 
@@ -3265,14 +3265,14 @@ Flags:
  * `--start-index` - Specifies the index of the first result.
 
 
-### `bricks service-principals patch` - Update service principal details.
+### `databricks service-principals patch` - Update service principal details.
 
 Partially updates the details of a single service principal in the Databricks Workspace.
 
 Flags:
  * `--json` - either inline JSON string or @path/to/file.json with request body
 
-### `bricks service-principals update` - Replace service principal.
+### `databricks service-principals update` - Replace service principal.
 
 Updates the details of a single service principal.
 
@@ -3286,7 +3286,7 @@ Flags:
  * `--external-id` -
  * `--id` - Databricks service principal ID.
 
-## `bricks account service-principals` - Manage service principals on the account level.
+## `databricks account service-principals` - Manage service principals on the account level.
 
 Identities for use with jobs, automated tools, and systems such as scripts, apps, and
 CI/CD platforms. Databricks recommends creating service principals to run production jobs
@@ -3294,7 +3294,7 @@ or modify production data. If all processes that act on production data run with
 principals, interactive users do not need any write, delete, or modify privileges in
 production. This eliminates the risk of a user overwriting production data by accident.
 
-### `bricks account service-principals create` - Create a service principal.
+### `databricks account service-principals create` - Create a service principal.
 
 Creates a new service principal in the Databricks Account.
 
@@ -3306,15 +3306,15 @@ Flags:
  * `--external-id` -
  * `--id` - Databricks service principal ID.
 
-### `bricks account service-principals delete` - Delete a service principal.
+### `databricks account service-principals delete` - Delete a service principal.
 
 Delete a single service principal in the Databricks Account.
 
-### `bricks account service-principals get` - Get service principal details.
+### `databricks account service-principals get` - Get service principal details.
 
 Gets the details for a single service principal define in the Databricks Account.
 
-### `bricks account service-principals list` - List service principals.
+### `databricks account service-principals list` - List service principals.
 
 Gets the set of service principals associated with a Databricks Account.
 
@@ -3327,14 +3327,14 @@ Flags:
  * `--sort-order` - The order to sort the results.
  * `--start-index` - Specifies the index of the first result.
 
-### `bricks account service-principals patch` - Update service principal details.
+### `databricks account service-principals patch` - Update service principal details.
 
 Partially updates the details of a single service principal in the Databricks Account.
 
 Flags:
  * `--json` - either inline JSON string or @path/to/file.json with request body
 
-### `bricks account service-principals update` - Replace service principal.
+### `databricks account service-principals update` - Replace service principal.
 
 Updates the details of a single service principal.
 
@@ -3348,7 +3348,7 @@ Flags:
  * `--external-id` -
  * `--id` - Databricks service principal ID.
 
-## `bricks serving-endpoints` - Manage model serving endpoints.
+## `databricks serving-endpoints` - Manage model serving endpoints.
 
 The Serving Endpoints API allows you to create, update, and delete model serving endpoints.
 
@@ -3360,46 +3360,46 @@ Model Registry, called served models. A serving endpoint can have at most ten se
 traffic settings to define how requests should be routed to your served models behind an endpoint.
 Additionally, you can configure the scale of resources that should be applied to each served model.
 
-### `bricks serving-endpoints build-logs` - Retrieve the logs associated with building the model's environment for a given serving endpoint's served model.
+### `databricks serving-endpoints build-logs` - Retrieve the logs associated with building the model's environment for a given serving endpoint's served model.
 
 Retrieve the logs associated with building the model's environment for a given serving endpoint's served model.
 
 Retrieves the build logs associated with the provided served model.
 
-### `bricks serving-endpoints create` - Create a new serving endpoint.
+### `databricks serving-endpoints create` - Create a new serving endpoint.
 
 Flags:
  * `--no-wait` - do not wait to reach NOT_UPDATING state.
  * `--timeout` - maximum amount of time to reach NOT_UPDATING state.
  * `--json` - either inline JSON string or @path/to/file.json with request body
 
-### `bricks serving-endpoints delete` - Delete a serving endpoint.
+### `databricks serving-endpoints delete` - Delete a serving endpoint.
 
 Delete a serving endpoint.
 
-### `bricks serving-endpoints export-metrics` - Retrieve the metrics corresponding to a serving endpoint for the current time in Prometheus or OpenMetrics exposition format.
+### `databricks serving-endpoints export-metrics` - Retrieve the metrics corresponding to a serving endpoint for the current time in Prometheus or OpenMetrics exposition format.
 
 Retrieve the metrics corresponding to a serving endpoint for the current time in Prometheus or OpenMetrics exposition format.
 
 Retrieves the metrics associated with the provided serving endpoint in either Prometheus or OpenMetrics exposition format.
 
-### `bricks serving-endpoints get` - Get a single serving endpoint.
+### `databricks serving-endpoints get` - Get a single serving endpoint.
 
 Retrieves the details for a single serving endpoint.
 
-### `bricks serving-endpoints list` - Retrieve all serving endpoints.
+### `databricks serving-endpoints list` - Retrieve all serving endpoints.
 
 Retrieve all serving endpoints.
 
-### `bricks serving-endpoints logs` - Retrieve the most recent log lines associated with a given serving endpoint's served model.
+### `databricks serving-endpoints logs` - Retrieve the most recent log lines associated with a given serving endpoint's served model.
 
 Retrieves the service logs associated with the provided served model.
 
-### `bricks serving-endpoints query` - Query a serving endpoint with provided model input.
+### `databricks serving-endpoints query` - Query a serving endpoint with provided model input.
 
 Query a serving endpoint with provided model input.
 
-### `bricks serving-endpoints update-config` - Update a serving endpoint with a new config.
+### `databricks serving-endpoints update-config` - Update a serving endpoint with a new config.
 
 Update a serving endpoint with a new config.
 
@@ -3413,11 +3413,11 @@ Flags:
  * `--timeout` - maximum amount of time to reach NOT_UPDATING state.
  * `--json` - either inline JSON string or @path/to/file.json with request body
 
-## `bricks shares` - Databricks Shares commands.
+## `databricks shares` - Databricks Shares commands.
 
 Databricks Shares commands
 
-### `bricks shares create` - Create a share.
+### `databricks shares create` - Create a share.
 
 Creates a new share for data objects. Data objects can be added after creation with **update**.
 The caller must be a metastore admin or have the **CREATE_SHARE** privilege on the metastore.
@@ -3425,28 +3425,28 @@ The caller must be a metastore admin or have the **CREATE_SHARE** privilege on t
 Flags:
  * `--comment` - User-provided free-form text description.
 
-### `bricks shares delete` - Delete a share.
+### `databricks shares delete` - Delete a share.
 
 Deletes a data object share from the metastore. The caller must be an owner of the share.
 
-### `bricks shares get` - Get a share.
+### `databricks shares get` - Get a share.
 
 Gets a data object share from the metastore. The caller must be a metastore admin or the owner of the share.
 
 Flags:
  * `--include-shared-data` - Query for data to include in the share.
 
-### `bricks shares list` - List shares.
+### `databricks shares list` - List shares.
 
 Gets an array of data object shares from the metastore. The caller must be a metastore admin or the owner of the share.
 There is no guarantee of a specific ordering of the elements in the array.
 
-### `bricks shares share-permissions` - Get permissions.
+### `databricks shares share-permissions` - Get permissions.
 
 Gets the permissions for a data share from the metastore.
 The caller must be a metastore admin or the owner of the share.
 
-### `bricks shares update` - Update a share.
+### `databricks shares update` - Update a share.
 
 Updates the share with the changes and data objects in the request.
 The caller must be the owner of the share or a metastore admin.
@@ -3468,7 +3468,7 @@ Flags:
  * `--name` - Name of the share.
  * `--owner` - Username of current owner of share.
 
-### `bricks shares update-permissions` - Update permissions.
+### `databricks shares update-permissions` - Update permissions.
 
 Updates the permissions for a data share in the metastore.
 The caller must be a metastore admin or an owner of the share.
@@ -3479,7 +3479,7 @@ recipient revocations do not require additional privileges.
 Flags:
  * `--json` - either inline JSON string or @path/to/file.json with request body
 
-## `bricks account storage` - Manage storage configurations for this workspace.
+## `databricks account storage` - Manage storage configurations for this workspace.
 
 These commands manage storage configurations for this workspace. A root storage S3 bucket in
 your account is required to store objects like cluster logs, notebook revisions, and job
@@ -3487,7 +3487,7 @@ results. You can also use the root storage S3 bucket for storage of non-producti
 data. A storage configuration encapsulates this bucket information, and its ID is used when
 creating a new workspace.
 
-### `bricks account storage create` - Create new storage configuration.
+### `databricks account storage create` - Create new storage configuration.
 
 Creates new storage configuration for an account, specified by ID. Uploads a storage configuration object that represents the root AWS S3 bucket in your account. Databricks stores related workspace assets including DBFS, cluster logs, and job results. For the AWS S3 bucket, you need to configure the required bucket policy.
 
@@ -3496,19 +3496,19 @@ For information about how to create a new workspace with command, see [Create a 
 Flags:
  * `--json` - either inline JSON string or @path/to/file.json with request body
 
-### `bricks account storage delete` - Delete storage configuration.
+### `databricks account storage delete` - Delete storage configuration.
 
 Deletes a Databricks storage configuration. You cannot delete a storage configuration that is associated with any workspace.
 
-### `bricks account storage get` - Get storage configuration.
+### `databricks account storage get` - Get storage configuration.
 
 Gets a Databricks storage configuration for an account, both specified by ID.
 
-### `bricks account storage list` - Get all storage configurations.
+### `databricks account storage list` - Get all storage configurations.
 
 Gets a list of all Databricks storage configurations for your account, specified by ID.
 
-## `bricks storage-credentials` - Manage storage credentials for Unity Catalog.
+## `databricks storage-credentials` - Manage storage credentials for Unity Catalog.
 
 A storage credential represents an authentication and authorization mechanism for accessing
 data stored on your cloud tenant. Each storage credential is subject to
@@ -3524,7 +3524,7 @@ To create storage credentials, you must be a Databricks account admin. The accou
 who creates the storage credential can delegate ownership to another user or group to
 manage permissions on it.
 
-### `bricks storage-credentials create` - Create a storage credential.
+### `databricks storage-credentials create` - Create a storage credential.
 
 Creates a new storage credential. The request object is specific to the cloud:
 
@@ -3540,25 +3540,25 @@ Flags:
  * `--read-only` - Whether the storage credential is only usable for read operations.
  * `--skip-validation` - Supplying true to this argument skips validation of the created credential.
 
-### `bricks storage-credentials delete` - Delete a credential.
+### `databricks storage-credentials delete` - Delete a credential.
 
 Deletes a storage credential from the metastore. The caller must be an owner of the storage credential.
 
 Flags:
  * `--force` - Force deletion even if there are dependent external locations or external tables.
 
-### `bricks storage-credentials get` - Get a credential.
+### `databricks storage-credentials get` - Get a credential.
 
 Gets a storage credential from the metastore. The caller must be a metastore admin, the owner of the storage credential, or have some permission on the storage credential.
 
-### `bricks storage-credentials list` - List credentials.
+### `databricks storage-credentials list` - List credentials.
 
 Gets an array of storage credentials (as __StorageCredentialInfo__ objects).
 The array is limited to only those storage credentials the caller has permission to access.
 If the caller is a metastore admin, all storage credentials will be retrieved.
 There is no guarantee of a specific ordering of the elements in the array.
 
-### `bricks storage-credentials update` - Update a credential.
+### `databricks storage-credentials update` - Update a credential.
 
 Updates a storage credential on the metastore. The caller must be the owner of the storage credential or a metastore admin. If the caller is a metastore admin, only the __owner__ credential can be changed.
 
@@ -3571,7 +3571,7 @@ Flags:
  * `--read-only` - Whether the storage credential is only usable for read operations.
  * `--skip-validation` - Supplying true to this argument skips validation of the updated credential.
 
-### `bricks storage-credentials validate` - Validate a storage credential.
+### `databricks storage-credentials validate` - Validate a storage credential.
 
 Validates a storage credential. At least one of __external_location_name__ and __url__ need to be provided. If only one of them is
 provided, it will be used for validation. And if both are provided, the __url__ will be used for
@@ -3588,11 +3588,11 @@ Flags:
  * `--read-only` - Whether the storage credential is only usable for read operations.
  * `--url` - The external location url to validate.
 
-## `bricks account storage-credentials` - These commands manage storage credentials for a particular metastore.
+## `databricks account storage-credentials` - These commands manage storage credentials for a particular metastore.
 
 These commands manage storage credentials for a particular metastore.
 
-### `bricks account storage-credentials create` - Create a storage credential.
+### `databricks account storage-credentials create` - Create a storage credential.
 
 Creates a new storage credential. The request object is specific to the cloud:
 
@@ -3608,15 +3608,15 @@ Flags:
  * `--read-only` - Whether the storage credential is only usable for read operations.
  * `--skip-validation` - Supplying true to this argument skips validation of the created credential.
 
-### `bricks account storage-credentials get` - Gets the named storage credential.
+### `databricks account storage-credentials get` - Gets the named storage credential.
 
 Gets a storage credential from the metastore. The caller must be a metastore admin, the owner of the storage credential, or have a level of privilege on the storage credential.
 
-### `bricks account storage-credentials list` - Get all storage credentials assigned to a metastore.
+### `databricks account storage-credentials list` - Get all storage credentials assigned to a metastore.
 
 Gets a list of all storage credentials that have been assigned to given metastore.
 
-## `bricks table-constraints` - Primary key and foreign key constraints encode relationships between fields in tables.
+## `databricks table-constraints` - Primary key and foreign key constraints encode relationships between fields in tables.
 
 Primary and foreign keys are informational only and are not enforced. Foreign keys must reference a primary key in another table.
 This primary key is the parent constraint of the foreign key and the table this primary key is on is the parent table of the foreign key.
@@ -3625,7 +3625,7 @@ Similarly, the foreign key is the child constraint of its referenced primary key
 You can declare primary keys and foreign keys as part of the table specification during table creation.
 You can also add or drop constraints on existing tables.
 
-### `bricks table-constraints create` - Create a table constraint.
+### `databricks table-constraints create` - Create a table constraint.
 
 
 For the table constraint creation to succeed, the user must satisfy both of these conditions:
@@ -3639,7 +3639,7 @@ For the table constraint creation to succeed, the user must satisfy both of thes
 Flags:
  * `--json` - either inline JSON string or @path/to/file.json with request body
 
-### `bricks table-constraints delete` - Delete a table constraint.
+### `databricks table-constraints delete` - Delete a table constraint.
 
 Deletes a table constraint.
 
@@ -3651,7 +3651,7 @@ For the table constraint deletion to succeed, the user must satisfy both of thes
   the **USE_SCHEMA** privilege on the table's schema,
   and be the owner of the table.
 
-## `bricks tables` - A table resides in the third layer of Unity Catalog’s three-level namespace.
+## `databricks tables` - A table resides in the third layer of Unity Catalog’s three-level namespace.
 
 A table resides in the third layer of Unity Catalog’s three-level namespace. It contains
 rows of data. To create a table, users must have CREATE_TABLE and USE_SCHEMA permissions on the schema,
@@ -3661,13 +3661,13 @@ parent catalog and the USE_SCHEMA permission on its parent schema.
 
 A table can be managed or external. From an API perspective, a __VIEW__ is a particular kind of table (rather than a managed or external table).
 
-### `bricks tables delete` - Delete a table.
+### `databricks tables delete` - Delete a table.
 
 Deletes a table from the specified parent catalog and schema.
 The caller must be the owner of the parent catalog, have the **USE_CATALOG** privilege on the parent catalog and be the owner of the parent schema,
 or be the owner of the table and have the **USE_CATALOG** privilege on the parent catalog and the **USE_SCHEMA** privilege on the parent schema.
 
-### `bricks tables get` - Get a table.
+### `databricks tables get` - Get a table.
 
 Gets a table from the metastore for a specific catalog and schema.
 The caller must be a metastore admin, be the owner of the table and have the **USE_CATALOG** privilege on the parent catalog and the **USE_SCHEMA** privilege on the parent schema,
@@ -3676,7 +3676,7 @@ or be the owner of the table and have the **SELECT** privilege on it as well.
 Flags:
  * `--include-delta-metadata` - Whether delta metadata should be included in the response.
 
-### `bricks tables list` - List tables.
+### `databricks tables list` - List tables.
 
 Gets an array of all tables for the current metastore under the parent catalog and schema.
 The caller must be a metastore admin or an owner of (or have the **SELECT** privilege on) the table.
@@ -3688,7 +3688,7 @@ Flags:
  * `--max-results` - Maximum number of tables to return (page length).
  * `--page-token` - Opaque token to send for the next page of results (pagination).
 
-### `bricks tables list-summaries` - List table summaries.
+### `databricks tables list-summaries` - List table summaries.
 
 Gets an array of summaries for tables for a schema and catalog within the metastore. The table summaries returned are either:
 
@@ -3705,27 +3705,27 @@ Flags:
  * `--schema-name-pattern` - A sql LIKE pattern (% and _) for schema names.
  * `--table-name-pattern` - A sql LIKE pattern (% and _) for table names.
 
-## `bricks token-management` - Enables administrators to get all tokens and delete tokens for other users.
+## `databricks token-management` - Enables administrators to get all tokens and delete tokens for other users.
 
 Enables administrators to get all tokens and delete tokens for other users. Admins can
 either get every token, get a specific token by ID, or get all tokens for a particular user.
 
-### `bricks token-management create-obo-token` - Create on-behalf token.
+### `databricks token-management create-obo-token` - Create on-behalf token.
 
 Creates a token on behalf of a service principal.
 
 Flags:
  * `--comment` - Comment that describes the purpose of the token.
 
-### `bricks token-management delete` - Delete a token.
+### `databricks token-management delete` - Delete a token.
 
 Deletes a token, specified by its ID.
 
-### `bricks token-management get` - Get token info.
+### `databricks token-management get` - Get token info.
 
 Gets information about a token, specified by its ID.
 
-### `bricks token-management list` - List all tokens.
+### `databricks token-management list` - List all tokens.
 
 Lists all tokens associated with the specified workspace or user.
 
@@ -3733,11 +3733,11 @@ Flags:
  * `--created-by-id` - User ID of the user that created the token.
  * `--created-by-username` - Username of the user that created the token.
 
-## `bricks tokens` - The Token API allows you to create, list, and revoke tokens that can be used to authenticate and access Databricks commandss.
+## `databricks tokens` - The Token API allows you to create, list, and revoke tokens that can be used to authenticate and access Databricks commandss.
 
 The Token API allows you to create, list, and revoke tokens that can be used to authenticate and access Databricks commandss.
 
-### `bricks tokens create` - Create a user token.
+### `databricks tokens create` - Create a user token.
 
 Creates and returns a token for a user. If this call is made through token authentication, it creates
 a token with the same client ID as the authenticated token. If the user's token quota is exceeded, this call
@@ -3747,17 +3747,17 @@ Flags:
  * `--comment` - Optional description to attach to the token.
  * `--lifetime-seconds` - The lifetime of the token, in seconds.
 
-### `bricks tokens delete` - Revoke token.
+### `databricks tokens delete` - Revoke token.
 
 Revokes an access token.
 
 If a token with the specified ID is not valid, this call returns an error **RESOURCE_DOES_NOT_EXIST**.
 
-### `bricks tokens list` - List tokens.
+### `databricks tokens list` - List tokens.
 
 Lists all the valid tokens for a user-workspace pair.
 
-## `bricks users` - Manage users on the workspace-level.
+## `databricks users` - Manage users on the workspace-level.
 
 Databricks recommends using SCIM provisioning to sync users and groups automatically from
 your identity provider to your Databricks Workspace. SCIM streamlines onboarding a new
@@ -3767,7 +3767,7 @@ needs access to Databricks Workspace, admins can terminate the user in your iden
 user’s account will also be removed from Databricks Workspace. This ensures a consistent offboarding
 process and prevents unauthorized users from accessing sensitive data.
 
-### `bricks users create` - Create a new user.
+### `databricks users create` - Create a new user.
 
 Creates a new user in the Databricks Workspace. This new user will also be added to the Databricks account.
 
@@ -3779,15 +3779,15 @@ Flags:
  * `--id` - Databricks user ID.
  * `--user-name` - Email address of the Databricks user.
 
-### `bricks users delete` - Delete a user.
+### `databricks users delete` - Delete a user.
 
 Deletes a user. Deleting a user from a Databricks Workspace also removes objects associated with the user.
 
-### `bricks users get` - Get user details.
+### `databricks users get` - Get user details.
 
 Gets information for a specific user in Databricks Workspace.
 
-### `bricks users list` - List users.
+### `databricks users list` - List users.
 
 Gets details for all the users associated with a Databricks Workspace.
 
@@ -3800,14 +3800,14 @@ Flags:
  * `--sort-order` - The order to sort the results.
  * `--start-index` - Specifies the index of the first result.
 
-### `bricks users patch` - Update user details.
+### `databricks users patch` - Update user details.
 
 Partially updates a user resource by applying the supplied operations on specific user attributes.
 
 Flags:
  * `--json` - either inline JSON string or @path/to/file.json with request body
 
-### `bricks users update` - Replace a user.
+### `databricks users update` - Replace a user.
 
 Replaces a user's information with the data supplied in request.
 
@@ -3819,7 +3819,7 @@ Flags:
  * `--id` - Databricks user ID.
  * `--user-name` - Email address of the Databricks user.
 
-## `bricks account users` - Manage users on the accou
+## `databricks account users` - Manage users on the accou
 
 Databricks recommends using SCIM provisioning to sync users and groups automatically from
 your identity provider to your Databricks Account. SCIM streamlines onboarding a new
@@ -3829,7 +3829,7 @@ needs access to Databricks Account, admins can terminate the user in your identi
 user’s account will also be removed from Databricks Account. This ensures a consistent offboarding
 process and prevents unauthorized users from accessing sensitive data.
 
-### `bricks account users create` - Create a new user.
+### `databricks account users create` - Create a new user.
 
 Creates a new user in the Databricks Account. This new user will also be added to the Databricks account.
 
@@ -3841,15 +3841,15 @@ Flags:
  * `--id` - Databricks user ID.
  * `--user-name` - Email address of the Databricks user.
 
-### `bricks account users delete` - Delete a user.
+### `databricks account users delete` - Delete a user.
 
 Deleting a user from a Databricks Account also removes objects associated with the user.
 
-### `bricks account users get` - Get user details.
+### `databricks account users get` - Get user details.
 
 Gets information for a specific user in Databricks Account.
 
-### `bricks account users list` - List users.
+### `databricks account users list` - List users.
 
 Gets details for all the users associated with a Databricks Account.
 
@@ -3862,14 +3862,14 @@ Flags:
  * `--sort-order` - The order to sort the results.
  * `--start-index` - Specifies the index of the first result.
 
-### `bricks account users patch` - Update user details.
+### `databricks account users patch` - Update user details.
 
 Partially updates a user resource by applying the supplied operations on specific user attributes.
 
 Flags:
  * `--json` - either inline JSON string or @path/to/file.json with request body
 
-### `bricks account users update` - Replace a user.
+### `databricks account users update` - Replace a user.
 
 Replaces a user's information with the data supplied in request.
 
@@ -3881,11 +3881,11 @@ Flags:
  * `--id` - Databricks user ID.
  * `--user-name` - Email address of the Databricks user.
 
-## `bricks account vpc-endpoints` - Manage VPC endpoints.
+## `databricks account vpc-endpoints` - Manage VPC endpoints.
 
 These commands manage VPC endpoint configurations for this account.
 
-### `bricks account vpc-endpoints create` - Create VPC endpoint configuration.
+### `databricks account vpc-endpoints create` - Create VPC endpoint configuration.
 
 Creates a VPC endpoint configuration, which represents a
 [VPC endpoint](https://docs.aws.amazon.com/vpc/latest/privatelink/vpc-endpoints.html)
@@ -3903,7 +3903,7 @@ Flags:
  * `--json` - either inline JSON string or @path/to/file.json with request body * `--aws-vpc-endpoint-id` - The ID of the VPC endpoint object in AWS.
  * `--region` - The AWS region in which this VPC endpoint object exists.
 
-### `bricks account vpc-endpoints delete` - Delete VPC endpoint configuration.
+### `databricks account vpc-endpoints delete` - Delete VPC endpoint configuration.
 
 Deletes a VPC endpoint configuration, which represents an
 [AWS VPC endpoint](https://docs.aws.amazon.com/vpc/latest/privatelink/concepts.html) that
@@ -3911,24 +3911,24 @@ can communicate privately with Databricks over [AWS PrivateLink](https://aws.ama
 
 Before configuring PrivateLink, read the [Databricks article about PrivateLink](https://docs.databricks.com/administration-guide/cloud-configurations/aws/privatelink.html).
 
-### `bricks account vpc-endpoints get` - Get a VPC endpoint configuration.
+### `databricks account vpc-endpoints get` - Get a VPC endpoint configuration.
 
 Gets a VPC endpoint configuration, which represents a [VPC endpoint](https://docs.aws.amazon.com/vpc/latest/privatelink/concepts.html) object in AWS used to communicate privately with Databricks over
 [AWS PrivateLink](https://aws.amazon.com/privatelink).
 
-### `bricks account vpc-endpoints list` - Get all VPC endpoint configurations.
+### `databricks account vpc-endpoints list` - Get all VPC endpoint configurations.
 
 Gets a list of all VPC endpoints for an account, specified by ID.
 
 Before configuring PrivateLink, read the [Databricks article about PrivateLink](https://docs.databricks.com/administration-guide/cloud-configurations/aws/privatelink.html).
 
-## `bricks warehouses` - Manage Databricks SQL warehouses.
+## `databricks warehouses` - Manage Databricks SQL warehouses.
 
 A SQL warehouse is a compute resource that lets you run SQL commands on data objects within
 Databricks SQL. Compute resources are infrastructure resources that provide processing
 capabilities in the cloud.
 
-### `bricks warehouses create` - Create a warehouse.
+### `databricks warehouses create` - Create a warehouse.
 
 Creates a new SQL warehouse.
 
@@ -3948,7 +3948,7 @@ Flags:
  * `--spot-instance-policy` - Configurations whether the warehouse should use spot instances.
  * `--warehouse-type` - Warehouse type: `PRO` or `CLASSIC`.
 
-### `bricks warehouses delete` - Delete a warehouse.
+### `databricks warehouses delete` - Delete a warehouse.
 
 Deletes a SQL warehouse.
 
@@ -3956,7 +3956,7 @@ Flags:
  * `--no-wait` - do not wait to reach DELETED state.
  * `--timeout` - maximum amount of time to reach DELETED state.
 
-### `bricks warehouses edit` - Update a warehouse.
+### `databricks warehouses edit` - Update a warehouse.
 
 Updates the configuration for a SQL warehouse.
 
@@ -3976,7 +3976,7 @@ Flags:
  * `--spot-instance-policy` - Configurations whether the warehouse should use spot instances.
  * `--warehouse-type` - Warehouse type: `PRO` or `CLASSIC`.
 
-### `bricks warehouses get` - Get warehouse info.
+### `databricks warehouses get` - Get warehouse info.
 
 Gets the information for a single SQL warehouse.
 
@@ -3984,18 +3984,18 @@ Flags:
  * `--no-wait` - do not wait to reach RUNNING state.
  * `--timeout` - maximum amount of time to reach RUNNING state.
 
-### `bricks warehouses get-workspace-warehouse-config` - Get the workspace configuration.
+### `databricks warehouses get-workspace-warehouse-config` - Get the workspace configuration.
 
 Gets the workspace level configuration that is shared by all SQL warehouses in a workspace.
 
-### `bricks warehouses list` - List warehouses.
+### `databricks warehouses list` - List warehouses.
 
 Lists all SQL warehouses that a user has manager permissions on.
 
 Flags:
  * `--run-as-user-id` - Service Principal which will be used to fetch the list of warehouses.
 
-### `bricks warehouses set-workspace-warehouse-config` - Set the workspace configuration.
+### `databricks warehouses set-workspace-warehouse-config` - Set the workspace configuration.
 
 Sets the workspace level configuration that is shared by all SQL warehouses in a workspace.
 
@@ -4006,23 +4006,23 @@ Flags:
  * `--security-policy` - Security policy for warehouses.
  * `--serverless-agreement` - Internal.
 
-### `bricks warehouses start` - Start a warehouse.
+### `databricks warehouses start` - Start a warehouse.
 
 Flags:
  * `--no-wait` - do not wait to reach RUNNING state.
  * `--timeout` - maximum amount of time to reach RUNNING state.
 
-### `bricks warehouses stop` - Stop a warehouse.
+### `databricks warehouses stop` - Stop a warehouse.
 
 Flags:
  * `--no-wait` - do not wait to reach STOPPED state.
  * `--timeout` - maximum amount of time to reach STOPPED state.
 
-## `bricks workspace` - The Workspace API allows you to list, import, export, and delete notebooks and folders.
+## `databricks workspace` - The Workspace API allows you to list, import, export, and delete notebooks and folders.
 
 A notebook is a web-based interface to a document that contains runnable code, visualizations, and explanatory text.
 
-### `bricks workspace delete` - Delete a workspace object.
+### `databricks workspace delete` - Delete a workspace object.
 
 Delete a workspace object.
 
@@ -4035,7 +4035,7 @@ Object deletion cannot be undone and deleting a directory recursively is not ato
 Flags:
  * `--recursive` - The flag that specifies whether to delete the object recursively.
 
-### `bricks workspace export` - Export a workspace object.
+### `databricks workspace export` - Export a workspace object.
 
 Exports an object or the contents of an entire directory.
 
@@ -4047,12 +4047,12 @@ Flags:
  * `--direct-download` - Flag to enable direct download.
  * `--format` - This specifies the format of the exported file.
 
-### `bricks workspace get-status` - Get status.
+### `databricks workspace get-status` - Get status.
 
 Gets the status of an object or a directory.
 If `path` does not exist, this call returns an error `RESOURCE_DOES_NOT_EXIST`.
 
-### `bricks workspace import` - Import a workspace object.
+### `databricks workspace import` - Import a workspace object.
 
 Imports a workspace object (for example, a notebook or file) or the contents of an entire directory.
 If `path` already exists and `overwrite` is set to `false`, this call returns an error `RESOURCE_ALREADY_EXISTS`.
@@ -4064,7 +4064,7 @@ Flags:
  * `--language` - The language of the object.
  * `--overwrite` - The flag that specifies whether to overwrite existing object.
 
-### `bricks workspace list` - List contents.
+### `databricks workspace list` - List contents.
 
 Lists the contents of a directory, or the object if it is not a directory.If
 the input path does not exist, this call returns an error `RESOURCE_DOES_NOT_EXIST`.
@@ -4072,7 +4072,7 @@ the input path does not exist, this call returns an error `RESOURCE_DOES_NOT_EXI
 Flags:
  * `--notebooks-modified-after` - ...
 
-### `bricks workspace mkdirs` - Create a directory.
+### `databricks workspace mkdirs` - Create a directory.
 
 Creates the specified directory (and necessary parent directories if they do not exist).
 If there is an object (not a directory) at any prefix of the input path, this call returns
@@ -4080,42 +4080,42 @@ an error `RESOURCE_ALREADY_EXISTS`.
 
 Note that if this operation fails it may have succeeded in creating some of the necessary parrent directories.
 
-## `bricks account workspace-assignment` - The Workspace Permission Assignment API allows you to manage workspace permissions for principals in your account.
+## `databricks account workspace-assignment` - The Workspace Permission Assignment API allows you to manage workspace permissions for principals in your account.
 
 The Workspace Permission Assignment API allows you to manage workspace permissions for principals in your account.
 
-### `bricks account workspace-assignment delete` - Delete permissions assignment.
+### `databricks account workspace-assignment delete` - Delete permissions assignment.
 
 Deletes the workspace permissions assignment in a given account and workspace for the specified principal.
 
-### `bricks account workspace-assignment get` - List workspace permissions.
+### `databricks account workspace-assignment get` - List workspace permissions.
 
 Get an array of workspace permissions for the specified account and workspace.
 
-### `bricks account workspace-assignment list` - Get permission assignments.
+### `databricks account workspace-assignment list` - Get permission assignments.
 
 Get the permission assignments for the specified Databricks Account and Databricks Workspace.
 
-### `bricks account workspace-assignment update` - Create or update permissions assignment.
+### `databricks account workspace-assignment update` - Create or update permissions assignment.
 
 Creates or updates the workspace permissions assignment in a given account and workspace for the specified principal.
 
 Flags:
  * `--json` - either inline JSON string or @path/to/file.json with request body
 
-## `bricks workspace-conf` - command allows updating known workspace settings for advanced users.
+## `databricks workspace-conf` - command allows updating known workspace settings for advanced users.
 
 command allows updating known workspace settings for advanced users.
 
-### `bricks workspace-conf get-status` - Check configuration status.
+### `databricks workspace-conf get-status` - Check configuration status.
 
 Gets the configuration status for a workspace.
 
-### `bricks workspace-conf set-status` - Enable/disable features.
+### `databricks workspace-conf set-status` - Enable/disable features.
 
 Sets the configuration status for a workspace, including enabling or disabling it.
 
-## `bricks account workspaces` - These commands manage workspaces for this account.
+## `databricks account workspaces` - These commands manage workspaces for this account.
 
 These commands manage workspaces for this account. A Databricks workspace is an environment for
 accessing all of your Databricks assets. The workspace organizes objects (notebooks,
@@ -4125,7 +4125,7 @@ resources such as clusters and jobs.
 These endpoints are available if your account is on the E2 version of the platform or on
 a select custom plan that allows multiple workspaces per account.
 
-### `bricks account workspaces create` - Create a new workspace.
+### `databricks account workspaces create` - Create a new workspace.
 
 Creates a new workspace.
 
@@ -4152,13 +4152,13 @@ Flags:
  * `--storage-configuration-id` - The ID of the workspace's storage configuration object.
  * `--storage-customer-managed-key-id` - The ID of the workspace's storage encryption key configuration object.
 
-### `bricks account workspaces delete` - Delete a workspace.
+### `databricks account workspaces delete` - Delete a workspace.
 
 Terminates and deletes a Databricks workspace. From an API perspective, deletion is immediate. However, it might take a few minutes for all workspaces resources to be deleted, depending on the size and number of workspace resources.
 
 This operation is available only if your account is on the E2 version of the platform or on a select custom plan that allows multiple workspaces per account.
 
-### `bricks account workspaces get` - Get a workspace.
+### `databricks account workspaces get` - Get a workspace.
 
 Gets information including status for a Databricks workspace, specified by ID. In the response, the `workspace_status` field indicates the current status. After initial workspace creation (which is asynchronous), make repeated `GET` requests with the workspace ID and check its status. The workspace becomes available when the status changes to `RUNNING`.
 
@@ -4166,13 +4166,13 @@ For information about how to create a new workspace with command **including err
 
 This operation is available only if your account is on the E2 version of the platform or on a select custom plan that allows multiple workspaces per account.
 
-### `bricks account workspaces list` - Get all workspaces.
+### `databricks account workspaces list` - Get all workspaces.
 
 Gets a list of all workspaces associated with an account, specified by ID.
 
 This operation is available only if your account is on the E2 version of the platform or on a select custom plan that allows multiple workspaces per account.
 
-### `bricks account workspaces update` - Update workspace configuration.
+### `databricks account workspaces update` - Update workspace configuration.
 
 Updates a workspace configuration for either a running workspace or a failed workspace. The elements that can be updated varies between these two use cases.
 

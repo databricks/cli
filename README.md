@@ -12,9 +12,9 @@ Documentation is available at https://docs.databricks.com/dev-tools/cli/bricks-c
 
 This CLI is packaged as a dependency-free binary executable and may be located in any directory.
 
-For convenient access, copy the `bricks` binary to any directory listed in `$PATH`.
+For convenient access, copy the `databricks` binary to any directory listed in `$PATH`.
 
-Confirm the binary works by executing `bricks version`.
+Confirm the binary works by executing `databricks version`.
 
 ## Authentication
 
