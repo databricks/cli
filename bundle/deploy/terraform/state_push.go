@@ -5,9 +5,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/databricks/bricks/bundle"
-	"github.com/databricks/bricks/libs/filer"
-	"github.com/databricks/bricks/libs/log"
+	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/libs/filer"
+	"github.com/databricks/cli/libs/log"
 )
 
 type statePush struct{}

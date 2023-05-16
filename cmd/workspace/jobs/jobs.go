@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/databricks/bricks/cmd/root"
-	"github.com/databricks/bricks/libs/cmdio"
-	"github.com/databricks/bricks/libs/flags"
+	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/spf13/cobra"

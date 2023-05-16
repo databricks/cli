@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	lockpkg "github.com/databricks/bricks/libs/locker"
+	lockpkg "github.com/databricks/cli/libs/locker"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/stretchr/testify/assert"

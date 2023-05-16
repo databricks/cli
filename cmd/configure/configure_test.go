@@ -7,7 +7,7 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/databricks/bricks/cmd/root"
+	"github.com/databricks/cli/cmd/root"
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/ini.v1"
 )

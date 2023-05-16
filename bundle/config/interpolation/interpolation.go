@@ -9,8 +9,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/databricks/bricks/bundle"
-	"github.com/databricks/bricks/bundle/config/variable"
+	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/variable"
 	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
 )

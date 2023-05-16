@@ -9,24 +9,24 @@ builds:
     - -trimpath
   ldflags:
     - '-s -w'
-    - -X github.com/databricks/bricks/internal/build.buildProjectName={{ .ProjectName }}
-    - -X github.com/databricks/bricks/internal/build.buildVersion={{ .Version }}
+    - -X github.com/databricks/cli/internal/build.buildProjectName={{ .ProjectName }}
+    - -X github.com/databricks/cli/internal/build.buildVersion={{ .Version }}
 
     # Git information
-    - -X github.com/databricks/bricks/internal/build.buildBranch={{ .Branch }}
-    - -X github.com/databricks/bricks/internal/build.buildTag={{ .Tag }}
-    - -X github.com/databricks/bricks/internal/build.buildShortCommit={{ .ShortCommit }}
-    - -X github.com/databricks/bricks/internal/build.buildFullCommit={{ .FullCommit }}
-    - -X github.com/databricks/bricks/internal/build.buildCommitTimestamp={{ .CommitTimestamp }}
-    - -X github.com/databricks/bricks/internal/build.buildSummary={{ .Summary }}
+    - -X github.com/databricks/cli/internal/build.buildBranch={{ .Branch }}
+    - -X github.com/databricks/cli/internal/build.buildTag={{ .Tag }}
+    - -X github.com/databricks/cli/internal/build.buildShortCommit={{ .ShortCommit }}
+    - -X github.com/databricks/cli/internal/build.buildFullCommit={{ .FullCommit }}
+    - -X github.com/databricks/cli/internal/build.buildCommitTimestamp={{ .CommitTimestamp }}
+    - -X github.com/databricks/cli/internal/build.buildSummary={{ .Summary }}
 
     # Version information
-    - -X github.com/databricks/bricks/internal/build.buildMajor={{ .Major }}
-    - -X github.com/databricks/bricks/internal/build.buildMinor={{ .Minor }}
-    - -X github.com/databricks/bricks/internal/build.buildPatch={{ .Patch }}
-    - -X github.com/databricks/bricks/internal/build.buildPrerelease={{ .Prerelease }}
-    - -X github.com/databricks/bricks/internal/build.buildIsSnapshot={{ .IsSnapshot }}
-    - -X github.com/databricks/bricks/internal/build.buildTimestamp={{ .Timestamp }}
+    - -X github.com/databricks/cli/internal/build.buildMajor={{ .Major }}
+    - -X github.com/databricks/cli/internal/build.buildMinor={{ .Minor }}
+    - -X github.com/databricks/cli/internal/build.buildPatch={{ .Patch }}
+    - -X github.com/databricks/cli/internal/build.buildPrerelease={{ .Prerelease }}
+    - -X github.com/databricks/cli/internal/build.buildIsSnapshot={{ .IsSnapshot }}
+    - -X github.com/databricks/cli/internal/build.buildTimestamp={{ .Timestamp }}
 
   goos:
     - windows

@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/databricks/bricks/bundle"
-	"github.com/databricks/bricks/bundle/phases"
-	"github.com/databricks/bricks/libs/cmdio"
-	"github.com/databricks/bricks/libs/flags"
+	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/phases"
+	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/flags"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 )

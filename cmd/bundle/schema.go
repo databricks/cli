@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"reflect"
 
-	"github.com/databricks/bricks/bundle/config"
-	"github.com/databricks/bricks/bundle/schema"
+	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/schema"
 	"github.com/spf13/cobra"
 )
 

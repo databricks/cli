@@ -1,11 +1,11 @@
 package phases
 
 import (
-	"github.com/databricks/bricks/bundle"
-	"github.com/databricks/bricks/bundle/config/interpolation"
-	"github.com/databricks/bricks/bundle/config/mutator"
-	"github.com/databricks/bricks/bundle/config/variable"
-	"github.com/databricks/bricks/bundle/deploy/terraform"
+	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/interpolation"
+	"github.com/databricks/cli/bundle/config/mutator"
+	"github.com/databricks/cli/bundle/config/variable"
+	"github.com/databricks/cli/bundle/deploy/terraform"
 )
 
 // The initialize phase fills in defaults and connects to the workspace.

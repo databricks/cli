@@ -1,7 +1,7 @@
 package root
 
 import (
-	"github.com/databricks/bricks/internal/build"
+	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/databricks-sdk-go/useragent"
 )
 

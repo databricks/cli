@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/databricks/bricks/libs/filer"
+	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/google/uuid"
 )

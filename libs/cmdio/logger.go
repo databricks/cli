@@ -8,7 +8,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/databricks/bricks/libs/flags"
+	"github.com/databricks/cli/libs/flags"
 )
 
 // This is the interface for all io interactions with a user

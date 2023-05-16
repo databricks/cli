@@ -160,7 +160,7 @@ func (reader *OpenapiReader) jobsDocs() (*Docs, error) {
 	}
 	jobDocs := schemaToDocs(jobSettingsSchema)
 	// TODO: add description for id if needed.
-	// Tracked in https://github.com/databricks/bricks/issues/242
+	// Tracked in https://github.com/databricks/cli/issues/242
 	jobsDocs := &Docs{
 		Description:          "List of job definations",
 		AdditionalProperties: jobDocs,
@@ -175,7 +175,7 @@ func (reader *OpenapiReader) pipelinesDocs() (*Docs, error) {
 	}
 	pipelineDocs := schemaToDocs(pipelineSpecSchema)
 	// TODO: Two fields in resources.Pipeline have the json tag id. Clarify the
-	// semantics and then add a description if needed. (https://github.com/databricks/bricks/issues/242)
+	// semantics and then add a description if needed. (https://github.com/databricks/cli/issues/242)
 	pipelinesDocs := &Docs{
 		Description:          "List of pipeline definations",
 		AdditionalProperties: pipelineDocs,

@@ -3,8 +3,8 @@ package interpolation
 import (
 	"testing"
 
-	"github.com/databricks/bricks/bundle/config"
-	"github.com/databricks/bricks/bundle/config/variable"
+	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/variable"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

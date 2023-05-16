@@ -1,7 +1,7 @@
 package git
 
 import (
-	"github.com/databricks/bricks/libs/fileset"
+	"github.com/databricks/cli/libs/fileset"
 )
 
 // FileSet is Git repository aware implementation of [fileset.FileSet].

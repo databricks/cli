@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	_ "github.com/databricks/bricks/cmd/api"
+	_ "github.com/databricks/cli/cmd/api"
 )
 
 func TestAccApiGet(t *testing.T) {

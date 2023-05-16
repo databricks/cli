@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/databricks/bricks/bundle"
-	"github.com/databricks/bricks/libs/cmdio"
+	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/fatih/color"
 )

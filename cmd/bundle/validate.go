@@ -3,8 +3,8 @@ package bundle
 import (
 	"encoding/json"
 
-	"github.com/databricks/bricks/bundle"
-	"github.com/databricks/bricks/bundle/phases"
+	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/phases"
 	"github.com/spf13/cobra"
 )
 

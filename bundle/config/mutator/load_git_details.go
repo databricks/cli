@@ -3,9 +3,9 @@ package mutator
 import (
 	"context"
 
-	"github.com/databricks/bricks/bundle"
-	"github.com/databricks/bricks/libs/git"
-	"github.com/databricks/bricks/libs/log"
+	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/libs/git"
+	"github.com/databricks/cli/libs/log"
 )
 
 type loadGitDetails struct{}

@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/databricks/bricks/libs/log"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/config"
 	"gopkg.in/ini.v1"
 )

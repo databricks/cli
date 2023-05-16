@@ -6,7 +6,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/databricks/bricks/bundle"
+	"github.com/databricks/cli/bundle"
 )
 
 type expandWorkspaceRoot struct{}

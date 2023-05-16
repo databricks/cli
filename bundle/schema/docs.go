@@ -7,7 +7,7 @@ import (
 	"os"
 	"reflect"
 
-	"github.com/databricks/bricks/bundle/config"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/databricks-sdk-go/openapi"
 )
 

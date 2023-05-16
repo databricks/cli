@@ -6,9 +6,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/databricks/bricks/internal/build"
-	"github.com/databricks/bricks/libs/cmdio"
-	"github.com/databricks/bricks/libs/log"
+	"github.com/databricks/cli/internal/build"
+	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/log"
 	"github.com/spf13/cobra"
 	"golang.org/x/exp/slog"
 )

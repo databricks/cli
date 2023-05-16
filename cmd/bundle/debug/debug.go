@@ -3,7 +3,7 @@ package debug
 import (
 	"github.com/spf13/cobra"
 
-	parent "github.com/databricks/bricks/cmd/bundle"
+	parent "github.com/databricks/cli/cmd/bundle"
 )
 
 var debugCmd = &cobra.Command{

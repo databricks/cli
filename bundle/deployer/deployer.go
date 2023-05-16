@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/databricks/bricks/libs/locker"
-	"github.com/databricks/bricks/libs/log"
+	"github.com/databricks/cli/libs/locker"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/hashicorp/terraform-exec/tfexec"
 )

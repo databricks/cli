@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"path"
 
-	"github.com/databricks/bricks/bundle"
+	"github.com/databricks/cli/bundle"
 )
 
 type defineDefaultWorkspacePaths struct{}

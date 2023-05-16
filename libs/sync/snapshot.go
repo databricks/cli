@@ -12,9 +12,9 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 
-	"github.com/databricks/bricks/libs/fileset"
-	"github.com/databricks/bricks/libs/log"
-	"github.com/databricks/bricks/libs/notebook"
+	"github.com/databricks/cli/libs/fileset"
+	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/notebook"
 )
 
 // Bump it up every time a potentially breaking change is made to the snapshot schema

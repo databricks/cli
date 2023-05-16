@@ -1,4 +1,4 @@
-module github.com/databricks/bricks
+module github.com/databricks/cli
 
 go 1.18
 

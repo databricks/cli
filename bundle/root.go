@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/databricks/bricks/bundle/config"
-	"github.com/databricks/bricks/folders"
+	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/folders"
 )
 
 const envBundleRoot = "BUNDLE_ROOT"

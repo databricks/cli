@@ -3,8 +3,8 @@
 package o_auth_enrollment
 
 import (
-	"github.com/databricks/bricks/cmd/root"
-	"github.com/databricks/bricks/libs/cmdio"
+	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go/service/oauth2"
 	"github.com/spf13/cobra"
 )
