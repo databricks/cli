@@ -1,3 +1,4 @@
+project_name: databricks_cli
 before:
   hooks:
     - go mod tidy
@@ -41,7 +42,7 @@ builds:
       goarch: '386'
     - goos: linux
       goarch: '386'
-  binary: '{{ .ProjectName }}'
+  binary: databricks
 archives:
 - format: zip
 
