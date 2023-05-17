@@ -23,6 +23,7 @@ func TestTemplateInitializationForDevConfig(t *testing.T) {
 	tmp := t.TempDir()
 	f, err := os.Create(filepath.Join(tmp, "config.json"))
 	require.NoError(t, err)
+	defer f.Close()
 	_, err = f.WriteString(`
 	{
 		"project_name": "development_project",
@@ -52,6 +53,7 @@ func TestTemplateInitializationForProdConfig(t *testing.T) {
 	tmp := t.TempDir()
 	f, err := os.Create(filepath.Join(tmp, "config.json"))
 	require.NoError(t, err)
+	defer f.Close()
 	_, err = f.WriteString(`
 	{
 		"project_name": "production_project",
