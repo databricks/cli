@@ -89,3 +89,82 @@ func TestTemplateSchemaCastFloatToIntFailsForUnknownTypes(t *testing.T) {
 	err = schema.CastFloatToInt(config)
 	assert.ErrorContains(t, err, "bar is not defined as an input parameter for the template")
 }
+
+func TestTemplateSchemaCastFloatToIntFailsWhenWithNonIntValues(t *testing.T) {
+	// define schema for config
+	schemaJson := `{
+		"foo": {
+			"type": "integer"
+		}
+	}`
+	var schema Schema
+	err := json.Unmarshal([]byte(schemaJson), &schema)
+	require.NoError(t, err)
+
+	// define the config
+	configJson := `{
+		"foo": 1.1
+	}`
+	var config map[string]any
+	err = json.Unmarshal([]byte(configJson), &config)
+	require.NoError(t, err)
+
+	err = schema.CastFloatToInt(config)
+	assert.ErrorContains(t, err, "expected foo to have integer value but it is 1.1")
+}
+
+func TestTemplateSchemaValidateType(t *testing.T) {
+	// assert validation passing
+	err := validateType(int(0), FieldTypeInt)
+	assert.NoError(t, err)
+
+	err = validateType(int32(1), FieldTypeInt)
+	assert.NoError(t, err)
+
+	err = validateType(int64(1), FieldTypeInt)
+	assert.NoError(t, err)
+
+	err = validateType(float32(1.1), FieldTypeFloat)
+	assert.NoError(t, err)
+
+	err = validateType(float64(1.2), FieldTypeFloat)
+	assert.NoError(t, err)
+
+	err = validateType(false, FieldTypeBoolean)
+	assert.NoError(t, err)
+
+	err = validateType("abc", FieldTypeString)
+	assert.NoError(t, err)
+
+	// assert validation failing for integers
+	err = validateType(float64(1.2), FieldTypeInt)
+	assert.ErrorContains(t, err, "expected type integer, but value is 1.2")
+	err = validateType(true, FieldTypeInt)
+	assert.ErrorContains(t, err, "expected type integer, but value is true")
+	err = validateType("abc", FieldTypeInt)
+	assert.ErrorContains(t, err, "expected type integer, but value is \"abc\"")
+
+	// assert validation failing for floats
+	err = validateType(int(1), FieldTypeFloat)
+	assert.ErrorContains(t, err, "expected type float, but value is 1")
+	err = validateType(true, FieldTypeFloat)
+	assert.ErrorContains(t, err, "expected type float, but value is true")
+	err = validateType("abc", FieldTypeFloat)
+	assert.ErrorContains(t, err, "expected type float, but value is \"abc\"")
+
+	// assert validation failing for boolean
+	err = validateType(int(1), FieldTypeBoolean)
+	assert.ErrorContains(t, err, "expected type boolean, but value is 1")
+	err = validateType(float64(1), FieldTypeBoolean)
+	assert.ErrorContains(t, err, "expected type boolean, but value is 1")
+	err = validateType("abc", FieldTypeBoolean)
+	assert.ErrorContains(t, err, "expected type boolean, but value is \"abc\"")
+
+	// assert validation failing for string
+	err = validateType(int(1), FieldTypeString)
+	assert.ErrorContains(t, err, "expected type string, but value is 1")
+	err = validateType(float64(1), FieldTypeString)
+	assert.ErrorContains(t, err, "expected type string, but value is 1")
+	err = validateType(false, FieldTypeString)
+	assert.ErrorContains(t, err, "expected type string, but value is false")
+}

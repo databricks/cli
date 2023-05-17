@@ -3,6 +3,8 @@ package template
 import (
 	"fmt"
 	"reflect"
+
+	"golang.org/x/exp/slices"
 )
 
 type Schema map[string]FieldInfo
@@ -71,11 +73,13 @@ func validateType(v any, fieldType FieldType) error {
 			return fmt.Errorf("expected type string, but value is %#v", v)
 		}
 	case FieldTypeInt:
-		if _, ok := v.(int); !ok {
+		if !slices.Contains([]reflect.Kind{reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64},
+			reflect.TypeOf(v).Kind()) {
 			return fmt.Errorf("expected type integer, but value is %#v", v)
 		}
 	case FieldTypeFloat:
-		if _, ok := v.(float64); !ok {
+		if !slices.Contains([]reflect.Kind{reflect.Float32, reflect.Float64},
+			reflect.TypeOf(v).Kind()) {
 			return fmt.Errorf("expected type float, but value is %#v", v)
 		}
 	case FieldTypeBoolean:
