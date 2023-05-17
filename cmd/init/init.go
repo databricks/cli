@@ -35,7 +35,7 @@ var initCmd = &cobra.Command{
 
 		// read user config to initalize the template with
 		var config map[string]interface{}
-		b, err := os.ReadFile(ConfigFileName)
+		b, err := os.ReadFile(filepath.Join(targetDir, ConfigFileName))
 		if err != nil {
 			return err
 		}
@@ -58,10 +58,13 @@ var initCmd = &cobra.Command{
 		}
 
 		// materialize the template
-		return template.WalkFileTree(config, filepath.Join(args[0], TemplateDirname), ".")
+		return template.WalkFileTree(config, filepath.Join(args[0], TemplateDirname), targetDir)
 	},
 }
 
+var targetDir string
+
 func init() {
+	initCmd.Flags().StringVar(&targetDir, "target-dir", ".", "path to directory template will be initialized in")
 	root.RootCmd.AddCommand(initCmd)
 }

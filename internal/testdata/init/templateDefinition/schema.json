@@ -1,0 +1,17 @@
+{
+    "project_name": {
+        "description": "Name of the project",
+        "type": "string"
+    },
+    "cloud_type": {
+        "description": "type of the cloud for the project",
+        "type": "string"
+    },
+    "is_production": {
+        "type": "boolean"
+    },
+    "ci_type": {
+        "type": "string",
+        "description": "type of the CI runner, eg: github, azure devops"
+    }
+}

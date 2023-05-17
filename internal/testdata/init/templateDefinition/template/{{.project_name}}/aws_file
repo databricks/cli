@@ -1,0 +1,4 @@
+This file should only be generated for AWS
+{{if ne .cloud_type "AWS"}}
+{{skipThisFile}}
+{{end}}
