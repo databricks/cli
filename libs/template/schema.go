@@ -21,7 +21,7 @@ const (
 type FieldInfo struct {
 	Type        FieldType `json:"type"`
 	Description string    `json:"description"`
-	Validation  string    `json:"validate"`
+	Validation  string    `json:"validation"`
 }
 
 // function to check whether a float value represents an integer

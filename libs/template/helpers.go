@@ -5,10 +5,10 @@ import (
 	"text/template"
 )
 
-var ErrSkipThisFile = errors.New("skip generating this file")
+var errSkipThisFile = errors.New("skip generating this file")
 
 var HelperFuncs = template.FuncMap{
 	"skipThisFile": func() error {
-		panic(ErrSkipThisFile)
+		panic(errSkipThisFile)
 	},
 }

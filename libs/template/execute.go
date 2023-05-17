@@ -42,7 +42,7 @@ func generateDirectory(config map[string]any, parentDir, nameTempate string) (st
 func generateFile(config map[string]any, parentDir, nameTempate, contentTemplate string) error {
 	// compute file content
 	fileContent, err := executeTemplate(config, contentTemplate)
-	if errors.Is(err, ErrSkipThisFile) {
+	if errors.Is(err, errSkipThisFile) {
 		return nil
 	}
 	if err != nil {
@@ -54,22 +54,16 @@ func generateFile(config map[string]any, parentDir, nameTempate, contentTemplate
 	if err != nil {
 		return err
 	}
-	f, err := os.Create(filepath.Join(parentDir, fileName))
-	if err != nil {
-		return err
-	}
 
-	// write to file the computed content
-	_, err = f.Write([]byte(fileContent))
-	return err
+	return os.WriteFile(filepath.Join(parentDir, fileName), []byte(fileContent), 0644)
 }
 
 func WalkFileTree(config map[string]any, templatePath, instancePath string) error {
-	enteries, err := os.ReadDir(templatePath)
+	entries, err := os.ReadDir(templatePath)
 	if err != nil {
 		return err
 	}
-	for _, entry := range enteries {
+	for _, entry := range entries {
 		if entry.IsDir() {
 			// case: materialize a template directory
 			dirName, err := generateDirectory(config, instancePath, entry.Name())
