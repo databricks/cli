@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	_ "github.com/databricks/bricks/cmd/init"
-	"github.com/databricks/bricks/cmd/root"
+	_ "github.com/databricks/cli/cmd/init"
+	"github.com/databricks/cli/cmd/root"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

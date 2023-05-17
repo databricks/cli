@@ -5,8 +5,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/databricks/bricks/cmd/root"
-	"github.com/databricks/bricks/libs/template"
+	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/template"
 	"github.com/spf13/cobra"
 )
 
