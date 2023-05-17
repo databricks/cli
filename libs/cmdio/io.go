@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/briandowns/spinner"
-	"github.com/databricks/bricks/libs/flags"
+	"github.com/databricks/cli/libs/flags"
 	"github.com/fatih/color"
 	"github.com/manifoldco/promptui"
 	"github.com/mattn/go-isatty"

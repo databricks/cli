@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/databricks/bricks/libs/flags"
-	"github.com/databricks/bricks/libs/log"
+	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/cli/libs/log"
 	"golang.org/x/exp/slog"
 )
 

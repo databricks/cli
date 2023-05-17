@@ -14,4 +14,9 @@ type Environment struct {
 	Artifacts map[string]*Artifact `json:"artifacts,omitempty"`
 
 	Resources *Resources `json:"resources,omitempty"`
+
+	// Override default values for defined variables
+	// Does not permit defining new variables or redefining existing ones
+	// in the scope of an environment
+	Variables map[string]string `json:"variables,omitempty"`
 }

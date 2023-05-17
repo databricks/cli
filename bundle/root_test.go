@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/databricks/bricks/bundle/config"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/stretchr/testify/require"
 )
 

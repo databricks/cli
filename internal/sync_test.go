@@ -14,9 +14,9 @@ import (
 	"testing"
 	"time"
 
-	_ "github.com/databricks/bricks/cmd/sync"
-	"github.com/databricks/bricks/libs/sync"
-	"github.com/databricks/bricks/libs/testfile"
+	_ "github.com/databricks/cli/cmd/sync"
+	"github.com/databricks/cli/libs/sync"
+	"github.com/databricks/cli/libs/testfile"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
@@ -168,7 +168,7 @@ func TestAccFullFileSync(t *testing.T) {
 
 	localRepoPath, remoteRepoPath := setupRepo(t, wsc, ctx)
 
-	// Run `bricks sync` in the background.
+	// Run `databricks sync` in the background.
 	c := NewCobraTestRunner(t, "sync", localRepoPath, remoteRepoPath, "--full", "--watch")
 	c.RunBackground()
 
@@ -211,7 +211,7 @@ func TestAccIncrementalFileSync(t *testing.T) {
 
 	localRepoPath, remoteRepoPath := setupRepo(t, wsc, ctx)
 
-	// Run `bricks sync` in the background.
+	// Run `databricks sync` in the background.
 	c := NewCobraTestRunner(t, "sync", localRepoPath, remoteRepoPath, "--watch")
 	c.RunBackground()
 
@@ -256,7 +256,7 @@ func TestAccNestedFolderSync(t *testing.T) {
 
 	localRepoPath, remoteRepoPath := setupRepo(t, wsc, ctx)
 
-	// Run `bricks sync` in the background.
+	// Run `databricks sync` in the background.
 	c := NewCobraTestRunner(t, "sync", localRepoPath, remoteRepoPath, "--watch")
 	c.RunBackground()
 
@@ -298,7 +298,7 @@ func TestAccNestedSpacePlusAndHashAreEscapedSync(t *testing.T) {
 
 	localRepoPath, remoteRepoPath := setupRepo(t, wsc, ctx)
 
-	// Run `bricks sync` in the background.
+	// Run `databricks sync` in the background.
 	c := NewCobraTestRunner(t, "sync", localRepoPath, remoteRepoPath, "--watch")
 	c.RunBackground()
 
@@ -349,7 +349,7 @@ func TestAccIncrementalFileOverwritesFolder(t *testing.T) {
 
 	localRepoPath, remoteRepoPath := setupRepo(t, wsc, ctx)
 
-	// Run `bricks sync` in the background.
+	// Run `databricks sync` in the background.
 	c := NewCobraTestRunner(t, "sync", localRepoPath, remoteRepoPath, "--watch")
 	c.RunBackground()
 
@@ -399,7 +399,7 @@ func TestAccIncrementalSyncPythonNotebookToFile(t *testing.T) {
 	defer f.Close(t)
 	f.Overwrite(t, "# Databricks notebook source")
 
-	// Run `bricks sync` in the background.
+	// Run `databricks sync` in the background.
 	c := NewCobraTestRunner(t, "sync", localRepoPath, remoteRepoPath, "--watch")
 	c.RunBackground()
 
@@ -437,7 +437,7 @@ func TestAccIncrementalSyncFileToPythonNotebook(t *testing.T) {
 
 	localRepoPath, remoteRepoPath := setupRepo(t, wsc, ctx)
 
-	// Run `bricks sync` in the background.
+	// Run `databricks sync` in the background.
 	c := NewCobraTestRunner(t, "sync", localRepoPath, remoteRepoPath, "--watch")
 	c.RunBackground()
 
@@ -481,7 +481,7 @@ func TestAccIncrementalSyncPythonNotebookDelete(t *testing.T) {
 	defer f.Close(t)
 	f.Overwrite(t, "# Databricks notebook source")
 
-	// Run `bricks sync` in the background.
+	// Run `databricks sync` in the background.
 	c := NewCobraTestRunner(t, "sync", localRepoPath, remoteRepoPath, "--watch")
 	c.RunBackground()
 

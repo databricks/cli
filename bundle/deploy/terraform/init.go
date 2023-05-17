@@ -8,9 +8,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/databricks/bricks/bundle"
-	"github.com/databricks/bricks/bundle/config"
-	"github.com/databricks/bricks/libs/log"
+	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/libs/log"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/hc-install/product"
 	"github.com/hashicorp/hc-install/releases"

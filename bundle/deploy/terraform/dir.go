@@ -1,7 +1,7 @@
 package terraform
 
 import (
-	"github.com/databricks/bricks/bundle"
+	"github.com/databricks/cli/bundle"
 )
 
 // Dir returns the Terraform working directory for a given bundle.

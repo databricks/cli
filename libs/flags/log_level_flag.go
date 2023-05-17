@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/databricks/bricks/libs/log"
+	"github.com/databricks/cli/libs/log"
 	"github.com/spf13/cobra"
 	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slog"

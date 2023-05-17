@@ -3,6 +3,8 @@ package interpolation
 import (
 	"testing"
 
+	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/variable"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -124,4 +126,71 @@ func TestInterpolationVariableLoopError(t *testing.T) {
 
 	err := expand(&f)
 	assert.ErrorContains(t, err, "cycle detected in field resolution: b -> c -> d -> b")
+}
+
+func TestInterpolationForVariables(t *testing.T) {
+	foo := "abc"
+	bar := "${var.foo} def"
+	apple := "${var.foo} ${var.bar}"
+	config := config.Root{
+		Variables: map[string]*variable.Variable{
+			"foo": {
+				Value: &foo,
+			},
+			"bar": {
+				Value: &bar,
+			},
+			"apple": {
+				Value: &apple,
+			},
+		},
+		Bundle: config.Bundle{
+			Name: "${var.apple} ${var.foo}",
+		},
+	}
+
+	err := expand(&config)
+	assert.NoError(t, err)
+	assert.Equal(t, "abc", *(config.Variables["foo"].Value))
+	assert.Equal(t, "abc def", *(config.Variables["bar"].Value))
+	assert.Equal(t, "abc abc def", *(config.Variables["apple"].Value))
+	assert.Equal(t, "abc abc def abc", config.Bundle.Name)
+}
+
+func TestInterpolationLoopForVariables(t *testing.T) {
+	foo := "${var.bar}"
+	bar := "${var.foo}"
+	config := config.Root{
+		Variables: map[string]*variable.Variable{
+			"foo": {
+				Value: &foo,
+			},
+			"bar": {
+				Value: &bar,
+			},
+		},
+		Bundle: config.Bundle{
+			Name: "${var.foo}",
+		},
+	}
+
+	err := expand(&config)
+	assert.ErrorContains(t, err, "cycle detected in field resolution: bundle.name -> var.foo -> var.bar -> var.foo")
+}
+
+func TestInterpolationInvalidVariableReference(t *testing.T) {
+	foo := "abc"
+	config := config.Root{
+		Variables: map[string]*variable.Variable{
+			"foo": {
+				Value: &foo,
+			},
+		},
+		Bundle: config.Bundle{
+			Name: "${vars.foo}",
+		},
+	}
+
+	err := expand(&config)
+	assert.ErrorContains(t, err, "could not resolve reference vars.foo")
 }

@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/databricks/bricks/libs/log"
+	"github.com/databricks/cli/libs/log"
 	"golang.org/x/mod/semver"
 )
 

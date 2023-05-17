@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/databricks/bricks/cmd/root"
+	"github.com/databricks/cli/cmd/root"
 	"github.com/spf13/cobra"
 	"gopkg.in/ini.v1"
 )

@@ -1,6 +1,6 @@
 package groups
 
-import "github.com/databricks/bricks/libs/cmdio"
+import "github.com/databricks/cli/libs/cmdio"
 
 func init() {
 	listReq.Attributes = "id,displayName"

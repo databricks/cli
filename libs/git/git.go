@@ -7,7 +7,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/databricks/bricks/folders"
+	"github.com/databricks/cli/folders"
 	giturls "github.com/whilp/git-urls"
 	"gopkg.in/ini.v1"
 )

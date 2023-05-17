@@ -1,6 +1,6 @@
 package queries
 
-import "github.com/databricks/bricks/libs/cmdio"
+import "github.com/databricks/cli/libs/cmdio"
 
 func init() {
 	// TODO: figure out colored/non-colored headers and colspan shifts

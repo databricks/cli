@@ -5,8 +5,8 @@ package tokens
 import (
 	"fmt"
 
-	"github.com/databricks/bricks/cmd/root"
-	"github.com/databricks/bricks/libs/cmdio"
+	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go/service/settings"
 	"github.com/spf13/cobra"
 )

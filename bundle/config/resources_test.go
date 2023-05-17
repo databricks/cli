@@ -3,7 +3,7 @@ package config
 import (
 	"testing"
 
-	"github.com/databricks/bricks/bundle/config/resources"
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/stretchr/testify/assert"
 )
 

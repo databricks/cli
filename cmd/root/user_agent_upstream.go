@@ -7,7 +7,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/useragent"
 )
 
-// Environment variables that caller can set to convey what is upstream to bricks.
+// Environment variables that caller can set to convey what is upstream to this CLI.
 const upstreamEnvVar = "BRICKS_UPSTREAM"
 const upstreamVersionEnvVar = "BRICKS_UPSTREAM_VERSION"
 

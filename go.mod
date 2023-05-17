@@ -1,4 +1,4 @@
-module github.com/databricks/bricks
+module github.com/databricks/cli
 
 go 1.18
 
@@ -14,7 +14,7 @@ require (
 	github.com/hashicorp/terraform-json v0.16.0 // MPL 2.0
 	github.com/imdario/mergo v0.3.13 // BSD-3-Clause
 	github.com/manifoldco/promptui v0.9.0 // BSD-3-Clause
-	github.com/mattn/go-isatty v0.0.17 // MIT
+	github.com/mattn/go-isatty v0.0.18 // MIT
 	github.com/nwidger/jsoncolor v0.3.2 // MIT
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8 // BSD-2-Clause
 	github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06 // MIT
@@ -25,7 +25,7 @@ require (
 	golang.org/x/exp v0.0.0-20230310171629-522b1b587ee0
 	golang.org/x/mod v0.10.0
 	golang.org/x/oauth2 v0.7.0
-	golang.org/x/sync v0.1.0
+	golang.org/x/sync v0.2.0
 	golang.org/x/term v0.7.0
 	golang.org/x/text v0.9.0
 	gopkg.in/ini.v1 v1.67.0 // Apache 2.0

@@ -3,7 +3,7 @@ package bundle
 import (
 	"context"
 
-	"github.com/databricks/bricks/libs/log"
+	"github.com/databricks/cli/libs/log"
 )
 
 // Mutator is the interface type that mutates a bundle's configuration or internal state.

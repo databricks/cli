@@ -1,18 +1,17 @@
 package main
 
 import (
-	_ "github.com/databricks/bricks/cmd/account"
-	_ "github.com/databricks/bricks/cmd/api"
-	_ "github.com/databricks/bricks/cmd/auth"
-	_ "github.com/databricks/bricks/cmd/bundle"
-	_ "github.com/databricks/bricks/cmd/bundle/debug"
-	_ "github.com/databricks/bricks/cmd/configure"
-	_ "github.com/databricks/bricks/cmd/fs"
-	_ "github.com/databricks/bricks/cmd/init"
-	"github.com/databricks/bricks/cmd/root"
-	_ "github.com/databricks/bricks/cmd/sync"
-	_ "github.com/databricks/bricks/cmd/version"
-	_ "github.com/databricks/bricks/cmd/workspace"
+	_ "github.com/databricks/cli/cmd/account"
+	_ "github.com/databricks/cli/cmd/api"
+	_ "github.com/databricks/cli/cmd/auth"
+	_ "github.com/databricks/cli/cmd/bundle"
+	_ "github.com/databricks/cli/cmd/bundle/debug"
+	_ "github.com/databricks/cli/cmd/configure"
+	_ "github.com/databricks/cli/cmd/fs"
+	"github.com/databricks/cli/cmd/root"
+	_ "github.com/databricks/cli/cmd/sync"
+	_ "github.com/databricks/cli/cmd/version"
+	_ "github.com/databricks/cli/cmd/workspace"
 )
 
 func main() {

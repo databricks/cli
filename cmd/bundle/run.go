@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/databricks/bricks/bundle"
-	"github.com/databricks/bricks/bundle/deploy/terraform"
-	"github.com/databricks/bricks/bundle/phases"
-	"github.com/databricks/bricks/bundle/run"
-	"github.com/databricks/bricks/cmd/root"
-	"github.com/databricks/bricks/libs/flags"
+	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/deploy/terraform"
+	"github.com/databricks/cli/bundle/phases"
+	"github.com/databricks/cli/bundle/run"
+	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/flags"
 	"github.com/spf13/cobra"
 )
 
@@ -20,7 +20,7 @@ var runCmd = &cobra.Command{
 	Short: "Run a workload (e.g. a job or a pipeline)",
 
 	Args:    cobra.ExactArgs(1),
-	PreRunE: root.MustConfigureBundle,
+	PreRunE: ConfigureBundleWithVariables,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		b := bundle.Get(cmd.Context())
 		err := bundle.Apply(cmd.Context(), b, []bundle.Mutator{

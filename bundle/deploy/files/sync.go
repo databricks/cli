@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/databricks/bricks/bundle"
-	"github.com/databricks/bricks/libs/sync"
+	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/libs/sync"
 )
 
 func getSync(ctx context.Context, b *bundle.Bundle) (*sync.Sync, error) {

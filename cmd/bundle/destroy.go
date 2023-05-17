@@ -4,11 +4,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/databricks/bricks/bundle"
-	"github.com/databricks/bricks/bundle/phases"
-	"github.com/databricks/bricks/cmd/root"
-	"github.com/databricks/bricks/libs/cmdio"
-	"github.com/databricks/bricks/libs/flags"
+	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/phases"
+	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/flags"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 )
@@ -17,7 +16,7 @@ var destroyCmd = &cobra.Command{
 	Use:   "destroy",
 	Short: "Destroy deployed bundle resources",
 
-	PreRunE: root.MustConfigureBundle,
+	PreRunE: ConfigureBundleWithVariables,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		b := bundle.Get(ctx)

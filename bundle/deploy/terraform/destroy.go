@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/databricks/bricks/bundle"
-	"github.com/databricks/bricks/libs/cmdio"
+	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/fatih/color"
 	"github.com/hashicorp/terraform-exec/tfexec"
 	tfjson "github.com/hashicorp/terraform-json"

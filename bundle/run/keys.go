@@ -3,7 +3,7 @@ package run
 import (
 	"fmt"
 
-	"github.com/databricks/bricks/bundle"
+	"github.com/databricks/cli/bundle"
 )
 
 // RunnerLookup maps identifiers to a list of workloads that match that identifier.

@@ -3,7 +3,7 @@ package main
 import (
 	"testing"
 
-	"github.com/databricks/bricks/cmd/root"
+	"github.com/databricks/cli/cmd/root"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 )

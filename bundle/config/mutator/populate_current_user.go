@@ -3,7 +3,7 @@ package mutator
 import (
 	"context"
 
-	"github.com/databricks/bricks/bundle"
+	"github.com/databricks/cli/bundle"
 )
 
 type populateCurrentUser struct{}

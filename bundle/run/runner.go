@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/databricks/bricks/bundle"
-	"github.com/databricks/bricks/bundle/run/output"
+	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/run/output"
 )
 
 type key string

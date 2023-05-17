@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/databricks/bricks/bundle"
-	"github.com/databricks/bricks/bundle/config/interpolation"
+	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/interpolation"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

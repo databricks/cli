@@ -6,17 +6,17 @@ import (
 	"os"
 	"strings"
 
-	"github.com/databricks/bricks/internal/build"
-	"github.com/databricks/bricks/libs/cmdio"
-	"github.com/databricks/bricks/libs/log"
+	"github.com/databricks/cli/internal/build"
+	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/log"
 	"github.com/spf13/cobra"
 	"golang.org/x/exp/slog"
 )
 
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
-	Use:   "bricks",
-	Short: "Bricks CLI",
+	Use:   "databricks",
+	Short: "Databricks CLI",
 
 	// Cobra prints the usage string to stderr if a command returns an error.
 	// This usage string should only be displayed if an invalid combination of flags

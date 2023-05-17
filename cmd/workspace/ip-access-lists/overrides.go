@@ -1,6 +1,6 @@
 package ip_access_lists
 
-import "github.com/databricks/bricks/libs/cmdio"
+import "github.com/databricks/cli/libs/cmdio"
 
 func init() {
 	// this command still has no Web UI

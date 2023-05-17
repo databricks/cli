@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/databricks/bricks/bundle/config"
-	"github.com/databricks/bricks/bundle/config/resources"
-	"github.com/databricks/bricks/bundle/internal/tf/schema"
+	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/bundle/internal/tf/schema"
 	tfjson "github.com/hashicorp/terraform-json"
 )
 
@@ -154,14 +154,6 @@ func BundleToTerraform(config *config.Root) *schema.Root {
 }
 
 func TerraformToBundle(state *tfjson.State, config *config.Root) error {
-	if state.Values == nil {
-		return fmt.Errorf("state.Values not set")
-	}
-
-	if state.Values.RootModule == nil {
-		return fmt.Errorf("state.Values.RootModule not set")
-	}
-
 	for _, resource := range state.Values.RootModule.Resources {
 		// Limit to resources.
 		if resource.Mode != tfjson.ManagedResourceMode {

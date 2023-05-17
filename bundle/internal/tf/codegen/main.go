@@ -4,8 +4,8 @@ import (
 	"context"
 	"log"
 
-	"github.com/databricks/bricks/bundle/internal/tf/codegen/generator"
-	"github.com/databricks/bricks/bundle/internal/tf/codegen/schema"
+	"github.com/databricks/cli/bundle/internal/tf/codegen/generator"
+	"github.com/databricks/cli/bundle/internal/tf/codegen/schema"
 )
 
 func main() {

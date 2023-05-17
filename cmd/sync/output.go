@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"io"
 
-	"github.com/databricks/bricks/libs/sync"
+	"github.com/databricks/cli/libs/sync"
 )
 
 // Read synchronization events and write them as JSON to the specified writer (typically stdout).

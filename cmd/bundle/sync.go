@@ -4,11 +4,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/databricks/bricks/bundle"
-	"github.com/databricks/bricks/bundle/phases"
-	"github.com/databricks/bricks/cmd/root"
-	"github.com/databricks/bricks/libs/log"
-	"github.com/databricks/bricks/libs/sync"
+	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/phases"
+	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/sync"
 	"github.com/spf13/cobra"
 )
 
@@ -35,7 +34,7 @@ var syncCmd = &cobra.Command{
 	Short: "Synchronize bundle tree to the workspace",
 	Args:  cobra.NoArgs,
 
-	PreRunE: root.MustConfigureBundle,
+	PreRunE: ConfigureBundleWithVariables,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		b := bundle.Get(cmd.Context())
 

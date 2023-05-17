@@ -3,7 +3,7 @@
 package billable_usage
 
 import (
-	"github.com/databricks/bricks/cmd/root"
+	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/databricks-sdk-go/service/billing"
 	"github.com/spf13/cobra"
 )
