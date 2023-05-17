@@ -168,3 +168,122 @@ func TestTemplateSchemaValidateType(t *testing.T) {
 	err = validateType(false, FieldTypeString)
 	assert.ErrorContains(t, err, "expected type string, but value is false")
 }
+
+func TestTemplateSchemaValidateConfig(t *testing.T) {
+	// define schema for config
+	schemaJson := `{
+			"int_val": {
+				"type": "integer"
+			},
+			"float_val": {
+				"type": "float"
+			},
+			"bool_val": {
+				"type": "boolean"
+			},
+			"string_val": {
+				"type": "string"
+			}
+		}`
+	var schema Schema
+	err := json.Unmarshal([]byte(schemaJson), &schema)
+	require.NoError(t, err)
+
+	// define the config
+	config := map[string]any{
+		"int_val":    1,
+		"float_val":  1.1,
+		"bool_val":   true,
+		"string_val": "abc",
+	}
+
+	err = schema.ValidateConfig(config)
+	assert.NoError(t, err)
+}
+
+func TestTemplateSchemaValidateConfigFailsForUnknownField(t *testing.T) {
+	// define schema for config
+	schemaJson := `{
+			"int_val": {
+				"type": "integer"
+			},
+			"float_val": {
+				"type": "float"
+			},
+			"bool_val": {
+				"type": "boolean"
+			},
+			"string_val": {
+				"type": "string"
+			}
+		}`
+	var schema Schema
+	err := json.Unmarshal([]byte(schemaJson), &schema)
+	require.NoError(t, err)
+
+	// define the config
+	config := map[string]any{
+		"foo":        1,
+		"float_val":  1.1,
+		"bool_val":   true,
+		"string_val": "abc",
+	}
+
+	err = schema.ValidateConfig(config)
+	assert.ErrorContains(t, err, "foo is not defined as an input parameter for the template")
+}
+
+func TestTemplateSchemaValidateConfigFailsForWhenIncorrectTypes(t *testing.T) {
+	// define schema for config
+	schemaJson := `{
+			"int_val": {
+				"type": "integer"
+			},
+			"float_val": {
+				"type": "float"
+			},
+			"bool_val": {
+				"type": "boolean"
+			},
+			"string_val": {
+				"type": "string"
+			}
+		}`
+	var schema Schema
+	err := json.Unmarshal([]byte(schemaJson), &schema)
+	require.NoError(t, err)
+
+	// define the config
+	config := map[string]any{
+		"int_val":    1,
+		"float_val":  1.1,
+		"bool_val":   "true",
+		"string_val": "abc",
+	}
+
+	err = schema.ValidateConfig(config)
+	assert.ErrorContains(t, err, "incorrect type for bool_val. expected type boolean, but value is \"true\"")
+}
+
+func TestTemplateSchemaValidateConfigFailsForWhenMissingInputParams(t *testing.T) {
+	// define schema for config
+	schemaJson := `{
+			"int_val": {
+				"type": "integer"
+			},
+			"string_val": {
+				"type": "string"
+			}
+		}`
+	var schema Schema
+	err := json.Unmarshal([]byte(schemaJson), &schema)
+	require.NoError(t, err)
+
+	// define the config
+	config := map[string]any{
+		"int_val": 1,
+	}
+
+	err = schema.ValidateConfig(config)
+	assert.ErrorContains(t, err, "input parameter string_val is not defined in config")
+}
