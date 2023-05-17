@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/databricks/bricks/cmd/root"
+	"github.com/databricks/bricks/libs/template"
 	"github.com/spf13/cobra"
 )
 
@@ -26,7 +27,7 @@ var initCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		schema := Schema{}
+		schema := template.Schema{}
 		err = json.Unmarshal(schemaBytes, &schema)
 		if err != nil {
 			return err
@@ -57,7 +58,7 @@ var initCmd = &cobra.Command{
 		}
 
 		// materialize the template
-		return walkFileTree(config, filepath.Join(args[0], TemplateDirname), ".")
+		return template.WalkFileTree(config, filepath.Join(args[0], TemplateDirname), ".")
 	},
 }
 

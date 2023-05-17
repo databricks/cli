@@ -1,4 +1,4 @@
-package init
+package template
 
 import (
 	"os"
@@ -64,7 +64,7 @@ func generateFile(config map[string]any, parentDir, nameTempate, contentTemplate
 	return err
 }
 
-func walkFileTree(config map[string]any, templatePath, instancePath string) error {
+func WalkFileTree(config map[string]any, templatePath, instancePath string) error {
 	enteries, err := os.ReadDir(templatePath)
 	if err != nil {
 		return err
@@ -79,7 +79,7 @@ func walkFileTree(config map[string]any, templatePath, instancePath string) erro
 
 			// recusive generate files and directories inside inside our newly generated
 			// directory from the template defination
-			err = walkFileTree(config, filepath.Join(templatePath, entry.Name()), filepath.Join(instancePath, dirName))
+			err = WalkFileTree(config, filepath.Join(templatePath, entry.Name()), filepath.Join(instancePath, dirName))
 			if err != nil {
 				return err
 			}
