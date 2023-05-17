@@ -66,3 +66,26 @@ func TestTemplateSchemaCastFloatToInt(t *testing.T) {
 	assert.IsType(t, true, config["bool_val"])
 	assert.IsType(t, "abc", config["string_val"])
 }
+
+func TestTemplateSchemaCastFloatToIntFailsForUnknownTypes(t *testing.T) {
+	// define schema for config
+	schemaJson := `{
+		"foo": {
+			"type": "integer"
+		}
+	}`
+	var schema Schema
+	err := json.Unmarshal([]byte(schemaJson), &schema)
+	require.NoError(t, err)
+
+	// define the config
+	configJson := `{
+		"bar": true
+	}`
+	var config map[string]any
+	err = json.Unmarshal([]byte(configJson), &config)
+	require.NoError(t, err)
+
+	err = schema.CastFloatToInt(config)
+	assert.ErrorContains(t, err, "bar is not defined as an input parameter for the template")
+}
