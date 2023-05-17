@@ -1,6 +1,7 @@
 package template
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -41,10 +42,7 @@ func generateDirectory(config map[string]any, parentDir, nameTempate string) (st
 func generateFile(config map[string]any, parentDir, nameTempate, contentTemplate string) error {
 	// compute file content
 	fileContent, err := executeTemplate(config, contentTemplate)
-	// We do a substring match here because on errors the template library prepends
-	// some additional information about the callsite from which the ErrSkipThisFile
-	// error was returned
-	if err != nil && strings.Contains(err.Error(), ErrSkipThisFile.Error()) {
+	if errors.Is(err, ErrSkipThisFile) {
 		return nil
 	}
 	if err != nil {
