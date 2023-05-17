@@ -12,7 +12,7 @@ import (
 
 const ConfigFileName = "config.json"
 const SchemaFileName = "schema.json"
-const TemplateDirname = "template"
+const TemplateDirName = "template"
 
 var initCmd = &cobra.Command{
 	Use:   "init",
@@ -58,7 +58,7 @@ var initCmd = &cobra.Command{
 		}
 
 		// materialize the template
-		return template.WalkFileTree(config, filepath.Join(args[0], TemplateDirname), targetDir)
+		return template.WalkFileTree(config, filepath.Join(args[0], TemplateDirName), targetDir)
 	},
 }
 

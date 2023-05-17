@@ -7,11 +7,11 @@ import (
 	"text/template"
 )
 
-// Executes the template by appling config on it. Returns the materialized config
+// Executes the template by applying config on it. Returns the materialized config
 // as a string
 func executeTemplate(config map[string]any, templateDefination string) (string, error) {
 	// configure template with helper functions
-	tmpl, err := template.New("foo").Funcs(HelperFuncs).Parse(templateDefination)
+	tmpl, err := template.New("").Funcs(HelperFuncs).Parse(templateDefination)
 	if err != nil {
 		return "", err
 	}

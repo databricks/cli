@@ -92,13 +92,6 @@ func validateType(v any, fieldType FieldType) error {
 
 // TODO: add validation check for regex for string types
 func (schema Schema) ValidateConfig(config map[string]any) error {
-	// assert all fields are defined in
-	for k := range schema {
-		if _, ok := config[k]; !ok {
-			return fmt.Errorf("input parameter %s is not defined in config", k)
-		}
-	}
-
 	// validate types defined in config
 	for k, v := range config {
 		fieldMetadata, ok := schema[k]
@@ -108,6 +101,12 @@ func (schema Schema) ValidateConfig(config map[string]any) error {
 		err := validateType(v, fieldMetadata.Type)
 		if err != nil {
 			return fmt.Errorf("incorrect type for %s. %w", k, err)
+		}
+	}
+	// assert all fields are defined in
+	for k := range schema {
+		if _, ok := config[k]; !ok {
+			return fmt.Errorf("input parameter %s is not defined in config", k)
 		}
 	}
 	return nil
