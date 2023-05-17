@@ -3,24 +3,38 @@ package init
 import (
 	"encoding/json"
 	"os"
+	"path/filepath"
 
 	"github.com/databricks/bricks/cmd/root"
 	"github.com/spf13/cobra"
 )
 
-const SchemaFileName = "config.json"
+const ConfigFileName = "config.json"
+const SchemaFileName = "schema.json"
+const TemplateDirname = "template"
 
-// root template defination at schema.json
-// decide on semantics of defination later
-
-// initCmd represents the fs command
 var initCmd = &cobra.Command{
 	Use:   "init",
 	Short: "Initialize Template",
-	Long:  `Initialize bundle template`,
+	Long:  `Initialize template`,
+	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		templateLocation := args[0]
+
+		// read the file containing schema for template input parameters
+		schemaBytes, err := os.ReadFile(filepath.Join(templateLocation, SchemaFileName))
+		if err != nil {
+			return err
+		}
+		schema := Schema{}
+		err = json.Unmarshal(schemaBytes, &schema)
+		if err != nil {
+			return err
+		}
+
+		// read user config to initalize the template with
 		var config map[string]interface{}
-		b, err := os.ReadFile(SchemaFileName)
+		b, err := os.ReadFile(ConfigFileName)
 		if err != nil {
 			return err
 		}
@@ -28,15 +42,22 @@ var initCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		err = walkFileTree(config, ".", ".")
+
+		// cast any fields that are supported to be integers. The json unmarshalling
+		// for a generic map converts all numbers to floating point
+		err = schema.CastFloatToInt(config)
 		if err != nil {
-			err2 := os.RemoveAll("favela")
-			if err2 != nil {
-				return err2
-			}
 			return err
 		}
-		return nil
+
+		// validate config according to schema
+		err = schema.ValidateConfig(config)
+		if err != nil {
+			return err
+		}
+
+		// materialize the template
+		return walkFileTree(config, filepath.Join(args[0], TemplateDirname), ".")
 	},
 }
 
