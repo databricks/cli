@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	_ "github.com/databricks/cli/cmd/init"
+	_ "github.com/databricks/cli/cmd/bundle"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -36,7 +36,7 @@ func TestTemplateInitializationForDevConfig(t *testing.T) {
 
 	// materialize the template
 	cmd := root.RootCmd
-	cmd.SetArgs([]string{"init", filepath.FromSlash("testdata/init/templateDefinition"), "--target-dir", tmp})
+	cmd.SetArgs([]string{"bundle", "init", filepath.FromSlash("testdata/init/templateDefinition"), "--target-dir", tmp})
 	err = cmd.Execute()
 	require.NoError(t, err)
 
@@ -68,7 +68,7 @@ func TestTemplateInitializationForProdConfig(t *testing.T) {
 	cmd := root.RootCmd
 	childCommands := cmd.Commands()
 	fmt.Println(childCommands)
-	cmd.SetArgs([]string{"init", filepath.FromSlash("testdata/init/templateDefinition"), "--target-dir", tmp})
+	cmd.SetArgs([]string{"bundle", "init", filepath.FromSlash("testdata/init/templateDefinition"), "--target-dir", tmp})
 	err = cmd.Execute()
 	require.NoError(t, err)
 

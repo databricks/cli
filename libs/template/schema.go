@@ -3,8 +3,6 @@ package template
 import (
 	"fmt"
 	"reflect"
-
-	"golang.org/x/exp/slices"
 )
 
 type Schema map[string]FieldInfo
@@ -67,27 +65,11 @@ func (schema Schema) CastFloatToInt(config map[string]any) error {
 }
 
 func validateType(v any, fieldType FieldType) error {
-	switch fieldType {
-	case FieldTypeString:
-		if _, ok := v.(string); !ok {
-			return fmt.Errorf("expected type string, but value is %#v", v)
-		}
-	case FieldTypeInt:
-		if !slices.Contains([]reflect.Kind{reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64},
-			reflect.TypeOf(v).Kind()) {
-			return fmt.Errorf("expected type integer, but value is %#v", v)
-		}
-	case FieldTypeFloat:
-		if !slices.Contains([]reflect.Kind{reflect.Float32, reflect.Float64},
-			reflect.TypeOf(v).Kind()) {
-			return fmt.Errorf("expected type float, but value is %#v", v)
-		}
-	case FieldTypeBoolean:
-		if _, ok := v.(bool); !ok {
-			return fmt.Errorf("expected type boolean, but value is %#v", v)
-		}
+	validateFunc, ok := validators[fieldType]
+	if !ok {
+		return nil
 	}
-	return nil
+	return validateFunc(v)
 }
 
 // TODO: add validation check for regex for string types

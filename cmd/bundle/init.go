@@ -1,11 +1,10 @@
-package init
+package bundle
 
 import (
 	"encoding/json"
 	"os"
 	"path/filepath"
 
-	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/template"
 	"github.com/spf13/cobra"
 )
@@ -66,5 +65,5 @@ var targetDir string
 
 func init() {
 	initCmd.Flags().StringVar(&targetDir, "target-dir", ".", "path to directory template will be initialized in")
-	root.RootCmd.AddCommand(initCmd)
+	AddCommand(initCmd)
 }
