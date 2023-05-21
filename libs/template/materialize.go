@@ -1,14 +1,16 @@
 package template
 
-import "path/filepath"
+import (
+	"path/filepath"
+)
 
 const ConfigFileName = "config.json"
-const SchemaFileName = "schema.json"
-const TemplateDirName = "template"
+const schemaFileName = "schema.json"
+const templateDirName = "template"
 
 func Materialize(templatePath, instancePath string) error {
 	// read the file containing schema for template input parameters
-	schema, err := ReadSchema(filepath.Join(templatePath, SchemaFileName))
+	schema, err := ReadSchema(filepath.Join(templatePath, schemaFileName))
 	if err != nil {
 		return err
 	}
@@ -20,5 +22,5 @@ func Materialize(templatePath, instancePath string) error {
 	}
 
 	// materialize the template
-	return WalkFileTree(config, filepath.Join(templatePath, TemplateDirName), instancePath)
+	return WalkFileTree(config, filepath.Join(templatePath, templateDirName), instancePath)
 }
