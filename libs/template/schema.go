@@ -1,7 +1,9 @@
 package template
 
 import (
+	"encoding/json"
 	"fmt"
+	"os"
 	"reflect"
 )
 
@@ -31,7 +33,7 @@ func isIntegerValue(v float64) bool {
 // integeres according to the schema
 //
 // Needed because the default json unmarshaller for maps converts all numbers to floats
-func (schema Schema) CastFloatToInt(config map[string]any) error {
+func castFloatToInt(config map[string]any, schema Schema) error {
 	for k, v := range config {
 		// error because all config keys should be defined in schema too
 		if _, ok := schema[k]; !ok {
@@ -92,4 +94,43 @@ func (schema Schema) ValidateConfig(config map[string]any) error {
 		}
 	}
 	return nil
+}
+
+func ReadSchema(path string) (Schema, error) {
+	schemaBytes, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	schema := Schema{}
+	err = json.Unmarshal(schemaBytes, &schema)
+	if err != nil {
+		return nil, err
+	}
+	return schema, nil
+}
+
+func (schema Schema) ReadConfig(path string) (map[string]any, error) {
+	var config map[string]any
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(b, &config)
+	if err != nil {
+		return nil, err
+	}
+
+	// cast any fields that are supposed to be integers. The json unmarshalling
+	// for a generic map converts all numbers to floating point
+	err = castFloatToInt(config, schema)
+	if err != nil {
+		return nil, err
+	}
+
+	// validate config according to schema
+	err = schema.ValidateConfig(config)
+	if err != nil {
+		return nil, err
+	}
+	return config, nil
 }

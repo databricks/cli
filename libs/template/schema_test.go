@@ -56,7 +56,7 @@ func TestTemplateSchemaCastFloatToInt(t *testing.T) {
 	assert.IsType(t, true, config["bool_val"])
 	assert.IsType(t, "abc", config["string_val"])
 
-	err = schema.CastFloatToInt(config)
+	err = castFloatToInt(config, schema)
 	require.NoError(t, err)
 
 	// assert type after casting, that the float value was converted to an integer
@@ -86,7 +86,7 @@ func TestTemplateSchemaCastFloatToIntFailsForUnknownTypes(t *testing.T) {
 	err = json.Unmarshal([]byte(configJson), &config)
 	require.NoError(t, err)
 
-	err = schema.CastFloatToInt(config)
+	err = castFloatToInt(config, schema)
 	assert.ErrorContains(t, err, "bar is not defined as an input parameter for the template")
 }
 
@@ -109,7 +109,7 @@ func TestTemplateSchemaCastFloatToIntFailsWhenWithNonIntValues(t *testing.T) {
 	err = json.Unmarshal([]byte(configJson), &config)
 	require.NoError(t, err)
 
-	err = schema.CastFloatToInt(config)
+	err = castFloatToInt(config, schema)
 	assert.ErrorContains(t, err, "expected foo to have integer value but it is 1.1")
 }
 
