@@ -14,7 +14,6 @@ var initCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// initialize default value for config file path
-		// TODO: add a test for this
 		if configFile == "" {
 			configFile = filepath.Join(targetDir, template.ConfigFileName)
 		}

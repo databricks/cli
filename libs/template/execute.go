@@ -26,8 +26,6 @@ func executeTemplate(config map[string]any, templateDefination string) (string, 
 	return result.String(), nil
 }
 
-// TODO: allow skipping directories
-
 func generateFile(config map[string]any, pathTemplate, contentTemplate string) error {
 	// compute file content
 	fileContent, err := executeTemplate(config, contentTemplate)

@@ -9,7 +9,6 @@ import (
 
 type Validator func(v any) error
 
-// TODO: refactor tests into individual tests for individual validators
 func validateString(v any) error {
 	if _, ok := v.(string); !ok {
 		return fmt.Errorf("expected type string, but value is %#v", v)

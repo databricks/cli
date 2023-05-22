@@ -74,7 +74,6 @@ func validateType(v any, fieldType FieldType) error {
 	return validateFunc(v)
 }
 
-// TODO: add validation check for regex for string types
 func (schema Schema) ValidateConfig(config map[string]any) error {
 	// validate types defined in config
 	for k, v := range config {
