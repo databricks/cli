@@ -2,6 +2,7 @@ package version
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/internal/build"
@@ -15,13 +16,15 @@ var versionCmd = &cobra.Command{
 	Args: cobra.NoArgs,
 
 	RunE: func(cmd *cobra.Command, args []string) error {
+		info := build.GetInfo()
 		if detail {
 			enc := json.NewEncoder(cmd.OutOrStdout())
 			enc.SetIndent("", "  ")
-			return enc.Encode(build.GetInfo())
+			return enc.Encode(info)
 		}
 
-		return build.PrintVersion(cmd.OutOrStdout())
+		_, err := fmt.Fprintf(cmd.OutOrStdout(), "Databricks CLI v%s\n", info.Version)
+		return err
 	},
 }
 

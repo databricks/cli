@@ -15,8 +15,9 @@ import (
 
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
-	Use:   "databricks",
-	Short: "Databricks CLI",
+	Use:     "databricks",
+	Short:   "Databricks CLI",
+	Version: build.GetInfo().Version,
 
 	// Cobra prints the usage string to stderr if a command returns an error.
 	// This usage string should only be displayed if an invalid combination of flags
@@ -67,10 +68,6 @@ var RootCmd = &cobra.Command{
 
 // Wrap flag errors to include the usage string.
 func flagErrorFunc(c *cobra.Command, err error) error {
-	// We would like to use [errors.Is] here, but pflag doesn't wrap errors.
-	if strings.HasSuffix(err.Error(), errExitFromVersion.Error()) {
-		return build.PrintVersion(c.OutOrStdout())
-	}
 	return fmt.Errorf("%w\n\n%s", err, c.UsageString())
 }
 
@@ -109,4 +106,5 @@ func Execute() {
 
 func init() {
 	RootCmd.SetFlagErrorFunc(flagErrorFunc)
+	RootCmd.SetVersionTemplate("Databricks CLI v{{.Version}}\n")
 }
