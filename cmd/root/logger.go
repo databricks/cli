@@ -11,9 +11,9 @@ import (
 )
 
 const (
-	envBricksLogFile   = "BRICKS_LOG_FILE"
-	envBricksLogLevel  = "BRICKS_LOG_LEVEL"
-	envBricksLogFormat = "BRICKS_LOG_FORMAT"
+	envLogFile   = "DATABRICKS_LOG_FILE"
+	envLogLevel  = "DATABRICKS_LOG_LEVEL"
+	envLogFormat = "DATABRICKS_LOG_FORMAT"
 )
 
 func initializeLogger(ctx context.Context) (context.Context, error) {
@@ -52,13 +52,13 @@ var logOutput = flags.OutputText
 func init() {
 	// Configure defaults from environment, if applicable.
 	// If the provided value is invalid it is ignored.
-	if v, ok := os.LookupEnv(envBricksLogFile); ok {
+	if v, ok := os.LookupEnv(envLogFile); ok {
 		logFile.Set(v)
 	}
-	if v, ok := os.LookupEnv(envBricksLogLevel); ok {
+	if v, ok := os.LookupEnv(envLogLevel); ok {
 		logLevel.Set(v)
 	}
-	if v, ok := os.LookupEnv(envBricksLogFormat); ok {
+	if v, ok := os.LookupEnv(envLogFormat); ok {
 		logOutput.Set(v)
 	}
 

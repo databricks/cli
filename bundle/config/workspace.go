@@ -97,9 +97,9 @@ func (w *Workspace) Client() (*databricks.WorkspaceClient, error) {
 func init() {
 	arg0 := os.Args[0]
 
-	// Configure BRICKS_CLI_PATH only if our caller intends to use this specific version of this binary.
+	// Configure DATABRICKS_CLI_PATH only if our caller intends to use this specific version of this binary.
 	// Otherwise, if it is equal to its basename, processes can find it in $PATH.
 	if arg0 != filepath.Base(arg0) {
-		os.Setenv("BRICKS_CLI_PATH", arg0)
+		os.Setenv("DATABRICKS_CLI_PATH", arg0)
 	}
 }
