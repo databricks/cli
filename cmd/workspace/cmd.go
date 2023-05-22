@@ -49,6 +49,7 @@ import (
 	volumes "github.com/databricks/cli/cmd/workspace/volumes"
 	warehouses "github.com/databricks/cli/cmd/workspace/warehouses"
 	workspace "github.com/databricks/cli/cmd/workspace/workspace"
+	workspace_bindings "github.com/databricks/cli/cmd/workspace/workspace-bindings"
 	workspace_conf "github.com/databricks/cli/cmd/workspace/workspace-conf"
 )
 
@@ -98,5 +99,6 @@ func init() {
 	root.RootCmd.AddCommand(volumes.Cmd)
 	root.RootCmd.AddCommand(warehouses.Cmd)
 	root.RootCmd.AddCommand(workspace.Cmd)
+	root.RootCmd.AddCommand(workspace_bindings.Cmd)
 	root.RootCmd.AddCommand(workspace_conf.Cmd)
 }

@@ -20,6 +20,7 @@ import (
 	o_auth_enrollment "github.com/databricks/cli/cmd/account/o-auth-enrollment"
 	private_access "github.com/databricks/cli/cmd/account/private-access"
 	published_app_integration "github.com/databricks/cli/cmd/account/published-app-integration"
+	service_principal_secrets "github.com/databricks/cli/cmd/account/service-principal-secrets"
 	account_service_principals "github.com/databricks/cli/cmd/account/service-principals"
 	storage "github.com/databricks/cli/cmd/account/storage"
 	account_storage_credentials "github.com/databricks/cli/cmd/account/storage-credentials"
@@ -51,6 +52,7 @@ func init() {
 	accountCmd.AddCommand(o_auth_enrollment.Cmd)
 	accountCmd.AddCommand(private_access.Cmd)
 	accountCmd.AddCommand(published_app_integration.Cmd)
+	accountCmd.AddCommand(service_principal_secrets.Cmd)
 	accountCmd.AddCommand(account_service_principals.Cmd)
 	accountCmd.AddCommand(storage.Cmd)
 	accountCmd.AddCommand(account_storage_credentials.Cmd)

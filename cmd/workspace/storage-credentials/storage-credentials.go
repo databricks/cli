@@ -202,7 +202,7 @@ var listCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		response, err := w.StorageCredentials.List(ctx)
+		response, err := w.StorageCredentials.ListAll(ctx)
 		if err != nil {
 			return err
 		}
@@ -250,7 +250,8 @@ var updateCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		updateReq.Name = args[0]
+		updateReq.MetastoreId = args[0]
+		updateReq.Name = args[1]
 
 		response, err := w.StorageCredentials.Update(ctx, updateReq)
 		if err != nil {

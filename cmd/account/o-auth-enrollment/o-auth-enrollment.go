@@ -44,7 +44,7 @@ var createCmd = &cobra.Command{
   
   The enrollment is executed asynchronously, so the API will return 204
   immediately. The actual enrollment take a few minutes, you can check the
-  status via API :method:get.`,
+  status via API :method:OAuthEnrollment/get.`,
 
 	Annotations: map[string]string{},
 	Args:        cobra.ExactArgs(0),

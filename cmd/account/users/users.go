@@ -18,13 +18,13 @@ var Cmd = &cobra.Command{
 	Long: `User identities recognized by Databricks and represented by email addresses.
   
   Databricks recommends using SCIM provisioning to sync users and groups
-  automatically from your identity provider to your Databricks Account. SCIM
+  automatically from your identity provider to your Databricks account. SCIM
   streamlines onboarding a new employee or team by using your identity provider
-  to create users and groups in Databricks Account and give them the proper
+  to create users and groups in Databricks account and give them the proper
   level of access. When a user leaves your organization or no longer needs
-  access to Databricks Account, admins can terminate the user in your identity
+  access to Databricks account, admins can terminate the user in your identity
   provider and that user’s account will also be removed from Databricks
-  Account. This ensures a consistent offboarding process and prevents
+  account. This ensures a consistent offboarding process and prevents
   unauthorized users from accessing sensitive data.`,
 }
 
@@ -56,7 +56,7 @@ var createCmd = &cobra.Command{
 	Short: `Create a new user.`,
 	Long: `Create a new user.
   
-  Creates a new user in the Databricks Account. This new user will also be added
+  Creates a new user in the Databricks account. This new user will also be added
   to the Databricks account.`,
 
 	Annotations: map[string]string{},
@@ -93,7 +93,7 @@ var deleteCmd = &cobra.Command{
 	Short: `Delete a user.`,
 	Long: `Delete a user.
   
-  Deletes a user. Deleting a user from a Databricks Account also removes objects
+  Deletes a user. Deleting a user from a Databricks account also removes objects
   associated with the user.`,
 
 	Annotations: map[string]string{},
@@ -106,7 +106,7 @@ var deleteCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "Unique ID for a user in the Databricks Account")
+			id, err := cmdio.Select(ctx, names, "Unique ID for a user in the Databricks account")
 			if err != nil {
 				return err
 			}
@@ -140,7 +140,7 @@ var getCmd = &cobra.Command{
 	Short: `Get user details.`,
 	Long: `Get user details.
   
-  Gets information for a specific user in Databricks Account.`,
+  Gets information for a specific user in Databricks account.`,
 
 	Annotations: map[string]string{},
 	PreRunE:     root.MustAccountClient,
@@ -152,7 +152,7 @@ var getCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "Unique ID for a user in the Databricks Account")
+			id, err := cmdio.Select(ctx, names, "Unique ID for a user in the Databricks account")
 			if err != nil {
 				return err
 			}
@@ -194,7 +194,7 @@ var listCmd = &cobra.Command{
 	Short: `List users.`,
 	Long: `List users.
   
-  Gets details for all the users associated with a Databricks Account.`,
+  Gets details for all the users associated with a Databricks account.`,
 
 	Annotations: map[string]string{},
 	Args:        cobra.ExactArgs(0),

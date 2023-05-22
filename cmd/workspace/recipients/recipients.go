@@ -32,7 +32,7 @@ func init() {
 	// TODO: any: data_recipient_global_metastore_id
 	// TODO: complex arg: ip_access_list
 	createCmd.Flags().StringVar(&createReq.Owner, "owner", createReq.Owner, `Username of the recipient owner.`)
-	// TODO: any: properties_kvpairs
+	// TODO: complex arg: properties_kvpairs
 	createCmd.Flags().StringVar(&createReq.SharingCode, "sharing-code", createReq.SharingCode, `The one-time sharing code provided by the data recipient.`)
 
 }
@@ -300,7 +300,7 @@ func init() {
 	// TODO: complex arg: ip_access_list
 	updateCmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `Name of Recipient.`)
 	updateCmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of the recipient owner.`)
-	// TODO: any: properties_kvpairs
+	// TODO: complex arg: properties_kvpairs
 
 }
 

@@ -166,7 +166,7 @@ var listCmd = &cobra.Command{
 	Short: `Get init scripts.`,
 	Long: `Get init scripts.
   
-  "Get a list of all global init scripts for this workspace. This returns all
+  Get a list of all global init scripts for this workspace. This returns all
   properties for each script but **not** the script contents. To retrieve the
   contents of a script, use the [get a global init
   script](#operation/get-script) operation.`,
