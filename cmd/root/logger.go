@@ -6,7 +6,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/databricks/bricks/libs/cmdio"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/log"
 	"github.com/fatih/color"
