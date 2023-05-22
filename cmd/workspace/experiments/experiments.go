@@ -225,7 +225,7 @@ var getByNameCmd = &cobra.Command{
 	Short: `Get metadata.`,
 	Long: `Get metadata.
   
-  "Gets metadata for an experiment.
+  Gets metadata for an experiment.
   
   This endpoint will return deleted experiments, but prefers the active
   experiment if an active and deleted experiment share the same name. If
@@ -233,7 +233,7 @@ var getByNameCmd = &cobra.Command{
   them.
   
   Throws RESOURCE_DOES_NOT_EXIST if no experiment with the specified name
-  exists.S`,
+  exists.`,
 
 	Annotations: map[string]string{},
 	Args:        cobra.ExactArgs(1),
@@ -339,7 +339,7 @@ var getRunCmd = &cobra.Command{
 	Short: `Get a run.`,
 	Long: `Get a run.
   
-  "Gets the metadata, metrics, params, and tags for a run. In the case where
+  Gets the metadata, metrics, params, and tags for a run. In the case where
   multiple metrics with the same key are logged for a run, return only the value
   with the latest timestamp.
   
@@ -514,6 +514,47 @@ var logBatchCmd = &cobra.Command{
 	},
 }
 
+// start log-inputs command
+
+var logInputsReq ml.LogInputs
+var logInputsJson flags.JsonFlag
+
+func init() {
+	Cmd.AddCommand(logInputsCmd)
+	// TODO: short flags
+	logInputsCmd.Flags().Var(&logInputsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	// TODO: array: datasets
+	logInputsCmd.Flags().StringVar(&logInputsReq.RunId, "run-id", logInputsReq.RunId, `ID of the run to log under.`)
+
+}
+
+var logInputsCmd = &cobra.Command{
+	Use:   "log-inputs",
+	Short: `Log inputs to a run.`,
+	Long: `Log inputs to a run.
+  
+  **NOTE:** Experimental: This API may change or be removed in a future release
+  without warning.`,
+
+	Annotations: map[string]string{},
+	PreRunE:     root.MustWorkspaceClient,
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+		err = logInputsJson.Unmarshal(&logInputsReq)
+		if err != nil {
+			return err
+		}
+
+		err = w.Experiments.LogInputs(ctx, logInputsReq)
+		if err != nil {
+			return err
+		}
+		return nil
+	},
+}
+
 // start log-metric command
 
 var logMetricReq ml.LogMetric
@@ -652,12 +693,12 @@ var restoreExperimentCmd = &cobra.Command{
 	Short: `Restores an experiment.`,
 	Long: `Restores an experiment.
   
-  "Restore an experiment marked for deletion. This also restores associated
+  Restore an experiment marked for deletion. This also restores associated
   metadata, runs, metrics, params, and tags. If experiment uses FileStore,
   underlying artifacts associated with experiment are also restored.
   
   Throws RESOURCE_DOES_NOT_EXIST if experiment was never created or was
-  permanently deleted.",`,
+  permanently deleted.`,
 
 	Annotations: map[string]string{},
 	Args:        cobra.ExactArgs(1),

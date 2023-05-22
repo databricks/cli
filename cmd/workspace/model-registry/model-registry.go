@@ -470,7 +470,10 @@ var deleteTransitionRequestCmd = &cobra.Command{
 		w := root.WorkspaceClient(ctx)
 		deleteTransitionRequestReq.Name = args[0]
 		deleteTransitionRequestReq.Version = args[1]
-		deleteTransitionRequestReq.Stage = args[2]
+		_, err = fmt.Sscan(args[2], &deleteTransitionRequestReq.Stage)
+		if err != nil {
+			return fmt.Errorf("invalid STAGE: %s", args[2])
+		}
 		deleteTransitionRequestReq.Creator = args[3]
 
 		err = w.ModelRegistry.DeleteTransitionRequest(ctx, deleteTransitionRequestReq)
@@ -572,8 +575,8 @@ var getModelCmd = &cobra.Command{
 	Short: `Get model.`,
 	Long: `Get model.
   
-  Get the details of a model. This is a Databricks Workspace version of the
-  [MLflow endpoint] that also returns the model's Databricks Workspace ID and
+  Get the details of a model. This is a Databricks workspace version of the
+  [MLflow endpoint] that also returns the model's Databricks workspace ID and
   the permission level of the requesting user on the model.
   
   [MLflow endpoint]: https://www.mlflow.org/docs/latest/rest-api.html#get-registeredmodel`,
@@ -1059,7 +1062,7 @@ var transitionStageCmd = &cobra.Command{
 	Short: `Transition a stage.`,
 	Long: `Transition a stage.
   
-  Transition a model version's stage. This is a Databricks Workspace version of
+  Transition a model version's stage. This is a Databricks workspace version of
   the [MLflow endpoint] that also accepts a comment associated with the
   transition to be recorded.",
   

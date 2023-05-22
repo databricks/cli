@@ -19,7 +19,8 @@ var Cmd = &cobra.Command{
   it can be useful to use dashboard objects to look-up a collection of related
   query IDs. The API can also be used to duplicate multiple dashboards at once
   since you can get a dashboard definition with a GET request and then POST it
-  to create a new one.`,
+  to create a new one. Dashboards can be scheduled using the sql_task type of
+  the Jobs API, e.g. :method:jobs/create.`,
 }
 
 // start create command
@@ -32,13 +33,10 @@ func init() {
 	// TODO: short flags
 	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	createCmd.Flags().BoolVar(&createReq.DashboardFiltersEnabled, "dashboard-filters-enabled", createReq.DashboardFiltersEnabled, `In the web application, query filters that share a name are coupled to a single selection box if this value is true.`)
-	createCmd.Flags().BoolVar(&createReq.IsDraft, "is-draft", createReq.IsDraft, `Draft dashboards only appear in list views for their owners.`)
-	createCmd.Flags().BoolVar(&createReq.IsTrashed, "is-trashed", createReq.IsTrashed, `Indicates whether the dashboard is trashed.`)
+	createCmd.Flags().BoolVar(&createReq.IsFavorite, "is-favorite", createReq.IsFavorite, `Indicates whether this query object should appear in the current user's favorites list.`)
 	createCmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `The title of this dashboard that appears in list views and at the top of the dashboard page.`)
 	createCmd.Flags().StringVar(&createReq.Parent, "parent", createReq.Parent, `The identifier of the workspace folder containing the dashboard.`)
 	// TODO: array: tags
-	// TODO: array: widgets
 
 }
 

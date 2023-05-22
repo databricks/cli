@@ -67,8 +67,7 @@ var deleteCmd = &cobra.Command{
 	Short: `Delete a metastore.`,
 	Long: `Delete a metastore.
   
-  Deletes a Databricks Unity Catalog metastore for an account, both specified by
-  ID.`,
+  Deletes a Unity Catalog metastore for an account, both specified by ID.`,
 
 	Annotations: map[string]string{},
 	Args:        cobra.ExactArgs(1),
@@ -101,8 +100,7 @@ var getCmd = &cobra.Command{
 	Short: `Get a metastore.`,
 	Long: `Get a metastore.
   
-  Gets a Databricks Unity Catalog metastore from an account, both specified by
-  ID.`,
+  Gets a Unity Catalog metastore from an account, both specified by ID.`,
 
 	Annotations: map[string]string{},
 	Args:        cobra.ExactArgs(1),

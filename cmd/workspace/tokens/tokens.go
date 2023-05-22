@@ -82,7 +82,7 @@ var deleteCmd = &cobra.Command{
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 		if len(args) == 0 {
-			names, err := w.Tokens.PublicTokenInfoCommentToTokenIdMap(ctx)
+			names, err := w.Tokens.TokenInfoCommentToTokenIdMap(ctx)
 			if err != nil {
 				return err
 			}

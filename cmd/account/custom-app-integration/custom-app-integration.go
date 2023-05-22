@@ -46,7 +46,8 @@ var createCmd = &cobra.Command{
   
   Create Custom OAuth App Integration.
   
-  You can retrieve the custom oauth app integration via :method:get.`,
+  You can retrieve the custom oauth app integration via
+  :method:CustomAppIntegration/get.`,
 
 	Annotations: map[string]string{},
 	PreRunE:     root.MustAccountClient,
@@ -87,7 +88,7 @@ var deleteCmd = &cobra.Command{
 	Long: `Delete Custom OAuth App Integration.
   
   Delete an existing Custom OAuth App Integration. You can retrieve the custom
-  oauth app integration via :method:get.`,
+  oauth app integration via :method:CustomAppIntegration/get.`,
 
 	Annotations: map[string]string{},
 	Args:        cobra.ExactArgs(1),
@@ -151,7 +152,7 @@ var listCmd = &cobra.Command{
 	Long: `Get custom oauth app integrations.
   
   Get the list of custom oauth app integrations for the specified Databricks
-  Account`,
+  account`,
 
 	Annotations: map[string]string{},
 	PreRunE:     root.MustAccountClient,
@@ -187,7 +188,7 @@ var updateCmd = &cobra.Command{
 	Long: `Updates Custom OAuth App Integration.
   
   Updates an existing custom OAuth App Integration. You can retrieve the custom
-  oauth app integration via :method:get.`,
+  oauth app integration via :method:CustomAppIntegration/get.`,
 
 	Annotations: map[string]string{},
 	PreRunE:     root.MustAccountClient,

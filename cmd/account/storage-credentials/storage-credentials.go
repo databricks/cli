@@ -68,6 +68,41 @@ var createCmd = &cobra.Command{
 	},
 }
 
+// start delete command
+
+var deleteReq catalog.DeleteAccountStorageCredentialRequest
+
+func init() {
+	Cmd.AddCommand(deleteCmd)
+	// TODO: short flags
+
+}
+
+var deleteCmd = &cobra.Command{
+	Use:   "delete METASTORE_ID NAME",
+	Short: `Delete a storage credential.`,
+	Long: `Delete a storage credential.
+  
+  Deletes a storage credential from the metastore. The caller must be an owner
+  of the storage credential.`,
+
+	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(2),
+	PreRunE:     root.MustAccountClient,
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		a := root.AccountClient(ctx)
+		deleteReq.MetastoreId = args[0]
+		deleteReq.Name = args[1]
+
+		err = a.StorageCredentials.Delete(ctx, deleteReq)
+		if err != nil {
+			return err
+		}
+		return nil
+	},
+}
+
 // start get command
 
 var getReq catalog.GetAccountStorageCredentialRequest
@@ -131,6 +166,57 @@ var listCmd = &cobra.Command{
 		listReq.MetastoreId = args[0]
 
 		response, err := a.StorageCredentials.List(ctx, listReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	},
+}
+
+// start update command
+
+var updateReq catalog.UpdateStorageCredential
+var updateJson flags.JsonFlag
+
+func init() {
+	Cmd.AddCommand(updateCmd)
+	// TODO: short flags
+	updateCmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	// TODO: complex arg: aws_iam_role
+	// TODO: complex arg: azure_service_principal
+	updateCmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `Comment associated with the credential.`)
+	updateCmd.Flags().BoolVar(&updateReq.Force, "force", updateReq.Force, `Force update even if there are dependent external locations or external tables.`)
+	// TODO: complex arg: gcp_service_account_key
+	updateCmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `The credential name.`)
+	updateCmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of current owner of credential.`)
+	updateCmd.Flags().BoolVar(&updateReq.ReadOnly, "read-only", updateReq.ReadOnly, `Whether the storage credential is only usable for read operations.`)
+	updateCmd.Flags().BoolVar(&updateReq.SkipValidation, "skip-validation", updateReq.SkipValidation, `Supplying true to this argument skips validation of the updated credential.`)
+
+}
+
+var updateCmd = &cobra.Command{
+	Use:   "update",
+	Short: `Updates a storage credential.`,
+	Long: `Updates a storage credential.
+  
+  Updates a storage credential on the metastore. The caller must be the owner of
+  the storage credential. If the caller is a metastore admin, only the __owner__
+  credential can be changed.`,
+
+	Annotations: map[string]string{},
+	PreRunE:     root.MustAccountClient,
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		a := root.AccountClient(ctx)
+		err = updateJson.Unmarshal(&updateReq)
+		if err != nil {
+			return err
+		}
+		updateReq.MetastoreId = args[0]
+		updateReq.Name = args[1]
+
+		response, err := a.StorageCredentials.Update(ctx, updateReq)
 		if err != nil {
 			return err
 		}

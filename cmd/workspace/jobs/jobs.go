@@ -29,10 +29,11 @@ var Cmd = &cobra.Command{
   Spark submit, and Java applications.
   
   You should never hard code secrets or store them in plain text. Use the
-  :service:secrets to manage secrets in the [Databricks CLI]. Use the [Secrets
+  [Secrets CLI] to manage secrets in the [Databricks CLI]. Use the [Secrets
   utility] to reference secrets in notebooks and jobs.
   
   [Databricks CLI]: https://docs.databricks.com/dev-tools/cli/index.html
+  [Secrets CLI]: https://docs.databricks.com/dev-tools/cli/secrets-cli.html
   [Secrets utility]: https://docs.databricks.com/dev-tools/databricks-utils.html#dbutils-secrets`,
 }
 
@@ -184,6 +185,7 @@ func init() {
 	// TODO: array: job_clusters
 	createCmd.Flags().IntVar(&createReq.MaxConcurrentRuns, "max-concurrent-runs", createReq.MaxConcurrentRuns, `An optional maximum allowed number of concurrent runs of the job.`)
 	createCmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `An optional name for the job.`)
+	// TODO: complex arg: notification_settings
 	// TODO: complex arg: schedule
 	// TODO: map via StringToStringVar: tags
 	// TODO: array: tasks
@@ -852,6 +854,7 @@ func init() {
 	// TODO: array: access_control_list
 	// TODO: complex arg: git_source
 	submitCmd.Flags().StringVar(&submitReq.IdempotencyToken, "idempotency-token", submitReq.IdempotencyToken, `An optional token that can be used to guarantee the idempotency of job run requests.`)
+	// TODO: complex arg: notification_settings
 	submitCmd.Flags().StringVar(&submitReq.RunName, "run-name", submitReq.RunName, `An optional name for the run.`)
 	// TODO: array: tasks
 	submitCmd.Flags().IntVar(&submitReq.TimeoutSeconds, "timeout-seconds", submitReq.TimeoutSeconds, `An optional timeout applied to each run of this job.`)
@@ -928,8 +931,8 @@ func init() {
 
 var updateCmd = &cobra.Command{
 	Use:   "update",
-	Short: `Partially updates a job.`,
-	Long: `Partially updates a job.
+	Short: `Partially update a job.`,
+	Long: `Partially update a job.
   
   Add, update, or remove specific settings of an existing job. Use the ResetJob
   to overwrite all job settings.`,

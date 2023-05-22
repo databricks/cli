@@ -111,8 +111,8 @@ var listCmd = &cobra.Command{
 	Short: `Get permission assignments.`,
 	Long: `Get permission assignments.
   
-  Get the permission assignments for the specified Databricks Account and
-  Databricks Workspace.`,
+  Get the permission assignments for the specified Databricks account and
+  Databricks workspace.`,
 
 	Annotations: map[string]string{},
 	Args:        cobra.ExactArgs(1),

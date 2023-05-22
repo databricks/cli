@@ -17,7 +17,8 @@ var Cmd = &cobra.Command{
 	Short: `These endpoints are used for CRUD operations on query definitions.`,
 	Long: `These endpoints are used for CRUD operations on query definitions. Query
   definitions include the target SQL warehouse, query text, name, description,
-  tags, parameters, and visualizations.`,
+  tags, parameters, and visualizations. Queries can be scheduled using the
+  sql_task type of the Jobs API, e.g. :method:jobs/create.`,
 }
 
 // start create command

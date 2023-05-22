@@ -44,7 +44,8 @@ var createCmd = &cobra.Command{
   
   Create Published OAuth App Integration.
   
-  You can retrieve the published oauth app integration via :method:get.`,
+  You can retrieve the published oauth app integration via
+  :method:PublishedAppIntegration/get.`,
 
 	Annotations: map[string]string{},
 	PreRunE:     root.MustAccountClient,
@@ -80,7 +81,7 @@ var deleteCmd = &cobra.Command{
 	Long: `Delete Published OAuth App Integration.
   
   Delete an existing Published OAuth App Integration. You can retrieve the
-  published oauth app integration via :method:get.`,
+  published oauth app integration via :method:PublishedAppIntegration/get.`,
 
 	Annotations: map[string]string{},
 	Args:        cobra.ExactArgs(1),
@@ -144,7 +145,7 @@ var listCmd = &cobra.Command{
 	Long: `Get published oauth app integrations.
   
   Get the list of published oauth app integrations for the specified Databricks
-  Account`,
+  account`,
 
 	Annotations: map[string]string{},
 	PreRunE:     root.MustAccountClient,
@@ -179,7 +180,7 @@ var updateCmd = &cobra.Command{
 	Long: `Updates Published OAuth App Integration.
   
   Updates an existing published OAuth App Integration. You can retrieve the
-  published oauth app integration via :method:get.`,
+  published oauth app integration via :method:PublishedAppIntegration/get.`,
 
 	Annotations: map[string]string{},
 	PreRunE:     root.MustAccountClient,

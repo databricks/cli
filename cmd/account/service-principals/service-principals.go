@@ -49,7 +49,7 @@ var createCmd = &cobra.Command{
 	Short: `Create a service principal.`,
 	Long: `Create a service principal.
   
-  Creates a new service principal in the Databricks Account.`,
+  Creates a new service principal in the Databricks account.`,
 
 	Annotations: map[string]string{},
 	PreRunE:     root.MustAccountClient,
@@ -85,7 +85,7 @@ var deleteCmd = &cobra.Command{
 	Short: `Delete a service principal.`,
 	Long: `Delete a service principal.
   
-  Delete a single service principal in the Databricks Account.`,
+  Delete a single service principal in the Databricks account.`,
 
 	Annotations: map[string]string{},
 	PreRunE:     root.MustAccountClient,
@@ -97,7 +97,7 @@ var deleteCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "Unique ID for a service principal in the Databricks Account")
+			id, err := cmdio.Select(ctx, names, "Unique ID for a service principal in the Databricks account")
 			if err != nil {
 				return err
 			}
@@ -132,7 +132,7 @@ var getCmd = &cobra.Command{
 	Long: `Get service principal details.
   
   Gets the details for a single service principal define in the Databricks
-  Account.`,
+  account.`,
 
 	Annotations: map[string]string{},
 	PreRunE:     root.MustAccountClient,
@@ -144,7 +144,7 @@ var getCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "Unique ID for a service principal in the Databricks Account")
+			id, err := cmdio.Select(ctx, names, "Unique ID for a service principal in the Databricks account")
 			if err != nil {
 				return err
 			}
@@ -186,7 +186,7 @@ var listCmd = &cobra.Command{
 	Short: `List service principals.`,
 	Long: `List service principals.
   
-  Gets the set of service principals associated with a Databricks Account.`,
+  Gets the set of service principals associated with a Databricks account.`,
 
 	Annotations: map[string]string{},
 	Args:        cobra.ExactArgs(0),
@@ -223,7 +223,7 @@ var patchCmd = &cobra.Command{
 	Long: `Update service principal details.
   
   Partially updates the details of a single service principal in the Databricks
-  Account.`,
+  account.`,
 
 	Annotations: map[string]string{},
 	PreRunE:     root.MustAccountClient,

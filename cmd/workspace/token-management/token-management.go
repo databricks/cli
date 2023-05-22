@@ -81,7 +81,7 @@ var deleteCmd = &cobra.Command{
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 		if len(args) == 0 {
-			names, err := w.TokenManagement.PublicTokenInfoCommentToTokenIdMap(ctx, settings.ListTokenManagementRequest{})
+			names, err := w.TokenManagement.TokenInfoCommentToTokenIdMap(ctx, settings.ListTokenManagementRequest{})
 			if err != nil {
 				return err
 			}
@@ -127,7 +127,7 @@ var getCmd = &cobra.Command{
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 		if len(args) == 0 {
-			names, err := w.TokenManagement.PublicTokenInfoCommentToTokenIdMap(ctx, settings.ListTokenManagementRequest{})
+			names, err := w.TokenManagement.TokenInfoCommentToTokenIdMap(ctx, settings.ListTokenManagementRequest{})
 			if err != nil {
 				return err
 			}

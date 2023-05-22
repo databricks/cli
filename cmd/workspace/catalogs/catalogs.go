@@ -181,6 +181,7 @@ func init() {
 	updateCmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	updateCmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `User-provided free-form text description.`)
+	updateCmd.Flags().Var(&updateReq.IsolationMode, "isolation-mode", `Whether the current securable is accessible from all workspaces or a specific set of workspaces.`)
 	updateCmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `Name of catalog.`)
 	updateCmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of current owner of catalog.`)
 	// TODO: map via StringToStringVar: properties
