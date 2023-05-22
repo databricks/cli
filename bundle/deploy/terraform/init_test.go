@@ -203,7 +203,7 @@ func TestSetTempDirEnvVarsForWindowWithUserProfileSet(t *testing.T) {
 
 	// assert that we pass through the user profile
 	assert.Equal(t, map[string]string{
-		"USERPROFILE": "c:\\foo\\b",
+		"USERPROFILE": "c:\\foo\\c",
 	}, env)
 }
 
