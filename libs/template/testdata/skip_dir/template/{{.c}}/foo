@@ -1,0 +1,4 @@
+{{if eq .d "skipping"}}
+{{skipThisFile}}
+{{end}}
+Hello!
