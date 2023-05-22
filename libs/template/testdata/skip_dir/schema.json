@@ -1,14 +1,17 @@
 {
-    "a": {
-        "type": "string"
-    },
-    "b": {
-        "type": "string"
-    },
-    "c": {
-        "type": "string"
-    },
-    "d": {
-        "type": "string"
+    "version": 0,
+    "properties": {
+        "a": {
+            "type": "string"
+        },
+        "b": {
+            "type": "string"
+        },
+        "c": {
+            "type": "string"
+        },
+        "d": {
+            "type": "string"
+        }
     }
 }

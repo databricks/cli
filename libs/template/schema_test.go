@@ -21,17 +21,20 @@ func TestTemplateSchematIsInterger(t *testing.T) {
 func TestTemplateSchemaCastFloatToInt(t *testing.T) {
 	// define schema for config
 	schemaJson := `{
-		"int_val": {
-			"type": "integer"
-		},
-		"float_val": {
-			"type": "float"
-		},
-		"bool_val": {
-			"type": "boolean"
-		},
-		"string_val": {
-			"type": "string"
+		"version": 0,
+		"properties": {
+			"int_val": {
+				"type": "integer"
+			},
+			"float_val": {
+				"type": "float"
+			},
+			"bool_val": {
+				"type": "boolean"
+			},
+			"string_val": {
+				"type": "string"
+			}
 		}
 	}`
 	var schema Schema
@@ -56,7 +59,7 @@ func TestTemplateSchemaCastFloatToInt(t *testing.T) {
 	assert.IsType(t, true, config["bool_val"])
 	assert.IsType(t, "abc", config["string_val"])
 
-	err = castFloatToInt(config, schema)
+	err = castFloatToInt(config, &schema)
 	require.NoError(t, err)
 
 	// assert type after casting, that the float value was converted to an integer
@@ -70,8 +73,11 @@ func TestTemplateSchemaCastFloatToInt(t *testing.T) {
 func TestTemplateSchemaCastFloatToIntFailsForUnknownTypes(t *testing.T) {
 	// define schema for config
 	schemaJson := `{
-		"foo": {
-			"type": "integer"
+		"version": 0,
+		"properties": {
+			"foo": {
+				"type": "integer"
+			}
 		}
 	}`
 	var schema Schema
@@ -86,15 +92,18 @@ func TestTemplateSchemaCastFloatToIntFailsForUnknownTypes(t *testing.T) {
 	err = json.Unmarshal([]byte(configJson), &config)
 	require.NoError(t, err)
 
-	err = castFloatToInt(config, schema)
+	err = castFloatToInt(config, &schema)
 	assert.ErrorContains(t, err, "bar is not defined as an input parameter for the template")
 }
 
 func TestTemplateSchemaCastFloatToIntFailsWhenWithNonIntValues(t *testing.T) {
 	// define schema for config
 	schemaJson := `{
-		"foo": {
-			"type": "integer"
+		"version": 0,
+		"properties": {
+			"foo": {
+				"type": "integer"
+			}
 		}
 	}`
 	var schema Schema
@@ -109,7 +118,7 @@ func TestTemplateSchemaCastFloatToIntFailsWhenWithNonIntValues(t *testing.T) {
 	err = json.Unmarshal([]byte(configJson), &config)
 	require.NoError(t, err)
 
-	err = castFloatToInt(config, schema)
+	err = castFloatToInt(config, &schema)
 	assert.ErrorContains(t, err, "expected foo to have integer value but it is 1.1")
 }
 
@@ -172,17 +181,20 @@ func TestTemplateSchemaValidateType(t *testing.T) {
 func TestTemplateSchemaValidateConfig(t *testing.T) {
 	// define schema for config
 	schemaJson := `{
-			"int_val": {
-				"type": "integer"
-			},
-			"float_val": {
-				"type": "float"
-			},
-			"bool_val": {
-				"type": "boolean"
-			},
-			"string_val": {
-				"type": "string"
+			"version": 0,
+			"properties": {
+				"int_val": {
+					"type": "integer"
+				},
+				"float_val": {
+					"type": "float"
+				},
+				"bool_val": {
+					"type": "boolean"
+				},
+				"string_val": {
+					"type": "string"
+				}
 			}
 		}`
 	var schema Schema
@@ -236,6 +248,8 @@ func TestTemplateSchemaValidateConfigFailsForUnknownField(t *testing.T) {
 func TestTemplateSchemaValidateConfigFailsForWhenIncorrectTypes(t *testing.T) {
 	// define schema for config
 	schemaJson := `{
+		"version": 0,
+		"properties": {
 			"int_val": {
 				"type": "integer"
 			},
@@ -248,7 +262,8 @@ func TestTemplateSchemaValidateConfigFailsForWhenIncorrectTypes(t *testing.T) {
 			"string_val": {
 				"type": "string"
 			}
-		}`
+		}
+	}`
 	var schema Schema
 	err := json.Unmarshal([]byte(schemaJson), &schema)
 	require.NoError(t, err)
@@ -268,12 +283,15 @@ func TestTemplateSchemaValidateConfigFailsForWhenIncorrectTypes(t *testing.T) {
 func TestTemplateSchemaValidateConfigFailsForWhenMissingInputParams(t *testing.T) {
 	// define schema for config
 	schemaJson := `{
+		"version": 0,
+		"properties": {
 			"int_val": {
 				"type": "integer"
 			},
 			"string_val": {
 				"type": "string"
 			}
+		}
 		}`
 	var schema Schema
 	err := json.Unmarshal([]byte(schemaJson), &schema)

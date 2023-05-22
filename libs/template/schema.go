@@ -7,7 +7,15 @@ import (
 	"reflect"
 )
 
-type Schema map[string]FieldInfo
+const LatestSchemaVersion = 0
+
+type Schema struct {
+	// A version for the template schema
+	Version int `json:"version"`
+
+	// A list of properties that can be used in the config
+	Properties map[string]FieldInfo `json:"properties"`
+}
 
 type FieldType string
 
@@ -33,15 +41,15 @@ func isIntegerValue(v float64) bool {
 // integeres according to the schema
 //
 // Needed because the default json unmarshaller for maps converts all numbers to floats
-func castFloatToInt(config map[string]any, schema Schema) error {
+func castFloatToInt(config map[string]any, schema *Schema) error {
 	for k, v := range config {
 		// error because all config keys should be defined in schema too
-		if _, ok := schema[k]; !ok {
+		if _, ok := schema.Properties[k]; !ok {
 			return fmt.Errorf("%s is not defined as an input parameter for the template", k)
 		}
 
 		// skip non integer fields
-		fieldInfo := schema[k]
+		fieldInfo := schema.Properties[k]
 		if fieldInfo.Type != FieldTypeInt {
 			continue
 		}
@@ -74,10 +82,10 @@ func validateType(v any, fieldType FieldType) error {
 	return validateFunc(v)
 }
 
-func (schema Schema) ValidateConfig(config map[string]any) error {
+func (schema *Schema) ValidateConfig(config map[string]any) error {
 	// validate types defined in config
 	for k, v := range config {
-		fieldMetadata, ok := schema[k]
+		fieldMetadata, ok := schema.Properties[k]
 		if !ok {
 			return fmt.Errorf("%s is not defined as an input parameter for the template", k)
 		}
@@ -87,7 +95,7 @@ func (schema Schema) ValidateConfig(config map[string]any) error {
 		}
 	}
 	// assert all fields are defined in
-	for k := range schema {
+	for k := range schema.Properties {
 		if _, ok := config[k]; !ok {
 			return fmt.Errorf("input parameter %s is not defined in config", k)
 		}
@@ -95,20 +103,20 @@ func (schema Schema) ValidateConfig(config map[string]any) error {
 	return nil
 }
 
-func ReadSchema(path string) (Schema, error) {
+func ReadSchema(path string) (*Schema, error) {
 	schemaBytes, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
-	schema := Schema{}
-	err = json.Unmarshal(schemaBytes, &schema)
+	schema := &Schema{}
+	err = json.Unmarshal(schemaBytes, schema)
 	if err != nil {
 		return nil, err
 	}
 	return schema, nil
 }
 
-func (schema Schema) ReadConfig(path string) (map[string]any, error) {
+func (schema *Schema) ReadConfig(path string) (map[string]any, error) {
 	var config map[string]any
 	b, err := os.ReadFile(path)
 	if err != nil {
