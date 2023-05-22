@@ -23,8 +23,8 @@ var versionCmd = &cobra.Command{
 			return enc.Encode(info)
 		}
 
-		fmt.Fprintln(cmd.OutOrStdout(), info.Version)
-		return nil
+		_, err := fmt.Fprintf(cmd.OutOrStdout(), "Databricks CLI v%s\n", info.Version)
+		return err
 	},
 }
 

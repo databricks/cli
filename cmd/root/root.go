@@ -15,8 +15,9 @@ import (
 
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
-	Use:   "databricks",
-	Short: "Databricks CLI",
+	Use:     "databricks",
+	Short:   "Databricks CLI",
+	Version: build.GetInfo().Version,
 
 	// Cobra prints the usage string to stderr if a command returns an error.
 	// This usage string should only be displayed if an invalid combination of flags
@@ -105,9 +106,5 @@ func Execute() {
 
 func init() {
 	RootCmd.SetFlagErrorFunc(flagErrorFunc)
-
-	// The VS Code extension passes `-v` in debug mode and must be changed
-	// to use the new flags in `./logger.go` prior to removing this flag.
-	RootCmd.PersistentFlags().BoolP("verbose", "v", false, "")
-	RootCmd.PersistentFlags().MarkHidden("verbose")
+	RootCmd.SetVersionTemplate("Databricks CLI v{{.Version}}\n")
 }
