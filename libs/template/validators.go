@@ -46,4 +46,3 @@ var validators map[FieldType]Validator = map[FieldType]Validator{
 	FieldTypeInt:     validateInteger,
 	FieldTypeFloat:   validateFloat,
 }
-
