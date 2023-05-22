@@ -8,14 +8,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const envBricksOutputFormat = "BRICKS_OUTPUT_FORMAT"
+const envDatabricksCliOutputFormat = "DATABRICKS_CLI_OUTPUT_FORMAT"
 
 var outputType flags.Output = flags.OutputText
 
 func init() {
 	// Configure defaults from environment, if applicable.
 	// If the provided value is invalid it is ignored.
-	if v, ok := os.LookupEnv(envBricksOutputFormat); ok {
+	if v, ok := os.LookupEnv(envDatabricksCliOutputFormat); ok {
 		outputType.Set(v)
 	}
 

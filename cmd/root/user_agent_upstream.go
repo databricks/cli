@@ -8,8 +8,8 @@ import (
 )
 
 // Environment variables that caller can set to convey what is upstream to this CLI.
-const upstreamEnvVar = "BRICKS_UPSTREAM"
-const upstreamVersionEnvVar = "BRICKS_UPSTREAM_VERSION"
+const upstreamEnvVar = "DATABRICKS_CLI_UPSTREAM"
+const upstreamVersionEnvVar = "DATABRICKS_CLI_UPSTREAM_VERSION"
 
 // Keys in the user agent.
 const upstreamKey = "upstream"
