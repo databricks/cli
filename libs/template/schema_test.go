@@ -216,6 +216,8 @@ func TestTemplateSchemaValidateConfig(t *testing.T) {
 func TestTemplateSchemaValidateConfigFailsForUnknownField(t *testing.T) {
 	// define schema for config
 	schemaJson := `{
+		"version": 0,
+		"properties": {
 			"int_val": {
 				"type": "integer"
 			},
@@ -228,7 +230,8 @@ func TestTemplateSchemaValidateConfigFailsForUnknownField(t *testing.T) {
 			"string_val": {
 				"type": "string"
 			}
-		}`
+		}
+	}`
 	var schema Schema
 	err := json.Unmarshal([]byte(schemaJson), &schema)
 	require.NoError(t, err)
