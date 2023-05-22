@@ -102,6 +102,18 @@ func (m *initialize) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Muta
 		env["HOME"] = home
 	}
 
+	// Set the tmp dir location to inside cache directory. This helps us workaround
+	// situations where the CLI (and dependencies it calls) do not have adequate permissions
+	// to create a temperory file. see: os.TempDir for more context
+	tmpDir, err := b.CacheDir("tmp")
+	if err != nil {
+		return nil, err
+	}
+	// set tmp dir for unix
+	env["TMPDIR"] = tmpDir
+	// set tmp dir for windows
+	env["TMP"] = tmpDir
+
 	// Configure environment variables for auth for Terraform to use.
 	log.Debugf(ctx, "Environment variables for Terraform: %s", strings.Join(maps.Keys(env), ", "))
 	err = tf.SetEnv(env)
