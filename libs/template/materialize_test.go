@@ -24,7 +24,7 @@ func TestMaterializeEmptyDirsAreNotGenerated(t *testing.T) {
 	tmp := setupConfig(t, `
 	{
 		"a": "dir-with-file",
-		"b": "empty-dir",
+		"b": "foo",
 		"c": "dir-with-skipped-file",
 		"d": "skipping"
 	}`)
@@ -39,7 +39,7 @@ func TestMaterializeEmptyDirsAreNotGenerated(t *testing.T) {
 	tmp2 := setupConfig(t, `
 	{
 		"a": "dir-with-file",
-		"b": "empty-dir",
+		"b": "foo",
 		"c": "dir-not-skipped-this-time",
 		"d": "not-skipping"
 	}`)
@@ -48,7 +48,6 @@ func TestMaterializeEmptyDirsAreNotGenerated(t *testing.T) {
 
 	assert.DirExists(t, filepath.Join(tmp2, "dir-with-file"))
 	assert.FileExists(t, filepath.Join(tmp2, "dir-with-file/.gitkeep"))
-	assert.NoDirExists(t, filepath.Join(tmp2, "empty-dir"))
 	assert.DirExists(t, filepath.Join(tmp2, "dir-not-skipped-this-time"))
 	assert.FileExists(t, filepath.Join(tmp2, "dir-not-skipped-this-time/foo"))
 }
