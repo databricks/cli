@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/cmd/root"
+	_ "github.com/databricks/cli/cmd/version"
 	"github.com/stretchr/testify/require"
 )
 

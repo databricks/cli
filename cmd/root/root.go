@@ -67,6 +67,10 @@ var RootCmd = &cobra.Command{
 
 // Wrap flag errors to include the usage string.
 func flagErrorFunc(c *cobra.Command, err error) error {
+	// We would like to use [errors.Is] here, but pflag doesn't wrap errors.
+	if strings.HasSuffix(err.Error(), errExitFromVersion.Error()) {
+		return build.PrintVersion(c.OutOrStdout())
+	}
 	return fmt.Errorf("%w\n\n%s", err, c.UsageString())
 }
 
@@ -105,9 +109,4 @@ func Execute() {
 
 func init() {
 	RootCmd.SetFlagErrorFunc(flagErrorFunc)
-
-	// The VS Code extension passes `-v` in debug mode and must be changed
-	// to use the new flags in `./logger.go` prior to removing this flag.
-	RootCmd.PersistentFlags().BoolP("verbose", "v", false, "")
-	RootCmd.PersistentFlags().MarkHidden("verbose")
 }

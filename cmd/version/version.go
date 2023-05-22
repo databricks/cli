@@ -2,7 +2,6 @@ package version
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/internal/build"
@@ -16,15 +15,13 @@ var versionCmd = &cobra.Command{
 	Args: cobra.NoArgs,
 
 	RunE: func(cmd *cobra.Command, args []string) error {
-		info := build.GetInfo()
 		if detail {
 			enc := json.NewEncoder(cmd.OutOrStdout())
 			enc.SetIndent("", "  ")
-			return enc.Encode(info)
+			return enc.Encode(build.GetInfo())
 		}
 
-		fmt.Fprintln(cmd.OutOrStdout(), info.Version)
-		return nil
+		return build.PrintVersion(cmd.OutOrStdout())
 	},
 }
 
