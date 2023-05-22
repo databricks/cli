@@ -51,7 +51,12 @@ func TestTemplateInitializationForDevConfig(t *testing.T) {
 func TestTemplateInitializationForProdConfig(t *testing.T) {
 	// create target directory with the input config
 	tmp := t.TempDir()
-	f, err := os.Create(filepath.Join(tmp, "config.json"))
+
+	// create target directory to with the input config
+	configDir := filepath.Join(tmp, "dir-with-config")
+	err := os.Mkdir(configDir, os.ModePerm)
+	require.NoError(t, err)
+	f, err := os.Create(filepath.Join(configDir, "my_config.json"))
 	require.NoError(t, err)
 	_, err = f.WriteString(`
 	{
@@ -64,18 +69,23 @@ func TestTemplateInitializationForProdConfig(t *testing.T) {
 	f.Close()
 	require.NoError(t, err)
 
+	// create directory to initialize the template instance within
+	instanceDir := filepath.Join(tmp, "dir-with-instance")
+	err = os.Mkdir(instanceDir, os.ModePerm)
+	require.NoError(t, err)
+
 	// materialize the template
 	cmd := root.RootCmd
 	childCommands := cmd.Commands()
 	fmt.Println(childCommands)
-	cmd.SetArgs([]string{"bundle", "init", filepath.FromSlash("testdata/init/templateDefinition"), "--target-dir", tmp})
+	cmd.SetArgs([]string{"bundle", "init", filepath.FromSlash("testdata/init/templateDefinition"), "--target-dir", instanceDir, "--config-file", filepath.Join(configDir, "my_config.json")})
 	err = cmd.Execute()
 	require.NoError(t, err)
 
 	// assert on materialized template
-	assert.FileExists(t, filepath.Join(tmp, "production_project", "azure_file"))
-	assert.FileExists(t, filepath.Join(tmp, "production_project", ".azure_devops"))
-	assert.NoFileExists(t, filepath.Join(tmp, "production_project", "aws_file"))
-	assertFileContains(t, filepath.Join(tmp, "production_project", "azure_file"), "This file should only be generated for Azure")
-	assertFileContains(t, filepath.Join(tmp, "production_project", ".azure_devops"), "This is a production project")
+	assert.FileExists(t, filepath.Join(instanceDir, "production_project", "azure_file"))
+	assert.FileExists(t, filepath.Join(instanceDir, "production_project", ".azure_devops"))
+	assert.NoFileExists(t, filepath.Join(instanceDir, "production_project", "aws_file"))
+	assertFileContains(t, filepath.Join(instanceDir, "production_project", "azure_file"), "This file should only be generated for Azure")
+	assertFileContains(t, filepath.Join(instanceDir, "production_project", ".azure_devops"), "This is a production project")
 }

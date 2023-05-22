@@ -8,7 +8,7 @@ const ConfigFileName = "config.json"
 const schemaFileName = "schema.json"
 const templateDirName = "template"
 
-func Materialize(templatePath, instancePath string) error {
+func Materialize(templatePath, instancePath, configPath string) error {
 	// read the file containing schema for template input parameters
 	schema, err := ReadSchema(filepath.Join(templatePath, schemaFileName))
 	if err != nil {
@@ -16,7 +16,7 @@ func Materialize(templatePath, instancePath string) error {
 	}
 
 	// read user config to initalize the template with
-	config, err := schema.ReadConfig(filepath.Join(instancePath, ConfigFileName))
+	config, err := schema.ReadConfig(configPath)
 	if err != nil {
 		return err
 	}
