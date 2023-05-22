@@ -75,7 +75,7 @@ func (m *initialize) findExecPath(ctx context.Context, b *bundle.Bundle, tf *con
 // directory
 //
 // This is necessary to avoid trying to create temporary files in directories
-// the CLI and it's dependencies do not have acceess.
+// the CLI and it's dependencies do not have access to
 //
 // see: os.TempDir for more context
 func setTempDirEnvVars(env map[string]string, b *bundle.Bundle) error {
