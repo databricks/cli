@@ -22,5 +22,5 @@ func Materialize(templatePath, instancePath, configPath string) error {
 	}
 
 	// materialize the template
-	return WalkFileTree(config, filepath.Join(templatePath, templateDirName), instancePath)
+	return walkFileTree(config, filepath.Join(templatePath, templateDirName), instancePath)
 }

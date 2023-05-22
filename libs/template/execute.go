@@ -27,53 +27,50 @@ func executeTemplate(config map[string]any, templateDefination string) (string, 
 }
 
 // TODO: allow skipping directories
-func generateDirectory(config map[string]any, parentDir, nameTempate string) (string, error) {
-	dirName, err := executeTemplate(config, nameTempate)
-	if err != nil {
-		return "", err
-	}
-	err = os.Mkdir(filepath.Join(parentDir, dirName), 0755)
-	if err != nil {
-		return "", err
-	}
-	return dirName, nil
-}
 
-func generateFile(config map[string]any, parentDir, nameTempate, contentTemplate string) error {
+func generateFile(config map[string]any, pathTemplate, contentTemplate string) error {
 	// compute file content
 	fileContent, err := executeTemplate(config, contentTemplate)
 	if errors.Is(err, errSkipThisFile) {
+		// skip this file
 		return nil
 	}
 	if err != nil {
 		return err
 	}
 
-	// create the file by executing the templatized file name
-	fileName, err := executeTemplate(config, nameTempate)
+	// compute the path for this file
+	path, err := executeTemplate(config, pathTemplate)
+	if err != nil {
+		return err
+	}
+	// create any intermediate directories required. Directories are lazily generated
+	// only when they are required for a file.
+	err = os.MkdirAll(filepath.Dir(path), 0755)
 	if err != nil {
 		return err
 	}
 
-	return os.WriteFile(filepath.Join(parentDir, fileName), []byte(fileContent), 0644)
+	// write content to file
+	return os.WriteFile(path, []byte(fileContent), 0644)
 }
 
-func WalkFileTree(config map[string]any, templatePath, instancePath string) error {
+func walkFileTree(config map[string]any, templatePath, instancePath string) error {
 	entries, err := os.ReadDir(templatePath)
 	if err != nil {
 		return err
 	}
 	for _, entry := range entries {
 		if entry.IsDir() {
-			// case: materialize a template directory
-			dirName, err := generateDirectory(config, instancePath, entry.Name())
+			// compute directory name
+			dirName, err := executeTemplate(config, entry.Name())
 			if err != nil {
 				return err
 			}
 
-			// recusive generate files and directories inside inside our newly generated
+			// recusively generate files and directories inside inside our newly generated
 			// directory from the template defination
-			err = WalkFileTree(config, filepath.Join(templatePath, entry.Name()), filepath.Join(instancePath, dirName))
+			err = walkFileTree(config, filepath.Join(templatePath, entry.Name()), filepath.Join(instancePath, dirName))
 			if err != nil {
 				return err
 			}
@@ -85,7 +82,7 @@ func WalkFileTree(config map[string]any, templatePath, instancePath string) erro
 			}
 			contentTemplate := string(b)
 			fileNameTemplate := entry.Name()
-			err = generateFile(config, instancePath, fileNameTemplate, contentTemplate)
+			err = generateFile(config, filepath.Join(instancePath, fileNameTemplate), contentTemplate)
 			if err != nil {
 				return err
 			}
