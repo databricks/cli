@@ -10,7 +10,7 @@ import (
 	"golang.org/x/term"
 )
 
-const envDatabricksCliProgressFormat = "DATABRICKS_CLI_PROGRESS_FORMAT"
+const envProgressFormat = "DATABRICKS_CLI_PROGRESS_FORMAT"
 
 func resolveModeDefault(format flags.ProgressLogFormat) flags.ProgressLogFormat {
 	if (logLevel.String() == "disabled" || logFile.String() != "stderr") &&
@@ -40,7 +40,7 @@ var progressFormat = flags.NewProgressLogFormat()
 func init() {
 	// Configure defaults from environment, if applicable.
 	// If the provided value is invalid it is ignored.
-	if v, ok := os.LookupEnv(envDatabricksCliProgressFormat); ok {
+	if v, ok := os.LookupEnv(envProgressFormat); ok {
 		progressFormat.Set(v)
 	}
 	RootCmd.PersistentFlags().Var(&progressFormat, "progress-format", "format for progress logs (append, inplace, json)")

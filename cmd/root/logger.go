@@ -11,9 +11,9 @@ import (
 )
 
 const (
-	envDatabricksCliLogFile  = "DATABRICKS_CLI_LOG_FILE"
-	envDatabricksCliLogLevel = "DATABRICKS_CLI_LOG_LEVEL"
-	envDataricksCliLogFormat = "DATABRICKS_CLI_LOG_FORMAT"
+	envLogFile   = "DATABRICKS_LOG_FILE"
+	envLogLevel  = "DATABRICKS_LOG_LEVEL"
+	envLogFormat = "DATABRICKS_LOG_FORMAT"
 )
 
 func initializeLogger(ctx context.Context) (context.Context, error) {
@@ -52,13 +52,13 @@ var logOutput = flags.OutputText
 func init() {
 	// Configure defaults from environment, if applicable.
 	// If the provided value is invalid it is ignored.
-	if v, ok := os.LookupEnv(envDatabricksCliLogFile); ok {
+	if v, ok := os.LookupEnv(envLogFile); ok {
 		logFile.Set(v)
 	}
-	if v, ok := os.LookupEnv(envDatabricksCliLogLevel); ok {
+	if v, ok := os.LookupEnv(envLogLevel); ok {
 		logLevel.Set(v)
 	}
-	if v, ok := os.LookupEnv(envDataricksCliLogFormat); ok {
+	if v, ok := os.LookupEnv(envLogFormat); ok {
 		logOutput.Set(v)
 	}
 
