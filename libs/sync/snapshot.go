@@ -200,6 +200,7 @@ func (s *Snapshot) diff(ctx context.Context, all []fileset.File) (change diff, e
 
 			// change separators to '/' for file paths in remote store
 			unixFileName := filepath.ToSlash(f.Relative)
+
 			// put file in databricks workspace
 			change.put = append(change.put, unixFileName)
 
