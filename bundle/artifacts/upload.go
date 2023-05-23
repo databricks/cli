@@ -6,6 +6,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/artifacts/notebook"
+	"github.com/databricks/cli/bundle/artifacts/wheel"
 )
 
 func UploadAll() bundle.Mutator {
@@ -37,5 +38,9 @@ func (m *upload) Apply(ctx context.Context, b *bundle.Bundle) error {
 		return bundle.Apply(ctx, b, notebook.Upload(m.name))
 	}
 
-	return nil
+	if artifact.PythonPackage != nil {
+		return bundle.Apply(ctx, b, wheel.Upload(m.name))
+	}
+
+	return nil, nil
 }
