@@ -13,7 +13,7 @@ import (
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/service/dbfs"
+	"github.com/databricks/databricks-sdk-go/service/files"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -127,7 +127,7 @@ func temporaryDbfsDir(t *testing.T, w *databricks.WorkspaceClient) string {
 	// Remove test directory on test completion.
 	t.Cleanup(func() {
 		t.Logf("rm -rf dbfs:%s", path)
-		err := w.Dbfs.Delete(ctx, dbfs.Delete{
+		err := w.Dbfs.Delete(ctx, files.Delete{
 			Path:      path,
 			Recursive: true,
 		})

@@ -8,7 +8,7 @@ import (
 
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/service/dbfs"
+	"github.com/databricks/databricks-sdk-go/service/files"
 	"golang.org/x/exp/slices"
 )
 
@@ -34,13 +34,13 @@ func (w *DbfsClient) Write(ctx context.Context, name string, reader io.Reader, m
 		return err
 	}
 
-	fileMode := dbfs.FileModeWrite
+	fileMode := files.FileModeWrite
 	if slices.Contains(mode, OverwriteIfExists) {
-		fileMode |= dbfs.FileModeOverwrite
+		fileMode |= files.FileModeOverwrite
 	}
 	handle, err := w.workspaceClient.Dbfs.Open(ctx, absPath, fileMode)
 	if err != nil {
-		var aerr apierr.APIError
+		var aerr *apierr.APIError
 		if !errors.As(err, &aerr) {
 			return err
 		}
@@ -70,9 +70,9 @@ func (w *DbfsClient) Read(ctx context.Context, name string) (io.Reader, error) {
 		return nil, err
 	}
 
-	handle, err := w.workspaceClient.Dbfs.Open(ctx, absPath, dbfs.FileModeRead)
+	handle, err := w.workspaceClient.Dbfs.Open(ctx, absPath, files.FileModeRead)
 	if err != nil {
-		var aerr apierr.APIError
+		var aerr *apierr.APIError
 		if !errors.As(err, &aerr) {
 			return nil, err
 		}
@@ -118,7 +118,7 @@ func (w *DbfsClient) Delete(ctx context.Context, name string) error {
 		return err
 	}
 
-	return w.workspaceClient.Dbfs.Delete(ctx, dbfs.Delete{
+	return w.workspaceClient.Dbfs.Delete(ctx, files.Delete{
 		Path:      absPath,
 		Recursive: false,
 	})
