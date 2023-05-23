@@ -2,6 +2,7 @@ package template
 
 import (
 	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -10,9 +11,10 @@ import (
 
 // Executes the template by applying config on it. Returns the materialized config
 // as a string
-func executeTemplate(config map[string]any, templateDefination string) (string, error) {
+// TODO: test this function
+func executeTemplate(config map[string]any, templateDefinition string) (string, error) {
 	// configure template with helper functions
-	tmpl, err := template.New("").Funcs(HelperFuncs).Parse(templateDefination)
+	tmpl, err := template.New("").Funcs(HelperFuncs).Parse(templateDefinition)
 	if err != nil {
 		return "", err
 	}
@@ -26,7 +28,8 @@ func executeTemplate(config map[string]any, templateDefination string) (string, 
 	return result.String(), nil
 }
 
-func generateFile(config map[string]any, pathTemplate, contentTemplate string) error {
+// TODO: test this function
+func generateFile(config map[string]any, pathTemplate, contentTemplate string, perm fs.FileMode) error {
 	// compute file content
 	fileContent, err := executeTemplate(config, contentTemplate)
 	if errors.Is(err, errSkipThisFile) {
@@ -50,41 +53,41 @@ func generateFile(config map[string]any, pathTemplate, contentTemplate string) e
 	}
 
 	// write content to file
-	return os.WriteFile(path, []byte(fileContent), 0644)
+	return os.WriteFile(path, []byte(fileContent), perm)
 }
 
-func walkFileTree(config map[string]any, templatePath, instancePath string) error {
-	entries, err := os.ReadDir(templatePath)
-	if err != nil {
-		return err
-	}
-	for _, entry := range entries {
-		if entry.IsDir() {
-			// compute directory name
-			dirName, err := executeTemplate(config, entry.Name())
-			if err != nil {
-				return err
-			}
-
-			// recusively generate files and directories inside inside our newly generated
-			// directory from the template defination
-			err = walkFileTree(config, filepath.Join(templatePath, entry.Name()), filepath.Join(instancePath, dirName))
-			if err != nil {
-				return err
-			}
-		} else {
-			// case: materialize a template file with it's contents
-			b, err := os.ReadFile(filepath.Join(templatePath, entry.Name()))
-			if err != nil {
-				return err
-			}
-			contentTemplate := string(b)
-			fileNameTemplate := entry.Name()
-			err = generateFile(config, filepath.Join(instancePath, fileNameTemplate), contentTemplate)
-			if err != nil {
-				return err
-			}
+func walkFileTree(config map[string]any, templateRoot, instanceRoot string) error {
+	return filepath.WalkDir(templateRoot, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
 		}
-	}
-	return nil
+
+		// skip if current entry is a directory
+		if d.IsDir() {
+			return nil
+		}
+
+		// read template file to get the templatized content for the file
+		b, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		contentTemplate := string(b)
+
+		// get relative path to the template file, This forms the template for the
+		// path to the file
+		relPathTemplate, err := filepath.Rel(templateRoot, path)
+		if err != nil {
+			return err
+		}
+
+		// Get info about the template file. Used to ensure instance path also
+		// has the same permission bits
+		info, err := d.Info()
+		if err != nil {
+			return err
+		}
+
+		return generateFile(config, filepath.Join(instanceRoot, relPathTemplate), contentTemplate, info.Mode().Perm())
+	})
 }

@@ -1,6 +1,7 @@
 package template
 
 import (
+	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
@@ -18,6 +19,12 @@ func setupConfig(t *testing.T, config string) string {
 	f.Close()
 	require.NoError(t, err)
 	return tmp
+}
+
+func assertFilePerm(t *testing.T, path string, perm fs.FileMode) {
+	stat, err := os.Stat(path)
+	require.NoError(t, err)
+	assert.Equal(t, stat.Mode().Perm(), perm)
 }
 
 func TestMaterializeEmptyDirsAreNotGenerated(t *testing.T) {
@@ -50,4 +57,68 @@ func TestMaterializeEmptyDirsAreNotGenerated(t *testing.T) {
 	assert.FileExists(t, filepath.Join(tmp2, "dir-with-file/.gitkeep"))
 	assert.DirExists(t, filepath.Join(tmp2, "dir-not-skipped-this-time"))
 	assert.FileExists(t, filepath.Join(tmp2, "dir-not-skipped-this-time/foo"))
+}
+
+func TestMaterializedTemplatesHaveIdenticalFilePermissionsAsTemplate(t *testing.T) {
+	// create template
+	tmp := t.TempDir()
+	err := os.Mkdir(filepath.Join(tmp, "my_tmpl"), 0777)
+	require.NoError(t, err)
+	err = os.WriteFile(filepath.Join(tmp, "my_tmpl", "schema.json"), []byte(`
+	{
+		"version": 0,
+		"properties": {
+			"a": {
+				"type": "string"
+			},
+			"b": {
+				"type": "string"
+			}
+		}
+	}`), 0644)
+	require.NoError(t, err)
+
+	// A normal file with the executable bit not flipped
+	err = os.Mkdir(filepath.Join(tmp, "my_tmpl", "template"), 0777)
+	require.NoError(t, err)
+	err = os.WriteFile(filepath.Join(tmp, "my_tmpl", "template", "{{.a}}"), []byte("abc"), 0600)
+	require.NoError(t, err)
+
+	// A read only file
+	err = os.WriteFile(filepath.Join(tmp, "my_tmpl", "template", "{{.b}}"), []byte("def"), 0400)
+	require.NoError(t, err)
+
+	// A read only executable file
+	err = os.WriteFile(filepath.Join(tmp, "my_tmpl", "template", "foo"), []byte("ghi"), 0500)
+	require.NoError(t, err)
+
+	// An executable script, accessable by non user access classes
+	err = os.WriteFile(filepath.Join(tmp, "my_tmpl", "template", "bar"), []byte("ghi"), 0755)
+	require.NoError(t, err)
+
+	// create config.json file
+	err = os.Mkdir(filepath.Join(tmp, "config"), 0777)
+	require.NoError(t, err)
+	configPath := filepath.Join(tmp, "config", "config.json")
+	err = os.WriteFile(configPath, []byte(`
+	{
+		"a": "Amsterdam",
+		"b": "Hague"
+	}`), 0644)
+	require.NoError(t, err)
+
+	// create directory to initialize the template in
+	instanceRoot := filepath.Join(tmp, "instance")
+	err = os.Mkdir(instanceRoot, 0777)
+	require.NoError(t, err)
+
+	// materialize the template
+	err = Materialize(filepath.Join(tmp, "my_tmpl"), instanceRoot, configPath)
+	require.NoError(t, err)
+
+	// assert template files have the correct permission bits set
+	assertFilePerm(t, filepath.Join(instanceRoot, "Amsterdam"), 0600)
+	assertFilePerm(t, filepath.Join(instanceRoot, "Hague"), 0400)
+	assertFilePerm(t, filepath.Join(instanceRoot, "foo"), 0500)
+	assertFilePerm(t, filepath.Join(instanceRoot, "bar"), 0755)
 }
