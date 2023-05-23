@@ -35,7 +35,7 @@ func TestValidatorBoolean(t *testing.T) {
 	assert.ErrorContains(t, err, "expected type boolean, but value is \"false\"")
 }
 
-func TestValidatorFloat(t *testing.T) {
+func TestValidatorNumber(t *testing.T) {
 	err := validateNumber(true)
 	assert.ErrorContains(t, err, "expected type float, but value is true")
 
