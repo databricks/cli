@@ -25,6 +25,8 @@ func assertKeysOfMap(t *testing.T, m map[string]time.Time, expectedKeys []string
 }
 
 func TestDiff(t *testing.T) {
+	ctx := context.Background()
+
 	// Create temp project dir
 	projectDir := t.TempDir()
 	fileSet, err := git.NewFileSet(projectDir)
@@ -44,7 +46,7 @@ func TestDiff(t *testing.T) {
 	// New files are put
 	files, err := fileSet.All()
 	assert.NoError(t, err)
-	change, err := state.diff(files)
+	change, err := state.diff(ctx, files)
 	assert.NoError(t, err)
 	assert.Len(t, change.delete, 0)
 	assert.Len(t, change.put, 2)
@@ -59,7 +61,7 @@ func TestDiff(t *testing.T) {
 	assert.NoError(t, err)
 	files, err = fileSet.All()
 	assert.NoError(t, err)
-	change, err = state.diff(files)
+	change, err = state.diff(ctx, files)
 	assert.NoError(t, err)
 
 	assert.Len(t, change.delete, 0)
@@ -74,7 +76,7 @@ func TestDiff(t *testing.T) {
 	assert.NoError(t, err)
 	files, err = fileSet.All()
 	assert.NoError(t, err)
-	change, err = state.diff(files)
+	change, err = state.diff(ctx, files)
 	assert.NoError(t, err)
 	assert.Len(t, change.delete, 1)
 	assert.Len(t, change.put, 0)
@@ -85,6 +87,8 @@ func TestDiff(t *testing.T) {
 }
 
 func TestSymlinkDiff(t *testing.T) {
+	ctx := context.Background()
+
 	// Create temp project dir
 	projectDir := t.TempDir()
 	fileSet, err := git.NewFileSet(projectDir)
@@ -106,12 +110,14 @@ func TestSymlinkDiff(t *testing.T) {
 
 	files, err := fileSet.All()
 	assert.NoError(t, err)
-	change, err := state.diff(files)
+	change, err := state.diff(ctx, files)
 	assert.NoError(t, err)
 	assert.Len(t, change.put, 1)
 }
 
 func TestFolderDiff(t *testing.T) {
+	ctx := context.Background()
+
 	// Create temp project dir
 	projectDir := t.TempDir()
 	fileSet, err := git.NewFileSet(projectDir)
@@ -130,7 +136,7 @@ func TestFolderDiff(t *testing.T) {
 
 	files, err := fileSet.All()
 	assert.NoError(t, err)
-	change, err := state.diff(files)
+	change, err := state.diff(ctx, files)
 	assert.NoError(t, err)
 	assert.Len(t, change.delete, 0)
 	assert.Len(t, change.put, 1)
@@ -139,7 +145,7 @@ func TestFolderDiff(t *testing.T) {
 	f1.Remove(t)
 	files, err = fileSet.All()
 	assert.NoError(t, err)
-	change, err = state.diff(files)
+	change, err = state.diff(ctx, files)
 	assert.NoError(t, err)
 	assert.Len(t, change.delete, 1)
 	assert.Len(t, change.put, 0)
@@ -147,6 +153,8 @@ func TestFolderDiff(t *testing.T) {
 }
 
 func TestPythonNotebookDiff(t *testing.T) {
+	ctx := context.Background()
+
 	// Create temp project dir
 	projectDir := t.TempDir()
 	fileSet, err := git.NewFileSet(projectDir)
@@ -164,7 +172,7 @@ func TestPythonNotebookDiff(t *testing.T) {
 	files, err := fileSet.All()
 	assert.NoError(t, err)
 	foo.Overwrite(t, "# Databricks notebook source\nprint(\"abc\")")
-	change, err := state.diff(files)
+	change, err := state.diff(ctx, files)
 	assert.NoError(t, err)
 	assert.Len(t, change.delete, 0)
 	assert.Len(t, change.put, 1)
@@ -178,7 +186,7 @@ func TestPythonNotebookDiff(t *testing.T) {
 	foo.Overwrite(t, "print(\"abc\")")
 	files, err = fileSet.All()
 	assert.NoError(t, err)
-	change, err = state.diff(files)
+	change, err = state.diff(ctx, files)
 	assert.NoError(t, err)
 	assert.Len(t, change.delete, 1)
 	assert.Len(t, change.put, 1)
@@ -192,7 +200,7 @@ func TestPythonNotebookDiff(t *testing.T) {
 	foo.Overwrite(t, "# Databricks notebook source\nprint(\"def\")")
 	files, err = fileSet.All()
 	assert.NoError(t, err)
-	change, err = state.diff(files)
+	change, err = state.diff(ctx, files)
 	assert.NoError(t, err)
 	assert.Len(t, change.delete, 1)
 	assert.Len(t, change.put, 1)
@@ -207,7 +215,7 @@ func TestPythonNotebookDiff(t *testing.T) {
 	assert.NoError(t, err)
 	files, err = fileSet.All()
 	assert.NoError(t, err)
-	change, err = state.diff(files)
+	change, err = state.diff(ctx, files)
 	assert.NoError(t, err)
 	assert.Len(t, change.delete, 1)
 	assert.Len(t, change.put, 0)
@@ -218,6 +226,8 @@ func TestPythonNotebookDiff(t *testing.T) {
 }
 
 func TestErrorWhenIdenticalRemoteName(t *testing.T) {
+	ctx := context.Background()
+
 	// Create temp project dir
 	projectDir := t.TempDir()
 	fileSet, err := git.NewFileSet(projectDir)
@@ -235,7 +245,7 @@ func TestErrorWhenIdenticalRemoteName(t *testing.T) {
 	defer vanillaFoo.Close(t)
 	files, err := fileSet.All()
 	assert.NoError(t, err)
-	change, err := state.diff(files)
+	change, err := state.diff(ctx, files)
 	assert.NoError(t, err)
 	assert.Len(t, change.delete, 0)
 	assert.Len(t, change.put, 2)
@@ -246,11 +256,13 @@ func TestErrorWhenIdenticalRemoteName(t *testing.T) {
 	pythonFoo.Overwrite(t, "# Databricks notebook source\nprint(\"def\")")
 	files, err = fileSet.All()
 	assert.NoError(t, err)
-	change, err = state.diff(files)
+	change, err = state.diff(ctx, files)
 	assert.ErrorContains(t, err, "both foo and foo.py point to the same remote file location foo. Please remove one of them from your local project")
 }
 
 func TestNoErrorRenameWithIdenticalRemoteName(t *testing.T) {
+	ctx := context.Background()
+
 	// Create temp project dir
 	projectDir := t.TempDir()
 	fileSet, err := git.NewFileSet(projectDir)
@@ -267,7 +279,7 @@ func TestNoErrorRenameWithIdenticalRemoteName(t *testing.T) {
 	pythonFoo.Overwrite(t, "# Databricks notebook source\n")
 	files, err := fileSet.All()
 	assert.NoError(t, err)
-	change, err := state.diff(files)
+	change, err := state.diff(ctx, files)
 	assert.NoError(t, err)
 	assert.Len(t, change.delete, 0)
 	assert.Len(t, change.put, 1)
@@ -279,7 +291,7 @@ func TestNoErrorRenameWithIdenticalRemoteName(t *testing.T) {
 	sqlFoo.Overwrite(t, "-- Databricks notebook source\n")
 	files, err = fileSet.All()
 	assert.NoError(t, err)
-	change, err = state.diff(files)
+	change, err = state.diff(ctx, files)
 	assert.NoError(t, err)
 	assert.Len(t, change.delete, 1)
 	assert.Len(t, change.put, 1)

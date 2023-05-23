@@ -134,7 +134,7 @@ func (s *Sync) RunOnce(ctx context.Context) error {
 		return err
 	}
 
-	change, err := s.snapshot.diff(all)
+	change, err := s.snapshot.diff(ctx, all)
 	if err != nil {
 		return err
 	}
