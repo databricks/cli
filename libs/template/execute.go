@@ -11,7 +11,6 @@ import (
 
 // Executes the template by applying config on it. Returns the materialized config
 // as a string
-// TODO: test this function
 func executeTemplate(config map[string]any, templateDefinition string) (string, error) {
 	// configure template with helper functions
 	tmpl, err := template.New("").Funcs(HelperFuncs).Parse(templateDefinition)

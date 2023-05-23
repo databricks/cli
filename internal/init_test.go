@@ -36,7 +36,7 @@ func TestTemplateInitializationForDevConfig(t *testing.T) {
 
 	// materialize the template
 	cmd := root.RootCmd
-	cmd.SetArgs([]string{"bundle", "init", filepath.FromSlash("testdata/init/templateDefinition"), "--target-dir", tmp})
+	cmd.SetArgs([]string{"bundle", "init", filepath.FromSlash("testdata/init/templateDefinition"), "--target-dir", tmp, "--config-file", filepath.Join(tmp, "config.json")})
 	err = cmd.Execute()
 	require.NoError(t, err)
 
