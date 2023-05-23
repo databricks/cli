@@ -123,17 +123,16 @@ func TestTemplateSchemaValidateType(t *testing.T) {
 	// assert validation passing
 	err := validateType(int(0), PropertyTypeInt)
 	assert.NoError(t, err)
-
 	err = validateType(int32(1), PropertyTypeInt)
 	assert.NoError(t, err)
-
 	err = validateType(int64(1), PropertyTypeInt)
 	assert.NoError(t, err)
 
 	err = validateType(float32(1.1), PropertyTypeNumber)
 	assert.NoError(t, err)
-
 	err = validateType(float64(1.2), PropertyTypeNumber)
+	assert.NoError(t, err)
+	err = validateType(int(1), PropertyTypeNumber)
 	assert.NoError(t, err)
 
 	err = validateType(false, PropertyTypeBoolean)
@@ -151,8 +150,6 @@ func TestTemplateSchemaValidateType(t *testing.T) {
 	assert.ErrorContains(t, err, "expected type integer, but value is \"abc\"")
 
 	// assert validation failing for floats
-	err = validateType(int(1), PropertyTypeNumber)
-	assert.ErrorContains(t, err, "expected type float, but value is 1")
 	err = validateType(true, PropertyTypeNumber)
 	assert.ErrorContains(t, err, "expected type float, but value is true")
 	err = validateType("abc", PropertyTypeNumber)

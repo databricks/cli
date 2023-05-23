@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestValidatorString(t *testing.T) {
@@ -35,22 +36,22 @@ func TestValidatorBoolean(t *testing.T) {
 }
 
 func TestValidatorFloat(t *testing.T) {
-	err := validateFloat(true)
+	err := validateNumber(true)
 	assert.ErrorContains(t, err, "expected type float, but value is true")
 
-	err = validateFloat(int32(1))
-	assert.ErrorContains(t, err, "expected type float, but value is 1")
+	err = validateNumber(int32(1))
+	require.NoError(t, err)
 
-	err = validateFloat(int64(1))
-	assert.ErrorContains(t, err, "expected type float, but value is 1")
+	err = validateNumber(int64(1))
+	require.NoError(t, err)
 
-	err = validateFloat(float32(1))
+	err = validateNumber(float32(1))
 	assert.NoError(t, err)
 
-	err = validateFloat(float64(1))
+	err = validateNumber(float64(1))
 	assert.NoError(t, err)
 
-	err = validateFloat("abc")
+	err = validateNumber("abc")
 	assert.ErrorContains(t, err, "expected type float, but value is \"abc\"")
 }
 

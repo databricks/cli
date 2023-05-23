@@ -23,8 +23,8 @@ func validateBoolean(v any) error {
 	return nil
 }
 
-func validateFloat(v any) error {
-	if !slices.Contains([]reflect.Kind{reflect.Float32, reflect.Float64},
+func validateNumber(v any) error {
+	if !slices.Contains([]reflect.Kind{reflect.Float32, reflect.Float64, reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64},
 		reflect.TypeOf(v).Kind()) {
 		return fmt.Errorf("expected type float, but value is %#v", v)
 	}
@@ -43,5 +43,5 @@ var validators map[PropertyType]Validator = map[PropertyType]Validator{
 	PropertyTypeString:  validateString,
 	PropertyTypeBoolean: validateBoolean,
 	PropertyTypeInt:     validateInteger,
-	PropertyTypeNumber:  validateFloat,
+	PropertyTypeNumber:  validateNumber,
 }
