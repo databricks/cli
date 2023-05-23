@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
@@ -69,6 +70,44 @@ func (m *initialize) findExecPath(ctx context.Context, b *bundle.Bundle, tf *con
 	return tf.ExecPath, nil
 }
 
+// This function sets temp dir location for terraform to use. If user does not
+// specify anything here, we fall back to a `tmp` directory in the bundle's cache
+// directory
+//
+// This is necessary to avoid trying to create temporary files in directories
+// the CLI and its dependencies do not have access to.
+//
+// see: os.TempDir for more context
+func setTempDirEnvVars(env map[string]string, b *bundle.Bundle) error {
+	switch runtime.GOOS {
+	case "windows":
+		if v, ok := os.LookupEnv("TMP"); ok {
+			env["TMP"] = v
+		} else if v, ok := os.LookupEnv("TEMP"); ok {
+			env["TEMP"] = v
+		} else if v, ok := os.LookupEnv("USERPROFILE"); ok {
+			env["USERPROFILE"] = v
+		} else {
+			tmpDir, err := b.CacheDir("tmp")
+			if err != nil {
+				return err
+			}
+			env["TMP"] = tmpDir
+		}
+	default:
+		if v, ok := os.LookupEnv("TMPDIR"); ok {
+			env["TMPDIR"] = v
+		} else {
+			tmpDir, err := b.CacheDir("tmp")
+			if err != nil {
+				return err
+			}
+			env["TMPDIR"] = tmpDir
+		}
+	}
+	return nil
+}
+
 func (m *initialize) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator, error) {
 	tfConfig := b.Config.Bundle.Terraform
 	if tfConfig == nil {
@@ -100,6 +139,12 @@ func (m *initialize) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Muta
 	home, ok := os.LookupEnv("HOME")
 	if ok {
 		env["HOME"] = home
+	}
+
+	// Set the temporary directory environment variables
+	err = setTempDirEnvVars(env, b)
+	if err != nil {
+		return nil, err
 	}
 
 	// Configure environment variables for auth for Terraform to use.
