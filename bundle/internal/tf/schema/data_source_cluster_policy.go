@@ -6,5 +6,5 @@ type DataSourceClusterPolicy struct {
 	Definition         string `json:"definition,omitempty"`
 	Id                 string `json:"id,omitempty"`
 	MaxClustersPerUser int    `json:"max_clusters_per_user,omitempty"`
-	Name               string `json:"name"`
+	Name               string `json:"name,omitempty"`
 }

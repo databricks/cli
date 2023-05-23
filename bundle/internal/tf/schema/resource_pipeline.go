@@ -76,12 +76,17 @@ type ResourcePipelineClusterInitScriptsS3 struct {
 	Region           string `json:"region,omitempty"`
 }
 
+type ResourcePipelineClusterInitScriptsWorkspace struct {
+	Destination string `json:"destination,omitempty"`
+}
+
 type ResourcePipelineClusterInitScripts struct {
-	Abfss *ResourcePipelineClusterInitScriptsAbfss `json:"abfss,omitempty"`
-	Dbfs  *ResourcePipelineClusterInitScriptsDbfs  `json:"dbfs,omitempty"`
-	File  *ResourcePipelineClusterInitScriptsFile  `json:"file,omitempty"`
-	Gcs   *ResourcePipelineClusterInitScriptsGcs   `json:"gcs,omitempty"`
-	S3    *ResourcePipelineClusterInitScriptsS3    `json:"s3,omitempty"`
+	Abfss     *ResourcePipelineClusterInitScriptsAbfss     `json:"abfss,omitempty"`
+	Dbfs      *ResourcePipelineClusterInitScriptsDbfs      `json:"dbfs,omitempty"`
+	File      *ResourcePipelineClusterInitScriptsFile      `json:"file,omitempty"`
+	Gcs       *ResourcePipelineClusterInitScriptsGcs       `json:"gcs,omitempty"`
+	S3        *ResourcePipelineClusterInitScriptsS3        `json:"s3,omitempty"`
+	Workspace *ResourcePipelineClusterInitScriptsWorkspace `json:"workspace,omitempty"`
 }
 
 type ResourcePipelineCluster struct {
@@ -133,21 +138,28 @@ type ResourcePipelineLibrary struct {
 	Notebook *ResourcePipelineLibraryNotebook `json:"notebook,omitempty"`
 }
 
+type ResourcePipelineNotification struct {
+	Alerts          []string `json:"alerts"`
+	EmailRecipients []string `json:"email_recipients"`
+}
+
 type ResourcePipeline struct {
-	AllowDuplicateNames bool                      `json:"allow_duplicate_names,omitempty"`
-	Catalog             string                    `json:"catalog,omitempty"`
-	Channel             string                    `json:"channel,omitempty"`
-	Configuration       map[string]string         `json:"configuration,omitempty"`
-	Continuous          bool                      `json:"continuous,omitempty"`
-	Development         bool                      `json:"development,omitempty"`
-	Edition             string                    `json:"edition,omitempty"`
-	Id                  string                    `json:"id,omitempty"`
-	Name                string                    `json:"name,omitempty"`
-	Photon              bool                      `json:"photon,omitempty"`
-	Storage             string                    `json:"storage,omitempty"`
-	Target              string                    `json:"target,omitempty"`
-	Url                 string                    `json:"url,omitempty"`
-	Cluster             []ResourcePipelineCluster `json:"cluster,omitempty"`
-	Filters             *ResourcePipelineFilters  `json:"filters,omitempty"`
-	Library             []ResourcePipelineLibrary `json:"library,omitempty"`
+	AllowDuplicateNames bool                           `json:"allow_duplicate_names,omitempty"`
+	Catalog             string                         `json:"catalog,omitempty"`
+	Channel             string                         `json:"channel,omitempty"`
+	Configuration       map[string]string              `json:"configuration,omitempty"`
+	Continuous          bool                           `json:"continuous,omitempty"`
+	Development         bool                           `json:"development,omitempty"`
+	Edition             string                         `json:"edition,omitempty"`
+	Id                  string                         `json:"id,omitempty"`
+	Name                string                         `json:"name,omitempty"`
+	Photon              bool                           `json:"photon,omitempty"`
+	Serverless          bool                           `json:"serverless,omitempty"`
+	Storage             string                         `json:"storage,omitempty"`
+	Target              string                         `json:"target,omitempty"`
+	Url                 string                         `json:"url,omitempty"`
+	Cluster             []ResourcePipelineCluster      `json:"cluster,omitempty"`
+	Filters             *ResourcePipelineFilters       `json:"filters,omitempty"`
+	Library             []ResourcePipelineLibrary      `json:"library,omitempty"`
+	Notification        []ResourcePipelineNotification `json:"notification,omitempty"`
 }
