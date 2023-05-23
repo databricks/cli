@@ -4,7 +4,6 @@ import (
 	"path/filepath"
 )
 
-const ConfigFileName = "config.json"
 const schemaFileName = "schema.json"
 const templateDirName = "template"
 
