@@ -1,5 +1,4 @@
 {
-    "version": 0,
     "properties": {
         "a": {
             "type": "string"

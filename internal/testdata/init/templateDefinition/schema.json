@@ -1,5 +1,4 @@
 {
-    "version": 0,
     "properties": {
         "project_name": {
             "description": "Name of the project",
