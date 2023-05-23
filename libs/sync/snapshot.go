@@ -194,6 +194,8 @@ func (s *Snapshot) diff(ctx context.Context, all []fileset.File) (change diff, e
 			// get file metadata about whether it's a notebook
 			isNotebook, _, err := notebook.Detect(f.Absolute)
 			if err != nil {
+				// Ignore this file if we're unable to determine the notebook type.
+				// Trying to upload such a file to the workspace would fail anyway.
 				log.Warnf(ctx, err.Error())
 				continue
 			}
