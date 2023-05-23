@@ -181,6 +181,6 @@ func TestMaterializeFilePermissionsAreCopiedForWindows(t *testing.T) {
 	require.NoError(t, err)
 
 	// assert template files have the correct permission bits set
-	assertFilePerm(t, filepath.Join(instanceRoot, "Amsterdam"), 0600)
-	assertFilePerm(t, filepath.Join(instanceRoot, "Hague"), 0400)
+	assertFilePerm(t, filepath.Join(instanceRoot, "Amsterdam"), 0666)
+	assertFilePerm(t, filepath.Join(instanceRoot, "Hague"), 0444)
 }
