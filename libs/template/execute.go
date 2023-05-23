@@ -27,7 +27,6 @@ func executeTemplate(config map[string]any, templateDefinition string) (string, 
 	return result.String(), nil
 }
 
-// TODO: test this function
 func generateFile(config map[string]any, pathTemplate, contentTemplate string, perm fs.FileMode) error {
 	// compute file content
 	fileContent, err := executeTemplate(config, contentTemplate)
