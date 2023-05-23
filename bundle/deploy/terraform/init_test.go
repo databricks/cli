@@ -56,13 +56,11 @@ func TestSetTempDirEnvVarsForUnixWithTmpDirSet(t *testing.T) {
 	}
 
 	// Set TMPDIR environment variable
-	err := os.Setenv("TMPDIR", "/foo/bar")
-	defer os.Unsetenv("TMPDIR")
-	require.NoError(t, err)
+	t.Setenv("TMPDIR", "/foo/bar")
 
 	// compute env
 	env := make(map[string]string, 0)
-	err = setTempDirEnvVars(env, b)
+	err := setTempDirEnvVars(env, b)
 	require.NoError(t, err)
 
 	// assert that we pass through env var value
@@ -117,19 +115,13 @@ func TestSetTempDirEnvVarsForWindowWithAllTmpDirEnvVarsSet(t *testing.T) {
 	}
 
 	// Set environment variables
-	err := os.Setenv("TMP", "c:\\foo\\a")
-	require.NoError(t, err)
-	defer os.Unsetenv("TMP")
-	err = os.Setenv("TEMP", "c:\\foo\\b")
-	require.NoError(t, err)
-	defer os.Unsetenv("TEMP")
-	err = os.Setenv("USERPROFILE", "c:\\foo\\c")
-	require.NoError(t, err)
-	defer os.Unsetenv("USERPROFILE")
+	t.Setenv("TMP", "c:\\foo\\a")
+	t.Setenv("TEMP", "c:\\foo\\b")
+	t.Setenv("USERPROFILE", "c:\\foo\\c")
 
 	// compute env
 	env := make(map[string]string, 0)
-	err = setTempDirEnvVars(env, b)
+	err := setTempDirEnvVars(env, b)
 	require.NoError(t, err)
 
 	// assert that we pass through the highest priority env var value
@@ -155,12 +147,8 @@ func TestSetTempDirEnvVarsForWindowWithUserProfileAndTempSet(t *testing.T) {
 	// Set environment variables
 	err := os.Unsetenv("TMP")
 	require.NoError(t, err)
-	err = os.Setenv("TEMP", "c:\\foo\\b")
-	require.NoError(t, err)
-	defer os.Unsetenv("TEMP")
-	err = os.Setenv("USERPROFILE", "c:\\foo\\c")
-	require.NoError(t, err)
-	defer os.Unsetenv("USERPROFILE")
+	t.Setenv("TEMP", "c:\\foo\\b")
+	t.Setenv("USERPROFILE", "c:\\foo\\c")
 
 	// compute env
 	env := make(map[string]string, 0)
@@ -192,9 +180,7 @@ func TestSetTempDirEnvVarsForWindowWithUserProfileSet(t *testing.T) {
 	require.NoError(t, err)
 	err = os.Unsetenv("TEMP")
 	require.NoError(t, err)
-	err = os.Setenv("USERPROFILE", "c:\\foo\\c")
-	require.NoError(t, err)
-	defer os.Unsetenv("USERPROFILE")
+	t.Setenv("USERPROFILE", "c:\\foo\\c")
 
 	// compute env
 	env := make(map[string]string, 0)

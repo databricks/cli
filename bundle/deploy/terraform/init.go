@@ -75,21 +75,11 @@ func (m *initialize) findExecPath(ctx context.Context, b *bundle.Bundle, tf *con
 // directory
 //
 // This is necessary to avoid trying to create temporary files in directories
-// the CLI and it's dependencies do not have access to
+// the CLI and its dependencies do not have access to.
 //
 // see: os.TempDir for more context
 func setTempDirEnvVars(env map[string]string, b *bundle.Bundle) error {
 	switch runtime.GOOS {
-	case "darwin", "linux":
-		if v, ok := os.LookupEnv("TMPDIR"); ok {
-			env["TMPDIR"] = v
-		} else {
-			tmpDir, err := b.CacheDir("tmp")
-			if err != nil {
-				return err
-			}
-			env["TMPDIR"] = tmpDir
-		}
 	case "windows":
 		if v, ok := os.LookupEnv("TMP"); ok {
 			env["TMP"] = v
@@ -103,6 +93,16 @@ func setTempDirEnvVars(env map[string]string, b *bundle.Bundle) error {
 				return err
 			}
 			env["TMP"] = tmpDir
+		}
+	default:
+		if v, ok := os.LookupEnv("TMPDIR"); ok {
+			env["TMPDIR"] = v
+		} else {
+			tmpDir, err := b.CacheDir("tmp")
+			if err != nil {
+				return err
+			}
+			env["TMPDIR"] = tmpDir
 		}
 	}
 	return nil
