@@ -13,6 +13,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func unsetEnv(t *testing.T, name string) {
+	t.Setenv(name, "")
+	err := os.Unsetenv(name)
+	require.NoError(t, err)
+}
+
 func TestInitEnvironmentVariables(t *testing.T) {
 	_, err := exec.LookPath("terraform")
 	if err != nil {
@@ -84,12 +90,11 @@ func TestSetTempDirEnvVarsForUnixWithTmpDirNotSet(t *testing.T) {
 	}
 
 	// Unset TMPDIR environment variable confirm it's not set
-	err := os.Unsetenv("TMPDIR")
-	require.NoError(t, err)
+	unsetEnv(t, "TMPDIR")
 
 	// compute env
 	env := make(map[string]string, 0)
-	err = setTempDirEnvVars(env, b)
+	err := setTempDirEnvVars(env, b)
 	require.NoError(t, err)
 
 	// assert tmp dir is set to b.CacheDir("tmp")
@@ -145,14 +150,13 @@ func TestSetTempDirEnvVarsForWindowWithUserProfileAndTempSet(t *testing.T) {
 	}
 
 	// Set environment variables
-	err := os.Unsetenv("TMP")
-	require.NoError(t, err)
+	unsetEnv(t, "TMP")
 	t.Setenv("TEMP", "c:\\foo\\b")
 	t.Setenv("USERPROFILE", "c:\\foo\\c")
 
 	// compute env
 	env := make(map[string]string, 0)
-	err = setTempDirEnvVars(env, b)
+	err := setTempDirEnvVars(env, b)
 	require.NoError(t, err)
 
 	// assert that we pass through the highest priority env var value
@@ -176,15 +180,13 @@ func TestSetTempDirEnvVarsForWindowWithUserProfileSet(t *testing.T) {
 	}
 
 	// Set environment variables
-	err := os.Unsetenv("TMP")
-	require.NoError(t, err)
-	err = os.Unsetenv("TEMP")
-	require.NoError(t, err)
+	unsetEnv(t, "TMP")
+	unsetEnv(t, "TEMP")
 	t.Setenv("USERPROFILE", "c:\\foo\\c")
 
 	// compute env
 	env := make(map[string]string, 0)
-	err = setTempDirEnvVars(env, b)
+	err := setTempDirEnvVars(env, b)
 	require.NoError(t, err)
 
 	// assert that we pass through the user profile
@@ -208,16 +210,13 @@ func TestSetTempDirEnvVarsForWindowsWithoutAnyTempDirEnvVarsSet(t *testing.T) {
 	}
 
 	// unset all env vars
-	err := os.Unsetenv("TMP")
-	require.NoError(t, err)
-	err = os.Unsetenv("TEMP")
-	require.NoError(t, err)
-	err = os.Unsetenv("USERPROFILE")
-	require.NoError(t, err)
+	unsetEnv(t, "TMP")
+	unsetEnv(t, "TEMP")
+	unsetEnv(t, "USERPROFILE")
 
 	// compute env
 	env := make(map[string]string, 0)
-	err = setTempDirEnvVars(env, b)
+	err := setTempDirEnvVars(env, b)
 	require.NoError(t, err)
 
 	// assert TMP is set to b.CacheDir("tmp")
