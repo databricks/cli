@@ -21,13 +21,12 @@ func TestTemplateSchematIsInterger(t *testing.T) {
 func TestTemplateSchemaCastFloatToInt(t *testing.T) {
 	// define schema for config
 	schemaJson := `{
-		"version": 0,
 		"properties": {
 			"int_val": {
 				"type": "integer"
 			},
 			"float_val": {
-				"type": "float"
+				"type": "number"
 			},
 			"bool_val": {
 				"type": "boolean"
@@ -73,7 +72,6 @@ func TestTemplateSchemaCastFloatToInt(t *testing.T) {
 func TestTemplateSchemaCastFloatToIntFailsForUnknownTypes(t *testing.T) {
 	// define schema for config
 	schemaJson := `{
-		"version": 0,
 		"properties": {
 			"foo": {
 				"type": "integer"
@@ -99,7 +97,6 @@ func TestTemplateSchemaCastFloatToIntFailsForUnknownTypes(t *testing.T) {
 func TestTemplateSchemaCastFloatToIntFailsWhenWithNonIntValues(t *testing.T) {
 	// define schema for config
 	schemaJson := `{
-		"version": 0,
 		"properties": {
 			"foo": {
 				"type": "integer"
@@ -124,70 +121,69 @@ func TestTemplateSchemaCastFloatToIntFailsWhenWithNonIntValues(t *testing.T) {
 
 func TestTemplateSchemaValidateType(t *testing.T) {
 	// assert validation passing
-	err := validateType(int(0), FieldTypeInt)
+	err := validateType(int(0), PropertyTypeInt)
 	assert.NoError(t, err)
 
-	err = validateType(int32(1), FieldTypeInt)
+	err = validateType(int32(1), PropertyTypeInt)
 	assert.NoError(t, err)
 
-	err = validateType(int64(1), FieldTypeInt)
+	err = validateType(int64(1), PropertyTypeInt)
 	assert.NoError(t, err)
 
-	err = validateType(float32(1.1), FieldTypeFloat)
+	err = validateType(float32(1.1), PropertyTypeNumber)
 	assert.NoError(t, err)
 
-	err = validateType(float64(1.2), FieldTypeFloat)
+	err = validateType(float64(1.2), PropertyTypeNumber)
 	assert.NoError(t, err)
 
-	err = validateType(false, FieldTypeBoolean)
+	err = validateType(false, PropertyTypeBoolean)
 	assert.NoError(t, err)
 
-	err = validateType("abc", FieldTypeString)
+	err = validateType("abc", PropertyTypeString)
 	assert.NoError(t, err)
 
 	// assert validation failing for integers
-	err = validateType(float64(1.2), FieldTypeInt)
+	err = validateType(float64(1.2), PropertyTypeInt)
 	assert.ErrorContains(t, err, "expected type integer, but value is 1.2")
-	err = validateType(true, FieldTypeInt)
+	err = validateType(true, PropertyTypeInt)
 	assert.ErrorContains(t, err, "expected type integer, but value is true")
-	err = validateType("abc", FieldTypeInt)
+	err = validateType("abc", PropertyTypeInt)
 	assert.ErrorContains(t, err, "expected type integer, but value is \"abc\"")
 
 	// assert validation failing for floats
-	err = validateType(int(1), FieldTypeFloat)
+	err = validateType(int(1), PropertyTypeNumber)
 	assert.ErrorContains(t, err, "expected type float, but value is 1")
-	err = validateType(true, FieldTypeFloat)
+	err = validateType(true, PropertyTypeNumber)
 	assert.ErrorContains(t, err, "expected type float, but value is true")
-	err = validateType("abc", FieldTypeFloat)
+	err = validateType("abc", PropertyTypeNumber)
 	assert.ErrorContains(t, err, "expected type float, but value is \"abc\"")
 
 	// assert validation failing for boolean
-	err = validateType(int(1), FieldTypeBoolean)
+	err = validateType(int(1), PropertyTypeBoolean)
 	assert.ErrorContains(t, err, "expected type boolean, but value is 1")
-	err = validateType(float64(1), FieldTypeBoolean)
+	err = validateType(float64(1), PropertyTypeBoolean)
 	assert.ErrorContains(t, err, "expected type boolean, but value is 1")
-	err = validateType("abc", FieldTypeBoolean)
+	err = validateType("abc", PropertyTypeBoolean)
 	assert.ErrorContains(t, err, "expected type boolean, but value is \"abc\"")
 
 	// assert validation failing for string
-	err = validateType(int(1), FieldTypeString)
+	err = validateType(int(1), PropertyTypeString)
 	assert.ErrorContains(t, err, "expected type string, but value is 1")
-	err = validateType(float64(1), FieldTypeString)
+	err = validateType(float64(1), PropertyTypeString)
 	assert.ErrorContains(t, err, "expected type string, but value is 1")
-	err = validateType(false, FieldTypeString)
+	err = validateType(false, PropertyTypeString)
 	assert.ErrorContains(t, err, "expected type string, but value is false")
 }
 
 func TestTemplateSchemaValidateConfig(t *testing.T) {
 	// define schema for config
 	schemaJson := `{
-			"version": 0,
 			"properties": {
 				"int_val": {
 					"type": "integer"
 				},
 				"float_val": {
-					"type": "float"
+					"type": "number"
 				},
 				"bool_val": {
 					"type": "boolean"
@@ -216,13 +212,12 @@ func TestTemplateSchemaValidateConfig(t *testing.T) {
 func TestTemplateSchemaValidateConfigFailsForUnknownField(t *testing.T) {
 	// define schema for config
 	schemaJson := `{
-		"version": 0,
 		"properties": {
 			"int_val": {
 				"type": "integer"
 			},
 			"float_val": {
-				"type": "float"
+				"type": "number"
 			},
 			"bool_val": {
 				"type": "boolean"
@@ -251,13 +246,12 @@ func TestTemplateSchemaValidateConfigFailsForUnknownField(t *testing.T) {
 func TestTemplateSchemaValidateConfigFailsForWhenIncorrectTypes(t *testing.T) {
 	// define schema for config
 	schemaJson := `{
-		"version": 0,
 		"properties": {
 			"int_val": {
 				"type": "integer"
 			},
 			"float_val": {
-				"type": "float"
+				"type": "number"
 			},
 			"bool_val": {
 				"type": "boolean"
@@ -286,7 +280,6 @@ func TestTemplateSchemaValidateConfigFailsForWhenIncorrectTypes(t *testing.T) {
 func TestTemplateSchemaValidateConfigFailsForWhenMissingInputParams(t *testing.T) {
 	// define schema for config
 	schemaJson := `{
-		"version": 0,
 		"properties": {
 			"int_val": {
 				"type": "integer"

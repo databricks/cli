@@ -39,9 +39,9 @@ func validateInteger(v any) error {
 	return nil
 }
 
-var validators map[FieldType]Validator = map[FieldType]Validator{
-	FieldTypeString:  validateString,
-	FieldTypeBoolean: validateBoolean,
-	FieldTypeInt:     validateInteger,
-	FieldTypeFloat:   validateFloat,
+var validators map[PropertyType]Validator = map[PropertyType]Validator{
+	PropertyTypeString:  validateString,
+	PropertyTypeBoolean: validateBoolean,
+	PropertyTypeInt:     validateInteger,
+	PropertyTypeNumber:  validateFloat,
 }

@@ -9,27 +9,25 @@ import (
 
 const LatestSchemaVersion = 0
 
+// This is a JSON Schema compliant struct that we use to do validation checks on
+// the provided configuration
 type Schema struct {
-	// A version for the template schema
-	Version int `json:"version"`
-
 	// A list of properties that can be used in the config
-	Properties map[string]FieldInfo `json:"properties"`
+	Properties map[string]Property `json:"properties"`
 }
 
-type FieldType string
+type PropertyType string
 
 const (
-	FieldTypeString  = FieldType("string")
-	FieldTypeInt     = FieldType("integer")
-	FieldTypeFloat   = FieldType("float")
-	FieldTypeBoolean = FieldType("boolean")
+	PropertyTypeString  = PropertyType("string")
+	PropertyTypeInt     = PropertyType("integer")
+	PropertyTypeNumber  = PropertyType("number")
+	PropertyTypeBoolean = PropertyType("boolean")
 )
 
-type FieldInfo struct {
-	Type        FieldType `json:"type"`
-	Description string    `json:"description"`
-	Validation  string    `json:"validation"`
+type Property struct {
+	Type        PropertyType `json:"type"`
+	Description string       `json:"description"`
 }
 
 // function to check whether a float value represents an integer
@@ -38,7 +36,7 @@ func isIntegerValue(v float64) bool {
 }
 
 // cast value to integer for config values that are floats but are supposed to be
-// integeres according to the schema
+// integers according to the schema
 //
 // Needed because the default json unmarshaller for maps converts all numbers to floats
 func castFloatToInt(config map[string]any, schema *Schema) error {
@@ -50,7 +48,7 @@ func castFloatToInt(config map[string]any, schema *Schema) error {
 
 		// skip non integer fields
 		fieldInfo := schema.Properties[k]
-		if fieldInfo.Type != FieldTypeInt {
+		if fieldInfo.Type != PropertyTypeInt {
 			continue
 		}
 
@@ -74,7 +72,7 @@ func castFloatToInt(config map[string]any, schema *Schema) error {
 	return nil
 }
 
-func validateType(v any, fieldType FieldType) error {
+func validateType(v any, fieldType PropertyType) error {
 	validateFunc, ok := validators[fieldType]
 	if !ok {
 		return nil
