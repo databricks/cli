@@ -30,5 +30,7 @@ type ResourcePermissions struct {
 	SqlDashboardId    string                             `json:"sql_dashboard_id,omitempty"`
 	SqlEndpointId     string                             `json:"sql_endpoint_id,omitempty"`
 	SqlQueryId        string                             `json:"sql_query_id,omitempty"`
+	WorkspaceFileId   string                             `json:"workspace_file_id,omitempty"`
+	WorkspaceFilePath string                             `json:"workspace_file_path,omitempty"`
 	AccessControl     []ResourcePermissionsAccessControl `json:"access_control,omitempty"`
 }

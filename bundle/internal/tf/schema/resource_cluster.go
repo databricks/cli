@@ -98,12 +98,17 @@ type ResourceClusterInitScriptsS3 struct {
 	Region           string `json:"region,omitempty"`
 }
 
+type ResourceClusterInitScriptsWorkspace struct {
+	Destination string `json:"destination,omitempty"`
+}
+
 type ResourceClusterInitScripts struct {
-	Abfss *ResourceClusterInitScriptsAbfss `json:"abfss,omitempty"`
-	Dbfs  *ResourceClusterInitScriptsDbfs  `json:"dbfs,omitempty"`
-	File  *ResourceClusterInitScriptsFile  `json:"file,omitempty"`
-	Gcs   *ResourceClusterInitScriptsGcs   `json:"gcs,omitempty"`
-	S3    *ResourceClusterInitScriptsS3    `json:"s3,omitempty"`
+	Abfss     *ResourceClusterInitScriptsAbfss     `json:"abfss,omitempty"`
+	Dbfs      *ResourceClusterInitScriptsDbfs      `json:"dbfs,omitempty"`
+	File      *ResourceClusterInitScriptsFile      `json:"file,omitempty"`
+	Gcs       *ResourceClusterInitScriptsGcs       `json:"gcs,omitempty"`
+	S3        *ResourceClusterInitScriptsS3        `json:"s3,omitempty"`
+	Workspace *ResourceClusterInitScriptsWorkspace `json:"workspace,omitempty"`
 }
 
 type ResourceClusterLibraryCran struct {

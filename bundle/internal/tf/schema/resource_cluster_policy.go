@@ -3,9 +3,12 @@
 package schema
 
 type ResourceClusterPolicy struct {
-	Definition         string `json:"definition"`
-	Id                 string `json:"id,omitempty"`
-	MaxClustersPerUser int    `json:"max_clusters_per_user,omitempty"`
-	Name               string `json:"name"`
-	PolicyId           string `json:"policy_id,omitempty"`
+	Definition                      string `json:"definition,omitempty"`
+	Description                     string `json:"description,omitempty"`
+	Id                              string `json:"id,omitempty"`
+	MaxClustersPerUser              int    `json:"max_clusters_per_user,omitempty"`
+	Name                            string `json:"name"`
+	PolicyFamilyDefinitionOverrides string `json:"policy_family_definition_overrides,omitempty"`
+	PolicyFamilyId                  string `json:"policy_family_id,omitempty"`
+	PolicyId                        string `json:"policy_id,omitempty"`
 }
