@@ -37,5 +37,5 @@ func (m *all) Apply(ctx context.Context, b *bundle.Bundle) error {
 		}
 	}
 
-	return bundle.Seq(out...).Apply(ctx, b)
+	return bundle.Apply(ctx, b, bundle.Seq(out...))
 }

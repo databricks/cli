@@ -18,7 +18,7 @@ func (t *testMutator) Name() string {
 
 func (t *testMutator) Apply(ctx context.Context, b *Bundle) error {
 	t.applyCalled++
-	return Seq(t.nestedMutators...).Apply(ctx, b)
+	return Apply(ctx, b, Seq(t.nestedMutators...))
 }
 
 func TestMutator(t *testing.T) {

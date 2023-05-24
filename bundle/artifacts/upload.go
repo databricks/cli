@@ -34,7 +34,7 @@ func (m *upload) Apply(ctx context.Context, b *bundle.Bundle) error {
 	}
 
 	if artifact.Notebook != nil {
-		return notebook.Upload(m.name).Apply(ctx, b)
+		return bundle.Apply(ctx, b, notebook.Upload(m.name))
 	}
 
 	return nil

@@ -34,7 +34,7 @@ func (m *build) Apply(ctx context.Context, b *bundle.Bundle) error {
 	}
 
 	if artifact.Notebook != nil {
-		return notebook.Build(m.name).Apply(ctx, b)
+		return bundle.Apply(ctx, b, notebook.Build(m.name))
 	}
 
 	return nil
