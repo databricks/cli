@@ -45,7 +45,7 @@ func init() {
 }
 
 var createCmd = &cobra.Command{
-	Use:   "create",
+	Use:   "create ID",
 	Short: `Create a service principal.`,
 	Long: `Create a service principal.
   
@@ -56,6 +56,20 @@ var createCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+		if len(args) == 0 {
+			names, err := w.ServicePrincipals.ServicePrincipalDisplayNameToIdMap(ctx, iam.ListServicePrincipalsRequest{})
+			if err != nil {
+				return err
+			}
+			id, err := cmdio.Select(ctx, names, "Databricks service principal ID")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have databricks service principal id")
+		}
 		err = createJson.Unmarshal(&createReq)
 		if err != nil {
 			return err
@@ -189,7 +203,6 @@ var listCmd = &cobra.Command{
   Gets the set of service principals associated with a Databricks workspace.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(0),
 	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -218,7 +231,7 @@ func init() {
 }
 
 var patchCmd = &cobra.Command{
-	Use:   "patch",
+	Use:   "patch ID",
 	Short: `Update service principal details.`,
 	Long: `Update service principal details.
   
@@ -230,6 +243,20 @@ var patchCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+		if len(args) == 0 {
+			names, err := w.ServicePrincipals.ServicePrincipalDisplayNameToIdMap(ctx, iam.ListServicePrincipalsRequest{})
+			if err != nil {
+				return err
+			}
+			id, err := cmdio.Select(ctx, names, "Unique ID for a group in the Databricks account")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have unique id for a group in the databricks account")
+		}
 		err = patchJson.Unmarshal(&patchReq)
 		if err != nil {
 			return err
@@ -266,7 +293,7 @@ func init() {
 }
 
 var updateCmd = &cobra.Command{
-	Use:   "update",
+	Use:   "update ID",
 	Short: `Replace service principal.`,
 	Long: `Replace service principal.
   
@@ -279,6 +306,20 @@ var updateCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+		if len(args) == 0 {
+			names, err := w.ServicePrincipals.ServicePrincipalDisplayNameToIdMap(ctx, iam.ListServicePrincipalsRequest{})
+			if err != nil {
+				return err
+			}
+			id, err := cmdio.Select(ctx, names, "Databricks service principal ID")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have databricks service principal id")
+		}
 		err = updateJson.Unmarshal(&updateReq)
 		if err != nil {
 			return err

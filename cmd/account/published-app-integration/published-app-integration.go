@@ -175,7 +175,7 @@ func init() {
 }
 
 var updateCmd = &cobra.Command{
-	Use:   "update",
+	Use:   "update INTEGRATION_ID",
 	Short: `Updates Published OAuth App Integration.`,
 	Long: `Updates Published OAuth App Integration.
   
@@ -183,6 +183,7 @@ var updateCmd = &cobra.Command{
   published oauth app integration via :method:PublishedAppIntegration/get.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()

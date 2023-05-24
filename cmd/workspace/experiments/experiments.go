@@ -13,7 +13,17 @@ import (
 )
 
 var Cmd = &cobra.Command{
-	Use: "experiments",
+	Use:   "experiments",
+	Short: `Experiments are the primary unit of organization in MLflow; all MLflow runs belong to an experiment.`,
+	Long: `Experiments are the primary unit of organization in MLflow; all MLflow runs
+  belong to an experiment. Each experiment lets you visualize, search, and
+  compare runs, as well as download run artifacts or metadata for analysis in
+  other tools. Experiments are maintained in a Databricks hosted MLflow tracking
+  server.
+  
+  Experiments are located in the workspace file tree. You manage experiments
+  using the same tools you use to manage other workspace objects such as
+  folders, notebooks, and libraries.`,
 }
 
 // start create-experiment command
@@ -32,7 +42,7 @@ func init() {
 }
 
 var createExperimentCmd = &cobra.Command{
-	Use:   "create-experiment",
+	Use:   "create-experiment NAME",
 	Short: `Create experiment.`,
 	Long: `Create experiment.
   
@@ -44,6 +54,7 @@ var createExperimentCmd = &cobra.Command{
   Throws RESOURCE_ALREADY_EXISTS if a experiment with the given name exists.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -386,7 +397,6 @@ var listArtifactsCmd = &cobra.Command{
   specified, the response contains only artifacts with the specified prefix.",`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(0),
 	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -422,7 +432,6 @@ var listExperimentsCmd = &cobra.Command{
   Gets a list of all experiments.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(0),
 	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -485,7 +494,7 @@ var logBatchCmd = &cobra.Command{
   Request Limits ------------------------------- A single JSON-serialized API
   request may be up to 1 MB in size and contain:
   
-  * No more than 1000 metrics, params, and tags in total * Up to 1000 metrics -
+  * No more than 1000 metrics, params, and tags in total * Up to 1000 metrics *
   Up to 100 params * Up to 100 tags
   
   For example, a valid request might contain 900 metrics, 50 params, and 50
@@ -624,7 +633,6 @@ var logModelCmd = &cobra.Command{
   without warning.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(0),
 	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -969,7 +977,6 @@ var updateRunCmd = &cobra.Command{
   Updates run metadata.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(0),
 	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()

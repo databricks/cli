@@ -60,13 +60,14 @@ func init() {
 }
 
 var createCmd = &cobra.Command{
-	Use:   "create",
+	Use:   "create INSTANCE_POOL_NAME NODE_TYPE_ID",
 	Short: `Create a new instance pool.`,
 	Long: `Create a new instance pool.
   
   Creates a new instance pool using idle and ready-to-use cloud instances.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(2),
 	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -158,13 +159,14 @@ func init() {
 }
 
 var editCmd = &cobra.Command{
-	Use:   "edit",
+	Use:   "edit INSTANCE_POOL_ID INSTANCE_POOL_NAME NODE_TYPE_ID",
 	Short: `Edit an existing instance pool.`,
 	Long: `Edit an existing instance pool.
   
   Modifies the configuration of an existing instance pool.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(3),
 	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()

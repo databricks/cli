@@ -210,7 +210,7 @@ func init() {
 }
 
 var editCmd = &cobra.Command{
-	Use:   "edit",
+	Use:   "edit ID",
 	Short: `Update a warehouse.`,
 	Long: `Update a warehouse.
   
@@ -221,6 +221,20 @@ var editCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+		if len(args) == 0 {
+			names, err := w.Warehouses.EndpointInfoNameToIdMap(ctx, sql.ListWarehousesRequest{})
+			if err != nil {
+				return err
+			}
+			id, err := cmdio.Select(ctx, names, "Required")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have required")
+		}
 		err = editJson.Unmarshal(&editReq)
 		if err != nil {
 			return err
@@ -359,7 +373,6 @@ var listCmd = &cobra.Command{
   Lists all SQL warehouses that a user has manager permissions on.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(0),
 	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()

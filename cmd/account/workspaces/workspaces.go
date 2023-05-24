@@ -58,7 +58,7 @@ func init() {
 }
 
 var createCmd = &cobra.Command{
-	Use:   "create",
+	Use:   "create WORKSPACE_NAME",
 	Short: `Create a new workspace.`,
 	Long: `Create a new workspace.
   
@@ -77,6 +77,20 @@ var createCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
+		if len(args) == 0 {
+			names, err := a.Workspaces.WorkspaceWorkspaceNameToWorkspaceIdMap(ctx)
+			if err != nil {
+				return err
+			}
+			id, err := cmdio.Select(ctx, names, "The workspace's human-readable name")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the workspace's human-readable name")
+		}
 		err = createJson.Unmarshal(&createReq)
 		if err != nil {
 			return err

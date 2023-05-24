@@ -71,7 +71,7 @@ func init() {
 }
 
 var updateCmd = &cobra.Command{
-	Use:   "update",
+	Use:   "update NAME",
 	Short: `Update catalog workspace bindings.`,
 	Long: `Update catalog workspace bindings.
   
@@ -79,6 +79,7 @@ var updateCmd = &cobra.Command{
   admin or an owner of the catalog.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()

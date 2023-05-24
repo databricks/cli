@@ -192,7 +192,6 @@ var listCmd = &cobra.Command{
   term.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(0),
 	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -272,7 +271,7 @@ func init() {
 }
 
 var updateCmd = &cobra.Command{
-	Use:   "update",
+	Use:   "update QUERY_ID",
 	Short: `Change a query definition.`,
 	Long: `Change a query definition.
   
@@ -285,6 +284,20 @@ var updateCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+		if len(args) == 0 {
+			names, err := w.Queries.QueryNameToIdMap(ctx, sql.ListQueriesRequest{})
+			if err != nil {
+				return err
+			}
+			id, err := cmdio.Select(ctx, names, "")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have ")
+		}
 		err = updateJson.Unmarshal(&updateReq)
 		if err != nil {
 			return err

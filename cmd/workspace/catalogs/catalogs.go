@@ -42,7 +42,7 @@ func init() {
 }
 
 var createCmd = &cobra.Command{
-	Use:   "create",
+	Use:   "create NAME",
 	Short: `Create a catalog.`,
 	Long: `Create a catalog.
   
@@ -50,6 +50,7 @@ var createCmd = &cobra.Command{
   metastore admin or has the **CREATE_CATALOG** privilege.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -189,7 +190,7 @@ func init() {
 }
 
 var updateCmd = &cobra.Command{
-	Use:   "update",
+	Use:   "update NAME",
 	Short: `Update a catalog.`,
 	Long: `Update a catalog.
   
@@ -198,6 +199,7 @@ var updateCmd = &cobra.Command{
   of the catalog).`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()

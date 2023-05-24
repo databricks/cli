@@ -52,7 +52,7 @@ func init() {
 }
 
 var createCmd = &cobra.Command{
-	Use:   "create",
+	Use:   "create ID",
 	Short: `Create a new user.`,
 	Long: `Create a new user.
   
@@ -64,6 +64,20 @@ var createCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
+		if len(args) == 0 {
+			names, err := a.Users.UserUserNameToIdMap(ctx, iam.ListAccountUsersRequest{})
+			if err != nil {
+				return err
+			}
+			id, err := cmdio.Select(ctx, names, "Databricks user ID")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have databricks user id")
+		}
 		err = createJson.Unmarshal(&createReq)
 		if err != nil {
 			return err
@@ -197,7 +211,6 @@ var listCmd = &cobra.Command{
   Gets details for all the users associated with a Databricks account.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(0),
 	PreRunE:     root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -226,7 +239,7 @@ func init() {
 }
 
 var patchCmd = &cobra.Command{
-	Use:   "patch",
+	Use:   "patch ID",
 	Short: `Update user details.`,
 	Long: `Update user details.
   
@@ -238,6 +251,20 @@ var patchCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
+		if len(args) == 0 {
+			names, err := a.Users.UserUserNameToIdMap(ctx, iam.ListAccountUsersRequest{})
+			if err != nil {
+				return err
+			}
+			id, err := cmdio.Select(ctx, names, "Unique ID for a group in the Databricks account")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have unique id for a group in the databricks account")
+		}
 		err = patchJson.Unmarshal(&patchReq)
 		if err != nil {
 			return err
@@ -276,7 +303,7 @@ func init() {
 }
 
 var updateCmd = &cobra.Command{
-	Use:   "update",
+	Use:   "update ID",
 	Short: `Replace a user.`,
 	Long: `Replace a user.
   
@@ -287,6 +314,20 @@ var updateCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
+		if len(args) == 0 {
+			names, err := a.Users.UserUserNameToIdMap(ctx, iam.ListAccountUsersRequest{})
+			if err != nil {
+				return err
+			}
+			id, err := cmdio.Select(ctx, names, "Databricks user ID")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have databricks user id")
+		}
 		err = updateJson.Unmarshal(&updateReq)
 		if err != nil {
 			return err

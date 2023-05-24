@@ -57,7 +57,13 @@ func init() {
     {{- end}}
     {{end}}
 }
-{{ $hasPosArgs := and .Request (or .Request.IsOnlyPrimitiveFields (eq .PascalName "RunNow")) -}}
+{{$isAllRequiredFieldsPrimitive := or (not .Request) (gt (len .Request.RequiredFields) 0)}}
+{{ if .Request }}
+	{{- range .Request.RequiredFields -}}
+		{{- if not .Entity.IsPrimitive -}}{{ $isAllRequiredFieldsPrimitive = false }}{{- end -}}
+	{{- end -}}
+{{ end }}
+{{ $hasPosArgs := and .Request (or $isAllRequiredFieldsPrimitive (eq .PascalName "RunNow")) -}}
 {{- $hasSinglePosArg := and $hasPosArgs (eq 1 (len .Request.RequiredFields)) -}}
 {{- $serviceHasNamedIdMap := and .Service.List .Service.List.NamedIdMap -}}
 {{- $hasIdPrompt := and $hasSinglePosArg $serviceHasNamedIdMap -}}

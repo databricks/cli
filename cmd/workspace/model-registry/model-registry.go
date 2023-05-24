@@ -13,7 +13,10 @@ import (
 )
 
 var Cmd = &cobra.Command{
-	Use: "model-registry",
+	Use:   "model-registry",
+	Short: `MLflow Model Registry is a centralized model repository and a UI and set of APIs that enable you to manage the full lifecycle of MLflow Models.`,
+	Long: `MLflow Model Registry is a centralized model repository and a UI and set of
+  APIs that enable you to manage the full lifecycle of MLflow Models.`,
 }
 
 // start approve-transition-request command
@@ -113,7 +116,7 @@ func init() {
 }
 
 var createModelCmd = &cobra.Command{
-	Use:   "create-model",
+	Use:   "create-model NAME",
 	Short: `Create a model.`,
 	Long: `Create a model.
   
@@ -123,6 +126,7 @@ var createModelCmd = &cobra.Command{
   exists.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -159,13 +163,14 @@ func init() {
 }
 
 var createModelVersionCmd = &cobra.Command{
-	Use:   "create-model-version",
+	Use:   "create-model-version NAME SOURCE",
 	Short: `Create a model version.`,
 	Long: `Create a model version.
   
   Creates a model version.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(2),
 	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -506,7 +511,6 @@ var deleteWebhookCmd = &cobra.Command{
   Deletes a registry webhook.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(0),
 	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -535,13 +539,14 @@ func init() {
 }
 
 var getLatestVersionsCmd = &cobra.Command{
-	Use:   "get-latest-versions",
+	Use:   "get-latest-versions NAME",
 	Short: `Get the latest version.`,
 	Long: `Get the latest version.
   
   Gets the latest version of a registered model.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -687,7 +692,6 @@ var listModelsCmd = &cobra.Command{
   __max_results__.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(0),
 	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -1217,7 +1221,7 @@ func init() {
 }
 
 var updateWebhookCmd = &cobra.Command{
-	Use:   "update-webhook",
+	Use:   "update-webhook ID",
 	Short: `Update a webhook.`,
 	Long: `Update a webhook.
   
@@ -1226,6 +1230,7 @@ var updateWebhookCmd = &cobra.Command{
   Updates a registry webhook.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()

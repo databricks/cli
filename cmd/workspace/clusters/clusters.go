@@ -124,7 +124,7 @@ func init() {
 }
 
 var createCmd = &cobra.Command{
-	Use:   "create",
+	Use:   "create SPARK_VERSION",
 	Short: `Create new cluster.`,
 	Long: `Create new cluster.
   
@@ -147,6 +147,20 @@ var createCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+		if len(args) == 0 {
+			names, err := w.Clusters.ClusterInfoClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
+			if err != nil {
+				return err
+			}
+			id, err := cmdio.Select(ctx, names, "The Spark version of the cluster, e.g")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the spark version of the cluster, e.g")
+		}
 		err = createJson.Unmarshal(&createReq)
 		if err != nil {
 			return err
@@ -293,7 +307,7 @@ func init() {
 }
 
 var editCmd = &cobra.Command{
-	Use:   "edit",
+	Use:   "edit CLUSTER_ID SPARK_VERSION",
 	Short: `Update cluster configuration.`,
 	Long: `Update cluster configuration.
   
@@ -311,6 +325,7 @@ var editCmd = &cobra.Command{
   Clusters created by the Databricks Jobs service cannot be edited.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(2),
 	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -367,7 +382,7 @@ func init() {
 }
 
 var eventsCmd = &cobra.Command{
-	Use:   "events",
+	Use:   "events CLUSTER_ID",
 	Short: `List cluster activity events.`,
 	Long: `List cluster activity events.
   
@@ -380,6 +395,20 @@ var eventsCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+		if len(args) == 0 {
+			names, err := w.Clusters.ClusterInfoClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
+			if err != nil {
+				return err
+			}
+			id, err := cmdio.Select(ctx, names, "The ID of the cluster to retrieve events about")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the id of the cluster to retrieve events about")
+		}
 		err = eventsJson.Unmarshal(&eventsReq)
 		if err != nil {
 			return err
@@ -475,7 +504,6 @@ var listCmd = &cobra.Command{
   terminated job clusters.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(0),
 	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -665,7 +693,7 @@ func init() {
 }
 
 var resizeCmd = &cobra.Command{
-	Use:   "resize",
+	Use:   "resize CLUSTER_ID",
 	Short: `Resize cluster.`,
 	Long: `Resize cluster.
   
@@ -677,6 +705,20 @@ var resizeCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+		if len(args) == 0 {
+			names, err := w.Clusters.ClusterInfoClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
+			if err != nil {
+				return err
+			}
+			id, err := cmdio.Select(ctx, names, "The cluster to be resized")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the cluster to be resized")
+		}
 		err = resizeJson.Unmarshal(&resizeReq)
 		if err != nil {
 			return err

@@ -247,7 +247,6 @@ var listCmd = &cobra.Command{
   Returns a list of policies accessible by the requesting user.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(0),
 	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()

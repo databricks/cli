@@ -171,7 +171,6 @@ var listCmd = &cobra.Command{
   Lists all tokens associated with the specified workspace or user.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(0),
 	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()

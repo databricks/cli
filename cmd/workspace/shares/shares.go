@@ -204,7 +204,7 @@ func init() {
 }
 
 var updateCmd = &cobra.Command{
-	Use:   "update",
+	Use:   "update NAME",
 	Short: `Update a share.`,
 	Long: `Update a share.
   
@@ -224,6 +224,7 @@ var updateCmd = &cobra.Command{
   Table removals through **update** do not require additional privileges.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -257,7 +258,7 @@ func init() {
 }
 
 var updatePermissionsCmd = &cobra.Command{
-	Use:   "update-permissions",
+	Use:   "update-permissions NAME",
 	Short: `Update permissions.`,
 	Long: `Update permissions.
   
@@ -268,6 +269,7 @@ var updatePermissionsCmd = &cobra.Command{
   recipient revocations do not require additional privileges.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()

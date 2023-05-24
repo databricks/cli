@@ -43,7 +43,7 @@ func init() {
 }
 
 var createCmd = &cobra.Command{
-	Use:   "create",
+	Use:   "create URL PROVIDER",
 	Short: `Create a repo.`,
 	Long: `Create a repo.
   
@@ -52,6 +52,7 @@ var createCmd = &cobra.Command{
   unlike repos created in the browser.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(2),
 	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -191,7 +192,6 @@ var listCmd = &cobra.Command{
   paginated with each page containing twenty repos.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(0),
 	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -222,7 +222,7 @@ func init() {
 }
 
 var updateCmd = &cobra.Command{
-	Use:   "update",
+	Use:   "update REPO_ID",
 	Short: `Update a repo.`,
 	Long: `Update a repo.
   
@@ -234,6 +234,20 @@ var updateCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+		if len(args) == 0 {
+			names, err := w.Repos.RepoInfoPathToIdMap(ctx, workspace.ListReposRequest{})
+			if err != nil {
+				return err
+			}
+			id, err := cmdio.Select(ctx, names, "The ID for the corresponding repo to access")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the id for the corresponding repo to access")
+		}
 		err = updateJson.Unmarshal(&updateReq)
 		if err != nil {
 			return err

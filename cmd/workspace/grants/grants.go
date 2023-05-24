@@ -121,13 +121,14 @@ func init() {
 }
 
 var updateCmd = &cobra.Command{
-	Use:   "update",
+	Use:   "update SECURABLE_TYPE FULL_NAME",
 	Short: `Update permissions.`,
 	Long: `Update permissions.
   
   Updates the permissions for a securable.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(2),
 	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()

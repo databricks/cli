@@ -35,7 +35,7 @@ func init() {
 }
 
 var createCmd = &cobra.Command{
-	Use:   "create",
+	Use:   "create VPC_ENDPOINT_NAME",
 	Short: `Create VPC endpoint configuration.`,
 	Long: `Create VPC endpoint configuration.
   
@@ -58,6 +58,20 @@ var createCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
+		if len(args) == 0 {
+			names, err := a.VpcEndpoints.VpcEndpointVpcEndpointNameToVpcEndpointIdMap(ctx)
+			if err != nil {
+				return err
+			}
+			id, err := cmdio.Select(ctx, names, "The human-readable name of the storage configuration")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the human-readable name of the storage configuration")
+		}
 		err = createJson.Unmarshal(&createReq)
 		if err != nil {
 			return err

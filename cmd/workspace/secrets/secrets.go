@@ -46,7 +46,7 @@ func init() {
 }
 
 var createScopeCmd = &cobra.Command{
-	Use:   "create-scope",
+	Use:   "create-scope SCOPE",
 	Short: `Create a new secret scope.`,
 	Long: `Create a new secret scope.
   
@@ -55,6 +55,7 @@ var createScopeCmd = &cobra.Command{
   in a workspace is 100.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()

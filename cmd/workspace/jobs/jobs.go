@@ -556,7 +556,6 @@ var listCmd = &cobra.Command{
   Retrieves a list of jobs.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(0),
 	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -598,7 +597,6 @@ var listRunsCmd = &cobra.Command{
   List runs in descending order by start time.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(0),
 	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -642,7 +640,7 @@ func init() {
 }
 
 var repairRunCmd = &cobra.Command{
-	Use:   "repair-run",
+	Use:   "repair-run RUN_ID",
 	Short: `Repair a job run.`,
 	Long: `Repair a job run.
   
@@ -655,6 +653,20 @@ var repairRunCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+		if len(args) == 0 {
+			names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
+			if err != nil {
+				return err
+			}
+			id, err := cmdio.Select(ctx, names, "The job run ID of the run to repair")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the job run id of the run to repair")
+		}
 		err = repairRunJson.Unmarshal(&repairRunReq)
 		if err != nil {
 			return err
@@ -930,7 +942,7 @@ func init() {
 }
 
 var updateCmd = &cobra.Command{
-	Use:   "update",
+	Use:   "update JOB_ID",
 	Short: `Partially update a job.`,
 	Long: `Partially update a job.
   
@@ -942,6 +954,20 @@ var updateCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+		if len(args) == 0 {
+			names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
+			if err != nil {
+				return err
+			}
+			id, err := cmdio.Select(ctx, names, "The canonical identifier of the job to update")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the canonical identifier of the job to update")
+		}
 		err = updateJson.Unmarshal(&updateReq)
 		if err != nil {
 			return err

@@ -101,7 +101,7 @@ func init() {
 }
 
 var setCmd = &cobra.Command{
-	Use:   "set",
+	Use:   "set REQUEST_OBJECT_TYPE REQUEST_OBJECT_ID",
 	Short: `Set permissions.`,
 	Long: `Set permissions.
   
@@ -109,6 +109,7 @@ var setCmd = &cobra.Command{
   objects and root objects.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(2),
 	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -143,13 +144,14 @@ func init() {
 }
 
 var updateCmd = &cobra.Command{
-	Use:   "update",
+	Use:   "update REQUEST_OBJECT_TYPE REQUEST_OBJECT_ID",
 	Short: `Update permission.`,
 	Long: `Update permission.
   
   Updates the permissions on an object.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(2),
 	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()

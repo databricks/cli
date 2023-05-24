@@ -38,7 +38,7 @@ func init() {
 }
 
 var createCmd = &cobra.Command{
-	Use:   "create",
+	Use:   "create NETWORK_NAME",
 	Short: `Create network configuration.`,
 	Long: `Create network configuration.
   
@@ -51,6 +51,20 @@ var createCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
+		if len(args) == 0 {
+			names, err := a.Networks.NetworkNetworkNameToNetworkIdMap(ctx)
+			if err != nil {
+				return err
+			}
+			id, err := cmdio.Select(ctx, names, "The human-readable name of the network configuration")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the human-readable name of the network configuration")
+		}
 		err = createJson.Unmarshal(&createReq)
 		if err != nil {
 			return err

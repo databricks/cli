@@ -50,7 +50,7 @@ func init() {
 }
 
 var createCmd = &cobra.Command{
-	Use:   "create",
+	Use:   "create NAME METASTORE_ID",
 	Short: `Create a storage credential.`,
 	Long: `Create a storage credential.
   
@@ -63,6 +63,7 @@ var createCmd = &cobra.Command{
   **CREATE_STORAGE_CREDENTIAL** privilege on the metastore.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(2),
 	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -233,7 +234,7 @@ func init() {
 }
 
 var updateCmd = &cobra.Command{
-	Use:   "update",
+	Use:   "update METASTORE_ID NAME",
 	Short: `Update a credential.`,
 	Long: `Update a credential.
   
@@ -242,6 +243,7 @@ var updateCmd = &cobra.Command{
   admin, only the __owner__ credential can be changed.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(2),
 	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()

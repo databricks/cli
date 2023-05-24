@@ -38,7 +38,7 @@ func init() {
 }
 
 var createCmd = &cobra.Command{
-	Use:   "create",
+	Use:   "create NAME AUTHENTICATION_TYPE",
 	Short: `Create a share recipient.`,
 	Long: `Create a share recipient.
   
@@ -47,6 +47,7 @@ var createCmd = &cobra.Command{
   **CREATE_RECIPIENT** privilege on the metastore.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(2),
 	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -187,7 +188,6 @@ var listCmd = &cobra.Command{
   guarantee of a specific ordering of the elements in the array.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(0),
 	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -305,7 +305,7 @@ func init() {
 }
 
 var updateCmd = &cobra.Command{
-	Use:   "update",
+	Use:   "update NAME",
 	Short: `Update a share recipient.`,
 	Long: `Update a share recipient.
   
@@ -318,6 +318,20 @@ var updateCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+		if len(args) == 0 {
+			names, err := w.Recipients.RecipientInfoNameToMetastoreIdMap(ctx, sharing.ListRecipientsRequest{})
+			if err != nil {
+				return err
+			}
+			id, err := cmdio.Select(ctx, names, "Name of Recipient")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have name of recipient")
+		}
 		err = updateJson.Unmarshal(&updateReq)
 		if err != nil {
 			return err
