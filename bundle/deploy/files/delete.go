@@ -16,10 +16,10 @@ func (m *delete) Name() string {
 	return "files.Delete"
 }
 
-func (m *delete) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator, error) {
+func (m *delete) Apply(ctx context.Context, b *bundle.Bundle) error {
 	// Do not delete files if terraform destroy was not consented
 	if !b.Plan.IsEmpty && !b.Plan.ConfirmApply {
-		return nil, nil
+		return nil
 	}
 
 	cmdio.LogString(ctx, "Starting deletion of remote bundle files")
@@ -29,10 +29,10 @@ func (m *delete) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator,
 	if !b.AutoApprove {
 		proceed, err := cmdio.Ask(ctx, fmt.Sprintf("\n%s and all files in it will be %s Proceed?: ", b.Config.Workspace.RootPath, red("deleted permanently!")))
 		if err != nil {
-			return nil, err
+			return err
 		}
 		if !proceed {
-			return nil, nil
+			return nil
 		}
 	}
 
@@ -41,22 +41,22 @@ func (m *delete) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator,
 		Recursive: true,
 	})
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// Clean up sync snapshot file
 	sync, err := getSync(ctx, b)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	err = sync.DestroySnapshot(ctx)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	cmdio.LogString(ctx, fmt.Sprintf("Deleted snapshot file at %s", sync.SnapshotPath()))
 	cmdio.LogString(ctx, "Successfully deleted files!")
-	return nil, nil
+	return nil
 }
 
 func Delete() bundle.Mutator {

@@ -30,16 +30,16 @@ func (m *acquire) init(b *bundle.Bundle) error {
 	return nil
 }
 
-func (m *acquire) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator, error) {
+func (m *acquire) Apply(ctx context.Context, b *bundle.Bundle) error {
 	// Return early if locking is disabled.
 	if !b.Config.Bundle.Lock.IsEnabled() {
 		log.Infof(ctx, "Skipping; locking is disabled")
-		return nil, nil
+		return nil
 	}
 
 	err := m.init(b)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	force := b.Config.Bundle.Lock.Force
@@ -47,8 +47,8 @@ func (m *acquire) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator
 	err = b.Locker.Lock(ctx, force)
 	if err != nil {
 		log.Errorf(ctx, "Failed to acquire deployment lock: %v", err)
-		return nil, err
+		return err
 	}
 
-	return nil, nil
+	return nil
 }

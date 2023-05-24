@@ -22,21 +22,21 @@ func (m *selectEnvironment) Name() string {
 	return fmt.Sprintf("SelectEnvironment(%s)", m.name)
 }
 
-func (m *selectEnvironment) Apply(_ context.Context, b *bundle.Bundle) ([]bundle.Mutator, error) {
+func (m *selectEnvironment) Apply(_ context.Context, b *bundle.Bundle) error {
 	if b.Config.Environments == nil {
-		return nil, fmt.Errorf("no environments defined")
+		return fmt.Errorf("no environments defined")
 	}
 
 	// Get specified environment
 	env, ok := b.Config.Environments[m.name]
 	if !ok {
-		return nil, fmt.Errorf("%s: no such environment", m.name)
+		return fmt.Errorf("%s: no such environment", m.name)
 	}
 
 	// Merge specified environment into root configuration structure.
 	err := b.Config.MergeEnvironment(env)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// Store specified environment in configuration for reference.
@@ -44,5 +44,5 @@ func (m *selectEnvironment) Apply(_ context.Context, b *bundle.Bundle) ([]bundle
 
 	// Clear environments after loading.
 	b.Config.Environments = nil
-	return nil, nil
+	return nil
 }

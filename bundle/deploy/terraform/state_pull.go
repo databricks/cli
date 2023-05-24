@@ -18,15 +18,15 @@ func (l *statePull) Name() string {
 	return "terraform:state-pull"
 }
 
-func (l *statePull) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator, error) {
+func (l *statePull) Apply(ctx context.Context, b *bundle.Bundle) error {
 	f, err := filer.NewWorkspaceFilesClient(b.WorkspaceClient(), b.Config.Workspace.StatePath)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	dir, err := Dir(b)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// Download state file from filer to local cache directory.
@@ -36,21 +36,21 @@ func (l *statePull) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutat
 		// On first deploy this state file doesn't yet exist.
 		if apierr.IsMissing(err) {
 			log.Infof(ctx, "Remote state file does not exist")
-			return nil, nil
+			return nil
 		}
-		return nil, err
+		return err
 	}
 
 	// Expect the state file to live under dir.
 	local, err := os.OpenFile(filepath.Join(dir, TerraformStateFileName), os.O_CREATE|os.O_RDWR, 0600)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer local.Close()
 
 	if !IsLocalStateStale(local, remote) {
 		log.Infof(ctx, "Local state is the same or newer, ignoring remote state")
-		return nil, nil
+		return nil
 	}
 
 	// Truncating the file before writing
@@ -61,10 +61,10 @@ func (l *statePull) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutat
 	log.Infof(ctx, "Writing remote state file to local cache directory")
 	_, err = io.Copy(local, remote)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return nil, nil
+	return nil
 }
 
 func StatePull() bundle.Mutator {

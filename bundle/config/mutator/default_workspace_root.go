@@ -18,17 +18,17 @@ func (m *defineDefaultWorkspaceRoot) Name() string {
 	return "DefineDefaultWorkspaceRoot"
 }
 
-func (m *defineDefaultWorkspaceRoot) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator, error) {
+func (m *defineDefaultWorkspaceRoot) Apply(ctx context.Context, b *bundle.Bundle) error {
 	if b.Config.Workspace.RootPath != "" {
-		return nil, nil
+		return nil
 	}
 
 	if b.Config.Bundle.Name == "" {
-		return nil, fmt.Errorf("unable to define default workspace root: bundle name not defined")
+		return fmt.Errorf("unable to define default workspace root: bundle name not defined")
 	}
 
 	if b.Config.Bundle.Environment == "" {
-		return nil, fmt.Errorf("unable to define default workspace root: bundle environment not selected")
+		return fmt.Errorf("unable to define default workspace root: bundle environment not selected")
 	}
 
 	b.Config.Workspace.RootPath = fmt.Sprintf(
@@ -36,5 +36,5 @@ func (m *defineDefaultWorkspaceRoot) Apply(ctx context.Context, b *bundle.Bundle
 		b.Config.Bundle.Name,
 		b.Config.Bundle.Environment,
 	)
-	return nil, nil
+	return nil
 }

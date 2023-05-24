@@ -26,30 +26,30 @@ func (p *plan) Name() string {
 	return "terraform.Plan"
 }
 
-func (p *plan) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator, error) {
+func (p *plan) Apply(ctx context.Context, b *bundle.Bundle) error {
 	tf := b.Terraform
 	if tf == nil {
-		return nil, fmt.Errorf("terraform not initialized")
+		return fmt.Errorf("terraform not initialized")
 	}
 
 	cmdio.LogString(ctx, "Starting plan computation")
 
 	err := tf.Init(ctx, tfexec.Upgrade(true))
 	if err != nil {
-		return nil, fmt.Errorf("terraform init: %w", err)
+		return fmt.Errorf("terraform init: %w", err)
 	}
 
 	// Persist computed plan
 	tfDir, err := Dir(b)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	planPath := filepath.Join(tfDir, "plan")
 	destroy := p.goal == PlanDestroy
 
 	notEmpty, err := tf.Plan(ctx, tfexec.Destroy(destroy), tfexec.Out(planPath))
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// Set plan in main bundle struct for downstream mutators
@@ -60,7 +60,7 @@ func (p *plan) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator, e
 	}
 
 	cmdio.LogString(ctx, fmt.Sprintf("Planning complete and persisted at %s\n", planPath))
-	return nil, nil
+	return nil
 }
 
 // Plan returns a [bundle.Mutator] that runs the equivalent of `terraform plan -out ./plan`

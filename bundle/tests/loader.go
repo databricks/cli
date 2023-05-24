@@ -12,14 +12,14 @@ import (
 func load(t *testing.T, path string) *bundle.Bundle {
 	b, err := bundle.Load(path)
 	require.NoError(t, err)
-	err = bundle.Apply(context.Background(), b, mutator.DefaultMutators())
+	err = bundle.Apply(context.Background(), b, bundle.Seq(mutator.DefaultMutators()...))
 	require.NoError(t, err)
 	return b
 }
 
 func loadEnvironment(t *testing.T, path, env string) *bundle.Bundle {
 	b := load(t, path)
-	err := bundle.Apply(context.Background(), b, []bundle.Mutator{mutator.SelectEnvironment(env)})
+	err := bundle.Apply(context.Background(), b, mutator.SelectEnvironment(env))
 	require.NoError(t, err)
 	return b
 }

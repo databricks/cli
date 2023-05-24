@@ -13,7 +13,7 @@ import (
 
 func TestDefaultEnvironment(t *testing.T) {
 	bundle := &bundle.Bundle{}
-	_, err := mutator.DefineDefaultEnvironment().Apply(context.Background(), bundle)
+	err := mutator.DefineDefaultEnvironment().Apply(context.Background(), bundle)
 	require.NoError(t, err)
 	env, ok := bundle.Config.Environments["default"]
 	assert.True(t, ok)
@@ -28,7 +28,7 @@ func TestDefaultEnvironmentAlreadySpecified(t *testing.T) {
 			},
 		},
 	}
-	_, err := mutator.DefineDefaultEnvironment().Apply(context.Background(), bundle)
+	err := mutator.DefineDefaultEnvironment().Apply(context.Background(), bundle)
 	require.NoError(t, err)
 	_, ok := bundle.Config.Environments["default"]
 	assert.False(t, ok)

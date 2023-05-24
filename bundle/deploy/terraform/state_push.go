@@ -16,31 +16,31 @@ func (l *statePush) Name() string {
 	return "terraform:state-push"
 }
 
-func (l *statePush) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator, error) {
+func (l *statePush) Apply(ctx context.Context, b *bundle.Bundle) error {
 	f, err := filer.NewWorkspaceFilesClient(b.WorkspaceClient(), b.Config.Workspace.StatePath)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	dir, err := Dir(b)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// Expect the state file to live under dir.
 	local, err := os.Open(filepath.Join(dir, TerraformStateFileName))
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// Upload state file from local cache directory to filer.
 	log.Infof(ctx, "Writing local state file to remote state directory")
 	err = f.Write(ctx, TerraformStateFileName, local, filer.CreateParentDirectories, filer.OverwriteIfExists)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return nil, nil
+	return nil
 }
 
 func StatePush() bundle.Mutator {

@@ -28,9 +28,9 @@ func (m *defineDefaultInclude) Name() string {
 	return "DefineDefaultInclude"
 }
 
-func (m *defineDefaultInclude) Apply(_ context.Context, b *bundle.Bundle) ([]bundle.Mutator, error) {
+func (m *defineDefaultInclude) Apply(_ context.Context, b *bundle.Bundle) error {
 	if len(b.Config.Include) == 0 {
 		b.Config.Include = slices.Clone(m.include)
 	}
-	return nil, nil
+	return nil
 }
