@@ -42,5 +42,5 @@ func (m *build) Apply(ctx context.Context, b *bundle.Bundle) error {
 		return bundle.Apply(ctx, b, wheel.Build(m.name))
 	}
 
-	return nil, nil
+	return nil
 }

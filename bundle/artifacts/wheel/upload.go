@@ -28,10 +28,10 @@ func (m *upload) Name() string {
 	return fmt.Sprintf("wheel.Upload(%s)", m.name)
 }
 
-func (m *upload) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator, error) {
+func (m *upload) Apply(ctx context.Context, b *bundle.Bundle) error {
 	a, ok := b.Config.Artifacts[m.name]
 	if !ok {
-		return nil, fmt.Errorf("artifact doesn't exist: %s", m.name)
+		return fmt.Errorf("artifact doesn't exist: %s", m.name)
 	}
 
 	cmdio.LogString(ctx, fmt.Sprintf("Starting upload of Python wheel artifact: %s", m.name))
@@ -39,7 +39,7 @@ func (m *upload) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator,
 	artifact := a.PythonPackage
 	raw, err := os.ReadFile(artifact.LocalPath)
 	if err != nil {
-		return nil, fmt.Errorf("unable to read %s: %w", m.name, errors.Unwrap(err))
+		return fmt.Errorf("unable to read %s: %w", m.name, errors.Unwrap(err))
 	}
 
 	// Make sure target directory exists.
@@ -47,7 +47,7 @@ func (m *upload) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator,
 	if err != nil {
 		var apiErr *apierr.APIError
 		if !errors.As(err, &apiErr) || apiErr.ErrorCode != "RESOURCE_ALREADY_EXISTS" {
-			return nil, fmt.Errorf("unable to create directory for %s: %w", path.Dir(artifact.RemotePath), err)
+			return fmt.Errorf("unable to create directory for %s: %w", path.Dir(artifact.RemotePath), err)
 		}
 	}
 
@@ -60,9 +60,9 @@ func (m *upload) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator,
 		Content:   base64.StdEncoding.EncodeToString(raw),
 	})
 	if err != nil {
-		return nil, fmt.Errorf("unable to import %s: %w", m.name, err)
+		return fmt.Errorf("unable to import %s: %w", m.name, err)
 	}
 
 	cmdio.LogString(ctx, fmt.Sprintf("Uploaded Python wheel artifact: %s. Artifact path: %s", m.name, artifact.RemotePath))
-	return nil, nil
+	return nil
 }

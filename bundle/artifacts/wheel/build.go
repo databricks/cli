@@ -25,10 +25,10 @@ func (m *build) Name() string {
 	return fmt.Sprintf("wheel.Build(%s)", m.name)
 }
 
-func (m *build) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator, error) {
+func (m *build) Apply(ctx context.Context, b *bundle.Bundle) error {
 	a, ok := b.Config.Artifacts[m.name]
 	if !ok {
-		return nil, fmt.Errorf("artifact doesn't exist: %s", m.name)
+		return fmt.Errorf("artifact doesn't exist: %s", m.name)
 	}
 	cmdio.LogString(ctx, fmt.Sprintf("Starting build of Python wheel artifact: %s", m.name))
 
@@ -38,21 +38,21 @@ func (m *build) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator, 
 		artifact.Path = d
 	}
 	if _, err := os.Stat(artifact.Path); os.IsNotExist(err) {
-		return nil, fmt.Errorf("artifact path does't exists: %s", artifact.Path)
+		return fmt.Errorf("artifact path does't exists: %s", artifact.Path)
 	}
 	wheelPath, err := python.BuildWheel(ctx, artifact.Path)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	artifact.LocalPath = wheelPath
 
 	remotePath := b.Config.Workspace.ArtifactsPath
 	if remotePath == "" {
-		return nil, fmt.Errorf("remote artifact path not configured")
+		return fmt.Errorf("remote artifact path not configured")
 	}
 	artifact.RemotePath = path.Join(remotePath, path.Base(wheelPath))
 	cmdio.LogString(ctx, fmt.Sprintf("Built Python wheel artifact: %s", m.name))
 
-	return nil, nil
+	return nil
 }
