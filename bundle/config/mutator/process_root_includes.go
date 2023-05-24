@@ -74,5 +74,5 @@ func (m *processRootIncludes) Apply(ctx context.Context, b *bundle.Bundle) error
 	// Swap out the original includes list with the expanded globs.
 	b.Config.Include = files
 
-	return bundle.Seq(out...).Apply(ctx, b)
+	return bundle.Apply(ctx, b, bundle.Seq(out...))
 }
