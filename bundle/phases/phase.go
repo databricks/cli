@@ -26,7 +26,7 @@ func (p *phase) Name() string {
 	return p.name
 }
 
-func (p *phase) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator, error) {
+func (p *phase) Apply(ctx context.Context, b *bundle.Bundle) error {
 	log.Infof(ctx, "Phase: %s", p.Name())
-	return p.mutators, nil
+	return bundle.Seq(p.mutators...).Apply(ctx, b)
 }

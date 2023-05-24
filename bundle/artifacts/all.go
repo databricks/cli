@@ -20,7 +20,7 @@ func (m *all) Name() string {
 	return fmt.Sprintf("artifacts.%sAll", m.name)
 }
 
-func (m *all) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator, error) {
+func (m *all) Apply(ctx context.Context, b *bundle.Bundle) error {
 	var out []bundle.Mutator
 
 	// Iterate with stable ordering.
@@ -30,12 +30,12 @@ func (m *all) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator, er
 	for _, name := range keys {
 		m, err := m.fn(name)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		if m != nil {
 			out = append(out, m)
 		}
 	}
 
-	return out, nil
+	return bundle.Seq(out...).Apply(ctx, b)
 }

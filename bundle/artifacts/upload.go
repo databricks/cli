@@ -27,15 +27,15 @@ func (m *upload) Name() string {
 	return fmt.Sprintf("artifacts.Upload(%s)", m.name)
 }
 
-func (m *upload) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator, error) {
+func (m *upload) Apply(ctx context.Context, b *bundle.Bundle) error {
 	artifact, ok := b.Config.Artifacts[m.name]
 	if !ok {
-		return nil, fmt.Errorf("artifact doesn't exist: %s", m.name)
+		return fmt.Errorf("artifact doesn't exist: %s", m.name)
 	}
 
 	if artifact.Notebook != nil {
-		return []bundle.Mutator{notebook.Upload(m.name)}, nil
+		return notebook.Upload(m.name).Apply(ctx, b)
 	}
 
-	return nil, nil
+	return nil
 }
