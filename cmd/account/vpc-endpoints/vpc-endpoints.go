@@ -35,7 +35,7 @@ func init() {
 }
 
 var createCmd = &cobra.Command{
-	Use:   "create [VPC_ENDPOINT_NAME]",
+	Use:   "create VPC_ENDPOINT_NAME",
 	Short: `Create VPC endpoint configuration.`,
 	Long: `Create VPC endpoint configuration.
   
@@ -79,7 +79,6 @@ var createCmd = &cobra.Command{
 				return fmt.Errorf("expected to have the human-readable name of the storage configuration")
 			}
 			createReq.VpcEndpointName = args[0]
-
 		}
 
 		response, err := a.VpcEndpoints.Create(ctx, createReq)
@@ -93,15 +92,17 @@ var createCmd = &cobra.Command{
 // start delete command
 
 var deleteReq provisioning.DeleteVpcEndpointRequest
+var deleteJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
+	deleteCmd.Flags().Var(&deleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete [VPC_ENDPOINT_ID]",
+	Use:   "delete VPC_ENDPOINT_ID",
 	Short: `Delete VPC endpoint configuration.`,
 	Long: `Delete VPC endpoint configuration.
   
@@ -120,21 +121,28 @@ var deleteCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-		if len(args) == 0 {
-			names, err := a.VpcEndpoints.VpcEndpointVpcEndpointNameToVpcEndpointIdMap(ctx)
+		if cmd.Flags().Changed("json") {
+			err = deleteJson.Unmarshal(&deleteReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "Databricks VPC endpoint ID")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				names, err := a.VpcEndpoints.VpcEndpointVpcEndpointNameToVpcEndpointIdMap(ctx)
+				if err != nil {
+					return err
+				}
+				id, err := cmdio.Select(ctx, names, "Databricks VPC endpoint ID")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have databricks vpc endpoint id")
+			}
+			deleteReq.VpcEndpointId = args[0]
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have databricks vpc endpoint id")
-		}
-		deleteReq.VpcEndpointId = args[0]
 
 		err = a.VpcEndpoints.Delete(ctx, deleteReq)
 		if err != nil {
@@ -147,15 +155,17 @@ var deleteCmd = &cobra.Command{
 // start get command
 
 var getReq provisioning.GetVpcEndpointRequest
+var getJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
+	getCmd.Flags().Var(&getJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
 var getCmd = &cobra.Command{
-	Use:   "get [VPC_ENDPOINT_ID]",
+	Use:   "get VPC_ENDPOINT_ID",
 	Short: `Get a VPC endpoint configuration.`,
 	Long: `Get a VPC endpoint configuration.
   
@@ -170,21 +180,28 @@ var getCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-		if len(args) == 0 {
-			names, err := a.VpcEndpoints.VpcEndpointVpcEndpointNameToVpcEndpointIdMap(ctx)
+		if cmd.Flags().Changed("json") {
+			err = getJson.Unmarshal(&getReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "Databricks VPC endpoint ID")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				names, err := a.VpcEndpoints.VpcEndpointVpcEndpointNameToVpcEndpointIdMap(ctx)
+				if err != nil {
+					return err
+				}
+				id, err := cmdio.Select(ctx, names, "Databricks VPC endpoint ID")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have databricks vpc endpoint id")
+			}
+			getReq.VpcEndpointId = args[0]
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have databricks vpc endpoint id")
-		}
-		getReq.VpcEndpointId = args[0]
 
 		response, err := a.VpcEndpoints.Get(ctx, getReq)
 		if err != nil {

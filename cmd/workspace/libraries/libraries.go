@@ -69,10 +69,12 @@ var allClusterStatusesCmd = &cobra.Command{
 // start cluster-status command
 
 var clusterStatusReq compute.ClusterStatusRequest
+var clusterStatusJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(clusterStatusCmd)
 	// TODO: short flags
+	clusterStatusCmd.Flags().Var(&clusterStatusJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -98,12 +100,25 @@ var clusterStatusCmd = &cobra.Command{
   guarantee.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		clusterStatusReq.ClusterId = args[0]
+		if cmd.Flags().Changed("json") {
+			err = clusterStatusJson.Unmarshal(&clusterStatusReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			clusterStatusReq.ClusterId = args[0]
+		}
 
 		response, err := w.Libraries.ClusterStatus(ctx, clusterStatusReq)
 		if err != nil {
@@ -142,14 +157,17 @@ var installCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		err = installJson.Unmarshal(&installReq)
-		if err != nil {
-			return err
-		}
-		installReq.ClusterId = args[0]
-		_, err = fmt.Sscan(args[1], &installReq.Libraries)
-		if err != nil {
-			return fmt.Errorf("invalid LIBRARIES: %s", args[1])
+		if cmd.Flags().Changed("json") {
+			err = installJson.Unmarshal(&installReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			installReq.ClusterId = args[0]
+			_, err = fmt.Sscan(args[1], &installReq.Libraries)
+			if err != nil {
+				return fmt.Errorf("invalid LIBRARIES: %s", args[1])
+			}
 		}
 
 		err = w.Libraries.Install(ctx, installReq)
@@ -186,14 +204,17 @@ var uninstallCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		err = uninstallJson.Unmarshal(&uninstallReq)
-		if err != nil {
-			return err
-		}
-		uninstallReq.ClusterId = args[0]
-		_, err = fmt.Sscan(args[1], &uninstallReq.Libraries)
-		if err != nil {
-			return fmt.Errorf("invalid LIBRARIES: %s", args[1])
+		if cmd.Flags().Changed("json") {
+			err = uninstallJson.Unmarshal(&uninstallReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			uninstallReq.ClusterId = args[0]
+			_, err = fmt.Sscan(args[1], &uninstallReq.Libraries)
+			if err != nil {
+				return fmt.Errorf("invalid LIBRARIES: %s", args[1])
+			}
 		}
 
 		err = w.Libraries.Uninstall(ctx, uninstallReq)

@@ -56,17 +56,26 @@ var createCmd = &cobra.Command{
   [Databricks article about PrivateLink]: https://docs.databricks.com/administration-guide/cloud-configurations/aws/privatelink.html`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(2),
-	PreRunE:     root.MustAccountClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(2)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-		err = createJson.Unmarshal(&createReq)
-		if err != nil {
-			return err
+		if cmd.Flags().Changed("json") {
+			err = createJson.Unmarshal(&createReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			createReq.PrivateAccessSettingsName = args[0]
+			createReq.Region = args[1]
 		}
-		createReq.PrivateAccessSettingsName = args[0]
-		createReq.Region = args[1]
 
 		response, err := a.PrivateAccess.Create(ctx, createReq)
 		if err != nil {
@@ -79,15 +88,17 @@ var createCmd = &cobra.Command{
 // start delete command
 
 var deleteReq provisioning.DeletePrivateAccesRequest
+var deleteJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
+	deleteCmd.Flags().Var(&deleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete [PRIVATE_ACCESS_SETTINGS_ID]",
+	Use:   "delete PRIVATE_ACCESS_SETTINGS_ID",
 	Short: `Delete a private access settings object.`,
 	Long: `Delete a private access settings object.
   
@@ -105,21 +116,28 @@ var deleteCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-		if len(args) == 0 {
-			names, err := a.PrivateAccess.PrivateAccessSettingsPrivateAccessSettingsNameToPrivateAccessSettingsIdMap(ctx)
+		if cmd.Flags().Changed("json") {
+			err = deleteJson.Unmarshal(&deleteReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "Databricks Account API private access settings ID")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				names, err := a.PrivateAccess.PrivateAccessSettingsPrivateAccessSettingsNameToPrivateAccessSettingsIdMap(ctx)
+				if err != nil {
+					return err
+				}
+				id, err := cmdio.Select(ctx, names, "Databricks Account API private access settings ID")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have databricks account api private access settings id")
+			}
+			deleteReq.PrivateAccessSettingsId = args[0]
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have databricks account api private access settings id")
-		}
-		deleteReq.PrivateAccessSettingsId = args[0]
 
 		err = a.PrivateAccess.Delete(ctx, deleteReq)
 		if err != nil {
@@ -132,15 +150,17 @@ var deleteCmd = &cobra.Command{
 // start get command
 
 var getReq provisioning.GetPrivateAccesRequest
+var getJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
+	getCmd.Flags().Var(&getJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
 var getCmd = &cobra.Command{
-	Use:   "get [PRIVATE_ACCESS_SETTINGS_ID]",
+	Use:   "get PRIVATE_ACCESS_SETTINGS_ID",
 	Short: `Get a private access settings object.`,
 	Long: `Get a private access settings object.
   
@@ -158,21 +178,28 @@ var getCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-		if len(args) == 0 {
-			names, err := a.PrivateAccess.PrivateAccessSettingsPrivateAccessSettingsNameToPrivateAccessSettingsIdMap(ctx)
+		if cmd.Flags().Changed("json") {
+			err = getJson.Unmarshal(&getReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "Databricks Account API private access settings ID")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				names, err := a.PrivateAccess.PrivateAccessSettingsPrivateAccessSettingsNameToPrivateAccessSettingsIdMap(ctx)
+				if err != nil {
+					return err
+				}
+				id, err := cmdio.Select(ctx, names, "Databricks Account API private access settings ID")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have databricks account api private access settings id")
+			}
+			getReq.PrivateAccessSettingsId = args[0]
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have databricks account api private access settings id")
-		}
-		getReq.PrivateAccessSettingsId = args[0]
 
 		response, err := a.PrivateAccess.Get(ctx, getReq)
 		if err != nil {
@@ -254,18 +281,27 @@ var replaceCmd = &cobra.Command{
   [Databricks article about PrivateLink]: https://docs.databricks.com/administration-guide/cloud-configurations/aws/privatelink.html`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(3),
-	PreRunE:     root.MustAccountClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(3)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-		err = replaceJson.Unmarshal(&replaceReq)
-		if err != nil {
-			return err
+		if cmd.Flags().Changed("json") {
+			err = replaceJson.Unmarshal(&replaceReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			replaceReq.PrivateAccessSettingsName = args[0]
+			replaceReq.Region = args[1]
+			replaceReq.PrivateAccessSettingsId = args[2]
 		}
-		replaceReq.PrivateAccessSettingsName = args[0]
-		replaceReq.Region = args[1]
-		replaceReq.PrivateAccessSettingsId = args[2]
 
 		err = a.PrivateAccess.Replace(ctx, replaceReq)
 		if err != nil {

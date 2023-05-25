@@ -7,6 +7,7 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/sharing"
 	"github.com/spf13/cobra"
 )
@@ -20,10 +21,12 @@ var Cmd = &cobra.Command{
 // start create command
 
 var createReq sharing.CreateProvider
+var createJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(createCmd)
 	// TODO: short flags
+	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	createCmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `Description about the provider.`)
 	createCmd.Flags().StringVar(&createReq.RecipientProfileStr, "recipient-profile-str", createReq.RecipientProfileStr, `This field is required when the __authentication_type__ is **TOKEN** or not provided.`)
@@ -39,15 +42,28 @@ var createCmd = &cobra.Command{
   authentication type. The caller must be an admin on the metastore.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(2),
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(2)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		createReq.Name = args[0]
-		_, err = fmt.Sscan(args[1], &createReq.AuthenticationType)
-		if err != nil {
-			return fmt.Errorf("invalid AUTHENTICATION_TYPE: %s", args[1])
+		if cmd.Flags().Changed("json") {
+			err = createJson.Unmarshal(&createReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			createReq.Name = args[0]
+			_, err = fmt.Sscan(args[1], &createReq.AuthenticationType)
+			if err != nil {
+				return fmt.Errorf("invalid AUTHENTICATION_TYPE: %s", args[1])
+			}
 		}
 
 		response, err := w.Providers.Create(ctx, createReq)
@@ -61,15 +77,17 @@ var createCmd = &cobra.Command{
 // start delete command
 
 var deleteReq sharing.DeleteProviderRequest
+var deleteJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
+	deleteCmd.Flags().Var(&deleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete [NAME]",
+	Use:   "delete NAME",
 	Short: `Delete a provider.`,
 	Long: `Delete a provider.
   
@@ -81,21 +99,28 @@ var deleteCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if len(args) == 0 {
-			names, err := w.Providers.ProviderInfoNameToMetastoreIdMap(ctx, sharing.ListProvidersRequest{})
+		if cmd.Flags().Changed("json") {
+			err = deleteJson.Unmarshal(&deleteReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "Name of the provider")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				names, err := w.Providers.ProviderInfoNameToMetastoreIdMap(ctx, sharing.ListProvidersRequest{})
+				if err != nil {
+					return err
+				}
+				id, err := cmdio.Select(ctx, names, "Name of the provider")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have name of the provider")
+			}
+			deleteReq.Name = args[0]
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have name of the provider")
-		}
-		deleteReq.Name = args[0]
 
 		err = w.Providers.Delete(ctx, deleteReq)
 		if err != nil {
@@ -108,15 +133,17 @@ var deleteCmd = &cobra.Command{
 // start get command
 
 var getReq sharing.GetProviderRequest
+var getJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
+	getCmd.Flags().Var(&getJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
 var getCmd = &cobra.Command{
-	Use:   "get [NAME]",
+	Use:   "get NAME",
 	Short: `Get a provider.`,
 	Long: `Get a provider.
   
@@ -129,21 +156,28 @@ var getCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if len(args) == 0 {
-			names, err := w.Providers.ProviderInfoNameToMetastoreIdMap(ctx, sharing.ListProvidersRequest{})
+		if cmd.Flags().Changed("json") {
+			err = getJson.Unmarshal(&getReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "Name of the provider")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				names, err := w.Providers.ProviderInfoNameToMetastoreIdMap(ctx, sharing.ListProvidersRequest{})
+				if err != nil {
+					return err
+				}
+				id, err := cmdio.Select(ctx, names, "Name of the provider")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have name of the provider")
+			}
+			getReq.Name = args[0]
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have name of the provider")
-		}
-		getReq.Name = args[0]
 
 		response, err := w.Providers.Get(ctx, getReq)
 		if err != nil {
@@ -156,10 +190,12 @@ var getCmd = &cobra.Command{
 // start list command
 
 var listReq sharing.ListProvidersRequest
+var listJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(listCmd)
 	// TODO: short flags
+	listCmd.Flags().Var(&listJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	listCmd.Flags().StringVar(&listReq.DataProviderGlobalMetastoreId, "data-provider-global-metastore-id", listReq.DataProviderGlobalMetastoreId, `If not provided, all providers will be returned.`)
 
@@ -176,10 +212,24 @@ var listCmd = &cobra.Command{
   ordering of the elements in the array.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(0)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+		if cmd.Flags().Changed("json") {
+			err = listJson.Unmarshal(&listReq)
+			if err != nil {
+				return err
+			}
+		} else {
+		}
 
 		response, err := w.Providers.ListAll(ctx, listReq)
 		if err != nil {
@@ -192,15 +242,17 @@ var listCmd = &cobra.Command{
 // start list-shares command
 
 var listSharesReq sharing.ListSharesRequest
+var listSharesJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(listSharesCmd)
 	// TODO: short flags
+	listSharesCmd.Flags().Var(&listSharesJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
 var listSharesCmd = &cobra.Command{
-	Use:   "list-shares [NAME]",
+	Use:   "list-shares NAME",
 	Short: `List shares by Provider.`,
 	Long: `List shares by Provider.
   
@@ -213,21 +265,28 @@ var listSharesCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if len(args) == 0 {
-			names, err := w.Providers.ProviderInfoNameToMetastoreIdMap(ctx, sharing.ListProvidersRequest{})
+		if cmd.Flags().Changed("json") {
+			err = listSharesJson.Unmarshal(&listSharesReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "Name of the provider in which to list shares")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				names, err := w.Providers.ProviderInfoNameToMetastoreIdMap(ctx, sharing.ListProvidersRequest{})
+				if err != nil {
+					return err
+				}
+				id, err := cmdio.Select(ctx, names, "Name of the provider in which to list shares")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have name of the provider in which to list shares")
+			}
+			listSharesReq.Name = args[0]
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have name of the provider in which to list shares")
-		}
-		listSharesReq.Name = args[0]
 
 		response, err := w.Providers.ListShares(ctx, listSharesReq)
 		if err != nil {
@@ -240,10 +299,12 @@ var listSharesCmd = &cobra.Command{
 // start update command
 
 var updateReq sharing.UpdateProvider
+var updateJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(updateCmd)
 	// TODO: short flags
+	updateCmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	updateCmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `Description about the provider.`)
 	updateCmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `The name of the Provider.`)
@@ -253,7 +314,7 @@ func init() {
 }
 
 var updateCmd = &cobra.Command{
-	Use:   "update [NAME]",
+	Use:   "update NAME",
 	Short: `Update a provider.`,
 	Long: `Update a provider.
   
@@ -267,21 +328,28 @@ var updateCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if len(args) == 0 {
-			names, err := w.Providers.ProviderInfoNameToMetastoreIdMap(ctx, sharing.ListProvidersRequest{})
+		if cmd.Flags().Changed("json") {
+			err = updateJson.Unmarshal(&updateReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "The name of the Provider")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				names, err := w.Providers.ProviderInfoNameToMetastoreIdMap(ctx, sharing.ListProvidersRequest{})
+				if err != nil {
+					return err
+				}
+				id, err := cmdio.Select(ctx, names, "The name of the Provider")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have the name of the provider")
+			}
+			updateReq.Name = args[0]
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have the name of the provider")
-		}
-		updateReq.Name = args[0]
 
 		response, err := w.Providers.Update(ctx, updateReq)
 		if err != nil {

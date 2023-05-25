@@ -52,13 +52,23 @@ var createCmd = &cobra.Command{
   Creates a new service principal in the Databricks workspace.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(0)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		err = createJson.Unmarshal(&createReq)
-		if err != nil {
-			return err
+		if cmd.Flags().Changed("json") {
+			err = createJson.Unmarshal(&createReq)
+			if err != nil {
+				return err
+			}
+		} else {
 		}
 
 		response, err := w.ServicePrincipals.Create(ctx, createReq)
@@ -72,15 +82,17 @@ var createCmd = &cobra.Command{
 // start delete command
 
 var deleteReq iam.DeleteServicePrincipalRequest
+var deleteJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
+	deleteCmd.Flags().Var(&deleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete [ID]",
+	Use:   "delete ID",
 	Short: `Delete a service principal.`,
 	Long: `Delete a service principal.
   
@@ -91,21 +103,28 @@ var deleteCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if len(args) == 0 {
-			names, err := w.ServicePrincipals.ServicePrincipalDisplayNameToIdMap(ctx, iam.ListServicePrincipalsRequest{})
+		if cmd.Flags().Changed("json") {
+			err = deleteJson.Unmarshal(&deleteReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "Unique ID for a service principal in the Databricks workspace")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				names, err := w.ServicePrincipals.ServicePrincipalDisplayNameToIdMap(ctx, iam.ListServicePrincipalsRequest{})
+				if err != nil {
+					return err
+				}
+				id, err := cmdio.Select(ctx, names, "Unique ID for a service principal in the Databricks workspace")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have unique id for a service principal in the databricks workspace")
+			}
+			deleteReq.Id = args[0]
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have unique id for a service principal in the databricks workspace")
-		}
-		deleteReq.Id = args[0]
 
 		err = w.ServicePrincipals.Delete(ctx, deleteReq)
 		if err != nil {
@@ -118,15 +137,17 @@ var deleteCmd = &cobra.Command{
 // start get command
 
 var getReq iam.GetServicePrincipalRequest
+var getJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
+	getCmd.Flags().Var(&getJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
 var getCmd = &cobra.Command{
-	Use:   "get [ID]",
+	Use:   "get ID",
 	Short: `Get service principal details.`,
 	Long: `Get service principal details.
   
@@ -138,21 +159,28 @@ var getCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if len(args) == 0 {
-			names, err := w.ServicePrincipals.ServicePrincipalDisplayNameToIdMap(ctx, iam.ListServicePrincipalsRequest{})
+		if cmd.Flags().Changed("json") {
+			err = getJson.Unmarshal(&getReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "Unique ID for a service principal in the Databricks workspace")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				names, err := w.ServicePrincipals.ServicePrincipalDisplayNameToIdMap(ctx, iam.ListServicePrincipalsRequest{})
+				if err != nil {
+					return err
+				}
+				id, err := cmdio.Select(ctx, names, "Unique ID for a service principal in the Databricks workspace")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have unique id for a service principal in the databricks workspace")
+			}
+			getReq.Id = args[0]
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have unique id for a service principal in the databricks workspace")
-		}
-		getReq.Id = args[0]
 
 		response, err := w.ServicePrincipals.Get(ctx, getReq)
 		if err != nil {
@@ -165,10 +193,12 @@ var getCmd = &cobra.Command{
 // start list command
 
 var listReq iam.ListServicePrincipalsRequest
+var listJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(listCmd)
 	// TODO: short flags
+	listCmd.Flags().Var(&listJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	listCmd.Flags().StringVar(&listReq.Attributes, "attributes", listReq.Attributes, `Comma-separated list of attributes to return in response.`)
 	listCmd.Flags().IntVar(&listReq.Count, "count", listReq.Count, `Desired number of results per page.`)
@@ -188,10 +218,24 @@ var listCmd = &cobra.Command{
   Gets the set of service principals associated with a Databricks workspace.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(0)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+		if cmd.Flags().Changed("json") {
+			err = listJson.Unmarshal(&listReq)
+			if err != nil {
+				return err
+			}
+		} else {
+		}
 
 		response, err := w.ServicePrincipals.ListAll(ctx, listReq)
 		if err != nil {
@@ -216,7 +260,7 @@ func init() {
 }
 
 var patchCmd = &cobra.Command{
-	Use:   "patch [ID]",
+	Use:   "patch ID",
 	Short: `Update service principal details.`,
 	Long: `Update service principal details.
   
@@ -249,7 +293,6 @@ var patchCmd = &cobra.Command{
 				return fmt.Errorf("expected to have unique id for a service principal in the databricks workspace")
 			}
 			patchReq.Id = args[0]
-
 		}
 
 		err = w.ServicePrincipals.Patch(ctx, patchReq)
@@ -282,7 +325,7 @@ func init() {
 }
 
 var updateCmd = &cobra.Command{
-	Use:   "update [ID]",
+	Use:   "update ID",
 	Short: `Replace service principal.`,
 	Long: `Replace service principal.
   
@@ -316,7 +359,6 @@ var updateCmd = &cobra.Command{
 				return fmt.Errorf("expected to have databricks service principal id")
 			}
 			updateReq.Id = args[0]
-
 		}
 
 		err = w.ServicePrincipals.Update(ctx, updateReq)

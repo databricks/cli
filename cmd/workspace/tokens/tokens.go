@@ -7,6 +7,7 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/settings"
 	"github.com/spf13/cobra"
 )
@@ -21,10 +22,12 @@ var Cmd = &cobra.Command{
 // start create command
 
 var createReq settings.CreateTokenRequest
+var createJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(createCmd)
 	// TODO: short flags
+	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	createCmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `Optional description to attach to the token.`)
 	createCmd.Flags().Int64Var(&createReq.LifetimeSeconds, "lifetime-seconds", createReq.LifetimeSeconds, `The lifetime of the token, in seconds.`)
@@ -42,10 +45,24 @@ var createCmd = &cobra.Command{
   an error **QUOTA_EXCEEDED**.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(0)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+		if cmd.Flags().Changed("json") {
+			err = createJson.Unmarshal(&createReq)
+			if err != nil {
+				return err
+			}
+		} else {
+		}
 
 		response, err := w.Tokens.Create(ctx, createReq)
 		if err != nil {
@@ -58,15 +75,17 @@ var createCmd = &cobra.Command{
 // start delete command
 
 var deleteReq settings.RevokeTokenRequest
+var deleteJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
+	deleteCmd.Flags().Var(&deleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete [TOKEN_ID]",
+	Use:   "delete TOKEN_ID",
 	Short: `Revoke token.`,
 	Long: `Revoke token.
   
@@ -80,21 +99,28 @@ var deleteCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if len(args) == 0 {
-			names, err := w.Tokens.TokenInfoCommentToTokenIdMap(ctx)
+		if cmd.Flags().Changed("json") {
+			err = deleteJson.Unmarshal(&deleteReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "The ID of the token to be revoked")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				names, err := w.Tokens.TokenInfoCommentToTokenIdMap(ctx)
+				if err != nil {
+					return err
+				}
+				id, err := cmdio.Select(ctx, names, "The ID of the token to be revoked")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have the id of the token to be revoked")
+			}
+			deleteReq.TokenId = args[0]
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have the id of the token to be revoked")
-		}
-		deleteReq.TokenId = args[0]
 
 		err = w.Tokens.Delete(ctx, deleteReq)
 		if err != nil {

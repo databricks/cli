@@ -40,15 +40,17 @@ var Cmd = &cobra.Command{
 // start cancel-all-runs command
 
 var cancelAllRunsReq jobs.CancelAllRuns
+var cancelAllRunsJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(cancelAllRunsCmd)
 	// TODO: short flags
+	cancelAllRunsCmd.Flags().Var(&cancelAllRunsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
 var cancelAllRunsCmd = &cobra.Command{
-	Use:   "cancel-all-runs [JOB_ID]",
+	Use:   "cancel-all-runs JOB_ID",
 	Short: `Cancel all runs of a job.`,
 	Long: `Cancel all runs of a job.
   
@@ -60,23 +62,30 @@ var cancelAllRunsCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if len(args) == 0 {
-			names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
+		if cmd.Flags().Changed("json") {
+			err = cancelAllRunsJson.Unmarshal(&cancelAllRunsReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "The canonical identifier of the job to cancel all runs of")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
+				if err != nil {
+					return err
+				}
+				id, err := cmdio.Select(ctx, names, "The canonical identifier of the job to cancel all runs of")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have the canonical identifier of the job to cancel all runs of")
-		}
-		_, err = fmt.Sscan(args[0], &cancelAllRunsReq.JobId)
-		if err != nil {
-			return fmt.Errorf("invalid JOB_ID: %s", args[0])
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have the canonical identifier of the job to cancel all runs of")
+			}
+			_, err = fmt.Sscan(args[0], &cancelAllRunsReq.JobId)
+			if err != nil {
+				return fmt.Errorf("invalid JOB_ID: %s", args[0])
+			}
 		}
 
 		err = w.Jobs.CancelAllRuns(ctx, cancelAllRunsReq)
@@ -90,7 +99,7 @@ var cancelAllRunsCmd = &cobra.Command{
 // start cancel-run command
 
 var cancelRunReq jobs.CancelRun
-
+var cancelRunJson flags.JsonFlag
 var cancelRunSkipWait bool
 var cancelRunTimeout time.Duration
 
@@ -100,11 +109,12 @@ func init() {
 	cancelRunCmd.Flags().BoolVar(&cancelRunSkipWait, "no-wait", cancelRunSkipWait, `do not wait to reach TERMINATED or SKIPPED state`)
 	cancelRunCmd.Flags().DurationVar(&cancelRunTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach TERMINATED or SKIPPED state`)
 	// TODO: short flags
+	cancelRunCmd.Flags().Var(&cancelRunJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
 var cancelRunCmd = &cobra.Command{
-	Use:   "cancel-run [RUN_ID]",
+	Use:   "cancel-run RUN_ID",
 	Short: `Cancel a job run.`,
 	Long: `Cancel a job run.
   
@@ -116,23 +126,30 @@ var cancelRunCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if len(args) == 0 {
-			names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
+		if cmd.Flags().Changed("json") {
+			err = cancelRunJson.Unmarshal(&cancelRunReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "This field is required")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
+				if err != nil {
+					return err
+				}
+				id, err := cmdio.Select(ctx, names, "This field is required")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have this field is required")
-		}
-		_, err = fmt.Sscan(args[0], &cancelRunReq.RunId)
-		if err != nil {
-			return fmt.Errorf("invalid RUN_ID: %s", args[0])
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have this field is required")
+			}
+			_, err = fmt.Sscan(args[0], &cancelRunReq.RunId)
+			if err != nil {
+				return fmt.Errorf("invalid RUN_ID: %s", args[0])
+			}
 		}
 
 		if cancelRunSkipWait {
@@ -203,13 +220,23 @@ var createCmd = &cobra.Command{
   Create a new job.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(0)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		err = createJson.Unmarshal(&createReq)
-		if err != nil {
-			return err
+		if cmd.Flags().Changed("json") {
+			err = createJson.Unmarshal(&createReq)
+			if err != nil {
+				return err
+			}
+		} else {
 		}
 
 		response, err := w.Jobs.Create(ctx, createReq)
@@ -223,15 +250,17 @@ var createCmd = &cobra.Command{
 // start delete command
 
 var deleteReq jobs.DeleteJob
+var deleteJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
+	deleteCmd.Flags().Var(&deleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete [JOB_ID]",
+	Use:   "delete JOB_ID",
 	Short: `Delete a job.`,
 	Long: `Delete a job.
   
@@ -242,23 +271,30 @@ var deleteCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if len(args) == 0 {
-			names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
+		if cmd.Flags().Changed("json") {
+			err = deleteJson.Unmarshal(&deleteReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "The canonical identifier of the job to delete")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
+				if err != nil {
+					return err
+				}
+				id, err := cmdio.Select(ctx, names, "The canonical identifier of the job to delete")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have the canonical identifier of the job to delete")
-		}
-		_, err = fmt.Sscan(args[0], &deleteReq.JobId)
-		if err != nil {
-			return fmt.Errorf("invalid JOB_ID: %s", args[0])
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have the canonical identifier of the job to delete")
+			}
+			_, err = fmt.Sscan(args[0], &deleteReq.JobId)
+			if err != nil {
+				return fmt.Errorf("invalid JOB_ID: %s", args[0])
+			}
 		}
 
 		err = w.Jobs.Delete(ctx, deleteReq)
@@ -272,15 +308,17 @@ var deleteCmd = &cobra.Command{
 // start delete-run command
 
 var deleteRunReq jobs.DeleteRun
+var deleteRunJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(deleteRunCmd)
 	// TODO: short flags
+	deleteRunCmd.Flags().Var(&deleteRunJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
 var deleteRunCmd = &cobra.Command{
-	Use:   "delete-run [RUN_ID]",
+	Use:   "delete-run RUN_ID",
 	Short: `Delete a job run.`,
 	Long: `Delete a job run.
   
@@ -291,23 +329,30 @@ var deleteRunCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if len(args) == 0 {
-			names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
+		if cmd.Flags().Changed("json") {
+			err = deleteRunJson.Unmarshal(&deleteRunReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "The canonical identifier of the run for which to retrieve the metadata")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
+				if err != nil {
+					return err
+				}
+				id, err := cmdio.Select(ctx, names, "The canonical identifier of the run for which to retrieve the metadata")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have the canonical identifier of the run for which to retrieve the metadata")
-		}
-		_, err = fmt.Sscan(args[0], &deleteRunReq.RunId)
-		if err != nil {
-			return fmt.Errorf("invalid RUN_ID: %s", args[0])
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have the canonical identifier of the run for which to retrieve the metadata")
+			}
+			_, err = fmt.Sscan(args[0], &deleteRunReq.RunId)
+			if err != nil {
+				return fmt.Errorf("invalid RUN_ID: %s", args[0])
+			}
 		}
 
 		err = w.Jobs.DeleteRun(ctx, deleteRunReq)
@@ -321,17 +366,19 @@ var deleteRunCmd = &cobra.Command{
 // start export-run command
 
 var exportRunReq jobs.ExportRunRequest
+var exportRunJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(exportRunCmd)
 	// TODO: short flags
+	exportRunCmd.Flags().Var(&exportRunJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	exportRunCmd.Flags().Var(&exportRunReq.ViewsToExport, "views-to-export", `Which views to export (CODE, DASHBOARDS, or ALL).`)
 
 }
 
 var exportRunCmd = &cobra.Command{
-	Use:   "export-run [RUN_ID]",
+	Use:   "export-run RUN_ID",
 	Short: `Export and retrieve a job run.`,
 	Long: `Export and retrieve a job run.
   
@@ -342,23 +389,30 @@ var exportRunCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if len(args) == 0 {
-			names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
+		if cmd.Flags().Changed("json") {
+			err = exportRunJson.Unmarshal(&exportRunReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "The canonical identifier for the run")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
+				if err != nil {
+					return err
+				}
+				id, err := cmdio.Select(ctx, names, "The canonical identifier for the run")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have the canonical identifier for the run")
-		}
-		_, err = fmt.Sscan(args[0], &exportRunReq.RunId)
-		if err != nil {
-			return fmt.Errorf("invalid RUN_ID: %s", args[0])
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have the canonical identifier for the run")
+			}
+			_, err = fmt.Sscan(args[0], &exportRunReq.RunId)
+			if err != nil {
+				return fmt.Errorf("invalid RUN_ID: %s", args[0])
+			}
 		}
 
 		response, err := w.Jobs.ExportRun(ctx, exportRunReq)
@@ -372,15 +426,17 @@ var exportRunCmd = &cobra.Command{
 // start get command
 
 var getReq jobs.GetJobRequest
+var getJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
+	getCmd.Flags().Var(&getJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
 var getCmd = &cobra.Command{
-	Use:   "get [JOB_ID]",
+	Use:   "get JOB_ID",
 	Short: `Get a single job.`,
 	Long: `Get a single job.
   
@@ -391,23 +447,30 @@ var getCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if len(args) == 0 {
-			names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
+		if cmd.Flags().Changed("json") {
+			err = getJson.Unmarshal(&getReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "The canonical identifier of the job to retrieve information about")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
+				if err != nil {
+					return err
+				}
+				id, err := cmdio.Select(ctx, names, "The canonical identifier of the job to retrieve information about")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have the canonical identifier of the job to retrieve information about")
-		}
-		_, err = fmt.Sscan(args[0], &getReq.JobId)
-		if err != nil {
-			return fmt.Errorf("invalid JOB_ID: %s", args[0])
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have the canonical identifier of the job to retrieve information about")
+			}
+			_, err = fmt.Sscan(args[0], &getReq.JobId)
+			if err != nil {
+				return fmt.Errorf("invalid JOB_ID: %s", args[0])
+			}
 		}
 
 		response, err := w.Jobs.Get(ctx, getReq)
@@ -421,7 +484,7 @@ var getCmd = &cobra.Command{
 // start get-run command
 
 var getRunReq jobs.GetRunRequest
-
+var getRunJson flags.JsonFlag
 var getRunSkipWait bool
 var getRunTimeout time.Duration
 
@@ -431,13 +494,14 @@ func init() {
 	getRunCmd.Flags().BoolVar(&getRunSkipWait, "no-wait", getRunSkipWait, `do not wait to reach TERMINATED or SKIPPED state`)
 	getRunCmd.Flags().DurationVar(&getRunTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach TERMINATED or SKIPPED state`)
 	// TODO: short flags
+	getRunCmd.Flags().Var(&getRunJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	getRunCmd.Flags().BoolVar(&getRunReq.IncludeHistory, "include-history", getRunReq.IncludeHistory, `Whether to include the repair history in the response.`)
 
 }
 
 var getRunCmd = &cobra.Command{
-	Use:   "get-run [RUN_ID]",
+	Use:   "get-run RUN_ID",
 	Short: `Get a single job run.`,
 	Long: `Get a single job run.
   
@@ -448,23 +512,30 @@ var getRunCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if len(args) == 0 {
-			names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
+		if cmd.Flags().Changed("json") {
+			err = getRunJson.Unmarshal(&getRunReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "The canonical identifier of the run for which to retrieve the metadata")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
+				if err != nil {
+					return err
+				}
+				id, err := cmdio.Select(ctx, names, "The canonical identifier of the run for which to retrieve the metadata")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have the canonical identifier of the run for which to retrieve the metadata")
-		}
-		_, err = fmt.Sscan(args[0], &getRunReq.RunId)
-		if err != nil {
-			return fmt.Errorf("invalid RUN_ID: %s", args[0])
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have the canonical identifier of the run for which to retrieve the metadata")
+			}
+			_, err = fmt.Sscan(args[0], &getRunReq.RunId)
+			if err != nil {
+				return fmt.Errorf("invalid RUN_ID: %s", args[0])
+			}
 		}
 
 		response, err := w.Jobs.GetRun(ctx, getRunReq)
@@ -478,15 +549,17 @@ var getRunCmd = &cobra.Command{
 // start get-run-output command
 
 var getRunOutputReq jobs.GetRunOutputRequest
+var getRunOutputJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(getRunOutputCmd)
 	// TODO: short flags
+	getRunOutputCmd.Flags().Var(&getRunOutputJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
 var getRunOutputCmd = &cobra.Command{
-	Use:   "get-run-output [RUN_ID]",
+	Use:   "get-run-output RUN_ID",
 	Short: `Get the output for a single run.`,
 	Long: `Get the output for a single run.
   
@@ -506,23 +579,30 @@ var getRunOutputCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if len(args) == 0 {
-			names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
+		if cmd.Flags().Changed("json") {
+			err = getRunOutputJson.Unmarshal(&getRunOutputReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "The canonical identifier for the run")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
+				if err != nil {
+					return err
+				}
+				id, err := cmdio.Select(ctx, names, "The canonical identifier for the run")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have the canonical identifier for the run")
-		}
-		_, err = fmt.Sscan(args[0], &getRunOutputReq.RunId)
-		if err != nil {
-			return fmt.Errorf("invalid RUN_ID: %s", args[0])
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have the canonical identifier for the run")
+			}
+			_, err = fmt.Sscan(args[0], &getRunOutputReq.RunId)
+			if err != nil {
+				return fmt.Errorf("invalid RUN_ID: %s", args[0])
+			}
 		}
 
 		response, err := w.Jobs.GetRunOutput(ctx, getRunOutputReq)
@@ -536,10 +616,12 @@ var getRunOutputCmd = &cobra.Command{
 // start list command
 
 var listReq jobs.ListJobsRequest
+var listJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(listCmd)
 	// TODO: short flags
+	listCmd.Flags().Var(&listJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	listCmd.Flags().BoolVar(&listReq.ExpandTasks, "expand-tasks", listReq.ExpandTasks, `Whether to include task and cluster details in the response.`)
 	listCmd.Flags().IntVar(&listReq.Limit, "limit", listReq.Limit, `The number of jobs to return.`)
@@ -556,10 +638,24 @@ var listCmd = &cobra.Command{
   Retrieves a list of jobs.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(0)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+		if cmd.Flags().Changed("json") {
+			err = listJson.Unmarshal(&listReq)
+			if err != nil {
+				return err
+			}
+		} else {
+		}
 
 		response, err := w.Jobs.ListAll(ctx, listReq)
 		if err != nil {
@@ -572,10 +668,12 @@ var listCmd = &cobra.Command{
 // start list-runs command
 
 var listRunsReq jobs.ListRunsRequest
+var listRunsJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(listRunsCmd)
 	// TODO: short flags
+	listRunsCmd.Flags().Var(&listRunsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	listRunsCmd.Flags().BoolVar(&listRunsReq.ActiveOnly, "active-only", listRunsReq.ActiveOnly, `If active_only is true, only active runs are included in the results; otherwise, lists both active and completed runs.`)
 	listRunsCmd.Flags().BoolVar(&listRunsReq.CompletedOnly, "completed-only", listRunsReq.CompletedOnly, `If completed_only is true, only completed runs are included in the results; otherwise, lists both active and completed runs.`)
@@ -597,10 +695,24 @@ var listRunsCmd = &cobra.Command{
   List runs in descending order by start time.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(0)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+		if cmd.Flags().Changed("json") {
+			err = listRunsJson.Unmarshal(&listRunsReq)
+			if err != nil {
+				return err
+			}
+		} else {
+		}
 
 		response, err := w.Jobs.ListRunsAll(ctx, listRunsReq)
 		if err != nil {
@@ -640,7 +752,7 @@ func init() {
 }
 
 var repairRunCmd = &cobra.Command{
-	Use:   "repair-run [RUN_ID]",
+	Use:   "repair-run RUN_ID",
 	Short: `Repair a job run.`,
 	Long: `Repair a job run.
   
@@ -677,7 +789,6 @@ var repairRunCmd = &cobra.Command{
 			if err != nil {
 				return fmt.Errorf("invalid RUN_ID: %s", args[0])
 			}
-
 		}
 
 		if repairRunSkipWait {
@@ -737,17 +848,20 @@ var resetCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		err = resetJson.Unmarshal(&resetReq)
-		if err != nil {
-			return err
-		}
-		_, err = fmt.Sscan(args[0], &resetReq.JobId)
-		if err != nil {
-			return fmt.Errorf("invalid JOB_ID: %s", args[0])
-		}
-		_, err = fmt.Sscan(args[1], &resetReq.NewSettings)
-		if err != nil {
-			return fmt.Errorf("invalid NEW_SETTINGS: %s", args[1])
+		if cmd.Flags().Changed("json") {
+			err = resetJson.Unmarshal(&resetReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			_, err = fmt.Sscan(args[0], &resetReq.JobId)
+			if err != nil {
+				return fmt.Errorf("invalid JOB_ID: %s", args[0])
+			}
+			_, err = fmt.Sscan(args[1], &resetReq.NewSettings)
+			if err != nil {
+				return fmt.Errorf("invalid NEW_SETTINGS: %s", args[1])
+			}
 		}
 
 		err = w.Jobs.Reset(ctx, resetReq)
@@ -786,7 +900,7 @@ func init() {
 }
 
 var runNowCmd = &cobra.Command{
-	Use:   "run-now [JOB_ID]",
+	Use:   "run-now JOB_ID",
 	Short: `Trigger a new job run.`,
 	Long: `Trigger a new job run.
   
@@ -821,7 +935,6 @@ var runNowCmd = &cobra.Command{
 			if err != nil {
 				return fmt.Errorf("invalid JOB_ID: %s", args[0])
 			}
-
 		}
 
 		if runNowSkipWait {
@@ -893,13 +1006,23 @@ var submitCmd = &cobra.Command{
   submitted.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(0)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		err = submitJson.Unmarshal(&submitReq)
-		if err != nil {
-			return err
+		if cmd.Flags().Changed("json") {
+			err = submitJson.Unmarshal(&submitReq)
+			if err != nil {
+				return err
+			}
+		} else {
 		}
 
 		if submitSkipWait {
@@ -950,7 +1073,7 @@ func init() {
 }
 
 var updateCmd = &cobra.Command{
-	Use:   "update [JOB_ID]",
+	Use:   "update JOB_ID",
 	Short: `Partially update a job.`,
 	Long: `Partially update a job.
   
@@ -986,7 +1109,6 @@ var updateCmd = &cobra.Command{
 			if err != nil {
 				return fmt.Errorf("invalid JOB_ID: %s", args[0])
 			}
-
 		}
 
 		err = w.Jobs.Update(ctx, updateReq)

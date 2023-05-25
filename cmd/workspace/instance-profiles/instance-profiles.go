@@ -5,6 +5,7 @@ package instance_profiles
 import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/spf13/cobra"
 )
@@ -23,10 +24,12 @@ var Cmd = &cobra.Command{
 // start add command
 
 var addReq compute.AddInstanceProfile
+var addJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(addCmd)
 	// TODO: short flags
+	addCmd.Flags().Var(&addJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	addCmd.Flags().StringVar(&addReq.IamRoleArn, "iam-role-arn", addReq.IamRoleArn, `The AWS IAM role ARN of the role associated with the instance profile.`)
 	addCmd.Flags().BoolVar(&addReq.IsMetaInstanceProfile, "is-meta-instance-profile", addReq.IsMetaInstanceProfile, `By default, Databricks validates that it has sufficient permissions to launch instances with the instance profile.`)
@@ -43,12 +46,25 @@ var addCmd = &cobra.Command{
   API is only available to admin users.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		addReq.InstanceProfileArn = args[0]
+		if cmd.Flags().Changed("json") {
+			err = addJson.Unmarshal(&addReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			addReq.InstanceProfileArn = args[0]
+		}
 
 		err = w.InstanceProfiles.Add(ctx, addReq)
 		if err != nil {
@@ -61,10 +77,12 @@ var addCmd = &cobra.Command{
 // start edit command
 
 var editReq compute.InstanceProfile
+var editJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(editCmd)
 	// TODO: short flags
+	editCmd.Flags().Var(&editJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	editCmd.Flags().StringVar(&editReq.IamRoleArn, "iam-role-arn", editReq.IamRoleArn, `The AWS IAM role ARN of the role associated with the instance profile.`)
 	editCmd.Flags().BoolVar(&editReq.IsMetaInstanceProfile, "is-meta-instance-profile", editReq.IsMetaInstanceProfile, `By default, Databricks validates that it has sufficient permissions to launch instances with the instance profile.`)
@@ -93,12 +111,25 @@ var editCmd = &cobra.Command{
   [Enable serverless SQL warehouses]: https://docs.databricks.com/sql/admin/serverless.html`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		editReq.InstanceProfileArn = args[0]
+		if cmd.Flags().Changed("json") {
+			err = editJson.Unmarshal(&editReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			editReq.InstanceProfileArn = args[0]
+		}
 
 		err = w.InstanceProfiles.Edit(ctx, editReq)
 		if err != nil {
@@ -140,10 +171,12 @@ var listCmd = &cobra.Command{
 // start remove command
 
 var removeReq compute.RemoveInstanceProfile
+var removeJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(removeCmd)
 	// TODO: short flags
+	removeCmd.Flags().Var(&removeJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -158,12 +191,25 @@ var removeCmd = &cobra.Command{
   This API is only accessible to admin users.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		removeReq.InstanceProfileArn = args[0]
+		if cmd.Flags().Changed("json") {
+			err = removeJson.Unmarshal(&removeReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			removeReq.InstanceProfileArn = args[0]
+		}
 
 		err = w.InstanceProfiles.Remove(ctx, removeReq)
 		if err != nil {

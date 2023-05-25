@@ -58,7 +58,7 @@ func init() {
 }
 
 var createCmd = &cobra.Command{
-	Use:   "create [WORKSPACE_NAME]",
+	Use:   "create WORKSPACE_NAME",
 	Short: `Create a new workspace.`,
 	Long: `Create a new workspace.
   
@@ -98,7 +98,6 @@ var createCmd = &cobra.Command{
 				return fmt.Errorf("expected to have the workspace's human-readable name")
 			}
 			createReq.WorkspaceName = args[0]
-
 		}
 
 		if createSkipWait {
@@ -129,15 +128,17 @@ var createCmd = &cobra.Command{
 // start delete command
 
 var deleteReq provisioning.DeleteWorkspaceRequest
+var deleteJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
+	deleteCmd.Flags().Var(&deleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete [WORKSPACE_ID]",
+	Use:   "delete WORKSPACE_ID",
 	Short: `Delete a workspace.`,
 	Long: `Delete a workspace.
   
@@ -155,23 +156,30 @@ var deleteCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-		if len(args) == 0 {
-			names, err := a.Workspaces.WorkspaceWorkspaceNameToWorkspaceIdMap(ctx)
+		if cmd.Flags().Changed("json") {
+			err = deleteJson.Unmarshal(&deleteReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "Workspace ID")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				names, err := a.Workspaces.WorkspaceWorkspaceNameToWorkspaceIdMap(ctx)
+				if err != nil {
+					return err
+				}
+				id, err := cmdio.Select(ctx, names, "Workspace ID")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have workspace id")
-		}
-		_, err = fmt.Sscan(args[0], &deleteReq.WorkspaceId)
-		if err != nil {
-			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have workspace id")
+			}
+			_, err = fmt.Sscan(args[0], &deleteReq.WorkspaceId)
+			if err != nil {
+				return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
+			}
 		}
 
 		err = a.Workspaces.Delete(ctx, deleteReq)
@@ -185,15 +193,17 @@ var deleteCmd = &cobra.Command{
 // start get command
 
 var getReq provisioning.GetWorkspaceRequest
+var getJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
+	getCmd.Flags().Var(&getJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
 var getCmd = &cobra.Command{
-	Use:   "get [WORKSPACE_ID]",
+	Use:   "get WORKSPACE_ID",
 	Short: `Get a workspace.`,
 	Long: `Get a workspace.
   
@@ -217,23 +227,30 @@ var getCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-		if len(args) == 0 {
-			names, err := a.Workspaces.WorkspaceWorkspaceNameToWorkspaceIdMap(ctx)
+		if cmd.Flags().Changed("json") {
+			err = getJson.Unmarshal(&getReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "Workspace ID")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				names, err := a.Workspaces.WorkspaceWorkspaceNameToWorkspaceIdMap(ctx)
+				if err != nil {
+					return err
+				}
+				id, err := cmdio.Select(ctx, names, "Workspace ID")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have workspace id")
-		}
-		_, err = fmt.Sscan(args[0], &getReq.WorkspaceId)
-		if err != nil {
-			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have workspace id")
+			}
+			_, err = fmt.Sscan(args[0], &getReq.WorkspaceId)
+			if err != nil {
+				return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
+			}
 		}
 
 		response, err := a.Workspaces.Get(ctx, getReq)
@@ -278,7 +295,7 @@ var listCmd = &cobra.Command{
 // start update command
 
 var updateReq provisioning.UpdateWorkspaceRequest
-
+var updateJson flags.JsonFlag
 var updateSkipWait bool
 var updateTimeout time.Duration
 
@@ -288,6 +305,7 @@ func init() {
 	updateCmd.Flags().BoolVar(&updateSkipWait, "no-wait", updateSkipWait, `do not wait to reach RUNNING state`)
 	updateCmd.Flags().DurationVar(&updateTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
 	// TODO: short flags
+	updateCmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	updateCmd.Flags().StringVar(&updateReq.AwsRegion, "aws-region", updateReq.AwsRegion, `The AWS region of the workspace's data plane (for example, us-west-2).`)
 	updateCmd.Flags().StringVar(&updateReq.CredentialsId, "credentials-id", updateReq.CredentialsId, `ID of the workspace's credential configuration object.`)
@@ -299,7 +317,7 @@ func init() {
 }
 
 var updateCmd = &cobra.Command{
-	Use:   "update [WORKSPACE_ID]",
+	Use:   "update WORKSPACE_ID",
 	Short: `Update workspace configuration.`,
 	Long: `Update workspace configuration.
   
@@ -420,23 +438,30 @@ var updateCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-		if len(args) == 0 {
-			names, err := a.Workspaces.WorkspaceWorkspaceNameToWorkspaceIdMap(ctx)
+		if cmd.Flags().Changed("json") {
+			err = updateJson.Unmarshal(&updateReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "Workspace ID")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				names, err := a.Workspaces.WorkspaceWorkspaceNameToWorkspaceIdMap(ctx)
+				if err != nil {
+					return err
+				}
+				id, err := cmdio.Select(ctx, names, "Workspace ID")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have workspace id")
-		}
-		_, err = fmt.Sscan(args[0], &updateReq.WorkspaceId)
-		if err != nil {
-			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have workspace id")
+			}
+			_, err = fmt.Sscan(args[0], &updateReq.WorkspaceId)
+			if err != nil {
+				return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
+			}
 		}
 
 		if updateSkipWait {

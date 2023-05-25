@@ -46,13 +46,23 @@ var createCmd = &cobra.Command{
 	Long:  `Create a dashboard object.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(0)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		err = createJson.Unmarshal(&createReq)
-		if err != nil {
-			return err
+		if cmd.Flags().Changed("json") {
+			err = createJson.Unmarshal(&createReq)
+			if err != nil {
+				return err
+			}
+		} else {
 		}
 
 		response, err := w.Dashboards.Create(ctx, createReq)
@@ -66,15 +76,17 @@ var createCmd = &cobra.Command{
 // start delete command
 
 var deleteReq sql.DeleteDashboardRequest
+var deleteJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
+	deleteCmd.Flags().Var(&deleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete [DASHBOARD_ID]",
+	Use:   "delete DASHBOARD_ID",
 	Short: `Remove a dashboard.`,
 	Long: `Remove a dashboard.
   
@@ -86,21 +98,28 @@ var deleteCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if len(args) == 0 {
-			names, err := w.Dashboards.DashboardNameToIdMap(ctx, sql.ListDashboardsRequest{})
+		if cmd.Flags().Changed("json") {
+			err = deleteJson.Unmarshal(&deleteReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				names, err := w.Dashboards.DashboardNameToIdMap(ctx, sql.ListDashboardsRequest{})
+				if err != nil {
+					return err
+				}
+				id, err := cmdio.Select(ctx, names, "")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have ")
+			}
+			deleteReq.DashboardId = args[0]
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have ")
-		}
-		deleteReq.DashboardId = args[0]
 
 		err = w.Dashboards.Delete(ctx, deleteReq)
 		if err != nil {
@@ -113,15 +132,17 @@ var deleteCmd = &cobra.Command{
 // start get command
 
 var getReq sql.GetDashboardRequest
+var getJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
+	getCmd.Flags().Var(&getJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
 var getCmd = &cobra.Command{
-	Use:   "get [DASHBOARD_ID]",
+	Use:   "get DASHBOARD_ID",
 	Short: `Retrieve a definition.`,
 	Long: `Retrieve a definition.
   
@@ -133,21 +154,28 @@ var getCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if len(args) == 0 {
-			names, err := w.Dashboards.DashboardNameToIdMap(ctx, sql.ListDashboardsRequest{})
+		if cmd.Flags().Changed("json") {
+			err = getJson.Unmarshal(&getReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				names, err := w.Dashboards.DashboardNameToIdMap(ctx, sql.ListDashboardsRequest{})
+				if err != nil {
+					return err
+				}
+				id, err := cmdio.Select(ctx, names, "")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have ")
+			}
+			getReq.DashboardId = args[0]
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have ")
-		}
-		getReq.DashboardId = args[0]
 
 		response, err := w.Dashboards.Get(ctx, getReq)
 		if err != nil {
@@ -160,10 +188,12 @@ var getCmd = &cobra.Command{
 // start list command
 
 var listReq sql.ListDashboardsRequest
+var listJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(listCmd)
 	// TODO: short flags
+	listCmd.Flags().Var(&listJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	listCmd.Flags().Var(&listReq.Order, "order", `Name of dashboard attribute to order by.`)
 	listCmd.Flags().IntVar(&listReq.Page, "page", listReq.Page, `Page number to retrieve.`)
@@ -180,10 +210,24 @@ var listCmd = &cobra.Command{
   Fetch a paginated list of dashboard objects.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(0)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+		if cmd.Flags().Changed("json") {
+			err = listJson.Unmarshal(&listReq)
+			if err != nil {
+				return err
+			}
+		} else {
+		}
 
 		response, err := w.Dashboards.ListAll(ctx, listReq)
 		if err != nil {
@@ -196,15 +240,17 @@ var listCmd = &cobra.Command{
 // start restore command
 
 var restoreReq sql.RestoreDashboardRequest
+var restoreJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(restoreCmd)
 	// TODO: short flags
+	restoreCmd.Flags().Var(&restoreJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
 var restoreCmd = &cobra.Command{
-	Use:   "restore [DASHBOARD_ID]",
+	Use:   "restore DASHBOARD_ID",
 	Short: `Restore a dashboard.`,
 	Long: `Restore a dashboard.
   
@@ -215,21 +261,28 @@ var restoreCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if len(args) == 0 {
-			names, err := w.Dashboards.DashboardNameToIdMap(ctx, sql.ListDashboardsRequest{})
+		if cmd.Flags().Changed("json") {
+			err = restoreJson.Unmarshal(&restoreReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				names, err := w.Dashboards.DashboardNameToIdMap(ctx, sql.ListDashboardsRequest{})
+				if err != nil {
+					return err
+				}
+				id, err := cmdio.Select(ctx, names, "")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have ")
+			}
+			restoreReq.DashboardId = args[0]
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have ")
-		}
-		restoreReq.DashboardId = args[0]
 
 		err = w.Dashboards.Restore(ctx, restoreReq)
 		if err != nil {

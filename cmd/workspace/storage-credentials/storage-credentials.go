@@ -50,7 +50,7 @@ func init() {
 }
 
 var createCmd = &cobra.Command{
-	Use:   "create [NAME]",
+	Use:   "create NAME",
 	Short: `Create a storage credential.`,
 	Long: `Create a storage credential.
   
@@ -88,7 +88,6 @@ var createCmd = &cobra.Command{
 				return fmt.Errorf("expected to have the credential name")
 			}
 			createReq.Name = args[0]
-
 		}
 
 		response, err := w.StorageCredentials.Create(ctx, createReq)
@@ -102,17 +101,19 @@ var createCmd = &cobra.Command{
 // start delete command
 
 var deleteReq catalog.DeleteStorageCredentialRequest
+var deleteJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
+	deleteCmd.Flags().Var(&deleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	deleteCmd.Flags().BoolVar(&deleteReq.Force, "force", deleteReq.Force, `Force deletion even if there are dependent external locations or external tables.`)
 
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete [NAME]",
+	Use:   "delete NAME",
 	Short: `Delete a credential.`,
 	Long: `Delete a credential.
   
@@ -124,21 +125,28 @@ var deleteCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if len(args) == 0 {
-			names, err := w.StorageCredentials.StorageCredentialInfoNameToIdMap(ctx)
+		if cmd.Flags().Changed("json") {
+			err = deleteJson.Unmarshal(&deleteReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "Name of the storage credential")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				names, err := w.StorageCredentials.StorageCredentialInfoNameToIdMap(ctx)
+				if err != nil {
+					return err
+				}
+				id, err := cmdio.Select(ctx, names, "Name of the storage credential")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have name of the storage credential")
+			}
+			deleteReq.Name = args[0]
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have name of the storage credential")
-		}
-		deleteReq.Name = args[0]
 
 		err = w.StorageCredentials.Delete(ctx, deleteReq)
 		if err != nil {
@@ -151,15 +159,17 @@ var deleteCmd = &cobra.Command{
 // start get command
 
 var getReq catalog.GetStorageCredentialRequest
+var getJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
+	getCmd.Flags().Var(&getJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
 var getCmd = &cobra.Command{
-	Use:   "get [NAME]",
+	Use:   "get NAME",
 	Short: `Get a credential.`,
 	Long: `Get a credential.
   
@@ -172,21 +182,28 @@ var getCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if len(args) == 0 {
-			names, err := w.StorageCredentials.StorageCredentialInfoNameToIdMap(ctx)
+		if cmd.Flags().Changed("json") {
+			err = getJson.Unmarshal(&getReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "Name of the storage credential")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				names, err := w.StorageCredentials.StorageCredentialInfoNameToIdMap(ctx)
+				if err != nil {
+					return err
+				}
+				id, err := cmdio.Select(ctx, names, "Name of the storage credential")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have name of the storage credential")
+			}
+			getReq.Name = args[0]
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have name of the storage credential")
-		}
-		getReq.Name = args[0]
 
 		response, err := w.StorageCredentials.Get(ctx, getReq)
 		if err != nil {
@@ -250,7 +267,7 @@ func init() {
 }
 
 var updateCmd = &cobra.Command{
-	Use:   "update [NAME]",
+	Use:   "update NAME",
 	Short: `Update a credential.`,
 	Long: `Update a credential.
   
@@ -284,7 +301,6 @@ var updateCmd = &cobra.Command{
 				return fmt.Errorf("expected to have the credential name")
 			}
 			updateReq.Name = args[0]
-
 		}
 
 		response, err := w.StorageCredentials.Update(ctx, updateReq)
@@ -334,13 +350,23 @@ var validateCmd = &cobra.Command{
   credential.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(0)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		err = validateJson.Unmarshal(&validateReq)
-		if err != nil {
-			return err
+		if cmd.Flags().Changed("json") {
+			err = validateJson.Unmarshal(&validateReq)
+			if err != nil {
+				return err
+			}
+		} else {
 		}
 
 		response, err := w.StorageCredentials.Validate(ctx, validateReq)
