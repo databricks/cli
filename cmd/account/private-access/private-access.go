@@ -35,7 +35,7 @@ func init() {
 }
 
 var createCmd = &cobra.Command{
-	Use:   "create PRIVATE_ACCESS_SETTINGS_NAME REGION PRIVATE_ACCESS_SETTINGS_ID",
+	Use:   "create PRIVATE_ACCESS_SETTINGS_NAME REGION",
 	Short: `Create private access settings.`,
 	Long: `Create private access settings.
   
@@ -56,7 +56,7 @@ var createCmd = &cobra.Command{
   [Databricks article about PrivateLink]: https://docs.databricks.com/administration-guide/cloud-configurations/aws/privatelink.html`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(3),
+	Args:        cobra.ExactArgs(2),
 	PreRunE:     root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -67,7 +67,6 @@ var createCmd = &cobra.Command{
 		}
 		createReq.PrivateAccessSettingsName = args[0]
 		createReq.Region = args[1]
-		createReq.PrivateAccessSettingsId = args[2]
 
 		response, err := a.PrivateAccess.Create(ctx, createReq)
 		if err != nil {

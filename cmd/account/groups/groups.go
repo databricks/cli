@@ -45,7 +45,7 @@ func init() {
 }
 
 var createCmd = &cobra.Command{
-	Use:   "create ID",
+	Use:   "create",
 	Short: `Create a new group.`,
 	Long: `Create a new group.
   
@@ -57,25 +57,10 @@ var createCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-		if len(args) == 0 {
-			names, err := a.Groups.GroupDisplayNameToIdMap(ctx, iam.ListAccountGroupsRequest{})
-			if err != nil {
-				return err
-			}
-			id, err := cmdio.Select(ctx, names, "Databricks group ID")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have databricks group id")
-		}
 		err = createJson.Unmarshal(&createReq)
 		if err != nil {
 			return err
 		}
-		createReq.Id = args[0]
 
 		response, err := a.Groups.Create(ctx, createReq)
 		if err != nil {

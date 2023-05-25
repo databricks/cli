@@ -51,7 +51,6 @@ var createCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("invalid BUDGET: %s", args[0])
 		}
-		createReq.BudgetId = args[1]
 
 		response, err := a.Budgets.Create(ctx, createReq)
 		if err != nil {

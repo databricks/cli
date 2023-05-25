@@ -52,7 +52,7 @@ func init() {
 }
 
 var createCmd = &cobra.Command{
-	Use:   "create ID",
+	Use:   "create",
 	Short: `Create a new user.`,
 	Long: `Create a new user.
   
@@ -64,25 +64,10 @@ var createCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-		if len(args) == 0 {
-			names, err := a.Users.UserUserNameToIdMap(ctx, iam.ListAccountUsersRequest{})
-			if err != nil {
-				return err
-			}
-			id, err := cmdio.Select(ctx, names, "Databricks user ID")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have databricks user id")
-		}
 		err = createJson.Unmarshal(&createReq)
 		if err != nil {
 			return err
 		}
-		createReq.Id = args[0]
 
 		response, err := a.Users.Create(ctx, createReq)
 		if err != nil {
@@ -256,14 +241,14 @@ var patchCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "Unique ID for a group in the Databricks account")
+			id, err := cmdio.Select(ctx, names, "Unique ID for a user in the Databricks account")
 			if err != nil {
 				return err
 			}
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have unique id for a group in the databricks account")
+			return fmt.Errorf("expected to have unique id for a user in the databricks account")
 		}
 		err = patchJson.Unmarshal(&patchReq)
 		if err != nil {

@@ -164,20 +164,19 @@ func init() {
 }
 
 var updateCmd = &cobra.Command{
-	Use:   "update METASTORE_ID ID",
+	Use:   "update METASTORE_ID",
 	Short: `Update a metastore.`,
 	Long: `Update a metastore.
   
   Updates an existing Unity Catalog metastore.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(2),
+	Args:        cobra.ExactArgs(1),
 	PreRunE:     root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
 		updateReq.MetastoreId = args[0]
-		updateReq.Id = args[1]
 
 		response, err := a.Metastores.Update(ctx, updateReq)
 		if err != nil {

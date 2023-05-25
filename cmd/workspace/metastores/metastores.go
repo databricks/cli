@@ -377,7 +377,7 @@ func init() {
 }
 
 var updateCmd = &cobra.Command{
-	Use:   "update METASTORE_ID ID",
+	Use:   "update ID",
 	Short: `Update a metastore.`,
 	Long: `Update a metastore.
   
@@ -385,13 +385,25 @@ var updateCmd = &cobra.Command{
   admin.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(2),
 	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		updateReq.MetastoreId = args[0]
-		updateReq.Id = args[1]
+		if len(args) == 0 {
+			names, err := w.Metastores.MetastoreInfoNameToMetastoreIdMap(ctx)
+			if err != nil {
+				return err
+			}
+			id, err := cmdio.Select(ctx, names, "Unique ID of the metastore")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have unique id of the metastore")
+		}
+		updateReq.Id = args[0]
 
 		response, err := w.Metastores.Update(ctx, updateReq)
 		if err != nil {
@@ -415,7 +427,7 @@ func init() {
 }
 
 var updateAssignmentCmd = &cobra.Command{
-	Use:   "update-assignment WORKSPACE_ID METASTORE_ID",
+	Use:   "update-assignment WORKSPACE_ID",
 	Short: `Update an assignment.`,
 	Long: `Update an assignment.
   
@@ -425,16 +437,28 @@ var updateAssignmentCmd = &cobra.Command{
   to update __metastore_id__; otherwise, the caller can be a Workspace admin.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(2),
 	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+		if len(args) == 0 {
+			names, err := w.Metastores.MetastoreInfoNameToMetastoreIdMap(ctx)
+			if err != nil {
+				return err
+			}
+			id, err := cmdio.Select(ctx, names, "A workspace ID")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have a workspace id")
+		}
 		_, err = fmt.Sscan(args[0], &updateAssignmentReq.WorkspaceId)
 		if err != nil {
 			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
 		}
-		updateAssignmentReq.MetastoreId = args[1]
 
 		err = w.Metastores.UpdateAssignment(ctx, updateAssignmentReq)
 		if err != nil {

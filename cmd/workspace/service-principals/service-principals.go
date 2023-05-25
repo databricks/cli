@@ -45,7 +45,7 @@ func init() {
 }
 
 var createCmd = &cobra.Command{
-	Use:   "create ID",
+	Use:   "create",
 	Short: `Create a service principal.`,
 	Long: `Create a service principal.
   
@@ -56,25 +56,10 @@ var createCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if len(args) == 0 {
-			names, err := w.ServicePrincipals.ServicePrincipalDisplayNameToIdMap(ctx, iam.ListServicePrincipalsRequest{})
-			if err != nil {
-				return err
-			}
-			id, err := cmdio.Select(ctx, names, "Databricks service principal ID")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have databricks service principal id")
-		}
 		err = createJson.Unmarshal(&createReq)
 		if err != nil {
 			return err
 		}
-		createReq.Id = args[0]
 
 		response, err := w.ServicePrincipals.Create(ctx, createReq)
 		if err != nil {
@@ -248,14 +233,14 @@ var patchCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "Unique ID for a group in the Databricks account")
+			id, err := cmdio.Select(ctx, names, "Unique ID for a service principal in the Databricks workspace")
 			if err != nil {
 				return err
 			}
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have unique id for a group in the databricks account")
+			return fmt.Errorf("expected to have unique id for a service principal in the databricks workspace")
 		}
 		err = patchJson.Unmarshal(&patchReq)
 		if err != nil {
