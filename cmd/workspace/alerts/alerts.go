@@ -81,7 +81,7 @@ func init() {
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete ALERT_ID",
+	Use:   "delete [ALERT_ID]",
 	Short: `Delete an alert.`,
 	Long: `Delete an alert.
   
@@ -129,7 +129,7 @@ func init() {
 }
 
 var getCmd = &cobra.Command{
-	Use:   "get ALERT_ID",
+	Use:   "get [ALERT_ID]",
 	Short: `Get an alert.`,
 	Long: `Get an alert.
   

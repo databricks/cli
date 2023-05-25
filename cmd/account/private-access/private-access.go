@@ -87,7 +87,7 @@ func init() {
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete PRIVATE_ACCESS_SETTINGS_ID",
+	Use:   "delete [PRIVATE_ACCESS_SETTINGS_ID]",
 	Short: `Delete a private access settings object.`,
 	Long: `Delete a private access settings object.
   
@@ -140,7 +140,7 @@ func init() {
 }
 
 var getCmd = &cobra.Command{
-	Use:   "get PRIVATE_ACCESS_SETTINGS_ID",
+	Use:   "get [PRIVATE_ACCESS_SETTINGS_ID]",
 	Short: `Get a private access settings object.`,
 	Long: `Get a private access settings object.
   

@@ -34,7 +34,7 @@ func init() {
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete PATH",
+	Use:   "delete [PATH]",
 	Short: `Delete a workspace object.`,
 	Long: `Delete a workspace object.
   
@@ -90,7 +90,7 @@ func init() {
 }
 
 var exportCmd = &cobra.Command{
-	Use:   "export PATH",
+	Use:   "export [PATH]",
 	Short: `Export a workspace object.`,
 	Long: `Export a workspace object.
   
@@ -143,7 +143,7 @@ func init() {
 }
 
 var getStatusCmd = &cobra.Command{
-	Use:   "get-status PATH",
+	Use:   "get-status [PATH]",
 	Short: `Get status.`,
 	Long: `Get status.
   
@@ -195,7 +195,7 @@ func init() {
 }
 
 var importCmd = &cobra.Command{
-	Use:   "import PATH",
+	Use:   "import [PATH]",
 	Short: `Import a workspace object.`,
 	Long: `Import a workspace object.
   
@@ -246,7 +246,7 @@ func init() {
 }
 
 var listCmd = &cobra.Command{
-	Use:   "list PATH",
+	Use:   "list [PATH]",
 	Short: `List contents.`,
 	Long: `List contents.
   
@@ -294,7 +294,7 @@ func init() {
 }
 
 var mkdirsCmd = &cobra.Command{
-	Use:   "mkdirs PATH",
+	Use:   "mkdirs [PATH]",
 	Short: `Create a directory.`,
 	Long: `Create a directory.
   

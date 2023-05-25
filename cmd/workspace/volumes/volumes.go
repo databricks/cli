@@ -94,7 +94,7 @@ func init() {
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete FULL_NAME_ARG",
+	Use:   "delete [FULL_NAME_ARG]",
 	Short: `Delete a Volume.`,
 	Long: `Delete a Volume.
   
@@ -188,7 +188,7 @@ func init() {
 }
 
 var readCmd = &cobra.Command{
-	Use:   "read FULL_NAME_ARG",
+	Use:   "read [FULL_NAME_ARG]",
 	Short: `Get a Volume.`,
 	Long: `Get a Volume.
   
@@ -243,7 +243,7 @@ func init() {
 }
 
 var updateCmd = &cobra.Command{
-	Use:   "update FULL_NAME_ARG",
+	Use:   "update [FULL_NAME_ARG]",
 	Short: `Update a Volume.`,
 	Long: `Update a Volume.
   

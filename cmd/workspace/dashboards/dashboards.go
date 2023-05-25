@@ -74,7 +74,7 @@ func init() {
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete DASHBOARD_ID",
+	Use:   "delete [DASHBOARD_ID]",
 	Short: `Remove a dashboard.`,
 	Long: `Remove a dashboard.
   
@@ -121,7 +121,7 @@ func init() {
 }
 
 var getCmd = &cobra.Command{
-	Use:   "get DASHBOARD_ID",
+	Use:   "get [DASHBOARD_ID]",
 	Short: `Retrieve a definition.`,
 	Long: `Retrieve a definition.
   
@@ -204,7 +204,7 @@ func init() {
 }
 
 var restoreCmd = &cobra.Command{
-	Use:   "restore DASHBOARD_ID",
+	Use:   "restore [DASHBOARD_ID]",
 	Short: `Restore a dashboard.`,
 	Long: `Restore a dashboard.
   

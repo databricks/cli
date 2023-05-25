@@ -84,7 +84,7 @@ func init() {
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete QUERY_ID",
+	Use:   "delete [QUERY_ID]",
 	Short: `Delete a query.`,
 	Long: `Delete a query.
   
@@ -132,7 +132,7 @@ func init() {
 }
 
 var getCmd = &cobra.Command{
-	Use:   "get QUERY_ID",
+	Use:   "get [QUERY_ID]",
 	Short: `Get a query definition.`,
 	Long: `Get a query definition.
   
@@ -216,7 +216,7 @@ func init() {
 }
 
 var restoreCmd = &cobra.Command{
-	Use:   "restore QUERY_ID",
+	Use:   "restore [QUERY_ID]",
 	Short: `Restore a query.`,
 	Long: `Restore a query.
   
@@ -271,7 +271,7 @@ func init() {
 }
 
 var updateCmd = &cobra.Command{
-	Use:   "update QUERY_ID",
+	Use:   "update [QUERY_ID]",
 	Short: `Change a query definition.`,
 	Long: `Change a query definition.
   
@@ -284,25 +284,29 @@ var updateCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if len(args) == 0 {
-			names, err := w.Queries.QueryNameToIdMap(ctx, sql.ListQueriesRequest{})
+		if cmd.Flags().Changed("json") {
+			err = updateJson.Unmarshal(&updateReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				names, err := w.Queries.QueryNameToIdMap(ctx, sql.ListQueriesRequest{})
+				if err != nil {
+					return err
+				}
+				id, err := cmdio.Select(ctx, names, "")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have ")
+			}
+			updateReq.QueryId = args[0]
+
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have ")
-		}
-		err = updateJson.Unmarshal(&updateReq)
-		if err != nil {
-			return err
-		}
-		updateReq.QueryId = args[0]
 
 		response, err := w.Queries.Update(ctx, updateReq)
 		if err != nil {

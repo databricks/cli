@@ -73,7 +73,7 @@ func init() {
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete SCRIPT_ID",
+	Use:   "delete [SCRIPT_ID]",
 	Short: `Delete init script.`,
 	Long: `Delete init script.
   
@@ -119,7 +119,7 @@ func init() {
 }
 
 var getCmd = &cobra.Command{
-	Use:   "get SCRIPT_ID",
+	Use:   "get [SCRIPT_ID]",
 	Short: `Get an init script.`,
 	Long: `Get an init script.
   

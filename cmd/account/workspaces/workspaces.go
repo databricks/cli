@@ -58,7 +58,7 @@ func init() {
 }
 
 var createCmd = &cobra.Command{
-	Use:   "create WORKSPACE_NAME",
+	Use:   "create [WORKSPACE_NAME]",
 	Short: `Create a new workspace.`,
 	Long: `Create a new workspace.
   
@@ -77,25 +77,29 @@ var createCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-		if len(args) == 0 {
-			names, err := a.Workspaces.WorkspaceWorkspaceNameToWorkspaceIdMap(ctx)
+		if cmd.Flags().Changed("json") {
+			err = createJson.Unmarshal(&createReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "The workspace's human-readable name")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				names, err := a.Workspaces.WorkspaceWorkspaceNameToWorkspaceIdMap(ctx)
+				if err != nil {
+					return err
+				}
+				id, err := cmdio.Select(ctx, names, "The workspace's human-readable name")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have the workspace's human-readable name")
+			}
+			createReq.WorkspaceName = args[0]
+
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have the workspace's human-readable name")
-		}
-		err = createJson.Unmarshal(&createReq)
-		if err != nil {
-			return err
-		}
-		createReq.WorkspaceName = args[0]
 
 		if createSkipWait {
 			response, err := a.Workspaces.Create(ctx, createReq)
@@ -133,7 +137,7 @@ func init() {
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete WORKSPACE_ID",
+	Use:   "delete [WORKSPACE_ID]",
 	Short: `Delete a workspace.`,
 	Long: `Delete a workspace.
   
@@ -189,7 +193,7 @@ func init() {
 }
 
 var getCmd = &cobra.Command{
-	Use:   "get WORKSPACE_ID",
+	Use:   "get [WORKSPACE_ID]",
 	Short: `Get a workspace.`,
 	Long: `Get a workspace.
   
@@ -295,7 +299,7 @@ func init() {
 }
 
 var updateCmd = &cobra.Command{
-	Use:   "update WORKSPACE_ID",
+	Use:   "update [WORKSPACE_ID]",
 	Short: `Update workspace configuration.`,
 	Long: `Update workspace configuration.
   

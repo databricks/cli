@@ -145,7 +145,7 @@ func init() {
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete ID",
+	Use:   "delete [ID]",
 	Short: `Delete a metastore.`,
 	Long: `Delete a metastore.
   
@@ -191,7 +191,7 @@ func init() {
 }
 
 var getCmd = &cobra.Command{
-	Use:   "get ID",
+	Use:   "get [ID]",
 	Short: `Get a metastore.`,
 	Long: `Get a metastore.
   
@@ -377,7 +377,7 @@ func init() {
 }
 
 var updateCmd = &cobra.Command{
-	Use:   "update ID",
+	Use:   "update [ID]",
 	Short: `Update a metastore.`,
 	Long: `Update a metastore.
   
@@ -427,7 +427,7 @@ func init() {
 }
 
 var updateAssignmentCmd = &cobra.Command{
-	Use:   "update-assignment WORKSPACE_ID",
+	Use:   "update-assignment [WORKSPACE_ID]",
 	Short: `Update an assignment.`,
 	Long: `Update an assignment.
   

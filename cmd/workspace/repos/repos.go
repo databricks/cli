@@ -83,7 +83,7 @@ func init() {
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete REPO_ID",
+	Use:   "delete [REPO_ID]",
 	Short: `Delete a repo.`,
 	Long: `Delete a repo.
   
@@ -132,7 +132,7 @@ func init() {
 }
 
 var getCmd = &cobra.Command{
-	Use:   "get REPO_ID",
+	Use:   "get [REPO_ID]",
 	Short: `Get a repo.`,
 	Long: `Get a repo.
   
@@ -222,7 +222,7 @@ func init() {
 }
 
 var updateCmd = &cobra.Command{
-	Use:   "update REPO_ID",
+	Use:   "update [REPO_ID]",
 	Short: `Update a repo.`,
 	Long: `Update a repo.
   
@@ -234,27 +234,31 @@ var updateCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if len(args) == 0 {
-			names, err := w.Repos.RepoInfoPathToIdMap(ctx, workspace.ListReposRequest{})
+		if cmd.Flags().Changed("json") {
+			err = updateJson.Unmarshal(&updateReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "The ID for the corresponding repo to access")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				names, err := w.Repos.RepoInfoPathToIdMap(ctx, workspace.ListReposRequest{})
+				if err != nil {
+					return err
+				}
+				id, err := cmdio.Select(ctx, names, "The ID for the corresponding repo to access")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have the id for the corresponding repo to access")
-		}
-		err = updateJson.Unmarshal(&updateReq)
-		if err != nil {
-			return err
-		}
-		_, err = fmt.Sscan(args[0], &updateReq.RepoId)
-		if err != nil {
-			return fmt.Errorf("invalid REPO_ID: %s", args[0])
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have the id for the corresponding repo to access")
+			}
+			_, err = fmt.Sscan(args[0], &updateReq.RepoId)
+			if err != nil {
+				return fmt.Errorf("invalid REPO_ID: %s", args[0])
+			}
+
 		}
 
 		err = w.Repos.Update(ctx, updateReq)

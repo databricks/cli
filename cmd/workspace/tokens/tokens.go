@@ -66,7 +66,7 @@ func init() {
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete TOKEN_ID",
+	Use:   "delete [TOKEN_ID]",
 	Short: `Revoke token.`,
 	Long: `Revoke token.
   

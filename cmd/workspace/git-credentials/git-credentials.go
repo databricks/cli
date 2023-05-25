@@ -36,7 +36,7 @@ func init() {
 }
 
 var createCmd = &cobra.Command{
-	Use:   "create GIT_PROVIDER",
+	Use:   "create [GIT_PROVIDER]",
 	Short: `Create a credential entry.`,
 	Long: `Create a credential entry.
   
@@ -85,7 +85,7 @@ func init() {
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete CREDENTIAL_ID",
+	Use:   "delete [CREDENTIAL_ID]",
 	Short: `Delete a credential.`,
 	Long: `Delete a credential.
   
@@ -134,7 +134,7 @@ func init() {
 }
 
 var getCmd = &cobra.Command{
-	Use:   "get CREDENTIAL_ID",
+	Use:   "get [CREDENTIAL_ID]",
 	Short: `Get a credential entry.`,
 	Long: `Get a credential entry.
   
@@ -215,7 +215,7 @@ func init() {
 }
 
 var updateCmd = &cobra.Command{
-	Use:   "update CREDENTIAL_ID",
+	Use:   "update [CREDENTIAL_ID]",
 	Short: `Update a credential.`,
 	Long: `Update a credential.
   

@@ -119,7 +119,7 @@ func init() {
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete ID",
+	Use:   "delete [ID]",
 	Short: `Delete a warehouse.`,
 	Long: `Delete a warehouse.
   
@@ -210,7 +210,7 @@ func init() {
 }
 
 var editCmd = &cobra.Command{
-	Use:   "edit ID",
+	Use:   "edit [ID]",
 	Short: `Update a warehouse.`,
 	Long: `Update a warehouse.
   
@@ -221,25 +221,29 @@ var editCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if len(args) == 0 {
-			names, err := w.Warehouses.EndpointInfoNameToIdMap(ctx, sql.ListWarehousesRequest{})
+		if cmd.Flags().Changed("json") {
+			err = editJson.Unmarshal(&editReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "Required")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				names, err := w.Warehouses.EndpointInfoNameToIdMap(ctx, sql.ListWarehousesRequest{})
+				if err != nil {
+					return err
+				}
+				id, err := cmdio.Select(ctx, names, "Required")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have required")
+			}
+			editReq.Id = args[0]
+
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have required")
-		}
-		err = editJson.Unmarshal(&editReq)
-		if err != nil {
-			return err
-		}
-		editReq.Id = args[0]
 
 		if editSkipWait {
 			err = w.Warehouses.Edit(ctx, editReq)
@@ -290,7 +294,7 @@ func init() {
 }
 
 var getCmd = &cobra.Command{
-	Use:   "get ID",
+	Use:   "get [ID]",
 	Short: `Get warehouse info.`,
 	Long: `Get warehouse info.
   
@@ -451,7 +455,7 @@ func init() {
 }
 
 var startCmd = &cobra.Command{
-	Use:   "start ID",
+	Use:   "start [ID]",
 	Short: `Start a warehouse.`,
 	Long: `Start a warehouse.
   
@@ -527,7 +531,7 @@ func init() {
 }
 
 var stopCmd = &cobra.Command{
-	Use:   "stop ID",
+	Use:   "stop [ID]",
 	Short: `Stop a warehouse.`,
 	Long: `Stop a warehouse.
   

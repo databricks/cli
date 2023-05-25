@@ -81,7 +81,7 @@ func init() {
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete ID",
+	Use:   "delete [ID]",
 	Short: `Delete a group.`,
 	Long: `Delete a group.
   
@@ -127,7 +127,7 @@ func init() {
 }
 
 var getCmd = &cobra.Command{
-	Use:   "get ID",
+	Use:   "get [ID]",
 	Short: `Get group details.`,
 	Long: `Get group details.
   
@@ -216,7 +216,7 @@ func init() {
 }
 
 var patchCmd = &cobra.Command{
-	Use:   "patch ID",
+	Use:   "patch [ID]",
 	Short: `Update group details.`,
 	Long: `Update group details.
   
@@ -227,25 +227,29 @@ var patchCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-		if len(args) == 0 {
-			names, err := a.Groups.GroupDisplayNameToIdMap(ctx, iam.ListAccountGroupsRequest{})
+		if cmd.Flags().Changed("json") {
+			err = patchJson.Unmarshal(&patchReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "Unique ID for a group in the Databricks account")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				names, err := a.Groups.GroupDisplayNameToIdMap(ctx, iam.ListAccountGroupsRequest{})
+				if err != nil {
+					return err
+				}
+				id, err := cmdio.Select(ctx, names, "Unique ID for a group in the Databricks account")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have unique id for a group in the databricks account")
+			}
+			patchReq.Id = args[0]
+
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have unique id for a group in the databricks account")
-		}
-		err = patchJson.Unmarshal(&patchReq)
-		if err != nil {
-			return err
-		}
-		patchReq.Id = args[0]
 
 		err = a.Groups.Patch(ctx, patchReq)
 		if err != nil {
@@ -276,7 +280,7 @@ func init() {
 }
 
 var updateCmd = &cobra.Command{
-	Use:   "update ID",
+	Use:   "update [ID]",
 	Short: `Replace a group.`,
 	Long: `Replace a group.
   
@@ -287,25 +291,29 @@ var updateCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-		if len(args) == 0 {
-			names, err := a.Groups.GroupDisplayNameToIdMap(ctx, iam.ListAccountGroupsRequest{})
+		if cmd.Flags().Changed("json") {
+			err = updateJson.Unmarshal(&updateReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "Databricks group ID")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				names, err := a.Groups.GroupDisplayNameToIdMap(ctx, iam.ListAccountGroupsRequest{})
+				if err != nil {
+					return err
+				}
+				id, err := cmdio.Select(ctx, names, "Databricks group ID")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have databricks group id")
+			}
+			updateReq.Id = args[0]
+
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have databricks group id")
-		}
-		err = updateJson.Unmarshal(&updateReq)
-		if err != nil {
-			return err
-		}
-		updateReq.Id = args[0]
 
 		err = a.Groups.Update(ctx, updateReq)
 		if err != nil {

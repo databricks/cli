@@ -101,7 +101,7 @@ func init() {
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete PIPELINE_ID",
+	Use:   "delete [PIPELINE_ID]",
 	Short: `Delete a pipeline.`,
 	Long: `Delete a pipeline.
   
@@ -153,7 +153,7 @@ func init() {
 }
 
 var getCmd = &cobra.Command{
-	Use:   "get PIPELINE_ID",
+	Use:   "get [PIPELINE_ID]",
 	Short: `Get a pipeline.`,
 	Long:  `Get a pipeline.`,
 
@@ -238,7 +238,7 @@ func init() {
 }
 
 var listPipelineEventsCmd = &cobra.Command{
-	Use:   "list-pipeline-events PIPELINE_ID",
+	Use:   "list-pipeline-events [PIPELINE_ID]",
 	Short: `List pipeline events.`,
 	Long: `List pipeline events.
   
@@ -249,25 +249,29 @@ var listPipelineEventsCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if len(args) == 0 {
-			names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
+		if cmd.Flags().Changed("json") {
+			err = listPipelineEventsJson.Unmarshal(&listPipelineEventsReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
+				if err != nil {
+					return err
+				}
+				id, err := cmdio.Select(ctx, names, "")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have ")
+			}
+			listPipelineEventsReq.PipelineId = args[0]
+
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have ")
-		}
-		err = listPipelineEventsJson.Unmarshal(&listPipelineEventsReq)
-		if err != nil {
-			return err
-		}
-		listPipelineEventsReq.PipelineId = args[0]
 
 		response, err := w.Pipelines.ListPipelineEventsAll(ctx, listPipelineEventsReq)
 		if err != nil {
@@ -334,7 +338,7 @@ func init() {
 }
 
 var listUpdatesCmd = &cobra.Command{
-	Use:   "list-updates PIPELINE_ID",
+	Use:   "list-updates [PIPELINE_ID]",
 	Short: `List pipeline updates.`,
 	Long: `List pipeline updates.
   
@@ -386,7 +390,7 @@ func init() {
 }
 
 var resetCmd = &cobra.Command{
-	Use:   "reset PIPELINE_ID",
+	Use:   "reset [PIPELINE_ID]",
 	Short: `Reset a pipeline.`,
 	Long: `Reset a pipeline.
   
@@ -456,7 +460,7 @@ func init() {
 }
 
 var startUpdateCmd = &cobra.Command{
-	Use:   "start-update PIPELINE_ID",
+	Use:   "start-update [PIPELINE_ID]",
 	Short: `Queue a pipeline update.`,
 	Long: `Queue a pipeline update.
   
@@ -467,25 +471,29 @@ var startUpdateCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if len(args) == 0 {
-			names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
+		if cmd.Flags().Changed("json") {
+			err = startUpdateJson.Unmarshal(&startUpdateReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
+				if err != nil {
+					return err
+				}
+				id, err := cmdio.Select(ctx, names, "")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have ")
+			}
+			startUpdateReq.PipelineId = args[0]
+
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have ")
-		}
-		err = startUpdateJson.Unmarshal(&startUpdateReq)
-		if err != nil {
-			return err
-		}
-		startUpdateReq.PipelineId = args[0]
 
 		response, err := w.Pipelines.StartUpdate(ctx, startUpdateReq)
 		if err != nil {
@@ -512,7 +520,7 @@ func init() {
 }
 
 var stopCmd = &cobra.Command{
-	Use:   "stop PIPELINE_ID",
+	Use:   "stop [PIPELINE_ID]",
 	Short: `Stop a pipeline.`,
 	Long: `Stop a pipeline.
   
@@ -597,7 +605,7 @@ func init() {
 }
 
 var updateCmd = &cobra.Command{
-	Use:   "update PIPELINE_ID",
+	Use:   "update [PIPELINE_ID]",
 	Short: `Edit a pipeline.`,
 	Long: `Edit a pipeline.
   
@@ -608,25 +616,29 @@ var updateCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if len(args) == 0 {
-			names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
+		if cmd.Flags().Changed("json") {
+			err = updateJson.Unmarshal(&updateReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "Unique identifier for this pipeline")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
+				if err != nil {
+					return err
+				}
+				id, err := cmdio.Select(ctx, names, "Unique identifier for this pipeline")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have unique identifier for this pipeline")
+			}
+			updateReq.PipelineId = args[0]
+
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have unique identifier for this pipeline")
-		}
-		err = updateJson.Unmarshal(&updateReq)
-		if err != nil {
-			return err
-		}
-		updateReq.PipelineId = args[0]
 
 		err = w.Pipelines.Update(ctx, updateReq)
 		if err != nil {

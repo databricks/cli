@@ -57,6 +57,7 @@ func init() {
     {{- end}}
     {{end}}
 }
+
 {{$isAllRequiredFieldsPrimitive := or (not .Request) (gt (len .Request.RequiredFields) 0)}}
 {{ if .Request }}
 	{{- range .Request.RequiredFields -}}
@@ -68,37 +69,48 @@ func init() {
 {{- $serviceHasNamedIdMap := and .Service.List .Service.List.NamedIdMap -}}
 {{- $hasIdPrompt := and $hasSinglePosArg $serviceHasNamedIdMap -}}
 {{- $wait := and .Wait (and (not .IsCrudRead) (not (eq .SnakeName "get_run"))) -}}
+{{- $canAcceptJson := and .Request (not .Request.IsOnlyPrimitiveFields) -}}
+{{- $canAcceptJsonAndIdPrompts := and $hasIdPrompt $canAcceptJson -}}
+{{- $hasRequiredArgs := and (not $hasIdPrompt) $hasPosArgs -}}
 var {{.CamelName}}Cmd = &cobra.Command{
-	Use: "{{.KebabName}}{{if $hasPosArgs}}{{range .Request.RequiredFields}} {{.ConstantName}}{{end}}{{end}}",
+	Use: "{{.KebabName}}{{if $hasPosArgs}}{{range .Request.RequiredFields}} {{if $hasIdPrompt}}[{{end}}{{.ConstantName}}{{if $hasIdPrompt}}]{{end}}{{end}}{{end}}",
 	{{if .Description -}}
     Short: `{{.Summary | without "`"}}`,
 	Long: `{{.Comment  "  " 80 | without "`"}}`,
     {{end}}
-	Annotations: map[string]string{},{{if and (not $hasIdPrompt) $hasPosArgs }}
+	Annotations: map[string]string{},{{if $hasRequiredArgs }}
 	Args: cobra.ExactArgs({{len .Request.RequiredFields}}),{{end}}
 	PreRunE: root.Must{{if .Service.IsAccounts}}Account{{else}}Workspace{{end}}Client,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		{{if .Service.IsAccounts}}a := root.AccountClient(ctx){{else}}w := root.WorkspaceClient(ctx){{end}}
 		{{- if .Request -}}
+			{{if $canAcceptJsonAndIdPrompts}}
+				if cmd.Flags().Changed("json") {
+			{{-  end -}}
+			{{if $canAcceptJson }}
+					err = {{.CamelName}}Json.Unmarshal(&{{.CamelName}}Req)
+					if err != nil {
+						return err
+					}
+			{{- end -}}
+			{{if $canAcceptJsonAndIdPrompts}}
+				} else {
+			{{- end -}}
 			{{if $hasIdPrompt}}
 				if len(args) == 0 {
-				names, err := {{if .Service.IsAccounts}}a{{else}}w{{end}}.{{(.Service.TrimPrefix "account").PascalName}}.{{.Service.List.NamedIdMap.PascalName}}(ctx{{if .Service.List.Request}}, {{.Service.Package.Name}}.{{.Service.List.Request.PascalName}}{}{{end}})
-				if err != nil {
-					return err
+					names, err := {{if .Service.IsAccounts}}a{{else}}w{{end}}.{{(.Service.TrimPrefix "account").PascalName}}.{{.Service.List.NamedIdMap.PascalName}}(ctx{{if .Service.List.Request}}, {{.Service.Package.Name}}.{{.Service.List.Request.PascalName}}{}{{end}})
+					if err != nil {
+						return err
+					}
+					id, err := cmdio.Select(ctx, names, "{{range .Request.RequiredFields}}{{.Summary | trimSuffix "."}}{{end}}")
+					if err != nil {
+						return err
+					}
+					args = append(args, id)
 				}
-				id, err := cmdio.Select(ctx, names, "{{range .Request.RequiredFields}}{{.Summary | trimSuffix "."}}{{end}}")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have {{range .Request.RequiredFields}}{{.Summary | trimSuffix "." | lower}}{{end}}")
-			}{{end}}{{if not .Request.IsOnlyPrimitiveFields}}
-				err = {{.CamelName}}Json.Unmarshal(&{{.CamelName}}Req)
-				if err != nil {
-					return err
+				if len(args) != 1 {
+					return fmt.Errorf("expected to have {{range .Request.RequiredFields}}{{.Summary | trimSuffix "." | lower}}{{end}}")
 				}
 			{{- end -}}
 			{{$method := .}}
@@ -110,6 +122,9 @@ var {{.CamelName}}Cmd = &cobra.Command{
 				}{{else -}}
 				{{$method.CamelName}}Req.{{$field.PascalName}} = args[{{$arg}}]
 				{{- end -}}{{end}}
+			{{if $canAcceptJsonAndIdPrompts}}
+				}
+			{{end}}
 		{{end}}
 		{{if $wait -}}
 		if {{.CamelName}}SkipWait {

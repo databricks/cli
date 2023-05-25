@@ -71,7 +71,7 @@ func init() {
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete BUDGET_ID",
+	Use:   "delete [BUDGET_ID]",
 	Short: `Delete budget.`,
 	Long: `Delete budget.
   
@@ -117,7 +117,7 @@ func init() {
 }
 
 var getCmd = &cobra.Command{
-	Use:   "get BUDGET_ID",
+	Use:   "get [BUDGET_ID]",
 	Short: `Get budget and its status.`,
 	Long: `Get budget and its status.
   

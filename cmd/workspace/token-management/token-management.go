@@ -69,7 +69,7 @@ func init() {
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete TOKEN_ID",
+	Use:   "delete [TOKEN_ID]",
 	Short: `Delete a token.`,
 	Long: `Delete a token.
   
@@ -115,7 +115,7 @@ func init() {
 }
 
 var getCmd = &cobra.Command{
-	Use:   "get TOKEN_ID",
+	Use:   "get [TOKEN_ID]",
 	Short: `Get token info.`,
 	Long: `Get token info.
   

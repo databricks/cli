@@ -36,7 +36,7 @@ func init() {
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete FULL_NAME",
+	Use:   "delete [FULL_NAME]",
 	Short: `Delete a table.`,
 	Long: `Delete a table.
   
@@ -88,7 +88,7 @@ func init() {
 }
 
 var getCmd = &cobra.Command{
-	Use:   "get FULL_NAME",
+	Use:   "get [FULL_NAME]",
 	Short: `Get a table.`,
 	Long: `Get a table.
   
@@ -186,7 +186,7 @@ func init() {
 }
 
 var listSummariesCmd = &cobra.Command{
-	Use:   "list-summaries CATALOG_NAME",
+	Use:   "list-summaries [CATALOG_NAME]",
 	Short: `List table summaries.`,
 	Long: `List table summaries.
   

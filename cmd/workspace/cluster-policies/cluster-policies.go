@@ -57,7 +57,7 @@ func init() {
 }
 
 var createCmd = &cobra.Command{
-	Use:   "create NAME",
+	Use:   "create [NAME]",
 	Short: `Create a new policy.`,
 	Long: `Create a new policy.
   
@@ -103,7 +103,7 @@ func init() {
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete POLICY_ID",
+	Use:   "delete [POLICY_ID]",
 	Short: `Delete a cluster policy.`,
 	Long: `Delete a cluster policy.
   
@@ -191,7 +191,7 @@ func init() {
 }
 
 var getCmd = &cobra.Command{
-	Use:   "get POLICY_ID",
+	Use:   "get [POLICY_ID]",
 	Short: `Get entity.`,
 	Long: `Get entity.
   

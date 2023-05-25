@@ -110,7 +110,7 @@ func init() {
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete IP_ACCESS_LIST_ID",
+	Use:   "delete [IP_ACCESS_LIST_ID]",
 	Short: `Delete access list.`,
 	Long: `Delete access list.
   
@@ -156,7 +156,7 @@ func init() {
 }
 
 var getCmd = &cobra.Command{
-	Use:   "get IP_ACCESS_LIST_ID",
+	Use:   "get [IP_ACCESS_LIST_ID]",
 	Short: `Get access list.`,
 	Long: `Get access list.
   

@@ -124,7 +124,7 @@ func init() {
 }
 
 var createCmd = &cobra.Command{
-	Use:   "create SPARK_VERSION",
+	Use:   "create [SPARK_VERSION]",
 	Short: `Create new cluster.`,
 	Long: `Create new cluster.
   
@@ -147,25 +147,29 @@ var createCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if len(args) == 0 {
-			names, err := w.Clusters.ClusterInfoClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
+		if cmd.Flags().Changed("json") {
+			err = createJson.Unmarshal(&createReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "The Spark version of the cluster, e.g")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				names, err := w.Clusters.ClusterInfoClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
+				if err != nil {
+					return err
+				}
+				id, err := cmdio.Select(ctx, names, "The Spark version of the cluster, e.g")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have the spark version of the cluster, e.g")
+			}
+			createReq.SparkVersion = args[0]
+
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have the spark version of the cluster, e.g")
-		}
-		err = createJson.Unmarshal(&createReq)
-		if err != nil {
-			return err
-		}
-		createReq.SparkVersion = args[0]
 
 		if createSkipWait {
 			response, err := w.Clusters.Create(ctx, createReq)
@@ -209,7 +213,7 @@ func init() {
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete CLUSTER_ID",
+	Use:   "delete [CLUSTER_ID]",
 	Short: `Terminate cluster.`,
 	Long: `Terminate cluster.
   
@@ -382,7 +386,7 @@ func init() {
 }
 
 var eventsCmd = &cobra.Command{
-	Use:   "events CLUSTER_ID",
+	Use:   "events [CLUSTER_ID]",
 	Short: `List cluster activity events.`,
 	Long: `List cluster activity events.
   
@@ -395,25 +399,29 @@ var eventsCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if len(args) == 0 {
-			names, err := w.Clusters.ClusterInfoClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
+		if cmd.Flags().Changed("json") {
+			err = eventsJson.Unmarshal(&eventsReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "The ID of the cluster to retrieve events about")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				names, err := w.Clusters.ClusterInfoClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
+				if err != nil {
+					return err
+				}
+				id, err := cmdio.Select(ctx, names, "The ID of the cluster to retrieve events about")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have the id of the cluster to retrieve events about")
+			}
+			eventsReq.ClusterId = args[0]
+
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have the id of the cluster to retrieve events about")
-		}
-		err = eventsJson.Unmarshal(&eventsReq)
-		if err != nil {
-			return err
-		}
-		eventsReq.ClusterId = args[0]
 
 		response, err := w.Clusters.EventsAll(ctx, eventsReq)
 		if err != nil {
@@ -440,7 +448,7 @@ func init() {
 }
 
 var getCmd = &cobra.Command{
-	Use:   "get CLUSTER_ID",
+	Use:   "get [CLUSTER_ID]",
 	Short: `Get cluster info.`,
 	Long: `Get cluster info.
   
@@ -584,7 +592,7 @@ func init() {
 }
 
 var permanentDeleteCmd = &cobra.Command{
-	Use:   "permanent-delete CLUSTER_ID",
+	Use:   "permanent-delete [CLUSTER_ID]",
 	Short: `Permanently delete cluster.`,
 	Long: `Permanently delete cluster.
   
@@ -635,7 +643,7 @@ func init() {
 }
 
 var pinCmd = &cobra.Command{
-	Use:   "pin CLUSTER_ID",
+	Use:   "pin [CLUSTER_ID]",
 	Short: `Pin cluster.`,
 	Long: `Pin cluster.
   
@@ -693,7 +701,7 @@ func init() {
 }
 
 var resizeCmd = &cobra.Command{
-	Use:   "resize CLUSTER_ID",
+	Use:   "resize [CLUSTER_ID]",
 	Short: `Resize cluster.`,
 	Long: `Resize cluster.
   
@@ -705,25 +713,29 @@ var resizeCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if len(args) == 0 {
-			names, err := w.Clusters.ClusterInfoClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
+		if cmd.Flags().Changed("json") {
+			err = resizeJson.Unmarshal(&resizeReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "The cluster to be resized")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				names, err := w.Clusters.ClusterInfoClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
+				if err != nil {
+					return err
+				}
+				id, err := cmdio.Select(ctx, names, "The cluster to be resized")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have the cluster to be resized")
+			}
+			resizeReq.ClusterId = args[0]
+
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have the cluster to be resized")
-		}
-		err = resizeJson.Unmarshal(&resizeReq)
-		if err != nil {
-			return err
-		}
-		resizeReq.ClusterId = args[0]
 
 		if resizeSkipWait {
 			err = w.Clusters.Resize(ctx, resizeReq)
@@ -769,7 +781,7 @@ func init() {
 }
 
 var restartCmd = &cobra.Command{
-	Use:   "restart CLUSTER_ID",
+	Use:   "restart [CLUSTER_ID]",
 	Short: `Restart cluster.`,
 	Long: `Restart cluster.
   
@@ -867,7 +879,7 @@ func init() {
 }
 
 var startCmd = &cobra.Command{
-	Use:   "start CLUSTER_ID",
+	Use:   "start [CLUSTER_ID]",
 	Short: `Start terminated cluster.`,
 	Long: `Start terminated cluster.
   
@@ -937,7 +949,7 @@ func init() {
 }
 
 var unpinCmd = &cobra.Command{
-	Use:   "unpin CLUSTER_ID",
+	Use:   "unpin [CLUSTER_ID]",
 	Short: `Unpin cluster.`,
 	Long: `Unpin cluster.
   

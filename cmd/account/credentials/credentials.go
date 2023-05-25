@@ -88,7 +88,7 @@ func init() {
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete CREDENTIALS_ID",
+	Use:   "delete [CREDENTIALS_ID]",
 	Short: `Delete credential configuration.`,
 	Long: `Delete credential configuration.
   
@@ -136,7 +136,7 @@ func init() {
 }
 
 var getCmd = &cobra.Command{
-	Use:   "get CREDENTIALS_ID",
+	Use:   "get [CREDENTIALS_ID]",
 	Short: `Get credential configuration.`,
 	Long: `Get credential configuration.
   

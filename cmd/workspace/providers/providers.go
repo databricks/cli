@@ -69,7 +69,7 @@ func init() {
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete NAME",
+	Use:   "delete [NAME]",
 	Short: `Delete a provider.`,
 	Long: `Delete a provider.
   
@@ -116,7 +116,7 @@ func init() {
 }
 
 var getCmd = &cobra.Command{
-	Use:   "get NAME",
+	Use:   "get [NAME]",
 	Short: `Get a provider.`,
 	Long: `Get a provider.
   
@@ -200,7 +200,7 @@ func init() {
 }
 
 var listSharesCmd = &cobra.Command{
-	Use:   "list-shares NAME",
+	Use:   "list-shares [NAME]",
 	Short: `List shares by Provider.`,
 	Long: `List shares by Provider.
   
@@ -253,7 +253,7 @@ func init() {
 }
 
 var updateCmd = &cobra.Command{
-	Use:   "update NAME",
+	Use:   "update [NAME]",
 	Short: `Update a provider.`,
 	Long: `Update a provider.
   

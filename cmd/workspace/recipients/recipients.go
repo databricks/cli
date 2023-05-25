@@ -81,7 +81,7 @@ func init() {
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete NAME",
+	Use:   "delete [NAME]",
 	Short: `Delete a share recipient.`,
 	Long: `Delete a share recipient.
   
@@ -128,7 +128,7 @@ func init() {
 }
 
 var getCmd = &cobra.Command{
-	Use:   "get NAME",
+	Use:   "get [NAME]",
 	Short: `Get a share recipient.`,
 	Long: `Get a share recipient.
   
@@ -250,7 +250,7 @@ func init() {
 }
 
 var sharePermissionsCmd = &cobra.Command{
-	Use:   "share-permissions NAME",
+	Use:   "share-permissions [NAME]",
 	Short: `Get recipient share permissions.`,
 	Long: `Get recipient share permissions.
   
@@ -305,7 +305,7 @@ func init() {
 }
 
 var updateCmd = &cobra.Command{
-	Use:   "update NAME",
+	Use:   "update [NAME]",
 	Short: `Update a share recipient.`,
 	Long: `Update a share recipient.
   
@@ -318,25 +318,29 @@ var updateCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if len(args) == 0 {
-			names, err := w.Recipients.RecipientInfoNameToMetastoreIdMap(ctx, sharing.ListRecipientsRequest{})
+		if cmd.Flags().Changed("json") {
+			err = updateJson.Unmarshal(&updateReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "Name of Recipient")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				names, err := w.Recipients.RecipientInfoNameToMetastoreIdMap(ctx, sharing.ListRecipientsRequest{})
+				if err != nil {
+					return err
+				}
+				id, err := cmdio.Select(ctx, names, "Name of Recipient")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have name of recipient")
+			}
+			updateReq.Name = args[0]
+
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have name of recipient")
-		}
-		err = updateJson.Unmarshal(&updateReq)
-		if err != nil {
-			return err
-		}
-		updateReq.Name = args[0]
 
 		err = w.Recipients.Update(ctx, updateReq)
 		if err != nil {

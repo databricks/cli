@@ -79,7 +79,7 @@ func init() {
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete FULL_NAME",
+	Use:   "delete [FULL_NAME]",
 	Short: `Delete a schema.`,
 	Long: `Delete a schema.
   
@@ -126,7 +126,7 @@ func init() {
 }
 
 var getCmd = &cobra.Command{
-	Use:   "get FULL_NAME",
+	Use:   "get [FULL_NAME]",
 	Short: `Get a schema.`,
 	Long: `Get a schema.
   
@@ -174,7 +174,7 @@ func init() {
 }
 
 var listCmd = &cobra.Command{
-	Use:   "list CATALOG_NAME",
+	Use:   "list [CATALOG_NAME]",
 	Short: `List schemas.`,
 	Long: `List schemas.
   
@@ -231,7 +231,7 @@ func init() {
 }
 
 var updateCmd = &cobra.Command{
-	Use:   "update FULL_NAME",
+	Use:   "update [FULL_NAME]",
 	Short: `Update a schema.`,
 	Long: `Update a schema.
   
@@ -246,25 +246,29 @@ var updateCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if len(args) == 0 {
-			names, err := w.Schemas.SchemaInfoNameToFullNameMap(ctx, catalog.ListSchemasRequest{})
+		if cmd.Flags().Changed("json") {
+			err = updateJson.Unmarshal(&updateReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "Full name of the schema")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				names, err := w.Schemas.SchemaInfoNameToFullNameMap(ctx, catalog.ListSchemasRequest{})
+				if err != nil {
+					return err
+				}
+				id, err := cmdio.Select(ctx, names, "Full name of the schema")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have full name of the schema")
+			}
+			updateReq.FullName = args[0]
+
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have full name of the schema")
-		}
-		err = updateJson.Unmarshal(&updateReq)
-		if err != nil {
-			return err
-		}
-		updateReq.FullName = args[0]
 
 		response, err := w.Schemas.Update(ctx, updateReq)
 		if err != nil {

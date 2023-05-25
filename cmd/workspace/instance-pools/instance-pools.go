@@ -98,7 +98,7 @@ func init() {
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete INSTANCE_POOL_ID",
+	Use:   "delete [INSTANCE_POOL_ID]",
 	Short: `Delete an instance pool.`,
 	Long: `Delete an instance pool.
   
@@ -198,7 +198,7 @@ func init() {
 }
 
 var getCmd = &cobra.Command{
-	Use:   "get INSTANCE_POOL_ID",
+	Use:   "get [INSTANCE_POOL_ID]",
 	Short: `Get instance pool information.`,
 	Long: `Get instance pool information.
   

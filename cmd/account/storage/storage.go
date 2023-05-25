@@ -85,7 +85,7 @@ func init() {
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete STORAGE_CONFIGURATION_ID",
+	Use:   "delete [STORAGE_CONFIGURATION_ID]",
 	Short: `Delete storage configuration.`,
 	Long: `Delete storage configuration.
   
@@ -132,7 +132,7 @@ func init() {
 }
 
 var getCmd = &cobra.Command{
-	Use:   "get STORAGE_CONFIGURATION_ID",
+	Use:   "get [STORAGE_CONFIGURATION_ID]",
 	Short: `Get storage configuration.`,
 	Long: `Get storage configuration.
   

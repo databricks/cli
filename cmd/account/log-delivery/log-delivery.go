@@ -152,7 +152,7 @@ func init() {
 }
 
 var getCmd = &cobra.Command{
-	Use:   "get LOG_DELIVERY_CONFIGURATION_ID",
+	Use:   "get [LOG_DELIVERY_CONFIGURATION_ID]",
 	Short: `Get log delivery configuration.`,
 	Long: `Get log delivery configuration.
   
