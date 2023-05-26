@@ -14,6 +14,8 @@ const (
 	CreateParentDirectories           = iota << 1
 )
 
+// This struct is an abstract over file information from different file
+// systems like WSFS and DBFS. The names for the fields are inspired from https://pkg.go.dev/io/fs#FileInfo
 type FileInfo struct {
 	// The type of the file in workspace
 	Type string
