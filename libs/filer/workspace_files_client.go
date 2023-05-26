@@ -154,3 +154,13 @@ func (w *WorkspaceFilesClient) ReadDir(ctx context.Context, name string) ([]File
 	}
 	return info, nil
 }
+
+func (w *WorkspaceFilesClient) Mkdir(ctx context.Context, name string) error {
+	dirPath, err := w.root.Join(name)
+	if err != nil {
+		return err
+	}
+	return w.workspaceClient.Workspace.Mkdirs(ctx, workspace.Mkdirs{
+		Path: dirPath,
+	})
+}

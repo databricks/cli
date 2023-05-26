@@ -59,4 +59,7 @@ type Filer interface {
 
 	// Return contents of directory at `path`
 	ReadDir(ctx context.Context, path string) ([]FileInfo, error)
+
+	// Creates directory at `path`, creating any intermediate directories as required
+	Mkdir(ctx context.Context, path string) error
 }
