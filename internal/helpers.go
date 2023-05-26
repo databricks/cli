@@ -15,6 +15,8 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	_ "github.com/databricks/cli/cmd/version"
 	"github.com/stretchr/testify/require"
+
+	_ "github.com/databricks/cli/cmd/workspace"
 )
 
 const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"

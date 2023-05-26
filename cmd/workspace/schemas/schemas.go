@@ -214,7 +214,14 @@ var listCmd = &cobra.Command{
   no guarantee of a specific ordering of the elements in the array.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -224,20 +231,6 @@ var listCmd = &cobra.Command{
 				return err
 			}
 		} else {
-			if len(args) == 0 {
-				names, err := w.Schemas.SchemaInfoNameToFullNameMap(ctx, catalog.ListSchemasRequest{})
-				if err != nil {
-					return err
-				}
-				id, err := cmdio.Select(ctx, names, "Parent catalog for schemas of interest")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have parent catalog for schemas of interest")
-			}
 			listReq.CatalogName = args[0]
 		}
 

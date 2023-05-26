@@ -6,8 +6,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
-	_ "github.com/databricks/cli/cmd/workspace"
 )
 
 var clusterId string
@@ -24,7 +22,6 @@ func TestAccClustersList(t *testing.T) {
 
 	idRegExp := regexp.MustCompile(`[0-9]{4}\-[0-9]{6}-[a-z0-9]{8}`)
 	clusterId = idRegExp.FindString(outStr)
-	fmt.Println(clusterId)
 	assert.NotEmpty(t, clusterId)
 }
 

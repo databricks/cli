@@ -4,8 +4,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
-	_ "github.com/databricks/cli/cmd/workspace"
 )
 
 func TestSecretsCreateScopeErrWhenNoArguments(t *testing.T) {

@@ -60,7 +60,7 @@ func init() {
 
 {{ $hasPosArgs := and .Request (or .Request.IsAllRequiredFieldsPrimitive (eq .PascalName "RunNow")) -}}
 {{- $hasSinglePosArg := and $hasPosArgs (eq 1 (len .Request.RequiredFields)) -}}
-{{- $serviceHasNamedIdMap := and .Service.List .Service.List.NamedIdMap -}}
+{{- $serviceHasNamedIdMap := and (and .Service.List .Service.List.NamedIdMap) (not (eq .PascalName "List")) -}}
 {{- $hasIdPrompt := and $hasSinglePosArg $serviceHasNamedIdMap -}}
 {{- $wait := and .Wait (and (not .IsCrudRead) (not (eq .SnakeName "get_run"))) -}}
 {{- $hasRequiredArgs := and (not $hasIdPrompt) $hasPosArgs -}}
