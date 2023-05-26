@@ -57,56 +57,59 @@ var createCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		err = createJson.Unmarshal(&createReq)
-		if err != nil {
-			return err
+		if cmd.Flags().Changed("json") {
+			err = createJson.Unmarshal(&createReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			createReq.Name = args[0]
+			createReq.CatalogName = args[1]
+			createReq.SchemaName = args[2]
+			_, err = fmt.Sscan(args[3], &createReq.InputParams)
+			if err != nil {
+				return fmt.Errorf("invalid INPUT_PARAMS: %s", args[3])
+			}
+			_, err = fmt.Sscan(args[4], &createReq.DataType)
+			if err != nil {
+				return fmt.Errorf("invalid DATA_TYPE: %s", args[4])
+			}
+			createReq.FullDataType = args[5]
+			_, err = fmt.Sscan(args[6], &createReq.ReturnParams)
+			if err != nil {
+				return fmt.Errorf("invalid RETURN_PARAMS: %s", args[6])
+			}
+			_, err = fmt.Sscan(args[7], &createReq.RoutineBody)
+			if err != nil {
+				return fmt.Errorf("invalid ROUTINE_BODY: %s", args[7])
+			}
+			createReq.RoutineDefinition = args[8]
+			_, err = fmt.Sscan(args[9], &createReq.RoutineDependencies)
+			if err != nil {
+				return fmt.Errorf("invalid ROUTINE_DEPENDENCIES: %s", args[9])
+			}
+			_, err = fmt.Sscan(args[10], &createReq.ParameterStyle)
+			if err != nil {
+				return fmt.Errorf("invalid PARAMETER_STYLE: %s", args[10])
+			}
+			_, err = fmt.Sscan(args[11], &createReq.IsDeterministic)
+			if err != nil {
+				return fmt.Errorf("invalid IS_DETERMINISTIC: %s", args[11])
+			}
+			_, err = fmt.Sscan(args[12], &createReq.SqlDataAccess)
+			if err != nil {
+				return fmt.Errorf("invalid SQL_DATA_ACCESS: %s", args[12])
+			}
+			_, err = fmt.Sscan(args[13], &createReq.IsNullCall)
+			if err != nil {
+				return fmt.Errorf("invalid IS_NULL_CALL: %s", args[13])
+			}
+			_, err = fmt.Sscan(args[14], &createReq.SecurityType)
+			if err != nil {
+				return fmt.Errorf("invalid SECURITY_TYPE: %s", args[14])
+			}
+			createReq.SpecificName = args[15]
 		}
-		createReq.Name = args[0]
-		createReq.CatalogName = args[1]
-		createReq.SchemaName = args[2]
-		_, err = fmt.Sscan(args[3], &createReq.InputParams)
-		if err != nil {
-			return fmt.Errorf("invalid INPUT_PARAMS: %s", args[3])
-		}
-		_, err = fmt.Sscan(args[4], &createReq.DataType)
-		if err != nil {
-			return fmt.Errorf("invalid DATA_TYPE: %s", args[4])
-		}
-		createReq.FullDataType = args[5]
-		_, err = fmt.Sscan(args[6], &createReq.ReturnParams)
-		if err != nil {
-			return fmt.Errorf("invalid RETURN_PARAMS: %s", args[6])
-		}
-		_, err = fmt.Sscan(args[7], &createReq.RoutineBody)
-		if err != nil {
-			return fmt.Errorf("invalid ROUTINE_BODY: %s", args[7])
-		}
-		createReq.RoutineDefinition = args[8]
-		_, err = fmt.Sscan(args[9], &createReq.RoutineDependencies)
-		if err != nil {
-			return fmt.Errorf("invalid ROUTINE_DEPENDENCIES: %s", args[9])
-		}
-		_, err = fmt.Sscan(args[10], &createReq.ParameterStyle)
-		if err != nil {
-			return fmt.Errorf("invalid PARAMETER_STYLE: %s", args[10])
-		}
-		_, err = fmt.Sscan(args[11], &createReq.IsDeterministic)
-		if err != nil {
-			return fmt.Errorf("invalid IS_DETERMINISTIC: %s", args[11])
-		}
-		_, err = fmt.Sscan(args[12], &createReq.SqlDataAccess)
-		if err != nil {
-			return fmt.Errorf("invalid SQL_DATA_ACCESS: %s", args[12])
-		}
-		_, err = fmt.Sscan(args[13], &createReq.IsNullCall)
-		if err != nil {
-			return fmt.Errorf("invalid IS_NULL_CALL: %s", args[13])
-		}
-		_, err = fmt.Sscan(args[14], &createReq.SecurityType)
-		if err != nil {
-			return fmt.Errorf("invalid SECURITY_TYPE: %s", args[14])
-		}
-		createReq.SpecificName = args[15]
 
 		response, err := w.Functions.Create(ctx, createReq)
 		if err != nil {
@@ -119,10 +122,12 @@ var createCmd = &cobra.Command{
 // start delete command
 
 var deleteReq catalog.DeleteFunctionRequest
+var deleteJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
+	deleteCmd.Flags().Var(&deleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	deleteCmd.Flags().BoolVar(&deleteReq.Force, "force", deleteReq.Force, `Force deletion even if the function is notempty.`)
 
@@ -141,12 +146,25 @@ var deleteCmd = &cobra.Command{
   its parent catalog and the **USE_SCHEMA** privilege on its parent schema`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		deleteReq.Name = args[0]
+		if cmd.Flags().Changed("json") {
+			err = deleteJson.Unmarshal(&deleteReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			deleteReq.Name = args[0]
+		}
 
 		err = w.Functions.Delete(ctx, deleteReq)
 		if err != nil {
@@ -159,10 +177,12 @@ var deleteCmd = &cobra.Command{
 // start get command
 
 var getReq catalog.GetFunctionRequest
+var getJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
+	getCmd.Flags().Var(&getJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -180,12 +200,25 @@ var getCmd = &cobra.Command{
   **EXECUTE** privilege on the function itself`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		getReq.Name = args[0]
+		if cmd.Flags().Changed("json") {
+			err = getJson.Unmarshal(&getReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			getReq.Name = args[0]
+		}
 
 		response, err := w.Functions.Get(ctx, getReq)
 		if err != nil {
@@ -198,10 +231,12 @@ var getCmd = &cobra.Command{
 // start list command
 
 var listReq catalog.ListFunctionsRequest
+var listJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(listCmd)
 	// TODO: short flags
+	listCmd.Flags().Var(&listJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -219,13 +254,26 @@ var listCmd = &cobra.Command{
   the array.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(2),
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(2)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		listReq.CatalogName = args[0]
-		listReq.SchemaName = args[1]
+		if cmd.Flags().Changed("json") {
+			err = listJson.Unmarshal(&listReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			listReq.CatalogName = args[0]
+			listReq.SchemaName = args[1]
+		}
 
 		response, err := w.Functions.List(ctx, listReq)
 		if err != nil {
@@ -238,10 +286,12 @@ var listCmd = &cobra.Command{
 // start update command
 
 var updateReq catalog.UpdateFunction
+var updateJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(updateCmd)
 	// TODO: short flags
+	updateCmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	updateCmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of current owner of function.`)
 
@@ -262,12 +312,25 @@ var updateCmd = &cobra.Command{
   function's parent schema.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		updateReq.Name = args[0]
+		if cmd.Flags().Changed("json") {
+			err = updateJson.Unmarshal(&updateReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			updateReq.Name = args[0]
+		}
 
 		response, err := w.Functions.Update(ctx, updateReq)
 		if err != nil {

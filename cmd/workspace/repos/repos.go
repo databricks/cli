@@ -43,7 +43,7 @@ func init() {
 }
 
 var createCmd = &cobra.Command{
-	Use:   "create",
+	Use:   "create URL PROVIDER",
 	Short: `Create a repo.`,
 	Long: `Create a repo.
   
@@ -52,16 +52,26 @@ var createCmd = &cobra.Command{
   unlike repos created in the browser.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(2)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		err = createJson.Unmarshal(&createReq)
-		if err != nil {
-			return err
+		if cmd.Flags().Changed("json") {
+			err = createJson.Unmarshal(&createReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			createReq.Url = args[0]
+			createReq.Provider = args[1]
 		}
-		createReq.Url = args[0]
-		createReq.Provider = args[1]
 
 		response, err := w.Repos.Create(ctx, createReq)
 		if err != nil {
@@ -74,10 +84,12 @@ var createCmd = &cobra.Command{
 // start delete command
 
 var deleteReq workspace.DeleteRepoRequest
+var deleteJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
+	deleteCmd.Flags().Var(&deleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -93,23 +105,30 @@ var deleteCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if len(args) == 0 {
-			names, err := w.Repos.RepoInfoPathToIdMap(ctx, workspace.ListReposRequest{})
+		if cmd.Flags().Changed("json") {
+			err = deleteJson.Unmarshal(&deleteReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "The ID for the corresponding repo to access")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				names, err := w.Repos.RepoInfoPathToIdMap(ctx, workspace.ListReposRequest{})
+				if err != nil {
+					return err
+				}
+				id, err := cmdio.Select(ctx, names, "The ID for the corresponding repo to access")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have the id for the corresponding repo to access")
-		}
-		_, err = fmt.Sscan(args[0], &deleteReq.RepoId)
-		if err != nil {
-			return fmt.Errorf("invalid REPO_ID: %s", args[0])
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have the id for the corresponding repo to access")
+			}
+			_, err = fmt.Sscan(args[0], &deleteReq.RepoId)
+			if err != nil {
+				return fmt.Errorf("invalid REPO_ID: %s", args[0])
+			}
 		}
 
 		err = w.Repos.Delete(ctx, deleteReq)
@@ -123,10 +142,12 @@ var deleteCmd = &cobra.Command{
 // start get command
 
 var getReq workspace.GetRepoRequest
+var getJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
+	getCmd.Flags().Var(&getJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -142,23 +163,30 @@ var getCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if len(args) == 0 {
-			names, err := w.Repos.RepoInfoPathToIdMap(ctx, workspace.ListReposRequest{})
+		if cmd.Flags().Changed("json") {
+			err = getJson.Unmarshal(&getReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "The ID for the corresponding repo to access")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				names, err := w.Repos.RepoInfoPathToIdMap(ctx, workspace.ListReposRequest{})
+				if err != nil {
+					return err
+				}
+				id, err := cmdio.Select(ctx, names, "The ID for the corresponding repo to access")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have the id for the corresponding repo to access")
-		}
-		_, err = fmt.Sscan(args[0], &getReq.RepoId)
-		if err != nil {
-			return fmt.Errorf("invalid REPO_ID: %s", args[0])
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have the id for the corresponding repo to access")
+			}
+			_, err = fmt.Sscan(args[0], &getReq.RepoId)
+			if err != nil {
+				return fmt.Errorf("invalid REPO_ID: %s", args[0])
+			}
 		}
 
 		response, err := w.Repos.Get(ctx, getReq)
@@ -172,10 +200,12 @@ var getCmd = &cobra.Command{
 // start list command
 
 var listReq workspace.ListReposRequest
+var listJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(listCmd)
 	// TODO: short flags
+	listCmd.Flags().Var(&listJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	listCmd.Flags().StringVar(&listReq.NextPageToken, "next-page-token", listReq.NextPageToken, `Token used to get the next page of results.`)
 	listCmd.Flags().StringVar(&listReq.PathPrefix, "path-prefix", listReq.PathPrefix, `Filters repos that have paths starting with the given path prefix.`)
@@ -191,11 +221,24 @@ var listCmd = &cobra.Command{
   paginated with each page containing twenty repos.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(0),
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(0)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+		if cmd.Flags().Changed("json") {
+			err = listJson.Unmarshal(&listReq)
+			if err != nil {
+				return err
+			}
+		} else {
+		}
 
 		response, err := w.Repos.ListAll(ctx, listReq)
 		if err != nil {
@@ -222,7 +265,7 @@ func init() {
 }
 
 var updateCmd = &cobra.Command{
-	Use:   "update",
+	Use:   "update REPO_ID",
 	Short: `Update a repo.`,
 	Long: `Update a repo.
   
@@ -234,13 +277,30 @@ var updateCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		err = updateJson.Unmarshal(&updateReq)
-		if err != nil {
-			return err
-		}
-		_, err = fmt.Sscan(args[0], &updateReq.RepoId)
-		if err != nil {
-			return fmt.Errorf("invalid REPO_ID: %s", args[0])
+		if cmd.Flags().Changed("json") {
+			err = updateJson.Unmarshal(&updateReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			if len(args) == 0 {
+				names, err := w.Repos.RepoInfoPathToIdMap(ctx, workspace.ListReposRequest{})
+				if err != nil {
+					return err
+				}
+				id, err := cmdio.Select(ctx, names, "The ID for the corresponding repo to access")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
+			}
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have the id for the corresponding repo to access")
+			}
+			_, err = fmt.Sscan(args[0], &updateReq.RepoId)
+			if err != nil {
+				return fmt.Errorf("invalid REPO_ID: %s", args[0])
+			}
 		}
 
 		err = w.Repos.Update(ctx, updateReq)

@@ -76,18 +76,21 @@ var createCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-		err = createJson.Unmarshal(&createReq)
-		if err != nil {
-			return err
-		}
-		createReq.Label = args[0]
-		_, err = fmt.Sscan(args[1], &createReq.ListType)
-		if err != nil {
-			return fmt.Errorf("invalid LIST_TYPE: %s", args[1])
-		}
-		_, err = fmt.Sscan(args[2], &createReq.IpAddresses)
-		if err != nil {
-			return fmt.Errorf("invalid IP_ADDRESSES: %s", args[2])
+		if cmd.Flags().Changed("json") {
+			err = createJson.Unmarshal(&createReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			createReq.Label = args[0]
+			_, err = fmt.Sscan(args[1], &createReq.ListType)
+			if err != nil {
+				return fmt.Errorf("invalid LIST_TYPE: %s", args[1])
+			}
+			_, err = fmt.Sscan(args[2], &createReq.IpAddresses)
+			if err != nil {
+				return fmt.Errorf("invalid IP_ADDRESSES: %s", args[2])
+			}
 		}
 
 		response, err := a.IpAccessLists.Create(ctx, createReq)
@@ -101,10 +104,12 @@ var createCmd = &cobra.Command{
 // start delete command
 
 var deleteReq settings.DeleteAccountIpAccessListRequest
+var deleteJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
+	deleteCmd.Flags().Var(&deleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -120,21 +125,28 @@ var deleteCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-		if len(args) == 0 {
-			names, err := a.IpAccessLists.IpAccessListInfoLabelToListIdMap(ctx)
+		if cmd.Flags().Changed("json") {
+			err = deleteJson.Unmarshal(&deleteReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "The ID for the corresponding IP access list")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				names, err := a.IpAccessLists.IpAccessListInfoLabelToListIdMap(ctx)
+				if err != nil {
+					return err
+				}
+				id, err := cmdio.Select(ctx, names, "The ID for the corresponding IP access list")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have the id for the corresponding ip access list")
+			}
+			deleteReq.IpAccessListId = args[0]
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have the id for the corresponding ip access list")
-		}
-		deleteReq.IpAccessListId = args[0]
 
 		err = a.IpAccessLists.Delete(ctx, deleteReq)
 		if err != nil {
@@ -147,10 +159,12 @@ var deleteCmd = &cobra.Command{
 // start get command
 
 var getReq settings.GetAccountIpAccessListRequest
+var getJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
+	getCmd.Flags().Var(&getJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -166,21 +180,28 @@ var getCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-		if len(args) == 0 {
-			names, err := a.IpAccessLists.IpAccessListInfoLabelToListIdMap(ctx)
+		if cmd.Flags().Changed("json") {
+			err = getJson.Unmarshal(&getReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "The ID for the corresponding IP access list")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				names, err := a.IpAccessLists.IpAccessListInfoLabelToListIdMap(ctx)
+				if err != nil {
+					return err
+				}
+				id, err := cmdio.Select(ctx, names, "The ID for the corresponding IP access list")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have the id for the corresponding ip access list")
+			}
+			getReq.IpAccessListId = args[0]
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have the id for the corresponding ip access list")
-		}
-		getReq.IpAccessListId = args[0]
 
 		response, err := a.IpAccessLists.Get(ctx, getReq)
 		if err != nil {
@@ -252,24 +273,27 @@ var replaceCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-		err = replaceJson.Unmarshal(&replaceReq)
-		if err != nil {
-			return err
+		if cmd.Flags().Changed("json") {
+			err = replaceJson.Unmarshal(&replaceReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			replaceReq.Label = args[0]
+			_, err = fmt.Sscan(args[1], &replaceReq.ListType)
+			if err != nil {
+				return fmt.Errorf("invalid LIST_TYPE: %s", args[1])
+			}
+			_, err = fmt.Sscan(args[2], &replaceReq.IpAddresses)
+			if err != nil {
+				return fmt.Errorf("invalid IP_ADDRESSES: %s", args[2])
+			}
+			_, err = fmt.Sscan(args[3], &replaceReq.Enabled)
+			if err != nil {
+				return fmt.Errorf("invalid ENABLED: %s", args[3])
+			}
+			replaceReq.IpAccessListId = args[4]
 		}
-		replaceReq.Label = args[0]
-		_, err = fmt.Sscan(args[1], &replaceReq.ListType)
-		if err != nil {
-			return fmt.Errorf("invalid LIST_TYPE: %s", args[1])
-		}
-		_, err = fmt.Sscan(args[2], &replaceReq.IpAddresses)
-		if err != nil {
-			return fmt.Errorf("invalid IP_ADDRESSES: %s", args[2])
-		}
-		_, err = fmt.Sscan(args[3], &replaceReq.Enabled)
-		if err != nil {
-			return fmt.Errorf("invalid ENABLED: %s", args[3])
-		}
-		replaceReq.IpAccessListId = args[4]
 
 		err = a.IpAccessLists.Replace(ctx, replaceReq)
 		if err != nil {
@@ -318,24 +342,27 @@ var updateCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-		err = updateJson.Unmarshal(&updateReq)
-		if err != nil {
-			return err
+		if cmd.Flags().Changed("json") {
+			err = updateJson.Unmarshal(&updateReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			updateReq.Label = args[0]
+			_, err = fmt.Sscan(args[1], &updateReq.ListType)
+			if err != nil {
+				return fmt.Errorf("invalid LIST_TYPE: %s", args[1])
+			}
+			_, err = fmt.Sscan(args[2], &updateReq.IpAddresses)
+			if err != nil {
+				return fmt.Errorf("invalid IP_ADDRESSES: %s", args[2])
+			}
+			_, err = fmt.Sscan(args[3], &updateReq.Enabled)
+			if err != nil {
+				return fmt.Errorf("invalid ENABLED: %s", args[3])
+			}
+			updateReq.IpAccessListId = args[4]
 		}
-		updateReq.Label = args[0]
-		_, err = fmt.Sscan(args[1], &updateReq.ListType)
-		if err != nil {
-			return fmt.Errorf("invalid LIST_TYPE: %s", args[1])
-		}
-		_, err = fmt.Sscan(args[2], &updateReq.IpAddresses)
-		if err != nil {
-			return fmt.Errorf("invalid IP_ADDRESSES: %s", args[2])
-		}
-		_, err = fmt.Sscan(args[3], &updateReq.Enabled)
-		if err != nil {
-			return fmt.Errorf("invalid ENABLED: %s", args[3])
-		}
-		updateReq.IpAccessListId = args[4]
 
 		err = a.IpAccessLists.Update(ctx, updateReq)
 		if err != nil {

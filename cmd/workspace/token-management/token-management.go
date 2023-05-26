@@ -7,6 +7,7 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/settings"
 	"github.com/spf13/cobra"
 )
@@ -22,10 +23,12 @@ var Cmd = &cobra.Command{
 // start create-obo-token command
 
 var createOboTokenReq settings.CreateOboTokenRequest
+var createOboTokenJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(createOboTokenCmd)
 	// TODO: short flags
+	createOboTokenCmd.Flags().Var(&createOboTokenJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	createOboTokenCmd.Flags().StringVar(&createOboTokenReq.Comment, "comment", createOboTokenReq.Comment, `Comment that describes the purpose of the token.`)
 
@@ -39,15 +42,28 @@ var createOboTokenCmd = &cobra.Command{
   Creates a token on behalf of a service principal.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(2),
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(2)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		createOboTokenReq.ApplicationId = args[0]
-		_, err = fmt.Sscan(args[1], &createOboTokenReq.LifetimeSeconds)
-		if err != nil {
-			return fmt.Errorf("invalid LIFETIME_SECONDS: %s", args[1])
+		if cmd.Flags().Changed("json") {
+			err = createOboTokenJson.Unmarshal(&createOboTokenReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			createOboTokenReq.ApplicationId = args[0]
+			_, err = fmt.Sscan(args[1], &createOboTokenReq.LifetimeSeconds)
+			if err != nil {
+				return fmt.Errorf("invalid LIFETIME_SECONDS: %s", args[1])
+			}
 		}
 
 		response, err := w.TokenManagement.CreateOboToken(ctx, createOboTokenReq)
@@ -61,10 +77,12 @@ var createOboTokenCmd = &cobra.Command{
 // start delete command
 
 var deleteReq settings.DeleteTokenManagementRequest
+var deleteJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
+	deleteCmd.Flags().Var(&deleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -80,21 +98,28 @@ var deleteCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if len(args) == 0 {
-			names, err := w.TokenManagement.TokenInfoCommentToTokenIdMap(ctx, settings.ListTokenManagementRequest{})
+		if cmd.Flags().Changed("json") {
+			err = deleteJson.Unmarshal(&deleteReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "The ID of the token to get")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				names, err := w.TokenManagement.TokenInfoCommentToTokenIdMap(ctx, settings.ListTokenManagementRequest{})
+				if err != nil {
+					return err
+				}
+				id, err := cmdio.Select(ctx, names, "The ID of the token to get")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have the id of the token to get")
+			}
+			deleteReq.TokenId = args[0]
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have the id of the token to get")
-		}
-		deleteReq.TokenId = args[0]
 
 		err = w.TokenManagement.Delete(ctx, deleteReq)
 		if err != nil {
@@ -107,10 +132,12 @@ var deleteCmd = &cobra.Command{
 // start get command
 
 var getReq settings.GetTokenManagementRequest
+var getJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
+	getCmd.Flags().Var(&getJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -126,21 +153,28 @@ var getCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if len(args) == 0 {
-			names, err := w.TokenManagement.TokenInfoCommentToTokenIdMap(ctx, settings.ListTokenManagementRequest{})
+		if cmd.Flags().Changed("json") {
+			err = getJson.Unmarshal(&getReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "The ID of the token to get")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				names, err := w.TokenManagement.TokenInfoCommentToTokenIdMap(ctx, settings.ListTokenManagementRequest{})
+				if err != nil {
+					return err
+				}
+				id, err := cmdio.Select(ctx, names, "The ID of the token to get")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have the id of the token to get")
+			}
+			getReq.TokenId = args[0]
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have the id of the token to get")
-		}
-		getReq.TokenId = args[0]
 
 		response, err := w.TokenManagement.Get(ctx, getReq)
 		if err != nil {
@@ -153,10 +187,12 @@ var getCmd = &cobra.Command{
 // start list command
 
 var listReq settings.ListTokenManagementRequest
+var listJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(listCmd)
 	// TODO: short flags
+	listCmd.Flags().Var(&listJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	listCmd.Flags().StringVar(&listReq.CreatedById, "created-by-id", listReq.CreatedById, `User ID of the user that created the token.`)
 	listCmd.Flags().StringVar(&listReq.CreatedByUsername, "created-by-username", listReq.CreatedByUsername, `Username of the user that created the token.`)
@@ -171,11 +207,24 @@ var listCmd = &cobra.Command{
   Lists all tokens associated with the specified workspace or user.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(0),
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(0)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+		if cmd.Flags().Changed("json") {
+			err = listJson.Unmarshal(&listReq)
+			if err != nil {
+				return err
+			}
+		} else {
+		}
 
 		response, err := w.TokenManagement.ListAll(ctx, listReq)
 		if err != nil {
