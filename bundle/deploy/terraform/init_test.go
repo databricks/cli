@@ -48,7 +48,7 @@ func TestInitEnvironmentVariables(t *testing.T) {
 }
 
 func TestSetTempDirEnvVarsForUnixWithTmpDirSet(t *testing.T) {
-	if !(runtime.GOOS == "darwin" || runtime.GOOS == "linux") {
+	if runtime.GOOS != "darwin" && runtime.GOOS != "linux" {
 		t.SkipNow()
 	}
 
@@ -76,7 +76,7 @@ func TestSetTempDirEnvVarsForUnixWithTmpDirSet(t *testing.T) {
 }
 
 func TestSetTempDirEnvVarsForUnixWithTmpDirNotSet(t *testing.T) {
-	if !(runtime.GOOS == "darwin" || runtime.GOOS == "linux") {
+	if runtime.GOOS != "darwin" && runtime.GOOS != "linux" {
 		t.SkipNow()
 	}
 
