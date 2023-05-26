@@ -48,7 +48,7 @@ func TestInitEnvironmentVariables(t *testing.T) {
 }
 
 func TestSetTempDirEnvVarsForUnixWithTmpDirSet(t *testing.T) {
-	if runtime.GOOS != "darwin" && runtime.GOOS != "linux" {
+	if !(runtime.GOOS == "darwin" || runtime.GOOS == "linux") {
 		t.SkipNow()
 	}
 
@@ -69,14 +69,14 @@ func TestSetTempDirEnvVarsForUnixWithTmpDirSet(t *testing.T) {
 	err := setTempDirEnvVars(env, b)
 	require.NoError(t, err)
 
-	// assert that we pass through env var value
+	// Assert that we pass through TMPDIR.
 	assert.Equal(t, map[string]string{
 		"TMPDIR": "/foo/bar",
 	}, env)
 }
 
 func TestSetTempDirEnvVarsForUnixWithTmpDirNotSet(t *testing.T) {
-	if runtime.GOOS != "darwin" && runtime.GOOS != "linux" {
+	if !(runtime.GOOS == "darwin" || runtime.GOOS == "linux") {
 		t.SkipNow()
 	}
 
@@ -97,12 +97,8 @@ func TestSetTempDirEnvVarsForUnixWithTmpDirNotSet(t *testing.T) {
 	err := setTempDirEnvVars(env, b)
 	require.NoError(t, err)
 
-	// assert tmp dir is set to b.CacheDir("tmp")
-	tmpDir, err := b.CacheDir("tmp")
-	require.NoError(t, err)
-	assert.Equal(t, map[string]string{
-		"TMPDIR": tmpDir,
-	}, env)
+	// Assert that we don't pass through TMPDIR.
+	assert.Equal(t, map[string]string{}, env)
 }
 
 func TestSetTempDirEnvVarsForWindowWithAllTmpDirEnvVarsSet(t *testing.T) {
