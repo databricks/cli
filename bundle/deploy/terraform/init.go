@@ -95,10 +95,9 @@ func setTempDirEnvVars(env map[string]string, b *bundle.Bundle) error {
 			env["TMP"] = tmpDir
 		}
 	default:
+		// If TMPDIR is not set, we let the process fall back to its default value.
 		if v, ok := os.LookupEnv("TMPDIR"); ok {
 			env["TMPDIR"] = v
-		} else {
-			// If TMPDIR is not set, we let the process fall back to its default value.
 		}
 	}
 	return nil
