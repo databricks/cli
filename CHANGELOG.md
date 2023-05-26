@@ -1,5 +1,15 @@
 # Version changelog
 
+## 0.100.2
+
+CLI:
+* Reduce parallellism in locker integration test ([#407](https://github.com/databricks/bricks/pull/407)).
+
+Bundles:
+* Don't pass synthesized TMPDIR if not already set ([#409](https://github.com/databricks/bricks/pull/409)).
+* Added support for bundle.Seq, simplified Mutator.Apply interface ([#403](https://github.com/databricks/bricks/pull/403)).
+* Regenerated internal schema structs based on Terraform provider schemas ([#401](https://github.com/databricks/bricks/pull/401)).
+
 ## 0.100.1
 
 CLI:
