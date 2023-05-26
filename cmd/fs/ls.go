@@ -9,10 +9,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type FileInfo filer.FileInfo
-
-func (i *FileInfo) ExpandPath(root string) {
+func expandPath(i filer.FileInfo, root string) filer.FileInfo {
 	i.Name = path.Join(root, i.Name)
+	return i
 }
 
 // lsCmd represents the ls command
@@ -58,14 +57,12 @@ var lsCmd = &cobra.Command{
 		}
 
 		// compute output with expanded paths if necessary
-		output := make([]FileInfo, len(filesInfo))
-		for i, v := range filesInfo {
-			output[i] = FileInfo(v)
-			if absolute {
-				output[i].ExpandPath(rootPath)
+		if absolute {
+			for i := range filesInfo {
+				filesInfo[i] = expandPath(filesInfo[i], rootPath)
 			}
 		}
-		return cmdio.RenderWithTemplate(ctx, output, template)
+		return cmdio.RenderWithTemplate(ctx, filesInfo, template)
 	},
 }
 
