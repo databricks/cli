@@ -31,6 +31,26 @@ func testRootPath(t *testing.T, uncleanRoot string) {
 	assert.NoError(t, err)
 	assert.Equal(t, cleanRoot+"/a/b/f/g", remotePath)
 
+	remotePath, err = rp.Join(".//a/..//./b/..")
+	assert.NoError(t, err)
+	assert.Equal(t, cleanRoot, remotePath)
+
+	remotePath, err = rp.Join("a/b/../..")
+	assert.NoError(t, err)
+	assert.Equal(t, cleanRoot, remotePath)
+
+	remotePath, err = rp.Join("")
+	assert.NoError(t, err)
+	assert.Equal(t, cleanRoot, remotePath)
+
+	remotePath, err = rp.Join(".")
+	assert.NoError(t, err)
+	assert.Equal(t, cleanRoot, remotePath)
+
+	remotePath, err = rp.Join("/")
+	assert.NoError(t, err)
+	assert.Equal(t, cleanRoot, remotePath)
+
 	_, err = rp.Join("..")
 	assert.ErrorContains(t, err, `relative path escapes root: ..`)
 
@@ -57,21 +77,6 @@ func testRootPath(t *testing.T, uncleanRoot string) {
 
 	_, err = rp.Join("../..")
 	assert.ErrorContains(t, err, `relative path escapes root: ../..`)
-
-	_, err = rp.Join(".//a/..//./b/..")
-	assert.ErrorContains(t, err, `relative path resolves to root: .//a/..//./b/..`)
-
-	_, err = rp.Join("a/b/../..")
-	assert.ErrorContains(t, err, "relative path resolves to root: a/b/../..")
-
-	_, err = rp.Join("")
-	assert.ErrorContains(t, err, "relative path resolves to root: ")
-
-	_, err = rp.Join(".")
-	assert.ErrorContains(t, err, "relative path resolves to root: .")
-
-	_, err = rp.Join("/")
-	assert.ErrorContains(t, err, "relative path resolves to root: /")
 }
 
 func TestRootPathClean(t *testing.T) {
