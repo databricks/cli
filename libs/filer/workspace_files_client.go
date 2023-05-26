@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -31,6 +32,7 @@ type WorkspaceFilesClient struct {
 }
 
 func NewWorkspaceFilesClient(w *databricks.WorkspaceClient, root string) (Filer, error) {
+	//TODO
 	apiClient, err := client.New(w.Config)
 	if err != nil {
 		return nil, err
@@ -127,4 +129,29 @@ func (w *WorkspaceFilesClient) Delete(ctx context.Context, name string) error {
 		Path:      absPath,
 		Recursive: false,
 	})
+}
+
+func (w *WorkspaceFilesClient) ReadDir(ctx context.Context, name string) ([]FileInfo, error) {
+	absPath, err := w.root.Join(name)
+	if err != nil {
+		return nil, err
+	}
+
+	objects, err := w.workspaceClient.Workspace.ListAll(ctx, workspace.ListWorkspaceRequest{
+		Path: absPath,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	info := make([]FileInfo, 0)
+	for _, i := range objects {
+		info = append(info, FileInfo{
+			Type:    string(i.ObjectType),
+			Name:    path.Base(i.Path),
+			Size:    i.Size,
+			ModTime: time.UnixMilli(i.ModifiedAt),
+		})
+	}
+	return info, nil
 }
