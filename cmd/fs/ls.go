@@ -1,9 +1,7 @@
 package fs
 
 import (
-	"fmt"
 	"path"
-	"time"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
@@ -11,17 +9,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func parseFileInfo(info filer.FileInfo, parentDir string, isAbsolute bool) map[string]string {
-	fullName := info.Name
-	if isAbsolute {
-		fullName = path.Join(parentDir, info.Name)
-	}
-	return map[string]string{
-		"Name":    fullName,
-		"ModTime": info.ModTime.UTC().Format(time.UnixDate),
-		"Size":    fmt.Sprint(info.Size),
-		"Type":    info.Type,
-	}
+type FileInfo filer.FileInfo
+
+func (i *FileInfo) ExpandPath(root string) {
+	i.Name = path.Join(root, i.Name)
 }
 
 // lsCmd represents the ls command
@@ -41,21 +32,21 @@ var lsCmd = &cobra.Command{
 		`)
 		if longMode {
 			template = cmdio.Heredoc(`
-			{{range .}}{{.Type|printf "%-10s"}} {{.Size}}  {{.ModTime}}  {{.Name}}
+			{{range .}}{{.Type|printf "%-10s"}} {{.Size}}  {{.ModTime|unix_date}}  {{.Name}}
 			{{end}}
 			`)
 		}
 
 		// Path to list files from. Defaults to`/`
-		path := "/"
+		rootPath := "/"
 		if len(args) > 0 {
-			path = args[0]
+			rootPath = args[0]
 		}
 
 		// Initialize workspace client
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		f, err := filer.NewWorkspaceFilesClient(w, path)
+		f, err := filer.NewWorkspaceFilesClient(w, rootPath)
 		if err != nil {
 			return err
 		}
@@ -66,10 +57,13 @@ var lsCmd = &cobra.Command{
 			return err
 		}
 
-		// Parse it so it's ready to be rendered
-		output := make([]map[string]string, 0)
-		for _, info := range filesInfo {
-			output = append(output, parseFileInfo(info, path, absolute))
+		// compute output with expanded paths if necessary
+		output := make([]FileInfo, len(filesInfo))
+		for i, v := range filesInfo {
+			output[i] = FileInfo(v)
+			if absolute {
+				output[i].ExpandPath(rootPath)
+			}
 		}
 		return cmdio.RenderWithTemplate(ctx, output, template)
 	},
