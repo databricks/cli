@@ -143,14 +143,14 @@ func (w *WorkspaceFilesClient) ReadDir(ctx context.Context, name string) ([]File
 		return nil, err
 	}
 
-	info := make([]FileInfo, 0)
-	for _, i := range objects {
-		info = append(info, FileInfo{
-			Type:    string(i.ObjectType),
-			Name:    path.Base(i.Path),
-			Size:    i.Size,
-			ModTime: time.UnixMilli(i.ModifiedAt),
-		})
+	info := make([]FileInfo, len(objects))
+	for i, v := range objects {
+		info[i] = FileInfo{
+			Type:    string(v.ObjectType),
+			Name:    path.Base(v.Path),
+			Size:    v.Size,
+			ModTime: time.UnixMilli(v.ModifiedAt),
+		}
 	}
 	return info, nil
 }
