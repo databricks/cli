@@ -32,7 +32,6 @@ type WorkspaceFilesClient struct {
 }
 
 func NewWorkspaceFilesClient(w *databricks.WorkspaceClient, root string) (Filer, error) {
-	//TODO
 	apiClient, err := client.New(w.Config)
 	if err != nil {
 		return nil, err
