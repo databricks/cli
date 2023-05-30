@@ -70,14 +70,14 @@ var putSecretCmd = &cobra.Command{
 		} else {
 			putSecretReq.Scope = args[0]
 			putSecretReq.Key = args[1]
-		}
 
-		value, err := cmdio.Secret(ctx)
-		if err != nil {
-			return err
-		}
+			value, err := cmdio.Secret(ctx)
+			if err != nil {
+				return err
+			}
 
-		putSecretReq.StringValue = value
+			putSecretReq.StringValue = value
+		}
 
 		err = w.Secrets.PutSecret(ctx, putSecretReq)
 		if err != nil {
