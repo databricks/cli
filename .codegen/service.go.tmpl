@@ -27,6 +27,11 @@ var Cmd = &cobra.Command{
 }
 
 {{range .Methods}}
+
+{{- $excludes := list "put-secret" -}}
+{{if in $excludes .KebabName }}
+	{{continue}}
+{{end}}
 // start {{.KebabName}} command
 
 {{if .Request}}var {{.CamelName}}Req {{.Service.Package.Name}}.{{.Request.PascalName}}

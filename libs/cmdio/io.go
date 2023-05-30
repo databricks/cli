@@ -120,6 +120,20 @@ func Select[V any](ctx context.Context, names map[string]V, label string) (id st
 	return c.Select(stringNames, label)
 }
 
+func (c *cmdIO) Secret() (value string, err error) {
+	prompt := (promptui.Prompt{
+		Label: "Enter your secrets value",
+		Mask:  '*',
+	})
+
+	return prompt.Run()
+}
+
+func Secret(ctx context.Context) (value string, err error) {
+	c := fromContext(ctx)
+	return c.Secret()
+}
+
 func (c *cmdIO) Spinner(ctx context.Context) chan string {
 	var sp *spinner.Spinner
 	if c.interactive {
