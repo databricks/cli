@@ -142,6 +142,14 @@ func TestAccFilerWorkspaceFilesReadDir(t *testing.T) {
 	err = f.Write(ctx, "/dir/world.txt", strings.NewReader(`hello world`))
 	require.NoError(t, err)
 
+	// Create a nested directory (check that it creates intermediate directories).
+	err = f.Mkdir(ctx, "/dir/a/b/c")
+	require.NoError(t, err)
+
+	// Expect an error if the path doesn't exist.
+	_, err = f.ReadDir(ctx, "/dir/a/b/c/d/e")
+	assert.True(t, errors.As(err, &filer.NoSuchDirectoryError{}))
+
 	// Expect two entries in the root.
 	entries, err = f.ReadDir(ctx, ".")
 	require.NoError(t, err)
@@ -149,9 +157,16 @@ func TestAccFilerWorkspaceFilesReadDir(t *testing.T) {
 	assert.Equal(t, "dir", entries[0].Name)
 	assert.Equal(t, "hello.txt", entries[1].Name)
 
-	// Expect a single entry in the directory.
+	// Expect two entries in the directory.
 	entries, err = f.ReadDir(ctx, "/dir")
 	require.NoError(t, err)
+	assert.Len(t, entries, 2)
+	assert.Equal(t, "a", entries[0].Name)
+	assert.Equal(t, "world.txt", entries[1].Name)
+
+	// Expect a single entry in the nested path.
+	entries, err = f.ReadDir(ctx, "/dir/a/b")
+	require.NoError(t, err)
 	assert.Len(t, entries, 1)
-	assert.Equal(t, "world.txt", entries[0].Name)
+	assert.Equal(t, "c", entries[0].Name)
 }
