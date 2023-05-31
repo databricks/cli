@@ -2,14 +2,15 @@ package terraform
 
 import (
 	"context"
+	"errors"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/databricks-sdk-go/apierr"
 )
 
 type statePull struct{}
@@ -34,7 +35,7 @@ func (l *statePull) Apply(ctx context.Context, b *bundle.Bundle) error {
 	remote, err := f.Read(ctx, TerraformStateFileName)
 	if err != nil {
 		// On first deploy this state file doesn't yet exist.
-		if apierr.IsMissing(err) {
+		if errors.Is(err, fs.ErrNotExist) {
 			log.Infof(ctx, "Remote state file does not exist")
 			return nil
 		}
