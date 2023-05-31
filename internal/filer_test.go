@@ -156,6 +156,7 @@ func TestAccFilerWorkspaceFilesReadDir(t *testing.T) {
 	assert.Len(t, entries, 2)
 	assert.Equal(t, "dir", entries[0].Name)
 	assert.Equal(t, "hello.txt", entries[1].Name)
+	assert.Greater(t, entries[1].ModTime.Unix(), int64(0))
 
 	// Expect two entries in the directory.
 	entries, err = f.ReadDir(ctx, "/dir")
@@ -163,6 +164,7 @@ func TestAccFilerWorkspaceFilesReadDir(t *testing.T) {
 	assert.Len(t, entries, 2)
 	assert.Equal(t, "a", entries[0].Name)
 	assert.Equal(t, "world.txt", entries[1].Name)
+	assert.Greater(t, entries[1].ModTime.Unix(), int64(0))
 
 	// Expect a single entry in the nested path.
 	entries, err = f.ReadDir(ctx, "/dir/a/b")
