@@ -9,7 +9,9 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"sort"
 	"strings"
+	"time"
 
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -126,5 +128,43 @@ func (w *WorkspaceFilesClient) Delete(ctx context.Context, name string) error {
 	return w.workspaceClient.Workspace.Delete(ctx, workspace.Delete{
 		Path:      absPath,
 		Recursive: false,
+	})
+}
+
+func (w *WorkspaceFilesClient) ReadDir(ctx context.Context, name string) ([]FileInfo, error) {
+	absPath, err := w.root.Join(name)
+	if err != nil {
+		return nil, err
+	}
+
+	objects, err := w.workspaceClient.Workspace.ListAll(ctx, workspace.ListWorkspaceRequest{
+		Path: absPath,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	info := make([]FileInfo, len(objects))
+	for i, v := range objects {
+		info[i] = FileInfo{
+			Type:    string(v.ObjectType),
+			Name:    path.Base(v.Path),
+			Size:    v.Size,
+			ModTime: time.UnixMilli(v.ModifiedAt),
+		}
+	}
+
+	// Sort by name for parity with os.ReadDir.
+	sort.Slice(info, func(i, j int) bool { return info[i].Name < info[j].Name })
+	return info, nil
+}
+
+func (w *WorkspaceFilesClient) Mkdir(ctx context.Context, name string) error {
+	dirPath, err := w.root.Join(name)
+	if err != nil {
+		return err
+	}
+	return w.workspaceClient.Workspace.Mkdirs(ctx, workspace.Mkdirs{
+		Path: dirPath,
 	})
 }
