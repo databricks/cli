@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"net/http"
 	"net/url"
 	"path"
@@ -19,6 +20,53 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"golang.org/x/exp/slices"
 )
+
+// Type that implements fs.DirEntry for WSFS.
+type wsfsDirEntry struct {
+	wsfsFileInfo
+}
+
+func (entry wsfsDirEntry) Type() fs.FileMode {
+	return entry.wsfsFileInfo.Mode()
+}
+
+func (entry wsfsDirEntry) Info() (fs.FileInfo, error) {
+	return entry.wsfsFileInfo, nil
+}
+
+// Type that implements fs.FileInfo for WSFS.
+type wsfsFileInfo struct {
+	oi workspace.ObjectInfo
+}
+
+func (info wsfsFileInfo) Name() string {
+	return path.Base(info.oi.Path)
+}
+
+func (info wsfsFileInfo) Size() int64 {
+	return info.oi.Size
+}
+
+func (info wsfsFileInfo) Mode() fs.FileMode {
+	switch info.oi.ObjectType {
+	case workspace.ObjectTypeDirectory:
+		return fs.ModeDir
+	default:
+		return fs.ModePerm
+	}
+}
+
+func (info wsfsFileInfo) ModTime() time.Time {
+	return time.UnixMilli(info.oi.ModifiedAt)
+}
+
+func (info wsfsFileInfo) IsDir() bool {
+	return info.oi.ObjectType == workspace.ObjectTypeDirectory
+}
+
+func (info wsfsFileInfo) Sys() any {
+	return nil
+}
 
 // WorkspaceFilesClient implements the files-in-workspace API.
 
@@ -165,7 +213,7 @@ func (w *WorkspaceFilesClient) Delete(ctx context.Context, name string) error {
 	return err
 }
 
-func (w *WorkspaceFilesClient) ReadDir(ctx context.Context, name string) ([]FileInfo, error) {
+func (w *WorkspaceFilesClient) ReadDir(ctx context.Context, name string) ([]fs.DirEntry, error) {
 	absPath, err := w.root.Join(name)
 	if err != nil {
 		return nil, err
@@ -189,18 +237,13 @@ func (w *WorkspaceFilesClient) ReadDir(ctx context.Context, name string) ([]File
 		return nil, err
 	}
 
-	info := make([]FileInfo, len(objects))
+	info := make([]fs.DirEntry, len(objects))
 	for i, v := range objects {
-		info[i] = FileInfo{
-			Type:    string(v.ObjectType),
-			Name:    path.Base(v.Path),
-			Size:    v.Size,
-			ModTime: time.UnixMilli(v.ModifiedAt),
-		}
+		info[i] = wsfsDirEntry{wsfsFileInfo{oi: v}}
 	}
 
 	// Sort by name for parity with os.ReadDir.
-	sort.Slice(info, func(i, j int) bool { return info[i].Name < info[j].Name })
+	sort.Slice(info, func(i, j int) bool { return info[i].Name() < info[j].Name() })
 	return info, nil
 }
 

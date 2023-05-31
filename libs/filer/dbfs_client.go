@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"io/fs"
 	"net/http"
 	"path"
 	"sort"
@@ -14,6 +15,52 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/files"
 	"golang.org/x/exp/slices"
 )
+
+// Type that implements fs.DirEntry for DBFS.
+type dbfsDirEntry struct {
+	dbfsFileInfo
+}
+
+func (entry dbfsDirEntry) Type() fs.FileMode {
+	typ := fs.ModePerm
+	if entry.fi.IsDir {
+		typ |= fs.ModeDir
+	}
+	return typ
+}
+
+func (entry dbfsDirEntry) Info() (fs.FileInfo, error) {
+	return entry.dbfsFileInfo, nil
+}
+
+// Type that implements fs.FileInfo for DBFS.
+type dbfsFileInfo struct {
+	fi files.FileInfo
+}
+
+func (info dbfsFileInfo) Name() string {
+	return path.Base(info.fi.Path)
+}
+
+func (info dbfsFileInfo) Size() int64 {
+	return info.fi.FileSize
+}
+
+func (info dbfsFileInfo) Mode() fs.FileMode {
+	return fs.ModePerm
+}
+
+func (info dbfsFileInfo) ModTime() time.Time {
+	return time.UnixMilli(info.fi.ModificationTime)
+}
+
+func (info dbfsFileInfo) IsDir() bool {
+	return info.fi.IsDir
+}
+
+func (info dbfsFileInfo) Sys() any {
+	return nil
+}
 
 // DbfsClient implements the [Filer] interface for the DBFS backend.
 type DbfsClient struct {
@@ -152,7 +199,7 @@ func (w *DbfsClient) Delete(ctx context.Context, name string) error {
 	})
 }
 
-func (w *DbfsClient) ReadDir(ctx context.Context, name string) ([]FileInfo, error) {
+func (w *DbfsClient) ReadDir(ctx context.Context, name string) ([]fs.DirEntry, error) {
 	absPath, err := w.root.Join(name)
 	if err != nil {
 		return nil, err
@@ -175,17 +222,13 @@ func (w *DbfsClient) ReadDir(ctx context.Context, name string) ([]FileInfo, erro
 		return nil, err
 	}
 
-	info := make([]FileInfo, len(res.Files))
+	info := make([]fs.DirEntry, len(res.Files))
 	for i, v := range res.Files {
-		info[i] = FileInfo{
-			Name:    path.Base(v.Path),
-			Size:    v.FileSize,
-			ModTime: time.UnixMilli(v.ModificationTime),
-		}
+		info[i] = dbfsDirEntry{dbfsFileInfo: dbfsFileInfo{fi: v}}
 	}
 
 	// Sort by name for parity with os.ReadDir.
-	sort.Slice(info, func(i, j int) bool { return info[i].Name < info[j].Name })
+	sort.Slice(info, func(i, j int) bool { return info[i].Name() < info[j].Name() })
 	return info, nil
 }
 
