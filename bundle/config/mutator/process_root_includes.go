@@ -22,7 +22,7 @@ func (m *processRootIncludes) Name() string {
 	return "ProcessRootIncludes"
 }
 
-func (m *processRootIncludes) Apply(_ context.Context, b *bundle.Bundle) ([]bundle.Mutator, error) {
+func (m *processRootIncludes) Apply(ctx context.Context, b *bundle.Bundle) error {
 	var out []bundle.Mutator
 
 	// Map with files we've already seen to avoid loading them twice.
@@ -40,13 +40,13 @@ func (m *processRootIncludes) Apply(_ context.Context, b *bundle.Bundle) ([]bund
 	for _, entry := range b.Config.Include {
 		// Include paths must be relative.
 		if filepath.IsAbs(entry) {
-			return nil, fmt.Errorf("%s: includes must be relative paths", entry)
+			return fmt.Errorf("%s: includes must be relative paths", entry)
 		}
 
 		// Anchor includes to the bundle root path.
 		matches, err := filepath.Glob(filepath.Join(b.Config.Path, entry))
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		// Filter matches to ones we haven't seen yet.
@@ -54,7 +54,7 @@ func (m *processRootIncludes) Apply(_ context.Context, b *bundle.Bundle) ([]bund
 		for _, match := range matches {
 			rel, err := filepath.Rel(b.Config.Path, match)
 			if err != nil {
-				return nil, err
+				return err
 			}
 			if _, ok := seen[rel]; ok {
 				continue
@@ -74,5 +74,5 @@ func (m *processRootIncludes) Apply(_ context.Context, b *bundle.Bundle) ([]bund
 	// Swap out the original includes list with the expanded globs.
 	b.Config.Include = files
 
-	return out, nil
+	return bundle.Apply(ctx, b, bundle.Seq(out...))
 }

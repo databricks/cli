@@ -17,13 +17,13 @@ func (m *populateCurrentUser) Name() string {
 	return "PopulateCurrentUser"
 }
 
-func (m *populateCurrentUser) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator, error) {
+func (m *populateCurrentUser) Apply(ctx context.Context, b *bundle.Bundle) error {
 	w := b.WorkspaceClient()
 	me, err := w.CurrentUser.Me(ctx)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	b.Config.Workspace.CurrentUser = me
-	return nil, nil
+	return nil
 }

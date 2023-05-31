@@ -27,15 +27,15 @@ func (m *build) Name() string {
 	return fmt.Sprintf("artifacts.Build(%s)", m.name)
 }
 
-func (m *build) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator, error) {
+func (m *build) Apply(ctx context.Context, b *bundle.Bundle) error {
 	artifact, ok := b.Config.Artifacts[m.name]
 	if !ok {
-		return nil, fmt.Errorf("artifact doesn't exist: %s", m.name)
+		return fmt.Errorf("artifact doesn't exist: %s", m.name)
 	}
 
 	if artifact.Notebook != nil {
-		return []bundle.Mutator{notebook.Build(m.name)}, nil
+		return bundle.Apply(ctx, b, notebook.Build(m.name))
 	}
 
-	return nil, nil
+	return nil
 }

@@ -12,16 +12,17 @@ type Config struct {
 	AzureTenantId            string `json:"azure_tenant_id,omitempty"`
 	AzureUseMsi              bool   `json:"azure_use_msi,omitempty"`
 	AzureWorkspaceResourceId string `json:"azure_workspace_resource_id,omitempty"`
-	DatabricksCliPath        string `json:"databricks_cli_path,omitempty"`
 	ClientId                 string `json:"client_id,omitempty"`
 	ClientSecret             string `json:"client_secret,omitempty"`
 	ConfigFile               string `json:"config_file,omitempty"`
+	DatabricksCliPath        string `json:"databricks_cli_path,omitempty"`
 	DebugHeaders             bool   `json:"debug_headers,omitempty"`
 	DebugTruncateBytes       int    `json:"debug_truncate_bytes,omitempty"`
 	GoogleCredentials        string `json:"google_credentials,omitempty"`
 	GoogleServiceAccount     string `json:"google_service_account,omitempty"`
 	Host                     string `json:"host,omitempty"`
 	HttpTimeoutSeconds       int    `json:"http_timeout_seconds,omitempty"`
+	MetadataServiceUrl       string `json:"metadata_service_url,omitempty"`
 	Password                 string `json:"password,omitempty"`
 	Profile                  string `json:"profile,omitempty"`
 	RateLimit                int    `json:"rate_limit,omitempty"`

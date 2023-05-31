@@ -65,6 +65,7 @@ type Resources struct {
 	SqlGlobalConfig          map[string]*ResourceSqlGlobalConfig          `json:"databricks_sql_global_config,omitempty"`
 	SqlPermissions           map[string]*ResourceSqlPermissions           `json:"databricks_sql_permissions,omitempty"`
 	SqlQuery                 map[string]*ResourceSqlQuery                 `json:"databricks_sql_query,omitempty"`
+	SqlTable                 map[string]*ResourceSqlTable                 `json:"databricks_sql_table,omitempty"`
 	SqlVisualization         map[string]*ResourceSqlVisualization         `json:"databricks_sql_visualization,omitempty"`
 	SqlWidget                map[string]*ResourceSqlWidget                `json:"databricks_sql_widget,omitempty"`
 	StorageCredential        map[string]*ResourceStorageCredential        `json:"databricks_storage_credential,omitempty"`
@@ -74,6 +75,7 @@ type Resources struct {
 	UserInstanceProfile      map[string]*ResourceUserInstanceProfile      `json:"databricks_user_instance_profile,omitempty"`
 	UserRole                 map[string]*ResourceUserRole                 `json:"databricks_user_role,omitempty"`
 	WorkspaceConf            map[string]*ResourceWorkspaceConf            `json:"databricks_workspace_conf,omitempty"`
+	WorkspaceFile            map[string]*ResourceWorkspaceFile            `json:"databricks_workspace_file,omitempty"`
 }
 
 func NewResources() *Resources {
@@ -140,6 +142,7 @@ func NewResources() *Resources {
 		SqlGlobalConfig:          make(map[string]*ResourceSqlGlobalConfig),
 		SqlPermissions:           make(map[string]*ResourceSqlPermissions),
 		SqlQuery:                 make(map[string]*ResourceSqlQuery),
+		SqlTable:                 make(map[string]*ResourceSqlTable),
 		SqlVisualization:         make(map[string]*ResourceSqlVisualization),
 		SqlWidget:                make(map[string]*ResourceSqlWidget),
 		StorageCredential:        make(map[string]*ResourceStorageCredential),
@@ -149,5 +152,6 @@ func NewResources() *Resources {
 		UserInstanceProfile:      make(map[string]*ResourceUserInstanceProfile),
 		UserRole:                 make(map[string]*ResourceUserRole),
 		WorkspaceConf:            make(map[string]*ResourceWorkspaceConf),
+		WorkspaceFile:            make(map[string]*ResourceWorkspaceFile),
 	}
 }

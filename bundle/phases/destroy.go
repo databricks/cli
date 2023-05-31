@@ -9,19 +9,23 @@ import (
 
 // The destroy phase deletes artifacts and resources.
 func Destroy() bundle.Mutator {
-	destroyPhase := bundle.Defer([]bundle.Mutator{
+
+	destroyMutator := bundle.Seq(
 		lock.Acquire(),
-		terraform.StatePull(),
-		terraform.Plan(terraform.PlanGoal("destroy")),
-		terraform.Destroy(),
-		terraform.StatePush(),
-		files.Delete(),
-	}, []bundle.Mutator{
-		lock.Release(),
-	})
+		bundle.Defer(
+			bundle.Seq(
+				terraform.StatePull(),
+				terraform.Plan(terraform.PlanGoal("destroy")),
+				terraform.Destroy(),
+				terraform.StatePush(),
+				files.Delete(),
+			),
+			lock.Release(),
+		),
+	)
 
 	return newPhase(
 		"destroy",
-		destroyPhase,
+		[]bundle.Mutator{destroyMutator},
 	)
 }

@@ -7,6 +7,7 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/spf13/cobra"
 )
@@ -20,10 +21,12 @@ var Cmd = &cobra.Command{
 // start create command
 
 var createReq catalog.CreateMetastoreAssignment
+var createJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(createCmd)
 	// TODO: short flags
+	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -35,16 +38,29 @@ var createCmd = &cobra.Command{
   Creates an assignment to a metastore for a workspace`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(3),
-	PreRunE:     root.MustAccountClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(3)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-		createReq.MetastoreId = args[0]
-		createReq.DefaultCatalogName = args[1]
-		_, err = fmt.Sscan(args[2], &createReq.WorkspaceId)
-		if err != nil {
-			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[2])
+		if cmd.Flags().Changed("json") {
+			err = createJson.Unmarshal(&createReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			createReq.MetastoreId = args[0]
+			createReq.DefaultCatalogName = args[1]
+			_, err = fmt.Sscan(args[2], &createReq.WorkspaceId)
+			if err != nil {
+				return fmt.Errorf("invalid WORKSPACE_ID: %s", args[2])
+			}
 		}
 
 		response, err := a.MetastoreAssignments.Create(ctx, createReq)
@@ -58,10 +74,12 @@ var createCmd = &cobra.Command{
 // start delete command
 
 var deleteReq catalog.DeleteAccountMetastoreAssignmentRequest
+var deleteJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
+	deleteCmd.Flags().Var(&deleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -74,16 +92,29 @@ var deleteCmd = &cobra.Command{
   metastore.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(2),
-	PreRunE:     root.MustAccountClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(2)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-		_, err = fmt.Sscan(args[0], &deleteReq.WorkspaceId)
-		if err != nil {
-			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
+		if cmd.Flags().Changed("json") {
+			err = deleteJson.Unmarshal(&deleteReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			_, err = fmt.Sscan(args[0], &deleteReq.WorkspaceId)
+			if err != nil {
+				return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
+			}
+			deleteReq.MetastoreId = args[1]
 		}
-		deleteReq.MetastoreId = args[1]
 
 		err = a.MetastoreAssignments.Delete(ctx, deleteReq)
 		if err != nil {
@@ -96,10 +127,12 @@ var deleteCmd = &cobra.Command{
 // start get command
 
 var getReq catalog.GetAccountMetastoreAssignmentRequest
+var getJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
+	getCmd.Flags().Var(&getJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -114,14 +147,27 @@ var getCmd = &cobra.Command{
   404 returned.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
-	PreRunE:     root.MustAccountClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-		_, err = fmt.Sscan(args[0], &getReq.WorkspaceId)
-		if err != nil {
-			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
+		if cmd.Flags().Changed("json") {
+			err = getJson.Unmarshal(&getReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			_, err = fmt.Sscan(args[0], &getReq.WorkspaceId)
+			if err != nil {
+				return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
+			}
 		}
 
 		response, err := a.MetastoreAssignments.Get(ctx, getReq)
@@ -135,10 +181,12 @@ var getCmd = &cobra.Command{
 // start list command
 
 var listReq catalog.ListAccountMetastoreAssignmentsRequest
+var listJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(listCmd)
 	// TODO: short flags
+	listCmd.Flags().Var(&listJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -151,12 +199,25 @@ var listCmd = &cobra.Command{
   metastore.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
-	PreRunE:     root.MustAccountClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-		listReq.MetastoreId = args[0]
+		if cmd.Flags().Changed("json") {
+			err = listJson.Unmarshal(&listReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			listReq.MetastoreId = args[0]
+		}
 
 		response, err := a.MetastoreAssignments.List(ctx, listReq)
 		if err != nil {
@@ -169,10 +230,12 @@ var listCmd = &cobra.Command{
 // start update command
 
 var updateReq catalog.UpdateMetastoreAssignment
+var updateJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(updateCmd)
 	// TODO: short flags
+	updateCmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	updateCmd.Flags().StringVar(&updateReq.DefaultCatalogName, "default-catalog-name", updateReq.DefaultCatalogName, `The name of the default catalog for the metastore.`)
 	updateCmd.Flags().StringVar(&updateReq.MetastoreId, "metastore-id", updateReq.MetastoreId, `The unique ID of the metastore.`)
@@ -188,16 +251,29 @@ var updateCmd = &cobra.Command{
   default catalog may be updated`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(2),
-	PreRunE:     root.MustAccountClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(2)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-		_, err = fmt.Sscan(args[0], &updateReq.WorkspaceId)
-		if err != nil {
-			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
+		if cmd.Flags().Changed("json") {
+			err = updateJson.Unmarshal(&updateReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			_, err = fmt.Sscan(args[0], &updateReq.WorkspaceId)
+			if err != nil {
+				return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
+			}
+			updateReq.MetastoreId = args[1]
 		}
-		updateReq.MetastoreId = args[1]
 
 		response, err := a.MetastoreAssignments.Update(ctx, updateReq)
 		if err != nil {

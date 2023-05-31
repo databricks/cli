@@ -1,5 +1,24 @@
 # Version changelog
 
+## 0.100.2
+
+CLI:
+* Reduce parallellism in locker integration test ([#407](https://github.com/databricks/bricks/pull/407)).
+
+Bundles:
+* Don't pass synthesized TMPDIR if not already set ([#409](https://github.com/databricks/bricks/pull/409)).
+* Added support for bundle.Seq, simplified Mutator.Apply interface ([#403](https://github.com/databricks/bricks/pull/403)).
+* Regenerated internal schema structs based on Terraform provider schemas ([#401](https://github.com/databricks/bricks/pull/401)).
+
+## 0.100.1
+
+CLI:
+* Sync: Gracefully handle broken notebook files ([#398](https://github.com/databricks/cli/pull/398)).
+* Add version flag to print version and exit ([#394](https://github.com/databricks/cli/pull/394)).
+* Pass temporary directory environment variables to subprocesses ([#395](https://github.com/databricks/cli/pull/395)).
+* Rename environment variables `BRICKS_` -> `DATABRICKS_` ([#393](https://github.com/databricks/cli/pull/393)).
+* Update to Go SDK v0.9.0 ([#396](https://github.com/databricks/cli/pull/396)).
+
 ## 0.100.0
 
 This release bumps the minor version to 100 to disambiguate between Databricks CLI "v1" (the Python version)

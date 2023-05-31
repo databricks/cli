@@ -38,7 +38,7 @@ func init() {
 }
 
 var createCmd = &cobra.Command{
-	Use:   "create",
+	Use:   "create NETWORK_NAME",
 	Short: `Create network configuration.`,
 	Long: `Create network configuration.
   
@@ -51,11 +51,28 @@ var createCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-		err = createJson.Unmarshal(&createReq)
-		if err != nil {
-			return err
+		if cmd.Flags().Changed("json") {
+			err = createJson.Unmarshal(&createReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			if len(args) == 0 {
+				names, err := a.Networks.NetworkNetworkNameToNetworkIdMap(ctx)
+				if err != nil {
+					return err
+				}
+				id, err := cmdio.Select(ctx, names, "The human-readable name of the network configuration")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
+			}
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have the human-readable name of the network configuration")
+			}
+			createReq.NetworkName = args[0]
 		}
-		createReq.NetworkName = args[0]
 
 		response, err := a.Networks.Create(ctx, createReq)
 		if err != nil {
@@ -68,10 +85,12 @@ var createCmd = &cobra.Command{
 // start delete command
 
 var deleteReq provisioning.DeleteNetworkRequest
+var deleteJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
+	deleteCmd.Flags().Var(&deleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -92,21 +111,28 @@ var deleteCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-		if len(args) == 0 {
-			names, err := a.Networks.NetworkNetworkNameToNetworkIdMap(ctx)
+		if cmd.Flags().Changed("json") {
+			err = deleteJson.Unmarshal(&deleteReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "Databricks Account API network configuration ID")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				names, err := a.Networks.NetworkNetworkNameToNetworkIdMap(ctx)
+				if err != nil {
+					return err
+				}
+				id, err := cmdio.Select(ctx, names, "Databricks Account API network configuration ID")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have databricks account api network configuration id")
+			}
+			deleteReq.NetworkId = args[0]
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have databricks account api network configuration id")
-		}
-		deleteReq.NetworkId = args[0]
 
 		err = a.Networks.Delete(ctx, deleteReq)
 		if err != nil {
@@ -119,10 +145,12 @@ var deleteCmd = &cobra.Command{
 // start get command
 
 var getReq provisioning.GetNetworkRequest
+var getJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
+	getCmd.Flags().Var(&getJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -139,21 +167,28 @@ var getCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-		if len(args) == 0 {
-			names, err := a.Networks.NetworkNetworkNameToNetworkIdMap(ctx)
+		if cmd.Flags().Changed("json") {
+			err = getJson.Unmarshal(&getReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "Databricks Account API network configuration ID")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				names, err := a.Networks.NetworkNetworkNameToNetworkIdMap(ctx)
+				if err != nil {
+					return err
+				}
+				id, err := cmdio.Select(ctx, names, "Databricks Account API network configuration ID")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have databricks account api network configuration id")
+			}
+			getReq.NetworkId = args[0]
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have databricks account api network configuration id")
-		}
-		getReq.NetworkId = args[0]
 
 		response, err := a.Networks.Get(ctx, getReq)
 		if err != nil {

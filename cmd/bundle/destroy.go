@@ -42,11 +42,11 @@ var destroyCmd = &cobra.Command{
 			return fmt.Errorf("please specify --auto-approve since selected logging format is json")
 		}
 
-		return bundle.Apply(ctx, b, []bundle.Mutator{
+		return bundle.Apply(ctx, b, bundle.Seq(
 			phases.Initialize(),
 			phases.Build(),
 			phases.Destroy(),
-		})
+		))
 	},
 }
 

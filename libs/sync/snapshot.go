@@ -172,7 +172,7 @@ func loadOrNewSnapshot(ctx context.Context, opts *SyncOptions) (*Snapshot, error
 	return snapshot, nil
 }
 
-func (s *Snapshot) diff(all []fileset.File) (change diff, err error) {
+func (s *Snapshot) diff(ctx context.Context, all []fileset.File) (change diff, err error) {
 	lastModifiedTimes := s.LastUpdatedTimes
 	remoteToLocalNames := s.RemoteToLocalNames
 	localToRemoteNames := s.LocalToRemoteNames
@@ -191,17 +191,20 @@ func (s *Snapshot) diff(all []fileset.File) (change diff, err error) {
 		if !seen || modified.After(lastSeenModified) {
 			lastModifiedTimes[f.Relative] = modified
 
+			// get file metadata about whether it's a notebook
+			isNotebook, _, err := notebook.Detect(f.Absolute)
+			if err != nil {
+				// Ignore this file if we're unable to determine the notebook type.
+				// Trying to upload such a file to the workspace would fail anyway.
+				log.Warnf(ctx, err.Error())
+				continue
+			}
+
 			// change separators to '/' for file paths in remote store
 			unixFileName := filepath.ToSlash(f.Relative)
 
 			// put file in databricks workspace
 			change.put = append(change.put, unixFileName)
-
-			// get file metadata about whether it's a notebook
-			isNotebook, _, err := notebook.Detect(f.Absolute)
-			if err != nil {
-				return change, err
-			}
 
 			// Strip extension for notebooks.
 			remoteName := unixFileName

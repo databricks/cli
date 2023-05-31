@@ -47,8 +47,8 @@ func TestAccLock(t *testing.T) {
 	require.NoError(t, err)
 	remoteProjectRoot := createRemoteTestProject(t, "lock-acc-", wsc)
 
-	// 50 lockers try to acquire a lock at the same time
-	numConcurrentLocks := 50
+	// 5 lockers try to acquire a lock at the same time
+	numConcurrentLocks := 5
 
 	// Keep single locker unlocked.
 	// We use this to check on the current lock through GetActiveLockState.

@@ -15,16 +15,16 @@ func (w *write) Name() string {
 	return "terraform.Write"
 }
 
-func (w *write) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator, error) {
+func (w *write) Apply(ctx context.Context, b *bundle.Bundle) error {
 	dir, err := Dir(b)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	root := BundleToTerraform(&b.Config)
 	f, err := os.Create(filepath.Join(dir, "bundle.tf.json"))
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	defer f.Close()
@@ -33,10 +33,10 @@ func (w *write) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator, 
 	enc.SetIndent("", "  ")
 	err = enc.Encode(root)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return nil, nil
+	return nil
 }
 
 // Write returns a [bundle.Mutator] that converts resources in a bundle configuration

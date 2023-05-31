@@ -15,6 +15,8 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	_ "github.com/databricks/cli/cmd/version"
 	"github.com/stretchr/testify/require"
+
+	_ "github.com/databricks/cli/cmd/workspace"
 )
 
 const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
@@ -157,6 +159,13 @@ func RequireSuccessfulRun(t *testing.T, args ...string) (bytes.Buffer, bytes.Buf
 	stdout, stderr, err := c.Run()
 	require.NoError(t, err)
 	return stdout, stderr
+}
+
+func RequireErrorRun(t *testing.T, args ...string) (bytes.Buffer, bytes.Buffer, error) {
+	c := NewCobraTestRunner(t, args...)
+	stdout, stderr, err := c.Run()
+	require.Error(t, err)
+	return stdout, stderr, err
 }
 
 func writeFile(t *testing.T, name string, body string) string {

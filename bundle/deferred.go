@@ -7,29 +7,27 @@ import (
 )
 
 type DeferredMutator struct {
-	mutators []Mutator
-	finally  []Mutator
+	mutator Mutator
+	finally Mutator
 }
 
 func (d *DeferredMutator) Name() string {
 	return "deferred"
 }
 
-func Defer(mutators []Mutator, finally []Mutator) []Mutator {
-	return []Mutator{
-		&DeferredMutator{
-			mutators: mutators,
-			finally:  finally,
-		},
+func Defer(mutator Mutator, finally Mutator) Mutator {
+	return &DeferredMutator{
+		mutator: mutator,
+		finally: finally,
 	}
 }
 
-func (d *DeferredMutator) Apply(ctx context.Context, b *Bundle) ([]Mutator, error) {
-	mainErr := Apply(ctx, b, d.mutators)
+func (d *DeferredMutator) Apply(ctx context.Context, b *Bundle) error {
+	mainErr := Apply(ctx, b, d.mutator)
 	errOnFinish := Apply(ctx, b, d.finally)
 	if mainErr != nil || errOnFinish != nil {
-		return nil, errs.FromMany(mainErr, errOnFinish)
+		return errs.FromMany(mainErr, errOnFinish)
 	}
 
-	return nil, nil
+	return nil
 }

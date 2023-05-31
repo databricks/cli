@@ -19,7 +19,7 @@ func TestDefineDefaultWorkspacePaths(t *testing.T) {
 			},
 		},
 	}
-	_, err := mutator.DefineDefaultWorkspacePaths().Apply(context.Background(), bundle)
+	err := mutator.DefineDefaultWorkspacePaths().Apply(context.Background(), bundle)
 	require.NoError(t, err)
 	assert.Equal(t, "/files", bundle.Config.Workspace.FilesPath)
 	assert.Equal(t, "/artifacts", bundle.Config.Workspace.ArtifactsPath)
@@ -37,7 +37,7 @@ func TestDefineDefaultWorkspacePathsAlreadySet(t *testing.T) {
 			},
 		},
 	}
-	_, err := mutator.DefineDefaultWorkspacePaths().Apply(context.Background(), bundle)
+	err := mutator.DefineDefaultWorkspacePaths().Apply(context.Background(), bundle)
 	require.NoError(t, err)
 	assert.Equal(t, "/foo/bar", bundle.Config.Workspace.FilesPath)
 	assert.Equal(t, "/foo/bar", bundle.Config.Workspace.ArtifactsPath)

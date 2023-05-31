@@ -18,11 +18,11 @@ func (m *loadGitDetails) Name() string {
 	return "LoadGitDetails"
 }
 
-func (m *loadGitDetails) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator, error) {
+func (m *loadGitDetails) Apply(ctx context.Context, b *bundle.Bundle) error {
 	// Load relevant git repository
 	repo, err := git.NewRepository(b.Config.Path)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	// load branch name if undefined
 	if b.Config.Bundle.Git.Branch == "" {
@@ -47,5 +47,5 @@ func (m *loadGitDetails) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.
 		remoteUrl := repo.OriginUrl()
 		b.Config.Bundle.Git.OriginURL = remoteUrl
 	}
-	return nil, nil
+	return nil
 }

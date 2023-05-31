@@ -145,19 +145,19 @@ func (m *translatePaths) translatePipelineLibrary(dir string, b *bundle.Bundle, 
 	return nil
 }
 
-func (m *translatePaths) Apply(_ context.Context, b *bundle.Bundle) ([]bundle.Mutator, error) {
+func (m *translatePaths) Apply(_ context.Context, b *bundle.Bundle) error {
 	m.seen = make(map[string]string)
 
 	for key, job := range b.Config.Resources.Jobs {
 		dir, err := job.ConfigFileDirectory()
 		if err != nil {
-			return nil, fmt.Errorf("unable to determine directory for job %s: %w", key, err)
+			return fmt.Errorf("unable to determine directory for job %s: %w", key, err)
 		}
 
 		for i := 0; i < len(job.Tasks); i++ {
 			err := m.translateJobTask(dir, b, &job.Tasks[i])
 			if err != nil {
-				return nil, err
+				return err
 			}
 		}
 	}
@@ -165,16 +165,16 @@ func (m *translatePaths) Apply(_ context.Context, b *bundle.Bundle) ([]bundle.Mu
 	for key, pipeline := range b.Config.Resources.Pipelines {
 		dir, err := pipeline.ConfigFileDirectory()
 		if err != nil {
-			return nil, fmt.Errorf("unable to determine directory for pipeline %s: %w", key, err)
+			return fmt.Errorf("unable to determine directory for pipeline %s: %w", key, err)
 		}
 
 		for i := 0; i < len(pipeline.Libraries); i++ {
 			err := m.translatePipelineLibrary(dir, b, &pipeline.Libraries[i])
 			if err != nil {
-				return nil, err
+				return err
 			}
 		}
 	}
 
-	return nil, nil
+	return nil
 }
