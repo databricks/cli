@@ -39,6 +39,74 @@ func (f filerTest) assertContents(ctx context.Context, name string, contents str
 	assert.Equal(f, contents, body.String())
 }
 
+func runFilerReadWriteTest(t *testing.T, ctx context.Context, f filer.Filer) {
+	var err error
+
+	// Write should fail because the root path doesn't yet exist.
+	err = f.Write(ctx, "/foo/bar", strings.NewReader(`hello world`))
+	assert.True(t, errors.As(err, &filer.NoSuchDirectoryError{}))
+
+	// Read should fail because the root path doesn't yet exist.
+	_, err = f.Read(ctx, "/foo/bar")
+	assert.True(t, errors.As(err, &filer.FileDoesNotExistError{}))
+
+	// Write with CreateParentDirectories flag should succeed.
+	err = f.Write(ctx, "/foo/bar", strings.NewReader(`hello world`), filer.CreateParentDirectories)
+	assert.NoError(t, err)
+	filerTest{t, f}.assertContents(ctx, "/foo/bar", `hello world`)
+
+	// Write should fail because there is an existing file at the specified path.
+	err = f.Write(ctx, "/foo/bar", strings.NewReader(`hello universe`))
+	assert.True(t, errors.As(err, &filer.FileAlreadyExistsError{}))
+
+	// Write with OverwriteIfExists should succeed.
+	err = f.Write(ctx, "/foo/bar", strings.NewReader(`hello universe`), filer.OverwriteIfExists)
+	assert.NoError(t, err)
+	filerTest{t, f}.assertContents(ctx, "/foo/bar", `hello universe`)
+
+	// Delete should fail if the file doesn't exist.
+	err = f.Delete(ctx, "/doesnt_exist")
+	assert.True(t, errors.As(err, &filer.FileDoesNotExistError{}))
+
+	// Delete should succeed for file that does exist.
+	err = f.Delete(ctx, "/foo/bar")
+	assert.NoError(t, err)
+}
+
+func runFilerReadDirTest(t *testing.T, ctx context.Context, f filer.Filer) {
+	var err error
+
+	// We start with an empty directory.
+	entries, err := f.ReadDir(ctx, ".")
+	require.NoError(t, err)
+	assert.Len(t, entries, 0)
+
+	// Write a file.
+	err = f.Write(ctx, "/hello.txt", strings.NewReader(`hello world`))
+	require.NoError(t, err)
+
+	// Create a directory.
+	err = f.Mkdir(ctx, "/dir")
+	require.NoError(t, err)
+
+	// Write a file.
+	err = f.Write(ctx, "/dir/world.txt", strings.NewReader(`hello world`))
+	require.NoError(t, err)
+
+	// Expect two entries in the root.
+	entries, err = f.ReadDir(ctx, ".")
+	require.NoError(t, err)
+	require.Len(t, entries, 2)
+	assert.Equal(t, "dir", entries[0].Name)
+	assert.Equal(t, "hello.txt", entries[1].Name)
+
+	// Expect a single entry in the directory.
+	entries, err = f.ReadDir(ctx, "/dir")
+	require.NoError(t, err)
+	require.Len(t, entries, 1)
+	assert.Equal(t, "world.txt", entries[0].Name)
+}
+
 func temporaryWorkspaceDir(t *testing.T, w *databricks.WorkspaceClient) string {
 	ctx := context.Background()
 	me, err := w.CurrentUser.Me(ctx)
@@ -88,39 +156,13 @@ func setupWorkspaceFilesTest(t *testing.T) (context.Context, filer.Filer) {
 }
 
 func TestAccFilerWorkspaceFilesReadWrite(t *testing.T) {
-	var err error
-
 	ctx, f := setupWorkspaceFilesTest(t)
+	runFilerReadWriteTest(t, ctx, f)
+}
 
-	// Write should fail because the root path doesn't yet exist.
-	err = f.Write(ctx, "/foo/bar", strings.NewReader(`hello world`))
-	assert.True(t, errors.As(err, &filer.NoSuchDirectoryError{}))
-
-	// Read should fail because the root path doesn't yet exist.
-	_, err = f.Read(ctx, "/foo/bar")
-	assert.True(t, errors.As(err, &filer.FileDoesNotExistError{}))
-
-	// Write with CreateParentDirectories flag should succeed.
-	err = f.Write(ctx, "/foo/bar", strings.NewReader(`hello world`), filer.CreateParentDirectories)
-	assert.NoError(t, err)
-	filerTest{t, f}.assertContents(ctx, "/foo/bar", `hello world`)
-
-	// Write should fail because there is an existing file at the specified path.
-	err = f.Write(ctx, "/foo/bar", strings.NewReader(`hello universe`))
-	assert.True(t, errors.As(err, &filer.FileAlreadyExistsError{}))
-
-	// Write with OverwriteIfExists should succeed.
-	err = f.Write(ctx, "/foo/bar", strings.NewReader(`hello universe`), filer.OverwriteIfExists)
-	assert.NoError(t, err)
-	filerTest{t, f}.assertContents(ctx, "/foo/bar", `hello universe`)
-
-	// Delete should fail if the file doesn't exist.
-	err = f.Delete(ctx, "/doesnt_exist")
-	assert.True(t, errors.As(err, &filer.FileDoesNotExistError{}))
-
-	// Delete should succeed for file that does exist.
-	err = f.Delete(ctx, "/foo/bar")
-	assert.NoError(t, err)
+func TestAccFilerWorkspaceFilesReadDir(t *testing.T) {
+	ctx, f := setupWorkspaceFilesTest(t)
+	runFilerReadDirTest(t, ctx, f)
 }
 
 func temporaryDbfsDir(t *testing.T, w *databricks.WorkspaceClient) string {
@@ -148,7 +190,7 @@ func temporaryDbfsDir(t *testing.T, w *databricks.WorkspaceClient) string {
 	return path
 }
 
-func TestAccFilerDbfs(t *testing.T) {
+func setupFilerDbfsTest(t *testing.T) (context.Context, filer.Filer) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	ctx := context.Background()
@@ -156,66 +198,15 @@ func TestAccFilerDbfs(t *testing.T) {
 	tmpdir := temporaryDbfsDir(t, w)
 	f, err := filer.NewDbfsClient(w, tmpdir)
 	require.NoError(t, err)
-
-	// Read should fail because the root path doesn't yet exist.
-	_, err = f.Read(ctx, "/foo/bar")
-	assert.True(t, errors.As(err, &filer.FileDoesNotExistError{}))
-
-	// Write with CreateParentDirectories flag should succeed.
-	err = f.Write(ctx, "/foo/bar", strings.NewReader(`"hello world"`), filer.CreateParentDirectories)
-	assert.NoError(t, err)
-	filerTest{t, f}.assertContents(ctx, "/foo/bar", `"hello world"`)
-
-	// Write should fail because there is an existing file at the specified path.
-	err = f.Write(ctx, "/foo/bar", strings.NewReader(`"hello universe"`))
-	assert.True(t, errors.As(err, &filer.FileAlreadyExistsError{}))
-
-	// Write with OverwriteIfExists should succeed.
-	err = f.Write(ctx, "/foo/bar", strings.NewReader(`"hello universe"`), filer.OverwriteIfExists)
-	assert.NoError(t, err)
-	filerTest{t, f}.assertContents(ctx, "/foo/bar", `"hello universe"`)
-
-	// Delete should fail if the file doesn't exist.
-	err = f.Delete(ctx, "/doesnt_exist")
-	assert.True(t, errors.As(err, &filer.FileDoesNotExistError{}))
-
-	// Delete should succeed for file that does exist.
-	err = f.Delete(ctx, "/foo/bar")
-	assert.NoError(t, err)
+	return ctx, f
 }
 
-func TestAccFilerWorkspaceFilesReadDir(t *testing.T) {
-	var err error
+func TestAccFilerDbfsReadWrite(t *testing.T) {
+	ctx, f := setupFilerDbfsTest(t)
+	runFilerReadWriteTest(t, ctx, f)
+}
 
-	ctx, f := setupWorkspaceFilesTest(t)
-
-	// We start with an empty directory.
-	entries, err := f.ReadDir(ctx, ".")
-	require.NoError(t, err)
-	assert.Len(t, entries, 0)
-
-	// Write a file.
-	err = f.Write(ctx, "/hello.txt", strings.NewReader(`hello world`))
-	require.NoError(t, err)
-
-	// Create a directory.
-	err = f.Mkdir(ctx, "/dir")
-	require.NoError(t, err)
-
-	// Write a file.
-	err = f.Write(ctx, "/dir/world.txt", strings.NewReader(`hello world`))
-	require.NoError(t, err)
-
-	// Expect two entries in the root.
-	entries, err = f.ReadDir(ctx, ".")
-	require.NoError(t, err)
-	assert.Len(t, entries, 2)
-	assert.Equal(t, "dir", entries[0].Name)
-	assert.Equal(t, "hello.txt", entries[1].Name)
-
-	// Expect a single entry in the directory.
-	entries, err = f.ReadDir(ctx, "/dir")
-	require.NoError(t, err)
-	assert.Len(t, entries, 1)
-	assert.Equal(t, "world.txt", entries[0].Name)
+func TestAccFilerDbfsReadDir(t *testing.T) {
+	ctx, f := setupFilerDbfsTest(t)
+	runFilerReadDirTest(t, ctx, f)
 }

@@ -5,6 +5,9 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"path"
+	"sort"
+	"time"
 
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -38,6 +41,31 @@ func (w *DbfsClient) Write(ctx context.Context, name string, reader io.Reader, m
 	if slices.Contains(mode, OverwriteIfExists) {
 		fileMode |= files.FileModeOverwrite
 	}
+
+	// Issue info call before write because it automatically creates parent directories.
+	//
+	// For discussion: we could decide this is actually convenient, remove the call below,
+	// and apply the same semantics for the WSFS filer.
+	//
+	if !slices.Contains(mode, CreateParentDirectories) {
+		_, err = w.workspaceClient.Dbfs.GetStatusByPath(ctx, path.Dir(absPath))
+		if err != nil {
+			var aerr *apierr.APIError
+			if !errors.As(err, &aerr) {
+				return err
+			}
+
+			// This API returns a 404 if the file doesn't exist.
+			if aerr.StatusCode == http.StatusNotFound {
+				if aerr.ErrorCode == "RESOURCE_DOES_NOT_EXIST" {
+					return NoSuchDirectoryError{path.Dir(absPath)}
+				}
+			}
+
+			return err
+		}
+	}
+
 	handle, err := w.workspaceClient.Dbfs.Open(ctx, absPath, fileMode)
 	if err != nil {
 		var aerr *apierr.APIError
@@ -103,7 +131,7 @@ func (w *DbfsClient) Delete(ctx context.Context, name string) error {
 	//
 	_, err = w.workspaceClient.Dbfs.GetStatusByPath(ctx, absPath)
 	if err != nil {
-		var aerr apierr.APIError
+		var aerr *apierr.APIError
 		if !errors.As(err, &aerr) {
 			return err
 		}
@@ -122,4 +150,38 @@ func (w *DbfsClient) Delete(ctx context.Context, name string) error {
 		Path:      absPath,
 		Recursive: false,
 	})
+}
+
+func (w *DbfsClient) ReadDir(ctx context.Context, name string) ([]FileInfo, error) {
+	absPath, err := w.root.Join(name)
+	if err != nil {
+		return nil, err
+	}
+
+	res, err := w.workspaceClient.Dbfs.ListByPath(ctx, absPath)
+	if err != nil {
+		return nil, err
+	}
+
+	info := make([]FileInfo, len(res.Files))
+	for i, v := range res.Files {
+		info[i] = FileInfo{
+			Name:    path.Base(v.Path),
+			Size:    v.FileSize,
+			ModTime: time.UnixMilli(v.ModificationTime),
+		}
+	}
+
+	// Sort by name for parity with os.ReadDir.
+	sort.Slice(info, func(i, j int) bool { return info[i].Name < info[j].Name })
+	return info, nil
+}
+
+func (w *DbfsClient) Mkdir(ctx context.Context, name string) error {
+	dirPath, err := w.root.Join(name)
+	if err != nil {
+		return err
+	}
+
+	return w.workspaceClient.Dbfs.MkdirsByPath(ctx, dirPath)
 }
