@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"time"
+	"io/fs"
 )
 
 type WriteMode int
@@ -13,22 +13,6 @@ const (
 	OverwriteIfExists       WriteMode = iota
 	CreateParentDirectories           = iota << 1
 )
-
-// FileInfo abstracts over file information from different file systems.
-// Inspired by https://pkg.go.dev/io/fs#FileInfo.
-type FileInfo struct {
-	// The type of the file in workspace.
-	Type string
-
-	// Base name.
-	Name string
-
-	// Size in bytes.
-	Size int64
-
-	// Modification time.
-	ModTime time.Time
-}
 
 type FileAlreadyExistsError struct {
 	path string
@@ -68,7 +52,7 @@ type Filer interface {
 	Delete(ctx context.Context, path string) error
 
 	// Return contents of directory at `path`.
-	ReadDir(ctx context.Context, path string) ([]FileInfo, error)
+	ReadDir(ctx context.Context, path string) ([]fs.DirEntry, error)
 
 	// Creates directory at `path`, creating any intermediate directories as required.
 	Mkdir(ctx context.Context, path string) error

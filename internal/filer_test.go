@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"net/http"
 	"strings"
 	"testing"
@@ -75,6 +76,7 @@ func runFilerReadWriteTest(t *testing.T, ctx context.Context, f filer.Filer) {
 
 func runFilerReadDirTest(t *testing.T, ctx context.Context, f filer.Filer) {
 	var err error
+	var info fs.FileInfo
 
 	// We start with an empty directory.
 	entries, err := f.ReadDir(ctx, ".")
@@ -105,23 +107,32 @@ func runFilerReadDirTest(t *testing.T, ctx context.Context, f filer.Filer) {
 	entries, err = f.ReadDir(ctx, ".")
 	require.NoError(t, err)
 	assert.Len(t, entries, 2)
-	assert.Equal(t, "dir", entries[0].Name)
-	assert.Equal(t, "hello.txt", entries[1].Name)
-	assert.Greater(t, entries[1].ModTime.Unix(), int64(0))
+	assert.Equal(t, "dir", entries[0].Name())
+	assert.True(t, entries[0].IsDir())
+	assert.Equal(t, "hello.txt", entries[1].Name())
+	assert.False(t, entries[1].IsDir())
+	info, err = entries[1].Info()
+	require.NoError(t, err)
+	assert.Greater(t, info.ModTime().Unix(), int64(0))
 
 	// Expect two entries in the directory.
 	entries, err = f.ReadDir(ctx, "/dir")
 	require.NoError(t, err)
 	assert.Len(t, entries, 2)
-	assert.Equal(t, "a", entries[0].Name)
-	assert.Equal(t, "world.txt", entries[1].Name)
-	assert.Greater(t, entries[1].ModTime.Unix(), int64(0))
+	assert.Equal(t, "a", entries[0].Name())
+	assert.True(t, entries[0].IsDir())
+	assert.Equal(t, "world.txt", entries[1].Name())
+	assert.False(t, entries[1].IsDir())
+	info, err = entries[1].Info()
+	require.NoError(t, err)
+	assert.Greater(t, info.ModTime().Unix(), int64(0))
 
 	// Expect a single entry in the nested path.
 	entries, err = f.ReadDir(ctx, "/dir/a/b")
 	require.NoError(t, err)
 	assert.Len(t, entries, 1)
-	assert.Equal(t, "c", entries[0].Name)
+	assert.Equal(t, "c", entries[0].Name())
+	assert.True(t, entries[0].IsDir())
 }
 
 func temporaryWorkspaceDir(t *testing.T, w *databricks.WorkspaceClient) string {
