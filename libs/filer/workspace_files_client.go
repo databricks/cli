@@ -68,7 +68,12 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 
 	err = w.apiClient.Do(ctx, http.MethodPost, urlPath, body, nil)
 
-	// If we got an API error we deal with it below.
+	// Return early on success.
+	if err == nil {
+		return nil
+	}
+
+	// Special handling of this error only if it is an API error.
 	var aerr *apierr.APIError
 	if !errors.As(err, &aerr) {
 		return err
@@ -112,11 +117,23 @@ func (w *WorkspaceFilesClient) Read(ctx context.Context, name string) (io.Reader
 
 	var res []byte
 	err = w.apiClient.Do(ctx, http.MethodGet, urlPath, nil, &res)
-	if err != nil {
+
+	// Return early on success.
+	if err == nil {
+		return bytes.NewReader(res), nil
+	}
+
+	// Special handling of this error only if it is an API error.
+	var aerr *apierr.APIError
+	if !errors.As(err, &aerr) {
 		return nil, err
 	}
 
-	return bytes.NewReader(res), nil
+	if aerr.StatusCode == http.StatusNotFound {
+		return nil, FileDoesNotExistError{absPath}
+	}
+
+	return nil, err
 }
 
 func (w *WorkspaceFilesClient) Delete(ctx context.Context, name string) error {
@@ -125,10 +142,27 @@ func (w *WorkspaceFilesClient) Delete(ctx context.Context, name string) error {
 		return err
 	}
 
-	return w.workspaceClient.Workspace.Delete(ctx, workspace.Delete{
+	err = w.workspaceClient.Workspace.Delete(ctx, workspace.Delete{
 		Path:      absPath,
 		Recursive: false,
 	})
+
+	// Return early on success.
+	if err == nil {
+		return nil
+	}
+
+	// Special handling of this error only if it is an API error.
+	var aerr *apierr.APIError
+	if !errors.As(err, &aerr) {
+		return err
+	}
+
+	if aerr.StatusCode == http.StatusNotFound {
+		return FileDoesNotExistError{absPath}
+	}
+
+	return err
 }
 
 func (w *WorkspaceFilesClient) ReadDir(ctx context.Context, name string) ([]FileInfo, error) {

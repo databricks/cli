@@ -38,6 +38,14 @@ func (err FileAlreadyExistsError) Error() string {
 	return fmt.Sprintf("file already exists: %s", err.path)
 }
 
+type FileDoesNotExistError struct {
+	path string
+}
+
+func (err FileDoesNotExistError) Error() string {
+	return fmt.Sprintf("file does not exist: %s", err.path)
+}
+
 type NoSuchDirectoryError struct {
 	path string
 }
