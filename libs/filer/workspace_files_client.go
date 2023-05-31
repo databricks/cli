@@ -175,6 +175,17 @@ func (w *WorkspaceFilesClient) ReadDir(ctx context.Context, name string) ([]File
 		Path: absPath,
 	})
 	if err != nil {
+		// If we got an API error we deal with it below.
+		var aerr *apierr.APIError
+		if !errors.As(err, &aerr) {
+			return nil, err
+		}
+
+		// This API returns a 404 if the specified path does not exist.
+		if aerr.StatusCode == http.StatusNotFound {
+			return nil, NoSuchDirectoryError{path.Dir(absPath)}
+		}
+
 		return nil, err
 	}
 
