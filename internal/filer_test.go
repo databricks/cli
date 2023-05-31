@@ -65,7 +65,7 @@ func temporaryWorkspaceDir(t *testing.T, w *databricks.WorkspaceClient) string {
 	return path
 }
 
-func TestAccFilerWorkspaceFiles(t *testing.T) {
+func setupWorkspaceFilesTest(t *testing.T) (context.Context, filer.Filer) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	ctx := context.Background()
@@ -80,6 +80,14 @@ func TestAccFilerWorkspaceFiles(t *testing.T) {
 	if errors.As(err, &aerr) && aerr.StatusCode == http.StatusBadRequest {
 		t.Skip(aerr.Message)
 	}
+
+	return ctx, f
+}
+
+func TestAccFilerWorkspaceFilesReadWrite(t *testing.T) {
+	var err error
+
+	ctx, f := setupWorkspaceFilesTest(t)
 
 	// Write should fail because the root path doesn't yet exist.
 	err = f.Write(ctx, "/foo/bar", strings.NewReader(`hello world`))
@@ -110,4 +118,57 @@ func TestAccFilerWorkspaceFiles(t *testing.T) {
 	// Delete should succeed for file that does exist.
 	err = f.Delete(ctx, "/foo/bar")
 	assert.NoError(t, err)
+}
+
+func TestAccFilerWorkspaceFilesReadDir(t *testing.T) {
+	var err error
+
+	ctx, f := setupWorkspaceFilesTest(t)
+
+	// We start with an empty directory.
+	entries, err := f.ReadDir(ctx, ".")
+	require.NoError(t, err)
+	assert.Len(t, entries, 0)
+
+	// Write a file.
+	err = f.Write(ctx, "/hello.txt", strings.NewReader(`hello world`))
+	require.NoError(t, err)
+
+	// Create a directory.
+	err = f.Mkdir(ctx, "/dir")
+	require.NoError(t, err)
+
+	// Write a file.
+	err = f.Write(ctx, "/dir/world.txt", strings.NewReader(`hello world`))
+	require.NoError(t, err)
+
+	// Create a nested directory (check that it creates intermediate directories).
+	err = f.Mkdir(ctx, "/dir/a/b/c")
+	require.NoError(t, err)
+
+	// Expect an error if the path doesn't exist.
+	_, err = f.ReadDir(ctx, "/dir/a/b/c/d/e")
+	assert.True(t, errors.As(err, &filer.NoSuchDirectoryError{}))
+
+	// Expect two entries in the root.
+	entries, err = f.ReadDir(ctx, ".")
+	require.NoError(t, err)
+	assert.Len(t, entries, 2)
+	assert.Equal(t, "dir", entries[0].Name)
+	assert.Equal(t, "hello.txt", entries[1].Name)
+	assert.Greater(t, entries[1].ModTime.Unix(), int64(0))
+
+	// Expect two entries in the directory.
+	entries, err = f.ReadDir(ctx, "/dir")
+	require.NoError(t, err)
+	assert.Len(t, entries, 2)
+	assert.Equal(t, "a", entries[0].Name)
+	assert.Equal(t, "world.txt", entries[1].Name)
+	assert.Greater(t, entries[1].ModTime.Unix(), int64(0))
+
+	// Expect a single entry in the nested path.
+	entries, err = f.ReadDir(ctx, "/dir/a/b")
+	require.NoError(t, err)
+	assert.Len(t, entries, 1)
+	assert.Equal(t, "c", entries[0].Name)
 }
