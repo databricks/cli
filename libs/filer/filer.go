@@ -22,8 +22,16 @@ func (err FileAlreadyExistsError) Error() string {
 	return fmt.Sprintf("file already exists: %s", err.path)
 }
 
+func (err FileAlreadyExistsError) Is(other error) bool {
+	return other == fs.ErrExist
+}
+
 type FileDoesNotExistError struct {
 	path string
+}
+
+func (err FileDoesNotExistError) Is(other error) bool {
+	return other == fs.ErrNotExist
 }
 
 func (err FileDoesNotExistError) Error() string {
@@ -36,6 +44,10 @@ type NoSuchDirectoryError struct {
 
 func (err NoSuchDirectoryError) Error() string {
 	return fmt.Sprintf("no such directory: %s", err.path)
+}
+
+func (err NoSuchDirectoryError) Is(other error) bool {
+	return other == fs.ErrNotExist
 }
 
 // Filer is used to access files in a workspace.

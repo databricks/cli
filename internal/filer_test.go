@@ -46,10 +46,12 @@ func runFilerReadWriteTest(t *testing.T, ctx context.Context, f filer.Filer) {
 	// Write should fail because the root path doesn't yet exist.
 	err = f.Write(ctx, "/foo/bar", strings.NewReader(`hello world`))
 	assert.True(t, errors.As(err, &filer.NoSuchDirectoryError{}))
+	assert.True(t, errors.Is(err, fs.ErrNotExist))
 
 	// Read should fail because the root path doesn't yet exist.
 	_, err = f.Read(ctx, "/foo/bar")
 	assert.True(t, errors.As(err, &filer.FileDoesNotExistError{}))
+	assert.True(t, errors.Is(err, fs.ErrNotExist))
 
 	// Write with CreateParentDirectories flag should succeed.
 	err = f.Write(ctx, "/foo/bar", strings.NewReader(`hello world`), filer.CreateParentDirectories)
@@ -59,6 +61,7 @@ func runFilerReadWriteTest(t *testing.T, ctx context.Context, f filer.Filer) {
 	// Write should fail because there is an existing file at the specified path.
 	err = f.Write(ctx, "/foo/bar", strings.NewReader(`hello universe`))
 	assert.True(t, errors.As(err, &filer.FileAlreadyExistsError{}))
+	assert.True(t, errors.Is(err, fs.ErrExist))
 
 	// Write with OverwriteIfExists should succeed.
 	err = f.Write(ctx, "/foo/bar", strings.NewReader(`hello universe`), filer.OverwriteIfExists)
@@ -68,6 +71,7 @@ func runFilerReadWriteTest(t *testing.T, ctx context.Context, f filer.Filer) {
 	// Delete should fail if the file doesn't exist.
 	err = f.Delete(ctx, "/doesnt_exist")
 	assert.True(t, errors.As(err, &filer.FileDoesNotExistError{}))
+	assert.True(t, errors.Is(err, fs.ErrNotExist))
 
 	// Delete should succeed for file that does exist.
 	err = f.Delete(ctx, "/foo/bar")
@@ -102,6 +106,7 @@ func runFilerReadDirTest(t *testing.T, ctx context.Context, f filer.Filer) {
 	// Expect an error if the path doesn't exist.
 	_, err = f.ReadDir(ctx, "/dir/a/b/c/d/e")
 	assert.True(t, errors.As(err, &filer.NoSuchDirectoryError{}), err)
+	assert.True(t, errors.Is(err, fs.ErrNotExist))
 
 	// Expect two entries in the root.
 	entries, err = f.ReadDir(ctx, ".")
