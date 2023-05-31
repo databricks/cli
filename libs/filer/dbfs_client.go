@@ -160,6 +160,18 @@ func (w *DbfsClient) ReadDir(ctx context.Context, name string) ([]FileInfo, erro
 
 	res, err := w.workspaceClient.Dbfs.ListByPath(ctx, absPath)
 	if err != nil {
+		var aerr *apierr.APIError
+		if !errors.As(err, &aerr) {
+			return nil, err
+		}
+
+		// This API returns a 404 if the file doesn't exist.
+		if aerr.StatusCode == http.StatusNotFound {
+			if aerr.ErrorCode == "RESOURCE_DOES_NOT_EXIST" {
+				return nil, NoSuchDirectoryError{absPath}
+			}
+		}
+
 		return nil, err
 	}
 

@@ -99,7 +99,7 @@ func runFilerReadDirTest(t *testing.T, ctx context.Context, f filer.Filer) {
 
 	// Expect an error if the path doesn't exist.
 	_, err = f.ReadDir(ctx, "/dir/a/b/c/d/e")
-	assert.True(t, errors.As(err, &filer.NoSuchDirectoryError{}))
+	assert.True(t, errors.As(err, &filer.NoSuchDirectoryError{}), err)
 
 	// Expect two entries in the root.
 	entries, err = f.ReadDir(ctx, ".")
