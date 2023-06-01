@@ -77,7 +77,10 @@ func New(ctx context.Context, opts SyncOptions) (*Sync, error) {
 		}
 	}
 
-	repoFiles := repofiles.Create(opts.RemotePath, opts.LocalPath, opts.WorkspaceClient)
+	repoFiles, err := repofiles.Create(opts.RemotePath, opts.LocalPath, opts.WorkspaceClient, &repofiles.RepoFileOptions{OverwriteIfExists: true})
+	if err != nil {
+		return nil, err
+	}
 
 	return &Sync{
 		SyncOptions: &opts,

@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -14,9 +15,11 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	_ "github.com/databricks/cli/cmd/version"
+	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	_ "github.com/databricks/cli/cmd/workspace"
@@ -207,4 +210,24 @@ func temporaryWorkspaceDir(t *testing.T, w *databricks.WorkspaceClient) string {
 	})
 
 	return path
+}
+
+func assertFileContains(t *testing.T, ctx context.Context, f filer.Filer, name, contents string) {
+	r, err := f.Read(ctx, name)
+	require.NoError(t, err)
+
+	var b bytes.Buffer
+	_, err = io.Copy(&b, r)
+	require.NoError(t, err)
+
+	assert.Contains(t, b.String(), contents)
+}
+
+func assertNotebookExists(t *testing.T, ctx context.Context, w *databricks.WorkspaceClient, path string) {
+	info, err := w.Workspace.ListAll(ctx, workspace.ListWorkspaceRequest{
+		Path: path,
+	})
+	require.NoError(t, err)
+	assert.Len(t, info, 1)
+	assert.Equal(t, info[0].ObjectType, workspace.ObjectTypeNotebook)
 }
