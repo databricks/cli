@@ -2,6 +2,7 @@ package filer
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -50,6 +51,20 @@ func (err NoSuchDirectoryError) Is(other error) bool {
 	return other == fs.ErrNotExist
 }
 
+var ErrNotADirectory = errors.New("not a directory")
+
+type NotADirectory struct {
+	path string
+}
+
+func (err NotADirectory) Error() string {
+	return fmt.Sprintf("%s is not a directory", err.path)
+}
+
+func (err NotADirectory) Is(other error) bool {
+	return other == ErrNotADirectory
+}
+
 // Filer is used to access files in a workspace.
 // It has implementations for accessing files in WSFS and in DBFS.
 type Filer interface {
@@ -68,7 +83,4 @@ type Filer interface {
 
 	// Creates directory at `path`, creating any intermediate directories as required.
 	Mkdir(ctx context.Context, path string) error
-
-	// Stat returns information about the file at `path`.
-	Stat(ctx context.Context, name string) (fs.FileInfo, error)
 }

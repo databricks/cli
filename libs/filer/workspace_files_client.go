@@ -222,6 +222,12 @@ func (w *WorkspaceFilesClient) ReadDir(ctx context.Context, name string) ([]fs.D
 	objects, err := w.workspaceClient.Workspace.ListAll(ctx, workspace.ListWorkspaceRequest{
 		Path: absPath,
 	})
+
+	// TODO: add integration test for this
+	if len(objects) == 1 && objects[0].Path == absPath {
+		return nil, NotADirectory{absPath}
+	}
+
 	if err != nil {
 		// If we got an API error we deal with it below.
 		var aerr *apierr.APIError
@@ -255,27 +261,4 @@ func (w *WorkspaceFilesClient) Mkdir(ctx context.Context, name string) error {
 	return w.workspaceClient.Workspace.Mkdirs(ctx, workspace.Mkdirs{
 		Path: dirPath,
 	})
-}
-
-func (w *WorkspaceFilesClient) Stat(ctx context.Context, name string) (fs.FileInfo, error) {
-	absPath, err := w.root.Join(name)
-	if err != nil {
-		return nil, err
-	}
-
-	info, err := w.workspaceClient.Workspace.GetStatusByPath(ctx, absPath)
-	if err != nil {
-		// If we got an API error we deal with it below.
-		var aerr *apierr.APIError
-		if !errors.As(err, &aerr) {
-			return nil, err
-		}
-
-		// This API returns a 404 if the specified path does not exist.
-		if aerr.StatusCode == http.StatusNotFound {
-			return nil, FileDoesNotExistError{absPath}
-		}
-	}
-
-	return wsfsFileInfo{*info}, nil
 }
