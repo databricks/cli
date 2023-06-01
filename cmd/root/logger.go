@@ -25,14 +25,17 @@ type friendlyHandler struct {
 }
 
 var (
+	levelTrace = color.New(color.FgYellow).Sprint("TRACE")
 	levelDebug = color.New(color.FgYellow).Sprint("DEBUG")
-	levelInfo  = color.New(color.FgGreen).Sprint(" INFO")   // space in front is not a typo
-	levelWarn  = color.New(color.FgMagenta).Sprint(" WARN") // space in front is not a typo
+	levelInfo  = color.New(color.FgGreen).Sprintf("%5s", "INFO")
+	levelWarn  = color.New(color.FgMagenta).Sprintf("%5s", "WARN")
 	levelError = color.New(color.FgRed).Sprint("ERROR")
 )
 
 func (l *friendlyHandler) coloredLevel(rec slog.Record) string {
 	switch rec.Level {
+	case log.LevelTrace:
+		return levelTrace
 	case slog.LevelDebug:
 		return levelDebug
 	case slog.LevelInfo:
