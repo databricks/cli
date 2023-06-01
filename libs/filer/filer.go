@@ -83,4 +83,7 @@ type Filer interface {
 
 	// Creates directory at `path`, creating any intermediate directories as required.
 	Mkdir(ctx context.Context, path string) error
+
+	// Stat returns information about the file at `path`.
+	Stat(ctx context.Context, name string) (fs.FileInfo, error)
 }
