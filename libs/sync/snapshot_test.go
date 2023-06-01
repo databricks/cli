@@ -147,9 +147,10 @@ func TestFolderDiff(t *testing.T) {
 	assert.NoError(t, err)
 	change, err = state.diff(ctx, files)
 	assert.NoError(t, err)
-	assert.Len(t, change.delete, 1)
+	assert.Len(t, change.delete, 2)
 	assert.Len(t, change.put, 0)
 	assert.Contains(t, change.delete, "foo/bar")
+	assert.Contains(t, change.delete, "foo")
 }
 
 func TestPythonNotebookDiff(t *testing.T) {

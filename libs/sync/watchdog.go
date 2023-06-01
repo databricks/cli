@@ -67,12 +67,25 @@ func (s *Sync) applyPut(ctx context.Context, group *errgroup.Group, localName st
 }
 
 func (s *Sync) applyDiff(ctx context.Context, d diff) error {
+	// Delete paths in descending order of nesting level,
+	// while deleting paths at the same level in parallel.
+	for _, deletes := range d.GroupDeletesByNestingLevel() {
+		group, ctx := errgroup.WithContext(ctx)
+		group.SetLimit(MaxRequestsInFlight)
+
+		for _, remoteName := range deletes {
+			s.applyDelete(ctx, group, remoteName)
+		}
+
+		// Wait for goroutines to finish and return first non-nil error return if any.
+		err := group.Wait()
+		if err != nil {
+			return err
+		}
+	}
+
 	group, ctx := errgroup.WithContext(ctx)
 	group.SetLimit(MaxRequestsInFlight)
-
-	for _, remoteName := range d.delete {
-		s.applyDelete(ctx, group, remoteName)
-	}
 
 	for _, localName := range d.put {
 		s.applyPut(ctx, group, localName)

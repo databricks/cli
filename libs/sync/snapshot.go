@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"time"
@@ -15,6 +16,7 @@ import (
 	"github.com/databricks/cli/libs/fileset"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/notebook"
+	"golang.org/x/exp/maps"
 )
 
 // Bump it up every time a potentially breaking change is made to the snapshot schema
@@ -252,6 +254,46 @@ func (s *Snapshot) diff(ctx context.Context, all []fileset.File) (change diff, e
 		// add them to a delete batch
 		change.delete = append(change.delete, remoteName)
 	}
+
+	// Gather all directories previously present.
+	previousDirectories := map[string]struct{}{}
+	for _, localName := range maps.Keys(lastModifiedTimes) {
+		dir := filepath.ToSlash(filepath.Dir(localName))
+		for dir != "." {
+			if _, ok := previousDirectories[dir]; ok {
+				break
+			}
+			previousDirectories[dir] = struct{}{}
+			dir = path.Dir(dir)
+		}
+	}
+
+	// Gather all directories currently present.
+	currentDirectories := map[string]struct{}{}
+	for _, f := range all {
+		dir := filepath.ToSlash(filepath.Dir(f.Relative))
+		for dir != "." {
+			if _, ok := currentDirectories[dir]; ok {
+				break
+			}
+			currentDirectories[dir] = struct{}{}
+			dir = path.Dir(dir)
+		}
+	}
+
+	// Gather all directories that are no longer present.
+	for dir := range previousDirectories {
+		// Look for dir and all its parents.
+		for dir != "." {
+			if _, ok := currentDirectories[dir]; ok {
+				break
+			}
+
+			change.delete = append(change.delete, dir)
+			dir = path.Dir(dir)
+		}
+	}
+
 	// and remove them from the snapshot
 	for _, remoteName := range change.delete {
 		// we do note assert that remoteName exists in remoteToLocalNames since it
