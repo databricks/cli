@@ -69,7 +69,10 @@ var cancelAllRunsCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "Loading prompts for missing command argument. You can cancel the process and provide an argument yourself instead."
 				names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}
@@ -133,7 +136,10 @@ var cancelRunCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "Loading prompts for missing command argument. You can cancel the process and provide an argument yourself instead."
 				names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}
@@ -203,6 +209,7 @@ func init() {
 	createCmd.Flags().IntVar(&createReq.MaxConcurrentRuns, "max-concurrent-runs", createReq.MaxConcurrentRuns, `An optional maximum allowed number of concurrent runs of the job.`)
 	createCmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `An optional name for the job.`)
 	// TODO: complex arg: notification_settings
+	// TODO: complex arg: run_as
 	// TODO: complex arg: schedule
 	// TODO: map via StringToStringVar: tags
 	// TODO: array: tasks
@@ -278,7 +285,10 @@ var deleteCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "Loading prompts for missing command argument. You can cancel the process and provide an argument yourself instead."
 				names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}
@@ -336,7 +346,10 @@ var deleteRunCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "Loading prompts for missing command argument. You can cancel the process and provide an argument yourself instead."
 				names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}
@@ -396,7 +409,10 @@ var exportRunCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "Loading prompts for missing command argument. You can cancel the process and provide an argument yourself instead."
 				names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}
@@ -454,7 +470,10 @@ var getCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "Loading prompts for missing command argument. You can cancel the process and provide an argument yourself instead."
 				names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}
@@ -519,7 +538,10 @@ var getRunCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "Loading prompts for missing command argument. You can cancel the process and provide an argument yourself instead."
 				names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}
@@ -586,7 +608,10 @@ var getRunOutputCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "Loading prompts for missing command argument. You can cancel the process and provide an argument yourself instead."
 				names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}
@@ -772,7 +797,10 @@ var repairRunCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "Loading prompts for missing command argument. You can cancel the process and provide an argument yourself instead."
 				names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}
@@ -918,7 +946,10 @@ var runNowCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "Loading prompts for missing command argument. You can cancel the process and provide an argument yourself instead."
 				names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}
@@ -1092,7 +1123,10 @@ var updateCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "Loading prompts for missing command argument. You can cancel the process and provide an argument yourself instead."
 				names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}

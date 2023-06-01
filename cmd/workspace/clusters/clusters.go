@@ -169,7 +169,10 @@ var createCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "Loading prompts for missing command argument. You can cancel the process and provide an argument yourself instead."
 				names, err := w.Clusters.ClusterInfoClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}
@@ -249,7 +252,10 @@ var deleteCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "Loading prompts for missing command argument. You can cancel the process and provide an argument yourself instead."
 				names, err := w.Clusters.ClusterInfoClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}
@@ -437,7 +443,10 @@ var eventsCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "Loading prompts for missing command argument. You can cancel the process and provide an argument yourself instead."
 				names, err := w.Clusters.ClusterInfoClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}
@@ -498,7 +507,10 @@ var getCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "Loading prompts for missing command argument. You can cancel the process and provide an argument yourself instead."
 				names, err := w.Clusters.ClusterInfoClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}
@@ -671,7 +683,10 @@ var permanentDeleteCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "Loading prompts for missing command argument. You can cancel the process and provide an argument yourself instead."
 				names, err := w.Clusters.ClusterInfoClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}
@@ -728,7 +743,10 @@ var pinCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "Loading prompts for missing command argument. You can cancel the process and provide an argument yourself instead."
 				names, err := w.Clusters.ClusterInfoClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}
@@ -792,7 +810,10 @@ var resizeCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "Loading prompts for missing command argument. You can cancel the process and provide an argument yourself instead."
 				names, err := w.Clusters.ClusterInfoClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}
@@ -872,7 +893,10 @@ var restartCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "Loading prompts for missing command argument. You can cancel the process and provide an argument yourself instead."
 				names, err := w.Clusters.ClusterInfoClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}
@@ -984,7 +1008,10 @@ var startCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "Loading prompts for missing command argument. You can cancel the process and provide an argument yourself instead."
 				names, err := w.Clusters.ClusterInfoClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}
@@ -1058,7 +1085,10 @@ var unpinCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "Loading prompts for missing command argument. You can cancel the process and provide an argument yourself instead."
 				names, err := w.Clusters.ClusterInfoClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}

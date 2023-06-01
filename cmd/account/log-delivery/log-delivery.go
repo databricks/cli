@@ -183,7 +183,10 @@ var getCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "Loading prompts for missing command argument. You can cancel the process and provide an argument yourself instead."
 				names, err := a.LogDelivery.LogDeliveryConfigurationConfigNameToConfigIdMap(ctx, billing.ListLogDeliveryRequest{})
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}

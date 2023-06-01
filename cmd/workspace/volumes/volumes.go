@@ -134,7 +134,10 @@ var deleteCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "Loading prompts for missing command argument. You can cancel the process and provide an argument yourself instead."
 				names, err := w.Volumes.VolumeInfoNameToVolumeIdMap(ctx, catalog.ListVolumesRequest{})
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}
@@ -253,7 +256,10 @@ var readCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "Loading prompts for missing command argument. You can cancel the process and provide an argument yourself instead."
 				names, err := w.Volumes.VolumeInfoNameToVolumeIdMap(ctx, catalog.ListVolumesRequest{})
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}
@@ -319,7 +325,10 @@ var updateCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "Loading prompts for missing command argument. You can cancel the process and provide an argument yourself instead."
 				names, err := w.Volumes.VolumeInfoNameToVolumeIdMap(ctx, catalog.ListVolumesRequest{})
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}

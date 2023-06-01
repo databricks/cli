@@ -105,7 +105,10 @@ var deleteCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "Loading prompts for missing command argument. You can cancel the process and provide an argument yourself instead."
 				names, err := w.TokenManagement.TokenInfoCommentToTokenIdMap(ctx, settings.ListTokenManagementRequest{})
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}
@@ -160,7 +163,10 @@ var getCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "Loading prompts for missing command argument. You can cancel the process and provide an argument yourself instead."
 				names, err := w.TokenManagement.TokenInfoCommentToTokenIdMap(ctx, settings.ListTokenManagementRequest{})
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}
