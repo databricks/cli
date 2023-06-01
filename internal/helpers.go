@@ -180,7 +180,7 @@ func writeFile(t *testing.T, name string, body string) string {
 	return f.Name()
 }
 
-func TemporaryWorkspaceDir(t *testing.T, w *databricks.WorkspaceClient) string {
+func temporaryWorkspaceDir(t *testing.T, w *databricks.WorkspaceClient) string {
 	ctx := context.Background()
 	me, err := w.CurrentUser.Me(ctx)
 	require.NoError(t, err)

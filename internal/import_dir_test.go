@@ -20,7 +20,7 @@ func TestWorkspaceImportDir(t *testing.T) {
 
 	ctx := context.Background()
 	w := databricks.Must(databricks.NewWorkspaceClient())
-	tmpdir := TemporaryWorkspaceDir(t, w)
+	tmpdir := temporaryWorkspaceDir(t, w)
 
 	// run import_dir command
 	RequireSuccessfulRun(t, "workspace", "import_dir", "./testdata/import_dir/default", tmpdir)
@@ -39,7 +39,7 @@ func TestWorkspaceImportDirOverwriteFlag(t *testing.T) {
 
 	// ctx := context.Background()
 	w := databricks.Must(databricks.NewWorkspaceClient())
-	tmpdir := TemporaryWorkspaceDir(t, w)
+	tmpdir := temporaryWorkspaceDir(t, w)
 
 	// run import_dir command
 	RequireSuccessfulRun(t, "workspace", "import_dir", "./testdata/import_dir/override/a", tmpdir)
@@ -48,7 +48,6 @@ func TestWorkspaceImportDirOverwriteFlag(t *testing.T) {
 	// f, err := filer.NewWorkspaceFilesClient(w, tmpdir)
 	// require.NoError(t, err)
 	// assertFileContains(t, ctx, f, "bar.txt", "from directory A")
-
 
 	// Assert another run fails with path already exists error from the server
 	_, _, err := RequireErrorRun(t, "workspace", "import_dir", "./testdata/import_dir/override/b", tmpdir)

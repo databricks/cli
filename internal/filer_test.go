@@ -148,7 +148,7 @@ func setupWorkspaceFilesTest(t *testing.T) (context.Context, filer.Filer) {
 
 	ctx := context.Background()
 	w := databricks.Must(databricks.NewWorkspaceClient())
-	tmpdir := TemporaryWorkspaceDir(t, w)
+	tmpdir := temporaryWorkspaceDir(t, w)
 	f, err := filer.NewWorkspaceFilesClient(w, tmpdir)
 	require.NoError(t, err)
 

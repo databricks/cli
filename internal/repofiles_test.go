@@ -24,7 +24,7 @@ func TestRepoFilesPutFile(t *testing.T) {
 	ctx := context.Background()
 
 	// initialize client
-	wsfsTmpDir := TemporaryWorkspaceDir(t, w)
+	wsfsTmpDir := temporaryWorkspaceDir(t, w)
 	localTmpDir := t.TempDir()
 	r, err := repofiles.Create(wsfsTmpDir, localTmpDir, w, &repofiles.RepoFileOptions{
 		OverwriteIfExists: true,
@@ -54,7 +54,7 @@ func TestRepoFilesFileOverwritesNotebook(t *testing.T) {
 	ctx := context.Background()
 
 	// initialize client
-	wsfsTmpDir := TemporaryWorkspaceDir(t, w)
+	wsfsTmpDir := temporaryWorkspaceDir(t, w)
 	localTmpDir := t.TempDir()
 	r, err := repofiles.Create(wsfsTmpDir, localTmpDir, w, &repofiles.RepoFileOptions{
 		OverwriteIfExists: true,
@@ -86,7 +86,7 @@ func TestRepoFilesFileOverwritesEmptyDirectoryTree(t *testing.T) {
 	ctx := context.Background()
 
 	// initialize client
-	wsfsTmpDir := TemporaryWorkspaceDir(t, w)
+	wsfsTmpDir := temporaryWorkspaceDir(t, w)
 	localTmpDir := t.TempDir()
 	r, err := repofiles.Create(wsfsTmpDir, localTmpDir, w, &repofiles.RepoFileOptions{
 		OverwriteIfExists: true,
@@ -130,7 +130,7 @@ func TestRepoFilesFileInDirOverwritesExistingNotebook(t *testing.T) {
 	ctx := context.Background()
 
 	// initialize client
-	wsfsTmpDir := TemporaryWorkspaceDir(t, w)
+	wsfsTmpDir := temporaryWorkspaceDir(t, w)
 	localTmpDir := t.TempDir()
 	r, err := repofiles.Create(wsfsTmpDir, localTmpDir, w, &repofiles.RepoFileOptions{
 		OverwriteIfExists: true,
