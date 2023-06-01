@@ -56,6 +56,9 @@ func syncOptionsFromArgs(cmd *cobra.Command, args []string) (*sync.SyncOptions, 
 		// exist and add it to the `.gitignore` file in the root.
 		SnapshotBasePath: filepath.Join(args[0], ".databricks"),
 		WorkspaceClient:  databricks.Must(databricks.NewWorkspaceClient()),
+
+		PersistSnapshot: true,
+		AllowOverwrites: true,
 	}
 	return &opts, nil
 }
