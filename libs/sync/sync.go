@@ -25,9 +25,11 @@ type SyncOptions struct {
 
 	Host string
 
-	// If set, sync will not be able to overwrite any existing paths on the
-	// workspace file system.
-	DisallowOverwrites bool
+	// Allow sync to overwrite existing files in the workspace
+	AllowOverwrites bool
+
+	// Persist the snapshot on the local file systems for future sync runs
+	PersistSnapshot bool
 }
 
 type Sync struct {
@@ -80,9 +82,12 @@ func New(ctx context.Context, opts SyncOptions) (*Sync, error) {
 			return nil, fmt.Errorf("unable to load sync snapshot: %w", err)
 		}
 	}
-	repoFiles := repofiles.Create(opts.RemotePath, opts.LocalPath, opts.WorkspaceClient, &repofiles.RepoFileOptions{
-		OverwriteIfExists: !opts.DisallowOverwrites,
+	repoFiles, err := repofiles.Create(opts.RemotePath, opts.LocalPath, opts.WorkspaceClient, &repofiles.RepoFileOptions{
+		OverwriteIfExists: opts.AllowOverwrites,
 	})
+	if err != nil {
+		return nil, err
+	}
 
 	return &Sync{
 		SyncOptions: &opts,
@@ -163,10 +168,12 @@ func (s *Sync) RunOnce(ctx context.Context) error {
 		return err
 	}
 
-	err = s.snapshot.Save(ctx)
-	if err != nil {
-		log.Errorf(ctx, "cannot store snapshot: %s", err)
-		return err
+	if s.PersistSnapshot {
+		err = s.snapshot.Save(ctx)
+		if err != nil {
+			log.Errorf(ctx, "cannot store snapshot: %s", err)
+			return err
+		}
 	}
 
 	s.notifyComplete(ctx, change)
