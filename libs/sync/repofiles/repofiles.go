@@ -17,23 +17,30 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
+type RepoFileOptions struct {
+	OverwriteIfExists bool
+}
+
 // RepoFiles wraps reading and writing into a remote repo with safeguards to prevent
 // accidental deletion of repos and more robust methods to overwrite workspace files
 type RepoFiles struct {
+	*RepoFileOptions
+
 	repoRoot        string
 	localRoot       string
 	workspaceClient *databricks.WorkspaceClient
 }
 
-func Create(repoRoot, localRoot string, workspaceClient *databricks.WorkspaceClient) *RepoFiles {
+func Create(repoRoot, localRoot string, workspaceClient *databricks.WorkspaceClient, opts *RepoFileOptions) *RepoFiles {
 	return &RepoFiles{
 		repoRoot:        repoRoot,
 		localRoot:       localRoot,
 		workspaceClient: workspaceClient,
+		RepoFileOptions: opts,
 	}
 }
 
-func (r *RepoFiles) remotePath(relativePath string) (string, error) {
+func (r *RepoFiles) RemotePath(relativePath string) (string, error) {
 	fullPath := path.Join(r.repoRoot, relativePath)
 	cleanFullPath := path.Clean(fullPath)
 	if !strings.HasPrefix(cleanFullPath, r.repoRoot) {
@@ -58,12 +65,12 @@ func (r *RepoFiles) writeRemote(ctx context.Context, relativePath string, conten
 	if err != nil {
 		return err
 	}
-	remotePath, err := r.remotePath(relativePath)
+	remotePath, err := r.RemotePath(relativePath)
 	if err != nil {
 		return err
 	}
 	escapedPath := url.PathEscape(strings.TrimLeft(remotePath, "/"))
-	apiPath := fmt.Sprintf("/api/2.0/workspace-files/import-file/%s?overwrite=true", escapedPath)
+	apiPath := fmt.Sprintf("/api/2.0/workspace-files/import-file/%s?overwrite=%t", escapedPath, r.OverwriteIfExists)
 
 	err = apiClient.Do(ctx, http.MethodPost, apiPath, content, nil)
 
@@ -113,7 +120,7 @@ func (r *RepoFiles) writeRemote(ctx context.Context, relativePath string, conten
 }
 
 func (r *RepoFiles) deleteRemote(ctx context.Context, relativePath string) error {
-	remotePath, err := r.remotePath(relativePath)
+	remotePath, err := r.RemotePath(relativePath)
 	if err != nil {
 		return err
 	}

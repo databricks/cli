@@ -24,6 +24,10 @@ type SyncOptions struct {
 	WorkspaceClient *databricks.WorkspaceClient
 
 	Host string
+
+	// If set, sync will not be able to overwrite any existing paths on the
+	// workspace file system.
+	DisallowOverwrites bool
 }
 
 type Sync struct {
@@ -76,8 +80,9 @@ func New(ctx context.Context, opts SyncOptions) (*Sync, error) {
 			return nil, fmt.Errorf("unable to load sync snapshot: %w", err)
 		}
 	}
-
-	repoFiles := repofiles.Create(opts.RemotePath, opts.LocalPath, opts.WorkspaceClient)
+	repoFiles := repofiles.Create(opts.RemotePath, opts.LocalPath, opts.WorkspaceClient, &repofiles.RepoFileOptions{
+		OverwriteIfExists: !opts.DisallowOverwrites,
+	})
 
 	return &Sync{
 		SyncOptions: &opts,
@@ -123,6 +128,14 @@ func (s *Sync) notifyComplete(ctx context.Context, d diff) {
 	}
 	s.notifier.Notify(ctx, newEventComplete(s.seq, d.put, d.delete))
 	s.seq++
+}
+
+func (s *Sync) RemotePath(localPath string) (string, error) {
+	relativePath, ok := s.snapshot.LocalToRemoteNames[localPath]
+	if !ok {
+		return "", fmt.Errorf("could not find remote path for %s", localPath)
+	}
+	return s.repoFiles.RemotePath(relativePath)
 }
 
 func (s *Sync) RunOnce(ctx context.Context) error {
