@@ -159,7 +159,6 @@ func runFilerReadDirTest(t *testing.T, ctx context.Context, f filer.Filer) {
 	assert.Equal(t, "c", entries[0].Name())
 	assert.True(t, entries[0].IsDir())
 
-	// TODO: split into a separate PR
 	_, err = f.ReadDir(ctx, "/hello.txt")
 	assert.ErrorIs(t, err, filer.ErrNotADirectory)
 }
