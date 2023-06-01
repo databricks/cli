@@ -222,6 +222,10 @@ func (w *DbfsClient) ReadDir(ctx context.Context, name string) ([]fs.DirEntry, e
 		return nil, err
 	}
 
+	if len(res.Files) == 1 && res.Files[0].Path == absPath {
+		return nil, NotADirectory{absPath}
+	}
+
 	info := make([]fs.DirEntry, len(res.Files))
 	for i, v := range res.Files {
 		info[i] = dbfsDirEntry{dbfsFileInfo: dbfsFileInfo{fi: v}}
