@@ -14,6 +14,9 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	_ "github.com/databricks/cli/cmd/version"
+	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/stretchr/testify/require"
 
 	_ "github.com/databricks/cli/cmd/workspace"
@@ -175,4 +178,33 @@ func writeFile(t *testing.T, name string, body string) string {
 	require.NoError(t, err)
 	f.Close()
 	return f.Name()
+}
+
+func TemporaryWorkspaceDir(t *testing.T, w *databricks.WorkspaceClient) string {
+	ctx := context.Background()
+	me, err := w.CurrentUser.Me(ctx)
+	require.NoError(t, err)
+
+	path := fmt.Sprintf("/Users/%s/%s", me.UserName, RandomName("integration-test-wsfs-"))
+
+	// Ensure directory exists, but doesn't exist YET!
+	// Otherwise we could inadvertently remove a directory that already exists on cleanup.
+	t.Logf("mkdir %s", path)
+	err = w.Workspace.MkdirsByPath(ctx, path)
+	require.NoError(t, err)
+
+	// Remove test directory on test completion.
+	t.Cleanup(func() {
+		t.Logf("rm -rf %s", path)
+		err := w.Workspace.Delete(ctx, workspace.Delete{
+			Path:      path,
+			Recursive: true,
+		})
+		if err == nil || apierr.IsMissing(err) {
+			return
+		}
+		t.Logf("unable to remove temporary workspace directory %s: %#v", path, err)
+	})
+
+	return path
 }
