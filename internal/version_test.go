@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"encoding/json"
 	"fmt"
 	"testing"
 
@@ -26,4 +27,16 @@ func TestVersionCommand(t *testing.T) {
 	stdout, stderr := RequireSuccessfulRun(t, "version")
 	assert.Equal(t, expectedVersion, stdout.String())
 	assert.Equal(t, "", stderr.String())
+}
+
+func TestVersionCommandWithJSONOutput(t *testing.T) {
+	stdout, stderr := RequireSuccessfulRun(t, "version", "--output", "json")
+	assert.NotEmpty(t, stdout.String())
+	assert.Equal(t, "", stderr.String())
+
+	// Deserialize stdout and confirm we see the right fields.
+	var output map[string]any
+	err := json.Unmarshal(stdout.Bytes(), &output)
+	assert.NoError(t, err)
+	assert.Equal(t, build.GetInfo().Version, output["Version"])
 }
