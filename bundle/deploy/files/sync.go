@@ -21,6 +21,9 @@ func getSync(ctx context.Context, b *bundle.Bundle) (*sync.Sync, error) {
 
 		SnapshotBasePath: cacheDir,
 		WorkspaceClient:  b.WorkspaceClient(),
+
+		PersistSnapshot: true,
+		AllowOverwrites: true,
 	}
 	return sync.New(ctx, opts)
 }

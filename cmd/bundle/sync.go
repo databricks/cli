@@ -25,6 +25,9 @@ func syncOptionsFromBundle(cmd *cobra.Command, b *bundle.Bundle) (*sync.SyncOpti
 
 		SnapshotBasePath: cacheDir,
 		WorkspaceClient:  b.WorkspaceClient(),
+
+		PersistSnapshot: true,
+		AllowOverwrites: true,
 	}
 	return &opts, nil
 }

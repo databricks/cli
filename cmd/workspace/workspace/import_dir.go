@@ -31,11 +31,13 @@ var importDirCmd = &cobra.Command{
 		// Initialize syncer to do a full sync with the correct from source to target.
 		// This will upload the local files
 		opts := sync.SyncOptions{
-			LocalPath:          sourcePath,
-			RemotePath:         targetPath,
-			Full:               true,
-			WorkspaceClient:    databricks.Must(databricks.NewWorkspaceClient()),
-			DisallowOverwrites: !importDirOverwrite,
+			LocalPath:       sourcePath,
+			RemotePath:      targetPath,
+			Full:            true,
+			WorkspaceClient: databricks.Must(databricks.NewWorkspaceClient()),
+
+			AllowOverwrites: importDirOverwrite,
+			PersistSnapshot: false,
 		}
 		s, err := sync.New(ctx, opts)
 		if err != nil {
