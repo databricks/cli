@@ -2,6 +2,8 @@ package sync
 
 import (
 	"context"
+	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 
@@ -25,7 +27,7 @@ func (s *Sync) applyDelete(ctx context.Context, group *errgroup.Group, remoteNam
 	group.Go(func() error {
 		s.notifyProgress(ctx, EventActionDelete, remoteName, 0.0)
 		err := s.filer.Delete(ctx, remoteName)
-		if err != nil {
+		if err != nil && !errors.Is(err, fs.ErrNotExist) {
 			return err
 		}
 		s.notifyProgress(ctx, EventActionDelete, remoteName, 1.0)
