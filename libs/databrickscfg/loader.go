@@ -2,6 +2,7 @@ package databrickscfg
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -12,6 +13,43 @@ import (
 )
 
 var ResolveProfileFromHost = profileFromHostLoader{}
+
+var errNoMatchingProfiles = errors.New("no matching config profiles found")
+
+type errMultipleProfiles []string
+
+func (e errMultipleProfiles) Error() string {
+	return fmt.Sprintf("multiple profiles matched: %s", strings.Join(e, ", "))
+}
+
+func findMatchingProfile(ctx context.Context, configFile *config.File, matcher func(*ini.Section) bool) (*ini.Section, error) {
+	// Look for sections in the configuration file that match the configured host.
+	var matching []*ini.Section
+	for _, section := range configFile.Sections() {
+		if !matcher(section) {
+			continue
+		}
+		matching = append(matching, section)
+	}
+
+	// If there are no matching sections, we don't do anything.
+	if len(matching) == 0 {
+		return nil, errNoMatchingProfiles
+	}
+
+	// If there are multiple matching sections, let the user know it is impossible
+	// to unambiguously select a profile to use.
+	if len(matching) > 1 {
+		var names errMultipleProfiles
+		for _, section := range matching {
+			names = append(names, section.Name())
+		}
+
+		return nil, names
+	}
+
+	return matching[0], nil
+}
 
 type profileFromHostLoader struct{}
 
@@ -27,6 +65,7 @@ func (l profileFromHostLoader) Configure(cfg *config.Config) error {
 		return nil
 	}
 
+	ctx := context.Background()
 	configFile, err := config.LoadFile(cfg.ConfigFile)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -34,56 +73,37 @@ func (l profileFromHostLoader) Configure(cfg *config.Config) error {
 		}
 		return fmt.Errorf("cannot parse config file: %w", err)
 	}
-
 	// Normalized version of the configured host.
 	host := normalizeHost(cfg.Host)
-
-	// Look for sections in the configuration file that match the configured host.
-	var matching []*ini.Section
-	for _, section := range configFile.Sections() {
-		key, err := section.GetKey("host")
+	match, err := findMatchingProfile(ctx, configFile, func(s *ini.Section) bool {
+		key, err := s.GetKey("host")
 		if err != nil {
-			log.Tracef(context.Background(), "section %s: %s", section.Name(), err)
-			continue
+			log.Tracef(ctx, "section %s: %s", s.Name(), err)
+			return false
 		}
 
-		// Ignore this section if the normalized host doesn't match.
-		if normalizeHost(key.Value()) != host {
-			continue
-		}
-
-		matching = append(matching, section)
-	}
-
-	// If there are no matching sections, we don't do anything.
-	if len(matching) == 0 {
+		// Check if this section matches the normalized host
+		return normalizeHost(key.Value()) == host
+	})
+	if err == errNoMatchingProfiles {
 		return nil
 	}
-
-	// If there are multiple matching sections, let the user know it is impossible
-	// to unambiguously select a profile to use.
-	if len(matching) > 1 {
-		var names []string
-		for _, section := range matching {
-			names = append(names, section.Name())
-		}
-
+	if err, ok := err.(errMultipleProfiles); ok {
 		return fmt.Errorf(
-			"multiple profiles for host %s (%s): please set DATABRICKS_CONFIG_PROFILE to specify one",
-			host,
-			strings.Join(names, ", "),
-		)
+			"%s: %w: please set DATABRICKS_CONFIG_PROFILE to specify one",
+			host, err)
+	}
+	if err != nil {
+		return err
 	}
 
-	match := matching[0]
-	log.Debugf(context.Background(), "Loading profile %s because of host match", match.Name())
+	log.Debugf(ctx, "Loading profile %s because of host match", match.Name())
 	err = config.ConfigAttributes.ResolveFromStringMap(cfg, match.KeysHash())
 	if err != nil {
 		return fmt.Errorf("%s %s profile: %w", configFile.Path(), match.Name(), err)
 	}
 
 	return nil
-
 }
 
 func (l profileFromHostLoader) isAnyAuthConfigured(cfg *config.Config) bool {
