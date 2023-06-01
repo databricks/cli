@@ -1,7 +1,6 @@
 package sync
 
 import (
-	"bytes"
 	"context"
 	"os"
 	"path/filepath"
@@ -47,13 +46,15 @@ func (s *Sync) applyPut(ctx context.Context, group *errgroup.Group, localName st
 	group.Go(func() error {
 		s.notifyProgress(ctx, EventActionPut, localName, 0.0)
 
-		contents, err := os.ReadFile(filepath.Join(s.LocalPath, localName))
+		localFile, err := os.Open(filepath.Join(s.LocalPath, localName))
 		if err != nil {
 			return err
 		}
 
+		defer localFile.Close()
+
 		opts := []filer.WriteMode{filer.CreateParentDirectories, filer.OverwriteIfExists}
-		err = s.filer.Write(ctx, localName, bytes.NewReader(contents), opts...)
+		err = s.filer.Write(ctx, localName, localFile, opts...)
 		if err != nil {
 			return err
 		}
