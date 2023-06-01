@@ -283,14 +283,8 @@ func (s *Snapshot) diff(ctx context.Context, all []fileset.File) (change diff, e
 
 	// Gather all directories that are no longer present.
 	for dir := range previousDirectories {
-		// Look for dir and all its parents.
-		for dir != "." {
-			if _, ok := currentDirectories[dir]; ok {
-				break
-			}
-
+		if _, ok := currentDirectories[dir]; !ok {
 			change.delete = append(change.delete, dir)
-			dir = path.Dir(dir)
 		}
 	}
 
