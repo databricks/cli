@@ -222,7 +222,7 @@ func (w *DbfsClient) ReadDir(ctx context.Context, name string) ([]fs.DirEntry, e
 		return nil, err
 	}
 
-	if len(res.Files) == 1 && !res.Files[0].IsDir && res.Files[0].Path == absPath {
+	if len(res.Files) == 1 && res.Files[0].Path == absPath {
 		return nil, NotADirectory{absPath}
 	}
 

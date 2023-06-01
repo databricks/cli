@@ -159,8 +159,16 @@ func runFilerReadDirTest(t *testing.T, ctx context.Context, f filer.Filer) {
 	assert.Equal(t, "c", entries[0].Name())
 	assert.True(t, entries[0].IsDir())
 
+	// Expect an error trying to call ReadDir on a file
 	_, err = f.ReadDir(ctx, "/hello.txt")
 	assert.ErrorIs(t, err, filer.ErrNotADirectory)
+
+	// Expect 0 entries for an empty directory
+	err = f.Mkdir(ctx, "empty-dir")
+	require.NoError(t, err)
+	entries, err = f.ReadDir(ctx, "empty-dir")
+	assert.NoError(t, err)
+	assert.Len(t, entries, 0)
 }
 
 func setupWorkspaceFilesTest(t *testing.T) (context.Context, filer.Filer) {
