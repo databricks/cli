@@ -68,8 +68,29 @@ func runFilerReadWriteTest(t *testing.T, ctx context.Context, f filer.Filer) {
 	assert.NoError(t, err)
 	filerTest{t, f}.assertContents(ctx, "/foo/bar", `hello universe`)
 
+	// Stat on a directory should succeed.
+	// Note: size and modification time behave differently between WSFS and DBFS.
+	info, err := f.Stat(ctx, "/foo")
+	require.NoError(t, err)
+	assert.Equal(t, "foo", info.Name())
+	assert.True(t, info.Mode().IsDir())
+	assert.Equal(t, true, info.IsDir())
+
+	// Stat on a file should succeed.
+	// Note: size and modification time behave differently between WSFS and DBFS.
+	info, err = f.Stat(ctx, "/foo/bar")
+	require.NoError(t, err)
+	assert.Equal(t, "bar", info.Name())
+	assert.True(t, info.Mode().IsRegular())
+	assert.Equal(t, false, info.IsDir())
+
 	// Delete should fail if the file doesn't exist.
 	err = f.Delete(ctx, "/doesnt_exist")
+	assert.True(t, errors.As(err, &filer.FileDoesNotExistError{}))
+	assert.True(t, errors.Is(err, fs.ErrNotExist))
+
+	// Stat should fail if the file doesn't exist.
+	_, err = f.Stat(ctx, "/doesnt_exist")
 	assert.True(t, errors.As(err, &filer.FileDoesNotExistError{}))
 	assert.True(t, errors.Is(err, fs.ErrNotExist))
 

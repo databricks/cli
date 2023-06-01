@@ -256,3 +256,26 @@ func (w *WorkspaceFilesClient) Mkdir(ctx context.Context, name string) error {
 		Path: dirPath,
 	})
 }
+
+func (w *WorkspaceFilesClient) Stat(ctx context.Context, name string) (fs.FileInfo, error) {
+	absPath, err := w.root.Join(name)
+	if err != nil {
+		return nil, err
+	}
+
+	info, err := w.workspaceClient.Workspace.GetStatusByPath(ctx, absPath)
+	if err != nil {
+		// If we got an API error we deal with it below.
+		var aerr *apierr.APIError
+		if !errors.As(err, &aerr) {
+			return nil, err
+		}
+
+		// This API returns a 404 if the specified path does not exist.
+		if aerr.StatusCode == http.StatusNotFound {
+			return nil, FileDoesNotExistError{absPath}
+		}
+	}
+
+	return wsfsFileInfo{*info}, nil
+}
