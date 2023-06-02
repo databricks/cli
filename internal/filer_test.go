@@ -162,7 +162,7 @@ func runFilerReadDirTest(t *testing.T, ctx context.Context, f filer.Filer) {
 
 	// Expect an error trying to call ReadDir on a file
 	_, err = f.ReadDir(ctx, "/hello.txt")
-	assert.ErrorIs(t, err, filer.ErrNotADirectory)
+	assert.ErrorIs(t, err, fs.ErrInvalid)
 
 	// Expect 0 entries for an empty directory
 	err = f.Mkdir(ctx, "empty-dir")
@@ -170,6 +170,15 @@ func runFilerReadDirTest(t *testing.T, ctx context.Context, f filer.Filer) {
 	entries, err = f.ReadDir(ctx, "empty-dir")
 	assert.NoError(t, err)
 	assert.Len(t, entries, 0)
+
+	// Expect one entry for a directory with a file in it
+	err = f.Write(ctx, "dir-with-one-file/my-file.txt", strings.NewReader("abc"), filer.CreateParentDirectories)
+	require.NoError(t, err)
+	entries, err = f.ReadDir(ctx, "dir-with-one-file")
+	assert.NoError(t, err)
+	assert.Len(t, entries, 1)
+	assert.Equal(t, entries[0].Name(), "my-file.txt")
+	assert.False(t, entries[0].IsDir())
 }
 
 func temporaryWorkspaceDir(t *testing.T, w *databricks.WorkspaceClient) string {
