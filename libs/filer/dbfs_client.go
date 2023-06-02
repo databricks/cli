@@ -16,6 +16,8 @@ import (
 	"golang.org/x/exp/slices"
 )
 
+const DbfsScheme = "dbfs"
+
 // Type that implements fs.DirEntry for DBFS.
 type dbfsDirEntry struct {
 	dbfsFileInfo

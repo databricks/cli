@@ -24,17 +24,17 @@ type cmdIO struct {
 	// e.g. if stdout is a terminal
 	interactive  bool
 	outputFormat flags.Output
-	template     string
+	templates    map[string]string
 	in           io.Reader
 	out          io.Writer
 	err          io.Writer
 }
 
-func NewIO(outputFormat flags.Output, in io.Reader, out io.Writer, err io.Writer, template string) *cmdIO {
+func NewIO(outputFormat flags.Output, in io.Reader, out io.Writer, err io.Writer, templates map[string]string) *cmdIO {
 	return &cmdIO{
 		interactive:  !color.NoColor,
 		outputFormat: outputFormat,
-		template:     template,
+		templates:    templates,
 		in:           in,
 		out:          out,
 		err:          err,
@@ -66,14 +66,14 @@ func (c *cmdIO) IsTTY() bool {
 	return isatty.IsTerminal(fd) || isatty.IsCygwinTerminal(fd)
 }
 
-func (c *cmdIO) Render(v any) error {
+func (c *cmdIO) Render(v any, templateName string) error {
 	// TODO: add terminal width & white/dark theme detection
 	switch c.outputFormat {
 	case flags.OutputJSON:
 		return renderJson(c.out, v)
 	case flags.OutputText:
-		if c.template != "" {
-			return renderTemplate(c.out, c.template, v)
+		if c.templates[templateName] != "" {
+			return renderTemplate(c.out, c.templates[templateName], v)
 		}
 		return renderJson(c.out, v)
 	default:
@@ -83,7 +83,12 @@ func (c *cmdIO) Render(v any) error {
 
 func Render(ctx context.Context, v any) error {
 	c := fromContext(ctx)
-	return c.Render(v)
+	return c.Render(v, "template")
+}
+
+func RenderWithTemplate(ctx context.Context, v any, templateName string) error {
+	c := fromContext(ctx)
+	return c.Render(v, templateName)
 }
 
 type tuple struct{ Name, Id string }

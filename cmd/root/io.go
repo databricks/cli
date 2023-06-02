@@ -2,6 +2,7 @@ package root
 
 import (
 	"os"
+	"strings"
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
@@ -27,13 +28,14 @@ func OutputType() flags.Output {
 }
 
 func initializeIO(cmd *cobra.Command) error {
-	var template string
-	if cmd.Annotations != nil {
-		// rely on zeroval being an empty string
-		template = cmd.Annotations["template"]
+	templates := make(map[string]string, 0)
+	for k, v := range cmd.Annotations {
+		if strings.Contains(k, "template") {
+			templates[k] = v
+		}
 	}
 
-	cmdIO := cmdio.NewIO(outputType, cmd.InOrStdin(), cmd.OutOrStdout(), cmd.ErrOrStderr(), template)
+	cmdIO := cmdio.NewIO(outputType, cmd.InOrStdin(), cmd.OutOrStdout(), cmd.ErrOrStderr(), templates)
 	ctx := cmdio.InContext(cmd.Context(), cmdIO)
 	cmd.SetContext(ctx)
 
