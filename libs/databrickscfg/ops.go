@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/config"
@@ -15,6 +16,15 @@ const fileMode = 0o600
 func loadOrCreateConfigFile(filename string) (*config.File, error) {
 	if filename == "" {
 		filename = "~/.databrickscfg"
+	}
+	// Expand ~ to home directory, as we need a deterministic name for os.OpenFile
+	// to work in the cases when ~/.databrickscfg does not exist yet
+	if strings.HasPrefix(filename, "~") {
+		homedir, err := os.UserHomeDir()
+		if err != nil {
+			return nil, fmt.Errorf("cannot find homedir: %w", err)
+		}
+		filename = fmt.Sprintf("%s%s", homedir, filename[1:])
 	}
 	configFile, err := config.LoadFile(filename)
 	if err != nil && os.IsNotExist(err) {
