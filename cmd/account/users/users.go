@@ -119,7 +119,10 @@ var deleteCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No ID argument specified. Loading names for Account Users drop-down."
 				names, err := a.Users.UserUserNameToIdMap(ctx, iam.ListAccountUsersRequest{})
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}
@@ -174,7 +177,10 @@ var getCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No ID argument specified. Loading names for Account Users drop-down."
 				names, err := a.Users.UserUserNameToIdMap(ctx, iam.ListAccountUsersRequest{})
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}
@@ -287,7 +293,10 @@ var patchCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No ID argument specified. Loading names for Account Users drop-down."
 				names, err := a.Users.UserUserNameToIdMap(ctx, iam.ListAccountUsersRequest{})
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}
@@ -353,7 +362,10 @@ var updateCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No ID argument specified. Loading names for Account Users drop-down."
 				names, err := a.Users.UserUserNameToIdMap(ctx, iam.ListAccountUsersRequest{})
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}

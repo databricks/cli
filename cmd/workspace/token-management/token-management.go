@@ -105,7 +105,10 @@ var deleteCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No TOKEN_ID argument specified. Loading names for Token Management drop-down."
 				names, err := w.TokenManagement.TokenInfoCommentToTokenIdMap(ctx, settings.ListTokenManagementRequest{})
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}
@@ -160,7 +163,10 @@ var getCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No TOKEN_ID argument specified. Loading names for Token Management drop-down."
 				names, err := w.TokenManagement.TokenInfoCommentToTokenIdMap(ctx, settings.ListTokenManagementRequest{})
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}

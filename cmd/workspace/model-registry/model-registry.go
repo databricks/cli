@@ -605,8 +605,8 @@ func init() {
 
 var deleteTransitionRequestCmd = &cobra.Command{
 	Use:   "delete-transition-request NAME VERSION STAGE CREATOR",
-	Short: `Delete a ransition request.`,
-	Long: `Delete a ransition request.
+	Short: `Delete a transition request.`,
+	Long: `Delete a transition request.
   
   Cancels a model version stage transition request.`,
 

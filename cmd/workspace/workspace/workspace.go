@@ -62,7 +62,10 @@ var deleteCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No PATH argument specified. Loading names for Workspace drop-down."
 				names, err := w.Workspace.ObjectInfoPathToObjectIdMap(ctx, workspace.ListWorkspaceRequest{})
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}
@@ -127,7 +130,10 @@ var exportCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No PATH argument specified. Loading names for Workspace drop-down."
 				names, err := w.Workspace.ObjectInfoPathToObjectIdMap(ctx, workspace.ListWorkspaceRequest{})
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}
@@ -183,7 +189,10 @@ var getStatusCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No PATH argument specified. Loading names for Workspace drop-down."
 				names, err := w.Workspace.ObjectInfoPathToObjectIdMap(ctx, workspace.ListWorkspaceRequest{})
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}
@@ -246,7 +255,10 @@ var importCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No PATH argument specified. Loading names for Workspace drop-down."
 				names, err := w.Workspace.ObjectInfoPathToObjectIdMap(ctx, workspace.ListWorkspaceRequest{})
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}
@@ -358,7 +370,10 @@ var mkdirsCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No PATH argument specified. Loading names for Workspace drop-down."
 				names, err := w.Workspace.ObjectInfoPathToObjectIdMap(ctx, workspace.ListWorkspaceRequest{})
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}

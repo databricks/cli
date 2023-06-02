@@ -196,7 +196,10 @@ var deleteCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No ID argument specified. Loading names for Metastores drop-down."
 				names, err := w.Metastores.MetastoreInfoNameToMetastoreIdMap(ctx)
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}
@@ -252,7 +255,10 @@ var getCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No ID argument specified. Loading names for Metastores drop-down."
 				names, err := w.Metastores.MetastoreInfoNameToMetastoreIdMap(ctx)
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}
@@ -477,7 +483,10 @@ var updateCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No ID argument specified. Loading names for Metastores drop-down."
 				names, err := w.Metastores.MetastoreInfoNameToMetastoreIdMap(ctx)
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}
@@ -538,7 +547,10 @@ var updateAssignmentCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No WORKSPACE_ID argument specified. Loading names for Metastores drop-down."
 				names, err := w.Metastores.MetastoreInfoNameToMetastoreIdMap(ctx)
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}
