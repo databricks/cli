@@ -289,16 +289,16 @@ func TestAccSyncNestedFolderSync(t *testing.T) {
 	defer f.Close(t)
 	assertSync.waitForCompletionMarker()
 	assertSync.remoteDirContent(ctx, "", append(repoFiles, ".gitignore", "dir1"))
-	assertSync.remoteDirContent(ctx, "dir1", append(repoFiles, "dir2"))
-	assertSync.remoteDirContent(ctx, "dir1/dir2", append(repoFiles, "dir3"))
-	assertSync.remoteDirContent(ctx, "dir1/dir2/dir3", append(repoFiles, "foo.txt"))
+	assertSync.remoteDirContent(ctx, "dir1", []string{"dir2"})
+	assertSync.remoteDirContent(ctx, "dir1/dir2", []string{"dir3"})
+	assertSync.remoteDirContent(ctx, "dir1/dir2/dir3", []string{"foo.txt"})
 	assertSync.snapshotContains(append(repoFiles, ".gitignore", filepath.FromSlash("dir1/dir2/dir3/foo.txt")))
 
 	// delete
 	f.Remove(t)
 	assertSync.waitForCompletionMarker()
 	// directories are not cleaned up right now. This is not ideal
-	assertSync.remoteDirContent(ctx, "dir1/dir2/dir3", append(repoFiles))
+	assertSync.remoteDirContent(ctx, "dir1/dir2/dir3", []string{})
 	assertSync.snapshotContains(append(repoFiles, ".gitignore"))
 }
 
@@ -318,16 +318,16 @@ func TestAccSyncNestedSpacePlusAndHashAreEscapedSync(t *testing.T) {
 	defer f.Close(t)
 	assertSync.waitForCompletionMarker()
 	assertSync.remoteDirContent(ctx, "", append(repoFiles, ".gitignore", "dir1"))
-	assertSync.remoteDirContent(ctx, "dir1", append(repoFiles, "a b+c"))
-	assertSync.remoteDirContent(ctx, "dir1/a b+c", append(repoFiles, "c+d e"))
-	assertSync.remoteDirContent(ctx, "dir1/a b+c/c+d e", append(repoFiles, "e+f g#i.txt"))
+	assertSync.remoteDirContent(ctx, "dir1", []string{"a b+c"})
+	assertSync.remoteDirContent(ctx, "dir1/a b+c", []string{"c+d e"})
+	assertSync.remoteDirContent(ctx, "dir1/a b+c/c+d e", []string{"e+f g#i.txt"})
 	assertSync.snapshotContains(append(repoFiles, ".gitignore", filepath.FromSlash("dir1/a b+c/c+d e/e+f g#i.txt")))
 
 	// delete
 	f.Remove(t)
 	assertSync.waitForCompletionMarker()
 	// directories are not cleaned up right now. This is not ideal
-	assertSync.remoteDirContent(ctx, "dir1/a b+c/c+d e", append(repoFiles))
+	assertSync.remoteDirContent(ctx, "dir1/a b+c/c+d e", []string{})
 	assertSync.snapshotContains(append(repoFiles, ".gitignore"))
 }
 
@@ -352,14 +352,14 @@ func TestAccSyncIncrementalFileOverwritesFolder(t *testing.T) {
 	defer f.Close(t)
 	assertSync.waitForCompletionMarker()
 	assertSync.remoteDirContent(ctx, "", append(repoFiles, ".gitignore", "foo"))
-	assertSync.remoteDirContent(ctx, "foo", append(repoFiles, "bar.txt"))
+	assertSync.remoteDirContent(ctx, "foo", []string{"bar.txt"})
 	assertSync.snapshotContains(append(repoFiles, ".gitignore", filepath.FromSlash("foo/bar.txt")))
 
 	// delete foo/bar.txt
 	f.Remove(t)
 	os.Remove(filepath.Join(assertSync.localRoot, "foo"))
 	assertSync.waitForCompletionMarker()
-	assertSync.remoteDirContent(ctx, "foo", append(repoFiles))
+	assertSync.remoteDirContent(ctx, "foo", []string{})
 	assertSync.objectType(ctx, "foo", "DIRECTORY")
 	assertSync.snapshotContains(append(repoFiles, ".gitignore"))
 
