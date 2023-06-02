@@ -7,18 +7,18 @@ import (
 	"io/fs"
 )
 
-// FS implements the fs.FS interface for a filer.
-type FS struct {
+// filerFS implements the fs.filerFS interface for a filer.
+type filerFS struct {
 	ctx   context.Context
 	filer Filer
 }
 
 // NewFS returns an fs.FS backed by a filer.
 func NewFS(ctx context.Context, filer Filer) fs.FS {
-	return &FS{ctx: ctx, filer: filer}
+	return &filerFS{ctx: ctx, filer: filer}
 }
 
-func (fs *FS) Open(name string) (fs.File, error) {
+func (fs *filerFS) Open(name string) (fs.File, error) {
 	stat, err := fs.filer.Stat(fs.ctx, name)
 	if err != nil {
 		return nil, err
@@ -31,11 +31,11 @@ func (fs *FS) Open(name string) (fs.File, error) {
 	return &fsFile{fs: fs, name: name, stat: stat}, nil
 }
 
-func (fs *FS) ReadDir(name string) ([]fs.DirEntry, error) {
+func (fs *filerFS) ReadDir(name string) ([]fs.DirEntry, error) {
 	return fs.filer.ReadDir(fs.ctx, name)
 }
 
-func (fs *FS) ReadFile(name string) ([]byte, error) {
+func (fs *filerFS) ReadFile(name string) ([]byte, error) {
 	reader, err := fs.filer.Read(fs.ctx, name)
 	if err != nil {
 		return nil, err
@@ -50,13 +50,13 @@ func (fs *FS) ReadFile(name string) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func (fs *FS) Stat(name string) (fs.FileInfo, error) {
+func (fs *filerFS) Stat(name string) (fs.FileInfo, error) {
 	return fs.filer.Stat(fs.ctx, name)
 }
 
 // Type that implements fs.File for a filer-backed fs.FS.
 type fsFile struct {
-	fs   *FS
+	fs   *filerFS
 	name string
 	stat fs.FileInfo
 
@@ -89,7 +89,7 @@ func (f *fsFile) Close() error {
 
 // Type that implements fs.ReadDirFile for a filer-backed fs.FS.
 type fsDir struct {
-	fs   *FS
+	fs   *filerFS
 	name string
 	stat fs.FileInfo
 

@@ -121,19 +121,19 @@ func (f *fakeFiler) Stat(ctx context.Context, path string) (fs.FileInfo, error) 
 }
 
 func TestFsImplementsFS(t *testing.T) {
-	var _ fs.FS = &FS{}
+	var _ fs.FS = &filerFS{}
 }
 
 func TestFsImplementsReadDirFS(t *testing.T) {
-	var _ fs.ReadDirFS = &FS{}
+	var _ fs.ReadDirFS = &filerFS{}
 }
 
 func TestFsImplementsReadFileFS(t *testing.T) {
-	var _ fs.ReadDirFS = &FS{}
+	var _ fs.ReadDirFS = &filerFS{}
 }
 
 func TestFsImplementsStatFS(t *testing.T) {
-	var _ fs.StatFS = &FS{}
+	var _ fs.StatFS = &filerFS{}
 }
 
 func TestFsFileImplementsFsFile(t *testing.T) {
