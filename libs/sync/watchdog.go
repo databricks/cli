@@ -46,8 +46,6 @@ func (s *Sync) applyPut(ctx context.Context, group *errgroup.Group, localName st
 	}
 
 	group.Go(func() error {
-		s.notifyProgress(ctx, EventActionPut, localName, 0.0)
-
 		localFile, err := os.Open(filepath.Join(s.LocalPath, localName))
 		if err != nil {
 			return err
@@ -55,12 +53,12 @@ func (s *Sync) applyPut(ctx context.Context, group *errgroup.Group, localName st
 
 		defer localFile.Close()
 
+		s.notifyProgress(ctx, EventActionPut, localName, 0.0)
 		opts := []filer.WriteMode{filer.CreateParentDirectories, filer.OverwriteIfExists}
 		err = s.filer.Write(ctx, localName, localFile, opts...)
 		if err != nil {
 			return err
 		}
-
 		s.notifyProgress(ctx, EventActionPut, localName, 1.0)
 		return nil
 	})
