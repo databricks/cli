@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -63,10 +64,12 @@ type cobraTestRunner struct {
 	errch <-chan error
 }
 
-func consumeLines(ctx context.Context, r io.Reader) <-chan string {
+func consumeLines(ctx context.Context, wg *sync.WaitGroup, r io.Reader) <-chan string {
 	ch := make(chan string, 1000)
+	wg.Add(1)
 	go func() {
 		defer close(ch)
+		defer wg.Done()
 		scanner := bufio.NewScanner(r)
 		for scanner.Scan() {
 			select {
@@ -97,8 +100,9 @@ func (t *cobraTestRunner) RunBackground() {
 	stderrR = io.TeeReader(stderrR, &t.stderr)
 
 	// Consume stdout/stderr line-by-line.
-	t.stdoutLines = consumeLines(ctx, stdoutR)
-	t.stderrLines = consumeLines(ctx, stderrR)
+	var wg sync.WaitGroup
+	t.stdoutLines = consumeLines(ctx, &wg, stdoutR)
+	t.stderrLines = consumeLines(ctx, &wg, stderrR)
 
 	// Run command in background.
 	go func() {
@@ -111,11 +115,9 @@ func (t *cobraTestRunner) RunBackground() {
 		stdoutW.Close()
 		stderrW.Close()
 
-		// Read remaining data from pipes to ensure it ends up in the buffers.
-		// We rely on [consumeLines] to read everything but upon cancellation
-		// it terminates and we might have a few extra bytes in the pipe.
-		io.ReadAll(stdoutR)
-		io.ReadAll(stderrR)
+		// Wait for the [consumeLines] routines to finish now that
+		// the pipes they're reading from have closed.
+		wg.Wait()
 
 		if t.stdout.Len() > 0 {
 			// Make a copy of the buffer such that it remains "unread".
