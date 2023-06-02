@@ -112,7 +112,10 @@ var deleteCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No REPO_ID argument specified. Loading names for Repos drop-down."
 				names, err := w.Repos.RepoInfoPathToIdMap(ctx, workspace.ListReposRequest{})
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}
@@ -170,7 +173,10 @@ var getCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No REPO_ID argument specified. Loading names for Repos drop-down."
 				names, err := w.Repos.RepoInfoPathToIdMap(ctx, workspace.ListReposRequest{})
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}
@@ -284,7 +290,10 @@ var updateCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No REPO_ID argument specified. Loading names for Repos drop-down."
 				names, err := w.Repos.RepoInfoPathToIdMap(ctx, workspace.ListReposRequest{})
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}

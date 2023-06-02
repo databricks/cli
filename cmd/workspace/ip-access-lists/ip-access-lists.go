@@ -133,7 +133,10 @@ var deleteCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No IP_ACCESS_LIST_ID argument specified. Loading names for Ip Access Lists drop-down."
 				names, err := w.IpAccessLists.IpAccessListInfoLabelToListIdMap(ctx)
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}
@@ -188,7 +191,10 @@ var getCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No IP_ACCESS_LIST_ID argument specified. Loading names for Ip Access Lists drop-down."
 				names, err := w.IpAccessLists.IpAccessListInfoLabelToListIdMap(ctx)
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}

@@ -96,7 +96,10 @@ var {{.CamelName}}Cmd = &cobra.Command{
 			} else {
 			{{- if $hasIdPrompt}}
 				if len(args) == 0 {
+					promptSpinner := cmdio.Spinner(ctx)
+					promptSpinner <- "No{{range .Request.RequiredFields}} {{.ConstantName}}{{end}} argument specified. Loading names for {{.Service.TitleName}} drop-down."
 					names, err := {{if .Service.IsAccounts}}a{{else}}w{{end}}.{{(.Service.TrimPrefix "account").PascalName}}.{{.Service.List.NamedIdMap.PascalName}}(ctx{{if .Service.List.Request}}, {{.Service.Package.Name}}.{{.Service.List.Request.PascalName}}{}{{end}})
+					close(promptSpinner)
 					if err != nil {
 						return err
 					}

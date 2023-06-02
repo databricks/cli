@@ -78,7 +78,10 @@ var createCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No NAME argument specified. Loading names for Cluster Policies drop-down."
 				names, err := w.ClusterPolicies.PolicyNameToPolicyIdMap(ctx, compute.ListClusterPoliciesRequest{})
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}
@@ -134,7 +137,10 @@ var deleteCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No POLICY_ID argument specified. Loading names for Cluster Policies drop-down."
 				names, err := w.ClusterPolicies.PolicyNameToPolicyIdMap(ctx, compute.ListClusterPoliciesRequest{})
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}
@@ -245,7 +251,10 @@ var getCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No POLICY_ID argument specified. Loading names for Cluster Policies drop-down."
 				names, err := w.ClusterPolicies.PolicyNameToPolicyIdMap(ctx, compute.ListClusterPoliciesRequest{})
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}

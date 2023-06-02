@@ -65,7 +65,10 @@ var createCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No VPC_ENDPOINT_NAME argument specified. Loading names for Vpc Endpoints drop-down."
 				names, err := a.VpcEndpoints.VpcEndpointVpcEndpointNameToVpcEndpointIdMap(ctx)
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}
@@ -128,7 +131,10 @@ var deleteCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No VPC_ENDPOINT_ID argument specified. Loading names for Vpc Endpoints drop-down."
 				names, err := a.VpcEndpoints.VpcEndpointVpcEndpointNameToVpcEndpointIdMap(ctx)
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}
@@ -187,7 +193,10 @@ var getCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No VPC_ENDPOINT_ID argument specified. Loading names for Vpc Endpoints drop-down."
 				names, err := a.VpcEndpoints.VpcEndpointVpcEndpointNameToVpcEndpointIdMap(ctx)
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}

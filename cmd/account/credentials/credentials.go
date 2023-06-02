@@ -113,7 +113,10 @@ var deleteCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No CREDENTIALS_ID argument specified. Loading names for Credentials drop-down."
 				names, err := a.Credentials.CredentialCredentialsNameToCredentialsIdMap(ctx)
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}
@@ -169,7 +172,10 @@ var getCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No CREDENTIALS_ID argument specified. Loading names for Credentials drop-down."
 				names, err := a.Credentials.CredentialCredentialsNameToCredentialsIdMap(ctx)
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}

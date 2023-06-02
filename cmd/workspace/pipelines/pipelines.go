@@ -131,7 +131,10 @@ var deleteCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No PIPELINE_ID argument specified. Loading names for Pipelines drop-down."
 				names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}
@@ -189,7 +192,10 @@ var getCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No PIPELINE_ID argument specified. Loading names for Pipelines drop-down."
 				names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}
@@ -298,7 +304,10 @@ var listPipelineEventsCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No PIPELINE_ID argument specified. Loading names for Pipelines drop-down."
 				names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}
@@ -409,7 +418,10 @@ var listUpdatesCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No PIPELINE_ID argument specified. Loading names for Pipelines drop-down."
 				names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}
@@ -469,7 +481,10 @@ var resetCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No PIPELINE_ID argument specified. Loading names for Pipelines drop-down."
 				names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}
@@ -546,7 +561,10 @@ var startUpdateCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No PIPELINE_ID argument specified. Loading names for Pipelines drop-down."
 				names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}
@@ -606,7 +624,10 @@ var stopCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No PIPELINE_ID argument specified. Loading names for Pipelines drop-down."
 				names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}
@@ -698,7 +719,10 @@ var updateCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No PIPELINE_ID argument specified. Loading names for Pipelines drop-down."
 				names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}

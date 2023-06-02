@@ -116,7 +116,10 @@ var deleteCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No QUERY_ID argument specified. Loading names for Queries drop-down."
 				names, err := w.Queries.QueryNameToIdMap(ctx, sql.ListQueriesRequest{})
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}
@@ -172,7 +175,10 @@ var getCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No QUERY_ID argument specified. Loading names for Queries drop-down."
 				names, err := w.Queries.QueryNameToIdMap(ctx, sql.ListQueriesRequest{})
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}
@@ -281,7 +287,10 @@ var restoreCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No QUERY_ID argument specified. Loading names for Queries drop-down."
 				names, err := w.Queries.QueryNameToIdMap(ctx, sql.ListQueriesRequest{})
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}
@@ -344,7 +353,10 @@ var updateCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No QUERY_ID argument specified. Loading names for Queries drop-down."
 				names, err := w.Queries.QueryNameToIdMap(ctx, sql.ListQueriesRequest{})
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}

@@ -60,7 +60,10 @@ var createCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No GIT_PROVIDER argument specified. Loading names for Git Credentials drop-down."
 				names, err := w.GitCredentials.CredentialInfoGitProviderToCredentialIdMap(ctx)
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}
@@ -115,7 +118,10 @@ var deleteCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No CREDENTIAL_ID argument specified. Loading names for Git Credentials drop-down."
 				names, err := w.GitCredentials.CredentialInfoGitProviderToCredentialIdMap(ctx)
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}
@@ -173,7 +179,10 @@ var getCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No CREDENTIAL_ID argument specified. Loading names for Git Credentials drop-down."
 				names, err := w.GitCredentials.CredentialInfoGitProviderToCredentialIdMap(ctx)
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}
@@ -263,7 +272,10 @@ var updateCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No CREDENTIAL_ID argument specified. Loading names for Git Credentials drop-down."
 				names, err := w.GitCredentials.CredentialInfoGitProviderToCredentialIdMap(ctx)
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}

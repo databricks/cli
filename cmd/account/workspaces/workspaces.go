@@ -84,7 +84,10 @@ var createCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No WORKSPACE_NAME argument specified. Loading names for Workspaces drop-down."
 				names, err := a.Workspaces.WorkspaceWorkspaceNameToWorkspaceIdMap(ctx)
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}
@@ -163,7 +166,10 @@ var deleteCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No WORKSPACE_ID argument specified. Loading names for Workspaces drop-down."
 				names, err := a.Workspaces.WorkspaceWorkspaceNameToWorkspaceIdMap(ctx)
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}
@@ -234,7 +240,10 @@ var getCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No WORKSPACE_ID argument specified. Loading names for Workspaces drop-down."
 				names, err := a.Workspaces.WorkspaceWorkspaceNameToWorkspaceIdMap(ctx)
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}
@@ -445,7 +454,10 @@ var updateCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No WORKSPACE_ID argument specified. Loading names for Workspaces drop-down."
 				names, err := a.Workspaces.WorkspaceWorkspaceNameToWorkspaceIdMap(ctx)
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}
