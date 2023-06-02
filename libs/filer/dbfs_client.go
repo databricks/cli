@@ -22,11 +22,7 @@ type dbfsDirEntry struct {
 }
 
 func (entry dbfsDirEntry) Type() fs.FileMode {
-	typ := fs.ModePerm
-	if entry.fi.IsDir {
-		typ |= fs.ModeDir
-	}
-	return typ
+	return entry.Mode()
 }
 
 func (entry dbfsDirEntry) Info() (fs.FileInfo, error) {
@@ -47,7 +43,11 @@ func (info dbfsFileInfo) Size() int64 {
 }
 
 func (info dbfsFileInfo) Mode() fs.FileMode {
-	return fs.ModePerm
+	mode := fs.ModePerm
+	if info.fi.IsDir {
+		mode |= fs.ModeDir
+	}
+	return mode
 }
 
 func (info dbfsFileInfo) ModTime() time.Time {
@@ -222,6 +222,10 @@ func (w *DbfsClient) ReadDir(ctx context.Context, name string) ([]fs.DirEntry, e
 		return nil, err
 	}
 
+	if len(res.Files) == 1 && res.Files[0].Path == absPath {
+		return nil, NotADirectory{absPath}
+	}
+
 	info := make([]fs.DirEntry, len(res.Files))
 	for i, v := range res.Files {
 		info[i] = dbfsDirEntry{dbfsFileInfo: dbfsFileInfo{fi: v}}
@@ -239,4 +243,30 @@ func (w *DbfsClient) Mkdir(ctx context.Context, name string) error {
 	}
 
 	return w.workspaceClient.Dbfs.MkdirsByPath(ctx, dirPath)
+}
+
+func (w *DbfsClient) Stat(ctx context.Context, name string) (fs.FileInfo, error) {
+	absPath, err := w.root.Join(name)
+	if err != nil {
+		return nil, err
+	}
+
+	info, err := w.workspaceClient.Dbfs.GetStatusByPath(ctx, absPath)
+	if err != nil {
+		var aerr *apierr.APIError
+		if !errors.As(err, &aerr) {
+			return nil, err
+		}
+
+		// This API returns a 404 if the file doesn't exist.
+		if aerr.StatusCode == http.StatusNotFound {
+			if aerr.ErrorCode == "RESOURCE_DOES_NOT_EXIST" {
+				return nil, FileDoesNotExistError{absPath}
+			}
+		}
+
+		return nil, err
+	}
+
+	return dbfsFileInfo{*info}, nil
 }

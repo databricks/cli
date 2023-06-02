@@ -68,8 +68,29 @@ func runFilerReadWriteTest(t *testing.T, ctx context.Context, f filer.Filer) {
 	assert.NoError(t, err)
 	filerTest{t, f}.assertContents(ctx, "/foo/bar", `hello universe`)
 
+	// Stat on a directory should succeed.
+	// Note: size and modification time behave differently between WSFS and DBFS.
+	info, err := f.Stat(ctx, "/foo")
+	require.NoError(t, err)
+	assert.Equal(t, "foo", info.Name())
+	assert.True(t, info.Mode().IsDir())
+	assert.Equal(t, true, info.IsDir())
+
+	// Stat on a file should succeed.
+	// Note: size and modification time behave differently between WSFS and DBFS.
+	info, err = f.Stat(ctx, "/foo/bar")
+	require.NoError(t, err)
+	assert.Equal(t, "bar", info.Name())
+	assert.True(t, info.Mode().IsRegular())
+	assert.Equal(t, false, info.IsDir())
+
 	// Delete should fail if the file doesn't exist.
 	err = f.Delete(ctx, "/doesnt_exist")
+	assert.True(t, errors.As(err, &filer.FileDoesNotExistError{}))
+	assert.True(t, errors.Is(err, fs.ErrNotExist))
+
+	// Stat should fail if the file doesn't exist.
+	_, err = f.Stat(ctx, "/doesnt_exist")
 	assert.True(t, errors.As(err, &filer.FileDoesNotExistError{}))
 	assert.True(t, errors.Is(err, fs.ErrNotExist))
 
@@ -138,6 +159,26 @@ func runFilerReadDirTest(t *testing.T, ctx context.Context, f filer.Filer) {
 	assert.Len(t, entries, 1)
 	assert.Equal(t, "c", entries[0].Name())
 	assert.True(t, entries[0].IsDir())
+
+	// Expect an error trying to call ReadDir on a file
+	_, err = f.ReadDir(ctx, "/hello.txt")
+	assert.ErrorIs(t, err, fs.ErrInvalid)
+
+	// Expect 0 entries for an empty directory
+	err = f.Mkdir(ctx, "empty-dir")
+	require.NoError(t, err)
+	entries, err = f.ReadDir(ctx, "empty-dir")
+	assert.NoError(t, err)
+	assert.Len(t, entries, 0)
+
+	// Expect one entry for a directory with a file in it
+	err = f.Write(ctx, "dir-with-one-file/my-file.txt", strings.NewReader("abc"), filer.CreateParentDirectories)
+	require.NoError(t, err)
+	entries, err = f.ReadDir(ctx, "dir-with-one-file")
+	assert.NoError(t, err)
+	assert.Len(t, entries, 1)
+	assert.Equal(t, entries[0].Name(), "my-file.txt")
+	assert.False(t, entries[0].IsDir())
 }
 
 func temporaryWorkspaceDir(t *testing.T, w *databricks.WorkspaceClient) string {
@@ -145,7 +186,7 @@ func temporaryWorkspaceDir(t *testing.T, w *databricks.WorkspaceClient) string {
 	me, err := w.CurrentUser.Me(ctx)
 	require.NoError(t, err)
 
-	path := fmt.Sprintf("/Users/%s/%s", me.UserName, RandomName("integration-test-filer-wsfs-"))
+	path := fmt.Sprintf("/Users/%s/%s", me.UserName, RandomName("integration-test-wsfs-"))
 
 	// Ensure directory exists, but doesn't exist YET!
 	// Otherwise we could inadvertently remove a directory that already exists on cleanup.

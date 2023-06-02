@@ -126,5 +126,5 @@ func TestLoaderErrorsOnMultipleMatches(t *testing.T) {
 
 	err := cfg.EnsureResolved()
 	assert.Error(t, err)
-	assert.ErrorContains(t, err, "multiple profiles for host https://foo (foo1, foo2): ")
+	assert.ErrorContains(t, err, "https://foo: multiple profiles matched: foo1, foo2")
 }
