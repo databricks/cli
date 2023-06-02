@@ -16,6 +16,8 @@ import (
 	"time"
 
 	"github.com/databricks/cli/libs/auth/cache"
+	"github.com/databricks/cli/libs/databrickscfg"
+	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/pkg/browser"
 	"golang.org/x/oauth2"
@@ -95,6 +97,16 @@ func (a *PersistentAuth) Load(ctx context.Context) (*oauth2.Token, error) {
 	return refreshed, nil
 }
 
+func (a *PersistentAuth) profileName() string {
+	// TODO: get profile name from interactive input
+	if a.AccountID != "" {
+		return fmt.Sprintf("ACCOUNT-%s", a.AccountID)
+	}
+	host := strings.TrimPrefix(a.Host, "https://")
+	split := strings.Split(host, ".")
+	return split[0]
+}
+
 func (a *PersistentAuth) Challenge(ctx context.Context) error {
 	err := a.init(ctx)
 	if err != nil {
@@ -120,7 +132,12 @@ func (a *PersistentAuth) Challenge(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("store: %w", err)
 	}
-	return nil
+	return databrickscfg.SaveToProfile(ctx, &config.Config{
+		Host:      a.Host,
+		AccountID: a.AccountID,
+		AuthType:  "databricks-cli",
+		Profile:   a.profileName(),
+	})
 }
 
 func (a *PersistentAuth) init(ctx context.Context) error {
