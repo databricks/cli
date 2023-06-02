@@ -59,7 +59,7 @@ func (info dbfsFileInfo) IsDir() bool {
 }
 
 func (info dbfsFileInfo) Sys() any {
-	return nil
+	return info.fi
 }
 
 // DbfsClient implements the [Filer] interface for the DBFS backend.

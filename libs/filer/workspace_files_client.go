@@ -65,7 +65,7 @@ func (info wsfsFileInfo) IsDir() bool {
 }
 
 func (info wsfsFileInfo) Sys() any {
-	return nil
+	return info.oi
 }
 
 // WorkspaceFilesClient implements the files-in-workspace API.

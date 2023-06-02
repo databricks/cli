@@ -2,8 +2,8 @@ package internal
 
 import (
 	"context"
+	"io/fs"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -11,145 +11,241 @@ import (
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/sync/repofiles"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-// TODO: skip if not cloud env, these are integration tests
-// TODO: split into a separate PR
+type repofilesTestHelper struct {
+	w   *databricks.WorkspaceClient
+	f   filer.Filer
+	ctx context.Context
+	t   *testing.T
 
-func TestRepoFilesPutFile(t *testing.T) {
+	localRoot  string
+	remoteRoot string
+}
+
+func setupRepofilesTestHelper(t *testing.T, ctx context.Context) *repofilesTestHelper {
+	// t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+
 	w, err := databricks.NewWorkspaceClient()
 	require.NoError(t, err)
-	ctx := context.Background()
 
 	// initialize client
 	wsfsTmpDir := temporaryWorkspaceDir(t, w)
 	localTmpDir := t.TempDir()
-	r, err := repofiles.Create(wsfsTmpDir, localTmpDir, w, &repofiles.RepoFileOptions{
-		OverwriteIfExists: true,
-	})
+
 	require.NoError(t, err)
 	f, err := filer.NewWorkspaceFilesClient(w, wsfsTmpDir)
 	require.NoError(t, err)
 
-	// create local file
-	err = os.WriteFile(filepath.Join(localTmpDir, "foo.txt"), []byte(`hello, world`), os.ModePerm)
+	return &repofilesTestHelper{
+		w:   w,
+		f:   f,
+		ctx: ctx,
+		t:   t,
+
+		localRoot:  localTmpDir,
+		remoteRoot: wsfsTmpDir,
+	}
+}
+
+func (h *repofilesTestHelper) createLocalFile(name string, content string) {
+	absPath := filepath.Join(h.localRoot, name)
+	err := os.MkdirAll(filepath.Dir(absPath), os.ModePerm)
+	require.NoError(h.t, err)
+	err = os.WriteFile(absPath, []byte(content), os.ModePerm)
+	require.NoError(h.t, err)
+}
+
+func (h *repofilesTestHelper) createRemoteFile(name string, content string) {
+	h.f.Write(h.ctx, name, strings.NewReader(content), filer.CreateParentDirectories)
+}
+
+func (h *repofilesTestHelper) createRemoteDirectory(name string) {
+	h.f.Mkdir(h.ctx, name)
+}
+
+func (h *repofilesTestHelper) assertRemoteFileContent(name string, content string) {
+	assertFileContains(h.t, h.ctx, h.f, name, content)
+}
+
+func (h *repofilesTestHelper) assertRemoteFileType(name string, fileType workspace.ObjectType) {
+	info, err := h.f.Stat(h.ctx, name)
+	require.NoError(h.t, err)
+
+	objectInfo := info.Sys().(workspace.ObjectInfo)
+	assert.Equal(h.t, fileType, objectInfo.ObjectType)
+}
+
+func TestRepoFilesPutFile(t *testing.T) {
+	ctx := context.Background()
+	helper := setupRepofilesTestHelper(t, ctx)
+
+	r, err := repofiles.Create(helper.remoteRoot, helper.localRoot, helper.w, &repofiles.RepoFileOptions{
+		OverwriteIfExists: true,
+	})
 	require.NoError(t, err)
+
+	// create local file
+	helper.createLocalFile("foo.txt", "hello, world")
 	err = r.PutFile(ctx, "foo.txt")
 	require.NoError(t, err)
 
-	require.NoError(t, f.Mkdir(ctx, "bar"))
-
-	entries, err := f.ReadDir(ctx, "bar")
-	require.NoError(t, err)
-	require.Len(t, entries, 1)
-
-	assertFileContains(t, ctx, f, "foo.txt", "hello, world")
+	// Expect PUT to succeed
+	helper.assertRemoteFileContent("foo.txt", "hello, world")
 }
 
-func TestRepoFilesFileOverwritesNotebook(t *testing.T) {
-	w, err := databricks.NewWorkspaceClient()
-	require.NoError(t, err)
+func TestRepoFilesPutFileOverwritesNotebook(t *testing.T) {
 	ctx := context.Background()
+	helper := setupRepofilesTestHelper(t, ctx)
 
-	// initialize client
-	wsfsTmpDir := temporaryWorkspaceDir(t, w)
-	localTmpDir := t.TempDir()
-	r, err := repofiles.Create(wsfsTmpDir, localTmpDir, w, &repofiles.RepoFileOptions{
+	r, err := repofiles.Create(helper.remoteRoot, helper.localRoot, helper.w, &repofiles.RepoFileOptions{
 		OverwriteIfExists: true,
 	})
 	require.NoError(t, err)
-	f, err := filer.NewWorkspaceFilesClient(w, wsfsTmpDir)
+
+	// Create notebook in workspace
+	helper.createRemoteFile("foo.py", "#Databricks notebook source\nprint(1)")
+	helper.assertRemoteFileType("foo", workspace.ObjectTypeNotebook)
+
+	// Put file and assert file PUT succeeded
+	helper.createLocalFile("foo", "this file will overwrite the notebook")
+	err = r.PutFile(ctx, "foo")
+	assert.NoError(t, err)
+	helper.assertRemoteFileContent("foo", "this file will overwrite the notebook")
+	helper.assertRemoteFileType("foo", workspace.ObjectTypeFile)
+}
+
+func TestRepoFilesPutFileOverwritesEmptyDirectoryTree(t *testing.T) {
+	ctx := context.Background()
+	helper := setupRepofilesTestHelper(t, ctx)
+
+	r, err := repofiles.Create(helper.remoteRoot, helper.localRoot, helper.w, &repofiles.RepoFileOptions{
+		OverwriteIfExists: true,
+	})
 	require.NoError(t, err)
 
-	// create local notebook
-	err = os.WriteFile(filepath.Join(localTmpDir, "foo.py"), []byte("#Databricks notebook source\nprint(1)"), os.ModePerm)
-	require.NoError(t, err)
+	// create empty remote directory tree
+	helper.createRemoteDirectory("foo/a/b/c")
+	helper.createRemoteDirectory("foo/a/b/d/e")
+	helper.createRemoteDirectory("foo/f/g/i")
 
-	// upload notebook
-	err = r.PutFile(ctx, "foo.py")
-	require.NoError(t, err)
-	assertNotebookExists(t, ctx, w, path.Join(wsfsTmpDir, "foo"))
+	// assert directory tree is created
+	helper.assertRemoteFileType("foo", workspace.ObjectTypeDirectory)
+	helper.assertRemoteFileType("foo/a/b/c", workspace.ObjectTypeDirectory)
+	helper.assertRemoteFileType("foo/f/g/i", workspace.ObjectTypeDirectory)
+	helper.assertRemoteFileType("foo/a/b/d/e", workspace.ObjectTypeDirectory)
 
-	// upload file, and assert that it overwrites the notebook
-	err = os.WriteFile(filepath.Join(localTmpDir, "foo"), []byte("I am going to overwrite the notebook"), os.ModePerm)
-	require.NoError(t, err)
+	// Create local file and PUT it into the workspace
+	helper.createLocalFile("foo", "hello, world")
 	err = r.PutFile(ctx, "foo")
 	require.NoError(t, err)
-	assertFileContains(t, ctx, f, "foo", "I am going to overwrite the notebook")
+	helper.assertRemoteFileContent("foo", "hello, world")
+	helper.assertRemoteFileType("foo", workspace.ObjectTypeFile)
 }
 
-func TestRepoFilesFileOverwritesEmptyDirectoryTree(t *testing.T) {
-	w, err := databricks.NewWorkspaceClient()
-	require.NoError(t, err)
-	ctx := context.Background()
+func TestRepoFilesPutFileInDirOverwritesExistingNotebook(t *testing.T) {
+	// TODO: Skipping this test for now since the workspace-files import API has a
+	// bug and does not return the error message we need
+	t.SkipNow()
 
-	// initialize client
-	wsfsTmpDir := temporaryWorkspaceDir(t, w)
-	localTmpDir := t.TempDir()
-	r, err := repofiles.Create(wsfsTmpDir, localTmpDir, w, &repofiles.RepoFileOptions{
+	ctx := context.Background()
+	helper := setupRepofilesTestHelper(t, ctx)
+
+	r, err := repofiles.Create(helper.remoteRoot, helper.localRoot, helper.w, &repofiles.RepoFileOptions{
 		OverwriteIfExists: true,
 	})
 	require.NoError(t, err)
-	f, err := filer.NewWorkspaceFilesClient(w, wsfsTmpDir)
+
+	// create remote notebook
+	helper.createRemoteFile("foo.py", "#Databricks notebook source\nprint(1)")
+	helper.assertRemoteFileType("foo", workspace.ObjectTypeNotebook)
+
+	// create local file and PUT it in the workspace
+	helper.createLocalFile("foo/hello.txt", "just a file")
+	err = r.PutFile(ctx, "foo/hello.txt")
+	require.NoError(t, err)
+
+	// Assert PUT succeeeded
+	helper.assertRemoteFileType("foo", workspace.ObjectTypeDirectory)
+	helper.assertRemoteFileContent("foo/bar.txt", "just a file")
+}
+
+func TestRepoFilesPutFileWithoutOverwrite(t *testing.T) {
+	ctx := context.Background()
+	helper := setupRepofilesTestHelper(t, ctx)
+
+	r, err := repofiles.Create(helper.remoteRoot, helper.localRoot, helper.w, &repofiles.RepoFileOptions{
+		OverwriteIfExists: false,
+	})
 	require.NoError(t, err)
 
 	// create local file
-	err = os.WriteFile(filepath.Join(localTmpDir, "foo"), []byte(`hello, world`), os.ModePerm)
+	helper.createLocalFile("foo.txt", "hello, world")
+	err = r.PutFile(ctx, "foo.txt")
 	require.NoError(t, err)
 
-	// construct a directory tree without files in the workspace
-	err = f.Mkdir(ctx, "foo/a/b/c")
-	require.NoError(t, err)
-	err = f.Mkdir(ctx, "foo/a/b/d/e")
-	require.NoError(t, err)
-	err = f.Mkdir(ctx, "foo/f/g/i")
-	require.NoError(t, err)
-
-	// assert the directories exist
-	entries, err := f.ReadDir(ctx, "foo")
-	require.NoError(t, err)
-	assert.Len(t, entries, 2)
-	assert.True(t, entries[0].IsDir())
-	assert.True(t, entries[1].IsDir())
-
-	// upload file, and assert that it overwrites the empty directories
-	err = r.PutFile(ctx, "foo")
-	require.NoError(t, err)
-	assertFileContains(t, ctx, f, "foo", "hello, world")
-
-	// assert the directories do not exist anymore
-	_, err = f.ReadDir(ctx, "foo")
-	assert.ErrorIs(t, err, filer.ErrNotADirectory)
+	// Expect PUT to succeed
+	helper.assertRemoteFileContent("foo.txt", "hello, world")
 }
 
-func TestRepoFilesFileInDirOverwritesExistingNotebook(t *testing.T) {
-	w, err := databricks.NewWorkspaceClient()
-	require.NoError(t, err)
+func TestRepoFilesPutFileWithoutOverwriteFails(t *testing.T) {
 	ctx := context.Background()
+	helper := setupRepofilesTestHelper(t, ctx)
 
-	// initialize client
-	wsfsTmpDir := temporaryWorkspaceDir(t, w)
-	localTmpDir := t.TempDir()
-	r, err := repofiles.Create(wsfsTmpDir, localTmpDir, w, &repofiles.RepoFileOptions{
-		OverwriteIfExists: true,
+	r, err := repofiles.Create(helper.remoteRoot, helper.localRoot, helper.w, &repofiles.RepoFileOptions{
+		OverwriteIfExists: false,
 	})
 	require.NoError(t, err)
-	f, err := filer.NewWorkspaceFilesClient(w, wsfsTmpDir)
+
+	// create remote file
+	helper.createRemoteFile("foo.txt", "this file already exists in the workspace")
+
+	// create local file
+	helper.createLocalFile("foo.txt", "this file will attempt to overwrite the workspace file and fail")
+
+	// assert overwrite fails
+	err = r.PutFile(ctx, "foo.txt")
+	assert.ErrorIs(t, err, fs.ErrExist)
+}
+
+func TestRepoFilesPutFileWithoutOverwriteFailsIfDirectoryExists(t *testing.T) {
+	ctx := context.Background()
+	helper := setupRepofilesTestHelper(t, ctx)
+
+	r, err := repofiles.Create(helper.remoteRoot, helper.localRoot, helper.w, &repofiles.RepoFileOptions{
+		OverwriteIfExists: false,
+	})
 	require.NoError(t, err)
 
-	// create local notebook
-	err = f.Write(ctx, "foo.py", strings.NewReader("#Databricks notebook source\nprint(1)"))
-	require.NoError(t, err)
-	assertNotebookExists(t, ctx, w, path.Join(wsfsTmpDir, "foo"))
+	helper.createRemoteDirectory("foo")
 
-	// upload file
-	err = os.Mkdir(filepath.Join(localTmpDir, "foo"), os.ModePerm)
+	// create local file
+	helper.createLocalFile("foo", "hello, world")
+	err = r.PutFile(ctx, "foo")
+
+	// Assert PUT failed because file already exists
+	assert.ErrorIs(t, err, fs.ErrExist)
+}
+
+func TestRepoFilesPutFileWithoutOverwriteFailsIfNotebookExists(t *testing.T) {
+	ctx := context.Background()
+	helper := setupRepofilesTestHelper(t, ctx)
+
+	r, err := repofiles.Create(helper.remoteRoot, helper.localRoot, helper.w, &repofiles.RepoFileOptions{
+		OverwriteIfExists: false,
+	})
 	require.NoError(t, err)
-	err = os.WriteFile(filepath.Join(localTmpDir, "foo/bar.txt"), []byte("I am going to overwrite the notebook"), os.ModePerm)
-	require.NoError(t, err)
-	err = r.PutFile(ctx, "foo/bar.txt")
-	require.NoError(t, err)
-	assertFileContains(t, ctx, f, "foo/bar.txt", "I am going to overwrite the notebook")
+
+	// create remote notebook
+	helper.createRemoteFile("foo.py", "#Databricks notebook source\nprint(1)")
+
+	// create local file
+	helper.createLocalFile("foo", "hello, world")
+	err = r.PutFile(ctx, "foo")
+
+	// Assert PUT failed because file already exists
+	assert.ErrorIs(t, err, fs.ErrExist)
 }
