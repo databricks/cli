@@ -106,7 +106,10 @@ var deleteCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No TOKEN_ID argument specified. Loading names for Tokens drop-down."
 				names, err := w.Tokens.TokenInfoCommentToTokenIdMap(ctx)
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}

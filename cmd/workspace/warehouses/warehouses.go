@@ -148,7 +148,10 @@ var deleteCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No ID argument specified. Loading names for Warehouses drop-down."
 				names, err := w.Warehouses.EndpointInfoNameToIdMap(ctx, sql.ListWarehousesRequest{})
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}
@@ -246,7 +249,10 @@ var editCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No ID argument specified. Loading names for Warehouses drop-down."
 				names, err := w.Warehouses.EndpointInfoNameToIdMap(ctx, sql.ListWarehousesRequest{})
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}
@@ -330,7 +336,10 @@ var getCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No ID argument specified. Loading names for Warehouses drop-down."
 				names, err := w.Warehouses.EndpointInfoNameToIdMap(ctx, sql.ListWarehousesRequest{})
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}
@@ -525,7 +534,10 @@ var startCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No ID argument specified. Loading names for Warehouses drop-down."
 				names, err := w.Warehouses.EndpointInfoNameToIdMap(ctx, sql.ListWarehousesRequest{})
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}
@@ -609,7 +621,10 @@ var stopCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No ID argument specified. Loading names for Warehouses drop-down."
 				names, err := w.Warehouses.EndpointInfoNameToIdMap(ctx, sql.ListWarehousesRequest{})
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}

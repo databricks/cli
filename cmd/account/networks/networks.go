@@ -58,7 +58,10 @@ var createCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No NETWORK_NAME argument specified. Loading names for Networks drop-down."
 				names, err := a.Networks.NetworkNetworkNameToNetworkIdMap(ctx)
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}
@@ -118,7 +121,10 @@ var deleteCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No NETWORK_ID argument specified. Loading names for Networks drop-down."
 				names, err := a.Networks.NetworkNetworkNameToNetworkIdMap(ctx)
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}
@@ -174,7 +180,10 @@ var getCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No NETWORK_ID argument specified. Loading names for Networks drop-down."
 				names, err := a.Networks.NetworkNetworkNameToNetworkIdMap(ctx)
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}

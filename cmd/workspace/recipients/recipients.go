@@ -111,7 +111,10 @@ var deleteCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No NAME argument specified. Loading names for Recipients drop-down."
 				names, err := w.Recipients.RecipientInfoNameToMetastoreIdMap(ctx, sharing.ListRecipientsRequest{})
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}
@@ -168,7 +171,10 @@ var getCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No NAME argument specified. Loading names for Recipients drop-down."
 				names, err := w.Recipients.RecipientInfoNameToMetastoreIdMap(ctx, sharing.ListRecipientsRequest{})
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}
@@ -329,7 +335,10 @@ var sharePermissionsCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No NAME argument specified. Loading names for Recipients drop-down."
 				names, err := w.Recipients.RecipientInfoNameToMetastoreIdMap(ctx, sharing.ListRecipientsRequest{})
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}
@@ -392,7 +401,10 @@ var updateCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No NAME argument specified. Loading names for Recipients drop-down."
 				names, err := w.Recipients.RecipientInfoNameToMetastoreIdMap(ctx, sharing.ListRecipientsRequest{})
+				close(promptSpinner)
 				if err != nil {
 					return err
 				}
