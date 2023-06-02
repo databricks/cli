@@ -111,6 +111,12 @@ func (t *cobraTestRunner) RunBackground() {
 		stdoutW.Close()
 		stderrW.Close()
 
+		// Read remaining data from pipes to ensure it ends up in the buffers.
+		// We rely on [consumeLines] to read everything but upon cancellation
+		// it terminates and we might have a few extra bytes in the pipe.
+		io.ReadAll(stdoutR)
+		io.ReadAll(stderrR)
+
 		if t.stdout.Len() > 0 {
 			// Make a copy of the buffer such that it remains "unread".
 			scanner := bufio.NewScanner(bytes.NewBuffer(t.stdout.Bytes()))
