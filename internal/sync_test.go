@@ -25,7 +25,8 @@ import (
 )
 
 var (
-	repoUrl = "https://github.com/databricks/databricks-empty-ide-project.git"
+	repoUrl   = "https://github.com/databricks/databricks-empty-ide-project.git"
+	repoFiles = []string{}
 )
 
 // This test needs auth env vars to run.
@@ -212,14 +213,14 @@ func TestAccSyncFullFileSync(t *testing.T) {
 
 	// .gitignore is created by the sync process to enforce .databricks is not synced
 	assertSync.waitForCompletionMarker()
-	assertSync.remoteDirContent(ctx, "", []string{".gitignore"})
+	assertSync.remoteDirContent(ctx, "", append(repoFiles, ".gitignore"))
 
 	// New file
 	localFilePath := filepath.Join(assertSync.localRoot, "foo.txt")
 	f := testfile.CreateFile(t, localFilePath)
 	defer f.Close(t)
 	assertSync.waitForCompletionMarker()
-	assertSync.remoteDirContent(ctx, "", []string{"foo.txt", ".gitignore"})
+	assertSync.remoteDirContent(ctx, "", append(repoFiles, "foo.txt", ".gitignore"))
 	assertSync.remoteFileContent(ctx, "foo.txt", "")
 
 	// Write to file
@@ -235,7 +236,7 @@ func TestAccSyncFullFileSync(t *testing.T) {
 	// delete
 	f.Remove(t)
 	assertSync.waitForCompletionMarker()
-	assertSync.remoteDirContent(ctx, "", []string{".gitignore"})
+	assertSync.remoteDirContent(ctx, "", append(repoFiles, ".gitignore"))
 }
 
 func TestAccSyncIncrementalFileSync(t *testing.T) {
@@ -244,16 +245,16 @@ func TestAccSyncIncrementalFileSync(t *testing.T) {
 
 	// .gitignore is created by the sync process to enforce .databricks is not synced
 	assertSync.waitForCompletionMarker()
-	assertSync.remoteDirContent(ctx, "", []string{".gitignore"})
+	assertSync.remoteDirContent(ctx, "", append(repoFiles, ".gitignore"))
 
 	// New file
 	localFilePath := filepath.Join(assertSync.localRoot, "foo.txt")
 	f := testfile.CreateFile(t, localFilePath)
 	defer f.Close(t)
 	assertSync.waitForCompletionMarker()
-	assertSync.remoteDirContent(ctx, "", []string{"foo.txt", ".gitignore"})
+	assertSync.remoteDirContent(ctx, "", append(repoFiles, "foo.txt", ".gitignore"))
 	assertSync.remoteFileContent(ctx, "foo.txt", "")
-	assertSync.snapshotContains([]string{"foo.txt", ".gitignore"})
+	assertSync.snapshotContains(append(repoFiles, "foo.txt", ".gitignore"))
 
 	// Write to file
 	f.Overwrite(t, `{"statement": "Mi Gente"}`)
@@ -268,8 +269,8 @@ func TestAccSyncIncrementalFileSync(t *testing.T) {
 	// delete
 	f.Remove(t)
 	assertSync.waitForCompletionMarker()
-	assertSync.remoteDirContent(ctx, "", []string{".gitignore"})
-	assertSync.snapshotContains([]string{".gitignore"})
+	assertSync.remoteDirContent(ctx, "", append(repoFiles, ".gitignore"))
+	assertSync.snapshotContains(append(repoFiles, ".gitignore"))
 }
 
 func TestAccSyncNestedFolderSync(t *testing.T) {
@@ -278,7 +279,7 @@ func TestAccSyncNestedFolderSync(t *testing.T) {
 
 	// .gitignore is created by the sync process to enforce .databricks is not synced
 	assertSync.waitForCompletionMarker()
-	assertSync.remoteDirContent(ctx, "", []string{".gitignore"})
+	assertSync.remoteDirContent(ctx, "", append(repoFiles, ".gitignore"))
 
 	// New file
 	localFilePath := filepath.Join(assertSync.localRoot, "dir1/dir2/dir3/foo.txt")
@@ -287,18 +288,18 @@ func TestAccSyncNestedFolderSync(t *testing.T) {
 	f := testfile.CreateFile(t, localFilePath)
 	defer f.Close(t)
 	assertSync.waitForCompletionMarker()
-	assertSync.remoteDirContent(ctx, "", []string{".gitignore", "dir1"})
-	assertSync.remoteDirContent(ctx, "dir1", []string{"dir2"})
-	assertSync.remoteDirContent(ctx, "dir1/dir2", []string{"dir3"})
-	assertSync.remoteDirContent(ctx, "dir1/dir2/dir3", []string{"foo.txt"})
-	assertSync.snapshotContains([]string{".gitignore", filepath.FromSlash("dir1/dir2/dir3/foo.txt")})
+	assertSync.remoteDirContent(ctx, "", append(repoFiles, ".gitignore", "dir1"))
+	assertSync.remoteDirContent(ctx, "dir1", append(repoFiles, "dir2"))
+	assertSync.remoteDirContent(ctx, "dir1/dir2", append(repoFiles, "dir3"))
+	assertSync.remoteDirContent(ctx, "dir1/dir2/dir3", append(repoFiles, "foo.txt"))
+	assertSync.snapshotContains(append(repoFiles, ".gitignore", filepath.FromSlash("dir1/dir2/dir3/foo.txt")))
 
 	// delete
 	f.Remove(t)
 	assertSync.waitForCompletionMarker()
 	// directories are not cleaned up right now. This is not ideal
-	assertSync.remoteDirContent(ctx, "dir1/dir2/dir3", []string{})
-	assertSync.snapshotContains([]string{".gitignore"})
+	assertSync.remoteDirContent(ctx, "dir1/dir2/dir3", append(repoFiles))
+	assertSync.snapshotContains(append(repoFiles, ".gitignore"))
 }
 
 func TestAccSyncNestedSpacePlusAndHashAreEscapedSync(t *testing.T) {
@@ -307,7 +308,7 @@ func TestAccSyncNestedSpacePlusAndHashAreEscapedSync(t *testing.T) {
 
 	// .gitignore is created by the sync process to enforce .databricks is not synced
 	assertSync.waitForCompletionMarker()
-	assertSync.remoteDirContent(ctx, "", []string{".gitignore"})
+	assertSync.remoteDirContent(ctx, "", append(repoFiles, ".gitignore"))
 
 	// New file
 	localFilePath := filepath.Join(assertSync.localRoot, "dir1/a b+c/c+d e/e+f g#i.txt")
@@ -316,18 +317,18 @@ func TestAccSyncNestedSpacePlusAndHashAreEscapedSync(t *testing.T) {
 	f := testfile.CreateFile(t, localFilePath)
 	defer f.Close(t)
 	assertSync.waitForCompletionMarker()
-	assertSync.remoteDirContent(ctx, "", []string{".gitignore", "dir1"})
-	assertSync.remoteDirContent(ctx, "dir1", []string{"a b+c"})
-	assertSync.remoteDirContent(ctx, "dir1/a b+c", []string{"c+d e"})
-	assertSync.remoteDirContent(ctx, "dir1/a b+c/c+d e", []string{"e+f g#i.txt"})
-	assertSync.snapshotContains([]string{".gitignore", filepath.FromSlash("dir1/a b+c/c+d e/e+f g#i.txt")})
+	assertSync.remoteDirContent(ctx, "", append(repoFiles, ".gitignore", "dir1"))
+	assertSync.remoteDirContent(ctx, "dir1", append(repoFiles, "a b+c"))
+	assertSync.remoteDirContent(ctx, "dir1/a b+c", append(repoFiles, "c+d e"))
+	assertSync.remoteDirContent(ctx, "dir1/a b+c/c+d e", append(repoFiles, "e+f g#i.txt"))
+	assertSync.snapshotContains(append(repoFiles, ".gitignore", filepath.FromSlash("dir1/a b+c/c+d e/e+f g#i.txt")))
 
 	// delete
 	f.Remove(t)
 	assertSync.waitForCompletionMarker()
 	// directories are not cleaned up right now. This is not ideal
-	assertSync.remoteDirContent(ctx, "dir1/a b+c/c+d e", []string{})
-	assertSync.snapshotContains([]string{".gitignore"})
+	assertSync.remoteDirContent(ctx, "dir1/a b+c/c+d e", append(repoFiles))
+	assertSync.snapshotContains(append(repoFiles, ".gitignore"))
 }
 
 // sync does not clean up empty directories from the workspace file system.
@@ -350,24 +351,24 @@ func TestAccSyncIncrementalFileOverwritesFolder(t *testing.T) {
 	f := testfile.CreateFile(t, localFilePath)
 	defer f.Close(t)
 	assertSync.waitForCompletionMarker()
-	assertSync.remoteDirContent(ctx, "", []string{".gitignore", "foo"})
-	assertSync.remoteDirContent(ctx, "foo", []string{"bar.txt"})
-	assertSync.snapshotContains([]string{".gitignore", filepath.FromSlash("foo/bar.txt")})
+	assertSync.remoteDirContent(ctx, "", append(repoFiles, ".gitignore", "foo"))
+	assertSync.remoteDirContent(ctx, "foo", append(repoFiles, "bar.txt"))
+	assertSync.snapshotContains(append(repoFiles, ".gitignore", filepath.FromSlash("foo/bar.txt")))
 
 	// delete foo/bar.txt
 	f.Remove(t)
 	os.Remove(filepath.Join(assertSync.localRoot, "foo"))
 	assertSync.waitForCompletionMarker()
-	assertSync.remoteDirContent(ctx, "foo", []string{})
+	assertSync.remoteDirContent(ctx, "foo", append(repoFiles))
 	assertSync.objectType(ctx, "foo", "DIRECTORY")
-	assertSync.snapshotContains([]string{".gitignore"})
+	assertSync.snapshotContains(append(repoFiles, ".gitignore"))
 
 	f2 := testfile.CreateFile(t, filepath.Join(assertSync.localRoot, "foo"))
 	defer f2.Close(t)
 	assertSync.waitForCompletionMarker()
-	assertSync.remoteDirContent(ctx, "", []string{".gitignore", "foo"})
+	assertSync.remoteDirContent(ctx, "", append(repoFiles, ".gitignore", "foo"))
 	assertSync.objectType(ctx, "foo", "FILE")
-	assertSync.snapshotContains([]string{".gitignore", "foo"})
+	assertSync.snapshotContains(append(repoFiles, ".gitignore", "foo"))
 }
 
 func TestAccSyncIncrementalSyncPythonNotebookToFile(t *testing.T) {
@@ -382,23 +383,23 @@ func TestAccSyncIncrementalSyncPythonNotebookToFile(t *testing.T) {
 
 	// notebook was uploaded properly
 	assertSync.waitForCompletionMarker()
-	assertSync.remoteDirContent(ctx, "", []string{".gitignore", "foo"})
+	assertSync.remoteDirContent(ctx, "", append(repoFiles, ".gitignore", "foo"))
 	assertSync.objectType(ctx, "foo", "NOTEBOOK")
 	assertSync.language(ctx, "foo", "PYTHON")
-	assertSync.snapshotContains([]string{".gitignore", "foo.py"})
+	assertSync.snapshotContains(append(repoFiles, ".gitignore", "foo.py"))
 
 	// convert to vanilla python file
 	f.Overwrite(t, "# No longer a python notebook")
 	assertSync.waitForCompletionMarker()
 	assertSync.objectType(ctx, "foo.py", "FILE")
-	assertSync.remoteDirContent(ctx, "", []string{".gitignore", "foo.py"})
-	assertSync.snapshotContains([]string{".gitignore", "foo.py"})
+	assertSync.remoteDirContent(ctx, "", append(repoFiles, ".gitignore", "foo.py"))
+	assertSync.snapshotContains(append(repoFiles, ".gitignore", "foo.py"))
 
 	// delete the vanilla python file
 	f.Remove(t)
 	assertSync.waitForCompletionMarker()
-	assertSync.remoteDirContent(ctx, "", []string{".gitignore"})
-	assertSync.snapshotContains([]string{".gitignore"})
+	assertSync.remoteDirContent(ctx, "", append(repoFiles, ".gitignore"))
+	assertSync.snapshotContains(append(repoFiles, ".gitignore"))
 }
 
 func TestAccSyncIncrementalSyncFileToPythonNotebook(t *testing.T) {
@@ -412,17 +413,17 @@ func TestAccSyncIncrementalSyncFileToPythonNotebook(t *testing.T) {
 	assertSync.waitForCompletionMarker()
 
 	// assert file upload
-	assertSync.remoteDirContent(ctx, "", []string{".gitignore", "foo.py"})
+	assertSync.remoteDirContent(ctx, "", append(repoFiles, ".gitignore", "foo.py"))
 	assertSync.objectType(ctx, "foo.py", "FILE")
-	assertSync.snapshotContains([]string{".gitignore", "foo.py"})
+	assertSync.snapshotContains(append(repoFiles, ".gitignore", "foo.py"))
 
 	// convert to notebook
 	f.Overwrite(t, "# Databricks notebook source")
 	assertSync.waitForCompletionMarker()
 	assertSync.objectType(ctx, "foo", "NOTEBOOK")
 	assertSync.language(ctx, "foo", "PYTHON")
-	assertSync.remoteDirContent(ctx, "", []string{".gitignore", "foo"})
-	assertSync.snapshotContains([]string{".gitignore", "foo.py"})
+	assertSync.remoteDirContent(ctx, "", append(repoFiles, ".gitignore", "foo"))
+	assertSync.snapshotContains(append(repoFiles, ".gitignore", "foo.py"))
 }
 
 func TestAccSyncIncrementalSyncPythonNotebookDelete(t *testing.T) {
@@ -437,14 +438,14 @@ func TestAccSyncIncrementalSyncPythonNotebookDelete(t *testing.T) {
 	assertSync.waitForCompletionMarker()
 
 	// notebook was uploaded properly
-	assertSync.remoteDirContent(ctx, "", []string{".gitignore", "foo"})
+	assertSync.remoteDirContent(ctx, "", append(repoFiles, ".gitignore", "foo"))
 	assertSync.objectType(ctx, "foo", "NOTEBOOK")
 	assertSync.language(ctx, "foo", "PYTHON")
 
 	// Delete notebook
 	f.Remove(t)
 	assertSync.waitForCompletionMarker()
-	assertSync.remoteDirContent(ctx, "", []string{".gitignore"})
+	assertSync.remoteDirContent(ctx, "", append(repoFiles, ".gitignore"))
 }
 
 func TestAccSyncEnsureRemotePathIsUsableIfRepoDoesntExist(t *testing.T) {
