@@ -15,6 +15,7 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/files"
+	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -169,6 +170,35 @@ func runFilerReadDirTest(t *testing.T, ctx context.Context, f filer.Filer) {
 	entries, err = f.ReadDir(ctx, "empty-dir")
 	assert.NoError(t, err)
 	assert.Len(t, entries, 0)
+}
+
+func temporaryWorkspaceDir(t *testing.T, w *databricks.WorkspaceClient) string {
+	ctx := context.Background()
+	me, err := w.CurrentUser.Me(ctx)
+	require.NoError(t, err)
+
+	path := fmt.Sprintf("/Users/%s/%s", me.UserName, RandomName("integration-test-wsfs-"))
+
+	// Ensure directory exists, but doesn't exist YET!
+	// Otherwise we could inadvertently remove a directory that already exists on cleanup.
+	t.Logf("mkdir %s", path)
+	err = w.Workspace.MkdirsByPath(ctx, path)
+	require.NoError(t, err)
+
+	// Remove test directory on test completion.
+	t.Cleanup(func() {
+		t.Logf("rm -rf %s", path)
+		err := w.Workspace.Delete(ctx, workspace.Delete{
+			Path:      path,
+			Recursive: true,
+		})
+		if err == nil || apierr.IsMissing(err) {
+			return
+		}
+		t.Logf("unable to remove temporary workspace directory %s: %#v", path, err)
+	})
+
+	return path
 }
 
 func setupWorkspaceFilesTest(t *testing.T) (context.Context, filer.Filer) {
