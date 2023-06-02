@@ -2,7 +2,7 @@ package databrickscfg
 
 import (
 	"context"
-	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/databricks/databricks-sdk-go/config"
@@ -12,7 +12,7 @@ import (
 func TestLoadOrCreate(t *testing.T) {
 	dir := t.TempDir()
 
-	path := path.Join(dir, "databrickscfg")
+	path := filepath.Join(dir, "databrickscfg")
 	file, err := loadOrCreateConfigFile(path)
 	assert.NoError(t, err)
 	assert.NotNil(t, file)
@@ -131,7 +131,7 @@ func TestSaveToProfile_ErrorOnMatch(t *testing.T) {
 
 func TestSaveToProfile_NewFile(t *testing.T) {
 	ctx := context.Background()
-	path := path.Join(t.TempDir(), "databrickscfg")
+	path := filepath.Join(t.TempDir(), "databrickscfg")
 
 	err := SaveToProfile(ctx, &config.Config{
 		ConfigFile: path,
@@ -145,7 +145,7 @@ func TestSaveToProfile_NewFile(t *testing.T) {
 
 func TestSaveToProfile_ClearingPreviousProfile(t *testing.T) {
 	ctx := context.Background()
-	path := path.Join(t.TempDir(), "databrickscfg")
+	path := filepath.Join(t.TempDir(), "databrickscfg")
 
 	err := SaveToProfile(ctx, &config.Config{
 		ConfigFile: path,

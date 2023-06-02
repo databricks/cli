@@ -13,6 +13,9 @@ import (
 const fileMode = 0o600
 
 func loadOrCreateConfigFile(filename string) (*config.File, error) {
+	if filename == "" {
+		filename = "~/.databrickscfg"
+	}
 	configFile, err := config.LoadFile(filename)
 	if err != nil && os.IsNotExist(err) {
 		file, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE|os.O_TRUNC, fileMode)
@@ -91,7 +94,6 @@ func SaveToProfile(ctx context.Context, cfg *config.Config) error {
 		key.SetValue(attr.GetString(cfg))
 	}
 
-	// ignoring err because we've read the file already
 	orig, backupErr := os.ReadFile(configFile.Path())
 	if len(orig) > 0 && backupErr == nil {
 		log.Infof(ctx, "Backing up in %s.bak", configFile.Path())
@@ -99,7 +101,10 @@ func SaveToProfile(ctx context.Context, cfg *config.Config) error {
 		if err != nil {
 			return fmt.Errorf("backup: %w", err)
 		}
-		log.Infof(ctx, "Overriding %s", configFile.Path())
+		log.Infof(ctx, "Overwriting %s", configFile.Path())
+	} else if backupErr != nil {
+		log.Warnf(ctx, "Failed to backup %s: %v. Proceeding to save",
+			configFile.Path(), backupErr)
 	} else {
 		log.Infof(ctx, "Saving %s", configFile.Path())
 	}
