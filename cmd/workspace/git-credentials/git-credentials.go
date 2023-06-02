@@ -61,7 +61,7 @@ var createCmd = &cobra.Command{
 		} else {
 			if len(args) == 0 {
 				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "Loading prompts for missing command argument. You can cancel the process and provide an argument yourself instead."
+				promptSpinner <- "No GIT_PROVIDER argument specified. Loading names for Git Credentials drop-down."
 				names, err := w.GitCredentials.CredentialInfoGitProviderToCredentialIdMap(ctx)
 				close(promptSpinner)
 				if err != nil {
@@ -119,7 +119,7 @@ var deleteCmd = &cobra.Command{
 		} else {
 			if len(args) == 0 {
 				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "Loading prompts for missing command argument. You can cancel the process and provide an argument yourself instead."
+				promptSpinner <- "No CREDENTIAL_ID argument specified. Loading names for Git Credentials drop-down."
 				names, err := w.GitCredentials.CredentialInfoGitProviderToCredentialIdMap(ctx)
 				close(promptSpinner)
 				if err != nil {
@@ -180,7 +180,7 @@ var getCmd = &cobra.Command{
 		} else {
 			if len(args) == 0 {
 				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "Loading prompts for missing command argument. You can cancel the process and provide an argument yourself instead."
+				promptSpinner <- "No CREDENTIAL_ID argument specified. Loading names for Git Credentials drop-down."
 				names, err := w.GitCredentials.CredentialInfoGitProviderToCredentialIdMap(ctx)
 				close(promptSpinner)
 				if err != nil {
@@ -273,7 +273,7 @@ var updateCmd = &cobra.Command{
 		} else {
 			if len(args) == 0 {
 				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "Loading prompts for missing command argument. You can cancel the process and provide an argument yourself instead."
+				promptSpinner <- "No CREDENTIAL_ID argument specified. Loading names for Git Credentials drop-down."
 				names, err := w.GitCredentials.CredentialInfoGitProviderToCredentialIdMap(ctx)
 				close(promptSpinner)
 				if err != nil {

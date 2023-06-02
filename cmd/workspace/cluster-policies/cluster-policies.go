@@ -79,7 +79,7 @@ var createCmd = &cobra.Command{
 		} else {
 			if len(args) == 0 {
 				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "Loading prompts for missing command argument. You can cancel the process and provide an argument yourself instead."
+				promptSpinner <- "No NAME argument specified. Loading names for Cluster Policies drop-down."
 				names, err := w.ClusterPolicies.PolicyNameToPolicyIdMap(ctx, compute.ListClusterPoliciesRequest{})
 				close(promptSpinner)
 				if err != nil {
@@ -138,7 +138,7 @@ var deleteCmd = &cobra.Command{
 		} else {
 			if len(args) == 0 {
 				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "Loading prompts for missing command argument. You can cancel the process and provide an argument yourself instead."
+				promptSpinner <- "No POLICY_ID argument specified. Loading names for Cluster Policies drop-down."
 				names, err := w.ClusterPolicies.PolicyNameToPolicyIdMap(ctx, compute.ListClusterPoliciesRequest{})
 				close(promptSpinner)
 				if err != nil {
@@ -252,7 +252,7 @@ var getCmd = &cobra.Command{
 		} else {
 			if len(args) == 0 {
 				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "Loading prompts for missing command argument. You can cancel the process and provide an argument yourself instead."
+				promptSpinner <- "No POLICY_ID argument specified. Loading names for Cluster Policies drop-down."
 				names, err := w.ClusterPolicies.PolicyNameToPolicyIdMap(ctx, compute.ListClusterPoliciesRequest{})
 				close(promptSpinner)
 				if err != nil {

@@ -120,7 +120,7 @@ var deleteCmd = &cobra.Command{
 		} else {
 			if len(args) == 0 {
 				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "Loading prompts for missing command argument. You can cancel the process and provide an argument yourself instead."
+				promptSpinner <- "No ID argument specified. Loading names for Users drop-down."
 				names, err := w.Users.UserUserNameToIdMap(ctx, iam.ListUsersRequest{})
 				close(promptSpinner)
 				if err != nil {
@@ -178,7 +178,7 @@ var getCmd = &cobra.Command{
 		} else {
 			if len(args) == 0 {
 				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "Loading prompts for missing command argument. You can cancel the process and provide an argument yourself instead."
+				promptSpinner <- "No ID argument specified. Loading names for Users drop-down."
 				names, err := w.Users.UserUserNameToIdMap(ctx, iam.ListUsersRequest{})
 				close(promptSpinner)
 				if err != nil {
@@ -294,7 +294,7 @@ var patchCmd = &cobra.Command{
 		} else {
 			if len(args) == 0 {
 				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "Loading prompts for missing command argument. You can cancel the process and provide an argument yourself instead."
+				promptSpinner <- "No ID argument specified. Loading names for Users drop-down."
 				names, err := w.Users.UserUserNameToIdMap(ctx, iam.ListUsersRequest{})
 				close(promptSpinner)
 				if err != nil {
@@ -363,7 +363,7 @@ var updateCmd = &cobra.Command{
 		} else {
 			if len(args) == 0 {
 				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "Loading prompts for missing command argument. You can cancel the process and provide an argument yourself instead."
+				promptSpinner <- "No ID argument specified. Loading names for Users drop-down."
 				names, err := w.Users.UserUserNameToIdMap(ctx, iam.ListUsersRequest{})
 				close(promptSpinner)
 				if err != nil {

@@ -184,7 +184,7 @@ var getCmd = &cobra.Command{
 		} else {
 			if len(args) == 0 {
 				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "Loading prompts for missing command argument. You can cancel the process and provide an argument yourself instead."
+				promptSpinner <- "No LOG_DELIVERY_CONFIGURATION_ID argument specified. Loading names for Log Delivery drop-down."
 				names, err := a.LogDelivery.LogDeliveryConfigurationConfigNameToConfigIdMap(ctx, billing.ListLogDeliveryRequest{})
 				close(promptSpinner)
 				if err != nil {

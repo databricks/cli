@@ -62,7 +62,7 @@ var deleteCmd = &cobra.Command{
 		} else {
 			if len(args) == 0 {
 				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "Loading prompts for missing command argument. You can cancel the process and provide an argument yourself instead."
+				promptSpinner <- "No FULL_NAME argument specified. Loading names for Tables drop-down."
 				names, err := w.Tables.TableInfoNameToTableIdMap(ctx, catalog.ListTablesRequest{})
 				close(promptSpinner)
 				if err != nil {
@@ -126,7 +126,7 @@ var getCmd = &cobra.Command{
 		} else {
 			if len(args) == 0 {
 				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "Loading prompts for missing command argument. You can cancel the process and provide an argument yourself instead."
+				promptSpinner <- "No FULL_NAME argument specified. Loading names for Tables drop-down."
 				names, err := w.Tables.TableInfoNameToTableIdMap(ctx, catalog.ListTablesRequest{})
 				close(promptSpinner)
 				if err != nil {
@@ -257,7 +257,7 @@ var listSummariesCmd = &cobra.Command{
 		} else {
 			if len(args) == 0 {
 				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "Loading prompts for missing command argument. You can cancel the process and provide an argument yourself instead."
+				promptSpinner <- "No CATALOG_NAME argument specified. Loading names for Tables drop-down."
 				names, err := w.Tables.TableInfoNameToTableIdMap(ctx, catalog.ListTablesRequest{})
 				close(promptSpinner)
 				if err != nil {

@@ -170,7 +170,7 @@ var createCmd = &cobra.Command{
 		} else {
 			if len(args) == 0 {
 				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "Loading prompts for missing command argument. You can cancel the process and provide an argument yourself instead."
+				promptSpinner <- "No SPARK_VERSION argument specified. Loading names for Clusters drop-down."
 				names, err := w.Clusters.ClusterInfoClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
 				close(promptSpinner)
 				if err != nil {
@@ -253,7 +253,7 @@ var deleteCmd = &cobra.Command{
 		} else {
 			if len(args) == 0 {
 				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "Loading prompts for missing command argument. You can cancel the process and provide an argument yourself instead."
+				promptSpinner <- "No CLUSTER_ID argument specified. Loading names for Clusters drop-down."
 				names, err := w.Clusters.ClusterInfoClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
 				close(promptSpinner)
 				if err != nil {
@@ -444,7 +444,7 @@ var eventsCmd = &cobra.Command{
 		} else {
 			if len(args) == 0 {
 				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "Loading prompts for missing command argument. You can cancel the process and provide an argument yourself instead."
+				promptSpinner <- "No CLUSTER_ID argument specified. Loading names for Clusters drop-down."
 				names, err := w.Clusters.ClusterInfoClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
 				close(promptSpinner)
 				if err != nil {
@@ -508,7 +508,7 @@ var getCmd = &cobra.Command{
 		} else {
 			if len(args) == 0 {
 				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "Loading prompts for missing command argument. You can cancel the process and provide an argument yourself instead."
+				promptSpinner <- "No CLUSTER_ID argument specified. Loading names for Clusters drop-down."
 				names, err := w.Clusters.ClusterInfoClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
 				close(promptSpinner)
 				if err != nil {
@@ -684,7 +684,7 @@ var permanentDeleteCmd = &cobra.Command{
 		} else {
 			if len(args) == 0 {
 				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "Loading prompts for missing command argument. You can cancel the process and provide an argument yourself instead."
+				promptSpinner <- "No CLUSTER_ID argument specified. Loading names for Clusters drop-down."
 				names, err := w.Clusters.ClusterInfoClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
 				close(promptSpinner)
 				if err != nil {
@@ -744,7 +744,7 @@ var pinCmd = &cobra.Command{
 		} else {
 			if len(args) == 0 {
 				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "Loading prompts for missing command argument. You can cancel the process and provide an argument yourself instead."
+				promptSpinner <- "No CLUSTER_ID argument specified. Loading names for Clusters drop-down."
 				names, err := w.Clusters.ClusterInfoClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
 				close(promptSpinner)
 				if err != nil {
@@ -811,7 +811,7 @@ var resizeCmd = &cobra.Command{
 		} else {
 			if len(args) == 0 {
 				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "Loading prompts for missing command argument. You can cancel the process and provide an argument yourself instead."
+				promptSpinner <- "No CLUSTER_ID argument specified. Loading names for Clusters drop-down."
 				names, err := w.Clusters.ClusterInfoClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
 				close(promptSpinner)
 				if err != nil {
@@ -894,7 +894,7 @@ var restartCmd = &cobra.Command{
 		} else {
 			if len(args) == 0 {
 				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "Loading prompts for missing command argument. You can cancel the process and provide an argument yourself instead."
+				promptSpinner <- "No CLUSTER_ID argument specified. Loading names for Clusters drop-down."
 				names, err := w.Clusters.ClusterInfoClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
 				close(promptSpinner)
 				if err != nil {
@@ -1009,7 +1009,7 @@ var startCmd = &cobra.Command{
 		} else {
 			if len(args) == 0 {
 				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "Loading prompts for missing command argument. You can cancel the process and provide an argument yourself instead."
+				promptSpinner <- "No CLUSTER_ID argument specified. Loading names for Clusters drop-down."
 				names, err := w.Clusters.ClusterInfoClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
 				close(promptSpinner)
 				if err != nil {
@@ -1086,7 +1086,7 @@ var unpinCmd = &cobra.Command{
 		} else {
 			if len(args) == 0 {
 				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "Loading prompts for missing command argument. You can cancel the process and provide an argument yourself instead."
+				promptSpinner <- "No CLUSTER_ID argument specified. Loading names for Clusters drop-down."
 				names, err := w.Clusters.ClusterInfoClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
 				close(promptSpinner)
 				if err != nil {

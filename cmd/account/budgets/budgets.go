@@ -95,7 +95,7 @@ var deleteCmd = &cobra.Command{
 		} else {
 			if len(args) == 0 {
 				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "Loading prompts for missing command argument. You can cancel the process and provide an argument yourself instead."
+				promptSpinner <- "No BUDGET_ID argument specified. Loading names for Budgets drop-down."
 				names, err := a.Budgets.BudgetWithStatusNameToBudgetIdMap(ctx)
 				close(promptSpinner)
 				if err != nil {
@@ -154,7 +154,7 @@ var getCmd = &cobra.Command{
 		} else {
 			if len(args) == 0 {
 				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "Loading prompts for missing command argument. You can cancel the process and provide an argument yourself instead."
+				promptSpinner <- "No BUDGET_ID argument specified. Loading names for Budgets drop-down."
 				names, err := a.Budgets.BudgetWithStatusNameToBudgetIdMap(ctx)
 				close(promptSpinner)
 				if err != nil {

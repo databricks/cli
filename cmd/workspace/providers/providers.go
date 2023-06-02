@@ -107,7 +107,7 @@ var deleteCmd = &cobra.Command{
 		} else {
 			if len(args) == 0 {
 				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "Loading prompts for missing command argument. You can cancel the process and provide an argument yourself instead."
+				promptSpinner <- "No NAME argument specified. Loading names for Providers drop-down."
 				names, err := w.Providers.ProviderInfoNameToMetastoreIdMap(ctx, sharing.ListProvidersRequest{})
 				close(promptSpinner)
 				if err != nil {
@@ -167,7 +167,7 @@ var getCmd = &cobra.Command{
 		} else {
 			if len(args) == 0 {
 				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "Loading prompts for missing command argument. You can cancel the process and provide an argument yourself instead."
+				promptSpinner <- "No NAME argument specified. Loading names for Providers drop-down."
 				names, err := w.Providers.ProviderInfoNameToMetastoreIdMap(ctx, sharing.ListProvidersRequest{})
 				close(promptSpinner)
 				if err != nil {
@@ -279,7 +279,7 @@ var listSharesCmd = &cobra.Command{
 		} else {
 			if len(args) == 0 {
 				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "Loading prompts for missing command argument. You can cancel the process and provide an argument yourself instead."
+				promptSpinner <- "No NAME argument specified. Loading names for Providers drop-down."
 				names, err := w.Providers.ProviderInfoNameToMetastoreIdMap(ctx, sharing.ListProvidersRequest{})
 				close(promptSpinner)
 				if err != nil {
@@ -345,7 +345,7 @@ var updateCmd = &cobra.Command{
 		} else {
 			if len(args) == 0 {
 				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "Loading prompts for missing command argument. You can cancel the process and provide an argument yourself instead."
+				promptSpinner <- "No NAME argument specified. Loading names for Providers drop-down."
 				names, err := w.Providers.ProviderInfoNameToMetastoreIdMap(ctx, sharing.ListProvidersRequest{})
 				close(promptSpinner)
 				if err != nil {

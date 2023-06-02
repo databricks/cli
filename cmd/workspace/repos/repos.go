@@ -113,7 +113,7 @@ var deleteCmd = &cobra.Command{
 		} else {
 			if len(args) == 0 {
 				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "Loading prompts for missing command argument. You can cancel the process and provide an argument yourself instead."
+				promptSpinner <- "No REPO_ID argument specified. Loading names for Repos drop-down."
 				names, err := w.Repos.RepoInfoPathToIdMap(ctx, workspace.ListReposRequest{})
 				close(promptSpinner)
 				if err != nil {
@@ -174,7 +174,7 @@ var getCmd = &cobra.Command{
 		} else {
 			if len(args) == 0 {
 				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "Loading prompts for missing command argument. You can cancel the process and provide an argument yourself instead."
+				promptSpinner <- "No REPO_ID argument specified. Loading names for Repos drop-down."
 				names, err := w.Repos.RepoInfoPathToIdMap(ctx, workspace.ListReposRequest{})
 				close(promptSpinner)
 				if err != nil {
@@ -291,7 +291,7 @@ var updateCmd = &cobra.Command{
 		} else {
 			if len(args) == 0 {
 				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "Loading prompts for missing command argument. You can cancel the process and provide an argument yourself instead."
+				promptSpinner <- "No REPO_ID argument specified. Loading names for Repos drop-down."
 				names, err := w.Repos.RepoInfoPathToIdMap(ctx, workspace.ListReposRequest{})
 				close(promptSpinner)
 				if err != nil {
