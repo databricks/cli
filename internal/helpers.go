@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -54,17 +55,50 @@ type cobraTestRunner struct {
 	stdout bytes.Buffer
 	stderr bytes.Buffer
 
+	// Line-by-line output.
+	// Background goroutines populate these channels by reading from stdout/stderr pipes.
+	stdoutLines <-chan string
+	stderrLines <-chan string
+
 	errch <-chan error
 }
 
+func consumeLines(ctx context.Context, r io.Reader) <-chan string {
+	ch := make(chan string, 1000)
+	go func() {
+		defer close(ch)
+		scanner := bufio.NewScanner(r)
+		for scanner.Scan() {
+			select {
+			case <-ctx.Done():
+				return
+			case ch <- scanner.Text():
+			}
+		}
+	}()
+	return ch
+}
+
 func (t *cobraTestRunner) RunBackground() {
+	var stdoutR, stderrR io.Reader
+	var stdoutW, stderrW io.WriteCloser
+	stdoutR, stdoutW = io.Pipe()
+	stderrR, stderrW = io.Pipe()
 	root := root.RootCmd
-	root.SetOut(&t.stdout)
-	root.SetErr(&t.stderr)
+	root.SetOut(stdoutW)
+	root.SetErr(stderrW)
 	root.SetArgs(t.args)
 
 	errch := make(chan error)
 	ctx, cancel := context.WithCancel(context.Background())
+
+	// Tee stdout/stderr to buffers.
+	stdoutR = io.TeeReader(stdoutR, &t.stdout)
+	stderrR = io.TeeReader(stderrR, &t.stderr)
+
+	// Consume stdout/stderr line-by-line.
+	t.stdoutLines = consumeLines(ctx, stdoutR)
+	t.stderrLines = consumeLines(ctx, stderrR)
 
 	// Run command in background.
 	go func() {
@@ -72,6 +106,10 @@ func (t *cobraTestRunner) RunBackground() {
 		if err != nil {
 			t.Logf("Error running command: %s", err)
 		}
+
+		// Close pipes to signal EOF.
+		stdoutW.Close()
+		stderrW.Close()
 
 		if t.stdout.Len() > 0 {
 			// Make a copy of the buffer such that it remains "unread".
@@ -126,6 +164,9 @@ func (c *cobraTestRunner) Eventually(condition func() bool, waitFor time.Duratio
 
 	ticker := time.NewTicker(tick)
 	defer ticker.Stop()
+
+	// Kick off condition check immediately.
+	go func() { ch <- condition() }()
 
 	for tick := ticker.C; ; {
 		select {
