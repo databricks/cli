@@ -17,15 +17,15 @@ func loadOrCreateConfigFile(filename string) (*config.File, error) {
 	if err != nil && os.IsNotExist(err) {
 		file, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE|os.O_TRUNC, fileMode)
 		if err != nil {
-			return nil, fmt.Errorf("create config file: %w", err)
+			return nil, fmt.Errorf("create %s: %w", filename, err)
 		}
 		defer file.Close()
 		configFile, err = config.LoadFile(filename)
 		if err != nil {
-			return nil, fmt.Errorf("cannot load created file: %w", err)
+			return nil, fmt.Errorf("load created %s: %w", filename, err)
 		}
 	} else if err != nil {
-		return nil, fmt.Errorf("cannot parse config file: %w", err)
+		return nil, fmt.Errorf("parse %s: %w", filename, err)
 	}
 	return configFile, nil
 }
