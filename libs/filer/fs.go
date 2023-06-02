@@ -7,7 +7,7 @@ import (
 	"io/fs"
 )
 
-// filerFS implements the fs.filerFS interface for a filer.
+// filerFS implements the fs.FS interface for a filer.
 type filerFS struct {
 	ctx   context.Context
 	filer Filer
