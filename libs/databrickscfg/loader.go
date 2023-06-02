@@ -22,7 +22,7 @@ func (e errMultipleProfiles) Error() string {
 	return fmt.Sprintf("multiple profiles matched: %s", strings.Join(e, ", "))
 }
 
-func findMatchingProfile(ctx context.Context, configFile *config.File, matcher func(*ini.Section) bool) (*ini.Section, error) {
+func findMatchingProfile(configFile *config.File, matcher func(*ini.Section) bool) (*ini.Section, error) {
 	// Look for sections in the configuration file that match the configured host.
 	var matching []*ini.Section
 	for _, section := range configFile.Sections() {
@@ -75,7 +75,7 @@ func (l profileFromHostLoader) Configure(cfg *config.Config) error {
 	}
 	// Normalized version of the configured host.
 	host := normalizeHost(cfg.Host)
-	match, err := findMatchingProfile(ctx, configFile, func(s *ini.Section) bool {
+	match, err := findMatchingProfile(configFile, func(s *ini.Section) bool {
 		key, err := s.GetKey("host")
 		if err != nil {
 			log.Tracef(ctx, "section %s: %s", s.Name(), err)

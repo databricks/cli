@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"path/filepath"
 
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/config"
@@ -13,38 +12,37 @@ import (
 
 const fileMode = 0o600
 
-func SaveToProfile(ctx context.Context, cfg *config.Config) error {
-	configFile, err := config.LoadFile(cfg.ConfigFile)
+func loadOrCreateConfigFile(filename string) (*config.File, error) {
+	configFile, err := config.LoadFile(filename)
 	if err != nil && os.IsNotExist(err) {
-		homedir, err := os.UserHomeDir()
+		file, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE|os.O_TRUNC, fileMode)
 		if err != nil {
-			return fmt.Errorf("cannot find homedir: %w", err)
+			return nil, fmt.Errorf("create config file: %w", err)
 		}
-		path := filepath.Join(homedir, ".databrickscfg")
-		file, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, fileMode)
+		defer file.Close()
+		configFile, err = config.LoadFile(filename)
 		if err != nil {
-			return fmt.Errorf("create config file: %w", err)
-		}
-		err = file.Close()
-		if err != nil {
-			return fmt.Errorf("close config file: %w", err)
-		}
-		configFile, err = config.LoadFile(path)
-		if err != nil {
-			panic(fmt.Errorf("cannot load created file: %w", err))
+			return nil, fmt.Errorf("cannot load created file: %w", err)
 		}
 	} else if err != nil {
-		return fmt.Errorf("cannot parse config file: %w", err)
+		return nil, fmt.Errorf("cannot parse config file: %w", err)
 	}
+	return configFile, nil
+}
 
-	section, err := findMatchingProfile(ctx, configFile, func(s *ini.Section) bool {
+func matchOrCreateSection(ctx context.Context, configFile *config.File, cfg *config.Config) (*ini.Section, error) {
+	section, err := findMatchingProfile(configFile, func(s *ini.Section) bool {
 		if cfg.Profile == s.Name() {
 			return true
 		}
 		raw := s.KeysHash()
 		if cfg.AccountID != "" {
-			// here we rely on map zerovals for matching with accounts
+			// here we rely on map zerovals for matching with accounts:
+			// if profile has no account id, the raw["account_id"] will be empty
 			return cfg.AccountID == raw["account_id"]
+		}
+		if cfg.Host == "" {
+			return false
 		}
 		host, ok := raw["host"]
 		if !ok {
@@ -57,14 +55,28 @@ func SaveToProfile(ctx context.Context, cfg *config.Config) error {
 	if err == errNoMatchingProfiles {
 		section, err = configFile.NewSection(cfg.Profile)
 		if err != nil {
-			return fmt.Errorf("cannot create new profile: %w", err)
+			return nil, fmt.Errorf("cannot create new profile: %w", err)
 		}
 	} else if err != nil {
+		return nil, err
+	}
+	return section, nil
+}
+
+func SaveToProfile(ctx context.Context, cfg *config.Config) error {
+	configFile, err := loadOrCreateConfigFile(cfg.ConfigFile)
+	if err != nil {
+		return err
+	}
+
+	section, err := matchOrCreateSection(ctx, configFile, cfg)
+	if err != nil {
 		return err
 	}
 
 	// zeroval profile name before adding it to a section
 	cfg.Profile = ""
+	cfg.ConfigFile = ""
 
 	// clear old keys in case we're overriding the section
 	for _, oldKey := range section.KeyStrings() {
@@ -80,12 +92,16 @@ func SaveToProfile(ctx context.Context, cfg *config.Config) error {
 	}
 
 	// ignoring err because we've read the file already
-	orig, _ := os.ReadFile(configFile.Path())
-	log.Infof(ctx, "Backing up in %s.bak", configFile.Path())
-	err = os.WriteFile(configFile.Path()+".bak", orig, fileMode)
-	if err != nil {
-		return fmt.Errorf("backup: %w", err)
+	orig, backupErr := os.ReadFile(configFile.Path())
+	if len(orig) > 0 && backupErr == nil {
+		log.Infof(ctx, "Backing up in %s.bak", configFile.Path())
+		err = os.WriteFile(configFile.Path()+".bak", orig, fileMode)
+		if err != nil {
+			return fmt.Errorf("backup: %w", err)
+		}
+		log.Infof(ctx, "Overriding %s", configFile.Path())
+	} else {
+		log.Infof(ctx, "Saving %s", configFile.Path())
 	}
-	log.Infof(ctx, "Overriding %s", configFile.Path())
 	return configFile.SaveTo(configFile.Path())
 }
