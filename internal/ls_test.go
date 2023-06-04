@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"io/fs"
+	"path"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -46,6 +48,27 @@ func TestFsLsForDbfs(t *testing.T) {
 	assert.Equal(t, "bye.txt", parsedStdout[1]["name"])
 	assert.Equal(t, false, parsedStdout[1]["is_directory"])
 	assert.Equal(t, float64(3), parsedStdout[1]["size"])
+}
+
+func TestFsLsForDbfsOnFile(t *testing.T) {
+	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+
+	ctx := context.Background()
+	w, err := databricks.NewWorkspaceClient()
+	require.NoError(t, err)
+
+	tmpDir := temporaryDbfsDir(t, w)
+
+	f, err := filer.NewDbfsClient(w, tmpDir)
+	require.NoError(t, err)
+
+	err = f.Mkdir(ctx, "a")
+	require.NoError(t, err)
+	err = f.Write(ctx, "a/hello.txt", strings.NewReader("abc"), filer.CreateParentDirectories)
+	require.NoError(t, err)
+
+	_, _, err = RequireErrorRun(t, "fs", "ls", "dbfs:"+path.Join(tmpDir, "a", "hello.txt"), "--output=json")
+	assert.Regexp(t, regexp.MustCompile("not a directory: .*/a/hello.txt"), err.Error())
 }
 
 func TestFsLsForDbfsOnEmptyDir(t *testing.T) {
