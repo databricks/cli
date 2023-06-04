@@ -3,9 +3,11 @@ package filer
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"io/fs"
 	"net/http"
+	"net/url"
 	"path"
 	"sort"
 	"time"
@@ -271,4 +273,18 @@ func (w *DbfsClient) Stat(ctx context.Context, name string) (fs.FileInfo, error)
 	}
 
 	return dbfsFileInfo{*info}, nil
+}
+
+func ResolveDbfsPath(path string) (string, error) {
+	fileUri, err := url.Parse(path)
+	if err != nil {
+		return "", err
+	}
+
+	// Only dbfs file scheme is supported
+	if fileUri.Scheme != DbfsScheme {
+		return "", fmt.Errorf("expected dbfs path (with the dbfs:/ prefix): %s", path)
+	}
+
+	return fileUri.Path, nil
 }

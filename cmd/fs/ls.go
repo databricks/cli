@@ -1,8 +1,6 @@
 package fs
 
 import (
-	"fmt"
-	"net/url"
 	"sort"
 
 	"github.com/databricks/cli/cmd/root"
@@ -33,17 +31,12 @@ var lsCmd = &cobra.Command{
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		fileUri, err := url.Parse(args[0])
+		path, err := filer.ResolveDbfsPath(args[0])
 		if err != nil {
 			return err
 		}
 
-		// Only dbfs file scheme is supported
-		if fileUri.Scheme != filer.DbfsScheme {
-			return fmt.Errorf("expected dbfs path (with the dbfs:/ prefix): %s", args[0])
-		}
-
-		f, err := filer.NewDbfsClient(w, fileUri.Path)
+		f, err := filer.NewDbfsClient(w, path)
 		if err != nil {
 			return err
 		}
