@@ -3,6 +3,7 @@ package fs
 import (
 	"fmt"
 	"net/url"
+	"sort"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
@@ -59,6 +60,9 @@ var lsCmd = &cobra.Command{
 				return err
 			}
 			lsOutputs = append(lsOutputs, *parsedEntry)
+			sort.Slice(lsOutputs, func(i, j int) bool {
+				return lsOutputs[i].Name < lsOutputs[j].Name
+			})
 		}
 
 		// Use template for long mode if the flag is set
