@@ -8,6 +8,7 @@ import (
 
 var mkdirCmd = &cobra.Command{
 	Use:     "mkdir DIR_PATH",
+	Aliases: []string{"mkdirs"},
 	Short:   "Make directories",
 	Long:    `Mkdir will create directories along the path to the argument directory.`,
 	Args:    cobra.ExactArgs(1),
