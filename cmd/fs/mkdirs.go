@@ -7,7 +7,7 @@ import (
 )
 
 var mkdirsCmd = &cobra.Command{
-	Use:     "mkdirs <dir-path>",
+	Use:     "mkdirs DIR_PATH",
 	Short:   "Make directories",
 	Long:    `Mkdirs will create directories along the path to the argument directory.`,
 	Args:    cobra.ExactArgs(1),
@@ -17,7 +17,7 @@ var mkdirsCmd = &cobra.Command{
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		path, err := filer.ResolveDbfsPath(args[0])
+		path, err := resolveDbfsPath(args[0])
 		if err != nil {
 			return err
 		}
