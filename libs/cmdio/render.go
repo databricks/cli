@@ -6,6 +6,7 @@ import (
 	"strings"
 	"text/tabwriter"
 	"text/template"
+	"time"
 
 	"github.com/fatih/color"
 	"github.com/nwidger/jsoncolor"
@@ -84,6 +85,9 @@ func renderTemplate(w io.Writer, tmpl string, v any) error {
 				return "", err
 			}
 			return string(b), nil
+		},
+		"pretty_date": func(t time.Time) string {
+			return t.Format("2006-01-02T15:04:05Z")
 		},
 	}).Parse(tmpl)
 	if err != nil {
