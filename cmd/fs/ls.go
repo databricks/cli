@@ -65,26 +65,26 @@ var lsCmd = &cobra.Command{
 			return err
 		}
 
-		lsOutputs := make([]jsonDirEntry, 0)
+		jsonDirEntries := make([]jsonDirEntry, 0)
 		for _, entry := range entries {
-			parsedEntry, err := toJsonDirEntry(entry)
+			jsonDirEntry, err := toJsonDirEntry(entry)
 			if err != nil {
 				return err
 			}
-			lsOutputs = append(lsOutputs, *parsedEntry)
-			sort.Slice(lsOutputs, func(i, j int) bool {
-				return lsOutputs[i].Name < lsOutputs[j].Name
-			})
+			jsonDirEntries = append(jsonDirEntries, *jsonDirEntry)
 		}
+		sort.Slice(jsonDirEntries, func(i, j int) bool {
+			return jsonDirEntries[i].Name < jsonDirEntries[j].Name
+		})
 
 		// Use template for long mode if the flag is set
 		if longMode {
-			return cmdio.RenderWithTemplate(ctx, lsOutputs, cmdio.Heredoc(`
+			return cmdio.RenderWithTemplate(ctx, jsonDirEntries, cmdio.Heredoc(`
 			{{range .}}{{if .IsDir}}DIRECTORY {{else}}FILE      {{end}}{{.Size}} {{.ModTime|pretty_date}} {{.Name}}
 			{{end}}
 			`))
 		}
-		return cmdio.Render(ctx, lsOutputs)
+		return cmdio.Render(ctx, jsonDirEntries)
 	},
 }
 
