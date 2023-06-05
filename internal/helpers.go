@@ -5,18 +5,17 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"math/rand"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/databricks/cli/cmd/root"
 	_ "github.com/databricks/cli/cmd/version"
-	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/stretchr/testify/require"
 
 	_ "github.com/databricks/cli/cmd/workspace"
@@ -57,17 +56,53 @@ type cobraTestRunner struct {
 	stdout bytes.Buffer
 	stderr bytes.Buffer
 
+	// Line-by-line output.
+	// Background goroutines populate these channels by reading from stdout/stderr pipes.
+	stdoutLines <-chan string
+	stderrLines <-chan string
+
 	errch <-chan error
 }
 
+func consumeLines(ctx context.Context, wg *sync.WaitGroup, r io.Reader) <-chan string {
+	ch := make(chan string, 1000)
+	wg.Add(1)
+	go func() {
+		defer close(ch)
+		defer wg.Done()
+		scanner := bufio.NewScanner(r)
+		for scanner.Scan() {
+			select {
+			case <-ctx.Done():
+				return
+			case ch <- scanner.Text():
+			}
+		}
+	}()
+	return ch
+}
+
 func (t *cobraTestRunner) RunBackground() {
+	var stdoutR, stderrR io.Reader
+	var stdoutW, stderrW io.WriteCloser
+	stdoutR, stdoutW = io.Pipe()
+	stderrR, stderrW = io.Pipe()
 	root := root.RootCmd
-	root.SetOut(&t.stdout)
-	root.SetErr(&t.stderr)
+	root.SetOut(stdoutW)
+	root.SetErr(stderrW)
 	root.SetArgs(t.args)
 
 	errch := make(chan error)
 	ctx, cancel := context.WithCancel(context.Background())
+
+	// Tee stdout/stderr to buffers.
+	stdoutR = io.TeeReader(stdoutR, &t.stdout)
+	stderrR = io.TeeReader(stderrR, &t.stderr)
+
+	// Consume stdout/stderr line-by-line.
+	var wg sync.WaitGroup
+	t.stdoutLines = consumeLines(ctx, &wg, stdoutR)
+	t.stderrLines = consumeLines(ctx, &wg, stderrR)
 
 	// Run command in background.
 	go func() {
@@ -75,6 +110,14 @@ func (t *cobraTestRunner) RunBackground() {
 		if err != nil {
 			t.Logf("Error running command: %s", err)
 		}
+
+		// Close pipes to signal EOF.
+		stdoutW.Close()
+		stderrW.Close()
+
+		// Wait for the [consumeLines] routines to finish now that
+		// the pipes they're reading from have closed.
+		wg.Wait()
 
 		if t.stdout.Len() > 0 {
 			// Make a copy of the buffer such that it remains "unread".
@@ -130,6 +173,9 @@ func (c *cobraTestRunner) Eventually(condition func() bool, waitFor time.Duratio
 	ticker := time.NewTicker(tick)
 	defer ticker.Stop()
 
+	// Kick off condition check immediately.
+	go func() { ch <- condition() }()
+
 	for tick := ticker.C; ; {
 		select {
 		case err := <-c.errch:
@@ -178,33 +224,4 @@ func writeFile(t *testing.T, name string, body string) string {
 	require.NoError(t, err)
 	f.Close()
 	return f.Name()
-}
-
-func temporaryWorkspaceDir(t *testing.T, w *databricks.WorkspaceClient) string {
-	ctx := context.Background()
-	me, err := w.CurrentUser.Me(ctx)
-	require.NoError(t, err)
-
-	path := fmt.Sprintf("/Users/%s/%s", me.UserName, RandomName("integration-test-wsfs-"))
-
-	// Ensure directory exists, but doesn't exist YET!
-	// Otherwise we could inadvertently remove a directory that already exists on cleanup.
-	t.Logf("mkdir %s", path)
-	err = w.Workspace.MkdirsByPath(ctx, path)
-	require.NoError(t, err)
-
-	// Remove test directory on test completion.
-	t.Cleanup(func() {
-		t.Logf("rm -rf %s", path)
-		err := w.Workspace.Delete(ctx, workspace.Delete{
-			Path:      path,
-			Recursive: true,
-		})
-		if err == nil || apierr.IsMissing(err) {
-			return
-		}
-		t.Logf("unable to remove temporary workspace directory %s: %#v", path, err)
-	})
-
-	return path
 }
