@@ -124,7 +124,7 @@ var deleteCmd = &cobra.Command{
 				names, err := a.Users.UserUserNameToIdMap(ctx, iam.ListAccountUsersRequest{})
 				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Account Users drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "Unique ID for a user in the Databricks account")
 				if err != nil {
@@ -182,7 +182,7 @@ var getCmd = &cobra.Command{
 				names, err := a.Users.UserUserNameToIdMap(ctx, iam.ListAccountUsersRequest{})
 				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Account Users drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "Unique ID for a user in the Databricks account")
 				if err != nil {
@@ -298,7 +298,7 @@ var patchCmd = &cobra.Command{
 				names, err := a.Users.UserUserNameToIdMap(ctx, iam.ListAccountUsersRequest{})
 				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Account Users drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "Unique ID for a user in the Databricks account")
 				if err != nil {
@@ -367,7 +367,7 @@ var updateCmd = &cobra.Command{
 				names, err := a.Users.UserUserNameToIdMap(ctx, iam.ListAccountUsersRequest{})
 				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Account Users drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "Databricks user ID")
 				if err != nil {
