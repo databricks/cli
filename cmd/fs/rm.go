@@ -7,7 +7,7 @@ import (
 )
 
 var rmCmd = &cobra.Command{
-	Use:     "rm DIR_PATH",
+	Use:     "rm PATH",
 	Short:   "Remove files and directories from dbfs.",
 	Long:    `Remove files and directories from dbfs.`,
 	Args:    cobra.ExactArgs(1),
@@ -32,6 +32,6 @@ var rmCmd = &cobra.Command{
 var recursive bool
 
 func init() {
-	rmCmd.Flags().BoolVarP(&recursive, "recursive", "r", false, "Allow deletion of non-empty directories.")
+	rmCmd.Flags().BoolVarP(&recursive, "recursive", "r", false, "Recursively delete a non-empty directory.")
 	fsCmd.AddCommand(rmCmd)
 }
