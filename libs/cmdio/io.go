@@ -24,17 +24,17 @@ type cmdIO struct {
 	// e.g. if stdout is a terminal
 	interactive  bool
 	outputFormat flags.Output
-	templates    map[string]string
+	template     string
 	in           io.Reader
 	out          io.Writer
 	err          io.Writer
 }
 
-func NewIO(outputFormat flags.Output, in io.Reader, out io.Writer, err io.Writer, templates map[string]string) *cmdIO {
+func NewIO(outputFormat flags.Output, in io.Reader, out io.Writer, err io.Writer, template string) *cmdIO {
 	return &cmdIO{
 		interactive:  !color.NoColor,
 		outputFormat: outputFormat,
-		templates:    templates,
+		template:     template,
 		in:           in,
 		out:          out,
 		err:          err,
@@ -66,29 +66,25 @@ func (c *cmdIO) IsTTY() bool {
 	return isatty.IsTerminal(fd) || isatty.IsCygwinTerminal(fd)
 }
 
-func (c *cmdIO) Render(v any, templateName string) error {
+func Render(ctx context.Context, v any) error {
+	c := fromContext(ctx)
+	return RenderWithTemplate(ctx, v, c.template)
+}
+
+func RenderWithTemplate(ctx context.Context, v any, template string) error {
 	// TODO: add terminal width & white/dark theme detection
+	c := fromContext(ctx)
 	switch c.outputFormat {
 	case flags.OutputJSON:
 		return renderJson(c.out, v)
 	case flags.OutputText:
-		if c.templates[templateName] != "" {
-			return renderTemplate(c.out, c.templates[templateName], v)
+		if template != "" {
+			return renderTemplate(c.out, template, v)
 		}
 		return renderJson(c.out, v)
 	default:
 		return fmt.Errorf("invalid output format: %s", c.outputFormat)
 	}
-}
-
-func Render(ctx context.Context, v any) error {
-	c := fromContext(ctx)
-	return c.Render(v, "template")
-}
-
-func RenderWithTemplate(ctx context.Context, v any, templateName string) error {
-	c := fromContext(ctx)
-	return c.Render(v, templateName)
 }
 
 type tuple struct{ Name, Id string }
