@@ -20,7 +20,7 @@ require (
 	github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06 // MIT
 	github.com/spf13/cobra v1.7.0 // Apache 2.0
 	github.com/spf13/pflag v1.0.5 // BSD-3-Clause
-	github.com/stretchr/testify v1.8.3 // MIT
+	github.com/stretchr/testify v1.8.4 // MIT
 	github.com/whilp/git-urls v1.0.0 // MIT
 	golang.org/x/exp v0.0.0-20230310171629-522b1b587ee0
 	golang.org/x/mod v0.10.0
