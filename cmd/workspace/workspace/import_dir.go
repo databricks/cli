@@ -8,7 +8,8 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-// TODO: add some comments here
+// TODO: check whether we need mutex for any events been emitted since they are accessing
+// state
 var importDirCmd = &cobra.Command{
 	Use:   "import-dir SOURCE_PATH TARGET_PATH",
 	Short: `Recursively imports a directory from local to the Databricks workspace.`,
