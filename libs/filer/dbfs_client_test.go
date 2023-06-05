@@ -32,4 +32,7 @@ func TestResolveDbfsPath(t *testing.T) {
 
 	_, err = ResolveDbfsPath("/a/b/c")
 	assert.ErrorContains(t, err, "expected dbfs path (with the dbfs:/ prefix): /a/b/c")
+
+	_, err = ResolveDbfsPath("dbfs:a/b/c")
+	assert.ErrorContains(t, err, "expected dbfs path (with the dbfs:/ prefix): dbfs:a/b/c")
 }

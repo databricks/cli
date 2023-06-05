@@ -7,9 +7,9 @@ import (
 	"io"
 	"io/fs"
 	"net/http"
-	"net/url"
 	"path"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/databricks/databricks-sdk-go"
@@ -17,8 +17,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/files"
 	"golang.org/x/exp/slices"
 )
-
-const DbfsScheme = "dbfs"
 
 // Type that implements fs.DirEntry for DBFS.
 type dbfsDirEntry struct {
@@ -276,15 +274,9 @@ func (w *DbfsClient) Stat(ctx context.Context, name string) (fs.FileInfo, error)
 }
 
 func ResolveDbfsPath(path string) (string, error) {
-	fileUri, err := url.Parse(path)
-	if err != nil {
-		return "", err
-	}
-
-	// Only dbfs file scheme is supported
-	if fileUri.Scheme != DbfsScheme {
+	if !strings.HasPrefix(path, "dbfs:/") {
 		return "", fmt.Errorf("expected dbfs path (with the dbfs:/ prefix): %s", path)
 	}
 
-	return fileUri.Path, nil
+	return strings.TrimPrefix(path, "dbfs:"), nil
 }
