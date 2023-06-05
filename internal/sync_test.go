@@ -3,8 +3,10 @@ package internal
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"net/http"
 	"os"
 	"os/exec"
@@ -15,6 +17,7 @@ import (
 	"time"
 
 	_ "github.com/databricks/cli/cmd/sync"
+	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/sync"
 	"github.com/databricks/cli/libs/testfile"
 	"github.com/databricks/databricks-sdk-go"
@@ -63,6 +66,7 @@ type syncTest struct {
 	t          *testing.T
 	c          *cobraTestRunner
 	w          *databricks.WorkspaceClient
+	f          filer.Filer
 	localRoot  string
 	remoteRoot string
 }
@@ -73,6 +77,8 @@ func setupSyncTest(t *testing.T, args ...string) *syncTest {
 	w := databricks.Must(databricks.NewWorkspaceClient())
 	localRoot := t.TempDir()
 	remoteRoot := temporaryWorkspaceDir(t, w)
+	f, err := filer.NewWorkspaceFilesClient(w, remoteRoot)
+	require.NoError(t, err)
 
 	// Prepend common arguments.
 	args = append([]string{
@@ -90,6 +96,7 @@ func setupSyncTest(t *testing.T, args ...string) *syncTest {
 		t:          t,
 		c:          c,
 		w:          w,
+		f:          f,
 		localRoot:  localRoot,
 		remoteRoot: remoteRoot,
 	}
@@ -157,6 +164,13 @@ func (a *syncTest) remoteFileContent(ctx context.Context, relativePath string, e
 		require.NoError(a.t, err)
 		actualContent := string(res)
 		return actualContent == expectedContent
+	}, 30*time.Second, 5*time.Second)
+}
+
+func (a *syncTest) notExist(ctx context.Context, relativePath string) {
+	a.c.Eventually(func() bool {
+		_, err := a.f.Stat(ctx, relativePath)
+		return errors.Is(err, fs.ErrNotExist)
 	}, 30*time.Second, 5*time.Second)
 }
 
@@ -297,8 +311,7 @@ func TestAccSyncNestedFolderSync(t *testing.T) {
 	// delete
 	f.Remove(t)
 	assertSync.waitForCompletionMarker()
-	// directories are not cleaned up right now. This is not ideal
-	assertSync.remoteDirContent(ctx, "dir1/dir2/dir3", []string{})
+	assertSync.notExist(ctx, "dir1")
 	assertSync.snapshotContains(append(repoFiles, ".gitignore"))
 }
 
@@ -326,12 +339,10 @@ func TestAccSyncNestedSpacePlusAndHashAreEscapedSync(t *testing.T) {
 	// delete
 	f.Remove(t)
 	assertSync.waitForCompletionMarker()
-	// directories are not cleaned up right now. This is not ideal
-	assertSync.remoteDirContent(ctx, "dir1/a b+c/c+d e", []string{})
+	assertSync.notExist(ctx, "dir1/a b+c/c+d e")
 	assertSync.snapshotContains(append(repoFiles, ".gitignore"))
 }
 
-// sync does not clean up empty directories from the workspace file system.
 // This is a check for the edge case when a user does the following:
 //
 // 1. Add file foo/bar.txt
@@ -359,8 +370,7 @@ func TestAccSyncIncrementalFileOverwritesFolder(t *testing.T) {
 	f.Remove(t)
 	os.Remove(filepath.Join(assertSync.localRoot, "foo"))
 	assertSync.waitForCompletionMarker()
-	assertSync.remoteDirContent(ctx, "foo", []string{})
-	assertSync.objectType(ctx, "foo", "DIRECTORY")
+	assertSync.notExist(ctx, "foo")
 	assertSync.snapshotContains(append(repoFiles, ".gitignore"))
 
 	f2 := testfile.CreateFile(t, filepath.Join(assertSync.localRoot, "foo"))
