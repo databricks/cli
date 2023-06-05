@@ -33,18 +33,18 @@ func TestFsCatForDbfs(t *testing.T) {
 	assert.Equal(t, "abc", stdout.String())
 }
 
-func TestFsCatForDbfsOnNonExistantFile(t *testing.T) {
+func TestFsCatForDbfsOnNonExistentFile(t *testing.T) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
-	_, _, err := RequireErrorRun(t, "fs", "cat", "dbfs:/non-existant-file")
+	_, _, err := RequireErrorRun(t, "fs", "cat", "dbfs:/non-existent-file")
 	assert.ErrorIs(t, err, fs.ErrNotExist)
 }
 
 func TestFsCatForDbfsInvalidScheme(t *testing.T) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
-	_, _, err := RequireErrorRun(t, "fs", "cat", "dab:/non-existant-file")
-	assert.ErrorContains(t, err, "expected dbfs path (with the dbfs:/ prefix): dab:/non-existant-file")
+	_, _, err := RequireErrorRun(t, "fs", "cat", "dab:/non-existent-file")
+	assert.ErrorContains(t, err, "expected dbfs path (with the dbfs:/ prefix): dab:/non-existent-file")
 }
 
 func TestFsCatDoesNotSupportOutputModeJson(t *testing.T) {
