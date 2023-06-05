@@ -67,7 +67,7 @@ var deleteCmd = &cobra.Command{
 				names, err := w.Workspace.ObjectInfoPathToObjectIdMap(ctx, workspace.ListWorkspaceRequest{})
 				close(promptSpinner)
 				if err != nil {
-					return fmt.Errorf("failed to load names for Workspace drop-down. Please manually specify required arguments")
+					return fmt.Errorf("failed to load names for Workspace drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "The absolute path of the notebook or directory")
 				if err != nil {
@@ -135,7 +135,7 @@ var exportCmd = &cobra.Command{
 				names, err := w.Workspace.ObjectInfoPathToObjectIdMap(ctx, workspace.ListWorkspaceRequest{})
 				close(promptSpinner)
 				if err != nil {
-					return fmt.Errorf("failed to load names for Workspace drop-down. Please manually specify required arguments")
+					return fmt.Errorf("failed to load names for Workspace drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "The absolute path of the object or directory")
 				if err != nil {
@@ -194,7 +194,7 @@ var getStatusCmd = &cobra.Command{
 				names, err := w.Workspace.ObjectInfoPathToObjectIdMap(ctx, workspace.ListWorkspaceRequest{})
 				close(promptSpinner)
 				if err != nil {
-					return fmt.Errorf("failed to load names for Workspace drop-down. Please manually specify required arguments")
+					return fmt.Errorf("failed to load names for Workspace drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "The absolute path of the notebook or directory")
 				if err != nil {
@@ -260,7 +260,7 @@ var importCmd = &cobra.Command{
 				names, err := w.Workspace.ObjectInfoPathToObjectIdMap(ctx, workspace.ListWorkspaceRequest{})
 				close(promptSpinner)
 				if err != nil {
-					return fmt.Errorf("failed to load names for Workspace drop-down. Please manually specify required arguments")
+					return fmt.Errorf("failed to load names for Workspace drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "The absolute path of the object or directory")
 				if err != nil {
@@ -375,7 +375,7 @@ var mkdirsCmd = &cobra.Command{
 				names, err := w.Workspace.ObjectInfoPathToObjectIdMap(ctx, workspace.ListWorkspaceRequest{})
 				close(promptSpinner)
 				if err != nil {
-					return fmt.Errorf("failed to load names for Workspace drop-down. Please manually specify required arguments")
+					return fmt.Errorf("failed to load names for Workspace drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "The absolute path of the directory")
 				if err != nil {

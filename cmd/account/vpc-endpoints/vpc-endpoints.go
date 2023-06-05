@@ -70,7 +70,7 @@ var createCmd = &cobra.Command{
 				names, err := a.VpcEndpoints.VpcEndpointVpcEndpointNameToVpcEndpointIdMap(ctx)
 				close(promptSpinner)
 				if err != nil {
-					return fmt.Errorf("failed to load names for Vpc Endpoints drop-down. Please manually specify required arguments")
+					return fmt.Errorf("failed to load names for Vpc Endpoints drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "The human-readable name of the storage configuration")
 				if err != nil {
@@ -136,7 +136,7 @@ var deleteCmd = &cobra.Command{
 				names, err := a.VpcEndpoints.VpcEndpointVpcEndpointNameToVpcEndpointIdMap(ctx)
 				close(promptSpinner)
 				if err != nil {
-					return fmt.Errorf("failed to load names for Vpc Endpoints drop-down. Please manually specify required arguments")
+					return fmt.Errorf("failed to load names for Vpc Endpoints drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "Databricks VPC endpoint ID")
 				if err != nil {
@@ -198,7 +198,7 @@ var getCmd = &cobra.Command{
 				names, err := a.VpcEndpoints.VpcEndpointVpcEndpointNameToVpcEndpointIdMap(ctx)
 				close(promptSpinner)
 				if err != nil {
-					return fmt.Errorf("failed to load names for Vpc Endpoints drop-down. Please manually specify required arguments")
+					return fmt.Errorf("failed to load names for Vpc Endpoints drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "Databricks VPC endpoint ID")
 				if err != nil {

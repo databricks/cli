@@ -114,7 +114,7 @@ var deleteCmd = &cobra.Command{
 				names, err := w.GlobalInitScripts.GlobalInitScriptDetailsNameToScriptIdMap(ctx)
 				close(promptSpinner)
 				if err != nil {
-					return fmt.Errorf("failed to load names for Global Init Scripts drop-down. Please manually specify required arguments")
+					return fmt.Errorf("failed to load names for Global Init Scripts drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "The ID of the global init script")
 				if err != nil {
@@ -172,7 +172,7 @@ var getCmd = &cobra.Command{
 				names, err := w.GlobalInitScripts.GlobalInitScriptDetailsNameToScriptIdMap(ctx)
 				close(promptSpinner)
 				if err != nil {
-					return fmt.Errorf("failed to load names for Global Init Scripts drop-down. Please manually specify required arguments")
+					return fmt.Errorf("failed to load names for Global Init Scripts drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "The ID of the global init script")
 				if err != nil {

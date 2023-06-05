@@ -110,7 +110,7 @@ var deleteCmd = &cobra.Command{
 				names, err := w.TokenManagement.TokenInfoCommentToTokenIdMap(ctx, settings.ListTokenManagementRequest{})
 				close(promptSpinner)
 				if err != nil {
-					return fmt.Errorf("failed to load names for Token Management drop-down. Please manually specify required arguments")
+					return fmt.Errorf("failed to load names for Token Management drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "The ID of the token to get")
 				if err != nil {
@@ -168,7 +168,7 @@ var getCmd = &cobra.Command{
 				names, err := w.TokenManagement.TokenInfoCommentToTokenIdMap(ctx, settings.ListTokenManagementRequest{})
 				close(promptSpinner)
 				if err != nil {
-					return fmt.Errorf("failed to load names for Token Management drop-down. Please manually specify required arguments")
+					return fmt.Errorf("failed to load names for Token Management drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "The ID of the token to get")
 				if err != nil {

@@ -201,7 +201,7 @@ var deleteCmd = &cobra.Command{
 				names, err := w.Metastores.MetastoreInfoNameToMetastoreIdMap(ctx)
 				close(promptSpinner)
 				if err != nil {
-					return fmt.Errorf("failed to load names for Metastores drop-down. Please manually specify required arguments")
+					return fmt.Errorf("failed to load names for Metastores drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "Unique ID of the metastore")
 				if err != nil {
@@ -260,7 +260,7 @@ var getCmd = &cobra.Command{
 				names, err := w.Metastores.MetastoreInfoNameToMetastoreIdMap(ctx)
 				close(promptSpinner)
 				if err != nil {
-					return fmt.Errorf("failed to load names for Metastores drop-down. Please manually specify required arguments")
+					return fmt.Errorf("failed to load names for Metastores drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "Unique ID of the metastore")
 				if err != nil {
@@ -488,7 +488,7 @@ var updateCmd = &cobra.Command{
 				names, err := w.Metastores.MetastoreInfoNameToMetastoreIdMap(ctx)
 				close(promptSpinner)
 				if err != nil {
-					return fmt.Errorf("failed to load names for Metastores drop-down. Please manually specify required arguments")
+					return fmt.Errorf("failed to load names for Metastores drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "Unique ID of the metastore")
 				if err != nil {
@@ -552,7 +552,7 @@ var updateAssignmentCmd = &cobra.Command{
 				names, err := w.Metastores.MetastoreInfoNameToMetastoreIdMap(ctx)
 				close(promptSpinner)
 				if err != nil {
-					return fmt.Errorf("failed to load names for Metastores drop-down. Please manually specify required arguments")
+					return fmt.Errorf("failed to load names for Metastores drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "A workspace ID")
 				if err != nil {

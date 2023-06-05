@@ -101,7 +101,7 @@ var {{.CamelName}}Cmd = &cobra.Command{
 					names, err := {{if .Service.IsAccounts}}a{{else}}w{{end}}.{{(.Service.TrimPrefix "account").PascalName}}.{{.Service.List.NamedIdMap.PascalName}}(ctx{{if .Service.List.Request}}, {{.Service.Package.Name}}.{{.Service.List.Request.PascalName}}{}{{end}})
 					close(promptSpinner)
 					if err != nil {
-						return fmt.Errorf("failed to load names for {{.Service.TitleName}} drop-down. Please manually specify required arguments")
+						return fmt.Errorf("failed to load names for {{.Service.TitleName}} drop-down. Please manually specify required arguments. Original error: %w", err)
 					}
 					id, err := cmdio.Select(ctx, names, "{{range .Request.RequiredFields}}{{.Summary | trimSuffix "."}}{{end}}")
 					if err != nil {

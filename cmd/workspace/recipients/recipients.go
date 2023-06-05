@@ -116,7 +116,7 @@ var deleteCmd = &cobra.Command{
 				names, err := w.Recipients.RecipientInfoNameToMetastoreIdMap(ctx, sharing.ListRecipientsRequest{})
 				close(promptSpinner)
 				if err != nil {
-					return fmt.Errorf("failed to load names for Recipients drop-down. Please manually specify required arguments")
+					return fmt.Errorf("failed to load names for Recipients drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "Name of the recipient")
 				if err != nil {
@@ -176,7 +176,7 @@ var getCmd = &cobra.Command{
 				names, err := w.Recipients.RecipientInfoNameToMetastoreIdMap(ctx, sharing.ListRecipientsRequest{})
 				close(promptSpinner)
 				if err != nil {
-					return fmt.Errorf("failed to load names for Recipients drop-down. Please manually specify required arguments")
+					return fmt.Errorf("failed to load names for Recipients drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "Name of the recipient")
 				if err != nil {
@@ -340,7 +340,7 @@ var sharePermissionsCmd = &cobra.Command{
 				names, err := w.Recipients.RecipientInfoNameToMetastoreIdMap(ctx, sharing.ListRecipientsRequest{})
 				close(promptSpinner)
 				if err != nil {
-					return fmt.Errorf("failed to load names for Recipients drop-down. Please manually specify required arguments")
+					return fmt.Errorf("failed to load names for Recipients drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "The name of the Recipient")
 				if err != nil {
@@ -406,7 +406,7 @@ var updateCmd = &cobra.Command{
 				names, err := w.Recipients.RecipientInfoNameToMetastoreIdMap(ctx, sharing.ListRecipientsRequest{})
 				close(promptSpinner)
 				if err != nil {
-					return fmt.Errorf("failed to load names for Recipients drop-down. Please manually specify required arguments")
+					return fmt.Errorf("failed to load names for Recipients drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "Name of Recipient")
 				if err != nil {

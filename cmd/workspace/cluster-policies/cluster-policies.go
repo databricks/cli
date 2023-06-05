@@ -83,7 +83,7 @@ var createCmd = &cobra.Command{
 				names, err := w.ClusterPolicies.PolicyNameToPolicyIdMap(ctx, compute.ListClusterPoliciesRequest{})
 				close(promptSpinner)
 				if err != nil {
-					return fmt.Errorf("failed to load names for Cluster Policies drop-down. Please manually specify required arguments")
+					return fmt.Errorf("failed to load names for Cluster Policies drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "Cluster Policy name requested by the user")
 				if err != nil {
@@ -142,7 +142,7 @@ var deleteCmd = &cobra.Command{
 				names, err := w.ClusterPolicies.PolicyNameToPolicyIdMap(ctx, compute.ListClusterPoliciesRequest{})
 				close(promptSpinner)
 				if err != nil {
-					return fmt.Errorf("failed to load names for Cluster Policies drop-down. Please manually specify required arguments")
+					return fmt.Errorf("failed to load names for Cluster Policies drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "The ID of the policy to delete")
 				if err != nil {
@@ -256,7 +256,7 @@ var getCmd = &cobra.Command{
 				names, err := w.ClusterPolicies.PolicyNameToPolicyIdMap(ctx, compute.ListClusterPoliciesRequest{})
 				close(promptSpinner)
 				if err != nil {
-					return fmt.Errorf("failed to load names for Cluster Policies drop-down. Please manually specify required arguments")
+					return fmt.Errorf("failed to load names for Cluster Policies drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "Canonical unique identifier for the cluster policy")
 				if err != nil {

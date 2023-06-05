@@ -63,7 +63,7 @@ var createCmd = &cobra.Command{
 				names, err := a.Networks.NetworkNetworkNameToNetworkIdMap(ctx)
 				close(promptSpinner)
 				if err != nil {
-					return fmt.Errorf("failed to load names for Networks drop-down. Please manually specify required arguments")
+					return fmt.Errorf("failed to load names for Networks drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "The human-readable name of the network configuration")
 				if err != nil {
@@ -126,7 +126,7 @@ var deleteCmd = &cobra.Command{
 				names, err := a.Networks.NetworkNetworkNameToNetworkIdMap(ctx)
 				close(promptSpinner)
 				if err != nil {
-					return fmt.Errorf("failed to load names for Networks drop-down. Please manually specify required arguments")
+					return fmt.Errorf("failed to load names for Networks drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "Databricks Account API network configuration ID")
 				if err != nil {
@@ -185,7 +185,7 @@ var getCmd = &cobra.Command{
 				names, err := a.Networks.NetworkNetworkNameToNetworkIdMap(ctx)
 				close(promptSpinner)
 				if err != nil {
-					return fmt.Errorf("failed to load names for Networks drop-down. Please manually specify required arguments")
+					return fmt.Errorf("failed to load names for Networks drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "Databricks Account API network configuration ID")
 				if err != nil {

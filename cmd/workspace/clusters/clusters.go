@@ -174,7 +174,7 @@ var createCmd = &cobra.Command{
 				names, err := w.Clusters.ClusterInfoClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
 				close(promptSpinner)
 				if err != nil {
-					return fmt.Errorf("failed to load names for Clusters drop-down. Please manually specify required arguments")
+					return fmt.Errorf("failed to load names for Clusters drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "The Spark version of the cluster, e.g")
 				if err != nil {
@@ -257,7 +257,7 @@ var deleteCmd = &cobra.Command{
 				names, err := w.Clusters.ClusterInfoClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
 				close(promptSpinner)
 				if err != nil {
-					return fmt.Errorf("failed to load names for Clusters drop-down. Please manually specify required arguments")
+					return fmt.Errorf("failed to load names for Clusters drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "The cluster to be terminated")
 				if err != nil {
@@ -448,7 +448,7 @@ var eventsCmd = &cobra.Command{
 				names, err := w.Clusters.ClusterInfoClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
 				close(promptSpinner)
 				if err != nil {
-					return fmt.Errorf("failed to load names for Clusters drop-down. Please manually specify required arguments")
+					return fmt.Errorf("failed to load names for Clusters drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "The ID of the cluster to retrieve events about")
 				if err != nil {
@@ -512,7 +512,7 @@ var getCmd = &cobra.Command{
 				names, err := w.Clusters.ClusterInfoClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
 				close(promptSpinner)
 				if err != nil {
-					return fmt.Errorf("failed to load names for Clusters drop-down. Please manually specify required arguments")
+					return fmt.Errorf("failed to load names for Clusters drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "The cluster about which to retrieve information")
 				if err != nil {
@@ -688,7 +688,7 @@ var permanentDeleteCmd = &cobra.Command{
 				names, err := w.Clusters.ClusterInfoClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
 				close(promptSpinner)
 				if err != nil {
-					return fmt.Errorf("failed to load names for Clusters drop-down. Please manually specify required arguments")
+					return fmt.Errorf("failed to load names for Clusters drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "The cluster to be deleted")
 				if err != nil {
@@ -748,7 +748,7 @@ var pinCmd = &cobra.Command{
 				names, err := w.Clusters.ClusterInfoClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
 				close(promptSpinner)
 				if err != nil {
-					return fmt.Errorf("failed to load names for Clusters drop-down. Please manually specify required arguments")
+					return fmt.Errorf("failed to load names for Clusters drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "<needs content added>")
 				if err != nil {
@@ -815,7 +815,7 @@ var resizeCmd = &cobra.Command{
 				names, err := w.Clusters.ClusterInfoClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
 				close(promptSpinner)
 				if err != nil {
-					return fmt.Errorf("failed to load names for Clusters drop-down. Please manually specify required arguments")
+					return fmt.Errorf("failed to load names for Clusters drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "The cluster to be resized")
 				if err != nil {
@@ -898,7 +898,7 @@ var restartCmd = &cobra.Command{
 				names, err := w.Clusters.ClusterInfoClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
 				close(promptSpinner)
 				if err != nil {
-					return fmt.Errorf("failed to load names for Clusters drop-down. Please manually specify required arguments")
+					return fmt.Errorf("failed to load names for Clusters drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "The cluster to be started")
 				if err != nil {
@@ -1013,7 +1013,7 @@ var startCmd = &cobra.Command{
 				names, err := w.Clusters.ClusterInfoClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
 				close(promptSpinner)
 				if err != nil {
-					return fmt.Errorf("failed to load names for Clusters drop-down. Please manually specify required arguments")
+					return fmt.Errorf("failed to load names for Clusters drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "The cluster to be started")
 				if err != nil {
@@ -1090,7 +1090,7 @@ var unpinCmd = &cobra.Command{
 				names, err := w.Clusters.ClusterInfoClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
 				close(promptSpinner)
 				if err != nil {
-					return fmt.Errorf("failed to load names for Clusters drop-down. Please manually specify required arguments")
+					return fmt.Errorf("failed to load names for Clusters drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "<needs content added>")
 				if err != nil {

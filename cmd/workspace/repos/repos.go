@@ -117,7 +117,7 @@ var deleteCmd = &cobra.Command{
 				names, err := w.Repos.RepoInfoPathToIdMap(ctx, workspace.ListReposRequest{})
 				close(promptSpinner)
 				if err != nil {
-					return fmt.Errorf("failed to load names for Repos drop-down. Please manually specify required arguments")
+					return fmt.Errorf("failed to load names for Repos drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "The ID for the corresponding repo to access")
 				if err != nil {
@@ -178,7 +178,7 @@ var getCmd = &cobra.Command{
 				names, err := w.Repos.RepoInfoPathToIdMap(ctx, workspace.ListReposRequest{})
 				close(promptSpinner)
 				if err != nil {
-					return fmt.Errorf("failed to load names for Repos drop-down. Please manually specify required arguments")
+					return fmt.Errorf("failed to load names for Repos drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "The ID for the corresponding repo to access")
 				if err != nil {
@@ -295,7 +295,7 @@ var updateCmd = &cobra.Command{
 				names, err := w.Repos.RepoInfoPathToIdMap(ctx, workspace.ListReposRequest{})
 				close(promptSpinner)
 				if err != nil {
-					return fmt.Errorf("failed to load names for Repos drop-down. Please manually specify required arguments")
+					return fmt.Errorf("failed to load names for Repos drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "The ID for the corresponding repo to access")
 				if err != nil {
