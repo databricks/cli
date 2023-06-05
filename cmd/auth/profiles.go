@@ -99,8 +99,8 @@ var profilesCmd = &cobra.Command{
 	Short: "Lists profiles from ~/.databrickscfg",
 	Annotations: map[string]string{
 		"template": cmdio.Heredoc(`
-		{{white "Name"}}	{{white "Host"}}	{{white "Valid"}}
-		{{range .Profiles}}{{.Name | green}}	{{.Host|white}}	{{bool .Valid}}
+		{{header "Name"}}	{{header "Host"}}	{{header "Valid"}}
+		{{range .Profiles}}{{.Name | green}}	{{.Host|cyan}}	{{bool .Valid}}
 		{{end}}`),
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
