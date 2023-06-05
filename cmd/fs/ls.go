@@ -91,6 +91,6 @@ var lsCmd = &cobra.Command{
 var longMode bool
 
 func init() {
-	lsCmd.Flags().BoolVarP(&longMode, "long", "l", false, "Displays full information including size, file type  and modification time since Epoch in milliseconds.")
+	lsCmd.Flags().BoolVarP(&longMode, "long", "l", false, "Displays full information including size, file type and modification time since Epoch in milliseconds.")
 	fsCmd.AddCommand(lsCmd)
 }
