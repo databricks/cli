@@ -34,7 +34,7 @@ func toJsonDirEntry(f fs.DirEntry) (*jsonDirEntry, error) {
 
 // lsCmd represents the ls command
 var lsCmd = &cobra.Command{
-	Use:     "ls <dir-name>",
+	Use:     "ls DIR_PATH",
 	Short:   "Lists files",
 	Long:    `Lists files`,
 	Args:    cobra.ExactArgs(1),
@@ -50,7 +50,7 @@ var lsCmd = &cobra.Command{
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		path, err := filer.ResolveDbfsPath(args[0])
+		path, err := resolveDbfsPath(args[0])
 		if err != nil {
 			return err
 		}
