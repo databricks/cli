@@ -87,6 +87,19 @@ func RenderWithTemplate(ctx context.Context, v any, template string) error {
 	}
 }
 
+func RenderReader(ctx context.Context, r io.Reader) error {
+	c := fromContext(ctx)
+	switch c.outputFormat {
+	case flags.OutputJSON:
+		return fmt.Errorf("json output not supported")
+	case flags.OutputText:
+		_, err := io.Copy(c.out, r)
+		return err
+	default:
+		return fmt.Errorf("invalid output format: %s", c.outputFormat)
+	}
+}
+
 type tuple struct{ Name, Id string }
 
 func (c *cmdIO) Select(names map[string]string, label string) (id string, err error) {
