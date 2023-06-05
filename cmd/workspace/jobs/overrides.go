@@ -8,7 +8,7 @@ func init() {
 	{{end}}`)
 
 	listRunsCmd.Annotations["template"] = cmdio.Heredoc(`
-	{{"Job ID"|white}}	{{"Run ID"|white}}	{{"Result State"|white}}	URL
+	{{"Job ID"}}	{{"Run ID"}}	{{"Result State"}}	URL
 	{{range .}}{{green "%d" .JobId}}	{{blue "%d" .RunId}}	{{if eq .State.ResultState "SUCCESS"}}{{"SUCCESS"|green}}{{else}}{{red "%s" .State.ResultState}}{{end}}	{{.RunPageUrl}}
 	{{end}}`)
 }
