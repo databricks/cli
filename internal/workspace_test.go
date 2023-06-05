@@ -22,3 +22,8 @@ func TestWorkpaceListErrorWhenNoArguments(t *testing.T) {
 	_, _, err := RequireErrorRun(t, "workspace", "list")
 	assert.Equal(t, "accepts 1 arg(s), received 0", err.Error())
 }
+
+func TestWorkpaceGetStatusErrorWhenNoArguments(t *testing.T) {
+	_, _, err := RequireErrorRun(t, "workspace", "get-status")
+	assert.Equal(t, "accepts 1 arg(s), received 0", err.Error())
+}

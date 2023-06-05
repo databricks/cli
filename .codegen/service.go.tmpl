@@ -26,6 +26,7 @@ var Cmd = &cobra.Command{
     {{- end}}
 }
 
+{{- $serviceName := .KebabName -}}
 {{range .Methods}}
 
 {{- $excludes := list "put-secret" -}}
@@ -62,11 +63,14 @@ func init() {
     {{- end}}
     {{end}}
 }
+{{- $excludeFromPrompts := list "workspace get-status" -}}
+{{- $fullCommandName := (print $serviceName " " .KebabName) -}}
+{{- $noPrompt := or .IsCrudCreate (in $excludeFromPrompts $fullCommandName) }}
 
 {{ $hasPosArgs := and .Request (or .Request.IsAllRequiredFieldsPrimitive (eq .PascalName "RunNow")) -}}
 {{- $hasSinglePosArg := and $hasPosArgs (eq 1 (len .Request.RequiredFields)) -}}
 {{- $serviceHasNamedIdMap := and (and .Service.List .Service.List.NamedIdMap) (not (eq .PascalName "List")) -}}
-{{- $hasIdPrompt := and $hasSinglePosArg $serviceHasNamedIdMap -}}
+{{- $hasIdPrompt := and (not $noPrompt) (and $hasSinglePosArg $serviceHasNamedIdMap) -}}
 {{- $wait := and .Wait (and (not .IsCrudRead) (not (eq .SnakeName "get_run"))) -}}
 {{- $hasRequiredArgs := and (not $hasIdPrompt) $hasPosArgs -}}
 var {{.CamelName}}Cmd = &cobra.Command{
@@ -96,9 +100,12 @@ var {{.CamelName}}Cmd = &cobra.Command{
 			} else {
 			{{- if $hasIdPrompt}}
 				if len(args) == 0 {
+					promptSpinner := cmdio.Spinner(ctx)
+					promptSpinner <- "No{{range .Request.RequiredFields}} {{.ConstantName}}{{end}} argument specified. Loading names for {{.Service.TitleName}} drop-down."
 					names, err := {{if .Service.IsAccounts}}a{{else}}w{{end}}.{{(.Service.TrimPrefix "account").PascalName}}.{{.Service.List.NamedIdMap.PascalName}}(ctx{{if .Service.List.Request}}, {{.Service.Package.Name}}.{{.Service.List.Request.PascalName}}{}{{end}})
+					close(promptSpinner)
 					if err != nil {
-						return err
+						return fmt.Errorf("failed to load names for {{.Service.TitleName}} drop-down. Please manually specify required arguments. Original error: %w", err)
 					}
 					id, err := cmdio.Select(ctx, names, "{{range .Request.RequiredFields}}{{.Summary | trimSuffix "."}}{{end}}")
 					if err != nil {

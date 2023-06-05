@@ -159,6 +159,26 @@ func runFilerReadDirTest(t *testing.T, ctx context.Context, f filer.Filer) {
 	assert.Len(t, entries, 1)
 	assert.Equal(t, "c", entries[0].Name())
 	assert.True(t, entries[0].IsDir())
+
+	// Expect an error trying to call ReadDir on a file
+	_, err = f.ReadDir(ctx, "/hello.txt")
+	assert.ErrorIs(t, err, fs.ErrInvalid)
+
+	// Expect 0 entries for an empty directory
+	err = f.Mkdir(ctx, "empty-dir")
+	require.NoError(t, err)
+	entries, err = f.ReadDir(ctx, "empty-dir")
+	assert.NoError(t, err)
+	assert.Len(t, entries, 0)
+
+	// Expect one entry for a directory with a file in it
+	err = f.Write(ctx, "dir-with-one-file/my-file.txt", strings.NewReader("abc"), filer.CreateParentDirectories)
+	require.NoError(t, err)
+	entries, err = f.ReadDir(ctx, "dir-with-one-file")
+	assert.NoError(t, err)
+	assert.Len(t, entries, 1)
+	assert.Equal(t, entries[0].Name(), "my-file.txt")
+	assert.False(t, entries[0].IsDir())
 }
 
 func temporaryWorkspaceDir(t *testing.T, w *databricks.WorkspaceClient) string {
@@ -166,7 +186,7 @@ func temporaryWorkspaceDir(t *testing.T, w *databricks.WorkspaceClient) string {
 	me, err := w.CurrentUser.Me(ctx)
 	require.NoError(t, err)
 
-	path := fmt.Sprintf("/Users/%s/%s", me.UserName, RandomName("integration-test-filer-wsfs-"))
+	path := fmt.Sprintf("/Users/%s/%s", me.UserName, RandomName("integration-test-wsfs-"))
 
 	// Ensure directory exists, but doesn't exist YET!
 	// Otherwise we could inadvertently remove a directory that already exists on cleanup.
@@ -221,7 +241,7 @@ func TestAccFilerWorkspaceFilesReadDir(t *testing.T) {
 
 func temporaryDbfsDir(t *testing.T, w *databricks.WorkspaceClient) string {
 	ctx := context.Background()
-	path := fmt.Sprintf("/tmp/%s", RandomName("integration-test-filer-dbfs-"))
+	path := fmt.Sprintf("/tmp/%s", RandomName("integration-test-dbfs-"))
 
 	// This call fails if the path already exists.
 	t.Logf("mkdir dbfs:%s", path)

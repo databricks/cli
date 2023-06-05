@@ -110,9 +110,12 @@ var deleteCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No ID argument specified. Loading names for Account Service Principals drop-down."
 				names, err := a.ServicePrincipals.ServicePrincipalDisplayNameToIdMap(ctx, iam.ListAccountServicePrincipalsRequest{})
+				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Account Service Principals drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "Unique ID for a service principal in the Databricks account")
 				if err != nil {
@@ -166,9 +169,12 @@ var getCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No ID argument specified. Loading names for Account Service Principals drop-down."
 				names, err := a.ServicePrincipals.ServicePrincipalDisplayNameToIdMap(ctx, iam.ListAccountServicePrincipalsRequest{})
+				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Account Service Principals drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "Unique ID for a service principal in the Databricks account")
 				if err != nil {
@@ -279,9 +285,12 @@ var patchCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No ID argument specified. Loading names for Account Service Principals drop-down."
 				names, err := a.ServicePrincipals.ServicePrincipalDisplayNameToIdMap(ctx, iam.ListAccountServicePrincipalsRequest{})
+				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Account Service Principals drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "Unique ID for a service principal in the Databricks account")
 				if err != nil {
@@ -345,9 +354,12 @@ var updateCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No ID argument specified. Loading names for Account Service Principals drop-down."
 				names, err := a.ServicePrincipals.ServicePrincipalDisplayNameToIdMap(ctx, iam.ListAccountServicePrincipalsRequest{})
+				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Account Service Principals drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "Databricks service principal ID")
 				if err != nil {

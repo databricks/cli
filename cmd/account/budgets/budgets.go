@@ -94,9 +94,12 @@ var deleteCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No BUDGET_ID argument specified. Loading names for Budgets drop-down."
 				names, err := a.Budgets.BudgetWithStatusNameToBudgetIdMap(ctx)
+				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Budgets drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "Budget ID")
 				if err != nil {
@@ -150,9 +153,12 @@ var getCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No BUDGET_ID argument specified. Loading names for Budgets drop-down."
 				names, err := a.Budgets.BudgetWithStatusNameToBudgetIdMap(ctx)
+				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Budgets drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "Budget ID")
 				if err != nil {
