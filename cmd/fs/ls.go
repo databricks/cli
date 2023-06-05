@@ -49,12 +49,12 @@ var lsCmd = &cobra.Command{
 			return err
 		}
 
-		f, err := filer.NewDbfsClient(w, path)
+		f, err := filer.NewDbfsClient(w, "/")
 		if err != nil {
 			return err
 		}
 
-		entries, err := f.ReadDir(ctx, "")
+		entries, err := f.ReadDir(ctx, path)
 		if err != nil {
 			return err
 		}
