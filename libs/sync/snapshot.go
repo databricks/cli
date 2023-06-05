@@ -185,6 +185,11 @@ func (s *Snapshot) diff(ctx context.Context, all []fileset.File) (change diff, e
 		localFileSet[f.Relative] = struct{}{}
 	}
 
+	// Capture both previous and current set of files.
+	// This is needed to detect directories that were added or removed.
+	previousFiles := maps.Keys(lastModifiedTimes)
+	currentFiles := maps.Keys(localFileSet)
+
 	for _, f := range all {
 		// get current modified timestamp
 		modified := f.Modified()
@@ -255,10 +260,21 @@ func (s *Snapshot) diff(ctx context.Context, all []fileset.File) (change diff, e
 		change.delete = append(change.delete, remoteName)
 	}
 
+	// and remove them from the snapshot
+	for _, remoteName := range change.delete {
+		// we do note assert that remoteName exists in remoteToLocalNames since it
+		// will be missing for files with remote name changed
+		localName := remoteToLocalNames[remoteName]
+
+		delete(lastModifiedTimes, localName)
+		delete(remoteToLocalNames, remoteName)
+		delete(localToRemoteNames, localName)
+	}
+
 	// Gather all directories previously present.
 	previousDirectories := map[string]struct{}{}
-	for _, localName := range maps.Keys(lastModifiedTimes) {
-		dir := filepath.ToSlash(filepath.Dir(localName))
+	for _, f := range previousFiles {
+		dir := filepath.ToSlash(filepath.Dir(f))
 		for dir != "." {
 			if _, ok := previousDirectories[dir]; ok {
 				break
@@ -270,8 +286,8 @@ func (s *Snapshot) diff(ctx context.Context, all []fileset.File) (change diff, e
 
 	// Gather all directories currently present.
 	currentDirectories := map[string]struct{}{}
-	for _, f := range all {
-		dir := filepath.ToSlash(filepath.Dir(f.Relative))
+	for _, f := range currentFiles {
+		dir := filepath.ToSlash(filepath.Dir(f))
 		for dir != "." {
 			if _, ok := currentDirectories[dir]; ok {
 				break
@@ -281,22 +297,19 @@ func (s *Snapshot) diff(ctx context.Context, all []fileset.File) (change diff, e
 		}
 	}
 
-	// Gather all directories that are no longer present.
-	for dir := range previousDirectories {
-		if _, ok := currentDirectories[dir]; !ok {
-			change.delete = append(change.delete, dir)
+	// Create all new directories.
+	for dir := range currentDirectories {
+		if _, ok := previousDirectories[dir]; !ok {
+			change.mkdir = append(change.mkdir, dir)
 		}
 	}
 
-	// and remove them from the snapshot
-	for _, remoteName := range change.delete {
-		// we do note assert that remoteName exists in remoteToLocalNames since it
-		// will be missing for files with remote name changed
-		localName := remoteToLocalNames[remoteName]
-
-		delete(lastModifiedTimes, localName)
-		delete(remoteToLocalNames, remoteName)
-		delete(localToRemoteNames, localName)
+	// Remove all directories that are no longer present.
+	for dir := range previousDirectories {
+		if _, ok := currentDirectories[dir]; !ok {
+			change.rmdir = append(change.rmdir, dir)
+		}
 	}
+
 	return
 }
