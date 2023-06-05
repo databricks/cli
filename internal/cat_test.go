@@ -2,7 +2,6 @@ package internal
 
 import (
 	"context"
-	"encoding/json"
 	"io/fs"
 	"path"
 	"strings"
@@ -29,30 +28,42 @@ func TestFsCatForDbfs(t *testing.T) {
 	err = f.Write(ctx, "a/hello.txt", strings.NewReader("abc"), filer.CreateParentDirectories)
 	require.NoError(t, err)
 
-	stdout, stderr := RequireSuccessfulRun(t, "fs", "cat", "dbfs:"+path.Join(tmpDir, "a", "hello.txt"), "--output=json")
+	stdout, stderr := RequireSuccessfulRun(t, "fs", "cat", "dbfs:"+path.Join(tmpDir, "a", "hello.txt"))
 	assert.Equal(t, "", stderr.String())
-	var parsedStdout map[string]any
-	err = json.Unmarshal(stdout.Bytes(), &parsedStdout)
-	require.NoError(t, err)
-
-	// assert on cat output
-	assert.Equal(t, map[string]any{
-		"content": "abc",
-	}, parsedStdout)
+	assert.Equal(t, "abc", stdout.String())
 }
 
 func TestFsCatForDbfsOnNonExistantFile(t *testing.T) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
-	_, _, err := RequireErrorRun(t, "fs", "cat", "dbfs:/non-existant-file", "--output=json")
+	_, _, err := RequireErrorRun(t, "fs", "cat", "dbfs:/non-existant-file")
 	assert.ErrorIs(t, err, fs.ErrNotExist)
 }
 
 func TestFsCatForDbfsInvalidScheme(t *testing.T) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
-	_, _, err := RequireErrorRun(t, "fs", "cat", "dab:/non-existant-file", "--output=json")
+	_, _, err := RequireErrorRun(t, "fs", "cat", "dab:/non-existant-file")
 	assert.ErrorContains(t, err, "expected dbfs path (with the dbfs:/ prefix): dab:/non-existant-file")
+}
+
+func TestFsCatDoesNotSupportOutputModeJson(t *testing.T) {
+	// t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+
+	ctx := context.Background()
+	w, err := databricks.NewWorkspaceClient()
+	require.NoError(t, err)
+
+	tmpDir := temporaryDbfsDir(t, w)
+
+	f, err := filer.NewDbfsClient(w, tmpDir)
+	require.NoError(t, err)
+
+	err = f.Write(ctx, "hello.txt", strings.NewReader("abc"))
+	require.NoError(t, err)
+
+	_, _, err = RequireErrorRun(t, "fs", "cat", "dbfs:"+path.Join(tmpDir, "hello.txt"), "--output=json")
+	assert.ErrorContains(t, err, "json output not supported")
 }
 
 // TODO: Add test asserting an error when cat is called on an directory. Need this to be

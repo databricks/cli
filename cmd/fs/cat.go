@@ -1,8 +1,6 @@
 package fs
 
 import (
-	"io/ioutil"
-
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/filer"
@@ -10,20 +8,17 @@ import (
 )
 
 var catCmd = &cobra.Command{
-	Use:     "cat <file-path>",
+	Use:     "cat FILE_PATH",
 	Short:   "Show file content",
-	Long:    `Show the contents of a file. Does not work for directories.`,
+	Long:    `Show the contents of a file.`,
 	Args:    cobra.ExactArgs(1),
 	PreRunE: root.MustWorkspaceClient,
-	Annotations: map[string]string{
-		"template": cmdio.Heredoc(`{{.Content}}`),
-	},
 
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		path, err := filer.ResolveDbfsPath(args[0])
+		path, err := resolveDbfsPath(args[0])
 		if err != nil {
 			return err
 		}
@@ -37,13 +32,7 @@ var catCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-
-		b, err := ioutil.ReadAll(r)
-		if err != nil {
-			return err
-		}
-		content := string(b)
-		return cmdio.Render(ctx, toCatOutput(content))
+		return cmdio.RenderReader(ctx, r)
 	},
 }
 
