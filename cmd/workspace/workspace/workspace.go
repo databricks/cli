@@ -234,7 +234,14 @@ var importCmd = &cobra.Command{
   use DBC format to import a directory.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -244,23 +251,6 @@ var importCmd = &cobra.Command{
 				return err
 			}
 		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No PATH argument specified. Loading names for Workspace drop-down."
-				names, err := w.Workspace.ObjectInfoPathToObjectIdMap(ctx, workspace.ListWorkspaceRequest{})
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Workspace drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "The absolute path of the object or directory")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have the absolute path of the object or directory")
-			}
 			importReq.Path = args[0]
 		}
 
