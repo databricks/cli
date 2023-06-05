@@ -59,13 +59,13 @@ var lsCmd = &cobra.Command{
 			return err
 		}
 
-		jsonDirEntries := make([]jsonDirEntry, 0)
-		for _, entry := range entries {
+		jsonDirEntries := make([]jsonDirEntry, len(entries))
+		for i, entry := range entries {
 			jsonDirEntry, err := toJsonDirEntry(entry)
 			if err != nil {
 				return err
 			}
-			jsonDirEntries = append(jsonDirEntries, *jsonDirEntry)
+			jsonDirEntries[i] = *jsonDirEntry
 		}
 		sort.Slice(jsonDirEntries, func(i, j int) bool {
 			return jsonDirEntries[i].Name < jsonDirEntries[j].Name
