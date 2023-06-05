@@ -223,11 +223,6 @@ func (w *WorkspaceFilesClient) ReadDir(ctx context.Context, name string) ([]fs.D
 		Path: absPath,
 	})
 
-	// TODO: add integration test for this
-	if len(objects) == 1 && objects[0].Path == absPath {
-		return nil, NotADirectory{absPath}
-	}
-
 	if err != nil {
 		// If we got an API error we deal with it below.
 		var aerr *apierr.APIError
