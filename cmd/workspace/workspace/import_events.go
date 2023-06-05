@@ -59,7 +59,7 @@ func renderSyncEvents(ctx context.Context, eventChannel <-chan sync.Event, synce
 				// TODO: only emit this event if the the sync event has progress 1.o0
 				// File upload has been completed. This renders the event for that
 				// on the console
-				return cmdio.Render(ctx, newUploadCompleteEvent(v.Path))
+				return cmdio.RenderWithTemplate(ctx, newUploadCompleteEvent(v.Path), `Uploaded {{.SourcePath}}`)
 			}
 
 		}

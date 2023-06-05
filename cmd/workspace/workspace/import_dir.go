@@ -10,25 +10,18 @@ import (
 
 // TODO: check whether we need mutex for any events been emitted since they are accessing
 // state
+// TODO: Error: path must be nested under /Users/shreyas.goenka@databricks.com or /Repos/shreyas.goenka@databricks.com. Should this validation be
+// removed? Yes
 var importDirCmd = &cobra.Command{
 	Use:   "import-dir SOURCE_PATH TARGET_PATH",
-	Short: `Recursively imports a directory from local to the Databricks workspace.`,
+	Short: `Import directory to a Databricks workspace.`,
 	Long: `
-  Imports directory to the workspace.
+  Recursively imports a directory from  the local filesystem to a Databricks workspace.
 
   This command respects your git ignore configuration. Notebooks with extensions
   .scala, .py, .sql, .r, .R, .ipynb are stripped of their extensions.
 `,
 
-	Annotations: map[string]string{
-		// TODO: use render with template at individual call sites for these events.
-		"template": cmdio.Heredoc(`
-		{{if eq .Type "IMPORT_STARTED"}}Import started
-		{{else if eq .Type "UPLOAD_COMPLETE"}}Uploaded {{.SourcePath}} -> {{.TargetPath}}
-		{{else if eq .Type "IMPORT_COMPLETE"}}Import completed
-		{{end}}
-		`),
-	},
 	PreRunE: root.MustWorkspaceClient,
 	Args:    cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
@@ -62,7 +55,7 @@ var importDirCmd = &cobra.Command{
 			})
 
 		// Start Uploading local files
-		cmdio.Render(ctx, newImportStartedEvent(sourcePath, targetPath))
+		cmdio.RenderWithTemplate(ctx, newImportStartedEvent(sourcePath, targetPath), `Starting import {{.SourcePath}} -> {{TargetPath}}`)
 		err = s.RunOnce(ctx)
 		if err != nil {
 			return err
@@ -76,7 +69,7 @@ var importDirCmd = &cobra.Command{
 		}
 
 		// Render import completetion event
-		cmdio.Render(ctx, newImportCompleteEvent(sourcePath, targetPath))
+		cmdio.RenderWithTemplate(ctx, newImportCompleteEvent(sourcePath, targetPath), `Completed import. Files available at {{.TargetPath}}`)
 		return nil
 	},
 }
