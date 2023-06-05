@@ -54,7 +54,14 @@ var createCmd = &cobra.Command{
   [endpoint service]: https://docs.aws.amazon.com/vpc/latest/privatelink/privatelink-share-your-services.html`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.MustAccountClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
@@ -64,6 +71,7 @@ var createCmd = &cobra.Command{
 				return err
 			}
 		} else {
+<<<<<<< HEAD
 			if len(args) == 0 {
 				promptSpinner := cmdio.Spinner(ctx)
 				promptSpinner <- "No VPC_ENDPOINT_NAME argument specified. Loading names for Vpc Endpoints drop-down."
@@ -81,6 +89,8 @@ var createCmd = &cobra.Command{
 			if len(args) != 1 {
 				return fmt.Errorf("expected to have the human-readable name of the storage configuration")
 			}
+=======
+>>>>>>> 7413aa6 (Do not generate prompts for certain commands)
 			createReq.VpcEndpointName = args[0]
 		}
 

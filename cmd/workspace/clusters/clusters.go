@@ -158,7 +158,14 @@ var createCmd = &cobra.Command{
   informative error message.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -168,6 +175,7 @@ var createCmd = &cobra.Command{
 				return err
 			}
 		} else {
+<<<<<<< HEAD
 			if len(args) == 0 {
 				promptSpinner := cmdio.Spinner(ctx)
 				promptSpinner <- "No SPARK_VERSION argument specified. Loading names for Clusters drop-down."
@@ -185,6 +193,8 @@ var createCmd = &cobra.Command{
 			if len(args) != 1 {
 				return fmt.Errorf("expected to have the spark version of the cluster, e.g")
 			}
+=======
+>>>>>>> 7413aa6 (Do not generate prompts for certain commands)
 			createReq.SparkVersion = args[0]
 		}
 
