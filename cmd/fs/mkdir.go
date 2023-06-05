@@ -6,10 +6,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var mkdirsCmd = &cobra.Command{
-	Use:     "mkdirs DIR_PATH",
+var mkdirCmd = &cobra.Command{
+	Use:     "mkdir DIR_PATH",
 	Short:   "Make directories",
-	Long:    `Mkdirs will create directories along the path to the argument directory.`,
+	Long:    `Mkdir will create directories along the path to the argument directory.`,
 	Args:    cobra.ExactArgs(1),
 	PreRunE: root.MustWorkspaceClient,
 
@@ -32,5 +32,5 @@ var mkdirsCmd = &cobra.Command{
 }
 
 func init() {
-	fsCmd.AddCommand(mkdirsCmd)
+	fsCmd.AddCommand(mkdirCmd)
 }

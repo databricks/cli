@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TesFstMkDirsCreatesDirectory(t *testing.T) {
+func TesFsMkdirCreatesDirectory(t *testing.T) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	ctx := context.Background()
@@ -25,7 +25,7 @@ func TesFstMkDirsCreatesDirectory(t *testing.T) {
 	require.NoError(t, err)
 
 	// create directory "a"
-	stdout, stderr := RequireSuccessfulRun(t, "fs", "mkdirs", "dbfs:"+path.Join(tmpDir, "a"))
+	stdout, stderr := RequireSuccessfulRun(t, "fs", "mkdir", "dbfs:"+path.Join(tmpDir, "a"))
 	assert.Equal(t, "", stderr.String())
 	assert.Equal(t, "", stdout.String())
 
@@ -36,7 +36,7 @@ func TesFstMkDirsCreatesDirectory(t *testing.T) {
 	assert.Equal(t, true, info.IsDir())
 }
 
-func TestFsMkDirsCreatesMultipleDirectories(t *testing.T) {
+func TestFsMkdirCreatesMultipleDirectories(t *testing.T) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	ctx := context.Background()
@@ -49,7 +49,7 @@ func TestFsMkDirsCreatesMultipleDirectories(t *testing.T) {
 	require.NoError(t, err)
 
 	// create directory /a/b/c
-	stdout, stderr := RequireSuccessfulRun(t, "fs", "mkdirs", "dbfs:"+path.Join(tmpDir, "a", "b", "c"))
+	stdout, stderr := RequireSuccessfulRun(t, "fs", "mkdir", "dbfs:"+path.Join(tmpDir, "a", "b", "c"))
 	assert.Equal(t, "", stderr.String())
 	assert.Equal(t, "", stdout.String())
 
@@ -72,7 +72,7 @@ func TestFsMkDirsCreatesMultipleDirectories(t *testing.T) {
 	assert.Equal(t, true, infoC.IsDir())
 }
 
-func TestFsMkDirsWhenDirectoryAlreadyExists(t *testing.T) {
+func TestFsMkdirWhenDirectoryAlreadyExists(t *testing.T) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	ctx := context.Background()
@@ -88,12 +88,12 @@ func TestFsMkDirsWhenDirectoryAlreadyExists(t *testing.T) {
 	require.NoError(t, err)
 
 	// assert run is successful without any errors
-	stdout, stderr := RequireSuccessfulRun(t, "fs", "mkdirs", "dbfs:"+path.Join(tmpDir, "a"))
+	stdout, stderr := RequireSuccessfulRun(t, "fs", "mkdir", "dbfs:"+path.Join(tmpDir, "a"))
 	assert.Equal(t, "", stderr.String())
 	assert.Equal(t, "", stdout.String())
 }
 
-func TestFsMkDirsWhenFileExistsAtPath(t *testing.T) {
+func TestFsMkdirWhenFileExistsAtPath(t *testing.T) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	ctx := context.Background()
@@ -109,6 +109,6 @@ func TestFsMkDirsWhenFileExistsAtPath(t *testing.T) {
 	require.NoError(t, err)
 
 	// assert run fails
-	_, _, err = RequireErrorRun(t, "fs", "mkdirs", "dbfs:"+path.Join(tmpDir, "hello"))
+	_, _, err = RequireErrorRun(t, "fs", "mkdir", "dbfs:"+path.Join(tmpDir, "hello"))
 	assert.ErrorContains(t, err, "Cannot create directory")
 }
