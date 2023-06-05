@@ -3,13 +3,11 @@ package filer
 import (
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"io/fs"
 	"net/http"
 	"path"
 	"sort"
-	"strings"
 	"time"
 
 	"github.com/databricks/databricks-sdk-go"
@@ -271,12 +269,4 @@ func (w *DbfsClient) Stat(ctx context.Context, name string) (fs.FileInfo, error)
 	}
 
 	return dbfsFileInfo{*info}, nil
-}
-
-func ResolveDbfsPath(path string) (string, error) {
-	if !strings.HasPrefix(path, "dbfs:/") {
-		return "", fmt.Errorf("expected dbfs path (with the dbfs:/ prefix): %s", path)
-	}
-
-	return strings.TrimPrefix(path, "dbfs:"), nil
 }
