@@ -49,10 +49,10 @@ func TestFsCatForDbfsOnNonExistantFile(t *testing.T) {
 }
 
 func TestFsCatForDbfsInvalidScheme(t *testing.T) {
-	// t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
-	_, _, err := RequireErrorRun(t, "fs", "cat", "dbfs:non-existant-file", "--output=json")
-	assert.ErrorIs(t, err, fs.ErrNotExist)
+	_, _, err := RequireErrorRun(t, "fs", "cat", "dab:/non-existant-file", "--output=json")
+	assert.ErrorContains(t, err, "expected dbfs path (with the dbfs:/ prefix): dab:/non-existant-file")
 }
 
 // TODO: Add test asserting an error when cat is called on an directory. Need this to be
