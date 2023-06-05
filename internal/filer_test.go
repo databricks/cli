@@ -241,7 +241,7 @@ func TestAccFilerWorkspaceFilesReadDir(t *testing.T) {
 
 func temporaryDbfsDir(t *testing.T, w *databricks.WorkspaceClient) string {
 	ctx := context.Background()
-	path := fmt.Sprintf("/tmp/%s", RandomName("integration-test-filer-dbfs-"))
+	path := fmt.Sprintf("/tmp/%s", RandomName("integration-test-dbfs-"))
 
 	// This call fails if the path already exists.
 	t.Logf("mkdir dbfs:%s", path)
