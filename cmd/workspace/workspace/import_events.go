@@ -53,11 +53,12 @@ func renderSyncEvents(ctx context.Context, eventChannel <-chan sync.Event, synce
 					return nil
 				}
 				// TODO: test this works with windows paths
-				remotePath, err := syncer.RemotePath(progressEvent.Path)
-				if err != nil {
-					return err
-				}
-				err = cmdio.Render(ctx, newUploadCompleteEvent(progressEvent.Path, remotePath))
+				// remotePath, err := syncer.RemotePath(progressEvent.Path)
+				// if err != nil {
+				// 	return err
+				// }
+				remotePath := "TODO"
+				err := cmdio.Render(ctx, newUploadCompleteEvent(progressEvent.Path, remotePath))
 				if err != nil {
 					return err
 				}

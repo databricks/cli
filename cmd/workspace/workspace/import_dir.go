@@ -54,9 +54,10 @@ var importDirCmd = &cobra.Command{
 		// Initialize error wait group, and spawn the progress event emitter inside
 		// the error wait group
 		group, ctx := errgroup.WithContext(ctx)
+		eventsChannel := s.Events()
 		group.Go(
 			func() error {
-				return renderSyncEvents(ctx, s.Events(), s)
+				return renderSyncEvents(ctx, eventsChannel, s)
 			})
 
 		// Start Uploading local files

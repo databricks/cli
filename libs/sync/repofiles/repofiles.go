@@ -49,7 +49,7 @@ func Create(repoRoot, localRoot string, w *databricks.WorkspaceClient, opts *Rep
 	}, nil
 }
 
-func (r *RepoFiles) RemotePath(relativePath string) (string, error) {
+func (r *RepoFiles) remotePath(relativePath string) (string, error) {
 	fullPath := path.Join(r.repoRoot, relativePath)
 	cleanFullPath := path.Clean(fullPath)
 	if !strings.HasPrefix(cleanFullPath, r.repoRoot) {
@@ -82,7 +82,7 @@ func (r *RepoFiles) writeRemote(ctx context.Context, relativePath string, conten
 		// files, folders and notebooks might not have been cleaned up and they
 		// can't overwrite each other. If a folder `foo` exists, then attempts to
 		// PUT a file `foo` will fail
-		remotePath, err := r.RemotePath(relativePath)
+		remotePath, err := r.remotePath(relativePath)
 		if err != nil {
 			return err
 		}
