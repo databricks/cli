@@ -222,7 +222,6 @@ func (w *WorkspaceFilesClient) ReadDir(ctx context.Context, name string) ([]fs.D
 	objects, err := w.workspaceClient.Workspace.ListAll(ctx, workspace.ListWorkspaceRequest{
 		Path: absPath,
 	})
-
 	if err != nil {
 		// If we got an API error we deal with it below.
 		var aerr *apierr.APIError
