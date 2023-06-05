@@ -131,9 +131,12 @@ var deleteCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No PIPELINE_ID argument specified. Loading names for Pipelines drop-down."
 				names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
+				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "")
 				if err != nil {
@@ -189,9 +192,12 @@ var getCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No PIPELINE_ID argument specified. Loading names for Pipelines drop-down."
 				names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
+				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "")
 				if err != nil {
@@ -298,9 +304,12 @@ var listPipelineEventsCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No PIPELINE_ID argument specified. Loading names for Pipelines drop-down."
 				names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
+				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "")
 				if err != nil {
@@ -409,9 +418,12 @@ var listUpdatesCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No PIPELINE_ID argument specified. Loading names for Pipelines drop-down."
 				names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
+				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "The pipeline to return updates for")
 				if err != nil {
@@ -469,9 +481,12 @@ var resetCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No PIPELINE_ID argument specified. Loading names for Pipelines drop-down."
 				names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
+				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "")
 				if err != nil {
@@ -546,9 +561,12 @@ var startUpdateCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No PIPELINE_ID argument specified. Loading names for Pipelines drop-down."
 				names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
+				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "")
 				if err != nil {
@@ -606,9 +624,12 @@ var stopCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No PIPELINE_ID argument specified. Loading names for Pipelines drop-down."
 				names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
+				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "")
 				if err != nil {
@@ -698,9 +719,12 @@ var updateCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No PIPELINE_ID argument specified. Loading names for Pipelines drop-down."
 				names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
+				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "Unique identifier for this pipeline")
 				if err != nil {

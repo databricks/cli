@@ -10,7 +10,7 @@ import (
 
 func init() {
 	listScopesCmd.Annotations["template"] = cmdio.Heredoc(`
-	{{white "Scope"}}	{{white "Backend Type"}}
+	{{header "Scope"}}	{{header "Backend Type"}}
 	{{range .}}{{.Name|green}}	{{.BackendType}}
 	{{end}}`)
 

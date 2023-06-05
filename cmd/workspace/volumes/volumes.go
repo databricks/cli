@@ -134,9 +134,12 @@ var deleteCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No FULL_NAME_ARG argument specified. Loading names for Volumes drop-down."
 				names, err := w.Volumes.VolumeInfoNameToVolumeIdMap(ctx, catalog.ListVolumesRequest{})
+				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Volumes drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "The three-level (fully qualified) name of the volume")
 				if err != nil {
@@ -253,9 +256,12 @@ var readCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No FULL_NAME_ARG argument specified. Loading names for Volumes drop-down."
 				names, err := w.Volumes.VolumeInfoNameToVolumeIdMap(ctx, catalog.ListVolumesRequest{})
+				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Volumes drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "The three-level (fully qualified) name of the volume")
 				if err != nil {
@@ -319,9 +325,12 @@ var updateCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No FULL_NAME_ARG argument specified. Loading names for Volumes drop-down."
 				names, err := w.Volumes.VolumeInfoNameToVolumeIdMap(ctx, catalog.ListVolumesRequest{})
+				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Volumes drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "The three-level (fully qualified) name of the volume")
 				if err != nil {

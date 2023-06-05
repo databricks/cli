@@ -106,9 +106,12 @@ var deleteCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No TOKEN_ID argument specified. Loading names for Tokens drop-down."
 				names, err := w.Tokens.TokenInfoCommentToTokenIdMap(ctx)
+				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Tokens drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "The ID of the token to be revoked")
 				if err != nil {

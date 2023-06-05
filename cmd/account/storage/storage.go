@@ -109,9 +109,12 @@ var deleteCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No STORAGE_CONFIGURATION_ID argument specified. Loading names for Storage drop-down."
 				names, err := a.Storage.StorageConfigurationStorageConfigurationNameToStorageConfigurationIdMap(ctx)
+				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Storage drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "Databricks Account API storage configuration ID")
 				if err != nil {
@@ -164,9 +167,12 @@ var getCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No STORAGE_CONFIGURATION_ID argument specified. Loading names for Storage drop-down."
 				names, err := a.Storage.StorageConfigurationStorageConfigurationNameToStorageConfigurationIdMap(ctx)
+				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Storage drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "Databricks Account API storage configuration ID")
 				if err != nil {

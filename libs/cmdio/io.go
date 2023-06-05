@@ -66,24 +66,25 @@ func (c *cmdIO) IsTTY() bool {
 	return isatty.IsTerminal(fd) || isatty.IsCygwinTerminal(fd)
 }
 
-func (c *cmdIO) Render(v any) error {
+func Render(ctx context.Context, v any) error {
+	c := fromContext(ctx)
+	return RenderWithTemplate(ctx, v, c.template)
+}
+
+func RenderWithTemplate(ctx context.Context, v any, template string) error {
 	// TODO: add terminal width & white/dark theme detection
+	c := fromContext(ctx)
 	switch c.outputFormat {
 	case flags.OutputJSON:
 		return renderJson(c.out, v)
 	case flags.OutputText:
-		if c.template != "" {
-			return renderTemplate(c.out, c.template, v)
+		if template != "" {
+			return renderTemplate(c.out, template, v)
 		}
 		return renderJson(c.out, v)
 	default:
 		return fmt.Errorf("invalid output format: %s", c.outputFormat)
 	}
-}
-
-func Render(ctx context.Context, v any) error {
-	c := fromContext(ctx)
-	return c.Render(v)
 }
 
 type tuple struct{ Name, Id string }

@@ -47,7 +47,14 @@ var createCmd = &cobra.Command{
   pre-existing VPC and subnets.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.MustAccountClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
@@ -57,20 +64,6 @@ var createCmd = &cobra.Command{
 				return err
 			}
 		} else {
-			if len(args) == 0 {
-				names, err := a.Networks.NetworkNetworkNameToNetworkIdMap(ctx)
-				if err != nil {
-					return err
-				}
-				id, err := cmdio.Select(ctx, names, "The human-readable name of the network configuration")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have the human-readable name of the network configuration")
-			}
 			createReq.NetworkName = args[0]
 		}
 
@@ -118,9 +111,12 @@ var deleteCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No NETWORK_ID argument specified. Loading names for Networks drop-down."
 				names, err := a.Networks.NetworkNetworkNameToNetworkIdMap(ctx)
+				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Networks drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "Databricks Account API network configuration ID")
 				if err != nil {
@@ -174,9 +170,12 @@ var getCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No NETWORK_ID argument specified. Loading names for Networks drop-down."
 				names, err := a.Networks.NetworkNetworkNameToNetworkIdMap(ctx)
+				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Networks drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "Databricks Account API network configuration ID")
 				if err != nil {

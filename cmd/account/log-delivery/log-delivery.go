@@ -183,9 +183,12 @@ var getCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No LOG_DELIVERY_CONFIGURATION_ID argument specified. Loading names for Log Delivery drop-down."
 				names, err := a.LogDelivery.LogDeliveryConfigurationConfigNameToConfigIdMap(ctx, billing.ListLogDeliveryRequest{})
+				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Log Delivery drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "Databricks log delivery configuration ID")
 				if err != nil {

@@ -51,6 +51,18 @@ func (err NoSuchDirectoryError) Is(other error) bool {
 	return other == fs.ErrNotExist
 }
 
+type NotADirectory struct {
+	path string
+}
+
+func (err NotADirectory) Error() string {
+	return fmt.Sprintf("not a directory: %s", err.path)
+}
+
+func (err NotADirectory) Is(other error) bool {
+	return other == fs.ErrInvalid
+}
+
 // Filer is used to access files in a workspace.
 // It has implementations for accessing files in WSFS and in DBFS.
 type Filer interface {
