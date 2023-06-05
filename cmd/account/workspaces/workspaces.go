@@ -90,26 +90,6 @@ var createCmd = &cobra.Command{
 				return err
 			}
 		} else {
-<<<<<<< HEAD
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No WORKSPACE_NAME argument specified. Loading names for Workspaces drop-down."
-				names, err := a.Workspaces.WorkspaceWorkspaceNameToWorkspaceIdMap(ctx)
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Workspaces drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "The workspace's human-readable name")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have the workspace's human-readable name")
-			}
-=======
->>>>>>> 7413aa6 (Do not generate prompts for certain commands)
 			createReq.WorkspaceName = args[0]
 		}
 

@@ -84,26 +84,6 @@ var createCmd = &cobra.Command{
 				return err
 			}
 		} else {
-<<<<<<< HEAD
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No NAME argument specified. Loading names for Cluster Policies drop-down."
-				names, err := w.ClusterPolicies.PolicyNameToPolicyIdMap(ctx, compute.ListClusterPoliciesRequest{})
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Cluster Policies drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "Cluster Policy name requested by the user")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have cluster policy name requested by the user")
-			}
-=======
->>>>>>> 7413aa6 (Do not generate prompts for certain commands)
 			createReq.Name = args[0]
 		}
 

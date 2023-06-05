@@ -175,26 +175,6 @@ var createCmd = &cobra.Command{
 				return err
 			}
 		} else {
-<<<<<<< HEAD
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No SPARK_VERSION argument specified. Loading names for Clusters drop-down."
-				names, err := w.Clusters.ClusterInfoClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Clusters drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "The Spark version of the cluster, e.g")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have the spark version of the cluster, e.g")
-			}
-=======
->>>>>>> 7413aa6 (Do not generate prompts for certain commands)
 			createReq.SparkVersion = args[0]
 		}
 

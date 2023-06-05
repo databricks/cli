@@ -64,26 +64,6 @@ var createCmd = &cobra.Command{
 				return err
 			}
 		} else {
-<<<<<<< HEAD
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No NETWORK_NAME argument specified. Loading names for Networks drop-down."
-				names, err := a.Networks.NetworkNetworkNameToNetworkIdMap(ctx)
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Networks drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "The human-readable name of the network configuration")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have the human-readable name of the network configuration")
-			}
-=======
->>>>>>> 7413aa6 (Do not generate prompts for certain commands)
 			createReq.NetworkName = args[0]
 		}
 

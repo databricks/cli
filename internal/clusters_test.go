@@ -33,3 +33,8 @@ func TestAccClustersGet(t *testing.T) {
 	assert.Contains(t, outStr, fmt.Sprintf(`"cluster_id":"%s"`, clusterId))
 	assert.Equal(t, "", stderr.String())
 }
+
+func TestClusterCreateErrorWhenNoArguments(t *testing.T) {
+	_, _, err := RequireErrorRun(t, "clusters", "create")
+	assert.Equal(t, "accepts 1 arg(s), received 0", err.Error())
+}

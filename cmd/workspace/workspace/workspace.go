@@ -195,26 +195,6 @@ var getStatusCmd = &cobra.Command{
 				return err
 			}
 		} else {
-<<<<<<< HEAD
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No PATH argument specified. Loading names for Workspace drop-down."
-				names, err := w.Workspace.ObjectInfoPathToObjectIdMap(ctx, workspace.ListWorkspaceRequest{})
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Workspace drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "The absolute path of the notebook or directory")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have the absolute path of the notebook or directory")
-			}
-=======
->>>>>>> 7413aa6 (Do not generate prompts for certain commands)
 			getStatusReq.Path = args[0]
 		}
 
