@@ -20,9 +20,16 @@ var importDirCmd = &cobra.Command{
   .scala, .py, .sql, .r, .R, .ipynb are stripped of their extensions.
 `,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
-	Args:        cobra.ExactArgs(2),
+	Annotations: map[string]string{
+		"template": cmdio.Heredoc(`
+		{{if eq .Type "IMPORT_STARTED"}}Import started
+		{{else if eq .Type "UPLOAD_COMPLETE"}}Uploaded {{.SourcePath}} -> {{.TargetPath}}
+		{{else if eq .Type "IMPORT_COMPLETE"}}Import completed
+		{{end}}
+		`),
+	},
+	PreRunE: root.MustWorkspaceClient,
+	Args:    cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		sourcePath := args[0]
@@ -75,12 +82,6 @@ var importDirCmd = &cobra.Command{
 var importDirOverwrite bool
 
 func init() {
-	importDirCmd.Annotations["template"] = cmdio.Heredoc(`
-	{{if eq .Type "IMPORT_STARTED"}}Import started
-	{{else if eq .Type "UPLOAD_COMPLETE"}}Uploaded {{.SourcePath}} -> {{.TargetPath}}
-	{{else if eq .Type "IMPORT_COMPLETE"}}Import completed
-	{{end}}
-	`)
 	importDirCmd.Flags().BoolVar(&importDirOverwrite, "overwrite", false, "Overwrite if file already exists in the workspace")
 	Cmd.AddCommand(importDirCmd)
 }
