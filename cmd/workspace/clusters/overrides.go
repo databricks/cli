@@ -4,8 +4,8 @@ import "github.com/databricks/cli/libs/cmdio"
 
 func init() {
 	listCmd.Annotations["template"] = cmdio.Heredoc(`
-	{{"ID"}}	{{"Name"}}	{{"State"}}
-	{{range .}}{{.ClusterId | green}}	{{.ClusterName}}	{{if eq .State "RUNNING"}}{{green "%s" .State}}{{else if eq .State "TERMINATED"}}{{red "%s" .State}}{{else}}{{blue "%s" .State}}{{end}}
+	{{header "ID"}}	{{header "Name"}}	{{header "State"}}
+	{{range .}}{{.ClusterId | green}}	{{.ClusterName | cyan}}	{{if eq .State "RUNNING"}}{{green "%s" .State}}{{else if eq .State "TERMINATED"}}{{red "%s" .State}}{{else}}{{blue "%s" .State}}{{end}}
 	{{end}}`)
 
 	listNodeTypesCmd.Annotations["template"] = cmdio.Heredoc(`

@@ -4,7 +4,7 @@ import "github.com/databricks/cli/libs/cmdio"
 
 func init() {
 	listCmd.Annotations["template"] = cmdio.Heredoc(`
-	{{"ID"}}	{{"Expiry time"}}	{{"Comment"}}
-	{{range .}}{{.TokenId|green}}	{{.ExpiryTime}}	{{.Comment}}
+	{{header "ID"}}	{{header "Expiry time"}}	{{header "Comment"}}
+	{{range .}}{{.TokenId|green}}	{{cyan "%d" .ExpiryTime}}	{{.Comment|cyan}}
 	{{end}}`)
 }

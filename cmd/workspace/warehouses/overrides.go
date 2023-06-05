@@ -4,7 +4,7 @@ import "github.com/databricks/cli/libs/cmdio"
 
 func init() {
 	listCmd.Annotations["template"] = cmdio.Heredoc(`
-	{{"ID"}}	{{"Name"}}	{{"Size"}}	{{"State"}}
-	{{range .}}{{.Id|green}}	{{.Name}}	{{.ClusterSize}}	{{if eq .State "RUNNING"}}{{"RUNNING"|green}}{{else if eq .State "STOPPED"}}{{"STOPPED"|red}}{{else}}{{blue "%s" .State}}{{end}}
+	{{header "ID"}}	{{header "Name"}}	{{header "Size"}}	{{header "State"}}
+	{{range .}}{{.Id|green}}	{{.Name|cyan}}	{{.ClusterSize|cyan}}	{{if eq .State "RUNNING"}}{{"RUNNING"|green}}{{else if eq .State "STOPPED"}}{{"STOPPED"|red}}{{else}}{{blue "%s" .State}}{{end}}
 	{{end}}`)
 }

@@ -58,6 +58,7 @@ func renderTemplate(w io.Writer, tmpl string, v any) error {
 		// we render colored output if stdout is TTY, otherwise we render text.
 		// in the future we'll check if we can explicitly check for stderr being
 		// a TTY
+		"header":  color.BlueString,
 		"red":     color.RedString,
 		"green":   color.GreenString,
 		"blue":    color.BlueString,
