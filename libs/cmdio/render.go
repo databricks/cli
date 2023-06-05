@@ -49,10 +49,6 @@ func renderJson(w io.Writer, v any) error {
 		return err
 	}
 	_, err = w.Write(pretty)
-	if err != nil {
-		return err
-	}
-	_, err = w.Write([]byte("\n"))
 	return err
 }
 
