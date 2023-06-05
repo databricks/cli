@@ -165,10 +165,15 @@ func (w *DbfsClient) Read(ctx context.Context, name string) (io.Reader, error) {
 	return handle, nil
 }
 
-func (w *DbfsClient) Delete(ctx context.Context, name string) error {
+func (w *DbfsClient) Delete(ctx context.Context, name string, mode ...DeleteMode) error {
 	absPath, err := w.root.Join(name)
 	if err != nil {
 		return err
+	}
+
+	// Illegal to delete the root path.
+	if absPath == w.root.rootPath {
+		return CannotDeleteRootError{}
 	}
 
 	// Issue info call before delete because delete succeeds if the specified path doesn't exist.
@@ -193,10 +198,35 @@ func (w *DbfsClient) Delete(ctx context.Context, name string) error {
 		return err
 	}
 
-	return w.workspaceClient.Dbfs.Delete(ctx, files.Delete{
+	recursive := false
+	if slices.Contains(mode, DeleteRecursively) {
+		recursive = true
+	}
+
+	err = w.workspaceClient.Dbfs.Delete(ctx, files.Delete{
 		Path:      absPath,
-		Recursive: false,
+		Recursive: recursive,
 	})
+
+	// Return early on success.
+	if err == nil {
+		return nil
+	}
+
+	// Special handling of this error only if it is an API error.
+	var aerr *apierr.APIError
+	if !errors.As(err, &aerr) {
+		return err
+	}
+
+	switch aerr.StatusCode {
+	case http.StatusBadRequest:
+		if aerr.ErrorCode == "IO_ERROR" {
+			return DirectoryNotEmptyError{absPath}
+		}
+	}
+
+	return err
 }
 
 func (w *DbfsClient) ReadDir(ctx context.Context, name string) ([]fs.DirEntry, error) {
