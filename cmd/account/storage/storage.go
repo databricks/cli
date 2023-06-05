@@ -114,7 +114,7 @@ var deleteCmd = &cobra.Command{
 				names, err := a.Storage.StorageConfigurationStorageConfigurationNameToStorageConfigurationIdMap(ctx)
 				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Storage drop-down. Please manually specify required arguments")
 				}
 				id, err := cmdio.Select(ctx, names, "Databricks Account API storage configuration ID")
 				if err != nil {
@@ -172,7 +172,7 @@ var getCmd = &cobra.Command{
 				names, err := a.Storage.StorageConfigurationStorageConfigurationNameToStorageConfigurationIdMap(ctx)
 				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Storage drop-down. Please manually specify required arguments")
 				}
 				id, err := cmdio.Select(ctx, names, "Databricks Account API storage configuration ID")
 				if err != nil {

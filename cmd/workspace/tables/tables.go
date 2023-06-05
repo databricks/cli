@@ -66,7 +66,7 @@ var deleteCmd = &cobra.Command{
 				names, err := w.Tables.TableInfoNameToTableIdMap(ctx, catalog.ListTablesRequest{})
 				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Tables drop-down. Please manually specify required arguments")
 				}
 				id, err := cmdio.Select(ctx, names, "Full name of the table")
 				if err != nil {
@@ -130,7 +130,7 @@ var getCmd = &cobra.Command{
 				names, err := w.Tables.TableInfoNameToTableIdMap(ctx, catalog.ListTablesRequest{})
 				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Tables drop-down. Please manually specify required arguments")
 				}
 				id, err := cmdio.Select(ctx, names, "Full name of the table")
 				if err != nil {
@@ -261,7 +261,7 @@ var listSummariesCmd = &cobra.Command{
 				names, err := w.Tables.TableInfoNameToTableIdMap(ctx, catalog.ListTablesRequest{})
 				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Tables drop-down. Please manually specify required arguments")
 				}
 				id, err := cmdio.Select(ctx, names, "Name of parent catalog for tables of interest")
 				if err != nil {

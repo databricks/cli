@@ -188,7 +188,7 @@ var getCmd = &cobra.Command{
 				names, err := a.LogDelivery.LogDeliveryConfigurationConfigNameToConfigIdMap(ctx, billing.ListLogDeliveryRequest{})
 				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Log Delivery drop-down. Please manually specify required arguments")
 				}
 				id, err := cmdio.Select(ctx, names, "Databricks log delivery configuration ID")
 				if err != nil {

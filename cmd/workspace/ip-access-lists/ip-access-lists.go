@@ -138,7 +138,7 @@ var deleteCmd = &cobra.Command{
 				names, err := w.IpAccessLists.IpAccessListInfoLabelToListIdMap(ctx)
 				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Ip Access Lists drop-down. Please manually specify required arguments")
 				}
 				id, err := cmdio.Select(ctx, names, "The ID for the corresponding IP access list to modify")
 				if err != nil {
@@ -196,7 +196,7 @@ var getCmd = &cobra.Command{
 				names, err := w.IpAccessLists.IpAccessListInfoLabelToListIdMap(ctx)
 				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Ip Access Lists drop-down. Please manually specify required arguments")
 				}
 				id, err := cmdio.Select(ctx, names, "The ID for the corresponding IP access list to modify")
 				if err != nil {

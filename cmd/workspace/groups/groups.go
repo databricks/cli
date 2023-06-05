@@ -116,7 +116,7 @@ var deleteCmd = &cobra.Command{
 				names, err := w.Groups.GroupDisplayNameToIdMap(ctx, iam.ListGroupsRequest{})
 				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Groups drop-down. Please manually specify required arguments")
 				}
 				id, err := cmdio.Select(ctx, names, "Unique ID for a group in the Databricks workspace")
 				if err != nil {
@@ -174,7 +174,7 @@ var getCmd = &cobra.Command{
 				names, err := w.Groups.GroupDisplayNameToIdMap(ctx, iam.ListGroupsRequest{})
 				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Groups drop-down. Please manually specify required arguments")
 				}
 				id, err := cmdio.Select(ctx, names, "Unique ID for a group in the Databricks workspace")
 				if err != nil {
@@ -289,7 +289,7 @@ var patchCmd = &cobra.Command{
 				names, err := w.Groups.GroupDisplayNameToIdMap(ctx, iam.ListGroupsRequest{})
 				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Groups drop-down. Please manually specify required arguments")
 				}
 				id, err := cmdio.Select(ctx, names, "Unique ID for a group in the Databricks workspace")
 				if err != nil {
@@ -355,7 +355,7 @@ var updateCmd = &cobra.Command{
 				names, err := w.Groups.GroupDisplayNameToIdMap(ctx, iam.ListGroupsRequest{})
 				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Groups drop-down. Please manually specify required arguments")
 				}
 				id, err := cmdio.Select(ctx, names, "Databricks group ID")
 				if err != nil {

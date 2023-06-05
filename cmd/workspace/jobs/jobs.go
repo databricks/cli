@@ -74,7 +74,7 @@ var cancelAllRunsCmd = &cobra.Command{
 				names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
 				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments")
 				}
 				id, err := cmdio.Select(ctx, names, "The canonical identifier of the job to cancel all runs of")
 				if err != nil {
@@ -141,7 +141,7 @@ var cancelRunCmd = &cobra.Command{
 				names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
 				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments")
 				}
 				id, err := cmdio.Select(ctx, names, "This field is required")
 				if err != nil {
@@ -290,7 +290,7 @@ var deleteCmd = &cobra.Command{
 				names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
 				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments")
 				}
 				id, err := cmdio.Select(ctx, names, "The canonical identifier of the job to delete")
 				if err != nil {
@@ -351,7 +351,7 @@ var deleteRunCmd = &cobra.Command{
 				names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
 				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments")
 				}
 				id, err := cmdio.Select(ctx, names, "The canonical identifier of the run for which to retrieve the metadata")
 				if err != nil {
@@ -414,7 +414,7 @@ var exportRunCmd = &cobra.Command{
 				names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
 				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments")
 				}
 				id, err := cmdio.Select(ctx, names, "The canonical identifier for the run")
 				if err != nil {
@@ -475,7 +475,7 @@ var getCmd = &cobra.Command{
 				names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
 				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments")
 				}
 				id, err := cmdio.Select(ctx, names, "The canonical identifier of the job to retrieve information about")
 				if err != nil {
@@ -543,7 +543,7 @@ var getRunCmd = &cobra.Command{
 				names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
 				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments")
 				}
 				id, err := cmdio.Select(ctx, names, "The canonical identifier of the run for which to retrieve the metadata")
 				if err != nil {
@@ -613,7 +613,7 @@ var getRunOutputCmd = &cobra.Command{
 				names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
 				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments")
 				}
 				id, err := cmdio.Select(ctx, names, "The canonical identifier for the run")
 				if err != nil {
@@ -802,7 +802,7 @@ var repairRunCmd = &cobra.Command{
 				names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
 				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments")
 				}
 				id, err := cmdio.Select(ctx, names, "The job run ID of the run to repair")
 				if err != nil {
@@ -951,7 +951,7 @@ var runNowCmd = &cobra.Command{
 				names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
 				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments")
 				}
 				id, err := cmdio.Select(ctx, names, "The ID of the job to be executed")
 				if err != nil {
@@ -1128,7 +1128,7 @@ var updateCmd = &cobra.Command{
 				names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
 				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments")
 				}
 				id, err := cmdio.Select(ctx, names, "The canonical identifier of the job to update")
 				if err != nil {

@@ -153,7 +153,7 @@ var deleteCmd = &cobra.Command{
 				names, err := w.Warehouses.EndpointInfoNameToIdMap(ctx, sql.ListWarehousesRequest{})
 				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Warehouses drop-down. Please manually specify required arguments")
 				}
 				id, err := cmdio.Select(ctx, names, "Required")
 				if err != nil {
@@ -254,7 +254,7 @@ var editCmd = &cobra.Command{
 				names, err := w.Warehouses.EndpointInfoNameToIdMap(ctx, sql.ListWarehousesRequest{})
 				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Warehouses drop-down. Please manually specify required arguments")
 				}
 				id, err := cmdio.Select(ctx, names, "Required")
 				if err != nil {
@@ -341,7 +341,7 @@ var getCmd = &cobra.Command{
 				names, err := w.Warehouses.EndpointInfoNameToIdMap(ctx, sql.ListWarehousesRequest{})
 				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Warehouses drop-down. Please manually specify required arguments")
 				}
 				id, err := cmdio.Select(ctx, names, "Required")
 				if err != nil {
@@ -539,7 +539,7 @@ var startCmd = &cobra.Command{
 				names, err := w.Warehouses.EndpointInfoNameToIdMap(ctx, sql.ListWarehousesRequest{})
 				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Warehouses drop-down. Please manually specify required arguments")
 				}
 				id, err := cmdio.Select(ctx, names, "Required")
 				if err != nil {
@@ -626,7 +626,7 @@ var stopCmd = &cobra.Command{
 				names, err := w.Warehouses.EndpointInfoNameToIdMap(ctx, sql.ListWarehousesRequest{})
 				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Warehouses drop-down. Please manually specify required arguments")
 				}
 				id, err := cmdio.Select(ctx, names, "Required")
 				if err != nil {

@@ -65,7 +65,7 @@ var createCmd = &cobra.Command{
 				names, err := w.GitCredentials.CredentialInfoGitProviderToCredentialIdMap(ctx)
 				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Git Credentials drop-down. Please manually specify required arguments")
 				}
 				id, err := cmdio.Select(ctx, names, "Git provider")
 				if err != nil {
@@ -123,7 +123,7 @@ var deleteCmd = &cobra.Command{
 				names, err := w.GitCredentials.CredentialInfoGitProviderToCredentialIdMap(ctx)
 				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Git Credentials drop-down. Please manually specify required arguments")
 				}
 				id, err := cmdio.Select(ctx, names, "The ID for the corresponding credential to access")
 				if err != nil {
@@ -184,7 +184,7 @@ var getCmd = &cobra.Command{
 				names, err := w.GitCredentials.CredentialInfoGitProviderToCredentialIdMap(ctx)
 				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Git Credentials drop-down. Please manually specify required arguments")
 				}
 				id, err := cmdio.Select(ctx, names, "The ID for the corresponding credential to access")
 				if err != nil {
@@ -277,7 +277,7 @@ var updateCmd = &cobra.Command{
 				names, err := w.GitCredentials.CredentialInfoGitProviderToCredentialIdMap(ctx)
 				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Git Credentials drop-down. Please manually specify required arguments")
 				}
 				id, err := cmdio.Select(ctx, names, "The ID for the corresponding credential to access")
 				if err != nil {
