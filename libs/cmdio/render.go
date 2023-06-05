@@ -88,7 +88,7 @@ func renderTemplate(w io.Writer, tmpl string, v any) error {
 			return string(b), nil
 		},
 		"pretty_date": func(t time.Time) string {
-			return t.UTC().Format("2006-01-02T15:04:05Z")
+			return t.Format("2006-01-02T15:04:05Z")
 		},
 	}).Parse(tmpl)
 	if err != nil {

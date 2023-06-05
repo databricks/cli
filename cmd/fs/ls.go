@@ -39,12 +39,6 @@ var lsCmd = &cobra.Command{
 	Long:    `Lists files`,
 	Args:    cobra.ExactArgs(1),
 	PreRunE: root.MustWorkspaceClient,
-	Annotations: map[string]string{
-		"template": cmdio.Heredoc(`
-		{{range .}}{{.Name}}
-		{{end}}
-		`),
-	},
 
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
@@ -84,7 +78,10 @@ var lsCmd = &cobra.Command{
 			{{end}}
 			`))
 		}
-		return cmdio.Render(ctx, jsonDirEntries)
+		return cmdio.RenderWithTemplate(ctx, jsonDirEntries, cmdio.Heredoc(`
+		{{range .}}{{.Name}}
+		{{end}}
+		`))
 	},
 }
 
