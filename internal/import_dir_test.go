@@ -22,8 +22,8 @@ func TestWorkspaceImportDir(t *testing.T) {
 	w := databricks.Must(databricks.NewWorkspaceClient())
 	tmpdir := temporaryWorkspaceDir(t, w)
 
-	// run import_dir command
-	RequireSuccessfulRun(t, "workspace", "import_dir", "./testdata/import_dir/default", tmpdir)
+	// run import-dir command
+	RequireSuccessfulRun(t, "workspace", "import-dir", "./testdata/import_dir/default", tmpdir)
 
 	// assert files are uploaded
 	f, err := filer.NewWorkspaceFilesClient(w, tmpdir)
@@ -41,8 +41,8 @@ func TestWorkspaceImportDirOverwriteFlag(t *testing.T) {
 	w := databricks.Must(databricks.NewWorkspaceClient())
 	tmpdir := temporaryWorkspaceDir(t, w)
 
-	// run import_dir command
-	RequireSuccessfulRun(t, "workspace", "import_dir", "./testdata/import_dir/override/a", tmpdir)
+	// run import-dir command
+	RequireSuccessfulRun(t, "workspace", "import-dir", "./testdata/import_dir/override/a", tmpdir)
 
 	// // assert files are uploaded
 	// f, err := filer.NewWorkspaceFilesClient(w, tmpdir)
@@ -50,11 +50,11 @@ func TestWorkspaceImportDirOverwriteFlag(t *testing.T) {
 	// assertFileContains(t, ctx, f, "bar.txt", "from directory A")
 
 	// Assert another run fails with path already exists error from the server
-	_, _, err := RequireErrorRun(t, "workspace", "import_dir", "./testdata/import_dir/override/b", tmpdir)
+	_, _, err := RequireErrorRun(t, "workspace", "import-dir", "./testdata/import_dir/override/b", tmpdir)
 	assert.Regexp(t, regexp.MustCompile("Path (.*) already exists."), err.Error())
 
 	// // Succeeds with the overwrite flag
-	// RequireSuccessfulRun(t, "workspace", "import_dir", "./testdata/import_dir/override/b", tmpdir, "--overwrite")
+	// RequireSuccessfulRun(t, "workspace", "import-dir", "./testdata/import_dir/override/b", tmpdir, "--overwrite")
 	// require.NoError(t, err)
 	// assertFileContains(t, ctx, f, "bar.txt", "from directory B")
 }

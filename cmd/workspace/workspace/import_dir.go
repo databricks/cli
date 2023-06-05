@@ -11,7 +11,7 @@ import (
 
 // TODO: add some comments here
 var importDirCmd = &cobra.Command{
-	Use:   "import_dir SOURCE_PATH TARGET_PATH",
+	Use:   "import-dir SOURCE_PATH TARGET_PATH",
 	Short: `Recursively imports a directory from local to the Databricks workspace.`,
 	Long: `
   Imports directory to the workspace.
