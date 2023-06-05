@@ -48,7 +48,7 @@ func TestFsCatForDbfsInvalidScheme(t *testing.T) {
 }
 
 func TestFsCatDoesNotSupportOutputModeJson(t *testing.T) {
-	// t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	ctx := context.Background()
 	w, err := databricks.NewWorkspaceClient()
