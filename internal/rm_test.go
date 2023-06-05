@@ -104,7 +104,7 @@ func TestFsRmForNonEmptyDirectory(t *testing.T) {
 	assert.ErrorContains(t, err, "Non-recursive delete of non-empty directory")
 }
 
-func TestFsRmForNonExistantFile(t *testing.T) {
+func TestFsRmForNonExistentFile(t *testing.T) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	// No error is returned on command run
