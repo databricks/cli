@@ -4,7 +4,6 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/sync"
-	"github.com/databricks/databricks-sdk-go"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 )
@@ -21,6 +20,7 @@ var importDirCmd = &cobra.Command{
 `,
 
 	Annotations: map[string]string{
+		// TODO: use render with template at individual call sites for these events.
 		"template": cmdio.Heredoc(`
 		{{if eq .Type "IMPORT_STARTED"}}Import started
 		{{else if eq .Type "UPLOAD_COMPLETE"}}Uploaded {{.SourcePath}} -> {{.TargetPath}}
@@ -41,7 +41,7 @@ var importDirCmd = &cobra.Command{
 			LocalPath:       sourcePath,
 			RemotePath:      targetPath,
 			Full:            true,
-			WorkspaceClient: databricks.Must(databricks.NewWorkspaceClient()),
+			WorkspaceClient: root.WorkspaceClient(ctx),
 
 			AllowOverwrites: importDirOverwrite,
 			PersistSnapshot: false,

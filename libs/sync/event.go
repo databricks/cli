@@ -24,7 +24,6 @@ const (
 
 type Event interface {
 	fmt.Stringer
-	Type() EventType
 }
 
 type EventBase struct {
@@ -74,10 +73,6 @@ func (e *EventStart) String() string {
 	return fmt.Sprintf("Action: %s", e.EventChanges.String())
 }
 
-func (e *EventStart) Type() EventType {
-	return EventTypeStart
-}
-
 func newEventStart(seq int, put []string, delete []string) Event {
 	return &EventStart{
 		EventBase:    newEventBase(seq, EventTypeStart),
@@ -111,10 +106,6 @@ func (e *EventSyncProgress) String() string {
 	}
 }
 
-func (e *EventSyncProgress) Type() EventType {
-	return EventTypeProgress
-}
-
 func newEventProgress(seq int, action EventAction, path string, progress float32) Event {
 	return &EventSyncProgress{
 		EventBase: newEventBase(seq, EventTypeProgress),
@@ -140,10 +131,6 @@ func (e *EventSyncComplete) String() string {
 	}
 
 	return "Complete"
-}
-
-func (e *EventSyncComplete) Type() EventType {
-	return EventTypeComplete
 }
 
 func newEventComplete(seq int, put []string, delete []string) Event {
