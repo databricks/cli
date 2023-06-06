@@ -59,14 +59,17 @@ var createCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-		err = createJson.Unmarshal(&createReq)
-		if err != nil {
-			return err
-		}
-		createReq.CredentialsName = args[0]
-		_, err = fmt.Sscan(args[1], &createReq.AwsCredentials)
-		if err != nil {
-			return fmt.Errorf("invalid AWS_CREDENTIALS: %s", args[1])
+		if cmd.Flags().Changed("json") {
+			err = createJson.Unmarshal(&createReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			createReq.CredentialsName = args[0]
+			_, err = fmt.Sscan(args[1], &createReq.AwsCredentials)
+			if err != nil {
+				return fmt.Errorf("invalid AWS_CREDENTIALS: %s", args[1])
+			}
 		}
 
 		response, err := a.Credentials.Create(ctx, createReq)
@@ -80,10 +83,12 @@ var createCmd = &cobra.Command{
 // start delete command
 
 var deleteReq provisioning.DeleteCredentialRequest
+var deleteJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
+	deleteCmd.Flags().Var(&deleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -101,21 +106,31 @@ var deleteCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-		if len(args) == 0 {
-			names, err := a.Credentials.CredentialCredentialsNameToCredentialsIdMap(ctx)
+		if cmd.Flags().Changed("json") {
+			err = deleteJson.Unmarshal(&deleteReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "Databricks Account API credential configuration ID")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No CREDENTIALS_ID argument specified. Loading names for Credentials drop-down."
+				names, err := a.Credentials.CredentialCredentialsNameToCredentialsIdMap(ctx)
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Credentials drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "Databricks Account API credential configuration ID")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have databricks account api credential configuration id")
+			}
+			deleteReq.CredentialsId = args[0]
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have databricks account api credential configuration id")
-		}
-		deleteReq.CredentialsId = args[0]
 
 		err = a.Credentials.Delete(ctx, deleteReq)
 		if err != nil {
@@ -128,10 +143,12 @@ var deleteCmd = &cobra.Command{
 // start get command
 
 var getReq provisioning.GetCredentialRequest
+var getJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
+	getCmd.Flags().Var(&getJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -148,21 +165,31 @@ var getCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-		if len(args) == 0 {
-			names, err := a.Credentials.CredentialCredentialsNameToCredentialsIdMap(ctx)
+		if cmd.Flags().Changed("json") {
+			err = getJson.Unmarshal(&getReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "Databricks Account API credential configuration ID")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No CREDENTIALS_ID argument specified. Loading names for Credentials drop-down."
+				names, err := a.Credentials.CredentialCredentialsNameToCredentialsIdMap(ctx)
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Credentials drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "Databricks Account API credential configuration ID")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have databricks account api credential configuration id")
+			}
+			getReq.CredentialsId = args[0]
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have databricks account api credential configuration id")
-		}
-		getReq.CredentialsId = args[0]
 
 		response, err := a.Credentials.Get(ctx, getReq)
 		if err != nil {

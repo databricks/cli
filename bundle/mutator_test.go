@@ -16,9 +16,9 @@ func (t *testMutator) Name() string {
 	return "test"
 }
 
-func (t *testMutator) Apply(_ context.Context, b *Bundle) ([]Mutator, error) {
+func (t *testMutator) Apply(ctx context.Context, b *Bundle) error {
 	t.applyCalled++
-	return t.nestedMutators, nil
+	return Apply(ctx, b, Seq(t.nestedMutators...))
 }
 
 func TestMutator(t *testing.T) {
@@ -35,7 +35,7 @@ func TestMutator(t *testing.T) {
 	}
 
 	bundle := &Bundle{}
-	err := Apply(context.Background(), bundle, []Mutator{m})
+	err := Apply(context.Background(), bundle, m)
 	assert.NoError(t, err)
 
 	assert.Equal(t, 1, m.applyCalled)

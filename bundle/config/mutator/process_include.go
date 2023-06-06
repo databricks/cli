@@ -25,10 +25,10 @@ func (m *processInclude) Name() string {
 	return fmt.Sprintf("ProcessInclude(%s)", m.relPath)
 }
 
-func (m *processInclude) Apply(_ context.Context, b *bundle.Bundle) ([]bundle.Mutator, error) {
+func (m *processInclude) Apply(_ context.Context, b *bundle.Bundle) error {
 	this, err := config.Load(m.fullPath)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return nil, b.Config.Merge(this)
+	return b.Config.Merge(this)
 }

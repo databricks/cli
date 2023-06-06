@@ -6,10 +6,13 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"net/http"
 	"net/url"
 	"path"
+	"sort"
 	"strings"
+	"time"
 
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -17,6 +20,53 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"golang.org/x/exp/slices"
 )
+
+// Type that implements fs.DirEntry for WSFS.
+type wsfsDirEntry struct {
+	wsfsFileInfo
+}
+
+func (entry wsfsDirEntry) Type() fs.FileMode {
+	return entry.wsfsFileInfo.Mode()
+}
+
+func (entry wsfsDirEntry) Info() (fs.FileInfo, error) {
+	return entry.wsfsFileInfo, nil
+}
+
+// Type that implements fs.FileInfo for WSFS.
+type wsfsFileInfo struct {
+	oi workspace.ObjectInfo
+}
+
+func (info wsfsFileInfo) Name() string {
+	return path.Base(info.oi.Path)
+}
+
+func (info wsfsFileInfo) Size() int64 {
+	return info.oi.Size
+}
+
+func (info wsfsFileInfo) Mode() fs.FileMode {
+	switch info.oi.ObjectType {
+	case workspace.ObjectTypeDirectory:
+		return fs.ModeDir
+	default:
+		return fs.ModePerm
+	}
+}
+
+func (info wsfsFileInfo) ModTime() time.Time {
+	return time.UnixMilli(info.oi.ModifiedAt)
+}
+
+func (info wsfsFileInfo) IsDir() bool {
+	return info.oi.ObjectType == workspace.ObjectTypeDirectory
+}
+
+func (info wsfsFileInfo) Sys() any {
+	return nil
+}
 
 // WorkspaceFilesClient implements the files-in-workspace API.
 
@@ -66,7 +116,12 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 
 	err = w.apiClient.Do(ctx, http.MethodPost, urlPath, body, nil)
 
-	// If we got an API error we deal with it below.
+	// Return early on success.
+	if err == nil {
+		return nil
+	}
+
+	// Special handling of this error only if it is an API error.
 	var aerr *apierr.APIError
 	if !errors.As(err, &aerr) {
 		return err
@@ -110,21 +165,137 @@ func (w *WorkspaceFilesClient) Read(ctx context.Context, name string) (io.Reader
 
 	var res []byte
 	err = w.apiClient.Do(ctx, http.MethodGet, urlPath, nil, &res)
-	if err != nil {
+
+	// Return early on success.
+	if err == nil {
+		return bytes.NewReader(res), nil
+	}
+
+	// Special handling of this error only if it is an API error.
+	var aerr *apierr.APIError
+	if !errors.As(err, &aerr) {
 		return nil, err
 	}
 
-	return bytes.NewReader(res), nil
+	if aerr.StatusCode == http.StatusNotFound {
+		return nil, FileDoesNotExistError{absPath}
+	}
+
+	return nil, err
 }
 
-func (w *WorkspaceFilesClient) Delete(ctx context.Context, name string) error {
+func (w *WorkspaceFilesClient) Delete(ctx context.Context, name string, mode ...DeleteMode) error {
 	absPath, err := w.root.Join(name)
 	if err != nil {
 		return err
 	}
 
-	return w.workspaceClient.Workspace.Delete(ctx, workspace.Delete{
+	// Illegal to delete the root path.
+	if absPath == w.root.rootPath {
+		return CannotDeleteRootError{}
+	}
+
+	recursive := false
+	if slices.Contains(mode, DeleteRecursively) {
+		recursive = true
+	}
+
+	err = w.workspaceClient.Workspace.Delete(ctx, workspace.Delete{
 		Path:      absPath,
-		Recursive: false,
+		Recursive: recursive,
 	})
+
+	// Return early on success.
+	if err == nil {
+		return nil
+	}
+
+	// Special handling of this error only if it is an API error.
+	var aerr *apierr.APIError
+	if !errors.As(err, &aerr) {
+		return err
+	}
+
+	switch aerr.StatusCode {
+	case http.StatusBadRequest:
+		if aerr.ErrorCode == "DIRECTORY_NOT_EMPTY" {
+			return DirectoryNotEmptyError{absPath}
+		}
+	case http.StatusNotFound:
+		return FileDoesNotExistError{absPath}
+	}
+
+	return err
+}
+
+func (w *WorkspaceFilesClient) ReadDir(ctx context.Context, name string) ([]fs.DirEntry, error) {
+	absPath, err := w.root.Join(name)
+	if err != nil {
+		return nil, err
+	}
+
+	objects, err := w.workspaceClient.Workspace.ListAll(ctx, workspace.ListWorkspaceRequest{
+		Path: absPath,
+	})
+
+	if len(objects) == 1 && objects[0].Path == absPath {
+		return nil, NotADirectory{absPath}
+	}
+
+	if err != nil {
+		// If we got an API error we deal with it below.
+		var aerr *apierr.APIError
+		if !errors.As(err, &aerr) {
+			return nil, err
+		}
+
+		// This API returns a 404 if the specified path does not exist.
+		if aerr.StatusCode == http.StatusNotFound {
+			return nil, NoSuchDirectoryError{path.Dir(absPath)}
+		}
+
+		return nil, err
+	}
+
+	info := make([]fs.DirEntry, len(objects))
+	for i, v := range objects {
+		info[i] = wsfsDirEntry{wsfsFileInfo{oi: v}}
+	}
+
+	// Sort by name for parity with os.ReadDir.
+	sort.Slice(info, func(i, j int) bool { return info[i].Name() < info[j].Name() })
+	return info, nil
+}
+
+func (w *WorkspaceFilesClient) Mkdir(ctx context.Context, name string) error {
+	dirPath, err := w.root.Join(name)
+	if err != nil {
+		return err
+	}
+	return w.workspaceClient.Workspace.Mkdirs(ctx, workspace.Mkdirs{
+		Path: dirPath,
+	})
+}
+
+func (w *WorkspaceFilesClient) Stat(ctx context.Context, name string) (fs.FileInfo, error) {
+	absPath, err := w.root.Join(name)
+	if err != nil {
+		return nil, err
+	}
+
+	info, err := w.workspaceClient.Workspace.GetStatusByPath(ctx, absPath)
+	if err != nil {
+		// If we got an API error we deal with it below.
+		var aerr *apierr.APIError
+		if !errors.As(err, &aerr) {
+			return nil, err
+		}
+
+		// This API returns a 404 if the specified path does not exist.
+		if aerr.StatusCode == http.StatusNotFound {
+			return nil, FileDoesNotExistError{absPath}
+		}
+	}
+
+	return wsfsFileInfo{*info}, nil
 }

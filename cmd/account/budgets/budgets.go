@@ -43,15 +43,17 @@ var createCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-		err = createJson.Unmarshal(&createReq)
-		if err != nil {
-			return err
+		if cmd.Flags().Changed("json") {
+			err = createJson.Unmarshal(&createReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			_, err = fmt.Sscan(args[0], &createReq.Budget)
+			if err != nil {
+				return fmt.Errorf("invalid BUDGET: %s", args[0])
+			}
 		}
-		_, err = fmt.Sscan(args[0], &createReq.Budget)
-		if err != nil {
-			return fmt.Errorf("invalid BUDGET: %s", args[0])
-		}
-		createReq.BudgetId = args[1]
 
 		response, err := a.Budgets.Create(ctx, createReq)
 		if err != nil {
@@ -64,10 +66,12 @@ var createCmd = &cobra.Command{
 // start delete command
 
 var deleteReq billing.DeleteBudgetRequest
+var deleteJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
+	deleteCmd.Flags().Var(&deleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -83,21 +87,31 @@ var deleteCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-		if len(args) == 0 {
-			names, err := a.Budgets.BudgetWithStatusNameToBudgetIdMap(ctx)
+		if cmd.Flags().Changed("json") {
+			err = deleteJson.Unmarshal(&deleteReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "Budget ID")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No BUDGET_ID argument specified. Loading names for Budgets drop-down."
+				names, err := a.Budgets.BudgetWithStatusNameToBudgetIdMap(ctx)
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Budgets drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "Budget ID")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have budget id")
+			}
+			deleteReq.BudgetId = args[0]
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have budget id")
-		}
-		deleteReq.BudgetId = args[0]
 
 		err = a.Budgets.Delete(ctx, deleteReq)
 		if err != nil {
@@ -110,10 +124,12 @@ var deleteCmd = &cobra.Command{
 // start get command
 
 var getReq billing.GetBudgetRequest
+var getJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
+	getCmd.Flags().Var(&getJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -130,21 +146,31 @@ var getCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-		if len(args) == 0 {
-			names, err := a.Budgets.BudgetWithStatusNameToBudgetIdMap(ctx)
+		if cmd.Flags().Changed("json") {
+			err = getJson.Unmarshal(&getReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "Budget ID")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No BUDGET_ID argument specified. Loading names for Budgets drop-down."
+				names, err := a.Budgets.BudgetWithStatusNameToBudgetIdMap(ctx)
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Budgets drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "Budget ID")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have budget id")
+			}
+			getReq.BudgetId = args[0]
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have budget id")
-		}
-		getReq.BudgetId = args[0]
 
 		response, err := a.Budgets.Get(ctx, getReq)
 		if err != nil {
@@ -207,15 +233,18 @@ var updateCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-		err = updateJson.Unmarshal(&updateReq)
-		if err != nil {
-			return err
+		if cmd.Flags().Changed("json") {
+			err = updateJson.Unmarshal(&updateReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			_, err = fmt.Sscan(args[0], &updateReq.Budget)
+			if err != nil {
+				return fmt.Errorf("invalid BUDGET: %s", args[0])
+			}
+			updateReq.BudgetId = args[1]
 		}
-		_, err = fmt.Sscan(args[0], &updateReq.Budget)
-		if err != nil {
-			return fmt.Errorf("invalid BUDGET: %s", args[0])
-		}
-		updateReq.BudgetId = args[1]
 
 		err = a.Budgets.Update(ctx, updateReq)
 		if err != nil {

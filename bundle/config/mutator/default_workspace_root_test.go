@@ -20,7 +20,7 @@ func TestDefaultWorkspaceRoot(t *testing.T) {
 			},
 		},
 	}
-	_, err := mutator.DefineDefaultWorkspaceRoot().Apply(context.Background(), bundle)
+	err := mutator.DefineDefaultWorkspaceRoot().Apply(context.Background(), bundle)
 	require.NoError(t, err)
 	assert.Equal(t, "~/.bundle/name/environment", bundle.Config.Workspace.RootPath)
 }

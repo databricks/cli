@@ -17,9 +17,9 @@ func (t *mutatorWithError) Name() string {
 	return "mutatorWithError"
 }
 
-func (t *mutatorWithError) Apply(_ context.Context, b *Bundle) ([]Mutator, error) {
+func (t *mutatorWithError) Apply(_ context.Context, b *Bundle) error {
 	t.applyCalled++
-	return nil, fmt.Errorf(t.errorMsg)
+	return fmt.Errorf(t.errorMsg)
 }
 
 func TestDeferredMutatorWhenAllMutatorsSucceed(t *testing.T) {
@@ -27,7 +27,7 @@ func TestDeferredMutatorWhenAllMutatorsSucceed(t *testing.T) {
 	m2 := &testMutator{}
 	m3 := &testMutator{}
 	cleanup := &testMutator{}
-	deferredMutator := Defer([]Mutator{m1, m2, m3}, []Mutator{cleanup})
+	deferredMutator := Defer(Seq(m1, m2, m3), cleanup)
 
 	bundle := &Bundle{}
 	err := Apply(context.Background(), bundle, deferredMutator)
@@ -44,7 +44,7 @@ func TestDeferredMutatorWhenFirstFails(t *testing.T) {
 	m2 := &testMutator{}
 	mErr := &mutatorWithError{errorMsg: "mutator error occurred"}
 	cleanup := &testMutator{}
-	deferredMutator := Defer([]Mutator{mErr, m1, m2}, []Mutator{cleanup})
+	deferredMutator := Defer(Seq(mErr, m1, m2), cleanup)
 
 	bundle := &Bundle{}
 	err := Apply(context.Background(), bundle, deferredMutator)
@@ -61,7 +61,7 @@ func TestDeferredMutatorWhenMiddleOneFails(t *testing.T) {
 	m2 := &testMutator{}
 	mErr := &mutatorWithError{errorMsg: "mutator error occurred"}
 	cleanup := &testMutator{}
-	deferredMutator := Defer([]Mutator{m1, mErr, m2}, []Mutator{cleanup})
+	deferredMutator := Defer(Seq(m1, mErr, m2), cleanup)
 
 	bundle := &Bundle{}
 	err := Apply(context.Background(), bundle, deferredMutator)
@@ -78,7 +78,7 @@ func TestDeferredMutatorWhenLastOneFails(t *testing.T) {
 	m2 := &testMutator{}
 	mErr := &mutatorWithError{errorMsg: "mutator error occurred"}
 	cleanup := &testMutator{}
-	deferredMutator := Defer([]Mutator{m1, m2, mErr}, []Mutator{cleanup})
+	deferredMutator := Defer(Seq(m1, m2, mErr), cleanup)
 
 	bundle := &Bundle{}
 	err := Apply(context.Background(), bundle, deferredMutator)
@@ -95,7 +95,7 @@ func TestDeferredMutatorCombinesErrorMessages(t *testing.T) {
 	m2 := &testMutator{}
 	mErr := &mutatorWithError{errorMsg: "mutator error occurred"}
 	cleanupErr := &mutatorWithError{errorMsg: "cleanup error occurred"}
-	deferredMutator := Defer([]Mutator{m1, m2, mErr}, []Mutator{cleanupErr})
+	deferredMutator := Defer(Seq(m1, m2, mErr), cleanupErr)
 
 	bundle := &Bundle{}
 	err := Apply(context.Background(), bundle, deferredMutator)

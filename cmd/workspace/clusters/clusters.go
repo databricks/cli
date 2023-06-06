@@ -49,10 +49,12 @@ var Cmd = &cobra.Command{
 // start change-owner command
 
 var changeOwnerReq compute.ChangeClusterOwner
+var changeOwnerJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(changeOwnerCmd)
 	// TODO: short flags
+	changeOwnerCmd.Flags().Var(&changeOwnerJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -65,13 +67,26 @@ var changeOwnerCmd = &cobra.Command{
   operation.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(2),
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(2)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		changeOwnerReq.ClusterId = args[0]
-		changeOwnerReq.OwnerUsername = args[1]
+		if cmd.Flags().Changed("json") {
+			err = changeOwnerJson.Unmarshal(&changeOwnerReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			changeOwnerReq.ClusterId = args[0]
+			changeOwnerReq.OwnerUsername = args[1]
+		}
 
 		err = w.Clusters.ChangeOwner(ctx, changeOwnerReq)
 		if err != nil {
@@ -124,7 +139,7 @@ func init() {
 }
 
 var createCmd = &cobra.Command{
-	Use:   "create",
+	Use:   "create SPARK_VERSION",
 	Short: `Create new cluster.`,
 	Long: `Create new cluster.
   
@@ -143,15 +158,25 @@ var createCmd = &cobra.Command{
   informative error message.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		err = createJson.Unmarshal(&createReq)
-		if err != nil {
-			return err
+		if cmd.Flags().Changed("json") {
+			err = createJson.Unmarshal(&createReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			createReq.SparkVersion = args[0]
 		}
-		createReq.SparkVersion = args[0]
 
 		if createSkipWait {
 			response, err := w.Clusters.Create(ctx, createReq)
@@ -181,7 +206,7 @@ var createCmd = &cobra.Command{
 // start delete command
 
 var deleteReq compute.DeleteCluster
-
+var deleteJson flags.JsonFlag
 var deleteSkipWait bool
 var deleteTimeout time.Duration
 
@@ -191,6 +216,7 @@ func init() {
 	deleteCmd.Flags().BoolVar(&deleteSkipWait, "no-wait", deleteSkipWait, `do not wait to reach TERMINATED state`)
 	deleteCmd.Flags().DurationVar(&deleteTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach TERMINATED state`)
 	// TODO: short flags
+	deleteCmd.Flags().Var(&deleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -209,21 +235,31 @@ var deleteCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if len(args) == 0 {
-			names, err := w.Clusters.ClusterInfoClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
+		if cmd.Flags().Changed("json") {
+			err = deleteJson.Unmarshal(&deleteReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "The cluster to be terminated")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No CLUSTER_ID argument specified. Loading names for Clusters drop-down."
+				names, err := w.Clusters.ClusterInfoClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Clusters drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "The cluster to be terminated")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have the cluster to be terminated")
+			}
+			deleteReq.ClusterId = args[0]
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have the cluster to be terminated")
-		}
-		deleteReq.ClusterId = args[0]
 
 		if deleteSkipWait {
 			err = w.Clusters.Delete(ctx, deleteReq)
@@ -293,7 +329,7 @@ func init() {
 }
 
 var editCmd = &cobra.Command{
-	Use:   "edit",
+	Use:   "edit CLUSTER_ID SPARK_VERSION",
 	Short: `Update cluster configuration.`,
 	Long: `Update cluster configuration.
   
@@ -311,16 +347,26 @@ var editCmd = &cobra.Command{
   Clusters created by the Databricks Jobs service cannot be edited.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(2)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		err = editJson.Unmarshal(&editReq)
-		if err != nil {
-			return err
+		if cmd.Flags().Changed("json") {
+			err = editJson.Unmarshal(&editReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			editReq.ClusterId = args[0]
+			editReq.SparkVersion = args[1]
 		}
-		editReq.ClusterId = args[0]
-		editReq.SparkVersion = args[1]
 
 		if editSkipWait {
 			err = w.Clusters.Edit(ctx, editReq)
@@ -367,7 +413,7 @@ func init() {
 }
 
 var eventsCmd = &cobra.Command{
-	Use:   "events",
+	Use:   "events CLUSTER_ID",
 	Short: `List cluster activity events.`,
 	Long: `List cluster activity events.
   
@@ -380,11 +426,31 @@ var eventsCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		err = eventsJson.Unmarshal(&eventsReq)
-		if err != nil {
-			return err
+		if cmd.Flags().Changed("json") {
+			err = eventsJson.Unmarshal(&eventsReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No CLUSTER_ID argument specified. Loading names for Clusters drop-down."
+				names, err := w.Clusters.ClusterInfoClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Clusters drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "The ID of the cluster to retrieve events about")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
+			}
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have the id of the cluster to retrieve events about")
+			}
+			eventsReq.ClusterId = args[0]
 		}
-		eventsReq.ClusterId = args[0]
 
 		response, err := w.Clusters.EventsAll(ctx, eventsReq)
 		if err != nil {
@@ -397,7 +463,7 @@ var eventsCmd = &cobra.Command{
 // start get command
 
 var getReq compute.GetClusterRequest
-
+var getJson flags.JsonFlag
 var getSkipWait bool
 var getTimeout time.Duration
 
@@ -407,6 +473,7 @@ func init() {
 	getCmd.Flags().BoolVar(&getSkipWait, "no-wait", getSkipWait, `do not wait to reach RUNNING state`)
 	getCmd.Flags().DurationVar(&getTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
 	// TODO: short flags
+	getCmd.Flags().Var(&getJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -423,21 +490,31 @@ var getCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if len(args) == 0 {
-			names, err := w.Clusters.ClusterInfoClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
+		if cmd.Flags().Changed("json") {
+			err = getJson.Unmarshal(&getReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "The cluster about which to retrieve information")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No CLUSTER_ID argument specified. Loading names for Clusters drop-down."
+				names, err := w.Clusters.ClusterInfoClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Clusters drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "The cluster about which to retrieve information")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have the cluster about which to retrieve information")
+			}
+			getReq.ClusterId = args[0]
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have the cluster about which to retrieve information")
-		}
-		getReq.ClusterId = args[0]
 
 		response, err := w.Clusters.Get(ctx, getReq)
 		if err != nil {
@@ -450,10 +527,12 @@ var getCmd = &cobra.Command{
 // start list command
 
 var listReq compute.ListClustersRequest
+var listJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(listCmd)
 	// TODO: short flags
+	listCmd.Flags().Var(&listJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	listCmd.Flags().StringVar(&listReq.CanUseClient, "can-use-client", listReq.CanUseClient, `Filter clusters based on what type of client it can be used for.`)
 
@@ -475,11 +554,24 @@ var listCmd = &cobra.Command{
   terminated job clusters.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(0),
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(0)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+		if cmd.Flags().Changed("json") {
+			err = listJson.Unmarshal(&listReq)
+			if err != nil {
+				return err
+			}
+		} else {
+		}
 
 		response, err := w.Clusters.ListAll(ctx, listReq)
 		if err != nil {
@@ -548,10 +640,12 @@ var listZonesCmd = &cobra.Command{
 // start permanent-delete command
 
 var permanentDeleteReq compute.PermanentDeleteCluster
+var permanentDeleteJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(permanentDeleteCmd)
 	// TODO: short flags
+	permanentDeleteCmd.Flags().Var(&permanentDeleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -572,21 +666,31 @@ var permanentDeleteCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if len(args) == 0 {
-			names, err := w.Clusters.ClusterInfoClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
+		if cmd.Flags().Changed("json") {
+			err = permanentDeleteJson.Unmarshal(&permanentDeleteReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "The cluster to be deleted")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No CLUSTER_ID argument specified. Loading names for Clusters drop-down."
+				names, err := w.Clusters.ClusterInfoClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Clusters drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "The cluster to be deleted")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have the cluster to be deleted")
+			}
+			permanentDeleteReq.ClusterId = args[0]
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have the cluster to be deleted")
-		}
-		permanentDeleteReq.ClusterId = args[0]
 
 		err = w.Clusters.PermanentDelete(ctx, permanentDeleteReq)
 		if err != nil {
@@ -599,10 +703,12 @@ var permanentDeleteCmd = &cobra.Command{
 // start pin command
 
 var pinReq compute.PinCluster
+var pinJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(pinCmd)
 	// TODO: short flags
+	pinCmd.Flags().Var(&pinJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -620,21 +726,31 @@ var pinCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if len(args) == 0 {
-			names, err := w.Clusters.ClusterInfoClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
+		if cmd.Flags().Changed("json") {
+			err = pinJson.Unmarshal(&pinReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "<needs content added>")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No CLUSTER_ID argument specified. Loading names for Clusters drop-down."
+				names, err := w.Clusters.ClusterInfoClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Clusters drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "<needs content added>")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have <needs content added>")
+			}
+			pinReq.ClusterId = args[0]
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have <needs content added>")
-		}
-		pinReq.ClusterId = args[0]
 
 		err = w.Clusters.Pin(ctx, pinReq)
 		if err != nil {
@@ -665,7 +781,7 @@ func init() {
 }
 
 var resizeCmd = &cobra.Command{
-	Use:   "resize",
+	Use:   "resize CLUSTER_ID",
 	Short: `Resize cluster.`,
 	Long: `Resize cluster.
   
@@ -677,11 +793,31 @@ var resizeCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		err = resizeJson.Unmarshal(&resizeReq)
-		if err != nil {
-			return err
+		if cmd.Flags().Changed("json") {
+			err = resizeJson.Unmarshal(&resizeReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No CLUSTER_ID argument specified. Loading names for Clusters drop-down."
+				names, err := w.Clusters.ClusterInfoClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Clusters drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "The cluster to be resized")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
+			}
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have the cluster to be resized")
+			}
+			resizeReq.ClusterId = args[0]
 		}
-		resizeReq.ClusterId = args[0]
 
 		if resizeSkipWait {
 			err = w.Clusters.Resize(ctx, resizeReq)
@@ -711,7 +847,7 @@ var resizeCmd = &cobra.Command{
 // start restart command
 
 var restartReq compute.RestartCluster
-
+var restartJson flags.JsonFlag
 var restartSkipWait bool
 var restartTimeout time.Duration
 
@@ -721,6 +857,7 @@ func init() {
 	restartCmd.Flags().BoolVar(&restartSkipWait, "no-wait", restartSkipWait, `do not wait to reach RUNNING state`)
 	restartCmd.Flags().DurationVar(&restartTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
 	// TODO: short flags
+	restartCmd.Flags().Var(&restartJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	restartCmd.Flags().StringVar(&restartReq.RestartUser, "restart-user", restartReq.RestartUser, `<needs content added>.`)
 
@@ -739,21 +876,31 @@ var restartCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if len(args) == 0 {
-			names, err := w.Clusters.ClusterInfoClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
+		if cmd.Flags().Changed("json") {
+			err = restartJson.Unmarshal(&restartReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "The cluster to be started")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No CLUSTER_ID argument specified. Loading names for Clusters drop-down."
+				names, err := w.Clusters.ClusterInfoClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Clusters drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "The cluster to be started")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have the cluster to be started")
+			}
+			restartReq.ClusterId = args[0]
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have the cluster to be started")
-		}
-		restartReq.ClusterId = args[0]
 
 		if restartSkipWait {
 			err = w.Clusters.Restart(ctx, restartReq)
@@ -811,7 +958,7 @@ var sparkVersionsCmd = &cobra.Command{
 // start start command
 
 var startReq compute.StartCluster
-
+var startJson flags.JsonFlag
 var startSkipWait bool
 var startTimeout time.Duration
 
@@ -821,6 +968,7 @@ func init() {
 	startCmd.Flags().BoolVar(&startSkipWait, "no-wait", startSkipWait, `do not wait to reach RUNNING state`)
 	startCmd.Flags().DurationVar(&startTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
 	// TODO: short flags
+	startCmd.Flags().Var(&startJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -843,21 +991,31 @@ var startCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if len(args) == 0 {
-			names, err := w.Clusters.ClusterInfoClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
+		if cmd.Flags().Changed("json") {
+			err = startJson.Unmarshal(&startReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "The cluster to be started")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No CLUSTER_ID argument specified. Loading names for Clusters drop-down."
+				names, err := w.Clusters.ClusterInfoClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Clusters drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "The cluster to be started")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have the cluster to be started")
+			}
+			startReq.ClusterId = args[0]
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have the cluster to be started")
-		}
-		startReq.ClusterId = args[0]
 
 		if startSkipWait {
 			err = w.Clusters.Start(ctx, startReq)
@@ -887,10 +1045,12 @@ var startCmd = &cobra.Command{
 // start unpin command
 
 var unpinReq compute.UnpinCluster
+var unpinJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(unpinCmd)
 	// TODO: short flags
+	unpinCmd.Flags().Var(&unpinJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -908,21 +1068,31 @@ var unpinCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if len(args) == 0 {
-			names, err := w.Clusters.ClusterInfoClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
+		if cmd.Flags().Changed("json") {
+			err = unpinJson.Unmarshal(&unpinReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "<needs content added>")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No CLUSTER_ID argument specified. Loading names for Clusters drop-down."
+				names, err := w.Clusters.ClusterInfoClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Clusters drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "<needs content added>")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have <needs content added>")
+			}
+			unpinReq.ClusterId = args[0]
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have <needs content added>")
-		}
-		unpinReq.ClusterId = args[0]
 
 		err = w.Clusters.Unpin(ctx, unpinReq)
 		if err != nil {

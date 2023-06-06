@@ -95,20 +95,15 @@ func setTempDirEnvVars(env map[string]string, b *bundle.Bundle) error {
 			env["TMP"] = tmpDir
 		}
 	default:
+		// If TMPDIR is not set, we let the process fall back to its default value.
 		if v, ok := os.LookupEnv("TMPDIR"); ok {
 			env["TMPDIR"] = v
-		} else {
-			tmpDir, err := b.CacheDir("tmp")
-			if err != nil {
-				return err
-			}
-			env["TMPDIR"] = tmpDir
 		}
 	}
 	return nil
 }
 
-func (m *initialize) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator, error) {
+func (m *initialize) Apply(ctx context.Context, b *bundle.Bundle) error {
 	tfConfig := b.Config.Bundle.Terraform
 	if tfConfig == nil {
 		tfConfig = &config.Terraform{}
@@ -117,22 +112,22 @@ func (m *initialize) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Muta
 
 	execPath, err := m.findExecPath(ctx, b, tfConfig)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	workingDir, err := Dir(b)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	tf, err := tfexec.NewTerraform(workingDir, execPath)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	env, err := b.AuthEnv()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// Include $HOME in set of environment variables to pass along.
@@ -144,18 +139,18 @@ func (m *initialize) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Muta
 	// Set the temporary directory environment variables
 	err = setTempDirEnvVars(env, b)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// Configure environment variables for auth for Terraform to use.
 	log.Debugf(ctx, "Environment variables for Terraform: %s", strings.Join(maps.Keys(env), ", "))
 	err = tf.SetEnv(env)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	b.Terraform = tf
-	return nil, nil
+	return nil
 }
 
 func Initialize() bundle.Mutator {

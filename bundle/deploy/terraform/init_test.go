@@ -43,7 +43,7 @@ func TestInitEnvironmentVariables(t *testing.T) {
 	t.Setenv("DATABRICKS_TOKEN", "foobar")
 	bundle.WorkspaceClient()
 
-	_, err = Initialize().Apply(context.Background(), bundle)
+	err = Initialize().Apply(context.Background(), bundle)
 	require.NoError(t, err)
 }
 
@@ -69,7 +69,7 @@ func TestSetTempDirEnvVarsForUnixWithTmpDirSet(t *testing.T) {
 	err := setTempDirEnvVars(env, b)
 	require.NoError(t, err)
 
-	// assert that we pass through env var value
+	// Assert that we pass through TMPDIR.
 	assert.Equal(t, map[string]string{
 		"TMPDIR": "/foo/bar",
 	}, env)
@@ -97,12 +97,8 @@ func TestSetTempDirEnvVarsForUnixWithTmpDirNotSet(t *testing.T) {
 	err := setTempDirEnvVars(env, b)
 	require.NoError(t, err)
 
-	// assert tmp dir is set to b.CacheDir("tmp")
-	tmpDir, err := b.CacheDir("tmp")
-	require.NoError(t, err)
-	assert.Equal(t, map[string]string{
-		"TMPDIR": tmpDir,
-	}, env)
+	// Assert that we don't pass through TMPDIR.
+	assert.Equal(t, map[string]string{}, env)
 }
 
 func TestSetTempDirEnvVarsForWindowWithAllTmpDirEnvVarsSet(t *testing.T) {

@@ -60,15 +60,24 @@ var createCmd = &cobra.Command{
   added to the Databricks account.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(0)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		err = createJson.Unmarshal(&createReq)
-		if err != nil {
-			return err
+		if cmd.Flags().Changed("json") {
+			err = createJson.Unmarshal(&createReq)
+			if err != nil {
+				return err
+			}
+		} else {
 		}
-		createReq.Id = args[0]
 
 		response, err := w.Users.Create(ctx, createReq)
 		if err != nil {
@@ -81,10 +90,12 @@ var createCmd = &cobra.Command{
 // start delete command
 
 var deleteReq iam.DeleteUserRequest
+var deleteJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
+	deleteCmd.Flags().Var(&deleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -101,21 +112,31 @@ var deleteCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if len(args) == 0 {
-			names, err := w.Users.UserUserNameToIdMap(ctx, iam.ListUsersRequest{})
+		if cmd.Flags().Changed("json") {
+			err = deleteJson.Unmarshal(&deleteReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "Unique ID for a user in the Databricks workspace")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No ID argument specified. Loading names for Users drop-down."
+				names, err := w.Users.UserUserNameToIdMap(ctx, iam.ListUsersRequest{})
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Users drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "Unique ID for a user in the Databricks workspace")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have unique id for a user in the databricks workspace")
+			}
+			deleteReq.Id = args[0]
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have unique id for a user in the databricks workspace")
-		}
-		deleteReq.Id = args[0]
 
 		err = w.Users.Delete(ctx, deleteReq)
 		if err != nil {
@@ -128,10 +149,12 @@ var deleteCmd = &cobra.Command{
 // start get command
 
 var getReq iam.GetUserRequest
+var getJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
+	getCmd.Flags().Var(&getJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -147,21 +170,31 @@ var getCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if len(args) == 0 {
-			names, err := w.Users.UserUserNameToIdMap(ctx, iam.ListUsersRequest{})
+		if cmd.Flags().Changed("json") {
+			err = getJson.Unmarshal(&getReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "Unique ID for a user in the Databricks workspace")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No ID argument specified. Loading names for Users drop-down."
+				names, err := w.Users.UserUserNameToIdMap(ctx, iam.ListUsersRequest{})
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Users drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "Unique ID for a user in the Databricks workspace")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have unique id for a user in the databricks workspace")
+			}
+			getReq.Id = args[0]
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have unique id for a user in the databricks workspace")
-		}
-		getReq.Id = args[0]
 
 		response, err := w.Users.Get(ctx, getReq)
 		if err != nil {
@@ -174,10 +207,12 @@ var getCmd = &cobra.Command{
 // start list command
 
 var listReq iam.ListUsersRequest
+var listJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(listCmd)
 	// TODO: short flags
+	listCmd.Flags().Var(&listJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	listCmd.Flags().StringVar(&listReq.Attributes, "attributes", listReq.Attributes, `Comma-separated list of attributes to return in response.`)
 	listCmd.Flags().IntVar(&listReq.Count, "count", listReq.Count, `Desired number of results per page.`)
@@ -197,11 +232,24 @@ var listCmd = &cobra.Command{
   Gets details for all the users associated with a Databricks workspace.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(0),
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(0)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+		if cmd.Flags().Changed("json") {
+			err = listJson.Unmarshal(&listReq)
+			if err != nil {
+				return err
+			}
+		} else {
+		}
 
 		response, err := w.Users.ListAll(ctx, listReq)
 		if err != nil {
@@ -226,7 +274,7 @@ func init() {
 }
 
 var patchCmd = &cobra.Command{
-	Use:   "patch",
+	Use:   "patch ID",
 	Short: `Update user details.`,
 	Long: `Update user details.
   
@@ -238,11 +286,31 @@ var patchCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		err = patchJson.Unmarshal(&patchReq)
-		if err != nil {
-			return err
+		if cmd.Flags().Changed("json") {
+			err = patchJson.Unmarshal(&patchReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No ID argument specified. Loading names for Users drop-down."
+				names, err := w.Users.UserUserNameToIdMap(ctx, iam.ListUsersRequest{})
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Users drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "Unique ID for a user in the Databricks workspace")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
+			}
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have unique id for a user in the databricks workspace")
+			}
+			patchReq.Id = args[0]
 		}
-		patchReq.Id = args[0]
 
 		err = w.Users.Patch(ctx, patchReq)
 		if err != nil {
@@ -276,7 +344,7 @@ func init() {
 }
 
 var updateCmd = &cobra.Command{
-	Use:   "update",
+	Use:   "update ID",
 	Short: `Replace a user.`,
 	Long: `Replace a user.
   
@@ -287,11 +355,31 @@ var updateCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		err = updateJson.Unmarshal(&updateReq)
-		if err != nil {
-			return err
+		if cmd.Flags().Changed("json") {
+			err = updateJson.Unmarshal(&updateReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No ID argument specified. Loading names for Users drop-down."
+				names, err := w.Users.UserUserNameToIdMap(ctx, iam.ListUsersRequest{})
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Users drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "Databricks user ID")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
+			}
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have databricks user id")
+			}
+			updateReq.Id = args[0]
 		}
-		updateReq.Id = args[0]
 
 		err = w.Users.Update(ctx, updateReq)
 		if err != nil {

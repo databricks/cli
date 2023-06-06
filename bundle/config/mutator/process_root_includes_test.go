@@ -26,7 +26,7 @@ func TestProcessRootIncludesEmpty(t *testing.T) {
 			Path: ".",
 		},
 	}
-	_, err := mutator.ProcessRootIncludes().Apply(context.Background(), bundle)
+	err := mutator.ProcessRootIncludes().Apply(context.Background(), bundle)
 	require.NoError(t, err)
 }
 
@@ -46,7 +46,7 @@ func TestProcessRootIncludesAbs(t *testing.T) {
 			},
 		},
 	}
-	_, err := mutator.ProcessRootIncludes().Apply(context.Background(), bundle)
+	err := mutator.ProcessRootIncludes().Apply(context.Background(), bundle)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "must be relative paths")
 }
@@ -65,17 +65,9 @@ func TestProcessRootIncludesSingleGlob(t *testing.T) {
 	touch(t, bundle.Config.Path, "a.yml")
 	touch(t, bundle.Config.Path, "b.yml")
 
-	ms, err := mutator.ProcessRootIncludes().Apply(context.Background(), bundle)
+	err := mutator.ProcessRootIncludes().Apply(context.Background(), bundle)
 	require.NoError(t, err)
 
-	var names []string
-	for _, m := range ms {
-		names = append(names, m.Name())
-	}
-
-	assert.NotContains(t, names, "ProcessInclude(bundle.yml)")
-	assert.Contains(t, names, "ProcessInclude(a.yml)")
-	assert.Contains(t, names, "ProcessInclude(b.yml)")
 	assert.Equal(t, []string{"a.yml", "b.yml"}, bundle.Config.Include)
 }
 
@@ -93,16 +85,9 @@ func TestProcessRootIncludesMultiGlob(t *testing.T) {
 	touch(t, bundle.Config.Path, "a1.yml")
 	touch(t, bundle.Config.Path, "b1.yml")
 
-	ms, err := mutator.ProcessRootIncludes().Apply(context.Background(), bundle)
+	err := mutator.ProcessRootIncludes().Apply(context.Background(), bundle)
 	require.NoError(t, err)
 
-	var names []string
-	for _, m := range ms {
-		names = append(names, m.Name())
-	}
-
-	assert.Contains(t, names, "ProcessInclude(a1.yml)")
-	assert.Contains(t, names, "ProcessInclude(b1.yml)")
 	assert.Equal(t, []string{"a1.yml", "b1.yml"}, bundle.Config.Include)
 }
 
@@ -119,9 +104,7 @@ func TestProcessRootIncludesRemoveDups(t *testing.T) {
 
 	touch(t, bundle.Config.Path, "a.yml")
 
-	ms, err := mutator.ProcessRootIncludes().Apply(context.Background(), bundle)
+	err := mutator.ProcessRootIncludes().Apply(context.Background(), bundle)
 	require.NoError(t, err)
-	assert.Len(t, ms, 1)
-	assert.Equal(t, "ProcessInclude(a.yml)", ms[0].Name())
 	assert.Equal(t, []string{"a.yml"}, bundle.Config.Include)
 }

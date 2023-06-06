@@ -7,6 +7,7 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/spf13/cobra"
 )
@@ -43,10 +44,12 @@ var Cmd = &cobra.Command{
 // start create command
 
 var createReq compute.CreatePolicy
+var createJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(createCmd)
 	// TODO: short flags
+	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	createCmd.Flags().StringVar(&createReq.Definition, "definition", createReq.Definition, `Policy definition document expressed in Databricks Cluster Policy Definition Language.`)
 	createCmd.Flags().StringVar(&createReq.Description, "description", createReq.Description, `Additional human-readable description of the cluster policy.`)
@@ -64,25 +67,25 @@ var createCmd = &cobra.Command{
   Creates a new policy with prescribed settings.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if len(args) == 0 {
-			names, err := w.ClusterPolicies.PolicyNameToPolicyIdMap(ctx, compute.ListClusterPoliciesRequest{})
+		if cmd.Flags().Changed("json") {
+			err = createJson.Unmarshal(&createReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "Cluster Policy name requested by the user")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
+		} else {
+			createReq.Name = args[0]
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have cluster policy name requested by the user")
-		}
-		createReq.Name = args[0]
 
 		response, err := w.ClusterPolicies.Create(ctx, createReq)
 		if err != nil {
@@ -95,10 +98,12 @@ var createCmd = &cobra.Command{
 // start delete command
 
 var deleteReq compute.DeletePolicy
+var deleteJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
+	deleteCmd.Flags().Var(&deleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -115,21 +120,31 @@ var deleteCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if len(args) == 0 {
-			names, err := w.ClusterPolicies.PolicyNameToPolicyIdMap(ctx, compute.ListClusterPoliciesRequest{})
+		if cmd.Flags().Changed("json") {
+			err = deleteJson.Unmarshal(&deleteReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "The ID of the policy to delete")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No POLICY_ID argument specified. Loading names for Cluster Policies drop-down."
+				names, err := w.ClusterPolicies.PolicyNameToPolicyIdMap(ctx, compute.ListClusterPoliciesRequest{})
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Cluster Policies drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "The ID of the policy to delete")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have the id of the policy to delete")
+			}
+			deleteReq.PolicyId = args[0]
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have the id of the policy to delete")
-		}
-		deleteReq.PolicyId = args[0]
 
 		err = w.ClusterPolicies.Delete(ctx, deleteReq)
 		if err != nil {
@@ -142,10 +157,12 @@ var deleteCmd = &cobra.Command{
 // start edit command
 
 var editReq compute.EditPolicy
+var editJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(editCmd)
 	// TODO: short flags
+	editCmd.Flags().Var(&editJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	editCmd.Flags().StringVar(&editReq.Definition, "definition", editReq.Definition, `Policy definition document expressed in Databricks Cluster Policy Definition Language.`)
 	editCmd.Flags().StringVar(&editReq.Description, "description", editReq.Description, `Additional human-readable description of the cluster policy.`)
@@ -164,13 +181,26 @@ var editCmd = &cobra.Command{
   governed by the previous policy invalid.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(2),
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(2)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		editReq.PolicyId = args[0]
-		editReq.Name = args[1]
+		if cmd.Flags().Changed("json") {
+			err = editJson.Unmarshal(&editReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			editReq.PolicyId = args[0]
+			editReq.Name = args[1]
+		}
 
 		err = w.ClusterPolicies.Edit(ctx, editReq)
 		if err != nil {
@@ -183,10 +213,12 @@ var editCmd = &cobra.Command{
 // start get command
 
 var getReq compute.GetClusterPolicyRequest
+var getJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
+	getCmd.Flags().Var(&getJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -202,21 +234,31 @@ var getCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if len(args) == 0 {
-			names, err := w.ClusterPolicies.PolicyNameToPolicyIdMap(ctx, compute.ListClusterPoliciesRequest{})
+		if cmd.Flags().Changed("json") {
+			err = getJson.Unmarshal(&getReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "Canonical unique identifier for the cluster policy")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No POLICY_ID argument specified. Loading names for Cluster Policies drop-down."
+				names, err := w.ClusterPolicies.PolicyNameToPolicyIdMap(ctx, compute.ListClusterPoliciesRequest{})
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Cluster Policies drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "Canonical unique identifier for the cluster policy")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have canonical unique identifier for the cluster policy")
+			}
+			getReq.PolicyId = args[0]
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have canonical unique identifier for the cluster policy")
-		}
-		getReq.PolicyId = args[0]
 
 		response, err := w.ClusterPolicies.Get(ctx, getReq)
 		if err != nil {
@@ -229,10 +271,12 @@ var getCmd = &cobra.Command{
 // start list command
 
 var listReq compute.ListClusterPoliciesRequest
+var listJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(listCmd)
 	// TODO: short flags
+	listCmd.Flags().Var(&listJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	listCmd.Flags().Var(&listReq.SortColumn, "sort-column", `The cluster policy attribute to sort by.`)
 	listCmd.Flags().Var(&listReq.SortOrder, "sort-order", `The order in which the policies get listed.`)
@@ -247,11 +291,24 @@ var listCmd = &cobra.Command{
   Returns a list of policies accessible by the requesting user.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(0),
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(0)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+		if cmd.Flags().Changed("json") {
+			err = listJson.Unmarshal(&listReq)
+			if err != nil {
+				return err
+			}
+		} else {
+		}
 
 		response, err := w.ClusterPolicies.ListAll(ctx, listReq)
 		if err != nil {

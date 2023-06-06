@@ -63,14 +63,17 @@ var createCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		err = createJson.Unmarshal(&createReq)
-		if err != nil {
-			return err
-		}
-		createReq.FullNameArg = args[0]
-		_, err = fmt.Sscan(args[1], &createReq.Constraint)
-		if err != nil {
-			return fmt.Errorf("invalid CONSTRAINT: %s", args[1])
+		if cmd.Flags().Changed("json") {
+			err = createJson.Unmarshal(&createReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			createReq.FullNameArg = args[0]
+			_, err = fmt.Sscan(args[1], &createReq.Constraint)
+			if err != nil {
+				return fmt.Errorf("invalid CONSTRAINT: %s", args[1])
+			}
 		}
 
 		response, err := w.TableConstraints.Create(ctx, createReq)
@@ -84,10 +87,12 @@ var createCmd = &cobra.Command{
 // start delete command
 
 var deleteReq catalog.DeleteTableConstraintRequest
+var deleteJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
+	deleteCmd.Flags().Var(&deleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -107,16 +112,29 @@ var deleteCmd = &cobra.Command{
   on the table's schema, and be the owner of the table.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(3),
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(3)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		deleteReq.FullName = args[0]
-		deleteReq.ConstraintName = args[1]
-		_, err = fmt.Sscan(args[2], &deleteReq.Cascade)
-		if err != nil {
-			return fmt.Errorf("invalid CASCADE: %s", args[2])
+		if cmd.Flags().Changed("json") {
+			err = deleteJson.Unmarshal(&deleteReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			deleteReq.FullName = args[0]
+			deleteReq.ConstraintName = args[1]
+			_, err = fmt.Sscan(args[2], &deleteReq.Cascade)
+			if err != nil {
+				return fmt.Errorf("invalid CASCADE: %s", args[2])
+			}
 		}
 
 		err = w.TableConstraints.Delete(ctx, deleteReq)

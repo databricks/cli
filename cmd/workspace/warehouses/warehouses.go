@@ -61,13 +61,23 @@ var createCmd = &cobra.Command{
   Creates a new SQL warehouse.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(0)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		err = createJson.Unmarshal(&createReq)
-		if err != nil {
-			return err
+		if cmd.Flags().Changed("json") {
+			err = createJson.Unmarshal(&createReq)
+			if err != nil {
+				return err
+			}
+		} else {
 		}
 
 		if createSkipWait {
@@ -105,7 +115,7 @@ var createCmd = &cobra.Command{
 // start delete command
 
 var deleteReq sql.DeleteWarehouseRequest
-
+var deleteJson flags.JsonFlag
 var deleteSkipWait bool
 var deleteTimeout time.Duration
 
@@ -115,6 +125,7 @@ func init() {
 	deleteCmd.Flags().BoolVar(&deleteSkipWait, "no-wait", deleteSkipWait, `do not wait to reach DELETED state`)
 	deleteCmd.Flags().DurationVar(&deleteTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach DELETED state`)
 	// TODO: short flags
+	deleteCmd.Flags().Var(&deleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -130,21 +141,31 @@ var deleteCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if len(args) == 0 {
-			names, err := w.Warehouses.EndpointInfoNameToIdMap(ctx, sql.ListWarehousesRequest{})
+		if cmd.Flags().Changed("json") {
+			err = deleteJson.Unmarshal(&deleteReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "Required")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No ID argument specified. Loading names for Warehouses drop-down."
+				names, err := w.Warehouses.EndpointInfoNameToIdMap(ctx, sql.ListWarehousesRequest{})
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Warehouses drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "Required")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have required")
+			}
+			deleteReq.Id = args[0]
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have required")
-		}
-		deleteReq.Id = args[0]
 
 		if deleteSkipWait {
 			err = w.Warehouses.Delete(ctx, deleteReq)
@@ -210,7 +231,7 @@ func init() {
 }
 
 var editCmd = &cobra.Command{
-	Use:   "edit",
+	Use:   "edit ID",
 	Short: `Update a warehouse.`,
 	Long: `Update a warehouse.
   
@@ -221,11 +242,31 @@ var editCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		err = editJson.Unmarshal(&editReq)
-		if err != nil {
-			return err
+		if cmd.Flags().Changed("json") {
+			err = editJson.Unmarshal(&editReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No ID argument specified. Loading names for Warehouses drop-down."
+				names, err := w.Warehouses.EndpointInfoNameToIdMap(ctx, sql.ListWarehousesRequest{})
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Warehouses drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "Required")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
+			}
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have required")
+			}
+			editReq.Id = args[0]
 		}
-		editReq.Id = args[0]
 
 		if editSkipWait {
 			err = w.Warehouses.Edit(ctx, editReq)
@@ -262,7 +303,7 @@ var editCmd = &cobra.Command{
 // start get command
 
 var getReq sql.GetWarehouseRequest
-
+var getJson flags.JsonFlag
 var getSkipWait bool
 var getTimeout time.Duration
 
@@ -272,6 +313,7 @@ func init() {
 	getCmd.Flags().BoolVar(&getSkipWait, "no-wait", getSkipWait, `do not wait to reach RUNNING state`)
 	getCmd.Flags().DurationVar(&getTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
 	// TODO: short flags
+	getCmd.Flags().Var(&getJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -287,21 +329,31 @@ var getCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if len(args) == 0 {
-			names, err := w.Warehouses.EndpointInfoNameToIdMap(ctx, sql.ListWarehousesRequest{})
+		if cmd.Flags().Changed("json") {
+			err = getJson.Unmarshal(&getReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "Required")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No ID argument specified. Loading names for Warehouses drop-down."
+				names, err := w.Warehouses.EndpointInfoNameToIdMap(ctx, sql.ListWarehousesRequest{})
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Warehouses drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "Required")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have required")
+			}
+			getReq.Id = args[0]
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have required")
-		}
-		getReq.Id = args[0]
 
 		response, err := w.Warehouses.Get(ctx, getReq)
 		if err != nil {
@@ -342,10 +394,12 @@ var getWorkspaceWarehouseConfigCmd = &cobra.Command{
 // start list command
 
 var listReq sql.ListWarehousesRequest
+var listJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(listCmd)
 	// TODO: short flags
+	listCmd.Flags().Var(&listJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	listCmd.Flags().IntVar(&listReq.RunAsUserId, "run-as-user-id", listReq.RunAsUserId, `Service Principal which will be used to fetch the list of warehouses.`)
 
@@ -359,11 +413,24 @@ var listCmd = &cobra.Command{
   Lists all SQL warehouses that a user has manager permissions on.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(0),
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(0)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+		if cmd.Flags().Changed("json") {
+			err = listJson.Unmarshal(&listReq)
+			if err != nil {
+				return err
+			}
+		} else {
+		}
 
 		response, err := w.Warehouses.ListAll(ctx, listReq)
 		if err != nil {
@@ -404,13 +471,23 @@ var setWorkspaceWarehouseConfigCmd = &cobra.Command{
   a workspace.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(0)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		err = setWorkspaceWarehouseConfigJson.Unmarshal(&setWorkspaceWarehouseConfigReq)
-		if err != nil {
-			return err
+		if cmd.Flags().Changed("json") {
+			err = setWorkspaceWarehouseConfigJson.Unmarshal(&setWorkspaceWarehouseConfigReq)
+			if err != nil {
+				return err
+			}
+		} else {
 		}
 
 		err = w.Warehouses.SetWorkspaceWarehouseConfig(ctx, setWorkspaceWarehouseConfigReq)
@@ -424,7 +501,7 @@ var setWorkspaceWarehouseConfigCmd = &cobra.Command{
 // start start command
 
 var startReq sql.StartRequest
-
+var startJson flags.JsonFlag
 var startSkipWait bool
 var startTimeout time.Duration
 
@@ -434,6 +511,7 @@ func init() {
 	startCmd.Flags().BoolVar(&startSkipWait, "no-wait", startSkipWait, `do not wait to reach RUNNING state`)
 	startCmd.Flags().DurationVar(&startTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
 	// TODO: short flags
+	startCmd.Flags().Var(&startJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -449,21 +527,31 @@ var startCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if len(args) == 0 {
-			names, err := w.Warehouses.EndpointInfoNameToIdMap(ctx, sql.ListWarehousesRequest{})
+		if cmd.Flags().Changed("json") {
+			err = startJson.Unmarshal(&startReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "Required")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No ID argument specified. Loading names for Warehouses drop-down."
+				names, err := w.Warehouses.EndpointInfoNameToIdMap(ctx, sql.ListWarehousesRequest{})
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Warehouses drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "Required")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have required")
+			}
+			startReq.Id = args[0]
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have required")
-		}
-		startReq.Id = args[0]
 
 		if startSkipWait {
 			err = w.Warehouses.Start(ctx, startReq)
@@ -500,7 +588,7 @@ var startCmd = &cobra.Command{
 // start stop command
 
 var stopReq sql.StopRequest
-
+var stopJson flags.JsonFlag
 var stopSkipWait bool
 var stopTimeout time.Duration
 
@@ -510,6 +598,7 @@ func init() {
 	stopCmd.Flags().BoolVar(&stopSkipWait, "no-wait", stopSkipWait, `do not wait to reach STOPPED state`)
 	stopCmd.Flags().DurationVar(&stopTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach STOPPED state`)
 	// TODO: short flags
+	stopCmd.Flags().Var(&stopJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -525,21 +614,31 @@ var stopCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if len(args) == 0 {
-			names, err := w.Warehouses.EndpointInfoNameToIdMap(ctx, sql.ListWarehousesRequest{})
+		if cmd.Flags().Changed("json") {
+			err = stopJson.Unmarshal(&stopReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "Required")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No ID argument specified. Loading names for Warehouses drop-down."
+				names, err := w.Warehouses.EndpointInfoNameToIdMap(ctx, sql.ListWarehousesRequest{})
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Warehouses drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "Required")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have required")
+			}
+			stopReq.Id = args[0]
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have required")
-		}
-		stopReq.Id = args[0]
 
 		if stopSkipWait {
 			err = w.Warehouses.Stop(ctx, stopReq)

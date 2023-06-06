@@ -17,11 +17,11 @@ var deployCmd = &cobra.Command{
 		// If `--force` is specified, force acquisition of the deployment lock.
 		b.Config.Bundle.Lock.Force = force
 
-		return bundle.Apply(cmd.Context(), b, []bundle.Mutator{
+		return bundle.Apply(cmd.Context(), b, bundle.Seq(
 			phases.Initialize(),
 			phases.Build(),
 			phases.Deploy(),
-		})
+		))
 	},
 }
 

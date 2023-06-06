@@ -20,15 +20,15 @@ func (m *expandWorkspaceRoot) Name() string {
 	return "ExpandWorkspaceRoot"
 }
 
-func (m *expandWorkspaceRoot) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator, error) {
+func (m *expandWorkspaceRoot) Apply(ctx context.Context, b *bundle.Bundle) error {
 	root := b.Config.Workspace.RootPath
 	if root == "" {
-		return nil, fmt.Errorf("unable to expand workspace root: workspace root not defined")
+		return fmt.Errorf("unable to expand workspace root: workspace root not defined")
 	}
 
 	currentUser := b.Config.Workspace.CurrentUser
 	if currentUser == nil || currentUser.UserName == "" {
-		return nil, fmt.Errorf("unable to expand workspace root: current user not set")
+		return fmt.Errorf("unable to expand workspace root: current user not set")
 	}
 
 	if strings.HasPrefix(root, "~/") {
@@ -36,5 +36,5 @@ func (m *expandWorkspaceRoot) Apply(ctx context.Context, b *bundle.Bundle) ([]bu
 		b.Config.Workspace.RootPath = path.Join(home, root[2:])
 	}
 
-	return nil, nil
+	return nil
 }

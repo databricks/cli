@@ -30,10 +30,5 @@ func (p *RootPath) Join(name string) (string, error) {
 		return "", fmt.Errorf("relative path escapes root: %s", name)
 	}
 
-	// Don't allow name to resolve to the root path.
-	if strings.TrimPrefix(absPath, p.rootPath) == "" {
-		return "", fmt.Errorf("relative path resolves to root: %s", name)
-	}
-
 	return absPath, nil
 }

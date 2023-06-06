@@ -16,7 +16,7 @@ func TestSelectDefaultEnvironmentNoEnvironments(t *testing.T) {
 			Environments: map[string]*config.Environment{},
 		},
 	}
-	_, err := mutator.SelectDefaultEnvironment().Apply(context.Background(), bundle)
+	err := mutator.SelectDefaultEnvironment().Apply(context.Background(), bundle)
 	assert.ErrorContains(t, err, "no environments defined")
 }
 
@@ -28,10 +28,9 @@ func TestSelectDefaultEnvironmentSingleEnvironments(t *testing.T) {
 			},
 		},
 	}
-	ms, err := mutator.SelectDefaultEnvironment().Apply(context.Background(), bundle)
+	err := mutator.SelectDefaultEnvironment().Apply(context.Background(), bundle)
 	assert.NoError(t, err)
-	assert.Len(t, ms, 1)
-	assert.Equal(t, "SelectEnvironment(foo)", ms[0].Name())
+	assert.Equal(t, "foo", bundle.Config.Bundle.Environment)
 }
 
 func TestSelectDefaultEnvironmentNoDefaults(t *testing.T) {
@@ -44,7 +43,7 @@ func TestSelectDefaultEnvironmentNoDefaults(t *testing.T) {
 			},
 		},
 	}
-	_, err := mutator.SelectDefaultEnvironment().Apply(context.Background(), bundle)
+	err := mutator.SelectDefaultEnvironment().Apply(context.Background(), bundle)
 	assert.ErrorContains(t, err, "please specify environment")
 }
 
@@ -57,7 +56,7 @@ func TestSelectDefaultEnvironmentNoDefaultsWithNil(t *testing.T) {
 			},
 		},
 	}
-	_, err := mutator.SelectDefaultEnvironment().Apply(context.Background(), bundle)
+	err := mutator.SelectDefaultEnvironment().Apply(context.Background(), bundle)
 	assert.ErrorContains(t, err, "please specify environment")
 }
 
@@ -71,7 +70,7 @@ func TestSelectDefaultEnvironmentMultipleDefaults(t *testing.T) {
 			},
 		},
 	}
-	_, err := mutator.SelectDefaultEnvironment().Apply(context.Background(), bundle)
+	err := mutator.SelectDefaultEnvironment().Apply(context.Background(), bundle)
 	assert.ErrorContains(t, err, "multiple environments are marked as default")
 }
 
@@ -85,8 +84,7 @@ func TestSelectDefaultEnvironmentSingleDefault(t *testing.T) {
 			},
 		},
 	}
-	ms, err := mutator.SelectDefaultEnvironment().Apply(context.Background(), bundle)
+	err := mutator.SelectDefaultEnvironment().Apply(context.Background(), bundle)
 	assert.NoError(t, err)
-	assert.Len(t, ms, 1)
-	assert.Equal(t, "SelectEnvironment(bar)", ms[0].Name())
+	assert.Equal(t, "bar", bundle.Config.Bundle.Environment)
 }

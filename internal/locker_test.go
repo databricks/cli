@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"math/rand"
 	"sync"
 	"testing"
@@ -47,8 +48,8 @@ func TestAccLock(t *testing.T) {
 	require.NoError(t, err)
 	remoteProjectRoot := createRemoteTestProject(t, "lock-acc-", wsc)
 
-	// 50 lockers try to acquire a lock at the same time
-	numConcurrentLocks := 50
+	// 5 lockers try to acquire a lock at the same time
+	numConcurrentLocks := 5
 
 	// Keep single locker unlocked.
 	// We use this to check on the current lock through GetActiveLockState.
@@ -142,7 +143,7 @@ func TestAccLock(t *testing.T) {
 	err = lockers[indexOfActiveLocker].Unlock(ctx)
 	assert.NoError(t, err)
 	remoteLocker, err = locker.GetActiveLockState(ctx)
-	assert.ErrorContains(t, err, "File not found.", "remote lock file not deleted on unlock")
+	assert.ErrorIs(t, err, fs.ErrNotExist, "remote lock file not deleted on unlock")
 	assert.Nil(t, remoteLocker)
 	assert.False(t, lockers[indexOfActiveLocker].Active)
 

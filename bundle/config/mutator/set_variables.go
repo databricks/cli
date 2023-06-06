@@ -52,12 +52,12 @@ func setVariable(v *variable.Variable, name string) error {
 	return fmt.Errorf(`no value assigned to required variable %s. Assignment can be done through the "--var" flag or by setting the %s environment variable`, name, bundleVarPrefix+name)
 }
 
-func (m *setVariables) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator, error) {
+func (m *setVariables) Apply(ctx context.Context, b *bundle.Bundle) error {
 	for name, variable := range b.Config.Variables {
 		err := setVariable(variable, name)
 		if err != nil {
-			return nil, err
+			return err
 		}
 	}
-	return nil, nil
+	return nil
 }

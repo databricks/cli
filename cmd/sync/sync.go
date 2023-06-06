@@ -78,9 +78,7 @@ var syncCmd = &cobra.Command{
 		// b := bundle.GetOrNil(cmd.Context())
 		// if b != nil {
 		// 	// Run initialize phase to make sure paths are set.
-		// 	err = bundle.Apply(cmd.Context(), b, []bundle.Mutator{
-		// 		phases.Initialize(),
-		// 	})
+		// 	err = bundle.Apply(cmd.Context(), b, phases.Initialize())
 		// 	if err != nil {
 		// 		return err
 		// 	}

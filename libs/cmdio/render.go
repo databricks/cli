@@ -6,6 +6,7 @@ import (
 	"strings"
 	"text/tabwriter"
 	"text/template"
+	"time"
 
 	"github.com/fatih/color"
 	"github.com/nwidger/jsoncolor"
@@ -58,8 +59,7 @@ func renderTemplate(w io.Writer, tmpl string, v any) error {
 		// we render colored output if stdout is TTY, otherwise we render text.
 		// in the future we'll check if we can explicitly check for stderr being
 		// a TTY
-		"black":   color.BlackString,
-		"white":   color.WhiteString,
+		"header":  color.BlueString,
 		"red":     color.RedString,
 		"green":   color.GreenString,
 		"blue":    color.BlueString,
@@ -86,6 +86,9 @@ func renderTemplate(w io.Writer, tmpl string, v any) error {
 			}
 			return string(b), nil
 		},
+		"pretty_date": func(t time.Time) string {
+			return t.Format("2006-01-02T15:04:05Z")
+		},
 	}).Parse(tmpl)
 	if err != nil {
 		return err
@@ -107,8 +110,9 @@ func fancyJSON(v any) ([]byte, error) {
 	f.FalseColor = color.New(color.FgRed)
 	f.NumberColor = color.New(color.FgCyan)
 	f.NullColor = color.New(color.FgMagenta)
-	f.FieldColor = color.New(color.FgWhite, color.Bold)
-	f.FieldQuoteColor = color.New(color.FgWhite)
+	f.ObjectColor = color.New(color.Reset)
+	f.CommaColor = color.New(color.Reset)
+	f.ColonColor = color.New(color.Reset)
 
 	return jsoncolor.MarshalIndentWithFormatter(v, "", "  ", f)
 }

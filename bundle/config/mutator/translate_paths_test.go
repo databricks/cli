@@ -184,7 +184,7 @@ func TestTranslatePaths(t *testing.T) {
 		},
 	}
 
-	_, err := mutator.TranslatePaths().Apply(context.Background(), bundle)
+	err := mutator.TranslatePaths().Apply(context.Background(), bundle)
 	require.NoError(t, err)
 
 	// Assert that the path in the tasks now refer to the artifact.
@@ -281,7 +281,7 @@ func TestTranslatePathsInSubdirectories(t *testing.T) {
 		},
 	}
 
-	_, err := mutator.TranslatePaths().Apply(context.Background(), bundle)
+	err := mutator.TranslatePaths().Apply(context.Background(), bundle)
 	require.NoError(t, err)
 
 	assert.Equal(
@@ -327,7 +327,7 @@ func TestTranslatePathsOutsideBundleRoot(t *testing.T) {
 		},
 	}
 
-	_, err := mutator.TranslatePaths().Apply(context.Background(), bundle)
+	err := mutator.TranslatePaths().Apply(context.Background(), bundle)
 	assert.ErrorContains(t, err, "is not contained in bundle root")
 }
 
@@ -358,7 +358,7 @@ func TestJobNotebookDoesNotExistError(t *testing.T) {
 		},
 	}
 
-	_, err := mutator.TranslatePaths().Apply(context.Background(), bundle)
+	err := mutator.TranslatePaths().Apply(context.Background(), bundle)
 	assert.EqualError(t, err, "notebook ./doesnt_exist.py not found")
 }
 
@@ -389,7 +389,7 @@ func TestJobFileDoesNotExistError(t *testing.T) {
 		},
 	}
 
-	_, err := mutator.TranslatePaths().Apply(context.Background(), bundle)
+	err := mutator.TranslatePaths().Apply(context.Background(), bundle)
 	assert.EqualError(t, err, "file ./doesnt_exist.py not found")
 }
 
@@ -420,7 +420,7 @@ func TestPipelineNotebookDoesNotExistError(t *testing.T) {
 		},
 	}
 
-	_, err := mutator.TranslatePaths().Apply(context.Background(), bundle)
+	err := mutator.TranslatePaths().Apply(context.Background(), bundle)
 	assert.EqualError(t, err, "notebook ./doesnt_exist.py not found")
 }
 
@@ -451,6 +451,6 @@ func TestPipelineFileDoesNotExistError(t *testing.T) {
 		},
 	}
 
-	_, err := mutator.TranslatePaths().Apply(context.Background(), bundle)
+	err := mutator.TranslatePaths().Apply(context.Background(), bundle)
 	assert.EqualError(t, err, "file ./doesnt_exist.py not found")
 }
