@@ -6,13 +6,11 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestRepoFilesRemotePath(t *testing.T) {
 	repoRoot := "/Repos/doraemon/bar"
-	repoFiles, err := Create(repoRoot, "/doraemon/foo/bar", nil, nil)
-	require.NoError(t, err)
+	repoFiles := Create(repoRoot, "/doraemon/foo/bar", nil)
 
 	remotePath, err := repoFiles.remotePath("a/b/c")
 	assert.NoError(t, err)
@@ -83,8 +81,7 @@ func TestRepoReadLocal(t *testing.T) {
 	err := os.WriteFile(helloPath, []byte("my name is doraemon :P"), os.ModePerm)
 	assert.NoError(t, err)
 
-	repoFiles, err := Create("/Repos/doraemon/bar", tempDir, nil, nil)
-	require.NoError(t, err)
+	repoFiles := Create("/Repos/doraemon/bar", tempDir, nil)
 	bytes, err := repoFiles.readLocal("./a/../hello.txt")
 	assert.NoError(t, err)
 	assert.Equal(t, "my name is doraemon :P", string(bytes))
