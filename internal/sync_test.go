@@ -3,7 +3,6 @@ package internal
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -167,11 +166,19 @@ func (a *syncTest) remoteFileContent(ctx context.Context, relativePath string, e
 	}, 30*time.Second, 5*time.Second)
 }
 
-func (a *syncTest) notExist(ctx context.Context, relativePath string) {
-	a.c.Eventually(func() bool {
-		_, err := a.f.Stat(ctx, relativePath)
-		return errors.Is(err, fs.ErrNotExist)
-	}, 30*time.Second, 5*time.Second)
+func (a *syncTest) remoteNotExist(ctx context.Context, relativePath string) {
+	_, err := a.f.Stat(ctx, relativePath)
+	require.ErrorIs(a.t, err, fs.ErrNotExist)
+}
+
+func (a *syncTest) remoteExists(ctx context.Context, relativePath string) {
+	_, err := a.f.Stat(ctx, relativePath)
+	require.NoError(a.t, err)
+}
+
+func (a *syncTest) touchFile(ctx context.Context, path string) {
+	err := a.f.Write(ctx, path, strings.NewReader("contents"), filer.CreateParentDirectories)
+	require.NoError(a.t, err)
 }
 
 func (a *syncTest) objectType(ctx context.Context, relativePath string, expected string) {
@@ -311,8 +318,40 @@ func TestAccSyncNestedFolderSync(t *testing.T) {
 	// delete
 	f.Remove(t)
 	assertSync.waitForCompletionMarker()
-	assertSync.notExist(ctx, "dir1")
+	assertSync.remoteNotExist(ctx, "dir1")
 	assertSync.snapshotContains(append(repoFiles, ".gitignore"))
+}
+
+func TestAccSyncNestedFolderDoesntFailOnNonEmptyDirectory(t *testing.T) {
+	ctx := context.Background()
+	assertSync := setupSyncTest(t, "--watch")
+
+	// .gitignore is created by the sync process to enforce .databricks is not synced
+	assertSync.waitForCompletionMarker()
+	assertSync.remoteDirContent(ctx, "", append(repoFiles, ".gitignore"))
+
+	// New file
+	localFilePath := filepath.Join(assertSync.localRoot, "dir1/dir2/dir3/foo.txt")
+	err := os.MkdirAll(filepath.Dir(localFilePath), 0o755)
+	assert.NoError(t, err)
+	f := testfile.CreateFile(t, localFilePath)
+	defer f.Close(t)
+	assertSync.waitForCompletionMarker()
+	assertSync.remoteDirContent(ctx, "dir1/dir2/dir3", []string{"foo.txt"})
+
+	// Add file to dir1 to simulate a user writing to the workspace directly.
+	assertSync.touchFile(ctx, "dir1/foo.txt")
+
+	// Remove original file.
+	f.Remove(t)
+	assertSync.waitForCompletionMarker()
+
+	// Sync should have removed these directories.
+	assertSync.remoteNotExist(ctx, "dir1/dir2/dir3")
+	assertSync.remoteNotExist(ctx, "dir1/dir2")
+
+	// Sync should have ignored not being able to delete dir1.
+	assertSync.remoteExists(ctx, "dir1")
 }
 
 func TestAccSyncNestedSpacePlusAndHashAreEscapedSync(t *testing.T) {
@@ -339,7 +378,7 @@ func TestAccSyncNestedSpacePlusAndHashAreEscapedSync(t *testing.T) {
 	// delete
 	f.Remove(t)
 	assertSync.waitForCompletionMarker()
-	assertSync.notExist(ctx, "dir1/a b+c/c+d e")
+	assertSync.remoteNotExist(ctx, "dir1/a b+c/c+d e")
 	assertSync.snapshotContains(append(repoFiles, ".gitignore"))
 }
 
@@ -370,7 +409,7 @@ func TestAccSyncIncrementalFileOverwritesFolder(t *testing.T) {
 	f.Remove(t)
 	os.Remove(filepath.Join(assertSync.localRoot, "foo"))
 	assertSync.waitForCompletionMarker()
-	assertSync.notExist(ctx, "foo")
+	assertSync.remoteNotExist(ctx, "foo")
 	assertSync.snapshotContains(append(repoFiles, ".gitignore"))
 
 	f2 := testfile.CreateFile(t, filepath.Join(assertSync.localRoot, "foo"))

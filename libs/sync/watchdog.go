@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/databricks/cli/libs/filer"
+	"github.com/databricks/cli/libs/log"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -27,7 +28,21 @@ func (s *Sync) applyDelete(ctx context.Context, remoteName string) error {
 	return nil
 }
 
-// Create the specified path.
+// Remove the directory at the specified path.
+func (s *Sync) applyRmdir(ctx context.Context, remoteName string) error {
+	s.notifyProgress(ctx, EventActionDelete, remoteName, 0.0)
+
+	err := s.filer.Delete(ctx, remoteName)
+	if err != nil {
+		// Directory deletion is opportunistic, so we ignore errors.
+		log.Debugf(ctx, "error removing directory %s: %s", remoteName, err)
+	}
+
+	s.notifyProgress(ctx, EventActionDelete, remoteName, 1.0)
+	return nil
+}
+
+// Create a directory at the specified path.
 func (s *Sync) applyMkdir(ctx context.Context, localName string) error {
 	s.notifyProgress(ctx, EventActionPut, localName, 0.0)
 
@@ -98,7 +113,7 @@ func (s *Sync) applyDiff(ctx context.Context, d diff) error {
 
 	// Delete directories ordered by depth from leaf to root.
 	for _, group := range d.groupedRmdir() {
-		err = groupRunParallel(ctx, group, s.applyDelete)
+		err = groupRunParallel(ctx, group, s.applyRmdir)
 		if err != nil {
 			return err
 		}
