@@ -58,9 +58,9 @@ func repoPathForPath(me *iam.User, remotePath string) string {
 	return remotePath
 }
 
-// EnsureRemotePathIsUsable checks if the specified path is nested under
-// expected base paths and if it is a directory or repository.
-func EnsureRemotePathIsUsable(ctx context.Context, wsc *databricks.WorkspaceClient, remotePath string) error {
+// EnsureRemotePathIsUserScoped checks if the specified path is nested under
+// the caller's username and if it is a directory or repository.
+func EnsureRemotePathIsUserScoped(ctx context.Context, wsc *databricks.WorkspaceClient, remotePath string) error {
 	me, err := wsc.CurrentUser.Me(ctx)
 	if err != nil {
 		return err

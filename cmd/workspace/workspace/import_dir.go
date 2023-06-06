@@ -55,7 +55,10 @@ var importDirCmd = &cobra.Command{
 			})
 
 		// Start Uploading local files
-		cmdio.RenderWithTemplate(ctx, newImportStartedEvent(sourcePath, targetPath), `Starting import {{.SourcePath}} -> {{TargetPath}}`)
+		err = cmdio.RenderWithTemplate(ctx, newImportStartedEvent(sourcePath, targetPath), "Starting import {{.SourcePath}} -> {{.TargetPath}}\n")
+		if err != nil {
+			return err
+		}
 		err = s.RunOnce(ctx)
 		if err != nil {
 			return err
@@ -69,8 +72,7 @@ var importDirCmd = &cobra.Command{
 		}
 
 		// Render import completetion event
-		cmdio.RenderWithTemplate(ctx, newImportCompleteEvent(sourcePath, targetPath), `Completed import. Files available at {{.TargetPath}}`)
-		return nil
+		return cmdio.RenderWithTemplate(ctx, newImportCompleteEvent(sourcePath, targetPath), "Completed import. Files available at {{.TargetPath}}\n")
 	},
 }
 

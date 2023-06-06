@@ -31,7 +31,8 @@ func newImportStartedEvent(sourcePath, targetPath string) fileIOEvent {
 
 func newImportCompleteEvent(sourcePath, targetPath string) fileIOEvent {
 	return fileIOEvent{
-		Type: EventTypeImportComplete,
+		Type:       EventTypeImportComplete,
+		TargetPath: targetPath,
 	}
 }
 
@@ -52,14 +53,17 @@ func renderSyncEvents(ctx context.Context, eventChannel <-chan sync.Event, synce
 				return nil
 			}
 			if e.String() == "" {
-				return nil
+				continue
 			}
 			switch v := e.(type) {
 			case *sync.EventSyncProgress:
 				// TODO: only emit this event if the the sync event has progress 1.o0
 				// File upload has been completed. This renders the event for that
 				// on the console
-				return cmdio.RenderWithTemplate(ctx, newUploadCompleteEvent(v.Path), `Uploaded {{.SourcePath}}`)
+				err := cmdio.RenderWithTemplate(ctx, newUploadCompleteEvent(v.Path), "Uploaded {{.SourcePath}}\n")
+				if err != nil {
+					return err
+				}
 			}
 
 		}

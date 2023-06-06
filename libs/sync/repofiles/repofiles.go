@@ -31,11 +31,12 @@ type RepoFiles struct {
 	workspaceClient *databricks.WorkspaceClient
 }
 
-func Create(repoRoot, localRoot string, workspaceClient *databricks.WorkspaceClient) *RepoFiles {
+func Create(repoRoot, localRoot string, workspaceClient *databricks.WorkspaceClient, opts *RepoFileOptions) *RepoFiles {
 	return &RepoFiles{
 		repoRoot:        repoRoot,
 		localRoot:       localRoot,
 		workspaceClient: workspaceClient,
+		RepoFileOptions: opts,
 	}
 }
 

@@ -55,12 +55,6 @@ func New(ctx context.Context, opts SyncOptions) (*Sync, error) {
 		return nil, err
 	}
 
-	// Verify that the remote path we're about to synchronize to is valid and allowed.
-	err = EnsureRemotePathIsUsable(ctx, opts.WorkspaceClient, opts.RemotePath)
-	if err != nil {
-		return nil, err
-	}
-
 	// TODO: The host may be late-initialized in certain Azure setups where we
 	// specify the workspace by its resource ID. tracked in: https://databricks.atlassian.net/browse/DECO-194
 	opts.Host = opts.WorkspaceClient.Config.Host
@@ -82,12 +76,9 @@ func New(ctx context.Context, opts SyncOptions) (*Sync, error) {
 			return nil, fmt.Errorf("unable to load sync snapshot: %w", err)
 		}
 	}
-	repoFiles, err := repofiles.Create(opts.RemotePath, opts.LocalPath, opts.WorkspaceClient, &repofiles.RepoFileOptions{
+	repoFiles := repofiles.Create(opts.RemotePath, opts.LocalPath, opts.WorkspaceClient, &repofiles.RepoFileOptions{
 		OverwriteIfExists: opts.AllowOverwrites,
 	})
-	if err != nil {
-		return nil, err
-	}
 
 	return &Sync{
 		SyncOptions: &opts,

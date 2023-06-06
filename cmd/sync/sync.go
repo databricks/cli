@@ -99,6 +99,12 @@ var syncCmd = &cobra.Command{
 			return err
 		}
 
+		// Verify that the remote path we're about to synchronize to is valid and allowed.
+		err = sync.EnsureRemotePathIsUserScoped(ctx, opts.WorkspaceClient, opts.RemotePath)
+		if err != nil {
+			return err
+		}
+
 		var outputFunc func(context.Context, <-chan sync.Event, io.Writer)
 		switch output {
 		case flags.OutputText:

@@ -10,7 +10,7 @@ import (
 
 func TestRepoFilesRemotePath(t *testing.T) {
 	repoRoot := "/Repos/doraemon/bar"
-	repoFiles := Create(repoRoot, "/doraemon/foo/bar", nil)
+	repoFiles := Create(repoRoot, "/doraemon/foo/bar", nil, nil)
 
 	remotePath, err := repoFiles.remotePath("a/b/c")
 	assert.NoError(t, err)
@@ -81,8 +81,8 @@ func TestRepoReadLocal(t *testing.T) {
 	err := os.WriteFile(helloPath, []byte("my name is doraemon :P"), os.ModePerm)
 	assert.NoError(t, err)
 
-	repoFiles := Create("/Repos/doraemon/bar", tempDir, nil)
+	repoFiles := Create("/Repos/doraemon/bar", tempDir, nil, nil)
 	bytes, err := repoFiles.readLocal("./a/../hello.txt")
 	assert.NoError(t, err)
-	assert.Equal(t, "my name is doraemon :P", string(bytes))
+	assert.Equal(t, "my name is doraemon :P", string(bytes), nil)
 }
