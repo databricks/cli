@@ -184,15 +184,25 @@ func (w *WorkspaceFilesClient) Read(ctx context.Context, name string) (io.Reader
 	return nil, err
 }
 
-func (w *WorkspaceFilesClient) Delete(ctx context.Context, name string) error {
+func (w *WorkspaceFilesClient) Delete(ctx context.Context, name string, mode ...DeleteMode) error {
 	absPath, err := w.root.Join(name)
 	if err != nil {
 		return err
 	}
 
+	// Illegal to delete the root path.
+	if absPath == w.root.rootPath {
+		return CannotDeleteRootError{}
+	}
+
+	recursive := false
+	if slices.Contains(mode, DeleteRecursively) {
+		recursive = true
+	}
+
 	err = w.workspaceClient.Workspace.Delete(ctx, workspace.Delete{
 		Path:      absPath,
-		Recursive: false,
+		Recursive: recursive,
 	})
 
 	// Return early on success.
@@ -206,7 +216,12 @@ func (w *WorkspaceFilesClient) Delete(ctx context.Context, name string) error {
 		return err
 	}
 
-	if aerr.StatusCode == http.StatusNotFound {
+	switch aerr.StatusCode {
+	case http.StatusBadRequest:
+		if aerr.ErrorCode == "DIRECTORY_NOT_EMPTY" {
+			return DirectoryNotEmptyError{absPath}
+		}
+	case http.StatusNotFound:
 		return FileDoesNotExistError{absPath}
 	}
 
