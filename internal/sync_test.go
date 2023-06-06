@@ -351,6 +351,7 @@ func TestAccSyncNestedFolderDoesntFailOnNonEmptyDirectory(t *testing.T) {
 	assertSync.remoteNotExist(ctx, "dir1/dir2")
 
 	// Sync should have ignored not being able to delete dir1.
+	assertSync.remoteExists(ctx, "dir1/foo.txt")
 	assertSync.remoteExists(ctx, "dir1")
 }
 
