@@ -68,6 +68,10 @@ func runFilerReadWriteTest(t *testing.T, ctx context.Context, f filer.Filer) {
 	assert.NoError(t, err)
 	filerTest{t, f}.assertContents(ctx, "/foo/bar", `hello universe`)
 
+	// Write should succeed if there is no existing file at the specified path.
+	err = f.Write(ctx, "/foo/qux", strings.NewReader(`hello universe`))
+	assert.NoError(t, err)
+
 	// Stat on a directory should succeed.
 	// Note: size and modification time behave differently between WSFS and DBFS.
 	info, err := f.Stat(ctx, "/foo")
@@ -97,6 +101,21 @@ func runFilerReadWriteTest(t *testing.T, ctx context.Context, f filer.Filer) {
 	// Delete should succeed for file that does exist.
 	err = f.Delete(ctx, "/foo/bar")
 	assert.NoError(t, err)
+
+	// Delete should fail for a non-empty directory.
+	err = f.Delete(ctx, "/foo")
+	assert.True(t, errors.As(err, &filer.DirectoryNotEmptyError{}))
+	assert.True(t, errors.Is(err, fs.ErrInvalid))
+
+	// Delete should succeed for a non-empty directory if the DeleteRecursively flag is set.
+	err = f.Delete(ctx, "/foo", filer.DeleteRecursively)
+	assert.NoError(t, err)
+
+	// Delete of the filer root should ALWAYS fail, otherwise subsequent writes would fail.
+	// It is not in the filer's purview to delete its root directory.
+	err = f.Delete(ctx, "/")
+	assert.True(t, errors.As(err, &filer.CannotDeleteRootError{}))
+	assert.True(t, errors.Is(err, fs.ErrInvalid))
 }
 
 func runFilerReadDirTest(t *testing.T, ctx context.Context, f filer.Filer) {
