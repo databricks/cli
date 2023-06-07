@@ -77,7 +77,8 @@ func TestTranslatePathsSkippedWithGitSource(t *testing.T) {
 			},
 		},
 	}
-	_, err := mutator.TranslatePaths().Apply(context.Background(), bundle)
+
+	err := mutator.TranslatePaths().Apply(context.Background(), bundle)
 	require.NoError(t, err)
 
 	assert.Equal(
