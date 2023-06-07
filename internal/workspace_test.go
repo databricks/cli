@@ -65,7 +65,7 @@ func assertFileContents(t *testing.T, path string, content string) {
 	assert.Contains(t, string(b), content)
 }
 
-func TestExportDir(t *testing.T) {
+func TestAccExportDir(t *testing.T) {
 	ctx, f, sourceDir := setupWorkspaceImportExportTest(t)
 	targetDir := t.TempDir()
 
@@ -97,7 +97,7 @@ func TestExportDir(t *testing.T) {
 	assertFileContents(t, filepath.Join(targetDir, "a/b/c/file-b"), "def")
 }
 
-func TestExportDirDoesNotOverwrite(t *testing.T) {
+func TestAccExportDirDoesNotOverwrite(t *testing.T) {
 	ctx, f, sourceDir := setupWorkspaceImportExportTest(t)
 	targetDir := t.TempDir()
 
@@ -118,7 +118,7 @@ func TestExportDirDoesNotOverwrite(t *testing.T) {
 	assertFileContents(t, filepath.Join(targetDir, "file-a"), "local content")
 }
 
-func TestExportDirWithOverwriteFlag(t *testing.T) {
+func TestAccExportDirWithOverwriteFlag(t *testing.T) {
 	ctx, f, sourceDir := setupWorkspaceImportExportTest(t)
 	targetDir := t.TempDir()
 
