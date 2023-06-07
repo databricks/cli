@@ -77,7 +77,6 @@ based on the language type.
 				}
 			}
 
-			// TODO: test this behaviour
 			// Skip file if a file already exists in path
 			if _, err := os.Stat(targetPath); err == nil && !exportOverwrite {
 				// Log event that this file/directory has been skipped
@@ -91,7 +90,7 @@ based on the language type.
 			}
 			defer f.Close()
 
-			// stream write content to the local file
+			// Write content to the local file
 			r, err := workspaceFiler.Read(ctx, relPath)
 			if err != nil {
 				return err

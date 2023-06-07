@@ -173,7 +173,7 @@ func (w *WorkspaceFilesClient) Read(ctx context.Context, name string) (io.Reader
 
 	// Export file contents. Note the /workspace/export API has a limit of 10MBs
 	// for the file size
-		res, err := w.workspaceClient.Workspace.Export(ctx, workspace.ExportRequest{
+	res, err := w.workspaceClient.Workspace.Export(ctx, workspace.ExportRequest{
 		Path: absPath,
 	})
 	if err != nil {
