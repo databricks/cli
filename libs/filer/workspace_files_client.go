@@ -3,6 +3,7 @@ package filer
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"io"
@@ -65,7 +66,7 @@ func (info wsfsFileInfo) IsDir() bool {
 }
 
 func (info wsfsFileInfo) Sys() any {
-	return nil
+	return info.oi
 }
 
 // WorkspaceFilesClient implements the files-in-workspace API.
@@ -151,37 +152,38 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 	return err
 }
 
+// TODO: test what happens on trying to read a directory. Ideally send an invalid param error
 func (w *WorkspaceFilesClient) Read(ctx context.Context, name string) (io.Reader, error) {
 	absPath, err := w.root.Join(name)
 	if err != nil {
 		return nil, err
 	}
 
-	// Remove leading "/" so we can use it in the URL.
-	urlPath := fmt.Sprintf(
-		"/api/2.0/workspace-files/%s",
-		strings.TrimLeft(absPath, "/"),
-	)
-
-	var res []byte
-	err = w.apiClient.Do(ctx, http.MethodGet, urlPath, nil, &res)
-
-	// Return early on success.
-	if err == nil {
-		return bytes.NewReader(res), nil
-	}
-
-	// Special handling of this error only if it is an API error.
-	var aerr *apierr.APIError
-	if !errors.As(err, &aerr) {
+	// This stat call serves two purposes:
+	// 1. Checks file at path exists, and throws an error if it does not
+	// 2. Allows use to error out if the path is a directory. This is needed
+	// because the /workspace/export API does not error out
+	stat, err := w.Stat(ctx, name)
+	if err != nil {
 		return nil, err
 	}
-
-	if aerr.StatusCode == http.StatusNotFound {
-		return nil, FileDoesNotExistError{absPath}
+	if stat.IsDir() {
+		return nil, NotAFile{absPath}
 	}
 
-	return nil, err
+	// Export file contents. Note the /workspace/export API has a limit of 10MBs
+	// for the file size
+		res, err := w.workspaceClient.Workspace.Export(ctx, workspace.ExportRequest{
+		Path: absPath,
+	})
+	if err != nil {
+		return nil, err
+	}
+	b, err := base64.StdEncoding.DecodeString(res.Content)
+	if err != nil {
+		return nil, err
+	}
+	return bytes.NewReader(b), nil
 }
 
 func (w *WorkspaceFilesClient) Delete(ctx context.Context, name string, mode ...DeleteMode) error {

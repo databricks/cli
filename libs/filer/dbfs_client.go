@@ -59,7 +59,7 @@ func (info dbfsFileInfo) IsDir() bool {
 }
 
 func (info dbfsFileInfo) Sys() any {
-	return nil
+	return info.fi
 }
 
 // DbfsClient implements the [Filer] interface for the DBFS backend.
@@ -145,24 +145,20 @@ func (w *DbfsClient) Read(ctx context.Context, name string) (io.Reader, error) {
 		return nil, err
 	}
 
-	handle, err := w.workspaceClient.Dbfs.Open(ctx, absPath, files.FileModeRead)
+	// This stat call serves two purposes:
+	// 1. Checks file at path exists, and throws an error if it does not
+	// 2. Allows use to error out if the path is a directory. This is needed
+	// because the Dbfs.Open method on the SDK does not error when the path is
+	// a directory
+	stat, err := w.Stat(ctx, name)
 	if err != nil {
-		var aerr *apierr.APIError
-		if !errors.As(err, &aerr) {
-			return nil, err
-		}
-
-		// This API returns a 404 if the file doesn't exist.
-		if aerr.StatusCode == http.StatusNotFound {
-			if aerr.ErrorCode == "RESOURCE_DOES_NOT_EXIST" {
-				return nil, FileDoesNotExistError{absPath}
-			}
-		}
-
 		return nil, err
 	}
+	if stat.IsDir() {
+		return nil, NotAFile{absPath}
+	}
 
-	return handle, nil
+	return w.workspaceClient.Dbfs.Open(ctx, absPath, files.FileModeRead)
 }
 
 func (w *DbfsClient) Delete(ctx context.Context, name string, mode ...DeleteMode) error {
