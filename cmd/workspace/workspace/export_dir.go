@@ -104,7 +104,7 @@ based on the language type.
 		if err != nil {
 			return err
 		}
-		return cmdio.RenderWithTemplate(ctx, newExportCompletedEvent(targetDir), "Export complete. Files can be found at  {{.TargetPath}}\n")
+		return cmdio.RenderWithTemplate(ctx, newExportCompletedEvent(targetDir), "Export complete. Files can be found at {{.TargetPath}}\n")
 	},
 }
 
