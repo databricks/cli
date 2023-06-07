@@ -152,7 +152,6 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 	return err
 }
 
-// TODO: test what happens on trying to read a directory. Ideally send an invalid param error
 func (w *WorkspaceFilesClient) Read(ctx context.Context, name string) (io.Reader, error) {
 	absPath, err := w.root.Join(name)
 	if err != nil {
