@@ -1,6 +1,7 @@
 package databrickscfg
 
 import (
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -26,7 +27,11 @@ func TestProfilesSearchCaseInsensitive(t *testing.T) {
 }
 
 func TestLoadProfilesReturnsHomedirAsTilde(t *testing.T) {
-	t.Setenv("HOME", "./testdata")
+	if runtime.GOOS == "windows" {
+		t.Setenv("USERPROFILE", "./testdata")
+	} else {
+		t.Setenv("HOME", "./testdata")
+	}
 	file, _, err := LoadProfiles("./testdata/databrickscfg", func(p Profile) bool { return true })
 	require.NoError(t, err)
 	assert.Equal(t, "~/databrickscfg", file)
