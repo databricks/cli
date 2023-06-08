@@ -112,13 +112,23 @@ TRY_AUTH: // or try picking a config profile dynamically
 	return nil
 }
 
-func askForWorkspaceProfile() (string, error) {
-	file, profiles, err := databrickscfg.LoadProfiles(databrickscfg.DefaultPath, databrickscfg.MatchWorkspaceProfiles)
-	if err != nil {
-		return "", err
+func transformLoadError(path string, err error) error {
+	if os.IsNotExist(err) {
+		return fmt.Errorf("no configuration file found at %s; please create one first", path)
 	}
-	// Pick the only profile if there is only one.
-	if len(profiles) == 1 {
+	return err
+}
+
+func askForWorkspaceProfile() (string, error) {
+	path := databrickscfg.DefaultPath
+	file, profiles, err := databrickscfg.LoadProfiles(path, databrickscfg.MatchWorkspaceProfiles)
+	if err != nil {
+		return "", transformLoadError(path, err)
+	}
+	switch len(profiles) {
+	case 0:
+		return "", fmt.Errorf("%s does not contain workspace profiles; please create one first", path)
+	case 1:
 		return profiles[0].Name, nil
 	}
 	i, _, err := (&promptui.Select{
@@ -132,7 +142,8 @@ func askForWorkspaceProfile() (string, error) {
 			Inactive: `{{.Name}}`,
 			Selected: `{{ "Using workspace profile" | faint }}: {{ .Name | bold }}`,
 		},
-		Stdin: os.Stdin,
+		Stdin:  os.Stdin,
+		Stdout: os.Stderr,
 	}).Run()
 	if err != nil {
 		return "", err
@@ -141,12 +152,15 @@ func askForWorkspaceProfile() (string, error) {
 }
 
 func askForAccountProfile() (string, error) {
-	file, profiles, err := databrickscfg.LoadProfiles(databrickscfg.DefaultPath, databrickscfg.MatchAccountProfiles)
+	path := databrickscfg.DefaultPath
+	file, profiles, err := databrickscfg.LoadProfiles(path, databrickscfg.MatchAccountProfiles)
 	if err != nil {
-		return "", err
+		return "", transformLoadError(path, err)
 	}
-	// Pick the only profile if there is only one.
-	if len(profiles) == 1 {
+	switch len(profiles) {
+	case 0:
+		return "", fmt.Errorf("%s does not contain account profiles; please create one first", path)
+	case 1:
 		return profiles[0].Name, nil
 	}
 	i, _, err := (&promptui.Select{
@@ -160,7 +174,8 @@ func askForAccountProfile() (string, error) {
 			Inactive: `{{.Name}}`,
 			Selected: `{{ "Using account profile" | faint }}: {{ .Name | bold }}`,
 		},
-		Stdin: os.Stdin,
+		Stdin:  os.Stdin,
+		Stdout: os.Stderr,
 	}).Run()
 	if err != nil {
 		return "", err
