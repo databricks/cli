@@ -57,7 +57,7 @@ func exportFileCallback(ctx context.Context, workspaceFiler filer.Filer, sourceD
 		// If a file exists, and overwrite is not set, we skip exporting the file
 		if _, err := os.Stat(targetPath); err == nil && !exportOverwrite {
 			// Log event that this file/directory has been skipped
-			return cmdio.RenderWithTemplate(ctx, newFileSkippedEvent(sourcePath, targetPath), "{{.SourcePath}} -> {{.TargetPath}} (skipped; already exists)\n")
+			return cmdio.RenderWithTemplate(ctx, newFileSkippedEvent(relPath, targetPath), "{{.SourcePath}} -> {{.TargetPath}} (skipped; already exists)\n")
 		}
 
 		// create the file
@@ -104,7 +104,7 @@ based on the language type.
 		workspaceFS := filer.NewFS(ctx, workspaceFiler)
 
 		// TODO: print progress events on stderr instead: https://github.com/databricks/cli/issues/448
-		err = cmdio.RenderWithTemplate(ctx, newExportStartedEvent(sourceDir), "Export started. Download files from  {{.SourcePath}}\n")
+		err = cmdio.RenderJson(ctx, newExportStartedEvent(sourceDir))
 		if err != nil {
 			return err
 		}
@@ -113,7 +113,7 @@ based on the language type.
 		if err != nil {
 			return err
 		}
-		return cmdio.RenderWithTemplate(ctx, newExportCompletedEvent(targetDir), "Export complete. Files can be found at {{.TargetPath}}\n")
+		return cmdio.RenderJson(ctx, newExportCompletedEvent(targetDir))
 	},
 }
 
