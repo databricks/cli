@@ -147,7 +147,7 @@ func (w *DbfsClient) Read(ctx context.Context, name string) (io.Reader, error) {
 
 	// This stat call serves two purposes:
 	// 1. Checks file at path exists, and throws an error if it does not
-	// 2. Allows use to error out if the path is a directory. This is needed
+	// 2. Allows us to error out if the path is a directory. This is needed
 	// because the Dbfs.Open method on the SDK does not error when the path is
 	// a directory
 	// TODO(added 8 June 2023): remove this stat call on go sdk bump. https://github.com/databricks/cli/issues/450

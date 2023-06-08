@@ -160,8 +160,9 @@ func (w *WorkspaceFilesClient) Read(ctx context.Context, name string) (io.Reader
 
 	// This stat call serves two purposes:
 	// 1. Checks file at path exists, and throws an error if it does not
-	// 2. Allows use to error out if the path is a directory. This is needed
-	// because the /workspace/export API does not error out
+	// 2. Allows us to error out if the path is a directory. This is needed
+	// because the /workspace/export API does not error out, and returns the directory
+	// as a DBC archive even if format "SOURCE" is specified
 	stat, err := w.Stat(ctx, name)
 	if err != nil {
 		return nil, err
@@ -172,6 +173,7 @@ func (w *WorkspaceFilesClient) Read(ctx context.Context, name string) (io.Reader
 
 	// Export file contents. Note the /workspace/export API has a limit of 10MBs
 	// for the file size
+	// TODO: use direct download once it's fixed. see: https://github.com/databricks/cli/issues/452
 	res, err := w.workspaceClient.Workspace.Export(ctx, workspace.ExportRequest{
 		Path: absPath,
 	})

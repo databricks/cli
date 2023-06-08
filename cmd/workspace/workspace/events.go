@@ -1,21 +1,25 @@
 package workspace
 
 type fileIOEvent struct {
-	SourcePath string `json:"source_path,omitempty"`
-	TargetPath string `json:"target_path,omitempty"`
-	Type       string `json:"type"`
+	SourcePath string    `json:"source_path,omitempty"`
+	TargetPath string    `json:"target_path,omitempty"`
+	Type       EventType `json:"type"`
 }
 
-const EventTypeDownloadComplete = "DOWNLOAD_COMPLETE"
-const EventTypeExportStarted = "EXPORT_STARTED"
-const EventTypeExportCompleted = "EXPORT_COMPLETED"
-const EventTypeFileSkipped = "FILE_SKIPPED"
+type EventType string
 
-func newDownloadCompleteEvent(sourcePath, targetPath string) fileIOEvent {
+const (
+	EventTypeFileExported    = EventType("FILE_EXPORTED")
+	EventTypeExportStarted   = EventType("EXPORT_STARTED")
+	EventTypeExportCompleted = EventType("EXPORT_COMPLETED")
+	EventTypeFileSkipped     = EventType("FILE_SKIPPED")
+)
+
+func newFileExportedEvent(sourcePath, targetPath string) fileIOEvent {
 	return fileIOEvent{
 		SourcePath: sourcePath,
 		TargetPath: targetPath,
-		Type:       EventTypeDownloadComplete,
+		Type:       EventTypeFileExported,
 	}
 }
 

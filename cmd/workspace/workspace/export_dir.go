@@ -57,7 +57,7 @@ func exportFileCallback(ctx context.Context, workspaceFiler filer.Filer, sourceD
 		// If a file exists, and overwrite is not set, we skip exporting the file
 		if _, err := os.Stat(targetPath); err == nil && !exportOverwrite {
 			// Log event that this file/directory has been skipped
-			return cmdio.RenderWithTemplate(ctx, newFileSkippedEvent(sourcePath, targetPath), "Skipping {{.SourcePath}} because {{.TargetPath}} already exists\n")
+			return cmdio.RenderWithTemplate(ctx, newFileSkippedEvent(sourcePath, targetPath), "{{.SourcePath}} -> {{.TargetPath}} (skipped; already exists)\n")
 		}
 
 		// create the file
@@ -76,7 +76,7 @@ func exportFileCallback(ctx context.Context, workspaceFiler filer.Filer, sourceD
 		if err != nil {
 			return err
 		}
-		return cmdio.RenderWithTemplate(ctx, newDownloadCompleteEvent(sourcePath, targetPath), "Downloaded {{.SourcePath}} -> {{.TargetPath}}\n")
+		return cmdio.RenderWithTemplate(ctx, newFileExportedEvent(sourcePath, targetPath), "{{.SourcePath}} -> {{.TargetPath}}\n")
 	}
 }
 
