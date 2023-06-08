@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/cmdio"
@@ -113,17 +112,6 @@ TRY_AUTH: // or try picking a config profile dynamically
 	return nil
 }
 
-type searchProfiles databrickscfg.Profiles
-
-// Search implements the promptui.Searcher interface.
-// This allows the user to immediately starting typing to narrow down the list.
-func (s searchProfiles) Search(input string, index int) bool {
-	input = strings.ToLower(input)
-	name := strings.ToLower(s[index].Name)
-	host := strings.ToLower(s[index].Host)
-	return strings.Contains(name, input) || strings.Contains(host, input)
-}
-
 func askForWorkspaceProfile() (string, error) {
 	file, profiles, err := databrickscfg.LoadProfiles(databrickscfg.DefaultPath, databrickscfg.MatchWorkspaceProfiles)
 	if err != nil {
@@ -136,7 +124,7 @@ func askForWorkspaceProfile() (string, error) {
 	i, _, err := (&promptui.Select{
 		Label:             fmt.Sprintf("Workspace profiles defined in %s", file),
 		Items:             profiles,
-		Searcher:          searchProfiles(profiles).Search,
+		Searcher:          profiles.SearchCaseInsensitive,
 		StartInSearchMode: true,
 		Templates: &promptui.SelectTemplates{
 			Label:    "{{ . | faint }}",
@@ -164,7 +152,7 @@ func askForAccountProfile() (string, error) {
 	i, _, err := (&promptui.Select{
 		Label:             fmt.Sprintf("Account profiles defined in %s", file),
 		Items:             profiles,
-		Searcher:          searchProfiles(profiles).Search,
+		Searcher:          profiles.SearchCaseInsensitive,
 		StartInSearchMode: true,
 		Templates: &promptui.SelectTemplates{
 			Label:    "{{ . | faint }}",

@@ -40,6 +40,15 @@ func (p Profiles) Names() []string {
 	return names
 }
 
+// SearchCaseInsensitive implements the promptui.Searcher interface.
+// This allows the user to immediately starting typing to narrow down the list.
+func (p Profiles) SearchCaseInsensitive(input string, index int) bool {
+	input = strings.ToLower(input)
+	name := strings.ToLower(p[index].Name)
+	host := strings.ToLower(p[index].Host)
+	return strings.Contains(name, input) || strings.Contains(host, input)
+}
+
 type ProfileMatchFunction func(Profile) bool
 
 func MatchWorkspaceProfiles(p Profile) bool {

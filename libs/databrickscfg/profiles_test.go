@@ -14,6 +14,17 @@ func TestProfileCloud(t *testing.T) {
 	assert.Equal(t, Profile{Host: "https://some.invalid.host.com/"}.Cloud(), "AWS")
 }
 
+func TestProfilesSearchCaseInsensitive(t *testing.T) {
+	profiles := Profiles{
+		Profile{Name: "foo", Host: "bar"},
+	}
+	assert.True(t, profiles.SearchCaseInsensitive("f", 0))
+	assert.True(t, profiles.SearchCaseInsensitive("OO", 0))
+	assert.True(t, profiles.SearchCaseInsensitive("b", 0))
+	assert.True(t, profiles.SearchCaseInsensitive("AR", 0))
+	assert.False(t, profiles.SearchCaseInsensitive("qu", 0))
+}
+
 func TestLoadProfilesReturnsHomedirAsTilde(t *testing.T) {
 	t.Setenv("HOME", "./testdata")
 	file, _, err := LoadProfiles("./testdata/databrickscfg", func(p Profile) bool { return true })
