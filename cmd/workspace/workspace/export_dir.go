@@ -32,13 +32,13 @@ func exportFileCallback(ctx context.Context, workspaceFiler filer.Filer, sourceD
 		}
 
 		// Add extension to local file path if the file is a notebook
-		stat, err := workspaceFiler.Stat(ctx, relPath)
+		info, err := d.Info()
 		if err != nil {
 			return err
 		}
-		info := stat.Sys().(workspace.ObjectInfo)
-		if info.ObjectType == workspace.ObjectTypeNotebook {
-			switch info.Language {
+		objectInfo := info.Sys().(workspace.ObjectInfo)
+		if objectInfo.ObjectType == workspace.ObjectTypeNotebook {
+			switch objectInfo.Language {
 			case workspace.LanguagePython:
 				targetPath += ".py"
 			case workspace.LanguageR:
