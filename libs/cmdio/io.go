@@ -91,6 +91,14 @@ func RenderWithTemplate(ctx context.Context, v any, template string) error {
 	}
 }
 
+func RenderJson(ctx context.Context, v any) error {
+	c := fromContext(ctx)
+	if c.outputFormat == flags.OutputJSON {
+		return renderJson(c.out, v)
+	}
+	return nil
+}
+
 func RenderReader(ctx context.Context, r io.Reader) error {
 	c := fromContext(ctx)
 	switch c.outputFormat {

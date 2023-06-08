@@ -53,6 +53,12 @@ func runFilerReadWriteTest(t *testing.T, ctx context.Context, f filer.Filer) {
 	assert.True(t, errors.As(err, &filer.FileDoesNotExistError{}))
 	assert.True(t, errors.Is(err, fs.ErrNotExist))
 
+	// Read should fail because the path points to a directory
+	err = f.Mkdir(ctx, "/dir")
+	require.NoError(t, err)
+	_, err = f.Read(ctx, "/dir")
+	assert.ErrorIs(t, err, fs.ErrInvalid)
+
 	// Write with CreateParentDirectories flag should succeed.
 	err = f.Write(ctx, "/foo/bar", strings.NewReader(`hello world`), filer.CreateParentDirectories)
 	assert.NoError(t, err)
