@@ -52,7 +52,9 @@ func exportFileCallback(ctx context.Context, workspaceFiler filer.Filer, sourceD
 			}
 		}
 
-		// Skip file if a file already exists in path
+		// Skip file if a file already exists in path.
+		// os.Stat returns a fs.ErrNotExist if a file does not exist at path.
+		// If a file exists, and overwrite is not set, we skip exporting the file
 		if _, err := os.Stat(targetPath); err == nil && !exportOverwrite {
 			// Log event that this file/directory has been skipped
 			return cmdio.RenderWithTemplate(ctx, newFileSkippedEvent(sourcePath, targetPath), "Skipping {{.SourcePath}} because {{.TargetPath}} already exists\n")
