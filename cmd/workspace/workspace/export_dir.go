@@ -1,6 +1,7 @@
 package workspace
 
 import (
+	"context"
 	"io"
 	"io/fs"
 	"os"
@@ -13,6 +14,69 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/spf13/cobra"
 )
+
+// The callback function exports the file specified at relPath. This function is
+// meant to be used in conjunction with fs.WalkDir
+func exportFileCallback(ctx context.Context, workspaceFiler filer.Filer, sourceDir, targetDir string) func(string, fs.DirEntry, error) error {
+	return func(relPath string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		sourcePath := path.Join(sourceDir, relPath)
+		targetPath := filepath.Join(targetDir, relPath)
+
+		// create directory and return early
+		if d.IsDir() {
+			return os.MkdirAll(targetPath, 0755)
+		}
+
+		// Add extension to local file path if the file is a notebook
+		stat, err := workspaceFiler.Stat(ctx, relPath)
+		if err != nil {
+			return err
+		}
+		info := stat.Sys().(workspace.ObjectInfo)
+		if info.ObjectType == workspace.ObjectTypeNotebook {
+			switch info.Language {
+			case workspace.LanguagePython:
+				targetPath += ".py"
+			case workspace.LanguageR:
+				targetPath += ".r"
+			case workspace.LanguageScala:
+				targetPath += ".scala"
+			case workspace.LanguageSql:
+				targetPath += ".sql"
+			default:
+				// Do not add any extension to the file name
+			}
+		}
+
+		// Skip file if a file already exists in path
+		if _, err := os.Stat(targetPath); err == nil && !exportOverwrite {
+			// Log event that this file/directory has been skipped
+			return cmdio.RenderWithTemplate(ctx, newFileSkippedEvent(sourcePath, targetPath), "Skipping {{.SourcePath}} because {{.TargetPath}} already exists\n")
+		}
+
+		// create the file
+		f, err := os.Create(targetPath)
+		if err != nil {
+			return err
+		}
+		defer f.Close()
+
+		// Write content to the local file
+		r, err := workspaceFiler.Read(ctx, relPath)
+		if err != nil {
+			return err
+		}
+		_, err = io.Copy(f, r)
+		if err != nil {
+			return err
+		}
+		return cmdio.RenderWithTemplate(ctx, newDownloadCompleteEvent(sourcePath, targetPath), "Downloaded {{.SourcePath}} -> {{.TargetPath}}\n")
+	}
+}
 
 var exportDirCommand = &cobra.Command{
 	Use:   "export-dir SOURCE_PATH TARGET_PATH",
@@ -43,64 +107,7 @@ based on the language type.
 			return err
 		}
 
-		err = fs.WalkDir(workspaceFS, ".", func(relPath string, d fs.DirEntry, err error) error {
-			if err != nil {
-				return err
-			}
-
-			sourcePath := path.Join(sourceDir, relPath)
-			targetPath := filepath.Join(targetDir, relPath)
-
-			// create directory and return early
-			if d.IsDir() {
-				return os.MkdirAll(targetPath, 0755)
-			}
-
-			// Add extension to local file path if the file is a notebook
-			stat, err := workspaceFiler.Stat(ctx, relPath)
-			if err != nil {
-				return err
-			}
-			info := stat.Sys().(workspace.ObjectInfo)
-			if info.ObjectType == workspace.ObjectTypeNotebook {
-				switch info.Language {
-				case workspace.LanguagePython:
-					targetPath += ".py"
-				case workspace.LanguageR:
-					targetPath += ".r"
-				case workspace.LanguageScala:
-					targetPath += ".scala"
-				case workspace.LanguageSql:
-					targetPath += ".sql"
-				default:
-					// Do not add any extension to the file name
-				}
-			}
-
-			// Skip file if a file already exists in path
-			if _, err := os.Stat(targetPath); err == nil && !exportOverwrite {
-				// Log event that this file/directory has been skipped
-				return cmdio.RenderWithTemplate(ctx, newFileSkippedEvent(sourcePath, targetPath), "Skipping {{.SourcePath}} because {{.TargetPath}} already exists\n")
-			}
-
-			// create the file
-			f, err := os.Create(targetPath)
-			if err != nil {
-				return err
-			}
-			defer f.Close()
-
-			// Write content to the local file
-			r, err := workspaceFiler.Read(ctx, relPath)
-			if err != nil {
-				return err
-			}
-			_, err = io.Copy(f, r)
-			if err != nil {
-				return err
-			}
-			return cmdio.RenderWithTemplate(ctx, newDownloadCompleteEvent(sourcePath, targetPath), "Downloaded {{.SourcePath}} -> {{.TargetPath}}\n")
-		})
+		err = fs.WalkDir(workspaceFS, ".", exportFileCallback(ctx, workspaceFiler, sourceDir, targetDir))
 		if err != nil {
 			return err
 		}
