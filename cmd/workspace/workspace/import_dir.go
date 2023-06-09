@@ -50,11 +50,11 @@ func importFileCallback(ctx context.Context, workspaceFiler filer.Filer, sourceD
 		// If a file exists, and overwrite is not set, we skip importing the file
 		//
 		// Why do we need this additional API call?
-		// /workspace-files API when file already exists returns:
-		// 1. 409 (Conflict) if object is a file
-		// 2. 400 (Bad Request) if object is a notebook
-		// We make this additional API call to avoid regexing matching the message
-		// from the 400 error from the backend (in principle avoiding client complexity in order to paint over API gaps)
+		// The /workspace-files/import-file API when file already exists returns:
+		// 1. 409 Error (Conflict) if object is a file
+		// 2. 400 Error (Bad Request) if object is a notebook
+		// We make this additional Stat API call to avoid regexing matching the message
+		// in the 400 error (in principle avoiding client complexity in order to paint over API gaps)
 		if _, err := workspaceFiler.Stat(ctx, remoteName); err == nil && !importOverwrite {
 			// Log event that this file/directory has been skipped
 			return cmdio.RenderWithTemplate(ctx, newFileSkippedEvent(localName, path.Join(targetDir, remoteName)), "{{.SourcePath}} -> {{.TargetPath}} (skipped; already exists)\n")
@@ -76,7 +76,6 @@ func importFileCallback(ctx context.Context, workspaceFiler filer.Filer, sourceD
 	}
 }
 
-// TODO: do the import API support .ipynb
 var importDirCommand = &cobra.Command{
 	Use:   "import-dir SOURCE_PATH TARGET_PATH",
 	Short: `Import a directory from the local filesystem to a Databricks workspace.`,
