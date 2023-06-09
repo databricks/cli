@@ -42,13 +42,13 @@ func importFileCallback(ctx context.Context, workspaceFiler filer.Filer, sourceD
 		// 2. The extension of the notebook is stripped, and it's name is the workspace file system is `myNotebook`
 		//
 		// We compute the name of the notebook on the client side for logging purposes.
-		remoteName := localName
+		remoteName := filepath.ToSlash(localName)
 		isNotebook, _, err := notebook.Detect(sourcePath)
 		if err != nil {
 			return err
 		}
 		if isNotebook {
-			ext := filepath.Ext(localName)
+			ext := path.Ext(localName)
 			remoteName = strings.TrimSuffix(localName, ext)
 		}
 
@@ -65,7 +65,7 @@ func importFileCallback(ctx context.Context, workspaceFiler filer.Filer, sourceD
 				return err
 			}
 		} else {
-			err = workspaceFiler.Write(ctx, localName, f)
+			err = workspaceFiler.Write(ctx, filepath.ToSlash(localName), f)
 			if errors.Is(err, fs.ErrExist) {
 				// Emit file skipped event with the appropriate template
 				fileSkippedEvent := newFileSkippedEvent(localName, path.Join(targetDir, remoteName))
