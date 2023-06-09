@@ -10,7 +10,6 @@ import (
 
 	"github.com/briandowns/spinner"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/fatih/color"
 	"github.com/manifoldco/promptui"
 	"github.com/mattn/go-isatty"
 	"golang.org/x/exp/slices"
@@ -31,8 +30,13 @@ type cmdIO struct {
 }
 
 func NewIO(outputFormat flags.Output, in io.Reader, out io.Writer, err io.Writer, template string) *cmdIO {
+	// The check below is similar to color.NoColor but uses the specified err writer.
+	dumb := os.Getenv("NO_COLOR") != "" || os.Getenv("TERM") == "dumb"
+	if f, ok := err.(*os.File); ok && !dumb {
+		dumb = !isatty.IsTerminal(f.Fd()) && !isatty.IsCygwinTerminal(f.Fd())
+	}
 	return &cmdIO{
-		interactive:  !color.NoColor,
+		interactive:  !dumb,
 		outputFormat: outputFormat,
 		template:     template,
 		in:           in,
@@ -82,6 +86,27 @@ func RenderWithTemplate(ctx context.Context, v any, template string) error {
 			return renderTemplate(c.out, template, v)
 		}
 		return renderJson(c.out, v)
+	default:
+		return fmt.Errorf("invalid output format: %s", c.outputFormat)
+	}
+}
+
+func RenderJson(ctx context.Context, v any) error {
+	c := fromContext(ctx)
+	if c.outputFormat == flags.OutputJSON {
+		return renderJson(c.out, v)
+	}
+	return nil
+}
+
+func RenderReader(ctx context.Context, r io.Reader) error {
+	c := fromContext(ctx)
+	switch c.outputFormat {
+	case flags.OutputJSON:
+		return fmt.Errorf("json output not supported")
+	case flags.OutputText:
+		_, err := io.Copy(c.out, r)
+		return err
 	default:
 		return fmt.Errorf("invalid output format: %s", c.outputFormat)
 	}

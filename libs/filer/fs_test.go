@@ -79,7 +79,7 @@ func (f *fakeFiler) Read(ctx context.Context, p string) (io.Reader, error) {
 	return strings.NewReader("foo"), nil
 }
 
-func (f *fakeFiler) Delete(ctx context.Context, p string) error {
+func (f *fakeFiler) Delete(ctx context.Context, p string, mode ...DeleteMode) error {
 	return fmt.Errorf("not implemented")
 }
 
