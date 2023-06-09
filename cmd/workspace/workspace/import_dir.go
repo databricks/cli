@@ -61,13 +61,17 @@ func importFileCallback(ctx context.Context, workspaceFiler filer.Filer, sourceD
 		} else {
 			err = workspaceFiler.Write(ctx, localName, f)
 			if errors.Is(err, fs.ErrExist) {
-				return cmdio.RenderWithTemplate(ctx, newFileSkippedEvent(localName, path.Join(targetDir, remoteName)), "{{.SourcePath}} -> {{.TargetPath}} (skipped; already exists)\n")
+				// Emit file skipped event with the appropriate template
+				fileSkippedEvent := newFileSkippedEvent(localName, path.Join(targetDir, remoteName))
+				template := "{{.SourcePath}} -> {{.TargetPath}} (skipped; already exists)\n"
+				return cmdio.RenderWithTemplate(ctx, fileSkippedEvent, template)
 			}
 			if err != nil {
 				return err
 			}
 		}
-		return cmdio.RenderWithTemplate(ctx, newFileImportedEvent(localName, path.Join(targetDir, remoteName)), "{{.SourcePath}} -> {{.TargetPath}}\n")
+		fileImportedEvent := newFileImportedEvent(localName, path.Join(targetDir, remoteName))
+		return cmdio.RenderWithTemplate(ctx, fileImportedEvent, "{{.SourcePath}} -> {{.TargetPath}}\n")
 	}
 }
 
