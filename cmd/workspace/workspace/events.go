@@ -9,10 +9,15 @@ type fileIOEvent struct {
 type EventType string
 
 const (
-	EventTypeFileExported    = EventType("FILE_EXPORTED")
+	EventTypeFileExported = EventType("FILE_EXPORTED")
+	EventTypeFileSkipped  = EventType("FILE_SKIPPED")
+	EventTypeFileImported = EventType("FILE_IMPORTED")
+
 	EventTypeExportStarted   = EventType("EXPORT_STARTED")
 	EventTypeExportCompleted = EventType("EXPORT_COMPLETED")
-	EventTypeFileSkipped     = EventType("FILE_SKIPPED")
+
+	EventTypeImportStarted   = EventType("IMPORT_STARTED")
+	EventTypeImportCompleted = EventType("IMPORT_COMPLETED")
 )
 
 func newFileExportedEvent(sourcePath, targetPath string) fileIOEvent {
@@ -42,5 +47,27 @@ func newExportStartedEvent(sourcePath string) fileIOEvent {
 	return fileIOEvent{
 		SourcePath: sourcePath,
 		Type:       EventTypeExportStarted,
+	}
+}
+
+func newImportStartedEvent(sourcePath string) fileIOEvent {
+	return fileIOEvent{
+		SourcePath: sourcePath,
+		Type:       EventTypeImportStarted,
+	}
+}
+
+func newImportCompletedEvent(targetPath string) fileIOEvent {
+	return fileIOEvent{
+		TargetPath: targetPath,
+		Type:       EventTypeImportCompleted,
+	}
+}
+
+func newFileImportedEvent(sourcePath, targetPath string) fileIOEvent {
+	return fileIOEvent{
+		TargetPath: targetPath,
+		SourcePath: sourcePath,
+		Type:       EventTypeFileImported,
 	}
 }
