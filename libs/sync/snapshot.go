@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 	"time"
@@ -186,9 +185,16 @@ func (s *Snapshot) diff(ctx context.Context, all []fileset.File) (change diff, e
 	}
 
 	// Capture both previous and current set of files.
-	// This is needed to detect directories that were added or removed.
 	previousFiles := maps.Keys(lastModifiedTimes)
 	currentFiles := maps.Keys(localFileSet)
+
+	// Build directory sets to figure out which directories to create and which to remove.
+	previousDirectories := MakeDirSet(previousFiles)
+	currentDirectories := MakeDirSet(currentFiles)
+
+	// Create new directories; remove stale directories.
+	change.mkdir = currentDirectories.Remove(previousDirectories).Slice()
+	change.rmdir = previousDirectories.Remove(currentDirectories).Slice()
 
 	for _, f := range all {
 		// get current modified timestamp
@@ -269,46 +275,6 @@ func (s *Snapshot) diff(ctx context.Context, all []fileset.File) (change diff, e
 		delete(lastModifiedTimes, localName)
 		delete(remoteToLocalNames, remoteName)
 		delete(localToRemoteNames, localName)
-	}
-
-	// Gather all directories previously present.
-	previousDirectories := map[string]struct{}{}
-	for _, f := range previousFiles {
-		dir := filepath.ToSlash(filepath.Dir(f))
-		for dir != "." {
-			if _, ok := previousDirectories[dir]; ok {
-				break
-			}
-			previousDirectories[dir] = struct{}{}
-			dir = path.Dir(dir)
-		}
-	}
-
-	// Gather all directories currently present.
-	currentDirectories := map[string]struct{}{}
-	for _, f := range currentFiles {
-		dir := filepath.ToSlash(filepath.Dir(f))
-		for dir != "." {
-			if _, ok := currentDirectories[dir]; ok {
-				break
-			}
-			currentDirectories[dir] = struct{}{}
-			dir = path.Dir(dir)
-		}
-	}
-
-	// Create all new directories.
-	for dir := range currentDirectories {
-		if _, ok := previousDirectories[dir]; !ok {
-			change.mkdir = append(change.mkdir, dir)
-		}
-	}
-
-	// Remove all directories that are no longer present.
-	for dir := range previousDirectories {
-		if _, ok := currentDirectories[dir]; !ok {
-			change.rmdir = append(change.rmdir, dir)
-		}
 	}
 
 	return
