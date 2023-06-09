@@ -146,14 +146,7 @@ var deleteCmd = &cobra.Command{
   its parent catalog and the **USE_SCHEMA** privilege on its parent schema`,
 
 	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
-		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -163,6 +156,23 @@ var deleteCmd = &cobra.Command{
 				return err
 			}
 		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No NAME argument specified. Loading names for Functions drop-down."
+				names, err := w.Functions.FunctionInfoNameToFullNameMap(ctx, catalog.ListFunctionsRequest{})
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Functions drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "The fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function__name__)")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
+			}
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have the fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function__name__)")
+			}
 			deleteReq.Name = args[0]
 		}
 
@@ -200,14 +210,7 @@ var getCmd = &cobra.Command{
   **EXECUTE** privilege on the function itself`,
 
 	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
-		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -217,6 +220,23 @@ var getCmd = &cobra.Command{
 				return err
 			}
 		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No NAME argument specified. Loading names for Functions drop-down."
+				names, err := w.Functions.FunctionInfoNameToFullNameMap(ctx, catalog.ListFunctionsRequest{})
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Functions drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "The fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function__name__)")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
+			}
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have the fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function__name__)")
+			}
 			getReq.Name = args[0]
 		}
 
@@ -275,7 +295,7 @@ var listCmd = &cobra.Command{
 			listReq.SchemaName = args[1]
 		}
 
-		response, err := w.Functions.List(ctx, listReq)
+		response, err := w.Functions.ListAll(ctx, listReq)
 		if err != nil {
 			return err
 		}
@@ -312,14 +332,7 @@ var updateCmd = &cobra.Command{
   function's parent schema.`,
 
 	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
-		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -329,6 +342,23 @@ var updateCmd = &cobra.Command{
 				return err
 			}
 		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No NAME argument specified. Loading names for Functions drop-down."
+				names, err := w.Functions.FunctionInfoNameToFullNameMap(ctx, catalog.ListFunctionsRequest{})
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Functions drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "The fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function__name__)")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
+			}
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have the fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function__name__)")
+			}
 			updateReq.Name = args[0]
 		}
 

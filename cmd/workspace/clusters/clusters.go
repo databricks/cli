@@ -9,7 +9,6 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/spf13/cobra"
 )
@@ -178,23 +177,18 @@ var createCmd = &cobra.Command{
 			createReq.SparkVersion = args[0]
 		}
 
+		wait, err := w.Clusters.Create(ctx, createReq)
+		if err != nil {
+			return err
+		}
 		if createSkipWait {
-			response, err := w.Clusters.Create(ctx, createReq)
-			if err != nil {
-				return err
-			}
-			return cmdio.Render(ctx, response)
+			return nil
 		}
 		spinner := cmdio.Spinner(ctx)
-		info, err := w.Clusters.CreateAndWait(ctx, createReq,
-			retries.Timeout[compute.ClusterInfo](createTimeout),
-			func(i *retries.Info[compute.ClusterInfo]) {
-				if i.Info == nil {
-					return
-				}
-				statusMessage := i.Info.StateMessage
-				spinner <- statusMessage
-			})
+		info, err := wait.OnProgress(func(i *compute.ClusterInfo) {
+			statusMessage := i.StateMessage
+			spinner <- statusMessage
+		}).GetWithTimeout(createTimeout)
 		close(spinner)
 		if err != nil {
 			return err
@@ -261,23 +255,18 @@ var deleteCmd = &cobra.Command{
 			deleteReq.ClusterId = args[0]
 		}
 
+		wait, err := w.Clusters.Delete(ctx, deleteReq)
+		if err != nil {
+			return err
+		}
 		if deleteSkipWait {
-			err = w.Clusters.Delete(ctx, deleteReq)
-			if err != nil {
-				return err
-			}
 			return nil
 		}
 		spinner := cmdio.Spinner(ctx)
-		info, err := w.Clusters.DeleteAndWait(ctx, deleteReq,
-			retries.Timeout[compute.ClusterInfo](deleteTimeout),
-			func(i *retries.Info[compute.ClusterInfo]) {
-				if i.Info == nil {
-					return
-				}
-				statusMessage := i.Info.StateMessage
-				spinner <- statusMessage
-			})
+		info, err := wait.OnProgress(func(i *compute.ClusterInfo) {
+			statusMessage := i.StateMessage
+			spinner <- statusMessage
+		}).GetWithTimeout(deleteTimeout)
 		close(spinner)
 		if err != nil {
 			return err
@@ -310,6 +299,8 @@ func init() {
 	editCmd.Flags().StringVar(&editReq.ClusterName, "cluster-name", editReq.ClusterName, `Cluster name requested by the user.`)
 	editCmd.Flags().Var(&editReq.ClusterSource, "cluster-source", `Determines whether the cluster was created by a user through the UI, created by the Databricks Jobs Scheduler, or through an API request.`)
 	// TODO: map via StringToStringVar: custom_tags
+	editCmd.Flags().Var(&editReq.DataSecurityMode, "data-security-mode", `This describes an enum.`)
+	// TODO: complex arg: docker_image
 	editCmd.Flags().StringVar(&editReq.DriverInstancePoolId, "driver-instance-pool-id", editReq.DriverInstancePoolId, `The optional ID of the instance pool for the driver of the cluster belongs.`)
 	editCmd.Flags().StringVar(&editReq.DriverNodeTypeId, "driver-node-type-id", editReq.DriverNodeTypeId, `The node type of the Spark driver.`)
 	editCmd.Flags().BoolVar(&editReq.EnableElasticDisk, "enable-elastic-disk", editReq.EnableElasticDisk, `Autoscaling Local Storage: when enabled, this cluster will dynamically acquire additional disk space when its Spark workers are running low on disk space.`)
@@ -321,6 +312,7 @@ func init() {
 	editCmd.Flags().IntVar(&editReq.NumWorkers, "num-workers", editReq.NumWorkers, `Number of worker nodes that this cluster should have.`)
 	editCmd.Flags().StringVar(&editReq.PolicyId, "policy-id", editReq.PolicyId, `The ID of the cluster policy used to create the cluster if applicable.`)
 	editCmd.Flags().Var(&editReq.RuntimeEngine, "runtime-engine", `Decides which runtime engine to be use, e.g.`)
+	editCmd.Flags().StringVar(&editReq.SingleUserName, "single-user-name", editReq.SingleUserName, `Single user name if data_security_mode is SINGLE_USER.`)
 	// TODO: map via StringToStringVar: spark_conf
 	// TODO: map via StringToStringVar: spark_env_vars
 	// TODO: array: ssh_public_keys
@@ -368,23 +360,18 @@ var editCmd = &cobra.Command{
 			editReq.SparkVersion = args[1]
 		}
 
+		wait, err := w.Clusters.Edit(ctx, editReq)
+		if err != nil {
+			return err
+		}
 		if editSkipWait {
-			err = w.Clusters.Edit(ctx, editReq)
-			if err != nil {
-				return err
-			}
 			return nil
 		}
 		spinner := cmdio.Spinner(ctx)
-		info, err := w.Clusters.EditAndWait(ctx, editReq,
-			retries.Timeout[compute.ClusterInfo](editTimeout),
-			func(i *retries.Info[compute.ClusterInfo]) {
-				if i.Info == nil {
-					return
-				}
-				statusMessage := i.Info.StateMessage
-				spinner <- statusMessage
-			})
+		info, err := wait.OnProgress(func(i *compute.ClusterInfo) {
+			statusMessage := i.StateMessage
+			spinner <- statusMessage
+		}).GetWithTimeout(editTimeout)
 		close(spinner)
 		if err != nil {
 			return err
@@ -819,23 +806,18 @@ var resizeCmd = &cobra.Command{
 			resizeReq.ClusterId = args[0]
 		}
 
+		wait, err := w.Clusters.Resize(ctx, resizeReq)
+		if err != nil {
+			return err
+		}
 		if resizeSkipWait {
-			err = w.Clusters.Resize(ctx, resizeReq)
-			if err != nil {
-				return err
-			}
 			return nil
 		}
 		spinner := cmdio.Spinner(ctx)
-		info, err := w.Clusters.ResizeAndWait(ctx, resizeReq,
-			retries.Timeout[compute.ClusterInfo](resizeTimeout),
-			func(i *retries.Info[compute.ClusterInfo]) {
-				if i.Info == nil {
-					return
-				}
-				statusMessage := i.Info.StateMessage
-				spinner <- statusMessage
-			})
+		info, err := wait.OnProgress(func(i *compute.ClusterInfo) {
+			statusMessage := i.StateMessage
+			spinner <- statusMessage
+		}).GetWithTimeout(resizeTimeout)
 		close(spinner)
 		if err != nil {
 			return err
@@ -902,23 +884,18 @@ var restartCmd = &cobra.Command{
 			restartReq.ClusterId = args[0]
 		}
 
+		wait, err := w.Clusters.Restart(ctx, restartReq)
+		if err != nil {
+			return err
+		}
 		if restartSkipWait {
-			err = w.Clusters.Restart(ctx, restartReq)
-			if err != nil {
-				return err
-			}
 			return nil
 		}
 		spinner := cmdio.Spinner(ctx)
-		info, err := w.Clusters.RestartAndWait(ctx, restartReq,
-			retries.Timeout[compute.ClusterInfo](restartTimeout),
-			func(i *retries.Info[compute.ClusterInfo]) {
-				if i.Info == nil {
-					return
-				}
-				statusMessage := i.Info.StateMessage
-				spinner <- statusMessage
-			})
+		info, err := wait.OnProgress(func(i *compute.ClusterInfo) {
+			statusMessage := i.StateMessage
+			spinner <- statusMessage
+		}).GetWithTimeout(restartTimeout)
 		close(spinner)
 		if err != nil {
 			return err
@@ -1017,23 +994,18 @@ var startCmd = &cobra.Command{
 			startReq.ClusterId = args[0]
 		}
 
+		wait, err := w.Clusters.Start(ctx, startReq)
+		if err != nil {
+			return err
+		}
 		if startSkipWait {
-			err = w.Clusters.Start(ctx, startReq)
-			if err != nil {
-				return err
-			}
 			return nil
 		}
 		spinner := cmdio.Spinner(ctx)
-		info, err := w.Clusters.StartAndWait(ctx, startReq,
-			retries.Timeout[compute.ClusterInfo](startTimeout),
-			func(i *retries.Info[compute.ClusterInfo]) {
-				if i.Info == nil {
-					return
-				}
-				statusMessage := i.Info.StateMessage
-				spinner <- statusMessage
-			})
+		info, err := wait.OnProgress(func(i *compute.ClusterInfo) {
+			statusMessage := i.StateMessage
+			spinner <- statusMessage
+		}).GetWithTimeout(startTimeout)
 		close(spinner)
 		if err != nil {
 			return err
