@@ -78,6 +78,9 @@ func (r *Root) SetConfigFilePath(path string) {
 	r.Resources.SetConfigFilePath(path)
 	if r.Environments != nil {
 		for _, env := range r.Environments {
+			if env == nil {
+				continue
+			}
 			if env.Resources != nil {
 				env.Resources.SetConfigFilePath(path)
 			}
