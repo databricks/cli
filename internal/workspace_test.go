@@ -155,6 +155,7 @@ func TestAccImportDir(t *testing.T) {
 
 	// Assert files are imported
 	assertFilerFileContents(t, ctx, workspaceFiler, "file-a", "hello, world")
+	assertFilerFileContents(t, ctx, workspaceFiler, "a/b/c/file-b", "file-in-dir")
 	assertFilerFileContents(t, ctx, workspaceFiler, "pyNotebook", "# Databricks notebook source\nprint(\"python\")")
 	assertFilerFileContents(t, ctx, workspaceFiler, "sqlNotebook", "-- Databricks notebook source\nSELECT \"sql\"")
 	assertFilerFileContents(t, ctx, workspaceFiler, "rNotebook", "# Databricks notebook source\nprint(\"r\")")
@@ -179,6 +180,7 @@ func TestAccImportDirDoesNotOverwrite(t *testing.T) {
 	RequireSuccessfulRun(t, "workspace", "import-dir", "./testdata/import_dir", targetDir)
 
 	// Assert files are imported
+	assertFilerFileContents(t, ctx, workspaceFiler, "a/b/c/file-b", "file-in-dir")
 	assertFilerFileContents(t, ctx, workspaceFiler, "sqlNotebook", "-- Databricks notebook source\nSELECT \"sql\"")
 	assertFilerFileContents(t, ctx, workspaceFiler, "rNotebook", "# Databricks notebook source\nprint(\"r\")")
 	assertFilerFileContents(t, ctx, workspaceFiler, "scalaNotebook", "// Databricks notebook source\nprintln(\"scala\")")
@@ -206,6 +208,7 @@ func TestAccImportDirWithOverwriteFlag(t *testing.T) {
 	RequireSuccessfulRun(t, "workspace", "import-dir", "./testdata/import_dir", targetDir, "--overwrite")
 
 	// Assert files are imported
+	assertFilerFileContents(t, ctx, workspaceFiler, "a/b/c/file-b", "file-in-dir")
 	assertFilerFileContents(t, ctx, workspaceFiler, "sqlNotebook", "-- Databricks notebook source\nSELECT \"sql\"")
 	assertFilerFileContents(t, ctx, workspaceFiler, "rNotebook", "# Databricks notebook source\nprint(\"r\")")
 	assertFilerFileContents(t, ctx, workspaceFiler, "scalaNotebook", "// Databricks notebook source\nprintln(\"scala\")")

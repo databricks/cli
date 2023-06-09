@@ -31,7 +31,7 @@ func importFileCallback(ctx context.Context, workspaceFiler filer.Filer, sourceD
 
 		// create directory and return early
 		if d.IsDir() {
-			return workspaceFiler.Mkdir(ctx, path.Join(targetDir, localName))
+			return workspaceFiler.Mkdir(ctx, localName)
 		}
 
 		// Compute remote name for target
