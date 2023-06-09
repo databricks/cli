@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -144,8 +145,14 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 		return w.Write(ctx, name, bytes.NewReader(body), sliceWithout(mode, CreateParentDirectories)...)
 	}
 
-	// This API returns 409 if the file already exists.
+	// This API returns 409 if the file already exists, when the object type is file
 	if aerr.StatusCode == http.StatusConflict {
+		return FileAlreadyExistsError{absPath}
+	}
+
+	// This API returns 400 if the file already exists, when the object type is notebook
+	regex := regexp.MustCompile("Path (.*) already exists.")
+	if aerr.StatusCode == http.StatusBadRequest && regex.Match([]byte(aerr.Message)) {
 		return FileAlreadyExistsError{absPath}
 	}
 

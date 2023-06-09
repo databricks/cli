@@ -309,3 +309,134 @@ func TestAccFilerDbfsReadDir(t *testing.T) {
 	ctx, f := setupFilerDbfsTest(t)
 	runFilerReadDirTest(t, ctx, f)
 }
+
+var jupyterNotebookContent1 = `
+{
+	"cells": [
+	 {
+	  "cell_type": "code",
+	  "execution_count": null,
+	  "metadata": {},
+	  "outputs": [],
+	  "source": [
+	   "print(\"Jupyter Notebook Version 1\")"
+	  ]
+	 }
+	],
+	"metadata": {
+	 "language_info": {
+	  "name": "python"
+	 },
+	 "orig_nbformat": 4
+	},
+	"nbformat": 4,
+	"nbformat_minor": 2
+   }
+`
+
+var jupyterNotebookContent2 = `
+{
+	"cells": [
+	 {
+	  "cell_type": "code",
+	  "execution_count": null,
+	  "metadata": {},
+	  "outputs": [],
+	  "source": [
+	   "print(\"Jupyter Notebook Version 2\")"
+	  ]
+	 }
+	],
+	"metadata": {
+	 "language_info": {
+	  "name": "python"
+	 },
+	 "orig_nbformat": 4
+	},
+	"nbformat": 4,
+	"nbformat_minor": 2
+   }
+`
+
+func TestAccFilerWorkpsaceNotebookConflict(t *testing.T) {
+	ctx, f := setupWorkspaceFilesTest(t)
+	var err error
+
+	// Upload the notebooks
+	err = f.Write(ctx, "pyNb.py", strings.NewReader("# Databricks notebook source\nprint('first upload'))"))
+	require.NoError(t, err)
+	err = f.Write(ctx, "rNb.r", strings.NewReader("# Databricks notebook source\nprint('first upload'))"))
+	require.NoError(t, err)
+	err = f.Write(ctx, "sqlNb.sql", strings.NewReader("-- Databricks notebook source\n SELECT \"first upload\""))
+	require.NoError(t, err)
+	err = f.Write(ctx, "scalaNb.scala", strings.NewReader("// Databricks notebook source\n println(\"first upload\"))"))
+	require.NoError(t, err)
+	err = f.Write(ctx, "jupyterNb.ipynb", strings.NewReader(jupyterNotebookContent1))
+	require.NoError(t, err)
+
+	// Assert contents after initial upload
+	filerTest{t, f}.assertContents(ctx, "pyNb", "# Databricks notebook source\nprint('first upload'))")
+	filerTest{t, f}.assertContents(ctx, "rNb", "# Databricks notebook source\nprint('first upload'))")
+	filerTest{t, f}.assertContents(ctx, "sqlNb", "-- Databricks notebook source\n SELECT \"first upload\"")
+	filerTest{t, f}.assertContents(ctx, "scalaNb", "// Databricks notebook source\n println(\"first upload\"))")
+	filerTest{t, f}.assertContents(ctx, "jupyterNb", "# Databricks notebook source\nprint(\"Jupyter Notebook Version 1\")")
+
+	// Assert uploading a second time fails due to overwrite mode missing
+	err = f.Write(ctx, "pyNb.py", strings.NewReader("# Databricks notebook source\nprint('second upload'))"))
+	assert.ErrorIs(t, err, fs.ErrExist)
+
+	err = f.Write(ctx, "rNb.r", strings.NewReader("# Databricks notebook source\nprint('second upload'))"))
+	assert.ErrorIs(t, err, fs.ErrExist)
+
+	err = f.Write(ctx, "sqlNb.sql", strings.NewReader("# Databricks notebook source\n SELECT \"second upload\")"))
+	assert.ErrorIs(t, err, fs.ErrExist)
+
+	err = f.Write(ctx, "scalaNb.scala", strings.NewReader("# Databricks notebook source\n println(\"second upload\"))"))
+	assert.ErrorIs(t, err, fs.ErrExist)
+
+	err = f.Write(ctx, "jupyterNb.ipynb", strings.NewReader(jupyterNotebookContent2))
+	assert.ErrorIs(t, err, fs.ErrExist)
+}
+
+func TestAccFilerWorkpsaceNotebookWithOverwriteFLag(t *testing.T) {
+	ctx, f := setupWorkspaceFilesTest(t)
+	var err error
+
+	// Upload notebooks
+	err = f.Write(ctx, "pyNb.py", strings.NewReader("# Databricks notebook source\nprint('first upload'))"))
+	require.NoError(t, err)
+	err = f.Write(ctx, "rNb.r", strings.NewReader("# Databricks notebook source\nprint('first upload'))"))
+	require.NoError(t, err)
+	err = f.Write(ctx, "sqlNb.sql", strings.NewReader("-- Databricks notebook source\n SELECT \"first upload\""))
+	require.NoError(t, err)
+	err = f.Write(ctx, "scalaNb.scala", strings.NewReader("// Databricks notebook source\n println(\"first upload\"))"))
+	require.NoError(t, err)
+	err = f.Write(ctx, "jupyterNb.ipynb", strings.NewReader(jupyterNotebookContent1))
+	require.NoError(t, err)
+
+	// Assert contents after initial upload
+	filerTest{t, f}.assertContents(ctx, "pyNb", "# Databricks notebook source\nprint('first upload'))")
+	filerTest{t, f}.assertContents(ctx, "rNb", "# Databricks notebook source\nprint('first upload'))")
+	filerTest{t, f}.assertContents(ctx, "sqlNb", "-- Databricks notebook source\n SELECT \"first upload\"")
+	filerTest{t, f}.assertContents(ctx, "scalaNb", "// Databricks notebook source\n println(\"first upload\"))")
+	filerTest{t, f}.assertContents(ctx, "jupyterNb", "# Databricks notebook source\nprint(\"Jupyter Notebook Version 1\")")
+
+	// Upload notebooks a second time, overwriting the initial uplaods
+	err = f.Write(ctx, "pyNb.py", strings.NewReader("# Databricks notebook source\nprint('second upload'))"), filer.OverwriteIfExists)
+	require.NoError(t, err)
+	err = f.Write(ctx, "rNb.r", strings.NewReader("# Databricks notebook source\nprint('second upload'))"), filer.OverwriteIfExists)
+	require.NoError(t, err)
+	err = f.Write(ctx, "sqlNb.sql", strings.NewReader("-- Databricks notebook source\n SELECT \"second upload\""), filer.OverwriteIfExists)
+	require.NoError(t, err)
+	err = f.Write(ctx, "scalaNb.scala", strings.NewReader("// Databricks notebook source\n println(\"second upload\"))"), filer.OverwriteIfExists)
+	require.NoError(t, err)
+	err = f.Write(ctx, "jupyterNb.ipynb", strings.NewReader(jupyterNotebookContent2), filer.OverwriteIfExists)
+	require.NoError(t, err)
+
+	// Assert contents have been overwritten
+	filerTest{t, f}.assertContents(ctx, "pyNb", "# Databricks notebook source\nprint('second upload'))")
+	filerTest{t, f}.assertContents(ctx, "rNb", "# Databricks notebook source\nprint('second upload'))")
+	filerTest{t, f}.assertContents(ctx, "sqlNb", "-- Databricks notebook source\n SELECT \"second upload\"")
+	filerTest{t, f}.assertContents(ctx, "scalaNb", "// Databricks notebook source\n println(\"second upload\"))")
+	filerTest{t, f}.assertContents(ctx, "jupyterNb", "# Databricks notebook source\nprint(\"Jupyter Notebook Version 2\")")
+}
