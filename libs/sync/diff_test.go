@@ -21,6 +21,7 @@ func TestDiffGroupedMkdir(t *testing.T) {
 
 	// Expect only leaf directories to be included.
 	out := d.groupedMkdir()
+	assert.Len(t, out, 1)
 	assert.ElementsMatch(t, []string{
 		"foo/bar/baz1",
 		"foo/bar/baz2",
