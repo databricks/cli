@@ -35,7 +35,13 @@ func importFileCallback(ctx context.Context, workspaceFiler filer.Filer, sourceD
 			return workspaceFiler.Mkdir(ctx, localName)
 		}
 
-		// Compute remote name for target
+		// Compute remote name for target.
+		// Consider a notebook myNotebook.py, what happens when importing this notebook is:
+		//
+		// 1. We make a POST requests to /workspace-files/import-file API with the file name `myNotebook.py`
+		// 2. The extension of the notebook is stripped, and it's name is the workspace file system is `myNotebook`
+		//
+		// We compute the name of the notebook on the client side for logging purposes.
 		remoteName := localName
 		isNotebook, _, err := notebook.Detect(sourcePath)
 		if err != nil {
