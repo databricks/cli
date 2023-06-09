@@ -10,7 +10,6 @@ import (
 
 	"github.com/briandowns/spinner"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/fatih/color"
 	"github.com/manifoldco/promptui"
 	"github.com/mattn/go-isatty"
 	"golang.org/x/exp/slices"
@@ -31,8 +30,13 @@ type cmdIO struct {
 }
 
 func NewIO(outputFormat flags.Output, in io.Reader, out io.Writer, err io.Writer, template string) *cmdIO {
+	// The check below is similar to color.NoColor but uses the specified err writer.
+	dumb := os.Getenv("NO_COLOR") != "" || os.Getenv("TERM") == "dumb"
+	if f, ok := err.(*os.File); ok && !dumb {
+		dumb = !isatty.IsTerminal(f.Fd()) && !isatty.IsCygwinTerminal(f.Fd())
+	}
 	return &cmdIO{
-		interactive:  !color.NoColor,
+		interactive:  !dumb,
 		outputFormat: outputFormat,
 		template:     template,
 		in:           in,
