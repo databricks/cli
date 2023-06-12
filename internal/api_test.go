@@ -12,7 +12,7 @@ import (
 	_ "github.com/databricks/cli/cmd/api"
 )
 
-func TestAcxApiGet(t *testing.T) {
+func TestAccApiGet(t *testing.T) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	stdout, _ := RequireSuccessfulRun(t, "api", "get", "/api/2.0/preview/scim/v2/Me")
@@ -27,7 +27,7 @@ func TestAcxApiGet(t *testing.T) {
 	assert.NotNil(t, out["id"])
 }
 
-func TestAcxApiPost(t *testing.T) {
+func TestAccApiPost(t *testing.T) {
 	env := GetEnvOrSkipTest(t, "CLOUD_ENV")
 	t.Log(env)
 	if env == "gcp" {

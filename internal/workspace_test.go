@@ -17,7 +17,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestAcxWorkspaceList(t *testing.T) {
+func TestAccWorkspaceList(t *testing.T) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	stdout, stderr := RequireSuccessfulRun(t, "workspace", "list", "/")
@@ -40,7 +40,7 @@ func TestWorkpaceGetStatusErrorWhenNoArguments(t *testing.T) {
 }
 
 func setupWorkspaceImportExportTest(t *testing.T) (context.Context, filer.Filer, string) {
-	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+	// t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	ctx := context.Background()
 	w := databricks.Must(databricks.NewWorkspaceClient())
@@ -74,7 +74,7 @@ func assertFilerFileContents(t *testing.T, ctx context.Context, f filer.Filer, p
 	assert.Contains(t, string(b), content)
 }
 
-func TestAcxExportDir(t *testing.T) {
+func TestAccExportDir(t *testing.T) {
 	ctx, f, sourceDir := setupWorkspaceImportExportTest(t)
 	targetDir := t.TempDir()
 
@@ -106,7 +106,7 @@ func TestAcxExportDir(t *testing.T) {
 	assertLocalFileContents(t, filepath.Join(targetDir, "a/b/c/file-b"), "def")
 }
 
-func TestAcxExportDirDoesNotOverwrite(t *testing.T) {
+func TestAccExportDirDoesNotOverwrite(t *testing.T) {
 	ctx, f, sourceDir := setupWorkspaceImportExportTest(t)
 	targetDir := t.TempDir()
 
@@ -127,7 +127,7 @@ func TestAcxExportDirDoesNotOverwrite(t *testing.T) {
 	assertLocalFileContents(t, filepath.Join(targetDir, "file-a"), "local content")
 }
 
-func TestAcxExportDirWithOverwriteFlag(t *testing.T) {
+func TestAccExportDirWithOverwriteFlag(t *testing.T) {
 	ctx, f, sourceDir := setupWorkspaceImportExportTest(t)
 	targetDir := t.TempDir()
 

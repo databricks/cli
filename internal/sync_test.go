@@ -228,7 +228,7 @@ func (a *syncTest) snapshotContains(files []string) {
 	assert.Equal(a.t, len(files), len(s.LastUpdatedTimes))
 }
 
-func TestAcxSyncFullFileSync(t *testing.T) {
+func TestAccSyncFullFileSync(t *testing.T) {
 	ctx := context.Background()
 	assertSync := setupSyncTest(t, "--full", "--watch")
 
@@ -260,7 +260,7 @@ func TestAcxSyncFullFileSync(t *testing.T) {
 	assertSync.remoteDirContent(ctx, "", append(repoFiles, ".gitignore"))
 }
 
-func TestAcxSyncIncrementalFileSync(t *testing.T) {
+func TestAccSyncIncrementalFileSync(t *testing.T) {
 	ctx := context.Background()
 	assertSync := setupSyncTest(t, "--watch")
 
@@ -294,7 +294,7 @@ func TestAcxSyncIncrementalFileSync(t *testing.T) {
 	assertSync.snapshotContains(append(repoFiles, ".gitignore"))
 }
 
-func TestAcxSyncNestedFolderSync(t *testing.T) {
+func TestAccSyncNestedFolderSync(t *testing.T) {
 	ctx := context.Background()
 	assertSync := setupSyncTest(t, "--watch")
 
@@ -322,7 +322,7 @@ func TestAcxSyncNestedFolderSync(t *testing.T) {
 	assertSync.snapshotContains(append(repoFiles, ".gitignore"))
 }
 
-func TestAcxSyncNestedFolderDoesntFailOnNonEmptyDirectory(t *testing.T) {
+func TestAccSyncNestedFolderDoesntFailOnNonEmptyDirectory(t *testing.T) {
 	ctx := context.Background()
 	assertSync := setupSyncTest(t, "--watch")
 
@@ -355,7 +355,7 @@ func TestAcxSyncNestedFolderDoesntFailOnNonEmptyDirectory(t *testing.T) {
 	assertSync.remoteExists(ctx, "dir1")
 }
 
-func TestAcxSyncNestedSpacePlusAndHashAreEscapedSync(t *testing.T) {
+func TestAccSyncNestedSpacePlusAndHashAreEscapedSync(t *testing.T) {
 	ctx := context.Background()
 	assertSync := setupSyncTest(t, "--watch")
 
@@ -391,7 +391,7 @@ func TestAcxSyncNestedSpacePlusAndHashAreEscapedSync(t *testing.T) {
 //
 // In the above scenario sync should delete the empty folder and add foo to the remote
 // file system
-func TestAcxSyncIncrementalFileOverwritesFolder(t *testing.T) {
+func TestAccSyncIncrementalFileOverwritesFolder(t *testing.T) {
 	ctx := context.Background()
 	assertSync := setupSyncTest(t, "--watch")
 
@@ -421,7 +421,7 @@ func TestAcxSyncIncrementalFileOverwritesFolder(t *testing.T) {
 	assertSync.snapshotContains(append(repoFiles, ".gitignore", "foo"))
 }
 
-func TestAcxSyncIncrementalSyncPythonNotebookToFile(t *testing.T) {
+func TestAccSyncIncrementalSyncPythonNotebookToFile(t *testing.T) {
 	ctx := context.Background()
 	assertSync := setupSyncTest(t, "--watch")
 
@@ -452,7 +452,7 @@ func TestAcxSyncIncrementalSyncPythonNotebookToFile(t *testing.T) {
 	assertSync.snapshotContains(append(repoFiles, ".gitignore"))
 }
 
-func TestAcxSyncIncrementalSyncFileToPythonNotebook(t *testing.T) {
+func TestAccSyncIncrementalSyncFileToPythonNotebook(t *testing.T) {
 	ctx := context.Background()
 	assertSync := setupSyncTest(t, "--watch")
 
@@ -476,7 +476,7 @@ func TestAcxSyncIncrementalSyncFileToPythonNotebook(t *testing.T) {
 	assertSync.snapshotContains(append(repoFiles, ".gitignore", "foo.py"))
 }
 
-func TestAcxSyncIncrementalSyncPythonNotebookDelete(t *testing.T) {
+func TestAccSyncIncrementalSyncPythonNotebookDelete(t *testing.T) {
 	ctx := context.Background()
 	assertSync := setupSyncTest(t, "--watch")
 
@@ -498,7 +498,7 @@ func TestAcxSyncIncrementalSyncPythonNotebookDelete(t *testing.T) {
 	assertSync.remoteDirContent(ctx, "", append(repoFiles, ".gitignore"))
 }
 
-func TestAcxSyncEnsureRemotePathIsUsableIfRepoDoesntExist(t *testing.T) {
+func TestAccSyncEnsureRemotePathIsUsableIfRepoDoesntExist(t *testing.T) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	wsc := databricks.Must(databricks.NewWorkspaceClient())
@@ -518,7 +518,7 @@ func TestAcxSyncEnsureRemotePathIsUsableIfRepoDoesntExist(t *testing.T) {
 	assert.ErrorContains(t, err, " does not exist; please create it first")
 }
 
-func TestAcxSyncEnsureRemotePathIsUsableIfRepoExists(t *testing.T) {
+func TestAccSyncEnsureRemotePathIsUsableIfRepoExists(t *testing.T) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	wsc := databricks.Must(databricks.NewWorkspaceClient())
@@ -540,7 +540,7 @@ func TestAcxSyncEnsureRemotePathIsUsableIfRepoExists(t *testing.T) {
 	require.Equal(t, workspace.ObjectTypeDirectory, info.ObjectType)
 }
 
-func TestAcxSyncEnsureRemotePathIsUsableInWorkspace(t *testing.T) {
+func TestAccSyncEnsureRemotePathIsUsableInWorkspace(t *testing.T) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	wsc := databricks.Must(databricks.NewWorkspaceClient())

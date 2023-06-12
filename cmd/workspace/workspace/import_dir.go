@@ -18,30 +18,42 @@ import (
 
 // The callback function imports the file specified at sourcePath. This function is
 // meant to be used in conjunction with fs.WalkDir
+//
+// We deal with 3 different names for files. The need for this
+// arises due to workspace API behaviour and limitations
+//
+// 1. Local name: The name for the file in the local file system
+// 2. Remote name: The name of the file as materialized in the workspace
+// 3. API payload name: The name to be used for API calls
+//
+// Example, consider the notebook "foo\\myNotebook.py" on a windows file system.
+// The process to upload it would look like
+// 1. Read the notebook, referring to it using it's local name "foo\\myNotebook.py"
+// 2. API call to import the notebook to the workspace, using it API payload name "foo/myNotebook.py"
+// 3. The notebook is materialized in the workspace using it's remote name "foo/myNotebook"
 func importFileCallback(ctx context.Context, workspaceFiler filer.Filer, sourceDir, targetDir string) func(string, fs.DirEntry, error) error {
 	return func(sourcePath string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 
-		// Compute file path relative to source directory
+		// localName is the name for the file in the local file system
 		localName, err := filepath.Rel(sourceDir, sourcePath)
+
+		// nameForApiCall is the name for the file to be used in any API call.
+		// This is a file name we provide to the filer.Write and Mkdir methods
+		nameForApiCall := filepath.ToSlash(localName)
 		if err != nil {
 			return err
 		}
 
 		// create directory and return early
 		if d.IsDir() {
-			return workspaceFiler.Mkdir(ctx, localName)
+			return workspaceFiler.Mkdir(ctx, nameForApiCall)
 		}
 
-		// Compute remote name for target.
-		// Consider a notebook myNotebook.py, what happens when importing this notebook is:
-		//
-		// 1. We make a POST requests to /workspace-files/import-file API with the file name `myNotebook.py`
-		// 2. The extension of the notebook is stripped, and it's name is the workspace file system is `myNotebook`
-		//
-		// We compute the name of the notebook on the client side for logging purposes.
+		// remoteName is the name of the file as visible in the workspace. We compute
+		// the remote name on the client side for logging purposes
 		remoteName := filepath.ToSlash(localName)
 		isNotebook, _, err := notebook.Detect(sourcePath)
 		if err != nil {
@@ -59,14 +71,13 @@ func importFileCallback(ctx context.Context, workspaceFiler filer.Filer, sourceD
 		}
 
 		// Create file in WSFS
-		nameForApiPayload := filepath.ToSlash(localName)
 		if importOverwrite {
-			err = workspaceFiler.Write(ctx, nameForApiPayload, f, filer.OverwriteIfExists)
+			err = workspaceFiler.Write(ctx, nameForApiCall, f, filer.OverwriteIfExists)
 			if err != nil {
 				return err
 			}
 		} else {
-			err = workspaceFiler.Write(ctx, nameForApiPayload, f)
+			err = workspaceFiler.Write(ctx, nameForApiCall, f)
 			if errors.Is(err, fs.ErrExist) {
 				// Emit file skipped event with the appropriate template
 				fileSkippedEvent := newFileSkippedEvent(localName, path.Join(targetDir, remoteName))
