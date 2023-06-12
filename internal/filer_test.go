@@ -8,6 +8,7 @@ import (
 	"io"
 	"io/fs"
 	"net/http"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -70,6 +71,7 @@ func runFilerReadWriteTest(t *testing.T, ctx context.Context, f filer.Filer) {
 	err = f.Write(ctx, "/foo/bar", strings.NewReader(`hello universe`))
 	assert.True(t, errors.As(err, &filer.FileAlreadyExistsError{}))
 	assert.True(t, errors.Is(err, fs.ErrExist))
+	assert.Regexp(t, regexp.MustCompile(`file already exists: .*/foo/bar$`), err.Error())
 
 	// Write with OverwriteIfExists should succeed.
 	err = f.Write(ctx, "/foo/bar", strings.NewReader(`hello universe`), filer.OverwriteIfExists)
@@ -386,18 +388,23 @@ func TestAccFilerWorkspaceNotebookConflict(t *testing.T) {
 	// Assert uploading a second time fails due to overwrite mode missing
 	err = f.Write(ctx, "pyNb.py", strings.NewReader("# Databricks notebook source\nprint('second upload'))"))
 	assert.ErrorIs(t, err, fs.ErrExist)
+	assert.Regexp(t, regexp.MustCompile(`file already exists: .*/pyNb$`), err.Error())
 
 	err = f.Write(ctx, "rNb.r", strings.NewReader("# Databricks notebook source\nprint('second upload'))"))
 	assert.ErrorIs(t, err, fs.ErrExist)
+	assert.Regexp(t, regexp.MustCompile(`file already exists: .*/rNb$`), err.Error())
 
 	err = f.Write(ctx, "sqlNb.sql", strings.NewReader("# Databricks notebook source\n SELECT \"second upload\")"))
 	assert.ErrorIs(t, err, fs.ErrExist)
+	assert.Regexp(t, regexp.MustCompile(`file already exists: .*/sqlNb$`), err.Error())
 
 	err = f.Write(ctx, "scalaNb.scala", strings.NewReader("# Databricks notebook source\n println(\"second upload\"))"))
 	assert.ErrorIs(t, err, fs.ErrExist)
+	assert.Regexp(t, regexp.MustCompile(`file already exists: .*/scalaNb$`), err.Error())
 
 	err = f.Write(ctx, "jupyterNb.ipynb", strings.NewReader(jupyterNotebookContent2))
 	assert.ErrorIs(t, err, fs.ErrExist)
+	assert.Regexp(t, regexp.MustCompile(`file already exists: .*/jupyterNb$`), err.Error())
 }
 
 func TestAccFilerWorkspaceNotebookWithOverwriteFlag(t *testing.T) {
