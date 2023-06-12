@@ -31,6 +31,8 @@ func (f filerTest) assertContents(ctx context.Context, name string, contents str
 		return
 	}
 
+	defer reader.Close()
+
 	var body bytes.Buffer
 	_, err = io.Copy(&body, reader)
 	if !assert.NoError(f, err) {
@@ -236,7 +238,7 @@ func temporaryWorkspaceDir(t *testing.T, w *databricks.WorkspaceClient) string {
 }
 
 func setupWorkspaceFilesTest(t *testing.T) (context.Context, filer.Filer) {
-	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+	// t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	ctx := context.Background()
 	w := databricks.Must(databricks.NewWorkspaceClient())
@@ -439,4 +441,21 @@ func TestAccFilerWorkspaceNotebookWithOverwriteFlag(t *testing.T) {
 	filerTest{t, f}.assertContents(ctx, "sqlNb", "-- Databricks notebook source\n SELECT \"second upload\"")
 	filerTest{t, f}.assertContents(ctx, "scalaNb", "// Databricks notebook source\n println(\"second upload\"))")
 	filerTest{t, f}.assertContents(ctx, "jupyterNb", "# Databricks notebook source\nprint(\"Jupyter Notebook Version 2\")")
+}
+
+func setupFilerLocalTest(t *testing.T) (context.Context, filer.Filer) {
+	ctx := context.Background()
+	f, err := filer.NewLocalClient(t.TempDir())
+	require.NoError(t, err)
+	return ctx, f
+}
+
+func TestAccFilerLocalReadWrite(t *testing.T) {
+	ctx, f := setupFilerLocalTest(t)
+	runFilerReadWriteTest(t, ctx, f)
+}
+
+func TestAccFilerLocalReadDir(t *testing.T) {
+	ctx, f := setupFilerLocalTest(t)
+	runFilerReadDirTest(t, ctx, f)
 }

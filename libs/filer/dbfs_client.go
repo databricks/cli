@@ -139,7 +139,7 @@ func (w *DbfsClient) Write(ctx context.Context, name string, reader io.Reader, m
 	return err
 }
 
-func (w *DbfsClient) Read(ctx context.Context, name string) (io.Reader, error) {
+func (w *DbfsClient) Read(ctx context.Context, name string) (io.ReadCloser, error) {
 	absPath, err := w.root.Join(name)
 	if err != nil {
 		return nil, err
@@ -159,7 +159,13 @@ func (w *DbfsClient) Read(ctx context.Context, name string) (io.Reader, error) {
 		return nil, NotAFile{absPath}
 	}
 
-	return w.workspaceClient.Dbfs.Open(ctx, absPath, files.FileModeRead)
+	handle, err := w.workspaceClient.Dbfs.Open(ctx, absPath, files.FileModeRead)
+	if err != nil {
+		return nil, err
+	}
+
+	// A DBFS handle open for reading does not need to be closed.
+	return io.NopCloser(handle), nil
 }
 
 func (w *DbfsClient) Delete(ctx context.Context, name string, mode ...DeleteMode) error {
