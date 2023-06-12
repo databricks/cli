@@ -6,6 +6,7 @@ import (
 	"io/fs"
 	"path"
 	"path/filepath"
+	"strings"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
@@ -34,13 +35,25 @@ func cpWriteCallback(ctx context.Context, sourceFiler, targetFiler filer.Filer, 
 		}
 
 		// write to target file
-		err = targetFiler.Write(ctx, relPath, r)
-		if errors.Is(err, fs.ErrExist) {
-			fileSkippedEvent := newFileSkippedEvent(sourcePath, targetPath)
-			template := "{{.SourcePath}} -> {{.TargetPath}} (skipped; already exists)\n"
-			return cmdio.RenderWithTemplate(ctx, fileSkippedEvent, template)
+		if cpOverwrite {
+			err = targetFiler.Write(ctx, relPath, r, filer.OverwriteIfExists)
+			if err != nil {
+				return err
+			}
+		} else {
+			err = targetFiler.Write(ctx, relPath, r)
+			// skip if file already exists
+			if err != nil && errors.Is(err, fs.ErrExist) {
+				fileSkippedEvent := newFileSkippedEvent(sourcePath, targetPath)
+				template := "{{.SourcePath}} -> {{.TargetPath}} (skipped; already exists)\n"
+				return cmdio.RenderWithTemplate(ctx, fileSkippedEvent, template)
+			}
+			if err != nil {
+				return err
+			}
 		}
 
+		return cmdio.RenderWithTemplate(ctx, newFileCopiedEvent(sourcePath, targetPath), "{{.SourcePath}} -> {{.TargetPath}}")
 	}
 }
 
@@ -54,11 +67,28 @@ var cpCmd = &cobra.Command{
 	Use:     "cp SOURCE_PATH TARGET_PATH",
 	Short:   "Copy files to and from DBFS.",
 	Long:    `TODO`,
-	Args:    cobra.ExactArgs(1),
+	Args:    cobra.ExactArgs(2),
 	PreRunE: root.MustWorkspaceClient,
 
 	RunE: func(cmd *cobra.Command, args []string) error {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
 
+		sourceDir := args[0]
+		targetDir := args[1]
+
+		sourceFiler, err := setupFiler(ctx, args[0])
+		if err != nil {
+			return err
+		}
+		targetFiler, err := setupFiler(ctx, args[1])
+		if err != nil {
+			return err
+		}
+
+		
+
+		if strings.HasPrefix(s string, prefix string)
 	},
 }
 
