@@ -154,7 +154,6 @@ func TestAccImportDir(t *testing.T) {
 	RequireSuccessfulRun(t, "workspace", "import-dir", "./testdata/import_dir", targetDir, "--log-level=debug")
 
 	// Assert files are imported
-	assert.True(t, false)
 	assertFilerFileContents(t, ctx, workspaceFiler, "file-a", "hello, world")
 	assertFilerFileContents(t, ctx, workspaceFiler, "a/b/c/file-b", "file-in-dir")
 	assertFilerFileContents(t, ctx, workspaceFiler, "pyNotebook", "# Databricks notebook source\nprint(\"python\")")
