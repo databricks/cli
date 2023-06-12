@@ -31,6 +31,8 @@ func (f filerTest) assertContents(ctx context.Context, name string, contents str
 		return
 	}
 
+	defer reader.Close()
+
 	var body bytes.Buffer
 	_, err = io.Copy(&body, reader)
 	if !assert.NoError(f, err) {

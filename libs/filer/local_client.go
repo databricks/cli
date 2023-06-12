@@ -68,7 +68,7 @@ func (w *LocalClient) Write(ctx context.Context, name string, reader io.Reader, 
 
 }
 
-func (w *LocalClient) Read(ctx context.Context, name string) (io.Reader, error) {
+func (w *LocalClient) Read(ctx context.Context, name string) (io.ReadCloser, error) {
 	absPath, err := w.root.Join(name)
 	if err != nil {
 		return nil, err
