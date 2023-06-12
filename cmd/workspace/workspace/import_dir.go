@@ -39,13 +39,13 @@ func importFileCallback(ctx context.Context, workspaceFiler filer.Filer, sourceD
 
 		// localName is the name for the file in the local file system
 		localName, err := filepath.Rel(sourceDir, sourcePath)
+		if err != nil {
+			return err
+		}
 
 		// nameForApiCall is the name for the file to be used in any API call.
 		// This is a file name we provide to the filer.Write and Mkdir methods
 		nameForApiCall := filepath.ToSlash(localName)
-		if err != nil {
-			return err
-		}
 
 		// create directory and return early
 		if d.IsDir() {
@@ -69,6 +69,7 @@ func importFileCallback(ctx context.Context, workspaceFiler filer.Filer, sourceD
 		if err != nil {
 			return err
 		}
+		defer f.Close()
 
 		// Create file in WSFS
 		if importOverwrite {
