@@ -358,7 +358,7 @@ var jupyterNotebookContent2 = `
    }
 `
 
-func TestAccFilerWorkpsaceNotebookConflict(t *testing.T) {
+func TestAccFilerWorkspaceNotebookConflict(t *testing.T) {
 	ctx, f := setupWorkspaceFilesTest(t)
 	var err error
 
@@ -398,7 +398,7 @@ func TestAccFilerWorkpsaceNotebookConflict(t *testing.T) {
 	assert.ErrorIs(t, err, fs.ErrExist)
 }
 
-func TestAccFilerWorkpsaceNotebookWithOverwriteFLag(t *testing.T) {
+func TestAccFilerWorkspaceNotebookWithOverwriteFlag(t *testing.T) {
 	ctx, f := setupWorkspaceFilesTest(t)
 	var err error
 
