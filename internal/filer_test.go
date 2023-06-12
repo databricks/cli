@@ -238,7 +238,7 @@ func temporaryWorkspaceDir(t *testing.T, w *databricks.WorkspaceClient) string {
 }
 
 func setupWorkspaceFilesTest(t *testing.T) (context.Context, filer.Filer) {
-	// t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	ctx := context.Background()
 	w := databricks.Must(databricks.NewWorkspaceClient())
