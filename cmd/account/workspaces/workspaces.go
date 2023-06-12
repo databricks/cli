@@ -97,7 +97,7 @@ var createCmd = &cobra.Command{
 			return err
 		}
 		if createSkipWait {
-			return nil
+			return cmdio.Render(ctx, wait.Response)
 		}
 		spinner := cmdio.Spinner(ctx)
 		info, err := wait.OnProgress(func(i *provisioning.Workspace) {

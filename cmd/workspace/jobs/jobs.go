@@ -820,7 +820,7 @@ var repairRunCmd = &cobra.Command{
 			return err
 		}
 		if repairRunSkipWait {
-			return nil
+			return cmdio.Render(ctx, wait.Response)
 		}
 		spinner := cmdio.Spinner(ctx)
 		info, err := wait.OnProgress(func(i *jobs.Run) {
@@ -964,7 +964,7 @@ var runNowCmd = &cobra.Command{
 			return err
 		}
 		if runNowSkipWait {
-			return nil
+			return cmdio.Render(ctx, wait.Response)
 		}
 		spinner := cmdio.Spinner(ctx)
 		info, err := wait.OnProgress(func(i *jobs.Run) {
@@ -1047,7 +1047,7 @@ var submitCmd = &cobra.Command{
 			return err
 		}
 		if submitSkipWait {
-			return nil
+			return cmdio.Render(ctx, wait.Response)
 		}
 		spinner := cmdio.Spinner(ctx)
 		info, err := wait.OnProgress(func(i *jobs.Run) {

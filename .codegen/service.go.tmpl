@@ -56,7 +56,7 @@ func init() {
 			{{else if .Entity.IsAny }}// TODO: any: {{.Name}}
 			{{else if .Entity.ArrayValue }}// TODO: array: {{.Name}}
 			{{else if .Entity.MapValue }}// TODO: map via StringToStringVar: {{.Name}}
-			{{else if eq .KebabName "databricks-gcp-service-account" }}// TODO: output-only field
+			{{else if .Entity.IsEmpty }}// TODO: output-only field
 			{{else if .Entity.Enum }}{{$method.CamelName}}Cmd.Flags().Var(&{{$method.CamelName}}Req.{{.PascalName}}, "{{.KebabName}}", `{{.Summary | without "`"}}`)
 			{{else}}{{$method.CamelName}}Cmd.Flags().{{template "arg-type" .Entity}}(&{{$method.CamelName}}Req.{{.PascalName}}, "{{.KebabName}}", {{$method.CamelName}}Req.{{.PascalName}}, `{{.Summary | without "`"}}`)
 			{{end}}
@@ -135,7 +135,11 @@ var {{.CamelName}}Cmd = &cobra.Command{
 			return err
 		}
 		if {{.CamelName}}SkipWait {
+			{{if .Response -}}
+			return cmdio.Render(ctx, wait.Response)
+			{{- else -}}
 			return nil
+			{{- end}}
 		}
 		spinner := cmdio.Spinner(ctx)
 		info, err := wait.OnProgress(func(i *{{.Service.Package.Name}}.{{.Wait.Poll.Response.PascalName}}) {
