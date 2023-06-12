@@ -41,7 +41,7 @@ func createRemoteTestProject(t *testing.T, projectNamePrefix string, wsc *databr
 	return remoteProjectRoot
 }
 
-func TestAccLock(t *testing.T) {
+func TestAcxLock(t *testing.T) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 	ctx := context.TODO()
 	wsc, err := databricks.NewWorkspaceClient()

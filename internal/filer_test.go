@@ -254,12 +254,12 @@ func setupWorkspaceFilesTest(t *testing.T) (context.Context, filer.Filer) {
 	return ctx, f
 }
 
-func TestAccFilerWorkspaceFilesReadWrite(t *testing.T) {
+func TestAcxFilerWorkspaceFilesReadWrite(t *testing.T) {
 	ctx, f := setupWorkspaceFilesTest(t)
 	runFilerReadWriteTest(t, ctx, f)
 }
 
-func TestAccFilerWorkspaceFilesReadDir(t *testing.T) {
+func TestAcxFilerWorkspaceFilesReadDir(t *testing.T) {
 	ctx, f := setupWorkspaceFilesTest(t)
 	runFilerReadDirTest(t, ctx, f)
 }
@@ -300,12 +300,12 @@ func setupFilerDbfsTest(t *testing.T) (context.Context, filer.Filer) {
 	return ctx, f
 }
 
-func TestAccFilerDbfsReadWrite(t *testing.T) {
+func TestAcxFilerDbfsReadWrite(t *testing.T) {
 	ctx, f := setupFilerDbfsTest(t)
 	runFilerReadWriteTest(t, ctx, f)
 }
 
-func TestAccFilerDbfsReadDir(t *testing.T) {
+func TestAcxFilerDbfsReadDir(t *testing.T) {
 	ctx, f := setupFilerDbfsTest(t)
 	runFilerReadDirTest(t, ctx, f)
 }
@@ -358,7 +358,7 @@ var jupyterNotebookContent2 = `
    }
 `
 
-func TestAccFilerWorkspaceNotebookConflict(t *testing.T) {
+func TestAcxFilerWorkspaceNotebookConflict(t *testing.T) {
 	ctx, f := setupWorkspaceFilesTest(t)
 	var err error
 
@@ -398,7 +398,7 @@ func TestAccFilerWorkspaceNotebookConflict(t *testing.T) {
 	assert.ErrorIs(t, err, fs.ErrExist)
 }
 
-func TestAccFilerWorkspaceNotebookWithOverwriteFlag(t *testing.T) {
+func TestAcxFilerWorkspaceNotebookWithOverwriteFlag(t *testing.T) {
 	ctx, f := setupWorkspaceFilesTest(t)
 	var err error
 

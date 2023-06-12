@@ -17,7 +17,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestAccWorkspaceList(t *testing.T) {
+func TestAcxWorkspaceList(t *testing.T) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	stdout, stderr := RequireSuccessfulRun(t, "workspace", "list", "/")
@@ -74,7 +74,7 @@ func assertFilerFileContents(t *testing.T, ctx context.Context, f filer.Filer, p
 	assert.Contains(t, string(b), content)
 }
 
-func TestAccExportDir(t *testing.T) {
+func TestAcxExportDir(t *testing.T) {
 	ctx, f, sourceDir := setupWorkspaceImportExportTest(t)
 	targetDir := t.TempDir()
 
@@ -106,7 +106,7 @@ func TestAccExportDir(t *testing.T) {
 	assertLocalFileContents(t, filepath.Join(targetDir, "a/b/c/file-b"), "def")
 }
 
-func TestAccExportDirDoesNotOverwrite(t *testing.T) {
+func TestAcxExportDirDoesNotOverwrite(t *testing.T) {
 	ctx, f, sourceDir := setupWorkspaceImportExportTest(t)
 	targetDir := t.TempDir()
 
@@ -127,7 +127,7 @@ func TestAccExportDirDoesNotOverwrite(t *testing.T) {
 	assertLocalFileContents(t, filepath.Join(targetDir, "file-a"), "local content")
 }
 
-func TestAccExportDirWithOverwriteFlag(t *testing.T) {
+func TestAcxExportDirWithOverwriteFlag(t *testing.T) {
 	ctx, f, sourceDir := setupWorkspaceImportExportTest(t)
 	targetDir := t.TempDir()
 
@@ -151,9 +151,10 @@ func TestAccExportDirWithOverwriteFlag(t *testing.T) {
 // TODO: Add assertions on progress logs for workspace import-dir command. https://github.com/databricks/cli/issues/455
 func TestAccImportDir(t *testing.T) {
 	ctx, workspaceFiler, targetDir := setupWorkspaceImportExportTest(t)
-	RequireSuccessfulRun(t, "workspace", "import-dir", "./testdata/import_dir", targetDir)
+	RequireSuccessfulRun(t, "workspace", "import-dir", "./testdata/import_dir", targetDir, "--log-level=debug")
 
 	// Assert files are imported
+	assert.True(t, false)
 	assertFilerFileContents(t, ctx, workspaceFiler, "file-a", "hello, world")
 	assertFilerFileContents(t, ctx, workspaceFiler, "a/b/c/file-b", "file-in-dir")
 	assertFilerFileContents(t, ctx, workspaceFiler, "pyNotebook", "# Databricks notebook source\nprint(\"python\")")

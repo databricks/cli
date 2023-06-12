@@ -10,7 +10,7 @@ import (
 
 var clusterId string
 
-func TestAccClustersList(t *testing.T) {
+func TestAcxClustersList(t *testing.T) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	stdout, stderr := RequireSuccessfulRun(t, "clusters", "list")
@@ -25,7 +25,7 @@ func TestAccClustersList(t *testing.T) {
 	assert.NotEmpty(t, clusterId)
 }
 
-func TestAccClustersGet(t *testing.T) {
+func TestAcxClustersGet(t *testing.T) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	stdout, stderr := RequireSuccessfulRun(t, "clusters", "get", clusterId)
