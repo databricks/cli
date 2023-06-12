@@ -147,7 +147,7 @@ func TestSaveToProfile_NewFileWithoutDefault(t *testing.T) {
 	contents, err := os.ReadFile(path)
 	require.NoError(t, err)
 	assert.Equal(t,
-		`; The profile defined in the DEFAULT section is be used as fallback when no profile is explicitly specified.
+		`; The profile defined in the DEFAULT section is to be used as a fallback when no profile is explicitly specified.
 [DEFAULT]
 
 [abc]
