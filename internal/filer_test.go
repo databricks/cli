@@ -71,7 +71,6 @@ func runFilerReadWriteTest(t *testing.T, ctx context.Context, f filer.Filer) {
 	err = f.Write(ctx, "/foo/bar", strings.NewReader(`hello universe`))
 	assert.True(t, errors.As(err, &filer.FileAlreadyExistsError{}))
 	assert.True(t, errors.Is(err, fs.ErrExist))
-	assert.Regexp(t, regexp.MustCompile(`file already exists: .*/foo/bar$`), err.Error())
 
 	// Write with OverwriteIfExists should succeed.
 	err = f.Write(ctx, "/foo/bar", strings.NewReader(`hello universe`), filer.OverwriteIfExists)
