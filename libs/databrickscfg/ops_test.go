@@ -2,11 +2,13 @@ package databrickscfg
 
 import (
 	"context"
+	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestLoadOrCreate(t *testing.T) {
@@ -129,7 +131,7 @@ func TestSaveToProfile_ErrorOnMatch(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestSaveToProfile_NewFile(t *testing.T) {
+func TestSaveToProfile_NewFileWithoutDefault(t *testing.T) {
 	ctx := context.Background()
 	path := filepath.Join(t.TempDir(), "databrickscfg")
 
@@ -141,6 +143,39 @@ func TestSaveToProfile_NewFile(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.NoFileExists(t, path+".bak")
+
+	contents, err := os.ReadFile(path)
+	require.NoError(t, err)
+	assert.Equal(t,
+		`; The profile defined in the DEFAULT section is be used as fallback when no profile is explicitly specified.
+[DEFAULT]
+
+[abc]
+host  = https://foo
+token = xyz
+`, string(contents))
+}
+
+func TestSaveToProfile_NewFileWithDefault(t *testing.T) {
+	ctx := context.Background()
+	path := filepath.Join(t.TempDir(), "databrickscfg")
+
+	err := SaveToProfile(ctx, &config.Config{
+		ConfigFile: path,
+		Profile:    "DEFAULT",
+		Host:       "https://foo",
+		Token:      "xyz",
+	})
+	assert.NoError(t, err)
+	assert.NoFileExists(t, path+".bak")
+
+	contents, err := os.ReadFile(path)
+	require.NoError(t, err)
+	assert.Equal(t,
+		`[DEFAULT]
+host  = https://foo
+token = xyz
+`, string(contents))
 }
 
 func TestSaveToProfile_ClearingPreviousProfile(t *testing.T) {
