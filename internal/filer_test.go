@@ -309,3 +309,20 @@ func TestAccFilerDbfsReadDir(t *testing.T) {
 	ctx, f := setupFilerDbfsTest(t)
 	runFilerReadDirTest(t, ctx, f)
 }
+
+func setupFilerLocalTest(t *testing.T) (context.Context, filer.Filer) {
+	ctx := context.Background()
+	f, err := filer.NewLocalClient(t.TempDir())
+	require.NoError(t, err)
+	return ctx, f
+}
+
+func TestAccFilerLocalReadWrite(t *testing.T) {
+	ctx, f := setupFilerLocalTest(t)
+	runFilerReadWriteTest(t, ctx, f)
+}
+
+func TestAccFilerLocalReadDir(t *testing.T) {
+	ctx, f := setupFilerLocalTest(t)
+	runFilerReadDirTest(t, ctx, f)
+}
