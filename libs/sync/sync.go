@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/git"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/cli/libs/sync/repofiles"
 	"github.com/databricks/databricks-sdk-go"
 )
 
@@ -29,9 +29,9 @@ type SyncOptions struct {
 type Sync struct {
 	*SyncOptions
 
-	fileSet   *git.FileSet
-	snapshot  *Snapshot
-	repoFiles *repofiles.RepoFiles
+	fileSet  *git.FileSet
+	snapshot *Snapshot
+	filer    filer.Filer
 
 	// Synchronization progress events are sent to this event notifier.
 	notifier EventNotifier
@@ -77,16 +77,19 @@ func New(ctx context.Context, opts SyncOptions) (*Sync, error) {
 		}
 	}
 
-	repoFiles := repofiles.Create(opts.RemotePath, opts.LocalPath, opts.WorkspaceClient)
+	filer, err := filer.NewWorkspaceFilesClient(opts.WorkspaceClient, opts.RemotePath)
+	if err != nil {
+		return nil, err
+	}
 
 	return &Sync{
 		SyncOptions: &opts,
 
-		fileSet:   fileSet,
-		snapshot:  snapshot,
-		repoFiles: repoFiles,
-		notifier:  &NopNotifier{},
-		seq:       0,
+		fileSet:  fileSet,
+		snapshot: snapshot,
+		filer:    filer,
+		notifier: &NopNotifier{},
+		seq:      0,
 	}, nil
 }
 
