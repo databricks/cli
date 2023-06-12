@@ -5,17 +5,15 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
-	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
-	"gopkg.in/ini.v1"
 )
 
 // Placeholders to use as unique keys in context.Context.
@@ -41,19 +39,15 @@ func MustAccountClient(cmd *cobra.Command, args []string) error {
 		// 1. only admins will have account configured
 		// 2. 99% of admins will have access to just one account
 		// hence, we don't need to create a special "DEFAULT_ACCOUNT" profile yet
-		profiles, err := loadProfiles()
+		_, profiles, err := databrickscfg.LoadProfiles(
+			databrickscfg.DefaultPath,
+			databrickscfg.MatchAccountProfiles,
+		)
 		if err != nil {
 			return err
 		}
-		var items []profile
-		for _, v := range profiles {
-			if v.AccountID == "" {
-				continue
-			}
-			items = append(items, v)
-		}
-		if len(items) == 1 {
-			cfg.Profile = items[0].Name
+		if len(profiles) == 1 {
+			cfg.Profile = profiles[0].Name
 		}
 	}
 
@@ -121,107 +115,75 @@ TRY_AUTH: // or try picking a config profile dynamically
 	return nil
 }
 
-type profile struct {
-	Name      string
-	Host      string
-	AccountID string
-}
-
-func (p profile) Cloud() string {
-	if strings.Contains(p.Host, ".azuredatabricks.net") {
-		return "Azure"
+func transformLoadError(path string, err error) error {
+	if os.IsNotExist(err) {
+		return fmt.Errorf("no configuration file found at %s; please create one first", path)
 	}
-	if strings.Contains(p.Host, "gcp.databricks.com") {
-		return "GCP"
-	}
-	return "AWS"
-}
-
-func loadProfiles() (profiles []profile, err error) {
-	homedir, err := os.UserHomeDir()
-	if err != nil {
-		return nil, fmt.Errorf("cannot find homedir: %w", err)
-	}
-	file := filepath.Join(homedir, ".databrickscfg")
-	iniFile, err := ini.Load(file)
-	if err != nil {
-		return
-	}
-	for _, v := range iniFile.Sections() {
-		all := v.KeysHash()
-		host, ok := all["host"]
-		if !ok {
-			// invalid profile
-			continue
-		}
-		profiles = append(profiles, profile{
-			Name:      v.Name(),
-			Host:      host,
-			AccountID: all["account_id"],
-		})
-	}
-	return profiles, nil
+	return err
 }
 
 func askForWorkspaceProfile() (string, error) {
-	profiles, err := loadProfiles()
+	path := databrickscfg.DefaultPath
+	file, profiles, err := databrickscfg.LoadProfiles(path, databrickscfg.MatchWorkspaceProfiles)
 	if err != nil {
-		return "", err
+		return "", transformLoadError(path, err)
 	}
-	var items []profile
-	for _, v := range profiles {
-		if v.AccountID != "" {
-			continue
-		}
-		items = append(items, v)
+	switch len(profiles) {
+	case 0:
+		return "", fmt.Errorf("%s does not contain workspace profiles; please create one first", path)
+	case 1:
+		return profiles[0].Name, nil
 	}
-	label := "~/.databrickscfg profile"
 	i, _, err := (&promptui.Select{
-		Label: label,
-		Items: items,
+		Label:             fmt.Sprintf("Workspace profiles defined in %s", file),
+		Items:             profiles,
+		Searcher:          profiles.SearchCaseInsensitive,
+		StartInSearchMode: true,
 		Templates: &promptui.SelectTemplates{
+			Label:    "{{ . | faint }}",
 			Active:   `{{.Name | bold}} ({{.Host|faint}})`,
 			Inactive: `{{.Name}}`,
-			Selected: fmt.Sprintf(`{{ "%s" | faint }}: {{ .Name | bold }}`, label),
+			Selected: `{{ "Using workspace profile" | faint }}: {{ .Name | bold }}`,
 		},
-		Stdin: os.Stdin,
+		Stdin:  os.Stdin,
+		Stdout: os.Stderr,
 	}).Run()
 	if err != nil {
 		return "", err
 	}
-	return items[i].Name, nil
+	return profiles[i].Name, nil
 }
 
 func askForAccountProfile() (string, error) {
-	profiles, err := loadProfiles()
+	path := databrickscfg.DefaultPath
+	file, profiles, err := databrickscfg.LoadProfiles(path, databrickscfg.MatchAccountProfiles)
 	if err != nil {
-		return "", err
+		return "", transformLoadError(path, err)
 	}
-	var items []profile
-	for _, v := range profiles {
-		if v.AccountID == "" {
-			continue
-		}
-		items = append(items, v)
+	switch len(profiles) {
+	case 0:
+		return "", fmt.Errorf("%s does not contain account profiles; please create one first", path)
+	case 1:
+		return profiles[0].Name, nil
 	}
-	if len(items) == 1 {
-		return items[0].Name, nil
-	}
-	label := "~/.databrickscfg profile"
 	i, _, err := (&promptui.Select{
-		Label: label,
-		Items: items,
+		Label:             fmt.Sprintf("Account profiles defined in %s", file),
+		Items:             profiles,
+		Searcher:          profiles.SearchCaseInsensitive,
+		StartInSearchMode: true,
 		Templates: &promptui.SelectTemplates{
+			Label:    "{{ . | faint }}",
 			Active:   `{{.Name | bold}} ({{.AccountID|faint}} {{.Cloud|faint}})`,
 			Inactive: `{{.Name}}`,
-			Selected: fmt.Sprintf(`{{ "%s" | faint }}: {{ .Name | bold }}`, label),
+			Selected: `{{ "Using account profile" | faint }}: {{ .Name | bold }}`,
 		},
-		Stdin: os.Stdin,
+		Stdin:  os.Stdin,
+		Stdout: os.Stderr,
 	}).Run()
 	if err != nil {
 		return "", err
 	}
-	return items[i].Name, nil
+	return profiles[i].Name, nil
 }
 
 func WorkspaceClient(ctx context.Context) *databricks.WorkspaceClient {

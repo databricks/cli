@@ -154,6 +154,11 @@ func (m *translatePaths) Apply(_ context.Context, b *bundle.Bundle) error {
 			return fmt.Errorf("unable to determine directory for job %s: %w", key, err)
 		}
 
+		// Do not translate job task paths if using git source
+		if job.GitSource != nil {
+			continue
+		}
+
 		for i := 0; i < len(job.Tasks); i++ {
 			err := m.translateJobTask(dir, b, &job.Tasks[i])
 			if err != nil {
