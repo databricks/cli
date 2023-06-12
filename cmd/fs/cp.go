@@ -3,15 +3,25 @@ package fs
 import (
 	"context"
 	"io/fs"
+	"path"
+	"path/filepath"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/spf13/cobra"
 )
 
-func dbfsWriteCallback(ctx context.Context, dbfsFiler filer.Filer, sourceDir, targetDir string) func(string, fs.DirEntry, error) error {
+func dbfsWriteCallback(ctx context.Context, sourceFiler filer.Filer, sourceDir, targetDir string) func(string, fs.DirEntry, error) error {
 	return func(sourcePath string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
 
+		sourceName := 
+
+		if d.IsDir() {
+
+		}
 	}
 }
 
