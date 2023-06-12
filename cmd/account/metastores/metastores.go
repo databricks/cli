@@ -19,7 +19,7 @@ var Cmd = &cobra.Command{
 
 // start create command
 
-var createReq catalog.CreateMetastore
+var createReq catalog.AccountsCreateMetastore
 var createJson flags.JsonFlag
 
 func init() {
@@ -27,20 +27,21 @@ func init() {
 	// TODO: short flags
 	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	createCmd.Flags().StringVar(&createReq.Region, "region", createReq.Region, `Cloud region which the metastore serves (e.g., us-west-2, westus).`)
+	// TODO: complex arg: metastore_info
 
 }
 
 var createCmd = &cobra.Command{
-	Use:   "create NAME STORAGE_ROOT",
+	Use:   "create",
 	Short: `Create metastore.`,
 	Long: `Create metastore.
   
-  Creates a Unity Catalog metastore.`,
+  Creates a Unity Catalog metastore. Please add a header
+  X-Databricks-Account-Console-API-Version: 2.0 to access this API.`,
 
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(2)
+		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {
 			check = cobra.ExactArgs(0)
 		}
@@ -56,8 +57,6 @@ var createCmd = &cobra.Command{
 				return err
 			}
 		} else {
-			createReq.Name = args[0]
-			createReq.StorageRoot = args[1]
 		}
 
 		response, err := a.Metastores.Create(ctx, createReq)
@@ -85,7 +84,8 @@ var deleteCmd = &cobra.Command{
 	Short: `Delete a metastore.`,
 	Long: `Delete a metastore.
   
-  Deletes a Unity Catalog metastore for an account, both specified by ID.`,
+  Deletes a Unity Catalog metastore for an account, both specified by ID. Please
+  add a header X-Databricks-Account-Console-API-Version: 2.0 to access this API.`,
 
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
@@ -133,7 +133,8 @@ var getCmd = &cobra.Command{
 	Short: `Get a metastore.`,
 	Long: `Get a metastore.
   
-  Gets a Unity Catalog metastore from an account, both specified by ID.`,
+  Gets a Unity Catalog metastore from an account, both specified by ID. Please
+  add a header X-Databricks-Account-Console-API-Version: 2.0 to access this API.`,
 
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
@@ -176,7 +177,9 @@ var listCmd = &cobra.Command{
 	Short: `Get all metastores associated with an account.`,
 	Long: `Get all metastores associated with an account.
   
-  Gets all Unity Catalog metastores associated with an account specified by ID.`,
+  Gets all Unity Catalog metastores associated with an account specified by ID.
+  Please add a header X-Databricks-Account-Console-API-Version: 2.0 to access
+  this API.`,
 
 	Annotations: map[string]string{},
 	PreRunE:     root.MustAccountClient,
@@ -193,7 +196,7 @@ var listCmd = &cobra.Command{
 
 // start update command
 
-var updateReq catalog.UpdateMetastore
+var updateReq catalog.AccountsUpdateMetastore
 var updateJson flags.JsonFlag
 
 func init() {
@@ -201,13 +204,7 @@ func init() {
 	// TODO: short flags
 	updateCmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	updateCmd.Flags().StringVar(&updateReq.DeltaSharingOrganizationName, "delta-sharing-organization-name", updateReq.DeltaSharingOrganizationName, `The organization name of a Delta Sharing entity, to be used in Databricks-to-Databricks Delta Sharing as the official name.`)
-	updateCmd.Flags().Int64Var(&updateReq.DeltaSharingRecipientTokenLifetimeInSeconds, "delta-sharing-recipient-token-lifetime-in-seconds", updateReq.DeltaSharingRecipientTokenLifetimeInSeconds, `The lifetime of delta sharing recipient token in seconds.`)
-	updateCmd.Flags().Var(&updateReq.DeltaSharingScope, "delta-sharing-scope", `The scope of Delta Sharing enabled for the metastore.`)
-	updateCmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `The user-specified name of the metastore.`)
-	updateCmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `The owner of the metastore.`)
-	updateCmd.Flags().StringVar(&updateReq.PrivilegeModelVersion, "privilege-model-version", updateReq.PrivilegeModelVersion, `Privilege model version of the metastore, of the form major.minor (e.g., 1.0).`)
-	updateCmd.Flags().StringVar(&updateReq.StorageRootCredentialId, "storage-root-credential-id", updateReq.StorageRootCredentialId, `UUID of storage credential to access the metastore storage_root.`)
+	// TODO: complex arg: metastore_info
 
 }
 
@@ -216,7 +213,8 @@ var updateCmd = &cobra.Command{
 	Short: `Update a metastore.`,
 	Long: `Update a metastore.
   
-  Updates an existing Unity Catalog metastore.`,
+  Updates an existing Unity Catalog metastore. Please add a header
+  X-Databricks-Account-Console-API-Version: 2.0 to access this API.`,
 
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {

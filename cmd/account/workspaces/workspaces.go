@@ -9,7 +9,6 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/provisioning"
 	"github.com/spf13/cobra"
 )
@@ -93,23 +92,18 @@ var createCmd = &cobra.Command{
 			createReq.WorkspaceName = args[0]
 		}
 
+		wait, err := a.Workspaces.Create(ctx, createReq)
+		if err != nil {
+			return err
+		}
 		if createSkipWait {
-			response, err := a.Workspaces.Create(ctx, createReq)
-			if err != nil {
-				return err
-			}
-			return cmdio.Render(ctx, response)
+			return cmdio.Render(ctx, wait.Response)
 		}
 		spinner := cmdio.Spinner(ctx)
-		info, err := a.Workspaces.CreateAndWait(ctx, createReq,
-			retries.Timeout[provisioning.Workspace](createTimeout),
-			func(i *retries.Info[provisioning.Workspace]) {
-				if i.Info == nil {
-					return
-				}
-				statusMessage := i.Info.WorkspaceStatusMessage
-				spinner <- statusMessage
-			})
+		info, err := wait.OnProgress(func(i *provisioning.Workspace) {
+			statusMessage := i.WorkspaceStatusMessage
+			spinner <- statusMessage
+		}).GetWithTimeout(createTimeout)
 		close(spinner)
 		if err != nil {
 			return err
@@ -466,23 +460,18 @@ var updateCmd = &cobra.Command{
 			}
 		}
 
+		wait, err := a.Workspaces.Update(ctx, updateReq)
+		if err != nil {
+			return err
+		}
 		if updateSkipWait {
-			err = a.Workspaces.Update(ctx, updateReq)
-			if err != nil {
-				return err
-			}
 			return nil
 		}
 		spinner := cmdio.Spinner(ctx)
-		info, err := a.Workspaces.UpdateAndWait(ctx, updateReq,
-			retries.Timeout[provisioning.Workspace](updateTimeout),
-			func(i *retries.Info[provisioning.Workspace]) {
-				if i.Info == nil {
-					return
-				}
-				statusMessage := i.Info.WorkspaceStatusMessage
-				spinner <- statusMessage
-			})
+		info, err := wait.OnProgress(func(i *provisioning.Workspace) {
+			statusMessage := i.WorkspaceStatusMessage
+			spinner <- statusMessage
+		}).GetWithTimeout(updateTimeout)
 		close(spinner)
 		if err != nil {
 			return err

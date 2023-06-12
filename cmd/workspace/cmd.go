@@ -9,6 +9,7 @@ import (
 	catalogs "github.com/databricks/cli/cmd/workspace/catalogs"
 	cluster_policies "github.com/databricks/cli/cmd/workspace/cluster-policies"
 	clusters "github.com/databricks/cli/cmd/workspace/clusters"
+	connections "github.com/databricks/cli/cmd/workspace/connections"
 	current_user "github.com/databricks/cli/cmd/workspace/current-user"
 	dashboards "github.com/databricks/cli/cmd/workspace/dashboards"
 	data_sources "github.com/databricks/cli/cmd/workspace/data-sources"
@@ -41,6 +42,7 @@ import (
 	serving_endpoints "github.com/databricks/cli/cmd/workspace/serving-endpoints"
 	shares "github.com/databricks/cli/cmd/workspace/shares"
 	storage_credentials "github.com/databricks/cli/cmd/workspace/storage-credentials"
+	system_schemas "github.com/databricks/cli/cmd/workspace/system-schemas"
 	table_constraints "github.com/databricks/cli/cmd/workspace/table-constraints"
 	tables "github.com/databricks/cli/cmd/workspace/tables"
 	token_management "github.com/databricks/cli/cmd/workspace/token-management"
@@ -59,6 +61,7 @@ func init() {
 	root.RootCmd.AddCommand(catalogs.Cmd)
 	root.RootCmd.AddCommand(cluster_policies.Cmd)
 	root.RootCmd.AddCommand(clusters.Cmd)
+	root.RootCmd.AddCommand(connections.Cmd)
 	root.RootCmd.AddCommand(current_user.Cmd)
 	root.RootCmd.AddCommand(dashboards.Cmd)
 	root.RootCmd.AddCommand(data_sources.Cmd)
@@ -91,6 +94,7 @@ func init() {
 	root.RootCmd.AddCommand(serving_endpoints.Cmd)
 	root.RootCmd.AddCommand(shares.Cmd)
 	root.RootCmd.AddCommand(storage_credentials.Cmd)
+	root.RootCmd.AddCommand(system_schemas.Cmd)
 	root.RootCmd.AddCommand(table_constraints.Cmd)
 	root.RootCmd.AddCommand(tables.Cmd)
 	root.RootCmd.AddCommand(token_management.Cmd)

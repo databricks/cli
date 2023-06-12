@@ -20,7 +20,7 @@ var Cmd = &cobra.Command{
 
 // start create command
 
-var createReq catalog.CreateMetastoreAssignment
+var createReq catalog.AccountsCreateMetastoreAssignment
 var createJson flags.JsonFlag
 
 func init() {
@@ -28,18 +28,21 @@ func init() {
 	// TODO: short flags
 	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	// TODO: complex arg: metastore_assignment
+
 }
 
 var createCmd = &cobra.Command{
-	Use:   "create METASTORE_ID DEFAULT_CATALOG_NAME WORKSPACE_ID",
+	Use:   "create WORKSPACE_ID METASTORE_ID",
 	Short: `Assigns a workspace to a metastore.`,
 	Long: `Assigns a workspace to a metastore.
   
-  Creates an assignment to a metastore for a workspace`,
+  Creates an assignment to a metastore for a workspace Please add a header
+  X-Databricks-Account-Console-API-Version: 2.0 to access this API.`,
 
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(3)
+		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
 			check = cobra.ExactArgs(0)
 		}
@@ -55,12 +58,11 @@ var createCmd = &cobra.Command{
 				return err
 			}
 		} else {
-			createReq.MetastoreId = args[0]
-			createReq.DefaultCatalogName = args[1]
-			_, err = fmt.Sscan(args[2], &createReq.WorkspaceId)
+			_, err = fmt.Sscan(args[0], &createReq.WorkspaceId)
 			if err != nil {
-				return fmt.Errorf("invalid WORKSPACE_ID: %s", args[2])
+				return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
 			}
+			createReq.MetastoreId = args[1]
 		}
 
 		response, err := a.MetastoreAssignments.Create(ctx, createReq)
@@ -89,7 +91,8 @@ var deleteCmd = &cobra.Command{
 	Long: `Delete a metastore assignment.
   
   Deletes a metastore assignment to a workspace, leaving the workspace with no
-  metastore.`,
+  metastore. Please add a header X-Databricks-Account-Console-API-Version: 2.0
+  to access this API.`,
 
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
@@ -144,7 +147,8 @@ var getCmd = &cobra.Command{
   Gets the metastore assignment, if any, for the workspace specified by ID. If
   the workspace is assigned a metastore, the mappig will be returned. If no
   metastore is assigned to the workspace, the assignment will not be found and a
-  404 returned.`,
+  404 returned. Please add a header X-Databricks-Account-Console-API-Version:
+  2.0 to access this API.`,
 
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
@@ -196,7 +200,8 @@ var listCmd = &cobra.Command{
 	Long: `Get all workspaces assigned to a metastore.
   
   Gets a list of all Databricks workspace IDs that have been assigned to given
-  metastore.`,
+  metastore. Please add a header X-Databricks-Account-Console-API-Version: 2.0
+  to access this API`,
 
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
@@ -229,7 +234,7 @@ var listCmd = &cobra.Command{
 
 // start update command
 
-var updateReq catalog.UpdateMetastoreAssignment
+var updateReq catalog.AccountsUpdateMetastoreAssignment
 var updateJson flags.JsonFlag
 
 func init() {
@@ -237,8 +242,7 @@ func init() {
 	// TODO: short flags
 	updateCmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	updateCmd.Flags().StringVar(&updateReq.DefaultCatalogName, "default-catalog-name", updateReq.DefaultCatalogName, `The name of the default catalog for the metastore.`)
-	updateCmd.Flags().StringVar(&updateReq.MetastoreId, "metastore-id", updateReq.MetastoreId, `The unique ID of the metastore.`)
+	// TODO: complex arg: metastore_assignment
 
 }
 
@@ -248,7 +252,8 @@ var updateCmd = &cobra.Command{
 	Long: `Updates a metastore assignment to a workspaces.
   
   Updates an assignment to a metastore for a workspace. Currently, only the
-  default catalog may be updated`,
+  default catalog may be updated. Please add a header
+  X-Databricks-Account-Console-API-Version: 2.0 to access this API.`,
 
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {

@@ -56,6 +56,7 @@ func init() {
 			{{else if .Entity.IsAny }}// TODO: any: {{.Name}}
 			{{else if .Entity.ArrayValue }}// TODO: array: {{.Name}}
 			{{else if .Entity.MapValue }}// TODO: map via StringToStringVar: {{.Name}}
+			{{else if .Entity.IsEmpty }}// TODO: output-only field
 			{{else if .Entity.Enum }}{{$method.CamelName}}Cmd.Flags().Var(&{{$method.CamelName}}Req.{{.PascalName}}, "{{.KebabName}}", `{{.Summary | without "`"}}`)
 			{{else}}{{$method.CamelName}}Cmd.Flags().{{template "arg-type" .Entity}}(&{{$method.CamelName}}Req.{{.PascalName}}, "{{.KebabName}}", {{$method.CamelName}}Req.{{.PascalName}}, `{{.Summary | without "`"}}`)
 			{{end}}
@@ -129,35 +130,38 @@ var {{.CamelName}}Cmd = &cobra.Command{
 			}
 		{{end}}
 		{{if $wait -}}
+		wait, err := {{if .Service.IsAccounts}}a{{else}}w{{end}}.{{.Service.PascalName}}.{{.PascalName}}(ctx{{if .Request}}, {{.CamelName}}Req{{end}})
+		if err != nil {
+			return err
+		}
 		if {{.CamelName}}SkipWait {
-			{{template "method-call" .}}
+			{{if .Response -}}
+			return cmdio.Render(ctx, wait.Response)
+			{{- else -}}
+			return nil
+			{{- end}}
 		}
 		spinner := cmdio.Spinner(ctx)
-		info, err := {{if .Service.IsAccounts}}a{{else}}w{{end}}.{{.Service.PascalName}}.{{.PascalName}}AndWait(ctx{{if .Request}}, {{.CamelName}}Req{{end}},
-			retries.Timeout[{{.Service.Package.Name}}.{{.Wait.Poll.Response.PascalName}}]({{.CamelName}}Timeout),
-			func(i *retries.Info[{{.Service.Package.Name}}.{{.Wait.Poll.Response.PascalName}}]) {
-				if i.Info == nil {
-					return
-				}
-				{{if .Wait.MessagePath -}}
-				{{if .Wait.ComplexMessagePath -}}
-				if i.Info.{{.Wait.MessagePathHead.PascalName}} == nil {
-					return
-				}
-				status := i.Info{{range .Wait.StatusPath}}.{{.PascalName}}{{end}}
-				statusMessage := fmt.Sprintf("current status: %s", status)
-				if i.Info.{{.Wait.MessagePathHead.PascalName}} != nil {
-					statusMessage = i.Info{{range .Wait.MessagePath}}.{{.PascalName}}{{end}}
-				}
-				{{- else -}}
-				statusMessage := i.Info{{range .Wait.MessagePath}}.{{.PascalName}}{{end}}
-				{{- end}}
-				{{- else -}}
-				status := i.Info{{range .Wait.StatusPath}}.{{.PascalName}}{{end}}
-				statusMessage := fmt.Sprintf("current status: %s", status)
-				{{- end}}
-				spinner <- statusMessage
-			})
+		info, err := wait.OnProgress(func(i *{{.Service.Package.Name}}.{{.Wait.Poll.Response.PascalName}}) {
+			{{if .Wait.MessagePath -}}
+			{{if .Wait.ComplexMessagePath -}}
+			if i.{{.Wait.MessagePathHead.PascalName}} == nil {
+				return
+			}
+			status := i{{range .Wait.StatusPath}}.{{.PascalName}}{{end}}
+			statusMessage := fmt.Sprintf("current status: %s", status)
+			if i.{{.Wait.MessagePathHead.PascalName}} != nil {
+				statusMessage = i{{range .Wait.MessagePath}}.{{.PascalName}}{{end}}
+			}
+			{{- else -}}
+			statusMessage := i{{range .Wait.MessagePath}}.{{.PascalName}}{{end}}
+			{{- end}}
+			{{- else -}}
+			status := i{{range .Wait.StatusPath}}.{{.PascalName}}{{end}}
+			statusMessage := fmt.Sprintf("current status: %s", status)
+			{{- end}}
+			spinner <- statusMessage
+		}).GetWithTimeout({{.CamelName}}Timeout)
 		close(spinner)
 		if err != nil {
 			return err
