@@ -80,7 +80,7 @@ func groupRunSingle(ctx context.Context, group *errgroup.Group, fn func(context.
 	// Return early if the context has already been cancelled.
 	select {
 	case <-ctx.Done():
-		break
+		return
 	default:
 		// Proceed.
 	}
