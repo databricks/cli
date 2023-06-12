@@ -97,14 +97,6 @@ Notebooks will have their extensions (one of .scala, .py, .sql, .ipynb, .r) stri
 		sourceDir := args[0]
 		targetDir := args[1]
 
-		// Convert sourceDir to an absolute path
-		if !filepath.IsAbs(sourceDir) {
-			sourceDir, err = filepath.Abs(sourceDir)
-			if err != nil {
-				return err
-			}
-		}
-
 		// Initialize a filer rooted at targetDir
 		workspaceFiler, err := filer.NewWorkspaceFilesClient(w, targetDir)
 		if err != nil {
