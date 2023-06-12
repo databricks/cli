@@ -13,7 +13,7 @@ import (
 
 const fileMode = 0o600
 
-const defaultComment = "The profile defined in the DEFAULT section is be used as fallback when no profile is explicitly specified."
+const defaultComment = "The profile defined in the DEFAULT section is to be used as a fallback when no profile is explicitly specified."
 
 func loadOrCreateConfigFile(filename string) (*config.File, error) {
 	if filename == "" {
