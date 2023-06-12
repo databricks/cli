@@ -59,13 +59,14 @@ func importFileCallback(ctx context.Context, workspaceFiler filer.Filer, sourceD
 		}
 
 		// Create file in WSFS
+		nameForApiPayload := filepath.ToSlash(localName)
 		if importOverwrite {
-			err = workspaceFiler.Write(ctx, localName, f, filer.OverwriteIfExists)
+			err = workspaceFiler.Write(ctx, nameForApiPayload, f, filer.OverwriteIfExists)
 			if err != nil {
 				return err
 			}
 		} else {
-			err = workspaceFiler.Write(ctx, filepath.ToSlash(localName), f)
+			err = workspaceFiler.Write(ctx, nameForApiPayload, f)
 			if errors.Is(err, fs.ErrExist) {
 				// Emit file skipped event with the appropriate template
 				fileSkippedEvent := newFileSkippedEvent(localName, path.Join(targetDir, remoteName))
