@@ -152,7 +152,7 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 	return err
 }
 
-func (w *WorkspaceFilesClient) Read(ctx context.Context, name string) (io.Reader, error) {
+func (w *WorkspaceFilesClient) Read(ctx context.Context, name string) (io.ReadCloser, error) {
 	absPath, err := w.root.Join(name)
 	if err != nil {
 		return nil, err
@@ -184,7 +184,7 @@ func (w *WorkspaceFilesClient) Read(ctx context.Context, name string) (io.Reader
 	if err != nil {
 		return nil, err
 	}
-	return bytes.NewReader(b), nil
+	return io.NopCloser(bytes.NewReader(b)), nil
 }
 
 func (w *WorkspaceFilesClient) Delete(ctx context.Context, name string, mode ...DeleteMode) error {

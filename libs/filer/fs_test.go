@@ -70,13 +70,13 @@ func (f *fakeFiler) Write(ctx context.Context, p string, reader io.Reader, mode 
 	return fmt.Errorf("not implemented")
 }
 
-func (f *fakeFiler) Read(ctx context.Context, p string) (io.Reader, error) {
+func (f *fakeFiler) Read(ctx context.Context, p string) (io.ReadCloser, error) {
 	_, ok := f.entries[p]
 	if !ok {
 		return nil, fs.ErrNotExist
 	}
 
-	return strings.NewReader("foo"), nil
+	return io.NopCloser(strings.NewReader("foo")), nil
 }
 
 func (f *fakeFiler) Delete(ctx context.Context, p string, mode ...DeleteMode) error {

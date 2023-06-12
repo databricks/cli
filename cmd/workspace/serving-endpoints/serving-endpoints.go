@@ -9,7 +9,6 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/serving"
 	"github.com/spf13/cobra"
 )
@@ -122,24 +121,19 @@ var createCmd = &cobra.Command{
 			}
 		}
 
+		wait, err := w.ServingEndpoints.Create(ctx, createReq)
+		if err != nil {
+			return err
+		}
 		if createSkipWait {
-			response, err := w.ServingEndpoints.Create(ctx, createReq)
-			if err != nil {
-				return err
-			}
-			return cmdio.Render(ctx, response)
+			return cmdio.Render(ctx, wait.Response)
 		}
 		spinner := cmdio.Spinner(ctx)
-		info, err := w.ServingEndpoints.CreateAndWait(ctx, createReq,
-			retries.Timeout[serving.ServingEndpointDetailed](createTimeout),
-			func(i *retries.Info[serving.ServingEndpointDetailed]) {
-				if i.Info == nil {
-					return
-				}
-				status := i.Info.State.ConfigUpdate
-				statusMessage := fmt.Sprintf("current status: %s", status)
-				spinner <- statusMessage
-			})
+		info, err := wait.OnProgress(func(i *serving.ServingEndpointDetailed) {
+			status := i.State.ConfigUpdate
+			statusMessage := fmt.Sprintf("current status: %s", status)
+			spinner <- statusMessage
+		}).GetWithTimeout(createTimeout)
 		close(spinner)
 		if err != nil {
 			return err
@@ -309,7 +303,7 @@ var listCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		response, err := w.ServingEndpoints.List(ctx)
+		response, err := w.ServingEndpoints.ListAll(ctx)
 		if err != nil {
 			return err
 		}
@@ -460,24 +454,19 @@ var updateConfigCmd = &cobra.Command{
 			updateConfigReq.Name = args[1]
 		}
 
+		wait, err := w.ServingEndpoints.UpdateConfig(ctx, updateConfigReq)
+		if err != nil {
+			return err
+		}
 		if updateConfigSkipWait {
-			response, err := w.ServingEndpoints.UpdateConfig(ctx, updateConfigReq)
-			if err != nil {
-				return err
-			}
-			return cmdio.Render(ctx, response)
+			return cmdio.Render(ctx, wait.Response)
 		}
 		spinner := cmdio.Spinner(ctx)
-		info, err := w.ServingEndpoints.UpdateConfigAndWait(ctx, updateConfigReq,
-			retries.Timeout[serving.ServingEndpointDetailed](updateConfigTimeout),
-			func(i *retries.Info[serving.ServingEndpointDetailed]) {
-				if i.Info == nil {
-					return
-				}
-				status := i.Info.State.ConfigUpdate
-				statusMessage := fmt.Sprintf("current status: %s", status)
-				spinner <- statusMessage
-			})
+		info, err := wait.OnProgress(func(i *serving.ServingEndpointDetailed) {
+			status := i.State.ConfigUpdate
+			statusMessage := fmt.Sprintf("current status: %s", status)
+			spinner <- statusMessage
+		}).GetWithTimeout(updateConfigTimeout)
 		close(spinner)
 		if err != nil {
 			return err

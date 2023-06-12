@@ -18,7 +18,7 @@ var Cmd = &cobra.Command{
 
 // start create command
 
-var createReq catalog.CreateStorageCredential
+var createReq catalog.AccountsCreateStorageCredential
 var createJson flags.JsonFlag
 
 func init() {
@@ -26,17 +26,12 @@ func init() {
 	// TODO: short flags
 	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	// TODO: complex arg: aws_iam_role
-	// TODO: complex arg: azure_service_principal
-	createCmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `Comment associated with the credential.`)
-	// TODO: complex arg: gcp_service_account_key
-	createCmd.Flags().BoolVar(&createReq.ReadOnly, "read-only", createReq.ReadOnly, `Whether the storage credential is only usable for read operations.`)
-	createCmd.Flags().BoolVar(&createReq.SkipValidation, "skip-validation", createReq.SkipValidation, `Supplying true to this argument skips validation of the created credential.`)
+	// TODO: complex arg: credential_info
 
 }
 
 var createCmd = &cobra.Command{
-	Use:   "create NAME METASTORE_ID",
+	Use:   "create METASTORE_ID",
 	Short: `Create a storage credential.`,
 	Long: `Create a storage credential.
   
@@ -50,7 +45,7 @@ var createCmd = &cobra.Command{
 
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(2)
+		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
 			check = cobra.ExactArgs(0)
 		}
@@ -66,8 +61,7 @@ var createCmd = &cobra.Command{
 				return err
 			}
 		} else {
-			createReq.Name = args[0]
-			createReq.MetastoreId = args[1]
+			createReq.MetastoreId = args[0]
 		}
 
 		response, err := a.StorageCredentials.Create(ctx, createReq)
@@ -230,7 +224,7 @@ var listCmd = &cobra.Command{
 
 // start update command
 
-var updateReq catalog.UpdateStorageCredential
+var updateReq catalog.AccountsUpdateStorageCredential
 var updateJson flags.JsonFlag
 
 func init() {
@@ -238,15 +232,7 @@ func init() {
 	// TODO: short flags
 	updateCmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	// TODO: complex arg: aws_iam_role
-	// TODO: complex arg: azure_service_principal
-	updateCmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `Comment associated with the credential.`)
-	updateCmd.Flags().BoolVar(&updateReq.Force, "force", updateReq.Force, `Force update even if there are dependent external locations or external tables.`)
-	// TODO: complex arg: gcp_service_account_key
-	updateCmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `The credential name.`)
-	updateCmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of current owner of credential.`)
-	updateCmd.Flags().BoolVar(&updateReq.ReadOnly, "read-only", updateReq.ReadOnly, `Whether the storage credential is only usable for read operations.`)
-	updateCmd.Flags().BoolVar(&updateReq.SkipValidation, "skip-validation", updateReq.SkipValidation, `Supplying true to this argument skips validation of the updated credential.`)
+	// TODO: complex arg: credential_info
 
 }
 

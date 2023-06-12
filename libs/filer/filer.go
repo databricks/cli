@@ -111,7 +111,7 @@ type Filer interface {
 	Write(ctx context.Context, path string, reader io.Reader, mode ...WriteMode) error
 
 	// Read file at `path`.
-	Read(ctx context.Context, path string) (io.Reader, error)
+	Read(ctx context.Context, path string) (io.ReadCloser, error)
 
 	// Delete file or directory at `path`.
 	Delete(ctx context.Context, path string, mode ...DeleteMode) error

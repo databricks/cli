@@ -9,7 +9,6 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/spf13/cobra"
 )
@@ -500,23 +499,18 @@ var resetCmd = &cobra.Command{
 			resetReq.PipelineId = args[0]
 		}
 
+		wait, err := w.Pipelines.Reset(ctx, resetReq)
+		if err != nil {
+			return err
+		}
 		if resetSkipWait {
-			err = w.Pipelines.Reset(ctx, resetReq)
-			if err != nil {
-				return err
-			}
 			return nil
 		}
 		spinner := cmdio.Spinner(ctx)
-		info, err := w.Pipelines.ResetAndWait(ctx, resetReq,
-			retries.Timeout[pipelines.GetPipelineResponse](resetTimeout),
-			func(i *retries.Info[pipelines.GetPipelineResponse]) {
-				if i.Info == nil {
-					return
-				}
-				statusMessage := i.Info.Cause
-				spinner <- statusMessage
-			})
+		info, err := wait.OnProgress(func(i *pipelines.GetPipelineResponse) {
+			statusMessage := i.Cause
+			spinner <- statusMessage
+		}).GetWithTimeout(resetTimeout)
 		close(spinner)
 		if err != nil {
 			return err
@@ -643,23 +637,18 @@ var stopCmd = &cobra.Command{
 			stopReq.PipelineId = args[0]
 		}
 
+		wait, err := w.Pipelines.Stop(ctx, stopReq)
+		if err != nil {
+			return err
+		}
 		if stopSkipWait {
-			err = w.Pipelines.Stop(ctx, stopReq)
-			if err != nil {
-				return err
-			}
 			return nil
 		}
 		spinner := cmdio.Spinner(ctx)
-		info, err := w.Pipelines.StopAndWait(ctx, stopReq,
-			retries.Timeout[pipelines.GetPipelineResponse](stopTimeout),
-			func(i *retries.Info[pipelines.GetPipelineResponse]) {
-				if i.Info == nil {
-					return
-				}
-				statusMessage := i.Info.Cause
-				spinner <- statusMessage
-			})
+		info, err := wait.OnProgress(func(i *pipelines.GetPipelineResponse) {
+			statusMessage := i.Cause
+			spinner <- statusMessage
+		}).GetWithTimeout(stopTimeout)
 		close(spinner)
 		if err != nil {
 			return err
