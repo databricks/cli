@@ -151,8 +151,15 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 	}
 
 	// This API returns 400 if the file already exists, when the object type is notebook
-	regex := regexp.MustCompile("Path (.*) already exists.")
+	regex := regexp.MustCompile(`Path \((.*)\) already exists.`)
 	if aerr.StatusCode == http.StatusBadRequest && regex.Match([]byte(aerr.Message)) {
+		// Parse file path from regex capture group
+		matches := regex.FindStringSubmatch(aerr.Message)
+		if len(matches) == 2 {
+			return FileAlreadyExistsError{matches[1]}
+		}
+
+		// Default to path specified to filer.Write if regex capture fails
 		return FileAlreadyExistsError{absPath}
 	}
 
