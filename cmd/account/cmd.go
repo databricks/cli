@@ -6,6 +6,7 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/spf13/cobra"
 
+	account_access_control "github.com/databricks/cli/cmd/account/access-control"
 	billable_usage "github.com/databricks/cli/cmd/account/billable-usage"
 	budgets "github.com/databricks/cli/cmd/account/budgets"
 	credentials "github.com/databricks/cli/cmd/account/credentials"
@@ -22,6 +23,7 @@ import (
 	published_app_integration "github.com/databricks/cli/cmd/account/published-app-integration"
 	service_principal_secrets "github.com/databricks/cli/cmd/account/service-principal-secrets"
 	account_service_principals "github.com/databricks/cli/cmd/account/service-principals"
+	account_settings "github.com/databricks/cli/cmd/account/settings"
 	storage "github.com/databricks/cli/cmd/account/storage"
 	account_storage_credentials "github.com/databricks/cli/cmd/account/storage-credentials"
 	account_users "github.com/databricks/cli/cmd/account/users"
@@ -38,6 +40,7 @@ var accountCmd = &cobra.Command{
 func init() {
 	root.RootCmd.AddCommand(accountCmd)
 
+	accountCmd.AddCommand(account_access_control.Cmd)
 	accountCmd.AddCommand(billable_usage.Cmd)
 	accountCmd.AddCommand(budgets.Cmd)
 	accountCmd.AddCommand(credentials.Cmd)
@@ -54,6 +57,7 @@ func init() {
 	accountCmd.AddCommand(published_app_integration.Cmd)
 	accountCmd.AddCommand(service_principal_secrets.Cmd)
 	accountCmd.AddCommand(account_service_principals.Cmd)
+	accountCmd.AddCommand(account_settings.Cmd)
 	accountCmd.AddCommand(storage.Cmd)
 	accountCmd.AddCommand(account_storage_credentials.Cmd)
 	accountCmd.AddCommand(account_users.Cmd)

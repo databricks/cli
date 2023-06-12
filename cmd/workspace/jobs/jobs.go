@@ -9,7 +9,6 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/spf13/cobra"
 )
@@ -158,30 +157,25 @@ var cancelRunCmd = &cobra.Command{
 			}
 		}
 
+		wait, err := w.Jobs.CancelRun(ctx, cancelRunReq)
+		if err != nil {
+			return err
+		}
 		if cancelRunSkipWait {
-			err = w.Jobs.CancelRun(ctx, cancelRunReq)
-			if err != nil {
-				return err
-			}
 			return nil
 		}
 		spinner := cmdio.Spinner(ctx)
-		info, err := w.Jobs.CancelRunAndWait(ctx, cancelRunReq,
-			retries.Timeout[jobs.Run](cancelRunTimeout),
-			func(i *retries.Info[jobs.Run]) {
-				if i.Info == nil {
-					return
-				}
-				if i.Info.State == nil {
-					return
-				}
-				status := i.Info.State.LifeCycleState
-				statusMessage := fmt.Sprintf("current status: %s", status)
-				if i.Info.State != nil {
-					statusMessage = i.Info.State.StateMessage
-				}
-				spinner <- statusMessage
-			})
+		info, err := wait.OnProgress(func(i *jobs.Run) {
+			if i.State == nil {
+				return
+			}
+			status := i.State.LifeCycleState
+			statusMessage := fmt.Sprintf("current status: %s", status)
+			if i.State != nil {
+				statusMessage = i.State.StateMessage
+			}
+			spinner <- statusMessage
+		}).GetWithTimeout(cancelRunTimeout)
 		close(spinner)
 		if err != nil {
 			return err
@@ -652,6 +646,7 @@ func init() {
 	listCmd.Flags().IntVar(&listReq.Limit, "limit", listReq.Limit, `The number of jobs to return.`)
 	listCmd.Flags().StringVar(&listReq.Name, "name", listReq.Name, `A filter on the list based on the exact (case insensitive) job name.`)
 	listCmd.Flags().IntVar(&listReq.Offset, "offset", listReq.Offset, `The offset of the first job to return, relative to the most recently created job.`)
+	listCmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Use next_page_token or prev_page_token returned from the previous request to list the next or previous page of jobs respectively.`)
 
 }
 
@@ -706,6 +701,7 @@ func init() {
 	listRunsCmd.Flags().Int64Var(&listRunsReq.JobId, "job-id", listRunsReq.JobId, `The job for which to list runs.`)
 	listRunsCmd.Flags().IntVar(&listRunsReq.Limit, "limit", listRunsReq.Limit, `The number of runs to return.`)
 	listRunsCmd.Flags().IntVar(&listRunsReq.Offset, "offset", listRunsReq.Offset, `The offset of the first run to return, relative to the most recent run.`)
+	listRunsCmd.Flags().StringVar(&listRunsReq.PageToken, "page-token", listRunsReq.PageToken, `Use next_page_token or prev_page_token returned from the previous request to list the next or previous page of runs respectively.`)
 	listRunsCmd.Flags().Var(&listRunsReq.RunType, "run-type", `The type of runs to return.`)
 	listRunsCmd.Flags().IntVar(&listRunsReq.StartTimeFrom, "start-time-from", listRunsReq.StartTimeFrom, `Show runs that started _at or after_ this value.`)
 	listRunsCmd.Flags().IntVar(&listRunsReq.StartTimeTo, "start-time-to", listRunsReq.StartTimeTo, `Show runs that started _at or before_ this value.`)
@@ -819,30 +815,25 @@ var repairRunCmd = &cobra.Command{
 			}
 		}
 
+		wait, err := w.Jobs.RepairRun(ctx, repairRunReq)
+		if err != nil {
+			return err
+		}
 		if repairRunSkipWait {
-			response, err := w.Jobs.RepairRun(ctx, repairRunReq)
-			if err != nil {
-				return err
-			}
-			return cmdio.Render(ctx, response)
+			return cmdio.Render(ctx, wait.Response)
 		}
 		spinner := cmdio.Spinner(ctx)
-		info, err := w.Jobs.RepairRunAndWait(ctx, repairRunReq,
-			retries.Timeout[jobs.Run](repairRunTimeout),
-			func(i *retries.Info[jobs.Run]) {
-				if i.Info == nil {
-					return
-				}
-				if i.Info.State == nil {
-					return
-				}
-				status := i.Info.State.LifeCycleState
-				statusMessage := fmt.Sprintf("current status: %s", status)
-				if i.Info.State != nil {
-					statusMessage = i.Info.State.StateMessage
-				}
-				spinner <- statusMessage
-			})
+		info, err := wait.OnProgress(func(i *jobs.Run) {
+			if i.State == nil {
+				return
+			}
+			status := i.State.LifeCycleState
+			statusMessage := fmt.Sprintf("current status: %s", status)
+			if i.State != nil {
+				statusMessage = i.State.StateMessage
+			}
+			spinner <- statusMessage
+		}).GetWithTimeout(repairRunTimeout)
 		close(spinner)
 		if err != nil {
 			return err
@@ -968,30 +959,25 @@ var runNowCmd = &cobra.Command{
 			}
 		}
 
+		wait, err := w.Jobs.RunNow(ctx, runNowReq)
+		if err != nil {
+			return err
+		}
 		if runNowSkipWait {
-			response, err := w.Jobs.RunNow(ctx, runNowReq)
-			if err != nil {
-				return err
-			}
-			return cmdio.Render(ctx, response)
+			return cmdio.Render(ctx, wait.Response)
 		}
 		spinner := cmdio.Spinner(ctx)
-		info, err := w.Jobs.RunNowAndWait(ctx, runNowReq,
-			retries.Timeout[jobs.Run](runNowTimeout),
-			func(i *retries.Info[jobs.Run]) {
-				if i.Info == nil {
-					return
-				}
-				if i.Info.State == nil {
-					return
-				}
-				status := i.Info.State.LifeCycleState
-				statusMessage := fmt.Sprintf("current status: %s", status)
-				if i.Info.State != nil {
-					statusMessage = i.Info.State.StateMessage
-				}
-				spinner <- statusMessage
-			})
+		info, err := wait.OnProgress(func(i *jobs.Run) {
+			if i.State == nil {
+				return
+			}
+			status := i.State.LifeCycleState
+			statusMessage := fmt.Sprintf("current status: %s", status)
+			if i.State != nil {
+				statusMessage = i.State.StateMessage
+			}
+			spinner <- statusMessage
+		}).GetWithTimeout(runNowTimeout)
 		close(spinner)
 		if err != nil {
 			return err
@@ -1056,30 +1042,25 @@ var submitCmd = &cobra.Command{
 		} else {
 		}
 
+		wait, err := w.Jobs.Submit(ctx, submitReq)
+		if err != nil {
+			return err
+		}
 		if submitSkipWait {
-			response, err := w.Jobs.Submit(ctx, submitReq)
-			if err != nil {
-				return err
-			}
-			return cmdio.Render(ctx, response)
+			return cmdio.Render(ctx, wait.Response)
 		}
 		spinner := cmdio.Spinner(ctx)
-		info, err := w.Jobs.SubmitAndWait(ctx, submitReq,
-			retries.Timeout[jobs.Run](submitTimeout),
-			func(i *retries.Info[jobs.Run]) {
-				if i.Info == nil {
-					return
-				}
-				if i.Info.State == nil {
-					return
-				}
-				status := i.Info.State.LifeCycleState
-				statusMessage := fmt.Sprintf("current status: %s", status)
-				if i.Info.State != nil {
-					statusMessage = i.Info.State.StateMessage
-				}
-				spinner <- statusMessage
-			})
+		info, err := wait.OnProgress(func(i *jobs.Run) {
+			if i.State == nil {
+				return
+			}
+			status := i.State.LifeCycleState
+			statusMessage := fmt.Sprintf("current status: %s", status)
+			if i.State != nil {
+				statusMessage = i.State.StateMessage
+			}
+			spinner <- statusMessage
+		}).GetWithTimeout(submitTimeout)
 		close(spinner)
 		if err != nil {
 			return err

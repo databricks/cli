@@ -9,7 +9,6 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/spf13/cobra"
 )
@@ -80,30 +79,25 @@ var createCmd = &cobra.Command{
 		} else {
 		}
 
+		wait, err := w.Warehouses.Create(ctx, createReq)
+		if err != nil {
+			return err
+		}
 		if createSkipWait {
-			response, err := w.Warehouses.Create(ctx, createReq)
-			if err != nil {
-				return err
-			}
-			return cmdio.Render(ctx, response)
+			return cmdio.Render(ctx, wait.Response)
 		}
 		spinner := cmdio.Spinner(ctx)
-		info, err := w.Warehouses.CreateAndWait(ctx, createReq,
-			retries.Timeout[sql.GetWarehouseResponse](createTimeout),
-			func(i *retries.Info[sql.GetWarehouseResponse]) {
-				if i.Info == nil {
-					return
-				}
-				if i.Info.Health == nil {
-					return
-				}
-				status := i.Info.State
-				statusMessage := fmt.Sprintf("current status: %s", status)
-				if i.Info.Health != nil {
-					statusMessage = i.Info.Health.Summary
-				}
-				spinner <- statusMessage
-			})
+		info, err := wait.OnProgress(func(i *sql.GetWarehouseResponse) {
+			if i.Health == nil {
+				return
+			}
+			status := i.State
+			statusMessage := fmt.Sprintf("current status: %s", status)
+			if i.Health != nil {
+				statusMessage = i.Health.Summary
+			}
+			spinner <- statusMessage
+		}).GetWithTimeout(createTimeout)
 		close(spinner)
 		if err != nil {
 			return err
@@ -116,14 +110,9 @@ var createCmd = &cobra.Command{
 
 var deleteReq sql.DeleteWarehouseRequest
 var deleteJson flags.JsonFlag
-var deleteSkipWait bool
-var deleteTimeout time.Duration
 
 func init() {
 	Cmd.AddCommand(deleteCmd)
-
-	deleteCmd.Flags().BoolVar(&deleteSkipWait, "no-wait", deleteSkipWait, `do not wait to reach DELETED state`)
-	deleteCmd.Flags().DurationVar(&deleteTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach DELETED state`)
 	// TODO: short flags
 	deleteCmd.Flags().Var(&deleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
@@ -167,35 +156,11 @@ var deleteCmd = &cobra.Command{
 			deleteReq.Id = args[0]
 		}
 
-		if deleteSkipWait {
-			err = w.Warehouses.Delete(ctx, deleteReq)
-			if err != nil {
-				return err
-			}
-			return nil
-		}
-		spinner := cmdio.Spinner(ctx)
-		info, err := w.Warehouses.DeleteAndWait(ctx, deleteReq,
-			retries.Timeout[sql.GetWarehouseResponse](deleteTimeout),
-			func(i *retries.Info[sql.GetWarehouseResponse]) {
-				if i.Info == nil {
-					return
-				}
-				if i.Info.Health == nil {
-					return
-				}
-				status := i.Info.State
-				statusMessage := fmt.Sprintf("current status: %s", status)
-				if i.Info.Health != nil {
-					statusMessage = i.Info.Health.Summary
-				}
-				spinner <- statusMessage
-			})
-		close(spinner)
+		err = w.Warehouses.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, info)
+		return nil
 	},
 }
 
@@ -268,30 +233,25 @@ var editCmd = &cobra.Command{
 			editReq.Id = args[0]
 		}
 
+		wait, err := w.Warehouses.Edit(ctx, editReq)
+		if err != nil {
+			return err
+		}
 		if editSkipWait {
-			err = w.Warehouses.Edit(ctx, editReq)
-			if err != nil {
-				return err
-			}
 			return nil
 		}
 		spinner := cmdio.Spinner(ctx)
-		info, err := w.Warehouses.EditAndWait(ctx, editReq,
-			retries.Timeout[sql.GetWarehouseResponse](editTimeout),
-			func(i *retries.Info[sql.GetWarehouseResponse]) {
-				if i.Info == nil {
-					return
-				}
-				if i.Info.Health == nil {
-					return
-				}
-				status := i.Info.State
-				statusMessage := fmt.Sprintf("current status: %s", status)
-				if i.Info.Health != nil {
-					statusMessage = i.Info.Health.Summary
-				}
-				spinner <- statusMessage
-			})
+		info, err := wait.OnProgress(func(i *sql.GetWarehouseResponse) {
+			if i.Health == nil {
+				return
+			}
+			status := i.State
+			statusMessage := fmt.Sprintf("current status: %s", status)
+			if i.Health != nil {
+				statusMessage = i.Health.Summary
+			}
+			spinner <- statusMessage
+		}).GetWithTimeout(editTimeout)
 		close(spinner)
 		if err != nil {
 			return err
@@ -553,30 +513,25 @@ var startCmd = &cobra.Command{
 			startReq.Id = args[0]
 		}
 
+		wait, err := w.Warehouses.Start(ctx, startReq)
+		if err != nil {
+			return err
+		}
 		if startSkipWait {
-			err = w.Warehouses.Start(ctx, startReq)
-			if err != nil {
-				return err
-			}
 			return nil
 		}
 		spinner := cmdio.Spinner(ctx)
-		info, err := w.Warehouses.StartAndWait(ctx, startReq,
-			retries.Timeout[sql.GetWarehouseResponse](startTimeout),
-			func(i *retries.Info[sql.GetWarehouseResponse]) {
-				if i.Info == nil {
-					return
-				}
-				if i.Info.Health == nil {
-					return
-				}
-				status := i.Info.State
-				statusMessage := fmt.Sprintf("current status: %s", status)
-				if i.Info.Health != nil {
-					statusMessage = i.Info.Health.Summary
-				}
-				spinner <- statusMessage
-			})
+		info, err := wait.OnProgress(func(i *sql.GetWarehouseResponse) {
+			if i.Health == nil {
+				return
+			}
+			status := i.State
+			statusMessage := fmt.Sprintf("current status: %s", status)
+			if i.Health != nil {
+				statusMessage = i.Health.Summary
+			}
+			spinner <- statusMessage
+		}).GetWithTimeout(startTimeout)
 		close(spinner)
 		if err != nil {
 			return err
@@ -640,30 +595,25 @@ var stopCmd = &cobra.Command{
 			stopReq.Id = args[0]
 		}
 
+		wait, err := w.Warehouses.Stop(ctx, stopReq)
+		if err != nil {
+			return err
+		}
 		if stopSkipWait {
-			err = w.Warehouses.Stop(ctx, stopReq)
-			if err != nil {
-				return err
-			}
 			return nil
 		}
 		spinner := cmdio.Spinner(ctx)
-		info, err := w.Warehouses.StopAndWait(ctx, stopReq,
-			retries.Timeout[sql.GetWarehouseResponse](stopTimeout),
-			func(i *retries.Info[sql.GetWarehouseResponse]) {
-				if i.Info == nil {
-					return
-				}
-				if i.Info.Health == nil {
-					return
-				}
-				status := i.Info.State
-				statusMessage := fmt.Sprintf("current status: %s", status)
-				if i.Info.Health != nil {
-					statusMessage = i.Info.Health.Summary
-				}
-				spinner <- statusMessage
-			})
+		info, err := wait.OnProgress(func(i *sql.GetWarehouseResponse) {
+			if i.Health == nil {
+				return
+			}
+			status := i.State
+			statusMessage := fmt.Sprintf("current status: %s", status)
+			if i.Health != nil {
+				statusMessage = i.Health.Summary
+			}
+			spinner <- statusMessage
+		}).GetWithTimeout(stopTimeout)
 		close(spinner)
 		if err != nil {
 			return err
