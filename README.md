@@ -11,10 +11,9 @@ Documentation is available at https://docs.databricks.com/dev-tools/cli/databric
 ## Installation
 
 This CLI is packaged as a dependency-free binary executable and may be located in any directory.
-
-For convenient access, copy the `databricks` binary to any directory listed in `$PATH`.
-
-Confirm the binary works by executing `databricks version`.
+See https://github.com/databricks/cli/releases for releases and
+[the docs pages](https://docs.databricks.com/dev-tools/cli/databricks-cli.html) for
+installation instructions.
 
 ## Authentication
 
