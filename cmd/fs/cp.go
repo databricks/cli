@@ -20,11 +20,14 @@ func cpWriteCallback(ctx context.Context, sourceFiler, targetFiler filer.Filer, 
 			return err
 		}
 
+		// Compute path relative to the target directory
 		relPath, err := filepath.Rel(sourceDir, sourcePath)
 		if err != nil {
 			return err
 		}
 		relPath = filepath.ToSlash(relPath)
+
+		// Compute target path for the file
 		targetPath := filepath.Join(targetDir, relPath)
 
 		// create directory and return early
@@ -48,20 +51,89 @@ func cpWriteCallback(ctx context.Context, sourceFiler, targetFiler filer.Filer, 
 			err = targetFiler.Write(ctx, targetPath, r)
 			// skip if file already exists
 			if err != nil && errors.Is(err, fs.ErrExist) {
-				fileSkippedEvent := newFileSkippedEvent(sourcePath, targetPath)
-				template := "{{.SourcePath}} -> {{.TargetPath}} (skipped; already exists)\n"
-				return cmdio.RenderWithTemplate(ctx, fileSkippedEvent, template)
+				return emitCpFileSkippedEvent(ctx, sourcePath, targetPath)
 			}
 			if err != nil {
 				return err
 			}
 		}
 
-		return cmdio.RenderWithTemplate(ctx, newFileCopiedEvent(sourcePath, targetPath), "{{.SourcePath}} -> {{.TargetPath}}")
+		return emitCpFileCopiedEvent(ctx, sourcePath, targetPath)
 	}
 }
 
-// TODO: just use the root filer
+func cpDirToDir(ctx context.Context, sourceFiler, targetFiler filer.Filer, sourceDir, targetDir string) error {
+	if !cpRecursive {
+		return fmt.Errorf("source path %s is a directory. Please specify the --recursive flag", sourceDir)
+	}
+
+	sourceFs := filer.NewFS(ctx, sourceFiler)
+	return fs.WalkDir(sourceFs, sourceDir, cpWriteCallback(ctx, sourceFiler, targetFiler, sourceDir, targetDir))
+}
+
+func cpFileToDir(ctx context.Context, sourcePath, targetDir string, sourceFiler, targetFiler filer.Filer) error {
+	// Get reader for file at source path
+	r, err := sourceFiler.Read(ctx, sourcePath)
+	if err != nil {
+		return err
+	}
+	fileName := path.Base(sourcePath)
+	targetPath := path.Join(targetDir, fileName)
+
+	if cpOverwrite {
+		err = targetFiler.Write(ctx, targetPath, r, filer.OverwriteIfExists)
+		if err != nil {
+			return err
+		}
+	} else {
+		err = targetFiler.Write(ctx, targetPath, r)
+		// skip if file already exists
+		if err != nil && errors.Is(err, fs.ErrExist) {
+			return emitCpFileSkippedEvent(ctx, sourcePath, targetPath)
+		}
+		if err != nil {
+			return err
+		}
+	}
+	return emitCpFileCopiedEvent(ctx, sourcePath, targetPath)
+}
+
+func cpFileToFile(ctx context.Context, sourcePath, targetPath string, sourceFiler, targetFiler filer.Filer) error {
+	// Get reader for file at source path
+	r, err := sourceFiler.Read(ctx, sourcePath)
+	if err != nil {
+		return err
+	}
+	if cpOverwrite {
+		return targetFiler.Write(ctx, targetPath, r, filer.OverwriteIfExists)
+	} else {
+		err = targetFiler.Write(ctx, targetPath, r)
+		// skip if file already exists
+		if err != nil && errors.Is(err, fs.ErrExist) {
+			return emitCpFileSkippedEvent(ctx, sourcePath, targetPath)
+		}
+		if err != nil {
+			return err
+		}
+	}
+	return emitCpFileCopiedEvent(ctx, sourcePath, targetPath)
+}
+
+// TODO: emit these events on stderr
+// TODO: add integration tests for these events
+func emitCpFileSkippedEvent(ctx context.Context, sourcePath, targetPath string) error {
+	event := newFileSkippedEvent(sourcePath, targetPath)
+	template := "{{.SourcePath}} -> {{.TargetPath}} (skipped; already exists)\n"
+
+	return cmdio.RenderWithTemplate(ctx, event, template)
+}
+
+func emitCpFileCopiedEvent(ctx context.Context, sourcePath, targetPath string) error {
+	event := newFileCopiedEvent(sourcePath, targetPath)
+	template := "{{.SourcePath}} -> {{.TargetPath}}\n"
+
+	return cmdio.RenderWithTemplate(ctx, event, template)
+}
 
 var cpOverwrite bool
 var cpRecursive bool
@@ -74,8 +146,6 @@ func validateScheme(path string) error {
 	return nil
 }
 
-// TODO: error out if source is a directory and recursive is not specified
-
 // cpCmd represents the fs cp command
 var cpCmd = &cobra.Command{
 	Use:     "cp SOURCE_PATH TARGET_PATH",
@@ -87,74 +157,57 @@ var cpCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 
-		// Validate input path scheme
+		// Validate source path scheme, and compute path without the scheme
+		fullSourcePath := args[0]
 		sourceScheme := scheme(args[0])
-		sourcePath := args[0]
-		if err := validateScheme(sourcePath); err != nil {
+		if err := validateScheme(fullSourcePath); err != nil {
 			return err
 		}
-		targetPath := args[1]
+		sourcePath, err := removeScheme(fullSourcePath, sourceScheme)
+		if err != nil {
+			return err
+		}
+
+		// Validate target path scheme, and compute path without the scheme
+		fullTargetPath := args[1]
 		targetScheme := scheme(args[1])
-		if err := validateScheme(targetPath); err != nil {
+		if err := validateScheme(fullTargetPath); err != nil {
 			return err
 		}
-
-		cleanSourcePath, err := removeScheme(sourcePath, sourceScheme)
-		if err != nil {
-			return err
-		}
-		sourceRootFiler, err := setupRootFiler(ctx, sourceScheme)
-		if err != nil {
-			return err
-		}
-		sourceStat, err := sourceRootFiler.Stat(ctx, cleanSourcePath)
+		targetPath, err := removeScheme(fullTargetPath, targetScheme)
 		if err != nil {
 			return err
 		}
 
-		targetExists := true
-		cleanTargetPath, err := removeScheme(targetPath, targetScheme)
+		// Initialize filers according to source and target path schemes
+		sourceFiler, err := filerForScheme(ctx, sourceScheme)
 		if err != nil {
 			return err
 		}
-		targetRootFiler, err := setupRootFiler(ctx, targetScheme)
+		targetFiler, err := filerForScheme(ctx, targetScheme)
 		if err != nil {
 			return err
 		}
-		targetStat, err := targetRootFiler.Stat(ctx, cleanTargetPath)
-		if err != nil {
-			if errors.Is(err, fs.ErrNotExist) {
-				targetExists = false
-			} else {
-				return err
-			}
-		}
 
-		if sourceStat.IsDir() {
-			if !cpRecursive {
-				return fmt.Errorf("source path %s is a directory. Please specify the --recursive flag", sourcePath)
-			}
-
-			sourceFs := filer.NewFS(ctx, sourceRootFiler)
-			return fs.WalkDir(sourceFs, cleanSourcePath, cpWriteCallback(ctx, sourceRootFiler, targetRootFiler, cleanSourcePath, cleanTargetPath))
-		}
-
-		r, err := sourceRootFiler.Read(ctx, cleanSourcePath)
+		// Get information about file at source path
+		sourceInfo, err := sourceFiler.Stat(ctx, sourcePath)
 		if err != nil {
 			return err
 		}
-		if targetExists && targetStat.IsDir() {
-			name := path.Base(cleanSourcePath)
-			if cpOverwrite {
-				return targetRootFiler.Write(ctx, path.Join(cleanTargetPath, name), r, filer.OverwriteIfExists)
-			}
-			return targetRootFiler.Write(ctx, path.Join(cleanTargetPath, name), r)
+
+		// If source path is a directory, recursively create files at target path
+		if sourceInfo.IsDir() {
+			return cpDirToDir(ctx, sourceFiler, targetFiler, sourcePath, targetPath)
 		}
 
-		if cpOverwrite {
-			return targetRootFiler.Write(ctx, cleanTargetPath, r, filer.OverwriteIfExists)
+		// If target path already exists and is a directory, then write to a file
+		// inside the directory
+		if targetInfo, err := targetFiler.Stat(ctx, targetPath); err == nil && targetInfo.IsDir() {
+			return cpFileToDir(ctx, sourcePath, targetPath, sourceFiler, targetFiler)
 		}
-		return targetRootFiler.Write(ctx, cleanTargetPath, r)
+
+		// Default case, write file at source path, to a file at target path
+		return cpFileToFile(ctx, sourcePath, targetPath, sourceFiler, targetFiler)
 	},
 }
 

@@ -25,7 +25,7 @@ func resolveDbfsPath(path string) (string, error) {
 	return strings.TrimPrefix(path, "dbfs:"), nil
 }
 
-func setupRootFiler(ctx context.Context, scheme Scheme) (filer.Filer, error) {
+func filerForScheme(ctx context.Context, scheme Scheme) (filer.Filer, error) {
 	w := root.WorkspaceClient(ctx)
 
 	switch scheme {
