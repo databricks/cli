@@ -16,6 +16,10 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	_ "github.com/databricks/cli/cmd/version"
+	"github.com/databricks/cli/libs/flags"
+	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	_ "github.com/databricks/cli/cmd/workspace"
@@ -82,6 +86,48 @@ func consumeLines(ctx context.Context, wg *sync.WaitGroup, r io.Reader) <-chan s
 	return ch
 }
 
+func (t *cobraTestRunner) registerFlagCleanup(c *cobra.Command) {
+	// Find target command that will be run. Example: if the command run is `databricks fs cp`,
+	// target command corresponds to `cp`
+	targetCmd, _, err := c.Find(t.args)
+	require.NoError(t, err)
+
+	// Persist initial values for the flag objects in a map
+	initialFlagValues := make(map[string]string, 0)
+	targetCmd.Flags().VisitAll(func(f *pflag.Flag) {
+		initialFlagValues[f.Name] = f.Value.String()
+	})
+
+	// Register cleanup callback function, to restore flag values to their original
+	// value once the test completes execution
+	t.Cleanup(func() {
+		for k, v := range initialFlagValues {
+			// We skip the "progress-format" flag because it's default value is
+			// flags.ModeDefault which is not a valid argument for it's Set method (*ProgressLogFormat).Set(..)
+			if k == "progress-format" {
+				continue
+			}
+
+			// Restore flag values to their previous values
+			err := targetCmd.Flag(k).Value.Set(v)
+			assert.NoError(t, err)
+		}
+
+		// Set progress format to flags.ModeAppend, which is what's flags.ModeDefault
+		// will be resolve to in a CI runner environment (since console is not a tty)
+		err := targetCmd.Flag("progress-format").Value.Set(string(flags.ModeAppend))
+		assert.NoError(t, err)
+
+		// These flags are initialized by cobra at execution time using the
+		// (*Command).InitDefaultHelpFlag() and (*Command).InitDefaultVersionFlag()
+		// methods, thus we manually reset them here
+		err = targetCmd.Flag("help").Value.Set("false")
+		assert.NoError(t, err)
+		err = targetCmd.Flag("version").Value.Set("false")
+		assert.NoError(t, err)
+	})
+}
+
 func (t *cobraTestRunner) RunBackground() {
 	var stdoutR, stderrR io.Reader
 	var stdoutW, stderrW io.WriteCloser
@@ -91,6 +137,12 @@ func (t *cobraTestRunner) RunBackground() {
 	root.SetOut(stdoutW)
 	root.SetErr(stderrW)
 	root.SetArgs(t.args)
+
+	// Register cleanup function to restore flags to their original values
+	// once test has been executed. This is needed because flag values reside
+	// in a global singleton data-structure, and thus subsequent tests might
+	// otherwise interfere with each other
+	t.registerFlagCleanup(root)
 
 	errch := make(chan error)
 	ctx, cancel := context.WithCancel(context.Background())
