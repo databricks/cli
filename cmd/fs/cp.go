@@ -198,18 +198,18 @@ var cpCmd = &cobra.Command{
 			return err
 		}
 
-		// If source path is a directory, recursively create files at target path
+		// case 1: source path is a directory, then recursively create files at target path
 		if sourceInfo.IsDir() {
 			return cpDirToDir(ctx, sourceFiler, targetFiler, sourcePath, targetPath)
 		}
 
-		// If target path already exists and is a directory, then write to a file
-		// inside the directory
+		// case 2: source path is a file, and target path is a directory. In this case
+		// we copy the file to inside the directory
 		if targetInfo, err := targetFiler.Stat(ctx, targetPath); err == nil && targetInfo.IsDir() {
 			return cpFileToDir(ctx, sourcePath, targetPath, sourceFiler, targetFiler)
 		}
 
-		// Default case, write file at source path, to a file at target path
+		// case 3: source path is a file, and target path is a file
 		return cpFileToFile(ctx, sourcePath, targetPath, sourceFiler, targetFiler)
 	},
 }

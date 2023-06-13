@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"path"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -74,8 +75,6 @@ func setupDbfsFiler(t *testing.T) (filer.Filer, string) {
 	require.NoError(t, err)
 	return f, "dbfs:" + tmpDir
 }
-
-// TODO: test overwrite version of these commands
 
 func TestFsCpDirLocalToDbfs(t *testing.T) {
 	ctx := context.Background()
@@ -321,4 +320,32 @@ func TestFsCpLocalFileToDbfsFileWithOverwriteFlag(t *testing.T) {
 
 	RequireSuccessfulRun(t, "fs", "cp", path.Join(sourceDir, "a/b/c/hello.txt"), path.Join(targetDir, "a/b/c/hola.txt"), "--recursive", "--overwrite")
 	assertFileContent(t, ctx, targetFiler, "a/b/c/hola.txt", "hello, world\n")
+}
+
+func TestFsCpSourceIsDirectoryButTargetIsFile(t *testing.T) {
+	ctx := context.Background()
+	sourceFiler, sourceDir := setupDbfsFiler(t)
+	targetFiler, targetDir := setupDbfsFiler(t)
+	setupSourceDir(t, ctx, sourceFiler)
+
+	// Write a conflicting file to target
+	err := targetFiler.Write(ctx, "my_target", strings.NewReader("I'll block any attempts to recursively copy"), filer.CreateParentDirectories)
+	require.NoError(t, err)
+
+	_, _, err = RequireErrorRun(t, "fs", "cp", sourceDir, path.Join(targetDir, "my_target"), "--recursive", "--overwrite")
+	assert.Regexp(t, regexp.MustCompile(`Cannot create directory .* because .* is an existing file.`), err.Error())
+}
+
+func TestFsCpSourceIsDirectoryButTargetIsLocalFile(t *testing.T) {
+	ctx := context.Background()
+	sourceFiler, sourceDir := setupDbfsFiler(t)
+	targetFiler, targetDir := setupLocalFiler(t)
+	setupSourceDir(t, ctx, sourceFiler)
+
+	// Write a conflicting file to target
+	err := targetFiler.Write(ctx, "my_target", strings.NewReader("I'll block any attempts to recursively copy"), filer.CreateParentDirectories)
+	require.NoError(t, err)
+
+	_, _, err = RequireErrorRun(t, "fs", "cp", sourceDir, path.Join(targetDir, "my_target"), "--recursive", "--overwrite")
+	assert.Regexp(t, regexp.MustCompile(`mkdir .*: not a directory`), err.Error())
 }
