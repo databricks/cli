@@ -26,10 +26,9 @@ func resolveDbfsPath(path string) (string, error) {
 }
 
 func filerForScheme(ctx context.Context, scheme Scheme) (filer.Filer, error) {
-	w := root.WorkspaceClient(ctx)
-
 	switch scheme {
 	case DbfsScheme:
+		w := root.WorkspaceClient(ctx)
 		return filer.NewDbfsClient(w, "/")
 	case LocalScheme:
 		return filer.NewLocalClient("/")
