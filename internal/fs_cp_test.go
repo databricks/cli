@@ -3,6 +3,7 @@ package internal
 import (
 	"context"
 	"io/ioutil"
+	"path"
 	"strings"
 	"testing"
 
@@ -23,6 +24,21 @@ func setupSourceDir(t *testing.T, ctx context.Context, f filer.Filer) {
 
 	err = f.Write(ctx, "a/b/c/hello.txt", strings.NewReader("hello, world\n"), filer.CreateParentDirectories)
 	require.NoError(t, err)
+}
+
+func setupSourceFile(t *testing.T, ctx context.Context, f filer.Filer) {
+	err := f.Write(ctx, "foo.txt", strings.NewReader("abc"))
+	require.NoError(t, err)
+}
+
+func assertTargetFile(t *testing.T, ctx context.Context, f filer.Filer, relPath string) {
+	var err error
+
+	r, err := f.Read(ctx, relPath)
+	assert.NoError(t, err)
+	b, err := ioutil.ReadAll(r)
+	require.NoError(t, err)
+	assert.Equal(t, "abc", string(b))
 }
 
 func assertTargetDir(t *testing.T, ctx context.Context, f filer.Filer) {
@@ -108,4 +124,94 @@ func TestFsCpDirLocalToLocal(t *testing.T) {
 	RequireSuccessfulRun(t, "fs", "cp", "-r", sourceDir, targetDir)
 
 	assertTargetDir(t, ctx, targetFiler)
+}
+
+// TODO: test out all the error cases
+
+func TestFsCpFileDbfsToDbfs(t *testing.T) {
+	ctx := context.Background()
+	sourceFiler, sourceDir := setupDbfsFiler(t)
+	targetFiler, targetDir := setupDbfsFiler(t)
+	setupSourceFile(t, ctx, sourceFiler)
+
+	RequireSuccessfulRun(t, "fs", "cp", path.Join(sourceDir, "foo.txt"), path.Join(targetDir, "bar.txt"))
+
+	assertTargetFile(t, ctx, targetFiler, "bar.txt")
+}
+
+func TestFsCpFileLocalToDbfs(t *testing.T) {
+	ctx := context.Background()
+	sourceFiler, sourceDir := setupLocalFiler(t)
+	targetFiler, targetDir := setupDbfsFiler(t)
+	setupSourceFile(t, ctx, sourceFiler)
+
+	RequireSuccessfulRun(t, "fs", "cp", path.Join(sourceDir, "foo.txt"), path.Join(targetDir, "bar.txt"))
+
+	assertTargetFile(t, ctx, targetFiler, "bar.txt")
+}
+
+func TestFsCpFileDbfsToLocal(t *testing.T) {
+	ctx := context.Background()
+	sourceFiler, sourceDir := setupDbfsFiler(t)
+	targetFiler, targetDir := setupLocalFiler(t)
+	setupSourceFile(t, ctx, sourceFiler)
+
+	RequireSuccessfulRun(t, "fs", "cp", path.Join(sourceDir, "foo.txt"), path.Join(targetDir, "bar.txt"))
+
+	assertTargetFile(t, ctx, targetFiler, "bar.txt")
+}
+
+func TestFsCpFileLocalToLocal(t *testing.T) {
+	ctx := context.Background()
+	sourceFiler, sourceDir := setupLocalFiler(t)
+	targetFiler, targetDir := setupLocalFiler(t)
+	setupSourceFile(t, ctx, sourceFiler)
+
+	RequireSuccessfulRun(t, "fs", "cp", path.Join(sourceDir, "foo.txt"), path.Join(targetDir, "bar.txt"))
+
+	assertTargetFile(t, ctx, targetFiler, "bar.txt")
+}
+
+func TestFsCpFileToDirDbfsToDbfs(t *testing.T) {
+	ctx := context.Background()
+	sourceFiler, sourceDir := setupDbfsFiler(t)
+	targetFiler, targetDir := setupDbfsFiler(t)
+	setupSourceFile(t, ctx, sourceFiler)
+
+	RequireSuccessfulRun(t, "fs", "cp", path.Join(sourceDir, "foo.txt"), targetDir)
+
+	assertTargetFile(t, ctx, targetFiler, "foo.txt")
+}
+
+func TestFsCpFileToDirLocalToDbfs(t *testing.T) {
+	ctx := context.Background()
+	sourceFiler, sourceDir := setupLocalFiler(t)
+	targetFiler, targetDir := setupDbfsFiler(t)
+	setupSourceFile(t, ctx, sourceFiler)
+
+	RequireSuccessfulRun(t, "fs", "cp", path.Join(sourceDir, "foo.txt"), targetDir)
+
+	assertTargetFile(t, ctx, targetFiler, "foo.txt")
+}
+
+func TestFsCpFileToDirDbfsToLocal(t *testing.T) {
+	ctx := context.Background()
+	sourceFiler, sourceDir := setupDbfsFiler(t)
+	targetFiler, targetDir := setupLocalFiler(t)
+	setupSourceFile(t, ctx, sourceFiler)
+
+	RequireSuccessfulRun(t, "fs", "cp", path.Join(sourceDir, "foo.txt"), targetDir)
+
+	assertTargetFile(t, ctx, targetFiler, "foo.txt")
+}
+
+func TestFsCpFileToDirLocalToLocal(t *testing.T) {
+	ctx := context.Background()
+	sourceFiler, sourceDir := setupLocalFiler(t)
+	targetFiler, targetDir := setupLocalFiler(t)
+	setupSourceFile(t, ctx, sourceFiler)
+
+	RequireSuccessfulRun(t, "fs", "cp", path.Join(sourceDir, "foo.txt"), targetDir)
+
+	assertTargetFile(t, ctx, targetFiler, "foo.txt")
 }

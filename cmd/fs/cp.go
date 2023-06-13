@@ -3,6 +3,7 @@ package fs
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io/fs"
 	"path"
 	"path/filepath"
@@ -56,8 +57,31 @@ func cpWriteCallback(ctx context.Context, sourceFiler, targetFiler filer.Filer, 
 	}
 }
 
+// TODO: just use the root filer
+func copyDirToDir(ctx context.Context, sourceDir string, targetDir string) error {
+	sourceFiler, err := setupFiler(ctx, sourceDir)
+	if err != nil {
+		return err
+	}
+	sourceFs := filer.NewFS(ctx, sourceFiler)
+	targetFiler, err := setupFiler(ctx, targetDir)
+	if err != nil {
+		return err
+	}
+
+	return fs.WalkDir(sourceFs, ".", cpWriteCallback(ctx, sourceFiler, targetFiler, sourceDir, targetDir))
+}
+
 var cpOverwrite bool
 var cpRecursive bool
+
+func validateScheme(path string) error {
+	scheme := scheme(path)
+	if scheme != LocalScheme && scheme != DbfsScheme {
+		return fmt.Errorf(`no scheme specified for path %s. Please specify scheme "dbfs" or "file". Example: file:/foo/bar`, path)
+	}
+	return nil
+}
 
 // TODO: error out if source is a directory and recursive is not specified
 
@@ -72,20 +96,72 @@ var cpCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 
-		sourceDir := args[0]
-		targetDir := args[1]
+		// Validate input path scheme
+		sourceScheme := scheme(args[0])
+		sourcePath := args[0]
+		if err := validateScheme(sourcePath); err != nil {
+			return err
+		}
+		targetPath := args[1]
+		targetScheme := scheme(args[1])
+		if err := validateScheme(targetPath); err != nil {
+			return err
+		}
 
-		sourceFiler, err := setupFiler(ctx, args[0])
+		cleanSourcePath, err := removeScheme(sourcePath, sourceScheme)
 		if err != nil {
 			return err
 		}
-		sourceFs := filer.NewFS(ctx, sourceFiler)
-		targetFiler, err := setupFiler(ctx, args[1])
+		sourceRootFiler, err := setupRootFiler(ctx, sourceScheme)
+		if err != nil {
+			return err
+		}
+		sourceStat, err := sourceRootFiler.Stat(ctx, cleanSourcePath)
 		if err != nil {
 			return err
 		}
 
-		return fs.WalkDir(sourceFs, ".", cpWriteCallback(ctx, sourceFiler, targetFiler, sourceDir, targetDir))
+		targetExists := true
+		cleanTargetPath, err := removeScheme(targetPath, targetScheme)
+		if err != nil {
+			return err
+		}
+		targetRootFiler, err := setupRootFiler(ctx, targetScheme)
+		if err != nil {
+			return err
+		}
+		targetStat, err := targetRootFiler.Stat(ctx, cleanTargetPath)
+		if err != nil {
+			if errors.Is(err, fs.ErrNotExist) {
+				targetExists = false
+			} else {
+				return err
+			}
+		}
+
+		if sourceStat.IsDir() {
+			if !cpRecursive {
+				return fmt.Errorf("source path %s is a directory. Please specify the --recursive flag", sourcePath)
+			}
+			return copyDirToDir(ctx, sourcePath, targetPath)
+		}
+
+		r, err := sourceRootFiler.Read(ctx, cleanSourcePath)
+		if err != nil {
+			return err
+		}
+		if targetExists && targetStat.IsDir() {
+			name := path.Base(cleanSourcePath)
+			if cpOverwrite {
+				return targetRootFiler.Write(ctx, path.Join(cleanTargetPath, name), r, filer.OverwriteIfExists)
+			}
+			return targetRootFiler.Write(ctx, path.Join(cleanTargetPath, name), r)
+		}
+
+		if cpOverwrite {
+			return targetRootFiler.Write(ctx, cleanTargetPath, r, filer.OverwriteIfExists)
+		}
+		return targetRootFiler.Write(ctx, cleanTargetPath, r)
 	},
 }
 
@@ -94,3 +170,13 @@ func init() {
 	cpCmd.Flags().BoolVarP(&cpRecursive, "recursive", "r", false, "recursively copy files from directory")
 	fsCmd.AddCommand(cpCmd)
 }
+
+/*
++
++source path:
++1. Read scheme
++2. Check if path is file or directory. If it does not exist, return error
++3. If it's a directory, check recursive flag is specified
++4.
++
++*/
