@@ -38,24 +38,6 @@ func setupRootFiler(ctx context.Context, scheme Scheme) (filer.Filer, error) {
 	}
 }
 
-func setupFiler(ctx context.Context, path string) (filer.Filer, error) {
-	w := root.WorkspaceClient(ctx)
-	scheme := scheme(path)
-	resolvedPath, err := removeScheme(path, scheme)
-	if err != nil {
-		return nil, err
-	}
-
-	switch scheme {
-	case DbfsScheme:
-		return filer.NewDbfsClient(w, resolvedPath)
-	case LocalScheme:
-		return filer.NewLocalClient(resolvedPath)
-	default:
-		return nil, fmt.Errorf("scheme %q is not supported", scheme)
-	}
-}
-
 func removeScheme(path string, scheme Scheme) (string, error) {
 	if scheme == NoScheme {
 		return path, nil

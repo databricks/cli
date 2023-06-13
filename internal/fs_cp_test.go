@@ -82,6 +82,8 @@ func setupDbfsFiler(t *testing.T) (filer.Filer, string) {
 	return f, "dbfs:" + tmpDir
 }
 
+// TODO: test overwrite version of these commands
+
 func TestFsCpDirLocalToDbfs(t *testing.T) {
 	ctx := context.Background()
 	sourceFiler, sourceDir := setupLocalFiler(t)

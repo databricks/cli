@@ -15,33 +15,37 @@ import (
 )
 
 func cpWriteCallback(ctx context.Context, sourceFiler, targetFiler filer.Filer, sourceDir, targetDir string) func(string, fs.DirEntry, error) error {
-	return func(relPath string, d fs.DirEntry, err error) error {
+	return func(sourcePath string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 
-		sourcePath := path.Join(sourceDir, relPath)
+		relPath, err := filepath.Rel(sourceDir, sourcePath)
+		if err != nil {
+			return err
+		}
+		relPath = filepath.ToSlash(relPath)
 		targetPath := filepath.Join(targetDir, relPath)
 
 		// create directory and return early
 		if d.IsDir() {
-			return targetFiler.Mkdir(ctx, relPath)
+			return targetFiler.Mkdir(ctx, targetPath)
 		}
 
 		// get reader for source file
-		r, err := sourceFiler.Read(ctx, relPath)
+		r, err := sourceFiler.Read(ctx, sourcePath)
 		if err != nil {
 			return err
 		}
 
 		// write to target file
 		if cpOverwrite {
-			err = targetFiler.Write(ctx, relPath, r, filer.OverwriteIfExists)
+			err = targetFiler.Write(ctx, targetPath, r, filer.OverwriteIfExists)
 			if err != nil {
 				return err
 			}
 		} else {
-			err = targetFiler.Write(ctx, relPath, r)
+			err = targetFiler.Write(ctx, targetPath, r)
 			// skip if file already exists
 			if err != nil && errors.Is(err, fs.ErrExist) {
 				fileSkippedEvent := newFileSkippedEvent(sourcePath, targetPath)
@@ -58,19 +62,6 @@ func cpWriteCallback(ctx context.Context, sourceFiler, targetFiler filer.Filer, 
 }
 
 // TODO: just use the root filer
-func copyDirToDir(ctx context.Context, sourceDir string, targetDir string) error {
-	sourceFiler, err := setupFiler(ctx, sourceDir)
-	if err != nil {
-		return err
-	}
-	sourceFs := filer.NewFS(ctx, sourceFiler)
-	targetFiler, err := setupFiler(ctx, targetDir)
-	if err != nil {
-		return err
-	}
-
-	return fs.WalkDir(sourceFs, ".", cpWriteCallback(ctx, sourceFiler, targetFiler, sourceDir, targetDir))
-}
 
 var cpOverwrite bool
 var cpRecursive bool
@@ -143,7 +134,9 @@ var cpCmd = &cobra.Command{
 			if !cpRecursive {
 				return fmt.Errorf("source path %s is a directory. Please specify the --recursive flag", sourcePath)
 			}
-			return copyDirToDir(ctx, sourcePath, targetPath)
+
+			sourceFs := filer.NewFS(ctx, sourceRootFiler)
+			return fs.WalkDir(sourceFs, cleanSourcePath, cpWriteCallback(ctx, sourceRootFiler, targetRootFiler, cleanSourcePath, cleanTargetPath))
 		}
 
 		r, err := sourceRootFiler.Read(ctx, cleanSourcePath)
@@ -170,13 +163,3 @@ func init() {
 	cpCmd.Flags().BoolVarP(&cpRecursive, "recursive", "r", false, "recursively copy files from directory")
 	fsCmd.AddCommand(cpCmd)
 }
-
-/*
-+
-+source path:
-+1. Read scheme
-+2. Check if path is file or directory. If it does not exist, return error
-+3. If it's a directory, check recursive flag is specified
-+4.
-+
-+*/
