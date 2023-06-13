@@ -58,6 +58,8 @@ func assertTargetDir(t *testing.T, ctx context.Context, f filer.Filer) {
 }
 
 func setupLocalFiler(t *testing.T) (filer.Filer, string) {
+	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+
 	tmp := t.TempDir()
 	f, err := filer.NewLocalClient(tmp)
 	require.NoError(t, err)
