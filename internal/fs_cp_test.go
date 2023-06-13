@@ -2,6 +2,7 @@ package internal
 
 import (
 	"context"
+	"fmt"
 	"io/ioutil"
 	"path"
 	"strings"
@@ -41,26 +42,18 @@ func assertTargetFile(t *testing.T, ctx context.Context, f filer.Filer, relPath 
 	assert.Equal(t, "abc", string(b))
 }
 
-func assertTargetDir(t *testing.T, ctx context.Context, f filer.Filer) {
-	var err error
-
-	r, err := f.Read(ctx, "pyNb.py")
-	assert.NoError(t, err)
+func assertFileContent(t *testing.T, ctx context.Context, f filer.Filer, path, expectedContent string) {
+	r, err := f.Read(ctx, path)
+	require.NoError(t, err)
 	b, err := ioutil.ReadAll(r)
 	require.NoError(t, err)
-	assert.Equal(t, "# Databricks notebook source\nprint(123)", string(b))
+	assert.Equal(t, expectedContent, string(b))
+}
 
-	r, err = f.Read(ctx, "query.sql")
-	assert.NoError(t, err)
-	b, err = ioutil.ReadAll(r)
-	require.NoError(t, err)
-	assert.Equal(t, "SELECT 1", string(b))
-
-	r, err = f.Read(ctx, "a/b/c/hello.txt")
-	assert.NoError(t, err)
-	b, err = ioutil.ReadAll(r)
-	require.NoError(t, err)
-	assert.Equal(t, "hello, world\n", string(b))
+func assertTargetDir(t *testing.T, ctx context.Context, f filer.Filer) {
+	assertFileContent(t, ctx, f, "pyNb.py", "# Databricks notebook source\nprint(123)")
+	assertFileContent(t, ctx, f, "query.sql", "SELECT 1")
+	assertFileContent(t, ctx, f, "a/b/c/hello.txt", "hello, world\n")
 }
 
 func setupLocalFiler(t *testing.T) (filer.Filer, string) {
@@ -228,4 +221,48 @@ func TestFsCpErrorsOnNoScheme(t *testing.T) {
 func TestFsCpErrorsOnInvalidScheme(t *testing.T) {
 	_, _, err := RequireErrorRun(t, "fs", "cp", "file:/a", "https:/b")
 	assert.Equal(t, "unsupported scheme https specified for path https:/b. Please specify scheme \"dbfs\" or \"file\". Example: file:/foo/bar", err.Error())
+}
+
+func TestFsCpErrorWhenSourceIsDbfsDirWithoutRecursiveFlag(t *testing.T) {
+	w, err := databricks.NewWorkspaceClient()
+	require.NoError(t, err)
+	tmpDir := temporaryDbfsDir(t, w)
+	_, _, err = RequireErrorRun(t, "fs", "cp", "dbfs:"+tmpDir, "file:/a")
+	assert.Equal(t, fmt.Sprintf("source path %s is a directory. Please specify the --recursive flag", tmpDir), err.Error())
+}
+
+func TestFsCpErrorWhenSourceIsLocalDirWithoutRecursiveFlag(t *testing.T) {
+	tmpDir := t.TempDir()
+	_, _, err := RequireErrorRun(t, "fs", "cp", "file:"+tmpDir, "file:/a")
+	assert.Equal(t, fmt.Sprintf("source path %s is a directory. Please specify the --recursive flag", tmpDir), err.Error())
+}
+
+func TestFsCpDbfsDirToDbfsDirFileNotOverwritten(t *testing.T) {
+	ctx := context.Background()
+	sourceFiler, sourceDir := setupDbfsFiler(t)
+	targetFiler, targetDir := setupDbfsFiler(t)
+	setupSourceDir(t, ctx, sourceFiler)
+
+	// Write a conflicting file to target
+	err := targetFiler.Write(ctx, "a/b/c/hello.txt", strings.NewReader("this should not be overwritten"), filer.CreateParentDirectories)
+	require.NoError(t, err)
+
+	RequireSuccessfulRun(t, "fs", "cp", sourceDir, targetDir, "--recursive")
+	assertFileContent(t, ctx, targetFiler, "a/b/c/hello.txt", "this should not be overwritten")
+	assertFileContent(t, ctx, targetFiler, "query.sql", "SELECT 1")
+	assertFileContent(t, ctx, targetFiler, "pyNb.py", "# Databricks notebook source\nprint(123)")
+}
+
+func TestFsCpDbfsDirToDbfsDirFileWithOverwriteFlag(t *testing.T) {
+	ctx := context.Background()
+	sourceFiler, sourceDir := setupDbfsFiler(t)
+	targetFiler, targetDir := setupDbfsFiler(t)
+	setupSourceDir(t, ctx, sourceFiler)
+
+	// Write a conflicting file to target
+	err := targetFiler.Write(ctx, "a/b/c/hello.txt", strings.NewReader("this will be overwritten"), filer.CreateParentDirectories)
+	require.NoError(t, err)
+
+	RequireSuccessfulRun(t, "fs", "cp", sourceDir, targetDir, "--recursive", "--overwrite")
+	assertTargetDir(t, ctx, targetFiler)
 }
