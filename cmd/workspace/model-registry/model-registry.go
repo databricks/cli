@@ -17,6 +17,9 @@ var Cmd = &cobra.Command{
 	Short: `MLflow Model Registry is a centralized model repository and a UI and set of APIs that enable you to manage the full lifecycle of MLflow Models.`,
 	Long: `MLflow Model Registry is a centralized model repository and a UI and set of
   APIs that enable you to manage the full lifecycle of MLflow Models.`,
+	Annotations: map[string]string{
+		"package": "ml",
+	},
 }
 
 // start approve-transition-request command
@@ -40,9 +43,7 @@ var approveTransitionRequestCmd = &cobra.Command{
   
   Approves a model version stage transition request.`,
 
-	Annotations: map[string]string{
-		"package": "ml",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(4)
 		if cmd.Flags().Changed("json") {
@@ -101,9 +102,7 @@ var createCommentCmd = &cobra.Command{
   user or programmatically to display relevant information about the model. For
   example, test results or deployment errors.`,
 
-	Annotations: map[string]string{
-		"package": "ml",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(3)
 		if cmd.Flags().Changed("json") {
@@ -159,9 +158,7 @@ var createModelCmd = &cobra.Command{
   Throws RESOURCE_ALREADY_EXISTS if a registered model with the given name
   exists.`,
 
-	Annotations: map[string]string{
-		"package": "ml",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
@@ -214,9 +211,7 @@ var createModelVersionCmd = &cobra.Command{
   
   Creates a model version.`,
 
-	Annotations: map[string]string{
-		"package": "ml",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
@@ -267,9 +262,7 @@ var createTransitionRequestCmd = &cobra.Command{
   
   Creates a model version stage transition request.`,
 
-	Annotations: map[string]string{
-		"package": "ml",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(3)
 		if cmd.Flags().Changed("json") {
@@ -330,10 +323,8 @@ var createWebhookCmd = &cobra.Command{
   
   Creates a registry webhook.`,
 
-	Annotations: map[string]string{
-		"package": "ml",
-	},
-	PreRunE: root.MustWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -376,9 +367,7 @@ var deleteCommentCmd = &cobra.Command{
   
   Deletes a comment on a model version.`,
 
-	Annotations: map[string]string{
-		"package": "ml",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
@@ -426,9 +415,7 @@ var deleteModelCmd = &cobra.Command{
   
   Deletes a registered model.`,
 
-	Annotations: map[string]string{
-		"package": "ml",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
@@ -476,9 +463,7 @@ var deleteModelTagCmd = &cobra.Command{
   
   Deletes the tag for a registered model.`,
 
-	Annotations: map[string]string{
-		"package": "ml",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
@@ -527,9 +512,7 @@ var deleteModelVersionCmd = &cobra.Command{
   
   Deletes a model version.`,
 
-	Annotations: map[string]string{
-		"package": "ml",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
@@ -578,9 +561,7 @@ var deleteModelVersionTagCmd = &cobra.Command{
   
   Deletes a model version tag.`,
 
-	Annotations: map[string]string{
-		"package": "ml",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(3)
 		if cmd.Flags().Changed("json") {
@@ -632,9 +613,7 @@ var deleteTransitionRequestCmd = &cobra.Command{
   
   Cancels a model version stage transition request.`,
 
-	Annotations: map[string]string{
-		"package": "ml",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(4)
 		if cmd.Flags().Changed("json") {
@@ -692,9 +671,7 @@ var deleteWebhookCmd = &cobra.Command{
   
   Deletes a registry webhook.`,
 
-	Annotations: map[string]string{
-		"package": "ml",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {
@@ -743,9 +720,7 @@ var getLatestVersionsCmd = &cobra.Command{
   
   Gets the latest version of a registered model.`,
 
-	Annotations: map[string]string{
-		"package": "ml",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
@@ -797,9 +772,7 @@ var getModelCmd = &cobra.Command{
   
   [MLflow endpoint]: https://www.mlflow.org/docs/latest/rest-api.html#get-registeredmodel`,
 
-	Annotations: map[string]string{
-		"package": "ml",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
@@ -847,9 +820,7 @@ var getModelVersionCmd = &cobra.Command{
   
   Get a model version.`,
 
-	Annotations: map[string]string{
-		"package": "ml",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
@@ -898,9 +869,7 @@ var getModelVersionDownloadUriCmd = &cobra.Command{
   
   Gets a URI to download the model version.`,
 
-	Annotations: map[string]string{
-		"package": "ml",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
@@ -953,9 +922,7 @@ var listModelsCmd = &cobra.Command{
   Lists all available registered models, up to the limit specified in
   __max_results__.`,
 
-	Annotations: map[string]string{
-		"package": "ml",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {
@@ -1002,9 +969,7 @@ var listTransitionRequestsCmd = &cobra.Command{
   
   Gets a list of all open stage transition requests for the model version.`,
 
-	Annotations: map[string]string{
-		"package": "ml",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
@@ -1059,9 +1024,7 @@ var listWebhooksCmd = &cobra.Command{
   
   Lists all registry webhooks.`,
 
-	Annotations: map[string]string{
-		"package": "ml",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {
@@ -1110,9 +1073,7 @@ var rejectTransitionRequestCmd = &cobra.Command{
   
   Rejects a model version stage transition request.`,
 
-	Annotations: map[string]string{
-		"package": "ml",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(3)
 		if cmd.Flags().Changed("json") {
@@ -1167,9 +1128,7 @@ var renameModelCmd = &cobra.Command{
   
   Renames a registered model.`,
 
-	Annotations: map[string]string{
-		"package": "ml",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
@@ -1222,9 +1181,7 @@ var searchModelVersionsCmd = &cobra.Command{
   
   Searches for specific model versions based on the supplied __filter__.`,
 
-	Annotations: map[string]string{
-		"package": "ml",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {
@@ -1276,9 +1233,7 @@ var searchModelsCmd = &cobra.Command{
   
   Search for registered models based on the specified __filter__.`,
 
-	Annotations: map[string]string{
-		"package": "ml",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {
@@ -1325,9 +1280,7 @@ var setModelTagCmd = &cobra.Command{
   
   Sets a tag on a registered model.`,
 
-	Annotations: map[string]string{
-		"package": "ml",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(3)
 		if cmd.Flags().Changed("json") {
@@ -1377,9 +1330,7 @@ var setModelVersionTagCmd = &cobra.Command{
   
   Sets a model version tag.`,
 
-	Annotations: map[string]string{
-		"package": "ml",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(4)
 		if cmd.Flags().Changed("json") {
@@ -1434,9 +1385,7 @@ var testRegistryWebhookCmd = &cobra.Command{
   
   Tests a registry webhook.`,
 
-	Annotations: map[string]string{
-		"package": "ml",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
@@ -1490,9 +1439,7 @@ var transitionStageCmd = &cobra.Command{
   
   [MLflow endpoint]: https://www.mlflow.org/docs/latest/rest-api.html#transition-modelversion-stage`,
 
-	Annotations: map[string]string{
-		"package": "ml",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(4)
 		if cmd.Flags().Changed("json") {
@@ -1549,9 +1496,7 @@ var updateCommentCmd = &cobra.Command{
   
   Post an edit to a comment on a model version.`,
 
-	Annotations: map[string]string{
-		"package": "ml",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
@@ -1602,9 +1547,7 @@ var updateModelCmd = &cobra.Command{
   
   Updates a registered model.`,
 
-	Annotations: map[string]string{
-		"package": "ml",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
@@ -1654,9 +1597,7 @@ var updateModelVersionCmd = &cobra.Command{
   
   Updates the model version.`,
 
-	Annotations: map[string]string{
-		"package": "ml",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
@@ -1713,9 +1654,7 @@ var updateWebhookCmd = &cobra.Command{
   
   Updates a registry webhook.`,
 
-	Annotations: map[string]string{
-		"package": "ml",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {

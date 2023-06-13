@@ -16,6 +16,9 @@ var Cmd = &cobra.Command{
 	Use:   "recipients",
 	Short: `Databricks Recipients REST API.`,
 	Long:  `Databricks Recipients REST API`,
+	Annotations: map[string]string{
+		"package": "sharing",
+	},
 }
 
 // start create command
@@ -46,9 +49,7 @@ var createCmd = &cobra.Command{
   metastore. The caller must be a metastore admin or has the
   **CREATE_RECIPIENT** privilege on the metastore.`,
 
-	Annotations: map[string]string{
-		"package": "sharing",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
@@ -101,10 +102,8 @@ var deleteCmd = &cobra.Command{
   Deletes the specified recipient from the metastore. The caller must be the
   owner of the recipient.`,
 
-	Annotations: map[string]string{
-		"package": "sharing",
-	},
-	PreRunE: root.MustWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -163,10 +162,8 @@ var getCmd = &cobra.Command{
   
   * the caller is the owner of the share recipient, or: * is a metastore admin`,
 
-	Annotations: map[string]string{
-		"package": "sharing",
-	},
-	PreRunE: root.MustWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -228,9 +225,7 @@ var listCmd = &cobra.Command{
   * the caller is a metastore admin, or * the caller is the owner. There is no
   guarantee of a specific ordering of the elements in the array.`,
 
-	Annotations: map[string]string{
-		"package": "sharing",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {
@@ -278,9 +273,7 @@ var rotateTokenCmd = &cobra.Command{
   Refreshes the specified recipient's delta sharing authentication token with
   the provided token info. The caller must be the owner of the recipient.`,
 
-	Annotations: map[string]string{
-		"package": "sharing",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
@@ -333,10 +326,8 @@ var sharePermissionsCmd = &cobra.Command{
   Gets the share permissions for the specified Recipient. The caller must be a
   metastore admin or the owner of the Recipient.`,
 
-	Annotations: map[string]string{
-		"package": "sharing",
-	},
-	PreRunE: root.MustWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -401,10 +392,8 @@ var updateCmd = &cobra.Command{
   admin or the owner of the recipient. If the recipient name will be updated,
   the user must be both a metastore admin and the owner of the recipient.`,
 
-	Annotations: map[string]string{
-		"package": "sharing",
-	},
-	PreRunE: root.MustWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)

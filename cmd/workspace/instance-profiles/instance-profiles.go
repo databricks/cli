@@ -19,6 +19,9 @@ var Cmd = &cobra.Command{
   instance profiles for more information.
   
   [Secure access to S3 buckets]: https://docs.databricks.com/administration-guide/cloud-configurations/aws/instance-profiles.html`,
+	Annotations: map[string]string{
+		"package": "compute",
+	},
 }
 
 // start add command
@@ -45,9 +48,7 @@ var addCmd = &cobra.Command{
   In the UI, you can select the instance profile when launching clusters. This
   API is only available to admin users.`,
 
-	Annotations: map[string]string{
-		"package": "compute",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
@@ -112,9 +113,7 @@ var editCmd = &cobra.Command{
   [Databricks SQL Serverless]: https://docs.databricks.com/sql/admin/serverless.html
   [Enable serverless SQL warehouses]: https://docs.databricks.com/sql/admin/serverless.html`,
 
-	Annotations: map[string]string{
-		"package": "compute",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
@@ -159,10 +158,8 @@ var listCmd = &cobra.Command{
   
   This API is available to all users.`,
 
-	Annotations: map[string]string{
-		"package": "compute",
-	},
-	PreRunE: root.MustWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -196,9 +193,7 @@ var removeCmd = &cobra.Command{
   
   This API is only accessible to admin users.`,
 
-	Annotations: map[string]string{
-		"package": "compute",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {

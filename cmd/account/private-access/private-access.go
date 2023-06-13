@@ -16,6 +16,9 @@ var Cmd = &cobra.Command{
 	Use:   "private-access",
 	Short: `These APIs manage private access settings for this account.`,
 	Long:  `These APIs manage private access settings for this account.`,
+	Annotations: map[string]string{
+		"package": "provisioning",
+	},
 }
 
 // start create command
@@ -55,9 +58,7 @@ var createCmd = &cobra.Command{
   [AWS PrivateLink]: https://aws.amazon.com/privatelink
   [Databricks article about PrivateLink]: https://docs.databricks.com/administration-guide/cloud-configurations/aws/privatelink.html`,
 
-	Annotations: map[string]string{
-		"package": "provisioning",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
@@ -113,10 +114,8 @@ var deleteCmd = &cobra.Command{
   [AWS PrivateLink]: https://aws.amazon.com/privatelink
   [Databricks article about PrivateLink]: https://docs.databricks.com/administration-guide/cloud-configurations/aws/privatelink.html`,
 
-	Annotations: map[string]string{
-		"package": "provisioning",
-	},
-	PreRunE: root.MustAccountClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
@@ -180,10 +179,8 @@ var getCmd = &cobra.Command{
   [AWS PrivateLink]: https://aws.amazon.com/privatelink
   [Databricks article about PrivateLink]: https://docs.databricks.com/administration-guide/cloud-configurations/aws/privatelink.html`,
 
-	Annotations: map[string]string{
-		"package": "provisioning",
-	},
-	PreRunE: root.MustAccountClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
@@ -236,10 +233,8 @@ var listCmd = &cobra.Command{
   Gets a list of all private access settings objects for an account, specified
   by ID.`,
 
-	Annotations: map[string]string{
-		"package": "provisioning",
-	},
-	PreRunE: root.MustAccountClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
@@ -294,9 +289,7 @@ var replaceCmd = &cobra.Command{
   [AWS PrivateLink]: https://aws.amazon.com/privatelink
   [Databricks article about PrivateLink]: https://docs.databricks.com/administration-guide/cloud-configurations/aws/privatelink.html`,
 
-	Annotations: map[string]string{
-		"package": "provisioning",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(3)
 		if cmd.Flags().Changed("json") {

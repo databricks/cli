@@ -20,6 +20,9 @@ var Cmd = &cobra.Command{
   
   A notebook is a web-based interface to a document that contains runnable code,
   visualizations, and explanatory text.`,
+	Annotations: map[string]string{
+		"package": "workspace",
+	},
 }
 
 // start delete command
@@ -50,10 +53,8 @@ var deleteCmd = &cobra.Command{
   Object deletion cannot be undone and deleting a directory recursively is not
   atomic.`,
 
-	Annotations: map[string]string{
-		"package": "workspace",
-	},
-	PreRunE: root.MustWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -120,10 +121,8 @@ var exportCmd = &cobra.Command{
   exceed size limit, this call returns MAX_NOTEBOOK_SIZE_EXCEEDED. Currently,
   this API does not support exporting a library.`,
 
-	Annotations: map[string]string{
-		"package": "workspace",
-	},
-	PreRunE: root.MustWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -181,9 +180,7 @@ var getStatusCmd = &cobra.Command{
   Gets the status of an object or a directory. If path does not exist, this
   call returns an error RESOURCE_DOES_NOT_EXIST.`,
 
-	Annotations: map[string]string{
-		"package": "workspace",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
@@ -239,9 +236,7 @@ var importCmd = &cobra.Command{
   false, this call returns an error RESOURCE_ALREADY_EXISTS. One can only
   use DBC format to import a directory.`,
 
-	Annotations: map[string]string{
-		"package": "workspace",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
@@ -293,9 +288,7 @@ var listCmd = &cobra.Command{
   the input path does not exist, this call returns an error
   RESOURCE_DOES_NOT_EXIST.`,
 
-	Annotations: map[string]string{
-		"package": "workspace",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
@@ -348,10 +341,8 @@ var mkdirsCmd = &cobra.Command{
   Note that if this operation fails it may have succeeded in creating some of
   the necessary parrent directories.`,
 
-	Annotations: map[string]string{
-		"package": "workspace",
-	},
-	PreRunE: root.MustWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)

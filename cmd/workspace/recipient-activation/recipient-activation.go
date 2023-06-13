@@ -14,6 +14,9 @@ var Cmd = &cobra.Command{
 	Use:   "recipient-activation",
 	Short: `Databricks Recipient Activation REST API.`,
 	Long:  `Databricks Recipient Activation REST API`,
+	Annotations: map[string]string{
+		"package": "sharing",
+	},
 }
 
 // start get-activation-url-info command
@@ -35,9 +38,7 @@ var getActivationUrlInfoCmd = &cobra.Command{
   
   Gets an activation URL for a share.`,
 
-	Annotations: map[string]string{
-		"package": "sharing",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
@@ -86,9 +87,7 @@ var retrieveTokenCmd = &cobra.Command{
   Retrieve access token with an activation url. This is a public API without any
   authentication.`,
 
-	Annotations: map[string]string{
-		"package": "sharing",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {

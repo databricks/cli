@@ -21,6 +21,9 @@ var Cmd = &cobra.Command{
   in your workspace. We advise you to use any text editor, REST client, or
   grep to search the response from this API for the name of your SQL warehouse
   as it appears in Databricks SQL.`,
+	Annotations: map[string]string{
+		"package": "sql",
+	},
 }
 
 // start list command
@@ -39,10 +42,8 @@ var listCmd = &cobra.Command{
   fields that appear in this API response are enumerated for clarity. However,
   you need only a SQL warehouse's id to create new queries against it.`,
 
-	Annotations: map[string]string{
-		"package": "sql",
-	},
-	PreRunE: root.MustWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)

@@ -16,6 +16,9 @@ var Cmd = &cobra.Command{
 	Use:   "metastore-assignments",
 	Short: `These APIs manage metastore assignments to a workspace.`,
 	Long:  `These APIs manage metastore assignments to a workspace.`,
+	Annotations: map[string]string{
+		"package": "catalog",
+	},
 }
 
 // start create command
@@ -40,9 +43,7 @@ var createCmd = &cobra.Command{
   Creates an assignment to a metastore for a workspace Please add a header
   X-Databricks-Account-Console-API-Version: 2.0 to access this API.`,
 
-	Annotations: map[string]string{
-		"package": "catalog",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
@@ -96,9 +97,7 @@ var deleteCmd = &cobra.Command{
   metastore. Please add a header X-Databricks-Account-Console-API-Version: 2.0
   to access this API.`,
 
-	Annotations: map[string]string{
-		"package": "catalog",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
@@ -154,9 +153,7 @@ var getCmd = &cobra.Command{
   404 returned. Please add a header X-Databricks-Account-Console-API-Version:
   2.0 to access this API.`,
 
-	Annotations: map[string]string{
-		"package": "catalog",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
@@ -209,9 +206,7 @@ var listCmd = &cobra.Command{
   metastore. Please add a header X-Databricks-Account-Console-API-Version: 2.0
   to access this API`,
 
-	Annotations: map[string]string{
-		"package": "catalog",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
@@ -263,9 +258,7 @@ var updateCmd = &cobra.Command{
   default catalog may be updated. Please add a header
   X-Databricks-Account-Console-API-Version: 2.0 to access this API.`,
 
-	Annotations: map[string]string{
-		"package": "catalog",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {

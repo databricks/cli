@@ -27,6 +27,9 @@ var Cmd = &cobra.Command{
   Databricks secrets. While Databricks makes an effort to redact secret values
   that might be displayed in notebooks, it is not possible to prevent such users
   from reading secrets.`,
+	Annotations: map[string]string{
+		"package": "workspace",
+	},
 }
 
 // start create-scope command
@@ -54,9 +57,7 @@ var createScopeCmd = &cobra.Command{
   and periods, and may not exceed 128 characters. The maximum number of scopes
   in a workspace is 100.`,
 
-	Annotations: map[string]string{
-		"package": "workspace",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
@@ -109,9 +110,7 @@ var deleteAclCmd = &cobra.Command{
   Throws PERMISSION_DENIED if the user does not have permission to make this
   API call.`,
 
-	Annotations: map[string]string{
-		"package": "workspace",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
@@ -164,9 +163,7 @@ var deleteScopeCmd = &cobra.Command{
   PERMISSION_DENIED if the user does not have permission to make this API
   call.`,
 
-	Annotations: map[string]string{
-		"package": "workspace",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
@@ -219,9 +216,7 @@ var deleteSecretCmd = &cobra.Command{
   Throws PERMISSION_DENIED if the user does not have permission to make this
   API call.`,
 
-	Annotations: map[string]string{
-		"package": "workspace",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
@@ -275,9 +270,7 @@ var getAclCmd = &cobra.Command{
   PERMISSION_DENIED if the user does not have permission to make this API
   call.`,
 
-	Annotations: map[string]string{
-		"package": "workspace",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
@@ -331,9 +324,7 @@ var listAclsCmd = &cobra.Command{
   PERMISSION_DENIED if the user does not have permission to make this API
   call.`,
 
-	Annotations: map[string]string{
-		"package": "workspace",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
@@ -379,10 +370,8 @@ var listScopesCmd = &cobra.Command{
   Throws PERMISSION_DENIED if the user does not have permission to make this
   API call.`,
 
-	Annotations: map[string]string{
-		"package": "workspace",
-	},
-	PreRunE: root.MustWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -420,9 +409,7 @@ var listSecretsCmd = &cobra.Command{
   PERMISSION_DENIED if the user does not have permission to make this API
   call.`,
 
-	Annotations: map[string]string{
-		"package": "workspace",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
@@ -495,9 +482,7 @@ var putAclCmd = &cobra.Command{
   PERMISSION_DENIED if the user does not have permission to make this API
   call.`,
 
-	Annotations: map[string]string{
-		"package": "workspace",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(3)
 		if cmd.Flags().Changed("json") {

@@ -26,6 +26,9 @@ var Cmd = &cobra.Command{
   
   To create external locations, you must be a metastore admin or a user with the
   **CREATE_EXTERNAL_LOCATION** privilege.`,
+	Annotations: map[string]string{
+		"package": "catalog",
+	},
 }
 
 // start create command
@@ -53,9 +56,7 @@ var createCmd = &cobra.Command{
   metastore admin or have the **CREATE_EXTERNAL_LOCATION** privilege on both the
   metastore and the associated storage credential.`,
 
-	Annotations: map[string]string{
-		"package": "catalog",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(3)
 		if cmd.Flags().Changed("json") {
@@ -108,9 +109,7 @@ var deleteCmd = &cobra.Command{
   Deletes the specified external location from the metastore. The caller must be
   the owner of the external location.`,
 
-	Annotations: map[string]string{
-		"package": "catalog",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
@@ -160,9 +159,7 @@ var getCmd = &cobra.Command{
   metastore admin, the owner of the external location, or a user that has some
   privilege on the external location.`,
 
-	Annotations: map[string]string{
-		"package": "catalog",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
@@ -208,10 +205,8 @@ var listCmd = &cobra.Command{
   location, or a user that has some privilege on the external location. There is
   no guarantee of a specific ordering of the elements in the array.`,
 
-	Annotations: map[string]string{
-		"package": "catalog",
-	},
-	PreRunE: root.MustWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -252,9 +247,7 @@ var updateCmd = &cobra.Command{
   the external location, or be a metastore admin. In the second case, the admin
   can only update the name of the external location.`,
 
-	Annotations: map[string]string{
-		"package": "catalog",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {

@@ -39,6 +39,9 @@ var Cmd = &cobra.Command{
   
   Only admin users can create, edit, and delete policies. Admin users also have
   access to all policies.`,
+	Annotations: map[string]string{
+		"package": "compute",
+	},
 }
 
 // start create command
@@ -66,9 +69,7 @@ var createCmd = &cobra.Command{
   
   Creates a new policy with prescribed settings.`,
 
-	Annotations: map[string]string{
-		"package": "compute",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
@@ -117,10 +118,8 @@ var deleteCmd = &cobra.Command{
   Delete a policy for a cluster. Clusters governed by this policy can still run,
   but cannot be edited.`,
 
-	Annotations: map[string]string{
-		"package": "compute",
-	},
-	PreRunE: root.MustWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -184,9 +183,7 @@ var editCmd = &cobra.Command{
   Update an existing policy for cluster. This operation may make some clusters
   governed by the previous policy invalid.`,
 
-	Annotations: map[string]string{
-		"package": "compute",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
@@ -235,10 +232,8 @@ var getCmd = &cobra.Command{
   
   Get a cluster policy entity. Creation and editing is available to admins only.`,
 
-	Annotations: map[string]string{
-		"package": "compute",
-	},
-	PreRunE: root.MustWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -298,9 +293,7 @@ var listCmd = &cobra.Command{
   
   Returns a list of policies accessible by the requesting user.`,
 
-	Annotations: map[string]string{
-		"package": "compute",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {

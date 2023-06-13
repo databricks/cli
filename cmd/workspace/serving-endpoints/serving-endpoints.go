@@ -29,6 +29,9 @@ var Cmd = &cobra.Command{
   define how requests should be routed to your served models behind an endpoint.
   Additionally, you can configure the scale of resources that should be applied
   to each served model.`,
+	Annotations: map[string]string{
+		"package": "serving",
+	},
 }
 
 // start build-logs command
@@ -51,9 +54,7 @@ var buildLogsCmd = &cobra.Command{
   
   Retrieves the build logs associated with the provided served model.`,
 
-	Annotations: map[string]string{
-		"package": "serving",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
@@ -105,10 +106,8 @@ var createCmd = &cobra.Command{
 	Short: `Create a new serving endpoint.`,
 	Long:  `Create a new serving endpoint.`,
 
-	Annotations: map[string]string{
-		"package": "serving",
-	},
-	PreRunE: root.MustWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -163,9 +162,7 @@ var deleteCmd = &cobra.Command{
 	Short: `Delete a serving endpoint.`,
 	Long:  `Delete a serving endpoint.`,
 
-	Annotations: map[string]string{
-		"package": "serving",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
@@ -215,9 +212,7 @@ var exportMetricsCmd = &cobra.Command{
   Retrieves the metrics associated with the provided serving endpoint in either
   Prometheus or OpenMetrics exposition format.`,
 
-	Annotations: map[string]string{
-		"package": "serving",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
@@ -265,9 +260,7 @@ var getCmd = &cobra.Command{
   
   Retrieves the details for a single serving endpoint.`,
 
-	Annotations: map[string]string{
-		"package": "serving",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
@@ -308,10 +301,8 @@ var listCmd = &cobra.Command{
 	Short: `Retrieve all serving endpoints.`,
 	Long:  `Retrieve all serving endpoints.`,
 
-	Annotations: map[string]string{
-		"package": "serving",
-	},
-	PreRunE: root.MustWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -343,9 +334,7 @@ var logsCmd = &cobra.Command{
   
   Retrieves the service logs associated with the provided served model.`,
 
-	Annotations: map[string]string{
-		"package": "serving",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
@@ -392,9 +381,7 @@ var queryCmd = &cobra.Command{
 	Short: `Query a serving endpoint with provided model input.`,
 	Long:  `Query a serving endpoint with provided model input.`,
 
-	Annotations: map[string]string{
-		"package": "serving",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
@@ -452,10 +439,8 @@ var updateConfigCmd = &cobra.Command{
   endpoint that already has an update in progress can not be updated until the
   current update completes or fails.`,
 
-	Annotations: map[string]string{
-		"package": "serving",
-	},
-	PreRunE: root.MustWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)

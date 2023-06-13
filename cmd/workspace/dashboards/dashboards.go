@@ -21,6 +21,9 @@ var Cmd = &cobra.Command{
   since you can get a dashboard definition with a GET request and then POST it
   to create a new one. Dashboards can be scheduled using the sql_task type of
   the Jobs API, e.g. :method:jobs/create.`,
+	Annotations: map[string]string{
+		"package": "sql",
+	},
 }
 
 // start create command
@@ -45,9 +48,7 @@ var createCmd = &cobra.Command{
 	Short: `Create a dashboard object.`,
 	Long:  `Create a dashboard object.`,
 
-	Annotations: map[string]string{
-		"package": "sql",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {
@@ -95,10 +96,8 @@ var deleteCmd = &cobra.Command{
   Moves a dashboard to the trash. Trashed dashboards do not appear in list views
   or searches, and cannot be shared.`,
 
-	Annotations: map[string]string{
-		"package": "sql",
-	},
-	PreRunE: root.MustWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -156,10 +155,8 @@ var getCmd = &cobra.Command{
   Returns a JSON representation of a dashboard object, including its
   visualization and query objects.`,
 
-	Annotations: map[string]string{
-		"package": "sql",
-	},
-	PreRunE: root.MustWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -221,9 +218,7 @@ var listCmd = &cobra.Command{
   
   Fetch a paginated list of dashboard objects.`,
 
-	Annotations: map[string]string{
-		"package": "sql",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {
@@ -270,10 +265,8 @@ var restoreCmd = &cobra.Command{
   
   A restored dashboard appears in list views and searches and can be shared.`,
 
-	Annotations: map[string]string{
-		"package": "sql",
-	},
-	PreRunE: root.MustWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)

@@ -17,6 +17,9 @@ var Cmd = &cobra.Command{
 	Short: `The Token API allows you to create, list, and revoke tokens that can be used to authenticate and access Databricks REST APIs.`,
 	Long: `The Token API allows you to create, list, and revoke tokens that can be used
   to authenticate and access Databricks REST APIs.`,
+	Annotations: map[string]string{
+		"package": "settings",
+	},
 }
 
 // start create command
@@ -44,9 +47,7 @@ var createCmd = &cobra.Command{
   authenticated token. If the user's token quota is exceeded, this call returns
   an error **QUOTA_EXCEEDED**.`,
 
-	Annotations: map[string]string{
-		"package": "settings",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {
@@ -96,10 +97,8 @@ var deleteCmd = &cobra.Command{
   If a token with the specified ID is not valid, this call returns an error
   **RESOURCE_DOES_NOT_EXIST**.`,
 
-	Annotations: map[string]string{
-		"package": "settings",
-	},
-	PreRunE: root.MustWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -151,10 +150,8 @@ var listCmd = &cobra.Command{
   
   Lists all the valid tokens for a user-workspace pair.`,
 
-	Annotations: map[string]string{
-		"package": "settings",
-	},
-	PreRunE: root.MustWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)

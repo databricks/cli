@@ -26,6 +26,9 @@ var Cmd = &cobra.Command{
   may create different types of connections with each connection having a unique
   set of configuration options to support credential management and other
   settings.`,
+	Annotations: map[string]string{
+		"package": "catalog",
+	},
 }
 
 // start create command
@@ -56,10 +59,8 @@ var createCmd = &cobra.Command{
   specify connection details and configurations for interaction with the
   external server.`,
 
-	Annotations: map[string]string{
-		"package": "catalog",
-	},
-	PreRunE: root.MustWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -107,10 +108,8 @@ var deleteCmd = &cobra.Command{
   
   Deletes the connection that matches the supplied name.`,
 
-	Annotations: map[string]string{
-		"package": "catalog",
-	},
-	PreRunE: root.MustWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -167,10 +166,8 @@ var getCmd = &cobra.Command{
   
   Gets a connection from it's name.`,
 
-	Annotations: map[string]string{
-		"package": "catalog",
-	},
-	PreRunE: root.MustWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -222,10 +219,8 @@ var listCmd = &cobra.Command{
   
   List all connections.`,
 
-	Annotations: map[string]string{
-		"package": "catalog",
-	},
-	PreRunE: root.MustWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -256,10 +251,8 @@ var updateCmd = &cobra.Command{
   
   Updates the connection that matches the supplied name.`,
 
-	Annotations: map[string]string{
-		"package": "catalog",
-	},
-	PreRunE: root.MustWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)

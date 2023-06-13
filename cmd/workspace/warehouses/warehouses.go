@@ -19,6 +19,9 @@ var Cmd = &cobra.Command{
 	Long: `A SQL warehouse is a compute resource that lets you run SQL commands on data
   objects within Databricks SQL. Compute resources are infrastructure resources
   that provide processing capabilities in the cloud.`,
+	Annotations: map[string]string{
+		"package": "sql",
+	},
 }
 
 // start create command
@@ -59,9 +62,7 @@ var createCmd = &cobra.Command{
   
   Creates a new SQL warehouse.`,
 
-	Annotations: map[string]string{
-		"package": "sql",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {
@@ -127,10 +128,8 @@ var deleteCmd = &cobra.Command{
   
   Deletes a SQL warehouse.`,
 
-	Annotations: map[string]string{
-		"package": "sql",
-	},
-	PreRunE: root.MustWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -206,10 +205,8 @@ var editCmd = &cobra.Command{
   
   Updates the configuration for a SQL warehouse.`,
 
-	Annotations: map[string]string{
-		"package": "sql",
-	},
-	PreRunE: root.MustWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -290,10 +287,8 @@ var getCmd = &cobra.Command{
   
   Gets the information for a single SQL warehouse.`,
 
-	Annotations: map[string]string{
-		"package": "sql",
-	},
-	PreRunE: root.MustWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -346,10 +341,8 @@ var getWorkspaceWarehouseConfigCmd = &cobra.Command{
   Gets the workspace level configuration that is shared by all SQL warehouses in
   a workspace.`,
 
-	Annotations: map[string]string{
-		"package": "sql",
-	},
-	PreRunE: root.MustWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -382,9 +375,7 @@ var listCmd = &cobra.Command{
   
   Lists all SQL warehouses that a user has manager permissions on.`,
 
-	Annotations: map[string]string{
-		"package": "sql",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {
@@ -442,9 +433,7 @@ var setWorkspaceWarehouseConfigCmd = &cobra.Command{
   Sets the workspace level configuration that is shared by all SQL warehouses in
   a workspace.`,
 
-	Annotations: map[string]string{
-		"package": "sql",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {
@@ -496,10 +485,8 @@ var startCmd = &cobra.Command{
   
   Starts a SQL warehouse.`,
 
-	Annotations: map[string]string{
-		"package": "sql",
-	},
-	PreRunE: root.MustWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -580,10 +567,8 @@ var stopCmd = &cobra.Command{
   
   Stops a SQL warehouse.`,
 
-	Annotations: map[string]string{
-		"package": "sql",
-	},
-	PreRunE: root.MustWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)

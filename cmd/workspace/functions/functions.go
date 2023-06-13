@@ -21,6 +21,9 @@ var Cmd = &cobra.Command{
   invoked wherever a table reference is allowed in a query. In Unity Catalog, a
   function resides at the same level as a table, so it can be referenced with
   the form __catalog_name__.__schema_name__.__function_name__.`,
+	Annotations: map[string]string{
+		"package": "catalog",
+	},
 }
 
 // start create command
@@ -52,10 +55,8 @@ var createCmd = &cobra.Command{
   created: - **USE_CATALOG** on the function's parent catalog - **USE_SCHEMA**
   and **CREATE_FUNCTION** on the function's parent schema`,
 
-	Annotations: map[string]string{
-		"package": "catalog",
-	},
-	PreRunE: root.MustWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -147,10 +148,8 @@ var deleteCmd = &cobra.Command{
   owner of the function itself and have both the **USE_CATALOG** privilege on
   its parent catalog and the **USE_SCHEMA** privilege on its parent schema`,
 
-	Annotations: map[string]string{
-		"package": "catalog",
-	},
-	PreRunE: root.MustWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -213,10 +212,8 @@ var getCmd = &cobra.Command{
   catalog, the **USE_SCHEMA** privilege on the function's parent schema, and the
   **EXECUTE** privilege on the function itself`,
 
-	Annotations: map[string]string{
-		"package": "catalog",
-	},
-	PreRunE: root.MustWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -279,9 +276,7 @@ var listCmd = &cobra.Command{
   is the owner. There is no guarantee of a specific ordering of the elements in
   the array.`,
 
-	Annotations: map[string]string{
-		"package": "catalog",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
@@ -339,10 +334,8 @@ var updateCmd = &cobra.Command{
   privilege on its parent catalog as well as the **USE_SCHEMA** privilege on the
   function's parent schema.`,
 
-	Annotations: map[string]string{
-		"package": "catalog",
-	},
-	PreRunE: root.MustWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)

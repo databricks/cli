@@ -17,6 +17,9 @@ var Cmd = &cobra.Command{
 	Short: `The Workspace Permission Assignment API allows you to manage workspace permissions for principals in your account.`,
 	Long: `The Workspace Permission Assignment API allows you to manage workspace
   permissions for principals in your account.`,
+	Annotations: map[string]string{
+		"package": "iam",
+	},
 }
 
 // start delete command
@@ -39,9 +42,7 @@ var deleteCmd = &cobra.Command{
   Deletes the workspace permissions assignment in a given account and workspace
   for the specified principal.`,
 
-	Annotations: map[string]string{
-		"package": "iam",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
@@ -96,9 +97,7 @@ var getCmd = &cobra.Command{
   
   Get an array of workspace permissions for the specified account and workspace.`,
 
-	Annotations: map[string]string{
-		"package": "iam",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
@@ -150,9 +149,7 @@ var listCmd = &cobra.Command{
   Get the permission assignments for the specified Databricks account and
   Databricks workspace.`,
 
-	Annotations: map[string]string{
-		"package": "iam",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
@@ -204,10 +201,8 @@ var updateCmd = &cobra.Command{
   Creates or updates the workspace permissions assignment in a given account and
   workspace for the specified principal.`,
 
-	Annotations: map[string]string{
-		"package": "iam",
-	},
-	PreRunE: root.MustAccountClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)

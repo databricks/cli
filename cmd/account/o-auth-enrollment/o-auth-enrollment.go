@@ -18,6 +18,9 @@ var Cmd = &cobra.Command{
   
   **Note:** Your account must be on the E2 version to use these APIs, this is
   because OAuth is only supported on the E2 version.`,
+	Annotations: map[string]string{
+		"package": "oauth2",
+	},
 }
 
 // start create command
@@ -49,9 +52,7 @@ var createCmd = &cobra.Command{
   immediately. The actual enrollment take a few minutes, you can check the
   status via API :method:OAuthEnrollment/get.`,
 
-	Annotations: map[string]string{
-		"package": "oauth2",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {
@@ -96,10 +97,8 @@ var getCmd = &cobra.Command{
   You can only add/use the OAuth published/custom application integrations when
   OAuth enrollment status is enabled.`,
 
-	Annotations: map[string]string{
-		"package": "oauth2",
-	},
-	PreRunE: root.MustAccountClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)

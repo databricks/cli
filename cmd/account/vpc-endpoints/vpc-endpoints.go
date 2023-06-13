@@ -16,6 +16,9 @@ var Cmd = &cobra.Command{
 	Use:   "vpc-endpoints",
 	Short: `These APIs manage VPC endpoint configurations for this account.`,
 	Long:  `These APIs manage VPC endpoint configurations for this account.`,
+	Annotations: map[string]string{
+		"package": "provisioning",
+	},
 }
 
 // start create command
@@ -53,9 +56,7 @@ var createCmd = &cobra.Command{
   [VPC endpoint]: https://docs.aws.amazon.com/vpc/latest/privatelink/vpc-endpoints.html
   [endpoint service]: https://docs.aws.amazon.com/vpc/latest/privatelink/privatelink-share-your-services.html`,
 
-	Annotations: map[string]string{
-		"package": "provisioning",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
@@ -111,10 +112,8 @@ var deleteCmd = &cobra.Command{
   [AWS VPC endpoint]: https://docs.aws.amazon.com/vpc/latest/privatelink/concepts.html
   [Databricks article about PrivateLink]: https://docs.databricks.com/administration-guide/cloud-configurations/aws/privatelink.html`,
 
-	Annotations: map[string]string{
-		"package": "provisioning",
-	},
-	PreRunE: root.MustAccountClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
@@ -175,10 +174,8 @@ var getCmd = &cobra.Command{
   [AWS PrivateLink]: https://aws.amazon.com/privatelink
   [VPC endpoint]: https://docs.aws.amazon.com/vpc/latest/privatelink/concepts.html`,
 
-	Annotations: map[string]string{
-		"package": "provisioning",
-	},
-	PreRunE: root.MustAccountClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
@@ -235,10 +232,8 @@ var listCmd = &cobra.Command{
   
   [Databricks article about PrivateLink]: https://docs.databricks.com/administration-guide/cloud-configurations/aws/privatelink.html`,
 
-	Annotations: map[string]string{
-		"package": "provisioning",
-	},
-	PreRunE: root.MustAccountClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)

@@ -17,6 +17,9 @@ var Cmd = &cobra.Command{
 	Short: `These APIs manage network configurations for customer-managed VPCs (optional).`,
 	Long: `These APIs manage network configurations for customer-managed VPCs (optional).
   Its ID is used when creating a new workspace if you use customer-managed VPCs.`,
+	Annotations: map[string]string{
+		"package": "provisioning",
+	},
 }
 
 // start create command
@@ -46,9 +49,7 @@ var createCmd = &cobra.Command{
   resources. The VPC will be used for new Databricks clusters. This requires a
   pre-existing VPC and subnets.`,
 
-	Annotations: map[string]string{
-		"package": "provisioning",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
@@ -101,10 +102,8 @@ var deleteCmd = &cobra.Command{
   This operation is available only if your account is on the E2 version of the
   platform.`,
 
-	Annotations: map[string]string{
-		"package": "provisioning",
-	},
-	PreRunE: root.MustAccountClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
@@ -162,10 +161,8 @@ var getCmd = &cobra.Command{
   Gets a Databricks network configuration, which represents a cloud VPC and its
   resources.`,
 
-	Annotations: map[string]string{
-		"package": "provisioning",
-	},
-	PreRunE: root.MustAccountClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
@@ -221,10 +218,8 @@ var listCmd = &cobra.Command{
   This operation is available only if your account is on the E2 version of the
   platform.`,
 
-	Annotations: map[string]string{
-		"package": "provisioning",
-	},
-	PreRunE: root.MustAccountClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)

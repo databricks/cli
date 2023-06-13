@@ -16,6 +16,9 @@ var Cmd = &cobra.Command{
 	Long: `A system schema is a schema that lives within the system catalog. A system
   schema may contain information about customer usage of Unity Catalog such as
   audit-logs, billing-logs, lineage information, etc.`,
+	Annotations: map[string]string{
+		"package": "catalog",
+	},
 }
 
 // start disable command
@@ -38,9 +41,7 @@ var disableCmd = &cobra.Command{
   Disables the system schema and removes it from the system catalog. The caller
   must be an account admin or a metastore admin.`,
 
-	Annotations: map[string]string{
-		"package": "catalog",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
@@ -85,10 +86,8 @@ var enableCmd = &cobra.Command{
   Enables the system schema and adds it to the system catalog. The caller must
   be an account admin or a metastore admin.`,
 
-	Annotations: map[string]string{
-		"package": "catalog",
-	},
-	PreRunE: root.MustWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -120,9 +119,7 @@ var listCmd = &cobra.Command{
   Gets an array of system schemas for a metastore. The caller must be an account
   admin or a metastore admin.`,
 
-	Annotations: map[string]string{
-		"package": "catalog",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {

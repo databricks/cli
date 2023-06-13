@@ -24,6 +24,9 @@ var Cmd = &cobra.Command{
   
   A table can be managed or external. From an API perspective, a __VIEW__ is a
   particular kind of table (rather than a managed or external table).`,
+	Annotations: map[string]string{
+		"package": "catalog",
+	},
 }
 
 // start delete command
@@ -49,10 +52,8 @@ var deleteCmd = &cobra.Command{
   table and have the **USE_CATALOG** privilege on the parent catalog and the
   **USE_SCHEMA** privilege on the parent schema.`,
 
-	Annotations: map[string]string{
-		"package": "catalog",
-	},
-	PreRunE: root.MustWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -115,10 +116,8 @@ var getCmd = &cobra.Command{
   privilege on the parent schema, or be the owner of the table and have the
   **SELECT** privilege on it as well.`,
 
-	Annotations: map[string]string{
-		"package": "catalog",
-	},
-	PreRunE: root.MustWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -184,9 +183,7 @@ var listCmd = &cobra.Command{
   the **USE_SCHEMA** privilege on the parent schema. There is no guarantee of a
   specific ordering of the elements in the array.`,
 
-	Annotations: map[string]string{
-		"package": "catalog",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
@@ -250,10 +247,8 @@ var listSummariesCmd = &cobra.Command{
   
   There is no guarantee of a specific ordering of the elements in the array.`,
 
-	Annotations: map[string]string{
-		"package": "catalog",
-	},
-	PreRunE: root.MustWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)

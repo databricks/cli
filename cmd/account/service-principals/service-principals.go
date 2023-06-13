@@ -21,6 +21,9 @@ var Cmd = &cobra.Command{
   production data run with service principals, interactive users do not need any
   write, delete, or modify privileges in production. This eliminates the risk of
   a user overwriting production data by accident.`,
+	Annotations: map[string]string{
+		"package": "iam",
+	},
 }
 
 // start create command
@@ -51,9 +54,7 @@ var createCmd = &cobra.Command{
   
   Creates a new service principal in the Databricks account.`,
 
-	Annotations: map[string]string{
-		"package": "iam",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {
@@ -100,10 +101,8 @@ var deleteCmd = &cobra.Command{
   
   Delete a single service principal in the Databricks account.`,
 
-	Annotations: map[string]string{
-		"package": "iam",
-	},
-	PreRunE: root.MustAccountClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
@@ -161,10 +160,8 @@ var getCmd = &cobra.Command{
   Gets the details for a single service principal define in the Databricks
   account.`,
 
-	Annotations: map[string]string{
-		"package": "iam",
-	},
-	PreRunE: root.MustAccountClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
@@ -229,9 +226,7 @@ var listCmd = &cobra.Command{
   
   Gets the set of service principals associated with a Databricks account.`,
 
-	Annotations: map[string]string{
-		"package": "iam",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {
@@ -281,10 +276,8 @@ var patchCmd = &cobra.Command{
   Partially updates the details of a single service principal in the Databricks
   account.`,
 
-	Annotations: map[string]string{
-		"package": "iam",
-	},
-	PreRunE: root.MustAccountClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
@@ -352,10 +345,8 @@ var updateCmd = &cobra.Command{
   
   This action replaces the existing service principal with the same name.`,
 
-	Annotations: map[string]string{
-		"package": "iam",
-	},
-	PreRunE: root.MustAccountClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)

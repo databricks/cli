@@ -24,6 +24,9 @@ var Cmd = &cobra.Command{
   Experiments are located in the workspace file tree. You manage experiments
   using the same tools you use to manage other workspace objects such as
   folders, notebooks, and libraries.`,
+	Annotations: map[string]string{
+		"package": "ml",
+	},
 }
 
 // start create-experiment command
@@ -53,9 +56,7 @@ var createExperimentCmd = &cobra.Command{
   
   Throws RESOURCE_ALREADY_EXISTS if a experiment with the given name exists.`,
 
-	Annotations: map[string]string{
-		"package": "ml",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
@@ -111,9 +112,7 @@ var createRunCmd = &cobra.Command{
   mlflowParam, mlflowMetric and mlflowRunTag associated with a single
   execution.`,
 
-	Annotations: map[string]string{
-		"package": "ml",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {
@@ -162,9 +161,7 @@ var deleteExperimentCmd = &cobra.Command{
   for deletion. If the experiment uses FileStore, artifacts associated with
   experiment are also deleted.`,
 
-	Annotations: map[string]string{
-		"package": "ml",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
@@ -212,9 +209,7 @@ var deleteRunCmd = &cobra.Command{
   
   Marks a run for deletion.`,
 
-	Annotations: map[string]string{
-		"package": "ml",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
@@ -263,9 +258,7 @@ var deleteTagCmd = &cobra.Command{
   Deletes a tag on a run. Tags are run metadata that can be updated during a run
   and after a run completes.`,
 
-	Annotations: map[string]string{
-		"package": "ml",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
@@ -322,9 +315,7 @@ var getByNameCmd = &cobra.Command{
   Throws RESOURCE_DOES_NOT_EXIST if no experiment with the specified name
   exists.`,
 
-	Annotations: map[string]string{
-		"package": "ml",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
@@ -372,9 +363,7 @@ var getExperimentCmd = &cobra.Command{
   
   Gets metadata for an experiment. This method works on deleted experiments.`,
 
-	Annotations: map[string]string{
-		"package": "ml",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
@@ -427,9 +416,7 @@ var getHistoryCmd = &cobra.Command{
   
   Gets a list of all values for the specified metric for a given run.`,
 
-	Annotations: map[string]string{
-		"package": "ml",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
@@ -484,9 +471,7 @@ var getRunCmd = &cobra.Command{
   If there are multiple values with the latest timestamp, return the maximum of
   these values.`,
 
-	Annotations: map[string]string{
-		"package": "ml",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
@@ -540,9 +525,7 @@ var listArtifactsCmd = &cobra.Command{
   List artifacts for a run. Takes an optional artifact_path prefix. If it is
   specified, the response contains only artifacts with the specified prefix.",`,
 
-	Annotations: map[string]string{
-		"package": "ml",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {
@@ -593,9 +576,7 @@ var listExperimentsCmd = &cobra.Command{
   
   Gets a list of all experiments.`,
 
-	Annotations: map[string]string{
-		"package": "ml",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {
@@ -683,9 +664,7 @@ var logBatchCmd = &cobra.Command{
   * Metric keyes, param keys, and tag keys can be up to 250 characters in length
   * Parameter and tag values can be up to 250 characters in length`,
 
-	Annotations: map[string]string{
-		"package": "ml",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {
@@ -736,9 +715,7 @@ var logInputsCmd = &cobra.Command{
   **NOTE:** Experimental: This API may change or be removed in a future release
   without warning.`,
 
-	Annotations: map[string]string{
-		"package": "ml",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {
@@ -791,9 +768,7 @@ var logMetricCmd = &cobra.Command{
   value) with an associated timestamp. Examples include the various metrics that
   represent ML model accuracy. A metric can be logged multiple times.`,
 
-	Annotations: map[string]string{
-		"package": "ml",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(3)
 		if cmd.Flags().Changed("json") {
@@ -853,9 +828,7 @@ var logModelCmd = &cobra.Command{
   **NOTE:** Experimental: This API may change or be removed in a future release
   without warning.`,
 
-	Annotations: map[string]string{
-		"package": "ml",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {
@@ -908,9 +881,7 @@ var logParamCmd = &cobra.Command{
   constant dates and values used in an ETL pipeline. A param can be logged only
   once for a run.`,
 
-	Annotations: map[string]string{
-		"package": "ml",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
@@ -964,9 +935,7 @@ var restoreExperimentCmd = &cobra.Command{
   Throws RESOURCE_DOES_NOT_EXIST if experiment was never created or was
   permanently deleted.`,
 
-	Annotations: map[string]string{
-		"package": "ml",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
@@ -1014,9 +983,7 @@ var restoreRunCmd = &cobra.Command{
   
   Restores a deleted run.`,
 
-	Annotations: map[string]string{
-		"package": "ml",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
@@ -1070,9 +1037,7 @@ var searchExperimentsCmd = &cobra.Command{
   
   Searches for experiments that satisfy specified search criteria.`,
 
-	Annotations: map[string]string{
-		"package": "ml",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {
@@ -1128,9 +1093,7 @@ var searchRunsCmd = &cobra.Command{
   
   Search expressions can use mlflowMetric and mlflowParam keys.",`,
 
-	Annotations: map[string]string{
-		"package": "ml",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {
@@ -1177,9 +1140,7 @@ var setExperimentTagCmd = &cobra.Command{
   
   Sets a tag on an experiment. Experiment tags are metadata that can be updated.`,
 
-	Annotations: map[string]string{
-		"package": "ml",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(3)
 		if cmd.Flags().Changed("json") {
@@ -1233,9 +1194,7 @@ var setTagCmd = &cobra.Command{
   Sets a tag on a run. Tags are run metadata that can be updated during a run
   and after a run completes.`,
 
-	Annotations: map[string]string{
-		"package": "ml",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
@@ -1286,9 +1245,7 @@ var updateExperimentCmd = &cobra.Command{
   
   Updates experiment metadata.`,
 
-	Annotations: map[string]string{
-		"package": "ml",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
@@ -1341,9 +1298,7 @@ var updateRunCmd = &cobra.Command{
   
   Updates run metadata.`,
 
-	Annotations: map[string]string{
-		"package": "ml",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {

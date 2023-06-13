@@ -14,6 +14,9 @@ var Cmd = &cobra.Command{
 	Use:   "settings",
 	Short: `TBD.`,
 	Long:  `TBD`,
+	Annotations: map[string]string{
+		"package": "settings",
+	},
 }
 
 // start read-personal-compute-setting command
@@ -37,9 +40,7 @@ var readPersonalComputeSettingCmd = &cobra.Command{
   
   TBD`,
 
-	Annotations: map[string]string{
-		"package": "settings",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {

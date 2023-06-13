@@ -19,6 +19,9 @@ var Cmd = &cobra.Command{
   
   A catalog's workspace bindings can be configured by a metastore admin or the
   owner of the catalog.`,
+	Annotations: map[string]string{
+		"package": "catalog",
+	},
 }
 
 // start get command
@@ -41,9 +44,7 @@ var getCmd = &cobra.Command{
   Gets workspace bindings of the catalog. The caller must be a metastore admin
   or an owner of the catalog.`,
 
-	Annotations: map[string]string{
-		"package": "catalog",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
@@ -95,9 +96,7 @@ var updateCmd = &cobra.Command{
   Updates workspace bindings of the catalog. The caller must be a metastore
   admin or an owner of the catalog.`,
 
-	Annotations: map[string]string{
-		"package": "catalog",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {

@@ -28,6 +28,9 @@ var Cmd = &cobra.Command{
   workspaces created before Unity Catalog was released. If your workspace
   includes a legacy Hive metastore, the data in that metastore is available in a
   catalog named hive_metastore.`,
+	Annotations: map[string]string{
+		"package": "catalog",
+	},
 }
 
 // start assign command
@@ -51,9 +54,7 @@ var assignCmd = &cobra.Command{
   __workspace_id__ exists, it will be overwritten by the new __metastore_id__
   and __default_catalog_name__. The caller must be an account admin.`,
 
-	Annotations: map[string]string{
-		"package": "catalog",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(3)
 		if cmd.Flags().Changed("json") {
@@ -108,9 +109,7 @@ var createCmd = &cobra.Command{
   
   Creates a new metastore based on a provided name and storage root path.`,
 
-	Annotations: map[string]string{
-		"package": "catalog",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
@@ -154,10 +153,8 @@ var currentCmd = &cobra.Command{
   
   Gets the metastore assignment for the workspace being accessed.`,
 
-	Annotations: map[string]string{
-		"package": "catalog",
-	},
-	PreRunE: root.MustWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -190,10 +187,8 @@ var deleteCmd = &cobra.Command{
   
   Deletes a metastore. The caller must be a metastore admin.`,
 
-	Annotations: map[string]string{
-		"package": "catalog",
-	},
-	PreRunE: root.MustWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -251,10 +246,8 @@ var getCmd = &cobra.Command{
   Gets a metastore that matches the supplied ID. The caller must be a metastore
   admin to retrieve this info.`,
 
-	Annotations: map[string]string{
-		"package": "catalog",
-	},
-	PreRunE: root.MustWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -308,10 +301,8 @@ var listCmd = &cobra.Command{
   caller must be an admin to retrieve this info. There is no guarantee of a
   specific ordering of the elements in the array.`,
 
-	Annotations: map[string]string{
-		"package": "catalog",
-	},
-	PreRunE: root.MustWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -342,9 +333,7 @@ var maintenanceCmd = &cobra.Command{
   
   Enables or disables auto maintenance on the metastore.`,
 
-	Annotations: map[string]string{
-		"package": "catalog",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
@@ -392,10 +381,8 @@ var summaryCmd = &cobra.Command{
   Gets information about a metastore. This summary includes the storage
   credential, the cloud vendor, the cloud region, and the global metastore ID.`,
 
-	Annotations: map[string]string{
-		"package": "catalog",
-	},
-	PreRunE: root.MustWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -426,9 +413,7 @@ var unassignCmd = &cobra.Command{
   
   Deletes a metastore assignment. The caller must be an account administrator.`,
 
-	Annotations: map[string]string{
-		"package": "catalog",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
@@ -489,10 +474,8 @@ var updateCmd = &cobra.Command{
   Updates information for a specific metastore. The caller must be a metastore
   admin.`,
 
-	Annotations: map[string]string{
-		"package": "catalog",
-	},
-	PreRunE: root.MustWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -555,10 +538,8 @@ var updateAssignmentCmd = &cobra.Command{
   Workspace is already assigned a metastore. The caller must be an account admin
   to update __metastore_id__; otherwise, the caller can be a Workspace admin.`,
 
-	Annotations: map[string]string{
-		"package": "catalog",
-	},
-	PreRunE: root.MustWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)

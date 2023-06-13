@@ -26,6 +26,9 @@ var Cmd = &cobra.Command{
   automatically grants the privilege to all current and future objects within
   the catalog. Similarly, privileges granted on a schema are inherited by all
   current and future objects within that schema.`,
+	Annotations: map[string]string{
+		"package": "catalog",
+	},
 }
 
 // start get command
@@ -49,9 +52,7 @@ var getCmd = &cobra.Command{
   
   Gets the permissions for a securable.`,
 
-	Annotations: map[string]string{
-		"package": "catalog",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
@@ -105,9 +106,7 @@ var getEffectiveCmd = &cobra.Command{
   
   Gets the effective permissions for a securable.`,
 
-	Annotations: map[string]string{
-		"package": "catalog",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
@@ -161,9 +160,7 @@ var updateCmd = &cobra.Command{
   
   Updates the permissions for a securable.`,
 
-	Annotations: map[string]string{
-		"package": "catalog",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {

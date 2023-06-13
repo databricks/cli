@@ -20,6 +20,9 @@ var Cmd = &cobra.Command{
   access (or list) a table or view in a schema, users must have the USE_SCHEMA
   data permission on the schema and its parent catalog, and they must have the
   SELECT permission on the table or view.`,
+	Annotations: map[string]string{
+		"package": "catalog",
+	},
 }
 
 // start create command
@@ -47,9 +50,7 @@ var createCmd = &cobra.Command{
   metastore admin, or have the **CREATE_SCHEMA** privilege in the parent
   catalog.`,
 
-	Annotations: map[string]string{
-		"package": "catalog",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
@@ -99,10 +100,8 @@ var deleteCmd = &cobra.Command{
   Deletes the specified schema from the parent catalog. The caller must be the
   owner of the schema or an owner of the parent catalog.`,
 
-	Annotations: map[string]string{
-		"package": "catalog",
-	},
-	PreRunE: root.MustWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -161,10 +160,8 @@ var getCmd = &cobra.Command{
   admin, the owner of the schema, or a user that has the **USE_SCHEMA**
   privilege on the schema.`,
 
-	Annotations: map[string]string{
-		"package": "catalog",
-	},
-	PreRunE: root.MustWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -225,9 +222,7 @@ var listCmd = &cobra.Command{
   which the caller has the **USE_SCHEMA** privilege) will be retrieved. There is
   no guarantee of a specific ordering of the elements in the array.`,
 
-	Annotations: map[string]string{
-		"package": "catalog",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
@@ -284,10 +279,8 @@ var updateCmd = &cobra.Command{
   caller must be a metastore admin or have the **CREATE_SCHEMA** privilege on
   the parent catalog.`,
 
-	Annotations: map[string]string{
-		"package": "catalog",
-	},
-	PreRunE: root.MustWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)

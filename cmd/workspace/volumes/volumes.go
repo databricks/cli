@@ -23,6 +23,9 @@ var Cmd = &cobra.Command{
   storing library and config files of arbitrary formats such as .whl or .txt
   centrally and providing secure access across workspaces to it, or transforming
   and querying non-tabular data files in ETL.`,
+	Annotations: map[string]string{
+		"package": "catalog",
+	},
 }
 
 // start create command
@@ -64,9 +67,7 @@ var createCmd = &cobra.Command{
   location. - The specified storage location is not under the location of other
   tables, nor volumes, or catalogs or schemas.`,
 
-	Annotations: map[string]string{
-		"package": "catalog",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(4)
 		if cmd.Flags().Changed("json") {
@@ -124,10 +125,8 @@ var deleteCmd = &cobra.Command{
   case, the caller must also be the owner or have the **USE_CATALOG** privilege
   on the parent catalog and the **USE_SCHEMA** privilege on the parent schema.`,
 
-	Annotations: map[string]string{
-		"package": "catalog",
-	},
-	PreRunE: root.MustWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -194,9 +193,7 @@ var listCmd = &cobra.Command{
   
   There is no guarantee of a specific ordering of the elements in the array.`,
 
-	Annotations: map[string]string{
-		"package": "catalog",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
@@ -250,10 +247,8 @@ var readCmd = &cobra.Command{
   be the owner or have the **USE_CATALOG** privilege on the parent catalog and
   the **USE_SCHEMA** privilege on the parent schema.`,
 
-	Annotations: map[string]string{
-		"package": "catalog",
-	},
-	PreRunE: root.MustWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -321,10 +316,8 @@ var updateCmd = &cobra.Command{
   Currently only the name, the owner or the comment of the volume could be
   updated.`,
 
-	Annotations: map[string]string{
-		"package": "catalog",
-	},
-	PreRunE: root.MustWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)

@@ -18,6 +18,9 @@ var Cmd = &cobra.Command{
 	Long: `Enables administrators to get all tokens and delete tokens for other users.
   Admins can either get every token, get a specific token by ID, or get all
   tokens for a particular user.`,
+	Annotations: map[string]string{
+		"package": "settings",
+	},
 }
 
 // start create-obo-token command
@@ -41,9 +44,7 @@ var createOboTokenCmd = &cobra.Command{
   
   Creates a token on behalf of a service principal.`,
 
-	Annotations: map[string]string{
-		"package": "settings",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
@@ -95,10 +96,8 @@ var deleteCmd = &cobra.Command{
   
   Deletes a token, specified by its ID.`,
 
-	Annotations: map[string]string{
-		"package": "settings",
-	},
-	PreRunE: root.MustWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -155,10 +154,8 @@ var getCmd = &cobra.Command{
   
   Gets information about a token, specified by its ID.`,
 
-	Annotations: map[string]string{
-		"package": "settings",
-	},
-	PreRunE: root.MustWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -218,9 +215,7 @@ var listCmd = &cobra.Command{
   
   Lists all tokens associated with the specified workspace or user.`,
 
-	Annotations: map[string]string{
-		"package": "settings",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {

@@ -36,6 +36,9 @@ var Cmd = &cobra.Command{
   
   After changes to the IP access list feature, it can take a few minutes for
   changes to take effect.`,
+	Annotations: map[string]string{
+		"package": "settings",
+	},
 }
 
 // start create command
@@ -72,10 +75,8 @@ var createCmd = &cobra.Command{
   IP access list has no effect until you enable the feature. See
   :method:workspaceconf/setStatus`,
 
-	Annotations: map[string]string{
-		"package": "settings",
-	},
-	PreRunE: root.MustWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -123,10 +124,8 @@ var deleteCmd = &cobra.Command{
   
   Deletes an IP access list, specified by its list ID.`,
 
-	Annotations: map[string]string{
-		"package": "settings",
-	},
-	PreRunE: root.MustWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -183,10 +182,8 @@ var getCmd = &cobra.Command{
   
   Gets an IP access list, specified by its list ID.`,
 
-	Annotations: map[string]string{
-		"package": "settings",
-	},
-	PreRunE: root.MustWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -238,10 +235,8 @@ var listCmd = &cobra.Command{
   
   Gets all IP access lists for the specified workspace.`,
 
-	Annotations: map[string]string{
-		"package": "settings",
-	},
-	PreRunE: root.MustWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -285,10 +280,8 @@ var replaceCmd = &cobra.Command{
   Note that your resulting IP access list has no effect until you enable the
   feature. See :method:workspaceconf/setStatus.`,
 
-	Annotations: map[string]string{
-		"package": "settings",
-	},
-	PreRunE: root.MustWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -358,10 +351,8 @@ var updateCmd = &cobra.Command{
   resulting IP access list has no effect until you enable the feature. See
   :method:workspaceconf/setStatus.`,
 
-	Annotations: map[string]string{
-		"package": "settings",
-	},
-	PreRunE: root.MustWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)

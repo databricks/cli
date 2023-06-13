@@ -21,6 +21,9 @@ var Cmd = &cobra.Command{
   bucket for storage of non-production DBFS data. A storage configuration
   encapsulates this bucket information, and its ID is used when creating a new
   workspace.`,
+	Annotations: map[string]string{
+		"package": "provisioning",
+	},
 }
 
 // start create command
@@ -51,10 +54,8 @@ var createCmd = &cobra.Command{
   
   [Create a new workspace using the Account API]: http://docs.databricks.com/administration-guide/account-api/new-workspace.html`,
 
-	Annotations: map[string]string{
-		"package": "provisioning",
-	},
-	PreRunE: root.MustAccountClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
@@ -99,10 +100,8 @@ var deleteCmd = &cobra.Command{
   Deletes a Databricks storage configuration. You cannot delete a storage
   configuration that is associated with any workspace.`,
 
-	Annotations: map[string]string{
-		"package": "provisioning",
-	},
-	PreRunE: root.MustAccountClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
@@ -159,10 +158,8 @@ var getCmd = &cobra.Command{
   
   Gets a Databricks storage configuration for an account, both specified by ID.`,
 
-	Annotations: map[string]string{
-		"package": "provisioning",
-	},
-	PreRunE: root.MustAccountClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
@@ -215,10 +212,8 @@ var listCmd = &cobra.Command{
   Gets a list of all Databricks storage configurations for your account,
   specified by ID.`,
 
-	Annotations: map[string]string{
-		"package": "provisioning",
-	},
-	PreRunE: root.MustAccountClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)

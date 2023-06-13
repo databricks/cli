@@ -28,6 +28,9 @@ var Cmd = &cobra.Command{
   
   [Authentication using OAuth tokens for service principals]: https://docs.databricks.com/dev-tools/authentication-oauth.html
   [Databricks Terraform Provider]: https://github.com/databricks/terraform-provider-databricks/blob/master/docs/index.md#authenticating-with-service-principal`,
+	Annotations: map[string]string{
+		"package": "oauth2",
+	},
 }
 
 // start create command
@@ -49,9 +52,7 @@ var createCmd = &cobra.Command{
   
   Create a secret for the given service principal.`,
 
-	Annotations: map[string]string{
-		"package": "oauth2",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
@@ -102,9 +103,7 @@ var deleteCmd = &cobra.Command{
   
   Delete a secret from the given service principal.`,
 
-	Annotations: map[string]string{
-		"package": "oauth2",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
@@ -158,9 +157,7 @@ var listCmd = &cobra.Command{
   only returns information about the secrets themselves and does not include the
   secret values.`,
 
-	Annotations: map[string]string{
-		"package": "oauth2",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {

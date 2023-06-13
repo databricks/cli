@@ -22,6 +22,9 @@ var Cmd = &cobra.Command{
   in Unity Catalog to groups, instead of to users individually. All Databricks
   workspace identities can be assigned as members of groups, and members inherit
   permissions that are assigned to their group.`,
+	Annotations: map[string]string{
+		"package": "iam",
+	},
 }
 
 // start create command
@@ -52,9 +55,7 @@ var createCmd = &cobra.Command{
   Creates a group in the Databricks workspace with a unique name, using the
   supplied group details.`,
 
-	Annotations: map[string]string{
-		"package": "iam",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {
@@ -101,10 +102,8 @@ var deleteCmd = &cobra.Command{
   
   Deletes a group from the Databricks workspace.`,
 
-	Annotations: map[string]string{
-		"package": "iam",
-	},
-	PreRunE: root.MustWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -161,10 +160,8 @@ var getCmd = &cobra.Command{
   
   Gets the information for a specific group in the Databricks workspace.`,
 
-	Annotations: map[string]string{
-		"package": "iam",
-	},
-	PreRunE: root.MustWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -229,9 +226,7 @@ var listCmd = &cobra.Command{
   
   Gets all details of the groups associated with the Databricks workspace.`,
 
-	Annotations: map[string]string{
-		"package": "iam",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {
@@ -280,10 +275,8 @@ var patchCmd = &cobra.Command{
   
   Partially updates the details of a group.`,
 
-	Annotations: map[string]string{
-		"package": "iam",
-	},
-	PreRunE: root.MustWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -348,10 +341,8 @@ var updateCmd = &cobra.Command{
   
   Updates the details of a group by replacing the entire group entity.`,
 
-	Annotations: map[string]string{
-		"package": "iam",
-	},
-	PreRunE: root.MustWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)

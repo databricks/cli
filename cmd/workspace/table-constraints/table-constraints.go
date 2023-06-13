@@ -28,6 +28,9 @@ var Cmd = &cobra.Command{
   You can declare primary keys and foreign keys as part of the table
   specification during table creation. You can also add or drop constraints on
   existing tables.`,
+	Annotations: map[string]string{
+		"package": "catalog",
+	},
 }
 
 // start create command
@@ -58,10 +61,8 @@ var createCmd = &cobra.Command{
   referenced parent table's schema, and be the owner of the referenced parent
   table.`,
 
-	Annotations: map[string]string{
-		"package": "catalog",
-	},
-	PreRunE: root.MustWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -113,9 +114,7 @@ var deleteCmd = &cobra.Command{
   **USE_CATALOG** privilege on the table's catalog, the **USE_SCHEMA** privilege
   on the table's schema, and be the owner of the table.`,
 
-	Annotations: map[string]string{
-		"package": "catalog",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(3)
 		if cmd.Flags().Changed("json") {

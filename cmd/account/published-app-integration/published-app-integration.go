@@ -20,6 +20,9 @@ var Cmd = &cobra.Command{
   **Note:** You can only add/use the OAuth published application integrations
   when OAuth enrollment status is enabled. For more details see
   :method:OAuthEnrollment/create`,
+	Annotations: map[string]string{
+		"package": "oauth2",
+	},
 }
 
 // start create command
@@ -47,9 +50,7 @@ var createCmd = &cobra.Command{
   You can retrieve the published oauth app integration via
   :method:PublishedAppIntegration/get.`,
 
-	Annotations: map[string]string{
-		"package": "oauth2",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {
@@ -97,9 +98,7 @@ var deleteCmd = &cobra.Command{
   Delete an existing Published OAuth App Integration. You can retrieve the
   published oauth app integration via :method:PublishedAppIntegration/get.`,
 
-	Annotations: map[string]string{
-		"package": "oauth2",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
@@ -147,9 +146,7 @@ var getCmd = &cobra.Command{
   
   Gets the Published OAuth App Integration for the given integration id.`,
 
-	Annotations: map[string]string{
-		"package": "oauth2",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
@@ -193,10 +190,8 @@ var listCmd = &cobra.Command{
   Get the list of published oauth app integrations for the specified Databricks
   account`,
 
-	Annotations: map[string]string{
-		"package": "oauth2",
-	},
-	PreRunE: root.MustAccountClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
@@ -230,9 +225,7 @@ var updateCmd = &cobra.Command{
   Updates an existing published OAuth App Integration. You can retrieve the
   published oauth app integration via :method:PublishedAppIntegration/get.`,
 
-	Annotations: map[string]string{
-		"package": "oauth2",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {

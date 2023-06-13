@@ -18,6 +18,9 @@ var Cmd = &cobra.Command{
 	Long: `These APIs manage access rules on resources in an account. Currently, only
   grant rules are supported. A grant rule specifies a role assigned to a set of
   principals. A list of rules attached to a resource is called a rule set.`,
+	Annotations: map[string]string{
+		"package": "iam",
+	},
 }
 
 // start get command
@@ -41,9 +44,7 @@ var getCmd = &cobra.Command{
   contains a list of access rules on the said resource. Currently only a default
   rule set for each resource is supported.`,
 
-	Annotations: map[string]string{
-		"package": "iam",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
@@ -94,9 +95,7 @@ var listCmd = &cobra.Command{
   grantable if the rule set on the resource can contain an access rule of the
   role.`,
 
-	Annotations: map[string]string{
-		"package": "iam",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
@@ -146,10 +145,8 @@ var updateCmd = &cobra.Command{
   the rule set before modifying it. This pattern helps prevent conflicts between
   concurrent updates.`,
 
-	Annotations: map[string]string{
-		"package": "iam",
-	},
-	PreRunE: root.MustAccountClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)

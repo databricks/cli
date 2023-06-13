@@ -15,6 +15,9 @@ var Cmd = &cobra.Command{
 	Short: `These APIs manage Unity Catalog metastores for an account.`,
 	Long: `These APIs manage Unity Catalog metastores for an account. A metastore
   contains catalogs that can be associated with workspaces`,
+	Annotations: map[string]string{
+		"package": "catalog",
+	},
 }
 
 // start create command
@@ -39,9 +42,7 @@ var createCmd = &cobra.Command{
   Creates a Unity Catalog metastore. Please add a header
   X-Databricks-Account-Console-API-Version: 2.0 to access this API.`,
 
-	Annotations: map[string]string{
-		"package": "catalog",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {
@@ -89,9 +90,7 @@ var deleteCmd = &cobra.Command{
   Deletes a Unity Catalog metastore for an account, both specified by ID. Please
   add a header X-Databricks-Account-Console-API-Version: 2.0 to access this API.`,
 
-	Annotations: map[string]string{
-		"package": "catalog",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
@@ -140,9 +139,7 @@ var getCmd = &cobra.Command{
   Gets a Unity Catalog metastore from an account, both specified by ID. Please
   add a header X-Databricks-Account-Console-API-Version: 2.0 to access this API.`,
 
-	Annotations: map[string]string{
-		"package": "catalog",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
@@ -187,10 +184,8 @@ var listCmd = &cobra.Command{
   Please add a header X-Databricks-Account-Console-API-Version: 2.0 to access
   this API.`,
 
-	Annotations: map[string]string{
-		"package": "catalog",
-	},
-	PreRunE: root.MustAccountClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
@@ -224,9 +219,7 @@ var updateCmd = &cobra.Command{
   Updates an existing Unity Catalog metastore. Please add a header
   X-Databricks-Account-Console-API-Version: 2.0 to access this API.`,
 
-	Annotations: map[string]string{
-		"package": "catalog",
-	},
+	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {

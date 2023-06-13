@@ -13,6 +13,9 @@ var Cmd = &cobra.Command{
 	Short: `This API allows retrieving information about currently authenticated user or service principal.`,
 	Long: `This API allows retrieving information about currently authenticated user or
   service principal.`,
+	Annotations: map[string]string{
+		"package": "iam",
+	},
 }
 
 // start me command
@@ -29,10 +32,8 @@ var meCmd = &cobra.Command{
   
   Get details about the current method caller's identity.`,
 
-	Annotations: map[string]string{
-		"package": "iam",
-	},
-	PreRunE: root.MustWorkspaceClient,
+	Annotations: map[string]string{},
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
