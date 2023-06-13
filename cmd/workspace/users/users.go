@@ -59,7 +59,9 @@ var createCmd = &cobra.Command{
   Creates a new user in the Databricks workspace. This new user will also be
   added to the Databricks account.`,
 
-	Annotations: map[string]string{},
+	Annotations: map[string]string{
+		"package": "iam",
+	},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {
@@ -107,8 +109,10 @@ var deleteCmd = &cobra.Command{
   Deletes a user. Deleting a user from a Databricks workspace also removes
   objects associated with the user.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Annotations: map[string]string{
+		"package": "iam",
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -165,8 +169,10 @@ var getCmd = &cobra.Command{
   
   Gets information for a specific user in Databricks workspace.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Annotations: map[string]string{
+		"package": "iam",
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -231,7 +237,9 @@ var listCmd = &cobra.Command{
   
   Gets details for all the users associated with a Databricks workspace.`,
 
-	Annotations: map[string]string{},
+	Annotations: map[string]string{
+		"package": "iam",
+	},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {
@@ -281,8 +289,10 @@ var patchCmd = &cobra.Command{
   Partially updates a user resource by applying the supplied operations on
   specific user attributes.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Annotations: map[string]string{
+		"package": "iam",
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -350,8 +360,10 @@ var updateCmd = &cobra.Command{
   
   Replaces a user's information with the data supplied in request.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Annotations: map[string]string{
+		"package": "iam",
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)

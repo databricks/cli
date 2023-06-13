@@ -48,7 +48,9 @@ var createCmd = &cobra.Command{
   will fail. Use the PATCH endpoint to update existing credentials, or the
   DELETE endpoint to delete existing credentials.`,
 
-	Annotations: map[string]string{},
+	Annotations: map[string]string{
+		"package": "workspace",
+	},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
@@ -96,8 +98,10 @@ var deleteCmd = &cobra.Command{
   
   Deletes the specified Git credential.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Annotations: map[string]string{
+		"package": "workspace",
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -157,8 +161,10 @@ var getCmd = &cobra.Command{
   
   Gets the Git credential with the specified credential ID.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Annotations: map[string]string{
+		"package": "workspace",
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -214,8 +220,10 @@ var listCmd = &cobra.Command{
   Lists the calling user's Git credentials. One credential per user is
   supported.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Annotations: map[string]string{
+		"package": "workspace",
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -250,8 +258,10 @@ var updateCmd = &cobra.Command{
   
   Updates the specified Git credential.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Annotations: map[string]string{
+		"package": "workspace",
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)

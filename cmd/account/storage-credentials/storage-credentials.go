@@ -43,7 +43,9 @@ var createCmd = &cobra.Command{
   The caller must be a metastore admin and have the
   **CREATE_STORAGE_CREDENTIAL** privilege on the metastore.`,
 
-	Annotations: map[string]string{},
+	Annotations: map[string]string{
+		"package": "catalog",
+	},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
@@ -92,7 +94,9 @@ var deleteCmd = &cobra.Command{
   Deletes a storage credential from the metastore. The caller must be an owner
   of the storage credential.`,
 
-	Annotations: map[string]string{},
+	Annotations: map[string]string{
+		"package": "catalog",
+	},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
@@ -143,7 +147,9 @@ var getCmd = &cobra.Command{
   admin, the owner of the storage credential, or have a level of privilege on
   the storage credential.`,
 
-	Annotations: map[string]string{},
+	Annotations: map[string]string{
+		"package": "catalog",
+	},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
@@ -193,7 +199,9 @@ var listCmd = &cobra.Command{
   Gets a list of all storage credentials that have been assigned to given
   metastore.`,
 
-	Annotations: map[string]string{},
+	Annotations: map[string]string{
+		"package": "catalog",
+	},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
@@ -245,7 +253,9 @@ var updateCmd = &cobra.Command{
   the storage credential. If the caller is a metastore admin, only the __owner__
   credential can be changed.`,
 
-	Annotations: map[string]string{},
+	Annotations: map[string]string{
+		"package": "catalog",
+	},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {

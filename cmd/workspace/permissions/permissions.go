@@ -37,7 +37,9 @@ var getCmd = &cobra.Command{
   Gets the permission of an object. Objects can inherit permissions from their
   parent objects or root objects.`,
 
-	Annotations: map[string]string{},
+	Annotations: map[string]string{
+		"package": "iam",
+	},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
@@ -86,7 +88,9 @@ var getPermissionLevelsCmd = &cobra.Command{
   
   Gets the permission levels that a user can have on an object.`,
 
-	Annotations: map[string]string{},
+	Annotations: map[string]string{
+		"package": "iam",
+	},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
@@ -138,7 +142,9 @@ var setCmd = &cobra.Command{
   Sets permissions on object. Objects can inherit permissions from their parent
   objects and root objects.`,
 
-	Annotations: map[string]string{},
+	Annotations: map[string]string{
+		"package": "iam",
+	},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
@@ -189,7 +195,9 @@ var updateCmd = &cobra.Command{
   
   Updates the permissions on an object.`,
 
-	Annotations: map[string]string{},
+	Annotations: map[string]string{
+		"package": "iam",
+	},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {

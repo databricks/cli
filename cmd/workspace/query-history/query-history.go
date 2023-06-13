@@ -42,7 +42,9 @@ var listCmd = &cobra.Command{
   
   You can filter by user ID, warehouse ID, status, and time range.`,
 
-	Annotations: map[string]string{},
+	Annotations: map[string]string{
+		"package": "sql",
+	},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {

@@ -54,8 +54,10 @@ var createCmd = &cobra.Command{
   
   [Create a new workspace using the Account API]: http://docs.databricks.com/administration-guide/account-api/new-workspace.html`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustAccountClient,
+	Annotations: map[string]string{
+		"package": "provisioning",
+	},
+	PreRunE: root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
@@ -101,8 +103,10 @@ var deleteCmd = &cobra.Command{
   specified by ID. You cannot delete a credential that is associated with any
   workspace.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustAccountClient,
+	Annotations: map[string]string{
+		"package": "provisioning",
+	},
+	PreRunE: root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
@@ -160,8 +164,10 @@ var getCmd = &cobra.Command{
   Gets a Databricks credential configuration object for an account, both
   specified by ID.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustAccountClient,
+	Annotations: map[string]string{
+		"package": "provisioning",
+	},
+	PreRunE: root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
@@ -214,8 +220,10 @@ var listCmd = &cobra.Command{
   Gets all Databricks credential configurations associated with an account
   specified by ID.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustAccountClient,
+	Annotations: map[string]string{
+		"package": "provisioning",
+	},
+	PreRunE: root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)

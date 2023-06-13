@@ -38,8 +38,10 @@ var createCmd = &cobra.Command{
   
   Creates a new budget in the specified account.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustAccountClient,
+	Annotations: map[string]string{
+		"package": "billing",
+	},
+	PreRunE: root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
@@ -82,8 +84,10 @@ var deleteCmd = &cobra.Command{
   
   Deletes the budget specified by its UUID.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustAccountClient,
+	Annotations: map[string]string{
+		"package": "billing",
+	},
+	PreRunE: root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
@@ -141,8 +145,10 @@ var getCmd = &cobra.Command{
   Gets the budget specified by its UUID, including noncumulative status for each
   day that the budget is configured to include.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustAccountClient,
+	Annotations: map[string]string{
+		"package": "billing",
+	},
+	PreRunE: root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
@@ -195,8 +201,10 @@ var listCmd = &cobra.Command{
   Gets all budgets associated with this account, including noncumulative status
   for each day that the budget is configured to include.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustAccountClient,
+	Annotations: map[string]string{
+		"package": "billing",
+	},
+	PreRunE: root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
@@ -228,8 +236,10 @@ var updateCmd = &cobra.Command{
   Modifies a budget in this account. Budget properties are completely
   overwritten.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustAccountClient,
+	Annotations: map[string]string{
+		"package": "billing",
+	},
+	PreRunE: root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)

@@ -49,7 +49,9 @@ var getCmd = &cobra.Command{
   
   Gets the permissions for a securable.`,
 
-	Annotations: map[string]string{},
+	Annotations: map[string]string{
+		"package": "catalog",
+	},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
@@ -103,7 +105,9 @@ var getEffectiveCmd = &cobra.Command{
   
   Gets the effective permissions for a securable.`,
 
-	Annotations: map[string]string{},
+	Annotations: map[string]string{
+		"package": "catalog",
+	},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
@@ -157,7 +161,9 @@ var updateCmd = &cobra.Command{
   
   Updates the permissions for a securable.`,
 
-	Annotations: map[string]string{},
+	Annotations: map[string]string{
+		"package": "catalog",
+	},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {

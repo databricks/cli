@@ -64,7 +64,9 @@ var createCmd = &cobra.Command{
   location. - The specified storage location is not under the location of other
   tables, nor volumes, or catalogs or schemas.`,
 
-	Annotations: map[string]string{},
+	Annotations: map[string]string{
+		"package": "catalog",
+	},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(4)
 		if cmd.Flags().Changed("json") {
@@ -122,8 +124,10 @@ var deleteCmd = &cobra.Command{
   case, the caller must also be the owner or have the **USE_CATALOG** privilege
   on the parent catalog and the **USE_SCHEMA** privilege on the parent schema.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Annotations: map[string]string{
+		"package": "catalog",
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -190,7 +194,9 @@ var listCmd = &cobra.Command{
   
   There is no guarantee of a specific ordering of the elements in the array.`,
 
-	Annotations: map[string]string{},
+	Annotations: map[string]string{
+		"package": "catalog",
+	},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
@@ -244,8 +250,10 @@ var readCmd = &cobra.Command{
   be the owner or have the **USE_CATALOG** privilege on the parent catalog and
   the **USE_SCHEMA** privilege on the parent schema.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Annotations: map[string]string{
+		"package": "catalog",
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -313,8 +321,10 @@ var updateCmd = &cobra.Command{
   Currently only the name, the owner or the comment of the volume could be
   updated.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Annotations: map[string]string{
+		"package": "catalog",
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)

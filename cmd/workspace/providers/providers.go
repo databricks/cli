@@ -41,7 +41,9 @@ var createCmd = &cobra.Command{
   Creates a new authentication provider minimally based on a name and
   authentication type. The caller must be an admin on the metastore.`,
 
-	Annotations: map[string]string{},
+	Annotations: map[string]string{
+		"package": "sharing",
+	},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
@@ -94,8 +96,10 @@ var deleteCmd = &cobra.Command{
   Deletes an authentication provider, if the caller is a metastore admin or is
   the owner of the provider.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Annotations: map[string]string{
+		"package": "sharing",
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -154,8 +158,10 @@ var getCmd = &cobra.Command{
   the provider, and must either be a metastore admin or the owner of the
   provider.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Annotations: map[string]string{
+		"package": "sharing",
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -217,7 +223,9 @@ var listCmd = &cobra.Command{
   caller are not included in the response. There is no guarantee of a specific
   ordering of the elements in the array.`,
 
-	Annotations: map[string]string{},
+	Annotations: map[string]string{
+		"package": "sharing",
+	},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {
@@ -266,8 +274,10 @@ var listSharesCmd = &cobra.Command{
   
   * the caller is a metastore admin, or * the caller is the owner.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Annotations: map[string]string{
+		"package": "sharing",
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -332,8 +342,10 @@ var updateCmd = &cobra.Command{
   provider name, the caller must be both a metastore admin and the owner of the
   provider.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Annotations: map[string]string{
+		"package": "sharing",
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)

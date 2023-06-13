@@ -46,8 +46,10 @@ var createCmd = &cobra.Command{
   query, evaluates a condition of its result, and notifies users or notification
   destinations if the condition was met.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Annotations: map[string]string{
+		"package": "sql",
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -94,8 +96,10 @@ var deleteCmd = &cobra.Command{
   restored. **Note:** Unlike queries and dashboards, alerts cannot be moved to
   the trash.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Annotations: map[string]string{
+		"package": "sql",
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -152,8 +156,10 @@ var getCmd = &cobra.Command{
   
   Gets an alert.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Annotations: map[string]string{
+		"package": "sql",
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -205,8 +211,10 @@ var listCmd = &cobra.Command{
   
   Gets a list of alerts.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Annotations: map[string]string{
+		"package": "sql",
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -239,8 +247,10 @@ var updateCmd = &cobra.Command{
   
   Updates an alert.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Annotations: map[string]string{
+		"package": "sql",
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)

@@ -39,7 +39,9 @@ var createCmd = &cobra.Command{
   with **update**. The caller must be a metastore admin or have the
   **CREATE_SHARE** privilege on the metastore.`,
 
-	Annotations: map[string]string{},
+	Annotations: map[string]string{
+		"package": "sharing",
+	},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
@@ -88,7 +90,9 @@ var deleteCmd = &cobra.Command{
   Deletes a data object share from the metastore. The caller must be an owner of
   the share.`,
 
-	Annotations: map[string]string{},
+	Annotations: map[string]string{
+		"package": "sharing",
+	},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
@@ -139,7 +143,9 @@ var getCmd = &cobra.Command{
   Gets a data object share from the metastore. The caller must be a metastore
   admin or the owner of the share.`,
 
-	Annotations: map[string]string{},
+	Annotations: map[string]string{
+		"package": "sharing",
+	},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
@@ -184,8 +190,10 @@ var listCmd = &cobra.Command{
   metastore admin or the owner of the share. There is no guarantee of a specific
   ordering of the elements in the array.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Annotations: map[string]string{
+		"package": "sharing",
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -217,7 +225,9 @@ var sharePermissionsCmd = &cobra.Command{
   Gets the permissions for a data share from the metastore. The caller must be a
   metastore admin or the owner of the share.`,
 
-	Annotations: map[string]string{},
+	Annotations: map[string]string{
+		"package": "sharing",
+	},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
@@ -283,7 +293,9 @@ var updateCmd = &cobra.Command{
   
   Table removals through **update** do not require additional privileges.`,
 
-	Annotations: map[string]string{},
+	Annotations: map[string]string{
+		"package": "sharing",
+	},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
@@ -337,7 +349,9 @@ var updatePermissionsCmd = &cobra.Command{
   For new recipient grants, the user must also be the owner of the recipients.
   recipient revocations do not require additional privileges.`,
 
-	Annotations: map[string]string{},
+	Annotations: map[string]string{
+		"package": "sharing",
+	},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {

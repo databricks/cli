@@ -49,7 +49,9 @@ var createCmd = &cobra.Command{
   Creates a new catalog instance in the parent metastore if the caller is a
   metastore admin or has the **CREATE_CATALOG** privilege.`,
 
-	Annotations: map[string]string{},
+	Annotations: map[string]string{
+		"package": "catalog",
+	},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
@@ -100,7 +102,9 @@ var deleteCmd = &cobra.Command{
   Deletes the catalog that matches the supplied name. The caller must be a
   metastore admin or the owner of the catalog.`,
 
-	Annotations: map[string]string{},
+	Annotations: map[string]string{
+		"package": "catalog",
+	},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
@@ -150,7 +154,9 @@ var getCmd = &cobra.Command{
   admin, the owner of the catalog, or a user that has the **USE_CATALOG**
   privilege set for their account.`,
 
-	Annotations: map[string]string{},
+	Annotations: map[string]string{
+		"package": "catalog",
+	},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
@@ -197,8 +203,10 @@ var listCmd = &cobra.Command{
   retrieved. There is no guarantee of a specific ordering of the elements in the
   array.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Annotations: map[string]string{
+		"package": "catalog",
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -237,7 +245,9 @@ var updateCmd = &cobra.Command{
   the owner of the catalog, or a metastore admin (when changing the owner field
   of the catalog).`,
 
-	Annotations: map[string]string{},
+	Annotations: map[string]string{
+		"package": "catalog",
+	},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {

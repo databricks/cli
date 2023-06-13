@@ -48,7 +48,9 @@ var createCmd = &cobra.Command{
   
   Creates a new global init script in this workspace.`,
 
-	Annotations: map[string]string{},
+	Annotations: map[string]string{
+		"package": "compute",
+	},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
@@ -97,8 +99,10 @@ var deleteCmd = &cobra.Command{
   
   Deletes a global init script.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Annotations: map[string]string{
+		"package": "compute",
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -155,8 +159,10 @@ var getCmd = &cobra.Command{
   
   Gets all the details of a script, including its Base64-encoded contents.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Annotations: map[string]string{
+		"package": "compute",
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -211,8 +217,10 @@ var listCmd = &cobra.Command{
   contents of a script, use the [get a global init
   script](#operation/get-script) operation.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Annotations: map[string]string{
+		"package": "compute",
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -247,7 +255,9 @@ var updateCmd = &cobra.Command{
   Updates a global init script, specifying only the fields to change. All fields
   are optional. Unspecified fields retain their current value.`,
 
-	Annotations: map[string]string{},
+	Annotations: map[string]string{
+		"package": "compute",
+	},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(3)
 		if cmd.Flags().Changed("json") {

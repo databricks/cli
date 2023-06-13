@@ -46,7 +46,9 @@ var createCmd = &cobra.Command{
   resources. The VPC will be used for new Databricks clusters. This requires a
   pre-existing VPC and subnets.`,
 
-	Annotations: map[string]string{},
+	Annotations: map[string]string{
+		"package": "provisioning",
+	},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
@@ -99,8 +101,10 @@ var deleteCmd = &cobra.Command{
   This operation is available only if your account is on the E2 version of the
   platform.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustAccountClient,
+	Annotations: map[string]string{
+		"package": "provisioning",
+	},
+	PreRunE: root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
@@ -158,8 +162,10 @@ var getCmd = &cobra.Command{
   Gets a Databricks network configuration, which represents a cloud VPC and its
   resources.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustAccountClient,
+	Annotations: map[string]string{
+		"package": "provisioning",
+	},
+	PreRunE: root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
@@ -215,8 +221,10 @@ var listCmd = &cobra.Command{
   This operation is available only if your account is on the E2 version of the
   platform.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustAccountClient,
+	Annotations: map[string]string{
+		"package": "provisioning",
+	},
+	PreRunE: root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)

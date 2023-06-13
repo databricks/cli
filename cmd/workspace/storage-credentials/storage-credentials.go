@@ -64,7 +64,9 @@ var createCmd = &cobra.Command{
   The caller must be a metastore admin and have the
   **CREATE_STORAGE_CREDENTIAL** privilege on the metastore.`,
 
-	Annotations: map[string]string{},
+	Annotations: map[string]string{
+		"package": "catalog",
+	},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
@@ -115,8 +117,10 @@ var deleteCmd = &cobra.Command{
   Deletes a storage credential from the metastore. The caller must be an owner
   of the storage credential.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Annotations: map[string]string{
+		"package": "catalog",
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -175,8 +179,10 @@ var getCmd = &cobra.Command{
   admin, the owner of the storage credential, or have some permission on the
   storage credential.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Annotations: map[string]string{
+		"package": "catalog",
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -232,8 +238,10 @@ var listCmd = &cobra.Command{
   credentials will be retrieved. There is no guarantee of a specific ordering of
   the elements in the array.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Annotations: map[string]string{
+		"package": "catalog",
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -277,8 +285,10 @@ var updateCmd = &cobra.Command{
   the storage credential or a metastore admin. If the caller is a metastore
   admin, only the __owner__ credential can be changed.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Annotations: map[string]string{
+		"package": "catalog",
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -355,7 +365,9 @@ var validateCmd = &cobra.Command{
   the **CREATE_EXTERNAL_LOCATION** privilege on the metastore and the storage
   credential.`,
 
-	Annotations: map[string]string{},
+	Annotations: map[string]string{
+		"package": "catalog",
+	},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {

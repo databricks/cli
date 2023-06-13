@@ -45,7 +45,9 @@ var createCmd = &cobra.Command{
 	Short: `Create a dashboard object.`,
 	Long:  `Create a dashboard object.`,
 
-	Annotations: map[string]string{},
+	Annotations: map[string]string{
+		"package": "sql",
+	},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {
@@ -93,8 +95,10 @@ var deleteCmd = &cobra.Command{
   Moves a dashboard to the trash. Trashed dashboards do not appear in list views
   or searches, and cannot be shared.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Annotations: map[string]string{
+		"package": "sql",
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -152,8 +156,10 @@ var getCmd = &cobra.Command{
   Returns a JSON representation of a dashboard object, including its
   visualization and query objects.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Annotations: map[string]string{
+		"package": "sql",
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -215,7 +221,9 @@ var listCmd = &cobra.Command{
   
   Fetch a paginated list of dashboard objects.`,
 
-	Annotations: map[string]string{},
+	Annotations: map[string]string{
+		"package": "sql",
+	},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {
@@ -262,8 +270,10 @@ var restoreCmd = &cobra.Command{
   
   A restored dashboard appears in list views and searches and can be shared.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Annotations: map[string]string{
+		"package": "sql",
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)

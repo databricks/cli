@@ -51,7 +51,9 @@ var createCmd = &cobra.Command{
   
   Creates a new service principal in the Databricks workspace.`,
 
-	Annotations: map[string]string{},
+	Annotations: map[string]string{
+		"package": "iam",
+	},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {
@@ -98,8 +100,10 @@ var deleteCmd = &cobra.Command{
   
   Delete a single service principal in the Databricks workspace.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Annotations: map[string]string{
+		"package": "iam",
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -157,8 +161,10 @@ var getCmd = &cobra.Command{
   Gets the details for a single service principal define in the Databricks
   workspace.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Annotations: map[string]string{
+		"package": "iam",
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -223,7 +229,9 @@ var listCmd = &cobra.Command{
   
   Gets the set of service principals associated with a Databricks workspace.`,
 
-	Annotations: map[string]string{},
+	Annotations: map[string]string{
+		"package": "iam",
+	},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {
@@ -273,8 +281,10 @@ var patchCmd = &cobra.Command{
   Partially updates the details of a single service principal in the Databricks
   workspace.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Annotations: map[string]string{
+		"package": "iam",
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -342,8 +352,10 @@ var updateCmd = &cobra.Command{
   
   This action replaces the existing service principal with the same name.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Annotations: map[string]string{
+		"package": "iam",
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)

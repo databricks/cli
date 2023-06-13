@@ -65,7 +65,9 @@ var changeOwnerCmd = &cobra.Command{
   Change the owner of the cluster. You must be an admin to perform this
   operation.`,
 
-	Annotations: map[string]string{},
+	Annotations: map[string]string{
+		"package": "compute",
+	},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
@@ -156,7 +158,9 @@ var createCmd = &cobra.Command{
   creation will succeed. Otherwise the cluster will terminate with an
   informative error message.`,
 
-	Annotations: map[string]string{},
+	Annotations: map[string]string{
+		"package": "compute",
+	},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
@@ -224,8 +228,10 @@ var deleteCmd = &cobra.Command{
   TERMINATED state. If the cluster is already in a TERMINATING or
   TERMINATED state, nothing will happen.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Annotations: map[string]string{
+		"package": "compute",
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -338,7 +344,9 @@ var editCmd = &cobra.Command{
   
   Clusters created by the Databricks Jobs service cannot be edited.`,
 
-	Annotations: map[string]string{},
+	Annotations: map[string]string{
+		"package": "compute",
+	},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
@@ -408,8 +416,10 @@ var eventsCmd = &cobra.Command{
   paginated. If there are more events to read, the response includes all the
   nparameters necessary to request the next page of events.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Annotations: map[string]string{
+		"package": "compute",
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -472,8 +482,10 @@ var getCmd = &cobra.Command{
   Retrieves the information for a cluster given its identifier. Clusters can be
   described while they are running, or up to 60 days after they are terminated.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Annotations: map[string]string{
+		"package": "compute",
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -540,7 +552,9 @@ var listCmd = &cobra.Command{
   clusters, all 45 terminated all-purpose clusters, and the 30 most recently
   terminated job clusters.`,
 
-	Annotations: map[string]string{},
+	Annotations: map[string]string{
+		"package": "compute",
+	},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {
@@ -583,8 +597,10 @@ var listNodeTypesCmd = &cobra.Command{
   Returns a list of supported Spark node types. These node types can be used to
   launch a cluster.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Annotations: map[string]string{
+		"package": "compute",
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -611,8 +627,10 @@ var listZonesCmd = &cobra.Command{
   Returns a list of availability zones where clusters can be created in (For
   example, us-west-2a). These zones can be used to launch a cluster.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Annotations: map[string]string{
+		"package": "compute",
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -648,8 +666,10 @@ var permanentDeleteCmd = &cobra.Command{
   cluster list, and API users can no longer perform any action on permanently
   deleted clusters.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Annotations: map[string]string{
+		"package": "compute",
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -708,8 +728,10 @@ var pinCmd = &cobra.Command{
   ListClusters API. Pinning a cluster that is already pinned will have no
   effect. This API can only be called by workspace admins.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Annotations: map[string]string{
+		"package": "compute",
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -775,8 +797,10 @@ var resizeCmd = &cobra.Command{
   Resizes a cluster to have a desired number of workers. This will fail unless
   the cluster is in a RUNNING state.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Annotations: map[string]string{
+		"package": "compute",
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -853,8 +877,10 @@ var restartCmd = &cobra.Command{
   Restarts a Spark cluster with the supplied ID. If the cluster is not currently
   in a RUNNING state, nothing will happen.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Annotations: map[string]string{
+		"package": "compute",
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -919,8 +945,10 @@ var sparkVersionsCmd = &cobra.Command{
   Returns the list of available Spark versions. These versions can be used to
   launch a cluster.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Annotations: map[string]string{
+		"package": "compute",
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -963,8 +991,10 @@ var startCmd = &cobra.Command{
   nodes. * If the cluster is not currently in a TERMINATED state, nothing will
   happen. * Clusters launched to run a job cannot be started.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Annotations: map[string]string{
+		"package": "compute",
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -1035,8 +1065,10 @@ var unpinCmd = &cobra.Command{
   ListClusters API. Unpinning a cluster that is not pinned will have no effect.
   This API can only be called by workspace admins.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Annotations: map[string]string{
+		"package": "compute",
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)

@@ -66,7 +66,9 @@ var createCmd = &cobra.Command{
   
   Creates a new instance pool using idle and ready-to-use cloud instances.`,
 
-	Annotations: map[string]string{},
+	Annotations: map[string]string{
+		"package": "compute",
+	},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
@@ -116,8 +118,10 @@ var deleteCmd = &cobra.Command{
   Deletes the instance pool permanently. The idle instances in the pool are
   terminated asynchronously.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Annotations: map[string]string{
+		"package": "compute",
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -186,7 +190,9 @@ var editCmd = &cobra.Command{
   
   Modifies the configuration of an existing instance pool.`,
 
-	Annotations: map[string]string{},
+	Annotations: map[string]string{
+		"package": "compute",
+	},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(3)
 		if cmd.Flags().Changed("json") {
@@ -236,8 +242,10 @@ var getCmd = &cobra.Command{
   
   Retrieve the information for an instance pool based on its identifier.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Annotations: map[string]string{
+		"package": "compute",
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -289,8 +297,10 @@ var listCmd = &cobra.Command{
   
   Gets a list of instance pools with their statistics.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Annotations: map[string]string{
+		"package": "compute",
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)

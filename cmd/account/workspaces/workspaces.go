@@ -71,7 +71,9 @@ var createCmd = &cobra.Command{
   repeated GET requests with the workspace ID and check its status. The
   workspace becomes available when the status changes to RUNNING.`,
 
-	Annotations: map[string]string{},
+	Annotations: map[string]string{
+		"package": "provisioning",
+	},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
@@ -138,8 +140,10 @@ var deleteCmd = &cobra.Command{
   platform or on a select custom plan that allows multiple workspaces per
   account.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustAccountClient,
+	Annotations: map[string]string{
+		"package": "provisioning",
+	},
+	PreRunE: root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
@@ -212,8 +216,10 @@ var getCmd = &cobra.Command{
   
   [Create a new workspace using the Account API]: http://docs.databricks.com/administration-guide/account-api/new-workspace.html`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustAccountClient,
+	Annotations: map[string]string{
+		"package": "provisioning",
+	},
+	PreRunE: root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
@@ -272,8 +278,10 @@ var listCmd = &cobra.Command{
   platform or on a select custom plan that allows multiple workspaces per
   account.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustAccountClient,
+	Annotations: map[string]string{
+		"package": "provisioning",
+	},
+	PreRunE: root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
@@ -426,8 +434,10 @@ var updateCmd = &cobra.Command{
   [Account Console]: https://docs.databricks.com/administration-guide/account-settings-e2/account-console-e2.html
   [Create a new workspace using the Account API]: http://docs.databricks.com/administration-guide/account-api/new-workspace.html`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustAccountClient,
+	Annotations: map[string]string{
+		"package": "provisioning",
+	},
+	PreRunE: root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)

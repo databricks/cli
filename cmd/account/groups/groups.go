@@ -52,7 +52,9 @@ var createCmd = &cobra.Command{
   Creates a group in the Databricks account with a unique name, using the
   supplied group details.`,
 
-	Annotations: map[string]string{},
+	Annotations: map[string]string{
+		"package": "iam",
+	},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {
@@ -99,8 +101,10 @@ var deleteCmd = &cobra.Command{
   
   Deletes a group from the Databricks account.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustAccountClient,
+	Annotations: map[string]string{
+		"package": "iam",
+	},
+	PreRunE: root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
@@ -157,8 +161,10 @@ var getCmd = &cobra.Command{
   
   Gets the information for a specific group in the Databricks account.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustAccountClient,
+	Annotations: map[string]string{
+		"package": "iam",
+	},
+	PreRunE: root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
@@ -223,7 +229,9 @@ var listCmd = &cobra.Command{
   
   Gets all details of the groups associated with the Databricks account.`,
 
-	Annotations: map[string]string{},
+	Annotations: map[string]string{
+		"package": "iam",
+	},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {
@@ -272,8 +280,10 @@ var patchCmd = &cobra.Command{
   
   Partially updates the details of a group.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustAccountClient,
+	Annotations: map[string]string{
+		"package": "iam",
+	},
+	PreRunE: root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
@@ -338,8 +348,10 @@ var updateCmd = &cobra.Command{
   
   Updates the details of a group by replacing the entire group entity.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustAccountClient,
+	Annotations: map[string]string{
+		"package": "iam",
+	},
+	PreRunE: root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)

@@ -35,7 +35,9 @@ var getStatusCmd = &cobra.Command{
   
   Gets the configuration status for a workspace.`,
 
-	Annotations: map[string]string{},
+	Annotations: map[string]string{
+		"package": "settings",
+	},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
@@ -84,7 +86,9 @@ var setStatusCmd = &cobra.Command{
   Sets the configuration status for a workspace, including enabling or disabling
   it.`,
 
-	Annotations: map[string]string{},
+	Annotations: map[string]string{
+		"package": "settings",
+	},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {

@@ -123,7 +123,9 @@ var createCmd = &cobra.Command{
   [Configure audit logging]: https://docs.databricks.com/administration-guide/account-settings/audit-logs.html
   [Deliver and access billable usage logs]: https://docs.databricks.com/administration-guide/account-settings/billable-usage-delivery.html`,
 
-	Annotations: map[string]string{},
+	Annotations: map[string]string{
+		"package": "billing",
+	},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {
@@ -171,8 +173,10 @@ var getCmd = &cobra.Command{
   Gets a Databricks log delivery configuration object for an account, both
   specified by ID.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustAccountClient,
+	Annotations: map[string]string{
+		"package": "billing",
+	},
+	PreRunE: root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
@@ -234,7 +238,9 @@ var listCmd = &cobra.Command{
   Gets all Databricks log delivery configurations associated with an account
   specified by ID.`,
 
-	Annotations: map[string]string{},
+	Annotations: map[string]string{
+		"package": "billing",
+	},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {
@@ -285,7 +291,9 @@ var patchStatusCmd = &cobra.Command{
   if this would violate the delivery configuration limits described under
   [Create log delivery](#operation/create-log-delivery-config).`,
 
-	Annotations: map[string]string{},
+	Annotations: map[string]string{
+		"package": "billing",
+	},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {

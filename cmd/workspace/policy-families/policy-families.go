@@ -39,7 +39,9 @@ func init() {
 var getCmd = &cobra.Command{
 	Use: "get POLICY_FAMILY_ID",
 
-	Annotations: map[string]string{},
+	Annotations: map[string]string{
+		"package": "compute",
+	},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
@@ -86,7 +88,9 @@ func init() {
 var listCmd = &cobra.Command{
 	Use: "list",
 
-	Annotations: map[string]string{},
+	Annotations: map[string]string{
+		"package": "compute",
+	},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {

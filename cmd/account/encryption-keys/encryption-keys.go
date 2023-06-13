@@ -71,8 +71,10 @@ var createCmd = &cobra.Command{
   platform or on a select custom plan that allows multiple workspaces per
   account.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustAccountClient,
+	Annotations: map[string]string{
+		"package": "provisioning",
+	},
+	PreRunE: root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
@@ -116,7 +118,9 @@ var deleteCmd = &cobra.Command{
   Deletes a customer-managed key configuration object for an account. You cannot
   delete a configuration that is associated with a running workspace.`,
 
-	Annotations: map[string]string{},
+	Annotations: map[string]string{
+		"package": "provisioning",
+	},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
@@ -178,7 +182,9 @@ var getCmd = &cobra.Command{
   This operation is available only if your account is on the E2 version of the
   platform.",`,
 
-	Annotations: map[string]string{},
+	Annotations: map[string]string{
+		"package": "provisioning",
+	},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
@@ -233,8 +239,10 @@ var listCmd = &cobra.Command{
   This operation is available only if your account is on the E2 version of the
   platform.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustAccountClient,
+	Annotations: map[string]string{
+		"package": "provisioning",
+	},
+	PreRunE: root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)

@@ -71,7 +71,9 @@ var createCmd = &cobra.Command{
   Creates a new data processing pipeline based on the requested configuration.
   If successful, this method returns the ID of the new pipeline.`,
 
-	Annotations: map[string]string{},
+	Annotations: map[string]string{
+		"package": "pipelines",
+	},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {
@@ -118,8 +120,10 @@ var deleteCmd = &cobra.Command{
   
   Deletes a pipeline.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Annotations: map[string]string{
+		"package": "pipelines",
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -179,8 +183,10 @@ var getCmd = &cobra.Command{
 	Short: `Get a pipeline.`,
 	Long:  `Get a pipeline.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Annotations: map[string]string{
+		"package": "pipelines",
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -237,7 +243,9 @@ var getUpdateCmd = &cobra.Command{
   
   Gets an update from an active pipeline.`,
 
-	Annotations: map[string]string{},
+	Annotations: map[string]string{
+		"package": "pipelines",
+	},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
@@ -291,8 +299,10 @@ var listPipelineEventsCmd = &cobra.Command{
   
   Retrieves events for a pipeline.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Annotations: map[string]string{
+		"package": "pipelines",
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -354,7 +364,9 @@ var listPipelinesCmd = &cobra.Command{
   
   Lists pipelines defined in the Delta Live Tables system.`,
 
-	Annotations: map[string]string{},
+	Annotations: map[string]string{
+		"package": "pipelines",
+	},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {
@@ -405,8 +417,10 @@ var listUpdatesCmd = &cobra.Command{
   
   List updates for an active pipeline.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Annotations: map[string]string{
+		"package": "pipelines",
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -468,8 +482,10 @@ var resetCmd = &cobra.Command{
   
   Resets a pipeline.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Annotations: map[string]string{
+		"package": "pipelines",
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -543,8 +559,10 @@ var startUpdateCmd = &cobra.Command{
   
   Starts or queues a pipeline update.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Annotations: map[string]string{
+		"package": "pipelines",
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -606,8 +624,10 @@ var stopCmd = &cobra.Command{
   
   Stops a pipeline.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Annotations: map[string]string{
+		"package": "pipelines",
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -696,8 +716,10 @@ var updateCmd = &cobra.Command{
   
   Updates a pipeline with the supplied configuration.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Annotations: map[string]string{
+		"package": "pipelines",
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)

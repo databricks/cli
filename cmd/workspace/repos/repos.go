@@ -51,7 +51,9 @@ var createCmd = &cobra.Command{
   Note that repos created programmatically must be linked to a remote Git repo,
   unlike repos created in the browser.`,
 
-	Annotations: map[string]string{},
+	Annotations: map[string]string{
+		"package": "workspace",
+	},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
@@ -100,8 +102,10 @@ var deleteCmd = &cobra.Command{
   
   Deletes the specified repo.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Annotations: map[string]string{
+		"package": "workspace",
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -161,8 +165,10 @@ var getCmd = &cobra.Command{
   
   Returns the repo with the given repo ID.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Annotations: map[string]string{
+		"package": "workspace",
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -226,7 +232,9 @@ var listCmd = &cobra.Command{
   Returns repos that the calling user has Manage permissions on. Results are
   paginated with each page containing twenty repos.`,
 
-	Annotations: map[string]string{},
+	Annotations: map[string]string{
+		"package": "workspace",
+	},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {
@@ -278,8 +286,10 @@ var updateCmd = &cobra.Command{
   Updates the repo to a different branch or tag, or updates the repo to the
   latest commit on the same branch.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Annotations: map[string]string{
+		"package": "workspace",
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)

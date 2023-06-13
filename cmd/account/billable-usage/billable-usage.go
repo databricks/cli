@@ -41,7 +41,9 @@ var downloadCmd = &cobra.Command{
   
   [CSV file schema]: https://docs.databricks.com/administration-guide/account-settings/usage-analysis.html#schema`,
 
-	Annotations: map[string]string{},
+	Annotations: map[string]string{
+		"package": "billing",
+	},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {

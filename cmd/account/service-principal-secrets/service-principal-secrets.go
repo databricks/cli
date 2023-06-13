@@ -49,7 +49,9 @@ var createCmd = &cobra.Command{
   
   Create a secret for the given service principal.`,
 
-	Annotations: map[string]string{},
+	Annotations: map[string]string{
+		"package": "oauth2",
+	},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
@@ -100,7 +102,9 @@ var deleteCmd = &cobra.Command{
   
   Delete a secret from the given service principal.`,
 
-	Annotations: map[string]string{},
+	Annotations: map[string]string{
+		"package": "oauth2",
+	},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
@@ -154,7 +158,9 @@ var listCmd = &cobra.Command{
   only returns information about the secrets themselves and does not include the
   secret values.`,
 
-	Annotations: map[string]string{},
+	Annotations: map[string]string{
+		"package": "oauth2",
+	},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {

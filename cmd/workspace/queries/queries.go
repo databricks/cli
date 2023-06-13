@@ -55,7 +55,9 @@ var createCmd = &cobra.Command{
   
   **Note**: You cannot add a visualization until you create the query.`,
 
-	Annotations: map[string]string{},
+	Annotations: map[string]string{
+		"package": "sql",
+	},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {
@@ -104,8 +106,10 @@ var deleteCmd = &cobra.Command{
   searches and list views, and they cannot be used for alerts. The trash is
   deleted after 30 days.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Annotations: map[string]string{
+		"package": "sql",
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -163,8 +167,10 @@ var getCmd = &cobra.Command{
   Retrieve a query object definition along with contextual permissions
   information about the currently authenticated user.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Annotations: map[string]string{
+		"package": "sql",
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -227,7 +233,9 @@ var listCmd = &cobra.Command{
   Gets a list of queries. Optionally, this list can be filtered by a search
   term.`,
 
-	Annotations: map[string]string{},
+	Annotations: map[string]string{
+		"package": "sql",
+	},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {
@@ -275,8 +283,10 @@ var restoreCmd = &cobra.Command{
   Restore a query that has been moved to the trash. A restored query appears in
   list views and searches. You can use restored queries for alerts.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Annotations: map[string]string{
+		"package": "sql",
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -341,8 +351,10 @@ var updateCmd = &cobra.Command{
   
   **Note**: You cannot undo this operation.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Annotations: map[string]string{
+		"package": "sql",
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)

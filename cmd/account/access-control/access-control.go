@@ -41,7 +41,9 @@ var getCmd = &cobra.Command{
   contains a list of access rules on the said resource. Currently only a default
   rule set for each resource is supported.`,
 
-	Annotations: map[string]string{},
+	Annotations: map[string]string{
+		"package": "iam",
+	},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
@@ -92,7 +94,9 @@ var listCmd = &cobra.Command{
   grantable if the rule set on the resource can contain an access rule of the
   role.`,
 
-	Annotations: map[string]string{},
+	Annotations: map[string]string{
+		"package": "iam",
+	},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
@@ -142,8 +146,10 @@ var updateCmd = &cobra.Command{
   the rule set before modifying it. This pattern helps prevent conflicts between
   concurrent updates.`,
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustAccountClient,
+	Annotations: map[string]string{
+		"package": "iam",
+	},
+	PreRunE: root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
