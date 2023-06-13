@@ -1,0 +1,46 @@
+Copyright (2023) Databricks, Inc.
+
+This Software includes software developed at Databricks (https://www.databricks.com/) and its use is subject to the included LICENSE file.
+
+This Software contains code from the following open source projects, licensed under the Apache 2.0 license:
+
+github.com/spf13/cobra v1.7.0
+github.com/briandowns/spinner v1.23.0
+gopkg.in/ini.v1 v1.67.0
+
+—--
+
+This software contains code from the following open source projects, licensed under the MPL 2.0 license:
+
+github.com/hashicorp/go-version v1.6.0 // MPL 2.0
+github.com/hashicorp/hc-install v0.5.2 // MPL 2.0
+github.com/hashicorp/terraform-exec v0.18.1 // MPL 2.0
+github.com/hashicorp/terraform-json v0.17.0 // MPL 2.0
+
+---
+
+This software contains code from the following open source projects, licensed under the BSD (3-clause) license:
+
+github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8 
+
+---
+
+This software contains code from the following open source projects, licensed under the BSD (3-clause) license:
+
+github.com/spf13/pflag v1.0.5
+github.com/google/uuid v1.3.0
+github.com/imdario/mergo v0.3.13 // BSD-3-Clause
+github.com/manifoldco/promptui v0.9.0 // BSD-3-Clause
+
+
+—--
+
+This Software contains code from the following open source projects, licensed under the MIT license:
+
+github.com/fatih/color v1.15.0
+github.com/ghodss/yaml v1.0.0 
+github.com/mattn/go-isatty v0.0.19 // MIT
+github.com/nwidger/jsoncolor v0.3.2 // MIT
+github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06
+github.com/stretchr/testify v1.8.4
+github.com/whilp/git-urls v1.0.0
