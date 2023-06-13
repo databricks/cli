@@ -20,10 +20,10 @@ import (
 {{define "service"}}
 var Cmd = &cobra.Command{
 	Use:   "{{(.TrimPrefix "account").KebabName}}",
-    {{- if .Description }}
-    Short: `{{.Summary | without "`"}}`,
+	{{- if .Description }}
+	Short: `{{.Summary | without "`"}}`,
 	Long: `{{.Comment  "  " 80 | without "`"}}`,
-    {{- end }}
+	{{- end }}
 	Annotations: map[string]string{
 		"package": "{{ .Package.Name }}",
 	},
