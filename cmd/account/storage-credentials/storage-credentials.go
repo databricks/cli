@@ -14,6 +14,9 @@ var Cmd = &cobra.Command{
 	Use:   "storage-credentials",
 	Short: `These APIs manage storage credentials for a particular metastore.`,
 	Long:  `These APIs manage storage credentials for a particular metastore.`,
+	Annotations: map[string]string{
+		"package": "catalog",
+	},
 }
 
 // start create command

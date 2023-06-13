@@ -43,6 +43,9 @@ var Cmd = &cobra.Command{
   recently terminated by the job scheduler. To keep an all-purpose cluster
   configuration even after it has been terminated for more than 30 days, an
   administrator can pin a cluster to the cluster list.`,
+	Annotations: map[string]string{
+		"package": "compute",
+	},
 }
 
 // start change-owner command

@@ -21,6 +21,9 @@ var Cmd = &cobra.Command{
   See [more info].
   
   [more info]: https://docs.databricks.com/repos/get-access-tokens-from-git-provider.html`,
+	Annotations: map[string]string{
+		"package": "workspace",
+	},
 }
 
 // start create command

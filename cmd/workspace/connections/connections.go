@@ -26,6 +26,9 @@ var Cmd = &cobra.Command{
   may create different types of connections with each connection having a unique
   set of configuration options to support credential management and other
   settings.`,
+	Annotations: map[string]string{
+		"package": "catalog",
+	},
 }
 
 // start create command

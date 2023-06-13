@@ -31,6 +31,9 @@ var Cmd = &cobra.Command{
   encryption requires that the workspace is on the E2 version of the platform.
   If you have an older workspace, it might not be on the E2 version of the
   platform. If you are not sure, contact your Databricks representative.`,
+	Annotations: map[string]string{
+		"package": "provisioning",
+	},
 }
 
 // start create command

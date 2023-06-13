@@ -29,6 +29,9 @@ var Cmd = &cobra.Command{
   define how requests should be routed to your served models behind an endpoint.
   Additionally, you can configure the scale of resources that should be applied
   to each served model.`,
+	Annotations: map[string]string{
+		"package": "serving",
+	},
 }
 
 // start build-logs command

@@ -21,6 +21,9 @@ var Cmd = &cobra.Command{
   bucket for storage of non-production DBFS data. A storage configuration
   encapsulates this bucket information, and its ID is used when creating a new
   workspace.`,
+	Annotations: map[string]string{
+		"package": "provisioning",
+	},
 }
 
 // start create command

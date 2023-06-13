@@ -28,6 +28,9 @@ var Cmd = &cobra.Command{
   To create storage credentials, you must be a Databricks account admin. The
   account admin who creates the storage credential can delegate ownership to
   another user or group to manage permissions on it.`,
+	Annotations: map[string]string{
+		"package": "catalog",
+	},
 }
 
 // start create command

@@ -21,6 +21,9 @@ var Cmd = &cobra.Command{
   production data run with service principals, interactive users do not need any
   write, delete, or modify privileges in production. This eliminates the risk of
   a user overwriting production data by accident.`,
+	Annotations: map[string]string{
+		"package": "iam",
+	},
 }
 
 // start create command

@@ -13,6 +13,9 @@ var Cmd = &cobra.Command{
 	Short: `This API allows retrieving information about currently authenticated user or service principal.`,
 	Long: `This API allows retrieving information about currently authenticated user or
   service principal.`,
+	Annotations: map[string]string{
+		"package": "iam",
+	},
 }
 
 // start me command

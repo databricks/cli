@@ -39,6 +39,9 @@ var Cmd = &cobra.Command{
   
   Only admin users can create, edit, and delete policies. Admin users also have
   access to all policies.`,
+	Annotations: map[string]string{
+		"package": "compute",
+	},
 }
 
 // start create command

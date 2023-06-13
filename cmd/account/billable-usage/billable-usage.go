@@ -14,6 +14,9 @@ var Cmd = &cobra.Command{
 	Short: `This API allows you to download billable usage logs for the specified account and date range.`,
 	Long: `This API allows you to download billable usage logs for the specified account
   and date range. This feature works with all account types.`,
+	Annotations: map[string]string{
+		"package": "billing",
+	},
 }
 
 // start download command

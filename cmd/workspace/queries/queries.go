@@ -19,6 +19,9 @@ var Cmd = &cobra.Command{
   definitions include the target SQL warehouse, query text, name, description,
   tags, parameters, and visualizations. Queries can be scheduled using the
   sql_task type of the Jobs API, e.g. :method:jobs/create.`,
+	Annotations: map[string]string{
+		"package": "sql",
+	},
 }
 
 // start create command

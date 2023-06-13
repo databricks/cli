@@ -14,6 +14,9 @@ var Cmd = &cobra.Command{
 	Use:   "query-history",
 	Short: `Access the history of queries through SQL warehouses.`,
 	Long:  `Access the history of queries through SQL warehouses.`,
+	Annotations: map[string]string{
+		"package": "sql",
+	},
 }
 
 // start list command

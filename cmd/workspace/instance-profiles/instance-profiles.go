@@ -19,6 +19,9 @@ var Cmd = &cobra.Command{
   instance profiles for more information.
   
   [Secure access to S3 buckets]: https://docs.databricks.com/administration-guide/cloud-configurations/aws/instance-profiles.html`,
+	Annotations: map[string]string{
+		"package": "compute",
+	},
 }
 
 // start add command

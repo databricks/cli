@@ -36,6 +36,9 @@ var Cmd = &cobra.Command{
   
   After changes to the IP access list feature, it can take a few minutes for
   changes to take effect.`,
+	Annotations: map[string]string{
+		"package": "settings",
+	},
 }
 
 // start create command

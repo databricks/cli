@@ -17,6 +17,9 @@ var Cmd = &cobra.Command{
 	Short: `The Workspace Permission Assignment API allows you to manage workspace permissions for principals in your account.`,
 	Long: `The Workspace Permission Assignment API allows you to manage workspace
   permissions for principals in your account.`,
+	Annotations: map[string]string{
+		"package": "iam",
+	},
 }
 
 // start delete command
