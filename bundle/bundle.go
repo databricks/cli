@@ -100,7 +100,7 @@ func (b *Bundle) CacheDir(paths ...string) (string, error) {
 
 	cacheDirName, exists := os.LookupEnv("DATABRICKS_BUNDLE_TMP")
 
-	if !exists {
+	if !exists || cacheDirName == "" {
 		cacheDirName = filepath.Join(
 			// Anchor at bundle root directory.
 			b.Config.Path,
