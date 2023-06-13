@@ -25,7 +25,7 @@ var Cmd = &cobra.Command{
 	Long: `{{.Comment  "  " 80 | without "`"}}`,
     {{- end}}
 	Annotations: map[string]string{
-		"package": {{ .Package.Name | printf "%q" }},
+		"package": "{{ .Package.Name }}",
 	},
 }
 
