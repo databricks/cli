@@ -140,8 +140,11 @@ var cpRecursive bool
 
 func validateScheme(path string) error {
 	scheme := scheme(path)
-	if scheme != LocalScheme && scheme != DbfsScheme {
+	if scheme == NoScheme {
 		return fmt.Errorf(`no scheme specified for path %s. Please specify scheme "dbfs" or "file". Example: file:/foo/bar`, path)
+	}
+	if scheme != LocalScheme && scheme != DbfsScheme {
+		return fmt.Errorf(`unsupported scheme %s specified for path %s. Please specify scheme "dbfs" or "file". Example: file:/foo/bar`, scheme, path)
 	}
 	return nil
 }

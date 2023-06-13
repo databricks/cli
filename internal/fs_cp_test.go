@@ -217,3 +217,15 @@ func TestFsCpFileToDirLocalToLocal(t *testing.T) {
 
 	assertTargetFile(t, ctx, targetFiler, "foo.txt")
 }
+
+// TODO: Test cp works for relative local paths
+
+func TestFsCpErrorsOnNoScheme(t *testing.T) {
+	_, _, err := RequireErrorRun(t, "fs", "cp", "/a", "/b")
+	assert.Equal(t, "no scheme specified for path /a. Please specify scheme \"dbfs\" or \"file\". Example: file:/foo/bar", err.Error())
+}
+
+func TestFsCpErrorsOnInvalidScheme(t *testing.T) {
+	_, _, err := RequireErrorRun(t, "fs", "cp", "file:/a", "https:/b")
+	assert.Equal(t, "unsupported scheme https specified for path https:/b. Please specify scheme \"dbfs\" or \"file\". Example: file:/foo/bar", err.Error())
+}
