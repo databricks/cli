@@ -6,7 +6,6 @@ import (
 	"io/fs"
 	"path"
 	"path/filepath"
-	"strings"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
@@ -72,7 +71,6 @@ var cpCmd = &cobra.Command{
 
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
 
 		sourceDir := args[0]
 		targetDir := args[1]
@@ -81,14 +79,13 @@ var cpCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+		sourceFs := filer.NewFS(ctx, sourceFiler)
 		targetFiler, err := setupFiler(ctx, args[1])
 		if err != nil {
 			return err
 		}
 
-		
-
-		if strings.HasPrefix(s string, prefix string)
+		return fs.WalkDir(sourceFs, ".", cpWriteCallback(ctx, sourceFiler, targetFiler, sourceDir, targetDir))
 	},
 }
 
