@@ -266,3 +266,59 @@ func TestFsCpDbfsDirToDbfsDirFileWithOverwriteFlag(t *testing.T) {
 	RequireSuccessfulRun(t, "fs", "cp", sourceDir, targetDir, "--recursive", "--overwrite")
 	assertTargetDir(t, ctx, targetFiler)
 }
+
+func TestFsCpDbfsFileToLocalDirFileNotOverwritten(t *testing.T) {
+	ctx := context.Background()
+	sourceFiler, sourceDir := setupDbfsFiler(t)
+	targetFiler, targetDir := setupLocalFiler(t)
+	setupSourceDir(t, ctx, sourceFiler)
+
+	// Write a conflicting file to target
+	err := targetFiler.Write(ctx, "a/b/c/hello.txt", strings.NewReader("this should not be overwritten"), filer.CreateParentDirectories)
+	require.NoError(t, err)
+
+	RequireSuccessfulRun(t, "fs", "cp", path.Join(sourceDir, "a/b/c/hello.txt"), path.Join(targetDir, "a/b/c"), "--recursive")
+	assertFileContent(t, ctx, targetFiler, "a/b/c/hello.txt", "this should not be overwritten")
+}
+
+func TestFsCpDbfsFileToLocalDirFileWithOverwriteFlag(t *testing.T) {
+	ctx := context.Background()
+	sourceFiler, sourceDir := setupDbfsFiler(t)
+	targetFiler, targetDir := setupLocalFiler(t)
+	setupSourceDir(t, ctx, sourceFiler)
+
+	// Write a conflicting file to target
+	err := targetFiler.Write(ctx, "a/b/c/hello.txt", strings.NewReader("this will be overwritten :') "), filer.CreateParentDirectories)
+	require.NoError(t, err)
+
+	RequireSuccessfulRun(t, "fs", "cp", path.Join(sourceDir, "a/b/c/hello.txt"), path.Join(targetDir, "a/b/c"), "--recursive", "--overwrite")
+	assertFileContent(t, ctx, targetFiler, "a/b/c/hello.txt", "hello, world\n")
+}
+
+func TestFsCpLocalFileToDbfsFileNotOverwritten(t *testing.T) {
+	ctx := context.Background()
+	sourceFiler, sourceDir := setupLocalFiler(t)
+	targetFiler, targetDir := setupDbfsFiler(t)
+	setupSourceDir(t, ctx, sourceFiler)
+
+	// Write a conflicting file to target
+	err := targetFiler.Write(ctx, "a/b/c/hola.txt", strings.NewReader("this should not be overwritten"), filer.CreateParentDirectories)
+	require.NoError(t, err)
+
+	RequireSuccessfulRun(t, "fs", "cp", path.Join(sourceDir, "a/b/c/hello.txt"), path.Join(targetDir, "a/b/c/hola.txt"), "--recursive")
+	assertFileContent(t, ctx, targetFiler, "a/b/c/hola.txt", "this should not be overwritten")
+}
+
+func TestFsCpLocalFileToDbfsFileWithOverwriteFlag(t *testing.T) {
+	ctx := context.Background()
+	sourceFiler, sourceDir := setupDbfsFiler(t)
+	targetFiler, targetDir := setupLocalFiler(t)
+	setupSourceDir(t, ctx, sourceFiler)
+
+	// Write a conflicting file to target
+	err := targetFiler.Write(ctx, "a/b/c/hola.txt", strings.NewReader("this will be overwritten. Such is life."), filer.CreateParentDirectories)
+	require.NoError(t, err)
+
+	RequireSuccessfulRun(t, "fs", "cp", path.Join(sourceDir, "a/b/c/hello.txt"), path.Join(targetDir, "a/b/c/hola.txt"), "--recursive", "--overwrite")
+	assertFileContent(t, ctx, targetFiler, "a/b/c/hola.txt", "hello, world\n")
+}
