@@ -28,6 +28,9 @@ var Cmd = &cobra.Command{
   You can declare primary keys and foreign keys as part of the table
   specification during table creation. You can also add or drop constraints on
   existing tables.`,
+	Annotations: map[string]string{
+		"package": "catalog",
+	},
 }
 
 // start create command

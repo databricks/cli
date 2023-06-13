@@ -18,6 +18,9 @@ var Cmd = &cobra.Command{
 	Long: `Enables administrators to get all tokens and delete tokens for other users.
   Admins can either get every token, get a specific token by ID, or get all
   tokens for a particular user.`,
+	Annotations: map[string]string{
+		"package": "settings",
+	},
 }
 
 // start create-obo-token command

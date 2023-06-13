@@ -26,6 +26,9 @@ var Cmd = &cobra.Command{
   
   To create external locations, you must be a metastore admin or a user with the
   **CREATE_EXTERNAL_LOCATION** privilege.`,
+	Annotations: map[string]string{
+		"package": "catalog",
+	},
 }
 
 // start create command

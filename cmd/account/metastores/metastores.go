@@ -15,6 +15,9 @@ var Cmd = &cobra.Command{
 	Short: `These APIs manage Unity Catalog metastores for an account.`,
 	Long: `These APIs manage Unity Catalog metastores for an account. A metastore
   contains catalogs that can be associated with workspaces`,
+	Annotations: map[string]string{
+		"package": "catalog",
+	},
 }
 
 // start create command

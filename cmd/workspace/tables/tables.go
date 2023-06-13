@@ -24,6 +24,9 @@ var Cmd = &cobra.Command{
   
   A table can be managed or external. From an API perspective, a __VIEW__ is a
   particular kind of table (rather than a managed or external table).`,
+	Annotations: map[string]string{
+		"package": "catalog",
+	},
 }
 
 // start delete command
