@@ -35,30 +35,7 @@ func cpWriteCallback(ctx context.Context, sourceFiler, targetFiler filer.Filer, 
 			return targetFiler.Mkdir(ctx, targetPath)
 		}
 
-		// get reader for source file
-		r, err := sourceFiler.Read(ctx, sourcePath)
-		if err != nil {
-			return err
-		}
-
-		// write to target file
-		if cpOverwrite {
-			err = targetFiler.Write(ctx, targetPath, r, filer.OverwriteIfExists)
-			if err != nil {
-				return err
-			}
-		} else {
-			err = targetFiler.Write(ctx, targetPath, r)
-			// skip if file already exists
-			if err != nil && errors.Is(err, fs.ErrExist) {
-				return emitCpFileSkippedEvent(ctx, sourcePath, targetPath)
-			}
-			if err != nil {
-				return err
-			}
-		}
-
-		return emitCpFileCopiedEvent(ctx, sourcePath, targetPath)
+		return cpFileToFile(ctx, sourcePath, targetPath, sourceFiler, targetFiler)
 	}
 }
 
