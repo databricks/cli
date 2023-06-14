@@ -18,6 +18,13 @@ var accountCmd = &cobra.Command{
 
 func init() {
 	root.RootCmd.AddCommand(accountCmd)
-    {{range .Services}}{{if .IsAccounts}}{{if not (in $excludes .KebabName) }}
-	accountCmd.AddCommand({{.SnakeName}}.Cmd){{end}}{{end}}{{end}}
+
+	{{range .Services}}{{if .IsAccounts}}{{if not (in $excludes .KebabName) -}}
+	accountCmd.AddCommand({{.SnakeName}}.Cmd)
+	{{end}}{{end}}{{end}}
+
+	// Register commands with groups
+	{{range .Services}}{{if .IsAccounts}}{{if not (in $excludes .KebabName) -}}
+	{{.SnakeName}}.Cmd.GroupID = "{{ .Package.Name }}"
+	{{end}}{{end}}{{end}}
 }
