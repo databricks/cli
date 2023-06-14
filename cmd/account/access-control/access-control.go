@@ -21,6 +21,9 @@ var Cmd = &cobra.Command{
 	Annotations: map[string]string{
 		"package": "iam",
 	},
+
+	// This service is being previewed; hide from help output.
+	Hidden: true,
 }
 
 // start get command
