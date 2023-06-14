@@ -24,6 +24,9 @@ var Cmd = &cobra.Command{
   These endpoints are available if your account is on the E2 version of the
   platform or on a select custom plan that allows multiple workspaces per
   account.`,
+	Annotations: map[string]string{
+		"package": "provisioning",
+	},
 }
 
 // start create command

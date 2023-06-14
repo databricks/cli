@@ -34,6 +34,9 @@ var Cmd = &cobra.Command{
   [Databricks CLI]: https://docs.databricks.com/dev-tools/cli/index.html
   [Secrets CLI]: https://docs.databricks.com/dev-tools/cli/secrets-cli.html
   [Secrets utility]: https://docs.databricks.com/dev-tools/databricks-utils.html#dbutils-secrets`,
+	Annotations: map[string]string{
+		"package": "jobs",
+	},
 }
 
 // start cancel-all-runs command

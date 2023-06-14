@@ -16,6 +16,9 @@ var Cmd = &cobra.Command{
 	Use:   "metastore-assignments",
 	Short: `These APIs manage metastore assignments to a workspace.`,
 	Long:  `These APIs manage metastore assignments to a workspace.`,
+	Annotations: map[string]string{
+		"package": "catalog",
+	},
 }
 
 // start create command

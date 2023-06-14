@@ -33,6 +33,9 @@ var Cmd = &cobra.Command{
   
   Databricks does not charge DBUs while instances are idle in the pool. Instance
   provider billing does apply. See pricing.`,
+	Annotations: map[string]string{
+		"package": "compute",
+	},
 }
 
 // start create command

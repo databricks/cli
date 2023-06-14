@@ -28,6 +28,9 @@ var Cmd = &cobra.Command{
   
   [Authentication using OAuth tokens for service principals]: https://docs.databricks.com/dev-tools/authentication-oauth.html
   [Databricks Terraform Provider]: https://github.com/databricks/terraform-provider-databricks/blob/master/docs/index.md#authenticating-with-service-principal`,
+	Annotations: map[string]string{
+		"package": "oauth2",
+	},
 }
 
 // start create command

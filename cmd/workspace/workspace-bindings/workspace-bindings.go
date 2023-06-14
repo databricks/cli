@@ -19,6 +19,9 @@ var Cmd = &cobra.Command{
   
   A catalog's workspace bindings can be configured by a metastore admin or the
   owner of the catalog.`,
+	Annotations: map[string]string{
+		"package": "catalog",
+	},
 }
 
 // start get command

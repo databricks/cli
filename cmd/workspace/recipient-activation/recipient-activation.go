@@ -14,6 +14,9 @@ var Cmd = &cobra.Command{
 	Use:   "recipient-activation",
 	Short: `Databricks Recipient Activation REST API.`,
 	Long:  `Databricks Recipient Activation REST API`,
+	Annotations: map[string]string{
+		"package": "sharing",
+	},
 }
 
 // start get-activation-url-info command

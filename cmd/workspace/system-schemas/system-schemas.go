@@ -16,6 +16,12 @@ var Cmd = &cobra.Command{
 	Long: `A system schema is a schema that lives within the system catalog. A system
   schema may contain information about customer usage of Unity Catalog such as
   audit-logs, billing-logs, lineage information, etc.`,
+	Annotations: map[string]string{
+		"package": "catalog",
+	},
+
+	// This service is being previewed; hide from help output.
+	Hidden: true,
 }
 
 // start disable command

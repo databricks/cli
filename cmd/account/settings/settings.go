@@ -14,6 +14,9 @@ var Cmd = &cobra.Command{
 	Use:   "settings",
 	Short: `TBD.`,
 	Long:  `TBD`,
+	Annotations: map[string]string{
+		"package": "settings",
+	},
 }
 
 // start read-personal-compute-setting command

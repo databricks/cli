@@ -14,6 +14,9 @@ var Cmd = &cobra.Command{
 	Use:   "workspace-conf",
 	Short: `This API allows updating known workspace settings for advanced users.`,
 	Long:  `This API allows updating known workspace settings for advanced users.`,
+	Annotations: map[string]string{
+		"package": "settings",
+	},
 }
 
 // start get-status command

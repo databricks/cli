@@ -16,6 +16,9 @@ var Cmd = &cobra.Command{
 	Use:   "providers",
 	Short: `Databricks Providers REST API.`,
 	Long:  `Databricks Providers REST API`,
+	Annotations: map[string]string{
+		"package": "sharing",
+	},
 }
 
 // start create command

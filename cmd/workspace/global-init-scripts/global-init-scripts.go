@@ -24,6 +24,9 @@ var Cmd = &cobra.Command{
   script returns with a bad exit code, the Apache Spark container fails to
   launch and init scripts with later position are skipped. If enough containers
   fail, the entire cluster fails with a GLOBAL_INIT_SCRIPT_FAILURE error code.`,
+	Annotations: map[string]string{
+		"package": "compute",
+	},
 }
 
 // start create command

@@ -30,6 +30,9 @@ var Cmd = &cobra.Command{
   quality with Delta Live Tables expectations. Expectations allow you to define
   expected data quality and specify how to handle records that fail those
   expectations.`,
+	Annotations: map[string]string{
+		"package": "pipelines",
+	},
 }
 
 // start create command

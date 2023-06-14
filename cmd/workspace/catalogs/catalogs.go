@@ -21,6 +21,9 @@ var Cmd = &cobra.Command{
   data centrally across all of the workspaces in a Databricks account. Users in
   different workspaces can share access to the same data, depending on
   privileges granted centrally in Unity Catalog.`,
+	Annotations: map[string]string{
+		"package": "catalog",
+	},
 }
 
 // start create command
