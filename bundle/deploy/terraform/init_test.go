@@ -260,7 +260,7 @@ func TestSetProxyEnvVars(t *testing.T) {
 	env = make(map[string]string, 0)
 	err = setProxyEnvVars(env, b)
 	require.NoError(t, err)
-	assert.ElementsMatch(t, []string{"http_proxy", "https_proxy", "no_proxy"}, maps.Keys(env))
+	assert.ElementsMatch(t, []string{"HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY"}, maps.Keys(env))
 
 	// Upper case set.
 	clearEnv()
