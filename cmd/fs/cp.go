@@ -72,30 +72,10 @@ func cpDirToDir(ctx context.Context, sourceFiler, targetFiler filer.Filer, sourc
 }
 
 func cpFileToDir(ctx context.Context, sourcePath, targetDir string, sourceFiler, targetFiler filer.Filer) error {
-	// Get reader for file at source path
-	r, err := sourceFiler.Read(ctx, sourcePath)
-	if err != nil {
-		return err
-	}
 	fileName := path.Base(sourcePath)
 	targetPath := path.Join(targetDir, fileName)
 
-	if cpOverwrite {
-		err = targetFiler.Write(ctx, targetPath, r, filer.OverwriteIfExists)
-		if err != nil {
-			return err
-		}
-	} else {
-		err = targetFiler.Write(ctx, targetPath, r)
-		// skip if file already exists
-		if err != nil && errors.Is(err, fs.ErrExist) {
-			return emitCpFileSkippedEvent(ctx, sourcePath, targetPath)
-		}
-		if err != nil {
-			return err
-		}
-	}
-	return emitCpFileCopiedEvent(ctx, sourcePath, targetPath)
+	return cpFileToFile(ctx, sourcePath, targetPath, sourceFiler, targetFiler)
 }
 
 func cpFileToFile(ctx context.Context, sourcePath, targetPath string, sourceFiler, targetFiler filer.Filer) error {
@@ -105,7 +85,10 @@ func cpFileToFile(ctx context.Context, sourcePath, targetPath string, sourceFile
 		return err
 	}
 	if cpOverwrite {
-		return targetFiler.Write(ctx, targetPath, r, filer.OverwriteIfExists)
+		err = targetFiler.Write(ctx, targetPath, r, filer.OverwriteIfExists)
+		if err != nil {
+			return err
+		}
 	} else {
 		err = targetFiler.Write(ctx, targetPath, r)
 		// skip if file already exists
