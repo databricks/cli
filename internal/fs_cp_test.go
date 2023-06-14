@@ -247,6 +247,8 @@ func TestFsCpFileToDirWithOverwriteFlag(t *testing.T) {
 }
 
 func TestFsCpErrorsWhenSourceIsDirWithoutRecursiveFlag(t *testing.T) {
+	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+
 	type test struct {
 		path   string
 		scheme string
@@ -270,11 +272,15 @@ func TestFsCpErrorsWhenSourceIsDirWithoutRecursiveFlag(t *testing.T) {
 // TODO: Test cp works for relative local paths
 
 func TestFsCpErrorsOnNoScheme(t *testing.T) {
+	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+
 	_, _, err := RequireErrorRun(t, "fs", "cp", "/a", "/b")
 	assert.Equal(t, "no scheme specified for path /a. Please specify scheme \"dbfs\" or \"file\". Example: file:/foo/bar", err.Error())
 }
 
 func TestFsCpErrorsOnInvalidScheme(t *testing.T) {
+	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+
 	_, _, err := RequireErrorRun(t, "fs", "cp", "file:/a", "https:/b")
 	assert.Equal(t, "unsupported scheme https specified for path https:/b. Please specify scheme \"dbfs\" or \"file\". Example: file:/foo/bar", err.Error())
 }
