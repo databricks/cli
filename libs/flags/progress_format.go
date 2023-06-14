@@ -33,6 +33,11 @@ func (p *ProgressLogFormat) Set(s string) error {
 		*p = ProgressLogFormat(ModeInplace.String())
 	case ModeJson.String():
 		*p = ProgressLogFormat(ModeJson.String())
+	case ModeDefault.String():
+		// We include ModeDefault here for symmetry reasons so this flag value
+		// can be unset after test runs. We should not point this value in error
+		// messages though since it's internal only
+		*p = ProgressLogFormat(ModeJson.String())
 	default:
 		valid := []string{
 			ModeAppend.String(),
