@@ -22,6 +22,9 @@ var Cmd = &cobra.Command{
   **Note:** You can only add/use the OAuth custom application integrations when
   OAuth enrollment status is enabled. For more details see
   :method:OAuthEnrollment/create`,
+	Annotations: map[string]string{
+		"package": "oauth2",
+	},
 }
 
 // start create command

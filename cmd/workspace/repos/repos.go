@@ -25,6 +25,9 @@ var Cmd = &cobra.Command{
   Within Repos you can develop code in notebooks or other files and follow data
   science and engineering code development best practices using Git for version
   control, collaboration, and CI/CD.`,
+	Annotations: map[string]string{
+		"package": "workspace",
+	},
 }
 
 // start create command

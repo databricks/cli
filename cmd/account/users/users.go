@@ -26,6 +26,9 @@ var Cmd = &cobra.Command{
   provider and that user’s account will also be removed from Databricks
   account. This ensures a consistent offboarding process and prevents
   unauthorized users from accessing sensitive data.`,
+	Annotations: map[string]string{
+		"package": "iam",
+	},
 }
 
 // start create command

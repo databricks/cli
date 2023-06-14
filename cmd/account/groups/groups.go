@@ -22,6 +22,9 @@ var Cmd = &cobra.Command{
   in Unity Catalog to groups, instead of to users individually. All Databricks
   account identities can be assigned as members of groups, and members inherit
   permissions that are assigned to their group.`,
+	Annotations: map[string]string{
+		"package": "iam",
+	},
 }
 
 // start create command

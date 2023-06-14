@@ -15,6 +15,9 @@ var Cmd = &cobra.Command{
 	Short: `Permissions API are used to create read, write, edit, update and manage access for various users on different objects and endpoints.`,
 	Long: `Permissions API are used to create read, write, edit, update and manage access
   for various users on different objects and endpoints.`,
+	Annotations: map[string]string{
+		"package": "iam",
+	},
 }
 
 // start get command

@@ -18,6 +18,9 @@ var Cmd = &cobra.Command{
   
   **Note:** Your account must be on the E2 version to use these APIs, this is
   because OAuth is only supported on the E2 version.`,
+	Annotations: map[string]string{
+		"package": "oauth2",
+	},
 }
 
 // start create command

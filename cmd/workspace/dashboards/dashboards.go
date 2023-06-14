@@ -21,6 +21,9 @@ var Cmd = &cobra.Command{
   since you can get a dashboard definition with a GET request and then POST it
   to create a new one. Dashboards can be scheduled using the sql_task type of
   the Jobs API, e.g. :method:jobs/create.`,
+	Annotations: map[string]string{
+		"package": "sql",
+	},
 }
 
 // start create command

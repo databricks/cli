@@ -17,6 +17,9 @@ var Cmd = &cobra.Command{
 	Short: `These APIs manage budget configuration including notifications for exceeding a budget for a period.`,
 	Long: `These APIs manage budget configuration including notifications for exceeding a
   budget for a period. They can also retrieve the status of each budget.`,
+	Annotations: map[string]string{
+		"package": "billing",
+	},
 }
 
 // start create command

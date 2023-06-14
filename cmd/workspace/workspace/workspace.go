@@ -20,6 +20,9 @@ var Cmd = &cobra.Command{
   
   A notebook is a web-based interface to a document that contains runnable code,
   visualizations, and explanatory text.`,
+	Annotations: map[string]string{
+		"package": "workspace",
+	},
 }
 
 // start delete command

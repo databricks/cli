@@ -22,6 +22,9 @@ var Cmd = &cobra.Command{
   Policy families cannot be used directly to create clusters. Instead, you
   create cluster policies using a policy family. Cluster policies created using
   a policy family inherit the policy family's policy definition.`,
+	Annotations: map[string]string{
+		"package": "compute",
+	},
 }
 
 // start get command
