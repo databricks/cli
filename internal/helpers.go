@@ -240,6 +240,7 @@ func NewCobraTestRunner(t *testing.T, args ...string) *cobraTestRunner {
 }
 
 func RequireSuccessfulRun(t *testing.T, args ...string) (bytes.Buffer, bytes.Buffer) {
+	t.Logf("run args: [%s]", strings.Join(args, ", "))
 	c := NewCobraTestRunner(t, args...)
 	stdout, stderr, err := c.Run()
 	require.NoError(t, err)

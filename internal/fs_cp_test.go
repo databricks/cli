@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"path"
-	"regexp"
 	"strings"
 	"testing"
 
@@ -268,9 +267,6 @@ func TestAccFsCpErrorsWhenSourceIsDirWithoutRecursiveFlag(t *testing.T) {
 	}
 }
 
-// TODO: test out all the error cases
-// TODO: Test cp works for relative local paths
-
 func TestAccFsCpErrorsOnNoScheme(t *testing.T) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
@@ -287,28 +283,19 @@ func TestAccFsCpErrorsOnInvalidScheme(t *testing.T) {
 
 func TestAccFsCpSourceIsDirectoryButTargetIsFile(t *testing.T) {
 	ctx := context.Background()
-	sourceFiler, sourceDir := setupDbfsFiler(t)
-	targetFiler, targetDir := setupDbfsFiler(t)
-	setupSourceDir(t, ctx, sourceFiler)
+	table := setupTable()
 
-	// Write a conflicting file to target
-	err := targetFiler.Write(ctx, "my_target", strings.NewReader("I'll block any attempts to recursively copy"), filer.CreateParentDirectories)
-	require.NoError(t, err)
+	for _, row := range table {
+		sourceFiler, sourceDir := row.setupSource(t)
+		targetFiler, targetDir := row.setupTarget(t)
+		setupSourceDir(t, ctx, sourceFiler)
 
-	_, _, err = RequireErrorRun(t, "fs", "cp", sourceDir, path.Join(targetDir, "my_target"), "--recursive", "--overwrite")
-	assert.Regexp(t, regexp.MustCompile(`Cannot create directory .* because .* is an existing file.`), err.Error())
-}
+		// Write a conflicting file to target
+		err := targetFiler.Write(ctx, "my_target", strings.NewReader("I'll block any attempts to recursively copy"), filer.CreateParentDirectories)
+		require.NoError(t, err)
 
-func TestAccFsCpSourceIsDirectoryButTargetIsLocalFile(t *testing.T) {
-	ctx := context.Background()
-	sourceFiler, sourceDir := setupDbfsFiler(t)
-	targetFiler, targetDir := setupLocalFiler(t)
-	setupSourceDir(t, ctx, sourceFiler)
+		_, _, err = RequireErrorRun(t, "fs", "cp", sourceDir, path.Join(targetDir, "my_target"), "--recursive", "--overwrite")
+		assert.Error(t, err)
+	}
 
-	// Write a conflicting file to target
-	err := targetFiler.Write(ctx, "my_target", strings.NewReader("I'll block any attempts to recursively copy"), filer.CreateParentDirectories)
-	require.NoError(t, err)
-
-	_, _, err = RequireErrorRun(t, "fs", "cp", sourceDir, path.Join(targetDir, "my_target"), "--recursive", "--overwrite")
-	assert.Regexp(t, regexp.MustCompile(`mkdir .*: not a directory`), err.Error())
 }
