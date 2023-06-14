@@ -92,7 +92,7 @@ func setupTable() []cpTest {
 	}
 }
 
-func TestFsCpDir(t *testing.T) {
+func TestAccFsCpDir(t *testing.T) {
 	ctx := context.Background()
 	table := setupTable()
 
@@ -107,7 +107,7 @@ func TestFsCpDir(t *testing.T) {
 	}
 }
 
-func TestFsCpFileToFile(t *testing.T) {
+func TestAccFsCpFileToFile(t *testing.T) {
 	ctx := context.Background()
 	table := setupTable()
 
@@ -122,7 +122,7 @@ func TestFsCpFileToFile(t *testing.T) {
 	}
 }
 
-func TestFsCpFileToDir(t *testing.T) {
+func TestAccFsCpFileToDir(t *testing.T) {
 	ctx := context.Background()
 	table := setupTable()
 	for _, row := range table {
@@ -136,7 +136,7 @@ func TestFsCpFileToDir(t *testing.T) {
 	}
 }
 
-func TestFsCpDirToDirFileNotOverwritten(t *testing.T) {
+func TestAccFsCpDirToDirFileNotOverwritten(t *testing.T) {
 	ctx := context.Background()
 	table := setupTable()
 
@@ -156,7 +156,7 @@ func TestFsCpDirToDirFileNotOverwritten(t *testing.T) {
 	}
 }
 
-func TestFsCpFileToDirFileNotOverwritten(t *testing.T) {
+func TestAccFsCpFileToDirFileNotOverwritten(t *testing.T) {
 	ctx := context.Background()
 	table := setupTable()
 
@@ -174,7 +174,7 @@ func TestFsCpFileToDirFileNotOverwritten(t *testing.T) {
 	}
 }
 
-func TestFsCpFileToFileFileNotOverwritten(t *testing.T) {
+func TestAccFsCpFileToFileFileNotOverwritten(t *testing.T) {
 	ctx := context.Background()
 	table := setupTable()
 
@@ -192,7 +192,7 @@ func TestFsCpFileToFileFileNotOverwritten(t *testing.T) {
 	}
 }
 
-func TestFsCpDirToDirWithOverwriteFlag(t *testing.T) {
+func TestAccFsCpDirToDirWithOverwriteFlag(t *testing.T) {
 	ctx := context.Background()
 	table := setupTable()
 
@@ -210,7 +210,7 @@ func TestFsCpDirToDirWithOverwriteFlag(t *testing.T) {
 	}
 }
 
-func TestFsCpFileToFileWithOverwriteFlag(t *testing.T) {
+func TestAccFsCpFileToFileWithOverwriteFlag(t *testing.T) {
 	ctx := context.Background()
 	table := setupTable()
 
@@ -228,7 +228,7 @@ func TestFsCpFileToFileWithOverwriteFlag(t *testing.T) {
 	}
 }
 
-func TestFsCpFileToDirWithOverwriteFlag(t *testing.T) {
+func TestAccFsCpFileToDirWithOverwriteFlag(t *testing.T) {
 	ctx := context.Background()
 	table := setupTable()
 
@@ -246,7 +246,7 @@ func TestFsCpFileToDirWithOverwriteFlag(t *testing.T) {
 	}
 }
 
-func TestFsCpErrorsWhenSourceIsDirWithoutRecursiveFlag(t *testing.T) {
+func TestAccFsCpErrorsWhenSourceIsDirWithoutRecursiveFlag(t *testing.T) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	type test struct {
@@ -271,21 +271,21 @@ func TestFsCpErrorsWhenSourceIsDirWithoutRecursiveFlag(t *testing.T) {
 // TODO: test out all the error cases
 // TODO: Test cp works for relative local paths
 
-func TestFsCpErrorsOnNoScheme(t *testing.T) {
+func TestAccFsCpErrorsOnNoScheme(t *testing.T) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	_, _, err := RequireErrorRun(t, "fs", "cp", "/a", "/b")
 	assert.Equal(t, "no scheme specified for path /a. Please specify scheme \"dbfs\" or \"file\". Example: file:/foo/bar", err.Error())
 }
 
-func TestFsCpErrorsOnInvalidScheme(t *testing.T) {
+func TestAccFsCpErrorsOnInvalidScheme(t *testing.T) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	_, _, err := RequireErrorRun(t, "fs", "cp", "file:/a", "https:/b")
 	assert.Equal(t, "unsupported scheme https specified for path https:/b. Please specify scheme \"dbfs\" or \"file\". Example: file:/foo/bar", err.Error())
 }
 
-func TestFsCpSourceIsDirectoryButTargetIsFile(t *testing.T) {
+func TestAccFsCpSourceIsDirectoryButTargetIsFile(t *testing.T) {
 	ctx := context.Background()
 	sourceFiler, sourceDir := setupDbfsFiler(t)
 	targetFiler, targetDir := setupDbfsFiler(t)
@@ -299,7 +299,7 @@ func TestFsCpSourceIsDirectoryButTargetIsFile(t *testing.T) {
 	assert.Regexp(t, regexp.MustCompile(`Cannot create directory .* because .* is an existing file.`), err.Error())
 }
 
-func TestFsCpSourceIsDirectoryButTargetIsLocalFile(t *testing.T) {
+func TestAccFsCpSourceIsDirectoryButTargetIsLocalFile(t *testing.T) {
 	ctx := context.Background()
 	sourceFiler, sourceDir := setupDbfsFiler(t)
 	targetFiler, targetDir := setupLocalFiler(t)
