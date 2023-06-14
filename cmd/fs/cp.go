@@ -123,9 +123,19 @@ var cpRecursive bool
 
 // cpCmd represents the fs cp command
 var cpCmd = &cobra.Command{
-	Use:     "cp SOURCE_PATH TARGET_PATH",
-	Short:   "Copy files to and from DBFS.",
-	Long:    `TODO`,
+	Use:   "cp SOURCE_PATH TARGET_PATH",
+	Short: "Copy files and directories to and from DBFS.",
+	Long: `Copy files to and from DBFS.
+
+  Its required that you specify the scheme "file" for local files and
+  "dbfs" for dbfs files. For example: file:/foo/bar or dbfs:/foo/bar.
+
+  Recursively copying a directory will copy all files inside directory
+  at SOURCE_PATH to the directory at TARGET_PATH.
+
+  When copying a file, if TARGET_PATH is a directory, the file will be created
+  inside the directory, otherwise the file is created at TARGET_PATH.
+`,
 	Args:    cobra.ExactArgs(2),
 	PreRunE: root.MustWorkspaceClient,
 
