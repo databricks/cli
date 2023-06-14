@@ -4,43 +4,97 @@ This Software includes software developed at Databricks (https://www.databricks.
 
 This Software contains code from the following open source projects, licensed under the Apache 2.0 license:
 
-github.com/spf13/cobra v1.7.0
-github.com/briandowns/spinner v1.23.0
-gopkg.in/ini.v1 v1.67.0
+spf13/cobra - https://github.com/spf13/cobra
+Copyright cobra authors
+License - https://github.com/spf13/cobra/blob/main/LICENSE.txt
+
+briandowns/spinner - https://github.com/briandowns/spinner
+Copyright 2022 Brian J. Downs
+License - https://github.com/briandowns/spinner/blob/master/LICENSE
+
+go-ini/ini - https://github.com/go-ini/ini
+Copyright ini authors
+License - https://github.com/go-ini/ini/blob/main/LICENSE
 
 —--
 
 This software contains code from the following open source projects, licensed under the MPL 2.0 license:
 
-github.com/hashicorp/go-version v1.6.0 // MPL 2.0
-github.com/hashicorp/hc-install v0.5.2 // MPL 2.0
-github.com/hashicorp/terraform-exec v0.18.1 // MPL 2.0
-github.com/hashicorp/terraform-json v0.17.0 // MPL 2.0
+hashicopr/go-version - https://github.com/hashicorp/go-version
+Copyright 2014 HashiCorp, Inc. 
+License - https://github.com/hashicorp/go-version/blob/main/LICENSE
+
+hashicorp/hc-install - https://github.com/hashicorp/hc-install
+Copyright 2020 HashiCorp, Inc.
+License - https://github.com/hashicorp/hc-install/blob/main/LICENSE
+
+hashicopr/terraform-exec - https://github.com/hashicorp/terraform-exec
+Copyright 2020 HashiCorp, Inc.
+LIcense - https://github.com/hashicorp/terraform-exec/blob/main/LICENSE
+
+hashicorp/terraform-json - https://github.com/hashicorp/terraform-json
+Copyright 2019 HashiCorp, Inc.
+License - https://github.com/hashicorp/terraform-json/blob/main/LICENSE
+
+---
+
+This software contains code from the following open source projects, licensed under the BSD (2-clause) license:
+
+pkg/browser - https://github.com/pkg/browser
+Copyright (c) 2014, Dave Cheney <dave@cheney.net>
+License - https://github.com/pkg/browser/blob/master/LICENSE
 
 ---
 
 This software contains code from the following open source projects, licensed under the BSD (3-clause) license:
 
-github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8 
+spf13/pflag - https://github.com/spf13/pflag
+Copyright (c) 2012 Alex Ogier. All rights reserved.
+Copyright (c) 2012 The Go Authors. All rights reserved.
+License - https://raw.githubusercontent.com/spf13/pflag/master/LICENSE
 
----
+google/uuid - https://github.com/google/uuid
+Copyright (c) 2009,2014 Google Inc. All rights reserved.
+License - https://github.com/google/uuid/blob/master/LICENSE
 
-This software contains code from the following open source projects, licensed under the BSD (3-clause) license:
+imdario/mergo - https://github.com/imdario/mergo
+Copyright (c) 2013 Dario Castañé. All rights reserved.
+Copyright (c) 2012 The Go Authors. All rights reserved.
+License - https://github.com/imdario/mergo/blob/master/LICENSE
 
-github.com/spf13/pflag v1.0.5
-github.com/google/uuid v1.3.0
-github.com/imdario/mergo v0.3.13 // BSD-3-Clause
-github.com/manifoldco/promptui v0.9.0 // BSD-3-Clause
-
+manifoldco/promptui - https://github.com/manifoldco/promptui
+Copyright (c) 2017, Arigato Machine Inc. All rights reserved.
+License - https://github.com/manifoldco/promptui/blob/master/LICENSE.md
 
 —--
 
 This Software contains code from the following open source projects, licensed under the MIT license:
 
-github.com/fatih/color v1.15.0
-github.com/ghodss/yaml v1.0.0 
-github.com/mattn/go-isatty v0.0.19 // MIT
-github.com/nwidger/jsoncolor v0.3.2 // MIT
-github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06
-github.com/stretchr/testify v1.8.4
-github.com/whilp/git-urls v1.0.0
+fatih/color - https://github.com/fatih/color
+Copyright (c) 2013 Fatih Arslan
+License - https://github.com/fatih/color/blob/main/LICENSE.md
+
+ghodss/yaml - https://github.com/ghodss/yaml
+Copyright (c) 2014 Sam Ghods
+License - https://github.com/ghodss/yaml/blob/master/LICENSE
+ 
+mattn/go-isatty - https://github.com/mattn/go-isatty
+Copyright (c) Yasuhiro MATSUMOTO <mattn.jp@gmail.com>
+https://github.com/mattn/go-isatty/blob/master/LICENSE
+
+nwidger/jsoncolor - https://github.com/nwidger/jsoncolor
+Copyright (c) 2016 Niels Widger
+License - https://github.com/nwidger/jsoncolor/blob/master/LICENSE
+
+sabhiram/go-gitignore - https://github.com/sabhiram/go-gitignore
+Copyright (c) 2015 Shaba Abhiram
+License - https://github.com/sabhiram/go-gitignore/blob/master/LICENSE
+
+
+stretchr/testify - https://github.com/stretchr/testify
+Copyright (c) 2012-2020 Mat Ryer, Tyler Bunnell and contributors.
+License - https://github.com/stretchr/testify/blob/master/LICENSE
+
+whilp/git-urls - https://github.com/whilp/git-urls
+Copyright (c) 2020 Will Maier
+License - https://github.com/whilp/git-urls/blob/master/LICENSE
