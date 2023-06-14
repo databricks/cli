@@ -121,17 +121,6 @@ func emitCpFileCopiedEvent(ctx context.Context, sourcePath, targetPath string) e
 var cpOverwrite bool
 var cpRecursive bool
 
-func validateScheme(path string) error {
-	scheme := scheme(path)
-	if scheme == NoScheme {
-		return fmt.Errorf(`no scheme specified for path %s. Please specify scheme "dbfs" or "file". Example: file:/foo/bar`, path)
-	}
-	if scheme != LocalScheme && scheme != DbfsScheme {
-		return fmt.Errorf(`unsupported scheme %s specified for path %s. Please specify scheme "dbfs" or "file". Example: file:/foo/bar`, scheme, path)
-	}
-	return nil
-}
-
 // cpCmd represents the fs cp command
 var cpCmd = &cobra.Command{
 	Use:     "cp SOURCE_PATH TARGET_PATH",
@@ -143,34 +132,16 @@ var cpCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 
-		// Validate source path scheme, and compute path without the scheme
+		// Get source filer and source path without scheme
 		fullSourcePath := args[0]
-		sourceScheme := scheme(args[0])
-		if err := validateScheme(fullSourcePath); err != nil {
-			return err
-		}
-		sourcePath, err := removeScheme(fullSourcePath, sourceScheme)
+		sourceFiler, sourcePath, err := filerForPath(ctx, fullSourcePath)
 		if err != nil {
 			return err
 		}
 
-		// Validate target path scheme, and compute path without the scheme
+		// Get target filer and target path without scheme
 		fullTargetPath := args[1]
-		targetScheme := scheme(args[1])
-		if err := validateScheme(fullTargetPath); err != nil {
-			return err
-		}
-		targetPath, err := removeScheme(fullTargetPath, targetScheme)
-		if err != nil {
-			return err
-		}
-
-		// Initialize filers according to source and target path schemes
-		sourceFiler, err := filerForScheme(ctx, sourceScheme)
-		if err != nil {
-			return err
-		}
-		targetFiler, err := filerForScheme(ctx, targetScheme)
+		targetFiler, targetPath, err := filerForPath(ctx, fullTargetPath)
 		if err != nil {
 			return err
 		}

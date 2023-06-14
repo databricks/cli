@@ -20,7 +20,7 @@ var mkdirCmd = &cobra.Command{
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		path, err := resolveDbfsPath(args[0])
+		path, err := trimDbfsScheme(args[0])
 		if err != nil {
 			return err
 		}

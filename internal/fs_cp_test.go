@@ -58,7 +58,7 @@ func assertTargetDir(t *testing.T, ctx context.Context, f filer.Filer) {
 }
 
 func setupLocalFiler(t *testing.T) (filer.Filer, string) {
-	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+	// t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	tmp := t.TempDir()
 	f, err := filer.NewLocalClient(tmp)
@@ -67,7 +67,7 @@ func setupLocalFiler(t *testing.T) (filer.Filer, string) {
 }
 
 func setupDbfsFiler(t *testing.T) (filer.Filer, string) {
-	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+	// t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	w, err := databricks.NewWorkspaceClient()
 	require.NoError(t, err)

@@ -17,7 +17,36 @@ const (
 	NoScheme    = Scheme("")
 )
 
-func resolveDbfsPath(path string) (string, error) {
+func filerForPath(ctx context.Context, path string) (filer.Filer, string, error) {
+	parts := strings.Split(path, ":")
+	if len(parts) < 2 {
+		return nil, "", fmt.Errorf(`no scheme specified for path %s. Please specify scheme "dbfs" or "file". Example: file:/foo/bar`, path)
+	}
+	scheme := Scheme(parts[0])
+	switch scheme {
+	case DbfsScheme:
+		w := root.WorkspaceClient(ctx)
+		cleanPath, err := trimDbfsScheme(path)
+		if err != nil {
+			return nil, "", err
+		}
+		f, err := filer.NewDbfsClient(w, "/")
+		return f, cleanPath, err
+
+	case LocalScheme:
+		cleanPath, err := trimLocalScheme(path)
+		if err != nil {
+			return nil, "", err
+		}
+		f, err := filer.NewLocalClient("/")
+		return f, cleanPath, err
+
+	default:
+		return nil, "", fmt.Errorf(`unsupported scheme %s specified for path %s. Please specify scheme "dbfs" or "file". Example: file:/foo/bar`, scheme, path)
+	}
+}
+
+func trimDbfsScheme(path string) (string, error) {
 	if !strings.HasPrefix(path, "dbfs:/") {
 		return "", fmt.Errorf("expected dbfs path (with the dbfs:/ prefix): %s", path)
 	}
@@ -25,33 +54,10 @@ func resolveDbfsPath(path string) (string, error) {
 	return strings.TrimPrefix(path, "dbfs:"), nil
 }
 
-func filerForScheme(ctx context.Context, scheme Scheme) (filer.Filer, error) {
-	switch scheme {
-	case DbfsScheme:
-		w := root.WorkspaceClient(ctx)
-		return filer.NewDbfsClient(w, "/")
-	case LocalScheme:
-		return filer.NewLocalClient("/")
-	default:
-		return nil, fmt.Errorf("scheme %q is not supported", scheme)
+func trimLocalScheme(path string) (string, error) {
+	if !strings.HasPrefix(path, "file:") {
+		return "", fmt.Errorf("expected file path (with the file: prefix): %s", path)
 	}
-}
 
-func removeScheme(path string, scheme Scheme) (string, error) {
-	if scheme == NoScheme {
-		return path, nil
-	}
-	prefix := string(scheme) + ":"
-	if !strings.HasPrefix(path, prefix) {
-		return "", fmt.Errorf("expected path %s to have scheme %s. Example: %s:/foo/bar", path, scheme, scheme)
-	}
-	return strings.TrimPrefix(path, prefix), nil
-}
-
-func scheme(path string) Scheme {
-	parts := strings.Split(path, ":")
-	if len(parts) < 2 {
-		return NoScheme
-	}
-	return Scheme(parts[0])
+	return strings.TrimPrefix(path, "file:"), nil
 }
