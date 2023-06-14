@@ -333,6 +333,9 @@ var maintenanceCmd = &cobra.Command{
   
   Enables or disables auto maintenance on the metastore.`,
 
+	// This command is being previewed; hide from help output.
+	Hidden: true,
+
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
