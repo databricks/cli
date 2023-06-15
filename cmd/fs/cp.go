@@ -61,6 +61,8 @@ func cpFileToFile(ctx context.Context, sourcePath, targetPath string, sourceFile
 	if err != nil {
 		return err
 	}
+	defer r.Close()
+
 	if cpOverwrite {
 		err = targetFiler.Write(ctx, targetPath, r, filer.OverwriteIfExists)
 		if err != nil {
