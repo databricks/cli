@@ -2,7 +2,7 @@ package fs
 
 import (
 	"github.com/databricks/cli/cmd/root"
-	"github.com/databricks/databricks-sdk-go/service/files"
+	"github.com/databricks/cli/libs/filer"
 	"github.com/spf13/cobra"
 )
 
@@ -15,17 +15,16 @@ var rmCmd = &cobra.Command{
 
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
 
-		path, err := trimDbfsScheme(args[0])
+		f, path, err := filerForPath(ctx, args[0])
 		if err != nil {
 			return err
 		}
 
-		return w.Dbfs.Delete(ctx, files.Delete{
-			Path:      path,
-			Recursive: recursive,
-		})
+		if recursive {
+			return f.Delete(ctx, path, filer.DeleteRecursively)
+		}
+		return f.Delete(ctx, path)
 	},
 }
 

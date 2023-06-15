@@ -2,7 +2,6 @@ package fs
 
 import (
 	"github.com/databricks/cli/cmd/root"
-	"github.com/databricks/cli/libs/filer"
 	"github.com/spf13/cobra"
 )
 
@@ -18,14 +17,8 @@ var mkdirCmd = &cobra.Command{
 
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
 
-		path, err := trimDbfsScheme(args[0])
-		if err != nil {
-			return err
-		}
-
-		f, err := filer.NewDbfsClient(w, "/")
+		f, path, err := filerForPath(ctx, args[0])
 		if err != nil {
 			return err
 		}

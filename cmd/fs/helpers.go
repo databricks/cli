@@ -17,47 +17,24 @@ const (
 	NoScheme    = Scheme("")
 )
 
-func filerForPath(ctx context.Context, path string) (filer.Filer, string, error) {
-	parts := strings.Split(path, ":")
+func filerForPath(ctx context.Context, fullPath string) (filer.Filer, string, error) {
+	parts := strings.Split(fullPath, ":")
 	if len(parts) < 2 {
-		return nil, "", fmt.Errorf(`no scheme specified for path %s. Please specify scheme "dbfs" or "file". Example: file:/foo/bar`, path)
+		return nil, "", fmt.Errorf(`no scheme specified for path %s. Please specify scheme "dbfs" or "file". Example: file:/foo/bar`, fullPath)
 	}
 	scheme := Scheme(parts[0])
+	path := parts[1]
 	switch scheme {
 	case DbfsScheme:
 		w := root.WorkspaceClient(ctx)
-		cleanPath, err := trimDbfsScheme(path)
-		if err != nil {
-			return nil, "", err
-		}
 		f, err := filer.NewDbfsClient(w, "/")
-		return f, cleanPath, err
+		return f, path, err
 
 	case LocalScheme:
-		cleanPath, err := trimLocalScheme(path)
-		if err != nil {
-			return nil, "", err
-		}
 		f, err := filer.NewLocalClient("/")
-		return f, cleanPath, err
+		return f, path, err
 
 	default:
-		return nil, "", fmt.Errorf(`unsupported scheme %s specified for path %s. Please specify scheme "dbfs" or "file". Example: file:/foo/bar`, scheme, path)
+		return nil, "", fmt.Errorf(`unsupported scheme %s specified for path %s. Please specify scheme "dbfs" or "file". Example: file:/foo/bar`, scheme, fullPath)
 	}
-}
-
-func trimDbfsScheme(path string) (string, error) {
-	if !strings.HasPrefix(path, "dbfs:/") {
-		return "", fmt.Errorf("expected dbfs path (with the dbfs:/ prefix): %s", path)
-	}
-
-	return strings.TrimPrefix(path, "dbfs:"), nil
-}
-
-func trimLocalScheme(path string) (string, error) {
-	if !strings.HasPrefix(path, "file:") {
-		return "", fmt.Errorf("expected file path (with the file: prefix): %s", path)
-	}
-
-	return strings.TrimPrefix(path, "file:"), nil
 }
