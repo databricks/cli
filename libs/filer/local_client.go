@@ -19,8 +19,8 @@ type LocalClient struct {
 
 func NewLocalClient(root string) (Filer, error) {
 	if runtime.GOOS == "windows" && root == "/" {
-		// Windows paths require a drive specified. This allows use to create
-		// local filers at the root of a windows file system
+		// Windows paths require a Volume/Drive letter specified. This allows us
+		// to create local filers at the root of a windows file system without specifying one
 		return &LocalClient{root: NewRootPath("")}, nil
 	}
 	return &LocalClient{
