@@ -51,13 +51,31 @@ func IsInteractive(ctx context.Context) bool {
 }
 
 // IsTTY detects if io.Writer is a terminal.
-func IsTTY(w io.Writer) bool {
+func IsTTY(w any) bool {
 	f, ok := w.(*os.File)
 	if !ok {
 		return false
 	}
 	fd := f.Fd()
 	return isatty.IsTerminal(fd) || isatty.IsCygwinTerminal(fd)
+}
+
+// IsInTTY detects if the input reader is a terminal.
+func IsInTTY(ctx context.Context) bool {
+	c := fromContext(ctx)
+	return IsTTY(c.in)
+}
+
+// IsOutTTY detects if the output writer is a terminal.
+func IsOutTTY(ctx context.Context) bool {
+	c := fromContext(ctx)
+	return IsTTY(c.out)
+}
+
+// IsErrTTY detects if the error writer is a terminal.
+func IsErrTTY(ctx context.Context) bool {
+	c := fromContext(ctx)
+	return IsTTY(c.err)
 }
 
 // IsTTY detects if stdout is a terminal. It assumes that stderr is terminal as well
@@ -168,6 +186,22 @@ func (c *cmdIO) Secret() (value string, err error) {
 func Secret(ctx context.Context) (value string, err error) {
 	c := fromContext(ctx)
 	return c.Secret()
+}
+
+type nopWriteCloser struct {
+	io.Writer
+}
+
+func (nopWriteCloser) Close() error {
+	return nil
+}
+
+func Prompt(ctx context.Context) *promptui.Prompt {
+	c := fromContext(ctx)
+	return &promptui.Prompt{
+		Stdin:  io.NopCloser(c.in),
+		Stdout: nopWriteCloser{c.out},
+	}
 }
 
 func (c *cmdIO) Spinner(ctx context.Context) chan string {
