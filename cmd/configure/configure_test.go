@@ -52,7 +52,7 @@ func TestDefaultConfigureNoInteractive(t *testing.T) {
 	})
 	os.Stdin = inp
 
-	root.RootCmd.SetArgs([]string{"configure", "--token", "--host", "host"})
+	root.RootCmd.SetArgs([]string{"configure", "--token", "--host", "https://host"})
 
 	err := root.RootCmd.ExecuteContext(ctx)
 	assert.NoError(t, err)
@@ -67,7 +67,7 @@ func TestDefaultConfigureNoInteractive(t *testing.T) {
 	defaultSection, err := cfg.GetSection("DEFAULT")
 	assert.NoError(t, err)
 
-	assertKeyValueInSection(t, defaultSection, "host", "host")
+	assertKeyValueInSection(t, defaultSection, "host", "https://host")
 	assertKeyValueInSection(t, defaultSection, "token", "token")
 }
 
@@ -84,7 +84,7 @@ func TestConfigFileFromEnvNoInteractive(t *testing.T) {
 	t.Cleanup(func() { os.Stdin = oldStdin })
 	os.Stdin = inp
 
-	root.RootCmd.SetArgs([]string{"configure", "--token", "--host", "host"})
+	root.RootCmd.SetArgs([]string{"configure", "--token", "--host", "https://host"})
 
 	err := root.RootCmd.ExecuteContext(ctx)
 	assert.NoError(t, err)
@@ -98,7 +98,7 @@ func TestConfigFileFromEnvNoInteractive(t *testing.T) {
 	defaultSection, err := cfg.GetSection("DEFAULT")
 	assert.NoError(t, err)
 
-	assertKeyValueInSection(t, defaultSection, "host", "host")
+	assertKeyValueInSection(t, defaultSection, "host", "https://host")
 	assertKeyValueInSection(t, defaultSection, "token", "token")
 }
 
@@ -112,7 +112,7 @@ func TestCustomProfileConfigureNoInteractive(t *testing.T) {
 	t.Cleanup(func() { os.Stdin = oldStdin })
 	os.Stdin = inp
 
-	root.RootCmd.SetArgs([]string{"configure", "--token", "--host", "host", "--profile", "CUSTOM"})
+	root.RootCmd.SetArgs([]string{"configure", "--token", "--host", "https://host", "--profile", "CUSTOM"})
 
 	err := root.RootCmd.ExecuteContext(ctx)
 	assert.NoError(t, err)
@@ -126,6 +126,6 @@ func TestCustomProfileConfigureNoInteractive(t *testing.T) {
 	defaultSection, err := cfg.GetSection("CUSTOM")
 	assert.NoError(t, err)
 
-	assertKeyValueInSection(t, defaultSection, "host", "host")
+	assertKeyValueInSection(t, defaultSection, "host", "https://host")
 	assertKeyValueInSection(t, defaultSection, "token", "token")
 }
