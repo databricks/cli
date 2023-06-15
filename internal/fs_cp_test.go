@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"path"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -62,7 +63,7 @@ func setupLocalFiler(t *testing.T) (filer.Filer, string) {
 	tmp := t.TempDir()
 	f, err := filer.NewLocalClient(tmp)
 	require.NoError(t, err)
-	return f, "file:" + tmp
+	return f, path.Join("file:", filepath.ToSlash(tmp))
 }
 
 func setupDbfsFiler(t *testing.T) (filer.Filer, string) {
@@ -74,7 +75,7 @@ func setupDbfsFiler(t *testing.T) (filer.Filer, string) {
 	tmpDir := temporaryDbfsDir(t, w)
 	f, err := filer.NewDbfsClient(w, tmpDir)
 	require.NoError(t, err)
-	return f, "dbfs:" + tmpDir
+	return f, path.Join("dbfs:", tmpDir)
 }
 
 type cpTest struct {
