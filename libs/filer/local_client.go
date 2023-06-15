@@ -6,6 +6,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"runtime"
 
 	"golang.org/x/exp/slices"
 )
@@ -17,6 +18,11 @@ type LocalClient struct {
 }
 
 func NewLocalClient(root string) (Filer, error) {
+	if runtime.GOOS == "windows" && root == "/" {
+		// Windows paths require a drive specified. This allows use to create
+		// local filers at the root of a windows file system
+		return &LocalClient{root: NewRootPath("")}, nil
+	}
 	return &LocalClient{
 		root: NewRootPath(root),
 	}, nil
