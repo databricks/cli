@@ -84,6 +84,9 @@ var createScopeCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start delete-acl command
@@ -138,6 +141,9 @@ var deleteAclCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start delete-scope command
@@ -190,6 +196,9 @@ var deleteScopeCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start delete-secret command
@@ -244,6 +253,9 @@ var deleteSecretCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start get-acl command
@@ -298,6 +310,9 @@ var getAclCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start list-acls command
@@ -351,6 +366,9 @@ var listAclsCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start list-scopes command
@@ -381,6 +399,9 @@ var listScopesCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start list-secrets command
@@ -436,6 +457,9 @@ var listSecretsCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start put-acl command
@@ -514,6 +538,9 @@ var putAclCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // end service Secrets

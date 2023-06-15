@@ -100,6 +100,9 @@ var createCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start delete command
@@ -158,6 +161,9 @@ var deleteCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start get command
@@ -219,6 +225,9 @@ var getCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start get-update command
@@ -268,6 +277,9 @@ var getUpdateCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start list-pipeline-events command
@@ -331,6 +343,9 @@ var listPipelineEventsCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start list-pipelines command
@@ -383,6 +398,9 @@ var listPipelinesCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start list-updates command
@@ -445,6 +463,9 @@ var listUpdatesCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start reset command
@@ -520,6 +541,9 @@ var resetCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, info)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start start-update command
@@ -583,6 +607,9 @@ var startUpdateCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start stop command
@@ -658,6 +685,9 @@ var stopCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, info)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start update command
@@ -736,6 +766,9 @@ var updateCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // end service Pipelines
