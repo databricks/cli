@@ -12,6 +12,20 @@ import (
 	"github.com/spf13/cobra"
 )
 
+func validateHost(s string) error {
+	u, err := url.Parse(s)
+	if err != nil {
+		return err
+	}
+	if u.Host == "" || u.Scheme != "https" {
+		return fmt.Errorf("must start with https://")
+	}
+	if u.Path != "" && u.Path != "/" {
+		return fmt.Errorf("must use empty path")
+	}
+	return nil
+}
+
 func configureFromFlags(cmd *cobra.Command, ctx context.Context, cfg *config.Config) error {
 	// Configure profile name if set.
 	profile, err := cmd.Flags().GetString("profile")
@@ -31,23 +45,14 @@ func configureFromFlags(cmd *cobra.Command, ctx context.Context, cfg *config.Con
 		cfg.Host = host
 	}
 
-	return nil
-}
+	// Validate host if set.
+	if cfg.Host != "" {
+		err = validateHost(cfg.Host)
+		if err != nil {
+			return err
+		}
+	}
 
-func validateHost(s string) error {
-	u, err := url.Parse(s)
-	if err != nil {
-		return err
-	}
-	if u.Host == "" {
-		return fmt.Errorf("must specify host")
-	}
-	if u.Scheme != "https" {
-		return fmt.Errorf("must use https scheme")
-	}
-	if u.Path != "" && u.Path != "/" {
-		return fmt.Errorf("must use empty path")
-	}
 	return nil
 }
 
