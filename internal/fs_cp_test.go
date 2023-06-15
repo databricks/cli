@@ -3,7 +3,7 @@ package internal
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"path"
 	"path/filepath"
 	"strings"
@@ -44,7 +44,7 @@ func assertTargetFile(t *testing.T, ctx context.Context, f filer.Filer, relPath 
 
 	r, err := f.Read(ctx, relPath)
 	assert.NoError(t, err)
-	b, err := ioutil.ReadAll(r)
+	b, err := io.ReadAll(r)
 	require.NoError(t, err)
 	assert.Equal(t, "abc", string(b))
 }
@@ -52,7 +52,8 @@ func assertTargetFile(t *testing.T, ctx context.Context, f filer.Filer, relPath 
 func assertFileContent(t *testing.T, ctx context.Context, f filer.Filer, path, expectedContent string) {
 	r, err := f.Read(ctx, path)
 	require.NoError(t, err)
-	b, err := ioutil.ReadAll(r)
+	defer r.Close()
+	b, err := io.ReadAll(r)
 	require.NoError(t, err)
 	assert.Equal(t, expectedContent, string(b))
 }
@@ -72,7 +73,7 @@ func setupLocalFiler(t *testing.T) (filer.Filer, string) {
 	require.NoError(t, err)
 
 	fmt.Println("[ACCEPTANCE_TEST] local filer setup FINISH")
-	return f, path.Join("file:", filepath.ToSlash(tmp))
+	return f, path.Join("file:/", filepath.ToSlash(tmp))
 }
 
 func setupDbfsFiler(t *testing.T) (filer.Filer, string) {
@@ -87,7 +88,7 @@ func setupDbfsFiler(t *testing.T) (filer.Filer, string) {
 	require.NoError(t, err)
 
 	fmt.Println("[ACCEPTANCE_TEST] dbfs filer setup FINISH")
-	return f, path.Join("dbfs:", tmpDir)
+	return f, path.Join("dbfs:/", tmpDir)
 }
 
 type cpTest struct {
@@ -300,7 +301,7 @@ func TestAccFsCpErrorsOnNoScheme(t *testing.T) {
 func TestAccFsCpErrorsOnInvalidScheme(t *testing.T) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
-	_, _, err := RequireErrorRun(t, "fs", "cp", "file:/a", "https:/b")
+	_, _, err := RequireErrorRun(t, "fs", "cp", "dbfs:/a", "https:/b")
 	assert.Equal(t, "unsupported scheme https specified for path https:/b. Please specify scheme \"dbfs\" or \"file\". Example: file:/foo/bar or file:/c:/foo/bar", err.Error())
 }
 
