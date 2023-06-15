@@ -35,7 +35,7 @@ func TestBundleCacheDir(t *testing.T) {
 	bundle.Config.Bundle.Environment = "default"
 
 	// unset env variable in case it's set
-	testing.TB.Setenv(t, "DATABRICKS_BUNDLE_TMP", "")
+	t.Setenv("DATABRICKS_BUNDLE_TMP", "")
 
 	cacheDir, err := bundle.CacheDir()
 
@@ -59,7 +59,7 @@ func TestBundleCacheDirOverride(t *testing.T) {
 	bundle.Config.Bundle.Environment = "default"
 
 	// now we expect to use 'bundleTmpDir' instead of CWD/.databricks/bundle
-	testing.TB.Setenv(t, "DATABRICKS_BUNDLE_TMP", bundleTmpDir)
+	t.Setenv("DATABRICKS_BUNDLE_TMP", bundleTmpDir)
 
 	cacheDir, err := bundle.CacheDir()
 
