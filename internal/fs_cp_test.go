@@ -18,14 +18,20 @@ import (
 func setupSourceDir(t *testing.T, ctx context.Context, f filer.Filer) {
 	var err error
 
+	fmt.Println("[ACCEPTANCE_TEST] adding pyNb.py")
 	err = f.Write(ctx, "pyNb.py", strings.NewReader("# Databricks notebook source\nprint(123)"))
 	require.NoError(t, err)
+	fmt.Println("[ACCEPTANCE_TEST] added pyNb.py")
 
+	fmt.Println("[ACCEPTANCE_TEST] adding query.sql")
 	err = f.Write(ctx, "query.sql", strings.NewReader("SELECT 1"))
 	require.NoError(t, err)
+	fmt.Println("[ACCEPTANCE_TEST] added query.sql")
 
+	fmt.Println("[ACCEPTANCE_TEST] adding a/b/c/hello.txt")
 	err = f.Write(ctx, "a/b/c/hello.txt", strings.NewReader("hello, world\n"), filer.CreateParentDirectories)
 	require.NoError(t, err)
+	fmt.Println("[ACCEPTANCE_TEST] added a/b/c/hello.txt")
 }
 
 func setupSourceFile(t *testing.T, ctx context.Context, f filer.Filer) {
@@ -59,15 +65,19 @@ func assertTargetDir(t *testing.T, ctx context.Context, f filer.Filer) {
 
 func setupLocalFiler(t *testing.T) (filer.Filer, string) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+	fmt.Println("[ACCEPTANCE_TEST] local filer setup START")
 
 	tmp := t.TempDir()
 	f, err := filer.NewLocalClient(tmp)
 	require.NoError(t, err)
+
+	fmt.Println("[ACCEPTANCE_TEST] local filer setup FINISH")
 	return f, path.Join("file:", filepath.ToSlash(tmp))
 }
 
 func setupDbfsFiler(t *testing.T) (filer.Filer, string) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+	fmt.Println("[ACCEPTANCE_TEST] dbfs filer setup START")
 
 	w, err := databricks.NewWorkspaceClient()
 	require.NoError(t, err)
@@ -75,6 +85,8 @@ func setupDbfsFiler(t *testing.T) (filer.Filer, string) {
 	tmpDir := temporaryDbfsDir(t, w)
 	f, err := filer.NewDbfsClient(w, tmpDir)
 	require.NoError(t, err)
+
+	fmt.Println("[ACCEPTANCE_TEST] dbfs filer setup FINISH")
 	return f, path.Join("dbfs:", tmpDir)
 }
 
@@ -97,8 +109,12 @@ func TestAccFsCpDir(t *testing.T) {
 	table := setupTable()
 
 	for _, row := range table {
+		fmt.Println("[ACCEPTANCE_TEST] setting source START")
 		sourceFiler, sourceDir := row.setupSource(t)
+		fmt.Println("[ACCEPTANCE_TEST] setting source COMPLETE")
+		fmt.Println("[ACCEPTANCE_TEST] setting target START")
 		targetFiler, targetDir := row.setupTarget(t)
+		fmt.Println("[ACCEPTANCE_TEST] setting target COMPLETE")
 		setupSourceDir(t, ctx, sourceFiler)
 
 		RequireSuccessfulRun(t, "fs", "cp", "-r", sourceDir, targetDir)
@@ -126,9 +142,15 @@ func TestAccFsCpFileToDir(t *testing.T) {
 	ctx := context.Background()
 	table := setupTable()
 	for _, row := range table {
+		fmt.Println("[ACCEPTANCE_TEST] setting source START")
 		sourceFiler, sourceDir := row.setupSource(t)
+		fmt.Println("[ACCEPTANCE_TEST] setting source COMPLETE")
+		fmt.Println("[ACCEPTANCE_TEST] setting target START")
 		targetFiler, targetDir := row.setupTarget(t)
+		fmt.Println("[ACCEPTANCE_TEST] setting target COMPLETE")
+		fmt.Println("[ACCEPTANCE_TEST] setting source dir START")
 		setupSourceFile(t, ctx, sourceFiler)
+		fmt.Println("[ACCEPTANCE_TEST] setting source dir COMPLETE")
 
 		RequireSuccessfulRun(t, "fs", "cp", path.Join(sourceDir, "foo.txt"), targetDir)
 

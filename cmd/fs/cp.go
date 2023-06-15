@@ -30,8 +30,11 @@ func cpWriteCallback(ctx context.Context, sourceFiler, targetFiler filer.Filer, 
 		// Compute target path for the file
 		targetPath := path.Join(targetDir, relPath)
 
+		fmt.Printf("[CLI_COPY] relPath computation. (sourcePath: %s, targetPath: %s, sourceDir: %s, targetDir: %s, relPath: %s)\n", sourcePath, targetPath, sourceDir, targetDir, relPath)
+
 		// create directory and return early
 		if d.IsDir() {
+			fmt.Printf("[CLI_COPY] target mkdir FILER call. (path: %s)\n", targetPath)
 			return targetFiler.Mkdir(ctx, targetPath)
 		}
 
@@ -63,6 +66,7 @@ func cpFileToFile(ctx context.Context, sourcePath, targetPath string, sourceFile
 	}
 	defer r.Close()
 
+	fmt.Printf("[CLI_COPY] target write FILER call. (path: %s)\n", targetPath)
 	if cpOverwrite {
 		err = targetFiler.Write(ctx, targetPath, r, filer.OverwriteIfExists)
 		if err != nil {
@@ -139,6 +143,7 @@ var cpCmd = &cobra.Command{
 		}
 
 		// Get information about file at source path
+		fmt.Printf("[CLI_COPY] source stat FILER call. (path: %s)\n", sourcePath)
 		sourceInfo, err := sourceFiler.Stat(ctx, sourcePath)
 		if err != nil {
 			return err
@@ -151,6 +156,7 @@ var cpCmd = &cobra.Command{
 
 		// case 2: source path is a file, and target path is a directory. In this case
 		// we copy the file to inside the directory
+		fmt.Printf("[CLI_COPY] target stat FILER call. (path: %s)\n", targetPath)
 		if targetInfo, err := targetFiler.Stat(ctx, targetPath); err == nil && targetInfo.IsDir() {
 			return cpFileToDir(ctx, sourcePath, targetPath, sourceFiler, targetFiler)
 		}

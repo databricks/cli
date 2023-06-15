@@ -2,6 +2,7 @@ package filer
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"io/fs"
 	"os"
@@ -28,6 +29,8 @@ func (w *LocalClient) Write(ctx context.Context, name string, reader io.Reader, 
 		return err
 	}
 
+	fmt.Printf("[LOCAL_CLIENT] write start. (name: %s)\n", name)
+
 	flags := os.O_WRONLY | os.O_CREATE
 	if slices.Contains(mode, OverwriteIfExists) {
 		flags |= os.O_TRUNC
@@ -36,14 +39,18 @@ func (w *LocalClient) Write(ctx context.Context, name string, reader io.Reader, 
 	}
 
 	absPath = filepath.FromSlash(absPath)
+
+	fmt.Printf("[LOCAL_CLIENT] write file API call. (absPath: %s)\n", absPath)
 	f, err := os.OpenFile(absPath, flags, 0644)
 	if os.IsNotExist(err) && slices.Contains(mode, CreateParentDirectories) {
 		// Create parent directories if they don't exist.
+		fmt.Printf("[LOCAL_CLIENT] mkdirAll API call. (absPath: %s)\n", absPath)
 		err = os.MkdirAll(filepath.Dir(absPath), 0755)
 		if err != nil {
 			return err
 		}
 		// Try again.
+		fmt.Printf("[LOCAL_CLIENT] write file API call (post mkdirs). (absPath: %s)\n", absPath)
 		f, err = os.OpenFile(absPath, flags, 0644)
 	}
 
@@ -63,6 +70,8 @@ func (w *LocalClient) Write(ctx context.Context, name string, reader io.Reader, 
 	if err == nil {
 		err = cerr
 	}
+
+	fmt.Printf("[LOCAL_CLIENT] write complete. (name: %s)\n", name)
 
 	return err
 
