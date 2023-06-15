@@ -18,7 +18,7 @@ const (
 )
 
 func filerForPath(ctx context.Context, fullPath string) (filer.Filer, string, error) {
-	parts := strings.Split(fullPath, ":")
+	parts := strings.SplitN(fullPath, ":", 2)
 	if len(parts) < 2 {
 		return nil, "", fmt.Errorf(`no scheme specified for path %s. Please specify scheme "dbfs" or "file". Example: file:/foo/bar or file:/c:/foo/bar`, fullPath)
 	}
