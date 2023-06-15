@@ -44,7 +44,7 @@ func (w *LocalClient) Write(ctx context.Context, name string, reader io.Reader, 
 	f, err := os.OpenFile(absPath, flags, 0644)
 	if os.IsNotExist(err) && slices.Contains(mode, CreateParentDirectories) {
 		// Create parent directories if they don't exist.
-		fmt.Printf("[LOCAL_CLIENT] mkdirAll API call. (absPath: %s)\n", absPath)
+		fmt.Printf("[LOCAL_CLIENT] mkdirAll API call. (absPath: %s)\n", filepath.Dir(absPath))
 		err = os.MkdirAll(filepath.Dir(absPath), 0755)
 		if err != nil {
 			return err
@@ -168,16 +168,20 @@ func (w *LocalClient) Mkdir(ctx context.Context, name string) error {
 }
 
 func (w *LocalClient) Stat(ctx context.Context, name string) (fs.FileInfo, error) {
+	fmt.Printf("[LOCAL_CLIENT] stat start. (name: %s)\n", name)
 	absPath, err := w.root.Join(name)
 	if err != nil {
 		return nil, err
 	}
 
 	absPath = filepath.FromSlash(absPath)
+	fmt.Printf("[LOCAL_CLIENT] stat API call. (absPath: %s)\n", absPath)
 	stat, err := os.Stat(absPath)
 	if os.IsNotExist(err) {
+		fmt.Printf("[LOCAL_CLIENT] stat FileDoesNotExistError. (absPath: %s)\n", absPath)
 		return nil, FileDoesNotExistError{path: absPath}
 	}
-
+	fmt.Printf("[LOCAL_CLIENT] stat err (if any). (absPath: %s)\n", err)
+	fmt.Printf("[LOCAL_CLIENT] stat complete. (name: %s)\n", name)
 	return stat, err
 }
