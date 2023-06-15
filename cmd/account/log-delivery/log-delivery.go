@@ -75,6 +75,9 @@ var Cmd = &cobra.Command{
   [Billable usage log delivery]: https://docs.databricks.com/administration-guide/account-settings/billable-usage-delivery.html
   [Usage page]: https://docs.databricks.com/administration-guide/account-settings/usage.html
   [create a new AWS S3 bucket]: https://docs.databricks.com/administration-guide/account-api/aws-storage.html`,
+	Annotations: map[string]string{
+		"package": "billing",
+	},
 }
 
 // start create command

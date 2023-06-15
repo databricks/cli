@@ -16,6 +16,9 @@ var Cmd = &cobra.Command{
 	Use:   "private-access",
 	Short: `These APIs manage private access settings for this account.`,
 	Long:  `These APIs manage private access settings for this account.`,
+	Annotations: map[string]string{
+		"package": "provisioning",
+	},
 }
 
 // start create command

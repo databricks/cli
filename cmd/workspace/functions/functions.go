@@ -21,6 +21,9 @@ var Cmd = &cobra.Command{
   invoked wherever a table reference is allowed in a query. In Unity Catalog, a
   function resides at the same level as a table, so it can be referenced with
   the form __catalog_name__.__schema_name__.__function_name__.`,
+	Annotations: map[string]string{
+		"package": "catalog",
+	},
 }
 
 // start create command

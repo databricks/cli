@@ -16,6 +16,9 @@ var Cmd = &cobra.Command{
 	Use:   "vpc-endpoints",
 	Short: `These APIs manage VPC endpoint configurations for this account.`,
 	Long:  `These APIs manage VPC endpoint configurations for this account.`,
+	Annotations: map[string]string{
+		"package": "provisioning",
+	},
 }
 
 // start create command

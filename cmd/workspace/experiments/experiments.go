@@ -24,6 +24,9 @@ var Cmd = &cobra.Command{
   Experiments are located in the workspace file tree. You manage experiments
   using the same tools you use to manage other workspace objects such as
   folders, notebooks, and libraries.`,
+	Annotations: map[string]string{
+		"package": "ml",
+	},
 }
 
 // start create-experiment command

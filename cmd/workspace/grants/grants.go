@@ -26,6 +26,9 @@ var Cmd = &cobra.Command{
   automatically grants the privilege to all current and future objects within
   the catalog. Similarly, privileges granted on a schema are inherited by all
   current and future objects within that schema.`,
+	Annotations: map[string]string{
+		"package": "catalog",
+	},
 }
 
 // start get command

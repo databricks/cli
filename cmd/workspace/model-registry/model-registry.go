@@ -17,6 +17,9 @@ var Cmd = &cobra.Command{
 	Short: `MLflow Model Registry is a centralized model repository and a UI and set of APIs that enable you to manage the full lifecycle of MLflow Models.`,
 	Long: `MLflow Model Registry is a centralized model repository and a UI and set of
   APIs that enable you to manage the full lifecycle of MLflow Models.`,
+	Annotations: map[string]string{
+		"package": "ml",
+	},
 }
 
 // start approve-transition-request command

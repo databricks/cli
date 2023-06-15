@@ -23,6 +23,12 @@ var Cmd = &cobra.Command{
   storing library and config files of arbitrary formats such as .whl or .txt
   centrally and providing secure access across workspaces to it, or transforming
   and querying non-tabular data files in ETL.`,
+	Annotations: map[string]string{
+		"package": "catalog",
+	},
+
+	// This service is being previewed; hide from help output.
+	Hidden: true,
 }
 
 // start create command

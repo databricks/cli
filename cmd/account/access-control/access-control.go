@@ -18,6 +18,12 @@ var Cmd = &cobra.Command{
 	Long: `These APIs manage access rules on resources in an account. Currently, only
   grant rules are supported. A grant rule specifies a role assigned to a set of
   principals. A list of rules attached to a resource is called a rule set.`,
+	Annotations: map[string]string{
+		"package": "iam",
+	},
+
+	// This service is being previewed; hide from help output.
+	Hidden: true,
 }
 
 // start get command

@@ -20,6 +20,9 @@ var Cmd = &cobra.Command{
   Databricks can deploy clusters in the appropriate VPC for the new workspace. A
   credential configuration encapsulates this role information, and its ID is
   used when creating a new workspace.`,
+	Annotations: map[string]string{
+		"package": "provisioning",
+	},
 }
 
 // start create command

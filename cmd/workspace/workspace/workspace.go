@@ -20,6 +20,9 @@ var Cmd = &cobra.Command{
   
   A notebook is a web-based interface to a document that contains runnable code,
   visualizations, and explanatory text.`,
+	Annotations: map[string]string{
+		"package": "workspace",
+	},
 }
 
 // start delete command
@@ -99,7 +102,6 @@ func init() {
 	// TODO: short flags
 	exportCmd.Flags().Var(&exportJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	exportCmd.Flags().BoolVar(&exportReq.DirectDownload, "direct-download", exportReq.DirectDownload, `Flag to enable direct download.`)
 	exportCmd.Flags().Var(&exportReq.Format, "format", `This specifies the format of the exported file.`)
 
 }

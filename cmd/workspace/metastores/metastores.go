@@ -28,6 +28,9 @@ var Cmd = &cobra.Command{
   workspaces created before Unity Catalog was released. If your workspace
   includes a legacy Hive metastore, the data in that metastore is available in a
   catalog named hive_metastore.`,
+	Annotations: map[string]string{
+		"package": "catalog",
+	},
 }
 
 // start assign command
@@ -329,6 +332,9 @@ var maintenanceCmd = &cobra.Command{
 	Long: `Enables or disables auto maintenance on the metastore.
   
   Enables or disables auto maintenance on the metastore.`,
+
+	// This command is being previewed; hide from help output.
+	Hidden: true,
 
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
