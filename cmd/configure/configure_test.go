@@ -52,7 +52,7 @@ func TestDefaultConfigureNoInteractive(t *testing.T) {
 	})
 	os.Stdin = inp
 
-	root.RootCmd.SetArgs([]string{"configure", "--token", "--host", "host"})
+	root.RootCmd.SetArgs([]string{"configure", "--token", "--host", "https://host"})
 
 	err := root.RootCmd.ExecuteContext(ctx)
 	assert.NoError(t, err)
@@ -67,7 +67,7 @@ func TestDefaultConfigureNoInteractive(t *testing.T) {
 	defaultSection, err := cfg.GetSection("DEFAULT")
 	assert.NoError(t, err)
 
-	assertKeyValueInSection(t, defaultSection, "host", "host")
+	assertKeyValueInSection(t, defaultSection, "host", "https://host")
 	assertKeyValueInSection(t, defaultSection, "token", "token")
 }
 
@@ -75,8 +75,8 @@ func TestConfigFileFromEnvNoInteractive(t *testing.T) {
 	//TODO: Replace with similar test code from go SDK, once we start using it directly
 	ctx := context.Background()
 	tempHomeDir := setup(t)
-	cfgFileDir := filepath.Join(tempHomeDir, "test")
-	t.Setenv("DATABRICKS_CONFIG_FILE", cfgFileDir)
+	cfgPath := filepath.Join(tempHomeDir, ".databrickscfg")
+	t.Setenv("DATABRICKS_CONFIG_FILE", cfgPath)
 
 	inp := getTempFileWithContent(t, tempHomeDir, "token\n")
 	defer inp.Close()
@@ -84,12 +84,11 @@ func TestConfigFileFromEnvNoInteractive(t *testing.T) {
 	t.Cleanup(func() { os.Stdin = oldStdin })
 	os.Stdin = inp
 
-	root.RootCmd.SetArgs([]string{"configure", "--token", "--host", "host"})
+	root.RootCmd.SetArgs([]string{"configure", "--token", "--host", "https://host"})
 
 	err := root.RootCmd.ExecuteContext(ctx)
 	assert.NoError(t, err)
 
-	cfgPath := filepath.Join(cfgFileDir, ".databrickscfg")
 	_, err = os.Stat(cfgPath)
 	assert.NoError(t, err)
 
@@ -99,25 +98,25 @@ func TestConfigFileFromEnvNoInteractive(t *testing.T) {
 	defaultSection, err := cfg.GetSection("DEFAULT")
 	assert.NoError(t, err)
 
-	assertKeyValueInSection(t, defaultSection, "host", "host")
+	assertKeyValueInSection(t, defaultSection, "host", "https://host")
 	assertKeyValueInSection(t, defaultSection, "token", "token")
 }
 
 func TestCustomProfileConfigureNoInteractive(t *testing.T) {
 	ctx := context.Background()
 	tempHomeDir := setup(t)
+	cfgPath := filepath.Join(tempHomeDir, ".databrickscfg")
 	inp := getTempFileWithContent(t, tempHomeDir, "token\n")
 	defer inp.Close()
 	oldStdin := os.Stdin
 	t.Cleanup(func() { os.Stdin = oldStdin })
 	os.Stdin = inp
 
-	root.RootCmd.SetArgs([]string{"configure", "--token", "--host", "host", "--profile", "CUSTOM"})
+	root.RootCmd.SetArgs([]string{"configure", "--token", "--host", "https://host", "--profile", "CUSTOM"})
 
 	err := root.RootCmd.ExecuteContext(ctx)
 	assert.NoError(t, err)
 
-	cfgPath := filepath.Join(tempHomeDir, ".databrickscfg")
 	_, err = os.Stat(cfgPath)
 	assert.NoError(t, err)
 
@@ -127,6 +126,6 @@ func TestCustomProfileConfigureNoInteractive(t *testing.T) {
 	defaultSection, err := cfg.GetSection("CUSTOM")
 	assert.NoError(t, err)
 
-	assertKeyValueInSection(t, defaultSection, "host", "host")
+	assertKeyValueInSection(t, defaultSection, "host", "https://host")
 	assertKeyValueInSection(t, defaultSection, "token", "token")
 }
