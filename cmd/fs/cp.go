@@ -28,7 +28,7 @@ func cpWriteCallback(ctx context.Context, sourceFiler, targetFiler filer.Filer, 
 		relPath = filepath.ToSlash(relPath)
 
 		// Compute target path for the file
-		targetPath := filepath.Join(targetDir, relPath)
+		targetPath := path.Join(targetDir, relPath)
 
 		// create directory and return early
 		if d.IsDir() {
@@ -107,7 +107,7 @@ var cpCmd = &cobra.Command{
 	Long: `Copy files to and from DBFS.
 
   It is required that you specify the scheme "file" for local files and
-  "dbfs" for dbfs files. For example: file:/foo/bar or dbfs:/foo/bar.
+  "dbfs" for dbfs files. For example: file:/foo/bar, file:/c:/foo/bar or dbfs:/foo/bar.
 
   Recursively copying a directory will copy all files inside directory
   at SOURCE_PATH to the directory at TARGET_PATH.
@@ -120,6 +120,9 @@ var cpCmd = &cobra.Command{
 
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
+
+		// TODO: Error if a user uses '\' as path separator on windows when "file"
+		// scheme is specified (https://github.com/databricks/cli/issues/485)
 
 		// Get source filer and source path without scheme
 		fullSourcePath := args[0]

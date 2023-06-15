@@ -20,7 +20,7 @@ const (
 func filerForPath(ctx context.Context, fullPath string) (filer.Filer, string, error) {
 	parts := strings.Split(fullPath, ":")
 	if len(parts) < 2 {
-		return nil, "", fmt.Errorf(`no scheme specified for path %s. Please specify scheme "dbfs" or "file". Example: file:/foo/bar`, fullPath)
+		return nil, "", fmt.Errorf(`no scheme specified for path %s. Please specify scheme "dbfs" or "file". Example: file:/foo/bar or file:/c:/foo/bar`, fullPath)
 	}
 	scheme := Scheme(parts[0])
 	path := parts[1]
@@ -35,6 +35,6 @@ func filerForPath(ctx context.Context, fullPath string) (filer.Filer, string, er
 		return f, path, err
 
 	default:
-		return nil, "", fmt.Errorf(`unsupported scheme %s specified for path %s. Please specify scheme "dbfs" or "file". Example: file:/foo/bar`, scheme, fullPath)
+		return nil, "", fmt.Errorf(`unsupported scheme %s specified for path %s. Please specify scheme "dbfs" or "file". Example: file:/foo/bar or file:/c:/foo/bar`, scheme, fullPath)
 	}
 }
