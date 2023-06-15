@@ -75,8 +75,8 @@ func TestConfigFileFromEnvNoInteractive(t *testing.T) {
 	//TODO: Replace with similar test code from go SDK, once we start using it directly
 	ctx := context.Background()
 	tempHomeDir := setup(t)
-	cfgFileDir := filepath.Join(tempHomeDir, "test")
-	t.Setenv("DATABRICKS_CONFIG_FILE", cfgFileDir)
+	cfgPath := filepath.Join(tempHomeDir, ".databrickscfg")
+	t.Setenv("DATABRICKS_CONFIG_FILE", cfgPath)
 
 	inp := getTempFileWithContent(t, tempHomeDir, "token\n")
 	defer inp.Close()
@@ -89,7 +89,6 @@ func TestConfigFileFromEnvNoInteractive(t *testing.T) {
 	err := root.RootCmd.ExecuteContext(ctx)
 	assert.NoError(t, err)
 
-	cfgPath := filepath.Join(cfgFileDir, ".databrickscfg")
 	_, err = os.Stat(cfgPath)
 	assert.NoError(t, err)
 
@@ -106,6 +105,7 @@ func TestConfigFileFromEnvNoInteractive(t *testing.T) {
 func TestCustomProfileConfigureNoInteractive(t *testing.T) {
 	ctx := context.Background()
 	tempHomeDir := setup(t)
+	cfgPath := filepath.Join(tempHomeDir, ".databrickscfg")
 	inp := getTempFileWithContent(t, tempHomeDir, "token\n")
 	defer inp.Close()
 	oldStdin := os.Stdin
@@ -117,7 +117,6 @@ func TestCustomProfileConfigureNoInteractive(t *testing.T) {
 	err := root.RootCmd.ExecuteContext(ctx)
 	assert.NoError(t, err)
 
-	cfgPath := filepath.Join(tempHomeDir, ".databrickscfg")
 	_, err = os.Stat(cfgPath)
 	assert.NoError(t, err)
 
