@@ -5,12 +5,14 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/exp/maps"
 )
 
 func unsetEnv(t *testing.T, name string) {
@@ -221,4 +223,52 @@ func TestSetTempDirEnvVarsForWindowsWithoutAnyTempDirEnvVarsSet(t *testing.T) {
 	assert.Equal(t, map[string]string{
 		"TMP": tmpDir,
 	}, env)
+}
+
+func TestSetProxyEnvVars(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Path: t.TempDir(),
+			Bundle: config.Bundle{
+				Environment: "whatever",
+			},
+		},
+	}
+
+	// Temporarily clear environment variables.
+	clearEnv := func() {
+		for _, v := range []string{"http_proxy", "https_proxy", "no_proxy"} {
+			for _, v := range []string{strings.ToUpper(v), strings.ToLower(v)} {
+				t.Setenv(v, "foo")
+				os.Unsetenv(v)
+			}
+		}
+	}
+
+	// No proxy env vars set.
+	clearEnv()
+	env := make(map[string]string, 0)
+	err := setProxyEnvVars(env, b)
+	require.NoError(t, err)
+	assert.Len(t, env, 0)
+
+	// Lower case set.
+	clearEnv()
+	t.Setenv("http_proxy", "foo")
+	t.Setenv("https_proxy", "foo")
+	t.Setenv("no_proxy", "foo")
+	env = make(map[string]string, 0)
+	err = setProxyEnvVars(env, b)
+	require.NoError(t, err)
+	assert.ElementsMatch(t, []string{"HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY"}, maps.Keys(env))
+
+	// Upper case set.
+	clearEnv()
+	t.Setenv("HTTP_PROXY", "foo")
+	t.Setenv("HTTPS_PROXY", "foo")
+	t.Setenv("NO_PROXY", "foo")
+	env = make(map[string]string, 0)
+	err = setProxyEnvVars(env, b)
+	require.NoError(t, err)
+	assert.ElementsMatch(t, []string{"HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY"}, maps.Keys(env))
 }

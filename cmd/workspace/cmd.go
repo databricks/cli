@@ -1,6 +1,6 @@
 // Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
 
-package cmd
+package workspace
 
 import (
 	"github.com/databricks/cli/cmd/root"
@@ -56,7 +56,6 @@ import (
 )
 
 func init() {
-
 	root.RootCmd.AddCommand(alerts.Cmd)
 	root.RootCmd.AddCommand(catalogs.Cmd)
 	root.RootCmd.AddCommand(cluster_policies.Cmd)
@@ -105,4 +104,55 @@ func init() {
 	root.RootCmd.AddCommand(workspace.Cmd)
 	root.RootCmd.AddCommand(workspace_bindings.Cmd)
 	root.RootCmd.AddCommand(workspace_conf.Cmd)
+
+	// Register commands with groups
+	alerts.Cmd.GroupID = "sql"
+	catalogs.Cmd.GroupID = "catalog"
+	cluster_policies.Cmd.GroupID = "compute"
+	clusters.Cmd.GroupID = "compute"
+	connections.Cmd.GroupID = "catalog"
+	current_user.Cmd.GroupID = "iam"
+	dashboards.Cmd.GroupID = "sql"
+	data_sources.Cmd.GroupID = "sql"
+	experiments.Cmd.GroupID = "ml"
+	external_locations.Cmd.GroupID = "catalog"
+	functions.Cmd.GroupID = "catalog"
+	git_credentials.Cmd.GroupID = "workspace"
+	global_init_scripts.Cmd.GroupID = "compute"
+	grants.Cmd.GroupID = "catalog"
+	groups.Cmd.GroupID = "iam"
+	instance_pools.Cmd.GroupID = "compute"
+	instance_profiles.Cmd.GroupID = "compute"
+	ip_access_lists.Cmd.GroupID = "settings"
+	jobs.Cmd.GroupID = "jobs"
+	libraries.Cmd.GroupID = "compute"
+	metastores.Cmd.GroupID = "catalog"
+	model_registry.Cmd.GroupID = "ml"
+	permissions.Cmd.GroupID = "iam"
+	pipelines.Cmd.GroupID = "pipelines"
+	policy_families.Cmd.GroupID = "compute"
+	providers.Cmd.GroupID = "sharing"
+	queries.Cmd.GroupID = "sql"
+	query_history.Cmd.GroupID = "sql"
+	recipient_activation.Cmd.GroupID = "sharing"
+	recipients.Cmd.GroupID = "sharing"
+	repos.Cmd.GroupID = "workspace"
+	schemas.Cmd.GroupID = "catalog"
+	secrets.Cmd.GroupID = "workspace"
+	service_principals.Cmd.GroupID = "iam"
+	serving_endpoints.Cmd.GroupID = "serving"
+	shares.Cmd.GroupID = "sharing"
+	storage_credentials.Cmd.GroupID = "catalog"
+	system_schemas.Cmd.GroupID = "catalog"
+	table_constraints.Cmd.GroupID = "catalog"
+	tables.Cmd.GroupID = "catalog"
+	token_management.Cmd.GroupID = "settings"
+	tokens.Cmd.GroupID = "settings"
+	users.Cmd.GroupID = "iam"
+	volumes.Cmd.GroupID = "catalog"
+	warehouses.Cmd.GroupID = "sql"
+	workspace.Cmd.GroupID = "workspace"
+	workspace_bindings.Cmd.GroupID = "catalog"
+	workspace_conf.Cmd.GroupID = "settings"
+
 }

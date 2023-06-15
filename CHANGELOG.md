@@ -1,5 +1,20 @@
 # Version changelog
 
+## 0.100.4
+
+CLI:
+ * Add workspace import-dir command ([#456](https://github.com/databricks/cli/pull/456)).
+ * Annotate generated commands with OpenAPI package name ([#466](https://github.com/databricks/cli/pull/466)).
+ * Associate generated commands with command groups ([#475](https://github.com/databricks/cli/pull/475)).
+ * Disable shell completions for generated commands ([#483](https://github.com/databricks/cli/pull/483)).
+ * Include [DEFAULT] section header when writing ~/.databrickscfg ([#464](https://github.com/databricks/cli/pull/464)).
+ * Pass through proxy related environment variables ([#465](https://github.com/databricks/cli/pull/465)).
+ * Restore flags to original values on test completion ([#470](https://github.com/databricks/cli/pull/470)).
+ * Update configure command ([#482](https://github.com/databricks/cli/pull/482)).
+
+Dependencies:
+ * Bump SDK to latest ([#473](https://github.com/databricks/cli/pull/473)).
+
 ## 0.100.3
 
 CLI:
