@@ -912,14 +912,7 @@ var resetCmd = &cobra.Command{
 				return err
 			}
 		} else {
-			_, err = fmt.Sscan(args[0], &resetReq.JobId)
-			if err != nil {
-				return fmt.Errorf("invalid JOB_ID: %s", args[0])
-			}
-			_, err = fmt.Sscan(args[1], &resetReq.NewSettings)
-			if err != nil {
-				return fmt.Errorf("invalid NEW_SETTINGS: %s", args[1])
-			}
+			return fmt.Errorf("provide command input in JSON format by specifying --json option")
 		}
 
 		err = w.Jobs.Reset(ctx, resetReq)

@@ -221,18 +221,7 @@ var updateCmd = &cobra.Command{
 				return err
 			}
 		} else {
-			_, err = fmt.Sscan(args[0], &updateReq.Permissions)
-			if err != nil {
-				return fmt.Errorf("invalid PERMISSIONS: %s", args[0])
-			}
-			_, err = fmt.Sscan(args[1], &updateReq.WorkspaceId)
-			if err != nil {
-				return fmt.Errorf("invalid WORKSPACE_ID: %s", args[1])
-			}
-			_, err = fmt.Sscan(args[2], &updateReq.PrincipalId)
-			if err != nil {
-				return fmt.Errorf("invalid PRINCIPAL_ID: %s", args[2])
-			}
+			return fmt.Errorf("provide command input in JSON format by specifying --json option")
 		}
 
 		err = a.WorkspaceAssignment.Update(ctx, updateReq)
