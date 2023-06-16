@@ -2,7 +2,6 @@ package filer
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"io/fs"
 	"os"
@@ -28,7 +27,6 @@ func (w *LocalClient) Write(ctx context.Context, name string, reader io.Reader, 
 	if err != nil {
 		return err
 	}
-
 
 	flags := os.O_WRONLY | os.O_CREATE
 	if slices.Contains(mode, OverwriteIfExists) {
@@ -66,7 +64,6 @@ func (w *LocalClient) Write(ctx context.Context, name string, reader io.Reader, 
 	if err == nil {
 		err = cerr
 	}
-
 
 	return err
 

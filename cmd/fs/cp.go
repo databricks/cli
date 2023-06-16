@@ -14,7 +14,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func cpWriteCallback(ctx context.Context, sourceFiler, targetFiler filer.Filer, sourceDir, targetDir string) fs.WalkDirFunc {
+type copy struct {
+	ctx         context.Context
+	sourceFiler filer.Filer
+	targetFiler filer.Filer
+}
+
+func (c *copy) cpWriteCallback(sourceDir, targetDir string) fs.WalkDirFunc {
 	return func(sourcePath string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -32,53 +38,53 @@ func cpWriteCallback(ctx context.Context, sourceFiler, targetFiler filer.Filer, 
 
 		// create directory and return early
 		if d.IsDir() {
-			return targetFiler.Mkdir(ctx, targetPath)
+			return c.targetFiler.Mkdir(c.ctx, targetPath)
 		}
 
-		return cpFileToFile(ctx, sourcePath, targetPath, sourceFiler, targetFiler)
+		return c.cpFileToFile(sourcePath, targetPath)
 	}
 }
 
-func cpDirToDir(ctx context.Context, sourceFiler, targetFiler filer.Filer, sourceDir, targetDir string) error {
+func (c *copy) cpDirToDir(sourceDir, targetDir string) error {
 	if !cpRecursive {
 		return fmt.Errorf("source path %s is a directory. Please specify the --recursive flag", sourceDir)
 	}
 
-	sourceFs := filer.NewFS(ctx, sourceFiler)
-	return fs.WalkDir(sourceFs, sourceDir, cpWriteCallback(ctx, sourceFiler, targetFiler, sourceDir, targetDir))
+	sourceFs := filer.NewFS(c.ctx, c.sourceFiler)
+	return fs.WalkDir(sourceFs, sourceDir, c.cpWriteCallback(sourceDir, targetDir))
 }
 
-func cpFileToDir(ctx context.Context, sourcePath, targetDir string, sourceFiler, targetFiler filer.Filer) error {
+func (c *copy) cpFileToDir(sourcePath, targetDir string) error {
 	fileName := path.Base(sourcePath)
 	targetPath := path.Join(targetDir, fileName)
 
-	return cpFileToFile(ctx, sourcePath, targetPath, sourceFiler, targetFiler)
+	return c.cpFileToFile(sourcePath, targetPath)
 }
 
-func cpFileToFile(ctx context.Context, sourcePath, targetPath string, sourceFiler, targetFiler filer.Filer) error {
+func (c *copy) cpFileToFile(sourcePath, targetPath string) error {
 	// Get reader for file at source path
-	r, err := sourceFiler.Read(ctx, sourcePath)
+	r, err := c.sourceFiler.Read(c.ctx, sourcePath)
 	if err != nil {
 		return err
 	}
 	defer r.Close()
 
 	if cpOverwrite {
-		err = targetFiler.Write(ctx, targetPath, r, filer.OverwriteIfExists)
+		err = c.targetFiler.Write(c.ctx, targetPath, r, filer.OverwriteIfExists)
 		if err != nil {
 			return err
 		}
 	} else {
-		err = targetFiler.Write(ctx, targetPath, r)
+		err = c.targetFiler.Write(c.ctx, targetPath, r)
 		// skip if file already exists
 		if err != nil && errors.Is(err, fs.ErrExist) {
-			return emitCpFileSkippedEvent(ctx, sourcePath, targetPath)
+			return emitCpFileSkippedEvent(c.ctx, sourcePath, targetPath)
 		}
 		if err != nil {
 			return err
 		}
 	}
-	return emitCpFileCopiedEvent(ctx, sourcePath, targetPath)
+	return emitCpFileCopiedEvent(c.ctx, sourcePath, targetPath)
 }
 
 // TODO: emit these events on stderr
@@ -138,6 +144,12 @@ var cpCmd = &cobra.Command{
 			return err
 		}
 
+		c := copy{
+			ctx:         ctx,
+			sourceFiler: sourceFiler,
+			targetFiler: targetFiler,
+		}
+
 		// Get information about file at source path
 		sourceInfo, err := sourceFiler.Stat(ctx, sourcePath)
 		if err != nil {
@@ -146,17 +158,17 @@ var cpCmd = &cobra.Command{
 
 		// case 1: source path is a directory, then recursively create files at target path
 		if sourceInfo.IsDir() {
-			return cpDirToDir(ctx, sourceFiler, targetFiler, sourcePath, targetPath)
+			return c.cpDirToDir(sourcePath, targetPath)
 		}
 
 		// case 2: source path is a file, and target path is a directory. In this case
 		// we copy the file to inside the directory
 		if targetInfo, err := targetFiler.Stat(ctx, targetPath); err == nil && targetInfo.IsDir() {
-			return cpFileToDir(ctx, sourcePath, targetPath, sourceFiler, targetFiler)
+			return c.cpFileToDir(sourcePath, targetPath)
 		}
 
 		// case 3: source path is a file, and target path is a file
-		return cpFileToFile(ctx, sourcePath, targetPath, sourceFiler, targetFiler)
+		return c.cpFileToFile(sourcePath, targetPath)
 	},
 }
 
