@@ -45,7 +45,7 @@ func init() {
 }
 
 var createCmd = &cobra.Command{
-	Use:   "create",
+	Use:   "create NAME CATALOG_NAME SCHEMA_NAME INPUT_PARAMS DATA_TYPE FULL_DATA_TYPE RETURN_PARAMS ROUTINE_BODY ROUTINE_DEFINITION ROUTINE_DEPENDENCIES PARAMETER_STYLE IS_DETERMINISTIC SQL_DATA_ACCESS IS_NULL_CALL SECURITY_TYPE SPECIFIC_NAME",
 	Short: `Create a function.`,
 	Long: `Create a function.
   
@@ -56,7 +56,14 @@ var createCmd = &cobra.Command{
   and **CREATE_FUNCTION** on the function's parent schema`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(16)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)

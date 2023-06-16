@@ -55,7 +55,7 @@ func init() {
 }
 
 var createCmd = &cobra.Command{
-	Use:   "create",
+	Use:   "create LABEL LIST_TYPE IP_ADDRESSES",
 	Short: `Create access list.`,
 	Long: `Create access list.
   
@@ -75,7 +75,14 @@ var createCmd = &cobra.Command{
   It can take a few minutes for the changes to take effect.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.MustAccountClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(3)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
@@ -244,6 +251,7 @@ var listCmd = &cobra.Command{
   Gets all IP access lists for the specified account.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(0),
 	PreRunE:     root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -274,7 +282,7 @@ func init() {
 }
 
 var replaceCmd = &cobra.Command{
-	Use:   "replace",
+	Use:   "replace LABEL LIST_TYPE IP_ADDRESSES ENABLED IP_ACCESS_LIST_ID",
 	Short: `Replace access list.`,
 	Long: `Replace access list.
   
@@ -290,7 +298,14 @@ var replaceCmd = &cobra.Command{
   INVALID_STATE. It can take a few minutes for the changes to take effect.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.MustAccountClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(5)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
@@ -342,7 +357,7 @@ func init() {
 }
 
 var updateCmd = &cobra.Command{
-	Use:   "update",
+	Use:   "update LABEL LIST_TYPE IP_ADDRESSES ENABLED IP_ACCESS_LIST_ID",
 	Short: `Update access list.`,
 	Long: `Update access list.
   
@@ -362,7 +377,14 @@ var updateCmd = &cobra.Command{
   It can take a few minutes for the changes to take effect.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.MustAccountClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(5)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)

@@ -43,6 +43,7 @@ var listCmd = &cobra.Command{
   you need only a SQL warehouse's id to create new queries against it.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(0),
 	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()

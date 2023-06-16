@@ -57,6 +57,7 @@ var allClusterStatusesCmd = &cobra.Command{
   well as libraries set to be installed on all clusters via the libraries UI.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(0),
 	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -150,7 +151,7 @@ func init() {
 }
 
 var installCmd = &cobra.Command{
-	Use:   "install",
+	Use:   "install CLUSTER_ID LIBRARIES",
 	Short: `Add a library.`,
 	Long: `Add a library.
   
@@ -162,7 +163,14 @@ var installCmd = &cobra.Command{
   installed on all clusters via the libraries UI.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(2)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -203,7 +211,7 @@ func init() {
 }
 
 var uninstallCmd = &cobra.Command{
-	Use:   "uninstall",
+	Use:   "uninstall CLUSTER_ID LIBRARIES",
 	Short: `Uninstall libraries.`,
 	Long: `Uninstall libraries.
   
@@ -212,7 +220,14 @@ var uninstallCmd = &cobra.Command{
   not installed on the cluster will have no impact but is not an error.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(2)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)

@@ -215,6 +215,7 @@ var listCmd = &cobra.Command{
   no guarantee of a specific ordering of the elements in the array.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(0),
 	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()

@@ -160,6 +160,7 @@ var currentCmd = &cobra.Command{
   Gets the metastore assignment for the workspace being accessed.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(0),
 	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -317,6 +318,7 @@ var listCmd = &cobra.Command{
   specific ordering of the elements in the array.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(0),
 	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -406,6 +408,7 @@ var summaryCmd = &cobra.Command{
   credential, the cloud vendor, the cloud region, and the global metastore ID.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(0),
 	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()

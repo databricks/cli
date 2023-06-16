@@ -54,7 +54,7 @@ func init() {
 }
 
 var createCmd = &cobra.Command{
-	Use:   "create",
+	Use:   "create LABEL LIST_TYPE IP_ADDRESSES",
 	Short: `Create access list.`,
 	Long: `Create access list.
   
@@ -76,7 +76,14 @@ var createCmd = &cobra.Command{
   :method:workspaceconf/setStatus`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(3)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -245,6 +252,7 @@ var listCmd = &cobra.Command{
   Gets all IP access lists for the specified workspace.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(0),
 	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -275,7 +283,7 @@ func init() {
 }
 
 var replaceCmd = &cobra.Command{
-	Use:   "replace",
+	Use:   "replace LABEL LIST_TYPE IP_ADDRESSES ENABLED IP_ACCESS_LIST_ID",
 	Short: `Replace access list.`,
 	Long: `Replace access list.
   
@@ -293,7 +301,14 @@ var replaceCmd = &cobra.Command{
   feature. See :method:workspaceconf/setStatus.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(5)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -345,7 +360,7 @@ func init() {
 }
 
 var updateCmd = &cobra.Command{
-	Use:   "update",
+	Use:   "update LABEL LIST_TYPE IP_ADDRESSES ENABLED IP_ACCESS_LIST_ID",
 	Short: `Update access list.`,
 	Long: `Update access list.
   
@@ -367,7 +382,14 @@ var updateCmd = &cobra.Command{
   :method:workspaceconf/setStatus.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(5)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)

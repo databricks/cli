@@ -105,12 +105,19 @@ func init() {
 }
 
 var createCmd = &cobra.Command{
-	Use:   "create",
+	Use:   "create NAME CONFIG",
 	Short: `Create a new serving endpoint.`,
 	Long:  `Create a new serving endpoint.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(2)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -317,6 +324,7 @@ var listCmd = &cobra.Command{
 	Long:  `Retrieve all serving endpoints.`,
 
 	Annotations: map[string]string{},
+	Args:        cobra.ExactArgs(0),
 	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -454,7 +462,7 @@ func init() {
 }
 
 var updateConfigCmd = &cobra.Command{
-	Use:   "update-config",
+	Use:   "update-config SERVED_MODELS NAME",
 	Short: `Update a serving endpoint with a new config.`,
 	Long: `Update a serving endpoint with a new config.
   
@@ -464,7 +472,14 @@ var updateConfigCmd = &cobra.Command{
   current update completes or fails.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(2)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)

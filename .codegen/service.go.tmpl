@@ -76,7 +76,7 @@ func init() {
 {{- $fullCommandName := (print $serviceName " " .KebabName) -}}
 {{- $noPrompt := or .IsCrudCreate (in $excludeFromPrompts $fullCommandName) }}
 
-{{ $hasPosArgs := and .Request (or .Request.IsAllRequiredFieldsPrimitive (eq .PascalName "RunNow")) -}}
+{{ $hasPosArgs := and .Request (or (gt (len .Request.RequiredFields) 0) (eq .PascalName "RunNow")) -}}
 {{- $hasSinglePosArg := and $hasPosArgs (eq 1 (len .Request.RequiredFields)) -}}
 {{- $serviceHasNamedIdMap := and (and .Service.List .Service.List.NamedIdMap) (not (eq .PascalName "List")) -}}
 {{- $hasIdPrompt := and (not $noPrompt) (and $hasSinglePosArg $serviceHasNamedIdMap) -}}
@@ -101,7 +101,11 @@ var {{.CamelName}}Cmd = &cobra.Command{
 			check = cobra.ExactArgs(0)
 		}
 		return check(cmd, args)
-	},{{end}}
+	},{{else}}
+	{{- if not $hasIdPrompt }}
+	Args: cobra.ExactArgs(0),
+	{{- end -}}
+	{{- end}}
 	PreRunE: root.Must{{if .Service.IsAccounts}}Account{{else}}Workspace{{end}}Client,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()

@@ -203,7 +203,7 @@ func init() {
 }
 
 var updateCmd = &cobra.Command{
-	Use:   "update",
+	Use:   "update PERMISSIONS WORKSPACE_ID PRINCIPAL_ID",
 	Short: `Create or update permissions assignment.`,
 	Long: `Create or update permissions assignment.
   
@@ -211,7 +211,14 @@ var updateCmd = &cobra.Command{
   workspace for the specified principal.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.MustAccountClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(3)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
