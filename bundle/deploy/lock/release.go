@@ -2,17 +2,25 @@ package lock
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/log"
 )
 
+type Goal string
+
+const (
+	GoalDeploy  = Goal("deploy")
+	GoalDestroy = Goal("destroy")
+)
+
 type release struct {
-	allowLockFileNotExist bool
+	goal Goal
 }
 
-func Release(allowLockFileNotExist bool) bundle.Mutator {
-	return &release{allowLockFileNotExist}
+func Release(goal Goal) bundle.Mutator {
+	return &release{goal}
 }
 
 func (m *release) Name() string {
@@ -34,11 +42,12 @@ func (m *release) Apply(ctx context.Context, b *bundle.Bundle) error {
 	}
 
 	log.Infof(ctx, "Releasing deployment lock")
-	err := b.Locker.Unlock(ctx, m.allowLockFileNotExist)
-	if err != nil {
-		log.Errorf(ctx, "Failed to release deployment lock: %v", err)
-		return err
+	switch m.goal {
+	case GoalDeploy:
+		return b.Locker.Unlock(ctx, false)
+	case GoalDestroy:
+		return b.Locker.Unlock(ctx, true)
+	default:
+		return fmt.Errorf("unknown goal for lock release: %s", m.goal)
 	}
-
-	return nil
 }

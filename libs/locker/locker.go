@@ -172,7 +172,6 @@ func (locker *Locker) Unlock(ctx context.Context, allowLockFileNotExist bool) er
 	// if allowLockFileNotExist is set, do not throw an error if the lock file does
 	// not exist. This is helpful when destroying a bundle in which case the lock
 	// file will be deleted before we have a chance to unlock
-	// TODO: add a test for this
 	if _, err := locker.filer.Stat(ctx, LockFileName); errors.Is(err, fs.ErrNotExist) && allowLockFileNotExist {
 		locker.Active = false
 		return nil
