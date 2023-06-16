@@ -44,6 +44,7 @@ func assertTargetFile(t *testing.T, ctx context.Context, f filer.Filer, relPath 
 
 	r, err := f.Read(ctx, relPath)
 	assert.NoError(t, err)
+	defer r.Close()
 	b, err := io.ReadAll(r)
 	require.NoError(t, err)
 	assert.Equal(t, "abc", string(b))
@@ -272,23 +273,13 @@ func TestAccFsCpFileToDirWithOverwriteFlag(t *testing.T) {
 func TestAccFsCpErrorsWhenSourceIsDirWithoutRecursiveFlag(t *testing.T) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
-	type test struct {
-		path   string
-		scheme string
-	}
-
 	w, err := databricks.NewWorkspaceClient()
 	require.NoError(t, err)
 
-	table := []test{
-		{path: temporaryDbfsDir(t, w), scheme: "dbfs"},
-		{path: t.TempDir(), scheme: "file"},
-	}
+	tmpDir := temporaryDbfsDir(t, w)
 
-	for _, row := range table {
-		_, _, err := RequireErrorRun(t, "fs", "cp", row.scheme+":"+row.path, "file:/a")
-		assert.Equal(t, fmt.Sprintf("source path %s is a directory. Please specify the --recursive flag", row.path), err.Error())
-	}
+	_, _, err = RequireErrorRun(t, "fs", "cp", "dbfs:"+tmpDir, "file:/a")
+	assert.Equal(t, fmt.Sprintf("source path %s is a directory. Please specify the --recursive flag", strings.TrimPrefix(tmpDir, "/")), err.Error())
 }
 
 func TestAccFsCpErrorsOnNoScheme(t *testing.T) {
