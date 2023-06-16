@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/fs"
 	"math/rand"
 	"sync"
@@ -42,7 +43,7 @@ func createRemoteTestProject(t *testing.T, projectNamePrefix string, wsc *databr
 }
 
 func TestAccLock(t *testing.T) {
-	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+	// t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 	ctx := context.TODO()
 	wsc, err := databricks.NewWorkspaceClient()
 	require.NoError(t, err)
@@ -114,18 +115,23 @@ func TestAccLock(t *testing.T) {
 		if i == indexOfActiveLocker {
 			continue
 		}
-		err := lockers[i].PutFile(ctx, "foo.json", []byte(`'{"surname":"Khan", "name":"Shah Rukh"}`))
+		err := lockers[i].Write(ctx, "foo.json", []byte(`'{"surname":"Khan", "name":"Shah Rukh"}`))
 		assert.ErrorContains(t, err, "failed to put file. deploy lock not held")
 	}
 
 	// active locker file write succeeds
-	err = lockers[indexOfActiveLocker].PutFile(ctx, "foo.json", []byte(`{"surname":"Khan", "name":"Shah Rukh"}`))
+	err = lockers[indexOfActiveLocker].Write(ctx, "foo.json", []byte(`{"surname":"Khan", "name":"Shah Rukh"}`))
 	assert.NoError(t, err)
 
-	// active locker file read succeeds with expected results
-	bytes, err := lockers[indexOfActiveLocker].GetRawJsonFileContent(ctx, "foo.json")
+	// read active locker file
+	r, err := lockers[indexOfActiveLocker].Read(ctx, "foo.json")
+	require.NoError(t, err)
+	b, err := io.ReadAll(r)
+	require.NoError(t, err)
+
+	// assert on active locker content
 	var res map[string]string
-	json.Unmarshal(bytes, &res)
+	json.Unmarshal(b, &res)
 	assert.NoError(t, err)
 	assert.Equal(t, "Khan", res["surname"])
 	assert.Equal(t, "Shah Rukh", res["name"])
@@ -135,7 +141,7 @@ func TestAccLock(t *testing.T) {
 		if i == indexOfActiveLocker {
 			continue
 		}
-		_, err = lockers[i].GetRawJsonFileContent(ctx, "foo.json")
+		_, err = lockers[i].Read(ctx, "foo.json")
 		assert.ErrorContains(t, err, "failed to get file. deploy lock not held")
 	}
 

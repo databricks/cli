@@ -7,7 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"strings"
+	"io/fs"
 	"time"
 
 	"github.com/databricks/cli/libs/filer"
@@ -88,7 +88,7 @@ func (locker *Locker) GetActiveLockState(ctx context.Context) (*LockState, error
 // holder details if locker does not hold the lock
 func (locker *Locker) assertLockHeld(ctx context.Context) error {
 	activeLockState, err := locker.GetActiveLockState(ctx)
-	if err != nil && strings.Contains(err.Error(), "File not found.") {
+	if errors.Is(err, fs.ErrNotExist) {
 		return fmt.Errorf("no active lock on target dir: %s", err)
 	}
 	if err != nil {
@@ -104,22 +104,18 @@ func (locker *Locker) assertLockHeld(ctx context.Context) error {
 }
 
 // idempotent function since overwrite is set to true
-func (locker *Locker) PutFile(ctx context.Context, pathToFile string, content []byte) error {
+func (locker *Locker) Write(ctx context.Context, pathToFile string, content []byte) error {
 	if !locker.Active {
 		return fmt.Errorf("failed to put file. deploy lock not held")
 	}
 	return locker.filer.Write(ctx, pathToFile, bytes.NewReader(content), filer.OverwriteIfExists, filer.CreateParentDirectories)
 }
 
-func (locker *Locker) GetRawJsonFileContent(ctx context.Context, path string) ([]byte, error) {
+func (locker *Locker) Read(ctx context.Context, path string) (io.ReadCloser, error) {
 	if !locker.Active {
 		return nil, fmt.Errorf("failed to get file. deploy lock not held")
 	}
-	reader, err := locker.filer.Read(ctx, path)
-	if err != nil {
-		return nil, err
-	}
-	return io.ReadAll(reader)
+	return locker.filer.Read(ctx, path)
 }
 
 func (locker *Locker) Lock(ctx context.Context, isForced bool) error {

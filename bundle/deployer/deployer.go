@@ -2,10 +2,12 @@ package deployer
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/databricks/cli/libs/locker"
 	"github.com/databricks/cli/libs/log"
@@ -97,22 +99,24 @@ func (b *Deployer) tfStateLocalPath() string {
 	return filepath.Join(b.DefaultTerraformRoot(), "terraform.tfstate")
 }
 
-func (b *Deployer) LoadTerraformState(ctx context.Context) error {
-	bytes, err := b.locker.GetRawJsonFileContent(ctx, b.tfStateRemotePath())
-	if err != nil {
+func (d *Deployer) LoadTerraformState(ctx context.Context) error {
+	r, err := d.locker.Read(ctx, d.tfStateRemotePath())
+	if errors.Is(err, fs.ErrNotExist) {
 		// If remote tf state is absent, use local tf state
-		if strings.Contains(err.Error(), "File not found.") {
-			return nil
-		} else {
-			return err
-		}
+		return nil
 	}
-	err = os.MkdirAll(b.DefaultTerraformRoot(), os.ModeDir)
 	if err != nil {
 		return err
 	}
-	err = os.WriteFile(b.tfStateLocalPath(), bytes, os.ModePerm)
-	return err
+	err = os.MkdirAll(d.DefaultTerraformRoot(), os.ModeDir)
+	if err != nil {
+		return err
+	}
+	b, err := io.ReadAll(r)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(d.tfStateLocalPath(), b, os.ModePerm)
 }
 
 func (b *Deployer) SaveTerraformState(ctx context.Context) error {
@@ -120,7 +124,7 @@ func (b *Deployer) SaveTerraformState(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	return b.locker.PutFile(ctx, b.tfStateRemotePath(), bytes)
+	return b.locker.Write(ctx, b.tfStateRemotePath(), bytes)
 }
 
 func (d *Deployer) Lock(ctx context.Context, isForced bool) error {
