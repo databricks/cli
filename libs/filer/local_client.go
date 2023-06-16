@@ -36,7 +36,6 @@ func (w *LocalClient) Write(ctx context.Context, name string, reader io.Reader, 
 	}
 
 	absPath = filepath.FromSlash(absPath)
-
 	f, err := os.OpenFile(absPath, flags, 0644)
 	if os.IsNotExist(err) && slices.Contains(mode, CreateParentDirectories) {
 		// Create parent directories if they don't exist.
@@ -170,5 +169,6 @@ func (w *LocalClient) Stat(ctx context.Context, name string) (fs.FileInfo, error
 	if os.IsNotExist(err) {
 		return nil, FileDoesNotExistError{path: absPath}
 	}
+	
 	return stat, err
 }
