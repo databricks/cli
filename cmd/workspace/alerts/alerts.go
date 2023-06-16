@@ -60,12 +60,7 @@ var createCmd = &cobra.Command{
 				return err
 			}
 		} else {
-			createReq.Name = args[0]
-			_, err = fmt.Sscan(args[1], &createReq.Options)
-			if err != nil {
-				return fmt.Errorf("invalid OPTIONS: %s", args[1])
-			}
-			createReq.QueryId = args[2]
+			return fmt.Errorf("provide command input in JSON format by specifying --json option")
 		}
 
 		response, err := w.Alerts.Create(ctx, createReq)
@@ -265,13 +260,7 @@ var updateCmd = &cobra.Command{
 				return err
 			}
 		} else {
-			updateReq.Name = args[0]
-			_, err = fmt.Sscan(args[1], &updateReq.Options)
-			if err != nil {
-				return fmt.Errorf("invalid OPTIONS: %s", args[1])
-			}
-			updateReq.QueryId = args[2]
-			updateReq.AlertId = args[3]
+			return fmt.Errorf("provide command input in JSON format by specifying --json option")
 		}
 
 		err = w.Alerts.Update(ctx, updateReq)

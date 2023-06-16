@@ -133,14 +133,18 @@ var {{.CamelName}}Cmd = &cobra.Command{
 				}
 			{{- end -}}
 			{{$method := .}}
-			{{- range $arg, $field := .Request.RequiredFields}}
-				{{if not $field.Entity.IsString -}}
-				_, err = fmt.Sscan(args[{{$arg}}], &{{$method.CamelName}}Req.{{$field.PascalName}})
-				if err != nil {
-					return fmt.Errorf("invalid {{$field.ConstantName}}: %s", args[{{$arg}}])
-				}{{else -}}
-				{{$method.CamelName}}Req.{{$field.PascalName}} = args[{{$arg}}]
-				{{- end -}}{{end}}
+			{{- if .Request.IsAllRequiredFieldsPrimitive -}}
+				{{- range $arg, $field := .Request.RequiredFields}}
+					{{if not $field.Entity.IsString -}}
+					_, err = fmt.Sscan(args[{{$arg}}], &{{$method.CamelName}}Req.{{$field.PascalName}})
+					if err != nil {
+						return fmt.Errorf("invalid {{$field.ConstantName}}: %s", args[{{$arg}}])
+					}{{else -}}
+					{{$method.CamelName}}Req.{{$field.PascalName}} = args[{{$arg}}]
+					{{- end -}}{{end}}
+			{{- else -}}
+				return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+			{{- end -}}
 			}
 		{{end}}
 		{{if $wait -}}
