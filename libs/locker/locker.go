@@ -71,6 +71,7 @@ func (locker *Locker) GetActiveLockState(ctx context.Context) (*LockState, error
 	if err != nil {
 		return nil, err
 	}
+	defer reader.Close()
 
 	bytes, err := io.ReadAll(reader)
 	if err != nil {
@@ -179,7 +180,7 @@ func (locker *Locker) Unlock(ctx context.Context, allowLockFileNotExist bool) er
 
 	err := locker.assertLockHeld(ctx)
 	if err != nil {
-		return fmt.Errorf("unlock called when lock is not held: %s", err)
+		return fmt.Errorf("unlock called when lock is not held: %w", err)
 	}
 	err = locker.filer.Delete(ctx, LockFileName)
 	if err != nil {

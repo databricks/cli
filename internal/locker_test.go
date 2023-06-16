@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/libs/filer"
 	lockpkg "github.com/databricks/cli/libs/locker"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
@@ -126,6 +127,7 @@ func TestAccLock(t *testing.T) {
 	// read active locker file
 	r, err := lockers[indexOfActiveLocker].Read(ctx, "foo.json")
 	require.NoError(t, err)
+	defer r.Close()
 	b, err := io.ReadAll(r)
 	require.NoError(t, err)
 
@@ -158,4 +160,68 @@ func TestAccLock(t *testing.T) {
 	err = lockers[indexOfAnInactiveLocker].Lock(ctx, false)
 	assert.NoError(t, err)
 	assert.True(t, lockers[indexOfAnInactiveLocker].Active)
+}
+
+func setupLockerTest(ctx context.Context, t *testing.T) (*lockpkg.Locker, filer.Filer) {
+	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+
+	w, err := databricks.NewWorkspaceClient()
+	require.NoError(t, err)
+
+	// create temp wsfs dir
+	tmpDir := temporaryWorkspaceDir(t, w)
+	f, err := filer.NewWorkspaceFilesClient(w, tmpDir)
+	require.NoError(t, err)
+
+	// create locker
+	locker, err := lockpkg.CreateLocker("redfoo@databricks.com", tmpDir, w)
+	require.NoError(t, err)
+
+	return locker, f
+}
+
+func TestAccLockUnlockWithoutAllowsLockFileNotExist(t *testing.T) {
+	ctx := context.Background()
+	locker, f := setupLockerTest(ctx, t)
+	var err error
+
+	// Acquire lock on tmp directory
+	err = locker.Lock(ctx, false)
+	require.NoError(t, err)
+
+	// Assert lock file is created
+	_, err = f.Stat(ctx, "deploy.lock")
+	assert.NoError(t, err)
+
+	// Manually delete lock file
+	err = f.Delete(ctx, "deploy.lock")
+	assert.NoError(t, err)
+
+	// Assert error, because lock file does not exist
+	err = locker.Unlock(ctx, false)
+	assert.ErrorIs(t, err, fs.ErrNotExist)
+}
+
+func TestAccLockUnlockWithAllowsLockFileNotExist(t *testing.T) {
+	ctx := context.Background()
+	locker, f := setupLockerTest(ctx, t)
+	var err error
+
+	// Acquire lock on tmp directory
+	err = locker.Lock(ctx, false)
+	require.NoError(t, err)
+	assert.True(t, locker.Active)
+
+	// Assert lock file is created
+	_, err = f.Stat(ctx, "deploy.lock")
+	assert.NoError(t, err)
+
+	// Manually delete lock file
+	err = f.Delete(ctx, "deploy.lock")
+	assert.NoError(t, err)
+
+	// Assert error, because lock file does not exist
+	err = locker.Unlock(ctx, true)
+	assert.NoError(t, err)
+	assert.False(t, locker.Active)
 }

@@ -108,6 +108,7 @@ func (d *Deployer) LoadTerraformState(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	defer r.Close()
 	err = os.MkdirAll(d.DefaultTerraformRoot(), os.ModeDir)
 	if err != nil {
 		return err
