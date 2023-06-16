@@ -79,6 +79,9 @@ var approveTransitionRequestCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start create-comment command
@@ -131,6 +134,9 @@ var createCommentCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start create-model command
@@ -185,6 +191,9 @@ var createModelCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start create-model-version command
@@ -239,6 +248,9 @@ var createModelVersionCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start create-transition-request command
@@ -294,6 +306,9 @@ var createTransitionRequestCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start create-webhook command
@@ -346,6 +361,9 @@ var createWebhookCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start delete-comment command
@@ -394,6 +412,9 @@ var deleteCommentCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start delete-model command
@@ -442,6 +463,9 @@ var deleteModelCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start delete-model-tag command
@@ -491,6 +515,9 @@ var deleteModelTagCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start delete-model-version command
@@ -540,6 +567,9 @@ var deleteModelVersionCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start delete-model-version-tag command
@@ -590,6 +620,9 @@ var deleteModelVersionTagCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start delete-transition-request command
@@ -646,6 +679,9 @@ var deleteTransitionRequestCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start delete-webhook command
@@ -697,6 +733,9 @@ var deleteWebhookCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start get-latest-versions command
@@ -747,6 +786,9 @@ var getLatestVersionsCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start get-model command
@@ -799,6 +841,9 @@ var getModelCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start get-model-version command
@@ -848,6 +893,9 @@ var getModelVersionCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start get-model-version-download-uri command
@@ -897,6 +945,9 @@ var getModelVersionDownloadUriCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start list-models command
@@ -948,6 +999,9 @@ var listModelsCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start list-transition-requests command
@@ -997,6 +1051,9 @@ var listTransitionRequestsCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start list-webhooks command
@@ -1050,6 +1107,9 @@ var listWebhooksCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start reject-transition-request command
@@ -1105,6 +1165,9 @@ var rejectTransitionRequestCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start rename-model command
@@ -1155,6 +1218,9 @@ var renameModelCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start search-model-versions command
@@ -1207,6 +1273,9 @@ var searchModelVersionsCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start search-models command
@@ -1259,6 +1328,9 @@ var searchModelsCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start set-model-tag command
@@ -1309,6 +1381,9 @@ var setModelTagCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start set-model-version-tag command
@@ -1360,6 +1435,9 @@ var setModelVersionTagCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start test-registry-webhook command
@@ -1412,6 +1490,9 @@ var testRegistryWebhookCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start transition-stage command
@@ -1475,6 +1556,9 @@ var transitionStageCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start update-comment command
@@ -1524,6 +1608,9 @@ var updateCommentCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start update-model command
@@ -1574,6 +1661,9 @@ var updateModelCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start update-model-version command
@@ -1625,6 +1715,9 @@ var updateModelVersionCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start update-webhook command
@@ -1681,6 +1774,9 @@ var updateWebhookCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // end service ModelRegistry

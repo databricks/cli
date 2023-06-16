@@ -66,6 +66,9 @@ var readPersonalComputeSettingCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // end service AccountSettings
