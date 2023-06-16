@@ -38,21 +38,14 @@ func init() {
 }
 
 var createCmd = &cobra.Command{
-	Use:   "create BUDGET",
+	Use:   "create",
 	Short: `Create a new budget.`,
 	Long: `Create a new budget.
   
   Creates a new budget in the specified account.`,
 
 	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
-		return check(cmd, args)
-	},
-	PreRunE: root.MustAccountClient,
+	PreRunE:     root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
@@ -62,10 +55,7 @@ var createCmd = &cobra.Command{
 				return err
 			}
 		} else {
-			_, err = fmt.Sscan(args[0], &createReq.Budget)
-			if err != nil {
-				return fmt.Errorf("invalid BUDGET: %s", args[0])
-			}
+			return fmt.Errorf("provide command input in JSON format by specifying --json option")
 		}
 
 		response, err := a.Budgets.Create(ctx, createReq)
@@ -218,7 +208,6 @@ var listCmd = &cobra.Command{
   for each day that the budget is configured to include.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(0),
 	PreRunE:     root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -247,7 +236,7 @@ func init() {
 }
 
 var updateCmd = &cobra.Command{
-	Use:   "update BUDGET BUDGET_ID",
+	Use:   "update",
 	Short: `Modify budget.`,
 	Long: `Modify budget.
   
@@ -255,14 +244,7 @@ var updateCmd = &cobra.Command{
   overwritten.`,
 
 	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(2)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
-		return check(cmd, args)
-	},
-	PreRunE: root.MustAccountClient,
+	PreRunE:     root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
@@ -272,11 +254,7 @@ var updateCmd = &cobra.Command{
 				return err
 			}
 		} else {
-			_, err = fmt.Sscan(args[0], &updateReq.Budget)
-			if err != nil {
-				return fmt.Errorf("invalid BUDGET: %s", args[0])
-			}
-			updateReq.BudgetId = args[1]
+			return fmt.Errorf("provide command input in JSON format by specifying --json option")
 		}
 
 		err = a.Budgets.Update(ctx, updateReq)

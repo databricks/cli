@@ -41,7 +41,7 @@ func init() {
 }
 
 var createCmd = &cobra.Command{
-	Use:   "create NAME OPTIONS QUERY_ID",
+	Use:   "create",
 	Short: `Create an alert.`,
 	Long: `Create an alert.
   
@@ -50,14 +50,7 @@ var createCmd = &cobra.Command{
   destinations if the condition was met.`,
 
 	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(3)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
-		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -67,12 +60,7 @@ var createCmd = &cobra.Command{
 				return err
 			}
 		} else {
-			createReq.Name = args[0]
-			_, err = fmt.Sscan(args[1], &createReq.Options)
-			if err != nil {
-				return fmt.Errorf("invalid OPTIONS: %s", args[1])
-			}
-			createReq.QueryId = args[2]
+			return fmt.Errorf("provide command input in JSON format by specifying --json option")
 		}
 
 		response, err := w.Alerts.Create(ctx, createReq)
@@ -225,7 +213,6 @@ var listCmd = &cobra.Command{
   Gets a list of alerts.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(0),
 	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -256,21 +243,14 @@ func init() {
 }
 
 var updateCmd = &cobra.Command{
-	Use:   "update NAME OPTIONS QUERY_ID ALERT_ID",
+	Use:   "update",
 	Short: `Update an alert.`,
 	Long: `Update an alert.
   
   Updates an alert.`,
 
 	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(4)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
-		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -280,13 +260,7 @@ var updateCmd = &cobra.Command{
 				return err
 			}
 		} else {
-			updateReq.Name = args[0]
-			_, err = fmt.Sscan(args[1], &updateReq.Options)
-			if err != nil {
-				return fmt.Errorf("invalid OPTIONS: %s", args[1])
-			}
-			updateReq.QueryId = args[2]
-			updateReq.AlertId = args[3]
+			return fmt.Errorf("provide command input in JSON format by specifying --json option")
 		}
 
 		err = w.Alerts.Update(ctx, updateReq)

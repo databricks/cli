@@ -43,7 +43,7 @@ func init() {
 }
 
 var createCmd = &cobra.Command{
-	Use:   "create NAME REDIRECT_URLS",
+	Use:   "create",
 	Short: `Create Custom OAuth App Integration.`,
 	Long: `Create Custom OAuth App Integration.
   
@@ -53,14 +53,7 @@ var createCmd = &cobra.Command{
   :method:CustomAppIntegration/get.`,
 
 	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(2)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
-		return check(cmd, args)
-	},
-	PreRunE: root.MustAccountClient,
+	PreRunE:     root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
@@ -70,11 +63,7 @@ var createCmd = &cobra.Command{
 				return err
 			}
 		} else {
-			createReq.Name = args[0]
-			_, err = fmt.Sscan(args[1], &createReq.RedirectUrls)
-			if err != nil {
-				return fmt.Errorf("invalid REDIRECT_URLS: %s", args[1])
-			}
+			return fmt.Errorf("provide command input in JSON format by specifying --json option")
 		}
 
 		response, err := a.CustomAppIntegration.Create(ctx, createReq)
@@ -207,7 +196,6 @@ var listCmd = &cobra.Command{
   account`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(0),
 	PreRunE:     root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()

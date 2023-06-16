@@ -53,8 +53,14 @@ var createCmd = &cobra.Command{
   status via API :method:OAuthEnrollment/get.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(0),
-	PreRunE:     root.MustAccountClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(0)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
@@ -95,7 +101,6 @@ var getCmd = &cobra.Command{
   OAuth enrollment status is enabled.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(0),
 	PreRunE:     root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()

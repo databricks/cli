@@ -45,7 +45,7 @@ func init() {
 }
 
 var createCmd = &cobra.Command{
-	Use:   "create NAME CATALOG_NAME SCHEMA_NAME INPUT_PARAMS DATA_TYPE FULL_DATA_TYPE RETURN_PARAMS ROUTINE_BODY ROUTINE_DEFINITION ROUTINE_DEPENDENCIES PARAMETER_STYLE IS_DETERMINISTIC SQL_DATA_ACCESS IS_NULL_CALL SECURITY_TYPE SPECIFIC_NAME",
+	Use:   "create",
 	Short: `Create a function.`,
 	Long: `Create a function.
   
@@ -56,14 +56,7 @@ var createCmd = &cobra.Command{
   and **CREATE_FUNCTION** on the function's parent schema`,
 
 	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(16)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
-		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -73,52 +66,7 @@ var createCmd = &cobra.Command{
 				return err
 			}
 		} else {
-			createReq.Name = args[0]
-			createReq.CatalogName = args[1]
-			createReq.SchemaName = args[2]
-			_, err = fmt.Sscan(args[3], &createReq.InputParams)
-			if err != nil {
-				return fmt.Errorf("invalid INPUT_PARAMS: %s", args[3])
-			}
-			_, err = fmt.Sscan(args[4], &createReq.DataType)
-			if err != nil {
-				return fmt.Errorf("invalid DATA_TYPE: %s", args[4])
-			}
-			createReq.FullDataType = args[5]
-			_, err = fmt.Sscan(args[6], &createReq.ReturnParams)
-			if err != nil {
-				return fmt.Errorf("invalid RETURN_PARAMS: %s", args[6])
-			}
-			_, err = fmt.Sscan(args[7], &createReq.RoutineBody)
-			if err != nil {
-				return fmt.Errorf("invalid ROUTINE_BODY: %s", args[7])
-			}
-			createReq.RoutineDefinition = args[8]
-			_, err = fmt.Sscan(args[9], &createReq.RoutineDependencies)
-			if err != nil {
-				return fmt.Errorf("invalid ROUTINE_DEPENDENCIES: %s", args[9])
-			}
-			_, err = fmt.Sscan(args[10], &createReq.ParameterStyle)
-			if err != nil {
-				return fmt.Errorf("invalid PARAMETER_STYLE: %s", args[10])
-			}
-			_, err = fmt.Sscan(args[11], &createReq.IsDeterministic)
-			if err != nil {
-				return fmt.Errorf("invalid IS_DETERMINISTIC: %s", args[11])
-			}
-			_, err = fmt.Sscan(args[12], &createReq.SqlDataAccess)
-			if err != nil {
-				return fmt.Errorf("invalid SQL_DATA_ACCESS: %s", args[12])
-			}
-			_, err = fmt.Sscan(args[13], &createReq.IsNullCall)
-			if err != nil {
-				return fmt.Errorf("invalid IS_NULL_CALL: %s", args[13])
-			}
-			_, err = fmt.Sscan(args[14], &createReq.SecurityType)
-			if err != nil {
-				return fmt.Errorf("invalid SECURITY_TYPE: %s", args[14])
-			}
-			createReq.SpecificName = args[15]
+			return fmt.Errorf("provide command input in JSON format by specifying --json option")
 		}
 
 		response, err := w.Functions.Create(ctx, createReq)

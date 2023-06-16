@@ -55,7 +55,7 @@ func init() {
 }
 
 var createCmd = &cobra.Command{
-	Use:   "create LABEL LIST_TYPE IP_ADDRESSES",
+	Use:   "create",
 	Short: `Create access list.`,
 	Long: `Create access list.
   
@@ -75,14 +75,7 @@ var createCmd = &cobra.Command{
   It can take a few minutes for the changes to take effect.`,
 
 	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(3)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
-		return check(cmd, args)
-	},
-	PreRunE: root.MustAccountClient,
+	PreRunE:     root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
@@ -92,15 +85,7 @@ var createCmd = &cobra.Command{
 				return err
 			}
 		} else {
-			createReq.Label = args[0]
-			_, err = fmt.Sscan(args[1], &createReq.ListType)
-			if err != nil {
-				return fmt.Errorf("invalid LIST_TYPE: %s", args[1])
-			}
-			_, err = fmt.Sscan(args[2], &createReq.IpAddresses)
-			if err != nil {
-				return fmt.Errorf("invalid IP_ADDRESSES: %s", args[2])
-			}
+			return fmt.Errorf("provide command input in JSON format by specifying --json option")
 		}
 
 		response, err := a.IpAccessLists.Create(ctx, createReq)
@@ -251,7 +236,6 @@ var listCmd = &cobra.Command{
   Gets all IP access lists for the specified account.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(0),
 	PreRunE:     root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -282,7 +266,7 @@ func init() {
 }
 
 var replaceCmd = &cobra.Command{
-	Use:   "replace LABEL LIST_TYPE IP_ADDRESSES ENABLED IP_ACCESS_LIST_ID",
+	Use:   "replace",
 	Short: `Replace access list.`,
 	Long: `Replace access list.
   
@@ -298,14 +282,7 @@ var replaceCmd = &cobra.Command{
   INVALID_STATE. It can take a few minutes for the changes to take effect.`,
 
 	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(5)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
-		return check(cmd, args)
-	},
-	PreRunE: root.MustAccountClient,
+	PreRunE:     root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
@@ -315,20 +292,7 @@ var replaceCmd = &cobra.Command{
 				return err
 			}
 		} else {
-			replaceReq.Label = args[0]
-			_, err = fmt.Sscan(args[1], &replaceReq.ListType)
-			if err != nil {
-				return fmt.Errorf("invalid LIST_TYPE: %s", args[1])
-			}
-			_, err = fmt.Sscan(args[2], &replaceReq.IpAddresses)
-			if err != nil {
-				return fmt.Errorf("invalid IP_ADDRESSES: %s", args[2])
-			}
-			_, err = fmt.Sscan(args[3], &replaceReq.Enabled)
-			if err != nil {
-				return fmt.Errorf("invalid ENABLED: %s", args[3])
-			}
-			replaceReq.IpAccessListId = args[4]
+			return fmt.Errorf("provide command input in JSON format by specifying --json option")
 		}
 
 		err = a.IpAccessLists.Replace(ctx, replaceReq)
@@ -357,7 +321,7 @@ func init() {
 }
 
 var updateCmd = &cobra.Command{
-	Use:   "update LABEL LIST_TYPE IP_ADDRESSES ENABLED IP_ACCESS_LIST_ID",
+	Use:   "update",
 	Short: `Update access list.`,
 	Long: `Update access list.
   
@@ -377,14 +341,7 @@ var updateCmd = &cobra.Command{
   It can take a few minutes for the changes to take effect.`,
 
 	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(5)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
-		return check(cmd, args)
-	},
-	PreRunE: root.MustAccountClient,
+	PreRunE:     root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
@@ -394,20 +351,7 @@ var updateCmd = &cobra.Command{
 				return err
 			}
 		} else {
-			updateReq.Label = args[0]
-			_, err = fmt.Sscan(args[1], &updateReq.ListType)
-			if err != nil {
-				return fmt.Errorf("invalid LIST_TYPE: %s", args[1])
-			}
-			_, err = fmt.Sscan(args[2], &updateReq.IpAddresses)
-			if err != nil {
-				return fmt.Errorf("invalid IP_ADDRESSES: %s", args[2])
-			}
-			_, err = fmt.Sscan(args[3], &updateReq.Enabled)
-			if err != nil {
-				return fmt.Errorf("invalid ENABLED: %s", args[3])
-			}
-			updateReq.IpAccessListId = args[4]
+			return fmt.Errorf("provide command input in JSON format by specifying --json option")
 		}
 
 		err = a.IpAccessLists.Update(ctx, updateReq)

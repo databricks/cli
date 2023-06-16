@@ -52,7 +52,7 @@ func init() {
 }
 
 var createCmd = &cobra.Command{
-	Use:   "create NAME CONNECTION_TYPE OPTIONS_KVPAIRS",
+	Use:   "create",
 	Short: `Create a connection.`,
 	Long: `Create a connection.
   
@@ -63,14 +63,7 @@ var createCmd = &cobra.Command{
   external server.`,
 
 	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(3)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
-		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -80,15 +73,7 @@ var createCmd = &cobra.Command{
 				return err
 			}
 		} else {
-			createReq.Name = args[0]
-			_, err = fmt.Sscan(args[1], &createReq.ConnectionType)
-			if err != nil {
-				return fmt.Errorf("invalid CONNECTION_TYPE: %s", args[1])
-			}
-			_, err = fmt.Sscan(args[2], &createReq.OptionsKvpairs)
-			if err != nil {
-				return fmt.Errorf("invalid OPTIONS_KVPAIRS: %s", args[2])
-			}
+			return fmt.Errorf("provide command input in JSON format by specifying --json option")
 		}
 
 		response, err := w.Connections.Create(ctx, createReq)
@@ -239,7 +224,6 @@ var listCmd = &cobra.Command{
   List all connections.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(0),
 	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -268,21 +252,14 @@ func init() {
 }
 
 var updateCmd = &cobra.Command{
-	Use:   "update NAME OPTIONS_KVPAIRS NAME_ARG",
+	Use:   "update",
 	Short: `Update a connection.`,
 	Long: `Update a connection.
   
   Updates the connection that matches the supplied name.`,
 
 	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(3)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
-		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -292,12 +269,7 @@ var updateCmd = &cobra.Command{
 				return err
 			}
 		} else {
-			updateReq.Name = args[0]
-			_, err = fmt.Sscan(args[1], &updateReq.OptionsKvpairs)
-			if err != nil {
-				return fmt.Errorf("invalid OPTIONS_KVPAIRS: %s", args[1])
-			}
-			updateReq.NameArg = args[2]
+			return fmt.Errorf("provide command input in JSON format by specifying --json option")
 		}
 
 		response, err := w.Connections.Update(ctx, updateReq)

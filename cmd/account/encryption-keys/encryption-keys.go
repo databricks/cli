@@ -52,7 +52,7 @@ func init() {
 }
 
 var createCmd = &cobra.Command{
-	Use:   "create USE_CASES",
+	Use:   "create",
 	Short: `Create encryption key configuration.`,
 	Long: `Create encryption key configuration.
   
@@ -75,14 +75,7 @@ var createCmd = &cobra.Command{
   account.`,
 
 	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
-		return check(cmd, args)
-	},
-	PreRunE: root.MustAccountClient,
+	PreRunE:     root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
@@ -92,10 +85,7 @@ var createCmd = &cobra.Command{
 				return err
 			}
 		} else {
-			_, err = fmt.Sscan(args[0], &createReq.UseCases)
-			if err != nil {
-				return fmt.Errorf("invalid USE_CASES: %s", args[0])
-			}
+			return fmt.Errorf("provide command input in JSON format by specifying --json option")
 		}
 
 		response, err := a.EncryptionKeys.Create(ctx, createReq)
@@ -253,7 +243,6 @@ var listCmd = &cobra.Command{
   platform.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(0),
 	PreRunE:     root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()

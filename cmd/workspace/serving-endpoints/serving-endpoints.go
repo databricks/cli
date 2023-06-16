@@ -105,19 +105,12 @@ func init() {
 }
 
 var createCmd = &cobra.Command{
-	Use:   "create NAME CONFIG",
+	Use:   "create",
 	Short: `Create a new serving endpoint.`,
 	Long:  `Create a new serving endpoint.`,
 
 	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(2)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
-		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -127,11 +120,7 @@ var createCmd = &cobra.Command{
 				return err
 			}
 		} else {
-			createReq.Name = args[0]
-			_, err = fmt.Sscan(args[1], &createReq.Config)
-			if err != nil {
-				return fmt.Errorf("invalid CONFIG: %s", args[1])
-			}
+			return fmt.Errorf("provide command input in JSON format by specifying --json option")
 		}
 
 		wait, err := w.ServingEndpoints.Create(ctx, createReq)
@@ -324,7 +313,6 @@ var listCmd = &cobra.Command{
 	Long:  `Retrieve all serving endpoints.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(0),
 	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -462,7 +450,7 @@ func init() {
 }
 
 var updateConfigCmd = &cobra.Command{
-	Use:   "update-config SERVED_MODELS NAME",
+	Use:   "update-config",
 	Short: `Update a serving endpoint with a new config.`,
 	Long: `Update a serving endpoint with a new config.
   
@@ -472,14 +460,7 @@ var updateConfigCmd = &cobra.Command{
   current update completes or fails.`,
 
 	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(2)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
-		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -489,11 +470,7 @@ var updateConfigCmd = &cobra.Command{
 				return err
 			}
 		} else {
-			_, err = fmt.Sscan(args[0], &updateConfigReq.ServedModels)
-			if err != nil {
-				return fmt.Errorf("invalid SERVED_MODELS: %s", args[0])
-			}
-			updateConfigReq.Name = args[1]
+			return fmt.Errorf("provide command input in JSON format by specifying --json option")
 		}
 
 		wait, err := w.ServingEndpoints.UpdateConfig(ctx, updateConfigReq)

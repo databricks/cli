@@ -46,7 +46,7 @@ func init() {
 }
 
 var createCmd = &cobra.Command{
-	Use:   "create FULL_NAME_ARG CONSTRAINT",
+	Use:   "create",
 	Short: `Create a table constraint.`,
 	Long: `Create a table constraint.
   
@@ -62,14 +62,7 @@ var createCmd = &cobra.Command{
   table.`,
 
 	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(2)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
-		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -79,11 +72,7 @@ var createCmd = &cobra.Command{
 				return err
 			}
 		} else {
-			createReq.FullNameArg = args[0]
-			_, err = fmt.Sscan(args[1], &createReq.Constraint)
-			if err != nil {
-				return fmt.Errorf("invalid CONSTRAINT: %s", args[1])
-			}
+			return fmt.Errorf("provide command input in JSON format by specifying --json option")
 		}
 
 		response, err := w.TableConstraints.Create(ctx, createReq)

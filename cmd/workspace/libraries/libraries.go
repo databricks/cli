@@ -57,7 +57,6 @@ var allClusterStatusesCmd = &cobra.Command{
   well as libraries set to be installed on all clusters via the libraries UI.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(0),
 	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -151,7 +150,7 @@ func init() {
 }
 
 var installCmd = &cobra.Command{
-	Use:   "install CLUSTER_ID LIBRARIES",
+	Use:   "install",
 	Short: `Add a library.`,
 	Long: `Add a library.
   
@@ -163,14 +162,7 @@ var installCmd = &cobra.Command{
   installed on all clusters via the libraries UI.`,
 
 	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(2)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
-		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -180,11 +172,7 @@ var installCmd = &cobra.Command{
 				return err
 			}
 		} else {
-			installReq.ClusterId = args[0]
-			_, err = fmt.Sscan(args[1], &installReq.Libraries)
-			if err != nil {
-				return fmt.Errorf("invalid LIBRARIES: %s", args[1])
-			}
+			return fmt.Errorf("provide command input in JSON format by specifying --json option")
 		}
 
 		err = w.Libraries.Install(ctx, installReq)
@@ -211,7 +199,7 @@ func init() {
 }
 
 var uninstallCmd = &cobra.Command{
-	Use:   "uninstall CLUSTER_ID LIBRARIES",
+	Use:   "uninstall",
 	Short: `Uninstall libraries.`,
 	Long: `Uninstall libraries.
   
@@ -220,14 +208,7 @@ var uninstallCmd = &cobra.Command{
   not installed on the cluster will have no impact but is not an error.`,
 
 	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(2)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
-		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
+	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -237,11 +218,7 @@ var uninstallCmd = &cobra.Command{
 				return err
 			}
 		} else {
-			uninstallReq.ClusterId = args[0]
-			_, err = fmt.Sscan(args[1], &uninstallReq.Libraries)
-			if err != nil {
-				return fmt.Errorf("invalid LIBRARIES: %s", args[1])
-			}
+			return fmt.Errorf("provide command input in JSON format by specifying --json option")
 		}
 
 		err = w.Libraries.Uninstall(ctx, uninstallReq)
