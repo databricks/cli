@@ -7,10 +7,12 @@ import (
 	"github.com/databricks/cli/libs/log"
 )
 
-type release struct{}
+type release struct {
+	allowLockFileNotExist bool
+}
 
-func Release() bundle.Mutator {
-	return &release{}
+func Release(allowLockFileNotExist bool) bundle.Mutator {
+	return &release{allowLockFileNotExist}
 }
 
 func (m *release) Name() string {
@@ -32,7 +34,7 @@ func (m *release) Apply(ctx context.Context, b *bundle.Bundle) error {
 	}
 
 	log.Infof(ctx, "Releasing deployment lock")
-	err := b.Locker.Unlock(ctx)
+	err := b.Locker.Unlock(ctx, m.allowLockFileNotExist)
 	if err != nil {
 		log.Errorf(ctx, "Failed to release deployment lock: %v", err)
 		return err
