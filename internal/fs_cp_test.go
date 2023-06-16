@@ -278,7 +278,7 @@ func TestAccFsCpErrorsWhenSourceIsDirWithoutRecursiveFlag(t *testing.T) {
 
 	tmpDir := temporaryDbfsDir(t, w)
 
-	_, _, err = RequireErrorRun(t, "fs", "cp", "dbfs:"+tmpDir, "file:/a")
+	_, _, err = RequireErrorRun(t, "fs", "cp", "dbfs:"+tmpDir, "dbfs:/tmp")
 	assert.Equal(t, fmt.Sprintf("source path %s is a directory. Please specify the --recursive flag", strings.TrimPrefix(tmpDir, "/")), err.Error())
 }
 
