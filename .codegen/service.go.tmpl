@@ -143,7 +143,7 @@ var {{.CamelName}}Cmd = &cobra.Command{
 					{{$method.CamelName}}Req.{{$field.PascalName}} = args[{{$arg}}]
 					{{- end -}}{{end}}
 			{{- else -}}
-				return fmt.Errorf("provide command input in JSON format by specifying --json option")
+				return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 			{{- end -}}
 			}
 		{{end}}
