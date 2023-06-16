@@ -43,7 +43,7 @@ func createRemoteTestProject(t *testing.T, projectNamePrefix string, wsc *databr
 }
 
 func TestAccLock(t *testing.T) {
-	// t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 	ctx := context.TODO()
 	wsc, err := databricks.NewWorkspaceClient()
 	require.NoError(t, err)
