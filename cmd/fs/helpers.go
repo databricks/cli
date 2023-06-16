@@ -19,7 +19,6 @@ const (
 )
 
 func filerForPath(ctx context.Context, fullPath string) (filer.Filer, string, error) {
-	// TODO: address :/ better
 	parts := strings.SplitN(fullPath, ":/", 2)
 	if len(parts) < 2 {
 		return nil, "", fmt.Errorf(`no scheme specified for path %s. Please specify scheme "dbfs" or "file". Example: file:/foo/bar or file:/c:/foo/bar`, fullPath)
@@ -36,7 +35,6 @@ func filerForPath(ctx context.Context, fullPath string) (filer.Filer, string, er
 		if runtime.GOOS == "windows" {
 			parts := strings.SplitN(path, ":", 2)
 			if len(parts) < 2 {
-				// TODO: add test for this error
 				return nil, "", fmt.Errorf("no volume specfied for path: %s", path)
 			}
 			volume := parts[0] + ":"
