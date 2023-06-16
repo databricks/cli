@@ -14,7 +14,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func cpWriteCallback(ctx context.Context, sourceFiler, targetFiler filer.Filer, sourceDir, targetDir string) func(string, fs.DirEntry, error) error {
+func cpWriteCallback(ctx context.Context, sourceFiler, targetFiler filer.Filer, sourceDir, targetDir string) fs.WalkDirFunc {
 	return func(sourcePath string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
