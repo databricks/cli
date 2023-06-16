@@ -8,5 +8,5 @@ import (
 
 func TestAlertsCreateErrWhenNoArguments(t *testing.T) {
 	_, _, err := RequireErrorRun(t, "alerts", "create")
-	assert.Equal(t, "accepts 3 arg(s), received 0", err.Error())
+	assert.Equal(t, "provide command input in JSON format by specifying --json option", err.Error())
 }
