@@ -35,6 +35,9 @@ var Cmd = &cobra.Command{
   When you uninstall a library from a cluster, the library is removed only when
   you restart the cluster. Until you restart the cluster, the status of the
   uninstalled library appears as Uninstall pending restart.`,
+	Annotations: map[string]string{
+		"package": "compute",
+	},
 }
 
 // start all-cluster-statuses command
@@ -64,6 +67,9 @@ var allClusterStatusesCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start cluster-status command
@@ -126,6 +132,9 @@ var clusterStatusCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start install command
@@ -163,11 +172,7 @@ var installCmd = &cobra.Command{
 				return err
 			}
 		} else {
-			installReq.ClusterId = args[0]
-			_, err = fmt.Sscan(args[1], &installReq.Libraries)
-			if err != nil {
-				return fmt.Errorf("invalid LIBRARIES: %s", args[1])
-			}
+			return fmt.Errorf("provide command input in JSON format by specifying --json option")
 		}
 
 		err = w.Libraries.Install(ctx, installReq)
@@ -176,6 +181,9 @@ var installCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start uninstall command
@@ -210,11 +218,7 @@ var uninstallCmd = &cobra.Command{
 				return err
 			}
 		} else {
-			uninstallReq.ClusterId = args[0]
-			_, err = fmt.Sscan(args[1], &uninstallReq.Libraries)
-			if err != nil {
-				return fmt.Errorf("invalid LIBRARIES: %s", args[1])
-			}
+			return fmt.Errorf("provide command input in JSON format by specifying --json option")
 		}
 
 		err = w.Libraries.Uninstall(ctx, uninstallReq)
@@ -223,6 +227,9 @@ var uninstallCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // end service Libraries

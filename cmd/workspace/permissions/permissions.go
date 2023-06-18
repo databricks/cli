@@ -15,6 +15,9 @@ var Cmd = &cobra.Command{
 	Short: `Permissions API are used to create read, write, edit, update and manage access for various users on different objects and endpoints.`,
 	Long: `Permissions API are used to create read, write, edit, update and manage access
   for various users on different objects and endpoints.`,
+	Annotations: map[string]string{
+		"package": "iam",
+	},
 }
 
 // start get command
@@ -65,6 +68,9 @@ var getCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start get-permission-levels command
@@ -114,6 +120,9 @@ var getPermissionLevelsCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start set command
@@ -166,6 +175,9 @@ var setCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start update command
@@ -217,6 +229,9 @@ var updateCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // end service Permissions

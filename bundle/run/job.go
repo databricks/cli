@@ -12,7 +12,6 @@ import (
 	"github.com/databricks/cli/bundle/run/progress"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/fatih/color"
 	flag "github.com/spf13/pflag"
@@ -145,27 +144,17 @@ func (r *jobRunner) logFailedTasks(ctx context.Context, runId int64) {
 	}
 }
 
-func pullRunIdCallback(runId *int64) func(info *retries.Info[jobs.Run]) {
-	return func(info *retries.Info[jobs.Run]) {
-		i := info.Info
-		if i == nil {
-			return
-		}
-
+func pullRunIdCallback(runId *int64) func(info *jobs.Run) {
+	return func(i *jobs.Run) {
 		if *runId == 0 {
 			*runId = i.RunId
 		}
 	}
 }
 
-func logDebugCallback(ctx context.Context, runId *int64) func(info *retries.Info[jobs.Run]) {
+func logDebugCallback(ctx context.Context, runId *int64) func(info *jobs.Run) {
 	var prevState *jobs.RunState
-	return func(info *retries.Info[jobs.Run]) {
-		i := info.Info
-		if i == nil {
-			return
-		}
-
+	return func(i *jobs.Run) {
 		state := i.State
 		if state == nil {
 			return
@@ -173,23 +162,18 @@ func logDebugCallback(ctx context.Context, runId *int64) func(info *retries.Info
 
 		// Log the job run URL as soon as it is available.
 		if prevState == nil {
-			log.Infof(ctx, "Run available at %s", info.Info.RunPageUrl)
+			log.Infof(ctx, "Run available at %s", i.RunPageUrl)
 		}
 		if prevState == nil || prevState.LifeCycleState != state.LifeCycleState {
-			log.Infof(ctx, "Run status: %s", info.Info.State.LifeCycleState)
+			log.Infof(ctx, "Run status: %s", i.State.LifeCycleState)
 			prevState = state
 		}
 	}
 }
 
-func logProgressCallback(ctx context.Context, progressLogger *cmdio.Logger) func(info *retries.Info[jobs.Run]) {
+func logProgressCallback(ctx context.Context, progressLogger *cmdio.Logger) func(info *jobs.Run) {
 	var prevState *jobs.RunState
-	return func(info *retries.Info[jobs.Run]) {
-		i := info.Info
-		if i == nil {
-			return
-		}
-
+	return func(i *jobs.Run) {
 		state := i.State
 		if state == nil {
 			return
@@ -255,8 +239,15 @@ func (r *jobRunner) Run(ctx context.Context, opts *Options) (output.RunOutput, e
 	}
 	logProgress := logProgressCallback(ctx, progressLogger)
 
-	run, err := w.Jobs.RunNowAndWait(ctx, *req,
-		retries.Timeout[jobs.Run](jobRunTimeout), pullRunId, logDebug, logProgress)
+	waiter, err := w.Jobs.RunNow(ctx, *req)
+	if err != nil {
+		return nil, fmt.Errorf("cannot start job")
+	}
+	run, err := waiter.OnProgress(func(r *jobs.Run) {
+		pullRunId(r)
+		logDebug(r)
+		logProgress(r)
+	}).GetWithTimeout(jobRunTimeout)
 	if err != nil && runId != nil {
 		r.logFailedTasks(ctx, *runId)
 	}

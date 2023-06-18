@@ -24,6 +24,9 @@ var Cmd = &cobra.Command{
   
   A table can be managed or external. From an API perspective, a __VIEW__ is a
   particular kind of table (rather than a managed or external table).`,
+	Annotations: map[string]string{
+		"package": "catalog",
+	},
 }
 
 // start delete command
@@ -66,7 +69,7 @@ var deleteCmd = &cobra.Command{
 				names, err := w.Tables.TableInfoNameToTableIdMap(ctx, catalog.ListTablesRequest{})
 				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Tables drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "Full name of the table")
 				if err != nil {
@@ -86,6 +89,9 @@ var deleteCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start get command
@@ -130,7 +136,7 @@ var getCmd = &cobra.Command{
 				names, err := w.Tables.TableInfoNameToTableIdMap(ctx, catalog.ListTablesRequest{})
 				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Tables drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "Full name of the table")
 				if err != nil {
@@ -150,6 +156,9 @@ var getCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start list command
@@ -208,6 +217,9 @@ var listCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start list-summaries command
@@ -261,7 +273,7 @@ var listSummariesCmd = &cobra.Command{
 				names, err := w.Tables.TableInfoNameToTableIdMap(ctx, catalog.ListTablesRequest{})
 				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Tables drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "Name of parent catalog for tables of interest")
 				if err != nil {
@@ -281,6 +293,9 @@ var listSummariesCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // end service Tables

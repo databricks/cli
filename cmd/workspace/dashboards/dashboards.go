@@ -21,6 +21,9 @@ var Cmd = &cobra.Command{
   since you can get a dashboard definition with a GET request and then POST it
   to create a new one. Dashboards can be scheduled using the sql_task type of
   the Jobs API, e.g. :method:jobs/create.`,
+	Annotations: map[string]string{
+		"package": "sql",
+	},
 }
 
 // start create command
@@ -71,6 +74,9 @@ var createCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start delete command
@@ -110,7 +116,7 @@ var deleteCmd = &cobra.Command{
 				names, err := w.Dashboards.DashboardNameToIdMap(ctx, sql.ListDashboardsRequest{})
 				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Dashboards drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "")
 				if err != nil {
@@ -130,6 +136,9 @@ var deleteCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start get command
@@ -169,7 +178,7 @@ var getCmd = &cobra.Command{
 				names, err := w.Dashboards.DashboardNameToIdMap(ctx, sql.ListDashboardsRequest{})
 				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Dashboards drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "")
 				if err != nil {
@@ -189,6 +198,9 @@ var getCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start list command
@@ -241,6 +253,9 @@ var listCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start restore command
@@ -279,7 +294,7 @@ var restoreCmd = &cobra.Command{
 				names, err := w.Dashboards.DashboardNameToIdMap(ctx, sql.ListDashboardsRequest{})
 				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Dashboards drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "")
 				if err != nil {
@@ -299,6 +314,9 @@ var restoreCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // end service Dashboards

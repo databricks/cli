@@ -25,6 +25,9 @@ var Cmd = &cobra.Command{
   Within Repos you can develop code in notebooks or other files and follow data
   science and engineering code development best practices using Git for version
   control, collaboration, and CI/CD.`,
+	Annotations: map[string]string{
+		"package": "workspace",
+	},
 }
 
 // start create command
@@ -79,6 +82,9 @@ var createCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start delete command
@@ -117,7 +123,7 @@ var deleteCmd = &cobra.Command{
 				names, err := w.Repos.RepoInfoPathToIdMap(ctx, workspace.ListReposRequest{})
 				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Repos drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "The ID for the corresponding repo to access")
 				if err != nil {
@@ -140,6 +146,9 @@ var deleteCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start get command
@@ -178,7 +187,7 @@ var getCmd = &cobra.Command{
 				names, err := w.Repos.RepoInfoPathToIdMap(ctx, workspace.ListReposRequest{})
 				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Repos drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "The ID for the corresponding repo to access")
 				if err != nil {
@@ -201,6 +210,9 @@ var getCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start list command
@@ -252,6 +264,9 @@ var listCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start update command
@@ -295,7 +310,7 @@ var updateCmd = &cobra.Command{
 				names, err := w.Repos.RepoInfoPathToIdMap(ctx, workspace.ListReposRequest{})
 				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Repos drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "The ID for the corresponding repo to access")
 				if err != nil {
@@ -318,6 +333,9 @@ var updateCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // end service Repos

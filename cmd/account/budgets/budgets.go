@@ -17,6 +17,12 @@ var Cmd = &cobra.Command{
 	Short: `These APIs manage budget configuration including notifications for exceeding a budget for a period.`,
 	Long: `These APIs manage budget configuration including notifications for exceeding a
   budget for a period. They can also retrieve the status of each budget.`,
+	Annotations: map[string]string{
+		"package": "billing",
+	},
+
+	// This service is being previewed; hide from help output.
+	Hidden: true,
 }
 
 // start create command
@@ -49,10 +55,7 @@ var createCmd = &cobra.Command{
 				return err
 			}
 		} else {
-			_, err = fmt.Sscan(args[0], &createReq.Budget)
-			if err != nil {
-				return fmt.Errorf("invalid BUDGET: %s", args[0])
-			}
+			return fmt.Errorf("provide command input in JSON format by specifying --json option")
 		}
 
 		response, err := a.Budgets.Create(ctx, createReq)
@@ -61,6 +64,9 @@ var createCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start delete command
@@ -99,7 +105,7 @@ var deleteCmd = &cobra.Command{
 				names, err := a.Budgets.BudgetWithStatusNameToBudgetIdMap(ctx)
 				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Budgets drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "Budget ID")
 				if err != nil {
@@ -119,6 +125,9 @@ var deleteCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start get command
@@ -158,7 +167,7 @@ var getCmd = &cobra.Command{
 				names, err := a.Budgets.BudgetWithStatusNameToBudgetIdMap(ctx)
 				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Budgets drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "Budget ID")
 				if err != nil {
@@ -178,6 +187,9 @@ var getCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start list command
@@ -206,6 +218,9 @@ var listCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start update command
@@ -239,11 +254,7 @@ var updateCmd = &cobra.Command{
 				return err
 			}
 		} else {
-			_, err = fmt.Sscan(args[0], &updateReq.Budget)
-			if err != nil {
-				return fmt.Errorf("invalid BUDGET: %s", args[0])
-			}
-			updateReq.BudgetId = args[1]
+			return fmt.Errorf("provide command input in JSON format by specifying --json option")
 		}
 
 		err = a.Budgets.Update(ctx, updateReq)
@@ -252,6 +263,9 @@ var updateCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // end service Budgets

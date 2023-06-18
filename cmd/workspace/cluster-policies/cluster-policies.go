@@ -39,6 +39,9 @@ var Cmd = &cobra.Command{
   
   Only admin users can create, edit, and delete policies. Admin users also have
   access to all policies.`,
+	Annotations: map[string]string{
+		"package": "compute",
+	},
 }
 
 // start create command
@@ -67,7 +70,14 @@ var createCmd = &cobra.Command{
   Creates a new policy with prescribed settings.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -77,23 +87,6 @@ var createCmd = &cobra.Command{
 				return err
 			}
 		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No NAME argument specified. Loading names for Cluster Policies drop-down."
-				names, err := w.ClusterPolicies.PolicyNameToPolicyIdMap(ctx, compute.ListClusterPoliciesRequest{})
-				close(promptSpinner)
-				if err != nil {
-					return err
-				}
-				id, err := cmdio.Select(ctx, names, "Cluster Policy name requested by the user")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have cluster policy name requested by the user")
-			}
 			createReq.Name = args[0]
 		}
 
@@ -103,6 +96,9 @@ var createCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start delete command
@@ -142,7 +138,7 @@ var deleteCmd = &cobra.Command{
 				names, err := w.ClusterPolicies.PolicyNameToPolicyIdMap(ctx, compute.ListClusterPoliciesRequest{})
 				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Cluster Policies drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "The ID of the policy to delete")
 				if err != nil {
@@ -162,6 +158,9 @@ var deleteCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start edit command
@@ -218,6 +217,9 @@ var editCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start get command
@@ -256,7 +258,7 @@ var getCmd = &cobra.Command{
 				names, err := w.ClusterPolicies.PolicyNameToPolicyIdMap(ctx, compute.ListClusterPoliciesRequest{})
 				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Cluster Policies drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "Canonical unique identifier for the cluster policy")
 				if err != nil {
@@ -276,6 +278,9 @@ var getCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start list command
@@ -326,6 +331,9 @@ var listCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // end service ClusterPolicies

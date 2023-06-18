@@ -28,6 +28,9 @@ var Cmd = &cobra.Command{
   You can declare primary keys and foreign keys as part of the table
   specification during table creation. You can also add or drop constraints on
   existing tables.`,
+	Annotations: map[string]string{
+		"package": "catalog",
+	},
 }
 
 // start create command
@@ -69,11 +72,7 @@ var createCmd = &cobra.Command{
 				return err
 			}
 		} else {
-			createReq.FullNameArg = args[0]
-			_, err = fmt.Sscan(args[1], &createReq.Constraint)
-			if err != nil {
-				return fmt.Errorf("invalid CONSTRAINT: %s", args[1])
-			}
+			return fmt.Errorf("provide command input in JSON format by specifying --json option")
 		}
 
 		response, err := w.TableConstraints.Create(ctx, createReq)
@@ -82,6 +81,9 @@ var createCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start delete command
@@ -143,6 +145,9 @@ var deleteCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // end service TableConstraints

@@ -21,6 +21,9 @@ var Cmd = &cobra.Command{
   See [more info].
   
   [more info]: https://docs.databricks.com/repos/get-access-tokens-from-git-provider.html`,
+	Annotations: map[string]string{
+		"package": "workspace",
+	},
 }
 
 // start create command
@@ -49,7 +52,14 @@ var createCmd = &cobra.Command{
   DELETE endpoint to delete existing credentials.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -59,23 +69,6 @@ var createCmd = &cobra.Command{
 				return err
 			}
 		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No GIT_PROVIDER argument specified. Loading names for Git Credentials drop-down."
-				names, err := w.GitCredentials.CredentialInfoGitProviderToCredentialIdMap(ctx)
-				close(promptSpinner)
-				if err != nil {
-					return err
-				}
-				id, err := cmdio.Select(ctx, names, "Git provider")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have git provider")
-			}
 			createReq.GitProvider = args[0]
 		}
 
@@ -85,6 +78,9 @@ var createCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start delete command
@@ -123,7 +119,7 @@ var deleteCmd = &cobra.Command{
 				names, err := w.GitCredentials.CredentialInfoGitProviderToCredentialIdMap(ctx)
 				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Git Credentials drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "The ID for the corresponding credential to access")
 				if err != nil {
@@ -146,6 +142,9 @@ var deleteCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start get command
@@ -184,7 +183,7 @@ var getCmd = &cobra.Command{
 				names, err := w.GitCredentials.CredentialInfoGitProviderToCredentialIdMap(ctx)
 				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Git Credentials drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "The ID for the corresponding credential to access")
 				if err != nil {
@@ -207,6 +206,9 @@ var getCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start list command
@@ -235,6 +237,9 @@ var listCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start update command
@@ -277,7 +282,7 @@ var updateCmd = &cobra.Command{
 				names, err := w.GitCredentials.CredentialInfoGitProviderToCredentialIdMap(ctx)
 				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Git Credentials drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "The ID for the corresponding credential to access")
 				if err != nil {
@@ -300,6 +305,9 @@ var updateCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // end service GitCredentials

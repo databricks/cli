@@ -9,7 +9,6 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/provisioning"
 	"github.com/spf13/cobra"
 )
@@ -25,6 +24,9 @@ var Cmd = &cobra.Command{
   These endpoints are available if your account is on the E2 version of the
   platform or on a select custom plan that allows multiple workspaces per
   account.`,
+	Annotations: map[string]string{
+		"package": "provisioning",
+	},
 }
 
 // start create command
@@ -73,7 +75,14 @@ var createCmd = &cobra.Command{
   workspace becomes available when the status changes to RUNNING.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.MustAccountClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
@@ -83,49 +92,30 @@ var createCmd = &cobra.Command{
 				return err
 			}
 		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No WORKSPACE_NAME argument specified. Loading names for Workspaces drop-down."
-				names, err := a.Workspaces.WorkspaceWorkspaceNameToWorkspaceIdMap(ctx)
-				close(promptSpinner)
-				if err != nil {
-					return err
-				}
-				id, err := cmdio.Select(ctx, names, "The workspace's human-readable name")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have the workspace's human-readable name")
-			}
 			createReq.WorkspaceName = args[0]
 		}
 
+		wait, err := a.Workspaces.Create(ctx, createReq)
+		if err != nil {
+			return err
+		}
 		if createSkipWait {
-			response, err := a.Workspaces.Create(ctx, createReq)
-			if err != nil {
-				return err
-			}
-			return cmdio.Render(ctx, response)
+			return cmdio.Render(ctx, wait.Response)
 		}
 		spinner := cmdio.Spinner(ctx)
-		info, err := a.Workspaces.CreateAndWait(ctx, createReq,
-			retries.Timeout[provisioning.Workspace](createTimeout),
-			func(i *retries.Info[provisioning.Workspace]) {
-				if i.Info == nil {
-					return
-				}
-				statusMessage := i.Info.WorkspaceStatusMessage
-				spinner <- statusMessage
-			})
+		info, err := wait.OnProgress(func(i *provisioning.Workspace) {
+			statusMessage := i.WorkspaceStatusMessage
+			spinner <- statusMessage
+		}).GetWithTimeout(createTimeout)
 		close(spinner)
 		if err != nil {
 			return err
 		}
 		return cmdio.Render(ctx, info)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start delete command
@@ -171,7 +161,7 @@ var deleteCmd = &cobra.Command{
 				names, err := a.Workspaces.WorkspaceWorkspaceNameToWorkspaceIdMap(ctx)
 				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Workspaces drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "Workspace ID")
 				if err != nil {
@@ -194,6 +184,9 @@ var deleteCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start get command
@@ -245,7 +238,7 @@ var getCmd = &cobra.Command{
 				names, err := a.Workspaces.WorkspaceWorkspaceNameToWorkspaceIdMap(ctx)
 				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Workspaces drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "Workspace ID")
 				if err != nil {
@@ -268,6 +261,9 @@ var getCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start list command
@@ -299,6 +295,9 @@ var listCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start update command
@@ -459,7 +458,7 @@ var updateCmd = &cobra.Command{
 				names, err := a.Workspaces.WorkspaceWorkspaceNameToWorkspaceIdMap(ctx)
 				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Workspaces drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "Workspace ID")
 				if err != nil {
@@ -476,29 +475,27 @@ var updateCmd = &cobra.Command{
 			}
 		}
 
+		wait, err := a.Workspaces.Update(ctx, updateReq)
+		if err != nil {
+			return err
+		}
 		if updateSkipWait {
-			err = a.Workspaces.Update(ctx, updateReq)
-			if err != nil {
-				return err
-			}
 			return nil
 		}
 		spinner := cmdio.Spinner(ctx)
-		info, err := a.Workspaces.UpdateAndWait(ctx, updateReq,
-			retries.Timeout[provisioning.Workspace](updateTimeout),
-			func(i *retries.Info[provisioning.Workspace]) {
-				if i.Info == nil {
-					return
-				}
-				statusMessage := i.Info.WorkspaceStatusMessage
-				spinner <- statusMessage
-			})
+		info, err := wait.OnProgress(func(i *provisioning.Workspace) {
+			statusMessage := i.WorkspaceStatusMessage
+			spinner <- statusMessage
+		}).GetWithTimeout(updateTimeout)
 		close(spinner)
 		if err != nil {
 			return err
 		}
 		return cmdio.Render(ctx, info)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // end service Workspaces

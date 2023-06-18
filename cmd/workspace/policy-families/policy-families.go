@@ -22,6 +22,9 @@ var Cmd = &cobra.Command{
   Policy families cannot be used directly to create clusters. Instead, you
   create cluster policies using a policy family. Cluster policies created using
   a policy family inherit the policy family's policy definition.`,
+	Annotations: map[string]string{
+		"package": "compute",
+	},
 }
 
 // start get command
@@ -66,6 +69,9 @@ var getCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start list command
@@ -112,6 +118,9 @@ var listCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // end service PolicyFamilies

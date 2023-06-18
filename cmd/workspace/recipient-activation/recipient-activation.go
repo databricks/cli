@@ -14,6 +14,9 @@ var Cmd = &cobra.Command{
 	Use:   "recipient-activation",
 	Short: `Databricks Recipient Activation REST API.`,
 	Long:  `Databricks Recipient Activation REST API`,
+	Annotations: map[string]string{
+		"package": "sharing",
+	},
 }
 
 // start get-activation-url-info command
@@ -62,6 +65,9 @@ var getActivationUrlInfoCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start retrieve-token command
@@ -111,6 +117,9 @@ var retrieveTokenCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // end service RecipientActivation

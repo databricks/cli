@@ -14,6 +14,12 @@ const (
 	CreateParentDirectories           = iota << 1
 )
 
+type DeleteMode int
+
+const (
+	DeleteRecursively DeleteMode = iota
+)
+
 type FileAlreadyExistsError struct {
 	path string
 }
@@ -62,6 +68,41 @@ func (err NotADirectory) Is(other error) bool {
 	return other == fs.ErrInvalid
 }
 
+type NotAFile struct {
+	path string
+}
+
+func (err NotAFile) Error() string {
+	return fmt.Sprintf("not a file: %s", err.path)
+}
+
+func (err NotAFile) Is(other error) bool {
+	return other == fs.ErrInvalid
+}
+
+type DirectoryNotEmptyError struct {
+	path string
+}
+
+func (err DirectoryNotEmptyError) Error() string {
+	return fmt.Sprintf("directory not empty: %s", err.path)
+}
+
+func (err DirectoryNotEmptyError) Is(other error) bool {
+	return other == fs.ErrInvalid
+}
+
+type CannotDeleteRootError struct {
+}
+
+func (err CannotDeleteRootError) Error() string {
+	return "unable to delete filer root"
+}
+
+func (err CannotDeleteRootError) Is(other error) bool {
+	return other == fs.ErrInvalid
+}
+
 // Filer is used to access files in a workspace.
 // It has implementations for accessing files in WSFS and in DBFS.
 type Filer interface {
@@ -70,10 +111,10 @@ type Filer interface {
 	Write(ctx context.Context, path string, reader io.Reader, mode ...WriteMode) error
 
 	// Read file at `path`.
-	Read(ctx context.Context, path string) (io.Reader, error)
+	Read(ctx context.Context, path string) (io.ReadCloser, error)
 
-	// Delete file at `path`.
-	Delete(ctx context.Context, path string) error
+	// Delete file or directory at `path`.
+	Delete(ctx context.Context, path string, mode ...DeleteMode) error
 
 	// Return contents of directory at `path`.
 	ReadDir(ctx context.Context, path string) ([]fs.DirEntry, error)

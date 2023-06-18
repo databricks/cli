@@ -9,7 +9,6 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/spf13/cobra"
 )
@@ -31,6 +30,9 @@ var Cmd = &cobra.Command{
   quality with Delta Live Tables expectations. Expectations allow you to define
   expected data quality and specify how to handle records that fail those
   expectations.`,
+	Annotations: map[string]string{
+		"package": "pipelines",
+	},
 }
 
 // start create command
@@ -98,6 +100,9 @@ var createCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start delete command
@@ -136,7 +141,7 @@ var deleteCmd = &cobra.Command{
 				names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
 				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "")
 				if err != nil {
@@ -156,6 +161,9 @@ var deleteCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start get command
@@ -197,7 +205,7 @@ var getCmd = &cobra.Command{
 				names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
 				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "")
 				if err != nil {
@@ -217,6 +225,9 @@ var getCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start get-update command
@@ -266,6 +277,9 @@ var getUpdateCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start list-pipeline-events command
@@ -309,7 +323,7 @@ var listPipelineEventsCmd = &cobra.Command{
 				names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
 				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "")
 				if err != nil {
@@ -329,6 +343,9 @@ var listPipelineEventsCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start list-pipelines command
@@ -381,6 +398,9 @@ var listPipelinesCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start list-updates command
@@ -423,7 +443,7 @@ var listUpdatesCmd = &cobra.Command{
 				names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
 				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "The pipeline to return updates for")
 				if err != nil {
@@ -443,6 +463,9 @@ var listUpdatesCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start reset command
@@ -486,7 +509,7 @@ var resetCmd = &cobra.Command{
 				names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
 				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "")
 				if err != nil {
@@ -500,29 +523,27 @@ var resetCmd = &cobra.Command{
 			resetReq.PipelineId = args[0]
 		}
 
+		wait, err := w.Pipelines.Reset(ctx, resetReq)
+		if err != nil {
+			return err
+		}
 		if resetSkipWait {
-			err = w.Pipelines.Reset(ctx, resetReq)
-			if err != nil {
-				return err
-			}
 			return nil
 		}
 		spinner := cmdio.Spinner(ctx)
-		info, err := w.Pipelines.ResetAndWait(ctx, resetReq,
-			retries.Timeout[pipelines.GetPipelineResponse](resetTimeout),
-			func(i *retries.Info[pipelines.GetPipelineResponse]) {
-				if i.Info == nil {
-					return
-				}
-				statusMessage := i.Info.Cause
-				spinner <- statusMessage
-			})
+		info, err := wait.OnProgress(func(i *pipelines.GetPipelineResponse) {
+			statusMessage := i.Cause
+			spinner <- statusMessage
+		}).GetWithTimeout(resetTimeout)
 		close(spinner)
 		if err != nil {
 			return err
 		}
 		return cmdio.Render(ctx, info)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start start-update command
@@ -566,7 +587,7 @@ var startUpdateCmd = &cobra.Command{
 				names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
 				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "")
 				if err != nil {
@@ -586,6 +607,9 @@ var startUpdateCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start stop command
@@ -629,7 +653,7 @@ var stopCmd = &cobra.Command{
 				names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
 				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "")
 				if err != nil {
@@ -643,29 +667,27 @@ var stopCmd = &cobra.Command{
 			stopReq.PipelineId = args[0]
 		}
 
+		wait, err := w.Pipelines.Stop(ctx, stopReq)
+		if err != nil {
+			return err
+		}
 		if stopSkipWait {
-			err = w.Pipelines.Stop(ctx, stopReq)
-			if err != nil {
-				return err
-			}
 			return nil
 		}
 		spinner := cmdio.Spinner(ctx)
-		info, err := w.Pipelines.StopAndWait(ctx, stopReq,
-			retries.Timeout[pipelines.GetPipelineResponse](stopTimeout),
-			func(i *retries.Info[pipelines.GetPipelineResponse]) {
-				if i.Info == nil {
-					return
-				}
-				statusMessage := i.Info.Cause
-				spinner <- statusMessage
-			})
+		info, err := wait.OnProgress(func(i *pipelines.GetPipelineResponse) {
+			statusMessage := i.Cause
+			spinner <- statusMessage
+		}).GetWithTimeout(stopTimeout)
 		close(spinner)
 		if err != nil {
 			return err
 		}
 		return cmdio.Render(ctx, info)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start update command
@@ -724,7 +746,7 @@ var updateCmd = &cobra.Command{
 				names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
 				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "Unique identifier for this pipeline")
 				if err != nil {
@@ -744,6 +766,9 @@ var updateCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // end service Pipelines

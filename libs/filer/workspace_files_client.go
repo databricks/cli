@@ -3,6 +3,7 @@ package filer
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"io"
@@ -10,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -65,7 +67,7 @@ func (info wsfsFileInfo) IsDir() bool {
 }
 
 func (info wsfsFileInfo) Sys() any {
-	return nil
+	return info.oi
 }
 
 // WorkspaceFilesClient implements the files-in-workspace API.
@@ -143,56 +145,81 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 		return w.Write(ctx, name, bytes.NewReader(body), sliceWithout(mode, CreateParentDirectories)...)
 	}
 
-	// This API returns 409 if the file already exists.
+	// This API returns 409 if the file already exists, when the object type is file
 	if aerr.StatusCode == http.StatusConflict {
+		return FileAlreadyExistsError{absPath}
+	}
+
+	// This API returns 400 if the file already exists, when the object type is notebook
+	regex := regexp.MustCompile(`Path \((.*)\) already exists.`)
+	if aerr.StatusCode == http.StatusBadRequest && regex.Match([]byte(aerr.Message)) {
+		// Parse file path from regex capture group
+		matches := regex.FindStringSubmatch(aerr.Message)
+		if len(matches) == 2 {
+			return FileAlreadyExistsError{matches[1]}
+		}
+
+		// Default to path specified to filer.Write if regex capture fails
 		return FileAlreadyExistsError{absPath}
 	}
 
 	return err
 }
 
-func (w *WorkspaceFilesClient) Read(ctx context.Context, name string) (io.Reader, error) {
+func (w *WorkspaceFilesClient) Read(ctx context.Context, name string) (io.ReadCloser, error) {
 	absPath, err := w.root.Join(name)
 	if err != nil {
 		return nil, err
 	}
 
-	// Remove leading "/" so we can use it in the URL.
-	urlPath := fmt.Sprintf(
-		"/api/2.0/workspace-files/%s",
-		strings.TrimLeft(absPath, "/"),
-	)
-
-	var res []byte
-	err = w.apiClient.Do(ctx, http.MethodGet, urlPath, nil, &res)
-
-	// Return early on success.
-	if err == nil {
-		return bytes.NewReader(res), nil
-	}
-
-	// Special handling of this error only if it is an API error.
-	var aerr *apierr.APIError
-	if !errors.As(err, &aerr) {
+	// This stat call serves two purposes:
+	// 1. Checks file at path exists, and throws an error if it does not
+	// 2. Allows us to error out if the path is a directory. This is needed
+	// because the /workspace/export API does not error out, and returns the directory
+	// as a DBC archive even if format "SOURCE" is specified
+	stat, err := w.Stat(ctx, name)
+	if err != nil {
 		return nil, err
 	}
-
-	if aerr.StatusCode == http.StatusNotFound {
-		return nil, FileDoesNotExistError{absPath}
+	if stat.IsDir() {
+		return nil, NotAFile{absPath}
 	}
 
-	return nil, err
+	// Export file contents. Note the /workspace/export API has a limit of 10MBs
+	// for the file size
+	// TODO: use direct download once it's fixed. see: https://github.com/databricks/cli/issues/452
+	res, err := w.workspaceClient.Workspace.Export(ctx, workspace.ExportRequest{
+		Path: absPath,
+	})
+	if err != nil {
+		return nil, err
+	}
+	b, err := base64.StdEncoding.DecodeString(res.Content)
+	if err != nil {
+		return nil, err
+	}
+	return io.NopCloser(bytes.NewReader(b)), nil
 }
 
-func (w *WorkspaceFilesClient) Delete(ctx context.Context, name string) error {
+func (w *WorkspaceFilesClient) Delete(ctx context.Context, name string, mode ...DeleteMode) error {
 	absPath, err := w.root.Join(name)
 	if err != nil {
 		return err
 	}
 
+	// Illegal to delete the root path.
+	if absPath == w.root.rootPath {
+		return CannotDeleteRootError{}
+	}
+
+	recursive := false
+	if slices.Contains(mode, DeleteRecursively) {
+		recursive = true
+	}
+
 	err = w.workspaceClient.Workspace.Delete(ctx, workspace.Delete{
 		Path:      absPath,
-		Recursive: false,
+		Recursive: recursive,
 	})
 
 	// Return early on success.
@@ -206,7 +233,12 @@ func (w *WorkspaceFilesClient) Delete(ctx context.Context, name string) error {
 		return err
 	}
 
-	if aerr.StatusCode == http.StatusNotFound {
+	switch aerr.StatusCode {
+	case http.StatusBadRequest:
+		if aerr.ErrorCode == "DIRECTORY_NOT_EMPTY" {
+			return DirectoryNotEmptyError{absPath}
+		}
+	case http.StatusNotFound:
 		return FileDoesNotExistError{absPath}
 	}
 

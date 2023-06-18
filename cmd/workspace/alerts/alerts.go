@@ -20,6 +20,9 @@ var Cmd = &cobra.Command{
   its result, and notifies one or more users and/or notification destinations if
   the condition was met. Alerts can be scheduled using the sql_task type of
   the Jobs API, e.g. :method:jobs/create.`,
+	Annotations: map[string]string{
+		"package": "sql",
+	},
 }
 
 // start create command
@@ -57,12 +60,7 @@ var createCmd = &cobra.Command{
 				return err
 			}
 		} else {
-			createReq.Name = args[0]
-			_, err = fmt.Sscan(args[1], &createReq.Options)
-			if err != nil {
-				return fmt.Errorf("invalid OPTIONS: %s", args[1])
-			}
-			createReq.QueryId = args[2]
+			return fmt.Errorf("provide command input in JSON format by specifying --json option")
 		}
 
 		response, err := w.Alerts.Create(ctx, createReq)
@@ -71,6 +69,9 @@ var createCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start delete command
@@ -111,7 +112,7 @@ var deleteCmd = &cobra.Command{
 				names, err := w.Alerts.AlertNameToIdMap(ctx)
 				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Alerts drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "")
 				if err != nil {
@@ -131,6 +132,9 @@ var deleteCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start get command
@@ -169,7 +173,7 @@ var getCmd = &cobra.Command{
 				names, err := w.Alerts.AlertNameToIdMap(ctx)
 				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Alerts drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "")
 				if err != nil {
@@ -189,6 +193,9 @@ var getCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start list command
@@ -216,6 +223,9 @@ var listCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start update command
@@ -250,13 +260,7 @@ var updateCmd = &cobra.Command{
 				return err
 			}
 		} else {
-			updateReq.Name = args[0]
-			_, err = fmt.Sscan(args[1], &updateReq.Options)
-			if err != nil {
-				return fmt.Errorf("invalid OPTIONS: %s", args[1])
-			}
-			updateReq.QueryId = args[2]
-			updateReq.AlertId = args[3]
+			return fmt.Errorf("provide command input in JSON format by specifying --json option")
 		}
 
 		err = w.Alerts.Update(ctx, updateReq)
@@ -265,6 +269,9 @@ var updateCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // end service Alerts
