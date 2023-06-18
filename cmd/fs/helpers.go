@@ -3,7 +3,6 @@ package fs
 import (
 	"context"
 	"fmt"
-	"runtime"
 	"strings"
 
 	"github.com/databricks/cli/cmd/root"
@@ -32,16 +31,6 @@ func filerForPath(ctx context.Context, fullPath string) (filer.Filer, string, er
 		return f, path, err
 
 	case LocalScheme:
-		if runtime.GOOS == "windows" {
-			parts := strings.SplitN(path, ":", 2)
-			if len(parts) < 2 {
-				return nil, "", fmt.Errorf("no volume specified for path: %s", path)
-			}
-			volume := parts[0] + ":"
-			relPath := parts[1]
-			f, err := filer.NewLocalClient(volume)
-			return f, relPath, err
-		}
 		f, err := filer.NewLocalClient("/")
 		return f, path, err
 
