@@ -12,7 +12,7 @@ type UnixRootPath struct {
 	rootPath string
 }
 
-// NewUnixRootPath constructs and returns [RootPath].
+// NewUnixRootPath constructs and returns [UnixRootPath].
 // The named path is cleaned on construction.
 func NewUnixRootPath(name string) UnixRootPath {
 	return UnixRootPath{
