@@ -11,6 +11,8 @@ import (
 
 type processEnvironmentMode struct{}
 
+const debugConcurrentRuns = 4
+
 func ProcessEnvironmentMode() bundle.Mutator {
 	return &processEnvironmentMode{}
 }
@@ -31,12 +33,15 @@ func processDebugMode(b *bundle.Bundle) error {
 			r.Jobs[i].Tags = make(map[string]string)
 		}
 		r.Jobs[i].Tags["debug"] = ""
+		if r.Jobs[i].MaxConcurrentRuns == 0 {
+			r.Jobs[i].MaxConcurrentRuns = debugConcurrentRuns
+		}
 	}
 
 	for i := range r.Pipelines {
 		r.Pipelines[i].Name = "[debug] " + r.Pipelines[i].Name
 		r.Pipelines[i].Development = true
-		// (pipelines don't have tags)
+		// (pipelines don't yet support tags)
 	}
 
 	for i := range r.Models {
