@@ -18,7 +18,7 @@ var deployCmd = &cobra.Command{
 		b.Config.Bundle.Lock.Force = force
 
 		return bundle.Apply(cmd.Context(), b, bundle.Seq(
-			phases.Initialize(),
+			phases.Initialize(""),
 			phases.Build(),
 			phases.Deploy(),
 		))
@@ -26,8 +26,10 @@ var deployCmd = &cobra.Command{
 }
 
 var force bool
+var computeID string
 
 func init() {
 	AddCommand(deployCmd)
 	deployCmd.Flags().BoolVar(&force, "force", false, "Force acquisition of deployment lock.")
+	deployCmd.Flags().StringVar(&computeID, "compute", "", "Override compute in the deployment with the given compute ID.")
 }

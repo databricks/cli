@@ -255,6 +255,18 @@ func (r *jobRunner) Run(ctx context.Context, opts *Options) (output.RunOutput, e
 	}
 	logProgress := logProgressCallback(ctx, progressLogger)
 
+	if opts.NoWait {
+		run, err := w.Jobs.RunNow(ctx, *req)
+		if err != nil {
+			return nil, err
+		}
+		details, err := w.Jobs.GetRun(ctx, jobs.GetRunRequest{
+			RunId: run.RunId,
+		})
+		progressLogger.Log(progress.NewJobRunUrlEvent(details.RunPageUrl))
+		return nil, err
+	}
+
 	run, err := w.Jobs.RunNowAndWait(ctx, *req,
 		retries.Timeout[jobs.Run](jobRunTimeout), pullRunId, logDebug, logProgress)
 	if err != nil && runId != nil {

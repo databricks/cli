@@ -14,6 +14,8 @@ import (
 )
 
 var runOptions run.Options
+var deploy bool
+var noWait bool
 
 var runCmd = &cobra.Command{
 	Use:   "run [flags] KEY",
@@ -23,8 +25,25 @@ var runCmd = &cobra.Command{
 	PreRunE: ConfigureBundleWithVariables,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		b := bundle.Get(cmd.Context())
+
+		if deploy {
+			b.Config.Bundle.Lock.Force = force
+			err := bundle.Apply(cmd.Context(), b, bundle.Seq(
+				phases.Initialize(computeID),
+				phases.Build(),
+				phases.Deploy(),
+			))
+			if err != nil {
+				return err
+			}
+		} else if computeID != "" {
+			// Running notebooks is not yet implemented, otherwise we could
+			// use --compute with a notebook
+			return fmt.Errorf("not supported: --compute specified without --deploy")
+		}
+
 		err := bundle.Apply(cmd.Context(), b, bundle.Seq(
-			phases.Initialize(),
+			phases.Initialize(computeID),
 			terraform.Interpolate(),
 			terraform.Write(),
 			terraform.StatePull(),
@@ -39,6 +58,7 @@ var runCmd = &cobra.Command{
 			return err
 		}
 
+		runOptions.NoWait = noWait
 		output, err := runner.Run(cmd.Context(), &runOptions)
 		if err != nil {
 			return err
@@ -89,4 +109,8 @@ var runCmd = &cobra.Command{
 func init() {
 	runOptions.Define(runCmd.Flags())
 	rootCmd.AddCommand(runCmd)
+	runCmd.Flags().BoolVar(&deploy, "deploy", false, "Call deploy before run.")
+	runCmd.Flags().BoolVar(&force, "force", false, "Force acquisition of deployment lock.")
+	runCmd.Flags().BoolVar(&noWait, "no-wait", false, "Don't wait for the run to complete.")
+	runCmd.Flags().StringVar(&computeID, "compute", "", "Override compute in the deployment with the given compute ID.")
 }
