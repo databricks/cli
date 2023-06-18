@@ -14,7 +14,7 @@ import (
 )
 
 var runOptions run.Options
-var deploy bool
+var deployFlag bool
 var noWait bool
 
 var runCmd = &cobra.Command{
@@ -26,8 +26,8 @@ var runCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		b := bundle.Get(cmd.Context())
 
-		if deploy {
-			err := Deploy(cmd, b)
+		if deployFlag {
+			err := deploy(cmd, b)
 			if err != nil {
 				return err
 			}
@@ -104,7 +104,7 @@ var runCmd = &cobra.Command{
 func init() {
 	runOptions.Define(runCmd.Flags())
 	rootCmd.AddCommand(runCmd)
-	runCmd.Flags().BoolVar(&deploy, "deploy", false, "Call deploy before run.")
+	runCmd.Flags().BoolVar(&deployFlag, "deploy", false, "Call deploy before run.")
 	runCmd.Flags().BoolVar(&force, "force", false, "Force acquisition of deployment lock.")
 	runCmd.Flags().BoolVar(&noWait, "no-wait", false, "Don't wait for the run to complete.")
 	runCmd.Flags().StringVar(&computeID, "compute", "", "Override compute in the deployment with the given compute ID.")
