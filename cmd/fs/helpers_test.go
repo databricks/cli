@@ -22,5 +22,5 @@ func TestNotSpecifyingVolumeForWindowsPathErrors(t *testing.T) {
 	assert.Equal(t, `/foo/bar`, path)
 
 	_, _, err = filerForPath(ctx, pathWOVolume)
-	assert.Equal(t, "no volume specfied for path: uno/dos", err.Error())
+	assert.Equal(t, "no volume specified for path: uno/dos", err.Error())
 }
