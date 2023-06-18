@@ -27,12 +27,7 @@ var runCmd = &cobra.Command{
 		b := bundle.Get(cmd.Context())
 
 		if deploy {
-			b.Config.Bundle.Lock.Force = force
-			err := bundle.Apply(cmd.Context(), b, bundle.Seq(
-				phases.Initialize(computeID),
-				phases.Build(),
-				phases.Deploy(),
-			))
+			err := Deploy(cmd, b)
 			if err != nil {
 				return err
 			}
