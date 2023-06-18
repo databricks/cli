@@ -55,10 +55,7 @@ var createCmd = &cobra.Command{
 				return err
 			}
 		} else {
-			_, err = fmt.Sscan(args[0], &createReq.Budget)
-			if err != nil {
-				return fmt.Errorf("invalid BUDGET: %s", args[0])
-			}
+			return fmt.Errorf("provide command input in JSON format by specifying --json option")
 		}
 
 		response, err := a.Budgets.Create(ctx, createReq)
@@ -257,11 +254,7 @@ var updateCmd = &cobra.Command{
 				return err
 			}
 		} else {
-			_, err = fmt.Sscan(args[0], &updateReq.Budget)
-			if err != nil {
-				return fmt.Errorf("invalid BUDGET: %s", args[0])
-			}
-			updateReq.BudgetId = args[1]
+			return fmt.Errorf("provide command input in JSON format by specifying --json option")
 		}
 
 		err = a.Budgets.Update(ctx, updateReq)

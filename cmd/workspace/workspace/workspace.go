@@ -119,9 +119,9 @@ var exportCmd = &cobra.Command{
   If path does not exist, this call returns an error
   RESOURCE_DOES_NOT_EXIST.
   
-  One can only export a directory in DBC format. If the exported data would
-  exceed size limit, this call returns MAX_NOTEBOOK_SIZE_EXCEEDED. Currently,
-  this API does not support exporting a library.`,
+  If the exported data would exceed size limit, this call returns
+  MAX_NOTEBOOK_SIZE_EXCEEDED. Currently, this API does not support exporting a
+  library.`,
 
 	Annotations: map[string]string{},
 	PreRunE:     root.MustWorkspaceClient,
@@ -286,7 +286,7 @@ func init() {
 	// TODO: short flags
 	listCmd.Flags().Var(&listJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	listCmd.Flags().IntVar(&listReq.NotebooksModifiedAfter, "notebooks-modified-after", listReq.NotebooksModifiedAfter, `<content needed>.`)
+	listCmd.Flags().IntVar(&listReq.NotebooksModifiedAfter, "notebooks-modified-after", listReq.NotebooksModifiedAfter, `UTC timestamp in milliseconds.`)
 
 }
 
@@ -295,7 +295,7 @@ var listCmd = &cobra.Command{
 	Short: `List contents.`,
 	Long: `List contents.
   
-  Lists the contents of a directory, or the object if it is not a directory.If
+  Lists the contents of a directory, or the object if it is not a directory. If
   the input path does not exist, this call returns an error
   RESOURCE_DOES_NOT_EXIST.`,
 
@@ -353,7 +353,7 @@ var mkdirsCmd = &cobra.Command{
   path, this call returns an error RESOURCE_ALREADY_EXISTS.
   
   Note that if this operation fails it may have succeeded in creating some of
-  the necessary parrent directories.`,
+  the necessary parent directories.`,
 
 	Annotations: map[string]string{},
 	PreRunE:     root.MustWorkspaceClient,

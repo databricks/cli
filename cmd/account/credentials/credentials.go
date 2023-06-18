@@ -68,11 +68,7 @@ var createCmd = &cobra.Command{
 				return err
 			}
 		} else {
-			createReq.CredentialsName = args[0]
-			_, err = fmt.Sscan(args[1], &createReq.AwsCredentials)
-			if err != nil {
-				return fmt.Errorf("invalid AWS_CREDENTIALS: %s", args[1])
-			}
+			return fmt.Errorf("provide command input in JSON format by specifying --json option")
 		}
 
 		response, err := a.Credentials.Create(ctx, createReq)

@@ -60,7 +60,7 @@ func (l *friendlyHandler) Handle(ctx context.Context, rec slog.Record) error {
 	msg := fmt.Sprintf("%s %s %s%s\n",
 		color.MagentaString(t),
 		l.coloredLevel(rec),
-		color.HiWhiteString(rec.Message),
+		rec.Message,
 		attrs)
 	_, err := l.w.Write([]byte(msg))
 	return err

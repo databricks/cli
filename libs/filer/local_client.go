@@ -175,6 +175,5 @@ func (w *LocalClient) Stat(ctx context.Context, name string) (fs.FileInfo, error
 	if os.IsNotExist(err) {
 		return nil, FileDoesNotExistError{path: absPath}
 	}
-
 	return stat, err
 }

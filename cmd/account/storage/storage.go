@@ -65,11 +65,7 @@ var createCmd = &cobra.Command{
 				return err
 			}
 		} else {
-			createReq.StorageConfigurationName = args[0]
-			_, err = fmt.Sscan(args[1], &createReq.RootBucketInfo)
-			if err != nil {
-				return fmt.Errorf("invalid ROOT_BUCKET_INFO: %s", args[1])
-			}
+			return fmt.Errorf("provide command input in JSON format by specifying --json option")
 		}
 
 		response, err := a.Storage.Create(ctx, createReq)

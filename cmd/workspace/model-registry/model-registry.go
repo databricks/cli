@@ -349,10 +349,7 @@ var createWebhookCmd = &cobra.Command{
 				return err
 			}
 		} else {
-			_, err = fmt.Sscan(args[0], &createWebhookReq.Events)
-			if err != nil {
-				return fmt.Errorf("invalid EVENTS: %s", args[0])
-			}
+			return fmt.Errorf("provide command input in JSON format by specifying --json option")
 		}
 
 		response, err := w.ModelRegistry.CreateWebhook(ctx, createWebhookReq)
