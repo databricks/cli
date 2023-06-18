@@ -26,6 +26,9 @@ var Cmd = &cobra.Command{
   automatically grants the privilege to all current and future objects within
   the catalog. Similarly, privileges granted on a schema are inherited by all
   current and future objects within that schema.`,
+	Annotations: map[string]string{
+		"package": "catalog",
+	},
 }
 
 // start get command
@@ -80,6 +83,9 @@ var getCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start get-effective command
@@ -134,6 +140,9 @@ var getEffectiveCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start update command
@@ -188,6 +197,9 @@ var updateCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // end service Grants

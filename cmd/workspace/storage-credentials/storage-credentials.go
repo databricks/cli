@@ -28,6 +28,9 @@ var Cmd = &cobra.Command{
   To create storage credentials, you must be a Databricks account admin. The
   account admin who creates the storage credential can delegate ownership to
   another user or group to manage permissions on it.`,
+	Annotations: map[string]string{
+		"package": "catalog",
+	},
 }
 
 // start create command
@@ -41,9 +44,10 @@ func init() {
 	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: aws_iam_role
+	// TODO: complex arg: azure_managed_identity
 	// TODO: complex arg: azure_service_principal
 	createCmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `Comment associated with the credential.`)
-	// TODO: complex arg: gcp_service_account_key
+	// TODO: output-only field
 	createCmd.Flags().BoolVar(&createReq.ReadOnly, "read-only", createReq.ReadOnly, `Whether the storage credential is only usable for read operations.`)
 	createCmd.Flags().BoolVar(&createReq.SkipValidation, "skip-validation", createReq.SkipValidation, `Supplying true to this argument skips validation of the created credential.`)
 
@@ -56,14 +60,22 @@ var createCmd = &cobra.Command{
   
   Creates a new storage credential. The request object is specific to the cloud:
   
-  * **AwsIamRole** for AWS credentials * **AzureServicePrincipal** for Azure
-  credentials * **GcpServiceAcountKey** for GCP credentials.
+  * **AwsIamRole** for AWS credentials. * **AzureServicePrincipal** for Azure
+  credentials. * **AzureManagedIdentity** for Azure managed credentials. *
+  **DatabricksGcpServiceAccount** for GCP managed credentials.
   
   The caller must be a metastore admin and have the
   **CREATE_STORAGE_CREDENTIAL** privilege on the metastore.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -73,20 +85,6 @@ var createCmd = &cobra.Command{
 				return err
 			}
 		} else {
-			if len(args) == 0 {
-				names, err := w.StorageCredentials.StorageCredentialInfoNameToIdMap(ctx)
-				if err != nil {
-					return err
-				}
-				id, err := cmdio.Select(ctx, names, "The credential name")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have the credential name")
-			}
 			createReq.Name = args[0]
 		}
 
@@ -96,6 +94,9 @@ var createCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start delete command
@@ -132,9 +133,12 @@ var deleteCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No NAME argument specified. Loading names for Storage Credentials drop-down."
 				names, err := w.StorageCredentials.StorageCredentialInfoNameToIdMap(ctx)
+				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Storage Credentials drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "Name of the storage credential")
 				if err != nil {
@@ -154,6 +158,9 @@ var deleteCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start get command
@@ -189,9 +196,12 @@ var getCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No NAME argument specified. Loading names for Storage Credentials drop-down."
 				names, err := w.StorageCredentials.StorageCredentialInfoNameToIdMap(ctx)
+				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Storage Credentials drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "Name of the storage credential")
 				if err != nil {
@@ -211,6 +221,9 @@ var getCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start list command
@@ -242,6 +255,9 @@ var listCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start update command
@@ -255,10 +271,11 @@ func init() {
 	updateCmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: aws_iam_role
+	// TODO: complex arg: azure_managed_identity
 	// TODO: complex arg: azure_service_principal
 	updateCmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `Comment associated with the credential.`)
+	// TODO: output-only field
 	updateCmd.Flags().BoolVar(&updateReq.Force, "force", updateReq.Force, `Force update even if there are dependent external locations or external tables.`)
-	// TODO: complex arg: gcp_service_account_key
 	updateCmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `The credential name.`)
 	updateCmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of current owner of credential.`)
 	updateCmd.Flags().BoolVar(&updateReq.ReadOnly, "read-only", updateReq.ReadOnly, `Whether the storage credential is only usable for read operations.`)
@@ -287,9 +304,12 @@ var updateCmd = &cobra.Command{
 			}
 		} else {
 			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No NAME argument specified. Loading names for Storage Credentials drop-down."
 				names, err := w.StorageCredentials.StorageCredentialInfoNameToIdMap(ctx)
+				close(promptSpinner)
 				if err != nil {
-					return err
+					return fmt.Errorf("failed to load names for Storage Credentials drop-down. Please manually specify required arguments. Original error: %w", err)
 				}
 				id, err := cmdio.Select(ctx, names, "The credential name")
 				if err != nil {
@@ -309,6 +329,9 @@ var updateCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start validate command
@@ -322,9 +345,10 @@ func init() {
 	validateCmd.Flags().Var(&validateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: aws_iam_role
+	// TODO: complex arg: azure_managed_identity
 	// TODO: complex arg: azure_service_principal
+	// TODO: output-only field
 	validateCmd.Flags().StringVar(&validateReq.ExternalLocationName, "external-location-name", validateReq.ExternalLocationName, `The name of an existing external location to validate.`)
-	// TODO: complex arg: gcp_service_account_key
 	validateCmd.Flags().BoolVar(&validateReq.ReadOnly, "read-only", validateReq.ReadOnly, `Whether the storage credential is only usable for read operations.`)
 	// TODO: any: storage_credential_name
 	validateCmd.Flags().StringVar(&validateReq.Url, "url", validateReq.Url, `The external location url to validate.`)
@@ -375,6 +399,9 @@ var validateCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // end service StorageCredentials

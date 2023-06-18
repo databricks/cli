@@ -9,7 +9,6 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/spf13/cobra"
 )
@@ -19,31 +18,34 @@ var Cmd = &cobra.Command{
 	Short: `The Clusters API allows you to create, start, edit, list, terminate, and delete clusters.`,
 	Long: `The Clusters API allows you to create, start, edit, list, terminate, and
   delete clusters.
-  
+
   Databricks maps cluster node instance types to compute units known as DBUs.
   See the instance type pricing page for a list of the supported instance types
   and their corresponding DBUs.
-  
+
   A Databricks cluster is a set of computation resources and configurations on
   which you run data engineering, data science, and data analytics workloads,
   such as production ETL pipelines, streaming analytics, ad-hoc analytics, and
   machine learning.
-  
+
   You run these workloads as a set of commands in a notebook or as an automated
   job. Databricks makes a distinction between all-purpose clusters and job
   clusters. You use all-purpose clusters to analyze data collaboratively using
   interactive notebooks. You use job clusters to run fast and robust automated
   jobs.
-  
+
   You can create an all-purpose cluster using the UI, CLI, or REST API. You can
   manually terminate and restart an all-purpose cluster. Multiple users can
   share such clusters to do collaborative interactive analysis.
-  
+
   IMPORTANT: Databricks retains cluster configuration information for up to 200
   all-purpose clusters terminated in the last 30 days and up to 30 job clusters
   recently terminated by the job scheduler. To keep an all-purpose cluster
   configuration even after it has been terminated for more than 30 days, an
   administrator can pin a cluster to the cluster list.`,
+	Annotations: map[string]string{
+		"package": "compute",
+	},
 }
 
 // start change-owner command
@@ -62,7 +64,7 @@ var changeOwnerCmd = &cobra.Command{
 	Use:   "change-owner CLUSTER_ID OWNER_USERNAME",
 	Short: `Change cluster owner.`,
 	Long: `Change cluster owner.
-  
+
   Change the owner of the cluster. You must be an admin to perform this
   operation.`,
 
@@ -94,6 +96,9 @@ var changeOwnerCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start create command
@@ -142,17 +147,17 @@ var createCmd = &cobra.Command{
 	Use:   "create SPARK_VERSION",
 	Short: `Create new cluster.`,
 	Long: `Create new cluster.
-  
+
   Creates a new Spark cluster. This method will acquire new instances from the
   cloud provider if necessary. This method is asynchronous; the returned
   cluster_id can be used to poll the cluster status. When this method returns,
   the cluster will be in a PENDING state. The cluster will be usable once it
   enters a RUNNING state.
-  
+
   Note: Databricks may not be able to acquire some of the requested nodes, due
   to cloud provider limitations (account limits, spot price, etc.) or transient
   network issues.
-  
+
   If Databricks acquires at least 85% of the requested on-demand nodes, cluster
   creation will succeed. Otherwise the cluster will terminate with an
   informative error message.`,
@@ -178,29 +183,27 @@ var createCmd = &cobra.Command{
 			createReq.SparkVersion = args[0]
 		}
 
+		wait, err := w.Clusters.Create(ctx, createReq)
+		if err != nil {
+			return err
+		}
 		if createSkipWait {
-			response, err := w.Clusters.Create(ctx, createReq)
-			if err != nil {
-				return err
-			}
-			return cmdio.Render(ctx, response)
+			return cmdio.Render(ctx, wait.Response)
 		}
 		spinner := cmdio.Spinner(ctx)
-		info, err := w.Clusters.CreateAndWait(ctx, createReq,
-			retries.Timeout[compute.ClusterInfo](createTimeout),
-			func(i *retries.Info[compute.ClusterInfo]) {
-				if i.Info == nil {
-					return
-				}
-				statusMessage := i.Info.StateMessage
-				spinner <- statusMessage
-			})
+		info, err := wait.OnProgress(func(i *compute.ClusterInfo) {
+			statusMessage := i.StateMessage
+			spinner <- statusMessage
+		}).GetWithTimeout(createTimeout)
 		close(spinner)
 		if err != nil {
 			return err
 		}
 		return cmdio.Render(ctx, info)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start delete command
@@ -224,7 +227,7 @@ var deleteCmd = &cobra.Command{
 	Use:   "delete CLUSTER_ID",
 	Short: `Terminate cluster.`,
 	Long: `Terminate cluster.
-  
+
   Terminates the Spark cluster with the specified ID. The cluster is removed
   asynchronously. Once the termination has completed, the cluster will be in a
   TERMINATED state. If the cluster is already in a TERMINATING or
@@ -261,29 +264,27 @@ var deleteCmd = &cobra.Command{
 			deleteReq.ClusterId = args[0]
 		}
 
+		wait, err := w.Clusters.Delete(ctx, deleteReq)
+		if err != nil {
+			return err
+		}
 		if deleteSkipWait {
-			err = w.Clusters.Delete(ctx, deleteReq)
-			if err != nil {
-				return err
-			}
 			return nil
 		}
 		spinner := cmdio.Spinner(ctx)
-		info, err := w.Clusters.DeleteAndWait(ctx, deleteReq,
-			retries.Timeout[compute.ClusterInfo](deleteTimeout),
-			func(i *retries.Info[compute.ClusterInfo]) {
-				if i.Info == nil {
-					return
-				}
-				statusMessage := i.Info.StateMessage
-				spinner <- statusMessage
-			})
+		info, err := wait.OnProgress(func(i *compute.ClusterInfo) {
+			statusMessage := i.StateMessage
+			spinner <- statusMessage
+		}).GetWithTimeout(deleteTimeout)
 		close(spinner)
 		if err != nil {
 			return err
 		}
 		return cmdio.Render(ctx, info)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start edit command
@@ -310,6 +311,8 @@ func init() {
 	editCmd.Flags().StringVar(&editReq.ClusterName, "cluster-name", editReq.ClusterName, `Cluster name requested by the user.`)
 	editCmd.Flags().Var(&editReq.ClusterSource, "cluster-source", `Determines whether the cluster was created by a user through the UI, created by the Databricks Jobs Scheduler, or through an API request.`)
 	// TODO: map via StringToStringVar: custom_tags
+	editCmd.Flags().Var(&editReq.DataSecurityMode, "data-security-mode", `This describes an enum.`)
+	// TODO: complex arg: docker_image
 	editCmd.Flags().StringVar(&editReq.DriverInstancePoolId, "driver-instance-pool-id", editReq.DriverInstancePoolId, `The optional ID of the instance pool for the driver of the cluster belongs.`)
 	editCmd.Flags().StringVar(&editReq.DriverNodeTypeId, "driver-node-type-id", editReq.DriverNodeTypeId, `The node type of the Spark driver.`)
 	editCmd.Flags().BoolVar(&editReq.EnableElasticDisk, "enable-elastic-disk", editReq.EnableElasticDisk, `Autoscaling Local Storage: when enabled, this cluster will dynamically acquire additional disk space when its Spark workers are running low on disk space.`)
@@ -321,6 +324,7 @@ func init() {
 	editCmd.Flags().IntVar(&editReq.NumWorkers, "num-workers", editReq.NumWorkers, `Number of worker nodes that this cluster should have.`)
 	editCmd.Flags().StringVar(&editReq.PolicyId, "policy-id", editReq.PolicyId, `The ID of the cluster policy used to create the cluster if applicable.`)
 	editCmd.Flags().Var(&editReq.RuntimeEngine, "runtime-engine", `Decides which runtime engine to be use, e.g.`)
+	editCmd.Flags().StringVar(&editReq.SingleUserName, "single-user-name", editReq.SingleUserName, `Single user name if data_security_mode is SINGLE_USER.`)
 	// TODO: map via StringToStringVar: spark_conf
 	// TODO: map via StringToStringVar: spark_env_vars
 	// TODO: array: ssh_public_keys
@@ -332,18 +336,18 @@ var editCmd = &cobra.Command{
 	Use:   "edit CLUSTER_ID SPARK_VERSION",
 	Short: `Update cluster configuration.`,
 	Long: `Update cluster configuration.
-  
+
   Updates the configuration of a cluster to match the provided attributes and
   size. A cluster can be updated if it is in a RUNNING or TERMINATED state.
-  
+
   If a cluster is updated while in a RUNNING state, it will be restarted so
   that the new attributes can take effect.
-  
+
   If a cluster is updated while in a TERMINATED state, it will remain
   TERMINATED. The next time it is started using the clusters/start API, the
   new attributes will take effect. Any attempt to update a cluster in any other
   state will be rejected with an INVALID_STATE error code.
-  
+
   Clusters created by the Databricks Jobs service cannot be edited.`,
 
 	Annotations: map[string]string{},
@@ -368,29 +372,27 @@ var editCmd = &cobra.Command{
 			editReq.SparkVersion = args[1]
 		}
 
+		wait, err := w.Clusters.Edit(ctx, editReq)
+		if err != nil {
+			return err
+		}
 		if editSkipWait {
-			err = w.Clusters.Edit(ctx, editReq)
-			if err != nil {
-				return err
-			}
 			return nil
 		}
 		spinner := cmdio.Spinner(ctx)
-		info, err := w.Clusters.EditAndWait(ctx, editReq,
-			retries.Timeout[compute.ClusterInfo](editTimeout),
-			func(i *retries.Info[compute.ClusterInfo]) {
-				if i.Info == nil {
-					return
-				}
-				statusMessage := i.Info.StateMessage
-				spinner <- statusMessage
-			})
+		info, err := wait.OnProgress(func(i *compute.ClusterInfo) {
+			statusMessage := i.StateMessage
+			spinner <- statusMessage
+		}).GetWithTimeout(editTimeout)
 		close(spinner)
 		if err != nil {
 			return err
 		}
 		return cmdio.Render(ctx, info)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start events command
@@ -416,7 +418,7 @@ var eventsCmd = &cobra.Command{
 	Use:   "events CLUSTER_ID",
 	Short: `List cluster activity events.`,
 	Long: `List cluster activity events.
-  
+
   Retrieves a list of events about the activity of a cluster. This API is
   paginated. If there are more events to read, the response includes all the
   nparameters necessary to request the next page of events.`,
@@ -458,6 +460,9 @@ var eventsCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start get command
@@ -481,7 +486,7 @@ var getCmd = &cobra.Command{
 	Use:   "get CLUSTER_ID",
 	Short: `Get cluster info.`,
 	Long: `Get cluster info.
-  
+
   Retrieves the information for a cluster given its identifier. Clusters can be
   described while they are running, or up to 60 days after they are terminated.`,
 
@@ -522,6 +527,9 @@ var getCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start list command
@@ -542,11 +550,11 @@ var listCmd = &cobra.Command{
 	Use:   "list",
 	Short: `List all clusters.`,
 	Long: `List all clusters.
-  
+
   Return information about all pinned clusters, active clusters, up to 200 of
   the most recently terminated all-purpose clusters in the past 30 days, and up
   to 30 of the most recently terminated job clusters in the past 30 days.
-  
+
   For example, if there is 1 pinned cluster, 4 active clusters, 45 terminated
   all-purpose clusters in the past 30 days, and 50 terminated job clusters in
   the past 30 days, then this API returns the 1 pinned cluster, 4 active
@@ -579,6 +587,9 @@ var listCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start list-node-types command
@@ -592,7 +603,7 @@ var listNodeTypesCmd = &cobra.Command{
 	Use:   "list-node-types",
 	Short: `List node types.`,
 	Long: `List node types.
-  
+
   Returns a list of supported Spark node types. These node types can be used to
   launch a cluster.`,
 
@@ -607,6 +618,9 @@ var listNodeTypesCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start list-zones command
@@ -620,7 +634,7 @@ var listZonesCmd = &cobra.Command{
 	Use:   "list-zones",
 	Short: `List availability zones.`,
 	Long: `List availability zones.
-  
+
   Returns a list of availability zones where clusters can be created in (For
   example, us-west-2a). These zones can be used to launch a cluster.`,
 
@@ -635,6 +649,9 @@ var listZonesCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start permanent-delete command
@@ -653,10 +670,10 @@ var permanentDeleteCmd = &cobra.Command{
 	Use:   "permanent-delete CLUSTER_ID",
 	Short: `Permanently delete cluster.`,
 	Long: `Permanently delete cluster.
-  
+
   Permanently deletes a Spark cluster. This cluster is terminated and resources
   are asynchronously removed.
-  
+
   In addition, users will no longer see permanently deleted clusters in the
   cluster list, and API users can no longer perform any action on permanently
   deleted clusters.`,
@@ -698,6 +715,9 @@ var permanentDeleteCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start pin command
@@ -716,7 +736,7 @@ var pinCmd = &cobra.Command{
 	Use:   "pin CLUSTER_ID",
 	Short: `Pin cluster.`,
 	Long: `Pin cluster.
-  
+
   Pinning a cluster ensures that the cluster will always be returned by the
   ListClusters API. Pinning a cluster that is already pinned will have no
   effect. This API can only be called by workspace admins.`,
@@ -758,6 +778,9 @@ var pinCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start resize command
@@ -784,7 +807,7 @@ var resizeCmd = &cobra.Command{
 	Use:   "resize CLUSTER_ID",
 	Short: `Resize cluster.`,
 	Long: `Resize cluster.
-  
+
   Resizes a cluster to have a desired number of workers. This will fail unless
   the cluster is in a RUNNING state.`,
 
@@ -819,29 +842,27 @@ var resizeCmd = &cobra.Command{
 			resizeReq.ClusterId = args[0]
 		}
 
+		wait, err := w.Clusters.Resize(ctx, resizeReq)
+		if err != nil {
+			return err
+		}
 		if resizeSkipWait {
-			err = w.Clusters.Resize(ctx, resizeReq)
-			if err != nil {
-				return err
-			}
 			return nil
 		}
 		spinner := cmdio.Spinner(ctx)
-		info, err := w.Clusters.ResizeAndWait(ctx, resizeReq,
-			retries.Timeout[compute.ClusterInfo](resizeTimeout),
-			func(i *retries.Info[compute.ClusterInfo]) {
-				if i.Info == nil {
-					return
-				}
-				statusMessage := i.Info.StateMessage
-				spinner <- statusMessage
-			})
+		info, err := wait.OnProgress(func(i *compute.ClusterInfo) {
+			statusMessage := i.StateMessage
+			spinner <- statusMessage
+		}).GetWithTimeout(resizeTimeout)
 		close(spinner)
 		if err != nil {
 			return err
 		}
 		return cmdio.Render(ctx, info)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start restart command
@@ -867,7 +888,7 @@ var restartCmd = &cobra.Command{
 	Use:   "restart CLUSTER_ID",
 	Short: `Restart cluster.`,
 	Long: `Restart cluster.
-  
+
   Restarts a Spark cluster with the supplied ID. If the cluster is not currently
   in a RUNNING state, nothing will happen.`,
 
@@ -902,29 +923,27 @@ var restartCmd = &cobra.Command{
 			restartReq.ClusterId = args[0]
 		}
 
+		wait, err := w.Clusters.Restart(ctx, restartReq)
+		if err != nil {
+			return err
+		}
 		if restartSkipWait {
-			err = w.Clusters.Restart(ctx, restartReq)
-			if err != nil {
-				return err
-			}
 			return nil
 		}
 		spinner := cmdio.Spinner(ctx)
-		info, err := w.Clusters.RestartAndWait(ctx, restartReq,
-			retries.Timeout[compute.ClusterInfo](restartTimeout),
-			func(i *retries.Info[compute.ClusterInfo]) {
-				if i.Info == nil {
-					return
-				}
-				statusMessage := i.Info.StateMessage
-				spinner <- statusMessage
-			})
+		info, err := wait.OnProgress(func(i *compute.ClusterInfo) {
+			statusMessage := i.StateMessage
+			spinner <- statusMessage
+		}).GetWithTimeout(restartTimeout)
 		close(spinner)
 		if err != nil {
 			return err
 		}
 		return cmdio.Render(ctx, info)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start spark-versions command
@@ -938,7 +957,7 @@ var sparkVersionsCmd = &cobra.Command{
 	Use:   "spark-versions",
 	Short: `List available Spark versions.`,
 	Long: `List available Spark versions.
-  
+
   Returns the list of available Spark versions. These versions can be used to
   launch a cluster.`,
 
@@ -953,6 +972,9 @@ var sparkVersionsCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start start command
@@ -976,10 +998,10 @@ var startCmd = &cobra.Command{
 	Use:   "start CLUSTER_ID",
 	Short: `Start terminated cluster.`,
 	Long: `Start terminated cluster.
-  
+
   Starts a terminated Spark cluster with the supplied ID. This works similar to
   createCluster except:
-  
+
   * The previous cluster id and attributes are preserved. * The cluster starts
   with the last specified cluster size. * If the previous cluster was an
   autoscaling cluster, the current cluster starts with the minimum number of
@@ -1017,29 +1039,27 @@ var startCmd = &cobra.Command{
 			startReq.ClusterId = args[0]
 		}
 
+		wait, err := w.Clusters.Start(ctx, startReq)
+		if err != nil {
+			return err
+		}
 		if startSkipWait {
-			err = w.Clusters.Start(ctx, startReq)
-			if err != nil {
-				return err
-			}
 			return nil
 		}
 		spinner := cmdio.Spinner(ctx)
-		info, err := w.Clusters.StartAndWait(ctx, startReq,
-			retries.Timeout[compute.ClusterInfo](startTimeout),
-			func(i *retries.Info[compute.ClusterInfo]) {
-				if i.Info == nil {
-					return
-				}
-				statusMessage := i.Info.StateMessage
-				spinner <- statusMessage
-			})
+		info, err := wait.OnProgress(func(i *compute.ClusterInfo) {
+			statusMessage := i.StateMessage
+			spinner <- statusMessage
+		}).GetWithTimeout(startTimeout)
 		close(spinner)
 		if err != nil {
 			return err
 		}
 		return cmdio.Render(ctx, info)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start unpin command
@@ -1058,7 +1078,7 @@ var unpinCmd = &cobra.Command{
 	Use:   "unpin CLUSTER_ID",
 	Short: `Unpin cluster.`,
 	Long: `Unpin cluster.
-  
+
   Unpinning a cluster will allow the cluster to eventually be removed from the
   ListClusters API. Unpinning a cluster that is not pinned will have no effect.
   This API can only be called by workspace admins.`,
@@ -1100,6 +1120,9 @@ var unpinCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // end service Clusters

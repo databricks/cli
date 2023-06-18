@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -144,15 +145,28 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 		return w.Write(ctx, name, bytes.NewReader(body), sliceWithout(mode, CreateParentDirectories)...)
 	}
 
-	// This API returns 409 if the file already exists.
+	// This API returns 409 if the file already exists, when the object type is file
 	if aerr.StatusCode == http.StatusConflict {
+		return FileAlreadyExistsError{absPath}
+	}
+
+	// This API returns 400 if the file already exists, when the object type is notebook
+	regex := regexp.MustCompile(`Path \((.*)\) already exists.`)
+	if aerr.StatusCode == http.StatusBadRequest && regex.Match([]byte(aerr.Message)) {
+		// Parse file path from regex capture group
+		matches := regex.FindStringSubmatch(aerr.Message)
+		if len(matches) == 2 {
+			return FileAlreadyExistsError{matches[1]}
+		}
+
+		// Default to path specified to filer.Write if regex capture fails
 		return FileAlreadyExistsError{absPath}
 	}
 
 	return err
 }
 
-func (w *WorkspaceFilesClient) Read(ctx context.Context, name string) (io.Reader, error) {
+func (w *WorkspaceFilesClient) Read(ctx context.Context, name string) (io.ReadCloser, error) {
 	absPath, err := w.root.Join(name)
 	if err != nil {
 		return nil, err
@@ -184,7 +198,7 @@ func (w *WorkspaceFilesClient) Read(ctx context.Context, name string) (io.Reader
 	if err != nil {
 		return nil, err
 	}
-	return bytes.NewReader(b), nil
+	return io.NopCloser(bytes.NewReader(b)), nil
 }
 
 func (w *WorkspaceFilesClient) Delete(ctx context.Context, name string, mode ...DeleteMode) error {

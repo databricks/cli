@@ -9,7 +9,6 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/spf13/cobra"
 )
@@ -35,6 +34,9 @@ var Cmd = &cobra.Command{
   [Databricks CLI]: https://docs.databricks.com/dev-tools/cli/index.html
   [Secrets CLI]: https://docs.databricks.com/dev-tools/cli/secrets-cli.html
   [Secrets utility]: https://docs.databricks.com/dev-tools/databricks-utils.html#dbutils-secrets`,
+	Annotations: map[string]string{
+		"package": "jobs",
+	},
 }
 
 // start cancel-all-runs command
@@ -97,6 +99,9 @@ var cancelAllRunsCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start cancel-run command
@@ -158,36 +163,34 @@ var cancelRunCmd = &cobra.Command{
 			}
 		}
 
+		wait, err := w.Jobs.CancelRun(ctx, cancelRunReq)
+		if err != nil {
+			return err
+		}
 		if cancelRunSkipWait {
-			err = w.Jobs.CancelRun(ctx, cancelRunReq)
-			if err != nil {
-				return err
-			}
 			return nil
 		}
 		spinner := cmdio.Spinner(ctx)
-		info, err := w.Jobs.CancelRunAndWait(ctx, cancelRunReq,
-			retries.Timeout[jobs.Run](cancelRunTimeout),
-			func(i *retries.Info[jobs.Run]) {
-				if i.Info == nil {
-					return
-				}
-				if i.Info.State == nil {
-					return
-				}
-				status := i.Info.State.LifeCycleState
-				statusMessage := fmt.Sprintf("current status: %s", status)
-				if i.Info.State != nil {
-					statusMessage = i.Info.State.StateMessage
-				}
-				spinner <- statusMessage
-			})
+		info, err := wait.OnProgress(func(i *jobs.Run) {
+			if i.State == nil {
+				return
+			}
+			status := i.State.LifeCycleState
+			statusMessage := fmt.Sprintf("current status: %s", status)
+			if i.State != nil {
+				statusMessage = i.State.StateMessage
+			}
+			spinner <- statusMessage
+		}).GetWithTimeout(cancelRunTimeout)
 		close(spinner)
 		if err != nil {
 			return err
 		}
 		return cmdio.Render(ctx, info)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start create command
@@ -252,6 +255,9 @@ var createCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start delete command
@@ -313,6 +319,9 @@ var deleteCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start delete-run command
@@ -374,6 +383,9 @@ var deleteRunCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start export-run command
@@ -437,6 +449,9 @@ var exportRunCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start get command
@@ -498,6 +513,9 @@ var getCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start get-run command
@@ -566,6 +584,9 @@ var getRunCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start get-run-output command
@@ -636,6 +657,9 @@ var getRunOutputCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start list command
@@ -652,6 +676,7 @@ func init() {
 	listCmd.Flags().IntVar(&listReq.Limit, "limit", listReq.Limit, `The number of jobs to return.`)
 	listCmd.Flags().StringVar(&listReq.Name, "name", listReq.Name, `A filter on the list based on the exact (case insensitive) job name.`)
 	listCmd.Flags().IntVar(&listReq.Offset, "offset", listReq.Offset, `The offset of the first job to return, relative to the most recently created job.`)
+	listCmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Use next_page_token or prev_page_token returned from the previous request to list the next or previous page of jobs respectively.`)
 
 }
 
@@ -688,6 +713,9 @@ var listCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start list-runs command
@@ -706,6 +734,7 @@ func init() {
 	listRunsCmd.Flags().Int64Var(&listRunsReq.JobId, "job-id", listRunsReq.JobId, `The job for which to list runs.`)
 	listRunsCmd.Flags().IntVar(&listRunsReq.Limit, "limit", listRunsReq.Limit, `The number of runs to return.`)
 	listRunsCmd.Flags().IntVar(&listRunsReq.Offset, "offset", listRunsReq.Offset, `The offset of the first run to return, relative to the most recent run.`)
+	listRunsCmd.Flags().StringVar(&listRunsReq.PageToken, "page-token", listRunsReq.PageToken, `Use next_page_token or prev_page_token returned from the previous request to list the next or previous page of runs respectively.`)
 	listRunsCmd.Flags().Var(&listRunsReq.RunType, "run-type", `The type of runs to return.`)
 	listRunsCmd.Flags().IntVar(&listRunsReq.StartTimeFrom, "start-time-from", listRunsReq.StartTimeFrom, `Show runs that started _at or after_ this value.`)
 	listRunsCmd.Flags().IntVar(&listRunsReq.StartTimeTo, "start-time-to", listRunsReq.StartTimeTo, `Show runs that started _at or before_ this value.`)
@@ -745,6 +774,9 @@ var listRunsCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start repair-run command
@@ -819,36 +851,34 @@ var repairRunCmd = &cobra.Command{
 			}
 		}
 
+		wait, err := w.Jobs.RepairRun(ctx, repairRunReq)
+		if err != nil {
+			return err
+		}
 		if repairRunSkipWait {
-			response, err := w.Jobs.RepairRun(ctx, repairRunReq)
-			if err != nil {
-				return err
-			}
-			return cmdio.Render(ctx, response)
+			return cmdio.Render(ctx, wait.Response)
 		}
 		spinner := cmdio.Spinner(ctx)
-		info, err := w.Jobs.RepairRunAndWait(ctx, repairRunReq,
-			retries.Timeout[jobs.Run](repairRunTimeout),
-			func(i *retries.Info[jobs.Run]) {
-				if i.Info == nil {
-					return
-				}
-				if i.Info.State == nil {
-					return
-				}
-				status := i.Info.State.LifeCycleState
-				statusMessage := fmt.Sprintf("current status: %s", status)
-				if i.Info.State != nil {
-					statusMessage = i.Info.State.StateMessage
-				}
-				spinner <- statusMessage
-			})
+		info, err := wait.OnProgress(func(i *jobs.Run) {
+			if i.State == nil {
+				return
+			}
+			status := i.State.LifeCycleState
+			statusMessage := fmt.Sprintf("current status: %s", status)
+			if i.State != nil {
+				statusMessage = i.State.StateMessage
+			}
+			spinner <- statusMessage
+		}).GetWithTimeout(repairRunTimeout)
 		close(spinner)
 		if err != nil {
 			return err
 		}
 		return cmdio.Render(ctx, info)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start reset command
@@ -882,14 +912,7 @@ var resetCmd = &cobra.Command{
 				return err
 			}
 		} else {
-			_, err = fmt.Sscan(args[0], &resetReq.JobId)
-			if err != nil {
-				return fmt.Errorf("invalid JOB_ID: %s", args[0])
-			}
-			_, err = fmt.Sscan(args[1], &resetReq.NewSettings)
-			if err != nil {
-				return fmt.Errorf("invalid NEW_SETTINGS: %s", args[1])
-			}
+			return fmt.Errorf("provide command input in JSON format by specifying --json option")
 		}
 
 		err = w.Jobs.Reset(ctx, resetReq)
@@ -898,6 +921,9 @@ var resetCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start run-now command
@@ -968,36 +994,34 @@ var runNowCmd = &cobra.Command{
 			}
 		}
 
+		wait, err := w.Jobs.RunNow(ctx, runNowReq)
+		if err != nil {
+			return err
+		}
 		if runNowSkipWait {
-			response, err := w.Jobs.RunNow(ctx, runNowReq)
-			if err != nil {
-				return err
-			}
-			return cmdio.Render(ctx, response)
+			return cmdio.Render(ctx, wait.Response)
 		}
 		spinner := cmdio.Spinner(ctx)
-		info, err := w.Jobs.RunNowAndWait(ctx, runNowReq,
-			retries.Timeout[jobs.Run](runNowTimeout),
-			func(i *retries.Info[jobs.Run]) {
-				if i.Info == nil {
-					return
-				}
-				if i.Info.State == nil {
-					return
-				}
-				status := i.Info.State.LifeCycleState
-				statusMessage := fmt.Sprintf("current status: %s", status)
-				if i.Info.State != nil {
-					statusMessage = i.Info.State.StateMessage
-				}
-				spinner <- statusMessage
-			})
+		info, err := wait.OnProgress(func(i *jobs.Run) {
+			if i.State == nil {
+				return
+			}
+			status := i.State.LifeCycleState
+			statusMessage := fmt.Sprintf("current status: %s", status)
+			if i.State != nil {
+				statusMessage = i.State.StateMessage
+			}
+			spinner <- statusMessage
+		}).GetWithTimeout(runNowTimeout)
 		close(spinner)
 		if err != nil {
 			return err
 		}
 		return cmdio.Render(ctx, info)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start submit command
@@ -1056,36 +1080,34 @@ var submitCmd = &cobra.Command{
 		} else {
 		}
 
+		wait, err := w.Jobs.Submit(ctx, submitReq)
+		if err != nil {
+			return err
+		}
 		if submitSkipWait {
-			response, err := w.Jobs.Submit(ctx, submitReq)
-			if err != nil {
-				return err
-			}
-			return cmdio.Render(ctx, response)
+			return cmdio.Render(ctx, wait.Response)
 		}
 		spinner := cmdio.Spinner(ctx)
-		info, err := w.Jobs.SubmitAndWait(ctx, submitReq,
-			retries.Timeout[jobs.Run](submitTimeout),
-			func(i *retries.Info[jobs.Run]) {
-				if i.Info == nil {
-					return
-				}
-				if i.Info.State == nil {
-					return
-				}
-				status := i.Info.State.LifeCycleState
-				statusMessage := fmt.Sprintf("current status: %s", status)
-				if i.Info.State != nil {
-					statusMessage = i.Info.State.StateMessage
-				}
-				spinner <- statusMessage
-			})
+		info, err := wait.OnProgress(func(i *jobs.Run) {
+			if i.State == nil {
+				return
+			}
+			status := i.State.LifeCycleState
+			statusMessage := fmt.Sprintf("current status: %s", status)
+			if i.State != nil {
+				statusMessage = i.State.StateMessage
+			}
+			spinner <- statusMessage
+		}).GetWithTimeout(submitTimeout)
 		close(spinner)
 		if err != nil {
 			return err
 		}
 		return cmdio.Render(ctx, info)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start update command
@@ -1151,6 +1173,9 @@ var updateCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // end service Jobs

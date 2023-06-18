@@ -14,6 +14,9 @@ var Cmd = &cobra.Command{
 	Use:   "workspace-conf",
 	Short: `This API allows updating known workspace settings for advanced users.`,
 	Long:  `This API allows updating known workspace settings for advanced users.`,
+	Annotations: map[string]string{
+		"package": "settings",
+	},
 }
 
 // start get-status command
@@ -62,6 +65,9 @@ var getStatusCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start set-status command
@@ -110,6 +116,9 @@ var setStatusCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // end service WorkspaceConf

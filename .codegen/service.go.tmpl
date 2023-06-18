@@ -20,10 +20,18 @@ import (
 {{define "service"}}
 var Cmd = &cobra.Command{
 	Use:   "{{(.TrimPrefix "account").KebabName}}",
-    {{if .Description -}}
-    Short: `{{.Summary | without "`"}}`,
+	{{- if .Description }}
+	Short: `{{.Summary | without "`"}}`,
 	Long: `{{.Comment  "  " 80 | without "`"}}`,
-    {{- end}}
+	{{- end }}
+	Annotations: map[string]string{
+		"package": "{{ .Package.Name }}",
+	},
+	{{- if .IsPrivatePreview }}
+
+	// This service is being previewed; hide from help output.
+	Hidden: true,
+	{{- end }}
 }
 
 {{- $serviceName := .KebabName -}}
@@ -56,6 +64,7 @@ func init() {
 			{{else if .Entity.IsAny }}// TODO: any: {{.Name}}
 			{{else if .Entity.ArrayValue }}// TODO: array: {{.Name}}
 			{{else if .Entity.MapValue }}// TODO: map via StringToStringVar: {{.Name}}
+			{{else if .Entity.IsEmpty }}// TODO: output-only field
 			{{else if .Entity.Enum }}{{$method.CamelName}}Cmd.Flags().Var(&{{$method.CamelName}}Req.{{.PascalName}}, "{{.KebabName}}", `{{.Summary | without "`"}}`)
 			{{else}}{{$method.CamelName}}Cmd.Flags().{{template "arg-type" .Entity}}(&{{$method.CamelName}}Req.{{.PascalName}}, "{{.KebabName}}", {{$method.CamelName}}Req.{{.PascalName}}, `{{.Summary | without "`"}}`)
 			{{end}}
@@ -75,10 +84,16 @@ func init() {
 {{- $hasRequiredArgs := and (not $hasIdPrompt) $hasPosArgs -}}
 var {{.CamelName}}Cmd = &cobra.Command{
 	Use: "{{.KebabName}}{{if $hasPosArgs}}{{range .Request.RequiredFields}} {{.ConstantName}}{{end}}{{end}}",
-	{{if .Description -}}
-    Short: `{{.Summary | without "`"}}`,
+	{{- if .Description }}
+	Short: `{{.Summary | without "`"}}`,
 	Long: `{{.Comment  "  " 80 | without "`"}}`,
-    {{end}}
+	{{- end }}
+	{{- if .IsPrivatePreview }}
+
+	// This command is being previewed; hide from help output.
+	Hidden: true,
+	{{- end }}
+
 	Annotations: map[string]string{},{{if $hasRequiredArgs }}
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs({{len .Request.RequiredFields}})
@@ -118,46 +133,53 @@ var {{.CamelName}}Cmd = &cobra.Command{
 				}
 			{{- end -}}
 			{{$method := .}}
-			{{- range $arg, $field := .Request.RequiredFields}}
-				{{if not $field.Entity.IsString -}}
-				_, err = fmt.Sscan(args[{{$arg}}], &{{$method.CamelName}}Req.{{$field.PascalName}})
-				if err != nil {
-					return fmt.Errorf("invalid {{$field.ConstantName}}: %s", args[{{$arg}}])
-				}{{else -}}
-				{{$method.CamelName}}Req.{{$field.PascalName}} = args[{{$arg}}]
-				{{- end -}}{{end}}
+			{{- if .Request.IsAllRequiredFieldsPrimitive -}}
+				{{- range $arg, $field := .Request.RequiredFields}}
+					{{if not $field.Entity.IsString -}}
+					_, err = fmt.Sscan(args[{{$arg}}], &{{$method.CamelName}}Req.{{$field.PascalName}})
+					if err != nil {
+						return fmt.Errorf("invalid {{$field.ConstantName}}: %s", args[{{$arg}}])
+					}{{else -}}
+					{{$method.CamelName}}Req.{{$field.PascalName}} = args[{{$arg}}]
+					{{- end -}}{{end}}
+			{{- else -}}
+				return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+			{{- end -}}
 			}
 		{{end}}
 		{{if $wait -}}
+		wait, err := {{if .Service.IsAccounts}}a{{else}}w{{end}}.{{.Service.PascalName}}.{{.PascalName}}(ctx{{if .Request}}, {{.CamelName}}Req{{end}})
+		if err != nil {
+			return err
+		}
 		if {{.CamelName}}SkipWait {
-			{{template "method-call" .}}
+			{{if .Response -}}
+			return cmdio.Render(ctx, wait.Response)
+			{{- else -}}
+			return nil
+			{{- end}}
 		}
 		spinner := cmdio.Spinner(ctx)
-		info, err := {{if .Service.IsAccounts}}a{{else}}w{{end}}.{{.Service.PascalName}}.{{.PascalName}}AndWait(ctx{{if .Request}}, {{.CamelName}}Req{{end}},
-			retries.Timeout[{{.Service.Package.Name}}.{{.Wait.Poll.Response.PascalName}}]({{.CamelName}}Timeout),
-			func(i *retries.Info[{{.Service.Package.Name}}.{{.Wait.Poll.Response.PascalName}}]) {
-				if i.Info == nil {
-					return
-				}
-				{{if .Wait.MessagePath -}}
-				{{if .Wait.ComplexMessagePath -}}
-				if i.Info.{{.Wait.MessagePathHead.PascalName}} == nil {
-					return
-				}
-				status := i.Info{{range .Wait.StatusPath}}.{{.PascalName}}{{end}}
-				statusMessage := fmt.Sprintf("current status: %s", status)
-				if i.Info.{{.Wait.MessagePathHead.PascalName}} != nil {
-					statusMessage = i.Info{{range .Wait.MessagePath}}.{{.PascalName}}{{end}}
-				}
-				{{- else -}}
-				statusMessage := i.Info{{range .Wait.MessagePath}}.{{.PascalName}}{{end}}
-				{{- end}}
-				{{- else -}}
-				status := i.Info{{range .Wait.StatusPath}}.{{.PascalName}}{{end}}
-				statusMessage := fmt.Sprintf("current status: %s", status)
-				{{- end}}
-				spinner <- statusMessage
-			})
+		info, err := wait.OnProgress(func(i *{{.Service.Package.Name}}.{{.Wait.Poll.Response.PascalName}}) {
+			{{if .Wait.MessagePath -}}
+			{{if .Wait.ComplexMessagePath -}}
+			if i.{{.Wait.MessagePathHead.PascalName}} == nil {
+				return
+			}
+			status := i{{range .Wait.StatusPath}}.{{.PascalName}}{{end}}
+			statusMessage := fmt.Sprintf("current status: %s", status)
+			if i.{{.Wait.MessagePathHead.PascalName}} != nil {
+				statusMessage = i{{range .Wait.MessagePath}}.{{.PascalName}}{{end}}
+			}
+			{{- else -}}
+			statusMessage := i{{range .Wait.MessagePath}}.{{.PascalName}}{{end}}
+			{{- end}}
+			{{- else -}}
+			status := i{{range .Wait.StatusPath}}.{{.PascalName}}{{end}}
+			statusMessage := fmt.Sprintf("current status: %s", status)
+			{{- end}}
+			spinner <- statusMessage
+		}).GetWithTimeout({{.CamelName}}Timeout)
 		close(spinner)
 		if err != nil {
 			return err
@@ -167,6 +189,9 @@ var {{.CamelName}}Cmd = &cobra.Command{
 		{{template "method-call" .}}
 		{{end -}}
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 {{end}}
 // end service {{.Name}}{{end}}

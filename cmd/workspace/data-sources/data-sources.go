@@ -21,6 +21,9 @@ var Cmd = &cobra.Command{
   in your workspace. We advise you to use any text editor, REST client, or
   grep to search the response from this API for the name of your SQL warehouse
   as it appears in Databricks SQL.`,
+	Annotations: map[string]string{
+		"package": "sql",
+	},
 }
 
 // start list command
@@ -50,6 +53,9 @@ var listCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // end service DataSources

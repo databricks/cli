@@ -21,6 +21,9 @@ var Cmd = &cobra.Command{
   bucket for storage of non-production DBFS data. A storage configuration
   encapsulates this bucket information, and its ID is used when creating a new
   workspace.`,
+	Annotations: map[string]string{
+		"package": "provisioning",
+	},
 }
 
 // start create command
@@ -62,11 +65,7 @@ var createCmd = &cobra.Command{
 				return err
 			}
 		} else {
-			createReq.StorageConfigurationName = args[0]
-			_, err = fmt.Sscan(args[1], &createReq.RootBucketInfo)
-			if err != nil {
-				return fmt.Errorf("invalid ROOT_BUCKET_INFO: %s", args[1])
-			}
+			return fmt.Errorf("provide command input in JSON format by specifying --json option")
 		}
 
 		response, err := a.Storage.Create(ctx, createReq)
@@ -75,6 +74,9 @@ var createCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start delete command
@@ -134,6 +136,9 @@ var deleteCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start get command
@@ -192,6 +197,9 @@ var getCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start list command
@@ -220,6 +228,9 @@ var listCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // end service Storage

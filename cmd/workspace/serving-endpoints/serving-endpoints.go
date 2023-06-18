@@ -9,7 +9,6 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/serving"
 	"github.com/spf13/cobra"
 )
@@ -30,6 +29,9 @@ var Cmd = &cobra.Command{
   define how requests should be routed to your served models behind an endpoint.
   Additionally, you can configure the scale of resources that should be applied
   to each served model.`,
+	Annotations: map[string]string{
+		"package": "serving",
+	},
 }
 
 // start build-logs command
@@ -80,6 +82,9 @@ var buildLogsCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start create command
@@ -115,37 +120,31 @@ var createCmd = &cobra.Command{
 				return err
 			}
 		} else {
-			createReq.Name = args[0]
-			_, err = fmt.Sscan(args[1], &createReq.Config)
-			if err != nil {
-				return fmt.Errorf("invalid CONFIG: %s", args[1])
-			}
+			return fmt.Errorf("provide command input in JSON format by specifying --json option")
 		}
 
+		wait, err := w.ServingEndpoints.Create(ctx, createReq)
+		if err != nil {
+			return err
+		}
 		if createSkipWait {
-			response, err := w.ServingEndpoints.Create(ctx, createReq)
-			if err != nil {
-				return err
-			}
-			return cmdio.Render(ctx, response)
+			return cmdio.Render(ctx, wait.Response)
 		}
 		spinner := cmdio.Spinner(ctx)
-		info, err := w.ServingEndpoints.CreateAndWait(ctx, createReq,
-			retries.Timeout[serving.ServingEndpointDetailed](createTimeout),
-			func(i *retries.Info[serving.ServingEndpointDetailed]) {
-				if i.Info == nil {
-					return
-				}
-				status := i.Info.State.ConfigUpdate
-				statusMessage := fmt.Sprintf("current status: %s", status)
-				spinner <- statusMessage
-			})
+		info, err := wait.OnProgress(func(i *serving.ServingEndpointDetailed) {
+			status := i.State.ConfigUpdate
+			statusMessage := fmt.Sprintf("current status: %s", status)
+			spinner <- statusMessage
+		}).GetWithTimeout(createTimeout)
 		close(spinner)
 		if err != nil {
 			return err
 		}
 		return cmdio.Render(ctx, info)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start delete command
@@ -192,6 +191,9 @@ var deleteCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start export-metrics command
@@ -242,6 +244,9 @@ var exportMetricsCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start get command
@@ -290,6 +295,9 @@ var getCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start list command
@@ -309,12 +317,15 @@ var listCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		response, err := w.ServingEndpoints.List(ctx)
+		response, err := w.ServingEndpoints.ListAll(ctx)
 		if err != nil {
 			return err
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start logs command
@@ -365,6 +376,9 @@ var logsCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start query command
@@ -411,6 +425,9 @@ var queryCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start update-config command
@@ -453,37 +470,31 @@ var updateConfigCmd = &cobra.Command{
 				return err
 			}
 		} else {
-			_, err = fmt.Sscan(args[0], &updateConfigReq.ServedModels)
-			if err != nil {
-				return fmt.Errorf("invalid SERVED_MODELS: %s", args[0])
-			}
-			updateConfigReq.Name = args[1]
+			return fmt.Errorf("provide command input in JSON format by specifying --json option")
 		}
 
+		wait, err := w.ServingEndpoints.UpdateConfig(ctx, updateConfigReq)
+		if err != nil {
+			return err
+		}
 		if updateConfigSkipWait {
-			response, err := w.ServingEndpoints.UpdateConfig(ctx, updateConfigReq)
-			if err != nil {
-				return err
-			}
-			return cmdio.Render(ctx, response)
+			return cmdio.Render(ctx, wait.Response)
 		}
 		spinner := cmdio.Spinner(ctx)
-		info, err := w.ServingEndpoints.UpdateConfigAndWait(ctx, updateConfigReq,
-			retries.Timeout[serving.ServingEndpointDetailed](updateConfigTimeout),
-			func(i *retries.Info[serving.ServingEndpointDetailed]) {
-				if i.Info == nil {
-					return
-				}
-				status := i.Info.State.ConfigUpdate
-				statusMessage := fmt.Sprintf("current status: %s", status)
-				spinner <- statusMessage
-			})
+		info, err := wait.OnProgress(func(i *serving.ServingEndpointDetailed) {
+			status := i.State.ConfigUpdate
+			statusMessage := fmt.Sprintf("current status: %s", status)
+			spinner <- statusMessage
+		}).GetWithTimeout(updateConfigTimeout)
 		close(spinner)
 		if err != nil {
 			return err
 		}
 		return cmdio.Render(ctx, info)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // end service ServingEndpoints

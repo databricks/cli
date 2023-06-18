@@ -17,6 +17,9 @@ var Cmd = &cobra.Command{
 	Short: `The Workspace Permission Assignment API allows you to manage workspace permissions for principals in your account.`,
 	Long: `The Workspace Permission Assignment API allows you to manage workspace
   permissions for principals in your account.`,
+	Annotations: map[string]string{
+		"package": "iam",
+	},
 }
 
 // start delete command
@@ -73,6 +76,9 @@ var deleteCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start get command
@@ -124,6 +130,9 @@ var getCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start list command
@@ -176,6 +185,9 @@ var listCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start update command
@@ -209,18 +221,7 @@ var updateCmd = &cobra.Command{
 				return err
 			}
 		} else {
-			_, err = fmt.Sscan(args[0], &updateReq.Permissions)
-			if err != nil {
-				return fmt.Errorf("invalid PERMISSIONS: %s", args[0])
-			}
-			_, err = fmt.Sscan(args[1], &updateReq.WorkspaceId)
-			if err != nil {
-				return fmt.Errorf("invalid WORKSPACE_ID: %s", args[1])
-			}
-			_, err = fmt.Sscan(args[2], &updateReq.PrincipalId)
-			if err != nil {
-				return fmt.Errorf("invalid PRINCIPAL_ID: %s", args[2])
-			}
+			return fmt.Errorf("provide command input in JSON format by specifying --json option")
 		}
 
 		err = a.WorkspaceAssignment.Update(ctx, updateReq)
@@ -229,6 +230,9 @@ var updateCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // end service WorkspaceAssignment

@@ -1,124 +1,167 @@
 package configure
 
 import (
-	"bytes"
-	"errors"
+	"context"
 	"fmt"
-	"os"
-	"path/filepath"
+	"net/url"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/databrickscfg"
+	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
-	"gopkg.in/ini.v1"
 )
 
-type Configs struct {
-	Host    string `ini:"host"`
-	Token   string `ini:"token,omitempty"`
-	Profile string `ini:"-"`
-}
-
-var tokenMode bool
-
-func (cfg *Configs) loadNonInteractive(cmd *cobra.Command) error {
-	host, err := cmd.Flags().GetString("host")
-	if err != nil || host == "" {
-		return fmt.Errorf("use --host to specify host in non interactive mode: %w", err)
-	}
-	cfg.Host = host
-
-	if !tokenMode {
-		return nil
-	}
-
-	n, err := fmt.Scanf("%s\n", &cfg.Token)
+func validateHost(s string) error {
+	u, err := url.Parse(s)
 	if err != nil {
 		return err
 	}
-	if n != 1 {
-		return fmt.Errorf("exactly 1 argument required")
+	if u.Host == "" || u.Scheme != "https" {
+		return fmt.Errorf("must start with https://")
+	}
+	if u.Path != "" && u.Path != "/" {
+		return fmt.Errorf("must use empty path")
 	}
 	return nil
 }
 
+func configureFromFlags(cmd *cobra.Command, ctx context.Context, cfg *config.Config) error {
+	// Configure profile name if set.
+	profile, err := cmd.Flags().GetString("profile")
+	if err != nil {
+		return fmt.Errorf("read --profile flag: %w", err)
+	}
+	if profile != "" {
+		cfg.Profile = profile
+	}
+
+	// Configure host if set.
+	host, err := cmd.Flags().GetString("host")
+	if err != nil {
+		return fmt.Errorf("read --host flag: %w", err)
+	}
+	if host != "" {
+		cfg.Host = host
+	}
+
+	// Validate host if set.
+	if cfg.Host != "" {
+		err = validateHost(cfg.Host)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func configureInteractive(cmd *cobra.Command, ctx context.Context, cfg *config.Config) error {
+	err := configureFromFlags(cmd, ctx, cfg)
+	if err != nil {
+		return err
+	}
+
+	// Ask user to specify the host if not already set.
+	if cfg.Host == "" {
+		prompt := cmdio.Prompt(ctx)
+		prompt.Label = "Databricks Host"
+		prompt.Default = "https://"
+		prompt.AllowEdit = true
+		prompt.Validate = validateHost
+		out, err := prompt.Run()
+		if err != nil {
+			return err
+		}
+		cfg.Host = out
+	}
+
+	// Ask user to specify the token is not already set.
+	if cfg.Token == "" {
+		prompt := cmdio.Prompt(ctx)
+		prompt.Label = "Personal Access Token"
+		prompt.Mask = '*'
+		out, err := prompt.Run()
+		if err != nil {
+			return err
+		}
+		cfg.Token = out
+	}
+
+	return nil
+}
+
+func configureNonInteractive(cmd *cobra.Command, ctx context.Context, cfg *config.Config) error {
+	err := configureFromFlags(cmd, ctx, cfg)
+	if err != nil {
+		return err
+	}
+
+	if cfg.Host == "" {
+		return fmt.Errorf("host must be set in non-interactive mode")
+	}
+
+	// Read token from stdin if not already set.
+	if cfg.Token == "" {
+		_, err := fmt.Fscanf(cmd.InOrStdin(), "%s\n", &cfg.Token)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 var configureCmd = &cobra.Command{
-	Use:    "configure",
-	Short:  "Configure authentication",
+	Use:   "configure",
+	Short: "Configure authentication",
+	Long: `Configure authentication.
+
+This command adds a profile to your ~/.databrickscfg file.
+You can write to a different file by setting the DATABRICKS_CONFIG_FILE environment variable.
+
+If this command is invoked in non-interactive mode, it will read the token from stdin.
+The host must be specified with the --host flag.
+	`,
 	Hidden: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		profile, err := cmd.Flags().GetString("profile")
+		var cfg config.Config
+
+		// Load environment variables, possibly the DEFAULT profile.
+		err := config.ConfigAttributes.Configure(&cfg)
 		if err != nil {
-			return fmt.Errorf("read --profile flag: %w", err)
+			return fmt.Errorf("unable to instantiate configuration from environment variables: %w", err)
 		}
 
-		path := os.Getenv("DATABRICKS_CONFIG_FILE")
-		if path == "" {
-			path, err = os.UserHomeDir()
-			if err != nil {
-				return fmt.Errorf("homedir: %w", err)
-			}
+		ctx := cmd.Context()
+		interactive := cmdio.IsInTTY(ctx) && cmdio.IsOutTTY(ctx)
+		var fn func(*cobra.Command, context.Context, *config.Config) error
+		if interactive {
+			fn = configureInteractive
+		} else {
+			fn = configureNonInteractive
 		}
-		if filepath.Base(path) == ".databrickscfg" {
-			path = filepath.Dir(path)
-		}
-		err = os.MkdirAll(path, os.ModeDir|os.ModePerm)
+		err = fn(cmd, ctx, &cfg)
 		if err != nil {
-			return fmt.Errorf("create config dir: %w", err)
-		}
-		cfgPath := filepath.Join(path, ".databrickscfg")
-		_, err = os.Stat(cfgPath)
-		if errors.Is(err, os.ErrNotExist) {
-			file, err := os.Create(cfgPath)
-			if err != nil {
-				return fmt.Errorf("create config file: %w", err)
-			}
-			file.Close()
-		} else if err != nil {
-			return fmt.Errorf("open config file: %w", err)
+			return err
 		}
 
-		ini_cfg, err := ini.Load(cfgPath)
-		if err != nil {
-			return fmt.Errorf("load config file: %w", err)
-		}
-		cfg := &Configs{"", "", profile}
-		err = ini_cfg.Section(profile).MapTo(cfg)
-		if err != nil {
-			return fmt.Errorf("unmarshal loaded config: %w", err)
-		}
+		// Clear the Databricks CLI path in token mode.
+		// This is relevant for OAuth only.
+		cfg.DatabricksCliPath = ""
 
-		err = cfg.loadNonInteractive(cmd)
-		if err != nil {
-			return fmt.Errorf("reading configs: %w", err)
-		}
-
-		err = ini_cfg.Section(profile).ReflectFrom(cfg)
-		if err != nil {
-			return fmt.Errorf("marshall config: %w", err)
-		}
-
-		var buffer bytes.Buffer
-		if ini_cfg.Section("DEFAULT").Body() != "" {
-			//This configuration makes the ini library write the DEFAULT header explicitly.
-			//DEFAULT section might be empty
-			ini.DefaultHeader = true
-		}
-		_, err = ini_cfg.WriteTo(&buffer)
-		if err != nil {
-			return fmt.Errorf("write config to buffer: %w", err)
-		}
-		err = os.WriteFile(cfgPath, buffer.Bytes(), os.ModePerm)
-		if err != nil {
-			return fmt.Errorf("write congfig to file: %w", err)
-		}
-
-		return nil
+		// Save profile to config file.
+		return databrickscfg.SaveToProfile(ctx, &cfg)
 	},
 }
 
 func init() {
 	root.RootCmd.AddCommand(configureCmd)
-	configureCmd.Flags().BoolVarP(&tokenMode, "token", "t", false, "Configure using Databricks Personal Access Token")
-	configureCmd.Flags().String("host", "", "Host to connect to.")
-	configureCmd.Flags().String("profile", "DEFAULT", "CLI connection profile to use.")
+	configureCmd.Flags().String("host", "", "Databricks workspace host.")
+	configureCmd.Flags().String("profile", "DEFAULT", "Name for the connection profile to configure.")
+
+	// Include token flag for compatibility with the legacy CLI.
+	// It doesn't actually do anything because we always use PATs.
+	configureCmd.Flags().BoolP("token", "t", true, "Configure using Databricks Personal Access Token")
+	configureCmd.Flags().MarkHidden("token")
 }
