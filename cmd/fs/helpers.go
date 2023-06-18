@@ -35,7 +35,7 @@ func filerForPath(ctx context.Context, fullPath string) (filer.Filer, string, er
 		if runtime.GOOS == "windows" {
 			parts := strings.SplitN(path, ":", 2)
 			if len(parts) < 2 {
-				return nil, "", fmt.Errorf("no volume specfied for path: %s", path)
+				return nil, "", fmt.Errorf("no volume specified for path: %s", path)
 			}
 			volume := parts[0] + ":"
 			relPath := parts[1]

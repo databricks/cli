@@ -7,9 +7,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func testRootPath(t *testing.T, uncleanRoot string) {
+func testUnixRootPath(t *testing.T, uncleanRoot string) {
 	cleanRoot := path.Clean(uncleanRoot)
-	rp := NewRootPath(uncleanRoot)
+	rp := NewUnixRootPath(uncleanRoot)
 
 	remotePath, err := rp.Join("a/b/c")
 	assert.NoError(t, err)
@@ -79,12 +79,12 @@ func testRootPath(t *testing.T, uncleanRoot string) {
 	assert.ErrorContains(t, err, `relative path escapes root: ../..`)
 }
 
-func TestRootPathClean(t *testing.T) {
-	testRootPath(t, "/some/root/path")
+func TestUnixRootPathClean(t *testing.T) {
+	testUnixRootPath(t, "/some/root/path")
 }
 
-func TestRootPathUnclean(t *testing.T) {
-	testRootPath(t, "/some/root/path/")
-	testRootPath(t, "/some/root/path/.")
-	testRootPath(t, "/some/root/../path/")
+func TestUnixRootPathUnclean(t *testing.T) {
+	testUnixRootPath(t, "/some/root/path/")
+	testUnixRootPath(t, "/some/root/path/.")
+	testUnixRootPath(t, "/some/root/../path/")
 }

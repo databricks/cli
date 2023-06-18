@@ -3,17 +3,13 @@ package filer
 import (
 	"context"
 	"path/filepath"
-	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestLocalClientAtRootForWindows(t *testing.T) {
-	if runtime.GOOS != "windows" {
-		t.Skip("this test is only meant for windows")
-	}
+func TestLocalClientAtRootOfFilesystem(t *testing.T) {
 	tmpDir := t.TempDir()
 	ctx := context.Background()
 

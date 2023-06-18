@@ -67,14 +67,14 @@ type DbfsClient struct {
 	workspaceClient *databricks.WorkspaceClient
 
 	// File operations will be relative to this path.
-	root RootPath
+	root UnixRootPath
 }
 
 func NewDbfsClient(w *databricks.WorkspaceClient, root string) (Filer, error) {
 	return &DbfsClient{
 		workspaceClient: w,
 
-		root: NewRootPath(root),
+		root: NewUnixRootPath(root),
 	}, nil
 }
 

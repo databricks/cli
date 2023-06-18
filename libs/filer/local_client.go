@@ -19,12 +19,13 @@ type LocalClient struct {
 
 func NewLocalClient(root string) (Filer, error) {
 	if runtime.GOOS == "windows" && root == "/" {
-		// Windows paths require a Volume/Drive letter specified. This allows us
-		// to create local filers at the root of a windows file system without specifying one
-		return &LocalClient{root: NewRootPath("")}, nil
+		// Windows file systems do not have a "root" directory. Instead paths require
+		// a Volume/Drive letter specified. This allows us to refer to files across
+		// different drives from a single client
+		return &LocalClient{root: NopRootPath{}}, nil
 	}
 	return &LocalClient{
-		root: NewRootPath(root),
+		root: NewUnixRootPath(root),
 	}, nil
 }
 
@@ -106,7 +107,7 @@ func (w *LocalClient) Delete(ctx context.Context, name string, mode ...DeleteMod
 	}
 
 	// Illegal to delete the root path.
-	if absPath == w.root.rootPath {
+	if absPath == w.root.Root() {
 		return CannotDeleteRootError{}
 	}
 
