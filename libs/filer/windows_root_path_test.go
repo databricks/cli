@@ -2,6 +2,7 @@ package filer
 
 import (
 	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -42,6 +43,14 @@ func TestWindowsRootPathForRoot(t *testing.T) {
 	assert.Equal(t, `C:a/b`, path)
 }
 
+func notThisVolume(name string) string {
+	if "c" != strings.ToLower(name) {
+		return "c"
+	} else {
+		return "d"
+	}
+}
+
 func TestWindowsRootPath(t *testing.T) {
 	if runtime.GOOS != "windows" {
 		t.Skip("this test is meant for windows")
@@ -50,14 +59,27 @@ func TestWindowsRootPath(t *testing.T) {
 	tmpDir := t.TempDir()
 	rp := NewWindowsRootPath(t.TempDir())
 
+	parts := strings.SplitN(tmpDir, ":", 2)
+	volume := parts[0]
+
 	// Assert root value returned
 	assert.Equal(t, tmpDir, rp.Root())
 
+	// relative windows paths
 	path, err := rp.Join(`a\b\c`)
 	assert.NoError(t, err)
 	assert.Equal(t, tmpDir+`\a\b`, path)
 
 	path, err = rp.Join("a/b")
 	assert.NoError(t, err)
-	assert.Equal(t, tmpDir + `\a/b`, path)
+	assert.Equal(t, tmpDir+`\a/b`, path)
+
+	// relative path with drive specified
+	path, err = rp.Join(volume + ":a\b")
+	assert.NoError(t, err)
+	assert.Equal(t, tmpDir+`\a\b`, path)
+
+	// path in a different volume
+	_, err = rp.Join(notThisVolume(volume) + ":a\b")
+	assert.Contains(t, err, "relative path escapes root")
 }

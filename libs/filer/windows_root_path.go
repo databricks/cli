@@ -26,7 +26,7 @@ func (p WindowsRootPath) Join(name string) (string, error) {
 
 	// Don't allow escaping the specified root using relative paths.
 	if !strings.HasPrefix(absPath, p.rootPath) {
-		return "", fmt.Errorf("relative path %s escapes root %s", name, p.rootPath)
+		return "", fmt.Errorf("relative path escapes root: %s", name)
 	}
 
 	return absPath, nil
