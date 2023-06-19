@@ -199,7 +199,9 @@ func (w *FilesClient) ReadDir(ctx context.Context, name string) ([]fs.DirEntry, 
 }
 
 func (w *FilesClient) Mkdir(ctx context.Context, name string) error {
-	return filesNotImplementedError("Mkdir")
+	// Directories are created implicitly.
+	// No need to do anything.
+	return nil
 }
 
 func (w *FilesClient) Stat(ctx context.Context, name string) (fs.FileInfo, error) {
