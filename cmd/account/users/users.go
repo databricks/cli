@@ -41,17 +41,6 @@ func init() {
 	// TODO: short flags
 	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	createCmd.Flags().BoolVar(&createReq.Active, "active", createReq.Active, `If this user is active.`)
-	createCmd.Flags().StringVar(&createReq.DisplayName, "display-name", createReq.DisplayName, `String that represents a concatenation of given and family names.`)
-	// TODO: array: emails
-	// TODO: array: entitlements
-	createCmd.Flags().StringVar(&createReq.ExternalId, "external-id", createReq.ExternalId, ``)
-	// TODO: array: groups
-	createCmd.Flags().StringVar(&createReq.Id, "id", createReq.Id, `Databricks user ID.`)
-	// TODO: complex arg: name
-	// TODO: array: roles
-	createCmd.Flags().StringVar(&createReq.UserName, "user-name", createReq.UserName, `Email address of the Databricks user.`)
-
 }
 
 var createCmd = &cobra.Command{
@@ -80,6 +69,7 @@ var createCmd = &cobra.Command{
 				return err
 			}
 		} else {
+			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
 
 		response, err := a.Users.Create(ctx, createReq)

@@ -58,7 +58,7 @@ func init() {
     {{if .Request}}// TODO: short flags
 	{{.CamelName}}Cmd.Flags().Var(&{{.CamelName}}Json, "json", `either inline JSON string or @path/to/file.json with request body`)
     {{$method := .}}
-	{{ if not .OnlyPayload }}
+	{{ if not .JsonOnly }}
 	{{range .Request.Fields -}}
 		{{- if not .Required -}}
 			{{if .Entity.IsObject }}// TODO: complex arg: {{.Name}}
@@ -135,7 +135,7 @@ var {{.CamelName}}Cmd = &cobra.Command{
 				}
 			{{- end -}}
 			{{$method := .}}
-			{{- if and .Request.IsAllRequiredFieldsPrimitive (not .OnlyPayload) -}}
+			{{- if and .Request.IsAllRequiredFieldsPrimitive (not .JsonOnly) -}}
 				{{- range $arg, $field := .Request.RequiredFields}}
 					{{if not $field.Entity.IsString -}}
 					_, err = fmt.Sscan(args[{{$arg}}], &{{$method.CamelName}}Req.{{$field.PascalName}})
