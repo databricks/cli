@@ -6,8 +6,6 @@ import (
 	"strings"
 )
 
-// UnixRootPath can be joined with a relative path and ensures that
-// the returned path is always a strict child of the root path.
 type UnixRootPath struct {
 	rootPath string
 }
@@ -20,8 +18,6 @@ func NewUnixRootPath(name string) UnixRootPath {
 	}
 }
 
-// Join returns the specified path name joined to the root.
-// It returns an error if the resulting path is not a strict child of the root path.
 func (p UnixRootPath) Join(name string) (string, error) {
 	absPath := path.Join(p.rootPath, name)
 

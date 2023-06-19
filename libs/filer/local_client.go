@@ -18,11 +18,8 @@ type LocalClient struct {
 }
 
 func NewLocalClient(root string) (Filer, error) {
-	if runtime.GOOS == "windows" && root == "/" {
-		// Windows file systems do not have a "root" directory. Instead paths require
-		// a Volume/Drive letter specified. This allows us to refer to files across
-		// different drives from a single client
-		return &LocalClient{root: NopRootPath{}}, nil
+	if runtime.GOOS == "windows" {
+		return &LocalClient{root: WindowsRootPath{root}}, nil
 	}
 	return &LocalClient{
 		root: NewUnixRootPath(root),
