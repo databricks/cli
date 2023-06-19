@@ -467,9 +467,12 @@ func TestAccFilerLocalReadDir(t *testing.T) {
 }
 
 func temporaryVolumeDir(t *testing.T, w *databricks.WorkspaceClient) string {
+	// Assume this test is run against the internal testing workspace.
 	path := RandomName("/Volumes/bogdanghita/default/v3_shared/cli-testing/integration-test-filer-")
 
-	// The Files API doesn't support mkdir/rmdir yet. Assume we can use the prefix.
+	// The Files API doesn't include support for creating and removing directories yet.
+	// Directories are created implicitly by writing a file to a path that doesn't exist.
+	// We therefore assume we can use the specified path without creating it first.
 	t.Logf("using dbfs:%s", path)
 
 	return path
