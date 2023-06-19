@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/libs/locker"
 	"github.com/databricks/cli/libs/log"
 )
 
@@ -44,9 +45,9 @@ func (m *release) Apply(ctx context.Context, b *bundle.Bundle) error {
 	log.Infof(ctx, "Releasing deployment lock")
 	switch m.goal {
 	case GoalDeploy:
-		return b.Locker.Unlock(ctx, false)
+		return b.Locker.Unlock(ctx)
 	case GoalDestroy:
-		return b.Locker.Unlock(ctx, true)
+		return b.Locker.Unlock(ctx, locker.AllowLockFileNotExist)
 	default:
 		return fmt.Errorf("unknown goal for lock release: %s", m.goal)
 	}

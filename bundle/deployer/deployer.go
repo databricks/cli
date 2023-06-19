@@ -133,7 +133,7 @@ func (d *Deployer) Lock(ctx context.Context, isForced bool) error {
 }
 
 func (d *Deployer) Unlock(ctx context.Context) error {
-	return d.locker.Unlock(ctx, false)
+	return d.locker.Unlock(ctx)
 }
 
 func (d *Deployer) ApplyTerraformConfig(ctx context.Context, configPath, terraformBinaryPath string, isForced bool) (DeploymentStatus, error) {

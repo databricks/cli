@@ -107,7 +107,7 @@ func TestAccLock(t *testing.T) {
 			continue
 		}
 		assert.NotEqual(t, remoteLocker.ID, lockers[i].State.ID)
-		err := lockers[i].Unlock(ctx, false)
+		err := lockers[i].Unlock(ctx)
 		assert.ErrorContains(t, err, "unlock called when lock is not held")
 	}
 
@@ -148,7 +148,7 @@ func TestAccLock(t *testing.T) {
 	}
 
 	// Unlock active lock and check it becomes inactive
-	err = lockers[indexOfActiveLocker].Unlock(ctx, false)
+	err = lockers[indexOfActiveLocker].Unlock(ctx)
 	assert.NoError(t, err)
 	remoteLocker, err = locker.GetActiveLockState(ctx)
 	assert.ErrorIs(t, err, fs.ErrNotExist, "remote lock file not deleted on unlock")
@@ -198,7 +198,7 @@ func TestAccLockUnlockWithoutAllowsLockFileNotExist(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Assert error, because lock file does not exist
-	err = locker.Unlock(ctx, false)
+	err = locker.Unlock(ctx)
 	assert.ErrorIs(t, err, fs.ErrNotExist)
 }
 
@@ -221,7 +221,7 @@ func TestAccLockUnlockWithAllowsLockFileNotExist(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Assert error, because lock file does not exist
-	err = locker.Unlock(ctx, true)
+	err = locker.Unlock(ctx, lockpkg.AllowLockFileNotExist)
 	assert.NoError(t, err)
 	assert.False(t, locker.Active)
 }

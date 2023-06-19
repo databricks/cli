@@ -13,6 +13,13 @@ import (
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/google/uuid"
+	"golang.org/x/exp/slices"
+)
+
+type UnlockOption int
+
+const (
+	AllowLockFileNotExist UnlockOption = iota
 )
 
 const LockFileName = "deploy.lock"
@@ -164,7 +171,7 @@ func (locker *Locker) Lock(ctx context.Context, isForced bool) error {
 	return nil
 }
 
-func (locker *Locker) Unlock(ctx context.Context, allowLockFileNotExist bool) error {
+func (locker *Locker) Unlock(ctx context.Context, opts ...UnlockOption) error {
 	if !locker.Active {
 		return fmt.Errorf("unlock called when lock is not held")
 	}
@@ -172,7 +179,7 @@ func (locker *Locker) Unlock(ctx context.Context, allowLockFileNotExist bool) er
 	// if allowLockFileNotExist is set, do not throw an error if the lock file does
 	// not exist. This is helpful when destroying a bundle in which case the lock
 	// file will be deleted before we have a chance to unlock
-	if _, err := locker.filer.Stat(ctx, LockFileName); errors.Is(err, fs.ErrNotExist) && allowLockFileNotExist {
+	if _, err := locker.filer.Stat(ctx, LockFileName); errors.Is(err, fs.ErrNotExist) && slices.Contains(opts, AllowLockFileNotExist) {
 		locker.Active = false
 		return nil
 	}
