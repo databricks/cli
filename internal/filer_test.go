@@ -82,7 +82,7 @@ func runFilerReadWriteTest(t *testing.T, ctx context.Context, f filer.Filer) {
 	assert.NoError(t, err)
 
 	// Stat on a directory should succeed.
-	// Note: size and modification time behave differently between WSFS and DBFS.
+	// Note: size and modification time behave differently between backends.
 	info, err := f.Stat(ctx, "/foo")
 	require.NoError(t, err)
 	assert.Equal(t, "foo", info.Name())
@@ -90,7 +90,7 @@ func runFilerReadWriteTest(t *testing.T, ctx context.Context, f filer.Filer) {
 	assert.Equal(t, true, info.IsDir())
 
 	// Stat on a file should succeed.
-	// Note: size and modification time behave differently between WSFS and DBFS.
+	// Note: size and modification time behave differently between backends.
 	info, err = f.Stat(ctx, "/foo/bar")
 	require.NoError(t, err)
 	assert.Equal(t, "bar", info.Name())
@@ -463,5 +463,125 @@ func TestAccFilerLocalReadWrite(t *testing.T) {
 
 func TestAccFilerLocalReadDir(t *testing.T) {
 	ctx, f := setupFilerLocalTest(t)
+	runFilerReadDirTest(t, ctx, f)
+}
+
+func temporaryVolumeDir(t *testing.T, w *databricks.WorkspaceClient) string {
+	// Assume this test is run against the internal testing workspace.
+	path := RandomName("/Volumes/bogdanghita/default/v3_shared/cli-testing/integration-test-filer-")
+
+	// The Files API doesn't include support for creating and removing directories yet.
+	// Directories are created implicitly by writing a file to a path that doesn't exist.
+	// We therefore assume we can use the specified path without creating it first.
+	t.Logf("using dbfs:%s", path)
+
+	return path
+}
+
+func setupFilerFilesApiTest(t *testing.T) (context.Context, filer.Filer) {
+	t.SkipNow() // until available on prod
+	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+
+	ctx := context.Background()
+	w := databricks.Must(databricks.NewWorkspaceClient())
+	tmpdir := temporaryVolumeDir(t, w)
+	f, err := filer.NewFilesClient(w, tmpdir)
+	require.NoError(t, err)
+	return ctx, f
+}
+
+func TestAccFilerFilesApiReadWrite(t *testing.T) {
+	ctx, f := setupFilerFilesApiTest(t)
+
+	// The Files API doesn't know about directories yet.
+	// Below is a copy of [runFilerReadWriteTest] with
+	// assertions that don't work commented out.
+
+	var err error
+
+	// Write should fail because the root path doesn't yet exist.
+	// err = f.Write(ctx, "/foo/bar", strings.NewReader(`hello world`))
+	// assert.True(t, errors.As(err, &filer.NoSuchDirectoryError{}))
+	// assert.True(t, errors.Is(err, fs.ErrNotExist))
+
+	// Read should fail because the root path doesn't yet exist.
+	_, err = f.Read(ctx, "/foo/bar")
+	assert.True(t, errors.As(err, &filer.FileDoesNotExistError{}))
+	assert.True(t, errors.Is(err, fs.ErrNotExist))
+
+	// Read should fail because the path points to a directory
+	// err = f.Mkdir(ctx, "/dir")
+	// require.NoError(t, err)
+	// _, err = f.Read(ctx, "/dir")
+	// assert.ErrorIs(t, err, fs.ErrInvalid)
+
+	// Write with CreateParentDirectories flag should succeed.
+	err = f.Write(ctx, "/foo/bar", strings.NewReader(`hello world`), filer.CreateParentDirectories)
+	assert.NoError(t, err)
+	filerTest{t, f}.assertContents(ctx, "/foo/bar", `hello world`)
+
+	// Write should fail because there is an existing file at the specified path.
+	err = f.Write(ctx, "/foo/bar", strings.NewReader(`hello universe`))
+	assert.True(t, errors.As(err, &filer.FileAlreadyExistsError{}))
+	assert.True(t, errors.Is(err, fs.ErrExist))
+
+	// Write with OverwriteIfExists should succeed.
+	err = f.Write(ctx, "/foo/bar", strings.NewReader(`hello universe`), filer.OverwriteIfExists)
+	assert.NoError(t, err)
+	filerTest{t, f}.assertContents(ctx, "/foo/bar", `hello universe`)
+
+	// Write should succeed if there is no existing file at the specified path.
+	err = f.Write(ctx, "/foo/qux", strings.NewReader(`hello universe`))
+	assert.NoError(t, err)
+
+	// Stat on a directory should succeed.
+	// Note: size and modification time behave differently between backends.
+	info, err := f.Stat(ctx, "/foo")
+	require.NoError(t, err)
+	assert.Equal(t, "foo", info.Name())
+	assert.True(t, info.Mode().IsDir())
+	assert.Equal(t, true, info.IsDir())
+
+	// Stat on a file should succeed.
+	// Note: size and modification time behave differently between backends.
+	info, err = f.Stat(ctx, "/foo/bar")
+	require.NoError(t, err)
+	assert.Equal(t, "bar", info.Name())
+	assert.True(t, info.Mode().IsRegular())
+	assert.Equal(t, false, info.IsDir())
+
+	// Delete should fail if the file doesn't exist.
+	err = f.Delete(ctx, "/doesnt_exist")
+	assert.True(t, errors.As(err, &filer.FileDoesNotExistError{}))
+	assert.True(t, errors.Is(err, fs.ErrNotExist))
+
+	// Stat should fail if the file doesn't exist.
+	_, err = f.Stat(ctx, "/doesnt_exist")
+	assert.True(t, errors.As(err, &filer.FileDoesNotExistError{}))
+	assert.True(t, errors.Is(err, fs.ErrNotExist))
+
+	// Delete should succeed for file that does exist.
+	err = f.Delete(ctx, "/foo/bar")
+	assert.NoError(t, err)
+
+	// Delete should fail for a non-empty directory.
+	err = f.Delete(ctx, "/foo")
+	assert.True(t, errors.As(err, &filer.DirectoryNotEmptyError{}))
+	assert.True(t, errors.Is(err, fs.ErrInvalid))
+
+	// Delete should succeed for a non-empty directory if the DeleteRecursively flag is set.
+	// err = f.Delete(ctx, "/foo", filer.DeleteRecursively)
+	// assert.NoError(t, err)
+
+	// Delete of the filer root should ALWAYS fail, otherwise subsequent writes would fail.
+	// It is not in the filer's purview to delete its root directory.
+	err = f.Delete(ctx, "/")
+	assert.True(t, errors.As(err, &filer.CannotDeleteRootError{}))
+	assert.True(t, errors.Is(err, fs.ErrInvalid))
+}
+
+func TestAccFilerFilesApiReadDir(t *testing.T) {
+	t.Skipf("no support for ReadDir yet")
+	ctx, f := setupFilerFilesApiTest(t)
 	runFilerReadDirTest(t, ctx, f)
 }
