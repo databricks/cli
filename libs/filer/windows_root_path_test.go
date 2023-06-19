@@ -44,7 +44,7 @@ func TestWindowsRootPathForRoot(t *testing.T) {
 }
 
 func notThisVolume(name string) string {
-	if "c" != strings.ToLower(name) {
+	if strings.ToLower(name) != "c" {
 		return "c"
 	} else {
 		return "d"
