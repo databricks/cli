@@ -19,7 +19,7 @@ type LocalClient struct {
 
 func NewLocalClient(root string) (Filer, error) {
 	if runtime.GOOS == "windows" {
-		return &LocalClient{root: WindowsRootPath{root}}, nil
+		return &LocalClient{root: NewWindowsRootPath("/")}, nil
 	}
 	return &LocalClient{
 		root: NewUnixRootPath(root),
