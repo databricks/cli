@@ -11,19 +11,17 @@ type WindowsRootPath struct {
 }
 
 func NewWindowsRootPath(name string) WindowsRootPath {
-	// Windows file systems do not have a "root" directory. Instead paths require
-	// a Volume/Drive letter specified. If a user of this struct specifies "/" then
-	// we treat it as the "root" and skip any validation
-	if name == "/" {
-		return WindowsRootPath{""}
-	}
-
 	return WindowsRootPath{filepath.Clean(name)}
 }
 
-// Join returns the specified path name joined to the root.
-// It returns an error if the resulting path is not a strict child of the root path.
 func (p WindowsRootPath) Join(name string) (string, error) {
+	// Windows file systems do not have a "root" directory. Instead paths require
+	// a Volume/Drive letter specified. If a user of this struct specifies "/" then
+	// we treat it as the "root" and skip any validation
+	if p.rootPath == "/" {
+		return name, nil
+	}
+
 	absPath := filepath.Join(p.rootPath, name)
 
 	// Don't allow escaping the specified root using relative paths.

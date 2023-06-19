@@ -15,7 +15,7 @@ func TestWindowsRootPathForRoot(t *testing.T) {
 	rp := NewWindowsRootPath("/")
 
 	// Assert root value returned
-	assert.Equal(t, "", rp.Root())
+	assert.Equal(t, "/", rp.Root())
 
 	// case: absolute windows path
 	path, err := rp.Join(`c:\a\b`)
