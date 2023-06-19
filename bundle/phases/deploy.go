@@ -22,7 +22,7 @@ func Deploy() bundle.Mutator {
 				terraform.Apply(),
 				terraform.StatePush(),
 			),
-			lock.Release(),
+			lock.Release(lock.GoalDeploy),
 		),
 	)
 

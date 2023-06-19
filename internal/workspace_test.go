@@ -3,7 +3,7 @@ package internal
 import (
 	"context"
 	"errors"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -69,7 +69,7 @@ func assertLocalFileContents(t *testing.T, path string, content string) {
 func assertFilerFileContents(t *testing.T, ctx context.Context, f filer.Filer, path string, content string) {
 	r, err := f.Read(ctx, path)
 	require.NoError(t, err)
-	b, err := ioutil.ReadAll(r)
+	b, err := io.ReadAll(r)
 	require.NoError(t, err)
 	assert.Contains(t, string(b), content)
 }

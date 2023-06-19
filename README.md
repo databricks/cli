@@ -2,7 +2,7 @@
 
 [![build](https://github.com/databricks/cli/workflows/build/badge.svg?branch=main)](https://github.com/databricks/cli/actions?query=workflow%3Abuild+branch%3Amain)
 
-This project is in private preview.
+This project is in public preview.
 
 Documentation about the full REST API coverage is avaialbe in the [docs folder](docs/commands.md).
 

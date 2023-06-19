@@ -64,4 +64,31 @@ func init() {
 	accountCmd.AddCommand(vpc_endpoints.Cmd)
 	accountCmd.AddCommand(workspace_assignment.Cmd)
 	accountCmd.AddCommand(workspaces.Cmd)
+
+	// Register commands with groups
+	account_access_control.Cmd.GroupID = "iam"
+	billable_usage.Cmd.GroupID = "billing"
+	budgets.Cmd.GroupID = "billing"
+	credentials.Cmd.GroupID = "provisioning"
+	custom_app_integration.Cmd.GroupID = "oauth2"
+	encryption_keys.Cmd.GroupID = "provisioning"
+	account_groups.Cmd.GroupID = "iam"
+	account_ip_access_lists.Cmd.GroupID = "settings"
+	log_delivery.Cmd.GroupID = "billing"
+	account_metastore_assignments.Cmd.GroupID = "catalog"
+	account_metastores.Cmd.GroupID = "catalog"
+	networks.Cmd.GroupID = "provisioning"
+	o_auth_enrollment.Cmd.GroupID = "oauth2"
+	private_access.Cmd.GroupID = "provisioning"
+	published_app_integration.Cmd.GroupID = "oauth2"
+	service_principal_secrets.Cmd.GroupID = "oauth2"
+	account_service_principals.Cmd.GroupID = "iam"
+	account_settings.Cmd.GroupID = "settings"
+	storage.Cmd.GroupID = "provisioning"
+	account_storage_credentials.Cmd.GroupID = "catalog"
+	account_users.Cmd.GroupID = "iam"
+	vpc_endpoints.Cmd.GroupID = "provisioning"
+	workspace_assignment.Cmd.GroupID = "iam"
+	workspaces.Cmd.GroupID = "provisioning"
+
 }
