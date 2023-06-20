@@ -388,6 +388,11 @@ type DataSourceJobJobSettingsSettingsPythonWheelTask struct {
 type DataSourceJobJobSettingsSettingsQueue struct {
 }
 
+type DataSourceJobJobSettingsSettingsRunAs struct {
+	ServicePrincipalName string `json:"service_principal_name,omitempty"`
+	UserName             string `json:"user_name,omitempty"`
+}
+
 type DataSourceJobJobSettingsSettingsSchedule struct {
 	PauseStatus          string `json:"pause_status,omitempty"`
 	QuartzCronExpression string `json:"quartz_cron_expression"`
@@ -740,6 +745,7 @@ type DataSourceJobJobSettingsSettings struct {
 	PipelineTask           *DataSourceJobJobSettingsSettingsPipelineTask         `json:"pipeline_task,omitempty"`
 	PythonWheelTask        *DataSourceJobJobSettingsSettingsPythonWheelTask      `json:"python_wheel_task,omitempty"`
 	Queue                  *DataSourceJobJobSettingsSettingsQueue                `json:"queue,omitempty"`
+	RunAs                  *DataSourceJobJobSettingsSettingsRunAs                `json:"run_as,omitempty"`
 	Schedule               *DataSourceJobJobSettingsSettingsSchedule             `json:"schedule,omitempty"`
 	SparkJarTask           *DataSourceJobJobSettingsSettingsSparkJarTask         `json:"spark_jar_task,omitempty"`
 	SparkPythonTask        *DataSourceJobJobSettingsSettingsSparkPythonTask      `json:"spark_python_task,omitempty"`
@@ -753,6 +759,7 @@ type DataSourceJobJobSettings struct {
 	CreatedTime     int                               `json:"created_time,omitempty"`
 	CreatorUserName string                            `json:"creator_user_name,omitempty"`
 	JobId           int                               `json:"job_id,omitempty"`
+	RunAsUserName   string                            `json:"run_as_user_name,omitempty"`
 	Settings        *DataSourceJobJobSettingsSettings `json:"settings,omitempty"`
 }
 
