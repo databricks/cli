@@ -51,6 +51,58 @@ func TestInterpolationVariables(t *testing.T) {
 	assert.Equal(t, "a", f.C)
 }
 
+func TestInterpolationVariablesSpecialChars(t *testing.T) {
+	type bar struct {
+		A string `json:"a-b"`
+		B string `json:"b_c"`
+		C string `json:"c-_a"`
+	}
+	f := bar{
+		A: "a",
+		B: "${a-b}",
+		C: "${a-b}",
+	}
+
+	err := expand(&f)
+	require.NoError(t, err)
+
+	assert.Equal(t, "a", f.A)
+	assert.Equal(t, "a", f.B)
+	assert.Equal(t, "a", f.C)
+}
+
+func TestValidMatches(t *testing.T) {
+	expectedMatches := map[string]string{
+		"${hello_world.world_world}": "hello_world.world_world",
+		"${helloworld.world-world}":  "helloworld.world-world",
+		"${hello-world.world-world}": "hello-world.world-world",
+		"${a-a.a-_a-a.id}":           "a-a.a-_a-a.id",
+	}
+	for key, expectedMatch := range expectedMatches {
+		match := re.FindStringSubmatch(key)
+		assert.Equal(t, expectedMatch, match[1])
+	}
+}
+
+func TestInValidMatches(t *testing.T) {
+	invalidMatches := []string{
+		"${hello_world-.world_world}",
+		"${hello_world-_.world_world}",
+		"${helloworld.world-world-}",
+		"${helloworld-.world-world}",
+		"${helloworld.-world-world}",
+		"${-hello-world.-world-world-}",
+		"${_-_._-_.id}",
+		"${0helloworld.world-world}",
+		"${helloworld.9world-world}",
+	}
+	for _, invalidMatch := range invalidMatches {
+		match := re.FindStringSubmatch(invalidMatch)
+		// no match
+		assert.Equal(t, 0, len(match))
+	}
+}
+
 func TestInterpolationWithPointers(t *testing.T) {
 	fd := "${a}"
 	f := foo{
