@@ -172,11 +172,7 @@ var installCmd = &cobra.Command{
 				return err
 			}
 		} else {
-			installReq.ClusterId = args[0]
-			_, err = fmt.Sscan(args[1], &installReq.Libraries)
-			if err != nil {
-				return fmt.Errorf("invalid LIBRARIES: %s", args[1])
-			}
+			return fmt.Errorf("provide command input in JSON format by specifying --json option")
 		}
 
 		err = w.Libraries.Install(ctx, installReq)
@@ -222,11 +218,7 @@ var uninstallCmd = &cobra.Command{
 				return err
 			}
 		} else {
-			uninstallReq.ClusterId = args[0]
-			_, err = fmt.Sscan(args[1], &uninstallReq.Libraries)
-			if err != nil {
-				return fmt.Errorf("invalid LIBRARIES: %s", args[1])
-			}
+			return fmt.Errorf("provide command input in JSON format by specifying --json option")
 		}
 
 		err = w.Libraries.Uninstall(ctx, uninstallReq)

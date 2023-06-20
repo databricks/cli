@@ -1,38 +1,26 @@
 package fs
 
 import (
+	"context"
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func TestResolveDbfsPath(t *testing.T) {
-	path, err := resolveDbfsPath("dbfs:/")
+func TestNotSpecifyingVolumeForWindowsPathErrors(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.Skip()
+	}
+
+	ctx := context.Background()
+	pathWithVolume := `file:/c:/foo/bar`
+	pathWOVolume := `file:/uno/dos`
+
+	_, path, err := filerForPath(ctx, pathWithVolume)
 	assert.NoError(t, err)
-	assert.Equal(t, "/", path)
+	assert.Equal(t, `/foo/bar`, path)
 
-	path, err = resolveDbfsPath("dbfs:/abc")
-	assert.NoError(t, err)
-	assert.Equal(t, "/abc", path)
-
-	path, err = resolveDbfsPath("dbfs:/a/b/c")
-	assert.NoError(t, err)
-	assert.Equal(t, "/a/b/c", path)
-
-	path, err = resolveDbfsPath("dbfs:/a/b/.")
-	assert.NoError(t, err)
-	assert.Equal(t, "/a/b/.", path)
-
-	path, err = resolveDbfsPath("dbfs:/a/../c")
-	assert.NoError(t, err)
-	assert.Equal(t, "/a/../c", path)
-
-	_, err = resolveDbfsPath("dbf:/a/b/c")
-	assert.ErrorContains(t, err, "expected dbfs path (with the dbfs:/ prefix): dbf:/a/b/c")
-
-	_, err = resolveDbfsPath("/a/b/c")
-	assert.ErrorContains(t, err, "expected dbfs path (with the dbfs:/ prefix): /a/b/c")
-
-	_, err = resolveDbfsPath("dbfs:a/b/c")
-	assert.ErrorContains(t, err, "expected dbfs path (with the dbfs:/ prefix): dbfs:a/b/c")
+	_, _, err = filerForPath(ctx, pathWOVolume)
+	assert.Equal(t, "no volume specfied for path: uno/dos", err.Error())
 }

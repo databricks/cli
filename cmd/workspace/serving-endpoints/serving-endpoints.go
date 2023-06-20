@@ -120,11 +120,7 @@ var createCmd = &cobra.Command{
 				return err
 			}
 		} else {
-			createReq.Name = args[0]
-			_, err = fmt.Sscan(args[1], &createReq.Config)
-			if err != nil {
-				return fmt.Errorf("invalid CONFIG: %s", args[1])
-			}
+			return fmt.Errorf("provide command input in JSON format by specifying --json option")
 		}
 
 		wait, err := w.ServingEndpoints.Create(ctx, createReq)
@@ -474,11 +470,7 @@ var updateConfigCmd = &cobra.Command{
 				return err
 			}
 		} else {
-			_, err = fmt.Sscan(args[0], &updateConfigReq.ServedModels)
-			if err != nil {
-				return fmt.Errorf("invalid SERVED_MODELS: %s", args[0])
-			}
-			updateConfigReq.Name = args[1]
+			return fmt.Errorf("provide command input in JSON format by specifying --json option")
 		}
 
 		wait, err := w.ServingEndpoints.UpdateConfig(ctx, updateConfigReq)

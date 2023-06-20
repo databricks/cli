@@ -85,10 +85,7 @@ var createCmd = &cobra.Command{
 				return err
 			}
 		} else {
-			_, err = fmt.Sscan(args[0], &createReq.UseCases)
-			if err != nil {
-				return fmt.Errorf("invalid USE_CASES: %s", args[0])
-			}
+			return fmt.Errorf("provide command input in JSON format by specifying --json option")
 		}
 
 		response, err := a.EncryptionKeys.Create(ctx, createReq)

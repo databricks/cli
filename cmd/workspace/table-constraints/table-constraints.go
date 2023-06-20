@@ -72,11 +72,7 @@ var createCmd = &cobra.Command{
 				return err
 			}
 		} else {
-			createReq.FullNameArg = args[0]
-			_, err = fmt.Sscan(args[1], &createReq.Constraint)
-			if err != nil {
-				return fmt.Errorf("invalid CONSTRAINT: %s", args[1])
-			}
+			return fmt.Errorf("provide command input in JSON format by specifying --json option")
 		}
 
 		response, err := w.TableConstraints.Create(ctx, createReq)
