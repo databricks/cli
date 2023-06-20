@@ -36,6 +36,15 @@ func init() {
 	// TODO: short flags
 	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	createCmd.Flags().BoolVar(&createReq.Active, "active", createReq.Active, `If this user is active.`)
+	createCmd.Flags().StringVar(&createReq.ApplicationId, "application-id", createReq.ApplicationId, `UUID relating to the service principal.`)
+	createCmd.Flags().StringVar(&createReq.DisplayName, "display-name", createReq.DisplayName, `String that represents a concatenation of given and family names.`)
+	// TODO: array: entitlements
+	createCmd.Flags().StringVar(&createReq.ExternalId, "external-id", createReq.ExternalId, ``)
+	// TODO: array: groups
+	createCmd.Flags().StringVar(&createReq.Id, "id", createReq.Id, `Databricks service principal ID.`)
+	// TODO: array: roles
+
 }
 
 var createCmd = &cobra.Command{
@@ -63,7 +72,6 @@ var createCmd = &cobra.Command{
 				return err
 			}
 		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
 
 		response, err := w.ServicePrincipals.Create(ctx, createReq)
