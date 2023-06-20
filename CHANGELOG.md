@@ -1,5 +1,29 @@
 # Version changelog
 
+## 0.200.0
+
+This version marks the first version available as public preview.
+
+The minor bump to 200 better disambiguates between Databricks CLI "v1" (the Python version)
+and this version, Databricks CLI "v2". The minor version of 0.100 may look lower than 0.17
+to some, whereas 200 does not. This bump has no other significance.
+
+CLI:
+ * Add filer.Filer implementation backed by the Files API ([#474](https://github.com/databricks/cli/pull/474)).
+ * Add fs cp command ([#463](https://github.com/databricks/cli/pull/463)).
+ * Correctly set ExactArgs if generated command has positional arguments ([#488](https://github.com/databricks/cli/pull/488)).
+ * Do not use white color as string output ([#489](https://github.com/databricks/cli/pull/489)).
+ * Update README to reflect public preview status ([#491](https://github.com/databricks/cli/pull/491)).
+
+Bundles:
+ * Fix force flag not working for bundle destroy ([#434](https://github.com/databricks/cli/pull/434)).
+ * Fix locker unlock for destroy ([#492](https://github.com/databricks/cli/pull/492)).
+ * Use better error assertions and clean up locker API ([#490](https://github.com/databricks/cli/pull/490)).
+
+Dependencies:
+ * Bump golang.org/x/mod from 0.10.0 to 0.11.0 ([#496](https://github.com/databricks/cli/pull/496)).
+ * Bump golang.org/x/sync from 0.2.0 to 0.3.0 ([#495](https://github.com/databricks/cli/pull/495)).
+
 ## 0.100.4
 
 CLI:
