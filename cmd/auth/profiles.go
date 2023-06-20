@@ -94,6 +94,39 @@ func (c *profileMetadata) Load(ctx context.Context) {
 	c.Host = cfg.Host
 }
 
+func getAllProfiles(ctx context.Context) ([]*profileMetadata, error) {
+	var profiles []*profileMetadata
+	iniFile, err := getDatabricksCfg()
+	if os.IsNotExist(err) {
+		// return empty list for non-configured machines
+		iniFile = ini.Empty()
+	} else if err != nil {
+		return nil, fmt.Errorf("cannot parse config file: %w", err)
+	}
+	var wg sync.WaitGroup
+	for _, v := range iniFile.Sections() {
+		hash := v.KeysHash()
+		profile := &profileMetadata{
+			Name:      v.Name(),
+			Host:      hash["host"],
+			AccountID: hash["account_id"],
+		}
+		if profile.IsEmpty() {
+			continue
+		}
+		wg.Add(1)
+		go func() {
+			// load more information about profile
+			profile.Load(ctx)
+			wg.Done()
+		}()
+		profiles = append(profiles, profile)
+	}
+	wg.Wait()
+
+	return profiles, nil
+}
+
 var profilesCmd = &cobra.Command{
 	Use:   "profiles",
 	Short: "Lists profiles from ~/.databrickscfg",
@@ -104,34 +137,10 @@ var profilesCmd = &cobra.Command{
 		{{end}}`),
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		var profiles []*profileMetadata
-		iniFile, err := getDatabricksCfg()
-		if os.IsNotExist(err) {
-			// return empty list for non-configured machines
-			iniFile = ini.Empty()
-		} else if err != nil {
-			return fmt.Errorf("cannot parse config file: %w", err)
+		profiles, err := getAllProfiles(cmd.Context())
+		if err != nil {
+			return err
 		}
-		var wg sync.WaitGroup
-		for _, v := range iniFile.Sections() {
-			hash := v.KeysHash()
-			profile := &profileMetadata{
-				Name:      v.Name(),
-				Host:      hash["host"],
-				AccountID: hash["account_id"],
-			}
-			if profile.IsEmpty() {
-				continue
-			}
-			wg.Add(1)
-			go func() {
-				// load more information about profile
-				profile.Load(cmd.Context())
-				wg.Done()
-			}()
-			profiles = append(profiles, profile)
-		}
-		wg.Wait()
 		return cmdio.Render(cmd.Context(), struct {
 			Profiles []*profileMetadata `json:"profiles"`
 		}{profiles})

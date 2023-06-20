@@ -44,6 +44,7 @@ var ( // Databricks SDK API: `databricks OAuth is not` will be checked for prese
 type PersistentAuth struct {
 	Host      string
 	AccountID string
+	Profile   string
 
 	http    httpGet
 	cache   tokenCache
@@ -132,11 +133,15 @@ func (a *PersistentAuth) Challenge(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("store: %w", err)
 	}
+	profileName := a.profileName()
+	if a.Profile != "" {
+		profileName = a.Profile
+	}
 	return databrickscfg.SaveToProfile(ctx, &config.Config{
 		Host:      a.Host,
 		AccountID: a.AccountID,
 		AuthType:  "databricks-cli",
-		Profile:   a.profileName(),
+		Profile:   profileName,
 	})
 }
 
