@@ -36,6 +36,15 @@ func processDebugMode(b *bundle.Bundle) error {
 		if r.Jobs[i].MaxConcurrentRuns == 0 {
 			r.Jobs[i].MaxConcurrentRuns = debugConcurrentRuns
 		}
+		if r.Jobs[i].Schedule != nil {
+			r.Jobs[i].Schedule.PauseStatus = "PAUSED"
+		}
+		if r.Jobs[i].Continuous != nil {
+			r.Jobs[i].Continuous.PauseStatus = "PAUSED"
+		}
+		if r.Jobs[i].Trigger != nil {
+			r.Jobs[i].Trigger.PauseStatus = "PAUSED"
+		}
 	}
 
 	for i := range r.Pipelines {
