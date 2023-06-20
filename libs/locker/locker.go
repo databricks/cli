@@ -13,7 +13,16 @@ import (
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/google/uuid"
+	"golang.org/x/exp/slices"
 )
+
+type UnlockOption int
+
+const (
+	AllowLockFileNotExist UnlockOption = iota
+)
+
+const LockFileName = "deploy.lock"
 
 // Locker object enables exclusive access to TargetDir's scope for a client. This
 // enables multiple clients to deploy to the same scope (ie TargetDir) in an atomic
@@ -65,10 +74,11 @@ type LockState struct {
 
 // GetActiveLockState returns current lock state, irrespective of us holding it.
 func (locker *Locker) GetActiveLockState(ctx context.Context) (*LockState, error) {
-	reader, err := locker.filer.Read(ctx, locker.RemotePath())
+	reader, err := locker.filer.Read(ctx, LockFileName)
 	if err != nil {
 		return nil, err
 	}
+	defer reader.Close()
 
 	bytes, err := io.ReadAll(reader)
 	if err != nil {
@@ -89,7 +99,7 @@ func (locker *Locker) GetActiveLockState(ctx context.Context) (*LockState, error
 func (locker *Locker) assertLockHeld(ctx context.Context) error {
 	activeLockState, err := locker.GetActiveLockState(ctx)
 	if errors.Is(err, fs.ErrNotExist) {
-		return fmt.Errorf("no active lock on target dir: %s", err)
+		return fmt.Errorf("no active lock on target dir: %w", err)
 	}
 	if err != nil {
 		return err
@@ -140,7 +150,7 @@ func (locker *Locker) Lock(ctx context.Context, isForced bool) error {
 		modes = append(modes, filer.OverwriteIfExists)
 	}
 
-	err = locker.filer.Write(ctx, locker.RemotePath(), bytes.NewReader(buf), modes...)
+	err = locker.filer.Write(ctx, LockFileName, bytes.NewReader(buf), modes...)
 	if err != nil {
 		// If the write failed because the lock file already exists, don't return
 		// the error and instead fall through to [assertLockHeld] below.
@@ -161,25 +171,29 @@ func (locker *Locker) Lock(ctx context.Context, isForced bool) error {
 	return nil
 }
 
-func (locker *Locker) Unlock(ctx context.Context) error {
+func (locker *Locker) Unlock(ctx context.Context, opts ...UnlockOption) error {
 	if !locker.Active {
 		return fmt.Errorf("unlock called when lock is not held")
 	}
+
+	// if allowLockFileNotExist is set, do not throw an error if the lock file does
+	// not exist. This is helpful when destroying a bundle in which case the lock
+	// file will be deleted before we have a chance to unlock
+	if _, err := locker.filer.Stat(ctx, LockFileName); errors.Is(err, fs.ErrNotExist) && slices.Contains(opts, AllowLockFileNotExist) {
+		locker.Active = false
+		return nil
+	}
+
 	err := locker.assertLockHeld(ctx)
 	if err != nil {
-		return fmt.Errorf("unlock called when lock is not held: %s", err)
+		return fmt.Errorf("unlock called when lock is not held: %w", err)
 	}
-	err = locker.filer.Delete(ctx, locker.RemotePath())
+	err = locker.filer.Delete(ctx, LockFileName)
 	if err != nil {
 		return err
 	}
 	locker.Active = false
 	return nil
-}
-
-func (locker *Locker) RemotePath() string {
-	// Note: remote paths are scoped to `targetDir`. Also see [CreateLocker].
-	return "deploy.lock"
 }
 
 func CreateLocker(user string, targetDir string, w *databricks.WorkspaceClient) (*Locker, error) {

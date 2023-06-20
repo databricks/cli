@@ -23,9 +23,9 @@ require (
 	github.com/stretchr/testify v1.8.4 // MIT
 	github.com/whilp/git-urls v1.0.0 // MIT
 	golang.org/x/exp v0.0.0-20230310171629-522b1b587ee0
-	golang.org/x/mod v0.10.0
+	golang.org/x/mod v0.11.0
 	golang.org/x/oauth2 v0.9.0
-	golang.org/x/sync v0.2.0
+	golang.org/x/sync v0.3.0
 	golang.org/x/term v0.9.0
 	golang.org/x/text v0.10.0
 	gopkg.in/ini.v1 v1.67.0 // Apache 2.0

@@ -28,6 +28,11 @@ func filerForPath(ctx context.Context, fullPath string) (filer.Filer, string, er
 	switch scheme {
 	case DbfsScheme:
 		w := root.WorkspaceClient(ctx)
+		// If the specified path has the "Volumes" prefix, use the Files API.
+		if strings.HasPrefix(path, "Volumes/") {
+			f, err := filer.NewFilesClient(w, "/")
+			return f, path, err
+		}
 		f, err := filer.NewDbfsClient(w, "/")
 		return f, path, err
 

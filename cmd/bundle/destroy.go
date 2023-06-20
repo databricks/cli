@@ -22,7 +22,7 @@ var destroyCmd = &cobra.Command{
 		b := bundle.Get(ctx)
 
 		// If `--force` is specified, force acquisition of the deployment lock.
-		b.Config.Bundle.Lock.Force = force
+		b.Config.Bundle.Lock.Force = forceDestroy
 
 		// If `--auto-approve`` is specified, we skip confirmation checks
 		b.AutoApprove = autoApprove
@@ -51,8 +51,10 @@ var destroyCmd = &cobra.Command{
 }
 
 var autoApprove bool
+var forceDestroy bool
 
 func init() {
 	AddCommand(destroyCmd)
 	destroyCmd.Flags().BoolVar(&autoApprove, "auto-approve", false, "Skip interactive approvals for deleting resources and files")
+	destroyCmd.Flags().BoolVar(&forceDestroy, "force", false, "Force acquisition of deployment lock.")
 }
