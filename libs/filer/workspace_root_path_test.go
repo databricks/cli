@@ -9,7 +9,7 @@ import (
 
 func testRootPath(t *testing.T, uncleanRoot string) {
 	cleanRoot := path.Clean(uncleanRoot)
-	rp := NewRootPath(uncleanRoot)
+	rp := NewWorkspaceRootPath(uncleanRoot)
 
 	remotePath, err := rp.Join("a/b/c")
 	assert.NoError(t, err)
