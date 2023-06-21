@@ -3,18 +3,87 @@ package root
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/log"
+	"github.com/fatih/color"
 	"golang.org/x/exp/slog"
 )
 
 const (
-	envBricksLogFile   = "BRICKS_LOG_FILE"
-	envBricksLogLevel  = "BRICKS_LOG_LEVEL"
-	envBricksLogFormat = "BRICKS_LOG_FORMAT"
+	envLogFile   = "DATABRICKS_LOG_FILE"
+	envLogLevel  = "DATABRICKS_LOG_LEVEL"
+	envLogFormat = "DATABRICKS_LOG_FORMAT"
 )
+
+type friendlyHandler struct {
+	slog.Handler
+	w io.Writer
+}
+
+var (
+	levelTrace = color.New(color.FgYellow).Sprint("TRACE")
+	levelDebug = color.New(color.FgYellow).Sprint("DEBUG")
+	levelInfo  = color.New(color.FgGreen).Sprintf("%5s", "INFO")
+	levelWarn  = color.New(color.FgMagenta).Sprintf("%5s", "WARN")
+	levelError = color.New(color.FgRed).Sprint("ERROR")
+)
+
+func (l *friendlyHandler) coloredLevel(rec slog.Record) string {
+	switch rec.Level {
+	case log.LevelTrace:
+		return levelTrace
+	case slog.LevelDebug:
+		return levelDebug
+	case slog.LevelInfo:
+		return levelInfo
+	case slog.LevelWarn:
+		return levelWarn
+	case log.LevelError:
+		return levelError
+	}
+	return ""
+}
+
+func (l *friendlyHandler) Handle(ctx context.Context, rec slog.Record) error {
+	t := fmt.Sprintf("%02d:%02d", rec.Time.Hour(), rec.Time.Minute())
+	attrs := ""
+	rec.Attrs(func(a slog.Attr) {
+		attrs += fmt.Sprintf(" %s%s%s",
+			color.CyanString(a.Key),
+			color.CyanString("="),
+			color.YellowString(a.Value.String()))
+	})
+	msg := fmt.Sprintf("%s %s %s%s\n",
+		color.MagentaString(t),
+		l.coloredLevel(rec),
+		rec.Message,
+		attrs)
+	_, err := l.w.Write([]byte(msg))
+	return err
+}
+
+func makeLogHandler(opts slog.HandlerOptions) (slog.Handler, error) {
+	switch logOutput {
+	case flags.OutputJSON:
+		return opts.NewJSONHandler(logFile.Writer()), nil
+	case flags.OutputText:
+		w := logFile.Writer()
+		if cmdio.IsTTY(w) {
+			return &friendlyHandler{
+				Handler: opts.NewTextHandler(w),
+				w:       w,
+			}, nil
+		}
+		return opts.NewTextHandler(w), nil
+
+	default:
+		return nil, fmt.Errorf("invalid log output mode: %s", logOutput)
+	}
+}
 
 func initializeLogger(ctx context.Context) (context.Context, error) {
 	opts := slog.HandlerOptions{}
@@ -31,14 +100,9 @@ func initializeLogger(ctx context.Context) (context.Context, error) {
 		return nil, err
 	}
 
-	var handler slog.Handler
-	switch logOutput {
-	case flags.OutputJSON:
-		handler = opts.NewJSONHandler(logFile.Writer())
-	case flags.OutputText:
-		handler = opts.NewTextHandler(logFile.Writer())
-	default:
-		return nil, fmt.Errorf("invalid log output: %s", logOutput)
+	handler, err := makeLogHandler(opts)
+	if err != nil {
+		return nil, err
 	}
 
 	slog.SetDefault(slog.New(handler))
@@ -52,13 +116,13 @@ var logOutput = flags.OutputText
 func init() {
 	// Configure defaults from environment, if applicable.
 	// If the provided value is invalid it is ignored.
-	if v, ok := os.LookupEnv(envBricksLogFile); ok {
+	if v, ok := os.LookupEnv(envLogFile); ok {
 		logFile.Set(v)
 	}
-	if v, ok := os.LookupEnv(envBricksLogLevel); ok {
+	if v, ok := os.LookupEnv(envLogLevel); ok {
 		logLevel.Set(v)
 	}
-	if v, ok := os.LookupEnv(envBricksLogFormat); ok {
+	if v, ok := os.LookupEnv(envLogFormat); ok {
 		logOutput.Set(v)
 	}
 

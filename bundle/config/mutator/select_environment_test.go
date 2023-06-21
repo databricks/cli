@@ -26,7 +26,7 @@ func TestSelectEnvironment(t *testing.T) {
 			},
 		},
 	}
-	_, err := mutator.SelectEnvironment("default").Apply(context.Background(), bundle)
+	err := mutator.SelectEnvironment("default").Apply(context.Background(), bundle)
 	require.NoError(t, err)
 	assert.Equal(t, "bar", bundle.Config.Workspace.Host)
 }
@@ -39,6 +39,6 @@ func TestSelectEnvironmentNotFound(t *testing.T) {
 			},
 		},
 	}
-	_, err := mutator.SelectEnvironment("doesnt-exist").Apply(context.Background(), bundle)
+	err := mutator.SelectEnvironment("doesnt-exist").Apply(context.Background(), bundle)
 	require.Error(t, err, "no environments defined")
 }

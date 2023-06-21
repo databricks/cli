@@ -7,6 +7,7 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/spf13/cobra"
 )
@@ -22,15 +23,23 @@ var Cmd = &cobra.Command{
   storing library and config files of arbitrary formats such as .whl or .txt
   centrally and providing secure access across workspaces to it, or transforming
   and querying non-tabular data files in ETL.`,
+	Annotations: map[string]string{
+		"package": "catalog",
+	},
+
+	// This service is being previewed; hide from help output.
+	Hidden: true,
 }
 
 // start create command
 
 var createReq catalog.CreateVolumeRequestContent
+var createJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(createCmd)
 	// TODO: short flags
+	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	createCmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `The comment attached to the volume.`)
 	createCmd.Flags().StringVar(&createReq.StorageLocation, "storage-location", createReq.StorageLocation, `The storage location on the cloud.`)
@@ -62,17 +71,30 @@ var createCmd = &cobra.Command{
   tables, nor volumes, or catalogs or schemas.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(4),
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(4)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		createReq.CatalogName = args[0]
-		createReq.Name = args[1]
-		createReq.SchemaName = args[2]
-		_, err = fmt.Sscan(args[3], &createReq.VolumeType)
-		if err != nil {
-			return fmt.Errorf("invalid VOLUME_TYPE: %s", args[3])
+		if cmd.Flags().Changed("json") {
+			err = createJson.Unmarshal(&createReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			createReq.CatalogName = args[0]
+			createReq.Name = args[1]
+			createReq.SchemaName = args[2]
+			_, err = fmt.Sscan(args[3], &createReq.VolumeType)
+			if err != nil {
+				return fmt.Errorf("invalid VOLUME_TYPE: %s", args[3])
+			}
 		}
 
 		response, err := w.Volumes.Create(ctx, createReq)
@@ -81,15 +103,20 @@ var createCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start delete command
 
 var deleteReq catalog.DeleteVolumeRequest
+var deleteJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
+	deleteCmd.Flags().Var(&deleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -109,21 +136,31 @@ var deleteCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if len(args) == 0 {
-			names, err := w.Volumes.VolumeInfoNameToVolumeIdMap(ctx, catalog.ListVolumesRequest{})
+		if cmd.Flags().Changed("json") {
+			err = deleteJson.Unmarshal(&deleteReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "The three-level (fully qualified) name of the volume")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No FULL_NAME_ARG argument specified. Loading names for Volumes drop-down."
+				names, err := w.Volumes.VolumeInfoNameToVolumeIdMap(ctx, catalog.ListVolumesRequest{})
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Volumes drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "The three-level (fully qualified) name of the volume")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have the three-level (fully qualified) name of the volume")
+			}
+			deleteReq.FullNameArg = args[0]
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have the three-level (fully qualified) name of the volume")
-		}
-		deleteReq.FullNameArg = args[0]
 
 		err = w.Volumes.Delete(ctx, deleteReq)
 		if err != nil {
@@ -131,15 +168,20 @@ var deleteCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start list command
 
 var listReq catalog.ListVolumesRequest
+var listJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(listCmd)
 	// TODO: short flags
+	listCmd.Flags().Var(&listJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -161,13 +203,26 @@ var listCmd = &cobra.Command{
   There is no guarantee of a specific ordering of the elements in the array.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(2),
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(2)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		listReq.CatalogName = args[0]
-		listReq.SchemaName = args[1]
+		if cmd.Flags().Changed("json") {
+			err = listJson.Unmarshal(&listReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			listReq.CatalogName = args[0]
+			listReq.SchemaName = args[1]
+		}
 
 		response, err := w.Volumes.ListAll(ctx, listReq)
 		if err != nil {
@@ -175,15 +230,20 @@ var listCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start read command
 
 var readReq catalog.ReadVolumeRequest
+var readJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(readCmd)
 	// TODO: short flags
+	readCmd.Flags().Var(&readJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -204,21 +264,31 @@ var readCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if len(args) == 0 {
-			names, err := w.Volumes.VolumeInfoNameToVolumeIdMap(ctx, catalog.ListVolumesRequest{})
+		if cmd.Flags().Changed("json") {
+			err = readJson.Unmarshal(&readReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "The three-level (fully qualified) name of the volume")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No FULL_NAME_ARG argument specified. Loading names for Volumes drop-down."
+				names, err := w.Volumes.VolumeInfoNameToVolumeIdMap(ctx, catalog.ListVolumesRequest{})
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Volumes drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "The three-level (fully qualified) name of the volume")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have the three-level (fully qualified) name of the volume")
+			}
+			readReq.FullNameArg = args[0]
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have the three-level (fully qualified) name of the volume")
-		}
-		readReq.FullNameArg = args[0]
 
 		response, err := w.Volumes.Read(ctx, readReq)
 		if err != nil {
@@ -226,15 +296,20 @@ var readCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start update command
 
 var updateReq catalog.UpdateVolumeRequestContent
+var updateJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(updateCmd)
 	// TODO: short flags
+	updateCmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	updateCmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `The comment attached to the volume.`)
 	updateCmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `The name of the volume.`)
@@ -261,21 +336,31 @@ var updateCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if len(args) == 0 {
-			names, err := w.Volumes.VolumeInfoNameToVolumeIdMap(ctx, catalog.ListVolumesRequest{})
+		if cmd.Flags().Changed("json") {
+			err = updateJson.Unmarshal(&updateReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "The three-level (fully qualified) name of the volume")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No FULL_NAME_ARG argument specified. Loading names for Volumes drop-down."
+				names, err := w.Volumes.VolumeInfoNameToVolumeIdMap(ctx, catalog.ListVolumesRequest{})
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Volumes drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "The three-level (fully qualified) name of the volume")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have the three-level (fully qualified) name of the volume")
+			}
+			updateReq.FullNameArg = args[0]
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have the three-level (fully qualified) name of the volume")
-		}
-		updateReq.FullNameArg = args[0]
 
 		response, err := w.Volumes.Update(ctx, updateReq)
 		if err != nil {
@@ -283,6 +368,9 @@ var updateCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // end service Volumes

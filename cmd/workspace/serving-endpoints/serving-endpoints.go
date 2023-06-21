@@ -9,7 +9,6 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/serving"
 	"github.com/spf13/cobra"
 )
@@ -30,15 +29,20 @@ var Cmd = &cobra.Command{
   define how requests should be routed to your served models behind an endpoint.
   Additionally, you can configure the scale of resources that should be applied
   to each served model.`,
+	Annotations: map[string]string{
+		"package": "serving",
+	},
 }
 
 // start build-logs command
 
 var buildLogsReq serving.BuildLogsRequest
+var buildLogsJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(buildLogsCmd)
 	// TODO: short flags
+	buildLogsCmd.Flags().Var(&buildLogsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -51,13 +55,26 @@ var buildLogsCmd = &cobra.Command{
   Retrieves the build logs associated with the provided served model.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(2),
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(2)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		buildLogsReq.Name = args[0]
-		buildLogsReq.ServedModelName = args[1]
+		if cmd.Flags().Changed("json") {
+			err = buildLogsJson.Unmarshal(&buildLogsReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			buildLogsReq.Name = args[0]
+			buildLogsReq.ServedModelName = args[1]
+		}
 
 		response, err := w.ServingEndpoints.BuildLogs(ctx, buildLogsReq)
 		if err != nil {
@@ -65,6 +82,9 @@ var buildLogsCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start create command
@@ -94,49 +114,48 @@ var createCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		err = createJson.Unmarshal(&createReq)
-		if err != nil {
-			return err
-		}
-		createReq.Name = args[0]
-		_, err = fmt.Sscan(args[1], &createReq.Config)
-		if err != nil {
-			return fmt.Errorf("invalid CONFIG: %s", args[1])
-		}
-
-		if createSkipWait {
-			response, err := w.ServingEndpoints.Create(ctx, createReq)
+		if cmd.Flags().Changed("json") {
+			err = createJson.Unmarshal(&createReq)
 			if err != nil {
 				return err
 			}
-			return cmdio.Render(ctx, response)
+		} else {
+			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+		}
+
+		wait, err := w.ServingEndpoints.Create(ctx, createReq)
+		if err != nil {
+			return err
+		}
+		if createSkipWait {
+			return cmdio.Render(ctx, wait.Response)
 		}
 		spinner := cmdio.Spinner(ctx)
-		info, err := w.ServingEndpoints.CreateAndWait(ctx, createReq,
-			retries.Timeout[serving.ServingEndpointDetailed](createTimeout),
-			func(i *retries.Info[serving.ServingEndpointDetailed]) {
-				if i.Info == nil {
-					return
-				}
-				status := i.Info.State.ConfigUpdate
-				statusMessage := fmt.Sprintf("current status: %s", status)
-				spinner <- statusMessage
-			})
+		info, err := wait.OnProgress(func(i *serving.ServingEndpointDetailed) {
+			status := i.State.ConfigUpdate
+			statusMessage := fmt.Sprintf("current status: %s", status)
+			spinner <- statusMessage
+		}).GetWithTimeout(createTimeout)
 		close(spinner)
 		if err != nil {
 			return err
 		}
 		return cmdio.Render(ctx, info)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start delete command
 
 var deleteReq serving.DeleteServingEndpointRequest
+var deleteJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
+	deleteCmd.Flags().Var(&deleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -146,12 +165,25 @@ var deleteCmd = &cobra.Command{
 	Long:  `Delete a serving endpoint.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		deleteReq.Name = args[0]
+		if cmd.Flags().Changed("json") {
+			err = deleteJson.Unmarshal(&deleteReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			deleteReq.Name = args[0]
+		}
 
 		err = w.ServingEndpoints.Delete(ctx, deleteReq)
 		if err != nil {
@@ -159,15 +191,20 @@ var deleteCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start export-metrics command
 
 var exportMetricsReq serving.ExportMetricsRequest
+var exportMetricsJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(exportMetricsCmd)
 	// TODO: short flags
+	exportMetricsCmd.Flags().Var(&exportMetricsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -181,12 +218,25 @@ var exportMetricsCmd = &cobra.Command{
   Prometheus or OpenMetrics exposition format.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		exportMetricsReq.Name = args[0]
+		if cmd.Flags().Changed("json") {
+			err = exportMetricsJson.Unmarshal(&exportMetricsReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			exportMetricsReq.Name = args[0]
+		}
 
 		err = w.ServingEndpoints.ExportMetrics(ctx, exportMetricsReq)
 		if err != nil {
@@ -194,15 +244,20 @@ var exportMetricsCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start get command
 
 var getReq serving.GetServingEndpointRequest
+var getJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
+	getCmd.Flags().Var(&getJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -214,12 +269,25 @@ var getCmd = &cobra.Command{
   Retrieves the details for a single serving endpoint.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		getReq.Name = args[0]
+		if cmd.Flags().Changed("json") {
+			err = getJson.Unmarshal(&getReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			getReq.Name = args[0]
+		}
 
 		response, err := w.ServingEndpoints.Get(ctx, getReq)
 		if err != nil {
@@ -227,6 +295,9 @@ var getCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start list command
@@ -246,21 +317,26 @@ var listCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		response, err := w.ServingEndpoints.List(ctx)
+		response, err := w.ServingEndpoints.ListAll(ctx)
 		if err != nil {
 			return err
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start logs command
 
 var logsReq serving.LogsRequest
+var logsJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(logsCmd)
 	// TODO: short flags
+	logsCmd.Flags().Var(&logsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -273,13 +349,26 @@ var logsCmd = &cobra.Command{
   Retrieves the service logs associated with the provided served model.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(2),
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(2)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		logsReq.Name = args[0]
-		logsReq.ServedModelName = args[1]
+		if cmd.Flags().Changed("json") {
+			err = logsJson.Unmarshal(&logsReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			logsReq.Name = args[0]
+			logsReq.ServedModelName = args[1]
+		}
 
 		response, err := w.ServingEndpoints.Logs(ctx, logsReq)
 		if err != nil {
@@ -287,15 +376,20 @@ var logsCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start query command
 
 var queryReq serving.QueryRequest
+var queryJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(queryCmd)
 	// TODO: short flags
+	queryCmd.Flags().Var(&queryJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -305,12 +399,25 @@ var queryCmd = &cobra.Command{
 	Long:  `Query a serving endpoint with provided model input.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		queryReq.Name = args[0]
+		if cmd.Flags().Changed("json") {
+			err = queryJson.Unmarshal(&queryReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			queryReq.Name = args[0]
+		}
 
 		response, err := w.ServingEndpoints.Query(ctx, queryReq)
 		if err != nil {
@@ -318,6 +425,9 @@ var queryCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start update-config command
@@ -354,40 +464,37 @@ var updateConfigCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		err = updateConfigJson.Unmarshal(&updateConfigReq)
-		if err != nil {
-			return err
-		}
-		_, err = fmt.Sscan(args[0], &updateConfigReq.ServedModels)
-		if err != nil {
-			return fmt.Errorf("invalid SERVED_MODELS: %s", args[0])
-		}
-		updateConfigReq.Name = args[1]
-
-		if updateConfigSkipWait {
-			response, err := w.ServingEndpoints.UpdateConfig(ctx, updateConfigReq)
+		if cmd.Flags().Changed("json") {
+			err = updateConfigJson.Unmarshal(&updateConfigReq)
 			if err != nil {
 				return err
 			}
-			return cmdio.Render(ctx, response)
+		} else {
+			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+		}
+
+		wait, err := w.ServingEndpoints.UpdateConfig(ctx, updateConfigReq)
+		if err != nil {
+			return err
+		}
+		if updateConfigSkipWait {
+			return cmdio.Render(ctx, wait.Response)
 		}
 		spinner := cmdio.Spinner(ctx)
-		info, err := w.ServingEndpoints.UpdateConfigAndWait(ctx, updateConfigReq,
-			retries.Timeout[serving.ServingEndpointDetailed](updateConfigTimeout),
-			func(i *retries.Info[serving.ServingEndpointDetailed]) {
-				if i.Info == nil {
-					return
-				}
-				status := i.Info.State.ConfigUpdate
-				statusMessage := fmt.Sprintf("current status: %s", status)
-				spinner <- statusMessage
-			})
+		info, err := wait.OnProgress(func(i *serving.ServingEndpointDetailed) {
+			status := i.State.ConfigUpdate
+			statusMessage := fmt.Sprintf("current status: %s", status)
+			spinner <- statusMessage
+		}).GetWithTimeout(updateConfigTimeout)
 		close(spinner)
 		if err != nil {
 			return err
 		}
 		return cmdio.Render(ctx, info)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // end service ServingEndpoints

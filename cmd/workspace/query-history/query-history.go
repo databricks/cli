@@ -14,6 +14,9 @@ var Cmd = &cobra.Command{
 	Use:   "query-history",
 	Short: `Access the history of queries through SQL warehouses.`,
 	Long:  `Access the history of queries through SQL warehouses.`,
+	Annotations: map[string]string{
+		"package": "sql",
+	},
 }
 
 // start list command
@@ -43,13 +46,23 @@ var listCmd = &cobra.Command{
   You can filter by user ID, warehouse ID, status, and time range.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(0)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		err = listJson.Unmarshal(&listReq)
-		if err != nil {
-			return err
+		if cmd.Flags().Changed("json") {
+			err = listJson.Unmarshal(&listReq)
+			if err != nil {
+				return err
+			}
+		} else {
 		}
 
 		response, err := w.QueryHistory.ListAll(ctx, listReq)
@@ -58,6 +71,9 @@ var listCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // end service QueryHistory

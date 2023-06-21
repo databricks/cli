@@ -10,7 +10,6 @@ import (
 
 	"github.com/briandowns/spinner"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/fatih/color"
 	"github.com/manifoldco/promptui"
 	"github.com/mattn/go-isatty"
 	"golang.org/x/exp/slices"
@@ -31,8 +30,13 @@ type cmdIO struct {
 }
 
 func NewIO(outputFormat flags.Output, in io.Reader, out io.Writer, err io.Writer, template string) *cmdIO {
+	// The check below is similar to color.NoColor but uses the specified err writer.
+	dumb := os.Getenv("NO_COLOR") != "" || os.Getenv("TERM") == "dumb"
+	if f, ok := err.(*os.File); ok && !dumb {
+		dumb = !isatty.IsTerminal(f.Fd()) && !isatty.IsCygwinTerminal(f.Fd())
+	}
 	return &cmdIO{
-		interactive:  !color.NoColor,
+		interactive:  !dumb,
 		outputFormat: outputFormat,
 		template:     template,
 		in:           in,
@@ -46,6 +50,34 @@ func IsInteractive(ctx context.Context) bool {
 	return c.interactive
 }
 
+// IsTTY detects if io.Writer is a terminal.
+func IsTTY(w any) bool {
+	f, ok := w.(*os.File)
+	if !ok {
+		return false
+	}
+	fd := f.Fd()
+	return isatty.IsTerminal(fd) || isatty.IsCygwinTerminal(fd)
+}
+
+// IsInTTY detects if the input reader is a terminal.
+func IsInTTY(ctx context.Context) bool {
+	c := fromContext(ctx)
+	return IsTTY(c.in)
+}
+
+// IsOutTTY detects if the output writer is a terminal.
+func IsOutTTY(ctx context.Context) bool {
+	c := fromContext(ctx)
+	return IsTTY(c.out)
+}
+
+// IsErrTTY detects if the error writer is a terminal.
+func IsErrTTY(ctx context.Context) bool {
+	c := fromContext(ctx)
+	return IsTTY(c.err)
+}
+
 // IsTTY detects if stdout is a terminal. It assumes that stderr is terminal as well
 func (c *cmdIO) IsTTY() bool {
 	f, ok := c.out.(*os.File)
@@ -56,14 +88,20 @@ func (c *cmdIO) IsTTY() bool {
 	return isatty.IsTerminal(fd) || isatty.IsCygwinTerminal(fd)
 }
 
-func (c *cmdIO) Render(v any) error {
+func Render(ctx context.Context, v any) error {
+	c := fromContext(ctx)
+	return RenderWithTemplate(ctx, v, c.template)
+}
+
+func RenderWithTemplate(ctx context.Context, v any, template string) error {
 	// TODO: add terminal width & white/dark theme detection
+	c := fromContext(ctx)
 	switch c.outputFormat {
 	case flags.OutputJSON:
 		return renderJson(c.out, v)
 	case flags.OutputText:
-		if c.template != "" {
-			return renderTemplate(c.out, c.template, v)
+		if template != "" {
+			return renderTemplate(c.out, template, v)
 		}
 		return renderJson(c.out, v)
 	default:
@@ -71,9 +109,25 @@ func (c *cmdIO) Render(v any) error {
 	}
 }
 
-func Render(ctx context.Context, v any) error {
+func RenderJson(ctx context.Context, v any) error {
 	c := fromContext(ctx)
-	return c.Render(v)
+	if c.outputFormat == flags.OutputJSON {
+		return renderJson(c.out, v)
+	}
+	return nil
+}
+
+func RenderReader(ctx context.Context, r io.Reader) error {
+	c := fromContext(ctx)
+	switch c.outputFormat {
+	case flags.OutputJSON:
+		return fmt.Errorf("json output not supported")
+	case flags.OutputText:
+		_, err := io.Copy(c.out, r)
+		return err
+	default:
+		return fmt.Errorf("invalid output format: %s", c.outputFormat)
+	}
 }
 
 type tuple struct{ Name, Id string }
@@ -118,6 +172,36 @@ func Select[V any](ctx context.Context, names map[string]V, label string) (id st
 		stringNames[k] = fmt.Sprint(v)
 	}
 	return c.Select(stringNames, label)
+}
+
+func (c *cmdIO) Secret() (value string, err error) {
+	prompt := (promptui.Prompt{
+		Label: "Enter your secrets value",
+		Mask:  '*',
+	})
+
+	return prompt.Run()
+}
+
+func Secret(ctx context.Context) (value string, err error) {
+	c := fromContext(ctx)
+	return c.Secret()
+}
+
+type nopWriteCloser struct {
+	io.Writer
+}
+
+func (nopWriteCloser) Close() error {
+	return nil
+}
+
+func Prompt(ctx context.Context) *promptui.Prompt {
+	c := fromContext(ctx)
+	return &promptui.Prompt{
+		Stdin:  io.NopCloser(c.in),
+		Stdout: nopWriteCloser{c.out},
+	}
 }
 
 func (c *cmdIO) Spinner(ctx context.Context) chan string {

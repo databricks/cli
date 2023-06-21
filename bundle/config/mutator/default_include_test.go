@@ -12,7 +12,7 @@ import (
 
 func TestDefaultInclude(t *testing.T) {
 	bundle := &bundle.Bundle{}
-	_, err := mutator.DefineDefaultInclude().Apply(context.Background(), bundle)
+	err := mutator.DefineDefaultInclude().Apply(context.Background(), bundle)
 	require.NoError(t, err)
 	assert.Equal(t, []string{"*.yml", "*/*.yml"}, bundle.Config.Include)
 }

@@ -9,7 +9,6 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/spf13/cobra"
 )
@@ -20,6 +19,9 @@ var Cmd = &cobra.Command{
 	Long: `A SQL warehouse is a compute resource that lets you run SQL commands on data
   objects within Databricks SQL. Compute resources are infrastructure resources
   that provide processing capabilities in the cloud.`,
+	Annotations: map[string]string{
+		"package": "sql",
+	},
 }
 
 // start create command
@@ -61,60 +63,64 @@ var createCmd = &cobra.Command{
   Creates a new SQL warehouse.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(0)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		err = createJson.Unmarshal(&createReq)
-		if err != nil {
-			return err
-		}
-
-		if createSkipWait {
-			response, err := w.Warehouses.Create(ctx, createReq)
+		if cmd.Flags().Changed("json") {
+			err = createJson.Unmarshal(&createReq)
 			if err != nil {
 				return err
 			}
-			return cmdio.Render(ctx, response)
+		} else {
+		}
+
+		wait, err := w.Warehouses.Create(ctx, createReq)
+		if err != nil {
+			return err
+		}
+		if createSkipWait {
+			return cmdio.Render(ctx, wait.Response)
 		}
 		spinner := cmdio.Spinner(ctx)
-		info, err := w.Warehouses.CreateAndWait(ctx, createReq,
-			retries.Timeout[sql.GetWarehouseResponse](createTimeout),
-			func(i *retries.Info[sql.GetWarehouseResponse]) {
-				if i.Info == nil {
-					return
-				}
-				if i.Info.Health == nil {
-					return
-				}
-				status := i.Info.State
-				statusMessage := fmt.Sprintf("current status: %s", status)
-				if i.Info.Health != nil {
-					statusMessage = i.Info.Health.Summary
-				}
-				spinner <- statusMessage
-			})
+		info, err := wait.OnProgress(func(i *sql.GetWarehouseResponse) {
+			if i.Health == nil {
+				return
+			}
+			status := i.State
+			statusMessage := fmt.Sprintf("current status: %s", status)
+			if i.Health != nil {
+				statusMessage = i.Health.Summary
+			}
+			spinner <- statusMessage
+		}).GetWithTimeout(createTimeout)
 		close(spinner)
 		if err != nil {
 			return err
 		}
 		return cmdio.Render(ctx, info)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start delete command
 
 var deleteReq sql.DeleteWarehouseRequest
-
-var deleteSkipWait bool
-var deleteTimeout time.Duration
+var deleteJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(deleteCmd)
-
-	deleteCmd.Flags().BoolVar(&deleteSkipWait, "no-wait", deleteSkipWait, `do not wait to reach DELETED state`)
-	deleteCmd.Flags().DurationVar(&deleteTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach DELETED state`)
 	// TODO: short flags
+	deleteCmd.Flags().Var(&deleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -130,52 +136,41 @@ var deleteCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if len(args) == 0 {
-			names, err := w.Warehouses.EndpointInfoNameToIdMap(ctx, sql.ListWarehousesRequest{})
+		if cmd.Flags().Changed("json") {
+			err = deleteJson.Unmarshal(&deleteReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "Required")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No ID argument specified. Loading names for Warehouses drop-down."
+				names, err := w.Warehouses.EndpointInfoNameToIdMap(ctx, sql.ListWarehousesRequest{})
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Warehouses drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "Required")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have required")
+			}
+			deleteReq.Id = args[0]
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have required")
-		}
-		deleteReq.Id = args[0]
 
-		if deleteSkipWait {
-			err = w.Warehouses.Delete(ctx, deleteReq)
-			if err != nil {
-				return err
-			}
-			return nil
-		}
-		spinner := cmdio.Spinner(ctx)
-		info, err := w.Warehouses.DeleteAndWait(ctx, deleteReq,
-			retries.Timeout[sql.GetWarehouseResponse](deleteTimeout),
-			func(i *retries.Info[sql.GetWarehouseResponse]) {
-				if i.Info == nil {
-					return
-				}
-				if i.Info.Health == nil {
-					return
-				}
-				status := i.Info.State
-				statusMessage := fmt.Sprintf("current status: %s", status)
-				if i.Info.Health != nil {
-					statusMessage = i.Info.Health.Summary
-				}
-				spinner <- statusMessage
-			})
-		close(spinner)
+		err = w.Warehouses.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, info)
+		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start edit command
@@ -210,7 +205,7 @@ func init() {
 }
 
 var editCmd = &cobra.Command{
-	Use:   "edit",
+	Use:   "edit ID",
 	Short: `Update a warehouse.`,
 	Long: `Update a warehouse.
   
@@ -221,48 +216,66 @@ var editCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		err = editJson.Unmarshal(&editReq)
-		if err != nil {
-			return err
-		}
-		editReq.Id = args[0]
-
-		if editSkipWait {
-			err = w.Warehouses.Edit(ctx, editReq)
+		if cmd.Flags().Changed("json") {
+			err = editJson.Unmarshal(&editReq)
 			if err != nil {
 				return err
 			}
+		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No ID argument specified. Loading names for Warehouses drop-down."
+				names, err := w.Warehouses.EndpointInfoNameToIdMap(ctx, sql.ListWarehousesRequest{})
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Warehouses drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "Required")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
+			}
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have required")
+			}
+			editReq.Id = args[0]
+		}
+
+		wait, err := w.Warehouses.Edit(ctx, editReq)
+		if err != nil {
+			return err
+		}
+		if editSkipWait {
 			return nil
 		}
 		spinner := cmdio.Spinner(ctx)
-		info, err := w.Warehouses.EditAndWait(ctx, editReq,
-			retries.Timeout[sql.GetWarehouseResponse](editTimeout),
-			func(i *retries.Info[sql.GetWarehouseResponse]) {
-				if i.Info == nil {
-					return
-				}
-				if i.Info.Health == nil {
-					return
-				}
-				status := i.Info.State
-				statusMessage := fmt.Sprintf("current status: %s", status)
-				if i.Info.Health != nil {
-					statusMessage = i.Info.Health.Summary
-				}
-				spinner <- statusMessage
-			})
+		info, err := wait.OnProgress(func(i *sql.GetWarehouseResponse) {
+			if i.Health == nil {
+				return
+			}
+			status := i.State
+			statusMessage := fmt.Sprintf("current status: %s", status)
+			if i.Health != nil {
+				statusMessage = i.Health.Summary
+			}
+			spinner <- statusMessage
+		}).GetWithTimeout(editTimeout)
 		close(spinner)
 		if err != nil {
 			return err
 		}
 		return cmdio.Render(ctx, info)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start get command
 
 var getReq sql.GetWarehouseRequest
-
+var getJson flags.JsonFlag
 var getSkipWait bool
 var getTimeout time.Duration
 
@@ -272,6 +285,7 @@ func init() {
 	getCmd.Flags().BoolVar(&getSkipWait, "no-wait", getSkipWait, `do not wait to reach RUNNING state`)
 	getCmd.Flags().DurationVar(&getTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
 	// TODO: short flags
+	getCmd.Flags().Var(&getJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -287,21 +301,31 @@ var getCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if len(args) == 0 {
-			names, err := w.Warehouses.EndpointInfoNameToIdMap(ctx, sql.ListWarehousesRequest{})
+		if cmd.Flags().Changed("json") {
+			err = getJson.Unmarshal(&getReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "Required")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No ID argument specified. Loading names for Warehouses drop-down."
+				names, err := w.Warehouses.EndpointInfoNameToIdMap(ctx, sql.ListWarehousesRequest{})
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Warehouses drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "Required")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have required")
+			}
+			getReq.Id = args[0]
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have required")
-		}
-		getReq.Id = args[0]
 
 		response, err := w.Warehouses.Get(ctx, getReq)
 		if err != nil {
@@ -309,6 +333,9 @@ var getCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start get-workspace-warehouse-config command
@@ -337,15 +364,20 @@ var getWorkspaceWarehouseConfigCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start list command
 
 var listReq sql.ListWarehousesRequest
+var listJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(listCmd)
 	// TODO: short flags
+	listCmd.Flags().Var(&listJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	listCmd.Flags().IntVar(&listReq.RunAsUserId, "run-as-user-id", listReq.RunAsUserId, `Service Principal which will be used to fetch the list of warehouses.`)
 
@@ -359,11 +391,24 @@ var listCmd = &cobra.Command{
   Lists all SQL warehouses that a user has manager permissions on.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(0),
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(0)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+		if cmd.Flags().Changed("json") {
+			err = listJson.Unmarshal(&listReq)
+			if err != nil {
+				return err
+			}
+		} else {
+		}
 
 		response, err := w.Warehouses.ListAll(ctx, listReq)
 		if err != nil {
@@ -371,6 +416,9 @@ var listCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start set-workspace-warehouse-config command
@@ -391,7 +439,6 @@ func init() {
 	setWorkspaceWarehouseConfigCmd.Flags().StringVar(&setWorkspaceWarehouseConfigReq.GoogleServiceAccount, "google-service-account", setWorkspaceWarehouseConfigReq.GoogleServiceAccount, `GCP only: Google Service Account used to pass to cluster to access Google Cloud Storage.`)
 	setWorkspaceWarehouseConfigCmd.Flags().StringVar(&setWorkspaceWarehouseConfigReq.InstanceProfileArn, "instance-profile-arn", setWorkspaceWarehouseConfigReq.InstanceProfileArn, `AWS Only: Instance profile used to pass IAM role to the cluster.`)
 	setWorkspaceWarehouseConfigCmd.Flags().Var(&setWorkspaceWarehouseConfigReq.SecurityPolicy, "security-policy", `Security policy for warehouses.`)
-	setWorkspaceWarehouseConfigCmd.Flags().BoolVar(&setWorkspaceWarehouseConfigReq.ServerlessAgreement, "serverless-agreement", setWorkspaceWarehouseConfigReq.ServerlessAgreement, `Internal.`)
 	// TODO: complex arg: sql_configuration_parameters
 
 }
@@ -405,13 +452,23 @@ var setWorkspaceWarehouseConfigCmd = &cobra.Command{
   a workspace.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(0)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		err = setWorkspaceWarehouseConfigJson.Unmarshal(&setWorkspaceWarehouseConfigReq)
-		if err != nil {
-			return err
+		if cmd.Flags().Changed("json") {
+			err = setWorkspaceWarehouseConfigJson.Unmarshal(&setWorkspaceWarehouseConfigReq)
+			if err != nil {
+				return err
+			}
+		} else {
 		}
 
 		err = w.Warehouses.SetWorkspaceWarehouseConfig(ctx, setWorkspaceWarehouseConfigReq)
@@ -420,12 +477,15 @@ var setWorkspaceWarehouseConfigCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start start command
 
 var startReq sql.StartRequest
-
+var startJson flags.JsonFlag
 var startSkipWait bool
 var startTimeout time.Duration
 
@@ -435,6 +495,7 @@ func init() {
 	startCmd.Flags().BoolVar(&startSkipWait, "no-wait", startSkipWait, `do not wait to reach RUNNING state`)
 	startCmd.Flags().DurationVar(&startTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
 	// TODO: short flags
+	startCmd.Flags().Var(&startJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -450,58 +511,66 @@ var startCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if len(args) == 0 {
-			names, err := w.Warehouses.EndpointInfoNameToIdMap(ctx, sql.ListWarehousesRequest{})
+		if cmd.Flags().Changed("json") {
+			err = startJson.Unmarshal(&startReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "Required")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No ID argument specified. Loading names for Warehouses drop-down."
+				names, err := w.Warehouses.EndpointInfoNameToIdMap(ctx, sql.ListWarehousesRequest{})
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Warehouses drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "Required")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have required")
+			}
+			startReq.Id = args[0]
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have required")
-		}
-		startReq.Id = args[0]
 
+		wait, err := w.Warehouses.Start(ctx, startReq)
+		if err != nil {
+			return err
+		}
 		if startSkipWait {
-			err = w.Warehouses.Start(ctx, startReq)
-			if err != nil {
-				return err
-			}
 			return nil
 		}
 		spinner := cmdio.Spinner(ctx)
-		info, err := w.Warehouses.StartAndWait(ctx, startReq,
-			retries.Timeout[sql.GetWarehouseResponse](startTimeout),
-			func(i *retries.Info[sql.GetWarehouseResponse]) {
-				if i.Info == nil {
-					return
-				}
-				if i.Info.Health == nil {
-					return
-				}
-				status := i.Info.State
-				statusMessage := fmt.Sprintf("current status: %s", status)
-				if i.Info.Health != nil {
-					statusMessage = i.Info.Health.Summary
-				}
-				spinner <- statusMessage
-			})
+		info, err := wait.OnProgress(func(i *sql.GetWarehouseResponse) {
+			if i.Health == nil {
+				return
+			}
+			status := i.State
+			statusMessage := fmt.Sprintf("current status: %s", status)
+			if i.Health != nil {
+				statusMessage = i.Health.Summary
+			}
+			spinner <- statusMessage
+		}).GetWithTimeout(startTimeout)
 		close(spinner)
 		if err != nil {
 			return err
 		}
 		return cmdio.Render(ctx, info)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start stop command
 
 var stopReq sql.StopRequest
-
+var stopJson flags.JsonFlag
 var stopSkipWait bool
 var stopTimeout time.Duration
 
@@ -511,6 +580,7 @@ func init() {
 	stopCmd.Flags().BoolVar(&stopSkipWait, "no-wait", stopSkipWait, `do not wait to reach STOPPED state`)
 	stopCmd.Flags().DurationVar(&stopTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach STOPPED state`)
 	// TODO: short flags
+	stopCmd.Flags().Var(&stopJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -526,52 +596,60 @@ var stopCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if len(args) == 0 {
-			names, err := w.Warehouses.EndpointInfoNameToIdMap(ctx, sql.ListWarehousesRequest{})
+		if cmd.Flags().Changed("json") {
+			err = stopJson.Unmarshal(&stopReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "Required")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No ID argument specified. Loading names for Warehouses drop-down."
+				names, err := w.Warehouses.EndpointInfoNameToIdMap(ctx, sql.ListWarehousesRequest{})
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Warehouses drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "Required")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have required")
+			}
+			stopReq.Id = args[0]
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have required")
-		}
-		stopReq.Id = args[0]
 
+		wait, err := w.Warehouses.Stop(ctx, stopReq)
+		if err != nil {
+			return err
+		}
 		if stopSkipWait {
-			err = w.Warehouses.Stop(ctx, stopReq)
-			if err != nil {
-				return err
-			}
 			return nil
 		}
 		spinner := cmdio.Spinner(ctx)
-		info, err := w.Warehouses.StopAndWait(ctx, stopReq,
-			retries.Timeout[sql.GetWarehouseResponse](stopTimeout),
-			func(i *retries.Info[sql.GetWarehouseResponse]) {
-				if i.Info == nil {
-					return
-				}
-				if i.Info.Health == nil {
-					return
-				}
-				status := i.Info.State
-				statusMessage := fmt.Sprintf("current status: %s", status)
-				if i.Info.Health != nil {
-					statusMessage = i.Info.Health.Summary
-				}
-				spinner <- statusMessage
-			})
+		info, err := wait.OnProgress(func(i *sql.GetWarehouseResponse) {
+			if i.Health == nil {
+				return
+			}
+			status := i.State
+			statusMessage := fmt.Sprintf("current status: %s", status)
+			if i.Health != nil {
+				statusMessage = i.Health.Summary
+			}
+			spinner <- statusMessage
+		}).GetWithTimeout(stopTimeout)
 		close(spinner)
 		if err != nil {
 			return err
 		}
 		return cmdio.Render(ctx, info)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // end service Warehouses

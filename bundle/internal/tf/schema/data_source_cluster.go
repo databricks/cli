@@ -120,12 +120,17 @@ type DataSourceClusterClusterInfoInitScriptsS3 struct {
 	Region           string `json:"region,omitempty"`
 }
 
+type DataSourceClusterClusterInfoInitScriptsWorkspace struct {
+	Destination string `json:"destination,omitempty"`
+}
+
 type DataSourceClusterClusterInfoInitScripts struct {
-	Abfss *DataSourceClusterClusterInfoInitScriptsAbfss `json:"abfss,omitempty"`
-	Dbfs  *DataSourceClusterClusterInfoInitScriptsDbfs  `json:"dbfs,omitempty"`
-	File  *DataSourceClusterClusterInfoInitScriptsFile  `json:"file,omitempty"`
-	Gcs   *DataSourceClusterClusterInfoInitScriptsGcs   `json:"gcs,omitempty"`
-	S3    *DataSourceClusterClusterInfoInitScriptsS3    `json:"s3,omitempty"`
+	Abfss     *DataSourceClusterClusterInfoInitScriptsAbfss     `json:"abfss,omitempty"`
+	Dbfs      *DataSourceClusterClusterInfoInitScriptsDbfs      `json:"dbfs,omitempty"`
+	File      *DataSourceClusterClusterInfoInitScriptsFile      `json:"file,omitempty"`
+	Gcs       *DataSourceClusterClusterInfoInitScriptsGcs       `json:"gcs,omitempty"`
+	S3        *DataSourceClusterClusterInfoInitScriptsS3        `json:"s3,omitempty"`
+	Workspace *DataSourceClusterClusterInfoInitScriptsWorkspace `json:"workspace,omitempty"`
 }
 
 type DataSourceClusterClusterInfoTerminationReason struct {

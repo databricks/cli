@@ -6,6 +6,7 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/spf13/cobra"
 
+	account_access_control "github.com/databricks/cli/cmd/account/access-control"
 	billable_usage "github.com/databricks/cli/cmd/account/billable-usage"
 	budgets "github.com/databricks/cli/cmd/account/budgets"
 	credentials "github.com/databricks/cli/cmd/account/credentials"
@@ -20,7 +21,9 @@ import (
 	o_auth_enrollment "github.com/databricks/cli/cmd/account/o-auth-enrollment"
 	private_access "github.com/databricks/cli/cmd/account/private-access"
 	published_app_integration "github.com/databricks/cli/cmd/account/published-app-integration"
+	service_principal_secrets "github.com/databricks/cli/cmd/account/service-principal-secrets"
 	account_service_principals "github.com/databricks/cli/cmd/account/service-principals"
+	account_settings "github.com/databricks/cli/cmd/account/settings"
 	storage "github.com/databricks/cli/cmd/account/storage"
 	account_storage_credentials "github.com/databricks/cli/cmd/account/storage-credentials"
 	account_users "github.com/databricks/cli/cmd/account/users"
@@ -37,6 +40,7 @@ var accountCmd = &cobra.Command{
 func init() {
 	root.RootCmd.AddCommand(accountCmd)
 
+	accountCmd.AddCommand(account_access_control.Cmd)
 	accountCmd.AddCommand(billable_usage.Cmd)
 	accountCmd.AddCommand(budgets.Cmd)
 	accountCmd.AddCommand(credentials.Cmd)
@@ -51,11 +55,40 @@ func init() {
 	accountCmd.AddCommand(o_auth_enrollment.Cmd)
 	accountCmd.AddCommand(private_access.Cmd)
 	accountCmd.AddCommand(published_app_integration.Cmd)
+	accountCmd.AddCommand(service_principal_secrets.Cmd)
 	accountCmd.AddCommand(account_service_principals.Cmd)
+	accountCmd.AddCommand(account_settings.Cmd)
 	accountCmd.AddCommand(storage.Cmd)
 	accountCmd.AddCommand(account_storage_credentials.Cmd)
 	accountCmd.AddCommand(account_users.Cmd)
 	accountCmd.AddCommand(vpc_endpoints.Cmd)
 	accountCmd.AddCommand(workspace_assignment.Cmd)
 	accountCmd.AddCommand(workspaces.Cmd)
+
+	// Register commands with groups
+	account_access_control.Cmd.GroupID = "iam"
+	billable_usage.Cmd.GroupID = "billing"
+	budgets.Cmd.GroupID = "billing"
+	credentials.Cmd.GroupID = "provisioning"
+	custom_app_integration.Cmd.GroupID = "oauth2"
+	encryption_keys.Cmd.GroupID = "provisioning"
+	account_groups.Cmd.GroupID = "iam"
+	account_ip_access_lists.Cmd.GroupID = "settings"
+	log_delivery.Cmd.GroupID = "billing"
+	account_metastore_assignments.Cmd.GroupID = "catalog"
+	account_metastores.Cmd.GroupID = "catalog"
+	networks.Cmd.GroupID = "provisioning"
+	o_auth_enrollment.Cmd.GroupID = "oauth2"
+	private_access.Cmd.GroupID = "provisioning"
+	published_app_integration.Cmd.GroupID = "oauth2"
+	service_principal_secrets.Cmd.GroupID = "oauth2"
+	account_service_principals.Cmd.GroupID = "iam"
+	account_settings.Cmd.GroupID = "settings"
+	storage.Cmd.GroupID = "provisioning"
+	account_storage_credentials.Cmd.GroupID = "catalog"
+	account_users.Cmd.GroupID = "iam"
+	vpc_endpoints.Cmd.GroupID = "provisioning"
+	workspace_assignment.Cmd.GroupID = "iam"
+	workspaces.Cmd.GroupID = "provisioning"
+
 }

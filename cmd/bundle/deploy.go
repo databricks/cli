@@ -15,19 +15,19 @@ var deployCmd = &cobra.Command{
 		b := bundle.Get(cmd.Context())
 
 		// If `--force` is specified, force acquisition of the deployment lock.
-		b.Config.Bundle.Lock.Force = force
+		b.Config.Bundle.Lock.Force = forceDeploy
 
-		return bundle.Apply(cmd.Context(), b, []bundle.Mutator{
+		return bundle.Apply(cmd.Context(), b, bundle.Seq(
 			phases.Initialize(),
 			phases.Build(),
 			phases.Deploy(),
-		})
+		))
 	},
 }
 
-var force bool
+var forceDeploy bool
 
 func init() {
 	AddCommand(deployCmd)
-	deployCmd.Flags().BoolVar(&force, "force", false, "Force acquisition of deployment lock.")
+	deployCmd.Flags().BoolVar(&forceDeploy, "force", false, "Force acquisition of deployment lock.")
 }

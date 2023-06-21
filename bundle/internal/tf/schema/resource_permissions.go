@@ -26,9 +26,12 @@ type ResourcePermissions struct {
 	RegisteredModelId string                             `json:"registered_model_id,omitempty"`
 	RepoId            string                             `json:"repo_id,omitempty"`
 	RepoPath          string                             `json:"repo_path,omitempty"`
+	ServingEndpointId string                             `json:"serving_endpoint_id,omitempty"`
 	SqlAlertId        string                             `json:"sql_alert_id,omitempty"`
 	SqlDashboardId    string                             `json:"sql_dashboard_id,omitempty"`
 	SqlEndpointId     string                             `json:"sql_endpoint_id,omitempty"`
 	SqlQueryId        string                             `json:"sql_query_id,omitempty"`
+	WorkspaceFileId   string                             `json:"workspace_file_id,omitempty"`
+	WorkspaceFilePath string                             `json:"workspace_file_path,omitempty"`
 	AccessControl     []ResourcePermissionsAccessControl `json:"access_control,omitempty"`
 }

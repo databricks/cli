@@ -62,28 +62,28 @@ func (w *destroy) Name() string {
 	return "terraform.Destroy"
 }
 
-func (w *destroy) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator, error) {
+func (w *destroy) Apply(ctx context.Context, b *bundle.Bundle) error {
 	// return early if plan is empty
 	if b.Plan.IsEmpty {
 		cmdio.LogString(ctx, "No resources to destroy in plan. Skipping destroy!")
-		return nil, nil
+		return nil
 	}
 
 	tf := b.Terraform
 	if tf == nil {
-		return nil, fmt.Errorf("terraform not initialized")
+		return fmt.Errorf("terraform not initialized")
 	}
 
 	// read plan file
 	plan, err := tf.ShowPlanFile(ctx, b.Plan.Path)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// print the resources that will be destroyed
 	err = logDestroyPlan(ctx, plan.ResourceChanges)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// Ask for confirmation, if needed
@@ -91,17 +91,17 @@ func (w *destroy) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator
 		red := color.New(color.FgRed).SprintFunc()
 		b.Plan.ConfirmApply, err = cmdio.Ask(ctx, fmt.Sprintf("\nThis will permanently %s resources! Proceed? [y/n]: ", red("destroy")))
 		if err != nil {
-			return nil, err
+			return err
 		}
 	}
 
 	// return if confirmation was not provided
 	if !b.Plan.ConfirmApply {
-		return nil, nil
+		return nil
 	}
 
 	if b.Plan.Path == "" {
-		return nil, fmt.Errorf("no plan found")
+		return fmt.Errorf("no plan found")
 	}
 
 	cmdio.LogString(ctx, "Starting to destroy resources")
@@ -109,11 +109,11 @@ func (w *destroy) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator
 	// Apply terraform according to the computed destroy plan
 	err = tf.Apply(ctx, tfexec.DirOrPlan(b.Plan.Path))
 	if err != nil {
-		return nil, fmt.Errorf("terraform destroy: %w", err)
+		return fmt.Errorf("terraform destroy: %w", err)
 	}
 
 	cmdio.LogString(ctx, "Successfully destroyed resources!")
-	return nil, nil
+	return nil
 }
 
 // Destroy returns a [bundle.Mutator] that runs the conceptual equivalent of

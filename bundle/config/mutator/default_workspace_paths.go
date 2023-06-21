@@ -19,10 +19,10 @@ func (m *defineDefaultWorkspacePaths) Name() string {
 	return "DefaultWorkspacePaths"
 }
 
-func (m *defineDefaultWorkspacePaths) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator, error) {
+func (m *defineDefaultWorkspacePaths) Apply(ctx context.Context, b *bundle.Bundle) error {
 	root := b.Config.Workspace.RootPath
 	if root == "" {
-		return nil, fmt.Errorf("unable to define default workspace paths: workspace root not defined")
+		return fmt.Errorf("unable to define default workspace paths: workspace root not defined")
 	}
 
 	if b.Config.Workspace.FilesPath == "" {
@@ -37,5 +37,5 @@ func (m *defineDefaultWorkspacePaths) Apply(ctx context.Context, b *bundle.Bundl
 		b.Config.Workspace.StatePath = path.Join(root, "state")
 	}
 
-	return nil, nil
+	return nil
 }

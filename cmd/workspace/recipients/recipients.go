@@ -16,6 +16,9 @@ var Cmd = &cobra.Command{
 	Use:   "recipients",
 	Short: `Databricks Recipients REST API.`,
 	Long:  `Databricks Recipients REST API`,
+	Annotations: map[string]string{
+		"package": "sharing",
+	},
 }
 
 // start create command
@@ -32,13 +35,13 @@ func init() {
 	// TODO: any: data_recipient_global_metastore_id
 	// TODO: complex arg: ip_access_list
 	createCmd.Flags().StringVar(&createReq.Owner, "owner", createReq.Owner, `Username of the recipient owner.`)
-	// TODO: any: properties_kvpairs
+	// TODO: complex arg: properties_kvpairs
 	createCmd.Flags().StringVar(&createReq.SharingCode, "sharing-code", createReq.SharingCode, `The one-time sharing code provided by the data recipient.`)
 
 }
 
 var createCmd = &cobra.Command{
-	Use:   "create",
+	Use:   "create NAME AUTHENTICATION_TYPE",
 	Short: `Create a share recipient.`,
 	Long: `Create a share recipient.
   
@@ -47,18 +50,28 @@ var createCmd = &cobra.Command{
   **CREATE_RECIPIENT** privilege on the metastore.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(2)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		err = createJson.Unmarshal(&createReq)
-		if err != nil {
-			return err
-		}
-		createReq.Name = args[0]
-		_, err = fmt.Sscan(args[1], &createReq.AuthenticationType)
-		if err != nil {
-			return fmt.Errorf("invalid AUTHENTICATION_TYPE: %s", args[1])
+		if cmd.Flags().Changed("json") {
+			err = createJson.Unmarshal(&createReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			createReq.Name = args[0]
+			_, err = fmt.Sscan(args[1], &createReq.AuthenticationType)
+			if err != nil {
+				return fmt.Errorf("invalid AUTHENTICATION_TYPE: %s", args[1])
+			}
 		}
 
 		response, err := w.Recipients.Create(ctx, createReq)
@@ -67,15 +80,20 @@ var createCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start delete command
 
 var deleteReq sharing.DeleteRecipientRequest
+var deleteJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
+	deleteCmd.Flags().Var(&deleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -92,21 +110,31 @@ var deleteCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if len(args) == 0 {
-			names, err := w.Recipients.RecipientInfoNameToMetastoreIdMap(ctx, sharing.ListRecipientsRequest{})
+		if cmd.Flags().Changed("json") {
+			err = deleteJson.Unmarshal(&deleteReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "Name of the recipient")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No NAME argument specified. Loading names for Recipients drop-down."
+				names, err := w.Recipients.RecipientInfoNameToMetastoreIdMap(ctx, sharing.ListRecipientsRequest{})
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Recipients drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "Name of the recipient")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have name of the recipient")
+			}
+			deleteReq.Name = args[0]
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have name of the recipient")
-		}
-		deleteReq.Name = args[0]
 
 		err = w.Recipients.Delete(ctx, deleteReq)
 		if err != nil {
@@ -114,15 +142,20 @@ var deleteCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start get command
 
 var getReq sharing.GetRecipientRequest
+var getJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
+	getCmd.Flags().Var(&getJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -140,21 +173,31 @@ var getCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if len(args) == 0 {
-			names, err := w.Recipients.RecipientInfoNameToMetastoreIdMap(ctx, sharing.ListRecipientsRequest{})
+		if cmd.Flags().Changed("json") {
+			err = getJson.Unmarshal(&getReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "Name of the recipient")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No NAME argument specified. Loading names for Recipients drop-down."
+				names, err := w.Recipients.RecipientInfoNameToMetastoreIdMap(ctx, sharing.ListRecipientsRequest{})
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Recipients drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "Name of the recipient")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have name of the recipient")
+			}
+			getReq.Name = args[0]
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have name of the recipient")
-		}
-		getReq.Name = args[0]
 
 		response, err := w.Recipients.Get(ctx, getReq)
 		if err != nil {
@@ -162,15 +205,20 @@ var getCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start list command
 
 var listReq sharing.ListRecipientsRequest
+var listJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(listCmd)
 	// TODO: short flags
+	listCmd.Flags().Var(&listJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	listCmd.Flags().StringVar(&listReq.DataRecipientGlobalMetastoreId, "data-recipient-global-metastore-id", listReq.DataRecipientGlobalMetastoreId, `If not provided, all recipients will be returned.`)
 
@@ -187,11 +235,24 @@ var listCmd = &cobra.Command{
   guarantee of a specific ordering of the elements in the array.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(0),
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(0)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+		if cmd.Flags().Changed("json") {
+			err = listJson.Unmarshal(&listReq)
+			if err != nil {
+				return err
+			}
+		} else {
+		}
 
 		response, err := w.Recipients.ListAll(ctx, listReq)
 		if err != nil {
@@ -199,15 +260,20 @@ var listCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start rotate-token command
 
 var rotateTokenReq sharing.RotateRecipientToken
+var rotateTokenJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(rotateTokenCmd)
 	// TODO: short flags
+	rotateTokenCmd.Flags().Var(&rotateTokenJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -220,16 +286,29 @@ var rotateTokenCmd = &cobra.Command{
   the provided token info. The caller must be the owner of the recipient.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(2),
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(2)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		_, err = fmt.Sscan(args[0], &rotateTokenReq.ExistingTokenExpireInSeconds)
-		if err != nil {
-			return fmt.Errorf("invalid EXISTING_TOKEN_EXPIRE_IN_SECONDS: %s", args[0])
+		if cmd.Flags().Changed("json") {
+			err = rotateTokenJson.Unmarshal(&rotateTokenReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			_, err = fmt.Sscan(args[0], &rotateTokenReq.ExistingTokenExpireInSeconds)
+			if err != nil {
+				return fmt.Errorf("invalid EXISTING_TOKEN_EXPIRE_IN_SECONDS: %s", args[0])
+			}
+			rotateTokenReq.Name = args[1]
 		}
-		rotateTokenReq.Name = args[1]
 
 		response, err := w.Recipients.RotateToken(ctx, rotateTokenReq)
 		if err != nil {
@@ -237,15 +316,20 @@ var rotateTokenCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start share-permissions command
 
 var sharePermissionsReq sharing.SharePermissionsRequest
+var sharePermissionsJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(sharePermissionsCmd)
 	// TODO: short flags
+	sharePermissionsCmd.Flags().Var(&sharePermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -262,21 +346,31 @@ var sharePermissionsCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if len(args) == 0 {
-			names, err := w.Recipients.RecipientInfoNameToMetastoreIdMap(ctx, sharing.ListRecipientsRequest{})
+		if cmd.Flags().Changed("json") {
+			err = sharePermissionsJson.Unmarshal(&sharePermissionsReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "The name of the Recipient")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No NAME argument specified. Loading names for Recipients drop-down."
+				names, err := w.Recipients.RecipientInfoNameToMetastoreIdMap(ctx, sharing.ListRecipientsRequest{})
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Recipients drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "The name of the Recipient")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have the name of the recipient")
+			}
+			sharePermissionsReq.Name = args[0]
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have the name of the recipient")
-		}
-		sharePermissionsReq.Name = args[0]
 
 		response, err := w.Recipients.SharePermissions(ctx, sharePermissionsReq)
 		if err != nil {
@@ -284,6 +378,9 @@ var sharePermissionsCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start update command
@@ -300,12 +397,12 @@ func init() {
 	// TODO: complex arg: ip_access_list
 	updateCmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `Name of Recipient.`)
 	updateCmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of the recipient owner.`)
-	// TODO: any: properties_kvpairs
+	// TODO: complex arg: properties_kvpairs
 
 }
 
 var updateCmd = &cobra.Command{
-	Use:   "update",
+	Use:   "update NAME",
 	Short: `Update a share recipient.`,
 	Long: `Update a share recipient.
   
@@ -318,11 +415,31 @@ var updateCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		err = updateJson.Unmarshal(&updateReq)
-		if err != nil {
-			return err
+		if cmd.Flags().Changed("json") {
+			err = updateJson.Unmarshal(&updateReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No NAME argument specified. Loading names for Recipients drop-down."
+				names, err := w.Recipients.RecipientInfoNameToMetastoreIdMap(ctx, sharing.ListRecipientsRequest{})
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Recipients drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "Name of Recipient")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
+			}
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have name of recipient")
+			}
+			updateReq.Name = args[0]
 		}
-		updateReq.Name = args[0]
 
 		err = w.Recipients.Update(ctx, updateReq)
 		if err != nil {
@@ -330,6 +447,9 @@ var updateCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // end service Recipients

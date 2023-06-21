@@ -5,6 +5,7 @@ package external_locations
 import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/spf13/cobra"
 )
@@ -25,15 +26,20 @@ var Cmd = &cobra.Command{
   
   To create external locations, you must be a metastore admin or a user with the
   **CREATE_EXTERNAL_LOCATION** privilege.`,
+	Annotations: map[string]string{
+		"package": "catalog",
+	},
 }
 
 // start create command
 
 var createReq catalog.CreateExternalLocation
+var createJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(createCmd)
 	// TODO: short flags
+	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	createCmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `User-provided free-form text description.`)
 	createCmd.Flags().BoolVar(&createReq.ReadOnly, "read-only", createReq.ReadOnly, `Indicates whether the external location is read-only.`)
@@ -51,14 +57,27 @@ var createCmd = &cobra.Command{
   metastore and the associated storage credential.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(3),
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(3)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		createReq.Name = args[0]
-		createReq.Url = args[1]
-		createReq.CredentialName = args[2]
+		if cmd.Flags().Changed("json") {
+			err = createJson.Unmarshal(&createReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			createReq.Name = args[0]
+			createReq.Url = args[1]
+			createReq.CredentialName = args[2]
+		}
 
 		response, err := w.ExternalLocations.Create(ctx, createReq)
 		if err != nil {
@@ -66,15 +85,20 @@ var createCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start delete command
 
 var deleteReq catalog.DeleteExternalLocationRequest
+var deleteJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
+	deleteCmd.Flags().Var(&deleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	deleteCmd.Flags().BoolVar(&deleteReq.Force, "force", deleteReq.Force, `Force deletion even if there are dependent external tables or mounts.`)
 
@@ -89,12 +113,25 @@ var deleteCmd = &cobra.Command{
   the owner of the external location.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		deleteReq.Name = args[0]
+		if cmd.Flags().Changed("json") {
+			err = deleteJson.Unmarshal(&deleteReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			deleteReq.Name = args[0]
+		}
 
 		err = w.ExternalLocations.Delete(ctx, deleteReq)
 		if err != nil {
@@ -102,15 +139,20 @@ var deleteCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start get command
 
 var getReq catalog.GetExternalLocationRequest
+var getJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
+	getCmd.Flags().Var(&getJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -124,12 +166,25 @@ var getCmd = &cobra.Command{
   privilege on the external location.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		getReq.Name = args[0]
+		if cmd.Flags().Changed("json") {
+			err = getJson.Unmarshal(&getReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			getReq.Name = args[0]
+		}
 
 		response, err := w.ExternalLocations.Get(ctx, getReq)
 		if err != nil {
@@ -137,6 +192,9 @@ var getCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start list command
@@ -167,15 +225,20 @@ var listCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start update command
 
 var updateReq catalog.UpdateExternalLocation
+var updateJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(updateCmd)
 	// TODO: short flags
+	updateCmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	updateCmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `User-provided free-form text description.`)
 	updateCmd.Flags().StringVar(&updateReq.CredentialName, "credential-name", updateReq.CredentialName, `Name of the storage credential used with this location.`)
@@ -197,12 +260,25 @@ var updateCmd = &cobra.Command{
   can only update the name of the external location.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		updateReq.Name = args[0]
+		if cmd.Flags().Changed("json") {
+			err = updateJson.Unmarshal(&updateReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			updateReq.Name = args[0]
+		}
 
 		response, err := w.ExternalLocations.Update(ctx, updateReq)
 		if err != nil {
@@ -210,6 +286,9 @@ var updateCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // end service ExternalLocations

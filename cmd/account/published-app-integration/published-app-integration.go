@@ -20,6 +20,9 @@ var Cmd = &cobra.Command{
   **Note:** You can only add/use the OAuth published application integrations
   when OAuth enrollment status is enabled. For more details see
   :method:OAuthEnrollment/create`,
+	Annotations: map[string]string{
+		"package": "oauth2",
+	},
 }
 
 // start create command
@@ -44,16 +47,27 @@ var createCmd = &cobra.Command{
   
   Create Published OAuth App Integration.
   
-  You can retrieve the published oauth app integration via :method:get.`,
+  You can retrieve the published oauth app integration via
+  :method:PublishedAppIntegration/get.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.MustAccountClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(0)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-		err = createJson.Unmarshal(&createReq)
-		if err != nil {
-			return err
+		if cmd.Flags().Changed("json") {
+			err = createJson.Unmarshal(&createReq)
+			if err != nil {
+				return err
+			}
+		} else {
 		}
 
 		response, err := a.PublishedAppIntegration.Create(ctx, createReq)
@@ -62,15 +76,20 @@ var createCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start delete command
 
 var deleteReq oauth2.DeletePublishedAppIntegrationRequest
+var deleteJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
+	deleteCmd.Flags().Var(&deleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -80,15 +99,28 @@ var deleteCmd = &cobra.Command{
 	Long: `Delete Published OAuth App Integration.
   
   Delete an existing Published OAuth App Integration. You can retrieve the
-  published oauth app integration via :method:get.`,
+  published oauth app integration via :method:PublishedAppIntegration/get.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
-	PreRunE:     root.MustAccountClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-		deleteReq.IntegrationId = args[0]
+		if cmd.Flags().Changed("json") {
+			err = deleteJson.Unmarshal(&deleteReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			deleteReq.IntegrationId = args[0]
+		}
 
 		err = a.PublishedAppIntegration.Delete(ctx, deleteReq)
 		if err != nil {
@@ -96,15 +128,20 @@ var deleteCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start get command
 
 var getReq oauth2.GetPublishedAppIntegrationRequest
+var getJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
+	getCmd.Flags().Var(&getJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -116,12 +153,25 @@ var getCmd = &cobra.Command{
   Gets the Published OAuth App Integration for the given integration id.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(1),
-	PreRunE:     root.MustAccountClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-		getReq.IntegrationId = args[0]
+		if cmd.Flags().Changed("json") {
+			err = getJson.Unmarshal(&getReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			getReq.IntegrationId = args[0]
+		}
 
 		response, err := a.PublishedAppIntegration.Get(ctx, getReq)
 		if err != nil {
@@ -129,6 +179,9 @@ var getCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start list command
@@ -144,7 +197,7 @@ var listCmd = &cobra.Command{
 	Long: `Get published oauth app integrations.
   
   Get the list of published oauth app integrations for the specified Databricks
-  Account`,
+  account`,
 
 	Annotations: map[string]string{},
 	PreRunE:     root.MustAccountClient,
@@ -157,6 +210,9 @@ var listCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start update command
@@ -174,23 +230,33 @@ func init() {
 }
 
 var updateCmd = &cobra.Command{
-	Use:   "update",
+	Use:   "update INTEGRATION_ID",
 	Short: `Updates Published OAuth App Integration.`,
 	Long: `Updates Published OAuth App Integration.
   
   Updates an existing published OAuth App Integration. You can retrieve the
-  published oauth app integration via :method:get.`,
+  published oauth app integration via :method:PublishedAppIntegration/get.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.MustAccountClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-		err = updateJson.Unmarshal(&updateReq)
-		if err != nil {
-			return err
+		if cmd.Flags().Changed("json") {
+			err = updateJson.Unmarshal(&updateReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			updateReq.IntegrationId = args[0]
 		}
-		updateReq.IntegrationId = args[0]
 
 		err = a.PublishedAppIntegration.Update(ctx, updateReq)
 		if err != nil {
@@ -198,6 +264,9 @@ var updateCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // end service PublishedAppIntegration

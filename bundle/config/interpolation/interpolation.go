@@ -247,6 +247,6 @@ func (m *interpolate) Name() string {
 	return "Interpolate"
 }
 
-func (m *interpolate) Apply(_ context.Context, b *bundle.Bundle) ([]bundle.Mutator, error) {
-	return nil, m.expand(&b.Config)
+func (m *interpolate) Apply(_ context.Context, b *bundle.Bundle) error {
+	return m.expand(&b.Config)
 }

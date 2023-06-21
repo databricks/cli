@@ -9,7 +9,6 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/provisioning"
 	"github.com/spf13/cobra"
 )
@@ -25,6 +24,9 @@ var Cmd = &cobra.Command{
   These endpoints are available if your account is on the E2 version of the
   platform or on a select custom plan that allows multiple workspaces per
   account.`,
+	Annotations: map[string]string{
+		"package": "provisioning",
+	},
 }
 
 // start create command
@@ -58,7 +60,7 @@ func init() {
 }
 
 var createCmd = &cobra.Command{
-	Use:   "create",
+	Use:   "create WORKSPACE_NAME",
 	Short: `Create a new workspace.`,
 	Long: `Create a new workspace.
   
@@ -73,48 +75,58 @@ var createCmd = &cobra.Command{
   workspace becomes available when the status changes to RUNNING.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.MustAccountClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-		err = createJson.Unmarshal(&createReq)
-		if err != nil {
-			return err
-		}
-		createReq.WorkspaceName = args[0]
-
-		if createSkipWait {
-			response, err := a.Workspaces.Create(ctx, createReq)
+		if cmd.Flags().Changed("json") {
+			err = createJson.Unmarshal(&createReq)
 			if err != nil {
 				return err
 			}
-			return cmdio.Render(ctx, response)
+		} else {
+			createReq.WorkspaceName = args[0]
+		}
+
+		wait, err := a.Workspaces.Create(ctx, createReq)
+		if err != nil {
+			return err
+		}
+		if createSkipWait {
+			return cmdio.Render(ctx, wait.Response)
 		}
 		spinner := cmdio.Spinner(ctx)
-		info, err := a.Workspaces.CreateAndWait(ctx, createReq,
-			retries.Timeout[provisioning.Workspace](createTimeout),
-			func(i *retries.Info[provisioning.Workspace]) {
-				if i.Info == nil {
-					return
-				}
-				statusMessage := i.Info.WorkspaceStatusMessage
-				spinner <- statusMessage
-			})
+		info, err := wait.OnProgress(func(i *provisioning.Workspace) {
+			statusMessage := i.WorkspaceStatusMessage
+			spinner <- statusMessage
+		}).GetWithTimeout(createTimeout)
 		close(spinner)
 		if err != nil {
 			return err
 		}
 		return cmdio.Render(ctx, info)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start delete command
 
 var deleteReq provisioning.DeleteWorkspaceRequest
+var deleteJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
+	deleteCmd.Flags().Var(&deleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -137,23 +149,33 @@ var deleteCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-		if len(args) == 0 {
-			names, err := a.Workspaces.WorkspaceWorkspaceNameToWorkspaceIdMap(ctx)
+		if cmd.Flags().Changed("json") {
+			err = deleteJson.Unmarshal(&deleteReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "Workspace ID")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No WORKSPACE_ID argument specified. Loading names for Workspaces drop-down."
+				names, err := a.Workspaces.WorkspaceWorkspaceNameToWorkspaceIdMap(ctx)
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Workspaces drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "Workspace ID")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have workspace id")
-		}
-		_, err = fmt.Sscan(args[0], &deleteReq.WorkspaceId)
-		if err != nil {
-			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have workspace id")
+			}
+			_, err = fmt.Sscan(args[0], &deleteReq.WorkspaceId)
+			if err != nil {
+				return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
+			}
 		}
 
 		err = a.Workspaces.Delete(ctx, deleteReq)
@@ -162,15 +184,20 @@ var deleteCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start get command
 
 var getReq provisioning.GetWorkspaceRequest
+var getJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
+	getCmd.Flags().Var(&getJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -199,23 +226,33 @@ var getCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-		if len(args) == 0 {
-			names, err := a.Workspaces.WorkspaceWorkspaceNameToWorkspaceIdMap(ctx)
+		if cmd.Flags().Changed("json") {
+			err = getJson.Unmarshal(&getReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "Workspace ID")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No WORKSPACE_ID argument specified. Loading names for Workspaces drop-down."
+				names, err := a.Workspaces.WorkspaceWorkspaceNameToWorkspaceIdMap(ctx)
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Workspaces drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "Workspace ID")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have workspace id")
-		}
-		_, err = fmt.Sscan(args[0], &getReq.WorkspaceId)
-		if err != nil {
-			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have workspace id")
+			}
+			_, err = fmt.Sscan(args[0], &getReq.WorkspaceId)
+			if err != nil {
+				return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
+			}
 		}
 
 		response, err := a.Workspaces.Get(ctx, getReq)
@@ -224,6 +261,9 @@ var getCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start list command
@@ -255,12 +295,15 @@ var listCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start update command
 
 var updateReq provisioning.UpdateWorkspaceRequest
-
+var updateJson flags.JsonFlag
 var updateSkipWait bool
 var updateTimeout time.Duration
 
@@ -270,6 +313,7 @@ func init() {
 	updateCmd.Flags().BoolVar(&updateSkipWait, "no-wait", updateSkipWait, `do not wait to reach RUNNING state`)
 	updateCmd.Flags().DurationVar(&updateTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
 	// TODO: short flags
+	updateCmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	updateCmd.Flags().StringVar(&updateReq.AwsRegion, "aws-region", updateReq.AwsRegion, `The AWS region of the workspace's data plane (for example, us-west-2).`)
 	updateCmd.Flags().StringVar(&updateReq.CredentialsId, "credentials-id", updateReq.CredentialsId, `ID of the workspace's credential configuration object.`)
@@ -402,48 +446,56 @@ var updateCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-		if len(args) == 0 {
-			names, err := a.Workspaces.WorkspaceWorkspaceNameToWorkspaceIdMap(ctx)
+		if cmd.Flags().Changed("json") {
+			err = updateJson.Unmarshal(&updateReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "Workspace ID")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No WORKSPACE_ID argument specified. Loading names for Workspaces drop-down."
+				names, err := a.Workspaces.WorkspaceWorkspaceNameToWorkspaceIdMap(ctx)
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Workspaces drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "Workspace ID")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have workspace id")
-		}
-		_, err = fmt.Sscan(args[0], &updateReq.WorkspaceId)
-		if err != nil {
-			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have workspace id")
+			}
+			_, err = fmt.Sscan(args[0], &updateReq.WorkspaceId)
+			if err != nil {
+				return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
+			}
 		}
 
+		wait, err := a.Workspaces.Update(ctx, updateReq)
+		if err != nil {
+			return err
+		}
 		if updateSkipWait {
-			err = a.Workspaces.Update(ctx, updateReq)
-			if err != nil {
-				return err
-			}
 			return nil
 		}
 		spinner := cmdio.Spinner(ctx)
-		info, err := a.Workspaces.UpdateAndWait(ctx, updateReq,
-			retries.Timeout[provisioning.Workspace](updateTimeout),
-			func(i *retries.Info[provisioning.Workspace]) {
-				if i.Info == nil {
-					return
-				}
-				statusMessage := i.Info.WorkspaceStatusMessage
-				spinner <- statusMessage
-			})
+		info, err := wait.OnProgress(func(i *provisioning.Workspace) {
+			statusMessage := i.WorkspaceStatusMessage
+			spinner <- statusMessage
+		}).GetWithTimeout(updateTimeout)
 		close(spinner)
 		if err != nil {
 			return err
 		}
 		return cmdio.Render(ctx, info)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // end service Workspaces

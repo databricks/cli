@@ -127,12 +127,17 @@ type DataSourceJobJobSettingsSettingsJobClusterNewClusterInitScriptsS3 struct {
 	Region           string `json:"region,omitempty"`
 }
 
+type DataSourceJobJobSettingsSettingsJobClusterNewClusterInitScriptsWorkspace struct {
+	Destination string `json:"destination,omitempty"`
+}
+
 type DataSourceJobJobSettingsSettingsJobClusterNewClusterInitScripts struct {
-	Abfss *DataSourceJobJobSettingsSettingsJobClusterNewClusterInitScriptsAbfss `json:"abfss,omitempty"`
-	Dbfs  *DataSourceJobJobSettingsSettingsJobClusterNewClusterInitScriptsDbfs  `json:"dbfs,omitempty"`
-	File  *DataSourceJobJobSettingsSettingsJobClusterNewClusterInitScriptsFile  `json:"file,omitempty"`
-	Gcs   *DataSourceJobJobSettingsSettingsJobClusterNewClusterInitScriptsGcs   `json:"gcs,omitempty"`
-	S3    *DataSourceJobJobSettingsSettingsJobClusterNewClusterInitScriptsS3    `json:"s3,omitempty"`
+	Abfss     *DataSourceJobJobSettingsSettingsJobClusterNewClusterInitScriptsAbfss     `json:"abfss,omitempty"`
+	Dbfs      *DataSourceJobJobSettingsSettingsJobClusterNewClusterInitScriptsDbfs      `json:"dbfs,omitempty"`
+	File      *DataSourceJobJobSettingsSettingsJobClusterNewClusterInitScriptsFile      `json:"file,omitempty"`
+	Gcs       *DataSourceJobJobSettingsSettingsJobClusterNewClusterInitScriptsGcs       `json:"gcs,omitempty"`
+	S3        *DataSourceJobJobSettingsSettingsJobClusterNewClusterInitScriptsS3        `json:"s3,omitempty"`
+	Workspace *DataSourceJobJobSettingsSettingsJobClusterNewClusterInitScriptsWorkspace `json:"workspace,omitempty"`
 }
 
 type DataSourceJobJobSettingsSettingsJobClusterNewClusterWorkloadTypeClients struct {
@@ -303,12 +308,17 @@ type DataSourceJobJobSettingsSettingsNewClusterInitScriptsS3 struct {
 	Region           string `json:"region,omitempty"`
 }
 
+type DataSourceJobJobSettingsSettingsNewClusterInitScriptsWorkspace struct {
+	Destination string `json:"destination,omitempty"`
+}
+
 type DataSourceJobJobSettingsSettingsNewClusterInitScripts struct {
-	Abfss *DataSourceJobJobSettingsSettingsNewClusterInitScriptsAbfss `json:"abfss,omitempty"`
-	Dbfs  *DataSourceJobJobSettingsSettingsNewClusterInitScriptsDbfs  `json:"dbfs,omitempty"`
-	File  *DataSourceJobJobSettingsSettingsNewClusterInitScriptsFile  `json:"file,omitempty"`
-	Gcs   *DataSourceJobJobSettingsSettingsNewClusterInitScriptsGcs   `json:"gcs,omitempty"`
-	S3    *DataSourceJobJobSettingsSettingsNewClusterInitScriptsS3    `json:"s3,omitempty"`
+	Abfss     *DataSourceJobJobSettingsSettingsNewClusterInitScriptsAbfss     `json:"abfss,omitempty"`
+	Dbfs      *DataSourceJobJobSettingsSettingsNewClusterInitScriptsDbfs      `json:"dbfs,omitempty"`
+	File      *DataSourceJobJobSettingsSettingsNewClusterInitScriptsFile      `json:"file,omitempty"`
+	Gcs       *DataSourceJobJobSettingsSettingsNewClusterInitScriptsGcs       `json:"gcs,omitempty"`
+	S3        *DataSourceJobJobSettingsSettingsNewClusterInitScriptsS3        `json:"s3,omitempty"`
+	Workspace *DataSourceJobJobSettingsSettingsNewClusterInitScriptsWorkspace `json:"workspace,omitempty"`
 }
 
 type DataSourceJobJobSettingsSettingsNewClusterWorkloadTypeClients struct {
@@ -359,6 +369,11 @@ type DataSourceJobJobSettingsSettingsNotebookTask struct {
 	Source         string            `json:"source,omitempty"`
 }
 
+type DataSourceJobJobSettingsSettingsNotificationSettings struct {
+	NoAlertForCanceledRuns bool `json:"no_alert_for_canceled_runs,omitempty"`
+	NoAlertForSkippedRuns  bool `json:"no_alert_for_skipped_runs,omitempty"`
+}
+
 type DataSourceJobJobSettingsSettingsPipelineTask struct {
 	PipelineId string `json:"pipeline_id"`
 }
@@ -368,6 +383,14 @@ type DataSourceJobJobSettingsSettingsPythonWheelTask struct {
 	NamedParameters map[string]string `json:"named_parameters,omitempty"`
 	PackageName     string            `json:"package_name,omitempty"`
 	Parameters      []string          `json:"parameters,omitempty"`
+}
+
+type DataSourceJobJobSettingsSettingsQueue struct {
+}
+
+type DataSourceJobJobSettingsSettingsRunAs struct {
+	ServicePrincipalName string `json:"service_principal_name,omitempty"`
+	UserName             string `json:"user_name,omitempty"`
 }
 
 type DataSourceJobJobSettingsSettingsSchedule struct {
@@ -385,6 +408,7 @@ type DataSourceJobJobSettingsSettingsSparkJarTask struct {
 type DataSourceJobJobSettingsSettingsSparkPythonTask struct {
 	Parameters []string `json:"parameters,omitempty"`
 	PythonFile string   `json:"python_file"`
+	Source     string   `json:"source,omitempty"`
 }
 
 type DataSourceJobJobSettingsSettingsSparkSubmitTask struct {
@@ -533,12 +557,17 @@ type DataSourceJobJobSettingsSettingsTaskNewClusterInitScriptsS3 struct {
 	Region           string `json:"region,omitempty"`
 }
 
+type DataSourceJobJobSettingsSettingsTaskNewClusterInitScriptsWorkspace struct {
+	Destination string `json:"destination,omitempty"`
+}
+
 type DataSourceJobJobSettingsSettingsTaskNewClusterInitScripts struct {
-	Abfss *DataSourceJobJobSettingsSettingsTaskNewClusterInitScriptsAbfss `json:"abfss,omitempty"`
-	Dbfs  *DataSourceJobJobSettingsSettingsTaskNewClusterInitScriptsDbfs  `json:"dbfs,omitempty"`
-	File  *DataSourceJobJobSettingsSettingsTaskNewClusterInitScriptsFile  `json:"file,omitempty"`
-	Gcs   *DataSourceJobJobSettingsSettingsTaskNewClusterInitScriptsGcs   `json:"gcs,omitempty"`
-	S3    *DataSourceJobJobSettingsSettingsTaskNewClusterInitScriptsS3    `json:"s3,omitempty"`
+	Abfss     *DataSourceJobJobSettingsSettingsTaskNewClusterInitScriptsAbfss     `json:"abfss,omitempty"`
+	Dbfs      *DataSourceJobJobSettingsSettingsTaskNewClusterInitScriptsDbfs      `json:"dbfs,omitempty"`
+	File      *DataSourceJobJobSettingsSettingsTaskNewClusterInitScriptsFile      `json:"file,omitempty"`
+	Gcs       *DataSourceJobJobSettingsSettingsTaskNewClusterInitScriptsGcs       `json:"gcs,omitempty"`
+	S3        *DataSourceJobJobSettingsSettingsTaskNewClusterInitScriptsS3        `json:"s3,omitempty"`
+	Workspace *DataSourceJobJobSettingsSettingsTaskNewClusterInitScriptsWorkspace `json:"workspace,omitempty"`
 }
 
 type DataSourceJobJobSettingsSettingsTaskNewClusterWorkloadTypeClients struct {
@@ -609,6 +638,7 @@ type DataSourceJobJobSettingsSettingsTaskSparkJarTask struct {
 type DataSourceJobJobSettingsSettingsTaskSparkPythonTask struct {
 	Parameters []string `json:"parameters,omitempty"`
 	PythonFile string   `json:"python_file"`
+	Source     string   `json:"source,omitempty"`
 }
 
 type DataSourceJobJobSettingsSettingsTaskSparkSubmitTask struct {
@@ -623,6 +653,10 @@ type DataSourceJobJobSettingsSettingsTaskSqlTaskDashboard struct {
 	DashboardId string `json:"dashboard_id"`
 }
 
+type DataSourceJobJobSettingsSettingsTaskSqlTaskFile struct {
+	Path string `json:"path"`
+}
+
 type DataSourceJobJobSettingsSettingsTaskSqlTaskQuery struct {
 	QueryId string `json:"query_id"`
 }
@@ -632,6 +666,7 @@ type DataSourceJobJobSettingsSettingsTaskSqlTask struct {
 	WarehouseId string                                                `json:"warehouse_id,omitempty"`
 	Alert       *DataSourceJobJobSettingsSettingsTaskSqlTaskAlert     `json:"alert,omitempty"`
 	Dashboard   *DataSourceJobJobSettingsSettingsTaskSqlTaskDashboard `json:"dashboard,omitempty"`
+	File        *DataSourceJobJobSettingsSettingsTaskSqlTaskFile      `json:"file,omitempty"`
 	Query       *DataSourceJobJobSettingsSettingsTaskSqlTaskQuery     `json:"query,omitempty"`
 }
 
@@ -642,6 +677,7 @@ type DataSourceJobJobSettingsSettingsTask struct {
 	MaxRetries             int                                                     `json:"max_retries,omitempty"`
 	MinRetryIntervalMillis int                                                     `json:"min_retry_interval_millis,omitempty"`
 	RetryOnTimeout         bool                                                    `json:"retry_on_timeout,omitempty"`
+	RunIf                  string                                                  `json:"run_if,omitempty"`
 	TaskKey                string                                                  `json:"task_key,omitempty"`
 	TimeoutSeconds         int                                                     `json:"timeout_seconds,omitempty"`
 	DbtTask                *DataSourceJobJobSettingsSettingsTaskDbtTask            `json:"dbt_task,omitempty"`
@@ -656,6 +692,17 @@ type DataSourceJobJobSettingsSettingsTask struct {
 	SparkPythonTask        *DataSourceJobJobSettingsSettingsTaskSparkPythonTask    `json:"spark_python_task,omitempty"`
 	SparkSubmitTask        *DataSourceJobJobSettingsSettingsTaskSparkSubmitTask    `json:"spark_submit_task,omitempty"`
 	SqlTask                *DataSourceJobJobSettingsSettingsTaskSqlTask            `json:"sql_task,omitempty"`
+}
+
+type DataSourceJobJobSettingsSettingsTriggerFileArrival struct {
+	MinTimeBetweenTriggerSeconds int    `json:"min_time_between_trigger_seconds,omitempty"`
+	Url                          string `json:"url"`
+	WaitAfterLastChangeSeconds   int    `json:"wait_after_last_change_seconds,omitempty"`
+}
+
+type DataSourceJobJobSettingsSettingsTrigger struct {
+	PauseStatus string                                              `json:"pause_status,omitempty"`
+	FileArrival *DataSourceJobJobSettingsSettingsTriggerFileArrival `json:"file_arrival,omitempty"`
 }
 
 type DataSourceJobJobSettingsSettingsWebhookNotificationsOnFailure struct {
@@ -694,13 +741,17 @@ type DataSourceJobJobSettingsSettings struct {
 	Library                []DataSourceJobJobSettingsSettingsLibrary             `json:"library,omitempty"`
 	NewCluster             *DataSourceJobJobSettingsSettingsNewCluster           `json:"new_cluster,omitempty"`
 	NotebookTask           *DataSourceJobJobSettingsSettingsNotebookTask         `json:"notebook_task,omitempty"`
+	NotificationSettings   *DataSourceJobJobSettingsSettingsNotificationSettings `json:"notification_settings,omitempty"`
 	PipelineTask           *DataSourceJobJobSettingsSettingsPipelineTask         `json:"pipeline_task,omitempty"`
 	PythonWheelTask        *DataSourceJobJobSettingsSettingsPythonWheelTask      `json:"python_wheel_task,omitempty"`
+	Queue                  *DataSourceJobJobSettingsSettingsQueue                `json:"queue,omitempty"`
+	RunAs                  *DataSourceJobJobSettingsSettingsRunAs                `json:"run_as,omitempty"`
 	Schedule               *DataSourceJobJobSettingsSettingsSchedule             `json:"schedule,omitempty"`
 	SparkJarTask           *DataSourceJobJobSettingsSettingsSparkJarTask         `json:"spark_jar_task,omitempty"`
 	SparkPythonTask        *DataSourceJobJobSettingsSettingsSparkPythonTask      `json:"spark_python_task,omitempty"`
 	SparkSubmitTask        *DataSourceJobJobSettingsSettingsSparkSubmitTask      `json:"spark_submit_task,omitempty"`
 	Task                   []DataSourceJobJobSettingsSettingsTask                `json:"task,omitempty"`
+	Trigger                *DataSourceJobJobSettingsSettingsTrigger              `json:"trigger,omitempty"`
 	WebhookNotifications   *DataSourceJobJobSettingsSettingsWebhookNotifications `json:"webhook_notifications,omitempty"`
 }
 
@@ -708,6 +759,7 @@ type DataSourceJobJobSettings struct {
 	CreatedTime     int                               `json:"created_time,omitempty"`
 	CreatorUserName string                            `json:"creator_user_name,omitempty"`
 	JobId           int                               `json:"job_id,omitempty"`
+	RunAsUserName   string                            `json:"run_as_user_name,omitempty"`
 	Settings        *DataSourceJobJobSettingsSettings `json:"settings,omitempty"`
 }
 

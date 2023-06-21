@@ -2,41 +2,53 @@ package lock
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/libs/locker"
 	"github.com/databricks/cli/libs/log"
 )
 
-type release struct{}
+type Goal string
 
-func Release() bundle.Mutator {
-	return &release{}
+const (
+	GoalDeploy  = Goal("deploy")
+	GoalDestroy = Goal("destroy")
+)
+
+type release struct {
+	goal Goal
+}
+
+func Release(goal Goal) bundle.Mutator {
+	return &release{goal}
 }
 
 func (m *release) Name() string {
 	return "lock:release"
 }
 
-func (m *release) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator, error) {
+func (m *release) Apply(ctx context.Context, b *bundle.Bundle) error {
 	// Return early if locking is disabled.
 	if !b.Config.Bundle.Lock.IsEnabled() {
 		log.Infof(ctx, "Skipping; locking is disabled")
-		return nil, nil
+		return nil
 	}
 
 	// Return early if the locker is not set.
 	// It is likely an error occurred prior to initialization of the locker instance.
 	if b.Locker == nil {
 		log.Warnf(ctx, "Unable to release lock if locker is not configured")
-		return nil, nil
+		return nil
 	}
 
 	log.Infof(ctx, "Releasing deployment lock")
-	err := b.Locker.Unlock(ctx)
-	if err != nil {
-		log.Errorf(ctx, "Failed to release deployment lock: %v", err)
-		return nil, err
+	switch m.goal {
+	case GoalDeploy:
+		return b.Locker.Unlock(ctx)
+	case GoalDestroy:
+		return b.Locker.Unlock(ctx, locker.AllowLockFileNotExist)
+	default:
+		return fmt.Errorf("unknown goal for lock release: %s", m.goal)
 	}
-
-	return nil, nil
 }

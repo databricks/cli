@@ -4,6 +4,7 @@ package billable_usage
 
 import (
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/billing"
 	"github.com/spf13/cobra"
 )
@@ -13,15 +14,20 @@ var Cmd = &cobra.Command{
 	Short: `This API allows you to download billable usage logs for the specified account and date range.`,
 	Long: `This API allows you to download billable usage logs for the specified account
   and date range. This feature works with all account types.`,
+	Annotations: map[string]string{
+		"package": "billing",
+	},
 }
 
 // start download command
 
 var downloadReq billing.DownloadRequest
+var downloadJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(downloadCmd)
 	// TODO: short flags
+	downloadCmd.Flags().Var(&downloadJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	downloadCmd.Flags().BoolVar(&downloadReq.PersonalData, "personal-data", downloadReq.PersonalData, `Specify whether to include personally identifiable information in the billable usage logs, for example the email addresses of cluster creators.`)
 
@@ -39,13 +45,26 @@ var downloadCmd = &cobra.Command{
   [CSV file schema]: https://docs.databricks.com/administration-guide/account-settings/usage-analysis.html#schema`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(2),
-	PreRunE:     root.MustAccountClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(2)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-		downloadReq.StartMonth = args[0]
-		downloadReq.EndMonth = args[1]
+		if cmd.Flags().Changed("json") {
+			err = downloadJson.Unmarshal(&downloadReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			downloadReq.StartMonth = args[0]
+			downloadReq.EndMonth = args[1]
+		}
 
 		err = a.BillableUsage.Download(ctx, downloadReq)
 		if err != nil {
@@ -53,6 +72,9 @@ var downloadCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // end service BillableUsage

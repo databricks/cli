@@ -16,6 +16,9 @@ var Cmd = &cobra.Command{
 	Use:   "private-access",
 	Short: `These APIs manage private access settings for this account.`,
 	Long:  `These APIs manage private access settings for this account.`,
+	Annotations: map[string]string{
+		"package": "provisioning",
+	},
 }
 
 // start create command
@@ -35,7 +38,7 @@ func init() {
 }
 
 var createCmd = &cobra.Command{
-	Use:   "create",
+	Use:   "create PRIVATE_ACCESS_SETTINGS_NAME REGION",
 	Short: `Create private access settings.`,
 	Long: `Create private access settings.
   
@@ -56,17 +59,26 @@ var createCmd = &cobra.Command{
   [Databricks article about PrivateLink]: https://docs.databricks.com/administration-guide/cloud-configurations/aws/privatelink.html`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.MustAccountClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(2)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-		err = createJson.Unmarshal(&createReq)
-		if err != nil {
-			return err
+		if cmd.Flags().Changed("json") {
+			err = createJson.Unmarshal(&createReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			createReq.PrivateAccessSettingsName = args[0]
+			createReq.Region = args[1]
 		}
-		createReq.PrivateAccessSettingsName = args[0]
-		createReq.Region = args[1]
-		createReq.PrivateAccessSettingsId = args[2]
 
 		response, err := a.PrivateAccess.Create(ctx, createReq)
 		if err != nil {
@@ -74,15 +86,20 @@ var createCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start delete command
 
 var deleteReq provisioning.DeletePrivateAccesRequest
+var deleteJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
+	deleteCmd.Flags().Var(&deleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -105,21 +122,31 @@ var deleteCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-		if len(args) == 0 {
-			names, err := a.PrivateAccess.PrivateAccessSettingsPrivateAccessSettingsNameToPrivateAccessSettingsIdMap(ctx)
+		if cmd.Flags().Changed("json") {
+			err = deleteJson.Unmarshal(&deleteReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "Databricks Account API private access settings ID")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No PRIVATE_ACCESS_SETTINGS_ID argument specified. Loading names for Private Access drop-down."
+				names, err := a.PrivateAccess.PrivateAccessSettingsPrivateAccessSettingsNameToPrivateAccessSettingsIdMap(ctx)
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Private Access drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "Databricks Account API private access settings ID")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have databricks account api private access settings id")
+			}
+			deleteReq.PrivateAccessSettingsId = args[0]
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have databricks account api private access settings id")
-		}
-		deleteReq.PrivateAccessSettingsId = args[0]
 
 		err = a.PrivateAccess.Delete(ctx, deleteReq)
 		if err != nil {
@@ -127,15 +154,20 @@ var deleteCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start get command
 
 var getReq provisioning.GetPrivateAccesRequest
+var getJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
+	getCmd.Flags().Var(&getJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -158,21 +190,31 @@ var getCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-		if len(args) == 0 {
-			names, err := a.PrivateAccess.PrivateAccessSettingsPrivateAccessSettingsNameToPrivateAccessSettingsIdMap(ctx)
+		if cmd.Flags().Changed("json") {
+			err = getJson.Unmarshal(&getReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "Databricks Account API private access settings ID")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No PRIVATE_ACCESS_SETTINGS_ID argument specified. Loading names for Private Access drop-down."
+				names, err := a.PrivateAccess.PrivateAccessSettingsPrivateAccessSettingsNameToPrivateAccessSettingsIdMap(ctx)
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Private Access drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "Databricks Account API private access settings ID")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have databricks account api private access settings id")
+			}
+			getReq.PrivateAccessSettingsId = args[0]
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have databricks account api private access settings id")
-		}
-		getReq.PrivateAccessSettingsId = args[0]
 
 		response, err := a.PrivateAccess.Get(ctx, getReq)
 		if err != nil {
@@ -180,6 +222,9 @@ var getCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start list command
@@ -208,6 +253,9 @@ var listCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start replace command
@@ -227,7 +275,7 @@ func init() {
 }
 
 var replaceCmd = &cobra.Command{
-	Use:   "replace",
+	Use:   "replace PRIVATE_ACCESS_SETTINGS_NAME REGION PRIVATE_ACCESS_SETTINGS_ID",
 	Short: `Replace private access settings.`,
 	Long: `Replace private access settings.
   
@@ -254,17 +302,27 @@ var replaceCmd = &cobra.Command{
   [Databricks article about PrivateLink]: https://docs.databricks.com/administration-guide/cloud-configurations/aws/privatelink.html`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.MustAccountClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(3)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-		err = replaceJson.Unmarshal(&replaceReq)
-		if err != nil {
-			return err
+		if cmd.Flags().Changed("json") {
+			err = replaceJson.Unmarshal(&replaceReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			replaceReq.PrivateAccessSettingsName = args[0]
+			replaceReq.Region = args[1]
+			replaceReq.PrivateAccessSettingsId = args[2]
 		}
-		replaceReq.PrivateAccessSettingsName = args[0]
-		replaceReq.Region = args[1]
-		replaceReq.PrivateAccessSettingsId = args[2]
 
 		err = a.PrivateAccess.Replace(ctx, replaceReq)
 		if err != nil {
@@ -272,6 +330,9 @@ var replaceCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // end service PrivateAccess

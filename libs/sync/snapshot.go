@@ -15,6 +15,7 @@ import (
 	"github.com/databricks/cli/libs/fileset"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/notebook"
+	"golang.org/x/exp/maps"
 )
 
 // Bump it up every time a potentially breaking change is made to the snapshot schema
@@ -172,7 +173,7 @@ func loadOrNewSnapshot(ctx context.Context, opts *SyncOptions) (*Snapshot, error
 	return snapshot, nil
 }
 
-func (s *Snapshot) diff(all []fileset.File) (change diff, err error) {
+func (s *Snapshot) diff(ctx context.Context, all []fileset.File) (change diff, err error) {
 	lastModifiedTimes := s.LastUpdatedTimes
 	remoteToLocalNames := s.RemoteToLocalNames
 	localToRemoteNames := s.LocalToRemoteNames
@@ -183,6 +184,18 @@ func (s *Snapshot) diff(all []fileset.File) (change diff, err error) {
 		localFileSet[f.Relative] = struct{}{}
 	}
 
+	// Capture both previous and current set of files.
+	previousFiles := maps.Keys(lastModifiedTimes)
+	currentFiles := maps.Keys(localFileSet)
+
+	// Build directory sets to figure out which directories to create and which to remove.
+	previousDirectories := MakeDirSet(previousFiles)
+	currentDirectories := MakeDirSet(currentFiles)
+
+	// Create new directories; remove stale directories.
+	change.mkdir = currentDirectories.Remove(previousDirectories).Slice()
+	change.rmdir = previousDirectories.Remove(currentDirectories).Slice()
+
 	for _, f := range all {
 		// get current modified timestamp
 		modified := f.Modified()
@@ -191,17 +204,20 @@ func (s *Snapshot) diff(all []fileset.File) (change diff, err error) {
 		if !seen || modified.After(lastSeenModified) {
 			lastModifiedTimes[f.Relative] = modified
 
+			// get file metadata about whether it's a notebook
+			isNotebook, _, err := notebook.Detect(f.Absolute)
+			if err != nil {
+				// Ignore this file if we're unable to determine the notebook type.
+				// Trying to upload such a file to the workspace would fail anyway.
+				log.Warnf(ctx, err.Error())
+				continue
+			}
+
 			// change separators to '/' for file paths in remote store
 			unixFileName := filepath.ToSlash(f.Relative)
 
 			// put file in databricks workspace
 			change.put = append(change.put, unixFileName)
-
-			// get file metadata about whether it's a notebook
-			isNotebook, _, err := notebook.Detect(f.Absolute)
-			if err != nil {
-				return change, err
-			}
 
 			// Strip extension for notebooks.
 			remoteName := unixFileName
@@ -249,6 +265,7 @@ func (s *Snapshot) diff(all []fileset.File) (change diff, err error) {
 		// add them to a delete batch
 		change.delete = append(change.delete, remoteName)
 	}
+
 	// and remove them from the snapshot
 	for _, remoteName := range change.delete {
 		// we do note assert that remoteName exists in remoteToLocalNames since it
@@ -259,5 +276,6 @@ func (s *Snapshot) diff(all []fileset.File) (change diff, err error) {
 		delete(remoteToLocalNames, remoteName)
 		delete(localToRemoteNames, localName)
 	}
+
 	return
 }

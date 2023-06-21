@@ -14,14 +14,17 @@ import (
 
 var Cmd = &cobra.Command{
 	Use:   "groups",
-	Short: `Groups simplify identity management, making it easier to assign access to Databricks Workspace, data, and other securable objects.`,
+	Short: `Groups simplify identity management, making it easier to assign access to Databricks workspace, data, and other securable objects.`,
 	Long: `Groups simplify identity management, making it easier to assign access to
-  Databricks Workspace, data, and other securable objects.
+  Databricks workspace, data, and other securable objects.
   
   It is best practice to assign access to workspaces and access-control policies
   in Unity Catalog to groups, instead of to users individually. All Databricks
-  Workspace identities can be assigned as members of groups, and members inherit
+  workspace identities can be assigned as members of groups, and members inherit
   permissions that are assigned to their group.`,
+	Annotations: map[string]string{
+		"package": "iam",
+	},
 }
 
 // start create command
@@ -49,19 +52,28 @@ var createCmd = &cobra.Command{
 	Short: `Create a new group.`,
 	Long: `Create a new group.
   
-  Creates a group in the Databricks Workspace with a unique name, using the
+  Creates a group in the Databricks workspace with a unique name, using the
   supplied group details.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(0)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		err = createJson.Unmarshal(&createReq)
-		if err != nil {
-			return err
+		if cmd.Flags().Changed("json") {
+			err = createJson.Unmarshal(&createReq)
+			if err != nil {
+				return err
+			}
+		} else {
 		}
-		createReq.Id = args[0]
 
 		response, err := w.Groups.Create(ctx, createReq)
 		if err != nil {
@@ -69,15 +81,20 @@ var createCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start delete command
 
 var deleteReq iam.DeleteGroupRequest
+var deleteJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
+	deleteCmd.Flags().Var(&deleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -86,28 +103,38 @@ var deleteCmd = &cobra.Command{
 	Short: `Delete a group.`,
 	Long: `Delete a group.
   
-  Deletes a group from the Databricks Workspace.`,
+  Deletes a group from the Databricks workspace.`,
 
 	Annotations: map[string]string{},
 	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if len(args) == 0 {
-			names, err := w.Groups.GroupDisplayNameToIdMap(ctx, iam.ListGroupsRequest{})
+		if cmd.Flags().Changed("json") {
+			err = deleteJson.Unmarshal(&deleteReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "Unique ID for a group in the Databricks Workspace")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No ID argument specified. Loading names for Groups drop-down."
+				names, err := w.Groups.GroupDisplayNameToIdMap(ctx, iam.ListGroupsRequest{})
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Groups drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "Unique ID for a group in the Databricks workspace")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have unique id for a group in the databricks workspace")
+			}
+			deleteReq.Id = args[0]
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have unique id for a group in the databricks workspace")
-		}
-		deleteReq.Id = args[0]
 
 		err = w.Groups.Delete(ctx, deleteReq)
 		if err != nil {
@@ -115,15 +142,20 @@ var deleteCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start get command
 
 var getReq iam.GetGroupRequest
+var getJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
+	getCmd.Flags().Var(&getJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -132,28 +164,38 @@ var getCmd = &cobra.Command{
 	Short: `Get group details.`,
 	Long: `Get group details.
   
-  Gets the information for a specific group in the Databricks Workspace.`,
+  Gets the information for a specific group in the Databricks workspace.`,
 
 	Annotations: map[string]string{},
 	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if len(args) == 0 {
-			names, err := w.Groups.GroupDisplayNameToIdMap(ctx, iam.ListGroupsRequest{})
+		if cmd.Flags().Changed("json") {
+			err = getJson.Unmarshal(&getReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "Unique ID for a group in the Databricks Workspace")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No ID argument specified. Loading names for Groups drop-down."
+				names, err := w.Groups.GroupDisplayNameToIdMap(ctx, iam.ListGroupsRequest{})
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Groups drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "Unique ID for a group in the Databricks workspace")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have unique id for a group in the databricks workspace")
+			}
+			getReq.Id = args[0]
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have unique id for a group in the databricks workspace")
-		}
-		getReq.Id = args[0]
 
 		response, err := w.Groups.Get(ctx, getReq)
 		if err != nil {
@@ -161,15 +203,20 @@ var getCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start list command
 
 var listReq iam.ListGroupsRequest
+var listJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(listCmd)
 	// TODO: short flags
+	listCmd.Flags().Var(&listJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	listCmd.Flags().StringVar(&listReq.Attributes, "attributes", listReq.Attributes, `Comma-separated list of attributes to return in response.`)
 	listCmd.Flags().IntVar(&listReq.Count, "count", listReq.Count, `Desired number of results per page.`)
@@ -186,14 +233,27 @@ var listCmd = &cobra.Command{
 	Short: `List group details.`,
 	Long: `List group details.
   
-  Gets all details of the groups associated with the Databricks Workspace.`,
+  Gets all details of the groups associated with the Databricks workspace.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(0),
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(0)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+		if cmd.Flags().Changed("json") {
+			err = listJson.Unmarshal(&listReq)
+			if err != nil {
+				return err
+			}
+		} else {
+		}
 
 		response, err := w.Groups.ListAll(ctx, listReq)
 		if err != nil {
@@ -201,6 +261,9 @@ var listCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start patch command
@@ -218,7 +281,7 @@ func init() {
 }
 
 var patchCmd = &cobra.Command{
-	Use:   "patch",
+	Use:   "patch ID",
 	Short: `Update group details.`,
 	Long: `Update group details.
   
@@ -229,11 +292,31 @@ var patchCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		err = patchJson.Unmarshal(&patchReq)
-		if err != nil {
-			return err
+		if cmd.Flags().Changed("json") {
+			err = patchJson.Unmarshal(&patchReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No ID argument specified. Loading names for Groups drop-down."
+				names, err := w.Groups.GroupDisplayNameToIdMap(ctx, iam.ListGroupsRequest{})
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Groups drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "Unique ID for a group in the Databricks workspace")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
+			}
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have unique id for a group in the databricks workspace")
+			}
+			patchReq.Id = args[0]
 		}
-		patchReq.Id = args[0]
 
 		err = w.Groups.Patch(ctx, patchReq)
 		if err != nil {
@@ -241,6 +324,9 @@ var patchCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start update command
@@ -264,7 +350,7 @@ func init() {
 }
 
 var updateCmd = &cobra.Command{
-	Use:   "update",
+	Use:   "update ID",
 	Short: `Replace a group.`,
 	Long: `Replace a group.
   
@@ -275,11 +361,31 @@ var updateCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		err = updateJson.Unmarshal(&updateReq)
-		if err != nil {
-			return err
+		if cmd.Flags().Changed("json") {
+			err = updateJson.Unmarshal(&updateReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No ID argument specified. Loading names for Groups drop-down."
+				names, err := w.Groups.GroupDisplayNameToIdMap(ctx, iam.ListGroupsRequest{})
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Groups drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "Databricks group ID")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
+			}
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have databricks group id")
+			}
+			updateReq.Id = args[0]
 		}
-		updateReq.Id = args[0]
 
 		err = w.Groups.Update(ctx, updateReq)
 		if err != nil {
@@ -287,6 +393,9 @@ var updateCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // end service Groups

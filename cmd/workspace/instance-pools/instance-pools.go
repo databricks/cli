@@ -33,6 +33,9 @@ var Cmd = &cobra.Command{
   
   Databricks does not charge DBUs while instances are idle in the pool. Instance
   provider billing does apply. See pricing.`,
+	Annotations: map[string]string{
+		"package": "compute",
+	},
 }
 
 // start create command
@@ -60,23 +63,33 @@ func init() {
 }
 
 var createCmd = &cobra.Command{
-	Use:   "create",
+	Use:   "create INSTANCE_POOL_NAME NODE_TYPE_ID",
 	Short: `Create a new instance pool.`,
 	Long: `Create a new instance pool.
   
   Creates a new instance pool using idle and ready-to-use cloud instances.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(2)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		err = createJson.Unmarshal(&createReq)
-		if err != nil {
-			return err
+		if cmd.Flags().Changed("json") {
+			err = createJson.Unmarshal(&createReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			createReq.InstancePoolName = args[0]
+			createReq.NodeTypeId = args[1]
 		}
-		createReq.InstancePoolName = args[0]
-		createReq.NodeTypeId = args[1]
 
 		response, err := w.InstancePools.Create(ctx, createReq)
 		if err != nil {
@@ -84,15 +97,20 @@ var createCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start delete command
 
 var deleteReq compute.DeleteInstancePool
+var deleteJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
+	deleteCmd.Flags().Var(&deleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -109,21 +127,31 @@ var deleteCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if len(args) == 0 {
-			names, err := w.InstancePools.InstancePoolAndStatsInstancePoolNameToInstancePoolIdMap(ctx)
+		if cmd.Flags().Changed("json") {
+			err = deleteJson.Unmarshal(&deleteReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "The instance pool to be terminated")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No INSTANCE_POOL_ID argument specified. Loading names for Instance Pools drop-down."
+				names, err := w.InstancePools.InstancePoolAndStatsInstancePoolNameToInstancePoolIdMap(ctx)
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Instance Pools drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "The instance pool to be terminated")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have the instance pool to be terminated")
+			}
+			deleteReq.InstancePoolId = args[0]
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have the instance pool to be terminated")
-		}
-		deleteReq.InstancePoolId = args[0]
 
 		err = w.InstancePools.Delete(ctx, deleteReq)
 		if err != nil {
@@ -131,6 +159,9 @@ var deleteCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start edit command
@@ -158,24 +189,34 @@ func init() {
 }
 
 var editCmd = &cobra.Command{
-	Use:   "edit",
+	Use:   "edit INSTANCE_POOL_ID INSTANCE_POOL_NAME NODE_TYPE_ID",
 	Short: `Edit an existing instance pool.`,
 	Long: `Edit an existing instance pool.
   
   Modifies the configuration of an existing instance pool.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(3)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		err = editJson.Unmarshal(&editReq)
-		if err != nil {
-			return err
+		if cmd.Flags().Changed("json") {
+			err = editJson.Unmarshal(&editReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			editReq.InstancePoolId = args[0]
+			editReq.InstancePoolName = args[1]
+			editReq.NodeTypeId = args[2]
 		}
-		editReq.InstancePoolId = args[0]
-		editReq.InstancePoolName = args[1]
-		editReq.NodeTypeId = args[2]
 
 		err = w.InstancePools.Edit(ctx, editReq)
 		if err != nil {
@@ -183,15 +224,20 @@ var editCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start get command
 
 var getReq compute.GetInstancePoolRequest
+var getJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
+	getCmd.Flags().Var(&getJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -207,21 +253,31 @@ var getCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if len(args) == 0 {
-			names, err := w.InstancePools.InstancePoolAndStatsInstancePoolNameToInstancePoolIdMap(ctx)
+		if cmd.Flags().Changed("json") {
+			err = getJson.Unmarshal(&getReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "The canonical unique identifier for the instance pool")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No INSTANCE_POOL_ID argument specified. Loading names for Instance Pools drop-down."
+				names, err := w.InstancePools.InstancePoolAndStatsInstancePoolNameToInstancePoolIdMap(ctx)
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Instance Pools drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "The canonical unique identifier for the instance pool")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have the canonical unique identifier for the instance pool")
+			}
+			getReq.InstancePoolId = args[0]
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have the canonical unique identifier for the instance pool")
-		}
-		getReq.InstancePoolId = args[0]
 
 		response, err := w.InstancePools.Get(ctx, getReq)
 		if err != nil {
@@ -229,6 +285,9 @@ var getCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start list command
@@ -256,6 +315,9 @@ var listCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // end service InstancePools

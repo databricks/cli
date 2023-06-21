@@ -75,6 +75,9 @@ var Cmd = &cobra.Command{
   [Billable usage log delivery]: https://docs.databricks.com/administration-guide/account-settings/billable-usage-delivery.html
   [Usage page]: https://docs.databricks.com/administration-guide/account-settings/usage.html
   [create a new AWS S3 bucket]: https://docs.databricks.com/administration-guide/account-api/aws-storage.html`,
+	Annotations: map[string]string{
+		"package": "billing",
+	},
 }
 
 // start create command
@@ -124,13 +127,23 @@ var createCmd = &cobra.Command{
   [Deliver and access billable usage logs]: https://docs.databricks.com/administration-guide/account-settings/billable-usage-delivery.html`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.MustAccountClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(0)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-		err = createJson.Unmarshal(&createReq)
-		if err != nil {
-			return err
+		if cmd.Flags().Changed("json") {
+			err = createJson.Unmarshal(&createReq)
+			if err != nil {
+				return err
+			}
+		} else {
 		}
 
 		response, err := a.LogDelivery.Create(ctx, createReq)
@@ -139,15 +152,20 @@ var createCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start get command
 
 var getReq billing.GetLogDeliveryRequest
+var getJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
+	getCmd.Flags().Var(&getJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -164,21 +182,31 @@ var getCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-		if len(args) == 0 {
-			names, err := a.LogDelivery.LogDeliveryConfigurationConfigNameToConfigIdMap(ctx, billing.ListLogDeliveryRequest{})
+		if cmd.Flags().Changed("json") {
+			err = getJson.Unmarshal(&getReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "Databricks log delivery configuration ID")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No LOG_DELIVERY_CONFIGURATION_ID argument specified. Loading names for Log Delivery drop-down."
+				names, err := a.LogDelivery.LogDeliveryConfigurationConfigNameToConfigIdMap(ctx, billing.ListLogDeliveryRequest{})
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Log Delivery drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "Databricks log delivery configuration ID")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have databricks log delivery configuration id")
+			}
+			getReq.LogDeliveryConfigurationId = args[0]
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have databricks log delivery configuration id")
-		}
-		getReq.LogDeliveryConfigurationId = args[0]
 
 		response, err := a.LogDelivery.Get(ctx, getReq)
 		if err != nil {
@@ -186,15 +214,20 @@ var getCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start list command
 
 var listReq billing.ListLogDeliveryRequest
+var listJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(listCmd)
 	// TODO: short flags
+	listCmd.Flags().Var(&listJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	listCmd.Flags().StringVar(&listReq.CredentialsId, "credentials-id", listReq.CredentialsId, `Filter by credential configuration ID.`)
 	listCmd.Flags().Var(&listReq.Status, "status", `Filter by status ENABLED or DISABLED.`)
@@ -211,11 +244,24 @@ var listCmd = &cobra.Command{
   specified by ID.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(0),
-	PreRunE:     root.MustAccountClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(0)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
+		if cmd.Flags().Changed("json") {
+			err = listJson.Unmarshal(&listReq)
+			if err != nil {
+				return err
+			}
+		} else {
+		}
 
 		response, err := a.LogDelivery.ListAll(ctx, listReq)
 		if err != nil {
@@ -223,15 +269,20 @@ var listCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start patch-status command
 
 var patchStatusReq billing.UpdateLogDeliveryConfigurationStatusRequest
+var patchStatusJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(patchStatusCmd)
 	// TODO: short flags
+	patchStatusCmd.Flags().Var(&patchStatusJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -247,16 +298,29 @@ var patchStatusCmd = &cobra.Command{
   [Create log delivery](#operation/create-log-delivery-config).`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(2),
-	PreRunE:     root.MustAccountClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(2)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-		_, err = fmt.Sscan(args[0], &patchStatusReq.Status)
-		if err != nil {
-			return fmt.Errorf("invalid STATUS: %s", args[0])
+		if cmd.Flags().Changed("json") {
+			err = patchStatusJson.Unmarshal(&patchStatusReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			_, err = fmt.Sscan(args[0], &patchStatusReq.Status)
+			if err != nil {
+				return fmt.Errorf("invalid STATUS: %s", args[0])
+			}
+			patchStatusReq.LogDeliveryConfigurationId = args[1]
 		}
-		patchStatusReq.LogDeliveryConfigurationId = args[1]
 
 		err = a.LogDelivery.PatchStatus(ctx, patchStatusReq)
 		if err != nil {
@@ -264,6 +328,9 @@ var patchStatusCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // end service LogDelivery

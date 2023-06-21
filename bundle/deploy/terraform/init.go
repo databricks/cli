@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
@@ -69,7 +70,55 @@ func (m *initialize) findExecPath(ctx context.Context, b *bundle.Bundle, tf *con
 	return tf.ExecPath, nil
 }
 
-func (m *initialize) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Mutator, error) {
+// This function sets temp dir location for terraform to use. If user does not
+// specify anything here, we fall back to a `tmp` directory in the bundle's cache
+// directory
+//
+// This is necessary to avoid trying to create temporary files in directories
+// the CLI and its dependencies do not have access to.
+//
+// see: os.TempDir for more context
+func setTempDirEnvVars(env map[string]string, b *bundle.Bundle) error {
+	switch runtime.GOOS {
+	case "windows":
+		if v, ok := os.LookupEnv("TMP"); ok {
+			env["TMP"] = v
+		} else if v, ok := os.LookupEnv("TEMP"); ok {
+			env["TEMP"] = v
+		} else if v, ok := os.LookupEnv("USERPROFILE"); ok {
+			env["USERPROFILE"] = v
+		} else {
+			tmpDir, err := b.CacheDir("tmp")
+			if err != nil {
+				return err
+			}
+			env["TMP"] = tmpDir
+		}
+	default:
+		// If TMPDIR is not set, we let the process fall back to its default value.
+		if v, ok := os.LookupEnv("TMPDIR"); ok {
+			env["TMPDIR"] = v
+		}
+	}
+	return nil
+}
+
+// This function passes through all proxy related environment variables.
+func setProxyEnvVars(env map[string]string, b *bundle.Bundle) error {
+	for _, v := range []string{"http_proxy", "https_proxy", "no_proxy"} {
+		// The case (upper or lower) is notoriously inconsistent for tools on Unix systems.
+		// We therefore try to read both the upper and lower case versions of the variable.
+		for _, v := range []string{strings.ToUpper(v), strings.ToLower(v)} {
+			if val, ok := os.LookupEnv(v); ok {
+				// Only set uppercase version of the variable.
+				env[strings.ToUpper(v)] = val
+			}
+		}
+	}
+	return nil
+}
+
+func (m *initialize) Apply(ctx context.Context, b *bundle.Bundle) error {
 	tfConfig := b.Config.Bundle.Terraform
 	if tfConfig == nil {
 		tfConfig = &config.Terraform{}
@@ -78,22 +127,22 @@ func (m *initialize) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Muta
 
 	execPath, err := m.findExecPath(ctx, b, tfConfig)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	workingDir, err := Dir(b)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	tf, err := tfexec.NewTerraform(workingDir, execPath)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	env, err := b.AuthEnv()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// Include $HOME in set of environment variables to pass along.
@@ -102,15 +151,27 @@ func (m *initialize) Apply(ctx context.Context, b *bundle.Bundle) ([]bundle.Muta
 		env["HOME"] = home
 	}
 
+	// Set the temporary directory environment variables
+	err = setTempDirEnvVars(env, b)
+	if err != nil {
+		return err
+	}
+
+	// Set the proxy related environment variables
+	err = setProxyEnvVars(env, b)
+	if err != nil {
+		return err
+	}
+
 	// Configure environment variables for auth for Terraform to use.
 	log.Debugf(ctx, "Environment variables for Terraform: %s", strings.Join(maps.Keys(env), ", "))
 	err = tf.SetEnv(env)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	b.Terraform = tf
-	return nil, nil
+	return nil
 }
 
 func Initialize() bundle.Mutator {

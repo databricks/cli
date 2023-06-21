@@ -25,7 +25,8 @@ type ResourceModelServingConfig struct {
 }
 
 type ResourceModelServing struct {
-	Id     string                      `json:"id,omitempty"`
-	Name   string                      `json:"name"`
-	Config *ResourceModelServingConfig `json:"config,omitempty"`
+	Id                string                      `json:"id,omitempty"`
+	Name              string                      `json:"name"`
+	ServingEndpointId string                      `json:"serving_endpoint_id,omitempty"`
+	Config            *ResourceModelServingConfig `json:"config,omitempty"`
 }

@@ -7,6 +7,7 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/spf13/cobra"
 )
@@ -27,15 +28,20 @@ var Cmd = &cobra.Command{
   workspaces created before Unity Catalog was released. If your workspace
   includes a legacy Hive metastore, the data in that metastore is available in a
   catalog named hive_metastore.`,
+	Annotations: map[string]string{
+		"package": "catalog",
+	},
 }
 
 // start assign command
 
 var assignReq catalog.CreateMetastoreAssignment
+var assignJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(assignCmd)
 	// TODO: short flags
+	assignCmd.Flags().Var(&assignJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -49,16 +55,29 @@ var assignCmd = &cobra.Command{
   and __default_catalog_name__. The caller must be an account admin.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(3),
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(3)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		assignReq.MetastoreId = args[0]
-		assignReq.DefaultCatalogName = args[1]
-		_, err = fmt.Sscan(args[2], &assignReq.WorkspaceId)
-		if err != nil {
-			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[2])
+		if cmd.Flags().Changed("json") {
+			err = assignJson.Unmarshal(&assignReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			assignReq.MetastoreId = args[0]
+			assignReq.DefaultCatalogName = args[1]
+			_, err = fmt.Sscan(args[2], &assignReq.WorkspaceId)
+			if err != nil {
+				return fmt.Errorf("invalid WORKSPACE_ID: %s", args[2])
+			}
 		}
 
 		err = w.Metastores.Assign(ctx, assignReq)
@@ -67,15 +86,20 @@ var assignCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start create command
 
 var createReq catalog.CreateMetastore
+var createJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(createCmd)
 	// TODO: short flags
+	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	createCmd.Flags().StringVar(&createReq.Region, "region", createReq.Region, `Cloud region which the metastore serves (e.g., us-west-2, westus).`)
 
@@ -89,13 +113,26 @@ var createCmd = &cobra.Command{
   Creates a new metastore based on a provided name and storage root path.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(2),
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(2)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		createReq.Name = args[0]
-		createReq.StorageRoot = args[1]
+		if cmd.Flags().Changed("json") {
+			err = createJson.Unmarshal(&createReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			createReq.Name = args[0]
+			createReq.StorageRoot = args[1]
+		}
 
 		response, err := w.Metastores.Create(ctx, createReq)
 		if err != nil {
@@ -103,6 +140,9 @@ var createCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start current command
@@ -130,15 +170,20 @@ var currentCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start delete command
 
 var deleteReq catalog.DeleteMetastoreRequest
+var deleteJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
+	deleteCmd.Flags().Var(&deleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	deleteCmd.Flags().BoolVar(&deleteReq.Force, "force", deleteReq.Force, `Force deletion even if the metastore is not empty.`)
 
@@ -156,21 +201,31 @@ var deleteCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if len(args) == 0 {
-			names, err := w.Metastores.MetastoreInfoNameToMetastoreIdMap(ctx)
+		if cmd.Flags().Changed("json") {
+			err = deleteJson.Unmarshal(&deleteReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "Unique ID of the metastore")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No ID argument specified. Loading names for Metastores drop-down."
+				names, err := w.Metastores.MetastoreInfoNameToMetastoreIdMap(ctx)
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Metastores drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "Unique ID of the metastore")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have unique id of the metastore")
+			}
+			deleteReq.Id = args[0]
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have unique id of the metastore")
-		}
-		deleteReq.Id = args[0]
 
 		err = w.Metastores.Delete(ctx, deleteReq)
 		if err != nil {
@@ -178,15 +233,20 @@ var deleteCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start get command
 
 var getReq catalog.GetMetastoreRequest
+var getJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
+	getCmd.Flags().Var(&getJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -203,21 +263,31 @@ var getCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if len(args) == 0 {
-			names, err := w.Metastores.MetastoreInfoNameToMetastoreIdMap(ctx)
+		if cmd.Flags().Changed("json") {
+			err = getJson.Unmarshal(&getReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "Unique ID of the metastore")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No ID argument specified. Loading names for Metastores drop-down."
+				names, err := w.Metastores.MetastoreInfoNameToMetastoreIdMap(ctx)
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Metastores drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "Unique ID of the metastore")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have unique id of the metastore")
+			}
+			getReq.Id = args[0]
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have unique id of the metastore")
-		}
-		getReq.Id = args[0]
 
 		response, err := w.Metastores.Get(ctx, getReq)
 		if err != nil {
@@ -225,6 +295,9 @@ var getCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start list command
@@ -254,15 +327,20 @@ var listCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start maintenance command
 
 var maintenanceReq catalog.UpdateAutoMaintenance
+var maintenanceJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(maintenanceCmd)
 	// TODO: short flags
+	maintenanceCmd.Flags().Var(&maintenanceJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -273,16 +351,32 @@ var maintenanceCmd = &cobra.Command{
   
   Enables or disables auto maintenance on the metastore.`,
 
+	// This command is being previewed; hide from help output.
+	Hidden: true,
+
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(2),
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(2)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		maintenanceReq.MetastoreId = args[0]
-		_, err = fmt.Sscan(args[1], &maintenanceReq.Enable)
-		if err != nil {
-			return fmt.Errorf("invalid ENABLE: %s", args[1])
+		if cmd.Flags().Changed("json") {
+			err = maintenanceJson.Unmarshal(&maintenanceReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			maintenanceReq.MetastoreId = args[0]
+			_, err = fmt.Sscan(args[1], &maintenanceReq.Enable)
+			if err != nil {
+				return fmt.Errorf("invalid ENABLE: %s", args[1])
+			}
 		}
 
 		response, err := w.Metastores.Maintenance(ctx, maintenanceReq)
@@ -291,6 +385,9 @@ var maintenanceCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start summary command
@@ -319,15 +416,20 @@ var summaryCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start unassign command
 
 var unassignReq catalog.UnassignRequest
+var unassignJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(unassignCmd)
 	// TODO: short flags
+	unassignCmd.Flags().Var(&unassignJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -339,16 +441,29 @@ var unassignCmd = &cobra.Command{
   Deletes a metastore assignment. The caller must be an account administrator.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(2),
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(2)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		_, err = fmt.Sscan(args[0], &unassignReq.WorkspaceId)
-		if err != nil {
-			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
+		if cmd.Flags().Changed("json") {
+			err = unassignJson.Unmarshal(&unassignReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			_, err = fmt.Sscan(args[0], &unassignReq.WorkspaceId)
+			if err != nil {
+				return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
+			}
+			unassignReq.MetastoreId = args[1]
 		}
-		unassignReq.MetastoreId = args[1]
 
 		err = w.Metastores.Unassign(ctx, unassignReq)
 		if err != nil {
@@ -356,15 +471,20 @@ var unassignCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start update command
 
 var updateReq catalog.UpdateMetastore
+var updateJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(updateCmd)
 	// TODO: short flags
+	updateCmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	updateCmd.Flags().StringVar(&updateReq.DeltaSharingOrganizationName, "delta-sharing-organization-name", updateReq.DeltaSharingOrganizationName, `The organization name of a Delta Sharing entity, to be used in Databricks-to-Databricks Delta Sharing as the official name.`)
 	updateCmd.Flags().Int64Var(&updateReq.DeltaSharingRecipientTokenLifetimeInSeconds, "delta-sharing-recipient-token-lifetime-in-seconds", updateReq.DeltaSharingRecipientTokenLifetimeInSeconds, `The lifetime of delta sharing recipient token in seconds.`)
@@ -377,7 +497,7 @@ func init() {
 }
 
 var updateCmd = &cobra.Command{
-	Use:   "update METASTORE_ID ID",
+	Use:   "update ID",
 	Short: `Update a metastore.`,
 	Long: `Update a metastore.
   
@@ -385,13 +505,35 @@ var updateCmd = &cobra.Command{
   admin.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(2),
 	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		updateReq.MetastoreId = args[0]
-		updateReq.Id = args[1]
+		if cmd.Flags().Changed("json") {
+			err = updateJson.Unmarshal(&updateReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No ID argument specified. Loading names for Metastores drop-down."
+				names, err := w.Metastores.MetastoreInfoNameToMetastoreIdMap(ctx)
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Metastores drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "Unique ID of the metastore")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
+			}
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have unique id of the metastore")
+			}
+			updateReq.Id = args[0]
+		}
 
 		response, err := w.Metastores.Update(ctx, updateReq)
 		if err != nil {
@@ -399,15 +541,20 @@ var updateCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start update-assignment command
 
 var updateAssignmentReq catalog.UpdateMetastoreAssignment
+var updateAssignmentJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(updateAssignmentCmd)
 	// TODO: short flags
+	updateAssignmentCmd.Flags().Var(&updateAssignmentJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	updateAssignmentCmd.Flags().StringVar(&updateAssignmentReq.DefaultCatalogName, "default-catalog-name", updateAssignmentReq.DefaultCatalogName, `The name of the default catalog for the metastore.`)
 	updateAssignmentCmd.Flags().StringVar(&updateAssignmentReq.MetastoreId, "metastore-id", updateAssignmentReq.MetastoreId, `The unique ID of the metastore.`)
@@ -415,7 +562,7 @@ func init() {
 }
 
 var updateAssignmentCmd = &cobra.Command{
-	Use:   "update-assignment WORKSPACE_ID METASTORE_ID",
+	Use:   "update-assignment WORKSPACE_ID",
 	Short: `Update an assignment.`,
 	Long: `Update an assignment.
   
@@ -425,16 +572,38 @@ var updateAssignmentCmd = &cobra.Command{
   to update __metastore_id__; otherwise, the caller can be a Workspace admin.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(2),
 	PreRunE:     root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		_, err = fmt.Sscan(args[0], &updateAssignmentReq.WorkspaceId)
-		if err != nil {
-			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
+		if cmd.Flags().Changed("json") {
+			err = updateAssignmentJson.Unmarshal(&updateAssignmentReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No WORKSPACE_ID argument specified. Loading names for Metastores drop-down."
+				names, err := w.Metastores.MetastoreInfoNameToMetastoreIdMap(ctx)
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Metastores drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "A workspace ID")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
+			}
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have a workspace id")
+			}
+			_, err = fmt.Sscan(args[0], &updateAssignmentReq.WorkspaceId)
+			if err != nil {
+				return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
+			}
 		}
-		updateAssignmentReq.MetastoreId = args[1]
 
 		err = w.Metastores.UpdateAssignment(ctx, updateAssignmentReq)
 		if err != nil {
@@ -442,6 +611,9 @@ var updateAssignmentCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // end service Metastores

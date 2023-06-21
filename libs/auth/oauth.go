@@ -95,6 +95,16 @@ func (a *PersistentAuth) Load(ctx context.Context) (*oauth2.Token, error) {
 	return refreshed, nil
 }
 
+func (a *PersistentAuth) ProfileName() string {
+	// TODO: get profile name from interactive input
+	if a.AccountID != "" {
+		return fmt.Sprintf("ACCOUNT-%s", a.AccountID)
+	}
+	host := strings.TrimPrefix(a.Host, "https://")
+	split := strings.Split(host, ".")
+	return split[0]
+}
+
 func (a *PersistentAuth) Challenge(ctx context.Context) error {
 	err := a.init(ctx)
 	if err != nil {

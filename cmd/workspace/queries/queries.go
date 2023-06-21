@@ -17,7 +17,11 @@ var Cmd = &cobra.Command{
 	Short: `These endpoints are used for CRUD operations on query definitions.`,
 	Long: `These endpoints are used for CRUD operations on query definitions. Query
   definitions include the target SQL warehouse, query text, name, description,
-  tags, parameters, and visualizations.`,
+  tags, parameters, and visualizations. Queries can be scheduled using the
+  sql_task type of the Jobs API, e.g. :method:jobs/create.`,
+	Annotations: map[string]string{
+		"package": "sql",
+	},
 }
 
 // start create command
@@ -29,13 +33,6 @@ func init() {
 	Cmd.AddCommand(createCmd)
 	// TODO: short flags
 	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
-
-	createCmd.Flags().StringVar(&createReq.DataSourceId, "data-source-id", createReq.DataSourceId, `The ID of the data source / SQL warehouse where this query will run.`)
-	createCmd.Flags().StringVar(&createReq.Description, "description", createReq.Description, `General description that can convey additional information about this query such as usage notes.`)
-	createCmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `The name or title of this query to display in list views.`)
-	// TODO: any: options
-	createCmd.Flags().StringVar(&createReq.Parent, "parent", createReq.Parent, `The identifier of the workspace folder containing the query.`)
-	createCmd.Flags().StringVar(&createReq.Query, "query", createReq.Query, `The text of the query.`)
 
 }
 
@@ -55,13 +52,24 @@ var createCmd = &cobra.Command{
   **Note**: You cannot add a visualization until you create the query.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(0)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		err = createJson.Unmarshal(&createReq)
-		if err != nil {
-			return err
+		if cmd.Flags().Changed("json") {
+			err = createJson.Unmarshal(&createReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
 
 		response, err := w.Queries.Create(ctx, createReq)
@@ -70,15 +78,20 @@ var createCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start delete command
 
 var deleteReq sql.DeleteQueryRequest
+var deleteJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
+	deleteCmd.Flags().Var(&deleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -96,21 +109,31 @@ var deleteCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if len(args) == 0 {
-			names, err := w.Queries.QueryNameToIdMap(ctx, sql.ListQueriesRequest{})
+		if cmd.Flags().Changed("json") {
+			err = deleteJson.Unmarshal(&deleteReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No QUERY_ID argument specified. Loading names for Queries drop-down."
+				names, err := w.Queries.QueryNameToIdMap(ctx, sql.ListQueriesRequest{})
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Queries drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have ")
+			}
+			deleteReq.QueryId = args[0]
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have ")
-		}
-		deleteReq.QueryId = args[0]
 
 		err = w.Queries.Delete(ctx, deleteReq)
 		if err != nil {
@@ -118,15 +141,20 @@ var deleteCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start get command
 
 var getReq sql.GetQueryRequest
+var getJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
+	getCmd.Flags().Var(&getJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -143,21 +171,31 @@ var getCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if len(args) == 0 {
-			names, err := w.Queries.QueryNameToIdMap(ctx, sql.ListQueriesRequest{})
+		if cmd.Flags().Changed("json") {
+			err = getJson.Unmarshal(&getReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No QUERY_ID argument specified. Loading names for Queries drop-down."
+				names, err := w.Queries.QueryNameToIdMap(ctx, sql.ListQueriesRequest{})
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Queries drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have ")
+			}
+			getReq.QueryId = args[0]
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have ")
-		}
-		getReq.QueryId = args[0]
 
 		response, err := w.Queries.Get(ctx, getReq)
 		if err != nil {
@@ -165,15 +203,20 @@ var getCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start list command
 
 var listReq sql.ListQueriesRequest
+var listJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(listCmd)
 	// TODO: short flags
+	listCmd.Flags().Var(&listJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	listCmd.Flags().StringVar(&listReq.Order, "order", listReq.Order, `Name of query attribute to order by.`)
 	listCmd.Flags().IntVar(&listReq.Page, "page", listReq.Page, `Page number to retrieve.`)
@@ -191,11 +234,24 @@ var listCmd = &cobra.Command{
   term.`,
 
 	Annotations: map[string]string{},
-	Args:        cobra.ExactArgs(0),
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(0)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+		if cmd.Flags().Changed("json") {
+			err = listJson.Unmarshal(&listReq)
+			if err != nil {
+				return err
+			}
+		} else {
+		}
 
 		response, err := w.Queries.ListAll(ctx, listReq)
 		if err != nil {
@@ -203,15 +259,20 @@ var listCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start restore command
 
 var restoreReq sql.RestoreQueryRequest
+var restoreJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(restoreCmd)
 	// TODO: short flags
+	restoreCmd.Flags().Var(&restoreJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -228,21 +289,31 @@ var restoreCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if len(args) == 0 {
-			names, err := w.Queries.QueryNameToIdMap(ctx, sql.ListQueriesRequest{})
+		if cmd.Flags().Changed("json") {
+			err = restoreJson.Unmarshal(&restoreReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No QUERY_ID argument specified. Loading names for Queries drop-down."
+				names, err := w.Queries.QueryNameToIdMap(ctx, sql.ListQueriesRequest{})
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Queries drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have ")
+			}
+			restoreReq.QueryId = args[0]
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have ")
-		}
-		restoreReq.QueryId = args[0]
 
 		err = w.Queries.Restore(ctx, restoreReq)
 		if err != nil {
@@ -250,6 +321,9 @@ var restoreCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start update command
@@ -271,7 +345,7 @@ func init() {
 }
 
 var updateCmd = &cobra.Command{
-	Use:   "update",
+	Use:   "update QUERY_ID",
 	Short: `Change a query definition.`,
 	Long: `Change a query definition.
   
@@ -284,11 +358,31 @@ var updateCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		err = updateJson.Unmarshal(&updateReq)
-		if err != nil {
-			return err
+		if cmd.Flags().Changed("json") {
+			err = updateJson.Unmarshal(&updateReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No QUERY_ID argument specified. Loading names for Queries drop-down."
+				names, err := w.Queries.QueryNameToIdMap(ctx, sql.ListQueriesRequest{})
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Queries drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
+			}
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have ")
+			}
+			updateReq.QueryId = args[0]
 		}
-		updateReq.QueryId = args[0]
 
 		response, err := w.Queries.Update(ctx, updateReq)
 		if err != nil {
@@ -296,6 +390,9 @@ var updateCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // end service Queries

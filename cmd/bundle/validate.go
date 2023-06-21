@@ -16,9 +16,7 @@ var validateCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		b := bundle.Get(cmd.Context())
 
-		err := bundle.Apply(cmd.Context(), b, []bundle.Mutator{
-			phases.Initialize(),
-		})
+		err := bundle.Apply(cmd.Context(), b, phases.Initialize())
 		if err != nil {
 			return err
 		}

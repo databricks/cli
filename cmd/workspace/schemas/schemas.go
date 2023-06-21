@@ -20,6 +20,9 @@ var Cmd = &cobra.Command{
   access (or list) a table or view in a schema, users must have the USE_SCHEMA
   data permission on the schema and its parent catalog, and they must have the
   SELECT permission on the table or view.`,
+	Annotations: map[string]string{
+		"package": "catalog",
+	},
 }
 
 // start create command
@@ -39,7 +42,7 @@ func init() {
 }
 
 var createCmd = &cobra.Command{
-	Use:   "create",
+	Use:   "create NAME CATALOG_NAME",
 	Short: `Create a schema.`,
 	Long: `Create a schema.
   
@@ -48,16 +51,26 @@ var createCmd = &cobra.Command{
   catalog.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(2)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		err = createJson.Unmarshal(&createReq)
-		if err != nil {
-			return err
+		if cmd.Flags().Changed("json") {
+			err = createJson.Unmarshal(&createReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			createReq.Name = args[0]
+			createReq.CatalogName = args[1]
 		}
-		createReq.Name = args[0]
-		createReq.CatalogName = args[1]
 
 		response, err := w.Schemas.Create(ctx, createReq)
 		if err != nil {
@@ -65,15 +78,20 @@ var createCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start delete command
 
 var deleteReq catalog.DeleteSchemaRequest
+var deleteJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
+	deleteCmd.Flags().Var(&deleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -90,21 +108,31 @@ var deleteCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if len(args) == 0 {
-			names, err := w.Schemas.SchemaInfoNameToFullNameMap(ctx, catalog.ListSchemasRequest{})
+		if cmd.Flags().Changed("json") {
+			err = deleteJson.Unmarshal(&deleteReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "Full name of the schema")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No FULL_NAME argument specified. Loading names for Schemas drop-down."
+				names, err := w.Schemas.SchemaInfoNameToFullNameMap(ctx, catalog.ListSchemasRequest{})
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Schemas drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "Full name of the schema")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have full name of the schema")
+			}
+			deleteReq.FullName = args[0]
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have full name of the schema")
-		}
-		deleteReq.FullName = args[0]
 
 		err = w.Schemas.Delete(ctx, deleteReq)
 		if err != nil {
@@ -112,15 +140,20 @@ var deleteCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start get command
 
 var getReq catalog.GetSchemaRequest
+var getJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
+	getCmd.Flags().Var(&getJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -138,21 +171,31 @@ var getCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if len(args) == 0 {
-			names, err := w.Schemas.SchemaInfoNameToFullNameMap(ctx, catalog.ListSchemasRequest{})
+		if cmd.Flags().Changed("json") {
+			err = getJson.Unmarshal(&getReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "Full name of the schema")
-			if err != nil {
-				return err
+		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No FULL_NAME argument specified. Loading names for Schemas drop-down."
+				names, err := w.Schemas.SchemaInfoNameToFullNameMap(ctx, catalog.ListSchemasRequest{})
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Schemas drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "Full name of the schema")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			args = append(args, id)
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have full name of the schema")
+			}
+			getReq.FullName = args[0]
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have full name of the schema")
-		}
-		getReq.FullName = args[0]
 
 		response, err := w.Schemas.Get(ctx, getReq)
 		if err != nil {
@@ -160,15 +203,20 @@ var getCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start list command
 
 var listReq catalog.ListSchemasRequest
+var listJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(listCmd)
 	// TODO: short flags
+	listCmd.Flags().Var(&listJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -184,25 +232,25 @@ var listCmd = &cobra.Command{
   no guarantee of a specific ordering of the elements in the array.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if len(args) == 0 {
-			names, err := w.Schemas.SchemaInfoNameToFullNameMap(ctx, catalog.ListSchemasRequest{})
+		if cmd.Flags().Changed("json") {
+			err = listJson.Unmarshal(&listReq)
 			if err != nil {
 				return err
 			}
-			id, err := cmdio.Select(ctx, names, "Parent catalog for schemas of interest")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
+		} else {
+			listReq.CatalogName = args[0]
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have parent catalog for schemas of interest")
-		}
-		listReq.CatalogName = args[0]
 
 		response, err := w.Schemas.ListAll(ctx, listReq)
 		if err != nil {
@@ -210,6 +258,9 @@ var listCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start update command
@@ -230,7 +281,7 @@ func init() {
 }
 
 var updateCmd = &cobra.Command{
-	Use:   "update",
+	Use:   "update FULL_NAME",
 	Short: `Update a schema.`,
 	Long: `Update a schema.
   
@@ -245,11 +296,31 @@ var updateCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		err = updateJson.Unmarshal(&updateReq)
-		if err != nil {
-			return err
+		if cmd.Flags().Changed("json") {
+			err = updateJson.Unmarshal(&updateReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No FULL_NAME argument specified. Loading names for Schemas drop-down."
+				names, err := w.Schemas.SchemaInfoNameToFullNameMap(ctx, catalog.ListSchemasRequest{})
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Schemas drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "Full name of the schema")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
+			}
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have full name of the schema")
+			}
+			updateReq.FullName = args[0]
 		}
-		updateReq.FullName = args[0]
 
 		response, err := w.Schemas.Update(ctx, updateReq)
 		if err != nil {
@@ -257,6 +328,9 @@ var updateCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // end service Schemas

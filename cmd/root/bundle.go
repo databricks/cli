@@ -39,7 +39,7 @@ func loadBundle(cmd *cobra.Command, args []string, load func() (*bundle.Bundle, 
 	}
 
 	ctx := cmd.Context()
-	err = bundle.Apply(ctx, b, mutator.DefaultMutators())
+	err = bundle.Apply(ctx, b, bundle.Seq(mutator.DefaultMutators()...))
 	if err != nil {
 		return nil, err
 	}
@@ -68,7 +68,7 @@ func configureBundle(cmd *cobra.Command, args []string, load func() (*bundle.Bun
 	}
 
 	ctx := cmd.Context()
-	err = bundle.Apply(ctx, b, []bundle.Mutator{m})
+	err = bundle.Apply(ctx, b, m)
 	if err != nil {
 		return err
 	}
