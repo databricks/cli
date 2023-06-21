@@ -5,6 +5,7 @@ package workspace
 import (
 	"github.com/databricks/cli/cmd/root"
 
+	account_access_control_proxy "github.com/databricks/cli/cmd/workspace/account-access-control-proxy"
 	alerts "github.com/databricks/cli/cmd/workspace/alerts"
 	catalogs "github.com/databricks/cli/cmd/workspace/catalogs"
 	cluster_policies "github.com/databricks/cli/cmd/workspace/cluster-policies"
@@ -56,6 +57,7 @@ import (
 )
 
 func init() {
+	root.RootCmd.AddCommand(account_access_control_proxy.Cmd)
 	root.RootCmd.AddCommand(alerts.Cmd)
 	root.RootCmd.AddCommand(catalogs.Cmd)
 	root.RootCmd.AddCommand(cluster_policies.Cmd)
@@ -106,6 +108,7 @@ func init() {
 	root.RootCmd.AddCommand(workspace_conf.Cmd)
 
 	// Register commands with groups
+	account_access_control_proxy.Cmd.GroupID = "iam"
 	alerts.Cmd.GroupID = "sql"
 	catalogs.Cmd.GroupID = "catalog"
 	cluster_policies.Cmd.GroupID = "compute"

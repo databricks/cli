@@ -1,7 +1,7 @@
 {
     "formatter": "go run golang.org/x/tools/cmd/goimports@latest -w $FILENAMES && go fmt ./...",
     "services": {
-        ".codegen/service.go.tmpl": "cmd/{{if .IsAccounts}}account{{else}}workspace{{end}}/{{(.TrimPrefix \"account\").KebabName}}/{{(.TrimPrefix \"account\").KebabName}}.go"
+        ".codegen/service.go.tmpl": "cmd/{{if .IsAccounts}}account{{else}}workspace{{end}}/{{if .IsAccounts}}{{(.TrimPrefix \"account\").KebabName}}{{else}}{{.KebabName}}{{end}}/{{if .IsAccounts}}{{(.TrimPrefix \"account\").KebabName}}{{else}}{{.KebabName}}{{end}}.go"
     },
     "batch": {
         ".codegen/cmds-workspace.go.tmpl": "cmd/workspace/cmd.go",

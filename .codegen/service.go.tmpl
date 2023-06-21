@@ -1,6 +1,6 @@
 // Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
 
-package {{(.TrimPrefix "account").SnakeName}}
+package {{template "ServiceSnakeName" .}}
 
 import (
     "github.com/databricks/cli/libs/cmdio"
@@ -19,7 +19,7 @@ import (
 
 {{define "service"}}
 var Cmd = &cobra.Command{
-	Use:   "{{(.TrimPrefix "account").KebabName}}",
+	Use:   "{{template "ServiceKebabName" .}}",
 	{{- if .Description }}
 	Short: `{{.Summary | without "`"}}`,
 	Long: `{{.Comment  "  " 80 | without "`"}}`,
@@ -119,7 +119,7 @@ var {{.CamelName}}Cmd = &cobra.Command{
 				if len(args) == 0 {
 					promptSpinner := cmdio.Spinner(ctx)
 					promptSpinner <- "No{{range .Request.RequiredFields}} {{.ConstantName}}{{end}} argument specified. Loading names for {{.Service.TitleName}} drop-down."
-					names, err := {{if .Service.IsAccounts}}a{{else}}w{{end}}.{{(.Service.TrimPrefix "account").PascalName}}.{{.Service.List.NamedIdMap.PascalName}}(ctx{{if .Service.List.Request}}, {{.Service.Package.Name}}.{{.Service.List.Request.PascalName}}{}{{end}})
+					names, err := {{if .Service.IsAccounts}}a{{else}}w{{end}}.{{template "ServicePascalName" .Service}}.{{.Service.List.NamedIdMap.PascalName}}(ctx{{if .Service.List.Request}}, {{.Service.Package.Name}}.{{.Service.List.Request.PascalName}}{}{{end}})
 					close(promptSpinner)
 					if err != nil {
 						return fmt.Errorf("failed to load names for {{.Service.TitleName}} drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -199,7 +199,7 @@ var {{.CamelName}}Cmd = &cobra.Command{
 // end service {{.Name}}{{end}}
 
 {{- define "method-call" -}}
-		{{if .Response}}response, err :={{else}}err ={{end}} {{if .Service.IsAccounts}}a{{else}}w{{end}}.{{(.Service.TrimPrefix "account").PascalName}}.{{.PascalName}}{{if .Pagination}}All{{end}}(ctx{{if .Request}}, {{.CamelName}}Req{{end}})
+		{{if .Response}}response, err :={{else}}err ={{end}} {{if .Service.IsAccounts}}a{{else}}w{{end}}.{{template "ServicePascalName" .Service}}.{{.PascalName}}{{if .Pagination}}All{{end}}(ctx{{if .Request}}, {{.CamelName}}Req{{end}})
 		if err != nil {
 			return err
 		}
@@ -219,4 +219,16 @@ var {{.CamelName}}Cmd = &cobra.Command{
 	{{- else if .Enum }}StringVar
 	{{- else}}/* NOT PRIMITIVE */
 	{{- end -}}
+{{- end -}}
+
+{{- define "ServiceSnakeName" -}}
+{{if .IsAccounts }}{{(.TrimPrefix "account").SnakeName }}{{ else }}{{ .SnakeName }}{{ end }}
+{{- end -}}
+
+{{- define "ServicePascalName" -}}
+{{if .IsAccounts }}{{(.TrimPrefix "account").PascalName }}{{ else }}{{ .PascalName }}{{ end }}
+{{- end -}}
+
+{{- define "ServiceKebabName" -}}
+{{if .IsAccounts }}{{(.TrimPrefix "account").KebabName }}{{ else }}{{ .KebabName }}{{ end }}
 {{- end -}}

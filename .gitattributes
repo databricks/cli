@@ -23,6 +23,7 @@ cmd/account/users/users.go linguist-generated=true
 cmd/account/vpc-endpoints/vpc-endpoints.go linguist-generated=true
 cmd/account/workspace-assignment/workspace-assignment.go linguist-generated=true
 cmd/account/workspaces/workspaces.go linguist-generated=true
+cmd/workspace/account-access-control-proxy/account-access-control-proxy.go linguist-generated=true
 cmd/workspace/alerts/alerts.go linguist-generated=true
 cmd/workspace/catalogs/catalogs.go linguist-generated=true
 cmd/workspace/cluster-policies/cluster-policies.go linguist-generated=true
