@@ -58,7 +58,8 @@ func init() {
     {{if .Request}}// TODO: short flags
 	{{.CamelName}}Cmd.Flags().Var(&{{.CamelName}}Json, "json", `either inline JSON string or @path/to/file.json with request body`)
     {{$method := .}}
-    {{range .Request.Fields -}}
+	{{ if not .IsJsonOnly }}
+	{{range .Request.Fields -}}
 		{{- if not .Required -}}
 			{{if .Entity.IsObject }}// TODO: complex arg: {{.Name}}
 			{{else if .Entity.IsAny }}// TODO: any: {{.Name}}
@@ -69,8 +70,9 @@ func init() {
 			{{else}}{{$method.CamelName}}Cmd.Flags().{{template "arg-type" .Entity}}(&{{$method.CamelName}}Req.{{.PascalName}}, "{{.KebabName}}", {{$method.CamelName}}Req.{{.PascalName}}, `{{.Summary | without "`"}}`)
 			{{end}}
 		{{- end -}}
-    {{- end}}
-    {{end}}
+	{{- end}}
+	{{- end}}
+	{{end}}
 }
 {{- $excludeFromPrompts := list "workspace get-status" -}}
 {{- $fullCommandName := (print $serviceName " " .KebabName) -}}
@@ -133,7 +135,7 @@ var {{.CamelName}}Cmd = &cobra.Command{
 				}
 			{{- end -}}
 			{{$method := .}}
-			{{- if .Request.IsAllRequiredFieldsPrimitive -}}
+			{{- if and .Request.IsAllRequiredFieldsPrimitive (not .IsJsonOnly) -}}
 				{{- range $arg, $field := .Request.RequiredFields}}
 					{{if not $field.Entity.IsString -}}
 					_, err = fmt.Sscan(args[{{$arg}}], &{{$method.CamelName}}Req.{{$field.PascalName}})

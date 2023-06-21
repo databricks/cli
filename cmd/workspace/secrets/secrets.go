@@ -42,8 +42,8 @@ func init() {
 	// TODO: short flags
 	createScopeCmd.Flags().Var(&createScopeJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	// TODO: complex arg: backend_azure_keyvault
 	createScopeCmd.Flags().StringVar(&createScopeReq.InitialManagePrincipal, "initial-manage-principal", createScopeReq.InitialManagePrincipal, `The principal that is initially granted MANAGE permission to the created scope.`)
-	// TODO: complex arg: keyvault_metadata
 	createScopeCmd.Flags().Var(&createScopeReq.ScopeBackendType, "scope-backend-type", `The backend type the scope will be created with.`)
 
 }
@@ -502,9 +502,9 @@ var putAclCmd = &cobra.Command{
   
   Throws RESOURCE_DOES_NOT_EXIST if no such secret scope exists. Throws
   RESOURCE_ALREADY_EXISTS if a permission for the principal already exists.
-  Throws INVALID_PARAMETER_VALUE if the permission is invalid. Throws
-  PERMISSION_DENIED if the user does not have permission to make this API
-  call.`,
+  Throws INVALID_PARAMETER_VALUE if the permission or principal is invalid.
+  Throws PERMISSION_DENIED if the user does not have permission to make this
+  API call.`,
 
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {

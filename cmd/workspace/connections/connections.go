@@ -73,7 +73,7 @@ var createCmd = &cobra.Command{
 				return err
 			}
 		} else {
-			return fmt.Errorf("provide command input in JSON format by specifying --json option")
+			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
 
 		response, err := w.Connections.Create(ctx, createReq)
@@ -269,7 +269,7 @@ var updateCmd = &cobra.Command{
 				return err
 			}
 		} else {
-			return fmt.Errorf("provide command input in JSON format by specifying --json option")
+			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
 
 		response, err := w.Connections.Update(ctx, updateReq)
