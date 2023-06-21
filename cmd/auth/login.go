@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg"
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/spf13/cobra"
@@ -49,47 +49,37 @@ var loginCmd = &cobra.Command{
 			return err
 		}
 
-		err = databrickscfg.SaveToProfile(ctx, &config.Config{
+		cfg := config.Config{
 			Host:      perisistentAuth.Host,
 			AccountID: perisistentAuth.AccountID,
 			AuthType:  "databricks-cli",
 			Profile:   profileName,
-		})
-
-		if err != nil {
-			return err
 		}
 
 		if configureCluster {
-			err := root.MustWorkspaceClient(cmd, args)
+			w, err := databricks.NewWorkspaceClient((*databricks.Config)(&cfg))
 			if err != nil {
 				return err
 			}
 			ctx := cmd.Context()
-			w := root.WorkspaceClient(ctx)
 
 			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "Loading names for Clusters drop-down."
+			promptSpinner <- "Loading list of clusters to select from"
 			names, err := w.Clusters.ClusterInfoClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
 			close(promptSpinner)
 			if err != nil {
-				return fmt.Errorf("failed to load names for Clusters drop-down. Please manually specify required arguments. Original error: %w", err)
+				return fmt.Errorf("failed to load clusters list. Original error: %w", err)
 			}
-			clusterId, err := cmdio.Select(ctx, names, "The cluster to be attached")
+			clusterId, err := cmdio.Select(ctx, names, "Choose cluster")
 			if err != nil {
 				return err
 			}
-			err = databrickscfg.SaveToProfile(ctx, &config.Config{
-				Host:      perisistentAuth.Host,
-				AccountID: perisistentAuth.AccountID,
-				AuthType:  "databricks-cli",
-				Profile:   profileName,
-				ClusterID: clusterId,
-			})
+			cfg.ClusterID = clusterId
+		}
 
-			if err != nil {
-				return err
-			}
+		err = databrickscfg.SaveToProfile(ctx, &cfg)
+		if err != nil {
+			return err
 		}
 
 		cmdio.LogString(ctx, fmt.Sprintf("Profile %s was successfully saved", profileName))
