@@ -36,7 +36,7 @@ func TestTemplateInitializationForDevConfig(t *testing.T) {
 
 	// materialize the template
 	cmd := root.RootCmd
-	cmd.SetArgs([]string{"bundle", "init", filepath.FromSlash("testdata/init/templateDefinition"), "--target-dir", tmp, "--config-file", filepath.Join(tmp, "config.json")})
+	cmd.SetArgs([]string{"bundle", "init", filepath.FromSlash("testdata/init/templateDefinition"), tmp, "--config-file", filepath.Join(tmp, "config.json")})
 	err = cmd.Execute()
 	require.NoError(t, err)
 
@@ -78,7 +78,7 @@ func TestTemplateInitializationForProdConfig(t *testing.T) {
 	cmd := root.RootCmd
 	childCommands := cmd.Commands()
 	fmt.Println(childCommands)
-	cmd.SetArgs([]string{"bundle", "init", filepath.FromSlash("testdata/init/templateDefinition"), "--target-dir", instanceDir, "--config-file", filepath.Join(configDir, "my_config.json")})
+	cmd.SetArgs([]string{"bundle", "init", filepath.FromSlash("testdata/init/templateDefinition"), instanceDir, "--config-file", filepath.Join(configDir, "my_config.json")})
 	err = cmd.Execute()
 	require.NoError(t, err)
 

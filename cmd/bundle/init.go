@@ -6,20 +6,18 @@ import (
 )
 
 var initCmd = &cobra.Command{
-	Use:   "init",
+	Use:   "init TEMPLATE_PATH INSTANCE_PATH",
 	Short: "Initialize Template",
 	Long:  `Initialize template`,
-	Args:  cobra.ExactArgs(1),
+	Args:  cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return template.Materialize(args[0], targetDir, configFile)
+		return template.Materialize(args[0], args[1], configFile)
 	},
 }
 
-var targetDir string
 var configFile string
 
 func init() {
-	initCmd.Flags().StringVar(&targetDir, "target-dir", ".", "path to directory template will be initialized in")
 	initCmd.Flags().StringVar(&configFile, "config-file", "", "path to config to use for template initialization")
 	initCmd.MarkFlagRequired("config-file")
 	AddCommand(initCmd)
