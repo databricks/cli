@@ -172,7 +172,7 @@ var installCmd = &cobra.Command{
 				return err
 			}
 		} else {
-			return fmt.Errorf("provide command input in JSON format by specifying --json option")
+			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
 
 		err = w.Libraries.Install(ctx, installReq)
@@ -218,7 +218,7 @@ var uninstallCmd = &cobra.Command{
 				return err
 			}
 		} else {
-			return fmt.Errorf("provide command input in JSON format by specifying --json option")
+			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
 
 		err = w.Libraries.Uninstall(ctx, uninstallReq)

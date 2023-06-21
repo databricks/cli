@@ -74,6 +74,7 @@ type Resources struct {
 	User                     map[string]*ResourceUser                     `json:"databricks_user,omitempty"`
 	UserInstanceProfile      map[string]*ResourceUserInstanceProfile      `json:"databricks_user_instance_profile,omitempty"`
 	UserRole                 map[string]*ResourceUserRole                 `json:"databricks_user_role,omitempty"`
+	Volume                   map[string]*ResourceVolume                   `json:"databricks_volume,omitempty"`
 	WorkspaceConf            map[string]*ResourceWorkspaceConf            `json:"databricks_workspace_conf,omitempty"`
 	WorkspaceFile            map[string]*ResourceWorkspaceFile            `json:"databricks_workspace_file,omitempty"`
 }
@@ -151,6 +152,7 @@ func NewResources() *Resources {
 		User:                     make(map[string]*ResourceUser),
 		UserInstanceProfile:      make(map[string]*ResourceUserInstanceProfile),
 		UserRole:                 make(map[string]*ResourceUserRole),
+		Volume:                   make(map[string]*ResourceVolume),
 		WorkspaceConf:            make(map[string]*ResourceWorkspaceConf),
 		WorkspaceFile:            make(map[string]*ResourceWorkspaceFile),
 	}
