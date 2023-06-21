@@ -18,7 +18,7 @@ import (
 const Delimiter = "."
 
 // must start with alphabet, support hyphens and underscores in middle but must end with character
-var re = regexp.MustCompile(`\$\{([a-zA-Z]+([-_]*[a-zA-Z0-9]+)*(\.[a-zA-Z]+([-_]*[a-zA-Z0-9]+)*)*)\}`)
+var re = regexp.MustCompile(`\$\{([a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*)*)\}`)
 
 type stringField struct {
 	path string
