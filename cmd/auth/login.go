@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/databricks/cli/libs/auth"
@@ -44,12 +45,19 @@ var loginCmd = &cobra.Command{
 			return err
 		}
 
-		return databrickscfg.SaveToProfile(ctx, &config.Config{
+		err = databrickscfg.SaveToProfile(ctx, &config.Config{
 			Host:      perisistentAuth.Host,
 			AccountID: perisistentAuth.AccountID,
 			AuthType:  "databricks-cli",
 			Profile:   profileName,
 		})
+
+		if err != nil {
+			return err
+		}
+
+		cmdio.LogString(ctx, fmt.Sprintf("Profile %s was successfully saved", profileName))
+		return nil
 	},
 }
 
