@@ -388,6 +388,11 @@ type ResourceJobPythonWheelTask struct {
 type ResourceJobQueue struct {
 }
 
+type ResourceJobRunAs struct {
+	ServicePrincipalName string `json:"service_principal_name,omitempty"`
+	UserName             string `json:"user_name,omitempty"`
+}
+
 type ResourceJobSchedule struct {
 	PauseStatus          string `json:"pause_status,omitempty"`
 	QuartzCronExpression string `json:"quartz_cron_expression"`
@@ -743,6 +748,7 @@ type ResourceJob struct {
 	PipelineTask           *ResourceJobPipelineTask         `json:"pipeline_task,omitempty"`
 	PythonWheelTask        *ResourceJobPythonWheelTask      `json:"python_wheel_task,omitempty"`
 	Queue                  *ResourceJobQueue                `json:"queue,omitempty"`
+	RunAs                  *ResourceJobRunAs                `json:"run_as,omitempty"`
 	Schedule               *ResourceJobSchedule             `json:"schedule,omitempty"`
 	SparkJarTask           *ResourceJobSparkJarTask         `json:"spark_jar_task,omitempty"`
 	SparkPythonTask        *ResourceJobSparkPythonTask      `json:"spark_python_task,omitempty"`
