@@ -54,6 +54,7 @@ func generateFile(config map[string]any, pathTemplate, contentTemplate string, p
 	return os.WriteFile(path, []byte(fileContent), perm)
 }
 
+// TODO: use local filer client for this function. https://github.com/databricks/cli/issues/511
 func walkFileTree(config map[string]any, templateRoot, instanceRoot string) error {
 	return filepath.WalkDir(templateRoot, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
