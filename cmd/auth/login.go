@@ -84,7 +84,7 @@ var loginCmd = &cobra.Command{
 				AccountID: perisistentAuth.AccountID,
 				AuthType:  "databricks-cli",
 				Profile:   profileName,
-				ClusterId: clusterId,
+				ClusterID: clusterId,
 			})
 
 			if err != nil {
