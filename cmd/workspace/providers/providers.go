@@ -312,7 +312,7 @@ var listSharesCmd = &cobra.Command{
 			listSharesReq.Name = args[0]
 		}
 
-		response, err := w.Providers.ListShares(ctx, listSharesReq)
+		response, err := w.Providers.ListSharesAll(ctx, listSharesReq)
 		if err != nil {
 			return err
 		}

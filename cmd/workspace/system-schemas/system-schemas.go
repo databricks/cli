@@ -3,8 +3,6 @@
 package system_schemas
 
 import (
-	"fmt"
-
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
@@ -65,10 +63,7 @@ var disableCmd = &cobra.Command{
 			}
 		} else {
 			disableReq.MetastoreId = args[0]
-			_, err = fmt.Sscan(args[1], &disableReq.SchemaName)
-			if err != nil {
-				return fmt.Errorf("invalid SCHEMA_NAME: %s", args[1])
-			}
+			disableReq.SchemaName = args[1]
 		}
 
 		err = w.SystemSchemas.Disable(ctx, disableReq)

@@ -295,11 +295,11 @@ var updateCmd = &cobra.Command{
 			updateReq.MetastoreId = args[1]
 		}
 
-		response, err := a.MetastoreAssignments.Update(ctx, updateReq)
+		err = a.MetastoreAssignments.Update(ctx, updateReq)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return nil
 	},
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
