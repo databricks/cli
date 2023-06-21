@@ -6,22 +6,23 @@ import (
 
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/databrickscfg"
+	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
 )
 
-func getProfilesMap(ctx context.Context) (map[string]string, error) {
-	profiles, err := getAllProfiles(ctx)
+func getProfileNames() ([]string, error) {
+	profiles, err := getAllProfiles()
 	if err != nil {
 		return nil, err
 	}
 
-	profilesMap := make(map[string]string, len(profiles))
-
+	var profileNames []string
 	for _, v := range profiles {
-		profilesMap[v.Name] = v.Name
+		profileNames = append(profileNames, v.Name)
 	}
 
-	return profilesMap, nil
+	return profileNames, nil
 }
 
 var loginTimeout time.Duration
@@ -37,23 +38,32 @@ var loginCmd = &cobra.Command{
 		ctx, cancel := context.WithTimeout(cmd.Context(), loginTimeout)
 		defer cancel()
 
+		var profileName string
 		profileFlag := cmd.Flag("profile")
 		if profileFlag != nil && profileFlag.Value.String() != "" {
-			perisistentAuth.Profile = profileFlag.Value.String()
+			profileName = profileFlag.Value.String()
 		} else {
-			profiles, err := getProfilesMap(cmd.Context())
+			profiles, err := getProfileNames()
 			if err != nil {
 				return err
 			}
-			if len(profiles) > 0 {
-				profile, err := cmdio.Select(ctx, profiles, "~/.databrickscfg profile")
-				if err != nil {
-					return err
-				}
-				perisistentAuth.Profile = profile
+			profile, err := cmdio.SelectWithAdd(ctx, profiles, "~/.databrickscfg profile", "Add new profile")
+			if err != nil {
+				return err
 			}
+			profileName = profile
 		}
-		return perisistentAuth.Challenge(ctx)
+		err := perisistentAuth.Challenge(ctx)
+		if err != nil {
+			return err
+		}
+
+		return databrickscfg.SaveToProfile(ctx, &config.Config{
+			Host:      perisistentAuth.Host,
+			AccountID: perisistentAuth.AccountID,
+			AuthType:  "databricks-cli",
+			Profile:   profileName,
+		})
 	},
 }
 
