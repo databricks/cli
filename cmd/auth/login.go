@@ -47,7 +47,7 @@ var loginCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			profile, err := cmdio.SelectWithAdd(ctx, profiles, "~/.databrickscfg profile", "Add new profile")
+			profile, err := cmdio.SelectWithAdd(ctx, profiles, "~/.databrickscfg profile", "Add a new profile")
 			if err != nil {
 				return err
 			}
