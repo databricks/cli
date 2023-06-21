@@ -3,7 +3,6 @@ package bundle
 import (
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -35,9 +34,38 @@ func TestBundleCacheDir(t *testing.T) {
 	// This is otherwise done by [mutators.SelectEnvironment].
 	bundle.Config.Bundle.Environment = "default"
 
+	// unset env variable in case it's set
+	t.Setenv("DATABRICKS_BUNDLE_TMP", "")
+
 	cacheDir, err := bundle.CacheDir()
+
+	// format is <CWD>/.databricks/bundle/<environment>
 	assert.NoError(t, err)
-	assert.True(t, strings.HasPrefix(cacheDir, projectDir))
+	assert.Equal(t, filepath.Join(projectDir, ".databricks", "bundle", "default"), cacheDir)
+}
+
+func TestBundleCacheDirOverride(t *testing.T) {
+	projectDir := t.TempDir()
+	bundleTmpDir := t.TempDir()
+	f1, err := os.Create(filepath.Join(projectDir, "bundle.yml"))
+	require.NoError(t, err)
+	f1.Close()
+
+	bundle, err := Load(projectDir)
+	require.NoError(t, err)
+
+	// Artificially set environment.
+	// This is otherwise done by [mutators.SelectEnvironment].
+	bundle.Config.Bundle.Environment = "default"
+
+	// now we expect to use 'bundleTmpDir' instead of CWD/.databricks/bundle
+	t.Setenv("DATABRICKS_BUNDLE_TMP", bundleTmpDir)
+
+	cacheDir, err := bundle.CacheDir()
+
+	// format is <DATABRICKS_BUNDLE_TMP>/<environment>
+	assert.NoError(t, err)
+	assert.Equal(t, filepath.Join(bundleTmpDir, "default"), cacheDir)
 }
 
 func TestBundleMustLoadSuccess(t *testing.T) {

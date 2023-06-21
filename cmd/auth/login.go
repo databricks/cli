@@ -2,9 +2,13 @@ package auth
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/databricks/cli/libs/auth"
+	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/databrickscfg"
+	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
 )
 
@@ -20,7 +24,40 @@ var loginCmd = &cobra.Command{
 		defer perisistentAuth.Close()
 		ctx, cancel := context.WithTimeout(cmd.Context(), loginTimeout)
 		defer cancel()
-		return perisistentAuth.Challenge(ctx)
+
+		var profileName string
+		profileFlag := cmd.Flag("profile")
+		if profileFlag != nil && profileFlag.Value.String() != "" {
+			profileName = profileFlag.Value.String()
+		} else {
+			prompt := cmdio.Prompt(ctx)
+			prompt.Label = "Databricks Profile Name"
+			prompt.Default = perisistentAuth.ProfileName()
+			prompt.AllowEdit = true
+			profile, err := prompt.Run()
+			if err != nil {
+				return err
+			}
+			profileName = profile
+		}
+		err := perisistentAuth.Challenge(ctx)
+		if err != nil {
+			return err
+		}
+
+		err = databrickscfg.SaveToProfile(ctx, &config.Config{
+			Host:      perisistentAuth.Host,
+			AccountID: perisistentAuth.AccountID,
+			AuthType:  "databricks-cli",
+			Profile:   profileName,
+		})
+
+		if err != nil {
+			return err
+		}
+
+		cmdio.LogString(ctx, fmt.Sprintf("Profile %s was successfully saved", profileName))
+		return nil
 	},
 }
 

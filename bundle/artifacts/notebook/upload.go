@@ -48,7 +48,7 @@ func (m *upload) Apply(ctx context.Context, b *bundle.Bundle) error {
 	err = b.WorkspaceClient().Workspace.Import(ctx, workspace.Import{
 		Path:      artifact.RemotePath,
 		Overwrite: true,
-		Format:    workspace.ExportFormatSource,
+		Format:    workspace.ImportFormatSource,
 		Language:  artifact.Language,
 		Content:   base64.StdEncoding.EncodeToString(raw),
 	})

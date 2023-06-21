@@ -47,8 +47,8 @@ func loadOrCreateConfigFile(filename string) (*config.File, error) {
 
 func matchOrCreateSection(ctx context.Context, configFile *config.File, cfg *config.Config) (*ini.Section, error) {
 	section, err := findMatchingProfile(configFile, func(s *ini.Section) bool {
-		if cfg.Profile == s.Name() {
-			return true
+		if cfg.Profile != "" {
+			return cfg.Profile == s.Name()
 		}
 		raw := s.KeysHash()
 		if cfg.AccountID != "" {
