@@ -174,23 +174,6 @@ func Select[V any](ctx context.Context, names map[string]V, label string) (id st
 	return c.Select(stringNames, label)
 }
 
-func (c *cmdIO) SelectWithAdd(items []string, label string, addLabel string) (value string, err error) {
-	if !c.interactive {
-		return "", fmt.Errorf("expected to have %s", label)
-	}
-	_, val, err := (&promptui.SelectWithAdd{
-		Label:    label,
-		Items:    items,
-		AddLabel: addLabel,
-	}).Run()
-	return val, err
-}
-
-func SelectWithAdd(ctx context.Context, items []string, label string, addLabel string) (id string, err error) {
-	c := fromContext(ctx)
-	return c.SelectWithAdd(items, label, addLabel)
-}
-
 func (c *cmdIO) Secret() (value string, err error) {
 	prompt := (promptui.Prompt{
 		Label: "Enter your secrets value",

@@ -94,31 +94,6 @@ func (c *profileMetadata) Load(ctx context.Context) {
 	c.Host = cfg.Host
 }
 
-func getAllProfiles() ([]*profileMetadata, error) {
-	var profiles []*profileMetadata
-	iniFile, err := getDatabricksCfg()
-	if os.IsNotExist(err) {
-		// return empty list for non-configured machines
-		iniFile = ini.Empty()
-	} else if err != nil {
-		return nil, fmt.Errorf("cannot parse config file: %w", err)
-	}
-	for _, v := range iniFile.Sections() {
-		hash := v.KeysHash()
-		profile := &profileMetadata{
-			Name:      v.Name(),
-			Host:      hash["host"],
-			AccountID: hash["account_id"],
-		}
-		if profile.IsEmpty() {
-			continue
-		}
-		profiles = append(profiles, profile)
-	}
-
-	return profiles, nil
-}
-
 var profilesCmd = &cobra.Command{
 	Use:   "profiles",
 	Short: "Lists profiles from ~/.databrickscfg",
@@ -130,25 +105,33 @@ var profilesCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		var profiles []*profileMetadata
-		var wg sync.WaitGroup
-
-		profilesList, err := getAllProfiles()
-		if err != nil {
-			return err
+		iniFile, err := getDatabricksCfg()
+		if os.IsNotExist(err) {
+			// return empty list for non-configured machines
+			iniFile = ini.Empty()
+		} else if err != nil {
+			return fmt.Errorf("cannot parse config file: %w", err)
 		}
-
-		ctx := cmd.Context()
-		for _, profile := range profilesList {
+		var wg sync.WaitGroup
+		for _, v := range iniFile.Sections() {
+			hash := v.KeysHash()
+			profile := &profileMetadata{
+				Name:      v.Name(),
+				Host:      hash["host"],
+				AccountID: hash["account_id"],
+			}
+			if profile.IsEmpty() {
+				continue
+			}
 			wg.Add(1)
 			go func() {
 				// load more information about profile
-				profile.Load(ctx)
+				profile.Load(cmd.Context())
 				wg.Done()
 			}()
 			profiles = append(profiles, profile)
 		}
 		wg.Wait()
-
 		return cmdio.Render(cmd.Context(), struct {
 			Profiles []*profileMetadata `json:"profiles"`
 		}{profiles})

@@ -11,20 +11,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func getProfileNames() ([]string, error) {
-	profiles, err := getAllProfiles()
-	if err != nil {
-		return nil, err
-	}
-
-	var profileNames []string
-	for _, v := range profiles {
-		profileNames = append(profileNames, v.Name)
-	}
-
-	return profileNames, nil
-}
-
 var loginTimeout time.Duration
 
 var loginCmd = &cobra.Command{
@@ -43,11 +29,11 @@ var loginCmd = &cobra.Command{
 		if profileFlag != nil && profileFlag.Value.String() != "" {
 			profileName = profileFlag.Value.String()
 		} else {
-			profiles, err := getProfileNames()
-			if err != nil {
-				return err
-			}
-			profile, err := cmdio.SelectWithAdd(ctx, profiles, "~/.databrickscfg profile", "Add a new profile")
+			prompt := cmdio.Prompt(ctx)
+			prompt.Label = "Databricks Profile Name"
+			prompt.Default = perisistentAuth.ProfileName()
+			prompt.AllowEdit = true
+			profile, err := prompt.Run()
 			if err != nil {
 				return err
 			}
