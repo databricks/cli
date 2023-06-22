@@ -80,18 +80,18 @@ func (c *copy) cpFileToFile(sourcePath, targetPath string) error {
 		err = c.targetFiler.Write(c.ctx, targetPath, r)
 		// skip if file already exists
 		if err != nil && errors.Is(err, fs.ErrExist) {
-			return c.emitCpFileSkippedEvent(sourcePath, targetPath)
+			return c.emitFileSkippedEvent(sourcePath, targetPath)
 		}
 		if err != nil {
 			return err
 		}
 	}
-	return c.emitCpFileCopiedEvent(sourcePath, targetPath)
+	return c.emitFileCopiedEvent(sourcePath, targetPath)
 }
 
 // TODO: emit these events on stderr
 // TODO: add integration tests for these events
-func (c *copy) emitCpFileSkippedEvent(sourcePath, targetPath string) error {
+func (c *copy) emitFileSkippedEvent(sourcePath, targetPath string) error {
 	fullSourcePath := sourcePath
 	if c.sourceScheme != "" {
 		fullSourcePath = path.Join(c.sourceScheme+":", sourcePath)
@@ -107,7 +107,7 @@ func (c *copy) emitCpFileSkippedEvent(sourcePath, targetPath string) error {
 	return cmdio.RenderWithTemplate(c.ctx, event, template)
 }
 
-func (c *copy) emitCpFileCopiedEvent(sourcePath, targetPath string) error {
+func (c *copy) emitFileCopiedEvent(sourcePath, targetPath string) error {
 	fullSourcePath := sourcePath
 	if c.sourceScheme != "" {
 		fullSourcePath = path.Join(c.sourceScheme+":", sourcePath)
