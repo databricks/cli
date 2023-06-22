@@ -38,7 +38,7 @@ func isSHA1(s string) bool {
 }
 
 func LoadReferenceFile(path string) (*Reference, error) {
-	// read referebce file content
+	// read reference file content
 	b, err := os.ReadFile(path)
 	if os.IsNotExist(err) {
 		return nil, nil
