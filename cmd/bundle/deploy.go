@@ -25,7 +25,7 @@ func deploy(cmd *cobra.Command, b *bundle.Bundle) error {
 	b.Config.Bundle.Lock.Force = forceDeploy
 
 	if computeID == "" {
-		computeID = os.Getenv("DATABRICKS_COMPUTE")
+		computeID = os.Getenv("DATABRICKS_COMPUTE_ID")
 	}
 
 	return bundle.Apply(cmd.Context(), b, bundle.Seq(
