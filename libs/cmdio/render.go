@@ -53,7 +53,7 @@ func renderJson(w io.Writer, v any) error {
 	if err != nil {
 		return err
 	}
-	_, err = w.Write([]byte("\r\n"))
+	_, err = w.Write([]byte("\n"))
 	return err
 }
 
