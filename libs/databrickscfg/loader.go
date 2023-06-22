@@ -76,6 +76,9 @@ func (l profileFromHostLoader) Configure(cfg *config.Config) error {
 	// Normalized version of the configured host.
 	host := normalizeHost(cfg.Host)
 	match, err := findMatchingProfile(configFile, func(s *ini.Section) bool {
+		if cfg.Profile != "" {
+			return cfg.Profile == s.Name()
+		}
 		key, err := s.GetKey("host")
 		if err != nil {
 			log.Tracef(ctx, "section %s: %s", s.Name(), err)
