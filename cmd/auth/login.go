@@ -57,6 +57,12 @@ var loginCmd = &cobra.Command{
 		}
 
 		if configureCluster {
+			// We need to save profile before it's used to initialise new workspace client.
+			// Otherwise it will complain about non existing profile
+			err = databrickscfg.SaveToProfile(ctx, &cfg)
+			if err != nil {
+				return err
+			}
 			w, err := databricks.NewWorkspaceClient((*databricks.Config)(&cfg))
 			if err != nil {
 				return err
