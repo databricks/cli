@@ -54,3 +54,7 @@ func filerForPath(ctx context.Context, fullPath string) (filer.Filer, string, er
 		return nil, "", fmt.Errorf(`unsupported scheme %s specified for path %s. Please specify scheme "dbfs" or "file". Example: file:/foo/bar or file:/c:/foo/bar`, scheme, fullPath)
 	}
 }
+
+func isDbfsPath(path string) bool {
+	return strings.HasPrefix(path, "dbfs:/")
+}
