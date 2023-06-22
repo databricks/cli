@@ -18,15 +18,15 @@ type jsonDirEntry struct {
 	ModTime time.Time `json:"last_modified"`
 }
 
-func toJsonDirEntry(f fs.DirEntry, dir string) (*jsonDirEntry, error) {
+func toJsonDirEntry(f fs.DirEntry, baseDir string, isAbsolute bool) (*jsonDirEntry, error) {
 	info, err := f.Info()
 	if err != nil {
 		return nil, err
 	}
 
 	name := f.Name()
-	if lsAbsolute {
-		name = path.Join(dir, name)
+	if isAbsolute {
+		name = path.Join(baseDir, name)
 	}
 
 	return &jsonDirEntry{
@@ -60,7 +60,7 @@ var lsCmd = &cobra.Command{
 
 		jsonDirEntries := make([]jsonDirEntry, len(entries))
 		for i, entry := range entries {
-			jsonDirEntry, err := toJsonDirEntry(entry, args[0])
+			jsonDirEntry, err := toJsonDirEntry(entry, args[0], lsAbsolute)
 			if err != nil {
 				return err
 			}
