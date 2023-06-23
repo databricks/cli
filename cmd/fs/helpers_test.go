@@ -2,25 +2,20 @@ package fs
 
 import (
 	"context"
-	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-func TestNotSpecifyingVolumeForWindowsPathErrors(t *testing.T) {
-	if runtime.GOOS != "windows" {
-		t.Skip()
-	}
+func TestFilerForPathForLocalPaths(t *testing.T) {
+	tmpDir := t.TempDir()
 
-	ctx := context.Background()
-	pathWithVolume := `file:/c:/foo/bar`
-	pathWOVolume := `file:/uno/dos`
-
-	_, path, err := filerForPath(ctx, pathWithVolume)
+	f, path, err := filerForPath(context.Background(), tmpDir)
 	assert.NoError(t, err)
-	assert.Equal(t, `/foo/bar`, path)
+	assert.Equal(t, tmpDir, path)
 
-	_, _, err = filerForPath(ctx, pathWOVolume)
-	assert.Equal(t, "no volume specfied for path: uno/dos", err.Error())
+	info, err := f.Stat(context.Background(), path)
+	require.NoError(t, err)
+	assert.True(t, info.IsDir())
 }
