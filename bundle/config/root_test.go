@@ -154,3 +154,12 @@ func TestInitializeVariablesUndefinedVariables(t *testing.T) {
 	err := root.InitializeVariables([]string{"bar=567"})
 	assert.ErrorContains(t, err, "variable bar has not been defined")
 }
+
+func TestRootMergeEnvironmentWithMode(t *testing.T) {
+	root := &Root{
+		Bundle: Bundle{},
+	}
+	env := &Environment{Mode: Debug}
+	require.NoError(t, root.MergeEnvironment(env))
+	assert.Equal(t, Debug, root.Bundle.Mode)
+}

@@ -243,6 +243,15 @@ func (r *jobRunner) Run(ctx context.Context, opts *Options) (output.RunOutput, e
 	if err != nil {
 		return nil, fmt.Errorf("cannot start job")
 	}
+
+	if opts.NoWait {
+		details, err := w.Jobs.GetRun(ctx, jobs.GetRunRequest{
+			RunId: waiter.RunId,
+		})
+		progressLogger.Log(progress.NewJobRunUrlEvent(details.RunPageUrl))
+		return nil, err
+	}
+
 	run, err := waiter.OnProgress(func(r *jobs.Run) {
 		pullRunId(r)
 		logDebug(r)

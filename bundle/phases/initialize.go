@@ -11,7 +11,7 @@ import (
 // The initialize phase fills in defaults and connects to the workspace.
 // Interpolation of fields referring to the "bundle" and "workspace" keys
 // happens upon completion of this phase.
-func Initialize() bundle.Mutator {
+func Initialize(overrideCompute string) bundle.Mutator {
 	return newPhase(
 		"initialize",
 		[]bundle.Mutator{
@@ -25,6 +25,8 @@ func Initialize() bundle.Mutator {
 				interpolation.IncludeLookupsInPath("workspace"),
 				interpolation.IncludeLookupsInPath(variable.VariableReferencePrefix),
 			),
+			mutator.OverrideCompute(overrideCompute),
+			mutator.ProcessEnvironmentMode(),
 			mutator.TranslatePaths(),
 			terraform.Initialize(),
 		},
