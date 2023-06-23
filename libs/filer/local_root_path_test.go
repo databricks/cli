@@ -10,7 +10,7 @@ import (
 
 func testUnixLocalRootPath(t *testing.T, uncleanRoot string) {
 	cleanRoot := filepath.Clean(uncleanRoot)
-	rp := NewWorkspaceRootPath(uncleanRoot)
+	rp := NewLocalRootPath(uncleanRoot)
 
 	remotePath, err := rp.Join("a/b/c")
 	assert.NoError(t, err)
@@ -93,7 +93,7 @@ func TestUnixLocalRootPath(t *testing.T) {
 
 func testWindowsLocalRootPath(t *testing.T, uncleanRoot string) {
 	cleanRoot := filepath.Clean(uncleanRoot)
-	rp := NewWorkspaceRootPath(uncleanRoot)
+	rp := NewLocalRootPath(uncleanRoot)
 
 	remotePath, err := rp.Join(`C:a\b\c`)
 	assert.NoError(t, err)

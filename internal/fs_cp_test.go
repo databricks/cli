@@ -66,7 +66,7 @@ func setupLocalFiler(t *testing.T) (filer.Filer, string) {
 	f, err := filer.NewLocalClient(tmp)
 	require.NoError(t, err)
 
-	return f, path.Join("file:/", filepath.ToSlash(tmp))
+	return f, path.Join(filepath.ToSlash(tmp))
 }
 
 func setupDbfsFiler(t *testing.T) (filer.Filer, string) {
