@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/cmd/fs"
+	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -14,11 +15,12 @@ import (
 func TestFilerForPathForDbfsPaths(t *testing.T) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
+	ctx := context.Background()
 	w, err := databricks.NewWorkspaceClient()
 	require.NoError(t, err)
 
-	ctx := context.Background()
 	tmpDir := temporaryDbfsDir(t, w)
+	ctx = root.SetWorkspaceClient(ctx, w)
 
 	f, path, err := fs.FilerForPath(ctx, path.Join("dbfs:", tmpDir))
 	assert.NoError(t, err)
