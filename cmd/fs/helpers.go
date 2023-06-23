@@ -2,20 +2,34 @@ package fs
 
 import (
 	"context"
+	"fmt"
+	"runtime"
 	"strings"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/filer"
 )
 
-func filerForPath(ctx context.Context, fullPath string) (filer.Filer, string, error) {
+func FilerForPath(ctx context.Context, fullPath string) (filer.Filer, string, error) {
 	// Split path at : to detect any file schemes
 	parts := strings.SplitN(fullPath, ":", 2)
 
-	// If dbfs file scheme is not specified, then it's a local path
-	if len(parts) < 2 || parts[0] != "dbfs" {
+	// If no scheme is specified, then local path
+	if len(parts) < 2 {
 		f, err := filer.NewLocalClient("")
 		return f, fullPath, err
+	}
+
+	// On windows systems, paths start with a drive letter. If the scheme
+	// is a single letter and the OS is windows, then we conclude the path
+	// is meant to be a local path.
+	if runtime.GOOS == "windows" && len(parts[0]) == 1 {
+		f, err := filer.NewLocalClient("")
+		return f, fullPath, err
+	}
+
+	if parts[0] != "dbfs" {
+		return nil, "", fmt.Errorf("invalid scheme: %s", parts[0])
 	}
 
 	path := parts[1]
