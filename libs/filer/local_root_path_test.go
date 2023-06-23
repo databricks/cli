@@ -95,11 +95,11 @@ func testWindowsLocalRootPath(t *testing.T, uncleanRoot string) {
 	cleanRoot := filepath.Clean(uncleanRoot)
 	rp := NewLocalRootPath(uncleanRoot)
 
-	remotePath, err := rp.Join(`C:a\b\c`)
+	remotePath, err := rp.Join(`a\b\c`)
 	assert.NoError(t, err)
 	assert.Equal(t, cleanRoot+`\a\b\c`, remotePath)
 
-	remotePath, err = rp.Join(`c:a\b\..\d`)
+	remotePath, err = rp.Join(`a\b\..\d`)
 	assert.NoError(t, err)
 	assert.Equal(t, cleanRoot+`\a\d`, remotePath)
 
@@ -107,11 +107,11 @@ func testWindowsLocalRootPath(t *testing.T, uncleanRoot string) {
 	assert.NoError(t, err)
 	assert.Equal(t, cleanRoot+`\c`, remotePath)
 
-	remotePath, err = rp.Join(`c:a\b\c\.`)
+	remotePath, err = rp.Join(`a\b\c\.`)
 	assert.NoError(t, err)
-	assert.Equal(t, cleanRoot+"/a/b/c", remotePath)
+	assert.Equal(t, cleanRoot+`\a\b\c`, remotePath)
 
-	remotePath, err = rp.Join(`c:a\b\..\..`)
+	remotePath, err = rp.Join(`a\b\..\..`)
 	assert.NoError(t, err)
 	assert.Equal(t, cleanRoot, remotePath)
 
