@@ -71,7 +71,7 @@ func TestInterpolationVariablesSpecialChars(t *testing.T) {
 	assert.Equal(t, "a", f.C)
 }
 
-func TestValidMatches(t *testing.T) {
+func TestInterpolationValidMatches(t *testing.T) {
 	expectedMatches := map[string]string{
 		"${hello_world.world_world}": "hello_world.world_world",
 		"${helloworld.world-world}":  "helloworld.world-world",
@@ -86,7 +86,7 @@ func TestValidMatches(t *testing.T) {
 	}
 }
 
-func TestInValidMatches(t *testing.T) {
+func TestInterpolationInvalidMatches(t *testing.T) {
 	invalidMatches := []string{
 		"${hello_world-.world_world}",   // the first segment ending must not end with hyphen (-)
 		"${hello_world-_.world_world}",  // the first segment ending must not end with underscore (_)
