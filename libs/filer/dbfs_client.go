@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"path"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/databricks/databricks-sdk-go"
@@ -145,22 +146,25 @@ func (w *DbfsClient) Read(ctx context.Context, name string) (io.ReadCloser, erro
 		return nil, err
 	}
 
-	// This stat call serves two purposes:
-	// 1. Checks file at path exists, and throws an error if it does not
-	// 2. Allows us to error out if the path is a directory. This is needed
-	// because the Dbfs.Open method on the SDK does not error when the path is
-	// a directory
-	// TODO(added 8 June 2023): remove this stat call on go sdk bump. https://github.com/databricks/cli/issues/450
-	stat, err := w.Stat(ctx, name)
-	if err != nil {
-		return nil, err
-	}
-	if stat.IsDir() {
-		return nil, NotAFile{absPath}
-	}
-
 	handle, err := w.workspaceClient.Dbfs.Open(ctx, absPath, files.FileModeRead)
 	if err != nil {
+		// Return error if file is a directory
+		if strings.Contains(err.Error(), "cannot open directory for reading") {
+			return nil, NotAFile{absPath}
+		}
+
+		var aerr *apierr.APIError
+		if !errors.As(err, &aerr) {
+			return nil, err
+		}
+
+		// This API returns a 404 if the file doesn't exist.
+		if aerr.StatusCode == http.StatusNotFound {
+			if aerr.ErrorCode == "RESOURCE_DOES_NOT_EXIST" {
+				return nil, FileDoesNotExistError{absPath}
+			}
+		}
+
 		return nil, err
 	}
 
