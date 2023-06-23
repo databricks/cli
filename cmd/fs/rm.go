@@ -16,7 +16,7 @@ var rmCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 
-		f, path, err := FilerForPath(ctx, args[0])
+		f, path, err := filerForPath(ctx, args[0])
 		if err != nil {
 			return err
 		}

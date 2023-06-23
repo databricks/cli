@@ -10,7 +10,7 @@ import (
 	"github.com/databricks/cli/libs/filer"
 )
 
-func FilerForPath(ctx context.Context, fullPath string) (filer.Filer, string, error) {
+func filerForPath(ctx context.Context, fullPath string) (filer.Filer, string, error) {
 	// Split path at : to detect any file schemes
 	parts := strings.SplitN(fullPath, ":", 2)
 

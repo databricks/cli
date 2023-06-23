@@ -14,7 +14,7 @@ func TestFilerForPathForLocalPaths(t *testing.T) {
 	tmpDir := t.TempDir()
 	ctx := context.Background()
 
-	f, path, err := FilerForPath(ctx, tmpDir)
+	f, path, err := filerForPath(ctx, tmpDir)
 	assert.NoError(t, err)
 	assert.Equal(t, tmpDir, path)
 
@@ -26,18 +26,18 @@ func TestFilerForPathForLocalPaths(t *testing.T) {
 func TestFilerForPathForInvalidScheme(t *testing.T) {
 	ctx := context.Background()
 
-	_, _, err := FilerForPath(ctx, "dbf:/a")
+	_, _, err := filerForPath(ctx, "dbf:/a")
 	assert.ErrorContains(t, err, "invalid scheme")
 
-	_, _, err = FilerForPath(ctx, "foo:a")
+	_, _, err = filerForPath(ctx, "foo:a")
 	assert.ErrorContains(t, err, "invalid scheme")
 
-	_, _, err = FilerForPath(ctx, "file:/a")
+	_, _, err = filerForPath(ctx, "file:/a")
 	assert.ErrorContains(t, err, "invalid scheme")
 }
 
 func testWindowsFilerForPath(t *testing.T, ctx context.Context, fullPath string) {
-	f, path, err := FilerForPath(ctx, fullPath)
+	f, path, err := filerForPath(ctx, fullPath)
 	assert.NoError(t, err)
 
 	// Assert path remains unchanged

@@ -186,10 +186,6 @@ func askForAccountProfile() (string, error) {
 	return profiles[i].Name, nil
 }
 
-func SetWorkspaceClient(ctx context.Context, w *databricks.WorkspaceClient) context.Context {
-	return context.WithValue(ctx, &workspaceClient, w)
-}
-
 func WorkspaceClient(ctx context.Context) *databricks.WorkspaceClient {
 	w, ok := ctx.Value(&workspaceClient).(*databricks.WorkspaceClient)
 	if !ok {

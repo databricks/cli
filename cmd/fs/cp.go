@@ -132,14 +132,14 @@ var cpCmd = &cobra.Command{
 
 		// Get source filer and source path without scheme
 		fullSourcePath := args[0]
-		sourceFiler, sourcePath, err := FilerForPath(ctx, fullSourcePath)
+		sourceFiler, sourcePath, err := filerForPath(ctx, fullSourcePath)
 		if err != nil {
 			return err
 		}
 
 		// Get target filer and target path without scheme
 		fullTargetPath := args[1]
-		targetFiler, targetPath, err := FilerForPath(ctx, fullTargetPath)
+		targetFiler, targetPath, err := filerForPath(ctx, fullTargetPath)
 		if err != nil {
 			return err
 		}
