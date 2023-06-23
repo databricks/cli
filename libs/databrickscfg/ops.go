@@ -47,8 +47,8 @@ func loadOrCreateConfigFile(filename string) (*config.File, error) {
 
 func matchOrCreateSection(ctx context.Context, configFile *config.File, cfg *config.Config) (*ini.Section, error) {
 	section, err := findMatchingProfile(configFile, func(s *ini.Section) bool {
-		if cfg.Profile == s.Name() {
-			return true
+		if cfg.Profile != "" {
+			return cfg.Profile == s.Name()
 		}
 		raw := s.KeysHash()
 		if cfg.AccountID != "" {
@@ -89,8 +89,6 @@ func SaveToProfile(ctx context.Context, cfg *config.Config) error {
 		return err
 	}
 
-	// zeroval profile name before adding it to a section
-	cfg.Profile = ""
 	cfg.ConfigFile = ""
 
 	// clear old keys in case we're overriding the section
@@ -99,7 +97,7 @@ func SaveToProfile(ctx context.Context, cfg *config.Config) error {
 	}
 
 	for _, attr := range config.ConfigAttributes {
-		if attr.IsZero(cfg) {
+		if attr.IsZero(cfg) || attr.Name == "profile" {
 			continue
 		}
 		key := section.Key(attr.Name)

@@ -287,7 +287,7 @@ var listSummariesCmd = &cobra.Command{
 			listSummariesReq.CatalogName = args[0]
 		}
 
-		response, err := w.Tables.ListSummaries(ctx, listSummariesReq)
+		response, err := w.Tables.ListSummariesAll(ctx, listSummariesReq)
 		if err != nil {
 			return err
 		}
