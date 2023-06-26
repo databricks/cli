@@ -52,6 +52,10 @@ func TestReposGet(t *testing.T) {
 	byPathOutput, stderr := RequireSuccessfulRun(t, "repos", "get", repoPath, "--output=json")
 	assert.Equal(t, "", stderr.String())
 
+	// Get by path fails
+	_, stderr, err = RequireErrorRun(t, "repos", "get", repoPath+"-doesntexist", "--output=json")
+	assert.ErrorContains(t, err, "failed to look up repo")
+
 	// Output should be the same
 	assert.Equal(t, byIdOutput.String(), byPathOutput.String())
 }
