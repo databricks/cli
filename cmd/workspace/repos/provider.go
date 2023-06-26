@@ -15,9 +15,9 @@ var gitProviders = map[string]string{
 
 var awsCodeCommitRegexp = regexp.MustCompile(`^git-codecommit\.[^.]+\.amazonaws.com$`)
 
-func DetectProvider(git string) string {
+func DetectProvider(rawURL string) string {
 	provider := ""
-	u, err := url.Parse(git)
+	u, err := url.Parse(rawURL)
 	if err != nil {
 		return provider
 	}
