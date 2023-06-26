@@ -13,26 +13,68 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func createTemporaryRepo(t *testing.T, w *databricks.WorkspaceClient, ctx context.Context) (int64, string) {
+func synthesizeTemporaryRepoPath(t *testing.T, w *databricks.WorkspaceClient, ctx context.Context) string {
 	me, err := w.CurrentUser.Me(ctx)
 	require.NoError(t, err)
-
 	repoPath := fmt.Sprintf("/Repos/%s/%s", me.UserName, RandomName("empty-repo-integration-"))
+
+	// Cleanup if repo was created at specified path.
+	t.Cleanup(func() {
+		oi, err := w.Workspace.GetStatusByPath(ctx, repoPath)
+		if apierr.IsMissing(err) {
+			return
+		}
+		require.NoError(t, err)
+		err = w.Repos.DeleteByRepoId(ctx, oi.ObjectId)
+		require.NoError(t, err)
+	})
+
+	return repoPath
+}
+
+func createTemporaryRepo(t *testing.T, w *databricks.WorkspaceClient, ctx context.Context) (int64, string) {
+	repoPath := synthesizeTemporaryRepoPath(t, w, ctx)
 	repoInfo, err := w.Repos.Create(ctx, workspace.CreateRepo{
 		Path:     repoPath,
 		Url:      repoUrl,
 		Provider: "gitHub",
 	})
 	require.NoError(t, err)
-
-	t.Cleanup(func() {
-		err := w.Repos.DeleteByRepoId(ctx, repoInfo.Id)
-		if !apierr.IsMissing(err) {
-			assert.NoError(t, err)
-		}
-	})
-
 	return repoInfo.Id, repoPath
+}
+
+func TestReposCreateWithProvider(t *testing.T) {
+	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+
+	ctx := context.Background()
+	w, err := databricks.NewWorkspaceClient()
+	require.NoError(t, err)
+	repoPath := synthesizeTemporaryRepoPath(t, w, ctx)
+
+	_, stderr := RequireSuccessfulRun(t, "repos", "create", repoUrl, "gitHub", "--path", repoPath)
+	assert.Equal(t, "", stderr.String())
+
+	// Confirm the repo was created.
+	oi, err := w.Workspace.GetStatusByPath(ctx, repoPath)
+	assert.NoError(t, err)
+	assert.Equal(t, workspace.ObjectTypeRepo, oi.ObjectType)
+}
+
+func TestReposCreateWithoutProvider(t *testing.T) {
+	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+
+	ctx := context.Background()
+	w, err := databricks.NewWorkspaceClient()
+	require.NoError(t, err)
+	repoPath := synthesizeTemporaryRepoPath(t, w, ctx)
+
+	_, stderr := RequireSuccessfulRun(t, "repos", "create", repoUrl, "--path", repoPath)
+	assert.Equal(t, "", stderr.String())
+
+	// Confirm the repo was created.
+	oi, err := w.Workspace.GetStatusByPath(ctx, repoPath)
+	assert.NoError(t, err)
+	assert.Equal(t, workspace.ObjectTypeRepo, oi.ObjectType)
 }
 
 func TestReposGet(t *testing.T) {
