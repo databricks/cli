@@ -2,6 +2,7 @@ package fs
 
 import (
 	"io/fs"
+	"path"
 	"sort"
 	"time"
 
@@ -17,14 +18,19 @@ type jsonDirEntry struct {
 	ModTime time.Time `json:"last_modified"`
 }
 
-func toJsonDirEntry(f fs.DirEntry) (*jsonDirEntry, error) {
+func toJsonDirEntry(f fs.DirEntry, baseDir string, isAbsolute bool) (*jsonDirEntry, error) {
 	info, err := f.Info()
 	if err != nil {
 		return nil, err
 	}
 
+	name := f.Name()
+	if isAbsolute {
+		name = path.Join(baseDir, name)
+	}
+
 	return &jsonDirEntry{
-		Name:    f.Name(),
+		Name:    name,
 		IsDir:   f.IsDir(),
 		Size:    info.Size(),
 		ModTime: info.ModTime(),
@@ -54,7 +60,7 @@ var lsCmd = &cobra.Command{
 
 		jsonDirEntries := make([]jsonDirEntry, len(entries))
 		for i, entry := range entries {
-			jsonDirEntry, err := toJsonDirEntry(entry)
+			jsonDirEntry, err := toJsonDirEntry(entry, args[0], lsAbsolute)
 			if err != nil {
 				return err
 			}
@@ -79,8 +85,10 @@ var lsCmd = &cobra.Command{
 }
 
 var longMode bool
+var lsAbsolute bool
 
 func init() {
 	lsCmd.Flags().BoolVarP(&longMode, "long", "l", false, "Displays full information including size, file type and modification time since Epoch in milliseconds.")
+	lsCmd.Flags().BoolVar(&lsAbsolute, "absolute", false, "Displays absolute paths.")
 	fsCmd.AddCommand(lsCmd)
 }
