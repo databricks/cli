@@ -1,6 +1,8 @@
 package cmdio
 
 import (
+	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"io"
 	"strings"
@@ -92,6 +94,27 @@ func renderTemplate(w io.Writer, tmpl string, v any) error {
 		},
 		"pretty_date": func(t time.Time) string {
 			return t.Format("2006-01-02T15:04:05Z")
+		},
+		"b64_encode": func(in string) (string, error) {
+			var out bytes.Buffer
+			enc := base64.NewEncoder(base64.StdEncoding, &out)
+			_, err := enc.Write([]byte(in))
+			if err != nil {
+				return "", err
+			}
+			err = enc.Close()
+			if err != nil {
+				return "", err
+			}
+			return out.String(), nil
+		},
+		"b64_decode": func(in string) (string, error) {
+			dec := base64.NewDecoder(base64.StdEncoding, strings.NewReader(in))
+			out, err := io.ReadAll(dec)
+			if err != nil {
+				return "", err
+			}
+			return string(out), nil
 		},
 	}).Parse(tmpl)
 	if err != nil {

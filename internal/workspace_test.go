@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -37,6 +38,26 @@ func TestWorkpaceListErrorWhenNoArguments(t *testing.T) {
 func TestWorkpaceGetStatusErrorWhenNoArguments(t *testing.T) {
 	_, _, err := RequireErrorRun(t, "workspace", "get-status")
 	assert.Equal(t, "accepts 1 arg(s), received 0", err.Error())
+}
+
+func TestWorkpaceExportPrintsContents(t *testing.T) {
+	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+
+	ctx := context.Background()
+	w := databricks.Must(databricks.NewWorkspaceClient())
+	tmpdir := temporaryWorkspaceDir(t, w)
+	f, err := filer.NewWorkspaceFilesClient(w, tmpdir)
+	require.NoError(t, err)
+
+	// Write file to workspace
+	contents := "#!/usr/bin/bash\necho hello, world\n"
+	err = f.Write(ctx, "file-a", strings.NewReader(contents))
+	require.NoError(t, err)
+
+	// Run export
+	stdout, stderr := RequireSuccessfulRun(t, "workspace", "export", path.Join(tmpdir, "file-a"))
+	assert.Equal(t, contents, stdout.String())
+	assert.Equal(t, "", stderr.String())
 }
 
 func setupWorkspaceImportExportTest(t *testing.T) (context.Context, filer.Filer, string) {
