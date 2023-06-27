@@ -45,3 +45,7 @@ func filerForPath(ctx context.Context, fullPath string) (filer.Filer, string, er
 	f, err := filer.NewDbfsClient(w, "/")
 	return f, path, err
 }
+
+func isDbfsPath(path string) bool {
+	return strings.HasPrefix(path, "dbfs:/")
+}

@@ -15,9 +15,11 @@ import (
 )
 
 type copy struct {
-	ctx         context.Context
-	sourceFiler filer.Filer
-	targetFiler filer.Filer
+	ctx          context.Context
+	sourceFiler  filer.Filer
+	targetFiler  filer.Filer
+	sourceScheme string
+	targetScheme string
 }
 
 func (c *copy) cpWriteCallback(sourceDir, targetDir string) fs.WalkDirFunc {
@@ -78,29 +80,47 @@ func (c *copy) cpFileToFile(sourcePath, targetPath string) error {
 		err = c.targetFiler.Write(c.ctx, targetPath, r)
 		// skip if file already exists
 		if err != nil && errors.Is(err, fs.ErrExist) {
-			return emitCpFileSkippedEvent(c.ctx, sourcePath, targetPath)
+			return c.emitFileSkippedEvent(sourcePath, targetPath)
 		}
 		if err != nil {
 			return err
 		}
 	}
-	return emitCpFileCopiedEvent(c.ctx, sourcePath, targetPath)
+	return c.emitFileCopiedEvent(sourcePath, targetPath)
 }
 
 // TODO: emit these events on stderr
 // TODO: add integration tests for these events
-func emitCpFileSkippedEvent(ctx context.Context, sourcePath, targetPath string) error {
-	event := newFileSkippedEvent(sourcePath, targetPath)
+func (c *copy) emitFileSkippedEvent(sourcePath, targetPath string) error {
+	fullSourcePath := sourcePath
+	if c.sourceScheme != "" {
+		fullSourcePath = path.Join(c.sourceScheme+":", sourcePath)
+	}
+	fullTargetPath := targetPath
+	if c.targetScheme != "" {
+		fullTargetPath = path.Join(c.targetScheme+":", targetPath)
+	}
+
+	event := newFileSkippedEvent(fullSourcePath, fullTargetPath)
 	template := "{{.SourcePath}} -> {{.TargetPath}} (skipped; already exists)\n"
 
-	return cmdio.RenderWithTemplate(ctx, event, template)
+	return cmdio.RenderWithTemplate(c.ctx, event, template)
 }
 
-func emitCpFileCopiedEvent(ctx context.Context, sourcePath, targetPath string) error {
-	event := newFileCopiedEvent(sourcePath, targetPath)
+func (c *copy) emitFileCopiedEvent(sourcePath, targetPath string) error {
+	fullSourcePath := sourcePath
+	if c.sourceScheme != "" {
+		fullSourcePath = path.Join(c.sourceScheme+":", sourcePath)
+	}
+	fullTargetPath := targetPath
+	if c.targetScheme != "" {
+		fullTargetPath = path.Join(c.targetScheme+":", targetPath)
+	}
+
+	event := newFileCopiedEvent(fullSourcePath, fullTargetPath)
 	template := "{{.SourcePath}} -> {{.TargetPath}}\n"
 
-	return cmdio.RenderWithTemplate(ctx, event, template)
+	return cmdio.RenderWithTemplate(c.ctx, event, template)
 }
 
 var cpOverwrite bool
@@ -144,10 +164,21 @@ var cpCmd = &cobra.Command{
 			return err
 		}
 
+		sourceScheme := ""
+		if isDbfsPath(fullSourcePath) {
+			sourceScheme = "dbfs"
+		}
+		targetScheme := ""
+		if isDbfsPath(fullTargetPath) {
+			targetScheme = "dbfs"
+		}
+
 		c := copy{
-			ctx:         ctx,
-			sourceFiler: sourceFiler,
-			targetFiler: targetFiler,
+			ctx:          ctx,
+			sourceFiler:  sourceFiler,
+			targetFiler:  targetFiler,
+			sourceScheme: sourceScheme,
+			targetScheme: targetScheme,
 		}
 
 		// Get information about file at source path
