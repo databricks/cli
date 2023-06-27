@@ -10,47 +10,38 @@ import (
 	"github.com/databricks/cli/libs/filer"
 )
 
-type Scheme string
-
-const (
-	DbfsScheme  = Scheme("dbfs")
-	LocalScheme = Scheme("file")
-	NoScheme    = Scheme("")
-)
-
 func filerForPath(ctx context.Context, fullPath string) (filer.Filer, string, error) {
-	parts := strings.SplitN(fullPath, ":/", 2)
+	// Split path at : to detect any file schemes
+	parts := strings.SplitN(fullPath, ":", 2)
+
+	// If no scheme is specified, then local path
 	if len(parts) < 2 {
-		return nil, "", fmt.Errorf(`no scheme specified for path %s. Please specify scheme "dbfs" or "file". Example: file:/foo/bar or file:/c:/foo/bar`, fullPath)
+		f, err := filer.NewLocalClient("")
+		return f, fullPath, err
 	}
-	scheme := Scheme(parts[0])
+
+	// On windows systems, paths start with a drive letter. If the scheme
+	// is a single letter and the OS is windows, then we conclude the path
+	// is meant to be a local path.
+	if runtime.GOOS == "windows" && len(parts[0]) == 1 {
+		f, err := filer.NewLocalClient("")
+		return f, fullPath, err
+	}
+
+	if parts[0] != "dbfs" {
+		return nil, "", fmt.Errorf("invalid scheme: %s", parts[0])
+	}
+
 	path := parts[1]
-	switch scheme {
-	case DbfsScheme:
-		w := root.WorkspaceClient(ctx)
-		// If the specified path has the "Volumes" prefix, use the Files API.
-		if strings.HasPrefix(path, "Volumes/") {
-			f, err := filer.NewFilesClient(w, "/")
-			return f, path, err
-		}
-		f, err := filer.NewDbfsClient(w, "/")
-		return f, path, err
+	w := root.WorkspaceClient(ctx)
 
-	case LocalScheme:
-		if runtime.GOOS == "windows" {
-			parts := strings.SplitN(path, ":", 2)
-			if len(parts) < 2 {
-				return nil, "", fmt.Errorf("no volume specfied for path: %s", path)
-			}
-			volume := parts[0] + ":"
-			relPath := parts[1]
-			f, err := filer.NewLocalClient(volume)
-			return f, relPath, err
-		}
-		f, err := filer.NewLocalClient("/")
+	// If the specified path has the "Volumes" prefix, use the Files API.
+	if strings.HasPrefix(path, "/Volumes/") {
+		f, err := filer.NewFilesClient(w, "/")
 		return f, path, err
-
-	default:
-		return nil, "", fmt.Errorf(`unsupported scheme %s specified for path %s. Please specify scheme "dbfs" or "file". Example: file:/foo/bar or file:/c:/foo/bar`, scheme, fullPath)
 	}
+
+	// The file is a dbfs file, and uses the DBFS APIs
+	f, err := filer.NewDbfsClient(w, "/")
+	return f, path, err
 }
