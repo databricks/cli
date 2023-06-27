@@ -17,6 +17,42 @@ func init() {
 	{{range .}}{{green "%d" .Id}}	{{.Path}}	{{.Branch|blue}}	{{.Url|cyan}}
 	{{end}}`)
 
+	createCmd.Use = "create URL [PROVIDER]"
+	createCmd.Args = func(cmd *cobra.Command, args []string) error {
+		// If the provider argument is not specified, we try to detect it from the URL.
+		check := cobra.RangeArgs(1, 2)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	}
+	createCmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+		if cmd.Flags().Changed("json") {
+			err = createJson.Unmarshal(&createReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			createReq.Url = args[0]
+			if len(args) > 1 {
+				createReq.Provider = args[1]
+			} else {
+				createReq.Provider = DetectProvider(createReq.Url)
+				if createReq.Provider == "" {
+					return fmt.Errorf(
+						"could not detect provider from URL %q; please specify", createReq.Url)
+				}
+			}
+		}
+		response, err := w.Repos.Create(ctx, createReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
 	deleteCmd.Use = "delete REPO_ID_OR_PATH"
 	deleteCmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
