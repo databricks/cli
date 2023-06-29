@@ -12,7 +12,7 @@ func TestGitClonePublicRepository(t *testing.T) {
 	tmpDir := t.TempDir()
 	var err error
 
-	err = Clone("databricks", "cli", tmpDir)
+	err = clonePublic("databricks", "cli", tmpDir)
 	assert.NoError(t, err)
 	assert.DirExists(t, filepath.Join(tmpDir, "cli-main"))
 
