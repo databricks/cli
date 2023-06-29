@@ -13,6 +13,7 @@ func Extract(src string, dst string) error {
 	if err != nil {
 		return err
 	}
+	defer zipReader.Close()
 
 	return fs.WalkDir(zipReader, ".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -28,11 +29,13 @@ func Extract(src string, dst string) error {
 		if err != nil {
 			return err
 		}
+		defer targetFile.Close()
 
 		sourceFile, err := zipReader.Open(path)
 		if err != nil {
 			return err
 		}
+		defer sourceFile.Close()
 
 		_, err = io.Copy(targetFile, sourceFile)
 		return err
