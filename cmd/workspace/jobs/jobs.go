@@ -40,7 +40,6 @@ var Cmd = &cobra.Command{
 }
 
 // start cancel-all-runs command
-
 var cancelAllRunsReq jobs.CancelAllRuns
 var cancelAllRunsJson flags.JsonFlag
 
@@ -64,6 +63,7 @@ var cancelAllRunsCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = cancelAllRunsJson.Unmarshal(&cancelAllRunsReq)
 			if err != nil {
@@ -105,9 +105,9 @@ var cancelAllRunsCmd = &cobra.Command{
 }
 
 // start cancel-run command
-
 var cancelRunReq jobs.CancelRun
 var cancelRunJson flags.JsonFlag
+
 var cancelRunSkipWait bool
 var cancelRunTimeout time.Duration
 
@@ -134,6 +134,7 @@ var cancelRunCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = cancelRunJson.Unmarshal(&cancelRunReq)
 			if err != nil {
@@ -194,7 +195,6 @@ var cancelRunCmd = &cobra.Command{
 }
 
 // start create command
-
 var createReq jobs.CreateJob
 var createJson flags.JsonFlag
 
@@ -243,6 +243,7 @@ var createCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = createJson.Unmarshal(&createReq)
 			if err != nil {
@@ -263,7 +264,6 @@ var createCmd = &cobra.Command{
 }
 
 // start delete command
-
 var deleteReq jobs.DeleteJob
 var deleteJson flags.JsonFlag
 
@@ -286,6 +286,7 @@ var deleteCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = deleteJson.Unmarshal(&deleteReq)
 			if err != nil {
@@ -327,7 +328,6 @@ var deleteCmd = &cobra.Command{
 }
 
 // start delete-run command
-
 var deleteRunReq jobs.DeleteRun
 var deleteRunJson flags.JsonFlag
 
@@ -350,6 +350,7 @@ var deleteRunCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = deleteRunJson.Unmarshal(&deleteRunReq)
 			if err != nil {
@@ -391,14 +392,11 @@ var deleteRunCmd = &cobra.Command{
 }
 
 // start export-run command
-
 var exportRunReq jobs.ExportRunRequest
-var exportRunJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(exportRunCmd)
 	// TODO: short flags
-	exportRunCmd.Flags().Var(&exportRunJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	exportRunCmd.Flags().Var(&exportRunReq.ViewsToExport, "views-to-export", `Which views to export (CODE, DASHBOARDS, or ALL).`)
 
@@ -416,12 +414,7 @@ var exportRunCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = exportRunJson.Unmarshal(&exportRunReq)
-			if err != nil {
-				return err
-			}
-		}
+
 		if len(args) == 0 {
 			promptSpinner := cmdio.Spinner(ctx)
 			promptSpinner <- "No RUN_ID argument specified. Loading names for Jobs drop-down."
@@ -456,14 +449,11 @@ var exportRunCmd = &cobra.Command{
 }
 
 // start get command
-
 var getReq jobs.GetJobRequest
-var getJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
-	getCmd.Flags().Var(&getJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -479,12 +469,7 @@ var getCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = getJson.Unmarshal(&getReq)
-			if err != nil {
-				return err
-			}
-		}
+
 		if len(args) == 0 {
 			promptSpinner := cmdio.Spinner(ctx)
 			promptSpinner <- "No JOB_ID argument specified. Loading names for Jobs drop-down."
@@ -519,9 +504,8 @@ var getCmd = &cobra.Command{
 }
 
 // start get-run command
-
 var getRunReq jobs.GetRunRequest
-var getRunJson flags.JsonFlag
+
 var getRunSkipWait bool
 var getRunTimeout time.Duration
 
@@ -531,7 +515,6 @@ func init() {
 	getRunCmd.Flags().BoolVar(&getRunSkipWait, "no-wait", getRunSkipWait, `do not wait to reach TERMINATED or SKIPPED state`)
 	getRunCmd.Flags().DurationVar(&getRunTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach TERMINATED or SKIPPED state`)
 	// TODO: short flags
-	getRunCmd.Flags().Var(&getRunJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	getRunCmd.Flags().BoolVar(&getRunReq.IncludeHistory, "include-history", getRunReq.IncludeHistory, `Whether to include the repair history in the response.`)
 
@@ -549,12 +532,7 @@ var getRunCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = getRunJson.Unmarshal(&getRunReq)
-			if err != nil {
-				return err
-			}
-		}
+
 		if len(args) == 0 {
 			promptSpinner := cmdio.Spinner(ctx)
 			promptSpinner <- "No RUN_ID argument specified. Loading names for Jobs drop-down."
@@ -589,14 +567,11 @@ var getRunCmd = &cobra.Command{
 }
 
 // start get-run-output command
-
 var getRunOutputReq jobs.GetRunOutputRequest
-var getRunOutputJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(getRunOutputCmd)
 	// TODO: short flags
-	getRunOutputCmd.Flags().Var(&getRunOutputJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -621,12 +596,7 @@ var getRunOutputCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = getRunOutputJson.Unmarshal(&getRunOutputReq)
-			if err != nil {
-				return err
-			}
-		}
+
 		if len(args) == 0 {
 			promptSpinner := cmdio.Spinner(ctx)
 			promptSpinner <- "No RUN_ID argument specified. Loading names for Jobs drop-down."
@@ -661,7 +631,6 @@ var getRunOutputCmd = &cobra.Command{
 }
 
 // start list command
-
 var listReq jobs.ListJobsRequest
 var listJson flags.JsonFlag
 
@@ -697,6 +666,7 @@ var listCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = listJson.Unmarshal(&listReq)
 			if err != nil {
@@ -717,7 +687,6 @@ var listCmd = &cobra.Command{
 }
 
 // start list-runs command
-
 var listRunsReq jobs.ListRunsRequest
 var listRunsJson flags.JsonFlag
 
@@ -758,6 +727,7 @@ var listRunsCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = listRunsJson.Unmarshal(&listRunsReq)
 			if err != nil {
@@ -778,9 +748,9 @@ var listRunsCmd = &cobra.Command{
 }
 
 // start repair-run command
-
 var repairRunReq jobs.RepairRun
 var repairRunJson flags.JsonFlag
+
 var repairRunSkipWait bool
 var repairRunTimeout time.Duration
 
@@ -821,6 +791,7 @@ var repairRunCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = repairRunJson.Unmarshal(&repairRunReq)
 			if err != nil {
@@ -881,7 +852,6 @@ var repairRunCmd = &cobra.Command{
 }
 
 // start reset command
-
 var resetReq jobs.ResetJob
 var resetJson flags.JsonFlag
 
@@ -905,6 +875,7 @@ var resetCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = resetJson.Unmarshal(&resetReq)
 			if err != nil {
@@ -926,9 +897,9 @@ var resetCmd = &cobra.Command{
 }
 
 // start run-now command
-
 var runNowReq jobs.RunNow
 var runNowJson flags.JsonFlag
+
 var runNowSkipWait bool
 var runNowTimeout time.Duration
 
@@ -965,6 +936,7 @@ var runNowCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = runNowJson.Unmarshal(&runNowReq)
 			if err != nil {
@@ -1025,9 +997,9 @@ var runNowCmd = &cobra.Command{
 }
 
 // start submit command
-
 var submitReq jobs.SubmitRun
 var submitJson flags.JsonFlag
+
 var submitSkipWait bool
 var submitTimeout time.Duration
 
@@ -1072,6 +1044,7 @@ var submitCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = submitJson.Unmarshal(&submitReq)
 			if err != nil {
@@ -1111,7 +1084,6 @@ var submitCmd = &cobra.Command{
 }
 
 // start update command
-
 var updateReq jobs.UpdateJob
 var updateJson flags.JsonFlag
 
@@ -1138,6 +1110,7 @@ var updateCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = updateJson.Unmarshal(&updateReq)
 			if err != nil {

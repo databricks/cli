@@ -21,14 +21,11 @@ var Cmd = &cobra.Command{
 }
 
 // start get command
-
 var getReq iam.GetPermissionRequest
-var getJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
-	getCmd.Flags().Var(&getJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -49,12 +46,7 @@ var getCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = getJson.Unmarshal(&getReq)
-			if err != nil {
-				return err
-			}
-		}
+
 		getReq.RequestObjectType = args[0]
 		getReq.RequestObjectId = args[1]
 
@@ -70,14 +62,11 @@ var getCmd = &cobra.Command{
 }
 
 // start get-permission-levels command
-
 var getPermissionLevelsReq iam.GetPermissionLevelsRequest
-var getPermissionLevelsJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(getPermissionLevelsCmd)
 	// TODO: short flags
-	getPermissionLevelsCmd.Flags().Var(&getPermissionLevelsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -97,12 +86,7 @@ var getPermissionLevelsCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = getPermissionLevelsJson.Unmarshal(&getPermissionLevelsReq)
-			if err != nil {
-				return err
-			}
-		}
+
 		getPermissionLevelsReq.RequestObjectType = args[0]
 		getPermissionLevelsReq.RequestObjectId = args[1]
 
@@ -118,7 +102,6 @@ var getPermissionLevelsCmd = &cobra.Command{
 }
 
 // start set command
-
 var setReq iam.PermissionsRequest
 var setJson flags.JsonFlag
 
@@ -148,6 +131,7 @@ var setCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = setJson.Unmarshal(&setReq)
 			if err != nil {
@@ -169,7 +153,6 @@ var setCmd = &cobra.Command{
 }
 
 // start update command
-
 var updateReq iam.PermissionsRequest
 var updateJson flags.JsonFlag
 
@@ -198,6 +181,7 @@ var updateCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = updateJson.Unmarshal(&updateReq)
 			if err != nil {

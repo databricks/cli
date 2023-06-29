@@ -34,7 +34,6 @@ var Cmd = &cobra.Command{
 }
 
 // start create command
-
 var createReq catalog.CreateTableConstraint
 var createJson flags.JsonFlag
 
@@ -66,6 +65,7 @@ var createCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = createJson.Unmarshal(&createReq)
 			if err != nil {
@@ -87,14 +87,11 @@ var createCmd = &cobra.Command{
 }
 
 // start delete command
-
 var deleteReq catalog.DeleteTableConstraintRequest
-var deleteJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
-	deleteCmd.Flags().Var(&deleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -122,12 +119,7 @@ var deleteCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = deleteJson.Unmarshal(&deleteReq)
-			if err != nil {
-				return err
-			}
-		}
+
 		deleteReq.FullName = args[0]
 		deleteReq.ConstraintName = args[1]
 		_, err = fmt.Sscan(args[2], &deleteReq.Cascade)

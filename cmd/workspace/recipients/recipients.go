@@ -22,7 +22,6 @@ var Cmd = &cobra.Command{
 }
 
 // start create command
-
 var createReq sharing.CreateRecipient
 var createJson flags.JsonFlag
 
@@ -61,6 +60,7 @@ var createCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = createJson.Unmarshal(&createReq)
 			if err != nil {
@@ -86,14 +86,11 @@ var createCmd = &cobra.Command{
 }
 
 // start delete command
-
 var deleteReq sharing.DeleteRecipientRequest
-var deleteJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
-	deleteCmd.Flags().Var(&deleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -110,12 +107,7 @@ var deleteCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = deleteJson.Unmarshal(&deleteReq)
-			if err != nil {
-				return err
-			}
-		}
+
 		if len(args) == 0 {
 			promptSpinner := cmdio.Spinner(ctx)
 			promptSpinner <- "No NAME argument specified. Loading names for Recipients drop-down."
@@ -147,14 +139,11 @@ var deleteCmd = &cobra.Command{
 }
 
 // start get command
-
 var getReq sharing.GetRecipientRequest
-var getJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
-	getCmd.Flags().Var(&getJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -172,12 +161,7 @@ var getCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = getJson.Unmarshal(&getReq)
-			if err != nil {
-				return err
-			}
-		}
+
 		if len(args) == 0 {
 			promptSpinner := cmdio.Spinner(ctx)
 			promptSpinner <- "No NAME argument specified. Loading names for Recipients drop-down."
@@ -209,7 +193,6 @@ var getCmd = &cobra.Command{
 }
 
 // start list command
-
 var listReq sharing.ListRecipientsRequest
 var listJson flags.JsonFlag
 
@@ -244,6 +227,7 @@ var listCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = listJson.Unmarshal(&listReq)
 			if err != nil {
@@ -264,14 +248,11 @@ var listCmd = &cobra.Command{
 }
 
 // start rotate-token command
-
 var rotateTokenReq sharing.RotateRecipientToken
-var rotateTokenJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(rotateTokenCmd)
 	// TODO: short flags
-	rotateTokenCmd.Flags().Var(&rotateTokenJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -292,12 +273,7 @@ var rotateTokenCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = rotateTokenJson.Unmarshal(&rotateTokenReq)
-			if err != nil {
-				return err
-			}
-		}
+
 		_, err = fmt.Sscan(args[0], &rotateTokenReq.ExistingTokenExpireInSeconds)
 		if err != nil {
 			return fmt.Errorf("invalid EXISTING_TOKEN_EXPIRE_IN_SECONDS: %s", args[0])
@@ -316,14 +292,11 @@ var rotateTokenCmd = &cobra.Command{
 }
 
 // start share-permissions command
-
 var sharePermissionsReq sharing.SharePermissionsRequest
-var sharePermissionsJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(sharePermissionsCmd)
 	// TODO: short flags
-	sharePermissionsCmd.Flags().Var(&sharePermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -340,12 +313,7 @@ var sharePermissionsCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = sharePermissionsJson.Unmarshal(&sharePermissionsReq)
-			if err != nil {
-				return err
-			}
-		}
+
 		if len(args) == 0 {
 			promptSpinner := cmdio.Spinner(ctx)
 			promptSpinner <- "No NAME argument specified. Loading names for Recipients drop-down."
@@ -377,7 +345,6 @@ var sharePermissionsCmd = &cobra.Command{
 }
 
 // start update command
-
 var updateReq sharing.UpdateRecipient
 var updateJson flags.JsonFlag
 
@@ -408,6 +375,7 @@ var updateCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = updateJson.Unmarshal(&updateReq)
 			if err != nil {

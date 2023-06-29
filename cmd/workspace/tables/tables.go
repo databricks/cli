@@ -7,7 +7,6 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/spf13/cobra"
 )
@@ -30,14 +29,11 @@ var Cmd = &cobra.Command{
 }
 
 // start delete command
-
 var deleteReq catalog.DeleteTableRequest
-var deleteJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
-	deleteCmd.Flags().Var(&deleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -57,12 +53,7 @@ var deleteCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = deleteJson.Unmarshal(&deleteReq)
-			if err != nil {
-				return err
-			}
-		}
+
 		if len(args) == 0 {
 			promptSpinner := cmdio.Spinner(ctx)
 			promptSpinner <- "No FULL_NAME argument specified. Loading names for Tables drop-down."
@@ -94,14 +85,11 @@ var deleteCmd = &cobra.Command{
 }
 
 // start get command
-
 var getReq catalog.GetTableRequest
-var getJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
-	getCmd.Flags().Var(&getJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	getCmd.Flags().BoolVar(&getReq.IncludeDeltaMetadata, "include-delta-metadata", getReq.IncludeDeltaMetadata, `Whether delta metadata should be included in the response.`)
 
@@ -123,12 +111,7 @@ var getCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = getJson.Unmarshal(&getReq)
-			if err != nil {
-				return err
-			}
-		}
+
 		if len(args) == 0 {
 			promptSpinner := cmdio.Spinner(ctx)
 			promptSpinner <- "No FULL_NAME argument specified. Loading names for Tables drop-down."
@@ -160,14 +143,11 @@ var getCmd = &cobra.Command{
 }
 
 // start list command
-
 var listReq catalog.ListTablesRequest
-var listJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(listCmd)
 	// TODO: short flags
-	listCmd.Flags().Var(&listJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	listCmd.Flags().BoolVar(&listReq.IncludeDeltaMetadata, "include-delta-metadata", listReq.IncludeDeltaMetadata, `Whether delta metadata should be included in the response.`)
 	listCmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of tables to return (page length).`)
@@ -196,12 +176,7 @@ var listCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = listJson.Unmarshal(&listReq)
-			if err != nil {
-				return err
-			}
-		}
+
 		listReq.CatalogName = args[0]
 		listReq.SchemaName = args[1]
 
@@ -217,14 +192,11 @@ var listCmd = &cobra.Command{
 }
 
 // start list-summaries command
-
 var listSummariesReq catalog.ListSummariesRequest
-var listSummariesJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(listSummariesCmd)
 	// TODO: short flags
-	listSummariesCmd.Flags().Var(&listSummariesJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	listSummariesCmd.Flags().IntVar(&listSummariesReq.MaxResults, "max-results", listSummariesReq.MaxResults, `Maximum number of tables to return (page length).`)
 	listSummariesCmd.Flags().StringVar(&listSummariesReq.PageToken, "page-token", listSummariesReq.PageToken, `Opaque token to send for the next page of results (pagination).`)
@@ -255,12 +227,7 @@ var listSummariesCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = listSummariesJson.Unmarshal(&listSummariesReq)
-			if err != nil {
-				return err
-			}
-		}
+
 		if len(args) == 0 {
 			promptSpinner := cmdio.Spinner(ctx)
 			promptSpinner <- "No CATALOG_NAME argument specified. Loading names for Tables drop-down."

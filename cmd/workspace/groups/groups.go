@@ -28,7 +28,6 @@ var Cmd = &cobra.Command{
 }
 
 // start create command
-
 var createReq iam.Group
 var createJson flags.JsonFlag
 
@@ -68,6 +67,7 @@ var createCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = createJson.Unmarshal(&createReq)
 			if err != nil {
@@ -88,14 +88,11 @@ var createCmd = &cobra.Command{
 }
 
 // start delete command
-
 var deleteReq iam.DeleteGroupRequest
-var deleteJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
-	deleteCmd.Flags().Var(&deleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -111,12 +108,7 @@ var deleteCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = deleteJson.Unmarshal(&deleteReq)
-			if err != nil {
-				return err
-			}
-		}
+
 		if len(args) == 0 {
 			promptSpinner := cmdio.Spinner(ctx)
 			promptSpinner <- "No ID argument specified. Loading names for Groups drop-down."
@@ -148,14 +140,11 @@ var deleteCmd = &cobra.Command{
 }
 
 // start get command
-
 var getReq iam.GetGroupRequest
-var getJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
-	getCmd.Flags().Var(&getJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -171,12 +160,7 @@ var getCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = getJson.Unmarshal(&getReq)
-			if err != nil {
-				return err
-			}
-		}
+
 		if len(args) == 0 {
 			promptSpinner := cmdio.Spinner(ctx)
 			promptSpinner <- "No ID argument specified. Loading names for Groups drop-down."
@@ -208,7 +192,6 @@ var getCmd = &cobra.Command{
 }
 
 // start list command
-
 var listReq iam.ListGroupsRequest
 var listJson flags.JsonFlag
 
@@ -246,6 +229,7 @@ var listCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = listJson.Unmarshal(&listReq)
 			if err != nil {
@@ -266,7 +250,6 @@ var listCmd = &cobra.Command{
 }
 
 // start patch command
-
 var patchReq iam.PartialUpdate
 var patchJson flags.JsonFlag
 
@@ -291,6 +274,7 @@ var patchCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = patchJson.Unmarshal(&patchReq)
 			if err != nil {
@@ -328,7 +312,6 @@ var patchCmd = &cobra.Command{
 }
 
 // start update command
-
 var updateReq iam.Group
 var updateJson flags.JsonFlag
 
@@ -360,6 +343,7 @@ var updateCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = updateJson.Unmarshal(&updateReq)
 			if err != nil {

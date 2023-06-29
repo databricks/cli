@@ -34,7 +34,6 @@ var Cmd = &cobra.Command{
 }
 
 // start create command
-
 var createReq catalog.CreateStorageCredential
 var createJson flags.JsonFlag
 
@@ -79,6 +78,7 @@ var createCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = createJson.Unmarshal(&createReq)
 			if err != nil {
@@ -100,14 +100,11 @@ var createCmd = &cobra.Command{
 }
 
 // start delete command
-
 var deleteReq catalog.DeleteStorageCredentialRequest
-var deleteJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
-	deleteCmd.Flags().Var(&deleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	deleteCmd.Flags().BoolVar(&deleteReq.Force, "force", deleteReq.Force, `Force deletion even if there are dependent external locations or external tables.`)
 
@@ -126,12 +123,7 @@ var deleteCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = deleteJson.Unmarshal(&deleteReq)
-			if err != nil {
-				return err
-			}
-		}
+
 		if len(args) == 0 {
 			promptSpinner := cmdio.Spinner(ctx)
 			promptSpinner <- "No NAME argument specified. Loading names for Storage Credentials drop-down."
@@ -163,14 +155,11 @@ var deleteCmd = &cobra.Command{
 }
 
 // start get command
-
 var getReq catalog.GetStorageCredentialRequest
-var getJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
-	getCmd.Flags().Var(&getJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -188,12 +177,7 @@ var getCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = getJson.Unmarshal(&getReq)
-			if err != nil {
-				return err
-			}
-		}
+
 		if len(args) == 0 {
 			promptSpinner := cmdio.Spinner(ctx)
 			promptSpinner <- "No NAME argument specified. Loading names for Storage Credentials drop-down."
@@ -259,7 +243,6 @@ var listCmd = &cobra.Command{
 }
 
 // start update command
-
 var updateReq catalog.UpdateStorageCredential
 var updateJson flags.JsonFlag
 
@@ -295,6 +278,7 @@ var updateCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = updateJson.Unmarshal(&updateReq)
 			if err != nil {
@@ -333,7 +317,6 @@ var updateCmd = &cobra.Command{
 }
 
 // start validate command
-
 var validateReq catalog.ValidateStorageCredential
 var validateJson flags.JsonFlag
 
@@ -383,6 +366,7 @@ var validateCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = validateJson.Unmarshal(&validateReq)
 			if err != nil {

@@ -26,7 +26,6 @@ var Cmd = &cobra.Command{
 }
 
 // start delete command
-
 var deleteReq workspace.Delete
 var deleteJson flags.JsonFlag
 
@@ -58,6 +57,7 @@ var deleteCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = deleteJson.Unmarshal(&deleteReq)
 			if err != nil {
@@ -96,14 +96,11 @@ var deleteCmd = &cobra.Command{
 }
 
 // start export command
-
 var exportReq workspace.ExportRequest
-var exportJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(exportCmd)
 	// TODO: short flags
-	exportCmd.Flags().Var(&exportJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	exportCmd.Flags().Var(&exportReq.Format, "format", `This specifies the format of the exported file.`)
 
@@ -128,12 +125,7 @@ var exportCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = exportJson.Unmarshal(&exportReq)
-			if err != nil {
-				return err
-			}
-		}
+
 		if len(args) == 0 {
 			promptSpinner := cmdio.Spinner(ctx)
 			promptSpinner <- "No PATH argument specified. Loading names for Workspace drop-down."
@@ -165,14 +157,11 @@ var exportCmd = &cobra.Command{
 }
 
 // start get-status command
-
 var getStatusReq workspace.GetStatusRequest
-var getStatusJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(getStatusCmd)
 	// TODO: short flags
-	getStatusCmd.Flags().Var(&getStatusJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -193,12 +182,7 @@ var getStatusCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = getStatusJson.Unmarshal(&getStatusReq)
-			if err != nil {
-				return err
-			}
-		}
+
 		getStatusReq.Path = args[0]
 
 		response, err := w.Workspace.GetStatus(ctx, getStatusReq)
@@ -213,7 +197,6 @@ var getStatusCmd = &cobra.Command{
 }
 
 // start import command
-
 var importReq workspace.Import
 var importJson flags.JsonFlag
 
@@ -251,6 +234,7 @@ var importCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = importJson.Unmarshal(&importReq)
 			if err != nil {
@@ -272,14 +256,11 @@ var importCmd = &cobra.Command{
 }
 
 // start list command
-
 var listReq workspace.ListWorkspaceRequest
-var listJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(listCmd)
 	// TODO: short flags
-	listCmd.Flags().Var(&listJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	listCmd.Flags().IntVar(&listReq.NotebooksModifiedAfter, "notebooks-modified-after", listReq.NotebooksModifiedAfter, `UTC timestamp in milliseconds.`)
 
@@ -303,12 +284,7 @@ var listCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = listJson.Unmarshal(&listReq)
-			if err != nil {
-				return err
-			}
-		}
+
 		listReq.Path = args[0]
 
 		response, err := w.Workspace.ListAll(ctx, listReq)
@@ -323,7 +299,6 @@ var listCmd = &cobra.Command{
 }
 
 // start mkdirs command
-
 var mkdirsReq workspace.Mkdirs
 var mkdirsJson flags.JsonFlag
 
@@ -351,6 +326,7 @@ var mkdirsCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = mkdirsJson.Unmarshal(&mkdirsReq)
 			if err != nil {

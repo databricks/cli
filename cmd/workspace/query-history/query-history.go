@@ -20,7 +20,6 @@ var Cmd = &cobra.Command{
 }
 
 // start list command
-
 var listReq sql.ListQueryHistoryRequest
 var listJson flags.JsonFlag
 
@@ -57,6 +56,7 @@ var listCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = listJson.Unmarshal(&listReq)
 			if err != nil {

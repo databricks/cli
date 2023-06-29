@@ -23,7 +23,6 @@ var Cmd = &cobra.Command{
 }
 
 // start delete-personal-compute-setting command
-
 var deletePersonalComputeSettingReq settings.DeletePersonalComputeSettingRequest
 var deletePersonalComputeSettingJson flags.JsonFlag
 
@@ -55,6 +54,7 @@ var deletePersonalComputeSettingCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = deletePersonalComputeSettingJson.Unmarshal(&deletePersonalComputeSettingReq)
 			if err != nil {
@@ -75,7 +75,6 @@ var deletePersonalComputeSettingCmd = &cobra.Command{
 }
 
 // start read-personal-compute-setting command
-
 var readPersonalComputeSettingReq settings.ReadPersonalComputeSettingRequest
 var readPersonalComputeSettingJson flags.JsonFlag
 
@@ -107,6 +106,7 @@ var readPersonalComputeSettingCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = readPersonalComputeSettingJson.Unmarshal(&readPersonalComputeSettingReq)
 			if err != nil {
@@ -127,7 +127,6 @@ var readPersonalComputeSettingCmd = &cobra.Command{
 }
 
 // start update-personal-compute-setting command
-
 var updatePersonalComputeSettingReq settings.UpdatePersonalComputeSettingRequest
 var updatePersonalComputeSettingJson flags.JsonFlag
 
@@ -160,6 +159,7 @@ var updatePersonalComputeSettingCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = updatePersonalComputeSettingJson.Unmarshal(&updatePersonalComputeSettingReq)
 			if err != nil {

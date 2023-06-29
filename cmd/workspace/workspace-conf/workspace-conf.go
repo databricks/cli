@@ -20,14 +20,11 @@ var Cmd = &cobra.Command{
 }
 
 // start get-status command
-
 var getStatusReq settings.GetStatusRequest
-var getStatusJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(getStatusCmd)
 	// TODO: short flags
-	getStatusCmd.Flags().Var(&getStatusJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -47,12 +44,7 @@ var getStatusCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = getStatusJson.Unmarshal(&getStatusReq)
-			if err != nil {
-				return err
-			}
-		}
+
 		getStatusReq.Keys = args[0]
 
 		response, err := w.WorkspaceConf.GetStatus(ctx, getStatusReq)
@@ -67,7 +59,6 @@ var getStatusCmd = &cobra.Command{
 }
 
 // start set-status command
-
 var setStatusReq settings.WorkspaceConf
 var setStatusJson flags.JsonFlag
 
@@ -98,6 +89,7 @@ var setStatusCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = setStatusJson.Unmarshal(&setStatusReq)
 			if err != nil {

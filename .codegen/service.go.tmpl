@@ -44,9 +44,14 @@ var Cmd = &cobra.Command{
 {{end}}
 // start {{.KebabName}} command
 
-{{if .Request}}var {{.CamelName}}Req {{.Service.Package.Name}}.{{.Request.PascalName}}
+{{- $useJsonForAllFields := or .IsJsonOnly (and .Request (or (not .Request.IsAllRequiredFieldsPrimitive) .Request.IsAllRequiredFieldsJsonUnserialisable))  -}}
+{{- $needJsonFlag := or $useJsonForAllFields (and .Request (not .Request.IsOnlyPrimitiveFields)) -}}
+{{- if .Request}}
+var {{.CamelName}}Req {{.Service.Package.Name}}.{{.Request.PascalName}}
+{{- if $needJsonFlag}}
 var {{.CamelName}}Json flags.JsonFlag
 {{- end}}
+{{end}}
 {{if .Wait}}var {{.CamelName}}SkipWait bool
 var {{.CamelName}}Timeout time.Duration{{end}}
 
@@ -57,7 +62,9 @@ func init() {
 	{{.CamelName}}Cmd.Flags().DurationVar(&{{.CamelName}}Timeout, "timeout", {{.Wait.Timeout}}*time.Minute, `maximum amount of time to reach {{range $i, $e := .Wait.Success}}{{if $i}} or {{end}}{{.Content}}{{end}} state`)
 	{{end -}}
     {{if .Request}}// TODO: short flags
+	{{- if $needJsonFlag}}
 	{{.CamelName}}Cmd.Flags().Var(&{{.CamelName}}Json, "json", `either inline JSON string or @path/to/file.json with request body`)
+	{{- end}}
     {{$method := .}}
 	{{ if not .IsJsonOnly }}
 	{{range .Request.Fields -}}
@@ -85,7 +92,6 @@ func init() {
 {{- $hasIdPrompt := and (not $noPrompt) (and $hasSinglePosArg $serviceHasNamedIdMap) -}}
 {{- $wait := and .Wait (and (not .IsCrudRead) (not (eq .SnakeName "get_run"))) -}}
 {{- $hasRequiredArgs := and (not $hasIdPrompt) $hasPosArgs -}}
-{{- $useJsonForAllFields := or .IsJsonOnly (and .Request (or (not .Request.IsAllRequiredFieldsPrimitive) .Request.IsAllRequiredFieldsJsonUnserialisable))  -}}
 var {{.CamelName}}Cmd = &cobra.Command{
 	Use: "{{.KebabName}}{{if $hasPosArgs}}{{range .Request.RequiredFields}} {{.ConstantName}}{{end}}{{end}}",
 	{{- if .Description }}
@@ -113,12 +119,13 @@ var {{.CamelName}}Cmd = &cobra.Command{
 		ctx := cmd.Context()
 		{{if .Service.IsAccounts}}a := root.AccountClient(ctx){{else}}w := root.WorkspaceClient(ctx){{end}}
 		{{- if .Request }}
+			{{ if $needJsonFlag }}
 			if cmd.Flags().Changed("json") {
 					err = {{.CamelName}}Json.Unmarshal(&{{.CamelName}}Req)
 					if err != nil {
 						return err
 					}
-			}{{if $useJsonForAllFields }} else {
+			}{{end}}{{if $useJsonForAllFields }} else {
 			{{- end }}
 			{{- if $hasIdPrompt}}
 				if len(args) == 0 {

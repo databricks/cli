@@ -7,7 +7,6 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/spf13/cobra"
 )
@@ -27,14 +26,11 @@ var Cmd = &cobra.Command{
 }
 
 // start disable command
-
 var disableReq catalog.DisableRequest
-var disableJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(disableCmd)
 	// TODO: short flags
-	disableCmd.Flags().Var(&disableJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -55,12 +51,7 @@ var disableCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = disableJson.Unmarshal(&disableReq)
-			if err != nil {
-				return err
-			}
-		}
+
 		disableReq.MetastoreId = args[0]
 		_, err = fmt.Sscan(args[1], &disableReq.SchemaName)
 		if err != nil {
@@ -79,14 +70,11 @@ var disableCmd = &cobra.Command{
 }
 
 // start enable command
-
 var enableReq catalog.EnableRequest
-var enableJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(enableCmd)
 	// TODO: short flags
-	enableCmd.Flags().Var(&enableJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -107,12 +95,7 @@ var enableCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = enableJson.Unmarshal(&enableReq)
-			if err != nil {
-				return err
-			}
-		}
+
 		enableReq.MetastoreId = args[0]
 		_, err = fmt.Sscan(args[1], &enableReq.SchemaName)
 		if err != nil {
@@ -131,14 +114,11 @@ var enableCmd = &cobra.Command{
 }
 
 // start list command
-
 var listReq catalog.ListSystemSchemasRequest
-var listJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(listCmd)
 	// TODO: short flags
-	listCmd.Flags().Var(&listJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -159,12 +139,7 @@ var listCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = listJson.Unmarshal(&listReq)
-			if err != nil {
-				return err
-			}
-		}
+
 		listReq.MetastoreId = args[0]
 
 		response, err := w.SystemSchemas.ListAll(ctx, listReq)

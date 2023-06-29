@@ -32,7 +32,6 @@ var Cmd = &cobra.Command{
 }
 
 // start create command
-
 var createReq catalog.CreateVolumeRequestContent
 var createJson flags.JsonFlag
 
@@ -82,6 +81,7 @@ var createCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = createJson.Unmarshal(&createReq)
 			if err != nil {
@@ -109,14 +109,11 @@ var createCmd = &cobra.Command{
 }
 
 // start delete command
-
 var deleteReq catalog.DeleteVolumeRequest
-var deleteJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
-	deleteCmd.Flags().Var(&deleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -136,12 +133,7 @@ var deleteCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = deleteJson.Unmarshal(&deleteReq)
-			if err != nil {
-				return err
-			}
-		}
+
 		if len(args) == 0 {
 			promptSpinner := cmdio.Spinner(ctx)
 			promptSpinner <- "No FULL_NAME_ARG argument specified. Loading names for Volumes drop-down."
@@ -173,14 +165,11 @@ var deleteCmd = &cobra.Command{
 }
 
 // start list command
-
 var listReq catalog.ListVolumesRequest
-var listJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(listCmd)
 	// TODO: short flags
-	listCmd.Flags().Var(&listJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -210,12 +199,7 @@ var listCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = listJson.Unmarshal(&listReq)
-			if err != nil {
-				return err
-			}
-		}
+
 		listReq.CatalogName = args[0]
 		listReq.SchemaName = args[1]
 
@@ -231,14 +215,11 @@ var listCmd = &cobra.Command{
 }
 
 // start read command
-
 var readReq catalog.ReadVolumeRequest
-var readJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(readCmd)
 	// TODO: short flags
-	readCmd.Flags().Var(&readJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -259,12 +240,7 @@ var readCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = readJson.Unmarshal(&readReq)
-			if err != nil {
-				return err
-			}
-		}
+
 		if len(args) == 0 {
 			promptSpinner := cmdio.Spinner(ctx)
 			promptSpinner <- "No FULL_NAME_ARG argument specified. Loading names for Volumes drop-down."
@@ -296,14 +272,11 @@ var readCmd = &cobra.Command{
 }
 
 // start update command
-
 var updateReq catalog.UpdateVolumeRequestContent
-var updateJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(updateCmd)
 	// TODO: short flags
-	updateCmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	updateCmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `The comment attached to the volume.`)
 	updateCmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `The name of the volume.`)
@@ -330,12 +303,7 @@ var updateCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = updateJson.Unmarshal(&updateReq)
-			if err != nil {
-				return err
-			}
-		}
+
 		if len(args) == 0 {
 			promptSpinner := cmdio.Spinner(ctx)
 			promptSpinner <- "No FULL_NAME_ARG argument specified. Loading names for Volumes drop-down."

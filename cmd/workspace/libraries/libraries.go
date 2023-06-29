@@ -73,14 +73,11 @@ var allClusterStatusesCmd = &cobra.Command{
 }
 
 // start cluster-status command
-
 var clusterStatusReq compute.ClusterStatusRequest
-var clusterStatusJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(clusterStatusCmd)
 	// TODO: short flags
-	clusterStatusCmd.Flags().Var(&clusterStatusJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -114,12 +111,7 @@ var clusterStatusCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = clusterStatusJson.Unmarshal(&clusterStatusReq)
-			if err != nil {
-				return err
-			}
-		}
+
 		clusterStatusReq.ClusterId = args[0]
 
 		response, err := w.Libraries.ClusterStatus(ctx, clusterStatusReq)
@@ -134,7 +126,6 @@ var clusterStatusCmd = &cobra.Command{
 }
 
 // start install command
-
 var installReq compute.InstallLibraries
 var installJson flags.JsonFlag
 
@@ -162,6 +153,7 @@ var installCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = installJson.Unmarshal(&installReq)
 			if err != nil {
@@ -183,7 +175,6 @@ var installCmd = &cobra.Command{
 }
 
 // start uninstall command
-
 var uninstallReq compute.UninstallLibraries
 var uninstallJson flags.JsonFlag
 
@@ -208,6 +199,7 @@ var uninstallCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = uninstallJson.Unmarshal(&uninstallReq)
 			if err != nil {

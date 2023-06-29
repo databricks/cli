@@ -5,7 +5,6 @@ package recipient_activation
 import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/sharing"
 	"github.com/spf13/cobra"
 )
@@ -20,14 +19,11 @@ var Cmd = &cobra.Command{
 }
 
 // start get-activation-url-info command
-
 var getActivationUrlInfoReq sharing.GetActivationUrlInfoRequest
-var getActivationUrlInfoJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(getActivationUrlInfoCmd)
 	// TODO: short flags
-	getActivationUrlInfoCmd.Flags().Var(&getActivationUrlInfoJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -47,12 +43,7 @@ var getActivationUrlInfoCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = getActivationUrlInfoJson.Unmarshal(&getActivationUrlInfoReq)
-			if err != nil {
-				return err
-			}
-		}
+
 		getActivationUrlInfoReq.ActivationUrl = args[0]
 
 		err = w.RecipientActivation.GetActivationUrlInfo(ctx, getActivationUrlInfoReq)
@@ -67,14 +58,11 @@ var getActivationUrlInfoCmd = &cobra.Command{
 }
 
 // start retrieve-token command
-
 var retrieveTokenReq sharing.RetrieveTokenRequest
-var retrieveTokenJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(retrieveTokenCmd)
 	// TODO: short flags
-	retrieveTokenCmd.Flags().Var(&retrieveTokenJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -95,12 +83,7 @@ var retrieveTokenCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = retrieveTokenJson.Unmarshal(&retrieveTokenReq)
-			if err != nil {
-				return err
-			}
-		}
+
 		retrieveTokenReq.ActivationUrl = args[0]
 
 		response, err := w.RecipientActivation.RetrieveToken(ctx, retrieveTokenReq)

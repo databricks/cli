@@ -81,7 +81,6 @@ var Cmd = &cobra.Command{
 }
 
 // start create command
-
 var createReq billing.WrappedCreateLogDeliveryConfiguration
 var createJson flags.JsonFlag
 
@@ -138,6 +137,7 @@ var createCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = createJson.Unmarshal(&createReq)
 			if err != nil {
@@ -158,14 +158,11 @@ var createCmd = &cobra.Command{
 }
 
 // start get command
-
 var getReq billing.GetLogDeliveryRequest
-var getJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
-	getCmd.Flags().Var(&getJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -182,12 +179,7 @@ var getCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = getJson.Unmarshal(&getReq)
-			if err != nil {
-				return err
-			}
-		}
+
 		if len(args) == 0 {
 			promptSpinner := cmdio.Spinner(ctx)
 			promptSpinner <- "No LOG_DELIVERY_CONFIGURATION_ID argument specified. Loading names for Log Delivery drop-down."
@@ -219,7 +211,6 @@ var getCmd = &cobra.Command{
 }
 
 // start list command
-
 var listReq billing.ListLogDeliveryRequest
 var listJson flags.JsonFlag
 
@@ -254,6 +245,7 @@ var listCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = listJson.Unmarshal(&listReq)
 			if err != nil {
@@ -274,14 +266,11 @@ var listCmd = &cobra.Command{
 }
 
 // start patch-status command
-
 var patchStatusReq billing.UpdateLogDeliveryConfigurationStatusRequest
-var patchStatusJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(patchStatusCmd)
 	// TODO: short flags
-	patchStatusCmd.Flags().Var(&patchStatusJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -305,12 +294,7 @@ var patchStatusCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = patchStatusJson.Unmarshal(&patchStatusReq)
-			if err != nil {
-				return err
-			}
-		}
+
 		_, err = fmt.Sscan(args[0], &patchStatusReq.Status)
 		if err != nil {
 			return fmt.Errorf("invalid STATUS: %s", args[0])

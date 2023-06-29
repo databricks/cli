@@ -23,14 +23,11 @@ var Cmd = &cobra.Command{
 }
 
 // start delete command
-
 var deleteReq iam.DeleteWorkspaceAssignmentRequest
-var deleteJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
-	deleteCmd.Flags().Var(&deleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -51,12 +48,7 @@ var deleteCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = deleteJson.Unmarshal(&deleteReq)
-			if err != nil {
-				return err
-			}
-		}
+
 		_, err = fmt.Sscan(args[0], &deleteReq.WorkspaceId)
 		if err != nil {
 			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
@@ -78,14 +70,11 @@ var deleteCmd = &cobra.Command{
 }
 
 // start get command
-
 var getReq iam.GetWorkspaceAssignmentRequest
-var getJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
-	getCmd.Flags().Var(&getJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -105,12 +94,7 @@ var getCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = getJson.Unmarshal(&getReq)
-			if err != nil {
-				return err
-			}
-		}
+
 		_, err = fmt.Sscan(args[0], &getReq.WorkspaceId)
 		if err != nil {
 			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
@@ -128,14 +112,11 @@ var getCmd = &cobra.Command{
 }
 
 // start list command
-
 var listReq iam.ListWorkspaceAssignmentRequest
-var listJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(listCmd)
 	// TODO: short flags
-	listCmd.Flags().Var(&listJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -156,12 +137,7 @@ var listCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = listJson.Unmarshal(&listReq)
-			if err != nil {
-				return err
-			}
-		}
+
 		_, err = fmt.Sscan(args[0], &listReq.WorkspaceId)
 		if err != nil {
 			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
@@ -179,7 +155,6 @@ var listCmd = &cobra.Command{
 }
 
 // start update command
-
 var updateReq iam.UpdateWorkspaceAssignments
 var updateJson flags.JsonFlag
 
@@ -203,6 +178,7 @@ var updateCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = updateJson.Unmarshal(&updateReq)
 			if err != nil {

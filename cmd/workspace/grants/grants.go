@@ -32,14 +32,11 @@ var Cmd = &cobra.Command{
 }
 
 // start get command
-
 var getReq catalog.GetGrantRequest
-var getJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
-	getCmd.Flags().Var(&getJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	getCmd.Flags().StringVar(&getReq.Principal, "principal", getReq.Principal, `If provided, only the permissions for the specified principal (user or group) are returned.`)
 
@@ -61,12 +58,7 @@ var getCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = getJson.Unmarshal(&getReq)
-			if err != nil {
-				return err
-			}
-		}
+
 		_, err = fmt.Sscan(args[0], &getReq.SecurableType)
 		if err != nil {
 			return fmt.Errorf("invalid SECURABLE_TYPE: %s", args[0])
@@ -85,14 +77,11 @@ var getCmd = &cobra.Command{
 }
 
 // start get-effective command
-
 var getEffectiveReq catalog.GetEffectiveRequest
-var getEffectiveJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(getEffectiveCmd)
 	// TODO: short flags
-	getEffectiveCmd.Flags().Var(&getEffectiveJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	getEffectiveCmd.Flags().StringVar(&getEffectiveReq.Principal, "principal", getEffectiveReq.Principal, `If provided, only the effective permissions for the specified principal (user or group) are returned.`)
 
@@ -114,12 +103,7 @@ var getEffectiveCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = getEffectiveJson.Unmarshal(&getEffectiveReq)
-			if err != nil {
-				return err
-			}
-		}
+
 		_, err = fmt.Sscan(args[0], &getEffectiveReq.SecurableType)
 		if err != nil {
 			return fmt.Errorf("invalid SECURABLE_TYPE: %s", args[0])
@@ -138,7 +122,6 @@ var getEffectiveCmd = &cobra.Command{
 }
 
 // start update command
-
 var updateReq catalog.UpdatePermissions
 var updateJson flags.JsonFlag
 
@@ -167,6 +150,7 @@ var updateCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = updateJson.Unmarshal(&updateReq)
 			if err != nil {

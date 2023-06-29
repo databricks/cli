@@ -28,14 +28,11 @@ var Cmd = &cobra.Command{
 }
 
 // start get command
-
 var getReq compute.GetPolicyFamilyRequest
-var getJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
-	getCmd.Flags().Var(&getJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -51,12 +48,7 @@ var getCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = getJson.Unmarshal(&getReq)
-			if err != nil {
-				return err
-			}
-		}
+
 		getReq.PolicyFamilyId = args[0]
 
 		response, err := w.PolicyFamilies.Get(ctx, getReq)
@@ -71,7 +63,6 @@ var getCmd = &cobra.Command{
 }
 
 // start list command
-
 var listReq compute.ListPolicyFamiliesRequest
 var listJson flags.JsonFlag
 
@@ -100,6 +91,7 @@ var listCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = listJson.Unmarshal(&listReq)
 			if err != nil {
