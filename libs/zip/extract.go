@@ -22,7 +22,7 @@ func Extract(src string, dst string) error {
 
 		targetPath := filepath.Join(dst, path)
 		if d.IsDir() {
-			return os.MkdirAll(targetPath, os.ModePerm)
+			return os.MkdirAll(targetPath, 0755)
 		}
 
 		targetFile, err := os.Create(targetPath)
