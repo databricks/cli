@@ -39,7 +39,7 @@ func TestAccGitClonePublicRepository(t *testing.T) {
 }
 
 func TestAccGitClonePublicRepositoryForTagReference(t *testing.T) {
-	// t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	tmpDir := t.TempDir()
 	ctx := context.Background()
