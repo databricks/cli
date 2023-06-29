@@ -52,9 +52,6 @@ var downloadCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustAccountClient,
@@ -66,10 +63,9 @@ var downloadCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			downloadReq.StartMonth = args[0]
-			downloadReq.EndMonth = args[1]
 		}
+		downloadReq.StartMonth = args[0]
+		downloadReq.EndMonth = args[1]
 
 		err = a.BillableUsage.Download(ctx, downloadReq)
 		if err != nil {

@@ -116,26 +116,25 @@ var deleteCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No NAME_ARG argument specified. Loading names for Connections drop-down."
-				names, err := w.Connections.ConnectionInfoNameToFullNameMap(ctx)
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Connections drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "The name of the connection to be deleted")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have the name of the connection to be deleted")
-			}
-			deleteReq.NameArg = args[0]
 		}
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No NAME_ARG argument specified. Loading names for Connections drop-down."
+			names, err := w.Connections.ConnectionInfoNameToFullNameMap(ctx)
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Connections drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "The name of the connection to be deleted")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the name of the connection to be deleted")
+		}
+		deleteReq.NameArg = args[0]
 
 		err = w.Connections.Delete(ctx, deleteReq)
 		if err != nil {
@@ -177,26 +176,25 @@ var getCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No NAME_ARG argument specified. Loading names for Connections drop-down."
-				names, err := w.Connections.ConnectionInfoNameToFullNameMap(ctx)
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Connections drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "Name of the connection")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have name of the connection")
-			}
-			getReq.NameArg = args[0]
 		}
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No NAME_ARG argument specified. Loading names for Connections drop-down."
+			names, err := w.Connections.ConnectionInfoNameToFullNameMap(ctx)
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Connections drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "Name of the connection")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have name of the connection")
+		}
+		getReq.NameArg = args[0]
 
 		response, err := w.Connections.Get(ctx, getReq)
 		if err != nil {

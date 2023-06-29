@@ -122,9 +122,6 @@ var deleteCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustAccountClient,
@@ -136,9 +133,8 @@ var deleteCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			deleteReq.CustomerManagedKeyId = args[0]
 		}
+		deleteReq.CustomerManagedKeyId = args[0]
 
 		err = a.EncryptionKeys.Delete(ctx, deleteReq)
 		if err != nil {
@@ -187,9 +183,6 @@ var getCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustAccountClient,
@@ -201,9 +194,8 @@ var getCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			getReq.CustomerManagedKeyId = args[0]
 		}
+		getReq.CustomerManagedKeyId = args[0]
 
 		response, err := a.EncryptionKeys.Get(ctx, getReq)
 		if err != nil {

@@ -133,26 +133,25 @@ var exportCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No PATH argument specified. Loading names for Workspace drop-down."
-				names, err := w.Workspace.ObjectInfoPathToObjectIdMap(ctx, workspace.ListWorkspaceRequest{})
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Workspace drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "The absolute path of the object or directory")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have the absolute path of the object or directory")
-			}
-			exportReq.Path = args[0]
 		}
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No PATH argument specified. Loading names for Workspace drop-down."
+			names, err := w.Workspace.ObjectInfoPathToObjectIdMap(ctx, workspace.ListWorkspaceRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Workspace drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "The absolute path of the object or directory")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the absolute path of the object or directory")
+		}
+		exportReq.Path = args[0]
 
 		response, err := w.Workspace.Export(ctx, exportReq)
 		if err != nil {
@@ -188,9 +187,6 @@ var getStatusCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
@@ -202,9 +198,8 @@ var getStatusCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			getStatusReq.Path = args[0]
 		}
+		getStatusReq.Path = args[0]
 
 		response, err := w.Workspace.GetStatus(ctx, getStatusReq)
 		if err != nil {
@@ -302,9 +297,6 @@ var listCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
@@ -316,9 +308,8 @@ var listCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			listReq.Path = args[0]
 		}
+		listReq.Path = args[0]
 
 		response, err := w.Workspace.ListAll(ctx, listReq)
 		if err != nil {

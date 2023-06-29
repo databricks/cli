@@ -108,9 +108,6 @@ var clusterStatusCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
@@ -122,9 +119,8 @@ var clusterStatusCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			clusterStatusReq.ClusterId = args[0]
 		}
+		clusterStatusReq.ClusterId = args[0]
 
 		response, err := w.Libraries.ClusterStatus(ctx, clusterStatusReq)
 		if err != nil {

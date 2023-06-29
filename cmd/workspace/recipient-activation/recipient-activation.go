@@ -41,9 +41,6 @@ var getActivationUrlInfoCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
@@ -55,9 +52,8 @@ var getActivationUrlInfoCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			getActivationUrlInfoReq.ActivationUrl = args[0]
 		}
+		getActivationUrlInfoReq.ActivationUrl = args[0]
 
 		err = w.RecipientActivation.GetActivationUrlInfo(ctx, getActivationUrlInfoReq)
 		if err != nil {
@@ -93,9 +89,6 @@ var retrieveTokenCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
@@ -107,9 +100,8 @@ var retrieveTokenCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			retrieveTokenReq.ActivationUrl = args[0]
 		}
+		retrieveTokenReq.ActivationUrl = args[0]
 
 		response, err := w.RecipientActivation.RetrieveToken(ctx, retrieveTokenReq)
 		if err != nil {

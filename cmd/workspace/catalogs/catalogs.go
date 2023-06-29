@@ -109,9 +109,6 @@ var deleteCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
@@ -123,9 +120,8 @@ var deleteCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			deleteReq.Name = args[0]
 		}
+		deleteReq.Name = args[0]
 
 		err = w.Catalogs.Delete(ctx, deleteReq)
 		if err != nil {
@@ -162,9 +158,6 @@ var getCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
@@ -176,9 +169,8 @@ var getCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			getReq.Name = args[0]
 		}
+		getReq.Name = args[0]
 
 		response, err := w.Catalogs.Get(ctx, getReq)
 		if err != nil {

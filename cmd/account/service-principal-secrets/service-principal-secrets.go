@@ -55,9 +55,6 @@ var createCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustAccountClient,
@@ -69,11 +66,10 @@ var createCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			_, err = fmt.Sscan(args[0], &createReq.ServicePrincipalId)
-			if err != nil {
-				return fmt.Errorf("invalid SERVICE_PRINCIPAL_ID: %s", args[0])
-			}
+		}
+		_, err = fmt.Sscan(args[0], &createReq.ServicePrincipalId)
+		if err != nil {
+			return fmt.Errorf("invalid SERVICE_PRINCIPAL_ID: %s", args[0])
 		}
 
 		response, err := a.ServicePrincipalSecrets.Create(ctx, createReq)
@@ -109,9 +105,6 @@ var deleteCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustAccountClient,
@@ -123,13 +116,12 @@ var deleteCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			_, err = fmt.Sscan(args[0], &deleteReq.ServicePrincipalId)
-			if err != nil {
-				return fmt.Errorf("invalid SERVICE_PRINCIPAL_ID: %s", args[0])
-			}
-			deleteReq.SecretId = args[1]
 		}
+		_, err = fmt.Sscan(args[0], &deleteReq.ServicePrincipalId)
+		if err != nil {
+			return fmt.Errorf("invalid SERVICE_PRINCIPAL_ID: %s", args[0])
+		}
+		deleteReq.SecretId = args[1]
 
 		err = a.ServicePrincipalSecrets.Delete(ctx, deleteReq)
 		if err != nil {
@@ -166,9 +158,6 @@ var listCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustAccountClient,
@@ -180,11 +169,10 @@ var listCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			_, err = fmt.Sscan(args[0], &listReq.ServicePrincipalId)
-			if err != nil {
-				return fmt.Errorf("invalid SERVICE_PRINCIPAL_ID: %s", args[0])
-			}
+		}
+		_, err = fmt.Sscan(args[0], &listReq.ServicePrincipalId)
+		if err != nil {
+			return fmt.Errorf("invalid SERVICE_PRINCIPAL_ID: %s", args[0])
 		}
 
 		response, err := a.ServicePrincipalSecrets.ListAll(ctx, listReq)

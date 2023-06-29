@@ -113,26 +113,25 @@ var deleteCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No FULL_NAME argument specified. Loading names for Schemas drop-down."
-				names, err := w.Schemas.SchemaInfoNameToFullNameMap(ctx, catalog.ListSchemasRequest{})
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Schemas drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "Full name of the schema")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have full name of the schema")
-			}
-			deleteReq.FullName = args[0]
 		}
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No FULL_NAME argument specified. Loading names for Schemas drop-down."
+			names, err := w.Schemas.SchemaInfoNameToFullNameMap(ctx, catalog.ListSchemasRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Schemas drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "Full name of the schema")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have full name of the schema")
+		}
+		deleteReq.FullName = args[0]
 
 		err = w.Schemas.Delete(ctx, deleteReq)
 		if err != nil {
@@ -176,26 +175,25 @@ var getCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No FULL_NAME argument specified. Loading names for Schemas drop-down."
-				names, err := w.Schemas.SchemaInfoNameToFullNameMap(ctx, catalog.ListSchemasRequest{})
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Schemas drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "Full name of the schema")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have full name of the schema")
-			}
-			getReq.FullName = args[0]
 		}
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No FULL_NAME argument specified. Loading names for Schemas drop-down."
+			names, err := w.Schemas.SchemaInfoNameToFullNameMap(ctx, catalog.ListSchemasRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Schemas drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "Full name of the schema")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have full name of the schema")
+		}
+		getReq.FullName = args[0]
 
 		response, err := w.Schemas.Get(ctx, getReq)
 		if err != nil {
@@ -234,9 +232,6 @@ var listCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
@@ -248,9 +243,8 @@ var listCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			listReq.CatalogName = args[0]
 		}
+		listReq.CatalogName = args[0]
 
 		response, err := w.Schemas.ListAll(ctx, listReq)
 		if err != nil {
@@ -301,26 +295,25 @@ var updateCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No FULL_NAME argument specified. Loading names for Schemas drop-down."
-				names, err := w.Schemas.SchemaInfoNameToFullNameMap(ctx, catalog.ListSchemasRequest{})
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Schemas drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "Full name of the schema")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have full name of the schema")
-			}
-			updateReq.FullName = args[0]
 		}
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No FULL_NAME argument specified. Loading names for Schemas drop-down."
+			names, err := w.Schemas.SchemaInfoNameToFullNameMap(ctx, catalog.ListSchemasRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Schemas drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "Full name of the schema")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have full name of the schema")
+		}
+		updateReq.FullName = args[0]
 
 		response, err := w.Schemas.Update(ctx, updateReq)
 		if err != nil {

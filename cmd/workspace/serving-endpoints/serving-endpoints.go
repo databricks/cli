@@ -57,9 +57,6 @@ var buildLogsCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
@@ -71,10 +68,9 @@ var buildLogsCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			buildLogsReq.Name = args[0]
-			buildLogsReq.ServedModelName = args[1]
 		}
+		buildLogsReq.Name = args[0]
+		buildLogsReq.ServedModelName = args[1]
 
 		response, err := w.ServingEndpoints.BuildLogs(ctx, buildLogsReq)
 		if err != nil {
@@ -167,9 +163,6 @@ var deleteCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
@@ -181,9 +174,8 @@ var deleteCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			deleteReq.Name = args[0]
 		}
+		deleteReq.Name = args[0]
 
 		err = w.ServingEndpoints.Delete(ctx, deleteReq)
 		if err != nil {
@@ -219,9 +211,6 @@ var exportMetricsCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
@@ -233,9 +222,8 @@ var exportMetricsCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			exportMetricsReq.Name = args[0]
 		}
+		exportMetricsReq.Name = args[0]
 
 		err = w.ServingEndpoints.ExportMetrics(ctx, exportMetricsReq)
 		if err != nil {
@@ -270,9 +258,6 @@ var getCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
@@ -284,9 +269,8 @@ var getCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			getReq.Name = args[0]
 		}
+		getReq.Name = args[0]
 
 		response, err := w.ServingEndpoints.Get(ctx, getReq)
 		if err != nil {
@@ -350,9 +334,6 @@ var logsCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
@@ -364,10 +345,9 @@ var logsCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			logsReq.Name = args[0]
-			logsReq.ServedModelName = args[1]
 		}
+		logsReq.Name = args[0]
+		logsReq.ServedModelName = args[1]
 
 		response, err := w.ServingEndpoints.Logs(ctx, logsReq)
 		if err != nil {
@@ -400,9 +380,6 @@ var queryCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
@@ -414,9 +391,8 @@ var queryCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			queryReq.Name = args[0]
 		}
+		queryReq.Name = args[0]
 
 		response, err := w.ServingEndpoints.Query(ctx, queryReq)
 		if err != nil {

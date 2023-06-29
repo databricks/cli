@@ -421,28 +421,27 @@ var exportRunCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No RUN_ID argument specified. Loading names for Jobs drop-down."
-				names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "The canonical identifier for the run")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have the canonical identifier for the run")
-			}
-			_, err = fmt.Sscan(args[0], &exportRunReq.RunId)
+		}
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No RUN_ID argument specified. Loading names for Jobs drop-down."
+			names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
+			close(promptSpinner)
 			if err != nil {
-				return fmt.Errorf("invalid RUN_ID: %s", args[0])
+				return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
+			id, err := cmdio.Select(ctx, names, "The canonical identifier for the run")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the canonical identifier for the run")
+		}
+		_, err = fmt.Sscan(args[0], &exportRunReq.RunId)
+		if err != nil {
+			return fmt.Errorf("invalid RUN_ID: %s", args[0])
 		}
 
 		response, err := w.Jobs.ExportRun(ctx, exportRunReq)
@@ -485,28 +484,27 @@ var getCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No JOB_ID argument specified. Loading names for Jobs drop-down."
-				names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "The canonical identifier of the job to retrieve information about")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have the canonical identifier of the job to retrieve information about")
-			}
-			_, err = fmt.Sscan(args[0], &getReq.JobId)
+		}
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No JOB_ID argument specified. Loading names for Jobs drop-down."
+			names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
+			close(promptSpinner)
 			if err != nil {
-				return fmt.Errorf("invalid JOB_ID: %s", args[0])
+				return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
+			id, err := cmdio.Select(ctx, names, "The canonical identifier of the job to retrieve information about")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the canonical identifier of the job to retrieve information about")
+		}
+		_, err = fmt.Sscan(args[0], &getReq.JobId)
+		if err != nil {
+			return fmt.Errorf("invalid JOB_ID: %s", args[0])
 		}
 
 		response, err := w.Jobs.Get(ctx, getReq)
@@ -556,28 +554,27 @@ var getRunCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No RUN_ID argument specified. Loading names for Jobs drop-down."
-				names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "The canonical identifier of the run for which to retrieve the metadata")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have the canonical identifier of the run for which to retrieve the metadata")
-			}
-			_, err = fmt.Sscan(args[0], &getRunReq.RunId)
+		}
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No RUN_ID argument specified. Loading names for Jobs drop-down."
+			names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
+			close(promptSpinner)
 			if err != nil {
-				return fmt.Errorf("invalid RUN_ID: %s", args[0])
+				return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
+			id, err := cmdio.Select(ctx, names, "The canonical identifier of the run for which to retrieve the metadata")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the canonical identifier of the run for which to retrieve the metadata")
+		}
+		_, err = fmt.Sscan(args[0], &getRunReq.RunId)
+		if err != nil {
+			return fmt.Errorf("invalid RUN_ID: %s", args[0])
 		}
 
 		response, err := w.Jobs.GetRun(ctx, getRunReq)
@@ -629,28 +626,27 @@ var getRunOutputCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No RUN_ID argument specified. Loading names for Jobs drop-down."
-				names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "The canonical identifier for the run")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have the canonical identifier for the run")
-			}
-			_, err = fmt.Sscan(args[0], &getRunOutputReq.RunId)
+		}
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No RUN_ID argument specified. Loading names for Jobs drop-down."
+			names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
+			close(promptSpinner)
 			if err != nil {
-				return fmt.Errorf("invalid RUN_ID: %s", args[0])
+				return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
+			id, err := cmdio.Select(ctx, names, "The canonical identifier for the run")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the canonical identifier for the run")
+		}
+		_, err = fmt.Sscan(args[0], &getRunOutputReq.RunId)
+		if err != nil {
+			return fmt.Errorf("invalid RUN_ID: %s", args[0])
 		}
 
 		response, err := w.Jobs.GetRunOutput(ctx, getRunOutputReq)

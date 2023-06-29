@@ -57,9 +57,6 @@ var assignCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(3)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
@@ -71,13 +68,12 @@ var assignCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			assignReq.MetastoreId = args[0]
-			assignReq.DefaultCatalogName = args[1]
-			_, err = fmt.Sscan(args[2], &assignReq.WorkspaceId)
-			if err != nil {
-				return fmt.Errorf("invalid WORKSPACE_ID: %s", args[2])
-			}
+		}
+		assignReq.MetastoreId = args[0]
+		assignReq.DefaultCatalogName = args[1]
+		_, err = fmt.Sscan(args[2], &assignReq.WorkspaceId)
+		if err != nil {
+			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[2])
 		}
 
 		err = w.Metastores.Assign(ctx, assignReq)
@@ -206,26 +202,25 @@ var deleteCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No ID argument specified. Loading names for Metastores drop-down."
-				names, err := w.Metastores.MetastoreInfoNameToMetastoreIdMap(ctx)
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Metastores drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "Unique ID of the metastore")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have unique id of the metastore")
-			}
-			deleteReq.Id = args[0]
 		}
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No ID argument specified. Loading names for Metastores drop-down."
+			names, err := w.Metastores.MetastoreInfoNameToMetastoreIdMap(ctx)
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Metastores drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "Unique ID of the metastore")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have unique id of the metastore")
+		}
+		deleteReq.Id = args[0]
 
 		err = w.Metastores.Delete(ctx, deleteReq)
 		if err != nil {
@@ -268,26 +263,25 @@ var getCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No ID argument specified. Loading names for Metastores drop-down."
-				names, err := w.Metastores.MetastoreInfoNameToMetastoreIdMap(ctx)
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Metastores drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "Unique ID of the metastore")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have unique id of the metastore")
-			}
-			getReq.Id = args[0]
 		}
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No ID argument specified. Loading names for Metastores drop-down."
+			names, err := w.Metastores.MetastoreInfoNameToMetastoreIdMap(ctx)
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Metastores drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "Unique ID of the metastore")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have unique id of the metastore")
+		}
+		getReq.Id = args[0]
 
 		response, err := w.Metastores.Get(ctx, getReq)
 		if err != nil {
@@ -443,9 +437,6 @@ var unassignCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
@@ -457,13 +448,12 @@ var unassignCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			_, err = fmt.Sscan(args[0], &unassignReq.WorkspaceId)
-			if err != nil {
-				return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
-			}
-			unassignReq.MetastoreId = args[1]
 		}
+		_, err = fmt.Sscan(args[0], &unassignReq.WorkspaceId)
+		if err != nil {
+			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
+		}
+		unassignReq.MetastoreId = args[1]
 
 		err = w.Metastores.Unassign(ctx, unassignReq)
 		if err != nil {
@@ -514,26 +504,25 @@ var updateCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No ID argument specified. Loading names for Metastores drop-down."
-				names, err := w.Metastores.MetastoreInfoNameToMetastoreIdMap(ctx)
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Metastores drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "Unique ID of the metastore")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have unique id of the metastore")
-			}
-			updateReq.Id = args[0]
 		}
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No ID argument specified. Loading names for Metastores drop-down."
+			names, err := w.Metastores.MetastoreInfoNameToMetastoreIdMap(ctx)
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Metastores drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "Unique ID of the metastore")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have unique id of the metastore")
+		}
+		updateReq.Id = args[0]
 
 		response, err := w.Metastores.Update(ctx, updateReq)
 		if err != nil {
@@ -581,28 +570,27 @@ var updateAssignmentCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No WORKSPACE_ID argument specified. Loading names for Metastores drop-down."
-				names, err := w.Metastores.MetastoreInfoNameToMetastoreIdMap(ctx)
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Metastores drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "A workspace ID")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have a workspace id")
-			}
-			_, err = fmt.Sscan(args[0], &updateAssignmentReq.WorkspaceId)
+		}
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No WORKSPACE_ID argument specified. Loading names for Metastores drop-down."
+			names, err := w.Metastores.MetastoreInfoNameToMetastoreIdMap(ctx)
+			close(promptSpinner)
 			if err != nil {
-				return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
+				return fmt.Errorf("failed to load names for Metastores drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
+			id, err := cmdio.Select(ctx, names, "A workspace ID")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have a workspace id")
+		}
+		_, err = fmt.Sscan(args[0], &updateAssignmentReq.WorkspaceId)
+		if err != nil {
+			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
 		}
 
 		err = w.Metastores.UpdateAssignment(ctx, updateAssignmentReq)

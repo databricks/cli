@@ -113,26 +113,25 @@ var deleteCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No SCRIPT_ID argument specified. Loading names for Global Init Scripts drop-down."
-				names, err := w.GlobalInitScripts.GlobalInitScriptDetailsNameToScriptIdMap(ctx)
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Global Init Scripts drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "The ID of the global init script")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have the id of the global init script")
-			}
-			deleteReq.ScriptId = args[0]
 		}
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No SCRIPT_ID argument specified. Loading names for Global Init Scripts drop-down."
+			names, err := w.GlobalInitScripts.GlobalInitScriptDetailsNameToScriptIdMap(ctx)
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Global Init Scripts drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "The ID of the global init script")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the id of the global init script")
+		}
+		deleteReq.ScriptId = args[0]
 
 		err = w.GlobalInitScripts.Delete(ctx, deleteReq)
 		if err != nil {
@@ -174,26 +173,25 @@ var getCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No SCRIPT_ID argument specified. Loading names for Global Init Scripts drop-down."
-				names, err := w.GlobalInitScripts.GlobalInitScriptDetailsNameToScriptIdMap(ctx)
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Global Init Scripts drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "The ID of the global init script")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have the id of the global init script")
-			}
-			getReq.ScriptId = args[0]
 		}
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No SCRIPT_ID argument specified. Loading names for Global Init Scripts drop-down."
+			names, err := w.GlobalInitScripts.GlobalInitScriptDetailsNameToScriptIdMap(ctx)
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Global Init Scripts drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "The ID of the global init script")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the id of the global init script")
+		}
+		getReq.ScriptId = args[0]
 
 		response, err := w.GlobalInitScripts.Get(ctx, getReq)
 		if err != nil {
@@ -265,9 +263,6 @@ var updateCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(3)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
@@ -279,11 +274,10 @@ var updateCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			updateReq.Name = args[0]
-			updateReq.Script = args[1]
-			updateReq.ScriptId = args[2]
 		}
+		updateReq.Name = args[0]
+		updateReq.Script = args[1]
+		updateReq.ScriptId = args[2]
 
 		err = w.GlobalInitScripts.Update(ctx, updateReq)
 		if err != nil {

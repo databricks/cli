@@ -154,28 +154,27 @@ var deleteCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No WORKSPACE_ID argument specified. Loading names for Workspaces drop-down."
-				names, err := a.Workspaces.WorkspaceWorkspaceNameToWorkspaceIdMap(ctx)
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Workspaces drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "Workspace ID")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have workspace id")
-			}
-			_, err = fmt.Sscan(args[0], &deleteReq.WorkspaceId)
+		}
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No WORKSPACE_ID argument specified. Loading names for Workspaces drop-down."
+			names, err := a.Workspaces.WorkspaceWorkspaceNameToWorkspaceIdMap(ctx)
+			close(promptSpinner)
 			if err != nil {
-				return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
+				return fmt.Errorf("failed to load names for Workspaces drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
+			id, err := cmdio.Select(ctx, names, "Workspace ID")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have workspace id")
+		}
+		_, err = fmt.Sscan(args[0], &deleteReq.WorkspaceId)
+		if err != nil {
+			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
 		}
 
 		err = a.Workspaces.Delete(ctx, deleteReq)
@@ -231,28 +230,27 @@ var getCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No WORKSPACE_ID argument specified. Loading names for Workspaces drop-down."
-				names, err := a.Workspaces.WorkspaceWorkspaceNameToWorkspaceIdMap(ctx)
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Workspaces drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "Workspace ID")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have workspace id")
-			}
-			_, err = fmt.Sscan(args[0], &getReq.WorkspaceId)
+		}
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No WORKSPACE_ID argument specified. Loading names for Workspaces drop-down."
+			names, err := a.Workspaces.WorkspaceWorkspaceNameToWorkspaceIdMap(ctx)
+			close(promptSpinner)
 			if err != nil {
-				return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
+				return fmt.Errorf("failed to load names for Workspaces drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
+			id, err := cmdio.Select(ctx, names, "Workspace ID")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have workspace id")
+		}
+		_, err = fmt.Sscan(args[0], &getReq.WorkspaceId)
+		if err != nil {
+			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
 		}
 
 		response, err := a.Workspaces.Get(ctx, getReq)
@@ -451,28 +449,27 @@ var updateCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No WORKSPACE_ID argument specified. Loading names for Workspaces drop-down."
-				names, err := a.Workspaces.WorkspaceWorkspaceNameToWorkspaceIdMap(ctx)
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Workspaces drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "Workspace ID")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have workspace id")
-			}
-			_, err = fmt.Sscan(args[0], &updateReq.WorkspaceId)
+		}
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No WORKSPACE_ID argument specified. Loading names for Workspaces drop-down."
+			names, err := a.Workspaces.WorkspaceWorkspaceNameToWorkspaceIdMap(ctx)
+			close(promptSpinner)
 			if err != nil {
-				return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
+				return fmt.Errorf("failed to load names for Workspaces drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
+			id, err := cmdio.Select(ctx, names, "Workspace ID")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have workspace id")
+		}
+		_, err = fmt.Sscan(args[0], &updateReq.WorkspaceId)
+		if err != nil {
+			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
 		}
 
 		wait, err := a.Workspaces.Update(ctx, updateReq)

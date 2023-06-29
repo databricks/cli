@@ -333,9 +333,6 @@ var getByNameCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
@@ -347,9 +344,8 @@ var getByNameCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			getByNameReq.ExperimentName = args[0]
 		}
+		getByNameReq.ExperimentName = args[0]
 
 		response, err := w.Experiments.GetByName(ctx, getByNameReq)
 		if err != nil {
@@ -384,9 +380,6 @@ var getExperimentCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
@@ -398,9 +391,8 @@ var getExperimentCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			getExperimentReq.ExperimentId = args[0]
 		}
+		getExperimentReq.ExperimentId = args[0]
 
 		response, err := w.Experiments.GetExperiment(ctx, getExperimentReq)
 		if err != nil {
@@ -440,9 +432,6 @@ var getHistoryCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
@@ -454,9 +443,8 @@ var getHistoryCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			getHistoryReq.MetricKey = args[0]
 		}
+		getHistoryReq.MetricKey = args[0]
 
 		response, err := w.Experiments.GetHistory(ctx, getHistoryReq)
 		if err != nil {
@@ -498,9 +486,6 @@ var getRunCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
@@ -512,9 +497,8 @@ var getRunCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			getRunReq.RunId = args[0]
 		}
+		getRunReq.RunId = args[0]
 
 		response, err := w.Experiments.GetRun(ctx, getRunReq)
 		if err != nil {

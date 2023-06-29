@@ -116,9 +116,6 @@ var deleteCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(3)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
@@ -130,13 +127,12 @@ var deleteCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			deleteReq.FullName = args[0]
-			deleteReq.ConstraintName = args[1]
-			_, err = fmt.Sscan(args[2], &deleteReq.Cascade)
-			if err != nil {
-				return fmt.Errorf("invalid CASCADE: %s", args[2])
-			}
+		}
+		deleteReq.FullName = args[0]
+		deleteReq.ConstraintName = args[1]
+		_, err = fmt.Sscan(args[2], &deleteReq.Cascade)
+		if err != nil {
+			return fmt.Errorf("invalid CASCADE: %s", args[2])
 		}
 
 		err = w.TableConstraints.Delete(ctx, deleteReq)

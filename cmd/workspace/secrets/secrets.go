@@ -285,9 +285,6 @@ var getAclCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
@@ -299,10 +296,9 @@ var getAclCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			getAclReq.Scope = args[0]
-			getAclReq.Principal = args[1]
 		}
+		getAclReq.Scope = args[0]
+		getAclReq.Principal = args[1]
 
 		response, err := w.Secrets.GetAcl(ctx, getAclReq)
 		if err != nil {
@@ -342,9 +338,6 @@ var listAclsCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
@@ -356,9 +349,8 @@ var listAclsCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			listAclsReq.Scope = args[0]
 		}
+		listAclsReq.Scope = args[0]
 
 		response, err := w.Secrets.ListAclsAll(ctx, listAclsReq)
 		if err != nil {
@@ -433,9 +425,6 @@ var listSecretsCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
@@ -447,9 +436,8 @@ var listSecretsCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			listSecretsReq.Scope = args[0]
 		}
+		listSecretsReq.Scope = args[0]
 
 		response, err := w.Secrets.ListSecretsAll(ctx, listSecretsReq)
 		if err != nil {

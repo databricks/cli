@@ -123,26 +123,25 @@ var deleteCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No ID argument specified. Loading names for Account Users drop-down."
-				names, err := a.Users.UserUserNameToIdMap(ctx, iam.ListAccountUsersRequest{})
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Account Users drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "Unique ID for a user in the Databricks account")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have unique id for a user in the databricks account")
-			}
-			deleteReq.Id = args[0]
 		}
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No ID argument specified. Loading names for Account Users drop-down."
+			names, err := a.Users.UserUserNameToIdMap(ctx, iam.ListAccountUsersRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Account Users drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "Unique ID for a user in the Databricks account")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have unique id for a user in the databricks account")
+		}
+		deleteReq.Id = args[0]
 
 		err = a.Users.Delete(ctx, deleteReq)
 		if err != nil {
@@ -184,26 +183,25 @@ var getCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No ID argument specified. Loading names for Account Users drop-down."
-				names, err := a.Users.UserUserNameToIdMap(ctx, iam.ListAccountUsersRequest{})
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Account Users drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "Unique ID for a user in the Databricks account")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have unique id for a user in the databricks account")
-			}
-			getReq.Id = args[0]
 		}
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No ID argument specified. Loading names for Account Users drop-down."
+			names, err := a.Users.UserUserNameToIdMap(ctx, iam.ListAccountUsersRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Account Users drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "Unique ID for a user in the Databricks account")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have unique id for a user in the databricks account")
+		}
+		getReq.Id = args[0]
 
 		response, err := a.Users.Get(ctx, getReq)
 		if err != nil {
@@ -306,26 +304,25 @@ var patchCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No ID argument specified. Loading names for Account Users drop-down."
-				names, err := a.Users.UserUserNameToIdMap(ctx, iam.ListAccountUsersRequest{})
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Account Users drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "Unique ID for a user in the Databricks account")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have unique id for a user in the databricks account")
-			}
-			patchReq.Id = args[0]
 		}
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No ID argument specified. Loading names for Account Users drop-down."
+			names, err := a.Users.UserUserNameToIdMap(ctx, iam.ListAccountUsersRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Account Users drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "Unique ID for a user in the Databricks account")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have unique id for a user in the databricks account")
+		}
+		patchReq.Id = args[0]
 
 		err = a.Users.Patch(ctx, patchReq)
 		if err != nil {

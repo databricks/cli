@@ -55,9 +55,6 @@ var getCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
@@ -69,13 +66,12 @@ var getCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			_, err = fmt.Sscan(args[0], &getReq.SecurableType)
-			if err != nil {
-				return fmt.Errorf("invalid SECURABLE_TYPE: %s", args[0])
-			}
-			getReq.FullName = args[1]
 		}
+		_, err = fmt.Sscan(args[0], &getReq.SecurableType)
+		if err != nil {
+			return fmt.Errorf("invalid SECURABLE_TYPE: %s", args[0])
+		}
+		getReq.FullName = args[1]
 
 		response, err := w.Grants.Get(ctx, getReq)
 		if err != nil {
@@ -112,9 +108,6 @@ var getEffectiveCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
@@ -126,13 +119,12 @@ var getEffectiveCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			_, err = fmt.Sscan(args[0], &getEffectiveReq.SecurableType)
-			if err != nil {
-				return fmt.Errorf("invalid SECURABLE_TYPE: %s", args[0])
-			}
-			getEffectiveReq.FullName = args[1]
 		}
+		_, err = fmt.Sscan(args[0], &getEffectiveReq.SecurableType)
+		if err != nil {
+			return fmt.Errorf("invalid SECURABLE_TYPE: %s", args[0])
+		}
+		getEffectiveReq.FullName = args[1]
 
 		response, err := w.Grants.GetEffective(ctx, getEffectiveReq)
 		if err != nil {
@@ -169,9 +161,6 @@ var updateCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
@@ -183,13 +172,12 @@ var updateCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			_, err = fmt.Sscan(args[0], &updateReq.SecurableType)
-			if err != nil {
-				return fmt.Errorf("invalid SECURABLE_TYPE: %s", args[0])
-			}
-			updateReq.FullName = args[1]
 		}
+		_, err = fmt.Sscan(args[0], &updateReq.SecurableType)
+		if err != nil {
+			return fmt.Errorf("invalid SECURABLE_TYPE: %s", args[0])
+		}
+		updateReq.FullName = args[1]
 
 		response, err := w.Grants.Update(ctx, updateReq)
 		if err != nil {

@@ -109,26 +109,25 @@ var deleteCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No DASHBOARD_ID argument specified. Loading names for Dashboards drop-down."
-				names, err := w.Dashboards.DashboardNameToIdMap(ctx, sql.ListDashboardsRequest{})
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Dashboards drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have ")
-			}
-			deleteReq.DashboardId = args[0]
 		}
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No DASHBOARD_ID argument specified. Loading names for Dashboards drop-down."
+			names, err := w.Dashboards.DashboardNameToIdMap(ctx, sql.ListDashboardsRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Dashboards drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have ")
+		}
+		deleteReq.DashboardId = args[0]
 
 		err = w.Dashboards.Delete(ctx, deleteReq)
 		if err != nil {
@@ -171,26 +170,25 @@ var getCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No DASHBOARD_ID argument specified. Loading names for Dashboards drop-down."
-				names, err := w.Dashboards.DashboardNameToIdMap(ctx, sql.ListDashboardsRequest{})
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Dashboards drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have ")
-			}
-			getReq.DashboardId = args[0]
 		}
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No DASHBOARD_ID argument specified. Loading names for Dashboards drop-down."
+			names, err := w.Dashboards.DashboardNameToIdMap(ctx, sql.ListDashboardsRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Dashboards drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have ")
+		}
+		getReq.DashboardId = args[0]
 
 		response, err := w.Dashboards.Get(ctx, getReq)
 		if err != nil {
@@ -287,26 +285,25 @@ var restoreCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No DASHBOARD_ID argument specified. Loading names for Dashboards drop-down."
-				names, err := w.Dashboards.DashboardNameToIdMap(ctx, sql.ListDashboardsRequest{})
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Dashboards drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have ")
-			}
-			restoreReq.DashboardId = args[0]
 		}
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No DASHBOARD_ID argument specified. Loading names for Dashboards drop-down."
+			names, err := w.Dashboards.DashboardNameToIdMap(ctx, sql.ListDashboardsRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Dashboards drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have ")
+		}
+		restoreReq.DashboardId = args[0]
 
 		err = w.Dashboards.Restore(ctx, restoreReq)
 		if err != nil {

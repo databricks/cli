@@ -62,26 +62,25 @@ var deleteCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No FULL_NAME argument specified. Loading names for Tables drop-down."
-				names, err := w.Tables.TableInfoNameToTableIdMap(ctx, catalog.ListTablesRequest{})
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Tables drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "Full name of the table")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have full name of the table")
-			}
-			deleteReq.FullName = args[0]
 		}
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No FULL_NAME argument specified. Loading names for Tables drop-down."
+			names, err := w.Tables.TableInfoNameToTableIdMap(ctx, catalog.ListTablesRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Tables drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "Full name of the table")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have full name of the table")
+		}
+		deleteReq.FullName = args[0]
 
 		err = w.Tables.Delete(ctx, deleteReq)
 		if err != nil {
@@ -129,26 +128,25 @@ var getCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No FULL_NAME argument specified. Loading names for Tables drop-down."
-				names, err := w.Tables.TableInfoNameToTableIdMap(ctx, catalog.ListTablesRequest{})
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Tables drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "Full name of the table")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have full name of the table")
-			}
-			getReq.FullName = args[0]
 		}
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No FULL_NAME argument specified. Loading names for Tables drop-down."
+			names, err := w.Tables.TableInfoNameToTableIdMap(ctx, catalog.ListTablesRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Tables drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "Full name of the table")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have full name of the table")
+		}
+		getReq.FullName = args[0]
 
 		response, err := w.Tables.Get(ctx, getReq)
 		if err != nil {
@@ -192,9 +190,6 @@ var listCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
@@ -206,10 +201,9 @@ var listCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			listReq.CatalogName = args[0]
-			listReq.SchemaName = args[1]
 		}
+		listReq.CatalogName = args[0]
+		listReq.SchemaName = args[1]
 
 		response, err := w.Tables.ListAll(ctx, listReq)
 		if err != nil {
@@ -266,26 +260,25 @@ var listSummariesCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No CATALOG_NAME argument specified. Loading names for Tables drop-down."
-				names, err := w.Tables.TableInfoNameToTableIdMap(ctx, catalog.ListTablesRequest{})
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Tables drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "Name of parent catalog for tables of interest")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have name of parent catalog for tables of interest")
-			}
-			listSummariesReq.CatalogName = args[0]
 		}
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No CATALOG_NAME argument specified. Loading names for Tables drop-down."
+			names, err := w.Tables.TableInfoNameToTableIdMap(ctx, catalog.ListTablesRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Tables drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "Name of parent catalog for tables of interest")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have name of parent catalog for tables of interest")
+		}
+		listSummariesReq.CatalogName = args[0]
 
 		response, err := w.Tables.ListSummariesAll(ctx, listSummariesReq)
 		if err != nil {

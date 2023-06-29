@@ -45,9 +45,6 @@ var deleteCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustAccountClient,
@@ -59,15 +56,14 @@ var deleteCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			_, err = fmt.Sscan(args[0], &deleteReq.WorkspaceId)
-			if err != nil {
-				return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
-			}
-			_, err = fmt.Sscan(args[1], &deleteReq.PrincipalId)
-			if err != nil {
-				return fmt.Errorf("invalid PRINCIPAL_ID: %s", args[1])
-			}
+		}
+		_, err = fmt.Sscan(args[0], &deleteReq.WorkspaceId)
+		if err != nil {
+			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
+		}
+		_, err = fmt.Sscan(args[1], &deleteReq.PrincipalId)
+		if err != nil {
+			return fmt.Errorf("invalid PRINCIPAL_ID: %s", args[1])
 		}
 
 		err = a.WorkspaceAssignment.Delete(ctx, deleteReq)
@@ -103,9 +99,6 @@ var getCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustAccountClient,
@@ -117,11 +110,10 @@ var getCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			_, err = fmt.Sscan(args[0], &getReq.WorkspaceId)
-			if err != nil {
-				return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
-			}
+		}
+		_, err = fmt.Sscan(args[0], &getReq.WorkspaceId)
+		if err != nil {
+			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
 		}
 
 		response, err := a.WorkspaceAssignment.Get(ctx, getReq)
@@ -158,9 +150,6 @@ var listCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustAccountClient,
@@ -172,11 +161,10 @@ var listCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			_, err = fmt.Sscan(args[0], &listReq.WorkspaceId)
-			if err != nil {
-				return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
-			}
+		}
+		_, err = fmt.Sscan(args[0], &listReq.WorkspaceId)
+		if err != nil {
+			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
 		}
 
 		response, err := a.WorkspaceAssignment.ListAll(ctx, listReq)

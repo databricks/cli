@@ -125,26 +125,25 @@ var deleteCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No VPC_ENDPOINT_ID argument specified. Loading names for Vpc Endpoints drop-down."
-				names, err := a.VpcEndpoints.VpcEndpointVpcEndpointNameToVpcEndpointIdMap(ctx)
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Vpc Endpoints drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "Databricks VPC endpoint ID")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have databricks vpc endpoint id")
-			}
-			deleteReq.VpcEndpointId = args[0]
 		}
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No VPC_ENDPOINT_ID argument specified. Loading names for Vpc Endpoints drop-down."
+			names, err := a.VpcEndpoints.VpcEndpointVpcEndpointNameToVpcEndpointIdMap(ctx)
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Vpc Endpoints drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "Databricks VPC endpoint ID")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have databricks vpc endpoint id")
+		}
+		deleteReq.VpcEndpointId = args[0]
 
 		err = a.VpcEndpoints.Delete(ctx, deleteReq)
 		if err != nil {
@@ -190,26 +189,25 @@ var getCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No VPC_ENDPOINT_ID argument specified. Loading names for Vpc Endpoints drop-down."
-				names, err := a.VpcEndpoints.VpcEndpointVpcEndpointNameToVpcEndpointIdMap(ctx)
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Vpc Endpoints drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "Databricks VPC endpoint ID")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have databricks vpc endpoint id")
-			}
-			getReq.VpcEndpointId = args[0]
 		}
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No VPC_ENDPOINT_ID argument specified. Loading names for Vpc Endpoints drop-down."
+			names, err := a.VpcEndpoints.VpcEndpointVpcEndpointNameToVpcEndpointIdMap(ctx)
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Vpc Endpoints drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "Databricks VPC endpoint ID")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have databricks vpc endpoint id")
+		}
+		getReq.VpcEndpointId = args[0]
 
 		response, err := a.VpcEndpoints.Get(ctx, getReq)
 		if err != nil {

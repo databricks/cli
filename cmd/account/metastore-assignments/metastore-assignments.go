@@ -46,9 +46,6 @@ var createCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustAccountClient,
@@ -60,13 +57,12 @@ var createCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			_, err = fmt.Sscan(args[0], &createReq.WorkspaceId)
-			if err != nil {
-				return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
-			}
-			createReq.MetastoreId = args[1]
 		}
+		_, err = fmt.Sscan(args[0], &createReq.WorkspaceId)
+		if err != nil {
+			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
+		}
+		createReq.MetastoreId = args[1]
 
 		response, err := a.MetastoreAssignments.Create(ctx, createReq)
 		if err != nil {
@@ -103,9 +99,6 @@ var deleteCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustAccountClient,
@@ -117,13 +110,12 @@ var deleteCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			_, err = fmt.Sscan(args[0], &deleteReq.WorkspaceId)
-			if err != nil {
-				return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
-			}
-			deleteReq.MetastoreId = args[1]
 		}
+		_, err = fmt.Sscan(args[0], &deleteReq.WorkspaceId)
+		if err != nil {
+			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
+		}
+		deleteReq.MetastoreId = args[1]
 
 		err = a.MetastoreAssignments.Delete(ctx, deleteReq)
 		if err != nil {
@@ -162,9 +154,6 @@ var getCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustAccountClient,
@@ -176,11 +165,10 @@ var getCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			_, err = fmt.Sscan(args[0], &getReq.WorkspaceId)
-			if err != nil {
-				return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
-			}
+		}
+		_, err = fmt.Sscan(args[0], &getReq.WorkspaceId)
+		if err != nil {
+			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
 		}
 
 		response, err := a.MetastoreAssignments.Get(ctx, getReq)
@@ -218,9 +206,6 @@ var listCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustAccountClient,
@@ -232,9 +217,8 @@ var listCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			listReq.MetastoreId = args[0]
 		}
+		listReq.MetastoreId = args[0]
 
 		response, err := a.MetastoreAssignments.List(ctx, listReq)
 		if err != nil {
@@ -273,9 +257,6 @@ var updateCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustAccountClient,
@@ -287,13 +268,12 @@ var updateCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			_, err = fmt.Sscan(args[0], &updateReq.WorkspaceId)
-			if err != nil {
-				return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
-			}
-			updateReq.MetastoreId = args[1]
 		}
+		_, err = fmt.Sscan(args[0], &updateReq.WorkspaceId)
+		if err != nil {
+			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
+		}
+		updateReq.MetastoreId = args[1]
 
 		err = a.MetastoreAssignments.Update(ctx, updateReq)
 		if err != nil {

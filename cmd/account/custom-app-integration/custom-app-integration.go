@@ -100,9 +100,6 @@ var deleteCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustAccountClient,
@@ -114,9 +111,8 @@ var deleteCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			deleteReq.IntegrationId = args[0]
 		}
+		deleteReq.IntegrationId = args[0]
 
 		err = a.CustomAppIntegration.Delete(ctx, deleteReq)
 		if err != nil {
@@ -151,9 +147,6 @@ var getCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustAccountClient,
@@ -165,9 +158,8 @@ var getCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			getReq.IntegrationId = args[0]
 		}
+		getReq.IntegrationId = args[0]
 
 		response, err := a.CustomAppIntegration.Get(ctx, getReq)
 		if err != nil {
@@ -237,9 +229,6 @@ var updateCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustAccountClient,
@@ -251,9 +240,8 @@ var updateCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			updateReq.IntegrationId = args[0]
 		}
+		updateReq.IntegrationId = args[0]
 
 		err = a.CustomAppIntegration.Update(ctx, updateReq)
 		if err != nil {

@@ -41,9 +41,6 @@ var getStatusCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
@@ -55,9 +52,8 @@ var getStatusCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			getStatusReq.Keys = args[0]
 		}
+		getStatusReq.Keys = args[0]
 
 		response, err := w.WorkspaceConf.GetStatus(ctx, getStatusReq)
 		if err != nil {

@@ -115,26 +115,25 @@ var deleteCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No NETWORK_ID argument specified. Loading names for Networks drop-down."
-				names, err := a.Networks.NetworkNetworkNameToNetworkIdMap(ctx)
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Networks drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "Databricks Account API network configuration ID")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have databricks account api network configuration id")
-			}
-			deleteReq.NetworkId = args[0]
 		}
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No NETWORK_ID argument specified. Loading names for Networks drop-down."
+			names, err := a.Networks.NetworkNetworkNameToNetworkIdMap(ctx)
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Networks drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "Databricks Account API network configuration ID")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have databricks account api network configuration id")
+		}
+		deleteReq.NetworkId = args[0]
 
 		err = a.Networks.Delete(ctx, deleteReq)
 		if err != nil {
@@ -177,26 +176,25 @@ var getCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No NETWORK_ID argument specified. Loading names for Networks drop-down."
-				names, err := a.Networks.NetworkNetworkNameToNetworkIdMap(ctx)
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Networks drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "Databricks Account API network configuration ID")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have databricks account api network configuration id")
-			}
-			getReq.NetworkId = args[0]
 		}
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No NETWORK_ID argument specified. Loading names for Networks drop-down."
+			names, err := a.Networks.NetworkNetworkNameToNetworkIdMap(ctx)
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Networks drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "Databricks Account API network configuration ID")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have databricks account api network configuration id")
+		}
+		getReq.NetworkId = args[0]
 
 		response, err := a.Networks.Get(ctx, getReq)
 		if err != nil {

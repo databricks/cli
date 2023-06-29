@@ -385,9 +385,6 @@ var deleteCommentCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
@@ -399,9 +396,8 @@ var deleteCommentCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			deleteCommentReq.Id = args[0]
 		}
+		deleteCommentReq.Id = args[0]
 
 		err = w.ModelRegistry.DeleteComment(ctx, deleteCommentReq)
 		if err != nil {
@@ -436,9 +432,6 @@ var deleteModelCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
@@ -450,9 +443,8 @@ var deleteModelCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			deleteModelReq.Name = args[0]
 		}
+		deleteModelReq.Name = args[0]
 
 		err = w.ModelRegistry.DeleteModel(ctx, deleteModelReq)
 		if err != nil {
@@ -487,9 +479,6 @@ var deleteModelTagCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
@@ -501,10 +490,9 @@ var deleteModelTagCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			deleteModelTagReq.Name = args[0]
-			deleteModelTagReq.Key = args[1]
 		}
+		deleteModelTagReq.Name = args[0]
+		deleteModelTagReq.Key = args[1]
 
 		err = w.ModelRegistry.DeleteModelTag(ctx, deleteModelTagReq)
 		if err != nil {
@@ -539,9 +527,6 @@ var deleteModelVersionCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
@@ -553,10 +538,9 @@ var deleteModelVersionCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			deleteModelVersionReq.Name = args[0]
-			deleteModelVersionReq.Version = args[1]
 		}
+		deleteModelVersionReq.Name = args[0]
+		deleteModelVersionReq.Version = args[1]
 
 		err = w.ModelRegistry.DeleteModelVersion(ctx, deleteModelVersionReq)
 		if err != nil {
@@ -591,9 +575,6 @@ var deleteModelVersionTagCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(3)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
@@ -605,11 +586,10 @@ var deleteModelVersionTagCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			deleteModelVersionTagReq.Name = args[0]
-			deleteModelVersionTagReq.Version = args[1]
-			deleteModelVersionTagReq.Key = args[2]
 		}
+		deleteModelVersionTagReq.Name = args[0]
+		deleteModelVersionTagReq.Version = args[1]
+		deleteModelVersionTagReq.Key = args[2]
 
 		err = w.ModelRegistry.DeleteModelVersionTag(ctx, deleteModelVersionTagReq)
 		if err != nil {
@@ -646,9 +626,6 @@ var deleteTransitionRequestCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(4)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
@@ -660,15 +637,14 @@ var deleteTransitionRequestCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			deleteTransitionRequestReq.Name = args[0]
-			deleteTransitionRequestReq.Version = args[1]
-			_, err = fmt.Sscan(args[2], &deleteTransitionRequestReq.Stage)
-			if err != nil {
-				return fmt.Errorf("invalid STAGE: %s", args[2])
-			}
-			deleteTransitionRequestReq.Creator = args[3]
 		}
+		deleteTransitionRequestReq.Name = args[0]
+		deleteTransitionRequestReq.Version = args[1]
+		_, err = fmt.Sscan(args[2], &deleteTransitionRequestReq.Stage)
+		if err != nil {
+			return fmt.Errorf("invalid STAGE: %s", args[2])
+		}
+		deleteTransitionRequestReq.Creator = args[3]
 
 		err = w.ModelRegistry.DeleteTransitionRequest(ctx, deleteTransitionRequestReq)
 		if err != nil {
@@ -814,9 +790,6 @@ var getModelCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
@@ -828,9 +801,8 @@ var getModelCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			getModelReq.Name = args[0]
 		}
+		getModelReq.Name = args[0]
 
 		response, err := w.ModelRegistry.GetModel(ctx, getModelReq)
 		if err != nil {
@@ -865,9 +837,6 @@ var getModelVersionCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
@@ -879,10 +848,9 @@ var getModelVersionCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			getModelVersionReq.Name = args[0]
-			getModelVersionReq.Version = args[1]
 		}
+		getModelVersionReq.Name = args[0]
+		getModelVersionReq.Version = args[1]
 
 		response, err := w.ModelRegistry.GetModelVersion(ctx, getModelVersionReq)
 		if err != nil {
@@ -917,9 +885,6 @@ var getModelVersionDownloadUriCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
@@ -931,10 +896,9 @@ var getModelVersionDownloadUriCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			getModelVersionDownloadUriReq.Name = args[0]
-			getModelVersionDownloadUriReq.Version = args[1]
 		}
+		getModelVersionDownloadUriReq.Name = args[0]
+		getModelVersionDownloadUriReq.Version = args[1]
 
 		response, err := w.ModelRegistry.GetModelVersionDownloadUri(ctx, getModelVersionDownloadUriReq)
 		if err != nil {
@@ -1023,9 +987,6 @@ var listTransitionRequestsCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
@@ -1037,10 +998,9 @@ var listTransitionRequestsCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			listTransitionRequestsReq.Name = args[0]
-			listTransitionRequestsReq.Version = args[1]
 		}
+		listTransitionRequestsReq.Name = args[0]
+		listTransitionRequestsReq.Version = args[1]
 
 		response, err := w.ModelRegistry.ListTransitionRequestsAll(ctx, listTransitionRequestsReq)
 		if err != nil {

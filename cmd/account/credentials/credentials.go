@@ -113,26 +113,25 @@ var deleteCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No CREDENTIALS_ID argument specified. Loading names for Credentials drop-down."
-				names, err := a.Credentials.CredentialCredentialsNameToCredentialsIdMap(ctx)
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Credentials drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "Databricks Account API credential configuration ID")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have databricks account api credential configuration id")
-			}
-			deleteReq.CredentialsId = args[0]
 		}
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No CREDENTIALS_ID argument specified. Loading names for Credentials drop-down."
+			names, err := a.Credentials.CredentialCredentialsNameToCredentialsIdMap(ctx)
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Credentials drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "Databricks Account API credential configuration ID")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have databricks account api credential configuration id")
+		}
+		deleteReq.CredentialsId = args[0]
 
 		err = a.Credentials.Delete(ctx, deleteReq)
 		if err != nil {
@@ -175,26 +174,25 @@ var getCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No CREDENTIALS_ID argument specified. Loading names for Credentials drop-down."
-				names, err := a.Credentials.CredentialCredentialsNameToCredentialsIdMap(ctx)
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Credentials drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "Databricks Account API credential configuration ID")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have databricks account api credential configuration id")
-			}
-			getReq.CredentialsId = args[0]
 		}
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No CREDENTIALS_ID argument specified. Loading names for Credentials drop-down."
+			names, err := a.Credentials.CredentialCredentialsNameToCredentialsIdMap(ctx)
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Credentials drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "Databricks Account API credential configuration ID")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have databricks account api credential configuration id")
+		}
+		getReq.CredentialsId = args[0]
 
 		response, err := a.Credentials.Get(ctx, getReq)
 		if err != nil {

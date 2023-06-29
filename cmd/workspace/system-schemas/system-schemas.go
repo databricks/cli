@@ -42,16 +42,13 @@ var disableCmd = &cobra.Command{
 	Use:   "disable METASTORE_ID SCHEMA_NAME",
 	Short: `Disable a system schema.`,
 	Long: `Disable a system schema.
-  
+
   Disables the system schema and removes it from the system catalog. The caller
   must be an account admin or a metastore admin.`,
 
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
@@ -63,12 +60,11 @@ var disableCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			disableReq.MetastoreId = args[0]
-			_, err = fmt.Sscan(args[1], &disableReq.SchemaName)
-			if err != nil {
-				return fmt.Errorf("invalid SCHEMA_NAME: %s", args[1])
-			}
+		}
+		disableReq.MetastoreId = args[0]
+		_, err = fmt.Sscan(args[1], &disableReq.SchemaName)
+		if err != nil {
+			return fmt.Errorf("invalid SCHEMA_NAME: %s", args[1])
 		}
 
 		err = w.SystemSchemas.Disable(ctx, disableReq)
@@ -98,16 +94,13 @@ var enableCmd = &cobra.Command{
 	Use:   "enable METASTORE_ID SCHEMA_NAME",
 	Short: `Enable a system schema.`,
 	Long: `Enable a system schema.
-  
+
   Enables the system schema and adds it to the system catalog. The caller must
   be an account admin or a metastore admin.`,
 
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
@@ -119,12 +112,11 @@ var enableCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			enableReq.MetastoreId = args[0]
-			_, err = fmt.Sscan(args[1], &enableReq.SchemaName)
-			if err != nil {
-				return fmt.Errorf("invalid SCHEMA_NAME: %s", args[1])
-			}
+		}
+		enableReq.MetastoreId = args[0]
+		_, err = fmt.Sscan(args[1], &enableReq.SchemaName)
+		if err != nil {
+			return fmt.Errorf("invalid SCHEMA_NAME: %s", args[1])
 		}
 
 		err = w.SystemSchemas.Enable(ctx, enableReq)
@@ -154,16 +146,13 @@ var listCmd = &cobra.Command{
 	Use:   "list METASTORE_ID",
 	Short: `List system schemas.`,
 	Long: `List system schemas.
-  
+
   Gets an array of system schemas for a metastore. The caller must be an account
   admin or a metastore admin.`,
 
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
@@ -175,9 +164,8 @@ var listCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		} else {
-			listReq.MetastoreId = args[0]
 		}
+		listReq.MetastoreId = args[0]
 
 		response, err := w.SystemSchemas.ListAll(ctx, listReq)
 		if err != nil {

@@ -85,6 +85,7 @@ func init() {
 {{- $hasIdPrompt := and (not $noPrompt) (and $hasSinglePosArg $serviceHasNamedIdMap) -}}
 {{- $wait := and .Wait (and (not .IsCrudRead) (not (eq .SnakeName "get_run"))) -}}
 {{- $hasRequiredArgs := and (not $hasIdPrompt) $hasPosArgs -}}
+{{- $useJsonForAllFields := or .IsJsonOnly (and .Request (or (not .Request.IsAllRequiredFieldsPrimitive) .Request.IsAllRequiredFieldsJsonUnserialisable))  -}}
 var {{.CamelName}}Cmd = &cobra.Command{
 	Use: "{{.KebabName}}{{if $hasPosArgs}}{{range .Request.RequiredFields}} {{.ConstantName}}{{end}}{{end}}",
 	{{- if .Description }}
@@ -100,9 +101,11 @@ var {{.CamelName}}Cmd = &cobra.Command{
 	Annotations: map[string]string{},{{if $hasRequiredArgs }}
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs({{len .Request.RequiredFields}})
+		{{- if $useJsonForAllFields }}
 		if cmd.Flags().Changed("json") {
 			check = cobra.ExactArgs(0)
 		}
+		{{- end }}
 		return check(cmd, args)
 	},{{end}}
 	PreRunE: root.Must{{if .Service.IsAccounts}}Account{{else}}Workspace{{end}}Client,
@@ -115,7 +118,8 @@ var {{.CamelName}}Cmd = &cobra.Command{
 					if err != nil {
 						return err
 					}
-			} else {
+			}{{if $useJsonForAllFields }} else {
+			{{- end }}
 			{{- if $hasIdPrompt}}
 				if len(args) == 0 {
 					promptSpinner := cmdio.Spinner(ctx)
@@ -148,7 +152,9 @@ var {{.CamelName}}Cmd = &cobra.Command{
 			{{- else -}}
 				return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 			{{- end -}}
+			{{if $useJsonForAllFields }}
 			}
+			{{end }}
 		{{end}}
 		{{if $wait -}}
 		wait, err := {{if .Service.IsAccounts}}a{{else}}w{{end}}.{{.Service.PascalName}}.{{.PascalName}}(ctx{{if .Request}}, {{.CamelName}}Req{{end}})
