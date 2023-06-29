@@ -52,7 +52,6 @@ func (opts CloneOptions) zipUrl() string {
 	return fmt.Sprintf(`%s/archive/%s.zip`, opts.repoUrl(), opts.Reference)
 }
 
-// TODO: test this holds true for alternate branches and tags
 func (opts CloneOptions) destination() string {
 	return filepath.Join(opts.TargetDir, opts.RepositoryName+"-"+opts.Reference)
 }
@@ -88,7 +87,6 @@ func download(ctx context.Context, url string, dest string) error {
 }
 
 func clonePrivate(ctx context.Context, opts CloneOptions) error {
-	// TODO: test that the branch --branch flag works with tags
 	cmd := exec.CommandContext(ctx, "git", "clone", opts.repoUrl(), opts.destination(), "--branch", opts.Reference)
 
 	// Redirect exec command output
