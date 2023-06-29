@@ -78,6 +78,21 @@ func IsErrTTY(ctx context.Context) bool {
 	return IsTTY(c.err)
 }
 
+func In(ctx context.Context) io.Reader {
+	c := fromContext(ctx)
+	return c.in
+}
+
+func Out(ctx context.Context) io.Writer {
+	c := fromContext(ctx)
+	return c.out
+}
+
+func Err(ctx context.Context) io.Writer {
+	c := fromContext(ctx)
+	return c.err
+}
+
 // IsTTY detects if stdout is a terminal. It assumes that stderr is terminal as well
 func (c *cmdIO) IsTTY() bool {
 	f, ok := c.out.(*os.File)

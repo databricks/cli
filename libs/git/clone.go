@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"path/filepath"
 
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/zip"
 )
 
@@ -86,11 +87,23 @@ func download(ctx context.Context, url string, dest string) error {
 	return err
 }
 
-// TODO: check stdin / stdout works properly with git clone and requesting an ID/password
 func clonePrivate(ctx context.Context, opts CloneOptions) error {
 	// TODO: test that the branch --branch flag works with tags
 	cmd := exec.CommandContext(ctx, "git", "clone", opts.repoUrl(), opts.destination(), "--branch", opts.Reference)
-	return cmd.Run()
+
+	// Redirect exec command output
+	cmd.Stderr = cmdio.Err(ctx)
+	cmd.Stdout = cmdio.Out(ctx)
+	cmd.Stdin = cmdio.In(ctx)
+
+	// start git clone
+	err := cmd.Start()
+	if err != nil {
+		return err
+	}
+
+	// wait for git clone to complete
+	return cmd.Wait()
 }
 
 func clonePublic(ctx context.Context, opts CloneOptions) error {
@@ -123,7 +136,6 @@ func Clone(ctx context.Context, opts CloneOptions) error {
 
 	// If a public repository was not found, we defer to the git CLI
 	if errors.Is(err, errNotFound) {
-
 		return clonePrivate(ctx, opts)
 	}
 	return err
