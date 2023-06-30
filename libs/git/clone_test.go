@@ -13,7 +13,7 @@ import (
 func TestGitCloneCLINotFound(t *testing.T) {
 	// Set PATH to "", so git CLI cannot be found
 	t.Setenv("PATH", "")
-	
+
 	tmpDir := t.TempDir()
 	cmdIO := cmdio.NewIO("text", os.Stdin, os.Stdout, os.Stderr, "")
 	ctx := cmdio.InContext(context.Background(), cmdIO)
