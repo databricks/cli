@@ -15,6 +15,12 @@ func Extract(src string, dst string) error {
 	}
 	defer zipReader.Close()
 
+	// create dst directory incase it does not  exist.
+	err = os.MkdirAll(dst, 0755)
+	if err != nil {
+		return err
+	}
+
 	return fs.WalkDir(zipReader, ".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err

@@ -76,7 +76,7 @@ func download(ctx context.Context, url string, dest string) error {
 		return fmt.Errorf("failed to download ZIP archive: %s. %s", url, resp.Status)
 	}
 
-	f, err := os.OpenFile(dest, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0644)
+	f, err := os.Create(dest)
 	if err != nil {
 		return err
 	}
@@ -108,13 +108,17 @@ func clonePrivate(ctx context.Context, opts CloneOptions) error {
 }
 
 func clonePublic(ctx context.Context, opts CloneOptions) error {
-	zipDst := filepath.Join(opts.TargetDir, opts.RepositoryName+".zip")
+	tmpDir := os.TempDir()
+	defer os.Remove(tmpDir)
+
+	zipDst := filepath.Join(tmpDir, opts.RepositoryName+".zip")
 
 	// Download public repository from github as a ZIP file
 	err := download(ctx, opts.zipUrl(), zipDst)
 	if err != nil {
 		return err
 	}
+	defer os.Remove(zipDst)
 
 	// Decompress the ZIP file
 	err = zip.Extract(zipDst, opts.TargetDir)
