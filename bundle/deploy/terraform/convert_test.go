@@ -20,13 +20,13 @@ func TestConvertJob(t *testing.T) {
 			JobClusters: []jobs.JobCluster{
 				{
 					JobClusterKey: "key",
-					NewCluster: &compute.BaseClusterInfo{
+					NewCluster: &compute.ClusterSpec{
 						SparkVersion: "10.4.x-scala2.12",
 					},
 				},
 			},
 			GitSource: &jobs.GitSource{
-				GitProvider: jobs.GitSourceGitProviderGithub,
+				GitProvider: jobs.GitProviderGithub,
 				GitUrl:      "https://github.com/foo/bar",
 			},
 		},
@@ -78,7 +78,7 @@ func TestConvertJobTaskLibraries(t *testing.T) {
 	var src = resources.Job{
 		JobSettings: &jobs.JobSettings{
 			Name: "my job",
-			Tasks: []jobs.JobTaskSettings{
+			Tasks: []jobs.Task{
 				{
 					TaskKey: "key",
 					Libraries: []compute.Library{

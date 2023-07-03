@@ -66,7 +66,7 @@ var loginCmd = &cobra.Command{
 
 			promptSpinner := cmdio.Spinner(ctx)
 			promptSpinner <- "Loading list of clusters to select from"
-			names, err := w.Clusters.ClusterInfoClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
+			names, err := w.Clusters.ClusterDetailsClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
 			close(promptSpinner)
 			if err != nil {
 				return fmt.Errorf("failed to load clusters list. Original error: %w", err)

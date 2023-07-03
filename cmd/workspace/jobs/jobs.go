@@ -203,6 +203,25 @@ func init() {
 	// TODO: short flags
 	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	// TODO: array: access_control_list
+	// TODO: array: compute
+	// TODO: complex arg: continuous
+	// TODO: complex arg: email_notifications
+	createCmd.Flags().Var(&createReq.Format, "format", `Used to tell what is the format of the job.`)
+	// TODO: complex arg: git_source
+	// TODO: array: job_clusters
+	createCmd.Flags().IntVar(&createReq.MaxConcurrentRuns, "max-concurrent-runs", createReq.MaxConcurrentRuns, `An optional maximum allowed number of concurrent runs of the job.`)
+	createCmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `An optional name for the job.`)
+	// TODO: complex arg: notification_settings
+	// TODO: array: parameters
+	// TODO: complex arg: run_as
+	// TODO: complex arg: schedule
+	// TODO: map via StringToStringVar: tags
+	// TODO: array: tasks
+	createCmd.Flags().IntVar(&createReq.TimeoutSeconds, "timeout-seconds", createReq.TimeoutSeconds, `An optional timeout applied to each run of this job.`)
+	// TODO: complex arg: trigger
+	// TODO: complex arg: webhook_notifications
+
 }
 
 var createCmd = &cobra.Command{
@@ -230,7 +249,6 @@ var createCmd = &cobra.Command{
 				return err
 			}
 		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
 
 		response, err := w.Jobs.Create(ctx, createReq)
@@ -666,8 +684,8 @@ func init() {
 
 var listCmd = &cobra.Command{
 	Use:   "list",
-	Short: `List all jobs.`,
-	Long: `List all jobs.
+	Short: `List jobs.`,
+	Long: `List jobs.
   
   Retrieves a list of jobs.`,
 
@@ -727,8 +745,8 @@ func init() {
 
 var listRunsCmd = &cobra.Command{
 	Use:   "list-runs",
-	Short: `List runs for a job.`,
-	Long: `List runs for a job.
+	Short: `List job runs.`,
+	Long: `List job runs.
   
   List runs in descending order by start time.`,
 
@@ -786,6 +804,7 @@ func init() {
 	// TODO: map via StringToStringVar: python_named_params
 	// TODO: array: python_params
 	repairRunCmd.Flags().BoolVar(&repairRunReq.RerunAllFailedTasks, "rerun-all-failed-tasks", repairRunReq.RerunAllFailedTasks, `If true, repair all failed tasks.`)
+	repairRunCmd.Flags().BoolVar(&repairRunReq.RerunDependentTasks, "rerun-dependent-tasks", repairRunReq.RerunDependentTasks, `If true, repair all tasks that depend on the tasks in rerun_tasks, even if they were previously successful.`)
 	// TODO: array: rerun_tasks
 	// TODO: array: spark_submit_params
 	// TODO: map via StringToStringVar: sql_params
@@ -928,6 +947,7 @@ func init() {
 	// TODO: array: dbt_commands
 	runNowCmd.Flags().StringVar(&runNowReq.IdempotencyToken, "idempotency-token", runNowReq.IdempotencyToken, `An optional token to guarantee the idempotency of job run requests.`)
 	// TODO: array: jar_params
+	// TODO: array: job_parameters
 	// TODO: map via StringToStringVar: notebook_params
 	// TODO: complex arg: pipeline_params
 	// TODO: map via StringToStringVar: python_named_params

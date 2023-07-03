@@ -43,6 +43,7 @@ func init() {
 	// TODO: array: groups
 	createCmd.Flags().StringVar(&createReq.Id, "id", createReq.Id, `Databricks group ID.`)
 	// TODO: array: members
+	// TODO: complex arg: meta
 	// TODO: array: roles
 
 }
@@ -345,6 +346,7 @@ func init() {
 	// TODO: array: groups
 	updateCmd.Flags().StringVar(&updateReq.Id, "id", updateReq.Id, `Databricks group ID.`)
 	// TODO: array: members
+	// TODO: complex arg: meta
 	// TODO: array: roles
 
 }
