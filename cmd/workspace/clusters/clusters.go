@@ -149,14 +149,9 @@ var createCmd = &cobra.Command{
 	Long: `Create new cluster.
   
   Creates a new Spark cluster. This method will acquire new instances from the
-  cloud provider if necessary. This method is asynchronous; the returned
-  cluster_id can be used to poll the cluster status. When this method returns,
-  the cluster will be in a PENDING state. The cluster will be usable once it
-  enters a RUNNING state.
-  
-  Note: Databricks may not be able to acquire some of the requested nodes, due
-  to cloud provider limitations (account limits, spot price, etc.) or transient
-  network issues.
+  cloud provider if necessary. Note: Databricks may not be able to acquire some
+  of the requested nodes, due to cloud provider limitations (account limits,
+  spot price, etc.) or transient network issues.
   
   If Databricks acquires at least 85% of the requested on-demand nodes, cluster
   creation will succeed. Otherwise the cluster will terminate with an
@@ -191,7 +186,7 @@ var createCmd = &cobra.Command{
 			return cmdio.Render(ctx, wait.Response)
 		}
 		spinner := cmdio.Spinner(ctx)
-		info, err := wait.OnProgress(func(i *compute.ClusterInfo) {
+		info, err := wait.OnProgress(func(i *compute.ClusterDetails) {
 			statusMessage := i.StateMessage
 			spinner <- statusMessage
 		}).GetWithTimeout(createTimeout)
@@ -247,7 +242,7 @@ var deleteCmd = &cobra.Command{
 			if len(args) == 0 {
 				promptSpinner := cmdio.Spinner(ctx)
 				promptSpinner <- "No CLUSTER_ID argument specified. Loading names for Clusters drop-down."
-				names, err := w.Clusters.ClusterInfoClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
+				names, err := w.Clusters.ClusterDetailsClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
 				close(promptSpinner)
 				if err != nil {
 					return fmt.Errorf("failed to load names for Clusters drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -272,7 +267,7 @@ var deleteCmd = &cobra.Command{
 			return nil
 		}
 		spinner := cmdio.Spinner(ctx)
-		info, err := wait.OnProgress(func(i *compute.ClusterInfo) {
+		info, err := wait.OnProgress(func(i *compute.ClusterDetails) {
 			statusMessage := i.StateMessage
 			spinner <- statusMessage
 		}).GetWithTimeout(deleteTimeout)
@@ -380,7 +375,7 @@ var editCmd = &cobra.Command{
 			return nil
 		}
 		spinner := cmdio.Spinner(ctx)
-		info, err := wait.OnProgress(func(i *compute.ClusterInfo) {
+		info, err := wait.OnProgress(func(i *compute.ClusterDetails) {
 			statusMessage := i.StateMessage
 			spinner <- statusMessage
 		}).GetWithTimeout(editTimeout)
@@ -437,7 +432,7 @@ var eventsCmd = &cobra.Command{
 			if len(args) == 0 {
 				promptSpinner := cmdio.Spinner(ctx)
 				promptSpinner <- "No CLUSTER_ID argument specified. Loading names for Clusters drop-down."
-				names, err := w.Clusters.ClusterInfoClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
+				names, err := w.Clusters.ClusterDetailsClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
 				close(promptSpinner)
 				if err != nil {
 					return fmt.Errorf("failed to load names for Clusters drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -504,7 +499,7 @@ var getCmd = &cobra.Command{
 			if len(args) == 0 {
 				promptSpinner := cmdio.Spinner(ctx)
 				promptSpinner <- "No CLUSTER_ID argument specified. Loading names for Clusters drop-down."
-				names, err := w.Clusters.ClusterInfoClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
+				names, err := w.Clusters.ClusterDetailsClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
 				close(promptSpinner)
 				if err != nil {
 					return fmt.Errorf("failed to load names for Clusters drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -692,7 +687,7 @@ var permanentDeleteCmd = &cobra.Command{
 			if len(args) == 0 {
 				promptSpinner := cmdio.Spinner(ctx)
 				promptSpinner <- "No CLUSTER_ID argument specified. Loading names for Clusters drop-down."
-				names, err := w.Clusters.ClusterInfoClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
+				names, err := w.Clusters.ClusterDetailsClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
 				close(promptSpinner)
 				if err != nil {
 					return fmt.Errorf("failed to load names for Clusters drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -755,7 +750,7 @@ var pinCmd = &cobra.Command{
 			if len(args) == 0 {
 				promptSpinner := cmdio.Spinner(ctx)
 				promptSpinner <- "No CLUSTER_ID argument specified. Loading names for Clusters drop-down."
-				names, err := w.Clusters.ClusterInfoClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
+				names, err := w.Clusters.ClusterDetailsClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
 				close(promptSpinner)
 				if err != nil {
 					return fmt.Errorf("failed to load names for Clusters drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -825,7 +820,7 @@ var resizeCmd = &cobra.Command{
 			if len(args) == 0 {
 				promptSpinner := cmdio.Spinner(ctx)
 				promptSpinner <- "No CLUSTER_ID argument specified. Loading names for Clusters drop-down."
-				names, err := w.Clusters.ClusterInfoClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
+				names, err := w.Clusters.ClusterDetailsClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
 				close(promptSpinner)
 				if err != nil {
 					return fmt.Errorf("failed to load names for Clusters drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -850,7 +845,7 @@ var resizeCmd = &cobra.Command{
 			return nil
 		}
 		spinner := cmdio.Spinner(ctx)
-		info, err := wait.OnProgress(func(i *compute.ClusterInfo) {
+		info, err := wait.OnProgress(func(i *compute.ClusterDetails) {
 			statusMessage := i.StateMessage
 			spinner <- statusMessage
 		}).GetWithTimeout(resizeTimeout)
@@ -906,7 +901,7 @@ var restartCmd = &cobra.Command{
 			if len(args) == 0 {
 				promptSpinner := cmdio.Spinner(ctx)
 				promptSpinner <- "No CLUSTER_ID argument specified. Loading names for Clusters drop-down."
-				names, err := w.Clusters.ClusterInfoClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
+				names, err := w.Clusters.ClusterDetailsClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
 				close(promptSpinner)
 				if err != nil {
 					return fmt.Errorf("failed to load names for Clusters drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -931,7 +926,7 @@ var restartCmd = &cobra.Command{
 			return nil
 		}
 		spinner := cmdio.Spinner(ctx)
-		info, err := wait.OnProgress(func(i *compute.ClusterInfo) {
+		info, err := wait.OnProgress(func(i *compute.ClusterDetails) {
 			statusMessage := i.StateMessage
 			spinner <- statusMessage
 		}).GetWithTimeout(restartTimeout)
@@ -1022,7 +1017,7 @@ var startCmd = &cobra.Command{
 			if len(args) == 0 {
 				promptSpinner := cmdio.Spinner(ctx)
 				promptSpinner <- "No CLUSTER_ID argument specified. Loading names for Clusters drop-down."
-				names, err := w.Clusters.ClusterInfoClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
+				names, err := w.Clusters.ClusterDetailsClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
 				close(promptSpinner)
 				if err != nil {
 					return fmt.Errorf("failed to load names for Clusters drop-down. Please manually specify required arguments. Original error: %w", err)
@@ -1047,7 +1042,7 @@ var startCmd = &cobra.Command{
 			return nil
 		}
 		spinner := cmdio.Spinner(ctx)
-		info, err := wait.OnProgress(func(i *compute.ClusterInfo) {
+		info, err := wait.OnProgress(func(i *compute.ClusterDetails) {
 			statusMessage := i.StateMessage
 			spinner <- statusMessage
 		}).GetWithTimeout(startTimeout)
@@ -1097,7 +1092,7 @@ var unpinCmd = &cobra.Command{
 			if len(args) == 0 {
 				promptSpinner := cmdio.Spinner(ctx)
 				promptSpinner <- "No CLUSTER_ID argument specified. Loading names for Clusters drop-down."
-				names, err := w.Clusters.ClusterInfoClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
+				names, err := w.Clusters.ClusterDetailsClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
 				close(promptSpinner)
 				if err != nil {
 					return fmt.Errorf("failed to load names for Clusters drop-down. Please manually specify required arguments. Original error: %w", err)

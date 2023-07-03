@@ -36,6 +36,11 @@ func init() {
 	// TODO: short flags
 	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	createCmd.Flags().BoolVar(&createReq.IsFavorite, "is-favorite", createReq.IsFavorite, `Indicates whether this query object should appear in the current user's favorites list.`)
+	createCmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `The title of this dashboard that appears in list views and at the top of the dashboard page.`)
+	createCmd.Flags().StringVar(&createReq.Parent, "parent", createReq.Parent, `The identifier of the workspace folder containing the dashboard.`)
+	// TODO: array: tags
+
 }
 
 var createCmd = &cobra.Command{
@@ -61,7 +66,6 @@ var createCmd = &cobra.Command{
 				return err
 			}
 		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
 
 		response, err := w.Dashboards.Create(ctx, createReq)

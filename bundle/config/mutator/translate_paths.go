@@ -105,7 +105,7 @@ func (m *translatePaths) translateFilePath(literal, localPath, remotePath string
 	return remotePath, nil
 }
 
-func (m *translatePaths) translateJobTask(dir string, b *bundle.Bundle, task *jobs.JobTaskSettings) error {
+func (m *translatePaths) translateJobTask(dir string, b *bundle.Bundle, task *jobs.Task) error {
 	var err error
 
 	if task.NotebookTask != nil {
