@@ -167,12 +167,12 @@ func (r *pipelineRunner) Run(ctx context.Context, opts *Options) (output.RunOutp
 		return nil, fmt.Errorf("no progress logger found")
 	}
 
-	if opts.NoWait {
-		log.Warnf(ctx, "--no-wait is not yet implemented for pipelines")
-	}
-
 	// Log the pipeline update URL as soon as it is available.
 	progressLogger.Log(progress.NewPipelineUpdateUrlEvent(w.Config.Host, updateID, pipelineID))
+
+	if opts.NoWait {
+		return nil, nil
+	}
 
 	// Poll update for completion and post status.
 	// Note: there is no "StartUpdateAndWait" wrapper for this API.
