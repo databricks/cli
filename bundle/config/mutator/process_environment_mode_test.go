@@ -53,7 +53,7 @@ func TestProcessEnvironmentModeApplyDefault(t *testing.T) {
 	bundle := &bundle.Bundle{
 		Config: config.Root{
 			Bundle: config.Bundle{
-				Mode: config.Default,
+				Mode: "",
 			},
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{

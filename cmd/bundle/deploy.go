@@ -21,15 +21,16 @@ var deployCmd = &cobra.Command{
 }
 
 func deploy(cmd *cobra.Command, b *bundle.Bundle) error {
-	// If `--force` is specified, force acquisition of the deployment lock.
-	b.Config.Bundle.Lock.Force = forceDeploy
-
 	if computeID == "" {
 		computeID = os.Getenv("DATABRICKS_CLUSTER_ID")
 	}
 
+	// If `--force` is specified, force acquisition of the deployment lock.
+	b.Config.Bundle.Lock.Force = forceDeploy
+	b.Config.Bundle.Compute = computeID
+
 	return bundle.Apply(cmd.Context(), b, bundle.Seq(
-		phases.Initialize(computeID),
+		phases.Initialize(),
 		phases.Build(),
 		phases.Deploy(),
 	))

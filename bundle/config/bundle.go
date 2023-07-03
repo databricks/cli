@@ -33,4 +33,7 @@ type Bundle struct {
 	// For example, 'mode: development' can be used for deployments for
 	// development purposes.
 	Mode Mode `json:"mode,omitempty"`
+
+	// Overrides the compute used for jobs and other supported assets.
+	Compute string `json:"override_compute,omitempty" bundle:"readonly"`
 }

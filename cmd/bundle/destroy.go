@@ -43,7 +43,7 @@ var destroyCmd = &cobra.Command{
 		}
 
 		return bundle.Apply(ctx, b, bundle.Seq(
-			phases.Initialize(""),
+			phases.Initialize(),
 			phases.Build(),
 			phases.Destroy(),
 		))

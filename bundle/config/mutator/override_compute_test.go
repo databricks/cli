@@ -18,7 +18,8 @@ func TestOverrideCompute(t *testing.T) {
 	bundle := &bundle.Bundle{
 		Config: config.Root{
 			Bundle: config.Bundle{
-				Mode: config.Development,
+				Mode:    config.Development,
+				Compute: "newClusterID",
 			},
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
@@ -38,7 +39,7 @@ func TestOverrideCompute(t *testing.T) {
 		},
 	}
 
-	m := mutator.OverrideCompute("newClusterID")
+	m := mutator.OverrideCompute()
 	err := m.Apply(context.Background(), bundle)
 	require.NoError(t, err)
 	assert.Nil(t, bundle.Config.Resources.Jobs["job1"].Tasks[0].NewCluster)

@@ -38,7 +38,7 @@ var runCmd = &cobra.Command{
 		}
 
 		err := bundle.Apply(cmd.Context(), b, bundle.Seq(
-			phases.Initialize(computeID),
+			phases.Initialize(),
 			terraform.Interpolate(),
 			terraform.Write(),
 			terraform.StatePull(),

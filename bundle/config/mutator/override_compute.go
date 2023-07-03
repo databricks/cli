@@ -9,32 +9,30 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 )
 
-type overrideCompute struct {
-	compute string
-}
+type overrideCompute struct{}
 
-func OverrideCompute(compute string) bundle.Mutator {
-	return &overrideCompute{compute: compute}
+func OverrideCompute() bundle.Mutator {
+	return &overrideCompute{}
 }
 
 func (m *overrideCompute) Name() string {
 	return "OverrideCompute"
 }
 
-func (m *overrideCompute) overrideJobCompute(j *resources.Job) {
+func overrideJobCompute(j *resources.Job, compute string) {
 	for i := range j.Tasks {
 		task := &j.Tasks[i]
 		if task.NewCluster != nil {
 			task.NewCluster = nil
-			task.ExistingClusterId = m.compute
+			task.ExistingClusterId = compute
 		} else if task.ExistingClusterId != "" {
-			task.ExistingClusterId = m.compute
+			task.ExistingClusterId = compute
 		}
 	}
 }
 
 func (m *overrideCompute) Apply(ctx context.Context, b *bundle.Bundle) error {
-	if m.compute == "" {
+	if b.Config.Bundle.Compute == "" {
 		return nil
 	}
 	if b.Config.Bundle.Mode != config.Development {
@@ -43,7 +41,7 @@ func (m *overrideCompute) Apply(ctx context.Context, b *bundle.Bundle) error {
 
 	r := b.Config.Resources
 	for i := range r.Jobs {
-		m.overrideJobCompute(r.Jobs[i])
+		overrideJobCompute(r.Jobs[i], b.Config.Bundle.Compute)
 	}
 
 	return nil
