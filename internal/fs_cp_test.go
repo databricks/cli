@@ -66,7 +66,7 @@ func setupLocalFiler(t *testing.T) (filer.Filer, string) {
 	f, err := filer.NewLocalClient(tmp)
 	require.NoError(t, err)
 
-	return f, path.Join("file:/", filepath.ToSlash(tmp))
+	return f, path.Join(filepath.ToSlash(tmp))
 }
 
 func setupDbfsFiler(t *testing.T) (filer.Filer, string) {
@@ -259,21 +259,14 @@ func TestAccFsCpErrorsWhenSourceIsDirWithoutRecursiveFlag(t *testing.T) {
 	tmpDir := temporaryDbfsDir(t, w)
 
 	_, _, err = RequireErrorRun(t, "fs", "cp", "dbfs:"+tmpDir, "dbfs:/tmp")
-	assert.Equal(t, fmt.Sprintf("source path %s is a directory. Please specify the --recursive flag", strings.TrimPrefix(tmpDir, "/")), err.Error())
-}
-
-func TestAccFsCpErrorsOnNoScheme(t *testing.T) {
-	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
-
-	_, _, err := RequireErrorRun(t, "fs", "cp", "/a", "/b")
-	assert.Equal(t, "no scheme specified for path /a. Please specify scheme \"dbfs\" or \"file\". Example: file:/foo/bar or file:/c:/foo/bar", err.Error())
+	assert.Equal(t, fmt.Sprintf("source path %s is a directory. Please specify the --recursive flag", tmpDir), err.Error())
 }
 
 func TestAccFsCpErrorsOnInvalidScheme(t *testing.T) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	_, _, err := RequireErrorRun(t, "fs", "cp", "dbfs:/a", "https:/b")
-	assert.Equal(t, "unsupported scheme https specified for path https:/b. Please specify scheme \"dbfs\" or \"file\". Example: file:/foo/bar or file:/c:/foo/bar", err.Error())
+	assert.Equal(t, "invalid scheme: https", err.Error())
 }
 
 func TestAccFsCpSourceIsDirectoryButTargetIsFile(t *testing.T) {

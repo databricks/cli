@@ -21,14 +21,11 @@ var Cmd = &cobra.Command{
 }
 
 // start get command
-
 var getReq iam.GetPermissionRequest
-var getJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
-	getCmd.Flags().Var(&getJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -43,24 +40,15 @@ var getCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = getJson.Unmarshal(&getReq)
-			if err != nil {
-				return err
-			}
-		} else {
-			getReq.RequestObjectType = args[0]
-			getReq.RequestObjectId = args[1]
-		}
+
+		getReq.RequestObjectType = args[0]
+		getReq.RequestObjectId = args[1]
 
 		response, err := w.Permissions.Get(ctx, getReq)
 		if err != nil {
@@ -74,14 +62,11 @@ var getCmd = &cobra.Command{
 }
 
 // start get-permission-levels command
-
 var getPermissionLevelsReq iam.GetPermissionLevelsRequest
-var getPermissionLevelsJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(getPermissionLevelsCmd)
 	// TODO: short flags
-	getPermissionLevelsCmd.Flags().Var(&getPermissionLevelsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -95,24 +80,15 @@ var getPermissionLevelsCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = getPermissionLevelsJson.Unmarshal(&getPermissionLevelsReq)
-			if err != nil {
-				return err
-			}
-		} else {
-			getPermissionLevelsReq.RequestObjectType = args[0]
-			getPermissionLevelsReq.RequestObjectId = args[1]
-		}
+
+		getPermissionLevelsReq.RequestObjectType = args[0]
+		getPermissionLevelsReq.RequestObjectId = args[1]
 
 		response, err := w.Permissions.GetPermissionLevels(ctx, getPermissionLevelsReq)
 		if err != nil {
@@ -126,7 +102,6 @@ var getPermissionLevelsCmd = &cobra.Command{
 }
 
 // start set command
-
 var setReq iam.PermissionsRequest
 var setJson flags.JsonFlag
 
@@ -150,24 +125,21 @@ var setCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = setJson.Unmarshal(&setReq)
 			if err != nil {
 				return err
 			}
-		} else {
-			setReq.RequestObjectType = args[0]
-			setReq.RequestObjectId = args[1]
 		}
+		setReq.RequestObjectType = args[0]
+		setReq.RequestObjectId = args[1]
 
 		err = w.Permissions.Set(ctx, setReq)
 		if err != nil {
@@ -181,7 +153,6 @@ var setCmd = &cobra.Command{
 }
 
 // start update command
-
 var updateReq iam.PermissionsRequest
 var updateJson flags.JsonFlag
 
@@ -204,24 +175,21 @@ var updateCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = updateJson.Unmarshal(&updateReq)
 			if err != nil {
 				return err
 			}
-		} else {
-			updateReq.RequestObjectType = args[0]
-			updateReq.RequestObjectId = args[1]
 		}
+		updateReq.RequestObjectType = args[0]
+		updateReq.RequestObjectId = args[1]
 
 		err = w.Permissions.Update(ctx, updateReq)
 		if err != nil {

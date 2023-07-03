@@ -24,7 +24,6 @@ var Cmd = &cobra.Command{
 }
 
 // start create command
-
 var createReq oauth2.CreateOAuthEnrollment
 var createJson flags.JsonFlag
 
@@ -64,6 +63,7 @@ var createCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = createJson.Unmarshal(&createReq)
 			if err != nil {

@@ -20,7 +20,6 @@ var Cmd = &cobra.Command{
 }
 
 // start create command
-
 var createReq sharing.CreateShare
 var createJson flags.JsonFlag
 
@@ -54,6 +53,7 @@ var createCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = createJson.Unmarshal(&createReq)
 			if err != nil {
@@ -75,14 +75,11 @@ var createCmd = &cobra.Command{
 }
 
 // start delete command
-
 var deleteReq sharing.DeleteShareRequest
-var deleteJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
-	deleteCmd.Flags().Var(&deleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -97,23 +94,14 @@ var deleteCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = deleteJson.Unmarshal(&deleteReq)
-			if err != nil {
-				return err
-			}
-		} else {
-			deleteReq.Name = args[0]
-		}
+
+		deleteReq.Name = args[0]
 
 		err = w.Shares.Delete(ctx, deleteReq)
 		if err != nil {
@@ -127,14 +115,11 @@ var deleteCmd = &cobra.Command{
 }
 
 // start get command
-
 var getReq sharing.GetShareRequest
-var getJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
-	getCmd.Flags().Var(&getJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	getCmd.Flags().BoolVar(&getReq.IncludeSharedData, "include-shared-data", getReq.IncludeSharedData, `Query for data to include in the share.`)
 
@@ -151,23 +136,14 @@ var getCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = getJson.Unmarshal(&getReq)
-			if err != nil {
-				return err
-			}
-		} else {
-			getReq.Name = args[0]
-		}
+
+		getReq.Name = args[0]
 
 		response, err := w.Shares.Get(ctx, getReq)
 		if err != nil {
@@ -213,14 +189,11 @@ var listCmd = &cobra.Command{
 }
 
 // start share-permissions command
-
 var sharePermissionsReq sharing.SharePermissionsRequest
-var sharePermissionsJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(sharePermissionsCmd)
 	// TODO: short flags
-	sharePermissionsCmd.Flags().Var(&sharePermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -235,23 +208,14 @@ var sharePermissionsCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = sharePermissionsJson.Unmarshal(&sharePermissionsReq)
-			if err != nil {
-				return err
-			}
-		} else {
-			sharePermissionsReq.Name = args[0]
-		}
+
+		sharePermissionsReq.Name = args[0]
 
 		response, err := w.Shares.SharePermissions(ctx, sharePermissionsReq)
 		if err != nil {
@@ -265,7 +229,6 @@ var sharePermissionsCmd = &cobra.Command{
 }
 
 // start update command
-
 var updateReq sharing.UpdateShare
 var updateJson flags.JsonFlag
 
@@ -313,6 +276,7 @@ var updateCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = updateJson.Unmarshal(&updateReq)
 			if err != nil {
@@ -334,7 +298,6 @@ var updateCmd = &cobra.Command{
 }
 
 // start update-permissions command
-
 var updatePermissionsReq sharing.UpdateSharePermissions
 var updatePermissionsJson flags.JsonFlag
 
@@ -361,23 +324,20 @@ var updatePermissionsCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = updatePermissionsJson.Unmarshal(&updatePermissionsReq)
 			if err != nil {
 				return err
 			}
-		} else {
-			updatePermissionsReq.Name = args[0]
 		}
+		updatePermissionsReq.Name = args[0]
 
 		err = w.Shares.UpdatePermissions(ctx, updatePermissionsReq)
 		if err != nil {

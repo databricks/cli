@@ -3,9 +3,10 @@
 package system_schemas
 
 import (
+	"fmt"
+
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/spf13/cobra"
 )
@@ -25,14 +26,11 @@ var Cmd = &cobra.Command{
 }
 
 // start disable command
-
 var disableReq catalog.DisableRequest
-var disableJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(disableCmd)
 	// TODO: short flags
-	disableCmd.Flags().Var(&disableJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -47,23 +45,17 @@ var disableCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = disableJson.Unmarshal(&disableReq)
-			if err != nil {
-				return err
-			}
-		} else {
-			disableReq.MetastoreId = args[0]
-			disableReq.SchemaName = args[1]
+
+		disableReq.MetastoreId = args[0]
+		_, err = fmt.Sscan(args[1], &disableReq.SchemaName)
+		if err != nil {
+			return fmt.Errorf("invalid SCHEMA_NAME: %s", args[1])
 		}
 
 		err = w.SystemSchemas.Disable(ctx, disableReq)
@@ -78,14 +70,16 @@ var disableCmd = &cobra.Command{
 }
 
 // start enable command
+var enableReq catalog.EnableRequest
 
 func init() {
 	Cmd.AddCommand(enableCmd)
+	// TODO: short flags
 
 }
 
 var enableCmd = &cobra.Command{
-	Use:   "enable",
+	Use:   "enable METASTORE_ID SCHEMA_NAME",
 	Short: `Enable a system schema.`,
 	Long: `Enable a system schema.
   
@@ -93,11 +87,22 @@ var enableCmd = &cobra.Command{
   be an account admin or a metastore admin.`,
 
 	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(2)
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		err = w.SystemSchemas.Enable(ctx)
+
+		enableReq.MetastoreId = args[0]
+		_, err = fmt.Sscan(args[1], &enableReq.SchemaName)
+		if err != nil {
+			return fmt.Errorf("invalid SCHEMA_NAME: %s", args[1])
+		}
+
+		err = w.SystemSchemas.Enable(ctx, enableReq)
 		if err != nil {
 			return err
 		}
@@ -109,14 +114,11 @@ var enableCmd = &cobra.Command{
 }
 
 // start list command
-
 var listReq catalog.ListSystemSchemasRequest
-var listJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(listCmd)
 	// TODO: short flags
-	listCmd.Flags().Var(&listJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -131,23 +133,14 @@ var listCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = listJson.Unmarshal(&listReq)
-			if err != nil {
-				return err
-			}
-		} else {
-			listReq.MetastoreId = args[0]
-		}
+
+		listReq.MetastoreId = args[0]
 
 		response, err := w.SystemSchemas.ListAll(ctx, listReq)
 		if err != nil {
