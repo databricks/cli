@@ -103,8 +103,8 @@ github.com/hashicorp/hc-install v0.5.2 h1:SfwMFnEXVVirpwkDuSF5kymUOhrUxrTq3udEse
 github.com/hashicorp/hc-install v0.5.2/go.mod h1:9QISwe6newMWIfEiXpzuu1k9HAGtQYgnSH8H9T8wmoI=
 github.com/hashicorp/terraform-exec v0.18.1 h1:LAbfDvNQU1l0NOQlTuudjczVhHj061fNX5H8XZxHlH4=
 github.com/hashicorp/terraform-exec v0.18.1/go.mod h1:58wg4IeuAJ6LVsLUeD2DWZZoc/bYi6dzhLHzxM41980=
-github.com/hashicorp/terraform-json v0.17.0 h1:EiA1Wp07nknYQAiv+jIt4dX4Cq5crgP+TsTE45MjMmM=
-github.com/hashicorp/terraform-json v0.17.0/go.mod h1:Huy6zt6euxaY9knPAFKjUITn8QxUFIe9VuSzb4zn/0o=
+github.com/hashicorp/terraform-json v0.17.1 h1:eMfvh/uWggKmY7Pmb3T85u86E2EQg6EQHgyRwf3RkyA=
+github.com/hashicorp/terraform-json v0.17.1/go.mod h1:Huy6zt6euxaY9knPAFKjUITn8QxUFIe9VuSzb4zn/0o=
 github.com/imdario/mergo v0.3.13 h1:lFzP57bqS/wsqKssCGmtLAb8A0wKjLGrve2q3PPVcBk=
 github.com/imdario/mergo v0.3.13/go.mod h1:4lJ1jqUDcsbIECGy0RUJAXNIhg+6ocWgb1ALK2O4oXg=
 github.com/inconshreveable/mousetrap v1.1.0 h1:wN+x4NVGpMsO7ErUn/mUI3vEoE6Jt13X2s0bqwp9tc8=
