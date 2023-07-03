@@ -57,16 +57,10 @@ func init() {
 	deleteCmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = deleteJson.Unmarshal(&deleteReq)
-			if err != nil {
-				return err
-			}
-		} else {
-			deleteReq.RepoId, err = repoArgumentToRepoID(ctx, w, args)
-			if err != nil {
-				return err
-			}
+
+		deleteReq.RepoId, err = repoArgumentToRepoID(ctx, w, args)
+		if err != nil {
+			return err
 		}
 		err = w.Repos.Delete(ctx, deleteReq)
 		if err != nil {
@@ -79,16 +73,9 @@ func init() {
 	getCmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = getJson.Unmarshal(&getReq)
-			if err != nil {
-				return err
-			}
-		} else {
-			getReq.RepoId, err = repoArgumentToRepoID(ctx, w, args)
-			if err != nil {
-				return err
-			}
+		getReq.RepoId, err = repoArgumentToRepoID(ctx, w, args)
+		if err != nil {
+			return err
 		}
 
 		response, err := w.Repos.Get(ctx, getReq)

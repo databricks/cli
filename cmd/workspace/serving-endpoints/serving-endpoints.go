@@ -35,14 +35,11 @@ var Cmd = &cobra.Command{
 }
 
 // start build-logs command
-
 var buildLogsReq serving.BuildLogsRequest
-var buildLogsJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(buildLogsCmd)
 	// TODO: short flags
-	buildLogsCmd.Flags().Var(&buildLogsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -57,24 +54,15 @@ var buildLogsCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = buildLogsJson.Unmarshal(&buildLogsReq)
-			if err != nil {
-				return err
-			}
-		} else {
-			buildLogsReq.Name = args[0]
-			buildLogsReq.ServedModelName = args[1]
-		}
+
+		buildLogsReq.Name = args[0]
+		buildLogsReq.ServedModelName = args[1]
 
 		response, err := w.ServingEndpoints.BuildLogs(ctx, buildLogsReq)
 		if err != nil {
@@ -88,9 +76,9 @@ var buildLogsCmd = &cobra.Command{
 }
 
 // start create command
-
 var createReq serving.CreateServingEndpoint
 var createJson flags.JsonFlag
+
 var createSkipWait bool
 var createTimeout time.Duration
 
@@ -114,6 +102,7 @@ var createCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = createJson.Unmarshal(&createReq)
 			if err != nil {
@@ -148,14 +137,11 @@ var createCmd = &cobra.Command{
 }
 
 // start delete command
-
 var deleteReq serving.DeleteServingEndpointRequest
-var deleteJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
-	deleteCmd.Flags().Var(&deleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -167,23 +153,14 @@ var deleteCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = deleteJson.Unmarshal(&deleteReq)
-			if err != nil {
-				return err
-			}
-		} else {
-			deleteReq.Name = args[0]
-		}
+
+		deleteReq.Name = args[0]
 
 		err = w.ServingEndpoints.Delete(ctx, deleteReq)
 		if err != nil {
@@ -197,14 +174,11 @@ var deleteCmd = &cobra.Command{
 }
 
 // start export-metrics command
-
 var exportMetricsReq serving.ExportMetricsRequest
-var exportMetricsJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(exportMetricsCmd)
 	// TODO: short flags
-	exportMetricsCmd.Flags().Var(&exportMetricsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -219,23 +193,14 @@ var exportMetricsCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = exportMetricsJson.Unmarshal(&exportMetricsReq)
-			if err != nil {
-				return err
-			}
-		} else {
-			exportMetricsReq.Name = args[0]
-		}
+
+		exportMetricsReq.Name = args[0]
 
 		err = w.ServingEndpoints.ExportMetrics(ctx, exportMetricsReq)
 		if err != nil {
@@ -249,14 +214,11 @@ var exportMetricsCmd = &cobra.Command{
 }
 
 // start get command
-
 var getReq serving.GetServingEndpointRequest
-var getJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
-	getCmd.Flags().Var(&getJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -270,23 +232,14 @@ var getCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = getJson.Unmarshal(&getReq)
-			if err != nil {
-				return err
-			}
-		} else {
-			getReq.Name = args[0]
-		}
+
+		getReq.Name = args[0]
 
 		response, err := w.ServingEndpoints.Get(ctx, getReq)
 		if err != nil {
@@ -328,14 +281,11 @@ var listCmd = &cobra.Command{
 }
 
 // start logs command
-
 var logsReq serving.LogsRequest
-var logsJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(logsCmd)
 	// TODO: short flags
-	logsCmd.Flags().Var(&logsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -350,24 +300,15 @@ var logsCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = logsJson.Unmarshal(&logsReq)
-			if err != nil {
-				return err
-			}
-		} else {
-			logsReq.Name = args[0]
-			logsReq.ServedModelName = args[1]
-		}
+
+		logsReq.Name = args[0]
+		logsReq.ServedModelName = args[1]
 
 		response, err := w.ServingEndpoints.Logs(ctx, logsReq)
 		if err != nil {
@@ -381,14 +322,11 @@ var logsCmd = &cobra.Command{
 }
 
 // start query command
-
 var queryReq serving.QueryRequest
-var queryJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(queryCmd)
 	// TODO: short flags
-	queryCmd.Flags().Var(&queryJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -400,23 +338,14 @@ var queryCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = queryJson.Unmarshal(&queryReq)
-			if err != nil {
-				return err
-			}
-		} else {
-			queryReq.Name = args[0]
-		}
+
+		queryReq.Name = args[0]
 
 		response, err := w.ServingEndpoints.Query(ctx, queryReq)
 		if err != nil {
@@ -430,9 +359,9 @@ var queryCmd = &cobra.Command{
 }
 
 // start update-config command
-
 var updateConfigReq serving.EndpointCoreConfigInput
 var updateConfigJson flags.JsonFlag
+
 var updateConfigSkipWait bool
 var updateConfigTimeout time.Duration
 
@@ -463,6 +392,7 @@ var updateConfigCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = updateConfigJson.Unmarshal(&updateConfigReq)
 			if err != nil {

@@ -30,9 +30,9 @@ var Cmd = &cobra.Command{
 }
 
 // start create command
-
 var createReq provisioning.CreateWorkspaceRequest
 var createJson flags.JsonFlag
+
 var createSkipWait bool
 var createTimeout time.Duration
 
@@ -86,6 +86,7 @@ var createCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = createJson.Unmarshal(&createReq)
 			if err != nil {
@@ -119,14 +120,11 @@ var createCmd = &cobra.Command{
 }
 
 // start delete command
-
 var deleteReq provisioning.DeleteWorkspaceRequest
-var deleteJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
-	deleteCmd.Flags().Var(&deleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -149,33 +147,27 @@ var deleteCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = deleteJson.Unmarshal(&deleteReq)
+
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No WORKSPACE_ID argument specified. Loading names for Workspaces drop-down."
+			names, err := a.Workspaces.WorkspaceWorkspaceNameToWorkspaceIdMap(ctx)
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Workspaces drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "Workspace ID")
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No WORKSPACE_ID argument specified. Loading names for Workspaces drop-down."
-				names, err := a.Workspaces.WorkspaceWorkspaceNameToWorkspaceIdMap(ctx)
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Workspaces drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "Workspace ID")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have workspace id")
-			}
-			_, err = fmt.Sscan(args[0], &deleteReq.WorkspaceId)
-			if err != nil {
-				return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
-			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have workspace id")
+		}
+		_, err = fmt.Sscan(args[0], &deleteReq.WorkspaceId)
+		if err != nil {
+			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
 		}
 
 		err = a.Workspaces.Delete(ctx, deleteReq)
@@ -190,14 +182,11 @@ var deleteCmd = &cobra.Command{
 }
 
 // start get command
-
 var getReq provisioning.GetWorkspaceRequest
-var getJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
-	getCmd.Flags().Var(&getJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -226,33 +215,27 @@ var getCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = getJson.Unmarshal(&getReq)
+
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No WORKSPACE_ID argument specified. Loading names for Workspaces drop-down."
+			names, err := a.Workspaces.WorkspaceWorkspaceNameToWorkspaceIdMap(ctx)
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Workspaces drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "Workspace ID")
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No WORKSPACE_ID argument specified. Loading names for Workspaces drop-down."
-				names, err := a.Workspaces.WorkspaceWorkspaceNameToWorkspaceIdMap(ctx)
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Workspaces drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "Workspace ID")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have workspace id")
-			}
-			_, err = fmt.Sscan(args[0], &getReq.WorkspaceId)
-			if err != nil {
-				return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
-			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have workspace id")
+		}
+		_, err = fmt.Sscan(args[0], &getReq.WorkspaceId)
+		if err != nil {
+			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
 		}
 
 		response, err := a.Workspaces.Get(ctx, getReq)
@@ -301,9 +284,8 @@ var listCmd = &cobra.Command{
 }
 
 // start update command
-
 var updateReq provisioning.UpdateWorkspaceRequest
-var updateJson flags.JsonFlag
+
 var updateSkipWait bool
 var updateTimeout time.Duration
 
@@ -313,7 +295,6 @@ func init() {
 	updateCmd.Flags().BoolVar(&updateSkipWait, "no-wait", updateSkipWait, `do not wait to reach RUNNING state`)
 	updateCmd.Flags().DurationVar(&updateTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
 	// TODO: short flags
-	updateCmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	updateCmd.Flags().StringVar(&updateReq.AwsRegion, "aws-region", updateReq.AwsRegion, `The AWS region of the workspace's data plane (for example, us-west-2).`)
 	updateCmd.Flags().StringVar(&updateReq.CredentialsId, "credentials-id", updateReq.CredentialsId, `ID of the workspace's credential configuration object.`)
@@ -446,33 +427,27 @@ var updateCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = updateJson.Unmarshal(&updateReq)
+
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No WORKSPACE_ID argument specified. Loading names for Workspaces drop-down."
+			names, err := a.Workspaces.WorkspaceWorkspaceNameToWorkspaceIdMap(ctx)
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Workspaces drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "Workspace ID")
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No WORKSPACE_ID argument specified. Loading names for Workspaces drop-down."
-				names, err := a.Workspaces.WorkspaceWorkspaceNameToWorkspaceIdMap(ctx)
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Workspaces drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "Workspace ID")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have workspace id")
-			}
-			_, err = fmt.Sscan(args[0], &updateReq.WorkspaceId)
-			if err != nil {
-				return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
-			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have workspace id")
+		}
+		_, err = fmt.Sscan(args[0], &updateReq.WorkspaceId)
+		if err != nil {
+			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
 		}
 
 		wait, err := a.Workspaces.Update(ctx, updateReq)
