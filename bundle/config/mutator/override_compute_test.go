@@ -25,9 +25,9 @@ func TestOverrideCompute(t *testing.T) {
 				Jobs: map[string]*resources.Job{
 					"job1": {JobSettings: &jobs.JobSettings{
 						Name: "job1",
-						Tasks: []jobs.JobTaskSettings{
+						Tasks: []jobs.Task{
 							{
-								NewCluster: &compute.BaseClusterInfo{},
+								NewCluster: &compute.ClusterSpec{},
 							},
 							{
 								ExistingClusterId: "cluster2",
