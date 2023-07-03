@@ -29,5 +29,8 @@ type Bundle struct {
 	// origin url. Automatically loaded by reading .git directory if not specified
 	Git Git `json:"git,omitempty"`
 
+	// Determines the mode of the environment.
+	// For example, 'mode: development' can be used for deployments for
+	// development purposes.
 	Mode Mode `json:"mode,omitempty"`
 }
