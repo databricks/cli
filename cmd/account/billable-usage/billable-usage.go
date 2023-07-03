@@ -4,7 +4,6 @@ package billable_usage
 
 import (
 	"github.com/databricks/cli/cmd/root"
-	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/billing"
 	"github.com/spf13/cobra"
 )
@@ -20,14 +19,11 @@ var Cmd = &cobra.Command{
 }
 
 // start download command
-
 var downloadReq billing.DownloadRequest
-var downloadJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(downloadCmd)
 	// TODO: short flags
-	downloadCmd.Flags().Var(&downloadJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	downloadCmd.Flags().BoolVar(&downloadReq.PersonalData, "personal-data", downloadReq.PersonalData, `Specify whether to include personally identifiable information in the billable usage logs, for example the email addresses of cluster creators.`)
 
@@ -52,24 +48,15 @@ var downloadCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = downloadJson.Unmarshal(&downloadReq)
-			if err != nil {
-				return err
-			}
-		} else {
-			downloadReq.StartMonth = args[0]
-			downloadReq.EndMonth = args[1]
-		}
+
+		downloadReq.StartMonth = args[0]
+		downloadReq.EndMonth = args[1]
 
 		err = a.BillableUsage.Download(ctx, downloadReq)
 		if err != nil {

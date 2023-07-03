@@ -24,14 +24,11 @@ var Cmd = &cobra.Command{
 }
 
 // start get-assignable-roles-for-resource command
-
 var getAssignableRolesForResourceReq iam.GetAssignableRolesForResourceRequest
-var getAssignableRolesForResourceJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(getAssignableRolesForResourceCmd)
 	// TODO: short flags
-	getAssignableRolesForResourceCmd.Flags().Var(&getAssignableRolesForResourceJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -47,23 +44,14 @@ var getAssignableRolesForResourceCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = getAssignableRolesForResourceJson.Unmarshal(&getAssignableRolesForResourceReq)
-			if err != nil {
-				return err
-			}
-		} else {
-			getAssignableRolesForResourceReq.Resource = args[0]
-		}
+
+		getAssignableRolesForResourceReq.Resource = args[0]
 
 		response, err := a.AccessControl.GetAssignableRolesForResource(ctx, getAssignableRolesForResourceReq)
 		if err != nil {
@@ -77,14 +65,11 @@ var getAssignableRolesForResourceCmd = &cobra.Command{
 }
 
 // start get-rule-set command
-
 var getRuleSetReq iam.GetRuleSetRequest
-var getRuleSetJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(getRuleSetCmd)
 	// TODO: short flags
-	getRuleSetCmd.Flags().Var(&getRuleSetJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -100,24 +85,15 @@ var getRuleSetCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = getRuleSetJson.Unmarshal(&getRuleSetReq)
-			if err != nil {
-				return err
-			}
-		} else {
-			getRuleSetReq.Name = args[0]
-			getRuleSetReq.Etag = args[1]
-		}
+
+		getRuleSetReq.Name = args[0]
+		getRuleSetReq.Etag = args[1]
 
 		response, err := a.AccessControl.GetRuleSet(ctx, getRuleSetReq)
 		if err != nil {
@@ -131,7 +107,6 @@ var getRuleSetCmd = &cobra.Command{
 }
 
 // start update-rule-set command
-
 var updateRuleSetReq iam.UpdateRuleSetRequest
 var updateRuleSetJson flags.JsonFlag
 
@@ -156,6 +131,7 @@ var updateRuleSetCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = updateRuleSetJson.Unmarshal(&updateRuleSetReq)
 			if err != nil {

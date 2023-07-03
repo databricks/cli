@@ -49,7 +49,6 @@ var Cmd = &cobra.Command{
 }
 
 // start change-owner command
-
 var changeOwnerReq compute.ChangeClusterOwner
 var changeOwnerJson flags.JsonFlag
 
@@ -80,6 +79,7 @@ var changeOwnerCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = changeOwnerJson.Unmarshal(&changeOwnerReq)
 			if err != nil {
@@ -102,9 +102,9 @@ var changeOwnerCmd = &cobra.Command{
 }
 
 // start create command
-
 var createReq compute.CreateCluster
 var createJson flags.JsonFlag
+
 var createSkipWait bool
 var createTimeout time.Duration
 
@@ -169,6 +169,7 @@ var createCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = createJson.Unmarshal(&createReq)
 			if err != nil {
@@ -202,9 +203,9 @@ var createCmd = &cobra.Command{
 }
 
 // start delete command
-
 var deleteReq compute.DeleteCluster
 var deleteJson flags.JsonFlag
+
 var deleteSkipWait bool
 var deleteTimeout time.Duration
 
@@ -233,6 +234,7 @@ var deleteCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = deleteJson.Unmarshal(&deleteReq)
 			if err != nil {
@@ -283,9 +285,9 @@ var deleteCmd = &cobra.Command{
 }
 
 // start edit command
-
 var editReq compute.EditCluster
 var editJson flags.JsonFlag
+
 var editSkipWait bool
 var editTimeout time.Duration
 
@@ -357,6 +359,7 @@ var editCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = editJson.Unmarshal(&editReq)
 			if err != nil {
@@ -391,7 +394,6 @@ var editCmd = &cobra.Command{
 }
 
 // start events command
-
 var eventsReq compute.GetEvents
 var eventsJson flags.JsonFlag
 
@@ -423,6 +425,7 @@ var eventsCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = eventsJson.Unmarshal(&eventsReq)
 			if err != nil {
@@ -461,9 +464,8 @@ var eventsCmd = &cobra.Command{
 }
 
 // start get command
-
 var getReq compute.GetClusterRequest
-var getJson flags.JsonFlag
+
 var getSkipWait bool
 var getTimeout time.Duration
 
@@ -473,7 +475,6 @@ func init() {
 	getCmd.Flags().BoolVar(&getSkipWait, "no-wait", getSkipWait, `do not wait to reach RUNNING state`)
 	getCmd.Flags().DurationVar(&getTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
 	// TODO: short flags
-	getCmd.Flags().Var(&getJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -490,31 +491,25 @@ var getCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = getJson.Unmarshal(&getReq)
+
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No CLUSTER_ID argument specified. Loading names for Clusters drop-down."
+			names, err := w.Clusters.ClusterDetailsClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Clusters drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "The cluster about which to retrieve information")
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No CLUSTER_ID argument specified. Loading names for Clusters drop-down."
-				names, err := w.Clusters.ClusterDetailsClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Clusters drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "The cluster about which to retrieve information")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have the cluster about which to retrieve information")
-			}
-			getReq.ClusterId = args[0]
+			args = append(args, id)
 		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the cluster about which to retrieve information")
+		}
+		getReq.ClusterId = args[0]
 
 		response, err := w.Clusters.Get(ctx, getReq)
 		if err != nil {
@@ -528,7 +523,6 @@ var getCmd = &cobra.Command{
 }
 
 // start list command
-
 var listReq compute.ListClustersRequest
 var listJson flags.JsonFlag
 
@@ -568,6 +562,7 @@ var listCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = listJson.Unmarshal(&listReq)
 			if err != nil {
@@ -650,7 +645,6 @@ var listZonesCmd = &cobra.Command{
 }
 
 // start permanent-delete command
-
 var permanentDeleteReq compute.PermanentDeleteCluster
 var permanentDeleteJson flags.JsonFlag
 
@@ -678,6 +672,7 @@ var permanentDeleteCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = permanentDeleteJson.Unmarshal(&permanentDeleteReq)
 			if err != nil {
@@ -716,7 +711,6 @@ var permanentDeleteCmd = &cobra.Command{
 }
 
 // start pin command
-
 var pinReq compute.PinCluster
 var pinJson flags.JsonFlag
 
@@ -741,6 +735,7 @@ var pinCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = pinJson.Unmarshal(&pinReq)
 			if err != nil {
@@ -779,9 +774,9 @@ var pinCmd = &cobra.Command{
 }
 
 // start resize command
-
 var resizeReq compute.ResizeCluster
 var resizeJson flags.JsonFlag
+
 var resizeSkipWait bool
 var resizeTimeout time.Duration
 
@@ -811,6 +806,7 @@ var resizeCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = resizeJson.Unmarshal(&resizeReq)
 			if err != nil {
@@ -861,9 +857,9 @@ var resizeCmd = &cobra.Command{
 }
 
 // start restart command
-
 var restartReq compute.RestartCluster
 var restartJson flags.JsonFlag
+
 var restartSkipWait bool
 var restartTimeout time.Duration
 
@@ -892,6 +888,7 @@ var restartCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = restartJson.Unmarshal(&restartReq)
 			if err != nil {
@@ -973,9 +970,9 @@ var sparkVersionsCmd = &cobra.Command{
 }
 
 // start start command
-
 var startReq compute.StartCluster
 var startJson flags.JsonFlag
+
 var startSkipWait bool
 var startTimeout time.Duration
 
@@ -1008,6 +1005,7 @@ var startCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = startJson.Unmarshal(&startReq)
 			if err != nil {
@@ -1058,7 +1056,6 @@ var startCmd = &cobra.Command{
 }
 
 // start unpin command
-
 var unpinReq compute.UnpinCluster
 var unpinJson flags.JsonFlag
 
@@ -1083,6 +1080,7 @@ var unpinCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = unpinJson.Unmarshal(&unpinReq)
 			if err != nil {

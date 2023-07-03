@@ -23,7 +23,6 @@ var Cmd = &cobra.Command{
 }
 
 // start create command
-
 var createReq settings.CreateTokenRequest
 var createJson flags.JsonFlag
 
@@ -59,6 +58,7 @@ var createCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = createJson.Unmarshal(&createReq)
 			if err != nil {
@@ -79,7 +79,6 @@ var createCmd = &cobra.Command{
 }
 
 // start delete command
-
 var deleteReq settings.RevokeTokenRequest
 var deleteJson flags.JsonFlag
 
@@ -105,6 +104,7 @@ var deleteCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = deleteJson.Unmarshal(&deleteReq)
 			if err != nil {
