@@ -21,18 +21,18 @@ func (m *processEnvironmentMode) Name() string {
 	return "ProcessEnvironmentMode"
 }
 
-// Mark all resources as being for 'debug' purposes, i.e.
+// Mark all resources as being for 'development' purposes, i.e.
 // changing their their name, adding tags, and (in the future)
 // marking them as 'hidden' in the UI.
-func processDebugMode(b *bundle.Bundle) error {
+func processDevelopmentMode(b *bundle.Bundle) error {
 	r := b.Config.Resources
 
 	for i := range r.Jobs {
-		r.Jobs[i].Name = "[debug] " + r.Jobs[i].Name
+		r.Jobs[i].Name = "[dev] " + r.Jobs[i].Name
 		if r.Jobs[i].Tags == nil {
 			r.Jobs[i].Tags = make(map[string]string)
 		}
-		r.Jobs[i].Tags["debug"] = ""
+		r.Jobs[i].Tags["dev"] = ""
 		if r.Jobs[i].MaxConcurrentRuns == 0 {
 			r.Jobs[i].MaxConcurrentRuns = debugConcurrentRuns
 		}
@@ -48,19 +48,19 @@ func processDebugMode(b *bundle.Bundle) error {
 	}
 
 	for i := range r.Pipelines {
-		r.Pipelines[i].Name = "[debug] " + r.Pipelines[i].Name
+		r.Pipelines[i].Name = "[dev] " + r.Pipelines[i].Name
 		r.Pipelines[i].Development = true
 		// (pipelines don't yet support tags)
 	}
 
 	for i := range r.Models {
-		r.Models[i].Name = "[debug] " + r.Models[i].Name
-		r.Models[i].Tags = append(r.Models[i].Tags, ml.ModelTag{Key: "debug", Value: ""})
+		r.Models[i].Name = "[dev] " + r.Models[i].Name
+		r.Models[i].Tags = append(r.Models[i].Tags, ml.ModelTag{Key: "dev", Value: ""})
 	}
 
 	for i := range r.Experiments {
-		r.Experiments[i].Name = "[debug] " + r.Experiments[i].Name
-		r.Experiments[i].Tags = append(r.Experiments[i].Tags, ml.ExperimentTag{Key: "debug", Value: ""})
+		r.Experiments[i].Name = "[dev] " + r.Experiments[i].Name
+		r.Experiments[i].Tags = append(r.Experiments[i].Tags, ml.ExperimentTag{Key: "dev", Value: ""})
 	}
 
 	return nil
@@ -68,12 +68,10 @@ func processDebugMode(b *bundle.Bundle) error {
 
 func (m *processEnvironmentMode) Apply(ctx context.Context, b *bundle.Bundle) error {
 	switch b.Config.Bundle.Mode {
-	case config.Debug:
-		return processDebugMode(b)
-	case config.Default, "":
+	case config.Development:
+		return processDevelopmentMode(b)
+	case "":
 		// No action
-	case config.PullRequest:
-		return fmt.Errorf("not implemented")
 	default:
 		return fmt.Errorf("unsupported value specified for 'mode': %s", b.Config.Bundle.Mode)
 	}

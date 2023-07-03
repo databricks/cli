@@ -2,12 +2,6 @@ package config
 
 type Mode string
 
-const (
-	Debug       Mode = "debug"
-	Default     Mode = "default"
-	PullRequest Mode = "pull-request"
-)
-
 // Environment defines overrides for a single environment.
 // This structure is recursively merged into the root configuration.
 type Environment struct {
@@ -30,3 +24,9 @@ type Environment struct {
 	// in the scope of an environment
 	Variables map[string]string `json:"variables,omitempty"`
 }
+
+const (
+	// Right now, we just have a default / "" mode and a "development" mode.
+	// Additional modes are expected to come for pull-requests and production.
+	Development Mode = "development"
+)

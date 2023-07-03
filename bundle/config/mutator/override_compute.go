@@ -37,7 +37,7 @@ func (m *overrideCompute) Apply(ctx context.Context, b *bundle.Bundle) error {
 	if m.compute == "" {
 		return nil
 	}
-	if b.Config.Bundle.Mode != config.Debug {
+	if b.Config.Bundle.Mode != config.Development {
 		return fmt.Errorf("cannot override compute for an environment that does not use 'mode: debug'")
 	}
 

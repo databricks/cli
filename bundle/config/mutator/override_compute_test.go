@@ -18,7 +18,7 @@ func TestOverrideCompute(t *testing.T) {
 	bundle := &bundle.Bundle{
 		Config: config.Root{
 			Bundle: config.Bundle{
-				Mode: config.Debug,
+				Mode: config.Development,
 			},
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{

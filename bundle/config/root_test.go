@@ -159,7 +159,7 @@ func TestRootMergeEnvironmentWithMode(t *testing.T) {
 	root := &Root{
 		Bundle: Bundle{},
 	}
-	env := &Environment{Mode: Debug}
+	env := &Environment{Mode: Development}
 	require.NoError(t, root.MergeEnvironment(env))
-	assert.Equal(t, Debug, root.Bundle.Mode)
+	assert.Equal(t, Development, root.Bundle.Mode)
 }

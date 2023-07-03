@@ -16,7 +16,7 @@ func TestJobAndPipelineDevelopment(t *testing.T) {
 
 	p := b.Config.Resources.Pipelines["nyc_taxi_pipeline"]
 	assert.Equal(t, "job_and_pipeline/bundle.yml", filepath.ToSlash(p.ConfigFilePath))
-	assert.Equal(t, b.Config.Bundle.Mode, config.Debug)
+	assert.Equal(t, b.Config.Bundle.Mode, config.Development)
 	assert.True(t, p.Development)
 	require.Len(t, p.Libraries, 1)
 	assert.Equal(t, "./dlt/nyc_taxi_loader", p.Libraries[0].Notebook.Path)
