@@ -38,7 +38,7 @@ var disableCmd = &cobra.Command{
 	Use:   "disable METASTORE_ID SCHEMA_NAME",
 	Short: `Disable a system schema.`,
 	Long: `Disable a system schema.
-
+  
   Disables the system schema and removes it from the system catalog. The caller
   must be an account admin or a metastore admin.`,
 
@@ -82,7 +82,7 @@ var enableCmd = &cobra.Command{
 	Use:   "enable METASTORE_ID SCHEMA_NAME",
 	Short: `Enable a system schema.`,
 	Long: `Enable a system schema.
-
+  
   Enables the system schema and adds it to the system catalog. The caller must
   be an account admin or a metastore admin.`,
 
@@ -126,7 +126,7 @@ var listCmd = &cobra.Command{
 	Use:   "list METASTORE_ID",
 	Short: `List system schemas.`,
 	Long: `List system schemas.
-
+  
   Gets an array of system schemas for a metastore. The caller must be an account
   admin or a metastore admin.`,
 
