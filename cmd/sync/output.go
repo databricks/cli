@@ -46,7 +46,7 @@ func textOutput(ctx context.Context, ch <-chan sync.Event, w io.Writer) {
 			// Sync events produce an empty string if nothing happened.
 			if str := e.String(); str != "" {
 				bw.WriteString(str)
-				bw.WriteString("\r\n")
+				bw.WriteString("\n")
 				bw.Flush()
 			}
 		}

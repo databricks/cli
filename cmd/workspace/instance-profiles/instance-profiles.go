@@ -25,7 +25,6 @@ var Cmd = &cobra.Command{
 }
 
 // start add command
-
 var addReq compute.AddInstanceProfile
 var addJson flags.JsonFlag
 
@@ -60,6 +59,7 @@ var addCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = addJson.Unmarshal(&addReq)
 			if err != nil {
@@ -81,7 +81,6 @@ var addCmd = &cobra.Command{
 }
 
 // start edit command
-
 var editReq compute.InstanceProfile
 var editJson flags.JsonFlag
 
@@ -128,6 +127,7 @@ var editCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = editJson.Unmarshal(&editReq)
 			if err != nil {
@@ -181,7 +181,6 @@ var listCmd = &cobra.Command{
 }
 
 // start remove command
-
 var removeReq compute.RemoveInstanceProfile
 var removeJson flags.JsonFlag
 
@@ -214,6 +213,7 @@ var removeCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = removeJson.Unmarshal(&removeReq)
 			if err != nil {

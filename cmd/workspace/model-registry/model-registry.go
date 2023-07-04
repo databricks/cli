@@ -23,7 +23,6 @@ var Cmd = &cobra.Command{
 }
 
 // start approve-transition-request command
-
 var approveTransitionRequestReq ml.ApproveTransitionRequest
 var approveTransitionRequestJson flags.JsonFlag
 
@@ -55,6 +54,7 @@ var approveTransitionRequestCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = approveTransitionRequestJson.Unmarshal(&approveTransitionRequestReq)
 			if err != nil {
@@ -85,7 +85,6 @@ var approveTransitionRequestCmd = &cobra.Command{
 }
 
 // start create-comment command
-
 var createCommentReq ml.CreateComment
 var createCommentJson flags.JsonFlag
 
@@ -117,6 +116,7 @@ var createCommentCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = createCommentJson.Unmarshal(&createCommentReq)
 			if err != nil {
@@ -140,7 +140,6 @@ var createCommentCmd = &cobra.Command{
 }
 
 // start create-model command
-
 var createModelReq ml.CreateModelRequest
 var createModelJson flags.JsonFlag
 
@@ -176,6 +175,7 @@ var createModelCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = createModelJson.Unmarshal(&createModelReq)
 			if err != nil {
@@ -197,7 +197,6 @@ var createModelCmd = &cobra.Command{
 }
 
 // start create-model-version command
-
 var createModelVersionReq ml.CreateModelVersionRequest
 var createModelVersionJson flags.JsonFlag
 
@@ -232,6 +231,7 @@ var createModelVersionCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = createModelVersionJson.Unmarshal(&createModelVersionReq)
 			if err != nil {
@@ -254,7 +254,6 @@ var createModelVersionCmd = &cobra.Command{
 }
 
 // start create-transition-request command
-
 var createTransitionRequestReq ml.CreateTransitionRequest
 var createTransitionRequestJson flags.JsonFlag
 
@@ -286,6 +285,7 @@ var createTransitionRequestCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = createTransitionRequestJson.Unmarshal(&createTransitionRequestReq)
 			if err != nil {
@@ -312,7 +312,6 @@ var createTransitionRequestCmd = &cobra.Command{
 }
 
 // start create-webhook command
-
 var createWebhookReq ml.CreateRegistryWebhook
 var createWebhookJson flags.JsonFlag
 
@@ -343,6 +342,7 @@ var createWebhookCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = createWebhookJson.Unmarshal(&createWebhookReq)
 			if err != nil {
@@ -364,14 +364,11 @@ var createWebhookCmd = &cobra.Command{
 }
 
 // start delete-comment command
-
 var deleteCommentReq ml.DeleteCommentRequest
-var deleteCommentJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(deleteCommentCmd)
 	// TODO: short flags
-	deleteCommentCmd.Flags().Var(&deleteCommentJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -385,23 +382,14 @@ var deleteCommentCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = deleteCommentJson.Unmarshal(&deleteCommentReq)
-			if err != nil {
-				return err
-			}
-		} else {
-			deleteCommentReq.Id = args[0]
-		}
+
+		deleteCommentReq.Id = args[0]
 
 		err = w.ModelRegistry.DeleteComment(ctx, deleteCommentReq)
 		if err != nil {
@@ -415,14 +403,11 @@ var deleteCommentCmd = &cobra.Command{
 }
 
 // start delete-model command
-
 var deleteModelReq ml.DeleteModelRequest
-var deleteModelJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(deleteModelCmd)
 	// TODO: short flags
-	deleteModelCmd.Flags().Var(&deleteModelJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -436,23 +421,14 @@ var deleteModelCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = deleteModelJson.Unmarshal(&deleteModelReq)
-			if err != nil {
-				return err
-			}
-		} else {
-			deleteModelReq.Name = args[0]
-		}
+
+		deleteModelReq.Name = args[0]
 
 		err = w.ModelRegistry.DeleteModel(ctx, deleteModelReq)
 		if err != nil {
@@ -466,14 +442,11 @@ var deleteModelCmd = &cobra.Command{
 }
 
 // start delete-model-tag command
-
 var deleteModelTagReq ml.DeleteModelTagRequest
-var deleteModelTagJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(deleteModelTagCmd)
 	// TODO: short flags
-	deleteModelTagCmd.Flags().Var(&deleteModelTagJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -487,24 +460,15 @@ var deleteModelTagCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = deleteModelTagJson.Unmarshal(&deleteModelTagReq)
-			if err != nil {
-				return err
-			}
-		} else {
-			deleteModelTagReq.Name = args[0]
-			deleteModelTagReq.Key = args[1]
-		}
+
+		deleteModelTagReq.Name = args[0]
+		deleteModelTagReq.Key = args[1]
 
 		err = w.ModelRegistry.DeleteModelTag(ctx, deleteModelTagReq)
 		if err != nil {
@@ -518,14 +482,11 @@ var deleteModelTagCmd = &cobra.Command{
 }
 
 // start delete-model-version command
-
 var deleteModelVersionReq ml.DeleteModelVersionRequest
-var deleteModelVersionJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(deleteModelVersionCmd)
 	// TODO: short flags
-	deleteModelVersionCmd.Flags().Var(&deleteModelVersionJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -539,24 +500,15 @@ var deleteModelVersionCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = deleteModelVersionJson.Unmarshal(&deleteModelVersionReq)
-			if err != nil {
-				return err
-			}
-		} else {
-			deleteModelVersionReq.Name = args[0]
-			deleteModelVersionReq.Version = args[1]
-		}
+
+		deleteModelVersionReq.Name = args[0]
+		deleteModelVersionReq.Version = args[1]
 
 		err = w.ModelRegistry.DeleteModelVersion(ctx, deleteModelVersionReq)
 		if err != nil {
@@ -570,14 +522,11 @@ var deleteModelVersionCmd = &cobra.Command{
 }
 
 // start delete-model-version-tag command
-
 var deleteModelVersionTagReq ml.DeleteModelVersionTagRequest
-var deleteModelVersionTagJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(deleteModelVersionTagCmd)
 	// TODO: short flags
-	deleteModelVersionTagCmd.Flags().Var(&deleteModelVersionTagJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -591,25 +540,16 @@ var deleteModelVersionTagCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(3)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = deleteModelVersionTagJson.Unmarshal(&deleteModelVersionTagReq)
-			if err != nil {
-				return err
-			}
-		} else {
-			deleteModelVersionTagReq.Name = args[0]
-			deleteModelVersionTagReq.Version = args[1]
-			deleteModelVersionTagReq.Key = args[2]
-		}
+
+		deleteModelVersionTagReq.Name = args[0]
+		deleteModelVersionTagReq.Version = args[1]
+		deleteModelVersionTagReq.Key = args[2]
 
 		err = w.ModelRegistry.DeleteModelVersionTag(ctx, deleteModelVersionTagReq)
 		if err != nil {
@@ -623,14 +563,11 @@ var deleteModelVersionTagCmd = &cobra.Command{
 }
 
 // start delete-transition-request command
-
 var deleteTransitionRequestReq ml.DeleteTransitionRequestRequest
-var deleteTransitionRequestJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(deleteTransitionRequestCmd)
 	// TODO: short flags
-	deleteTransitionRequestCmd.Flags().Var(&deleteTransitionRequestJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	deleteTransitionRequestCmd.Flags().StringVar(&deleteTransitionRequestReq.Comment, "comment", deleteTransitionRequestReq.Comment, `User-provided comment on the action.`)
 
@@ -646,29 +583,20 @@ var deleteTransitionRequestCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(4)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = deleteTransitionRequestJson.Unmarshal(&deleteTransitionRequestReq)
-			if err != nil {
-				return err
-			}
-		} else {
-			deleteTransitionRequestReq.Name = args[0]
-			deleteTransitionRequestReq.Version = args[1]
-			_, err = fmt.Sscan(args[2], &deleteTransitionRequestReq.Stage)
-			if err != nil {
-				return fmt.Errorf("invalid STAGE: %s", args[2])
-			}
-			deleteTransitionRequestReq.Creator = args[3]
+
+		deleteTransitionRequestReq.Name = args[0]
+		deleteTransitionRequestReq.Version = args[1]
+		_, err = fmt.Sscan(args[2], &deleteTransitionRequestReq.Stage)
+		if err != nil {
+			return fmt.Errorf("invalid STAGE: %s", args[2])
 		}
+		deleteTransitionRequestReq.Creator = args[3]
 
 		err = w.ModelRegistry.DeleteTransitionRequest(ctx, deleteTransitionRequestReq)
 		if err != nil {
@@ -682,7 +610,6 @@ var deleteTransitionRequestCmd = &cobra.Command{
 }
 
 // start delete-webhook command
-
 var deleteWebhookReq ml.DeleteWebhookRequest
 var deleteWebhookJson flags.JsonFlag
 
@@ -716,6 +643,7 @@ var deleteWebhookCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = deleteWebhookJson.Unmarshal(&deleteWebhookReq)
 			if err != nil {
@@ -736,7 +664,6 @@ var deleteWebhookCmd = &cobra.Command{
 }
 
 // start get-latest-versions command
-
 var getLatestVersionsReq ml.GetLatestVersionsRequest
 var getLatestVersionsJson flags.JsonFlag
 
@@ -768,6 +695,7 @@ var getLatestVersionsCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = getLatestVersionsJson.Unmarshal(&getLatestVersionsReq)
 			if err != nil {
@@ -789,14 +717,11 @@ var getLatestVersionsCmd = &cobra.Command{
 }
 
 // start get-model command
-
 var getModelReq ml.GetModelRequest
-var getModelJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(getModelCmd)
 	// TODO: short flags
-	getModelCmd.Flags().Var(&getModelJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -814,23 +739,14 @@ var getModelCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = getModelJson.Unmarshal(&getModelReq)
-			if err != nil {
-				return err
-			}
-		} else {
-			getModelReq.Name = args[0]
-		}
+
+		getModelReq.Name = args[0]
 
 		response, err := w.ModelRegistry.GetModel(ctx, getModelReq)
 		if err != nil {
@@ -844,14 +760,11 @@ var getModelCmd = &cobra.Command{
 }
 
 // start get-model-version command
-
 var getModelVersionReq ml.GetModelVersionRequest
-var getModelVersionJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(getModelVersionCmd)
 	// TODO: short flags
-	getModelVersionCmd.Flags().Var(&getModelVersionJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -865,24 +778,15 @@ var getModelVersionCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = getModelVersionJson.Unmarshal(&getModelVersionReq)
-			if err != nil {
-				return err
-			}
-		} else {
-			getModelVersionReq.Name = args[0]
-			getModelVersionReq.Version = args[1]
-		}
+
+		getModelVersionReq.Name = args[0]
+		getModelVersionReq.Version = args[1]
 
 		response, err := w.ModelRegistry.GetModelVersion(ctx, getModelVersionReq)
 		if err != nil {
@@ -896,14 +800,11 @@ var getModelVersionCmd = &cobra.Command{
 }
 
 // start get-model-version-download-uri command
-
 var getModelVersionDownloadUriReq ml.GetModelVersionDownloadUriRequest
-var getModelVersionDownloadUriJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(getModelVersionDownloadUriCmd)
 	// TODO: short flags
-	getModelVersionDownloadUriCmd.Flags().Var(&getModelVersionDownloadUriJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -917,24 +818,15 @@ var getModelVersionDownloadUriCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = getModelVersionDownloadUriJson.Unmarshal(&getModelVersionDownloadUriReq)
-			if err != nil {
-				return err
-			}
-		} else {
-			getModelVersionDownloadUriReq.Name = args[0]
-			getModelVersionDownloadUriReq.Version = args[1]
-		}
+
+		getModelVersionDownloadUriReq.Name = args[0]
+		getModelVersionDownloadUriReq.Version = args[1]
 
 		response, err := w.ModelRegistry.GetModelVersionDownloadUri(ctx, getModelVersionDownloadUriReq)
 		if err != nil {
@@ -948,7 +840,6 @@ var getModelVersionDownloadUriCmd = &cobra.Command{
 }
 
 // start list-models command
-
 var listModelsReq ml.ListModelsRequest
 var listModelsJson flags.JsonFlag
 
@@ -982,6 +873,7 @@ var listModelsCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = listModelsJson.Unmarshal(&listModelsReq)
 			if err != nil {
@@ -1002,14 +894,11 @@ var listModelsCmd = &cobra.Command{
 }
 
 // start list-transition-requests command
-
 var listTransitionRequestsReq ml.ListTransitionRequestsRequest
-var listTransitionRequestsJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(listTransitionRequestsCmd)
 	// TODO: short flags
-	listTransitionRequestsCmd.Flags().Var(&listTransitionRequestsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -1023,24 +912,15 @@ var listTransitionRequestsCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = listTransitionRequestsJson.Unmarshal(&listTransitionRequestsReq)
-			if err != nil {
-				return err
-			}
-		} else {
-			listTransitionRequestsReq.Name = args[0]
-			listTransitionRequestsReq.Version = args[1]
-		}
+
+		listTransitionRequestsReq.Name = args[0]
+		listTransitionRequestsReq.Version = args[1]
 
 		response, err := w.ModelRegistry.ListTransitionRequestsAll(ctx, listTransitionRequestsReq)
 		if err != nil {
@@ -1054,7 +934,6 @@ var listTransitionRequestsCmd = &cobra.Command{
 }
 
 // start list-webhooks command
-
 var listWebhooksReq ml.ListWebhooksRequest
 var listWebhooksJson flags.JsonFlag
 
@@ -1090,6 +969,7 @@ var listWebhooksCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = listWebhooksJson.Unmarshal(&listWebhooksReq)
 			if err != nil {
@@ -1110,7 +990,6 @@ var listWebhooksCmd = &cobra.Command{
 }
 
 // start reject-transition-request command
-
 var rejectTransitionRequestReq ml.RejectTransitionRequest
 var rejectTransitionRequestJson flags.JsonFlag
 
@@ -1142,6 +1021,7 @@ var rejectTransitionRequestCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = rejectTransitionRequestJson.Unmarshal(&rejectTransitionRequestReq)
 			if err != nil {
@@ -1168,7 +1048,6 @@ var rejectTransitionRequestCmd = &cobra.Command{
 }
 
 // start rename-model command
-
 var renameModelReq ml.RenameModelRequest
 var renameModelJson flags.JsonFlag
 
@@ -1200,6 +1079,7 @@ var renameModelCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = renameModelJson.Unmarshal(&renameModelReq)
 			if err != nil {
@@ -1221,7 +1101,6 @@ var renameModelCmd = &cobra.Command{
 }
 
 // start search-model-versions command
-
 var searchModelVersionsReq ml.SearchModelVersionsRequest
 var searchModelVersionsJson flags.JsonFlag
 
@@ -1256,6 +1135,7 @@ var searchModelVersionsCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = searchModelVersionsJson.Unmarshal(&searchModelVersionsReq)
 			if err != nil {
@@ -1276,7 +1156,6 @@ var searchModelVersionsCmd = &cobra.Command{
 }
 
 // start search-models command
-
 var searchModelsReq ml.SearchModelsRequest
 var searchModelsJson flags.JsonFlag
 
@@ -1311,6 +1190,7 @@ var searchModelsCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = searchModelsJson.Unmarshal(&searchModelsReq)
 			if err != nil {
@@ -1331,7 +1211,6 @@ var searchModelsCmd = &cobra.Command{
 }
 
 // start set-model-tag command
-
 var setModelTagReq ml.SetModelTagRequest
 var setModelTagJson flags.JsonFlag
 
@@ -1361,6 +1240,7 @@ var setModelTagCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = setModelTagJson.Unmarshal(&setModelTagReq)
 			if err != nil {
@@ -1384,7 +1264,6 @@ var setModelTagCmd = &cobra.Command{
 }
 
 // start set-model-version-tag command
-
 var setModelVersionTagReq ml.SetModelVersionTagRequest
 var setModelVersionTagJson flags.JsonFlag
 
@@ -1414,6 +1293,7 @@ var setModelVersionTagCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = setModelVersionTagJson.Unmarshal(&setModelVersionTagReq)
 			if err != nil {
@@ -1438,7 +1318,6 @@ var setModelVersionTagCmd = &cobra.Command{
 }
 
 // start test-registry-webhook command
-
 var testRegistryWebhookReq ml.TestRegistryWebhookRequest
 var testRegistryWebhookJson flags.JsonFlag
 
@@ -1472,6 +1351,7 @@ var testRegistryWebhookCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = testRegistryWebhookJson.Unmarshal(&testRegistryWebhookReq)
 			if err != nil {
@@ -1493,7 +1373,6 @@ var testRegistryWebhookCmd = &cobra.Command{
 }
 
 // start transition-stage command
-
 var transitionStageReq ml.TransitionModelVersionStageDatabricks
 var transitionStageJson flags.JsonFlag
 
@@ -1529,6 +1408,7 @@ var transitionStageCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = transitionStageJson.Unmarshal(&transitionStageReq)
 			if err != nil {
@@ -1559,7 +1439,6 @@ var transitionStageCmd = &cobra.Command{
 }
 
 // start update-comment command
-
 var updateCommentReq ml.UpdateComment
 var updateCommentJson flags.JsonFlag
 
@@ -1589,6 +1468,7 @@ var updateCommentCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = updateCommentJson.Unmarshal(&updateCommentReq)
 			if err != nil {
@@ -1611,7 +1491,6 @@ var updateCommentCmd = &cobra.Command{
 }
 
 // start update-model command
-
 var updateModelReq ml.UpdateModelRequest
 var updateModelJson flags.JsonFlag
 
@@ -1643,6 +1522,7 @@ var updateModelCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = updateModelJson.Unmarshal(&updateModelReq)
 			if err != nil {
@@ -1664,7 +1544,6 @@ var updateModelCmd = &cobra.Command{
 }
 
 // start update-model-version command
-
 var updateModelVersionReq ml.UpdateModelVersionRequest
 var updateModelVersionJson flags.JsonFlag
 
@@ -1696,6 +1575,7 @@ var updateModelVersionCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = updateModelVersionJson.Unmarshal(&updateModelVersionReq)
 			if err != nil {
@@ -1718,7 +1598,6 @@ var updateModelVersionCmd = &cobra.Command{
 }
 
 // start update-webhook command
-
 var updateWebhookReq ml.UpdateRegistryWebhook
 var updateWebhookJson flags.JsonFlag
 
@@ -1756,6 +1635,7 @@ var updateWebhookCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = updateWebhookJson.Unmarshal(&updateWebhookReq)
 			if err != nil {

@@ -34,14 +34,11 @@ var Cmd = &cobra.Command{
 }
 
 // start assign command
-
 var assignReq catalog.CreateMetastoreAssignment
-var assignJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(assignCmd)
 	// TODO: short flags
-	assignCmd.Flags().Var(&assignJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -57,27 +54,18 @@ var assignCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(3)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = assignJson.Unmarshal(&assignReq)
-			if err != nil {
-				return err
-			}
-		} else {
-			assignReq.MetastoreId = args[0]
-			assignReq.DefaultCatalogName = args[1]
-			_, err = fmt.Sscan(args[2], &assignReq.WorkspaceId)
-			if err != nil {
-				return fmt.Errorf("invalid WORKSPACE_ID: %s", args[2])
-			}
+
+		assignReq.MetastoreId = args[0]
+		assignReq.DefaultCatalogName = args[1]
+		_, err = fmt.Sscan(args[2], &assignReq.WorkspaceId)
+		if err != nil {
+			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[2])
 		}
 
 		err = w.Metastores.Assign(ctx, assignReq)
@@ -92,7 +80,6 @@ var assignCmd = &cobra.Command{
 }
 
 // start create command
-
 var createReq catalog.CreateMetastore
 var createJson flags.JsonFlag
 
@@ -124,6 +111,7 @@ var createCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = createJson.Unmarshal(&createReq)
 			if err != nil {
@@ -176,14 +164,11 @@ var currentCmd = &cobra.Command{
 }
 
 // start delete command
-
 var deleteReq catalog.DeleteMetastoreRequest
-var deleteJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
-	deleteCmd.Flags().Var(&deleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	deleteCmd.Flags().BoolVar(&deleteReq.Force, "force", deleteReq.Force, `Force deletion even if the metastore is not empty.`)
 
@@ -201,31 +186,25 @@ var deleteCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = deleteJson.Unmarshal(&deleteReq)
+
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No ID argument specified. Loading names for Metastores drop-down."
+			names, err := w.Metastores.MetastoreInfoNameToMetastoreIdMap(ctx)
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Metastores drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "Unique ID of the metastore")
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No ID argument specified. Loading names for Metastores drop-down."
-				names, err := w.Metastores.MetastoreInfoNameToMetastoreIdMap(ctx)
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Metastores drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "Unique ID of the metastore")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have unique id of the metastore")
-			}
-			deleteReq.Id = args[0]
+			args = append(args, id)
 		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have unique id of the metastore")
+		}
+		deleteReq.Id = args[0]
 
 		err = w.Metastores.Delete(ctx, deleteReq)
 		if err != nil {
@@ -239,14 +218,11 @@ var deleteCmd = &cobra.Command{
 }
 
 // start get command
-
 var getReq catalog.GetMetastoreRequest
-var getJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
-	getCmd.Flags().Var(&getJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -263,31 +239,25 @@ var getCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = getJson.Unmarshal(&getReq)
+
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No ID argument specified. Loading names for Metastores drop-down."
+			names, err := w.Metastores.MetastoreInfoNameToMetastoreIdMap(ctx)
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Metastores drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "Unique ID of the metastore")
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No ID argument specified. Loading names for Metastores drop-down."
-				names, err := w.Metastores.MetastoreInfoNameToMetastoreIdMap(ctx)
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Metastores drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "Unique ID of the metastore")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have unique id of the metastore")
-			}
-			getReq.Id = args[0]
+			args = append(args, id)
 		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have unique id of the metastore")
+		}
+		getReq.Id = args[0]
 
 		response, err := w.Metastores.Get(ctx, getReq)
 		if err != nil {
@@ -333,7 +303,6 @@ var listCmd = &cobra.Command{
 }
 
 // start maintenance command
-
 var maintenanceReq catalog.UpdateAutoMaintenance
 var maintenanceJson flags.JsonFlag
 
@@ -366,6 +335,7 @@ var maintenanceCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = maintenanceJson.Unmarshal(&maintenanceReq)
 			if err != nil {
@@ -422,14 +392,11 @@ var summaryCmd = &cobra.Command{
 }
 
 // start unassign command
-
 var unassignReq catalog.UnassignRequest
-var unassignJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(unassignCmd)
 	// TODO: short flags
-	unassignCmd.Flags().Var(&unassignJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -443,27 +410,18 @@ var unassignCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = unassignJson.Unmarshal(&unassignReq)
-			if err != nil {
-				return err
-			}
-		} else {
-			_, err = fmt.Sscan(args[0], &unassignReq.WorkspaceId)
-			if err != nil {
-				return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
-			}
-			unassignReq.MetastoreId = args[1]
+
+		_, err = fmt.Sscan(args[0], &unassignReq.WorkspaceId)
+		if err != nil {
+			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
 		}
+		unassignReq.MetastoreId = args[1]
 
 		err = w.Metastores.Unassign(ctx, unassignReq)
 		if err != nil {
@@ -477,14 +435,11 @@ var unassignCmd = &cobra.Command{
 }
 
 // start update command
-
 var updateReq catalog.UpdateMetastore
-var updateJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(updateCmd)
 	// TODO: short flags
-	updateCmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	updateCmd.Flags().StringVar(&updateReq.DeltaSharingOrganizationName, "delta-sharing-organization-name", updateReq.DeltaSharingOrganizationName, `The organization name of a Delta Sharing entity, to be used in Databricks-to-Databricks Delta Sharing as the official name.`)
 	updateCmd.Flags().Int64Var(&updateReq.DeltaSharingRecipientTokenLifetimeInSeconds, "delta-sharing-recipient-token-lifetime-in-seconds", updateReq.DeltaSharingRecipientTokenLifetimeInSeconds, `The lifetime of delta sharing recipient token in seconds.`)
@@ -509,31 +464,25 @@ var updateCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = updateJson.Unmarshal(&updateReq)
+
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No ID argument specified. Loading names for Metastores drop-down."
+			names, err := w.Metastores.MetastoreInfoNameToMetastoreIdMap(ctx)
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Metastores drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "Unique ID of the metastore")
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No ID argument specified. Loading names for Metastores drop-down."
-				names, err := w.Metastores.MetastoreInfoNameToMetastoreIdMap(ctx)
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Metastores drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "Unique ID of the metastore")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have unique id of the metastore")
-			}
-			updateReq.Id = args[0]
+			args = append(args, id)
 		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have unique id of the metastore")
+		}
+		updateReq.Id = args[0]
 
 		response, err := w.Metastores.Update(ctx, updateReq)
 		if err != nil {
@@ -547,14 +496,11 @@ var updateCmd = &cobra.Command{
 }
 
 // start update-assignment command
-
 var updateAssignmentReq catalog.UpdateMetastoreAssignment
-var updateAssignmentJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(updateAssignmentCmd)
 	// TODO: short flags
-	updateAssignmentCmd.Flags().Var(&updateAssignmentJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	updateAssignmentCmd.Flags().StringVar(&updateAssignmentReq.DefaultCatalogName, "default-catalog-name", updateAssignmentReq.DefaultCatalogName, `The name of the default catalog for the metastore.`)
 	updateAssignmentCmd.Flags().StringVar(&updateAssignmentReq.MetastoreId, "metastore-id", updateAssignmentReq.MetastoreId, `The unique ID of the metastore.`)
@@ -576,33 +522,27 @@ var updateAssignmentCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = updateAssignmentJson.Unmarshal(&updateAssignmentReq)
+
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No WORKSPACE_ID argument specified. Loading names for Metastores drop-down."
+			names, err := w.Metastores.MetastoreInfoNameToMetastoreIdMap(ctx)
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Metastores drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "A workspace ID")
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No WORKSPACE_ID argument specified. Loading names for Metastores drop-down."
-				names, err := w.Metastores.MetastoreInfoNameToMetastoreIdMap(ctx)
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Metastores drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "A workspace ID")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have a workspace id")
-			}
-			_, err = fmt.Sscan(args[0], &updateAssignmentReq.WorkspaceId)
-			if err != nil {
-				return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
-			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have a workspace id")
+		}
+		_, err = fmt.Sscan(args[0], &updateAssignmentReq.WorkspaceId)
+		if err != nil {
+			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
 		}
 
 		err = w.Metastores.UpdateAssignment(ctx, updateAssignmentReq)

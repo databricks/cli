@@ -27,7 +27,6 @@ var Cmd = &cobra.Command{
 }
 
 // start create command
-
 var createReq workspace.CreateCredentials
 var createJson flags.JsonFlag
 
@@ -63,6 +62,7 @@ var createCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = createJson.Unmarshal(&createReq)
 			if err != nil {
@@ -84,14 +84,11 @@ var createCmd = &cobra.Command{
 }
 
 // start delete command
-
 var deleteReq workspace.DeleteGitCredentialRequest
-var deleteJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
-	deleteCmd.Flags().Var(&deleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -107,33 +104,27 @@ var deleteCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = deleteJson.Unmarshal(&deleteReq)
+
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No CREDENTIAL_ID argument specified. Loading names for Git Credentials drop-down."
+			names, err := w.GitCredentials.CredentialInfoGitProviderToCredentialIdMap(ctx)
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Git Credentials drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "The ID for the corresponding credential to access")
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No CREDENTIAL_ID argument specified. Loading names for Git Credentials drop-down."
-				names, err := w.GitCredentials.CredentialInfoGitProviderToCredentialIdMap(ctx)
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Git Credentials drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "The ID for the corresponding credential to access")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have the id for the corresponding credential to access")
-			}
-			_, err = fmt.Sscan(args[0], &deleteReq.CredentialId)
-			if err != nil {
-				return fmt.Errorf("invalid CREDENTIAL_ID: %s", args[0])
-			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the id for the corresponding credential to access")
+		}
+		_, err = fmt.Sscan(args[0], &deleteReq.CredentialId)
+		if err != nil {
+			return fmt.Errorf("invalid CREDENTIAL_ID: %s", args[0])
 		}
 
 		err = w.GitCredentials.Delete(ctx, deleteReq)
@@ -148,14 +139,11 @@ var deleteCmd = &cobra.Command{
 }
 
 // start get command
-
 var getReq workspace.GetGitCredentialRequest
-var getJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
-	getCmd.Flags().Var(&getJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -171,33 +159,27 @@ var getCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = getJson.Unmarshal(&getReq)
+
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No CREDENTIAL_ID argument specified. Loading names for Git Credentials drop-down."
+			names, err := w.GitCredentials.CredentialInfoGitProviderToCredentialIdMap(ctx)
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Git Credentials drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "The ID for the corresponding credential to access")
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No CREDENTIAL_ID argument specified. Loading names for Git Credentials drop-down."
-				names, err := w.GitCredentials.CredentialInfoGitProviderToCredentialIdMap(ctx)
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Git Credentials drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "The ID for the corresponding credential to access")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have the id for the corresponding credential to access")
-			}
-			_, err = fmt.Sscan(args[0], &getReq.CredentialId)
-			if err != nil {
-				return fmt.Errorf("invalid CREDENTIAL_ID: %s", args[0])
-			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the id for the corresponding credential to access")
+		}
+		_, err = fmt.Sscan(args[0], &getReq.CredentialId)
+		if err != nil {
+			return fmt.Errorf("invalid CREDENTIAL_ID: %s", args[0])
 		}
 
 		response, err := w.GitCredentials.Get(ctx, getReq)
@@ -243,14 +225,11 @@ var listCmd = &cobra.Command{
 }
 
 // start update command
-
 var updateReq workspace.UpdateCredentials
-var updateJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(updateCmd)
 	// TODO: short flags
-	updateCmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	updateCmd.Flags().StringVar(&updateReq.GitProvider, "git-provider", updateReq.GitProvider, `Git provider.`)
 	updateCmd.Flags().StringVar(&updateReq.GitUsername, "git-username", updateReq.GitUsername, `Git username.`)
@@ -270,33 +249,27 @@ var updateCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = updateJson.Unmarshal(&updateReq)
+
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No CREDENTIAL_ID argument specified. Loading names for Git Credentials drop-down."
+			names, err := w.GitCredentials.CredentialInfoGitProviderToCredentialIdMap(ctx)
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Git Credentials drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "The ID for the corresponding credential to access")
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No CREDENTIAL_ID argument specified. Loading names for Git Credentials drop-down."
-				names, err := w.GitCredentials.CredentialInfoGitProviderToCredentialIdMap(ctx)
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Git Credentials drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "The ID for the corresponding credential to access")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have the id for the corresponding credential to access")
-			}
-			_, err = fmt.Sscan(args[0], &updateReq.CredentialId)
-			if err != nil {
-				return fmt.Errorf("invalid CREDENTIAL_ID: %s", args[0])
-			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the id for the corresponding credential to access")
+		}
+		_, err = fmt.Sscan(args[0], &updateReq.CredentialId)
+		if err != nil {
+			return fmt.Errorf("invalid CREDENTIAL_ID: %s", args[0])
 		}
 
 		err = w.GitCredentials.Update(ctx, updateReq)

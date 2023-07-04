@@ -22,7 +22,6 @@ var Cmd = &cobra.Command{
 }
 
 // start create command
-
 var createReq sharing.CreateRecipient
 var createJson flags.JsonFlag
 
@@ -61,6 +60,7 @@ var createCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = createJson.Unmarshal(&createReq)
 			if err != nil {
@@ -86,14 +86,11 @@ var createCmd = &cobra.Command{
 }
 
 // start delete command
-
 var deleteReq sharing.DeleteRecipientRequest
-var deleteJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
-	deleteCmd.Flags().Var(&deleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -110,31 +107,25 @@ var deleteCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = deleteJson.Unmarshal(&deleteReq)
+
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No NAME argument specified. Loading names for Recipients drop-down."
+			names, err := w.Recipients.RecipientInfoNameToMetastoreIdMap(ctx, sharing.ListRecipientsRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Recipients drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "Name of the recipient")
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No NAME argument specified. Loading names for Recipients drop-down."
-				names, err := w.Recipients.RecipientInfoNameToMetastoreIdMap(ctx, sharing.ListRecipientsRequest{})
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Recipients drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "Name of the recipient")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have name of the recipient")
-			}
-			deleteReq.Name = args[0]
+			args = append(args, id)
 		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have name of the recipient")
+		}
+		deleteReq.Name = args[0]
 
 		err = w.Recipients.Delete(ctx, deleteReq)
 		if err != nil {
@@ -148,14 +139,11 @@ var deleteCmd = &cobra.Command{
 }
 
 // start get command
-
 var getReq sharing.GetRecipientRequest
-var getJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
-	getCmd.Flags().Var(&getJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -173,31 +161,25 @@ var getCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = getJson.Unmarshal(&getReq)
+
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No NAME argument specified. Loading names for Recipients drop-down."
+			names, err := w.Recipients.RecipientInfoNameToMetastoreIdMap(ctx, sharing.ListRecipientsRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Recipients drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "Name of the recipient")
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No NAME argument specified. Loading names for Recipients drop-down."
-				names, err := w.Recipients.RecipientInfoNameToMetastoreIdMap(ctx, sharing.ListRecipientsRequest{})
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Recipients drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "Name of the recipient")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have name of the recipient")
-			}
-			getReq.Name = args[0]
+			args = append(args, id)
 		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have name of the recipient")
+		}
+		getReq.Name = args[0]
 
 		response, err := w.Recipients.Get(ctx, getReq)
 		if err != nil {
@@ -211,7 +193,6 @@ var getCmd = &cobra.Command{
 }
 
 // start list command
-
 var listReq sharing.ListRecipientsRequest
 var listJson flags.JsonFlag
 
@@ -246,6 +227,7 @@ var listCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = listJson.Unmarshal(&listReq)
 			if err != nil {
@@ -266,14 +248,11 @@ var listCmd = &cobra.Command{
 }
 
 // start rotate-token command
-
 var rotateTokenReq sharing.RotateRecipientToken
-var rotateTokenJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(rotateTokenCmd)
 	// TODO: short flags
-	rotateTokenCmd.Flags().Var(&rotateTokenJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -288,27 +267,18 @@ var rotateTokenCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = rotateTokenJson.Unmarshal(&rotateTokenReq)
-			if err != nil {
-				return err
-			}
-		} else {
-			_, err = fmt.Sscan(args[0], &rotateTokenReq.ExistingTokenExpireInSeconds)
-			if err != nil {
-				return fmt.Errorf("invalid EXISTING_TOKEN_EXPIRE_IN_SECONDS: %s", args[0])
-			}
-			rotateTokenReq.Name = args[1]
+
+		_, err = fmt.Sscan(args[0], &rotateTokenReq.ExistingTokenExpireInSeconds)
+		if err != nil {
+			return fmt.Errorf("invalid EXISTING_TOKEN_EXPIRE_IN_SECONDS: %s", args[0])
 		}
+		rotateTokenReq.Name = args[1]
 
 		response, err := w.Recipients.RotateToken(ctx, rotateTokenReq)
 		if err != nil {
@@ -322,14 +292,11 @@ var rotateTokenCmd = &cobra.Command{
 }
 
 // start share-permissions command
-
 var sharePermissionsReq sharing.SharePermissionsRequest
-var sharePermissionsJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(sharePermissionsCmd)
 	// TODO: short flags
-	sharePermissionsCmd.Flags().Var(&sharePermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -346,31 +313,25 @@ var sharePermissionsCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = sharePermissionsJson.Unmarshal(&sharePermissionsReq)
+
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No NAME argument specified. Loading names for Recipients drop-down."
+			names, err := w.Recipients.RecipientInfoNameToMetastoreIdMap(ctx, sharing.ListRecipientsRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Recipients drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "The name of the Recipient")
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No NAME argument specified. Loading names for Recipients drop-down."
-				names, err := w.Recipients.RecipientInfoNameToMetastoreIdMap(ctx, sharing.ListRecipientsRequest{})
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Recipients drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "The name of the Recipient")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have the name of the recipient")
-			}
-			sharePermissionsReq.Name = args[0]
+			args = append(args, id)
 		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the name of the recipient")
+		}
+		sharePermissionsReq.Name = args[0]
 
 		response, err := w.Recipients.SharePermissions(ctx, sharePermissionsReq)
 		if err != nil {
@@ -384,7 +345,6 @@ var sharePermissionsCmd = &cobra.Command{
 }
 
 // start update command
-
 var updateReq sharing.UpdateRecipient
 var updateJson flags.JsonFlag
 
@@ -415,6 +375,7 @@ var updateCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = updateJson.Unmarshal(&updateReq)
 			if err != nil {
