@@ -73,14 +73,11 @@ var allClusterStatusesCmd = &cobra.Command{
 }
 
 // start cluster-status command
-
 var clusterStatusReq compute.ClusterStatusRequest
-var clusterStatusJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(clusterStatusCmd)
 	// TODO: short flags
-	clusterStatusCmd.Flags().Var(&clusterStatusJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -108,23 +105,14 @@ var clusterStatusCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = clusterStatusJson.Unmarshal(&clusterStatusReq)
-			if err != nil {
-				return err
-			}
-		} else {
-			clusterStatusReq.ClusterId = args[0]
-		}
+
+		clusterStatusReq.ClusterId = args[0]
 
 		response, err := w.Libraries.ClusterStatus(ctx, clusterStatusReq)
 		if err != nil {
@@ -138,7 +126,6 @@ var clusterStatusCmd = &cobra.Command{
 }
 
 // start install command
-
 var installReq compute.InstallLibraries
 var installJson flags.JsonFlag
 
@@ -166,6 +153,7 @@ var installCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = installJson.Unmarshal(&installReq)
 			if err != nil {
@@ -187,7 +175,6 @@ var installCmd = &cobra.Command{
 }
 
 // start uninstall command
-
 var uninstallReq compute.UninstallLibraries
 var uninstallJson flags.JsonFlag
 
@@ -212,6 +199,7 @@ var uninstallCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = uninstallJson.Unmarshal(&uninstallReq)
 			if err != nil {

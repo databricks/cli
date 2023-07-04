@@ -49,11 +49,12 @@ var loginCmd = &cobra.Command{
 			return err
 		}
 
+		// We need the config without the profile before it's used to initialise new workspace client below.
+		// Otherwise it will complain about non existing profile because it was not yet saved.
 		cfg := config.Config{
 			Host:      perisistentAuth.Host,
 			AccountID: perisistentAuth.AccountID,
 			AuthType:  "databricks-cli",
-			Profile:   profileName,
 		}
 
 		if configureCluster {
@@ -65,7 +66,7 @@ var loginCmd = &cobra.Command{
 
 			promptSpinner := cmdio.Spinner(ctx)
 			promptSpinner <- "Loading list of clusters to select from"
-			names, err := w.Clusters.ClusterInfoClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
+			names, err := w.Clusters.ClusterDetailsClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
 			close(promptSpinner)
 			if err != nil {
 				return fmt.Errorf("failed to load clusters list. Original error: %w", err)
@@ -77,6 +78,7 @@ var loginCmd = &cobra.Command{
 			cfg.ClusterID = clusterId
 		}
 
+		cfg.Profile = profileName
 		err = databrickscfg.SaveToProfile(ctx, &cfg)
 		if err != nil {
 			return err

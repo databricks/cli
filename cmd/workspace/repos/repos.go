@@ -31,7 +31,6 @@ var Cmd = &cobra.Command{
 }
 
 // start create command
-
 var createReq workspace.CreateRepo
 var createJson flags.JsonFlag
 
@@ -66,6 +65,7 @@ var createCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = createJson.Unmarshal(&createReq)
 			if err != nil {
@@ -88,14 +88,11 @@ var createCmd = &cobra.Command{
 }
 
 // start delete command
-
 var deleteReq workspace.DeleteRepoRequest
-var deleteJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
-	deleteCmd.Flags().Var(&deleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -111,33 +108,27 @@ var deleteCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = deleteJson.Unmarshal(&deleteReq)
+
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No REPO_ID argument specified. Loading names for Repos drop-down."
+			names, err := w.Repos.RepoInfoPathToIdMap(ctx, workspace.ListReposRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Repos drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "The ID for the corresponding repo to access")
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No REPO_ID argument specified. Loading names for Repos drop-down."
-				names, err := w.Repos.RepoInfoPathToIdMap(ctx, workspace.ListReposRequest{})
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Repos drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "The ID for the corresponding repo to access")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have the id for the corresponding repo to access")
-			}
-			_, err = fmt.Sscan(args[0], &deleteReq.RepoId)
-			if err != nil {
-				return fmt.Errorf("invalid REPO_ID: %s", args[0])
-			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the id for the corresponding repo to access")
+		}
+		_, err = fmt.Sscan(args[0], &deleteReq.RepoId)
+		if err != nil {
+			return fmt.Errorf("invalid REPO_ID: %s", args[0])
 		}
 
 		err = w.Repos.Delete(ctx, deleteReq)
@@ -152,14 +143,11 @@ var deleteCmd = &cobra.Command{
 }
 
 // start get command
-
 var getReq workspace.GetRepoRequest
-var getJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
-	getCmd.Flags().Var(&getJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -175,33 +163,27 @@ var getCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = getJson.Unmarshal(&getReq)
+
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No REPO_ID argument specified. Loading names for Repos drop-down."
+			names, err := w.Repos.RepoInfoPathToIdMap(ctx, workspace.ListReposRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Repos drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "The ID for the corresponding repo to access")
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No REPO_ID argument specified. Loading names for Repos drop-down."
-				names, err := w.Repos.RepoInfoPathToIdMap(ctx, workspace.ListReposRequest{})
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Repos drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "The ID for the corresponding repo to access")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have the id for the corresponding repo to access")
-			}
-			_, err = fmt.Sscan(args[0], &getReq.RepoId)
-			if err != nil {
-				return fmt.Errorf("invalid REPO_ID: %s", args[0])
-			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the id for the corresponding repo to access")
+		}
+		_, err = fmt.Sscan(args[0], &getReq.RepoId)
+		if err != nil {
+			return fmt.Errorf("invalid REPO_ID: %s", args[0])
 		}
 
 		response, err := w.Repos.Get(ctx, getReq)
@@ -216,7 +198,6 @@ var getCmd = &cobra.Command{
 }
 
 // start list command
-
 var listReq workspace.ListReposRequest
 var listJson flags.JsonFlag
 
@@ -250,6 +231,7 @@ var listCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = listJson.Unmarshal(&listReq)
 			if err != nil {
@@ -270,7 +252,6 @@ var listCmd = &cobra.Command{
 }
 
 // start update command
-
 var updateReq workspace.UpdateRepo
 var updateJson flags.JsonFlag
 
@@ -298,33 +279,33 @@ var updateCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = updateJson.Unmarshal(&updateReq)
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No REPO_ID argument specified. Loading names for Repos drop-down."
-				names, err := w.Repos.RepoInfoPathToIdMap(ctx, workspace.ListReposRequest{})
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Repos drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "The ID for the corresponding repo to access")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have the id for the corresponding repo to access")
-			}
-			_, err = fmt.Sscan(args[0], &updateReq.RepoId)
+		}
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No REPO_ID argument specified. Loading names for Repos drop-down."
+			names, err := w.Repos.RepoInfoPathToIdMap(ctx, workspace.ListReposRequest{})
+			close(promptSpinner)
 			if err != nil {
-				return fmt.Errorf("invalid REPO_ID: %s", args[0])
+				return fmt.Errorf("failed to load names for Repos drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
+			id, err := cmdio.Select(ctx, names, "The ID for the corresponding repo to access")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the id for the corresponding repo to access")
+		}
+		_, err = fmt.Sscan(args[0], &updateReq.RepoId)
+		if err != nil {
+			return fmt.Errorf("invalid REPO_ID: %s", args[0])
 		}
 
 		err = w.Repos.Update(ctx, updateReq)

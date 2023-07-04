@@ -1,5 +1,32 @@
 # Version changelog
 
+## 0.200.1
+
+CLI:
+* Add --absolute flag for ls command ([#508](https://github.com/databricks/cli/pull/508)).
+* Add dbfs scheme prefix to paths in cp command output ([#516](https://github.com/databricks/cli/pull/516)).
+* Add provider detection to the repos create command ([#528](https://github.com/databricks/cli/pull/528)).
+* Added configure-cluster flag for auth login ([#500](https://github.com/databricks/cli/pull/500)).
+* Added prompts for Databricks profile for auth login command ([#502](https://github.com/databricks/cli/pull/502)).
+* Allow specifying repo by path for repos commands ([#526](https://github.com/databricks/cli/pull/526)).
+* Decode contents by default in workspace export command ([#531](https://github.com/databricks/cli/pull/531)).
+* Fixed jobs create command to only accept JSON payload ([#498](https://github.com/databricks/cli/pull/498)).
+* Make local files default for fs commands ([#506](https://github.com/databricks/cli/pull/506)).
+* Remove \r from new line print statments ([#509](https://github.com/databricks/cli/pull/509)).
+* Remove extra call to filer.Stat in dbfs filer.Read ([#515](https://github.com/databricks/cli/pull/515)).
+* Update alerts command integration test ([#512](https://github.com/databricks/cli/pull/512)).
+* Update variable regex to support hyphens ([#503](https://github.com/databricks/cli/pull/503)).
+
+Bundles:
+* Add DATABRICKS_BUNDLE_TMP env variable ([#462](https://github.com/databricks/cli/pull/462)).
+* Update Terraform provider schema structs ([#504](https://github.com/databricks/cli/pull/504)).
+
+Dependencies:
+* Bump github.com/databricks/databricks-sdk-go from 0.9.1-0.20230614092458-b5bbc1c8dabb to 0.10.0 ([#497](https://github.com/databricks/cli/pull/497)).
+
+Internal:
+* Use direct download for workspace filer read ([#514](https://github.com/databricks/cli/pull/514)).
+
 ## 0.200.0
 
 This version marks the first version available as public preview.
