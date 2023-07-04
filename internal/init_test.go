@@ -18,7 +18,7 @@ func assertFileContains(t *testing.T, path string, substr string) {
 	assert.Contains(t, string(b), substr)
 }
 
-func TestTemplateInitializationForDevConfig(t *testing.T) {
+func TestAccTemplateInitializationForDevConfig(t *testing.T) {
 	// create target directory with the input config
 	tmp := t.TempDir()
 	f, err := os.Create(filepath.Join(tmp, "config.json"))
@@ -48,7 +48,7 @@ func TestTemplateInitializationForDevConfig(t *testing.T) {
 	assertFileContains(t, filepath.Join(tmp, "development_project", ".github"), "This is a development project")
 }
 
-func TestTemplateInitializationForProdConfig(t *testing.T) {
+func TestAccTemplateInitializationForProdConfig(t *testing.T) {
 	// create target directory with the input config
 	tmp := t.TempDir()
 
