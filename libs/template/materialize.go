@@ -4,7 +4,7 @@ import (
 	"path/filepath"
 )
 
-const schemaFileName = "schema.json"
+const schemaFileName = "databricks_template_schema.json"
 const templateDirName = "template"
 
 func Materialize(templateRoot, instanceRoot, configPath string) error {
