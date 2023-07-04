@@ -18,7 +18,7 @@ var initCmd = &cobra.Command{
 var configFile string
 
 func init() {
-	initCmd.Flags().StringVar(&configFile, "config-file", "", "path to config to use for template initialization")
+	initCmd.Flags().StringVar(&configFile, "config-file", "", "input parameters for template initialization")
 	initCmd.MarkFlagRequired("config-file")
 	AddCommand(initCmd)
 }
