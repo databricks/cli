@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
@@ -49,7 +50,9 @@ func (m *processRootIncludes) Apply(ctx context.Context, b *bundle.Bundle) error
 			return err
 		}
 
-		if len(matches) == 0 {
+		// If the entry is not a glob pattern and no matches found,
+		// return an error because the file defined is not found
+		if len(matches) == 0 && !strings.Contains(entry, "*") {
 			return fmt.Errorf("%s defined in 'include' section does not match any files", entry)
 		}
 
