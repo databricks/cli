@@ -10,9 +10,6 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 )
 
-type RemoteUrl struct {
-}
-
 const GithubUrl = "https://github.com"
 const DatabricksOrg = "databricks"
 
