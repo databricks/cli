@@ -49,6 +49,10 @@ func (m *processRootIncludes) Apply(ctx context.Context, b *bundle.Bundle) error
 			return err
 		}
 
+		if len(matches) == 0 {
+			return fmt.Errorf("%s defined in 'include' section does not match any files", entry)
+		}
+
 		// Filter matches to ones we haven't seen yet.
 		var includes []string
 		for _, match := range matches {
