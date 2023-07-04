@@ -52,7 +52,7 @@ func (m *processRootIncludes) Apply(ctx context.Context, b *bundle.Bundle) error
 
 		// If the entry is not a glob pattern and no matches found,
 		// return an error because the file defined is not found
-		if len(matches) == 0 && !strings.Contains(entry, "*") {
+		if len(matches) == 0 && !strings.ContainsAny(entry, "*?[") {
 			return fmt.Errorf("%s defined in 'include' section does not match any files", entry)
 		}
 
