@@ -41,11 +41,11 @@ func TestProcessEnvironmentModeApplyDebug(t *testing.T) {
 	m := mutator.ProcessEnvironmentMode()
 	err := m.Apply(context.Background(), bundle)
 	require.NoError(t, err)
-	assert.Equal(t, "[debug] job1", bundle.Config.Resources.Jobs["job1"].Name)
-	assert.Equal(t, "[debug] pipeline1", bundle.Config.Resources.Pipelines["pipeline1"].Name)
-	assert.Equal(t, "[debug] experiment1", bundle.Config.Resources.Experiments["experiment1"].Name)
-	assert.Equal(t, "[debug] model1", bundle.Config.Resources.Models["model1"].Name)
-	assert.Equal(t, "debug", bundle.Config.Resources.Experiments["experiment1"].Experiment.Tags[0].Key)
+	assert.Equal(t, "[dev] job1", bundle.Config.Resources.Jobs["job1"].Name)
+	assert.Equal(t, "[dev] pipeline1", bundle.Config.Resources.Pipelines["pipeline1"].Name)
+	assert.Equal(t, "[dev] experiment1", bundle.Config.Resources.Experiments["experiment1"].Name)
+	assert.Equal(t, "[dev] model1", bundle.Config.Resources.Models["model1"].Name)
+	assert.Equal(t, "dev", bundle.Config.Resources.Experiments["experiment1"].Experiment.Tags[0].Key)
 	assert.True(t, bundle.Config.Resources.Pipelines["pipeline1"].PipelineSpec.Development)
 }
 
