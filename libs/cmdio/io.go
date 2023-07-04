@@ -50,6 +50,21 @@ func IsInteractive(ctx context.Context) bool {
 	return c.interactive
 }
 
+func In(ctx context.Context) io.Reader {
+	c := fromContext(ctx)
+	return c.in
+}
+
+func Out(ctx context.Context) io.Writer {
+	c := fromContext(ctx)
+	return c.out
+}
+
+func Err(ctx context.Context) io.Writer {
+	c := fromContext(ctx)
+	return c.err
+}
+
 // IsTTY detects if io.Writer is a terminal.
 func IsTTY(w any) bool {
 	f, ok := w.(*os.File)
