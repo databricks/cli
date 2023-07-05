@@ -82,13 +82,14 @@ var putSecretCmd = &cobra.Command{
 			putSecretReq.Scope = args[0]
 			putSecretReq.Key = args[1]
 
-			// Turn bytes value into a base64 encoded version of itself if specified.
-			if bytesValueChanged {
+			switch {
+			case bytesValueChanged:
+				// Bytes value set; encode as base64.
 				putSecretReq.BytesValue = base64.StdEncoding.EncodeToString([]byte(putSecretReq.BytesValue))
-			}
-
-			// Read secret value from stdin if not specified.
-			if !bytesValueChanged && !stringValueChanged {
+			case stringValueChanged:
+				// String value set; nothing to do.
+			default:
+				// Neither is specified; read secret value from stdin.
 				bytes, err := promptSecret(cmd)
 				if err != nil {
 					return err
