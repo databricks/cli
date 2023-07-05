@@ -11,15 +11,27 @@ import (
 )
 
 type renderer struct {
-	config map[string]any
-
+	config       map[string]any
 	baseTemplate *template.Template
 }
 
 func newRenderer(config map[string]any, libraryRoot string) (*renderer, error) {
-	tmpl, err := template.New("").Funcs(HelperFuncs).ParseGlob(filepath.Join(libraryRoot, "*"))
+	// All user defined functions will be available inside library root
+	libraryGlob := filepath.Join(libraryRoot, "*")
+
+	// Initialize new template, with helper functions loaded
+	tmpl := template.New("").Funcs(HelperFuncs)
+
+	// Load files in the library to the template
+	matches, err := filepath.Glob(libraryGlob)
 	if err != nil {
 		return nil, err
+	}
+	if len(matches) != 0 {
+		tmpl, err = tmpl.ParseGlob(libraryGlob)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return &renderer{

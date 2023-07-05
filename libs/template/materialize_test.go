@@ -66,10 +66,10 @@ func TestMaterializeFilePermissionsAreCopiedForUnix(t *testing.T) {
 
 	tmp := t.TempDir()
 
-	// create template schema in temp directory
+	// setup template in temp directory
 	err := os.Mkdir(filepath.Join(tmp, "my_tmpl"), 0777)
 	require.NoError(t, err)
-	err = os.WriteFile(filepath.Join(tmp, "my_tmpl", "schema.json"), []byte(`
+	err = os.WriteFile(filepath.Join(tmp, "my_tmpl", "databricks_template_schema.json"), []byte(`
 	{
 		"properties": {
 			"a": {
@@ -81,10 +81,10 @@ func TestMaterializeFilePermissionsAreCopiedForUnix(t *testing.T) {
 		}
 	}`), 0644)
 	require.NoError(t, err)
-
-	// A normal file with the executable bit not flipped
 	err = os.Mkdir(filepath.Join(tmp, "my_tmpl", "template"), 0777)
 	require.NoError(t, err)
+
+	// A normal file with the executable bit not flipped
 	err = os.WriteFile(filepath.Join(tmp, "my_tmpl", "template", "{{.a}}"), []byte("abc"), 0600)
 	require.NoError(t, err)
 
