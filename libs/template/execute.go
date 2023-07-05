@@ -10,8 +10,16 @@ import (
 	"text/template"
 )
 
+// This structure renders any template files during project initialization
 type renderer struct {
-	config       map[string]any
+	// A config that is the "dot" value available to any template being rendered.
+	// Refer to https://pkg.go.dev/text/template for how templates can use
+	// this "dot" value
+	config map[string]any
+
+	// A base template with helper functions and user defined template in the
+	// library directory loaded. This is used as the base to compute any project
+	// templates during file tree walk
 	baseTemplate *template.Template
 }
 
