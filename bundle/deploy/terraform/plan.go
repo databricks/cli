@@ -44,8 +44,8 @@ func logPlan(ctx context.Context, plan *tfjson.Plan) error {
 type PlanGoal string
 
 var (
-	PlanDeploy  = PlanGoal("deploy")
-	PlanDestroy = PlanGoal("destroy")
+	PlanGoalDeploy  = PlanGoal("deploy")
+	PlanGoalDestroy = PlanGoal("destroy")
 )
 
 type plan struct {
@@ -75,7 +75,7 @@ func (p *plan) Apply(ctx context.Context, b *bundle.Bundle) error {
 		return err
 	}
 	planPath := filepath.Join(tfDir, "plan")
-	destroy := p.goal == PlanDestroy
+	destroy := p.goal == PlanGoalDestroy
 
 	notEmpty, err := tf.Plan(ctx, tfexec.Destroy(destroy), tfexec.Out(planPath))
 	if err != nil {

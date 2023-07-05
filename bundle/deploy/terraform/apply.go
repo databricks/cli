@@ -9,7 +9,16 @@ import (
 	"github.com/hashicorp/terraform-exec/tfexec"
 )
 
-type apply struct{}
+type ApplyGoal string
+
+const (
+	ApplyGoalDeploy  = "deploy"
+	ApplyGoalDestroy = "destroy"
+)
+
+type apply struct {
+	goal ApplyGoal
+}
 
 func (w *apply) Name() string {
 	return "terraform.Apply"
@@ -55,7 +64,12 @@ func (w *apply) Apply(ctx context.Context, b *bundle.Bundle) error {
 		return nil
 	}
 
-	cmdio.LogString(ctx, "Starting deployment")
+	switch w.goal {
+	case ApplyGoalDeploy:
+		cmdio.LogString(ctx, "Starting deployment")
+	case ApplyGoalDestroy:
+		cmdio.LogString(ctx, "Starting destruction")
+	}
 
 	// Apply terraform according to the plan
 	err = tf.Apply(ctx, tfexec.DirOrPlan(b.Plan.Path))
@@ -63,12 +77,18 @@ func (w *apply) Apply(ctx context.Context, b *bundle.Bundle) error {
 		return fmt.Errorf("terraform apply: %w", err)
 	}
 
-	cmdio.LogString(ctx, "Resource deployment completed!")
+	switch w.goal {
+	case ApplyGoalDeploy:
+		cmdio.LogString(ctx, "Deployment Successful!")
+	case ApplyGoalDestroy:
+		cmdio.LogString(ctx, "Destruction Successful!")
+	}
+
 	return nil
 }
 
-// Apply returns a [bundle.Mutator] that runs the equivalent of `terraform apply`
+// Apply returns a [bundle.Mutator] that runs the equivalent of `terraform apply ./plan`
 // from the bundle's ephemeral working directory for Terraform.
-func Apply() bundle.Mutator {
-	return &apply{}
+func Apply(goal ApplyGoal) bundle.Mutator {
+	return &apply{goal}
 }
