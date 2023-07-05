@@ -30,7 +30,7 @@ func logPlan(ctx context.Context, plan *tfjson.Plan) error {
 		case tfActions.Replace():
 			action = "replace"
 		default:
-			fmt.Errorf("unknown terraform actions: %s", tfActions)
+			return fmt.Errorf("unknown terraform actions: %s", tfActions)
 		}
 
 		err := cmdio.RenderWithTemplate(ctx, change, fmt.Sprintf("%s {{.Type}} {{.Name}}\n", action))
