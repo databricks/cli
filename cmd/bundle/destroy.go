@@ -2,14 +2,12 @@ package bundle
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/spf13/cobra"
-	"golang.org/x/term"
 )
 
 var destroyCmd = &cobra.Command{
@@ -25,11 +23,11 @@ var destroyCmd = &cobra.Command{
 		b.Config.Bundle.Lock.Force = forceDestroy
 
 		// If `--auto-approve`` is specified, we skip confirmation checks
-		b.AutoApprove = autoApprove
+		b.AutoApprove = autoApproveDestroy
 
 		// we require auto-approve for non tty terminals since interactive consent
 		// is not possible
-		if !term.IsTerminal(int(os.Stderr.Fd())) && !autoApprove {
+		if !cmdio.IsErrTTY(cmd.Context()) && !autoApproveDestroy {
 			return fmt.Errorf("please specify --auto-approve to skip interactive confirmation checks for non tty consoles")
 		}
 
@@ -38,7 +36,7 @@ var destroyCmd = &cobra.Command{
 		if !ok {
 			return fmt.Errorf("progress logger not found")
 		}
-		if logger.Mode == flags.ModeJson && !autoApprove {
+		if logger.Mode == flags.ModeJson && !autoApproveDestroy {
 			return fmt.Errorf("please specify --auto-approve since selected logging format is json")
 		}
 
@@ -50,11 +48,11 @@ var destroyCmd = &cobra.Command{
 	},
 }
 
-var autoApprove bool
+var autoApproveDestroy bool
 var forceDestroy bool
 
 func init() {
 	AddCommand(destroyCmd)
-	destroyCmd.Flags().BoolVar(&autoApprove, "auto-approve", false, "Skip interactive approvals for deleting resources and files")
+	destroyCmd.Flags().BoolVar(&autoApproveDestroy, "auto-approve", false, "Skip interactive approvals for deleting resources and files")
 	destroyCmd.Flags().BoolVar(&forceDestroy, "force", false, "Force acquisition of deployment lock.")
 }
