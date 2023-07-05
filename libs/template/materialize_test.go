@@ -137,7 +137,7 @@ func TestMaterializeFilePermissionsAreCopiedForWindows(t *testing.T) {
 	// create template in temp directory
 	err := os.Mkdir(filepath.Join(tmp, "my_tmpl"), 0777)
 	require.NoError(t, err)
-	err = os.WriteFile(filepath.Join(tmp, "my_tmpl", "schema.json"), []byte(`
+	err = os.WriteFile(filepath.Join(tmp, "my_tmpl", "databricks_template_schema.json"), []byte(`
 	{
 		"properties": {
 			"a": {

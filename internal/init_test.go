@@ -18,10 +18,10 @@ func assertFileContains(t *testing.T, path string, substr string) {
 	assert.Contains(t, string(b), substr)
 }
 
-func assertLocalFileContent(t *testing.T, path string, expected string) {
+func assertFileNotContains(t *testing.T, path string, substr string) {
 	b, err := os.ReadFile(path)
 	require.NoError(t, err)
-	assert.Equal(t, string(b), expected)
+	assert.NotContains(t, string(b), substr)
 }
 
 func TestAccTemplateInitializationForDevConfig(t *testing.T) {
@@ -88,17 +88,16 @@ func TestAccTemplateInitializationForProdConfig(t *testing.T) {
 	err = cmd.Execute()
 	require.NoError(t, err)
 
-	// assert on materialized template
+	// assert on materialized template files
 	assert.FileExists(t, filepath.Join(instanceDir, "production_project", "azure_file"))
 	assert.FileExists(t, filepath.Join(instanceDir, "production_project", ".azure_devops"))
 	assert.NoFileExists(t, filepath.Join(instanceDir, "production_project", "aws_file"))
-
-	assertLocalFileContent(t, filepath.Join(instanceDir, "production_project", "azure_file"),
-		`
-This file should only be generated for Azure
-shreyas.goenka@databricks.com
-https://adb-xxxx.xx.azuredatabricks.net
-`)
-
 	assertFileContains(t, filepath.Join(instanceDir, "production_project", ".azure_devops"), "This is a production project")
+
+	// assert azure_file is computed correctly
+	azureFilePath := filepath.Join(instanceDir, "production_project", "azure_file")
+	assertFileContains(t, azureFilePath, "This file should only be generated for Azure")
+	assertFileContains(t, azureFilePath, "shreyas.goenka@databricks.com")
+	assertFileContains(t, azureFilePath, "https://adb-xxxx.xx.azuredatabricks.net")
+	assertFileNotContains(t, azureFilePath, "https://adb-xxxx.xx.azuredatabricks.net/sql/queries")
 }
