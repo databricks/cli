@@ -18,6 +18,12 @@ func assertFileContains(t *testing.T, path string, substr string) {
 	assert.Contains(t, string(b), substr)
 }
 
+func assertLocalFileContent(t *testing.T, path string, expected string) {
+	b, err := os.ReadFile(path)
+	require.NoError(t, err)
+	assert.Equal(t, string(b), expected)
+}
+
 func TestAccTemplateInitializationForDevConfig(t *testing.T) {
 	// create target directory with the input config
 	tmp := t.TempDir()
@@ -86,6 +92,13 @@ func TestAccTemplateInitializationForProdConfig(t *testing.T) {
 	assert.FileExists(t, filepath.Join(instanceDir, "production_project", "azure_file"))
 	assert.FileExists(t, filepath.Join(instanceDir, "production_project", ".azure_devops"))
 	assert.NoFileExists(t, filepath.Join(instanceDir, "production_project", "aws_file"))
-	assertFileContains(t, filepath.Join(instanceDir, "production_project", "azure_file"), "This file should only be generated for Azure")
+
+	assertLocalFileContent(t, filepath.Join(instanceDir, "production_project", "azure_file"),
+		`
+This file should only be generated for Azure
+shreyas.goenka@databricks.com
+https://adb-xxxx.xx.azuredatabricks.net
+`)
+
 	assertFileContains(t, filepath.Join(instanceDir, "production_project", ".azure_devops"), "This is a production project")
 }

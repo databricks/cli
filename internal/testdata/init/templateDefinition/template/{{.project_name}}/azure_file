@@ -1,7 +1,4 @@
+{{if ne .cloud_type "Azure"}}{{skipThisFile}}{{end}}
 This file should only be generated for Azure
-{{if ne .cloud_type "Azure"}}
-{{skipThisFile}}
-{{end}}
-
 {{ template "email" }}
 {{ template "get_host" "https://adb-xxxx.xx.azuredatabricks.net/sql/queries" }}
