@@ -16,19 +16,49 @@ func (w *apply) Name() string {
 }
 
 func (w *apply) Apply(ctx context.Context, b *bundle.Bundle) error {
+	// Return early if plan is empty
+	if b.Plan.IsEmpty {
+		cmdio.LogString(ctx, "Terraform plan is empty. Skipping apply.")
+		return nil
+	}
+
+	// Error if terraform is not initialized
 	tf := b.Terraform
 	if tf == nil {
 		return fmt.Errorf("terraform not initialized")
 	}
 
-	cmdio.LogString(ctx, "Starting resource deployment")
-
-	err := tf.Init(ctx, tfexec.Upgrade(true))
-	if err != nil {
-		return fmt.Errorf("terraform init: %w", err)
+	// Error if plan is missing
+	if b.Plan.Path == "" {
+		return fmt.Errorf("no plan found")
 	}
 
-	err = tf.Apply(ctx)
+	// Read and log plan file
+	plan, err := tf.ShowPlanFile(ctx, b.Plan.Path)
+	if err != nil {
+		return err
+	}
+	err = logPlan(ctx, plan)
+	if err != nil {
+		return err
+	}
+
+	// Ask for confirmation, if needed
+	if !b.Plan.ConfirmApply {
+		b.Plan.ConfirmApply, err = cmdio.Ask(ctx, "Proceed with apply? [y/n]: ")
+		if err != nil {
+			return err
+		}
+	}
+	if !b.Plan.ConfirmApply {
+		// return if confirmation was not provided
+		return nil
+	}
+
+	cmdio.LogString(ctx, "Starting deployment")
+
+	// Apply terraform according to the plan
+	err = tf.Apply(ctx, tfexec.DirOrPlan(b.Plan.Path))
 	if err != nil {
 		return fmt.Errorf("terraform apply: %w", err)
 	}

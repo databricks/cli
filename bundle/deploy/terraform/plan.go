@@ -9,7 +9,37 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/terraform"
 	"github.com/hashicorp/terraform-exec/tfexec"
+	tfjson "github.com/hashicorp/terraform-json"
 )
+
+func logPlan(ctx context.Context, plan *tfjson.Plan) error {
+	for _, change := range plan.ResourceChanges {
+		tfActions := change.Change.Actions
+		if tfActions.Read() || tfActions.NoOp() {
+			continue
+		}
+
+		var action string
+		switch {
+		case tfActions.Update():
+			action = "update"
+		case tfActions.Create():
+			action = "create"
+		case tfActions.Delete():
+			action = "delete"
+		case tfActions.Replace():
+			action = "replace"
+		default:
+			fmt.Errorf("unknown terraform actions: %s", tfActions)
+		}
+
+		err := cmdio.RenderWithTemplate(ctx, change, fmt.Sprintf("%s {{.Type}} {{.Name}}\n", action))
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
 
 type PlanGoal string
 
