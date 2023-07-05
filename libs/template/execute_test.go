@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"text/template"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -17,22 +18,40 @@ Sheep wool is the best!
 {{else}}
 {{.Animal}} wool is not too bad...
 {{end}}
+My email is {{template "email"}}
 `
-	statement, err := executeTemplate(map[string]any{
-		"Material": "wool",
-		"count":    1,
-		"Animal":   "sheep",
-	}, templateText)
-	require.NoError(t, err)
-	assert.Equal(t, "\"1 items are made of wool\".\n\nSheep wool is the best!\n\n", statement)
 
-	statement, err = executeTemplate(map[string]any{
-		"Material": "wool",
-		"count":    1,
-		"Animal":   "cat",
-	}, templateText)
+	r := renderer{
+		config: map[string]any{
+			"Material": "wool",
+			"count":    1,
+			"Animal":   "sheep",
+		},
+		baseTemplate: template.Must(template.New("base").Parse(`{{define "email"}}shreyas.goenka@databricks.com{{end}}`)),
+	}
+
+	statement, err := r.executeTemplate(templateText)
 	require.NoError(t, err)
-	assert.Equal(t, "\"1 items are made of wool\".\n\ncat wool is not too bad...\n\n", statement)
+	assert.Contains(t, statement, `"1 items are made of wool"`)
+	assert.NotContains(t, statement, `cat wool is not too bad.."`)
+	assert.Contains(t, statement, "Sheep wool is the best!")
+	assert.Contains(t, statement, `My email is shreyas.goenka@databricks.com`)
+
+	r = renderer{
+		config: map[string]any{
+			"Material": "wool",
+			"count":    1,
+			"Animal":   "cat",
+		},
+		baseTemplate: template.Must(template.New("base").Parse(`{{define "email"}}hrithik.roshan@databricks.com{{end}}`)),
+	}
+
+	statement, err = r.executeTemplate(templateText)
+	require.NoError(t, err)
+	assert.Contains(t, statement, `"1 items are made of wool"`)
+	assert.Contains(t, statement, `cat wool is not too bad...`)
+	assert.NotContains(t, statement, "Sheep wool is the best!")
+	assert.Contains(t, statement, `My email is hrithik.roshan@databricks.com`)
 }
 
 func TestGenerateFile(t *testing.T) {
@@ -46,11 +65,16 @@ func TestGenerateFile(t *testing.T) {
 	{{.Animal}} wool is not too bad...
 	{{end}}
 	`
-	err := generateFile(map[string]any{
-		"Material": "wool",
-		"count":    1,
-		"Animal":   "cat",
-	}, pathTemplate, contentTemplate, 0444)
+
+	r := renderer{
+		config: map[string]any{
+			"Material": "wool",
+			"count":    1,
+			"Animal":   "cat",
+		},
+		baseTemplate: template.New("base"),
+	}
+	err := r.generateFile(pathTemplate, contentTemplate, 0444)
 	require.NoError(t, err)
 
 	// assert file exists

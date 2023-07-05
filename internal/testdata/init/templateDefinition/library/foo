@@ -1,0 +1,6 @@
+{{define "email"}}shreyas.goenka@databricks.com{{end}}
+{{define "get_host"}}
+{{ with urlParse . }}{{-
+    print .Scheme `://` .Host
+-}}{{end}}
+{{end}}

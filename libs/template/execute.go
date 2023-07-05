@@ -2,6 +2,7 @@ package template
 
 import (
 	"errors"
+	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -9,39 +10,63 @@ import (
 	"text/template"
 )
 
-// Executes the template by applying config on it. Returns the materialized config
+type renderer struct {
+	config map[string]any
+
+	baseTemplate *template.Template
+}
+
+func newRenderer(config map[string]any, libraryRoot string) (*renderer, error) {
+	tmpl, err := template.New("").Funcs(HelperFuncs).ParseGlob(filepath.Join(libraryRoot, "*"))
+	if err != nil {
+		return nil, err
+	}
+
+	return &renderer{
+		config:       config,
+		baseTemplate: tmpl,
+	}, nil
+}
+
+// Executes the template by applying config on it. Returns the materialized template
 // as a string
-func executeTemplate(config map[string]any, templateDefinition string) (string, error) {
-	// configure template with helper functions
-	tmpl, err := template.New("").Funcs(HelperFuncs).Parse(templateDefinition)
+func (r *renderer) executeTemplate(templateDefinition string) (string, error) {
+	// Create copy of base template so as to not overwrite it
+	tmpl, err := r.baseTemplate.Clone()
 	if err != nil {
 		return "", err
 	}
 
-	// execute template
+	// Parse the template text
+	tmpl, err = tmpl.Parse(templateDefinition)
+	if err != nil {
+		return "", err
+	}
+
+	// Execute template and get result
 	result := strings.Builder{}
-	err = tmpl.Execute(&result, config)
+	err = tmpl.Execute(&result, r.config)
 	if err != nil {
 		return "", err
 	}
 	return result.String(), nil
 }
 
-func generateFile(config map[string]any, pathTemplate, contentTemplate string, perm fs.FileMode) error {
+func (r *renderer) generateFile(pathTemplate, contentTemplate string, perm fs.FileMode) error {
 	// compute file content
-	fileContent, err := executeTemplate(config, contentTemplate)
+	fileContent, err := r.executeTemplate(contentTemplate)
 	if errors.Is(err, errSkipThisFile) {
 		// skip this file
 		return nil
 	}
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to compute file content for %s. %w", pathTemplate, err)
 	}
 
 	// compute the path for this file
-	path, err := executeTemplate(config, pathTemplate)
+	path, err := r.executeTemplate(pathTemplate)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to compute path for %s. %w", pathTemplate, err)
 	}
 	// create any intermediate directories required. Directories are lazily generated
 	// only when they are required for a file.
@@ -55,7 +80,7 @@ func generateFile(config map[string]any, pathTemplate, contentTemplate string, p
 }
 
 // TODO: use local filer client for this function. https://github.com/databricks/cli/issues/511
-func walkFileTree(config map[string]any, templateRoot, instanceRoot string) error {
+func walkFileTree(r *renderer, templateRoot, instanceRoot string) error {
 	return filepath.WalkDir(templateRoot, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -87,6 +112,6 @@ func walkFileTree(config map[string]any, templateRoot, instanceRoot string) erro
 			return err
 		}
 
-		return generateFile(config, filepath.Join(instanceRoot, relPathTemplate), contentTemplate, info.Mode().Perm())
+		return r.generateFile(filepath.Join(instanceRoot, relPathTemplate), contentTemplate, info.Mode().Perm())
 	})
 }
