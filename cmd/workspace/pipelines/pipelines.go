@@ -36,7 +36,6 @@ var Cmd = &cobra.Command{
 }
 
 // start create command
-
 var createReq pipelines.CreatePipeline
 var createJson flags.JsonFlag
 
@@ -44,6 +43,25 @@ func init() {
 	Cmd.AddCommand(createCmd)
 	// TODO: short flags
 	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	createCmd.Flags().BoolVar(&createReq.AllowDuplicateNames, "allow-duplicate-names", createReq.AllowDuplicateNames, `If false, deployment will fail if name conflicts with that of another pipeline.`)
+	createCmd.Flags().StringVar(&createReq.Catalog, "catalog", createReq.Catalog, `A catalog in Unity Catalog to publish data from this pipeline to.`)
+	createCmd.Flags().StringVar(&createReq.Channel, "channel", createReq.Channel, `DLT Release Channel that specifies which version to use.`)
+	// TODO: array: clusters
+	// TODO: map via StringToStringVar: configuration
+	createCmd.Flags().BoolVar(&createReq.Continuous, "continuous", createReq.Continuous, `Whether the pipeline is continuous or triggered.`)
+	createCmd.Flags().BoolVar(&createReq.Development, "development", createReq.Development, `Whether the pipeline is in Development mode.`)
+	createCmd.Flags().BoolVar(&createReq.DryRun, "dry-run", createReq.DryRun, ``)
+	createCmd.Flags().StringVar(&createReq.Edition, "edition", createReq.Edition, `Pipeline product edition.`)
+	// TODO: complex arg: filters
+	createCmd.Flags().StringVar(&createReq.Id, "id", createReq.Id, `Unique identifier for this pipeline.`)
+	// TODO: array: libraries
+	createCmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `Friendly identifier for this pipeline.`)
+	createCmd.Flags().BoolVar(&createReq.Photon, "photon", createReq.Photon, `Whether Photon is enabled for this pipeline.`)
+	createCmd.Flags().BoolVar(&createReq.Serverless, "serverless", createReq.Serverless, `Whether serverless compute is enabled for this pipeline.`)
+	createCmd.Flags().StringVar(&createReq.Storage, "storage", createReq.Storage, `DBFS root directory for storing checkpoints and tables.`)
+	createCmd.Flags().StringVar(&createReq.Target, "target", createReq.Target, `Target schema (database) to add tables in this pipeline to.`)
+	// TODO: complex arg: trigger
 
 }
 
@@ -67,13 +85,13 @@ var createCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = createJson.Unmarshal(&createReq)
 			if err != nil {
 				return err
 			}
 		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
 
 		response, err := w.Pipelines.Create(ctx, createReq)
@@ -88,14 +106,11 @@ var createCmd = &cobra.Command{
 }
 
 // start delete command
-
 var deleteReq pipelines.DeletePipelineRequest
-var deleteJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
-	deleteCmd.Flags().Var(&deleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -111,31 +126,25 @@ var deleteCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = deleteJson.Unmarshal(&deleteReq)
+
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No PIPELINE_ID argument specified. Loading names for Pipelines drop-down."
+			names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "")
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No PIPELINE_ID argument specified. Loading names for Pipelines drop-down."
-				names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have ")
-			}
-			deleteReq.PipelineId = args[0]
+			args = append(args, id)
 		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have ")
+		}
+		deleteReq.PipelineId = args[0]
 
 		err = w.Pipelines.Delete(ctx, deleteReq)
 		if err != nil {
@@ -149,9 +158,8 @@ var deleteCmd = &cobra.Command{
 }
 
 // start get command
-
 var getReq pipelines.GetPipelineRequest
-var getJson flags.JsonFlag
+
 var getSkipWait bool
 var getTimeout time.Duration
 
@@ -161,7 +169,6 @@ func init() {
 	getCmd.Flags().BoolVar(&getSkipWait, "no-wait", getSkipWait, `do not wait to reach RUNNING state`)
 	getCmd.Flags().DurationVar(&getTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
 	// TODO: short flags
-	getCmd.Flags().Var(&getJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -175,31 +182,25 @@ var getCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = getJson.Unmarshal(&getReq)
+
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No PIPELINE_ID argument specified. Loading names for Pipelines drop-down."
+			names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "")
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No PIPELINE_ID argument specified. Loading names for Pipelines drop-down."
-				names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have ")
-			}
-			getReq.PipelineId = args[0]
+			args = append(args, id)
 		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have ")
+		}
+		getReq.PipelineId = args[0]
 
 		response, err := w.Pipelines.Get(ctx, getReq)
 		if err != nil {
@@ -213,14 +214,11 @@ var getCmd = &cobra.Command{
 }
 
 // start get-update command
-
 var getUpdateReq pipelines.GetUpdateRequest
-var getUpdateJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(getUpdateCmd)
 	// TODO: short flags
-	getUpdateCmd.Flags().Var(&getUpdateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -234,24 +232,15 @@ var getUpdateCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = getUpdateJson.Unmarshal(&getUpdateReq)
-			if err != nil {
-				return err
-			}
-		} else {
-			getUpdateReq.PipelineId = args[0]
-			getUpdateReq.UpdateId = args[1]
-		}
+
+		getUpdateReq.PipelineId = args[0]
+		getUpdateReq.UpdateId = args[1]
 
 		response, err := w.Pipelines.GetUpdate(ctx, getUpdateReq)
 		if err != nil {
@@ -265,7 +254,6 @@ var getUpdateCmd = &cobra.Command{
 }
 
 // start list-pipeline-events command
-
 var listPipelineEventsReq pipelines.ListPipelineEventsRequest
 var listPipelineEventsJson flags.JsonFlag
 
@@ -293,31 +281,31 @@ var listPipelineEventsCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = listPipelineEventsJson.Unmarshal(&listPipelineEventsReq)
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No PIPELINE_ID argument specified. Loading names for Pipelines drop-down."
-				names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have ")
-			}
-			listPipelineEventsReq.PipelineId = args[0]
 		}
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No PIPELINE_ID argument specified. Loading names for Pipelines drop-down."
+			names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have ")
+		}
+		listPipelineEventsReq.PipelineId = args[0]
 
 		response, err := w.Pipelines.ListPipelineEventsAll(ctx, listPipelineEventsReq)
 		if err != nil {
@@ -331,7 +319,6 @@ var listPipelineEventsCmd = &cobra.Command{
 }
 
 // start list-pipelines command
-
 var listPipelinesReq pipelines.ListPipelinesRequest
 var listPipelinesJson flags.JsonFlag
 
@@ -366,6 +353,7 @@ var listPipelinesCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = listPipelinesJson.Unmarshal(&listPipelinesReq)
 			if err != nil {
@@ -386,14 +374,11 @@ var listPipelinesCmd = &cobra.Command{
 }
 
 // start list-updates command
-
 var listUpdatesReq pipelines.ListUpdatesRequest
-var listUpdatesJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(listUpdatesCmd)
 	// TODO: short flags
-	listUpdatesCmd.Flags().Var(&listUpdatesJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	listUpdatesCmd.Flags().IntVar(&listUpdatesReq.MaxResults, "max-results", listUpdatesReq.MaxResults, `Max number of entries to return in a single page.`)
 	listUpdatesCmd.Flags().StringVar(&listUpdatesReq.PageToken, "page-token", listUpdatesReq.PageToken, `Page token returned by previous call.`)
@@ -413,31 +398,25 @@ var listUpdatesCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = listUpdatesJson.Unmarshal(&listUpdatesReq)
+
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No PIPELINE_ID argument specified. Loading names for Pipelines drop-down."
+			names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "The pipeline to return updates for")
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No PIPELINE_ID argument specified. Loading names for Pipelines drop-down."
-				names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "The pipeline to return updates for")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have the pipeline to return updates for")
-			}
-			listUpdatesReq.PipelineId = args[0]
+			args = append(args, id)
 		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the pipeline to return updates for")
+		}
+		listUpdatesReq.PipelineId = args[0]
 
 		response, err := w.Pipelines.ListUpdates(ctx, listUpdatesReq)
 		if err != nil {
@@ -451,9 +430,8 @@ var listUpdatesCmd = &cobra.Command{
 }
 
 // start reset command
-
 var resetReq pipelines.ResetRequest
-var resetJson flags.JsonFlag
+
 var resetSkipWait bool
 var resetTimeout time.Duration
 
@@ -463,7 +441,6 @@ func init() {
 	resetCmd.Flags().BoolVar(&resetSkipWait, "no-wait", resetSkipWait, `do not wait to reach RUNNING state`)
 	resetCmd.Flags().DurationVar(&resetTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
 	// TODO: short flags
-	resetCmd.Flags().Var(&resetJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -479,31 +456,25 @@ var resetCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = resetJson.Unmarshal(&resetReq)
+
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No PIPELINE_ID argument specified. Loading names for Pipelines drop-down."
+			names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "")
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No PIPELINE_ID argument specified. Loading names for Pipelines drop-down."
-				names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have ")
-			}
-			resetReq.PipelineId = args[0]
+			args = append(args, id)
 		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have ")
+		}
+		resetReq.PipelineId = args[0]
 
 		wait, err := w.Pipelines.Reset(ctx, resetReq)
 		if err != nil {
@@ -529,7 +500,6 @@ var resetCmd = &cobra.Command{
 }
 
 // start start-update command
-
 var startUpdateReq pipelines.StartUpdate
 var startUpdateJson flags.JsonFlag
 
@@ -557,31 +527,31 @@ var startUpdateCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = startUpdateJson.Unmarshal(&startUpdateReq)
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No PIPELINE_ID argument specified. Loading names for Pipelines drop-down."
-				names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have ")
-			}
-			startUpdateReq.PipelineId = args[0]
 		}
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No PIPELINE_ID argument specified. Loading names for Pipelines drop-down."
+			names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have ")
+		}
+		startUpdateReq.PipelineId = args[0]
 
 		response, err := w.Pipelines.StartUpdate(ctx, startUpdateReq)
 		if err != nil {
@@ -595,9 +565,8 @@ var startUpdateCmd = &cobra.Command{
 }
 
 // start stop command
-
 var stopReq pipelines.StopRequest
-var stopJson flags.JsonFlag
+
 var stopSkipWait bool
 var stopTimeout time.Duration
 
@@ -607,7 +576,6 @@ func init() {
 	stopCmd.Flags().BoolVar(&stopSkipWait, "no-wait", stopSkipWait, `do not wait to reach IDLE state`)
 	stopCmd.Flags().DurationVar(&stopTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach IDLE state`)
 	// TODO: short flags
-	stopCmd.Flags().Var(&stopJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -623,31 +591,25 @@ var stopCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = stopJson.Unmarshal(&stopReq)
+
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No PIPELINE_ID argument specified. Loading names for Pipelines drop-down."
+			names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "")
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No PIPELINE_ID argument specified. Loading names for Pipelines drop-down."
-				names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have ")
-			}
-			stopReq.PipelineId = args[0]
+			args = append(args, id)
 		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have ")
+		}
+		stopReq.PipelineId = args[0]
 
 		wait, err := w.Pipelines.Stop(ctx, stopReq)
 		if err != nil {
@@ -673,7 +635,6 @@ var stopCmd = &cobra.Command{
 }
 
 // start update command
-
 var updateReq pipelines.EditPipeline
 var updateJson flags.JsonFlag
 
@@ -716,6 +677,7 @@ var updateCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = updateJson.Unmarshal(&updateReq)
 			if err != nil {

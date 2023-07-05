@@ -8,7 +8,7 @@ import (
 // rootCmd represents the root command for the bundle subcommand.
 var rootCmd = &cobra.Command{
 	Use:   "bundle",
-	Short: "Databricks Application Bundles",
+	Short: "Databricks Asset Bundles",
 }
 
 func AddCommand(cmd *cobra.Command) {
