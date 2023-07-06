@@ -1,6 +1,8 @@
 package git
 
 import (
+	"context"
+	"os/exec"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -105,4 +107,13 @@ func TestGitCloneArgs(t *testing.T) {
 		RepositoryUrl: "abc",
 		TargetPath:    "/def",
 	}.args())
+}
+
+func TestGitCloneWithGitNotFound(t *testing.T) {
+	// We set $PATH here so the git CLI cannot be found by the clone function
+	t.Setenv("PATH", "")
+	tmpDir := t.TempDir()
+
+	err := Clone(context.Background(), "abc", tmpDir)
+	assert.ErrorIs(t, err, exec.ErrNotFound)
 }
