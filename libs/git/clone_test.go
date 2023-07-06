@@ -63,7 +63,7 @@ func TestGitParseCloneOptions(t *testing.T) {
 
 	// cases: full path of the repository is specified
 	assert.Equal(t, cloneOptions{
-		Reference:     "",
+		Reference:     "snapshot",
 		RepositoryUrl: "https://github.com/databricks/cli.git",
 		TargetPath:    "/bar",
 	}, parseCloneOptions("https://github.com/databricks/cli.git@snapshot", "/bar"))
