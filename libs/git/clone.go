@@ -1,13 +1,12 @@
 package git
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"os/exec"
 	"strings"
-
-	"github.com/databricks/cli/libs/cmdio"
 )
 
 const GithubUrl = "https://github.com"
@@ -71,11 +70,8 @@ func (opts cloneOptions) args() []string {
 func Clone(ctx context.Context, url, targetPath string) error {
 	opts := parseCloneOptions(url, targetPath)
 	cmd := exec.CommandContext(ctx, "git", opts.args()...)
-
-	// Redirect exec command output
-	cmd.Stderr = cmdio.Err(ctx)
-	cmd.Stdout = cmdio.Out(ctx)
-	cmd.Stdin = cmdio.In(ctx)
+	var cmdErr bytes.Buffer
+	cmd.Stderr = &cmdErr
 
 	// start git clone
 	err := cmd.Start()
@@ -87,5 +83,9 @@ func Clone(ctx context.Context, url, targetPath string) error {
 	}
 
 	// wait for git clone to complete
-	return cmd.Wait()
+	err = cmd.Wait()
+	if err != nil {
+		return fmt.Errorf("git clone failed: %w. %s", err, cmdErr.String())
+	}
+	return nil
 }
