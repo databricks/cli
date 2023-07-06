@@ -19,15 +19,15 @@ func TestAccGitClone(t *testing.T) {
 	ctx := cmdio.InContext(context.Background(), cmdIO)
 	var err error
 
-	err = git.Clone(ctx, "https://github.com/databricks/cli.git", tmpDir)
+	err = git.Clone(ctx, "https://github.com/ShreyasGoenka/empty-databricks-cli-repo.git", tmpDir)
 	assert.NoError(t, err)
 
 	// assert on repo content
-	b, err := os.ReadFile(filepath.Join(tmpDir, "NOTICE"))
+	b, err := os.ReadFile(filepath.Join(tmpDir, "README.md"))
 	assert.NoError(t, err)
-	assert.Contains(t, string(b), "Copyright (2023) Databricks, Inc.")
+	assert.Contains(t, string(b), "empty-databricks-cli-repo")
 
-	// assert current branch is main
+	// assert current branch is main, ie default for the repo
 	b, err = os.ReadFile(filepath.Join(tmpDir, ".git/HEAD"))
 	assert.NoError(t, err)
 	assert.Contains(t, string(b), "main")
@@ -41,12 +41,17 @@ func TestAccGitCloneWithOrgAndRepoName(t *testing.T) {
 	ctx := cmdio.InContext(context.Background(), cmdIO)
 	var err error
 
-	err = git.Clone(ctx, "databricks/cli", tmpDir)
+	err = git.Clone(ctx, "ShreyasGoenka/empty-databricks-cli-repo@cli", tmpDir)
 
 	assert.NoError(t, err)
-	b, err := os.ReadFile(filepath.Join(tmpDir, "NOTICE"))
+	b, err := os.ReadFile(filepath.Join(tmpDir, "README.md"))
 	assert.NoError(t, err)
-	assert.Contains(t, string(b), "Copyright (2023) Databricks, Inc.")
+	assert.Contains(t, string(b), "empty-databricks-cli-repo")
+
+	// assert current branch is "cli"
+	b, err = os.ReadFile(filepath.Join(tmpDir, ".git/HEAD"))
+	assert.NoError(t, err)
+	assert.Contains(t, string(b), "cli")
 }
 
 func TestAccGitCloneWithOnlyRepoName(t *testing.T) {

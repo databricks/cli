@@ -46,7 +46,7 @@ func expandUrl(s string) string {
 
 func parseCloneOptions(url, targetPath string) cloneOptions {
 	repoUrl := expandUrl(url)
-	reference := "main"
+	reference := ""
 
 	// Users can optionally specify a branch / tag by adding @my-branch to the end
 	// of the URL. eg: https://github.com/databricks/cli.git@release-branch
@@ -64,7 +64,11 @@ func parseCloneOptions(url, targetPath string) cloneOptions {
 }
 
 func (opts cloneOptions) args() []string {
-	return []string{"clone", opts.RepositoryUrl, opts.TargetPath, "--branch", opts.Reference, "--depth=1", "--no-tags"}
+	args := []string{"clone", opts.RepositoryUrl, opts.TargetPath, "--depth=1", "--no-tags"}
+	if opts.Reference != "" {
+		args = append(args, "--branch", opts.Reference)
+	}
+	return args
 }
 
 func Clone(ctx context.Context, url, targetPath string) error {
