@@ -20,6 +20,17 @@
     "bundle": {
       "description": "The details for this bundle.",
       "properties": {
+        "git": {
+          "description": "",
+          "properties": {
+            "branch": {
+              "description": ""
+            },
+            "origin_url": {
+              "description": ""
+            }
+          }
+        },
         "name": {
           "description": "The name of the bundle."
         }
@@ -49,6 +60,17 @@
           "bundle": {
             "description": "The details for this bundle.",
             "properties": {
+              "git": {
+                "description": "",
+                "properties": {
+                  "branch": {
+                    "description": ""
+                  },
+                  "origin_url": {
+                    "description": ""
+                  }
+                }
+              },
               "name": {
                 "description": "The name of the bundle."
               }
@@ -125,6 +147,25 @@
                 "additionalproperties": {
                   "description": "",
                   "properties": {
+                    "compute": {
+                      "description": "",
+                      "items": {
+                        "description": "",
+                        "properties": {
+                          "compute_key": {
+                            "description": ""
+                          },
+                          "spec": {
+                            "description": "",
+                            "properties": {
+                              "kind": {
+                                "description": ""
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
                     "continuous": {
                       "description": "",
                       "properties": {
@@ -326,6 +367,28 @@
                                   "description": ""
                                 }
                               },
+                              "data_security_mode": {
+                                "description": ""
+                              },
+                              "docker_image": {
+                                "description": "",
+                                "properties": {
+                                  "basic_auth": {
+                                    "description": "",
+                                    "properties": {
+                                      "password": {
+                                        "description": ""
+                                      },
+                                      "username": {
+                                        "description": ""
+                                      }
+                                    }
+                                  },
+                                  "url": {
+                                    "description": ""
+                                  }
+                                }
+                              },
                               "driver_instance_pool_id": {
                                 "description": "The optional ID of the instance pool for the driver of the cluster belongs.\nThe pool cluster uses the instance pool with id (instance_pool_id) if the driver pool is not\nassigned."
                               },
@@ -349,6 +412,59 @@
                                   },
                                   "google_service_account": {
                                     "description": "If provided, the cluster will impersonate the google service account when accessing\ngcloud services (like GCS). The google service account\nmust have previously been added to the Databricks environment by an account\nadministrator."
+                                  },
+                                  "local_ssd_count": {
+                                    "description": ""
+                                  }
+                                }
+                              },
+                              "init_scripts": {
+                                "description": "",
+                                "items": {
+                                  "description": "",
+                                  "properties": {
+                                    "dbfs": {
+                                      "description": "",
+                                      "properties": {
+                                        "destination": {
+                                          "description": ""
+                                        }
+                                      }
+                                    },
+                                    "s3": {
+                                      "description": "",
+                                      "properties": {
+                                        "canned_acl": {
+                                          "description": ""
+                                        },
+                                        "destination": {
+                                          "description": ""
+                                        },
+                                        "enable_encryption": {
+                                          "description": ""
+                                        },
+                                        "encryption_type": {
+                                          "description": ""
+                                        },
+                                        "endpoint": {
+                                          "description": ""
+                                        },
+                                        "kms_key": {
+                                          "description": ""
+                                        },
+                                        "region": {
+                                          "description": ""
+                                        }
+                                      }
+                                    },
+                                    "workspace": {
+                                      "description": "",
+                                      "properties": {
+                                        "destination": {
+                                          "description": ""
+                                        }
+                                      }
+                                    }
                                   }
                                 }
                               },
@@ -365,6 +481,9 @@
                                 "description": "The ID of the cluster policy used to create the cluster if applicable."
                               },
                               "runtime_engine": {
+                                "description": ""
+                              },
+                              "single_user_name": {
                                 "description": ""
                               },
                               "spark_conf": {
@@ -415,6 +534,31 @@
                     "name": {
                       "description": "An optional name for the job."
                     },
+                    "notification_settings": {
+                      "description": "",
+                      "properties": {
+                        "no_alert_for_canceled_runs": {
+                          "description": ""
+                        },
+                        "no_alert_for_skipped_runs": {
+                          "description": ""
+                        }
+                      }
+                    },
+                    "parameters": {
+                      "description": "",
+                      "items": {
+                        "description": "",
+                        "properties": {
+                          "default": {
+                            "description": ""
+                          },
+                          "name": {
+                            "description": ""
+                          }
+                        }
+                      }
+                    },
                     "permissions": {
                       "description": "",
                       "items": {
@@ -432,6 +576,17 @@
                           "user_name": {
                             "description": ""
                           }
+                        }
+                      }
+                    },
+                    "run_as": {
+                      "description": "",
+                      "properties": {
+                        "service_principal_name": {
+                          "description": ""
+                        },
+                        "user_name": {
+                          "description": ""
                         }
                       }
                     },
@@ -460,6 +615,23 @@
                       "items": {
                         "description": "",
                         "properties": {
+                          "compute_key": {
+                            "description": ""
+                          },
+                          "condition_task": {
+                            "description": "",
+                            "properties": {
+                              "left": {
+                                "description": ""
+                              },
+                              "op": {
+                                "description": ""
+                              },
+                              "right": {
+                                "description": ""
+                              }
+                            }
+                          },
                           "dbt_task": {
                             "description": "If dbt_task, indicates that this must execute a dbt task. It requires both Databricks SQL and the ability to use a serverless or a pro SQL warehouse.",
                             "properties": {
@@ -491,6 +663,9 @@
                             "items": {
                               "description": "",
                               "properties": {
+                                "outcome": {
+                                  "description": ""
+                                },
                                 "task_key": {
                                   "description": ""
                                 }
@@ -503,9 +678,6 @@
                           "email_notifications": {
                             "description": "An optional set of email addresses that is notified when runs of this job begin or complete as well as when this job is deleted. The default behavior is to not send any emails.",
                             "properties": {
-                              "no_alert_for_skipped_runs": {
-                                "description": "If true, do not send email to recipients specified in `on_failure` if the run is skipped."
-                              },
                               "on_failure": {
                                 "description": "A list of email addresses to be notified when a run unsuccessfully completes. A run is considered to have completed unsuccessfully if it ends with an `INTERNAL_ERROR` `life_cycle_state` or a `SKIPPED`, `FAILED`, or `TIMED_OUT` result_state. If this is not specified on job creation, reset, or update the list is empty, and notifications are not sent.",
                                 "items": {
@@ -722,6 +894,28 @@
                                   "description": ""
                                 }
                               },
+                              "data_security_mode": {
+                                "description": ""
+                              },
+                              "docker_image": {
+                                "description": "",
+                                "properties": {
+                                  "basic_auth": {
+                                    "description": "",
+                                    "properties": {
+                                      "password": {
+                                        "description": ""
+                                      },
+                                      "username": {
+                                        "description": ""
+                                      }
+                                    }
+                                  },
+                                  "url": {
+                                    "description": ""
+                                  }
+                                }
+                              },
                               "driver_instance_pool_id": {
                                 "description": "The optional ID of the instance pool for the driver of the cluster belongs.\nThe pool cluster uses the instance pool with id (instance_pool_id) if the driver pool is not\nassigned."
                               },
@@ -745,6 +939,59 @@
                                   },
                                   "google_service_account": {
                                     "description": "If provided, the cluster will impersonate the google service account when accessing\ngcloud services (like GCS). The google service account\nmust have previously been added to the Databricks environment by an account\nadministrator."
+                                  },
+                                  "local_ssd_count": {
+                                    "description": ""
+                                  }
+                                }
+                              },
+                              "init_scripts": {
+                                "description": "",
+                                "items": {
+                                  "description": "",
+                                  "properties": {
+                                    "dbfs": {
+                                      "description": "",
+                                      "properties": {
+                                        "destination": {
+                                          "description": ""
+                                        }
+                                      }
+                                    },
+                                    "s3": {
+                                      "description": "",
+                                      "properties": {
+                                        "canned_acl": {
+                                          "description": ""
+                                        },
+                                        "destination": {
+                                          "description": ""
+                                        },
+                                        "enable_encryption": {
+                                          "description": ""
+                                        },
+                                        "encryption_type": {
+                                          "description": ""
+                                        },
+                                        "endpoint": {
+                                          "description": ""
+                                        },
+                                        "kms_key": {
+                                          "description": ""
+                                        },
+                                        "region": {
+                                          "description": ""
+                                        }
+                                      }
+                                    },
+                                    "workspace": {
+                                      "description": "",
+                                      "properties": {
+                                        "destination": {
+                                          "description": ""
+                                        }
+                                      }
+                                    }
                                   }
                                 }
                               },
@@ -761,6 +1008,9 @@
                                 "description": "The ID of the cluster policy used to create the cluster if applicable."
                               },
                               "runtime_engine": {
+                                "description": ""
+                              },
+                              "single_user_name": {
                                 "description": ""
                               },
                               "spark_conf": {
@@ -819,6 +1069,20 @@
                               }
                             }
                           },
+                          "notification_settings": {
+                            "description": "",
+                            "properties": {
+                              "alert_on_last_attempt": {
+                                "description": ""
+                              },
+                              "no_alert_for_canceled_runs": {
+                                "description": ""
+                              },
+                              "no_alert_for_skipped_runs": {
+                                "description": ""
+                              }
+                            }
+                          },
                           "pipeline_task": {
                             "description": "If pipeline_task, indicates that this task must execute a Pipeline.",
                             "properties": {
@@ -856,6 +1120,9 @@
                           "retry_on_timeout": {
                             "description": "An optional policy to specify whether to retry a task when it times out. The default behavior is to not retry on timeout."
                           },
+                          "run_if": {
+                            "description": ""
+                          },
                           "spark_jar_task": {
                             "description": "If spark_jar_task, indicates that this task must run a JAR.",
                             "properties": {
@@ -883,6 +1150,9 @@
                                 }
                               },
                               "python_file": {
+                                "description": ""
+                              },
+                              "source": {
                                 "description": ""
                               }
                             }
@@ -954,6 +1224,14 @@
                                   }
                                 }
                               },
+                              "file": {
+                                "description": "",
+                                "properties": {
+                                  "path": {
+                                    "description": ""
+                                  }
+                                }
+                              },
                               "parameters": {
                                 "description": "Parameters to be used for each run of this job. The SQL alert task does not support custom parameters.",
                                 "additionalproperties": {
@@ -991,7 +1269,7 @@
                         "file_arrival": {
                           "description": "",
                           "properties": {
-                            "min_time_between_trigger_seconds": {
+                            "min_time_between_triggers_seconds": {
                               "description": ""
                             },
                             "url": {
@@ -1315,6 +1593,9 @@
                               },
                               "google_service_account": {
                                 "description": "If provided, the cluster will impersonate the google service account when accessing\ngcloud services (like GCS). The google service account\nmust have previously been added to the Databricks environment by an account\nadministrator."
+                              },
+                              "local_ssd_count": {
+                                "description": ""
                               }
                             }
                           },
@@ -1462,6 +1743,9 @@
                     "photon": {
                       "description": "Whether Photon is enabled for this pipeline."
                     },
+                    "serverless": {
+                      "description": ""
+                    },
                     "storage": {
                       "description": "DBFS root directory for storing checkpoints and tables."
                     },
@@ -1490,6 +1774,12 @@
                   }
                 }
               }
+            }
+          },
+          "variables": {
+            "description": "",
+            "additionalproperties": {
+              "description": ""
             }
           },
           "workspace": {
@@ -1613,6 +1903,25 @@
           "additionalproperties": {
             "description": "",
             "properties": {
+              "compute": {
+                "description": "",
+                "items": {
+                  "description": "",
+                  "properties": {
+                    "compute_key": {
+                      "description": ""
+                    },
+                    "spec": {
+                      "description": "",
+                      "properties": {
+                        "kind": {
+                          "description": ""
+                        }
+                      }
+                    }
+                  }
+                }
+              },
               "continuous": {
                 "description": "",
                 "properties": {
@@ -1814,6 +2123,28 @@
                             "description": ""
                           }
                         },
+                        "data_security_mode": {
+                          "description": ""
+                        },
+                        "docker_image": {
+                          "description": "",
+                          "properties": {
+                            "basic_auth": {
+                              "description": "",
+                              "properties": {
+                                "password": {
+                                  "description": ""
+                                },
+                                "username": {
+                                  "description": ""
+                                }
+                              }
+                            },
+                            "url": {
+                              "description": ""
+                            }
+                          }
+                        },
                         "driver_instance_pool_id": {
                           "description": "The optional ID of the instance pool for the driver of the cluster belongs.\nThe pool cluster uses the instance pool with id (instance_pool_id) if the driver pool is not\nassigned."
                         },
@@ -1837,6 +2168,59 @@
                             },
                             "google_service_account": {
                               "description": "If provided, the cluster will impersonate the google service account when accessing\ngcloud services (like GCS). The google service account\nmust have previously been added to the Databricks environment by an account\nadministrator."
+                            },
+                            "local_ssd_count": {
+                              "description": ""
+                            }
+                          }
+                        },
+                        "init_scripts": {
+                          "description": "",
+                          "items": {
+                            "description": "",
+                            "properties": {
+                              "dbfs": {
+                                "description": "",
+                                "properties": {
+                                  "destination": {
+                                    "description": ""
+                                  }
+                                }
+                              },
+                              "s3": {
+                                "description": "",
+                                "properties": {
+                                  "canned_acl": {
+                                    "description": ""
+                                  },
+                                  "destination": {
+                                    "description": ""
+                                  },
+                                  "enable_encryption": {
+                                    "description": ""
+                                  },
+                                  "encryption_type": {
+                                    "description": ""
+                                  },
+                                  "endpoint": {
+                                    "description": ""
+                                  },
+                                  "kms_key": {
+                                    "description": ""
+                                  },
+                                  "region": {
+                                    "description": ""
+                                  }
+                                }
+                              },
+                              "workspace": {
+                                "description": "",
+                                "properties": {
+                                  "destination": {
+                                    "description": ""
+                                  }
+                                }
+                              }
                             }
                           }
                         },
@@ -1853,6 +2237,9 @@
                           "description": "The ID of the cluster policy used to create the cluster if applicable."
                         },
                         "runtime_engine": {
+                          "description": ""
+                        },
+                        "single_user_name": {
                           "description": ""
                         },
                         "spark_conf": {
@@ -1903,6 +2290,31 @@
               "name": {
                 "description": "An optional name for the job."
               },
+              "notification_settings": {
+                "description": "",
+                "properties": {
+                  "no_alert_for_canceled_runs": {
+                    "description": ""
+                  },
+                  "no_alert_for_skipped_runs": {
+                    "description": ""
+                  }
+                }
+              },
+              "parameters": {
+                "description": "",
+                "items": {
+                  "description": "",
+                  "properties": {
+                    "default": {
+                      "description": ""
+                    },
+                    "name": {
+                      "description": ""
+                    }
+                  }
+                }
+              },
               "permissions": {
                 "description": "",
                 "items": {
@@ -1920,6 +2332,17 @@
                     "user_name": {
                       "description": ""
                     }
+                  }
+                }
+              },
+              "run_as": {
+                "description": "",
+                "properties": {
+                  "service_principal_name": {
+                    "description": ""
+                  },
+                  "user_name": {
+                    "description": ""
                   }
                 }
               },
@@ -1948,6 +2371,23 @@
                 "items": {
                   "description": "",
                   "properties": {
+                    "compute_key": {
+                      "description": ""
+                    },
+                    "condition_task": {
+                      "description": "",
+                      "properties": {
+                        "left": {
+                          "description": ""
+                        },
+                        "op": {
+                          "description": ""
+                        },
+                        "right": {
+                          "description": ""
+                        }
+                      }
+                    },
                     "dbt_task": {
                       "description": "If dbt_task, indicates that this must execute a dbt task. It requires both Databricks SQL and the ability to use a serverless or a pro SQL warehouse.",
                       "properties": {
@@ -1979,6 +2419,9 @@
                       "items": {
                         "description": "",
                         "properties": {
+                          "outcome": {
+                            "description": ""
+                          },
                           "task_key": {
                             "description": ""
                           }
@@ -1991,9 +2434,6 @@
                     "email_notifications": {
                       "description": "An optional set of email addresses that is notified when runs of this job begin or complete as well as when this job is deleted. The default behavior is to not send any emails.",
                       "properties": {
-                        "no_alert_for_skipped_runs": {
-                          "description": "If true, do not send email to recipients specified in `on_failure` if the run is skipped."
-                        },
                         "on_failure": {
                           "description": "A list of email addresses to be notified when a run unsuccessfully completes. A run is considered to have completed unsuccessfully if it ends with an `INTERNAL_ERROR` `life_cycle_state` or a `SKIPPED`, `FAILED`, or `TIMED_OUT` result_state. If this is not specified on job creation, reset, or update the list is empty, and notifications are not sent.",
                           "items": {
@@ -2210,6 +2650,28 @@
                             "description": ""
                           }
                         },
+                        "data_security_mode": {
+                          "description": ""
+                        },
+                        "docker_image": {
+                          "description": "",
+                          "properties": {
+                            "basic_auth": {
+                              "description": "",
+                              "properties": {
+                                "password": {
+                                  "description": ""
+                                },
+                                "username": {
+                                  "description": ""
+                                }
+                              }
+                            },
+                            "url": {
+                              "description": ""
+                            }
+                          }
+                        },
                         "driver_instance_pool_id": {
                           "description": "The optional ID of the instance pool for the driver of the cluster belongs.\nThe pool cluster uses the instance pool with id (instance_pool_id) if the driver pool is not\nassigned."
                         },
@@ -2233,6 +2695,59 @@
                             },
                             "google_service_account": {
                               "description": "If provided, the cluster will impersonate the google service account when accessing\ngcloud services (like GCS). The google service account\nmust have previously been added to the Databricks environment by an account\nadministrator."
+                            },
+                            "local_ssd_count": {
+                              "description": ""
+                            }
+                          }
+                        },
+                        "init_scripts": {
+                          "description": "",
+                          "items": {
+                            "description": "",
+                            "properties": {
+                              "dbfs": {
+                                "description": "",
+                                "properties": {
+                                  "destination": {
+                                    "description": ""
+                                  }
+                                }
+                              },
+                              "s3": {
+                                "description": "",
+                                "properties": {
+                                  "canned_acl": {
+                                    "description": ""
+                                  },
+                                  "destination": {
+                                    "description": ""
+                                  },
+                                  "enable_encryption": {
+                                    "description": ""
+                                  },
+                                  "encryption_type": {
+                                    "description": ""
+                                  },
+                                  "endpoint": {
+                                    "description": ""
+                                  },
+                                  "kms_key": {
+                                    "description": ""
+                                  },
+                                  "region": {
+                                    "description": ""
+                                  }
+                                }
+                              },
+                              "workspace": {
+                                "description": "",
+                                "properties": {
+                                  "destination": {
+                                    "description": ""
+                                  }
+                                }
+                              }
                             }
                           }
                         },
@@ -2249,6 +2764,9 @@
                           "description": "The ID of the cluster policy used to create the cluster if applicable."
                         },
                         "runtime_engine": {
+                          "description": ""
+                        },
+                        "single_user_name": {
                           "description": ""
                         },
                         "spark_conf": {
@@ -2307,6 +2825,20 @@
                         }
                       }
                     },
+                    "notification_settings": {
+                      "description": "",
+                      "properties": {
+                        "alert_on_last_attempt": {
+                          "description": ""
+                        },
+                        "no_alert_for_canceled_runs": {
+                          "description": ""
+                        },
+                        "no_alert_for_skipped_runs": {
+                          "description": ""
+                        }
+                      }
+                    },
                     "pipeline_task": {
                       "description": "If pipeline_task, indicates that this task must execute a Pipeline.",
                       "properties": {
@@ -2344,6 +2876,9 @@
                     "retry_on_timeout": {
                       "description": "An optional policy to specify whether to retry a task when it times out. The default behavior is to not retry on timeout."
                     },
+                    "run_if": {
+                      "description": ""
+                    },
                     "spark_jar_task": {
                       "description": "If spark_jar_task, indicates that this task must run a JAR.",
                       "properties": {
@@ -2371,6 +2906,9 @@
                           }
                         },
                         "python_file": {
+                          "description": ""
+                        },
+                        "source": {
                           "description": ""
                         }
                       }
@@ -2442,6 +2980,14 @@
                             }
                           }
                         },
+                        "file": {
+                          "description": "",
+                          "properties": {
+                            "path": {
+                              "description": ""
+                            }
+                          }
+                        },
                         "parameters": {
                           "description": "Parameters to be used for each run of this job. The SQL alert task does not support custom parameters.",
                           "additionalproperties": {
@@ -2479,7 +3025,7 @@
                   "file_arrival": {
                     "description": "",
                     "properties": {
-                      "min_time_between_trigger_seconds": {
+                      "min_time_between_triggers_seconds": {
                         "description": ""
                       },
                       "url": {
@@ -2803,6 +3349,9 @@
                         },
                         "google_service_account": {
                           "description": "If provided, the cluster will impersonate the google service account when accessing\ngcloud services (like GCS). The google service account\nmust have previously been added to the Databricks environment by an account\nadministrator."
+                        },
+                        "local_ssd_count": {
+                          "description": ""
                         }
                       }
                     },
@@ -2950,6 +3499,9 @@
               "photon": {
                 "description": "Whether Photon is enabled for this pipeline."
               },
+              "serverless": {
+                "description": ""
+              },
               "storage": {
                 "description": "DBFS root directory for storing checkpoints and tables."
               },
@@ -2976,6 +3528,20 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "variables": {
+      "description": "",
+      "additionalproperties": {
+        "description": "",
+        "properties": {
+          "default": {
+            "description": ""
+          },
+          "description": {
+            "description": ""
           }
         }
       }
