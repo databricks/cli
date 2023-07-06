@@ -196,6 +196,19 @@ func (reader *OpenapiReader) experimentsDocs() (*Docs, error) {
 	return experimentsDocs, nil
 }
 
+func (reader *OpenapiReader) modelsDocs() (*Docs, error) {
+	modelSpecSchema, err := reader.readResolvedSchema(SchemaPathPrefix + "ml.Model")
+	if err != nil {
+		return nil, err
+	}
+	modelDocs := schemaToDocs(modelSpecSchema)
+	modelsDocs := &Docs{
+		Description:          "List of MLflow models",
+		AdditionalProperties: modelDocs,
+	}
+	return modelsDocs, nil
+}
+
 func (reader *OpenapiReader) ResourcesDocs() (*Docs, error) {
 	jobsDocs, err := reader.jobsDocs()
 	if err != nil {
@@ -209,6 +222,10 @@ func (reader *OpenapiReader) ResourcesDocs() (*Docs, error) {
 	if err != nil {
 		return nil, err
 	}
+	modelsDocs, err := reader.modelsDocs()
+	if err != nil {
+		return nil, err
+	}
 
 	return &Docs{
 		Description: "Collection of Databricks resources to deploy.",
@@ -216,6 +233,7 @@ func (reader *OpenapiReader) ResourcesDocs() (*Docs, error) {
 			"jobs":        jobsDocs,
 			"pipelines":   pipelinesDocs,
 			"experiments": experimentsDocs,
+			"models":      modelsDocs,
 		},
 	}, nil
 }
