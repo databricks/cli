@@ -70,6 +70,22 @@ func (m *initialize) findExecPath(ctx context.Context, b *bundle.Bundle, tf *con
 	return tf.ExecPath, nil
 }
 
+// This function inherits some environment variables for Terraform CLI.
+func inheritEnvVars(env map[string]string) error {
+	// Include $HOME in set of environment variables to pass along.
+	home, ok := os.LookupEnv("HOME")
+	if ok {
+		env["HOME"] = home
+	}
+
+	// Include $TF_CLI_CONFIG_FILE to override terraform provider in development.
+	if config_file, ok := os.LookupEnv("TF_CLI_CONFIG_FILE"); ok {
+		env["TF_CLI_CONFIG_FILE"] = config_file
+	}
+
+	return nil
+}
+
 // This function sets temp dir location for terraform to use. If user does not
 // specify anything here, we fall back to a `tmp` directory in the bundle's cache
 // directory
@@ -130,10 +146,9 @@ func (m *initialize) Apply(ctx context.Context, b *bundle.Bundle) error {
 		return err
 	}
 
-	// Include $HOME in set of environment variables to pass along.
-	home, ok := os.LookupEnv("HOME")
-	if ok {
-		env["HOME"] = home
+	err = inheritEnvVars(env)
+	if err != nil {
+		return err
 	}
 
 	// Set the temporary directory environment variables
