@@ -80,7 +80,7 @@ func Clone(ctx context.Context, url, targetPath string) error {
 	// start git clone
 	err := cmd.Start()
 	if errors.Is(err, exec.ErrNotFound) {
-		return fmt.Errorf("please install git CLI to download templates: %w", err)
+		return fmt.Errorf("please install git CLI to clone a repository: %w", err)
 	}
 	if err != nil {
 		return err
