@@ -80,30 +80,30 @@
             "description": ""
           },
           "resources": {
-            "description": "Specification of databricks resources to instantiate",
+            "description": "Collection of Databricks resources to deploy.",
             "properties": {
               "experiments": {
-                "description": "",
+                "description": "List of MLflow experiments",
                 "additionalproperties": {
                   "description": "",
                   "properties": {
                     "artifact_location": {
-                      "description": ""
+                      "description": "Location where artifacts for the experiment are stored."
                     },
                     "creation_time": {
-                      "description": ""
+                      "description": "Creation time"
                     },
                     "experiment_id": {
-                      "description": ""
+                      "description": "Unique identifier for the experiment."
                     },
                     "last_update_time": {
-                      "description": ""
+                      "description": "Last update time"
                     },
                     "lifecycle_stage": {
-                      "description": ""
+                      "description": "Current life cycle stage of the experiment: \"active\" or \"deleted\".\nDeleted experiments are not returned by APIs."
                     },
                     "name": {
-                      "description": ""
+                      "description": "Human readable name that identifies the experiment."
                     },
                     "permissions": {
                       "description": "",
@@ -126,15 +126,15 @@
                       }
                     },
                     "tags": {
-                      "description": "",
+                      "description": "Tags: Additional metadata key-value pairs.",
                       "items": {
                         "description": "",
                         "properties": {
                           "key": {
-                            "description": ""
+                            "description": "The tag key."
                           },
                           "value": {
-                            "description": ""
+                            "description": "The tag value."
                           }
                         }
                       }
@@ -143,7 +143,7 @@
                 }
               },
               "jobs": {
-                "description": "List of job definations",
+                "description": "List of Databricks jobs",
                 "additionalproperties": {
                   "description": "",
                   "properties": {
@@ -170,7 +170,7 @@
                       "description": "An optional continuous property for this job. The continuous property will ensure that there is always one run executing. Only one of `schedule` and `continuous` can be used.",
                       "properties": {
                         "pause_status": {
-                          "description": "Indicate whether this schedule is paused or not."
+                          "description": "Indicate whether the continuous execution of the job is paused or not. Defaults to UNPAUSED."
                         }
                       }
                     },
@@ -594,7 +594,7 @@
                       "description": "An optional periodic schedule for this job. The default behavior is that the job only runs when triggered by clicking “Run Now” in the Jobs UI or sending an API request to `runNow`.",
                       "properties": {
                         "pause_status": {
-                          "description": "Indicate whether this schedule is paused or not."
+                          "description": "Indicate whether the continuous execution of the job is paused or not. Defaults to UNPAUSED."
                         },
                         "quartz_cron_expression": {
                           "description": "A Cron expression using Quartz syntax that describes the schedule for a job.\nSee [Cron Trigger](http://www.quartz-scheduler.org/documentation/quartz-2.3.0/tutorials/crontrigger.html)\nfor details. This field is required.\"\n"
@@ -1065,7 +1065,7 @@
                                 "description": "The path of the notebook to be run in the Databricks workspace or remote repository.\nFor notebooks stored in the Databricks workspace, the path must be absolute and begin with a slash.\nFor notebooks stored in a remote repository, the path must be relative. This field is required.\n"
                               },
                               "source": {
-                                "description": "Optional location type of the notebook. When set to `WORKSPACE`, the notebook will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the notebook will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: Notebook is located in \u003cDatabricks\u003e workspace.\n* `GIT`: Notebook is located in cloud Git provider.\n"
+                                "description": "Optional location type of the Python file. When set to `WORKSPACE` or not specified, the file will be retrieved\nfrom the local \u003cDatabricks\u003e workspace or cloud location (if the `python_file` has a URI format). When set to `GIT`,\nthe Python file will be retrieved from a Git repository defined in `git_source`.\n\n* `WORKSPACE`: The Python file is located in a \u003cDatabricks\u003e workspace or at a cloud filesystem URI.\n* `GIT`: The Python file is located in a remote Git repository.\n"
                               }
                             }
                           },
@@ -1153,7 +1153,7 @@
                                 "description": "The Python file to be executed. Cloud file URIs (such as dbfs:/, s3:/, adls:/, gcs:/) and workspace paths are supported. For python files stored in the Databricks workspace, the path must be absolute and begin with `/`. For files stored in a remote repository, the path must be relative. This field is required."
                               },
                               "source": {
-                                "description": "Optional location type of the notebook. When set to `WORKSPACE`, the notebook will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the notebook will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: Notebook is located in \u003cDatabricks\u003e workspace.\n* `GIT`: Notebook is located in cloud Git provider.\n"
+                                "description": "Optional location type of the Python file. When set to `WORKSPACE` or not specified, the file will be retrieved\nfrom the local \u003cDatabricks\u003e workspace or cloud location (if the `python_file` has a URI format). When set to `GIT`,\nthe Python file will be retrieved from a Git repository defined in `git_source`.\n\n* `WORKSPACE`: The Python file is located in a \u003cDatabricks\u003e workspace or at a cloud filesystem URI.\n* `GIT`: The Python file is located in a remote Git repository.\n"
                               }
                             }
                           },
@@ -1281,7 +1281,7 @@
                           }
                         },
                         "pause_status": {
-                          "description": "Indicate whether this schedule is paused or not."
+                          "description": "Indicate whether the continuous execution of the job is paused or not. Defaults to UNPAUSED."
                         }
                       }
                     },
@@ -1327,79 +1327,79 @@
                 }
               },
               "models": {
-                "description": "",
+                "description": "List of MLflow models",
                 "additionalproperties": {
                   "description": "",
                   "properties": {
                     "creation_timestamp": {
-                      "description": ""
+                      "description": "Timestamp recorded when this `registered_model` was created."
                     },
                     "description": {
-                      "description": ""
+                      "description": "Description of this `registered_model`."
                     },
                     "last_updated_timestamp": {
-                      "description": ""
+                      "description": "Timestamp recorded when metadata for this `registered_model` was last updated."
                     },
                     "latest_versions": {
-                      "description": "",
+                      "description": "Collection of latest model versions for each stage.\nOnly contains models with current `READY` status.",
                       "items": {
                         "description": "",
                         "properties": {
                           "creation_timestamp": {
-                            "description": ""
+                            "description": "Timestamp recorded when this `model_version` was created."
                           },
                           "current_stage": {
-                            "description": ""
+                            "description": "Current stage for this `model_version`."
                           },
                           "description": {
-                            "description": ""
+                            "description": "Description of this `model_version`."
                           },
                           "last_updated_timestamp": {
-                            "description": ""
+                            "description": "Timestamp recorded when metadata for this `model_version` was last updated."
                           },
                           "name": {
-                            "description": ""
+                            "description": "Unique name of the model"
                           },
                           "run_id": {
-                            "description": ""
+                            "description": "MLflow run ID used when creating `model_version`, if `source` was generated by an\nexperiment run stored in MLflow tracking server."
                           },
                           "run_link": {
-                            "description": ""
+                            "description": "Run Link: Direct link to the run that generated this version"
                           },
                           "source": {
-                            "description": ""
+                            "description": "URI indicating the location of the source model artifacts, used when creating `model_version`"
                           },
                           "status": {
-                            "description": ""
+                            "description": "Current status of `model_version`"
                           },
                           "status_message": {
-                            "description": ""
+                            "description": "Details on current `status`, if it is pending or failed."
                           },
                           "tags": {
-                            "description": "",
+                            "description": "Tags: Additional metadata key-value pairs for this `model_version`.",
                             "items": {
                               "description": "",
                               "properties": {
                                 "key": {
-                                  "description": ""
+                                  "description": "The tag key."
                                 },
                                 "value": {
-                                  "description": ""
+                                  "description": "The tag value."
                                 }
                               }
                             }
                           },
                           "user_id": {
-                            "description": ""
+                            "description": "User that created this `model_version`."
                           },
                           "version": {
-                            "description": ""
+                            "description": "Model's version number."
                           }
                         }
                       }
                     },
                     "name": {
-                      "description": ""
+                      "description": "Unique name for the model."
                     },
                     "permissions": {
                       "description": "",
@@ -1422,27 +1422,27 @@
                       }
                     },
                     "tags": {
-                      "description": "",
+                      "description": "Tags: Additional metadata key-value pairs for this `registered_model`.",
                       "items": {
                         "description": "",
                         "properties": {
                           "key": {
-                            "description": ""
+                            "description": "The tag key."
                           },
                           "value": {
-                            "description": ""
+                            "description": "The tag value."
                           }
                         }
                       }
                     },
                     "user_id": {
-                      "description": ""
+                      "description": "User that created this `registered_model`"
                     }
                   }
                 }
               },
               "pipelines": {
-                "description": "List of pipeline definations",
+                "description": "List of DLT pipelines",
                 "additionalproperties": {
                   "description": "",
                   "properties": {
@@ -1836,30 +1836,30 @@
       }
     },
     "resources": {
-      "description": "Specification of databricks resources to instantiate",
+      "description": "Collection of Databricks resources to deploy.",
       "properties": {
         "experiments": {
-          "description": "",
+          "description": "List of MLflow experiments",
           "additionalproperties": {
             "description": "",
             "properties": {
               "artifact_location": {
-                "description": ""
+                "description": "Location where artifacts for the experiment are stored."
               },
               "creation_time": {
-                "description": ""
+                "description": "Creation time"
               },
               "experiment_id": {
-                "description": ""
+                "description": "Unique identifier for the experiment."
               },
               "last_update_time": {
-                "description": ""
+                "description": "Last update time"
               },
               "lifecycle_stage": {
-                "description": ""
+                "description": "Current life cycle stage of the experiment: \"active\" or \"deleted\".\nDeleted experiments are not returned by APIs."
               },
               "name": {
-                "description": ""
+                "description": "Human readable name that identifies the experiment."
               },
               "permissions": {
                 "description": "",
@@ -1882,15 +1882,15 @@
                 }
               },
               "tags": {
-                "description": "",
+                "description": "Tags: Additional metadata key-value pairs.",
                 "items": {
                   "description": "",
                   "properties": {
                     "key": {
-                      "description": ""
+                      "description": "The tag key."
                     },
                     "value": {
-                      "description": ""
+                      "description": "The tag value."
                     }
                   }
                 }
@@ -1899,7 +1899,7 @@
           }
         },
         "jobs": {
-          "description": "List of job definations",
+          "description": "List of Databricks jobs",
           "additionalproperties": {
             "description": "",
             "properties": {
@@ -1926,7 +1926,7 @@
                 "description": "An optional continuous property for this job. The continuous property will ensure that there is always one run executing. Only one of `schedule` and `continuous` can be used.",
                 "properties": {
                   "pause_status": {
-                    "description": "Indicate whether this schedule is paused or not."
+                    "description": "Indicate whether the continuous execution of the job is paused or not. Defaults to UNPAUSED."
                   }
                 }
               },
@@ -2350,7 +2350,7 @@
                 "description": "An optional periodic schedule for this job. The default behavior is that the job only runs when triggered by clicking “Run Now” in the Jobs UI or sending an API request to `runNow`.",
                 "properties": {
                   "pause_status": {
-                    "description": "Indicate whether this schedule is paused or not."
+                    "description": "Indicate whether the continuous execution of the job is paused or not. Defaults to UNPAUSED."
                   },
                   "quartz_cron_expression": {
                     "description": "A Cron expression using Quartz syntax that describes the schedule for a job.\nSee [Cron Trigger](http://www.quartz-scheduler.org/documentation/quartz-2.3.0/tutorials/crontrigger.html)\nfor details. This field is required.\"\n"
@@ -2821,7 +2821,7 @@
                           "description": "The path of the notebook to be run in the Databricks workspace or remote repository.\nFor notebooks stored in the Databricks workspace, the path must be absolute and begin with a slash.\nFor notebooks stored in a remote repository, the path must be relative. This field is required.\n"
                         },
                         "source": {
-                          "description": "Optional location type of the notebook. When set to `WORKSPACE`, the notebook will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the notebook will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: Notebook is located in \u003cDatabricks\u003e workspace.\n* `GIT`: Notebook is located in cloud Git provider.\n"
+                          "description": "Optional location type of the Python file. When set to `WORKSPACE` or not specified, the file will be retrieved\nfrom the local \u003cDatabricks\u003e workspace or cloud location (if the `python_file` has a URI format). When set to `GIT`,\nthe Python file will be retrieved from a Git repository defined in `git_source`.\n\n* `WORKSPACE`: The Python file is located in a \u003cDatabricks\u003e workspace or at a cloud filesystem URI.\n* `GIT`: The Python file is located in a remote Git repository.\n"
                         }
                       }
                     },
@@ -2909,7 +2909,7 @@
                           "description": "The Python file to be executed. Cloud file URIs (such as dbfs:/, s3:/, adls:/, gcs:/) and workspace paths are supported. For python files stored in the Databricks workspace, the path must be absolute and begin with `/`. For files stored in a remote repository, the path must be relative. This field is required."
                         },
                         "source": {
-                          "description": "Optional location type of the notebook. When set to `WORKSPACE`, the notebook will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the notebook will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: Notebook is located in \u003cDatabricks\u003e workspace.\n* `GIT`: Notebook is located in cloud Git provider.\n"
+                          "description": "Optional location type of the Python file. When set to `WORKSPACE` or not specified, the file will be retrieved\nfrom the local \u003cDatabricks\u003e workspace or cloud location (if the `python_file` has a URI format). When set to `GIT`,\nthe Python file will be retrieved from a Git repository defined in `git_source`.\n\n* `WORKSPACE`: The Python file is located in a \u003cDatabricks\u003e workspace or at a cloud filesystem URI.\n* `GIT`: The Python file is located in a remote Git repository.\n"
                         }
                       }
                     },
@@ -3037,7 +3037,7 @@
                     }
                   },
                   "pause_status": {
-                    "description": "Indicate whether this schedule is paused or not."
+                    "description": "Indicate whether the continuous execution of the job is paused or not. Defaults to UNPAUSED."
                   }
                 }
               },
@@ -3083,79 +3083,79 @@
           }
         },
         "models": {
-          "description": "",
+          "description": "List of MLflow models",
           "additionalproperties": {
             "description": "",
             "properties": {
               "creation_timestamp": {
-                "description": ""
+                "description": "Timestamp recorded when this `registered_model` was created."
               },
               "description": {
-                "description": ""
+                "description": "Description of this `registered_model`."
               },
               "last_updated_timestamp": {
-                "description": ""
+                "description": "Timestamp recorded when metadata for this `registered_model` was last updated."
               },
               "latest_versions": {
-                "description": "",
+                "description": "Collection of latest model versions for each stage.\nOnly contains models with current `READY` status.",
                 "items": {
                   "description": "",
                   "properties": {
                     "creation_timestamp": {
-                      "description": ""
+                      "description": "Timestamp recorded when this `model_version` was created."
                     },
                     "current_stage": {
-                      "description": ""
+                      "description": "Current stage for this `model_version`."
                     },
                     "description": {
-                      "description": ""
+                      "description": "Description of this `model_version`."
                     },
                     "last_updated_timestamp": {
-                      "description": ""
+                      "description": "Timestamp recorded when metadata for this `model_version` was last updated."
                     },
                     "name": {
-                      "description": ""
+                      "description": "Unique name of the model"
                     },
                     "run_id": {
-                      "description": ""
+                      "description": "MLflow run ID used when creating `model_version`, if `source` was generated by an\nexperiment run stored in MLflow tracking server."
                     },
                     "run_link": {
-                      "description": ""
+                      "description": "Run Link: Direct link to the run that generated this version"
                     },
                     "source": {
-                      "description": ""
+                      "description": "URI indicating the location of the source model artifacts, used when creating `model_version`"
                     },
                     "status": {
-                      "description": ""
+                      "description": "Current status of `model_version`"
                     },
                     "status_message": {
-                      "description": ""
+                      "description": "Details on current `status`, if it is pending or failed."
                     },
                     "tags": {
-                      "description": "",
+                      "description": "Tags: Additional metadata key-value pairs for this `model_version`.",
                       "items": {
                         "description": "",
                         "properties": {
                           "key": {
-                            "description": ""
+                            "description": "The tag key."
                           },
                           "value": {
-                            "description": ""
+                            "description": "The tag value."
                           }
                         }
                       }
                     },
                     "user_id": {
-                      "description": ""
+                      "description": "User that created this `model_version`."
                     },
                     "version": {
-                      "description": ""
+                      "description": "Model's version number."
                     }
                   }
                 }
               },
               "name": {
-                "description": ""
+                "description": "Unique name for the model."
               },
               "permissions": {
                 "description": "",
@@ -3178,27 +3178,27 @@
                 }
               },
               "tags": {
-                "description": "",
+                "description": "Tags: Additional metadata key-value pairs for this `registered_model`.",
                 "items": {
                   "description": "",
                   "properties": {
                     "key": {
-                      "description": ""
+                      "description": "The tag key."
                     },
                     "value": {
-                      "description": ""
+                      "description": "The tag value."
                     }
                   }
                 }
               },
               "user_id": {
-                "description": ""
+                "description": "User that created this `registered_model`"
               }
             }
           }
         },
         "pipelines": {
-          "description": "List of pipeline definations",
+          "description": "List of DLT pipelines",
           "additionalproperties": {
             "description": "",
             "properties": {
