@@ -272,7 +272,7 @@ func TestSetProxyEnvVars(t *testing.T) {
 	require.NoError(t, err)
 	assert.ElementsMatch(t, []string{"HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY"}, maps.Keys(env))
 }
-  
+
 func TestInheritEnvVars(t *testing.T) {
 	env := map[string]string{}
 
