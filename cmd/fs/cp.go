@@ -132,7 +132,7 @@ var cpCmd = &cobra.Command{
 	Short: "Copy files and directories to and from DBFS.",
 	Long: `Copy files to and from DBFS.
 
-  For paths in DBFS it is required that you specify the dbfs scheme.
+  For paths in DBFS it is required that you specify the "dbfs" scheme.
   For example: dbfs:/foo/bar
 
   Recursively copying a directory will copy all files inside directory
