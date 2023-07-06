@@ -62,11 +62,10 @@ func TestAccGitCloneWithOnlyRepoName(t *testing.T) {
 	ctx := cmdio.InContext(context.Background(), cmdIO)
 	var err error
 
-	err = git.Clone(ctx, "cli", tmpDir)
+	err = git.Clone(ctx, "databricks-empty-ide-project", tmpDir)
 
 	assert.NoError(t, err)
-	b, err := os.ReadFile(filepath.Join(tmpDir, "NOTICE"))
+	b, err := os.ReadFile(filepath.Join(tmpDir, "README-IDE.md"))
 	assert.NoError(t, err)
-	assert.Contains(t, string(b), "Copyright (2023) Databricks, Inc.")
-
+	assert.Contains(t, string(b), "This folder contains a project that was synchronized from an IDE.")
 }
