@@ -9,8 +9,8 @@ import (
 	"strings"
 )
 
-const GithubUrl = "https://github.com"
-const DatabricksOrg = "databricks"
+const githubUrl = "https://github.com"
+const databricksOrg = "databricks"
 
 type cloneOptions struct {
 	// Branch or tag to clone
@@ -37,11 +37,11 @@ func expandUrl(s string) string {
 
 	// case: org and repository name are provided
 	if strings.Contains(s, "/") {
-		return strings.Join([]string{GithubUrl, s}, "/")
+		return strings.Join([]string{githubUrl, s}, "/")
 	}
 
 	// case: only repository name is provided
-	return strings.Join([]string{GithubUrl, DatabricksOrg, s}, "/")
+	return strings.Join([]string{githubUrl, databricksOrg, s}, "/")
 }
 
 func parseCloneOptions(url, targetPath string) cloneOptions {
