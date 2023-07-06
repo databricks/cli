@@ -80,30 +80,30 @@
             "description": ""
           },
           "resources": {
-            "description": "Specification of databricks resources to instantiate",
+            "description": "Collection of Databricks resources to deploy.",
             "properties": {
               "experiments": {
-                "description": "",
+                "description": "List of MLflow experiments",
                 "additionalproperties": {
                   "description": "",
                   "properties": {
                     "artifact_location": {
-                      "description": ""
+                      "description": "Location where artifacts for the experiment are stored."
                     },
                     "creation_time": {
-                      "description": ""
+                      "description": "Creation time"
                     },
                     "experiment_id": {
-                      "description": ""
+                      "description": "Unique identifier for the experiment."
                     },
                     "last_update_time": {
-                      "description": ""
+                      "description": "Last update time"
                     },
                     "lifecycle_stage": {
-                      "description": ""
+                      "description": "Current life cycle stage of the experiment: \"active\" or \"deleted\".\nDeleted experiments are not returned by APIs."
                     },
                     "name": {
-                      "description": ""
+                      "description": "Human readable name that identifies the experiment."
                     },
                     "permissions": {
                       "description": "",
@@ -126,15 +126,15 @@
                       }
                     },
                     "tags": {
-                      "description": "",
+                      "description": "Tags: Additional metadata key-value pairs.",
                       "items": {
                         "description": "",
                         "properties": {
                           "key": {
-                            "description": ""
+                            "description": "The tag key."
                           },
                           "value": {
-                            "description": ""
+                            "description": "The tag value."
                           }
                         }
                       }
@@ -143,7 +143,7 @@
                 }
               },
               "jobs": {
-                "description": "List of job definations",
+                "description": "List of Databricks jobs",
                 "additionalproperties": {
                   "description": "",
                   "properties": {
@@ -170,7 +170,7 @@
                       "description": "An optional continuous property for this job. The continuous property will ensure that there is always one run executing. Only one of `schedule` and `continuous` can be used.",
                       "properties": {
                         "pause_status": {
-                          "description": "Whether this trigger is paused or not."
+                          "description": "Indicate whether this schedule is paused or not."
                         }
                       }
                     },
@@ -240,7 +240,7 @@
                             "description": "A unique name for the job cluster. This field is required and must be unique within the job.\n`JobTaskSettings` may refer to this field to determine which cluster to launch for the task execution."
                           },
                           "new_cluster": {
-                            "description": "If new_cluster, a description of a cluster that is created for only for this task.",
+                            "description": "If new_cluster, a description of a cluster that is created for each task.",
                             "properties": {
                               "autoscale": {
                                 "description": "Parameters needed in order to automatically scale clusters up and down based on load.\nNote: autoscaling works best with DB runtime versions 3.0 or later.",
@@ -594,7 +594,7 @@
                       "description": "An optional periodic schedule for this job. The default behavior is that the job only runs when triggered by clicking “Run Now” in the Jobs UI or sending an API request to `runNow`.",
                       "properties": {
                         "pause_status": {
-                          "description": "Whether this trigger is paused or not."
+                          "description": "Indicate whether this schedule is paused or not."
                         },
                         "quartz_cron_expression": {
                           "description": "A Cron expression using Quartz syntax that describes the schedule for a job.\nSee [Cron Trigger](http://www.quartz-scheduler.org/documentation/quartz-2.3.0/tutorials/crontrigger.html)\nfor details. This field is required.\"\n"
@@ -767,7 +767,7 @@
                             "description": "An optional minimal interval in milliseconds between the start of the failed run and the subsequent retry run. The default behavior is that unsuccessful runs are immediately retried."
                           },
                           "new_cluster": {
-                            "description": "If new_cluster, a description of a cluster that is created for only for this task.",
+                            "description": "If new_cluster, a description of a cluster that is created for each task.",
                             "properties": {
                               "autoscale": {
                                 "description": "Parameters needed in order to automatically scale clusters up and down based on load.\nNote: autoscaling works best with DB runtime versions 3.0 or later.",
@@ -1281,7 +1281,7 @@
                           }
                         },
                         "pause_status": {
-                          "description": "Whether this trigger is paused or not."
+                          "description": "Indicate whether this schedule is paused or not."
                         }
                       }
                     },
@@ -1442,7 +1442,7 @@
                 }
               },
               "pipelines": {
-                "description": "List of pipeline definations",
+                "description": "List of DLT pipelines",
                 "additionalproperties": {
                   "description": "",
                   "properties": {
@@ -1836,30 +1836,30 @@
       }
     },
     "resources": {
-      "description": "Specification of databricks resources to instantiate",
+      "description": "Collection of Databricks resources to deploy.",
       "properties": {
         "experiments": {
-          "description": "",
+          "description": "List of MLflow experiments",
           "additionalproperties": {
             "description": "",
             "properties": {
               "artifact_location": {
-                "description": ""
+                "description": "Location where artifacts for the experiment are stored."
               },
               "creation_time": {
-                "description": ""
+                "description": "Creation time"
               },
               "experiment_id": {
-                "description": ""
+                "description": "Unique identifier for the experiment."
               },
               "last_update_time": {
-                "description": ""
+                "description": "Last update time"
               },
               "lifecycle_stage": {
-                "description": ""
+                "description": "Current life cycle stage of the experiment: \"active\" or \"deleted\".\nDeleted experiments are not returned by APIs."
               },
               "name": {
-                "description": ""
+                "description": "Human readable name that identifies the experiment."
               },
               "permissions": {
                 "description": "",
@@ -1882,15 +1882,15 @@
                 }
               },
               "tags": {
-                "description": "",
+                "description": "Tags: Additional metadata key-value pairs.",
                 "items": {
                   "description": "",
                   "properties": {
                     "key": {
-                      "description": ""
+                      "description": "The tag key."
                     },
                     "value": {
-                      "description": ""
+                      "description": "The tag value."
                     }
                   }
                 }
@@ -1899,7 +1899,7 @@
           }
         },
         "jobs": {
-          "description": "List of job definations",
+          "description": "List of Databricks jobs",
           "additionalproperties": {
             "description": "",
             "properties": {
@@ -1926,7 +1926,7 @@
                 "description": "An optional continuous property for this job. The continuous property will ensure that there is always one run executing. Only one of `schedule` and `continuous` can be used.",
                 "properties": {
                   "pause_status": {
-                    "description": "Whether this trigger is paused or not."
+                    "description": "Indicate whether this schedule is paused or not."
                   }
                 }
               },
@@ -1996,7 +1996,7 @@
                       "description": "A unique name for the job cluster. This field is required and must be unique within the job.\n`JobTaskSettings` may refer to this field to determine which cluster to launch for the task execution."
                     },
                     "new_cluster": {
-                      "description": "If new_cluster, a description of a cluster that is created for only for this task.",
+                      "description": "If new_cluster, a description of a cluster that is created for each task.",
                       "properties": {
                         "autoscale": {
                           "description": "Parameters needed in order to automatically scale clusters up and down based on load.\nNote: autoscaling works best with DB runtime versions 3.0 or later.",
@@ -2350,7 +2350,7 @@
                 "description": "An optional periodic schedule for this job. The default behavior is that the job only runs when triggered by clicking “Run Now” in the Jobs UI or sending an API request to `runNow`.",
                 "properties": {
                   "pause_status": {
-                    "description": "Whether this trigger is paused or not."
+                    "description": "Indicate whether this schedule is paused or not."
                   },
                   "quartz_cron_expression": {
                     "description": "A Cron expression using Quartz syntax that describes the schedule for a job.\nSee [Cron Trigger](http://www.quartz-scheduler.org/documentation/quartz-2.3.0/tutorials/crontrigger.html)\nfor details. This field is required.\"\n"
@@ -2523,7 +2523,7 @@
                       "description": "An optional minimal interval in milliseconds between the start of the failed run and the subsequent retry run. The default behavior is that unsuccessful runs are immediately retried."
                     },
                     "new_cluster": {
-                      "description": "If new_cluster, a description of a cluster that is created for only for this task.",
+                      "description": "If new_cluster, a description of a cluster that is created for each task.",
                       "properties": {
                         "autoscale": {
                           "description": "Parameters needed in order to automatically scale clusters up and down based on load.\nNote: autoscaling works best with DB runtime versions 3.0 or later.",
@@ -3037,7 +3037,7 @@
                     }
                   },
                   "pause_status": {
-                    "description": "Whether this trigger is paused or not."
+                    "description": "Indicate whether this schedule is paused or not."
                   }
                 }
               },
@@ -3198,7 +3198,7 @@
           }
         },
         "pipelines": {
-          "description": "List of pipeline definations",
+          "description": "List of DLT pipelines",
           "additionalproperties": {
             "description": "",
             "properties": {
