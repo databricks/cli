@@ -28,10 +28,12 @@ var Cmd = &cobra.Command{
   You can declare primary keys and foreign keys as part of the table
   specification during table creation. You can also add or drop constraints on
   existing tables.`,
+	Annotations: map[string]string{
+		"package": "catalog",
+	},
 }
 
 // start create command
-
 var createReq catalog.CreateTableConstraint
 var createJson flags.JsonFlag
 
@@ -63,17 +65,14 @@ var createCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = createJson.Unmarshal(&createReq)
 			if err != nil {
 				return err
 			}
 		} else {
-			createReq.FullNameArg = args[0]
-			_, err = fmt.Sscan(args[1], &createReq.Constraint)
-			if err != nil {
-				return fmt.Errorf("invalid CONSTRAINT: %s", args[1])
-			}
+			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
 
 		response, err := w.TableConstraints.Create(ctx, createReq)
@@ -82,17 +81,17 @@ var createCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start delete command
-
 var deleteReq catalog.DeleteTableConstraintRequest
-var deleteJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
-	deleteCmd.Flags().Var(&deleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -114,27 +113,18 @@ var deleteCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(3)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = deleteJson.Unmarshal(&deleteReq)
-			if err != nil {
-				return err
-			}
-		} else {
-			deleteReq.FullName = args[0]
-			deleteReq.ConstraintName = args[1]
-			_, err = fmt.Sscan(args[2], &deleteReq.Cascade)
-			if err != nil {
-				return fmt.Errorf("invalid CASCADE: %s", args[2])
-			}
+
+		deleteReq.FullName = args[0]
+		deleteReq.ConstraintName = args[1]
+		_, err = fmt.Sscan(args[2], &deleteReq.Cascade)
+		if err != nil {
+			return fmt.Errorf("invalid CASCADE: %s", args[2])
 		}
 
 		err = w.TableConstraints.Delete(ctx, deleteReq)
@@ -143,6 +133,9 @@ var deleteCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // end service TableConstraints

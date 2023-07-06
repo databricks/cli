@@ -13,6 +13,8 @@ import (
 
 const fileMode = 0o600
 
+const defaultComment = "The profile defined in the DEFAULT section is to be used as a fallback when no profile is explicitly specified."
+
 func loadOrCreateConfigFile(filename string) (*config.File, error) {
 	if filename == "" {
 		filename = "~/.databrickscfg"
@@ -45,8 +47,8 @@ func loadOrCreateConfigFile(filename string) (*config.File, error) {
 
 func matchOrCreateSection(ctx context.Context, configFile *config.File, cfg *config.Config) (*ini.Section, error) {
 	section, err := findMatchingProfile(configFile, func(s *ini.Section) bool {
-		if cfg.Profile == s.Name() {
-			return true
+		if cfg.Profile != "" {
+			return cfg.Profile == s.Name()
 		}
 		raw := s.KeysHash()
 		if cfg.AccountID != "" {
@@ -104,6 +106,12 @@ func SaveToProfile(ctx context.Context, cfg *config.Config) error {
 		key.SetValue(attr.GetString(cfg))
 	}
 
+	// Add a comment to the default section if it's empty.
+	section = configFile.Section(ini.DefaultSection)
+	if len(section.Keys()) == 0 && section.Comment == "" {
+		section.Comment = defaultComment
+	}
+
 	orig, backupErr := os.ReadFile(configFile.Path())
 	if len(orig) > 0 && backupErr == nil {
 		log.Infof(ctx, "Backing up in %s.bak", configFile.Path())
@@ -119,4 +127,10 @@ func SaveToProfile(ctx context.Context, cfg *config.Config) error {
 		log.Infof(ctx, "Saving %s", configFile.Path())
 	}
 	return configFile.SaveTo(configFile.Path())
+}
+
+func init() {
+	// We document databrickscfg files with a [DEFAULT] header and wish to keep it that way.
+	// This, however, does mean we emit a [DEFAULT] section even if it's empty.
+	ini.DefaultHeader = true
 }

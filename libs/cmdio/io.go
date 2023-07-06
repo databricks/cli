@@ -51,13 +51,31 @@ func IsInteractive(ctx context.Context) bool {
 }
 
 // IsTTY detects if io.Writer is a terminal.
-func IsTTY(w io.Writer) bool {
+func IsTTY(w any) bool {
 	f, ok := w.(*os.File)
 	if !ok {
 		return false
 	}
 	fd := f.Fd()
 	return isatty.IsTerminal(fd) || isatty.IsCygwinTerminal(fd)
+}
+
+// IsInTTY detects if the input reader is a terminal.
+func IsInTTY(ctx context.Context) bool {
+	c := fromContext(ctx)
+	return IsTTY(c.in)
+}
+
+// IsOutTTY detects if the output writer is a terminal.
+func IsOutTTY(ctx context.Context) bool {
+	c := fromContext(ctx)
+	return IsTTY(c.out)
+}
+
+// IsErrTTY detects if the error writer is a terminal.
+func IsErrTTY(ctx context.Context) bool {
+	c := fromContext(ctx)
+	return IsTTY(c.err)
 }
 
 // IsTTY detects if stdout is a terminal. It assumes that stderr is terminal as well
@@ -156,18 +174,35 @@ func Select[V any](ctx context.Context, names map[string]V, label string) (id st
 	return c.Select(stringNames, label)
 }
 
-func (c *cmdIO) Secret() (value string, err error) {
+func (c *cmdIO) Secret(label string) (value string, err error) {
 	prompt := (promptui.Prompt{
-		Label: "Enter your secrets value",
-		Mask:  '*',
+		Label:       label,
+		Mask:        '*',
+		HideEntered: true,
 	})
 
 	return prompt.Run()
 }
 
-func Secret(ctx context.Context) (value string, err error) {
+func Secret(ctx context.Context, label string) (value string, err error) {
 	c := fromContext(ctx)
-	return c.Secret()
+	return c.Secret(label)
+}
+
+type nopWriteCloser struct {
+	io.Writer
+}
+
+func (nopWriteCloser) Close() error {
+	return nil
+}
+
+func Prompt(ctx context.Context) *promptui.Prompt {
+	c := fromContext(ctx)
+	return &promptui.Prompt{
+		Stdin:  io.NopCloser(c.in),
+		Stdout: nopWriteCloser{c.out},
+	}
 }
 
 func (c *cmdIO) Spinner(ctx context.Context) chan string {

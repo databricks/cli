@@ -18,10 +18,12 @@ var Cmd = &cobra.Command{
   
   **Note:** Your account must be on the E2 version to use these APIs, this is
   because OAuth is only supported on the E2 version.`,
+	Annotations: map[string]string{
+		"package": "oauth2",
+	},
 }
 
 // start create command
-
 var createReq oauth2.CreateOAuthEnrollment
 var createJson flags.JsonFlag
 
@@ -61,6 +63,7 @@ var createCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = createJson.Unmarshal(&createReq)
 			if err != nil {
@@ -75,6 +78,9 @@ var createCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start get command
@@ -105,6 +111,9 @@ var getCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // end service OAuthEnrollment

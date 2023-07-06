@@ -14,13 +14,15 @@ func Destroy() bundle.Mutator {
 		lock.Acquire(),
 		bundle.Defer(
 			bundle.Seq(
+				terraform.Interpolate(),
+				terraform.Write(),
 				terraform.StatePull(),
 				terraform.Plan(terraform.PlanGoal("destroy")),
 				terraform.Destroy(),
 				terraform.StatePush(),
 				files.Delete(),
 			),
-			lock.Release(),
+			lock.Release(lock.GoalDestroy),
 		),
 	)
 

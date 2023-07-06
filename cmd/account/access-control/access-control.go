@@ -18,22 +18,63 @@ var Cmd = &cobra.Command{
 	Long: `These APIs manage access rules on resources in an account. Currently, only
   grant rules are supported. A grant rule specifies a role assigned to a set of
   principals. A list of rules attached to a resource is called a rule set.`,
+	Annotations: map[string]string{
+		"package": "iam",
+	},
 }
 
-// start get command
-
-var getReq iam.GetAccountAccessControlRequest
-var getJson flags.JsonFlag
+// start get-assignable-roles-for-resource command
+var getAssignableRolesForResourceReq iam.GetAssignableRolesForResourceRequest
 
 func init() {
-	Cmd.AddCommand(getCmd)
+	Cmd.AddCommand(getAssignableRolesForResourceCmd)
 	// TODO: short flags
-	getCmd.Flags().Var(&getJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
-var getCmd = &cobra.Command{
-	Use:   "get NAME ETAG",
+var getAssignableRolesForResourceCmd = &cobra.Command{
+	Use:   "get-assignable-roles-for-resource RESOURCE",
+	Short: `Get assignable roles for a resource.`,
+	Long: `Get assignable roles for a resource.
+  
+  Gets all the roles that can be granted on an account level resource. A role is
+  grantable if the rule set on the resource can contain an access rule of the
+  role.`,
+
+	Annotations: map[string]string{},
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		return check(cmd, args)
+	},
+	PreRunE: root.MustAccountClient,
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		a := root.AccountClient(ctx)
+
+		getAssignableRolesForResourceReq.Resource = args[0]
+
+		response, err := a.AccessControl.GetAssignableRolesForResource(ctx, getAssignableRolesForResourceReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
+}
+
+// start get-rule-set command
+var getRuleSetReq iam.GetRuleSetRequest
+
+func init() {
+	Cmd.AddCommand(getRuleSetCmd)
+	// TODO: short flags
+
+}
+
+var getRuleSetCmd = &cobra.Command{
+	Use:   "get-rule-set NAME ETAG",
 	Short: `Get a rule set.`,
 	Long: `Get a rule set.
   
@@ -44,97 +85,40 @@ var getCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = getJson.Unmarshal(&getReq)
-			if err != nil {
-				return err
-			}
-		} else {
-			getReq.Name = args[0]
-			getReq.Etag = args[1]
-		}
 
-		response, err := a.AccessControl.Get(ctx, getReq)
+		getRuleSetReq.Name = args[0]
+		getRuleSetReq.Etag = args[1]
+
+		response, err := a.AccessControl.GetRuleSet(ctx, getRuleSetReq)
 		if err != nil {
 			return err
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
-// start list command
-
-var listReq iam.ListAccountAccessControlRequest
-var listJson flags.JsonFlag
+// start update-rule-set command
+var updateRuleSetReq iam.UpdateRuleSetRequest
+var updateRuleSetJson flags.JsonFlag
 
 func init() {
-	Cmd.AddCommand(listCmd)
+	Cmd.AddCommand(updateRuleSetCmd)
 	// TODO: short flags
-	listCmd.Flags().Var(&listJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	updateRuleSetCmd.Flags().Var(&updateRuleSetJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
-var listCmd = &cobra.Command{
-	Use:   "list NAME",
-	Short: `List assignable roles on a resource.`,
-	Long: `List assignable roles on a resource.
-  
-  Gets all the roles that can be granted on an account level resource. A role is
-  grantable if the rule set on the resource can contain an access rule of the
-  role.`,
-
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
-		return check(cmd, args)
-	},
-	PreRunE: root.MustAccountClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		ctx := cmd.Context()
-		a := root.AccountClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = listJson.Unmarshal(&listReq)
-			if err != nil {
-				return err
-			}
-		} else {
-			listReq.Name = args[0]
-		}
-
-		response, err := a.AccessControl.List(ctx, listReq)
-		if err != nil {
-			return err
-		}
-		return cmdio.Render(ctx, response)
-	},
-}
-
-// start update command
-
-var updateReq iam.UpdateRuleSetRequest
-var updateJson flags.JsonFlag
-
-func init() {
-	Cmd.AddCommand(updateCmd)
-	// TODO: short flags
-	updateCmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
-
-}
-
-var updateCmd = &cobra.Command{
-	Use:   "update",
+var updateRuleSetCmd = &cobra.Command{
+	Use:   "update-rule-set",
 	Short: `Update a rule set.`,
 	Long: `Update a rule set.
   
@@ -147,26 +131,25 @@ var updateCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
+
 		if cmd.Flags().Changed("json") {
-			err = updateJson.Unmarshal(&updateReq)
+			err = updateRuleSetJson.Unmarshal(&updateRuleSetReq)
 			if err != nil {
 				return err
 			}
 		} else {
-			updateReq.Name = args[0]
-			_, err = fmt.Sscan(args[1], &updateReq.RuleSet)
-			if err != nil {
-				return fmt.Errorf("invalid RULE_SET: %s", args[1])
-			}
-			updateReq.Etag = args[2]
+			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
 
-		response, err := a.AccessControl.Update(ctx, updateReq)
+		response, err := a.AccessControl.UpdateRuleSet(ctx, updateRuleSetReq)
 		if err != nil {
 			return err
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // end service AccountAccessControl

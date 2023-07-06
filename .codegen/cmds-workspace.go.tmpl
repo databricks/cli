@@ -1,8 +1,8 @@
 // Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
 
-package cmd
+package workspace
 
-{{$excludes := list "command-execution" "statement-execution" "dbfs" "dbsql-permissions"}}
+{{ $excludes := list "command-execution" "statement-execution" "dbfs" "dbsql-permissions" "account-access-control-proxy" }}
 
 import (
 	"github.com/databricks/cli/cmd/root"
@@ -11,6 +11,12 @@ import (
 )
 
 func init() {
-    {{range .Services}}{{if not .IsAccounts}}{{if not (in $excludes .KebabName) }}
-	root.RootCmd.AddCommand({{.SnakeName}}.Cmd){{end}}{{end}}{{end}}
+	{{range .Services}}{{if not .IsAccounts}}{{if not (in $excludes .KebabName) -}}
+	root.RootCmd.AddCommand({{.SnakeName}}.Cmd)
+	{{end}}{{end}}{{end}}
+
+	// Register commands with groups
+	{{range .Services}}{{if not .IsAccounts}}{{if not (in $excludes .KebabName) -}}
+	{{.SnakeName}}.Cmd.GroupID = "{{ .Package.Name }}"
+	{{end}}{{end}}{{end}}
 }

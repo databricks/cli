@@ -26,10 +26,12 @@ var Cmd = &cobra.Command{
   provider and that user’s account will also be removed from Databricks
   workspace. This ensures a consistent offboarding process and prevents
   unauthorized users from accessing sensitive data.`,
+	Annotations: map[string]string{
+		"package": "iam",
+	},
 }
 
 // start create command
-
 var createReq iam.User
 var createJson flags.JsonFlag
 
@@ -71,6 +73,7 @@ var createCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = createJson.Unmarshal(&createReq)
 			if err != nil {
@@ -85,17 +88,17 @@ var createCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start delete command
-
 var deleteReq iam.DeleteUserRequest
-var deleteJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
-	deleteCmd.Flags().Var(&deleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -112,31 +115,25 @@ var deleteCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = deleteJson.Unmarshal(&deleteReq)
+
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No ID argument specified. Loading names for Users drop-down."
+			names, err := w.Users.UserUserNameToIdMap(ctx, iam.ListUsersRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Users drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "Unique ID for a user in the Databricks workspace")
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No ID argument specified. Loading names for Users drop-down."
-				names, err := w.Users.UserUserNameToIdMap(ctx, iam.ListUsersRequest{})
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Users drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "Unique ID for a user in the Databricks workspace")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have unique id for a user in the databricks workspace")
-			}
-			deleteReq.Id = args[0]
+			args = append(args, id)
 		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have unique id for a user in the databricks workspace")
+		}
+		deleteReq.Id = args[0]
 
 		err = w.Users.Delete(ctx, deleteReq)
 		if err != nil {
@@ -144,17 +141,17 @@ var deleteCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start get command
-
 var getReq iam.GetUserRequest
-var getJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
-	getCmd.Flags().Var(&getJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -170,31 +167,25 @@ var getCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = getJson.Unmarshal(&getReq)
+
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No ID argument specified. Loading names for Users drop-down."
+			names, err := w.Users.UserUserNameToIdMap(ctx, iam.ListUsersRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Users drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "Unique ID for a user in the Databricks workspace")
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No ID argument specified. Loading names for Users drop-down."
-				names, err := w.Users.UserUserNameToIdMap(ctx, iam.ListUsersRequest{})
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Users drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "Unique ID for a user in the Databricks workspace")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have unique id for a user in the databricks workspace")
-			}
-			getReq.Id = args[0]
+			args = append(args, id)
 		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have unique id for a user in the databricks workspace")
+		}
+		getReq.Id = args[0]
 
 		response, err := w.Users.Get(ctx, getReq)
 		if err != nil {
@@ -202,10 +193,12 @@ var getCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start list command
-
 var listReq iam.ListUsersRequest
 var listJson flags.JsonFlag
 
@@ -243,6 +236,7 @@ var listCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = listJson.Unmarshal(&listReq)
 			if err != nil {
@@ -257,10 +251,12 @@ var listCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start patch command
-
 var patchReq iam.PartialUpdate
 var patchJson flags.JsonFlag
 
@@ -286,31 +282,31 @@ var patchCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = patchJson.Unmarshal(&patchReq)
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No ID argument specified. Loading names for Users drop-down."
-				names, err := w.Users.UserUserNameToIdMap(ctx, iam.ListUsersRequest{})
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Users drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "Unique ID for a user in the Databricks workspace")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have unique id for a user in the databricks workspace")
-			}
-			patchReq.Id = args[0]
 		}
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No ID argument specified. Loading names for Users drop-down."
+			names, err := w.Users.UserUserNameToIdMap(ctx, iam.ListUsersRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Users drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "Unique ID for a user in the Databricks workspace")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have unique id for a user in the databricks workspace")
+		}
+		patchReq.Id = args[0]
 
 		err = w.Users.Patch(ctx, patchReq)
 		if err != nil {
@@ -318,10 +314,12 @@ var patchCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start update command
-
 var updateReq iam.User
 var updateJson flags.JsonFlag
 
@@ -355,6 +353,7 @@ var updateCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = updateJson.Unmarshal(&updateReq)
 			if err != nil {
@@ -387,6 +386,9 @@ var updateCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // end service Users

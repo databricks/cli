@@ -1,38 +1,62 @@
 package fs
 
 import (
+	"context"
+	"runtime"
 	"testing"
 
+	"github.com/databricks/cli/libs/filer"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-func TestResolveDbfsPath(t *testing.T) {
-	path, err := resolveDbfsPath("dbfs:/")
+func TestFilerForPathForLocalPaths(t *testing.T) {
+	tmpDir := t.TempDir()
+	ctx := context.Background()
+
+	f, path, err := filerForPath(ctx, tmpDir)
 	assert.NoError(t, err)
-	assert.Equal(t, "/", path)
+	assert.Equal(t, tmpDir, path)
 
-	path, err = resolveDbfsPath("dbfs:/abc")
+	info, err := f.Stat(ctx, path)
+	require.NoError(t, err)
+	assert.True(t, info.IsDir())
+}
+
+func TestFilerForPathForInvalidScheme(t *testing.T) {
+	ctx := context.Background()
+
+	_, _, err := filerForPath(ctx, "dbf:/a")
+	assert.ErrorContains(t, err, "invalid scheme")
+
+	_, _, err = filerForPath(ctx, "foo:a")
+	assert.ErrorContains(t, err, "invalid scheme")
+
+	_, _, err = filerForPath(ctx, "file:/a")
+	assert.ErrorContains(t, err, "invalid scheme")
+}
+
+func testWindowsFilerForPath(t *testing.T, ctx context.Context, fullPath string) {
+	f, path, err := filerForPath(ctx, fullPath)
 	assert.NoError(t, err)
-	assert.Equal(t, "/abc", path)
 
-	path, err = resolveDbfsPath("dbfs:/a/b/c")
-	assert.NoError(t, err)
-	assert.Equal(t, "/a/b/c", path)
+	// Assert path remains unchanged
+	assert.Equal(t, path, fullPath)
 
-	path, err = resolveDbfsPath("dbfs:/a/b/.")
-	assert.NoError(t, err)
-	assert.Equal(t, "/a/b/.", path)
+	// Assert local client is created
+	_, ok := f.(*filer.LocalClient)
+	assert.True(t, ok)
+}
 
-	path, err = resolveDbfsPath("dbfs:/a/../c")
-	assert.NoError(t, err)
-	assert.Equal(t, "/a/../c", path)
+func TestFilerForWindowsLocalPaths(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.SkipNow()
+	}
 
-	_, err = resolveDbfsPath("dbf:/a/b/c")
-	assert.ErrorContains(t, err, "expected dbfs path (with the dbfs:/ prefix): dbf:/a/b/c")
-
-	_, err = resolveDbfsPath("/a/b/c")
-	assert.ErrorContains(t, err, "expected dbfs path (with the dbfs:/ prefix): /a/b/c")
-
-	_, err = resolveDbfsPath("dbfs:a/b/c")
-	assert.ErrorContains(t, err, "expected dbfs path (with the dbfs:/ prefix): dbfs:a/b/c")
+	ctx := context.Background()
+	testWindowsFilerForPath(t, ctx, `c:\abc`)
+	testWindowsFilerForPath(t, ctx, `c:abc`)
+	testWindowsFilerForPath(t, ctx, `d:\abc`)
+	testWindowsFilerForPath(t, ctx, `d:\abc`)
+	testWindowsFilerForPath(t, ctx, `f:\abc\ef`)
 }

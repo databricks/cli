@@ -1,4 +1,4 @@
-// Package bundle is the top level package for Databricks Application Bundles.
+// Package bundle is the top level package for Databricks Asset Bundles.
 //
 // A bundle is represented by the [Bundle] type. It consists of configuration
 // and runtime state, such as a client to a Databricks workspace.
@@ -91,8 +91,6 @@ func (b *Bundle) WorkspaceClient() *databricks.WorkspaceClient {
 	return b.client
 }
 
-var cacheDirName = filepath.Join(".databricks", "bundle")
-
 // CacheDir returns directory to use for temporary files for this bundle.
 // Scoped to the bundle's environment.
 func (b *Bundle) CacheDir(paths ...string) (string, error) {
@@ -100,11 +98,20 @@ func (b *Bundle) CacheDir(paths ...string) (string, error) {
 		panic("environment not set")
 	}
 
+	cacheDirName, exists := os.LookupEnv("DATABRICKS_BUNDLE_TMP")
+
+	if !exists || cacheDirName == "" {
+		cacheDirName = filepath.Join(
+			// Anchor at bundle root directory.
+			b.Config.Path,
+			// Static cache directory.
+			".databricks",
+			"bundle",
+		)
+	}
+
 	// Fixed components of the result path.
 	parts := []string{
-		// Anchor at bundle root directory.
-		b.Config.Path,
-		// Static cache directory.
 		cacheDirName,
 		// Scope with environment name.
 		b.Config.Bundle.Environment,

@@ -36,10 +36,12 @@ var Cmd = &cobra.Command{
   
   After changes to the IP access list feature, it can take a few minutes for
   changes to take effect.`,
+	Annotations: map[string]string{
+		"package": "settings",
+	},
 }
 
 // start create command
-
 var createReq settings.CreateIpAccessList
 var createJson flags.JsonFlag
 
@@ -77,21 +79,14 @@ var createCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = createJson.Unmarshal(&createReq)
 			if err != nil {
 				return err
 			}
 		} else {
-			createReq.Label = args[0]
-			_, err = fmt.Sscan(args[1], &createReq.ListType)
-			if err != nil {
-				return fmt.Errorf("invalid LIST_TYPE: %s", args[1])
-			}
-			_, err = fmt.Sscan(args[2], &createReq.IpAddresses)
-			if err != nil {
-				return fmt.Errorf("invalid IP_ADDRESSES: %s", args[2])
-			}
+			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
 
 		response, err := w.IpAccessLists.Create(ctx, createReq)
@@ -100,17 +95,17 @@ var createCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start delete command
-
 var deleteReq settings.DeleteIpAccessListRequest
-var deleteJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
-	deleteCmd.Flags().Var(&deleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -126,31 +121,25 @@ var deleteCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = deleteJson.Unmarshal(&deleteReq)
+
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No IP_ACCESS_LIST_ID argument specified. Loading names for Ip Access Lists drop-down."
+			names, err := w.IpAccessLists.IpAccessListInfoLabelToListIdMap(ctx)
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Ip Access Lists drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "The ID for the corresponding IP access list to modify")
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No IP_ACCESS_LIST_ID argument specified. Loading names for Ip Access Lists drop-down."
-				names, err := w.IpAccessLists.IpAccessListInfoLabelToListIdMap(ctx)
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Ip Access Lists drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "The ID for the corresponding IP access list to modify")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have the id for the corresponding ip access list to modify")
-			}
-			deleteReq.IpAccessListId = args[0]
+			args = append(args, id)
 		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the id for the corresponding ip access list to modify")
+		}
+		deleteReq.IpAccessListId = args[0]
 
 		err = w.IpAccessLists.Delete(ctx, deleteReq)
 		if err != nil {
@@ -158,17 +147,17 @@ var deleteCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start get command
-
 var getReq settings.GetIpAccessListRequest
-var getJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
-	getCmd.Flags().Var(&getJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -184,31 +173,25 @@ var getCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = getJson.Unmarshal(&getReq)
+
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No IP_ACCESS_LIST_ID argument specified. Loading names for Ip Access Lists drop-down."
+			names, err := w.IpAccessLists.IpAccessListInfoLabelToListIdMap(ctx)
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Ip Access Lists drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "The ID for the corresponding IP access list to modify")
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No IP_ACCESS_LIST_ID argument specified. Loading names for Ip Access Lists drop-down."
-				names, err := w.IpAccessLists.IpAccessListInfoLabelToListIdMap(ctx)
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Ip Access Lists drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "The ID for the corresponding IP access list to modify")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have the id for the corresponding ip access list to modify")
-			}
-			getReq.IpAccessListId = args[0]
+			args = append(args, id)
 		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the id for the corresponding ip access list to modify")
+		}
+		getReq.IpAccessListId = args[0]
 
 		response, err := w.IpAccessLists.Get(ctx, getReq)
 		if err != nil {
@@ -216,6 +199,9 @@ var getCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start list command
@@ -243,10 +229,12 @@ var listCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start replace command
-
 var replaceReq settings.ReplaceIpAccessList
 var replaceJson flags.JsonFlag
 
@@ -282,26 +270,14 @@ var replaceCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = replaceJson.Unmarshal(&replaceReq)
 			if err != nil {
 				return err
 			}
 		} else {
-			replaceReq.Label = args[0]
-			_, err = fmt.Sscan(args[1], &replaceReq.ListType)
-			if err != nil {
-				return fmt.Errorf("invalid LIST_TYPE: %s", args[1])
-			}
-			_, err = fmt.Sscan(args[2], &replaceReq.IpAddresses)
-			if err != nil {
-				return fmt.Errorf("invalid IP_ADDRESSES: %s", args[2])
-			}
-			_, err = fmt.Sscan(args[3], &replaceReq.Enabled)
-			if err != nil {
-				return fmt.Errorf("invalid ENABLED: %s", args[3])
-			}
-			replaceReq.IpAccessListId = args[4]
+			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
 
 		err = w.IpAccessLists.Replace(ctx, replaceReq)
@@ -310,10 +286,12 @@ var replaceCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start update command
-
 var updateReq settings.UpdateIpAccessList
 var updateJson flags.JsonFlag
 
@@ -353,26 +331,14 @@ var updateCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = updateJson.Unmarshal(&updateReq)
 			if err != nil {
 				return err
 			}
 		} else {
-			updateReq.Label = args[0]
-			_, err = fmt.Sscan(args[1], &updateReq.ListType)
-			if err != nil {
-				return fmt.Errorf("invalid LIST_TYPE: %s", args[1])
-			}
-			_, err = fmt.Sscan(args[2], &updateReq.IpAddresses)
-			if err != nil {
-				return fmt.Errorf("invalid IP_ADDRESSES: %s", args[2])
-			}
-			_, err = fmt.Sscan(args[3], &updateReq.Enabled)
-			if err != nil {
-				return fmt.Errorf("invalid ENABLED: %s", args[3])
-			}
-			updateReq.IpAccessListId = args[4]
+			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
 
 		err = w.IpAccessLists.Update(ctx, updateReq)
@@ -381,6 +347,9 @@ var updateCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // end service IpAccessLists

@@ -10,7 +10,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-{{- $excludes := list "command-execution" "statement-execution" "dbfs" "dbsql-permissions" -}}
+{{ $excludes := list "command-execution" "statement-execution" "dbfs" "dbsql-permissions" "account-access-control-proxy" }}
+
 {{if not (in $excludes .KebabName) }}
 	{{template "service" .}}
 {{else}}
@@ -20,10 +21,18 @@ import (
 {{define "service"}}
 var Cmd = &cobra.Command{
 	Use:   "{{(.TrimPrefix "account").KebabName}}",
-    {{if .Description -}}
-    Short: `{{.Summary | without "`"}}`,
+	{{- if .Description }}
+	Short: `{{.Summary | without "`"}}`,
 	Long: `{{.Comment  "  " 80 | without "`"}}`,
-    {{- end}}
+	{{- end }}
+	Annotations: map[string]string{
+		"package": "{{ .Package.Name }}",
+	},
+	{{- if .IsPrivatePreview }}
+
+	// This service is being previewed; hide from help output.
+	Hidden: true,
+	{{- end }}
 }
 
 {{- $serviceName := .KebabName -}}
@@ -35,9 +44,14 @@ var Cmd = &cobra.Command{
 {{end}}
 // start {{.KebabName}} command
 
-{{if .Request}}var {{.CamelName}}Req {{.Service.Package.Name}}.{{.Request.PascalName}}
+{{- $useJsonForAllFields := or .IsJsonOnly (and .Request (or (not .Request.IsAllRequiredFieldsPrimitive) .Request.HasRequiredNonBodyField))  -}}
+{{- $needJsonFlag := or $useJsonForAllFields (and .Request (not .Request.IsOnlyPrimitiveFields)) -}}
+{{- if .Request}}
+var {{.CamelName}}Req {{.Service.Package.Name}}.{{.Request.PascalName}}
+{{- if $needJsonFlag}}
 var {{.CamelName}}Json flags.JsonFlag
 {{- end}}
+{{end}}
 {{if .Wait}}var {{.CamelName}}SkipWait bool
 var {{.CamelName}}Timeout time.Duration{{end}}
 
@@ -48,9 +62,12 @@ func init() {
 	{{.CamelName}}Cmd.Flags().DurationVar(&{{.CamelName}}Timeout, "timeout", {{.Wait.Timeout}}*time.Minute, `maximum amount of time to reach {{range $i, $e := .Wait.Success}}{{if $i}} or {{end}}{{.Content}}{{end}} state`)
 	{{end -}}
     {{if .Request}}// TODO: short flags
+	{{- if $needJsonFlag}}
 	{{.CamelName}}Cmd.Flags().Var(&{{.CamelName}}Json, "json", `either inline JSON string or @path/to/file.json with request body`)
+	{{- end}}
     {{$method := .}}
-    {{range .Request.Fields -}}
+	{{ if not .IsJsonOnly }}
+	{{range .Request.Fields -}}
 		{{- if not .Required -}}
 			{{if .Entity.IsObject }}// TODO: complex arg: {{.Name}}
 			{{else if .Entity.IsAny }}// TODO: any: {{.Name}}
@@ -61,8 +78,9 @@ func init() {
 			{{else}}{{$method.CamelName}}Cmd.Flags().{{template "arg-type" .Entity}}(&{{$method.CamelName}}Req.{{.PascalName}}, "{{.KebabName}}", {{$method.CamelName}}Req.{{.PascalName}}, `{{.Summary | without "`"}}`)
 			{{end}}
 		{{- end -}}
-    {{- end}}
-    {{end}}
+	{{- end}}
+	{{- end}}
+	{{end}}
 }
 {{- $excludeFromPrompts := list "workspace get-status" -}}
 {{- $fullCommandName := (print $serviceName " " .KebabName) -}}
@@ -76,16 +94,24 @@ func init() {
 {{- $hasRequiredArgs := and (not $hasIdPrompt) $hasPosArgs -}}
 var {{.CamelName}}Cmd = &cobra.Command{
 	Use: "{{.KebabName}}{{if $hasPosArgs}}{{range .Request.RequiredFields}} {{.ConstantName}}{{end}}{{end}}",
-	{{if .Description -}}
-    Short: `{{.Summary | without "`"}}`,
+	{{- if .Description }}
+	Short: `{{.Summary | without "`"}}`,
 	Long: `{{.Comment  "  " 80 | without "`"}}`,
-    {{end}}
+	{{- end }}
+	{{- if .IsPrivatePreview }}
+
+	// This command is being previewed; hide from help output.
+	Hidden: true,
+	{{- end }}
+
 	Annotations: map[string]string{},{{if $hasRequiredArgs }}
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs({{len .Request.RequiredFields}})
+		{{- if $useJsonForAllFields }}
 		if cmd.Flags().Changed("json") {
 			check = cobra.ExactArgs(0)
 		}
+		{{- end }}
 		return check(cmd, args)
 	},{{end}}
 	PreRunE: root.Must{{if .Service.IsAccounts}}Account{{else}}Workspace{{end}}Client,
@@ -93,12 +119,14 @@ var {{.CamelName}}Cmd = &cobra.Command{
 		ctx := cmd.Context()
 		{{if .Service.IsAccounts}}a := root.AccountClient(ctx){{else}}w := root.WorkspaceClient(ctx){{end}}
 		{{- if .Request }}
+			{{ if $needJsonFlag }}
 			if cmd.Flags().Changed("json") {
 					err = {{.CamelName}}Json.Unmarshal(&{{.CamelName}}Req)
 					if err != nil {
 						return err
 					}
-			} else {
+			}{{end}}{{if $useJsonForAllFields }} else {
+			{{- end }}
 			{{- if $hasIdPrompt}}
 				if len(args) == 0 {
 					promptSpinner := cmdio.Spinner(ctx)
@@ -119,15 +147,21 @@ var {{.CamelName}}Cmd = &cobra.Command{
 				}
 			{{- end -}}
 			{{$method := .}}
-			{{- range $arg, $field := .Request.RequiredFields}}
-				{{if not $field.Entity.IsString -}}
-				_, err = fmt.Sscan(args[{{$arg}}], &{{$method.CamelName}}Req.{{$field.PascalName}})
-				if err != nil {
-					return fmt.Errorf("invalid {{$field.ConstantName}}: %s", args[{{$arg}}])
-				}{{else -}}
-				{{$method.CamelName}}Req.{{$field.PascalName}} = args[{{$arg}}]
-				{{- end -}}{{end}}
+			{{- if and .Request.IsAllRequiredFieldsPrimitive (not .IsJsonOnly) -}}
+				{{- range $arg, $field := .Request.RequiredFields}}
+					{{if not $field.Entity.IsString -}}
+					_, err = fmt.Sscan(args[{{$arg}}], &{{$method.CamelName}}Req.{{$field.PascalName}})
+					if err != nil {
+						return fmt.Errorf("invalid {{$field.ConstantName}}: %s", args[{{$arg}}])
+					}{{else -}}
+					{{$method.CamelName}}Req.{{$field.PascalName}} = args[{{$arg}}]
+					{{- end -}}{{end}}
+			{{- else -}}
+				return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+			{{- end -}}
+			{{if $useJsonForAllFields }}
 			}
+			{{end }}
 		{{end}}
 		{{if $wait -}}
 		wait, err := {{if .Service.IsAccounts}}a{{else}}w{{end}}.{{.Service.PascalName}}.{{.PascalName}}(ctx{{if .Request}}, {{.CamelName}}Req{{end}})
@@ -171,6 +205,9 @@ var {{.CamelName}}Cmd = &cobra.Command{
 		{{template "method-call" .}}
 		{{end -}}
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 {{end}}
 // end service {{.Name}}{{end}}

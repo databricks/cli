@@ -26,17 +26,17 @@ var Cmd = &cobra.Command{
   automatically grants the privilege to all current and future objects within
   the catalog. Similarly, privileges granted on a schema are inherited by all
   current and future objects within that schema.`,
+	Annotations: map[string]string{
+		"package": "catalog",
+	},
 }
 
 // start get command
-
 var getReq catalog.GetGrantRequest
-var getJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
-	getCmd.Flags().Var(&getJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	getCmd.Flags().StringVar(&getReq.Principal, "principal", getReq.Principal, `If provided, only the permissions for the specified principal (user or group) are returned.`)
 
@@ -52,27 +52,18 @@ var getCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = getJson.Unmarshal(&getReq)
-			if err != nil {
-				return err
-			}
-		} else {
-			_, err = fmt.Sscan(args[0], &getReq.SecurableType)
-			if err != nil {
-				return fmt.Errorf("invalid SECURABLE_TYPE: %s", args[0])
-			}
-			getReq.FullName = args[1]
+
+		_, err = fmt.Sscan(args[0], &getReq.SecurableType)
+		if err != nil {
+			return fmt.Errorf("invalid SECURABLE_TYPE: %s", args[0])
 		}
+		getReq.FullName = args[1]
 
 		response, err := w.Grants.Get(ctx, getReq)
 		if err != nil {
@@ -80,17 +71,17 @@ var getCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start get-effective command
-
 var getEffectiveReq catalog.GetEffectiveRequest
-var getEffectiveJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(getEffectiveCmd)
 	// TODO: short flags
-	getEffectiveCmd.Flags().Var(&getEffectiveJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	getEffectiveCmd.Flags().StringVar(&getEffectiveReq.Principal, "principal", getEffectiveReq.Principal, `If provided, only the effective permissions for the specified principal (user or group) are returned.`)
 
@@ -106,27 +97,18 @@ var getEffectiveCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = getEffectiveJson.Unmarshal(&getEffectiveReq)
-			if err != nil {
-				return err
-			}
-		} else {
-			_, err = fmt.Sscan(args[0], &getEffectiveReq.SecurableType)
-			if err != nil {
-				return fmt.Errorf("invalid SECURABLE_TYPE: %s", args[0])
-			}
-			getEffectiveReq.FullName = args[1]
+
+		_, err = fmt.Sscan(args[0], &getEffectiveReq.SecurableType)
+		if err != nil {
+			return fmt.Errorf("invalid SECURABLE_TYPE: %s", args[0])
 		}
+		getEffectiveReq.FullName = args[1]
 
 		response, err := w.Grants.GetEffective(ctx, getEffectiveReq)
 		if err != nil {
@@ -134,10 +116,12 @@ var getEffectiveCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start update command
-
 var updateReq catalog.UpdatePermissions
 var updateJson flags.JsonFlag
 
@@ -160,27 +144,24 @@ var updateCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = updateJson.Unmarshal(&updateReq)
 			if err != nil {
 				return err
 			}
-		} else {
-			_, err = fmt.Sscan(args[0], &updateReq.SecurableType)
-			if err != nil {
-				return fmt.Errorf("invalid SECURABLE_TYPE: %s", args[0])
-			}
-			updateReq.FullName = args[1]
 		}
+		_, err = fmt.Sscan(args[0], &updateReq.SecurableType)
+		if err != nil {
+			return fmt.Errorf("invalid SECURABLE_TYPE: %s", args[0])
+		}
+		updateReq.FullName = args[1]
 
 		response, err := w.Grants.Update(ctx, updateReq)
 		if err != nil {
@@ -188,6 +169,9 @@ var updateCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // end service Grants

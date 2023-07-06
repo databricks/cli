@@ -27,10 +27,12 @@ var Cmd = &cobra.Command{
   Databricks secrets. While Databricks makes an effort to redact secret values
   that might be displayed in notebooks, it is not possible to prevent such users
   from reading secrets.`,
+	Annotations: map[string]string{
+		"package": "workspace",
+	},
 }
 
 // start create-scope command
-
 var createScopeReq workspace.CreateScope
 var createScopeJson flags.JsonFlag
 
@@ -39,8 +41,8 @@ func init() {
 	// TODO: short flags
 	createScopeCmd.Flags().Var(&createScopeJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	// TODO: complex arg: backend_azure_keyvault
 	createScopeCmd.Flags().StringVar(&createScopeReq.InitialManagePrincipal, "initial-manage-principal", createScopeReq.InitialManagePrincipal, `The principal that is initially granted MANAGE permission to the created scope.`)
-	// TODO: complex arg: keyvault_metadata
 	createScopeCmd.Flags().Var(&createScopeReq.ScopeBackendType, "scope-backend-type", `The backend type the scope will be created with.`)
 
 }
@@ -66,6 +68,7 @@ var createScopeCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = createScopeJson.Unmarshal(&createScopeReq)
 			if err != nil {
@@ -81,10 +84,12 @@ var createScopeCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start delete-acl command
-
 var deleteAclReq workspace.DeleteAcl
 var deleteAclJson flags.JsonFlag
 
@@ -119,6 +124,7 @@ var deleteAclCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = deleteAclJson.Unmarshal(&deleteAclReq)
 			if err != nil {
@@ -135,10 +141,12 @@ var deleteAclCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start delete-scope command
-
 var deleteScopeReq workspace.DeleteScope
 var deleteScopeJson flags.JsonFlag
 
@@ -172,6 +180,7 @@ var deleteScopeCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = deleteScopeJson.Unmarshal(&deleteScopeReq)
 			if err != nil {
@@ -187,10 +196,12 @@ var deleteScopeCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start delete-secret command
-
 var deleteSecretReq workspace.DeleteSecret
 var deleteSecretJson flags.JsonFlag
 
@@ -225,6 +236,7 @@ var deleteSecretCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = deleteSecretJson.Unmarshal(&deleteSecretReq)
 			if err != nil {
@@ -241,17 +253,17 @@ var deleteSecretCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start get-acl command
-
 var getAclReq workspace.GetAclRequest
-var getAclJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(getAclCmd)
 	// TODO: short flags
-	getAclCmd.Flags().Var(&getAclJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -270,24 +282,15 @@ var getAclCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = getAclJson.Unmarshal(&getAclReq)
-			if err != nil {
-				return err
-			}
-		} else {
-			getAclReq.Scope = args[0]
-			getAclReq.Principal = args[1]
-		}
+
+		getAclReq.Scope = args[0]
+		getAclReq.Principal = args[1]
 
 		response, err := w.Secrets.GetAcl(ctx, getAclReq)
 		if err != nil {
@@ -295,17 +298,17 @@ var getAclCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start list-acls command
-
 var listAclsReq workspace.ListAclsRequest
-var listAclsJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(listAclsCmd)
 	// TODO: short flags
-	listAclsCmd.Flags().Var(&listAclsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -324,23 +327,14 @@ var listAclsCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = listAclsJson.Unmarshal(&listAclsReq)
-			if err != nil {
-				return err
-			}
-		} else {
-			listAclsReq.Scope = args[0]
-		}
+
+		listAclsReq.Scope = args[0]
 
 		response, err := w.Secrets.ListAclsAll(ctx, listAclsReq)
 		if err != nil {
@@ -348,6 +342,9 @@ var listAclsCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start list-scopes command
@@ -378,17 +375,17 @@ var listScopesCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start list-secrets command
-
 var listSecretsReq workspace.ListSecretsRequest
-var listSecretsJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(listSecretsCmd)
 	// TODO: short flags
-	listSecretsCmd.Flags().Var(&listSecretsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -409,23 +406,14 @@ var listSecretsCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = listSecretsJson.Unmarshal(&listSecretsReq)
-			if err != nil {
-				return err
-			}
-		} else {
-			listSecretsReq.Scope = args[0]
-		}
+
+		listSecretsReq.Scope = args[0]
 
 		response, err := w.Secrets.ListSecretsAll(ctx, listSecretsReq)
 		if err != nil {
@@ -433,10 +421,12 @@ var listSecretsCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start put-acl command
-
 var putAclReq workspace.PutAcl
 var putAclJson flags.JsonFlag
 
@@ -475,9 +465,9 @@ var putAclCmd = &cobra.Command{
   
   Throws RESOURCE_DOES_NOT_EXIST if no such secret scope exists. Throws
   RESOURCE_ALREADY_EXISTS if a permission for the principal already exists.
-  Throws INVALID_PARAMETER_VALUE if the permission is invalid. Throws
-  PERMISSION_DENIED if the user does not have permission to make this API
-  call.`,
+  Throws INVALID_PARAMETER_VALUE if the permission or principal is invalid.
+  Throws PERMISSION_DENIED if the user does not have permission to make this
+  API call.`,
 
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
@@ -491,6 +481,7 @@ var putAclCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = putAclJson.Unmarshal(&putAclReq)
 			if err != nil {
@@ -511,6 +502,9 @@ var putAclCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // end service Secrets

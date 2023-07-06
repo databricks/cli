@@ -119,6 +119,21 @@ func setTempDirEnvVars(env map[string]string, b *bundle.Bundle) error {
 	return nil
 }
 
+// This function passes through all proxy related environment variables.
+func setProxyEnvVars(env map[string]string, b *bundle.Bundle) error {
+	for _, v := range []string{"http_proxy", "https_proxy", "no_proxy"} {
+		// The case (upper or lower) is notoriously inconsistent for tools on Unix systems.
+		// We therefore try to read both the upper and lower case versions of the variable.
+		for _, v := range []string{strings.ToUpper(v), strings.ToLower(v)} {
+			if val, ok := os.LookupEnv(v); ok {
+				// Only set uppercase version of the variable.
+				env[strings.ToUpper(v)] = val
+			}
+		}
+	}
+	return nil
+}
+
 func (m *initialize) Apply(ctx context.Context, b *bundle.Bundle) error {
 	tfConfig := b.Config.Bundle.Terraform
 	if tfConfig == nil {
@@ -153,6 +168,12 @@ func (m *initialize) Apply(ctx context.Context, b *bundle.Bundle) error {
 
 	// Set the temporary directory environment variables
 	err = setTempDirEnvVars(env, b)
+	if err != nil {
+		return err
+	}
+
+	// Set the proxy related environment variables
+	err = setProxyEnvVars(env, b)
 	if err != nil {
 		return err
 	}

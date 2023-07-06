@@ -18,10 +18,12 @@ var Cmd = &cobra.Command{
 	Long: `Enables administrators to get all tokens and delete tokens for other users.
   Admins can either get every token, get a specific token by ID, or get all
   tokens for a particular user.`,
+	Annotations: map[string]string{
+		"package": "settings",
+	},
 }
 
 // start create-obo-token command
-
 var createOboTokenReq settings.CreateOboTokenRequest
 var createOboTokenJson flags.JsonFlag
 
@@ -53,6 +55,7 @@ var createOboTokenCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = createOboTokenJson.Unmarshal(&createOboTokenReq)
 			if err != nil {
@@ -72,17 +75,17 @@ var createOboTokenCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start delete command
-
 var deleteReq settings.DeleteTokenManagementRequest
-var deleteJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
-	deleteCmd.Flags().Var(&deleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -98,31 +101,25 @@ var deleteCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = deleteJson.Unmarshal(&deleteReq)
+
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No TOKEN_ID argument specified. Loading names for Token Management drop-down."
+			names, err := w.TokenManagement.TokenInfoCommentToTokenIdMap(ctx, settings.ListTokenManagementRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Token Management drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "The ID of the token to get")
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No TOKEN_ID argument specified. Loading names for Token Management drop-down."
-				names, err := w.TokenManagement.TokenInfoCommentToTokenIdMap(ctx, settings.ListTokenManagementRequest{})
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Token Management drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "The ID of the token to get")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have the id of the token to get")
-			}
-			deleteReq.TokenId = args[0]
+			args = append(args, id)
 		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the id of the token to get")
+		}
+		deleteReq.TokenId = args[0]
 
 		err = w.TokenManagement.Delete(ctx, deleteReq)
 		if err != nil {
@@ -130,17 +127,17 @@ var deleteCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start get command
-
 var getReq settings.GetTokenManagementRequest
-var getJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
-	getCmd.Flags().Var(&getJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -156,31 +153,25 @@ var getCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = getJson.Unmarshal(&getReq)
+
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No TOKEN_ID argument specified. Loading names for Token Management drop-down."
+			names, err := w.TokenManagement.TokenInfoCommentToTokenIdMap(ctx, settings.ListTokenManagementRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Token Management drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "The ID of the token to get")
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No TOKEN_ID argument specified. Loading names for Token Management drop-down."
-				names, err := w.TokenManagement.TokenInfoCommentToTokenIdMap(ctx, settings.ListTokenManagementRequest{})
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Token Management drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "The ID of the token to get")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have the id of the token to get")
-			}
-			getReq.TokenId = args[0]
+			args = append(args, id)
 		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the id of the token to get")
+		}
+		getReq.TokenId = args[0]
 
 		response, err := w.TokenManagement.Get(ctx, getReq)
 		if err != nil {
@@ -188,10 +179,12 @@ var getCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start list command
-
 var listReq settings.ListTokenManagementRequest
 var listJson flags.JsonFlag
 
@@ -224,6 +217,7 @@ var listCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = listJson.Unmarshal(&listReq)
 			if err != nil {
@@ -238,6 +232,9 @@ var listCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // end service TokenManagement

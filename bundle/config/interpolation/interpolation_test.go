@@ -51,6 +51,61 @@ func TestInterpolationVariables(t *testing.T) {
 	assert.Equal(t, "a", f.C)
 }
 
+func TestInterpolationVariablesSpecialChars(t *testing.T) {
+	type bar struct {
+		A string `json:"a-b"`
+		B string `json:"b_c"`
+		C string `json:"c-_a"`
+	}
+	f := bar{
+		A: "a",
+		B: "${a-b}",
+		C: "${a-b}",
+	}
+
+	err := expand(&f)
+	require.NoError(t, err)
+
+	assert.Equal(t, "a", f.A)
+	assert.Equal(t, "a", f.B)
+	assert.Equal(t, "a", f.C)
+}
+
+func TestInterpolationValidMatches(t *testing.T) {
+	expectedMatches := map[string]string{
+		"${hello_world.world_world}": "hello_world.world_world",
+		"${helloworld.world-world}":  "helloworld.world-world",
+		"${hello-world.world-world}": "hello-world.world-world",
+	}
+	for interpolationStr, expectedMatch := range expectedMatches {
+		match := re.FindStringSubmatch(interpolationStr)
+		assert.True(t, len(match) > 0,
+			"Failed to match %s and find %s", interpolationStr, expectedMatch)
+		assert.Equal(t, expectedMatch, match[1],
+			"Failed to match the exact pattern %s and find %s", interpolationStr, expectedMatch)
+	}
+}
+
+func TestInterpolationInvalidMatches(t *testing.T) {
+	invalidMatches := []string{
+		"${hello_world-.world_world}",   // the first segment ending must not end with hyphen (-)
+		"${hello_world-_.world_world}",  // the first segment ending must not end with underscore (_)
+		"${helloworld.world-world-}",    // second segment must not end with hyphen (-)
+		"${helloworld-.world-world}",    // first segment must not end with hyphen (-)
+		"${helloworld.-world-world}",    // second segment must not start with hyphen (-)
+		"${-hello-world.-world-world-}", // must not start or end with hyphen (-)
+		"${_-_._-_.id}",                 // cannot use _- in sequence
+		"${0helloworld.world-world}",    // interpolated first section shouldn't start with number
+		"${helloworld.9world-world}",    // interpolated second section shouldn't start with number
+		"${a-a.a-_a-a.id}",              // fails because of -_ in the second segment
+		"${a-a.a--a-a.id}",              // fails because of -- in the second segment
+	}
+	for _, invalidMatch := range invalidMatches {
+		match := re.FindStringSubmatch(invalidMatch)
+		assert.True(t, len(match) == 0, "Should be invalid interpolation: %s", invalidMatch)
+	}
+}
+
 func TestInterpolationWithPointers(t *testing.T) {
 	fd := "${a}"
 	f := foo{

@@ -13,12 +13,12 @@ import (
 // LocalClient implements the [Filer] interface for the local filesystem.
 type LocalClient struct {
 	// File operations will be relative to this path.
-	root RootPath
+	root localRootPath
 }
 
 func NewLocalClient(root string) (Filer, error) {
 	return &LocalClient{
-		root: NewRootPath(root),
+		root: NewLocalRootPath(root),
 	}, nil
 }
 
@@ -169,6 +169,5 @@ func (w *LocalClient) Stat(ctx context.Context, name string) (fs.FileInfo, error
 	if os.IsNotExist(err) {
 		return nil, FileDoesNotExistError{path: absPath}
 	}
-
 	return stat, err
 }

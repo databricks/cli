@@ -7,7 +7,6 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/oauth2"
 	"github.com/spf13/cobra"
 )
@@ -28,17 +27,17 @@ var Cmd = &cobra.Command{
   
   [Authentication using OAuth tokens for service principals]: https://docs.databricks.com/dev-tools/authentication-oauth.html
   [Databricks Terraform Provider]: https://github.com/databricks/terraform-provider-databricks/blob/master/docs/index.md#authenticating-with-service-principal`,
+	Annotations: map[string]string{
+		"package": "oauth2",
+	},
 }
 
 // start create command
-
 var createReq oauth2.CreateServicePrincipalSecretRequest
-var createJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(createCmd)
 	// TODO: short flags
-	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -52,25 +51,16 @@ var createCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = createJson.Unmarshal(&createReq)
-			if err != nil {
-				return err
-			}
-		} else {
-			_, err = fmt.Sscan(args[0], &createReq.ServicePrincipalId)
-			if err != nil {
-				return fmt.Errorf("invalid SERVICE_PRINCIPAL_ID: %s", args[0])
-			}
+
+		_, err = fmt.Sscan(args[0], &createReq.ServicePrincipalId)
+		if err != nil {
+			return fmt.Errorf("invalid SERVICE_PRINCIPAL_ID: %s", args[0])
 		}
 
 		response, err := a.ServicePrincipalSecrets.Create(ctx, createReq)
@@ -79,17 +69,17 @@ var createCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start delete command
-
 var deleteReq oauth2.DeleteServicePrincipalSecretRequest
-var deleteJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
-	deleteCmd.Flags().Var(&deleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -103,27 +93,18 @@ var deleteCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = deleteJson.Unmarshal(&deleteReq)
-			if err != nil {
-				return err
-			}
-		} else {
-			_, err = fmt.Sscan(args[0], &deleteReq.ServicePrincipalId)
-			if err != nil {
-				return fmt.Errorf("invalid SERVICE_PRINCIPAL_ID: %s", args[0])
-			}
-			deleteReq.SecretId = args[1]
+
+		_, err = fmt.Sscan(args[0], &deleteReq.ServicePrincipalId)
+		if err != nil {
+			return fmt.Errorf("invalid SERVICE_PRINCIPAL_ID: %s", args[0])
 		}
+		deleteReq.SecretId = args[1]
 
 		err = a.ServicePrincipalSecrets.Delete(ctx, deleteReq)
 		if err != nil {
@@ -131,17 +112,17 @@ var deleteCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start list command
-
 var listReq oauth2.ListServicePrincipalSecretsRequest
-var listJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(listCmd)
 	// TODO: short flags
-	listCmd.Flags().Var(&listJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -157,25 +138,16 @@ var listCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustAccountClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = listJson.Unmarshal(&listReq)
-			if err != nil {
-				return err
-			}
-		} else {
-			_, err = fmt.Sscan(args[0], &listReq.ServicePrincipalId)
-			if err != nil {
-				return fmt.Errorf("invalid SERVICE_PRINCIPAL_ID: %s", args[0])
-			}
+
+		_, err = fmt.Sscan(args[0], &listReq.ServicePrincipalId)
+		if err != nil {
+			return fmt.Errorf("invalid SERVICE_PRINCIPAL_ID: %s", args[0])
 		}
 
 		response, err := a.ServicePrincipalSecrets.ListAll(ctx, listReq)
@@ -184,6 +156,9 @@ var listCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // end service ServicePrincipalSecrets

@@ -19,10 +19,12 @@ var Cmd = &cobra.Command{
   instance profiles for more information.
   
   [Secure access to S3 buckets]: https://docs.databricks.com/administration-guide/cloud-configurations/aws/instance-profiles.html`,
+	Annotations: map[string]string{
+		"package": "compute",
+	},
 }
 
 // start add command
-
 var addReq compute.AddInstanceProfile
 var addJson flags.JsonFlag
 
@@ -57,6 +59,7 @@ var addCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = addJson.Unmarshal(&addReq)
 			if err != nil {
@@ -72,10 +75,12 @@ var addCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start edit command
-
 var editReq compute.InstanceProfile
 var editJson flags.JsonFlag
 
@@ -122,6 +127,7 @@ var editCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = editJson.Unmarshal(&editReq)
 			if err != nil {
@@ -137,6 +143,9 @@ var editCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start list command
@@ -166,10 +175,12 @@ var listCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start remove command
-
 var removeReq compute.RemoveInstanceProfile
 var removeJson flags.JsonFlag
 
@@ -202,6 +213,7 @@ var removeCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = removeJson.Unmarshal(&removeReq)
 			if err != nil {
@@ -217,6 +229,9 @@ var removeCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // end service InstanceProfiles

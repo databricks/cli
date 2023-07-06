@@ -21,10 +21,12 @@ var Cmd = &cobra.Command{
   invoked wherever a table reference is allowed in a query. In Unity Catalog, a
   function resides at the same level as a table, so it can be referenced with
   the form __catalog_name__.__schema_name__.__function_name__.`,
+	Annotations: map[string]string{
+		"package": "catalog",
+	},
 }
 
 // start create command
-
 var createReq catalog.CreateFunction
 var createJson flags.JsonFlag
 
@@ -57,58 +59,14 @@ var createCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = createJson.Unmarshal(&createReq)
 			if err != nil {
 				return err
 			}
 		} else {
-			createReq.Name = args[0]
-			createReq.CatalogName = args[1]
-			createReq.SchemaName = args[2]
-			_, err = fmt.Sscan(args[3], &createReq.InputParams)
-			if err != nil {
-				return fmt.Errorf("invalid INPUT_PARAMS: %s", args[3])
-			}
-			_, err = fmt.Sscan(args[4], &createReq.DataType)
-			if err != nil {
-				return fmt.Errorf("invalid DATA_TYPE: %s", args[4])
-			}
-			createReq.FullDataType = args[5]
-			_, err = fmt.Sscan(args[6], &createReq.ReturnParams)
-			if err != nil {
-				return fmt.Errorf("invalid RETURN_PARAMS: %s", args[6])
-			}
-			_, err = fmt.Sscan(args[7], &createReq.RoutineBody)
-			if err != nil {
-				return fmt.Errorf("invalid ROUTINE_BODY: %s", args[7])
-			}
-			createReq.RoutineDefinition = args[8]
-			_, err = fmt.Sscan(args[9], &createReq.RoutineDependencies)
-			if err != nil {
-				return fmt.Errorf("invalid ROUTINE_DEPENDENCIES: %s", args[9])
-			}
-			_, err = fmt.Sscan(args[10], &createReq.ParameterStyle)
-			if err != nil {
-				return fmt.Errorf("invalid PARAMETER_STYLE: %s", args[10])
-			}
-			_, err = fmt.Sscan(args[11], &createReq.IsDeterministic)
-			if err != nil {
-				return fmt.Errorf("invalid IS_DETERMINISTIC: %s", args[11])
-			}
-			_, err = fmt.Sscan(args[12], &createReq.SqlDataAccess)
-			if err != nil {
-				return fmt.Errorf("invalid SQL_DATA_ACCESS: %s", args[12])
-			}
-			_, err = fmt.Sscan(args[13], &createReq.IsNullCall)
-			if err != nil {
-				return fmt.Errorf("invalid IS_NULL_CALL: %s", args[13])
-			}
-			_, err = fmt.Sscan(args[14], &createReq.SecurityType)
-			if err != nil {
-				return fmt.Errorf("invalid SECURITY_TYPE: %s", args[14])
-			}
-			createReq.SpecificName = args[15]
+			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
 
 		response, err := w.Functions.Create(ctx, createReq)
@@ -117,17 +75,17 @@ var createCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start delete command
-
 var deleteReq catalog.DeleteFunctionRequest
-var deleteJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
-	deleteCmd.Flags().Var(&deleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	deleteCmd.Flags().BoolVar(&deleteReq.Force, "force", deleteReq.Force, `Force deletion even if the function is notempty.`)
 
@@ -150,31 +108,25 @@ var deleteCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = deleteJson.Unmarshal(&deleteReq)
+
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No NAME argument specified. Loading names for Functions drop-down."
+			names, err := w.Functions.FunctionInfoNameToFullNameMap(ctx, catalog.ListFunctionsRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Functions drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "The fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function__name__)")
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No NAME argument specified. Loading names for Functions drop-down."
-				names, err := w.Functions.FunctionInfoNameToFullNameMap(ctx, catalog.ListFunctionsRequest{})
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Functions drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "The fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function__name__)")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have the fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function__name__)")
-			}
-			deleteReq.Name = args[0]
+			args = append(args, id)
 		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function__name__)")
+		}
+		deleteReq.Name = args[0]
 
 		err = w.Functions.Delete(ctx, deleteReq)
 		if err != nil {
@@ -182,17 +134,17 @@ var deleteCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start get command
-
 var getReq catalog.GetFunctionRequest
-var getJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
-	getCmd.Flags().Var(&getJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -214,31 +166,25 @@ var getCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = getJson.Unmarshal(&getReq)
+
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No NAME argument specified. Loading names for Functions drop-down."
+			names, err := w.Functions.FunctionInfoNameToFullNameMap(ctx, catalog.ListFunctionsRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Functions drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "The fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function__name__)")
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No NAME argument specified. Loading names for Functions drop-down."
-				names, err := w.Functions.FunctionInfoNameToFullNameMap(ctx, catalog.ListFunctionsRequest{})
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Functions drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "The fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function__name__)")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have the fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function__name__)")
-			}
-			getReq.Name = args[0]
+			args = append(args, id)
 		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function__name__)")
+		}
+		getReq.Name = args[0]
 
 		response, err := w.Functions.Get(ctx, getReq)
 		if err != nil {
@@ -246,17 +192,17 @@ var getCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start list command
-
 var listReq catalog.ListFunctionsRequest
-var listJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(listCmd)
 	// TODO: short flags
-	listCmd.Flags().Var(&listJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -276,24 +222,15 @@ var listCmd = &cobra.Command{
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	},
 	PreRunE: root.MustWorkspaceClient,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = listJson.Unmarshal(&listReq)
-			if err != nil {
-				return err
-			}
-		} else {
-			listReq.CatalogName = args[0]
-			listReq.SchemaName = args[1]
-		}
+
+		listReq.CatalogName = args[0]
+		listReq.SchemaName = args[1]
 
 		response, err := w.Functions.ListAll(ctx, listReq)
 		if err != nil {
@@ -301,17 +238,17 @@ var listCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start update command
-
 var updateReq catalog.UpdateFunction
-var updateJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(updateCmd)
 	// TODO: short flags
-	updateCmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	updateCmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of current owner of function.`)
 
@@ -336,31 +273,25 @@ var updateCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = updateJson.Unmarshal(&updateReq)
+
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No NAME argument specified. Loading names for Functions drop-down."
+			names, err := w.Functions.FunctionInfoNameToFullNameMap(ctx, catalog.ListFunctionsRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Functions drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "The fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function__name__)")
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No NAME argument specified. Loading names for Functions drop-down."
-				names, err := w.Functions.FunctionInfoNameToFullNameMap(ctx, catalog.ListFunctionsRequest{})
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Functions drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "The fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function__name__)")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have the fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function__name__)")
-			}
-			updateReq.Name = args[0]
+			args = append(args, id)
 		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function__name__)")
+		}
+		updateReq.Name = args[0]
 
 		response, err := w.Functions.Update(ctx, updateReq)
 		if err != nil {
@@ -368,6 +299,9 @@ var updateCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // end service Functions

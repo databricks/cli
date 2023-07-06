@@ -21,10 +21,12 @@ var Cmd = &cobra.Command{
   since you can get a dashboard definition with a GET request and then POST it
   to create a new one. Dashboards can be scheduled using the sql_task type of
   the Jobs API, e.g. :method:jobs/create.`,
+	Annotations: map[string]string{
+		"package": "sql",
+	},
 }
 
 // start create command
-
 var createReq sql.CreateDashboardRequest
 var createJson flags.JsonFlag
 
@@ -57,6 +59,7 @@ var createCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = createJson.Unmarshal(&createReq)
 			if err != nil {
@@ -71,17 +74,17 @@ var createCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start delete command
-
 var deleteReq sql.DeleteDashboardRequest
-var deleteJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
-	deleteCmd.Flags().Var(&deleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -98,31 +101,25 @@ var deleteCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = deleteJson.Unmarshal(&deleteReq)
+
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No DASHBOARD_ID argument specified. Loading names for Dashboards drop-down."
+			names, err := w.Dashboards.DashboardNameToIdMap(ctx, sql.ListDashboardsRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Dashboards drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "")
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No DASHBOARD_ID argument specified. Loading names for Dashboards drop-down."
-				names, err := w.Dashboards.DashboardNameToIdMap(ctx, sql.ListDashboardsRequest{})
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Dashboards drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have ")
-			}
-			deleteReq.DashboardId = args[0]
+			args = append(args, id)
 		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have ")
+		}
+		deleteReq.DashboardId = args[0]
 
 		err = w.Dashboards.Delete(ctx, deleteReq)
 		if err != nil {
@@ -130,17 +127,17 @@ var deleteCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start get command
-
 var getReq sql.GetDashboardRequest
-var getJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
-	getCmd.Flags().Var(&getJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -157,31 +154,25 @@ var getCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = getJson.Unmarshal(&getReq)
+
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No DASHBOARD_ID argument specified. Loading names for Dashboards drop-down."
+			names, err := w.Dashboards.DashboardNameToIdMap(ctx, sql.ListDashboardsRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Dashboards drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "")
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No DASHBOARD_ID argument specified. Loading names for Dashboards drop-down."
-				names, err := w.Dashboards.DashboardNameToIdMap(ctx, sql.ListDashboardsRequest{})
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Dashboards drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have ")
-			}
-			getReq.DashboardId = args[0]
+			args = append(args, id)
 		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have ")
+		}
+		getReq.DashboardId = args[0]
 
 		response, err := w.Dashboards.Get(ctx, getReq)
 		if err != nil {
@@ -189,10 +180,12 @@ var getCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start list command
-
 var listReq sql.ListDashboardsRequest
 var listJson flags.JsonFlag
 
@@ -227,6 +220,7 @@ var listCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = listJson.Unmarshal(&listReq)
 			if err != nil {
@@ -241,17 +235,17 @@ var listCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start restore command
-
 var restoreReq sql.RestoreDashboardRequest
-var restoreJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(restoreCmd)
 	// TODO: short flags
-	restoreCmd.Flags().Var(&restoreJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -267,31 +261,25 @@ var restoreCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = restoreJson.Unmarshal(&restoreReq)
+
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No DASHBOARD_ID argument specified. Loading names for Dashboards drop-down."
+			names, err := w.Dashboards.DashboardNameToIdMap(ctx, sql.ListDashboardsRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Dashboards drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "")
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No DASHBOARD_ID argument specified. Loading names for Dashboards drop-down."
-				names, err := w.Dashboards.DashboardNameToIdMap(ctx, sql.ListDashboardsRequest{})
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Dashboards drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have ")
-			}
-			restoreReq.DashboardId = args[0]
+			args = append(args, id)
 		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have ")
+		}
+		restoreReq.DashboardId = args[0]
 
 		err = w.Dashboards.Restore(ctx, restoreReq)
 		if err != nil {
@@ -299,6 +287,9 @@ var restoreCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // end service Dashboards

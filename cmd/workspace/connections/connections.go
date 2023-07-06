@@ -26,10 +26,15 @@ var Cmd = &cobra.Command{
   may create different types of connections with each connection having a unique
   set of configuration options to support credential management and other
   settings.`,
+	Annotations: map[string]string{
+		"package": "catalog",
+	},
+
+	// This service is being previewed; hide from help output.
+	Hidden: true,
 }
 
 // start create command
-
 var createReq catalog.CreateConnection
 var createJson flags.JsonFlag
 
@@ -61,21 +66,14 @@ var createCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = createJson.Unmarshal(&createReq)
 			if err != nil {
 				return err
 			}
 		} else {
-			createReq.Name = args[0]
-			_, err = fmt.Sscan(args[1], &createReq.ConnectionType)
-			if err != nil {
-				return fmt.Errorf("invalid CONNECTION_TYPE: %s", args[1])
-			}
-			_, err = fmt.Sscan(args[2], &createReq.OptionsKvpairs)
-			if err != nil {
-				return fmt.Errorf("invalid OPTIONS_KVPAIRS: %s", args[2])
-			}
+			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
 
 		response, err := w.Connections.Create(ctx, createReq)
@@ -84,17 +82,17 @@ var createCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start delete command
-
 var deleteReq catalog.DeleteConnectionRequest
-var deleteJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
-	deleteCmd.Flags().Var(&deleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -110,31 +108,25 @@ var deleteCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = deleteJson.Unmarshal(&deleteReq)
+
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No NAME_ARG argument specified. Loading names for Connections drop-down."
+			names, err := w.Connections.ConnectionInfoNameToFullNameMap(ctx)
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Connections drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "The name of the connection to be deleted")
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No NAME_ARG argument specified. Loading names for Connections drop-down."
-				names, err := w.Connections.ConnectionInfoNameToFullNameMap(ctx)
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Connections drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "The name of the connection to be deleted")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have the name of the connection to be deleted")
-			}
-			deleteReq.NameArg = args[0]
+			args = append(args, id)
 		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the name of the connection to be deleted")
+		}
+		deleteReq.NameArg = args[0]
 
 		err = w.Connections.Delete(ctx, deleteReq)
 		if err != nil {
@@ -142,17 +134,17 @@ var deleteCmd = &cobra.Command{
 		}
 		return nil
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start get command
-
 var getReq catalog.GetConnectionRequest
-var getJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(getCmd)
 	// TODO: short flags
-	getCmd.Flags().Var(&getJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 }
 
@@ -168,31 +160,25 @@ var getCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		if cmd.Flags().Changed("json") {
-			err = getJson.Unmarshal(&getReq)
+
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No NAME_ARG argument specified. Loading names for Connections drop-down."
+			names, err := w.Connections.ConnectionInfoNameToFullNameMap(ctx)
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Connections drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "Name of the connection")
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No NAME_ARG argument specified. Loading names for Connections drop-down."
-				names, err := w.Connections.ConnectionInfoNameToFullNameMap(ctx)
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Connections drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "Name of the connection")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have name of the connection")
-			}
-			getReq.NameArg = args[0]
+			args = append(args, id)
 		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have name of the connection")
+		}
+		getReq.NameArg = args[0]
 
 		response, err := w.Connections.Get(ctx, getReq)
 		if err != nil {
@@ -200,6 +186,9 @@ var getCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start list command
@@ -227,10 +216,12 @@ var listCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // start update command
-
 var updateReq catalog.UpdateConnection
 var updateJson flags.JsonFlag
 
@@ -253,18 +244,14 @@ var updateCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
 		if cmd.Flags().Changed("json") {
 			err = updateJson.Unmarshal(&updateReq)
 			if err != nil {
 				return err
 			}
 		} else {
-			updateReq.Name = args[0]
-			_, err = fmt.Sscan(args[1], &updateReq.OptionsKvpairs)
-			if err != nil {
-				return fmt.Errorf("invalid OPTIONS_KVPAIRS: %s", args[1])
-			}
-			updateReq.NameArg = args[2]
+			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
 
 		response, err := w.Connections.Update(ctx, updateReq)
@@ -273,6 +260,9 @@ var updateCmd = &cobra.Command{
 		}
 		return cmdio.Render(ctx, response)
 	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
 // end service Connections
