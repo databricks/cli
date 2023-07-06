@@ -78,6 +78,7 @@ func inheritEnvVars(env map[string]string) error {
 		env["HOME"] = home
 	}
 
+	// Include $TF_CLI_CONFIG_FILE to override terraform provider in development.
 	configFile, ok := os.LookupEnv("TF_CLI_CONFIG_FILE")
 	if ok {
 		env["TF_CLI_CONFIG_FILE"] = configFile
