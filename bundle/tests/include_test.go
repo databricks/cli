@@ -24,7 +24,6 @@ func TestIncludeInvalid(t *testing.T) {
 func TestIncludeWithGlob(t *testing.T) {
 	b := load(t, "./include_with_glob")
 
-	// Test that both jobs were loaded.
 	keys := maps.Keys(b.Config.Resources.Jobs)
 	sort.Strings(keys)
 	assert.Equal(t, []string{"my_job"}, keys)
