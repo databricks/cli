@@ -36,7 +36,7 @@ type Root struct {
 
 	// Workspace contains details about the workspace to connect to
 	// and paths in the workspace tree to use for this bundle.
-	Workspace Workspace `json:"workspace"`
+	Workspace Workspace `json:"workspace,omitempty"`
 
 	// Artifacts contains a description of all code artifacts in this bundle.
 	Artifacts map[string]*Artifact `json:"artifacts,omitempty"`
@@ -118,7 +118,7 @@ func (r *Root) Load(path string) error {
 	}
 	err = yaml.Unmarshal(raw, r)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to load %s: %w", path, err)
 	}
 
 	r.Path = filepath.Dir(path)
