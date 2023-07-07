@@ -20,8 +20,8 @@ func TestOverrideDevelopment(t *testing.T) {
 	bundle := &bundle.Bundle{
 		Config: config.Root{
 			Bundle: config.Bundle{
-				Mode:    config.Development,
-				Compute: "newClusterID",
+				Mode:      config.Development,
+				ComputeID: "newClusterID",
 			},
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
@@ -81,7 +81,7 @@ func TestOverrideProduction(t *testing.T) {
 	bundle := &bundle.Bundle{
 		Config: config.Root{
 			Bundle: config.Bundle{
-				Compute: "newClusterID",
+				ComputeID: "newClusterID",
 			},
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
