@@ -1,0 +1,5 @@
+bundle:
+  name: include_invalid
+
+include:
+  - notexists.yml

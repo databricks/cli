@@ -108,3 +108,17 @@ func TestProcessRootIncludesRemoveDups(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, []string{"a.yml"}, bundle.Config.Include)
 }
+
+func TestProcessRootIncludesNotExists(t *testing.T) {
+	bundle := &bundle.Bundle{
+		Config: config.Root{
+			Path: t.TempDir(),
+			Include: []string{
+				"notexist.yml",
+			},
+		},
+	}
+	err := mutator.ProcessRootIncludes().Apply(context.Background(), bundle)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "notexist.yml defined in 'include' section does not match any files")
+}
