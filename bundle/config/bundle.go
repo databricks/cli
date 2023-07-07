@@ -32,6 +32,7 @@ type Bundle struct {
 	// Determines the mode of the environment.
 	// For example, 'mode: development' can be used for deployments for
 	// development purposes.
+	// Annotated readonly as this should be set at the environment level.
 	Mode Mode `json:"mode,omitempty" bundle:"readonly"`
 
 	// Overrides the compute used for jobs and other supported assets.
