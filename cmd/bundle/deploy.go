@@ -14,20 +14,16 @@ var deployCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		b := bundle.Get(cmd.Context())
 
-		return deploy(cmd, b)
+		// If `--force` is specified, force acquisition of the deployment lock.
+		b.Config.Bundle.Lock.Force = forceDeploy
+		b.Config.Bundle.ComputeID = computeID
+
+		return bundle.Apply(cmd.Context(), b, bundle.Seq(
+			phases.Initialize(),
+			phases.Build(),
+			phases.Deploy(),
+		))
 	},
-}
-
-func deploy(cmd *cobra.Command, b *bundle.Bundle) error {
-	// If `--force` is specified, force acquisition of the deployment lock.
-	b.Config.Bundle.Lock.Force = forceDeploy
-	b.Config.Bundle.ComputeID = computeID
-
-	return bundle.Apply(cmd.Context(), b, bundle.Seq(
-		phases.Initialize(),
-		phases.Build(),
-		phases.Deploy(),
-	))
 }
 
 var forceDeploy bool

@@ -6,6 +6,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 )
 
@@ -37,13 +38,13 @@ func processDevelopmentMode(b *bundle.Bundle) error {
 			r.Jobs[i].MaxConcurrentRuns = developmentConcurrentRuns
 		}
 		if r.Jobs[i].Schedule != nil {
-			r.Jobs[i].Schedule.PauseStatus = "PAUSED"
+			r.Jobs[i].Schedule.PauseStatus = jobs.PauseStatusPaused
 		}
 		if r.Jobs[i].Continuous != nil {
-			r.Jobs[i].Continuous.PauseStatus = "PAUSED"
+			r.Jobs[i].Continuous.PauseStatus = jobs.PauseStatusPaused
 		}
 		if r.Jobs[i].Trigger != nil {
-			r.Jobs[i].Trigger.PauseStatus = "PAUSED"
+			r.Jobs[i].Trigger.PauseStatus = jobs.PauseStatusPaused
 		}
 	}
 
