@@ -11,7 +11,7 @@ import (
 
 type processEnvironmentMode struct{}
 
-const debugConcurrentRuns = 4
+const developmentConcurrentRuns = 4
 
 func ProcessEnvironmentMode() bundle.Mutator {
 	return &processEnvironmentMode{}
@@ -34,7 +34,7 @@ func processDevelopmentMode(b *bundle.Bundle) error {
 		}
 		r.Jobs[i].Tags["dev"] = ""
 		if r.Jobs[i].MaxConcurrentRuns == 0 {
-			r.Jobs[i].MaxConcurrentRuns = debugConcurrentRuns
+			r.Jobs[i].MaxConcurrentRuns = developmentConcurrentRuns
 		}
 		if r.Jobs[i].Schedule != nil {
 			r.Jobs[i].Schedule.PauseStatus = "PAUSED"
