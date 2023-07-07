@@ -44,7 +44,7 @@ var Cmd = &cobra.Command{
 {{end}}
 // start {{.KebabName}} command
 
-{{- $useJsonForAllFields := or .IsJsonOnly (and .Request (or (not .Request.IsAllRequiredFieldsPrimitive) .Request.IsAllRequiredFieldsJsonUnserialisable))  -}}
+{{- $useJsonForAllFields := or .IsJsonOnly (and .Request (or (not .Request.IsAllRequiredFieldsPrimitive) .Request.HasRequiredNonBodyField))  -}}
 {{- $needJsonFlag := or $useJsonForAllFields (and .Request (not .Request.IsOnlyPrimitiveFields)) -}}
 {{- if .Request}}
 var {{.CamelName}}Req {{.Service.Package.Name}}.{{.Request.PascalName}}
