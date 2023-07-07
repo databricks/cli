@@ -3,6 +3,7 @@ package mutator
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
@@ -60,7 +61,14 @@ func processDevelopmentMode(b *bundle.Bundle) error {
 	}
 
 	for i := range r.Experiments {
-		r.Experiments[i].Name = "[dev] " + r.Experiments[i].Name
+		path := r.Experiments[i].Name
+		dir := filepath.Dir(path)
+		base := filepath.Base(path)
+		if dir == "." {
+			r.Experiments[i].Name = "[dev] " + base
+		} else {
+			r.Experiments[i].Name = dir + "/[dev] " + base
+		}
 		r.Experiments[i].Tags = append(r.Experiments[i].Tags, ml.ExperimentTag{Key: "dev", Value: ""})
 	}
 
