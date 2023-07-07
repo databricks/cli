@@ -14,6 +14,7 @@ type Config struct {
 	AzureWorkspaceResourceId string `json:"azure_workspace_resource_id,omitempty"`
 	ClientId                 string `json:"client_id,omitempty"`
 	ClientSecret             string `json:"client_secret,omitempty"`
+	ClusterId                string `json:"cluster_id,omitempty"`
 	ConfigFile               string `json:"config_file,omitempty"`
 	DatabricksCliPath        string `json:"databricks_cli_path,omitempty"`
 	DebugHeaders             bool   `json:"debug_headers,omitempty"`
@@ -30,4 +31,5 @@ type Config struct {
 	SkipVerify               bool   `json:"skip_verify,omitempty"`
 	Token                    string `json:"token,omitempty"`
 	Username                 string `json:"username,omitempty"`
+	WarehouseId              string `json:"warehouse_id,omitempty"`
 }

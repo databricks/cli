@@ -162,7 +162,7 @@ func (reader *OpenapiReader) jobsDocs() (*Docs, error) {
 	// TODO: add description for id if needed.
 	// Tracked in https://github.com/databricks/cli/issues/242
 	jobsDocs := &Docs{
-		Description:          "List of job definations",
+		Description:          "List of Databricks jobs",
 		AdditionalProperties: jobDocs,
 	}
 	return jobsDocs, nil
@@ -177,10 +177,36 @@ func (reader *OpenapiReader) pipelinesDocs() (*Docs, error) {
 	// TODO: Two fields in resources.Pipeline have the json tag id. Clarify the
 	// semantics and then add a description if needed. (https://github.com/databricks/cli/issues/242)
 	pipelinesDocs := &Docs{
-		Description:          "List of pipeline definations",
+		Description:          "List of DLT pipelines",
 		AdditionalProperties: pipelineDocs,
 	}
 	return pipelinesDocs, nil
+}
+
+func (reader *OpenapiReader) experimentsDocs() (*Docs, error) {
+	experimentSpecSchema, err := reader.readResolvedSchema(SchemaPathPrefix + "ml.Experiment")
+	if err != nil {
+		return nil, err
+	}
+	experimentDocs := schemaToDocs(experimentSpecSchema)
+	experimentsDocs := &Docs{
+		Description:          "List of MLflow experiments",
+		AdditionalProperties: experimentDocs,
+	}
+	return experimentsDocs, nil
+}
+
+func (reader *OpenapiReader) modelsDocs() (*Docs, error) {
+	modelSpecSchema, err := reader.readResolvedSchema(SchemaPathPrefix + "ml.Model")
+	if err != nil {
+		return nil, err
+	}
+	modelDocs := schemaToDocs(modelSpecSchema)
+	modelsDocs := &Docs{
+		Description:          "List of MLflow models",
+		AdditionalProperties: modelDocs,
+	}
+	return modelsDocs, nil
 }
 
 func (reader *OpenapiReader) ResourcesDocs() (*Docs, error) {
@@ -192,12 +218,22 @@ func (reader *OpenapiReader) ResourcesDocs() (*Docs, error) {
 	if err != nil {
 		return nil, err
 	}
+	experimentsDocs, err := reader.experimentsDocs()
+	if err != nil {
+		return nil, err
+	}
+	modelsDocs, err := reader.modelsDocs()
+	if err != nil {
+		return nil, err
+	}
 
 	return &Docs{
-		Description: "Specification of databricks resources to instantiate",
+		Description: "Collection of Databricks resources to deploy.",
 		Properties: map[string]*Docs{
-			"jobs":      jobsDocs,
-			"pipelines": pipelinesDocs,
+			"jobs":        jobsDocs,
+			"pipelines":   pipelinesDocs,
+			"experiments": experimentsDocs,
+			"models":      modelsDocs,
 		},
 	}, nil
 }
