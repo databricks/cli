@@ -27,7 +27,8 @@ const (
 	// and is specific to this application only. Using these values
 	// for other applications is not allowed.
 	appClientID     = "databricks-cli"
-	appRedirectAddr = "localhost:8020"
+	appRedirectPort = ":8020"
+	appRedirectAddr = "localhost" + appRedirectPort
 
 	// maximum amount of time to acquire listener on appRedirectAddr
 	DefaultTimeout = 45 * time.Second
@@ -149,10 +150,13 @@ func (a *PersistentAuth) init(ctx context.Context) error {
 	// try acquire listener, which we also use as a machine-local
 	// exclusive lock to prevent token cache corruption in the scope
 	// of developer machine, where this command runs.
+	// We need to bind to the port rather than the address, otherwise
+	// we only bind to a single IP which may or may not be correct.
+	// See: https://pkg.go.dev/net#ListenIP
 	listener, err := retries.Poll(ctx, DefaultTimeout,
 		func() (*net.Listener, *retries.Err) {
 			var lc net.ListenConfig
-			l, err := lc.Listen(ctx, "tcp", appRedirectAddr)
+			l, err := lc.Listen(ctx, "tcp", appRedirectPort)
 			if err != nil {
 				return nil, retries.Continue(err)
 			}
