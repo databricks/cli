@@ -118,7 +118,7 @@ func (r *Root) Load(path string) error {
 	}
 	err = yaml.Unmarshal(raw, r)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to load %s: %w", path, err)
 	}
 
 	r.Path = filepath.Dir(path)

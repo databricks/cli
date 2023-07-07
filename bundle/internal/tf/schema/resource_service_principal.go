@@ -8,6 +8,7 @@ type ResourceServicePrincipal struct {
 	AllowInstancePoolCreate bool   `json:"allow_instance_pool_create,omitempty"`
 	ApplicationId           string `json:"application_id,omitempty"`
 	DatabricksSqlAccess     bool   `json:"databricks_sql_access,omitempty"`
+	DisableAsUserDeletion   bool   `json:"disable_as_user_deletion,omitempty"`
 	DisplayName             string `json:"display_name,omitempty"`
 	ExternalId              string `json:"external_id,omitempty"`
 	Force                   bool   `json:"force,omitempty"`

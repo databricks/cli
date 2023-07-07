@@ -19,5 +19,6 @@ type ResourceGrants struct {
 	StorageCredential string                `json:"storage_credential,omitempty"`
 	Table             string                `json:"table,omitempty"`
 	View              string                `json:"view,omitempty"`
+	Volume            string                `json:"volume,omitempty"`
 	Grant             []ResourceGrantsGrant `json:"grant,omitempty"`
 }
