@@ -2,6 +2,15 @@
 
 package schema
 
+type DataSourceJobJobSettingsSettingsComputeSpec struct {
+	Kind string `json:"kind,omitempty"`
+}
+
+type DataSourceJobJobSettingsSettingsCompute struct {
+	ComputeKey string                                       `json:"compute_key,omitempty"`
+	Spec       *DataSourceJobJobSettingsSettingsComputeSpec `json:"spec,omitempty"`
+}
+
 type DataSourceJobJobSettingsSettingsContinuous struct {
 	PauseStatus string `json:"pause_status,omitempty"`
 }
@@ -415,6 +424,12 @@ type DataSourceJobJobSettingsSettingsSparkSubmitTask struct {
 	Parameters []string `json:"parameters,omitempty"`
 }
 
+type DataSourceJobJobSettingsSettingsTaskConditionTask struct {
+	Left  string `json:"left,omitempty"`
+	Op    string `json:"op,omitempty"`
+	Right string `json:"right,omitempty"`
+}
+
 type DataSourceJobJobSettingsSettingsTaskDbtTask struct {
 	Catalog           string   `json:"catalog,omitempty"`
 	Commands          []string `json:"commands"`
@@ -425,7 +440,8 @@ type DataSourceJobJobSettingsSettingsTaskDbtTask struct {
 }
 
 type DataSourceJobJobSettingsSettingsTaskDependsOn struct {
-	TaskKey string `json:"task_key,omitempty"`
+	Outcome string `json:"outcome,omitempty"`
+	TaskKey string `json:"task_key"`
 }
 
 type DataSourceJobJobSettingsSettingsTaskEmailNotifications struct {
@@ -645,12 +661,27 @@ type DataSourceJobJobSettingsSettingsTaskSparkSubmitTask struct {
 	Parameters []string `json:"parameters,omitempty"`
 }
 
+type DataSourceJobJobSettingsSettingsTaskSqlTaskAlertSubscriptions struct {
+	DestinationId string `json:"destination_id,omitempty"`
+	UserName      string `json:"user_name,omitempty"`
+}
+
 type DataSourceJobJobSettingsSettingsTaskSqlTaskAlert struct {
-	AlertId string `json:"alert_id"`
+	AlertId            string                                                          `json:"alert_id"`
+	PauseSubscriptions bool                                                            `json:"pause_subscriptions,omitempty"`
+	Subscriptions      []DataSourceJobJobSettingsSettingsTaskSqlTaskAlertSubscriptions `json:"subscriptions,omitempty"`
+}
+
+type DataSourceJobJobSettingsSettingsTaskSqlTaskDashboardSubscriptions struct {
+	DestinationId string `json:"destination_id,omitempty"`
+	UserName      string `json:"user_name,omitempty"`
 }
 
 type DataSourceJobJobSettingsSettingsTaskSqlTaskDashboard struct {
-	DashboardId string `json:"dashboard_id"`
+	CustomSubject      string                                                              `json:"custom_subject,omitempty"`
+	DashboardId        string                                                              `json:"dashboard_id"`
+	PauseSubscriptions bool                                                                `json:"pause_subscriptions,omitempty"`
+	Subscriptions      []DataSourceJobJobSettingsSettingsTaskSqlTaskDashboardSubscriptions `json:"subscriptions,omitempty"`
 }
 
 type DataSourceJobJobSettingsSettingsTaskSqlTaskFile struct {
@@ -671,6 +702,7 @@ type DataSourceJobJobSettingsSettingsTaskSqlTask struct {
 }
 
 type DataSourceJobJobSettingsSettingsTask struct {
+	ComputeKey             string                                                  `json:"compute_key,omitempty"`
 	Description            string                                                  `json:"description,omitempty"`
 	ExistingClusterId      string                                                  `json:"existing_cluster_id,omitempty"`
 	JobClusterKey          string                                                  `json:"job_cluster_key,omitempty"`
@@ -680,6 +712,7 @@ type DataSourceJobJobSettingsSettingsTask struct {
 	RunIf                  string                                                  `json:"run_if,omitempty"`
 	TaskKey                string                                                  `json:"task_key,omitempty"`
 	TimeoutSeconds         int                                                     `json:"timeout_seconds,omitempty"`
+	ConditionTask          *DataSourceJobJobSettingsSettingsTaskConditionTask      `json:"condition_task,omitempty"`
 	DbtTask                *DataSourceJobJobSettingsSettingsTaskDbtTask            `json:"dbt_task,omitempty"`
 	DependsOn              []DataSourceJobJobSettingsSettingsTaskDependsOn         `json:"depends_on,omitempty"`
 	EmailNotifications     *DataSourceJobJobSettingsSettingsTaskEmailNotifications `json:"email_notifications,omitempty"`
@@ -695,9 +728,9 @@ type DataSourceJobJobSettingsSettingsTask struct {
 }
 
 type DataSourceJobJobSettingsSettingsTriggerFileArrival struct {
-	MinTimeBetweenTriggerSeconds int    `json:"min_time_between_trigger_seconds,omitempty"`
-	Url                          string `json:"url"`
-	WaitAfterLastChangeSeconds   int    `json:"wait_after_last_change_seconds,omitempty"`
+	MinTimeBetweenTriggersSeconds int    `json:"min_time_between_triggers_seconds,omitempty"`
+	Url                           string `json:"url"`
+	WaitAfterLastChangeSeconds    int    `json:"wait_after_last_change_seconds,omitempty"`
 }
 
 type DataSourceJobJobSettingsSettingsTrigger struct {
@@ -733,6 +766,7 @@ type DataSourceJobJobSettingsSettings struct {
 	RetryOnTimeout         bool                                                  `json:"retry_on_timeout,omitempty"`
 	Tags                   map[string]string                                     `json:"tags,omitempty"`
 	TimeoutSeconds         int                                                   `json:"timeout_seconds,omitempty"`
+	Compute                []DataSourceJobJobSettingsSettingsCompute             `json:"compute,omitempty"`
 	Continuous             *DataSourceJobJobSettingsSettingsContinuous           `json:"continuous,omitempty"`
 	DbtTask                *DataSourceJobJobSettingsSettingsDbtTask              `json:"dbt_task,omitempty"`
 	EmailNotifications     *DataSourceJobJobSettingsSettingsEmailNotifications   `json:"email_notifications,omitempty"`
