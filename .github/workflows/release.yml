@@ -24,6 +24,17 @@ jobs:
         with:
           go-version: 1.21.x
 
+      # If this is not added here, you cannot run this from a forked repository
+      - name: Add Lowercase Repository Name to Environment
+        run: |
+          echo REPOSITORY_NAME_LOWERCASE=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]') >> $GITHUB_ENV
+
+      - uses: "docker/login-action@v2"
+        with:
+          registry: "ghcr.io"
+          username: "${{ github.actor }}"
+          password: "${{ secrets.GITHUB_TOKEN }}"
+
       - name: Run GoReleaser
         id: releaser
         uses: goreleaser/goreleaser-action@v4
@@ -32,6 +43,7 @@ jobs:
           args: release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DOCKER_IMAGE_NAME: ${{ env.REPOSITORY_NAME_LOWERCASE }}
 
   create-setup-cli-release-pr:
     needs: goreleaser
