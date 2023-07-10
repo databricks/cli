@@ -32,6 +32,7 @@ func (m *loadGitDetails) Apply(ctx context.Context, b *bundle.Bundle) error {
 		} else {
 			b.Config.Bundle.Git.Branch = branch
 		}
+		b.Config.Bundle.Git.Inferred = true
 	}
 	// load commit hash if undefined
 	if b.Config.Bundle.Git.Commit == "" {

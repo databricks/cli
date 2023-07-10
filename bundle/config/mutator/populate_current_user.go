@@ -2,8 +2,10 @@ package mutator
 
 import (
 	"context"
+	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 )
 
 type populateCurrentUser struct{}
@@ -24,6 +26,9 @@ func (m *populateCurrentUser) Apply(ctx context.Context, b *bundle.Bundle) error
 		return err
 	}
 
-	b.Config.Workspace.CurrentUser = me
+	b.Config.Workspace.CurrentUser = &config.User{
+		ShortName: strings.Split(me.UserName, "@")[0],
+		User:      me,
+	}
 	return nil
 }
