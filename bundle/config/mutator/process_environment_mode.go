@@ -14,10 +14,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/ml"
 )
 
-type processEnvironmentMode struct {
-	// getPrincipalGetByIdImpl overrides the GetPrincipalGetById implementation for testing purposes.
-	getPrincipalGetByIdImpl func(ctx context.Context, id string) (*iam.ServicePrincipal, error)
-}
+type processEnvironmentMode struct {}
 
 const developmentConcurrentRuns = 4
 
@@ -97,7 +94,7 @@ func isUserSpecificDeployment(b *bundle.Bundle) bool {
 		!strings.Contains(b.Config.Workspace.FilesPath, username)
 }
 
-func (m *processEnvironmentMode) validateProductionMode(ctx context.Context, b *bundle.Bundle) error {
+func validateProductionMode(ctx context.Context, b *bundle.Bundle, isPrincipalUsed bool) error {
 	if b.Config.Bundle.Git.Inferred {
 		TODO: show a nice human error here? :(
 		return fmt.Errorf("environment with 'mode: production' must specify an explicit 'git' configuration")
@@ -110,12 +107,7 @@ func (m *processEnvironmentMode) validateProductionMode(ctx context.Context, b *
 		}
 	}
 
-	isPrincipal, err := m.isServicePrincipalUsed(ctx, b)
-	if err != nil {
-		return err
-	}
-
-	if !isPrincipal {
+	if !isPrincipalUsed {
 		if isUserSpecificDeployment(b) {
 			return fmt.Errorf("environment with 'mode: development' must deploy to a location specific to the user, and should e.g. set 'root_path: ~/.bundle/${bundle.name}/${bundle.environment}'")
 		}
@@ -128,15 +120,10 @@ func (m *processEnvironmentMode) validateProductionMode(ctx context.Context, b *
 }
 
 // Determines whether a service principal identity is used to run the CLI.
-func (m *processEnvironmentMode) isServicePrincipalUsed(ctx context.Context, b *bundle.Bundle) (bool, error) {
+func isServicePrincipalUsed(ctx context.Context, b *bundle.Bundle) (bool, error) {
 	ws := b.WorkspaceClient()
 
-	getPrincipalById := m.getPrincipalGetByIdImpl
-	if getPrincipalById == nil {
-		getPrincipalById = ws.ServicePrincipals.GetById
-	}
-
-	_, err := getPrincipalById(ctx, b.Config.Workspace.CurrentUser.Id)
+	_, err := ws.ServicePrincipals.GetById(ctx, b.Config.Workspace.CurrentUser.Id)
 	if err != nil {
 		apiError, ok := err.(*apierr.APIError)
 		if ok && apiError.StatusCode == 404 {
@@ -179,7 +166,11 @@ func (m *processEnvironmentMode) Apply(ctx context.Context, b *bundle.Bundle) er
 		}
 		return transformDevelopmentMode(b)
 	case config.Production:
-		return m.validateProductionMode(ctx, b)
+		isPrincipal, err := m.isServicePrincipalUsed(ctx, b)
+		if err != nil {
+			return err
+		}
+		return validateProductionMode(ctx, b, isPrincipal)
 	case "":
 		// No action
 	default:

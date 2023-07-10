@@ -29,6 +29,8 @@ type Environment struct {
 	// Does not permit defining new variables or redefining existing ones
 	// in the scope of an environment
 	Variables map[string]string `json:"variables,omitempty"`
+
+	Git Git `json:"git,omitempty"`
 }
 
 const (

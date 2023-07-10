@@ -198,5 +198,16 @@ func (r *Root) MergeEnvironment(env *Environment) error {
 		r.Bundle.ComputeID = env.ComputeID
 	}
 
+	if env.Git.Branch != "" {
+		r.Bundle.Git.Branch = env.Git.Branch
+		r.Bundle.Git.Inferred = false
+	}
+	if env.Git.Commit != "" {
+		r.Bundle.Git.Commit = env.Git.Commit
+	}
+	if env.Git.OriginURL != "" {
+		r.Bundle.Git.OriginURL = env.Git.OriginURL
+	}
+
 	return nil
 }

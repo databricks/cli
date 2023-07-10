@@ -9,7 +9,6 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
@@ -87,12 +86,8 @@ func TestProcessEnvironmentModeProduction(t *testing.T) {
 	bundle.Config.Workspace.ArtifactsPath = "/Shared/.bundle/x/y/artifacts"
 	bundle.Config.Workspace.FilesPath = "/Shared/.bundle/x/y/files"
 
-	m := ProcessEnvironmentMode()
-	m.getPrincipalGetByIdImpl = func(ctx context.Context, id string) (*iam.ServicePrincipal, error) {
-		return nil, &apierr.APIError{StatusCode: 404}
-	}
+	err := validateProductionMode(context.Background(), bundle, false)
 
-	err := m.Apply(context.Background(), bundle)
 	require.NoError(t, err)
 	assert.Equal(t, "job1", bundle.Config.Resources.Jobs["job1"].Name)
 	assert.Equal(t, "pipeline1", bundle.Config.Resources.Pipelines["pipeline1"].Name)
@@ -102,24 +97,16 @@ func TestProcessEnvironmentModeProduction(t *testing.T) {
 func TestProcessEnvironmentModeProductionFails(t *testing.T) {
 	bundle := mockBundle(config.Production)
 
-	m := ProcessEnvironmentMode()
-	m.getPrincipalGetByIdImpl = func(ctx context.Context, id string) (*iam.ServicePrincipal, error) {
-		return nil, &apierr.APIError{StatusCode: 404}
-	}
+	err := validateProductionMode(context.Background(), bundle, false)
 
-	err := m.Apply(context.Background(), bundle)
 	require.Error(t, err)
 }
 
 func TestProcessEnvironmentModeProductionOkForPrincipal(t *testing.T) {
 	bundle := mockBundle(config.Production)
 
-	m := ProcessEnvironmentMode()
-	m.getPrincipalGetByIdImpl = func(ctx context.Context, id string) (*iam.ServicePrincipal, error) {
-		return nil, nil
-	}
+	err := validateProductionMode(context.Background(), bundle, false)
 
-	err := m.Apply(context.Background(), bundle)
 	require.NoError(t, err)
 }
 
