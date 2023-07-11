@@ -594,5 +594,5 @@ func TestFileLibraryPipelineWithNotebookSourceError(t *testing.T) {
 	}
 
 	err := mutator.TranslatePaths().Apply(context.Background(), bundle)
-	assert.ErrorContains(t, err, "please specify notebooks as notebook libraries (use libraries.notebook.path)")
+	assert.ErrorContains(t, err, "please specify notebooks as notebook libraries")
 }
