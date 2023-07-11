@@ -147,7 +147,7 @@ func ValidateConfigAndProfileHost(cfg *databricks.Config, profile string) error 
 
 	hostFromProfile := normalizeHost(match.Key("host").Value())
 	if hostFromProfile != "" && host != "" && hostFromProfile != host {
-		return fmt.Errorf("config host mismatch, profile has %s host but CLI configured to use %s ", hostFromProfile, host)
+		return fmt.Errorf("config host mismatch: profile uses host %s, but CLI configured to use %s", hostFromProfile, host)
 	}
 
 	return nil
