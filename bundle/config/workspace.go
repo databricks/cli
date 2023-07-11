@@ -88,7 +88,7 @@ func (w *Workspace) Client() (*databricks.WorkspaceClient, error) {
 		}
 	}
 
-	if w.Profile != "" {
+	if w.Profile != "" && cfg.Host != "" {
 		err := databrickscfg.ValidateConfigAndProfileHost(&cfg, w.Profile)
 		if err != nil {
 			return nil, err
