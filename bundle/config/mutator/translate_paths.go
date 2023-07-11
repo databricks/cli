@@ -152,7 +152,7 @@ func (m *translatePaths) translatePipelineLibrary(dir string, b *bundle.Bundle, 
 	if library.File != nil {
 		err = m.rewritePath(dir, b, &library.File.Path, m.translateFilePath)
 		if target := (&ErrIsNotebook{}); errors.As(err, target) {
-			return fmt.Errorf("please use libraries.notebook.path for notebooks. %s", target)
+			return fmt.Errorf("please specify notebooks as notebook libraries (use libraries.notebook.path). %s", target)
 		}
 		if err != nil {
 			return err
