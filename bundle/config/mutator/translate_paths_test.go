@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"regexp"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -454,4 +455,144 @@ func TestPipelineFileDoesNotExistError(t *testing.T) {
 
 	err := mutator.TranslatePaths().Apply(context.Background(), bundle)
 	assert.EqualError(t, err, "file ./doesnt_exist.py not found")
+}
+
+func TestSparkPythonTaskJobWithNotebookSourceError(t *testing.T) {
+	dir := t.TempDir()
+	touchNotebookFile(t, filepath.Join(dir, "my_notebook.py"))
+
+	bundle := &bundle.Bundle{
+		Config: config.Root{
+			Path: dir,
+			Workspace: config.Workspace{
+				FilesPath: "/bundle",
+			},
+			Resources: config.Resources{
+				Jobs: map[string]*resources.Job{
+					"job": {
+						Paths: resources.Paths{
+							ConfigFilePath: filepath.Join(dir, "resource.yml"),
+						},
+						JobSettings: &jobs.JobSettings{
+							Tasks: []jobs.Task{
+								{
+									SparkPythonTask: &jobs.SparkPythonTask{
+										PythonFile: "./my_notebook.py",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	err := mutator.TranslatePaths().Apply(context.Background(), bundle)
+	assert.ErrorContains(t, err, "please use notebook task type for notebooks")
+}
+
+func TestNotebookTaskJobWithFileSourceError(t *testing.T) {
+	dir := t.TempDir()
+	touchEmptyFile(t, filepath.Join(dir, "my_file.py"))
+
+	bundle := &bundle.Bundle{
+		Config: config.Root{
+			Path: dir,
+			Workspace: config.Workspace{
+				FilesPath: "/bundle",
+			},
+			Resources: config.Resources{
+				Jobs: map[string]*resources.Job{
+					"job": {
+						Paths: resources.Paths{
+							ConfigFilePath: filepath.Join(dir, "resource.yml"),
+						},
+						JobSettings: &jobs.JobSettings{
+							Tasks: []jobs.Task{
+								{
+									NotebookTask: &jobs.NotebookTask{
+										NotebookPath: "./my_file.py",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	err := mutator.TranslatePaths().Apply(context.Background(), bundle)
+	assert.Regexp(t, regexp.MustCompile("file at .* is not a notebook"), err.Error())
+}
+
+func TestNotebookLibraryPipelineWithFileSourceError(t *testing.T) {
+	dir := t.TempDir()
+	touchEmptyFile(t, filepath.Join(dir, "my_file.py"))
+
+	bundle := &bundle.Bundle{
+		Config: config.Root{
+			Path: dir,
+			Workspace: config.Workspace{
+				FilesPath: "/bundle",
+			},
+			Resources: config.Resources{
+				Pipelines: map[string]*resources.Pipeline{
+					"pipeline": {
+						Paths: resources.Paths{
+							ConfigFilePath: filepath.Join(dir, "resource.yml"),
+						},
+						PipelineSpec: &pipelines.PipelineSpec{
+							Libraries: []pipelines.PipelineLibrary{
+								{
+									Notebook: &pipelines.NotebookLibrary{
+										Path: "./my_file.py",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	err := mutator.TranslatePaths().Apply(context.Background(), bundle)
+	assert.Regexp(t, regexp.MustCompile("file at .* is not a notebook"), err.Error())
+}
+
+func TestFileLibraryPipelineWithNotebookSourceError(t *testing.T) {
+	dir := t.TempDir()
+	touchNotebookFile(t, filepath.Join(dir, "my_notebook.py"))
+
+	bundle := &bundle.Bundle{
+		Config: config.Root{
+			Path: dir,
+			Workspace: config.Workspace{
+				FilesPath: "/bundle",
+			},
+			Resources: config.Resources{
+				Pipelines: map[string]*resources.Pipeline{
+					"pipeline": {
+						Paths: resources.Paths{
+							ConfigFilePath: filepath.Join(dir, "resource.yml"),
+						},
+						PipelineSpec: &pipelines.PipelineSpec{
+							Libraries: []pipelines.PipelineLibrary{
+								{
+									File: &pipelines.FileLibrary{
+										Path: "./my_notebook.py",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	err := mutator.TranslatePaths().Apply(context.Background(), bundle)
+	assert.ErrorContains(t, err, "please use libraries.notebook.path for notebooks")
 }
