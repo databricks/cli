@@ -16,7 +16,7 @@ var authCmd = &cobra.Command{
 
 var persistentAuth auth.PersistentAuth
 
-func promptForHost(ctx context.Context) error {
+func promptForHost(ctx context.Context) (string, error) {
 	prompt := cmdio.Prompt(ctx)
 	prompt.Label = "Databricks Host"
 	prompt.Default = "https://"
@@ -24,13 +24,12 @@ func promptForHost(ctx context.Context) error {
 	// Validate?
 	host, err := prompt.Run()
 	if err != nil {
-		return err
+		return "", err
 	}
-	persistentAuth.Host = host
-	return nil
+	return host, nil
 }
 
-func promptForAccountId(ctx context.Context) error {
+func promptForAccountId(ctx context.Context) (string, error) {
 	prompt := cmdio.Prompt(ctx)
 	prompt.Label = "Databricks Account ID"
 	prompt.Default = ""
@@ -38,10 +37,9 @@ func promptForAccountId(ctx context.Context) error {
 	// Validate?
 	accountId, err := prompt.Run()
 	if err != nil {
-		return err
+		return "", err
 	}
-	persistentAuth.AccountID = accountId
-	return nil
+	return accountId, nil
 }
 
 func init() {

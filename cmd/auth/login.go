@@ -23,10 +23,11 @@ func configureHost(ctx context.Context, args []string, argIndex int) error {
 		return nil
 	}
 
-	err := promptForHost(ctx)
+	host, err := promptForHost(ctx)
 	if err != nil {
 		return err
 	}
+	persistentAuth.Host = host
 	return nil
 }
 
@@ -47,10 +48,11 @@ var loginCmd = &cobra.Command{
 			AuthType: "databricks-cli",
 		}
 		if cfg.IsAccountClient() && persistentAuth.AccountID == "" {
-			err := promptForAccountId(ctx)
+			accountId, err := promptForAccountId(ctx)
 			if err != nil {
 				return err
 			}
+			persistentAuth.AccountID = accountId
 		}
 		cfg.AccountID = persistentAuth.AccountID
 
