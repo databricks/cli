@@ -26,6 +26,20 @@ func getEnvironment(cmd *cobra.Command) (value string) {
 	return os.Getenv(envName)
 }
 
+func getProfile(cmd *cobra.Command) (value string) {
+	// The command line flag takes precedence.
+	flag := cmd.Flag("profile")
+	if flag != nil {
+		value = flag.Value.String()
+		if value != "" {
+			return
+		}
+	}
+
+	// If it's not set, use the environment variable.
+	return os.Getenv("DATABRICKS_CONFIG_PROFILE")
+}
+
 // loadBundle loads the bundle configuration and applies default mutators.
 func loadBundle(cmd *cobra.Command, args []string, load func() (*bundle.Bundle, error)) (*bundle.Bundle, error) {
 	b, err := load()
@@ -36,6 +50,11 @@ func loadBundle(cmd *cobra.Command, args []string, load func() (*bundle.Bundle, 
 	// No bundle is fine in case of `TryConfigureBundle`.
 	if b == nil {
 		return nil, nil
+	}
+
+	profile := getProfile(cmd)
+	if profile != "" {
+		b.Config.Workspace.Profile = profile
 	}
 
 	ctx := cmd.Context()
