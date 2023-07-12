@@ -28,4 +28,13 @@ type Bundle struct {
 	// Contains Git information like current commit, current branch and
 	// origin url. Automatically loaded by reading .git directory if not specified
 	Git Git `json:"git,omitempty"`
+
+	// Determines the mode of the environment.
+	// For example, 'mode: development' can be used for deployments for
+	// development purposes.
+	// Annotated readonly as this should be set at the environment level.
+	Mode Mode `json:"mode,omitempty" bundle:"readonly"`
+
+	// Overrides the compute used for jobs and other supported assets.
+	ComputeID string `json:"compute_id,omitempty"`
 }
