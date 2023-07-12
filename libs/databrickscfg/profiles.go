@@ -60,6 +60,10 @@ func MatchAccountProfiles(p Profile) bool {
 	return p.Host != "" && p.AccountID != ""
 }
 
+func MatchAllProfiles(p Profile) bool {
+	return true
+}
+
 const DefaultPath = "~/.databrickscfg"
 
 func LoadProfiles(path string, fn ProfileMatchFunction) (file string, profiles Profiles, err error) {
@@ -102,7 +106,7 @@ func LoadProfiles(path string, fn ProfileMatchFunction) (file string, profiles P
 }
 
 func ProfileCompletion(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-	_, profiles, err := LoadProfiles(DefaultPath, func(p Profile) bool { return true })
+	_, profiles, err := LoadProfiles(DefaultPath, MatchAllProfiles)
 	if err != nil {
 		return nil, cobra.ShellCompDirectiveError
 	}
