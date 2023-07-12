@@ -13,6 +13,7 @@ import (
 )
 
 func logPlan(ctx context.Context, plan *tfjson.Plan) error {
+	cmdio.LogString(ctx, "Plan:")
 	for _, change := range plan.ResourceChanges {
 		tfActions := change.Change.Actions
 		if tfActions.Read() || tfActions.NoOp() {
@@ -22,22 +23,35 @@ func logPlan(ctx context.Context, plan *tfjson.Plan) error {
 		var action string
 		switch {
 		case tfActions.Update():
-			action = "update"
+			action = "Update"
 		case tfActions.Create():
-			action = "create"
+			action = "Create"
 		case tfActions.Delete():
-			action = "delete"
+			action = "Delete"
 		case tfActions.Replace():
-			action = "replace"
+			action = "Replace"
 		default:
 			return fmt.Errorf("unknown terraform actions: %s", tfActions)
 		}
 
-		err := cmdio.RenderWithTemplate(ctx, change, fmt.Sprintf("%s {{.Type}} {{.Name}}\n", action))
+		resourceType := change.Type
+		switch resourceType {
+		case "databricks_job":
+			resourceType = "Job"
+		case "databricks_pipeline":
+			resourceType = "DLT Pipeline"
+		case "databricks_mlflow_model":
+			resourceType = "Mlflow Model"
+		case "databricks_mlflow_experiment":
+			resourceType = "Mlflow Experiment"
+		}
+
+		err := cmdio.RenderWithTemplate(ctx, change, fmt.Sprintf("%s %s {{.Name}}\n", action, resourceType))
 		if err != nil {
 			return err
 		}
 	}
+	cmdio.LogString(ctx, "")
 	return nil
 }
 

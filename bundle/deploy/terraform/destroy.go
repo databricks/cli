@@ -3,58 +3,12 @@ package terraform
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/fatih/color"
 	"github.com/hashicorp/terraform-exec/tfexec"
-	tfjson "github.com/hashicorp/terraform-json"
 )
-
-type PlanResourceChange struct {
-	ResourceType string `json:"resource_type"`
-	Action       string `json:"action"`
-	ResourceName string `json:"resource_name"`
-}
-
-func (c *PlanResourceChange) String() string {
-	result := strings.Builder{}
-	switch c.Action {
-	case "delete":
-		result.WriteString("  delete ")
-	default:
-		result.WriteString(c.Action + " ")
-	}
-	switch c.ResourceType {
-	case "databricks_job":
-		result.WriteString("job ")
-	case "databricks_pipeline":
-		result.WriteString("pipeline ")
-	default:
-		result.WriteString(c.ResourceType + " ")
-	}
-	result.WriteString(c.ResourceName)
-	return result.String()
-}
-
-func (c *PlanResourceChange) IsInplaceSupported() bool {
-	return false
-}
-
-func logDestroyPlan(ctx context.Context, changes []*tfjson.ResourceChange) error {
-	cmdio.LogString(ctx, "The following resources will be removed:")
-	for _, c := range changes {
-		if c.Change.Actions.Delete() {
-			cmdio.Log(ctx, &PlanResourceChange{
-				ResourceType: c.Type,
-				Action:       "delete",
-				ResourceName: c.Name,
-			})
-		}
-	}
-	return nil
-}
 
 type destroy struct{}
 
@@ -81,7 +35,7 @@ func (w *destroy) Apply(ctx context.Context, b *bundle.Bundle) error {
 	}
 
 	// print the resources that will be destroyed
-	err = logDestroyPlan(ctx, plan.ResourceChanges)
+	err = logPlan(ctx, plan)
 	if err != nil {
 		return err
 	}
@@ -89,7 +43,7 @@ func (w *destroy) Apply(ctx context.Context, b *bundle.Bundle) error {
 	// Ask for confirmation, if needed
 	if !b.Plan.ConfirmApply {
 		red := color.New(color.FgRed).SprintFunc()
-		b.Plan.ConfirmApply, err = cmdio.Ask(ctx, fmt.Sprintf("\nThis will permanently %s resources! Proceed? [y/n]: ", red("destroy")))
+		b.Plan.ConfirmApply, err = cmdio.Ask(ctx, fmt.Sprintf("This will permanently %s resources! Proceed? [y/n]: ", red("destroy")))
 		if err != nil {
 			return err
 		}
