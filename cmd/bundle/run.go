@@ -14,6 +14,7 @@ import (
 )
 
 var runOptions run.Options
+var noWait bool
 
 var runCmd = &cobra.Command{
 	Use:   "run [flags] KEY",
@@ -23,6 +24,7 @@ var runCmd = &cobra.Command{
 	PreRunE: ConfigureBundleWithVariables,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		b := bundle.Get(cmd.Context())
+
 		err := bundle.Apply(cmd.Context(), b, bundle.Seq(
 			phases.Initialize(),
 			terraform.Interpolate(),
@@ -39,6 +41,7 @@ var runCmd = &cobra.Command{
 			return err
 		}
 
+		runOptions.NoWait = noWait
 		output, err := runner.Run(cmd.Context(), &runOptions)
 		if err != nil {
 			return err
@@ -89,4 +92,5 @@ var runCmd = &cobra.Command{
 func init() {
 	runOptions.Define(runCmd.Flags())
 	rootCmd.AddCommand(runCmd)
+	runCmd.Flags().BoolVar(&noWait, "no-wait", false, "Don't wait for the run to complete.")
 }
