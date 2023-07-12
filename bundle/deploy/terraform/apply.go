@@ -43,18 +43,7 @@ func (w *apply) Apply(ctx context.Context, b *bundle.Bundle) error {
 		return err
 	}
 
-	// Ask for confirmation, if needed
-	if !b.Plan.ConfirmApply {
-		b.Plan.ConfirmApply, err = cmdio.Ask(ctx, "Proceed with apply? [y/n]: ")
-		if err != nil {
-			return err
-		}
-	}
-	if !b.Plan.ConfirmApply {
-		// return if confirmation was not provided
-		return nil
-	}
-
+	// We do not block for confirmation checks at deploy
 	cmdio.LogString(ctx, "Starting deployment")
 
 	// Apply terraform according to the plan
