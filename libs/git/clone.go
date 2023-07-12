@@ -19,7 +19,7 @@ type cloneOptions struct {
 	// URL for the repository
 	RepositoryUrl string
 
-	// Path to clone repository at
+	// Local path to clone repository at
 	TargetPath string
 }
 
@@ -44,25 +44,6 @@ func expandUrl(s string) string {
 	return strings.Join([]string{githubUrl, databricksOrg, s}, "/")
 }
 
-func parseCloneOptions(url, targetPath string) cloneOptions {
-	repoUrl := expandUrl(url)
-	reference := ""
-
-	// Users can optionally specify a branch / tag by adding @my-branch to the end
-	// of the URL. eg: https://github.com/databricks/cli.git@release-branch
-	parts := strings.SplitN(repoUrl, "@", 2)
-	if len(parts) == 2 && parts[1] != "" {
-		reference = parts[1]
-		repoUrl = parts[0]
-	}
-	return cloneOptions{
-		Reference:     reference,
-		RepositoryUrl: repoUrl,
-		TargetPath:    targetPath,
-	}
-
-}
-
 func (opts cloneOptions) args() []string {
 	args := []string{"clone", opts.RepositoryUrl, opts.TargetPath, "--depth=1", "--no-tags"}
 	if opts.Reference != "" {
@@ -71,8 +52,14 @@ func (opts cloneOptions) args() []string {
 	return args
 }
 
-func Clone(ctx context.Context, url, targetPath string) error {
-	opts := parseCloneOptions(url, targetPath)
+func Clone(ctx context.Context, url, reference, targetPath string) error {
+	fullUrl := expandUrl(url)
+	opts := cloneOptions{
+		Reference:     reference,
+		RepositoryUrl: fullUrl,
+		TargetPath:    targetPath,
+	}
+
 	cmd := exec.CommandContext(ctx, "git", opts.args()...)
 	var cmdErr bytes.Buffer
 	cmd.Stderr = &cmdErr

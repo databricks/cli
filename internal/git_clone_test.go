@@ -17,7 +17,7 @@ func TestAccGitClone(t *testing.T) {
 	ctx := context.Background()
 	var err error
 
-	err = git.Clone(ctx, "https://github.com/ShreyasGoenka/empty-databricks-cli-repo.git", tmpDir)
+	err = git.Clone(ctx, "https://github.com/ShreyasGoenka/empty-databricks-cli-repo.git", "", tmpDir)
 	assert.NoError(t, err)
 
 	// assert on repo content
@@ -38,7 +38,7 @@ func TestAccGitCloneWithOrgAndRepoName(t *testing.T) {
 	ctx := context.Background()
 	var err error
 
-	err = git.Clone(ctx, "ShreyasGoenka/empty-databricks-cli-repo@cli", tmpDir)
+	err = git.Clone(ctx, "ShreyasGoenka/empty-databricks-cli-repo", "cli", tmpDir)
 
 	assert.NoError(t, err)
 	b, err := os.ReadFile(filepath.Join(tmpDir, "README.md"))
@@ -58,7 +58,7 @@ func TestAccGitCloneWithOnlyRepoName(t *testing.T) {
 	ctx := context.Background()
 	var err error
 
-	err = git.Clone(ctx, "databricks-empty-ide-project", tmpDir)
+	err = git.Clone(ctx, "databricks-empty-ide-project", "", tmpDir)
 
 	assert.NoError(t, err)
 	b, err := os.ReadFile(filepath.Join(tmpDir, "README-IDE.md"))
@@ -71,6 +71,6 @@ func TestAccGitCloneRepositoryDoesNotExist(t *testing.T) {
 
 	tmpDir := t.TempDir()
 
-	err := git.Clone(context.Background(), "doesnot-exist", tmpDir)
+	err := git.Clone(context.Background(), "doesnot-exist", "", tmpDir)
 	assert.Contains(t, err.Error(), `repository 'https://github.com/databricks/doesnot-exist/' not found`)
 }
