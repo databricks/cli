@@ -26,7 +26,7 @@ require (
 	golang.org/x/mod v0.11.0
 	golang.org/x/oauth2 v0.9.0
 	golang.org/x/sync v0.3.0
-	golang.org/x/term v0.9.0
+	golang.org/x/term v0.10.0
 	golang.org/x/text v0.10.0
 	gopkg.in/ini.v1 v1.67.0 // Apache 2.0
 )
@@ -52,7 +52,7 @@ require (
 	go.opencensus.io v0.24.0 // indirect
 	golang.org/x/crypto v0.10.0 // indirect
 	golang.org/x/net v0.11.0 // indirect
-	golang.org/x/sys v0.9.0 // indirect
+	golang.org/x/sys v0.10.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	google.golang.org/api v0.129.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
