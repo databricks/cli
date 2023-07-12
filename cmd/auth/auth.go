@@ -29,7 +29,7 @@ func promptForHost(ctx context.Context) (string, error) {
 	return host, nil
 }
 
-func promptForAccountId(ctx context.Context) (string, error) {
+func promptForAccountID(ctx context.Context) (string, error) {
 	prompt := cmdio.Prompt(ctx)
 	prompt.Label = "Databricks Account ID"
 	prompt.Default = ""
