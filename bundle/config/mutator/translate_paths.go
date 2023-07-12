@@ -20,7 +20,15 @@ type ErrIsNotebook struct {
 }
 
 func (err ErrIsNotebook) Error() string {
-	return fmt.Sprintf("file %s is a notebook", err.path)
+	return fmt.Sprintf("file at %s is a notebook", err.path)
+}
+
+type ErrIsNotNotebook struct {
+	path string
+}
+
+func (err ErrIsNotNotebook) Error() string {
+	return fmt.Sprintf("file at %s is not a notebook", err.path)
 }
 
 type translatePaths struct {
@@ -95,7 +103,7 @@ func (m *translatePaths) translateNotebookPath(literal, localPath, remotePath st
 		return "", fmt.Errorf("unable to determine if %s is a notebook: %w", localPath, err)
 	}
 	if !nb {
-		return "", fmt.Errorf("file at %s is not a notebook", localPath)
+		return "", ErrIsNotNotebook{localPath}
 	}
 
 	// Upon import, notebooks are stripped of their extension.
@@ -121,6 +129,9 @@ func (m *translatePaths) translateJobTask(dir string, b *bundle.Bundle, task *jo
 
 	if task.NotebookTask != nil {
 		err = m.rewritePath(dir, b, &task.NotebookTask.NotebookPath, m.translateNotebookPath)
+		if target := (&ErrIsNotNotebook{}); errors.As(err, target) {
+			return fmt.Errorf(`expected a notebook for "tasks.notebook_task.notebook_path" but got a file: %w`, target)
+		}
 		if err != nil {
 			return err
 		}
@@ -129,7 +140,7 @@ func (m *translatePaths) translateJobTask(dir string, b *bundle.Bundle, task *jo
 	if task.SparkPythonTask != nil {
 		err = m.rewritePath(dir, b, &task.SparkPythonTask.PythonFile, m.translateFilePath)
 		if target := (&ErrIsNotebook{}); errors.As(err, target) {
-			return fmt.Errorf("please use notebook task type for notebooks. %s", target)
+			return fmt.Errorf(`expected a file for "tasks.spark_python_task.python_file" but got a notebook: %w`, target)
 		}
 		if err != nil {
 			return err
@@ -144,6 +155,9 @@ func (m *translatePaths) translatePipelineLibrary(dir string, b *bundle.Bundle, 
 
 	if library.Notebook != nil {
 		err = m.rewritePath(dir, b, &library.Notebook.Path, m.translateNotebookPath)
+		if target := (&ErrIsNotNotebook{}); errors.As(err, target) {
+			return fmt.Errorf(`expected a notebook for "libraries.notebook.path" but got a file: %w`, target)
+		}
 		if err != nil {
 			return err
 		}
@@ -152,7 +166,7 @@ func (m *translatePaths) translatePipelineLibrary(dir string, b *bundle.Bundle, 
 	if library.File != nil {
 		err = m.rewritePath(dir, b, &library.File.Path, m.translateFilePath)
 		if target := (&ErrIsNotebook{}); errors.As(err, target) {
-			return fmt.Errorf("please specify notebooks as notebook libraries. %s", target)
+			return fmt.Errorf(`expected a file for "libraries.file.path" but got a notebook: %w`, target)
 		}
 		if err != nil {
 			return err

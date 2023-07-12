@@ -4,7 +4,6 @@ import (
 	"context"
 	"os"
 	"path/filepath"
-	"regexp"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -457,7 +456,7 @@ func TestPipelineFileDoesNotExistError(t *testing.T) {
 	assert.EqualError(t, err, "file ./doesnt_exist.py not found")
 }
 
-func TestSparkPythonTaskJobWithNotebookSourceError(t *testing.T) {
+func TestJobSparkPythonTaskWithNotebookSourceError(t *testing.T) {
 	dir := t.TempDir()
 	touchNotebookFile(t, filepath.Join(dir, "my_notebook.py"))
 
@@ -489,10 +488,10 @@ func TestSparkPythonTaskJobWithNotebookSourceError(t *testing.T) {
 	}
 
 	err := mutator.TranslatePaths().Apply(context.Background(), bundle)
-	assert.ErrorContains(t, err, "please use notebook task type for notebooks")
+	assert.ErrorContains(t, err, `expected a file for "tasks.spark_python_task.python_file" but got a notebook`)
 }
 
-func TestNotebookTaskJobWithFileSourceError(t *testing.T) {
+func TestJobNotebookTaskWithFileSourceError(t *testing.T) {
 	dir := t.TempDir()
 	touchEmptyFile(t, filepath.Join(dir, "my_file.py"))
 
@@ -524,10 +523,10 @@ func TestNotebookTaskJobWithFileSourceError(t *testing.T) {
 	}
 
 	err := mutator.TranslatePaths().Apply(context.Background(), bundle)
-	assert.Regexp(t, regexp.MustCompile("file at .* is not a notebook"), err.Error())
+	assert.ErrorContains(t, err, `expected a notebook for "tasks.notebook_task.notebook_path" but got a file`)
 }
 
-func TestNotebookLibraryPipelineWithFileSourceError(t *testing.T) {
+func TestPipelineNotebookLibraryWithFileSourceError(t *testing.T) {
 	dir := t.TempDir()
 	touchEmptyFile(t, filepath.Join(dir, "my_file.py"))
 
@@ -559,10 +558,10 @@ func TestNotebookLibraryPipelineWithFileSourceError(t *testing.T) {
 	}
 
 	err := mutator.TranslatePaths().Apply(context.Background(), bundle)
-	assert.Regexp(t, regexp.MustCompile("file at .* is not a notebook"), err.Error())
+	assert.ErrorContains(t, err, `expected a notebook for "libraries.notebook.path" but got a file`)
 }
 
-func TestFileLibraryPipelineWithNotebookSourceError(t *testing.T) {
+func TestPipelineFileLibraryWithNotebookSourceError(t *testing.T) {
 	dir := t.TempDir()
 	touchNotebookFile(t, filepath.Join(dir, "my_notebook.py"))
 
@@ -594,5 +593,5 @@ func TestFileLibraryPipelineWithNotebookSourceError(t *testing.T) {
 	}
 
 	err := mutator.TranslatePaths().Apply(context.Background(), bundle)
-	assert.ErrorContains(t, err, "please specify notebooks as notebook libraries")
+	assert.ErrorContains(t, err, `expected a file for "libraries.file.path" but got a notebook`)
 }
