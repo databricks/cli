@@ -7,6 +7,7 @@ import (
 type Options struct {
 	Job      JobOptions
 	Pipeline PipelineOptions
+	NoWait   bool
 }
 
 func (o *Options) Define(fs *flag.FlagSet) {
