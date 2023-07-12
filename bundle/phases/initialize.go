@@ -25,6 +25,8 @@ func Initialize() bundle.Mutator {
 				interpolation.IncludeLookupsInPath("workspace"),
 				interpolation.IncludeLookupsInPath(variable.VariableReferencePrefix),
 			),
+			mutator.OverrideCompute(),
+			mutator.ProcessEnvironmentMode(),
 			mutator.TranslatePaths(),
 			terraform.Initialize(),
 		},

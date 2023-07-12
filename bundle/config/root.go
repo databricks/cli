@@ -190,5 +190,13 @@ func (r *Root) MergeEnvironment(env *Environment) error {
 		}
 	}
 
+	if env.Mode != "" {
+		r.Bundle.Mode = env.Mode
+	}
+
+	if env.ComputeID != "" {
+		r.Bundle.ComputeID = env.ComputeID
+	}
+
 	return nil
 }
