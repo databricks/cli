@@ -170,6 +170,10 @@ func (r *pipelineRunner) Run(ctx context.Context, opts *Options) (output.RunOutp
 	// Log the pipeline update URL as soon as it is available.
 	progressLogger.Log(progress.NewPipelineUpdateUrlEvent(w.Config.Host, updateID, pipelineID))
 
+	if opts.NoWait {
+		return nil, nil
+	}
+
 	// Poll update for completion and post status.
 	// Note: there is no "StartUpdateAndWait" wrapper for this API.
 	var prevState *pipelines.UpdateInfoState

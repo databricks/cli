@@ -23,6 +23,7 @@ var currentUser int
 
 func init() {
 	RootCmd.PersistentFlags().StringP("profile", "p", "", "~/.databrickscfg profile")
+	RootCmd.RegisterFlagCompletionFunc("profile", databrickscfg.ProfileCompletion)
 }
 
 func MustAccountClient(cmd *cobra.Command, args []string) error {

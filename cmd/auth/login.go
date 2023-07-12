@@ -17,16 +17,46 @@ import (
 var loginTimeout time.Duration
 var configureCluster bool
 
+func configureHost(ctx context.Context, args []string, argIndex int) error {
+	if len(args) > argIndex {
+		persistentAuth.Host = args[argIndex]
+		return nil
+	}
+
+	host, err := promptForHost(ctx)
+	if err != nil {
+		return err
+	}
+	persistentAuth.Host = host
+	return nil
+}
+
 var loginCmd = &cobra.Command{
 	Use:   "login [HOST]",
 	Short: "Authenticate this machine",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if perisistentAuth.Host == "" && len(args) == 1 {
-			perisistentAuth.Host = args[0]
+		ctx := cmd.Context()
+		if persistentAuth.Host == "" {
+			configureHost(ctx, args, 0)
 		}
+		defer persistentAuth.Close()
 
-		defer perisistentAuth.Close()
-		ctx, cancel := context.WithTimeout(cmd.Context(), loginTimeout)
+		// We need the config without the profile before it's used to initialise new workspace client below.
+		// Otherwise it will complain about non existing profile because it was not yet saved.
+		cfg := config.Config{
+			Host:     persistentAuth.Host,
+			AuthType: "databricks-cli",
+		}
+		if cfg.IsAccountClient() && persistentAuth.AccountID == "" {
+			accountId, err := promptForAccountID(ctx)
+			if err != nil {
+				return err
+			}
+			persistentAuth.AccountID = accountId
+		}
+		cfg.AccountID = persistentAuth.AccountID
+
+		ctx, cancel := context.WithTimeout(ctx, loginTimeout)
 		defer cancel()
 
 		var profileName string
@@ -36,7 +66,7 @@ var loginCmd = &cobra.Command{
 		} else {
 			prompt := cmdio.Prompt(ctx)
 			prompt.Label = "Databricks Profile Name"
-			prompt.Default = perisistentAuth.ProfileName()
+			prompt.Default = persistentAuth.ProfileName()
 			prompt.AllowEdit = true
 			profile, err := prompt.Run()
 			if err != nil {
@@ -44,17 +74,9 @@ var loginCmd = &cobra.Command{
 			}
 			profileName = profile
 		}
-		err := perisistentAuth.Challenge(ctx)
+		err := persistentAuth.Challenge(ctx)
 		if err != nil {
 			return err
-		}
-
-		// We need the config without the profile before it's used to initialise new workspace client below.
-		// Otherwise it will complain about non existing profile because it was not yet saved.
-		cfg := config.Config{
-			Host:      perisistentAuth.Host,
-			AccountID: perisistentAuth.AccountID,
-			AuthType:  "databricks-cli",
 		}
 
 		if configureCluster {
