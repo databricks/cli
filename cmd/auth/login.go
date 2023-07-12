@@ -48,7 +48,7 @@ var loginCmd = &cobra.Command{
 			AuthType: "databricks-cli",
 		}
 		if cfg.IsAccountClient() && persistentAuth.AccountID == "" {
-			accountId, err := promptForAccountId(ctx)
+			accountId, err := promptForAccountID(ctx)
 			if err != nil {
 				return err
 			}
