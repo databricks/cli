@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/databricks/databricks-sdk-go/config"
+	"github.com/spf13/cobra"
 )
 
 // Profile holds a subset of the keys in a databrickscfg profile.
@@ -59,6 +60,10 @@ func MatchAccountProfiles(p Profile) bool {
 	return p.Host != "" && p.AccountID != ""
 }
 
+func MatchAllProfiles(p Profile) bool {
+	return true
+}
+
 const DefaultPath = "~/.databrickscfg"
 
 func LoadProfiles(path string, fn ProfileMatchFunction) (file string, profiles Profiles, err error) {
@@ -98,4 +103,12 @@ func LoadProfiles(path string, fn ProfileMatchFunction) (file string, profiles P
 	}
 
 	return
+}
+
+func ProfileCompletion(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	_, profiles, err := LoadProfiles(DefaultPath, MatchAllProfiles)
+	if err != nil {
+		return nil, cobra.ShellCompDirectiveError
+	}
+	return profiles.Names(), cobra.ShellCompDirectiveNoFileComp
 }
