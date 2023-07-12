@@ -15,13 +15,15 @@ var tokenCmd = &cobra.Command{
 	Use:   "token [HOST]",
 	Short: "Get authentication token",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if perisistentAuth.Host == "" && len(args) == 1 {
-			perisistentAuth.Host = args[0]
+		ctx := cmd.Context()
+		if persistentAuth.Host == "" {
+			configureHost(ctx, args, 0)
 		}
-		defer perisistentAuth.Close()
-		ctx, cancel := context.WithTimeout(cmd.Context(), tokenTimeout)
+		defer persistentAuth.Close()
+
+		ctx, cancel := context.WithTimeout(ctx, tokenTimeout)
 		defer cancel()
-		t, err := perisistentAuth.Load(ctx)
+		t, err := persistentAuth.Load(ctx)
 		if err != nil {
 			return err
 		}
