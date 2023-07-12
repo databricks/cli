@@ -1,5 +1,24 @@
 # Version changelog
 
+## 0.200.2
+
+CLI:
+* Fix secrets put-secret command ([#545](https://github.com/databricks/cli/pull/545)).
+* Fixed ignoring required positional parameters when --json flag is provided ([#535](https://github.com/databricks/cli/pull/535)).
+* Update cp help message to not require file scheme ([#554](https://github.com/databricks/cli/pull/554)).
+
+Bundles:
+* Fix: bundle destroy fails when bundle.tf.json file is deleted ([#519](https://github.com/databricks/cli/pull/519)).
+* Fixed error reporting when included invalid files in include section ([#543](https://github.com/databricks/cli/pull/543)).
+* Make top level workspace optional in JSON schema ([#562](https://github.com/databricks/cli/pull/562)).
+* Propagate TF_CLI_CONFIG_FILE env variable ([#555](https://github.com/databricks/cli/pull/555)).
+* Update Terraform provider schema structs ([#563](https://github.com/databricks/cli/pull/563)).
+* Update inline JSON schema documentation ([#557](https://github.com/databricks/cli/pull/557)).
+
+Dependencies:
+* Bump Go SDK to v0.12.0 ([#540](https://github.com/databricks/cli/pull/540)).
+* Bump github.com/hashicorp/terraform-json from 0.17.0 to 0.17.1 ([#541](https://github.com/databricks/cli/pull/541)).
+
 ## 0.200.1
 
 CLI:

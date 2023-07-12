@@ -8,6 +8,7 @@ resources:
 
 environments:
   development:
+    mode: development
     resources:
       pipelines:
         nyc_taxi_pipeline:
