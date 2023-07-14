@@ -1,2 +1,2 @@
-# bundle-samples
-Samples of Databricks Application Bundles
+# bundle-examples
+Examples of Databricks Asset Bundles.
