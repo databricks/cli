@@ -17,6 +17,28 @@ func TestAccGitClone(t *testing.T) {
 	ctx := context.Background()
 	var err error
 
+	err = git.Clone(ctx, "https://github.com/databricks/databricks-empty-ide-project.git", "", tmpDir)
+	assert.NoError(t, err)
+
+	// assert repo content
+	assert.NoError(t, err)
+	b, err := os.ReadFile(filepath.Join(tmpDir, "README-IDE.md"))
+	assert.NoError(t, err)
+	assert.Contains(t, string(b), "This folder contains a project that was synchronized from an IDE.")
+
+	// assert current branch is ide, ie default for the repo
+	b, err = os.ReadFile(filepath.Join(tmpDir, ".git/HEAD"))
+	assert.NoError(t, err)
+	assert.Contains(t, string(b), "ide")
+}
+
+func TestAccGitCloneForExternalRepo(t *testing.T) {
+	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+
+	tmpDir := t.TempDir()
+	ctx := context.Background()
+	var err error
+
 	err = git.Clone(ctx, "https://github.com/ShreyasGoenka/empty-databricks-cli-repo.git", "", tmpDir)
 	assert.NoError(t, err)
 
@@ -40,6 +62,7 @@ func TestAccGitCloneWithOrgAndRepoName(t *testing.T) {
 
 	err = git.Clone(ctx, "ShreyasGoenka/empty-databricks-cli-repo", "cli", tmpDir)
 
+	// assert on repo content
 	assert.NoError(t, err)
 	b, err := os.ReadFile(filepath.Join(tmpDir, "README.md"))
 	assert.NoError(t, err)
@@ -60,10 +83,16 @@ func TestAccGitCloneWithOnlyRepoName(t *testing.T) {
 
 	err = git.Clone(ctx, "databricks-empty-ide-project", "", tmpDir)
 
+	// assert on repo content
 	assert.NoError(t, err)
 	b, err := os.ReadFile(filepath.Join(tmpDir, "README-IDE.md"))
 	assert.NoError(t, err)
 	assert.Contains(t, string(b), "This folder contains a project that was synchronized from an IDE.")
+
+	// assert current branch is ide, ie default for the repo
+	b, err = os.ReadFile(filepath.Join(tmpDir, ".git/HEAD"))
+	assert.NoError(t, err)
+	assert.Contains(t, string(b), "ide")
 }
 
 func TestAccGitCloneRepositoryDoesNotExist(t *testing.T) {
