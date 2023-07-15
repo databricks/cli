@@ -1,4 +1,10 @@
 bundle:
   name: autoload git config test
-  git:
-    branch: foo
+
+environments:
+  development:
+    default: true
+
+  production:
+    git:
+      branch: production-branch
