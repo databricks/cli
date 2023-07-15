@@ -23,6 +23,7 @@ environments:
           development: false
 
   production:
+    mode: production
     resources:
       pipelines:
         nyc_taxi_pipeline:

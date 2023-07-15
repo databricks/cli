@@ -24,10 +24,13 @@ func repoPathForPath(me *iam.User, remotePath string) string {
 
 // EnsureRemotePathIsUsable checks if the specified path is nested under
 // expected base paths and if it is a directory or repository.
-func EnsureRemotePathIsUsable(ctx context.Context, wsc *databricks.WorkspaceClient, remotePath string) error {
-	me, err := wsc.CurrentUser.Me(ctx)
-	if err != nil {
-		return err
+func EnsureRemotePathIsUsable(ctx context.Context, wsc *databricks.WorkspaceClient, remotePath string, me *iam.User) error {
+	var err error
+	if me == nil {
+		me, err = wsc.CurrentUser.Me(ctx)
+		if err != nil {
+			return err
+		}
 	}
 
 	// Ensure that the remote path exists.

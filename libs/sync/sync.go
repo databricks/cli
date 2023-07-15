@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/libs/git"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 )
 
 type SyncOptions struct {
@@ -22,6 +23,8 @@ type SyncOptions struct {
 	PollInterval time.Duration
 
 	WorkspaceClient *databricks.WorkspaceClient
+
+	CurrentUser *iam.User
 
 	Host string
 }
@@ -50,7 +53,7 @@ func New(ctx context.Context, opts SyncOptions) (*Sync, error) {
 	}
 
 	// Verify that the remote path we're about to synchronize to is valid and allowed.
-	err = EnsureRemotePathIsUsable(ctx, opts.WorkspaceClient, opts.RemotePath)
+	err = EnsureRemotePathIsUsable(ctx, opts.WorkspaceClient, opts.RemotePath, opts.CurrentUser)
 	if err != nil {
 		return nil, err
 	}
