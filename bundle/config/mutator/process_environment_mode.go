@@ -118,7 +118,7 @@ func validateProductionMode(ctx context.Context, b *bundle.Bundle, isPrincipalUs
 
 	if !isPrincipalUsed {
 		if path := findIncorrectPath(b, config.Production); path != "" {
-			message := "%s must not contain the current username when using 'mode: production' without a service principal"
+			message := "%s must not contain the current username when using 'mode: production'"
 			if path == "root_path" {
 				return fmt.Errorf(message+"\n  tip: set workspace.root_path to a shared path such as /Shared/.bundle/${bundle.name}/${bundle.environment}", path)
 			} else {
@@ -127,7 +127,7 @@ func validateProductionMode(ctx context.Context, b *bundle.Bundle, isPrincipalUs
 		}
 
 		if !arePermissionsSetExplicitly(r) {
-			return fmt.Errorf("permissions and run_as must be set when using 'mode_production' without a service principals")
+			return fmt.Errorf("'permissions' and 'run_as' must be set when using 'mode_production'")
 		}
 	}
 	return nil
