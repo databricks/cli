@@ -1,0 +1,7 @@
+bundle:
+  name: include_with_glob
+
+include:
+  - "*.yml"
+  - "?.yml"
+  - "[a-z].yml"

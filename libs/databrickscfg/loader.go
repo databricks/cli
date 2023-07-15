@@ -90,7 +90,7 @@ func (l profileFromHostLoader) Configure(cfg *config.Config) error {
 	}
 	if err, ok := err.(errMultipleProfiles); ok {
 		return fmt.Errorf(
-			"%s: %w: please set DATABRICKS_CONFIG_PROFILE to specify one",
+			"%s: %w: please set DATABRICKS_CONFIG_PROFILE or provide --profile flag to specify one",
 			host, err)
 	}
 	if err != nil {

@@ -13,42 +13,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
-// Return if the child path is nested under the parent path.
-func isPathNestedUnder(child, parent string) bool {
-	child = path.Clean(child)
-	parent = path.Clean(parent)
-
-	// Traverse up the tree as long as "child" is contained in "parent".
-	for len(child) > len(parent) && strings.HasPrefix(child, parent) {
-		child = path.Dir(child)
-		if child == parent {
-			return true
-		}
-	}
-	return false
-}
-
-// Check if the specified path is nested under one of the allowed base paths.
-func checkPathNestedUnderBasePaths(me *iam.User, p string) error {
-	validBasePaths := []string{
-		path.Clean(fmt.Sprintf("/Users/%s", me.UserName)),
-		path.Clean(fmt.Sprintf("/Repos/%s", me.UserName)),
-	}
-
-	givenBasePath := path.Clean(p)
-	match := false
-	for _, basePath := range validBasePaths {
-		if isPathNestedUnder(givenBasePath, basePath) {
-			match = true
-			break
-		}
-	}
-	if !match {
-		return fmt.Errorf("path must be nested under %s", strings.Join(validBasePaths, " or "))
-	}
-	return nil
-}
-
 func repoPathForPath(me *iam.User, remotePath string) string {
 	base := path.Clean(fmt.Sprintf("/Repos/%s", me.UserName))
 	remotePath = path.Clean(remotePath)
@@ -62,11 +26,6 @@ func repoPathForPath(me *iam.User, remotePath string) string {
 // expected base paths and if it is a directory or repository.
 func EnsureRemotePathIsUsable(ctx context.Context, wsc *databricks.WorkspaceClient, remotePath string) error {
 	me, err := wsc.CurrentUser.Me(ctx)
-	if err != nil {
-		return err
-	}
-
-	err = checkPathNestedUnderBasePaths(me, remotePath)
 	if err != nil {
 		return err
 	}

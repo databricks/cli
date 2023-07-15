@@ -3,11 +3,12 @@
 package schema
 
 type ResourceModelServingConfigServedModels struct {
-	ModelName          string `json:"model_name"`
-	ModelVersion       string `json:"model_version"`
-	Name               string `json:"name,omitempty"`
-	ScaleToZeroEnabled bool   `json:"scale_to_zero_enabled,omitempty"`
-	WorkloadSize       string `json:"workload_size"`
+	EnvironmentVars    map[string]string `json:"environment_vars,omitempty"`
+	ModelName          string            `json:"model_name"`
+	ModelVersion       string            `json:"model_version"`
+	Name               string            `json:"name,omitempty"`
+	ScaleToZeroEnabled bool              `json:"scale_to_zero_enabled,omitempty"`
+	WorkloadSize       string            `json:"workload_size"`
 }
 
 type ResourceModelServingConfigTrafficConfigRoutes struct {
