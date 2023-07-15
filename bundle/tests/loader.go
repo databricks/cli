@@ -23,3 +23,10 @@ func loadEnvironment(t *testing.T, path, env string) *bundle.Bundle {
 	require.NoError(t, err)
 	return b
 }
+
+func loadEnvironmentWithError(t *testing.T, path, env string) error {
+	b := load(t, path)
+	err := bundle.Apply(context.Background(), b, mutator.SelectEnvironment(env))
+	require.Error(t, err)
+	return err
+}

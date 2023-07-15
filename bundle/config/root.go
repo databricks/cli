@@ -200,6 +200,9 @@ func (r *Root) MergeEnvironment(env *Environment) error {
 	}
 
 	if env.Git.Branch != "" {
+		if r.Bundle.Git.Inferred && r.Bundle.Git.Branch != env.Git.Branch {
+			return fmt.Errorf("not on the right Git branch:\n  expected according to configuration: %s\n  actual: %s", env.Git.Branch, r.Bundle.Git.Branch)
+		}
 		r.Bundle.Git.Branch = env.Git.Branch
 		r.Bundle.Git.Inferred = false
 	}

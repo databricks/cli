@@ -10,12 +10,11 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 )
 
-type processEnvironmentMode struct {}
+type processEnvironmentMode struct{}
 
 const developmentConcurrentRuns = 4
 
@@ -82,23 +81,37 @@ func transformDevelopmentMode(b *bundle.Bundle) error {
 }
 
 func validateDevelopmentMode(b *bundle.Bundle) error {
-	if isUserSpecificDeployment(b) {
-		return fmt.Errorf("environment with 'mode: development' must deploy to a location specific to the user, and should e.g. set 'root_path: ~/.bundle/${bundle.name}/${bundle.environment}'")
+	if path := findIncorrectPath(b, config.Development); path != "" {
+		return fmt.Errorf("%s must start with '~/' or contain the current username when using 'mode: development'", path)
 	}
 	return nil
 }
 
-func isUserSpecificDeployment(b *bundle.Bundle) bool {
+func findIncorrectPath(b *bundle.Bundle, mode config.Mode) string {
 	username := b.Config.Workspace.CurrentUser.UserName
-	return !strings.Contains(b.Config.Workspace.StatePath, username) ||
-		!strings.Contains(b.Config.Workspace.ArtifactsPath, username) ||
-		!strings.Contains(b.Config.Workspace.FilesPath, username)
+	containsExpected := true
+	if mode == config.Production {
+		containsExpected = false
+	}
+
+	if strings.Contains(b.Config.Workspace.RootPath, username) != containsExpected && b.Config.Workspace.RootPath != "" {
+		return "root_path"
+	}
+	if strings.Contains(b.Config.Workspace.StatePath, username) != containsExpected {
+		return "state_path"
+	}
+	if strings.Contains(b.Config.Workspace.FilesPath, username) != containsExpected {
+		return "files_path"
+	}
+	if strings.Contains(b.Config.Workspace.ArtifactsPath, username) != containsExpected {
+		return "artifacts_path"
+	}
+	return ""
 }
 
 func validateProductionMode(ctx context.Context, b *bundle.Bundle, isPrincipalUsed bool) error {
 	if b.Config.Bundle.Git.Inferred {
-		TODO: show a nice human error here? :(
-		return fmt.Errorf("environment with 'mode: production' must specify an explicit 'git' configuration")
+		return fmt.Errorf("environment with 'mode: production' must specify an explicit 'environments.git' configuration")
 	}
 
 	r := b.Config.Resources
@@ -109,12 +122,17 @@ func validateProductionMode(ctx context.Context, b *bundle.Bundle, isPrincipalUs
 	}
 
 	if !isPrincipalUsed {
-		if isUserSpecificDeployment(b) {
-			return fmt.Errorf("environment with 'mode: development' must deploy to a location specific to the user, and should e.g. set 'root_path: ~/.bundle/${bundle.name}/${bundle.environment}'")
+		if path := findIncorrectPath(b, config.Production); path != "" {
+			message := "%s must not contain the current username when using 'mode: production' without a service principal"
+			if path == "root_path" {
+				return fmt.Errorf(message+"\n  tip: set workspace.root_path to a shared path such as /Shared/.bundle/${bundle.name}/${bundle.environment}", path)
+			} else {
+				return fmt.Errorf(message, path)
+			}
 		}
 
 		if !arePermissionsSetExplicitly(r) {
-			return fmt.Errorf("environment with 'mode: production' must set permissions and run_as for all resources (when not using service principals)")
+			return fmt.Errorf("permissions and run_as must be set when using 'mode_production' without a service principals")
 		}
 	}
 	return nil
@@ -155,7 +173,7 @@ func arePermissionsSetExplicitly(r config.Resources) bool {
 			return false
 		}
 	}
-	return false
+	return true
 }
 
 func (m *processEnvironmentMode) Apply(ctx context.Context, b *bundle.Bundle) error {
@@ -167,7 +185,7 @@ func (m *processEnvironmentMode) Apply(ctx context.Context, b *bundle.Bundle) er
 		}
 		return transformDevelopmentMode(b)
 	case config.Production:
-		isPrincipal, err := m.isServicePrincipalUsed(ctx, b)
+		isPrincipal, err := isServicePrincipalUsed(ctx, b)
 		if err != nil {
 			return err
 		}

@@ -6,10 +6,13 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGitConfig(t *testing.T) {
+func TestAutoLoad(t *testing.T) {
 	b := load(t, "./autoload_git")
-	assert.Equal(t, "foo", b.Config.Bundle.Git.Branch)
-	sshUrl := "git@github.com:databricks/cli.git"
-	httpsUrl := "https://github.com/databricks/cli"
-	assert.Contains(t, []string{sshUrl, httpsUrl}, b.Config.Bundle.Git.OriginURL)
+	assert.NotEqual(t, "", b.Config.Bundle.Git.Branch)
+	assert.Contains(t, b.Config.Bundle.Git.OriginURL, "/cli")
+}
+
+func TestWrongBranch(t *testing.T) {
+	err := loadEnvironmentWithError(t, "./autoload_git", "production")
+	assert.ErrorContains(t, err, "not on the right Git branch")
 }

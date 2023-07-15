@@ -23,6 +23,10 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 		Config: config.Root{
 			Bundle: config.Bundle{
 				Mode: mode,
+				Git: config.Git{
+					OriginURL: "http://origin",
+					Branch:    "main",
+				},
 			},
 			Workspace: config.Workspace{
 				CurrentUser: &config.User{
@@ -83,31 +87,61 @@ func TestProcessEnvironmentModeDefault(t *testing.T) {
 
 func TestProcessEnvironmentModeProduction(t *testing.T) {
 	bundle := mockBundle(config.Production)
+
+	err := validateProductionMode(context.Background(), bundle, false)
+	require.ErrorContains(t, err, "state_path")
+
 	bundle.Config.Workspace.StatePath = "/Shared/.bundle/x/y/state"
 	bundle.Config.Workspace.ArtifactsPath = "/Shared/.bundle/x/y/artifacts"
 	bundle.Config.Workspace.FilesPath = "/Shared/.bundle/x/y/files"
 
-	err := validateProductionMode(context.Background(), bundle, false)
+	err = validateProductionMode(context.Background(), bundle, false)
+	require.ErrorContains(t, err, "permissions")
 
+	permissions := []resources.Permission{
+		{
+			Level:    "CAN_MANAGE",
+			UserName: "user@company.com",
+		},
+	}
+	bundle.Config.Resources.Jobs["job1"].Permissions = permissions
+	bundle.Config.Resources.Jobs["job1"].RunAs = &jobs.JobRunAs{UserName: "user@company.com"}
+	bundle.Config.Resources.Pipelines["pipeline1"].Permissions = permissions
+	bundle.Config.Resources.Experiments["experiment1"].Permissions = permissions
+	bundle.Config.Resources.Experiments["experiment2"].Permissions = permissions
+	bundle.Config.Resources.Models["model1"].Permissions = permissions
+
+	err = validateProductionMode(context.Background(), bundle, false)
 	require.NoError(t, err)
+
 	assert.Equal(t, "job1", bundle.Config.Resources.Jobs["job1"].Name)
 	assert.Equal(t, "pipeline1", bundle.Config.Resources.Pipelines["pipeline1"].Name)
 	assert.False(t, bundle.Config.Resources.Pipelines["pipeline1"].PipelineSpec.Development)
 }
 
-func TestProcessEnvironmentModeProductionFails(t *testing.T) {
+func TestProcessEnvironmentModeProductionGit(t *testing.T) {
 	bundle := mockBundle(config.Production)
 
-	err := validateProductionMode(context.Background(), bundle, false)
+	// Pretend the user didn't set Git configuration explicitly
+	bundle.Config.Bundle.Git.Inferred = true
 
-	require.Error(t, err)
+	err := validateProductionMode(context.Background(), bundle, false)
+	require.ErrorContains(t, err, "git")
+	bundle.Config.Bundle.Git.Inferred = false
+
+	// TODO: fail if on wrong branch
+
 }
 
 func TestProcessEnvironmentModeProductionOkForPrincipal(t *testing.T) {
 	bundle := mockBundle(config.Production)
 
+	// Our environment has all kinds of problems when not using service principals ...
 	err := validateProductionMode(context.Background(), bundle, false)
+	require.Error(t, err)
 
+	// ... but we're much less strict when a principal is used
+	err = validateProductionMode(context.Background(), bundle, true)
 	require.NoError(t, err)
 }
 
