@@ -7,4 +7,7 @@ type Git struct {
 
 	// Inferred is set to true if the Git details were inferred and weren't set explicitly
 	Inferred bool `json:"-" bundle:"readonly"`
+
+	// The actual branch according to Git (may be different from the configured branch)
+	ActualBranch string `json:"-" bundle:"readonly"`
 }

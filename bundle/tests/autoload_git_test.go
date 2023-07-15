@@ -9,10 +9,13 @@ import (
 func TestAutoLoad(t *testing.T) {
 	b := load(t, "./autoload_git")
 	assert.NotEqual(t, "", b.Config.Bundle.Git.Branch)
+	assert.True(t, b.Config.Bundle.Git.Inferred)
 	assert.Contains(t, b.Config.Bundle.Git.OriginURL, "/cli")
 }
 
-func TestWrongBranch(t *testing.T) {
-	err := loadEnvironmentWithError(t, "./autoload_git", "production")
-	assert.ErrorContains(t, err, "not on the right Git branch")
+func TestManuallySetBranch(t *testing.T) {
+	b := loadEnvironment(t, "./autoload_git", "production")
+	assert.False(t, b.Config.Bundle.Git.Inferred)
+	assert.Equal(t, "main", b.Config.Bundle.Git.Branch)
+	assert.Contains(t, b.Config.Bundle.Git.OriginURL, "/cli")
 }
