@@ -2,6 +2,15 @@
 
 package schema
 
+type ResourceJobComputeSpec struct {
+	Kind string `json:"kind,omitempty"`
+}
+
+type ResourceJobCompute struct {
+	ComputeKey string                  `json:"compute_key,omitempty"`
+	Spec       *ResourceJobComputeSpec `json:"spec,omitempty"`
+}
+
 type ResourceJobContinuous struct {
 	PauseStatus string `json:"pause_status,omitempty"`
 }
@@ -415,6 +424,12 @@ type ResourceJobSparkSubmitTask struct {
 	Parameters []string `json:"parameters,omitempty"`
 }
 
+type ResourceJobTaskConditionTask struct {
+	Left  string `json:"left,omitempty"`
+	Op    string `json:"op,omitempty"`
+	Right string `json:"right,omitempty"`
+}
+
 type ResourceJobTaskDbtTask struct {
 	Catalog           string   `json:"catalog,omitempty"`
 	Commands          []string `json:"commands"`
@@ -425,7 +440,8 @@ type ResourceJobTaskDbtTask struct {
 }
 
 type ResourceJobTaskDependsOn struct {
-	TaskKey string `json:"task_key,omitempty"`
+	Outcome string `json:"outcome,omitempty"`
+	TaskKey string `json:"task_key"`
 }
 
 type ResourceJobTaskEmailNotifications struct {
@@ -645,12 +661,27 @@ type ResourceJobTaskSparkSubmitTask struct {
 	Parameters []string `json:"parameters,omitempty"`
 }
 
+type ResourceJobTaskSqlTaskAlertSubscriptions struct {
+	DestinationId string `json:"destination_id,omitempty"`
+	UserName      string `json:"user_name,omitempty"`
+}
+
 type ResourceJobTaskSqlTaskAlert struct {
-	AlertId string `json:"alert_id"`
+	AlertId            string                                     `json:"alert_id"`
+	PauseSubscriptions bool                                       `json:"pause_subscriptions,omitempty"`
+	Subscriptions      []ResourceJobTaskSqlTaskAlertSubscriptions `json:"subscriptions,omitempty"`
+}
+
+type ResourceJobTaskSqlTaskDashboardSubscriptions struct {
+	DestinationId string `json:"destination_id,omitempty"`
+	UserName      string `json:"user_name,omitempty"`
 }
 
 type ResourceJobTaskSqlTaskDashboard struct {
-	DashboardId string `json:"dashboard_id"`
+	CustomSubject      string                                         `json:"custom_subject,omitempty"`
+	DashboardId        string                                         `json:"dashboard_id"`
+	PauseSubscriptions bool                                           `json:"pause_subscriptions,omitempty"`
+	Subscriptions      []ResourceJobTaskSqlTaskDashboardSubscriptions `json:"subscriptions,omitempty"`
 }
 
 type ResourceJobTaskSqlTaskFile struct {
@@ -671,6 +702,7 @@ type ResourceJobTaskSqlTask struct {
 }
 
 type ResourceJobTask struct {
+	ComputeKey             string                             `json:"compute_key,omitempty"`
 	Description            string                             `json:"description,omitempty"`
 	ExistingClusterId      string                             `json:"existing_cluster_id,omitempty"`
 	JobClusterKey          string                             `json:"job_cluster_key,omitempty"`
@@ -680,6 +712,7 @@ type ResourceJobTask struct {
 	RunIf                  string                             `json:"run_if,omitempty"`
 	TaskKey                string                             `json:"task_key,omitempty"`
 	TimeoutSeconds         int                                `json:"timeout_seconds,omitempty"`
+	ConditionTask          *ResourceJobTaskConditionTask      `json:"condition_task,omitempty"`
 	DbtTask                *ResourceJobTaskDbtTask            `json:"dbt_task,omitempty"`
 	DependsOn              []ResourceJobTaskDependsOn         `json:"depends_on,omitempty"`
 	EmailNotifications     *ResourceJobTaskEmailNotifications `json:"email_notifications,omitempty"`
@@ -695,9 +728,9 @@ type ResourceJobTask struct {
 }
 
 type ResourceJobTriggerFileArrival struct {
-	MinTimeBetweenTriggerSeconds int    `json:"min_time_between_trigger_seconds,omitempty"`
-	Url                          string `json:"url"`
-	WaitAfterLastChangeSeconds   int    `json:"wait_after_last_change_seconds,omitempty"`
+	MinTimeBetweenTriggersSeconds int    `json:"min_time_between_triggers_seconds,omitempty"`
+	Url                           string `json:"url"`
+	WaitAfterLastChangeSeconds    int    `json:"wait_after_last_change_seconds,omitempty"`
 }
 
 type ResourceJobTrigger struct {
@@ -736,6 +769,7 @@ type ResourceJob struct {
 	Tags                   map[string]string                `json:"tags,omitempty"`
 	TimeoutSeconds         int                              `json:"timeout_seconds,omitempty"`
 	Url                    string                           `json:"url,omitempty"`
+	Compute                []ResourceJobCompute             `json:"compute,omitempty"`
 	Continuous             *ResourceJobContinuous           `json:"continuous,omitempty"`
 	DbtTask                *ResourceJobDbtTask              `json:"dbt_task,omitempty"`
 	EmailNotifications     *ResourceJobEmailNotifications   `json:"email_notifications,omitempty"`

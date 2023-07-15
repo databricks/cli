@@ -174,18 +174,19 @@ func Select[V any](ctx context.Context, names map[string]V, label string) (id st
 	return c.Select(stringNames, label)
 }
 
-func (c *cmdIO) Secret() (value string, err error) {
+func (c *cmdIO) Secret(label string) (value string, err error) {
 	prompt := (promptui.Prompt{
-		Label: "Enter your secrets value",
-		Mask:  '*',
+		Label:       label,
+		Mask:        '*',
+		HideEntered: true,
 	})
 
 	return prompt.Run()
 }
 
-func Secret(ctx context.Context) (value string, err error) {
+func Secret(ctx context.Context, label string) (value string, err error) {
 	c := fromContext(ctx)
-	return c.Secret()
+	return c.Secret(label)
 }
 
 type nopWriteCloser struct {

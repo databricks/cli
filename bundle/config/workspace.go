@@ -82,12 +82,9 @@ func (w *Workspace) Client() (*databricks.WorkspaceClient, error) {
 		AzureLoginAppID:  w.AzureLoginAppID,
 	}
 
-	// HACKY fix to not used host based auth when the profile is already set
-	profile := os.Getenv("DATABRICKS_CONFIG_PROFILE")
-
 	// If only the host is configured, we try and unambiguously match it to
 	// a profile in the user's databrickscfg file. Override the default loaders.
-	if w.Host != "" && w.Profile == "" && profile == "" {
+	if w.Host != "" && w.Profile == "" {
 		cfg.Loaders = []config.Loader{
 			// Load auth creds from env vars
 			config.ConfigAttributes,
@@ -95,6 +92,13 @@ func (w *Workspace) Client() (*databricks.WorkspaceClient, error) {
 			// Our loader that resolves a profile from the host alone.
 			// This only kicks in if the above loaders don't configure auth.
 			databrickscfg.ResolveProfileFromHost,
+		}
+	}
+
+	if w.Profile != "" && w.Host != "" {
+		err := databrickscfg.ValidateConfigAndProfileHost(&cfg, w.Profile)
+		if err != nil {
+			return nil, err
 		}
 	}
 
