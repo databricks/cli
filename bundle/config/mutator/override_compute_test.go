@@ -2,6 +2,7 @@ package mutator_test
 
 import (
 	"context"
+	"os"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -14,20 +15,21 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestOverrideCompute(t *testing.T) {
+func TestOverrideDevelopment(t *testing.T) {
+	os.Setenv("DATABRICKS_CLUSTER_ID", "")
 	bundle := &bundle.Bundle{
 		Config: config.Root{
 			Bundle: config.Bundle{
-				Mode:    config.Development,
-				Compute: "newClusterID",
+				Mode:      config.Development,
+				ComputeID: "newClusterID",
 			},
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job1": {JobSettings: &jobs.JobSettings{
 						Name: "job1",
-						Tasks: []jobs.JobTaskSettings{
+						Tasks: []jobs.Task{
 							{
-								NewCluster: &compute.BaseClusterInfo{},
+								NewCluster: &compute.ClusterSpec{},
 							},
 							{
 								ExistingClusterId: "cluster2",
@@ -45,4 +47,88 @@ func TestOverrideCompute(t *testing.T) {
 	assert.Nil(t, bundle.Config.Resources.Jobs["job1"].Tasks[0].NewCluster)
 	assert.Equal(t, "newClusterID", bundle.Config.Resources.Jobs["job1"].Tasks[0].ExistingClusterId)
 	assert.Equal(t, "newClusterID", bundle.Config.Resources.Jobs["job1"].Tasks[1].ExistingClusterId)
+}
+
+func TestOverrideDevelopmentEnv(t *testing.T) {
+	os.Setenv("DATABRICKS_CLUSTER_ID", "newClusterId")
+	bundle := &bundle.Bundle{
+		Config: config.Root{
+			Resources: config.Resources{
+				Jobs: map[string]*resources.Job{
+					"job1": {JobSettings: &jobs.JobSettings{
+						Name: "job1",
+						Tasks: []jobs.Task{
+							{
+								NewCluster: &compute.ClusterSpec{},
+							},
+							{
+								ExistingClusterId: "cluster2",
+							},
+						},
+					}},
+				},
+			},
+		},
+	}
+
+	m := mutator.OverrideCompute()
+	err := m.Apply(context.Background(), bundle)
+	require.NoError(t, err)
+	assert.Equal(t, "cluster2", bundle.Config.Resources.Jobs["job1"].Tasks[1].ExistingClusterId)
+}
+
+func TestOverrideProduction(t *testing.T) {
+	bundle := &bundle.Bundle{
+		Config: config.Root{
+			Bundle: config.Bundle{
+				ComputeID: "newClusterID",
+			},
+			Resources: config.Resources{
+				Jobs: map[string]*resources.Job{
+					"job1": {JobSettings: &jobs.JobSettings{
+						Name: "job1",
+						Tasks: []jobs.Task{
+							{
+								NewCluster: &compute.ClusterSpec{},
+							},
+							{
+								ExistingClusterId: "cluster2",
+							},
+						},
+					}},
+				},
+			},
+		},
+	}
+
+	m := mutator.OverrideCompute()
+	err := m.Apply(context.Background(), bundle)
+	require.Error(t, err)
+}
+
+func TestOverrideProductionEnv(t *testing.T) {
+	os.Setenv("DATABRICKS_CLUSTER_ID", "newClusterId")
+	bundle := &bundle.Bundle{
+		Config: config.Root{
+			Resources: config.Resources{
+				Jobs: map[string]*resources.Job{
+					"job1": {JobSettings: &jobs.JobSettings{
+						Name: "job1",
+						Tasks: []jobs.Task{
+							{
+								NewCluster: &compute.ClusterSpec{},
+							},
+							{
+								ExistingClusterId: "cluster2",
+							},
+						},
+					}},
+				},
+			},
+		},
+	}
+
+	m := mutator.OverrideCompute()
+	err := m.Apply(context.Background(), bundle)
+	require.NoError(t, err)
 }

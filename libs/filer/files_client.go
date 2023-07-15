@@ -60,7 +60,7 @@ type FilesClient struct {
 	apiClient       *client.DatabricksClient
 
 	// File operations will be relative to this path.
-	root RootPath
+	root WorkspaceRootPath
 }
 
 func filesNotImplementedError(fn string) error {
@@ -77,7 +77,7 @@ func NewFilesClient(w *databricks.WorkspaceClient, root string) (Filer, error) {
 		workspaceClient: w,
 		apiClient:       apiClient,
 
-		root: NewRootPath(root),
+		root: NewWorkspaceRootPath(root),
 	}, nil
 }
 

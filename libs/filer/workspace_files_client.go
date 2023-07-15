@@ -3,7 +3,6 @@ package filer
 import (
 	"bytes"
 	"context"
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"io"
@@ -79,7 +78,7 @@ type WorkspaceFilesClient struct {
 	apiClient       *client.DatabricksClient
 
 	// File operations will be relative to this path.
-	root RootPath
+	root WorkspaceRootPath
 }
 
 func NewWorkspaceFilesClient(w *databricks.WorkspaceClient, root string) (Filer, error) {
@@ -92,7 +91,7 @@ func NewWorkspaceFilesClient(w *databricks.WorkspaceClient, root string) (Filer,
 		workspaceClient: w,
 		apiClient:       apiClient,
 
-		root: NewRootPath(root),
+		root: NewWorkspaceRootPath(root),
 	}, nil
 }
 
@@ -187,18 +186,7 @@ func (w *WorkspaceFilesClient) Read(ctx context.Context, name string) (io.ReadCl
 
 	// Export file contents. Note the /workspace/export API has a limit of 10MBs
 	// for the file size
-	// TODO: use direct download once it's fixed. see: https://github.com/databricks/cli/issues/452
-	res, err := w.workspaceClient.Workspace.Export(ctx, workspace.ExportRequest{
-		Path: absPath,
-	})
-	if err != nil {
-		return nil, err
-	}
-	b, err := base64.StdEncoding.DecodeString(res.Content)
-	if err != nil {
-		return nil, err
-	}
-	return io.NopCloser(bytes.NewReader(b)), nil
+	return w.workspaceClient.Workspace.Download(ctx, absPath)
 }
 
 func (w *WorkspaceFilesClient) Delete(ctx context.Context, name string, mode ...DeleteMode) error {

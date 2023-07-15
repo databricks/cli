@@ -54,7 +54,7 @@ func TestTranslatePathsSkippedWithGitSource(t *testing.T) {
 								GitTag:      "sometag",
 								GitUrl:      "https://github.com/someuser/somerepo",
 							},
-							Tasks: []jobs.JobTaskSettings{
+							Tasks: []jobs.Task{
 								{
 									NotebookTask: &jobs.NotebookTask{
 										NotebookPath: "my_job_notebook.py",
@@ -117,7 +117,7 @@ func TestTranslatePaths(t *testing.T) {
 							ConfigFilePath: filepath.Join(dir, "resource.yml"),
 						},
 						JobSettings: &jobs.JobSettings{
-							Tasks: []jobs.JobTaskSettings{
+							Tasks: []jobs.Task{
 								{
 									NotebookTask: &jobs.NotebookTask{
 										NotebookPath: "./my_job_notebook.py",
@@ -251,7 +251,7 @@ func TestTranslatePathsInSubdirectories(t *testing.T) {
 							ConfigFilePath: filepath.Join(dir, "job/resource.yml"),
 						},
 						JobSettings: &jobs.JobSettings{
-							Tasks: []jobs.JobTaskSettings{
+							Tasks: []jobs.Task{
 								{
 									SparkPythonTask: &jobs.SparkPythonTask{
 										PythonFile: "./my_python_file.py",
@@ -314,7 +314,7 @@ func TestTranslatePathsOutsideBundleRoot(t *testing.T) {
 							ConfigFilePath: filepath.Join(dir, "../resource.yml"),
 						},
 						JobSettings: &jobs.JobSettings{
-							Tasks: []jobs.JobTaskSettings{
+							Tasks: []jobs.Task{
 								{
 									SparkPythonTask: &jobs.SparkPythonTask{
 										PythonFile: "./my_python_file.py",
@@ -345,7 +345,7 @@ func TestJobNotebookDoesNotExistError(t *testing.T) {
 							ConfigFilePath: filepath.Join(dir, "fake.yml"),
 						},
 						JobSettings: &jobs.JobSettings{
-							Tasks: []jobs.JobTaskSettings{
+							Tasks: []jobs.Task{
 								{
 									NotebookTask: &jobs.NotebookTask{
 										NotebookPath: "./doesnt_exist.py",
@@ -376,7 +376,7 @@ func TestJobFileDoesNotExistError(t *testing.T) {
 							ConfigFilePath: filepath.Join(dir, "fake.yml"),
 						},
 						JobSettings: &jobs.JobSettings{
-							Tasks: []jobs.JobTaskSettings{
+							Tasks: []jobs.Task{
 								{
 									SparkPythonTask: &jobs.SparkPythonTask{
 										PythonFile: "./doesnt_exist.py",

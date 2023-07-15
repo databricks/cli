@@ -3,15 +3,17 @@ package mutator
 import (
 	"context"
 	"fmt"
+	"path"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 )
 
 type processEnvironmentMode struct{}
 
-const debugConcurrentRuns = 4
+const developmentConcurrentRuns = 4
 
 func ProcessEnvironmentMode() bundle.Mutator {
 	return &processEnvironmentMode{}
@@ -34,16 +36,16 @@ func processDevelopmentMode(b *bundle.Bundle) error {
 		}
 		r.Jobs[i].Tags["dev"] = ""
 		if r.Jobs[i].MaxConcurrentRuns == 0 {
-			r.Jobs[i].MaxConcurrentRuns = debugConcurrentRuns
+			r.Jobs[i].MaxConcurrentRuns = developmentConcurrentRuns
 		}
 		if r.Jobs[i].Schedule != nil {
-			r.Jobs[i].Schedule.PauseStatus = "PAUSED"
+			r.Jobs[i].Schedule.PauseStatus = jobs.PauseStatusPaused
 		}
 		if r.Jobs[i].Continuous != nil {
-			r.Jobs[i].Continuous.PauseStatus = "PAUSED"
+			r.Jobs[i].Continuous.PauseStatus = jobs.PauseStatusPaused
 		}
 		if r.Jobs[i].Trigger != nil {
-			r.Jobs[i].Trigger.PauseStatus = "PAUSED"
+			r.Jobs[i].Trigger.PauseStatus = jobs.PauseStatusPaused
 		}
 	}
 
@@ -59,7 +61,14 @@ func processDevelopmentMode(b *bundle.Bundle) error {
 	}
 
 	for i := range r.Experiments {
-		r.Experiments[i].Name = "[dev] " + r.Experiments[i].Name
+		filepath := r.Experiments[i].Name
+		dir := path.Dir(filepath)
+		base := path.Base(filepath)
+		if dir == "." {
+			r.Experiments[i].Name = "[dev] " + base
+		} else {
+			r.Experiments[i].Name = dir + "/[dev] " + base
+		}
 		r.Experiments[i].Tags = append(r.Experiments[i].Tags, ml.ExperimentTag{Key: "dev", Value: ""})
 	}
 
