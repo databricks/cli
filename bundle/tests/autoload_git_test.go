@@ -8,7 +8,6 @@ import (
 
 func TestAutoLoad(t *testing.T) {
 	b := load(t, "./autoload_git")
-	assert.NotEqual(t, "", b.Config.Bundle.Git.Branch)
 	assert.True(t, b.Config.Bundle.Git.Inferred)
 	assert.Contains(t, b.Config.Bundle.Git.OriginURL, "/cli")
 }

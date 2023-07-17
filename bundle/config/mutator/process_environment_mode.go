@@ -110,7 +110,7 @@ func findIncorrectPath(b *bundle.Bundle, mode config.Mode) string {
 
 func validateProductionMode(ctx context.Context, b *bundle.Bundle, isPrincipalUsed bool) error {
 	if b.Config.Bundle.Git.Inferred {
-		return fmt.Errorf("environment with 'mode: production' must specify an explicit 'environments.git' configuration")
+		return fmt.Errorf("environment with 'mode: production' must specify an explicit 'environments.environment.git' configuration")
 	}
 
 	r := b.Config.Resources
