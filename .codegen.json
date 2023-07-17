@@ -11,6 +11,7 @@
         "required": ["go"],
         "post_generate": [
             "rm -fr vendor",
+            "go mod tidy",
             "go mod vendor",
             "go test -short ./..."
         ]
