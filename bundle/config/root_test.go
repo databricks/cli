@@ -2,7 +2,11 @@ package config
 
 import (
 	"encoding/json"
+	"os"
+	"path/filepath"
 	"reflect"
+	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/bundle/config/variable"
@@ -162,4 +166,58 @@ func TestRootMergeEnvironmentWithMode(t *testing.T) {
 	env := &Environment{Mode: Development}
 	require.NoError(t, root.MergeEnvironment(env))
 	assert.Equal(t, Development, root.Bundle.Mode)
+}
+
+func TestConfigFileNames_FindInPath(t *testing.T) {
+	testCases := []struct {
+		name     string
+		files    []string
+		expected string
+		err      string
+	}{
+		{
+			name:     "file found",
+			files:    []string{"databricks.yaml"},
+			expected: "BASE/databricks.yaml",
+			err:      "",
+		},
+		{
+			name:     "multiple files found",
+			files:    []string{"databricks.yaml", "bundle.yml"},
+			expected: "",
+			err:      "multiple bundle configuration files found",
+		},
+		{
+			name:     "file not found",
+			files:    []string{},
+			expected: "",
+			err:      "no such file or directory",
+		},
+	}
+
+	if runtime.GOOS == "windows" {
+		testCases[2].err = "The system cannot find the file specified."
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			projectDir := t.TempDir()
+			for _, file := range tc.files {
+				f1, _ := os.Create(filepath.Join(projectDir, file))
+				f1.Close()
+			}
+
+			cfn := ConfigFileNames{"databricks.yaml", "databricks.yml", "bundle.yaml", "bundle.yml"}
+			result, err := cfn.FindInPath(projectDir)
+
+			expected := strings.Replace(tc.expected, "BASE/", projectDir+string(os.PathSeparator), 1)
+			if result != expected {
+				t.Errorf("expected %s, but got %s", expected, result)
+			}
+
+			if err != nil && !strings.Contains(err.Error(), tc.err) {
+				t.Errorf("expected error %v, but got %v", tc.err, err)
+			}
+		})
+	}
 }

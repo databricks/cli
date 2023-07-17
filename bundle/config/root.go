@@ -11,8 +11,31 @@ import (
 	"github.com/imdario/mergo"
 )
 
-// FileName is the name of bundle configuration file.
-const FileName = "bundle.yml"
+type ConfigFileNames [4]string
+
+// FileNames is the name of bundle configuration file.
+var FileNames = ConfigFileNames{"databricks.yaml", "databricks.yml", "bundle.yaml", "bundle.yml"}
+
+func (c ConfigFileNames) FindInPath(path string) (string, error) {
+	result := ""
+	var err error = nil
+
+	for _, file := range c {
+		filePath := filepath.Join(path, file)
+		_, err = os.Stat(filePath)
+		if err == nil {
+			if result != "" {
+				return "", fmt.Errorf("multiple bundle configuration files found in %s", path)
+			}
+			result = filePath
+		}
+	}
+
+	if result == "" {
+		return "", err
+	}
+	return result, nil
+}
 
 type Root struct {
 	// Path contains the directory path to the root of the bundle.
@@ -62,7 +85,10 @@ func Load(path string) (*Root, error) {
 
 	// If we were given a directory, assume this is the bundle root.
 	if stat.IsDir() {
-		path = filepath.Join(path, FileName)
+		path, err = FileNames.FindInPath(path)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if err := r.Load(path); err != nil {
