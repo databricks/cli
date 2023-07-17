@@ -25,7 +25,7 @@ func (c ConfigFileNames) FindInPath(path string) (string, error) {
 		_, err = os.Stat(filePath)
 		if err == nil {
 			if result != "" {
-				return "", fmt.Errorf("multiple bundle configuration files found in %s", path)
+				return "", fmt.Errorf("multiple bundle root configuration files found in %s", path)
 			}
 			result = filePath
 		}
