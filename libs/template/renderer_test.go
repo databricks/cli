@@ -25,7 +25,7 @@ func TestRendererVariableRead(t *testing.T) {
 	assert.Equal(t, "shreyas.goenka@databricks.com\n", string(b))
 }
 
-func TestUrlParseUsageInFunction(t *testing.T) {
+func TestRendererUrlParseUsageInFunction(t *testing.T) {
 	r, err := newRenderer(nil, "./testdata/get_host/library")
 	require.NoError(t, err)
 
@@ -38,6 +38,31 @@ func TestUrlParseUsageInFunction(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, "https://www.host.com\n", string(b))
+}
+
+func TestRendererRegexpCheckFailing(t *testing.T) {
+	r, err := newRenderer(nil, "./testdata/is_https/library")
+	require.NoError(t, err)
+
+	tmpDir := t.TempDir()
+
+	err = walkFileTree(r, "./testdata/is_https/template_not_https", tmpDir)
+	require.NoError(t, err)
+}
+
+func TestRendererRegexpCheckPassing(t *testing.T) {
+	r, err := newRenderer(nil, "./testdata/is_https/library")
+	require.NoError(t, err)
+
+	tmpDir := t.TempDir()
+
+	err = walkFileTree(r, "./testdata/is_https/template_is_https", tmpDir)
+	require.NoError(t, err)
+
+	b, err := os.ReadFile(filepath.Join(tmpDir, "my_check"))
+	require.NoError(t, err)
+
+	assert.Equal(t, "this file is created if validation passes\n", string(b))
 }
 
 func TestExecuteTemplate(t *testing.T) {

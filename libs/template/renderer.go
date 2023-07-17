@@ -79,6 +79,10 @@ func (r *renderer) generateFile(pathTemplate, contentTemplate string, perm fs.Fi
 		// skip this file
 		return nil
 	}
+	// Capture errors caused by the "fail" helper function
+	if target := (&ErrFail{}); errors.As(err, target) {
+		return target
+	}
 	if err != nil {
 		return fmt.Errorf("failed to compute file content for %s. %w", pathTemplate, err)
 	}

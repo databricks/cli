@@ -2,11 +2,22 @@ package template
 
 import (
 	"errors"
+	"fmt"
 	"net/url"
+	"regexp"
 	"text/template"
 )
 
 var errSkipThisFile = errors.New("skip generating this file")
+
+
+type ErrFail struct {
+	msg string
+}
+
+func (err ErrFail) Error() string {
+	return err.msg
+}
 
 var HelperFuncs = template.FuncMap{
 	// Text template execution returns the error only if it's the second return
@@ -16,5 +27,11 @@ var HelperFuncs = template.FuncMap{
 	},
 	"urlParse": func(rawUrl string) (*url.URL, error) {
 		return url.Parse(rawUrl)
+	},
+	"regexpCompile": func(expr string) (*regexp.Regexp, error) {
+		return regexp.Compile(expr)
+	},
+	"fail": func(format string, args ...any) (any, error) {
+		return nil, ErrFail{fmt.Sprintf(format, args...)}
 	},
 }

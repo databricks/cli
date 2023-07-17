@@ -1,0 +1,1 @@
+{{template "is_https_check" "/not-a-url"}}
