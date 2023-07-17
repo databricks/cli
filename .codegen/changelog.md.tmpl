@@ -1,0 +1,29 @@
+# Version changelog
+
+## {{.Version}}
+
+{{range .Changes -}}
+ * {{.}}.
+{{end}}{{- if .ApiChanges}}
+API Changes:
+{{range .ApiChanges}}{{if or (eq .X "method") (eq .X "service")}}
+ * {{.Action}} {{template "what" .}}{{if .Extra}} {{.Extra}}{{with .Other}} {{template "what" .}}{{end}}{{end}}.
+{{- end}}{{- end}}
+
+OpenAPI SHA: {{.Sha}}, Date: {{.Changed}}
+{{- end}}{{if .DependencyUpdates}}
+Dependency updates:
+{{range .DependencyUpdates}}
+ * {{.}}.
+{{- end -}}
+{{end}}
+
+## {{.PrevVersion}}
+
+{{- define "what" -}}
+    {{if eq .X "service" -}}
+        `{{if .Service.IsAccounts}}account {{end}} {{.Service.KebabName}}` command group
+    {{- else if eq .X "method" -}}
+        `{{if .Method.Service.IsAccounts}}account {{end}} {{.Service.KebabName}} {{.KebabName}}` command
+    {{- end}}
+{{- end -}}

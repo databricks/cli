@@ -6,5 +6,11 @@
     "batch": {
         ".codegen/cmds-workspace.go.tmpl": "cmd/workspace/cmd.go",
         ".codegen/cmds-account.go.tmpl": "cmd/account/cmd.go"
+    },
+    "toolchain": {
+        "required": ["go"],
+        "post_generate": [
+            "go test -short ./..."
+        ]
     }
 }
