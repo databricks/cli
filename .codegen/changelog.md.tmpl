@@ -22,8 +22,8 @@ Dependency updates:
 
 {{- define "what" -}}
     {{if eq .X "service" -}}
-        `databricks {{- if .Service.IsAccounts}}account {{end -}}{{(.Service.TrimPrefix "account").KebabName}}` command group
+        `databricks {{if .Service.IsAccounts}}account {{end -}}{{(.Service.TrimPrefix "account").KebabName}}` command group
     {{- else if eq .X "method" -}}
-        `databricks {{- if .Method.Service.IsAccounts}}account {{end -}}{{(.Method.Service.TrimPrefix "account").KebabName}} {{.Method.KebabName}}` command
+        `databricks {{if .Method.Service.IsAccounts}}account {{end -}}{{(.Method.Service.TrimPrefix "account").KebabName}} {{.Method.KebabName}}` command
     {{- end}}
 {{- end -}}
