@@ -13,33 +13,37 @@ import (
 
 type ConfigFileNames [4]string
 
-// FileNames contains possible names of bundle configuration files.
+// FileNames contains allowed names of bundle configuration files.
 var FileNames = ConfigFileNames{"databricks.yaml", "databricks.yml", "bundle.yaml", "bundle.yml"}
 
 func (c ConfigFileNames) FindInPath(path string) (string, error) {
 	result := ""
-	var err error = nil
+	var firstErr error
 
 	for _, file := range c {
 		filePath := filepath.Join(path, file)
-		_, err = os.Stat(filePath)
+		_, err := os.Stat(filePath)
 		if err == nil {
 			if result != "" {
 				return "", fmt.Errorf("multiple bundle root configuration files found in %s", path)
 			}
 			result = filePath
+		} else {
+			if firstErr == nil {
+				firstErr = err
+			}
 		}
 	}
 
 	if result == "" {
-		return "", err
+		return "", firstErr
 	}
 	return result, nil
 }
 
 type Root struct {
 	// Path contains the directory path to the root of the bundle.
-	// It is set when loading `bundle.yml`.
+	// It is set when loading `databricks.yaml`.
 	Path string `json:"-" bundle:"readonly"`
 
 	// Contains user defined variables
@@ -50,7 +54,7 @@ type Root struct {
 	Bundle Bundle `json:"bundle"`
 
 	// Include specifies a list of patterns of file names to load and
-	// merge into the this configuration. If not set in `bundle.yml`,
+	// merge into the this configuration. If not set in `databricks.yaml`,
 	// it defaults to loading `*.yml` and `*/*.yml`.
 	//
 	// Also see [mutator.DefineDefaultInclude].

@@ -61,7 +61,7 @@ func TestProcessRootIncludesSingleGlob(t *testing.T) {
 		},
 	}
 
-	touch(t, bundle.Config.Path, "bundle.yml")
+	touch(t, bundle.Config.Path, "databricks.yaml")
 	touch(t, bundle.Config.Path, "a.yml")
 	touch(t, bundle.Config.Path, "b.yml")
 

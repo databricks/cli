@@ -76,7 +76,7 @@ func TestRootLookup(t *testing.T) {
 
 	chdir(t, t.TempDir())
 
-	// Create bundle.yml file.
+	// Create databricks.yaml file.
 	f, err := os.Create(config.FileNames[0])
 	require.NoError(t, err)
 	defer f.Close()

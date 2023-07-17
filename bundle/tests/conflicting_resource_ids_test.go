@@ -14,7 +14,7 @@ import (
 
 func TestConflictingResourceIdsNoSubconfig(t *testing.T) {
 	_, err := bundle.Load("./conflicting_resource_ids/no_subconfigurations")
-	bundleConfigPath := filepath.FromSlash("conflicting_resource_ids/no_subconfigurations/bundle.yml")
+	bundleConfigPath := filepath.FromSlash("conflicting_resource_ids/no_subconfigurations/databricks.yaml")
 	assert.ErrorContains(t, err, fmt.Sprintf("multiple resources named foo (job at %s, pipeline at %s)", bundleConfigPath, bundleConfigPath))
 }
 
@@ -22,7 +22,7 @@ func TestConflictingResourceIdsOneSubconfig(t *testing.T) {
 	b, err := bundle.Load("./conflicting_resource_ids/one_subconfiguration")
 	require.NoError(t, err)
 	err = bundle.Apply(context.Background(), b, bundle.Seq(mutator.DefaultMutators()...))
-	bundleConfigPath := filepath.FromSlash("conflicting_resource_ids/one_subconfiguration/bundle.yml")
+	bundleConfigPath := filepath.FromSlash("conflicting_resource_ids/one_subconfiguration/databricks.yaml")
 	resourcesConfigPath := filepath.FromSlash("conflicting_resource_ids/one_subconfiguration/resources.yml")
 	assert.ErrorContains(t, err, fmt.Sprintf("multiple resources named foo (job at %s, pipeline at %s)", bundleConfigPath, resourcesConfigPath))
 }
