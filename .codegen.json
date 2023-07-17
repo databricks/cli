@@ -10,6 +10,7 @@
     "toolchain": {
         "required": ["go"],
         "post_generate": [
+            "go mod tidy",
             "go mod vendor",
             "go test -short ./..."
         ]
