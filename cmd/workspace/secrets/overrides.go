@@ -1,6 +1,11 @@
 package secrets
 
 import (
+	"encoding/base64"
+	"fmt"
+	"io"
+	"os"
+
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
@@ -40,15 +45,14 @@ var putSecretCmd = &cobra.Command{
   and cannot exceed 128 characters. The maximum allowed secret value size is 128
   KB. The maximum number of secrets in a given scope is 1000.
 
-  The input fields "string_value" or "bytes_value" specify the type of the
-  secret, which will determine the value returned when the secret value is
-  requested. Exactly one must be specified.
+  The arguments "string-value" or "bytes-value" specify the type of the secret,
+  which will determine the value returned when the secret value is requested.
 
-  Throws RESOURCE_DOES_NOT_EXIST if no such secret scope exists. Throws
-  RESOURCE_LIMIT_EXCEEDED if maximum number of secrets in scope is exceeded.
-  Throws INVALID_PARAMETER_VALUE if the key name or value length is invalid.
-  Throws PERMISSION_DENIED if the user does not have permission to make this
-  API call.`,
+  You can specify the secret value in one of three ways:
+  * Specify the value as a string using the --string-value flag.
+  * Input the secret when prompted interactively (single-line secrets).
+  * Pass the secret via standard input (multi-line secrets).
+  `,
 
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
@@ -62,6 +66,13 @@ var putSecretCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
+
+		bytesValueChanged := cmd.Flags().Changed("bytes-value")
+		stringValueChanged := cmd.Flags().Changed("string-value")
+		if bytesValueChanged && stringValueChanged {
+			return fmt.Errorf("cannot specify both --bytes-value and --string-value")
+		}
+
 		if cmd.Flags().Changed("json") {
 			err = putSecretJson.Unmarshal(&putSecretReq)
 			if err != nil {
@@ -71,12 +82,20 @@ var putSecretCmd = &cobra.Command{
 			putSecretReq.Scope = args[0]
 			putSecretReq.Key = args[1]
 
-			value, err := cmdio.Secret(ctx)
-			if err != nil {
-				return err
+			switch {
+			case bytesValueChanged:
+				// Bytes value set; encode as base64.
+				putSecretReq.BytesValue = base64.StdEncoding.EncodeToString([]byte(putSecretReq.BytesValue))
+			case stringValueChanged:
+				// String value set; nothing to do.
+			default:
+				// Neither is specified; read secret value from stdin.
+				bytes, err := promptSecret(cmd)
+				if err != nil {
+					return err
+				}
+				putSecretReq.BytesValue = base64.StdEncoding.EncodeToString(bytes)
 			}
-
-			putSecretReq.StringValue = value
 		}
 
 		err = w.Secrets.PutSecret(ctx, putSecretReq)
@@ -85,4 +104,18 @@ var putSecretCmd = &cobra.Command{
 		}
 		return nil
 	},
+}
+
+func promptSecret(cmd *cobra.Command) ([]byte, error) {
+	// If stdin is a TTY, prompt for the secret.
+	if !cmdio.IsInTTY(cmd.Context()) {
+		return io.ReadAll(os.Stdin)
+	}
+
+	value, err := cmdio.Secret(cmd.Context(), "Please enter your secret value")
+	if err != nil {
+		return nil, err
+	}
+
+	return []byte(value), nil
 }
