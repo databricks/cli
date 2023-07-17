@@ -18,9 +18,14 @@ var initCmd = &cobra.Command{
 var configFile string
 var outputDir string
 
+// TODO: move integration tests to be unit tests OR increase coverage
+
 func init() {
 	initCmd.Flags().StringVar(&configFile, "config-file", "", "Input parameters for template initialization")
 	initCmd.Flags().StringVar(&outputDir, "output-dir", "", "Directory to output the generated project into")
 	initCmd.MarkFlagRequired("config-file")
+	// TODO: make this flag optional and initialize into current directory.
+	// Should we initialize into current directory?
+	initCmd.MarkFlagRequired("output-dir")
 	AddCommand(initCmd)
 }

@@ -10,6 +10,36 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestRendererVariableRead(t *testing.T) {
+	r, err := newRenderer(nil, "./testdata/email/library")
+	require.NoError(t, err)
+
+	tmpDir := t.TempDir()
+
+	err = walkFileTree(r, "./testdata/email/template", tmpDir)
+	require.NoError(t, err)
+
+	b, err := os.ReadFile(filepath.Join(tmpDir, "my_email"))
+	require.NoError(t, err)
+
+	assert.Equal(t, "shreyas.goenka@databricks.com\n", string(b))
+}
+
+func TestUrlParseUsageInFunction(t *testing.T) {
+	r, err := newRenderer(nil, "./testdata/get_host/library")
+	require.NoError(t, err)
+
+	tmpDir := t.TempDir()
+
+	err = walkFileTree(r, "./testdata/get_host/template", tmpDir)
+	require.NoError(t, err)
+
+	b, err := os.ReadFile(filepath.Join(tmpDir, "my_host"))
+	require.NoError(t, err)
+
+	assert.Equal(t, "https://www.host.com\n", string(b))
+}
+
 func TestExecuteTemplate(t *testing.T) {
 	templateText :=
 		`"{{.count}} items are made of {{.Material}}".
