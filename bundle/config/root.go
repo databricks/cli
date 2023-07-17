@@ -13,7 +13,7 @@ import (
 
 type ConfigFileNames [4]string
 
-// FileNames is the name of bundle configuration file.
+// FileNames contains possible names of bundle configuration files.
 var FileNames = ConfigFileNames{"databricks.yaml", "databricks.yml", "bundle.yaml", "bundle.yml"}
 
 func (c ConfigFileNames) FindInPath(path string) (string, error) {
