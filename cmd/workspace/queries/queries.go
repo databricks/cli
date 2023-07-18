@@ -33,13 +33,6 @@ func init() {
 	// TODO: short flags
 	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	createCmd.Flags().StringVar(&createReq.DataSourceId, "data-source-id", createReq.DataSourceId, `The ID of the data source / SQL warehouse where this query will run.`)
-	createCmd.Flags().StringVar(&createReq.Description, "description", createReq.Description, `General description that can convey additional information about this query such as usage notes.`)
-	createCmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `The name or title of this query to display in list views.`)
-	// TODO: any: options
-	createCmd.Flags().StringVar(&createReq.Parent, "parent", createReq.Parent, `The identifier of the workspace folder containing the query.`)
-	createCmd.Flags().StringVar(&createReq.Query, "query", createReq.Query, `The text of the query.`)
-
 }
 
 var createCmd = &cobra.Command{
@@ -76,6 +69,7 @@ var createCmd = &cobra.Command{
 				return err
 			}
 		} else {
+			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
 
 		response, err := w.Queries.Create(ctx, createReq)
@@ -314,11 +308,11 @@ func init() {
 	// TODO: short flags
 	updateCmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	updateCmd.Flags().StringVar(&updateReq.DataSourceId, "data-source-id", updateReq.DataSourceId, `The ID of the data source / SQL warehouse where this query will run.`)
-	updateCmd.Flags().StringVar(&updateReq.Description, "description", updateReq.Description, `General description that can convey additional information about this query such as usage notes.`)
-	updateCmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `The name or title of this query to display in list views.`)
+	updateCmd.Flags().StringVar(&updateReq.DataSourceId, "data-source-id", updateReq.DataSourceId, `Data source ID.`)
+	updateCmd.Flags().StringVar(&updateReq.Description, "description", updateReq.Description, `General description that conveys additional information about this query such as usage notes.`)
+	updateCmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `The title of this query that appears in list views, widget headings, and on the query page.`)
 	// TODO: any: options
-	updateCmd.Flags().StringVar(&updateReq.Query, "query", updateReq.Query, `The text of the query.`)
+	updateCmd.Flags().StringVar(&updateReq.Query, "query", updateReq.Query, `The text of the query to be run.`)
 
 }
 

@@ -7,6 +7,7 @@ import (
 
 	alerts "github.com/databricks/cli/cmd/workspace/alerts"
 	catalogs "github.com/databricks/cli/cmd/workspace/catalogs"
+	clean_rooms "github.com/databricks/cli/cmd/workspace/clean-rooms"
 	cluster_policies "github.com/databricks/cli/cmd/workspace/cluster-policies"
 	clusters "github.com/databricks/cli/cmd/workspace/clusters"
 	connections "github.com/databricks/cli/cmd/workspace/connections"
@@ -58,6 +59,7 @@ import (
 func init() {
 	root.RootCmd.AddCommand(alerts.Cmd)
 	root.RootCmd.AddCommand(catalogs.Cmd)
+	root.RootCmd.AddCommand(clean_rooms.Cmd)
 	root.RootCmd.AddCommand(cluster_policies.Cmd)
 	root.RootCmd.AddCommand(clusters.Cmd)
 	root.RootCmd.AddCommand(connections.Cmd)
@@ -108,6 +110,7 @@ func init() {
 	// Register commands with groups
 	alerts.Cmd.GroupID = "sql"
 	catalogs.Cmd.GroupID = "catalog"
+	clean_rooms.Cmd.GroupID = "sharing"
 	cluster_policies.Cmd.GroupID = "compute"
 	clusters.Cmd.GroupID = "compute"
 	connections.Cmd.GroupID = "catalog"

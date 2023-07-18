@@ -203,25 +203,6 @@ func init() {
 	// TODO: short flags
 	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	// TODO: array: access_control_list
-	// TODO: array: compute
-	// TODO: complex arg: continuous
-	// TODO: complex arg: email_notifications
-	createCmd.Flags().Var(&createReq.Format, "format", `Used to tell what is the format of the job.`)
-	// TODO: complex arg: git_source
-	// TODO: array: job_clusters
-	createCmd.Flags().IntVar(&createReq.MaxConcurrentRuns, "max-concurrent-runs", createReq.MaxConcurrentRuns, `An optional maximum allowed number of concurrent runs of the job.`)
-	createCmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `An optional name for the job.`)
-	// TODO: complex arg: notification_settings
-	// TODO: array: parameters
-	// TODO: complex arg: run_as
-	// TODO: complex arg: schedule
-	// TODO: map via StringToStringVar: tags
-	// TODO: array: tasks
-	createCmd.Flags().IntVar(&createReq.TimeoutSeconds, "timeout-seconds", createReq.TimeoutSeconds, `An optional timeout applied to each run of this job.`)
-	// TODO: complex arg: trigger
-	// TODO: complex arg: webhook_notifications
-
 }
 
 var createCmd = &cobra.Command{
@@ -250,6 +231,7 @@ var createCmd = &cobra.Command{
 				return err
 			}
 		} else {
+			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
 
 		response, err := w.Jobs.Create(ctx, createReq)
@@ -1012,7 +994,9 @@ func init() {
 	submitCmd.Flags().Var(&submitJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: access_control_list
+	// TODO: complex arg: email_notifications
 	// TODO: complex arg: git_source
+	// TODO: complex arg: health
 	submitCmd.Flags().StringVar(&submitReq.IdempotencyToken, "idempotency-token", submitReq.IdempotencyToken, `An optional token that can be used to guarantee the idempotency of job run requests.`)
 	// TODO: complex arg: notification_settings
 	submitCmd.Flags().StringVar(&submitReq.RunName, "run-name", submitReq.RunName, `An optional name for the run.`)

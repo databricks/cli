@@ -1,5 +1,33 @@
 # Version changelog
 
+## 0.201.0
+
+* Add development runs ([#522](https://github.com/databricks/cli/pull/522)).
+* Support tab completion for profiles ([#572](https://github.com/databricks/cli/pull/572)).
+* Correctly use --profile flag passed for all bundle commands ([#571](https://github.com/databricks/cli/pull/571)).
+* Disallow notebooks in paths where files are expected ([#573](https://github.com/databricks/cli/pull/573)).
+* Improve auth login experience ([#570](https://github.com/databricks/cli/pull/570)).
+* Remove base path checks during sync ([#576](https://github.com/databricks/cli/pull/576)).
+* First look for databricks.yml before falling back to bundle.yml ([#580](https://github.com/databricks/cli/pull/580)).
+* Integrate with auto-release infra ([#581](https://github.com/databricks/cli/pull/581)).
+
+API Changes:
+
+ * Removed `databricks metastores maintenance` command.
+ * Added `databricks metastores enable-optimization` command.
+ * Added `databricks tables update` command.
+ * Changed `databricks account settings delete-personal-compute-setting` command with new required argument order.
+ * Changed `databricks account settings read-personal-compute-setting` command with new required argument order.
+ * Added `databricks clean-rooms` command group.
+
+OpenAPI SHA: 850a075ed9758d21a6bc4409506b48c8b9f93ab4, Date: 2023-07-18
+Dependency updates:
+
+ * Bump golang.org/x/term from 0.9.0 to 0.10.0 ([#567](https://github.com/databricks/cli/pull/567)).
+ * Bump golang.org/x/oauth2 from 0.9.0 to 0.10.0 ([#566](https://github.com/databricks/cli/pull/566)).
+ * Bump golang.org/x/mod from 0.11.0 to 0.12.0 ([#568](https://github.com/databricks/cli/pull/568)).
+ * Bump github.com/databricks/databricks-sdk-go from 0.12.0 to 0.13.0 ([#585](https://github.com/databricks/cli/pull/585)).
+
 ## 0.200.2
 
 CLI:

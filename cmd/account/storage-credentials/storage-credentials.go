@@ -81,6 +81,8 @@ func init() {
 	Cmd.AddCommand(deleteCmd)
 	// TODO: short flags
 
+	deleteCmd.Flags().BoolVar(&deleteReq.Force, "force", deleteReq.Force, `Force deletion even if the Storage Credential is not empty.`)
+
 }
 
 var deleteCmd = &cobra.Command{
