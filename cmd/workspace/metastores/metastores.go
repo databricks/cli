@@ -20,10 +20,10 @@ var Cmd = &cobra.Command{
   Databricks account admins can create metastores and assign them to Databricks
   workspaces to control which workloads use each metastore. For a workspace to
   use Unity Catalog, it must have a Unity Catalog metastore attached.
-
+  
   Each metastore is configured with a root storage location in a cloud storage
   account. This storage location is used for metadata and managed tables data.
-
+  
   NOTE: This metastore is distinct from the metastore included in Databricks
   workspaces created before Unity Catalog was released. If your workspace
   includes a legacy Hive metastore, the data in that metastore is available in a
@@ -46,7 +46,7 @@ var assignCmd = &cobra.Command{
 	Use:   "assign METASTORE_ID DEFAULT_CATALOG_NAME WORKSPACE_ID",
 	Short: `Create an assignment.`,
 	Long: `Create an assignment.
-
+  
   Creates a new metastore assignment. If an assignment for the same
   __workspace_id__ exists, it will be overwritten by the new __metastore_id__
   and __default_catalog_name__. The caller must be an account admin.`,
@@ -96,7 +96,7 @@ var createCmd = &cobra.Command{
 	Use:   "create NAME STORAGE_ROOT",
 	Short: `Create a metastore.`,
 	Long: `Create a metastore.
-
+  
   Creates a new metastore based on a provided name and storage root path.`,
 
 	Annotations: map[string]string{},
@@ -144,7 +144,7 @@ var currentCmd = &cobra.Command{
 	Use:   "current",
 	Short: `Get metastore assignment for workspace.`,
 	Long: `Get metastore assignment for workspace.
-
+  
   Gets the metastore assignment for the workspace being accessed.`,
 
 	Annotations: map[string]string{},
@@ -178,7 +178,7 @@ var deleteCmd = &cobra.Command{
 	Use:   "delete ID",
 	Short: `Delete a metastore.`,
 	Long: `Delete a metastore.
-
+  
   Deletes a metastore. The caller must be a metastore admin.`,
 
 	Annotations: map[string]string{},
@@ -217,6 +217,64 @@ var deleteCmd = &cobra.Command{
 	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
+// start enable-optimization command
+var enableOptimizationReq catalog.UpdatePredictiveOptimization
+var enableOptimizationJson flags.JsonFlag
+
+func init() {
+	Cmd.AddCommand(enableOptimizationCmd)
+	// TODO: short flags
+	enableOptimizationCmd.Flags().Var(&enableOptimizationJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+}
+
+var enableOptimizationCmd = &cobra.Command{
+	Use:   "enable-optimization METASTORE_ID ENABLE",
+	Short: `Toggle predictive optimization on the metastore.`,
+	Long: `Toggle predictive optimization on the metastore.
+  
+  Enables or disables predictive optimization on the metastore.`,
+
+	// This command is being previewed; hide from help output.
+	Hidden: true,
+
+	Annotations: map[string]string{},
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(2)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			err = enableOptimizationJson.Unmarshal(&enableOptimizationReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			enableOptimizationReq.MetastoreId = args[0]
+			_, err = fmt.Sscan(args[1], &enableOptimizationReq.Enable)
+			if err != nil {
+				return fmt.Errorf("invalid ENABLE: %s", args[1])
+			}
+		}
+
+		response, err := w.Metastores.EnableOptimization(ctx, enableOptimizationReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
+}
+
 // start get command
 var getReq catalog.GetMetastoreRequest
 
@@ -230,7 +288,7 @@ var getCmd = &cobra.Command{
 	Use:   "get ID",
 	Short: `Get a metastore.`,
 	Long: `Get a metastore.
-
+  
   Gets a metastore that matches the supplied ID. The caller must be a metastore
   admin to retrieve this info.`,
 
@@ -281,7 +339,7 @@ var listCmd = &cobra.Command{
 	Use:   "list",
 	Short: `List metastores.`,
 	Long: `List metastores.
-
+  
   Gets an array of the available metastores (as __MetastoreInfo__ objects). The
   caller must be an admin to retrieve this info. There is no guarantee of a
   specific ordering of the elements in the array.`,
@@ -292,64 +350,6 @@ var listCmd = &cobra.Command{
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 		response, err := w.Metastores.ListAll(ctx)
-		if err != nil {
-			return err
-		}
-		return cmdio.Render(ctx, response)
-	},
-	// Disable completions since they are not applicable.
-	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
-}
-
-// start maintenance command
-var maintenanceReq catalog.UpdatePredictiveOptimization
-var maintenanceJson flags.JsonFlag
-
-func init() {
-	Cmd.AddCommand(maintenanceCmd)
-	// TODO: short flags
-	maintenanceCmd.Flags().Var(&maintenanceJson, "json", `either inline JSON string or @path/to/file.json with request body`)
-
-}
-
-var maintenanceCmd = &cobra.Command{
-	Use:   "maintenance METASTORE_ID ENABLE",
-	Short: `Enables or disables auto maintenance on the metastore.`,
-	Long: `Enables or disables auto maintenance on the metastore.
-
-  Enables or disables auto maintenance on the metastore.`,
-
-	// This command is being previewed; hide from help output.
-	Hidden: true,
-
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(2)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
-		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
-
-		if cmd.Flags().Changed("json") {
-			err = maintenanceJson.Unmarshal(&maintenanceReq)
-			if err != nil {
-				return err
-			}
-		} else {
-			maintenanceReq.MetastoreId = args[0]
-			_, err = fmt.Sscan(args[1], &maintenanceReq.Enable)
-			if err != nil {
-				return fmt.Errorf("invalid ENABLE: %s", args[1])
-			}
-		}
-
-		response, err := w.Metastores.EnableOptimization(ctx, maintenanceReq)
 		if err != nil {
 			return err
 		}
@@ -371,7 +371,7 @@ var summaryCmd = &cobra.Command{
 	Use:   "summary",
 	Short: `Get a metastore summary.`,
 	Long: `Get a metastore summary.
-
+  
   Gets information about a metastore. This summary includes the storage
   credential, the cloud vendor, the cloud region, and the global metastore ID.`,
 
@@ -404,7 +404,7 @@ var unassignCmd = &cobra.Command{
 	Use:   "unassign WORKSPACE_ID METASTORE_ID",
 	Short: `Delete an assignment.`,
 	Long: `Delete an assignment.
-
+  
   Deletes a metastore assignment. The caller must be an account administrator.`,
 
 	Annotations: map[string]string{},
@@ -455,7 +455,7 @@ var updateCmd = &cobra.Command{
 	Use:   "update ID",
 	Short: `Update a metastore.`,
 	Long: `Update a metastore.
-
+  
   Updates information for a specific metastore. The caller must be a metastore
   admin.`,
 
@@ -511,7 +511,7 @@ var updateAssignmentCmd = &cobra.Command{
 	Use:   "update-assignment WORKSPACE_ID",
 	Short: `Update an assignment.`,
 	Long: `Update an assignment.
-
+  
   Updates a metastore assignment. This operation can be used to update
   __metastore_id__ or __default_catalog_name__ for a specified Workspace, if the
   Workspace is already assigned a metastore. The caller must be an account admin

@@ -258,4 +258,65 @@ var listSummariesCmd = &cobra.Command{
 	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
+// start update command
+var updateReq catalog.UpdateTableRequest
+
+func init() {
+	Cmd.AddCommand(updateCmd)
+	// TODO: short flags
+
+	updateCmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, ``)
+
+}
+
+var updateCmd = &cobra.Command{
+	Use:   "update FULL_NAME",
+	Short: `Update a table owner.`,
+	Long: `Update a table owner.
+  
+  Change the owner of the table. The caller must be the owner of the parent
+  catalog, have the **USE_CATALOG** privilege on the parent catalog and be the
+  owner of the parent schema, or be the owner of the table and have the
+  **USE_CATALOG** privilege on the parent catalog and the **USE_SCHEMA**
+  privilege on the parent schema.`,
+
+	// This command is being previewed; hide from help output.
+	Hidden: true,
+
+	Annotations: map[string]string{},
+	PreRunE:     root.MustWorkspaceClient,
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No FULL_NAME argument specified. Loading names for Tables drop-down."
+			names, err := w.Tables.TableInfoNameToTableIdMap(ctx, catalog.ListTablesRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Tables drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "Full name of the table")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have full name of the table")
+		}
+		updateReq.FullName = args[0]
+
+		err = w.Tables.Update(ctx, updateReq)
+		if err != nil {
+			return err
+		}
+		return nil
+	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
+}
+
 // end service Tables

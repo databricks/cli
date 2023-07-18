@@ -257,7 +257,8 @@ func init() {
 	// TODO: short flags
 	patchCmd.Flags().Var(&patchJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	// TODO: array: operations
+	// TODO: array: Operations
+	// TODO: array: schema
 
 }
 
