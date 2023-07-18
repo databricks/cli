@@ -45,7 +45,11 @@ type Bundle struct {
 
 func Load(path string) (*Bundle, error) {
 	bundle := &Bundle{}
-	err := bundle.Config.Load(filepath.Join(path, config.FileName))
+	configFile, err := config.FileNames.FindInPath(path)
+	if err != nil {
+		return nil, err
+	}
+	err = bundle.Config.Load(configFile)
 	if err != nil {
 		return nil, err
 	}

@@ -27,8 +27,10 @@ func (m *processRootIncludes) Apply(ctx context.Context, b *bundle.Bundle) error
 	var out []bundle.Mutator
 
 	// Map with files we've already seen to avoid loading them twice.
-	var seen = map[string]bool{
-		config.FileName: true,
+	var seen = map[string]bool{}
+
+	for _, file := range config.FileNames {
+		seen[file] = true
 	}
 
 	// Maintain list of files in order of files being loaded.

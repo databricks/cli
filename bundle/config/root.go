@@ -11,12 +11,39 @@ import (
 	"github.com/imdario/mergo"
 )
 
-// FileName is the name of bundle configuration file.
-const FileName = "bundle.yml"
+type ConfigFileNames []string
+
+// FileNames contains allowed names of bundle configuration files.
+var FileNames = ConfigFileNames{"databricks.yml", "databricks.yaml", "bundle.yml", "bundle.yaml"}
+
+func (c ConfigFileNames) FindInPath(path string) (string, error) {
+	result := ""
+	var firstErr error
+
+	for _, file := range c {
+		filePath := filepath.Join(path, file)
+		_, err := os.Stat(filePath)
+		if err == nil {
+			if result != "" {
+				return "", fmt.Errorf("multiple bundle root configuration files found in %s", path)
+			}
+			result = filePath
+		} else {
+			if firstErr == nil {
+				firstErr = err
+			}
+		}
+	}
+
+	if result == "" {
+		return "", firstErr
+	}
+	return result, nil
+}
 
 type Root struct {
 	// Path contains the directory path to the root of the bundle.
-	// It is set when loading `bundle.yml`.
+	// It is set when loading `databricks.yml`.
 	Path string `json:"-" bundle:"readonly"`
 
 	// Contains user defined variables
@@ -27,7 +54,7 @@ type Root struct {
 	Bundle Bundle `json:"bundle"`
 
 	// Include specifies a list of patterns of file names to load and
-	// merge into the this configuration. If not set in `bundle.yml`,
+	// merge into the this configuration. If not set in `databricks.yml`,
 	// it defaults to loading `*.yml` and `*/*.yml`.
 	//
 	// Also see [mutator.DefineDefaultInclude].
@@ -62,7 +89,10 @@ func Load(path string) (*Root, error) {
 
 	// If we were given a directory, assume this is the bundle root.
 	if stat.IsDir() {
-		path = filepath.Join(path, FileName)
+		path, err = FileNames.FindInPath(path)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if err := r.Load(path); err != nil {

@@ -2,7 +2,11 @@ package config
 
 import (
 	"encoding/json"
+	"os"
+	"path/filepath"
 	"reflect"
+	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/bundle/config/variable"
@@ -26,7 +30,7 @@ func TestRootMarshalUnmarshal(t *testing.T) {
 
 func TestRootLoad(t *testing.T) {
 	root := &Root{}
-	err := root.Load("../tests/basic/bundle.yml")
+	err := root.Load("../tests/basic/databricks.yml")
 	require.NoError(t, err)
 	assert.Equal(t, "basic", root.Bundle.Name)
 }
@@ -78,13 +82,13 @@ func TestRootMergeMap(t *testing.T) {
 
 func TestDuplicateIdOnLoadReturnsError(t *testing.T) {
 	root := &Root{}
-	err := root.Load("./testdata/duplicate_resource_names_in_root/bundle.yml")
-	assert.ErrorContains(t, err, "multiple resources named foo (job at ./testdata/duplicate_resource_names_in_root/bundle.yml, pipeline at ./testdata/duplicate_resource_names_in_root/bundle.yml)")
+	err := root.Load("./testdata/duplicate_resource_names_in_root/databricks.yml")
+	assert.ErrorContains(t, err, "multiple resources named foo (job at ./testdata/duplicate_resource_names_in_root/databricks.yml, pipeline at ./testdata/duplicate_resource_names_in_root/databricks.yml)")
 }
 
 func TestDuplicateIdOnMergeReturnsError(t *testing.T) {
 	root := &Root{}
-	err := root.Load("./testdata/duplicate_resource_name_in_subconfiguration/bundle.yml")
+	err := root.Load("./testdata/duplicate_resource_name_in_subconfiguration/databricks.yml")
 	require.NoError(t, err)
 
 	other := &Root{}
@@ -92,7 +96,7 @@ func TestDuplicateIdOnMergeReturnsError(t *testing.T) {
 	require.NoError(t, err)
 
 	err = root.Merge(other)
-	assert.ErrorContains(t, err, "multiple resources named foo (job at ./testdata/duplicate_resource_name_in_subconfiguration/bundle.yml, pipeline at ./testdata/duplicate_resource_name_in_subconfiguration/resources.yml)")
+	assert.ErrorContains(t, err, "multiple resources named foo (job at ./testdata/duplicate_resource_name_in_subconfiguration/databricks.yml, pipeline at ./testdata/duplicate_resource_name_in_subconfiguration/resources.yml)")
 }
 
 func TestInitializeVariables(t *testing.T) {
@@ -162,4 +166,63 @@ func TestRootMergeEnvironmentWithMode(t *testing.T) {
 	env := &Environment{Mode: Development}
 	require.NoError(t, root.MergeEnvironment(env))
 	assert.Equal(t, Development, root.Bundle.Mode)
+}
+
+func TestConfigFileNames_FindInPath(t *testing.T) {
+	testCases := []struct {
+		name     string
+		files    []string
+		expected string
+		err      string
+	}{
+		{
+			name:     "file found",
+			files:    []string{"databricks.yml"},
+			expected: "BASE/databricks.yml",
+			err:      "",
+		},
+		{
+			name:     "file found",
+			files:    []string{"bundle.yml"},
+			expected: "BASE/bundle.yml",
+			err:      "",
+		},
+		{
+			name:     "multiple files found",
+			files:    []string{"databricks.yaml", "bundle.yml"},
+			expected: "",
+			err:      "multiple bundle root configuration files found",
+		},
+		{
+			name:     "file not found",
+			files:    []string{},
+			expected: "",
+			err:      "no such file or directory",
+		},
+	}
+
+	if runtime.GOOS == "windows" {
+		testCases[3].err = "The system cannot find the file specified."
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			projectDir := t.TempDir()
+			for _, file := range tc.files {
+				f1, _ := os.Create(filepath.Join(projectDir, file))
+				f1.Close()
+			}
+
+			result, err := FileNames.FindInPath(projectDir)
+
+			expected := strings.Replace(tc.expected, "BASE/", projectDir+string(os.PathSeparator), 1)
+			assert.Equal(t, expected, result)
+
+			if tc.err != "" {
+				assert.ErrorContains(t, err, tc.err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
 }
