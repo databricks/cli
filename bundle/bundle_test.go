@@ -23,7 +23,7 @@ func TestLoadExists(t *testing.T) {
 
 func TestBundleCacheDir(t *testing.T) {
 	projectDir := t.TempDir()
-	f1, err := os.Create(filepath.Join(projectDir, "databricks.yaml"))
+	f1, err := os.Create(filepath.Join(projectDir, "databricks.yml"))
 	require.NoError(t, err)
 	f1.Close()
 
@@ -47,7 +47,7 @@ func TestBundleCacheDir(t *testing.T) {
 func TestBundleCacheDirOverride(t *testing.T) {
 	projectDir := t.TempDir()
 	bundleTmpDir := t.TempDir()
-	f1, err := os.Create(filepath.Join(projectDir, "databricks.yaml"))
+	f1, err := os.Create(filepath.Join(projectDir, "databricks.yml"))
 	require.NoError(t, err)
 	f1.Close()
 

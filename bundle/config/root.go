@@ -11,10 +11,10 @@ import (
 	"github.com/imdario/mergo"
 )
 
-type ConfigFileNames [4]string
+type ConfigFileNames []string
 
 // FileNames contains allowed names of bundle configuration files.
-var FileNames = ConfigFileNames{"databricks.yaml", "databricks.yml", "bundle.yaml", "bundle.yml"}
+var FileNames = ConfigFileNames{"databricks.yml", "databricks.yaml", "bundle.yml", "bundle.yaml"}
 
 func (c ConfigFileNames) FindInPath(path string) (string, error) {
 	result := ""
@@ -43,7 +43,7 @@ func (c ConfigFileNames) FindInPath(path string) (string, error) {
 
 type Root struct {
 	// Path contains the directory path to the root of the bundle.
-	// It is set when loading `databricks.yaml`.
+	// It is set when loading `databricks.yml`.
 	Path string `json:"-" bundle:"readonly"`
 
 	// Contains user defined variables
@@ -54,7 +54,7 @@ type Root struct {
 	Bundle Bundle `json:"bundle"`
 
 	// Include specifies a list of patterns of file names to load and
-	// merge into the this configuration. If not set in `databricks.yaml`,
+	// merge into the this configuration. If not set in `databricks.yml`,
 	// it defaults to loading `*.yml` and `*/*.yml`.
 	//
 	// Also see [mutator.DefineDefaultInclude].
