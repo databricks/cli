@@ -7,13 +7,14 @@ import (
 	"os"
 	"path"
 
+	"github.com/databricks/cli/libs"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/files"
 )
 
 func BuildWheel(ctx context.Context, dir string) (string, error) {
-	defer chdirAndBack(dir)()
+	defer libs.ChdirAndBack(dir)()
 	// remove previous dist leak
 	os.RemoveAll("dist")
 	// remove all other irrelevant traces
@@ -52,7 +53,7 @@ func UploadWheelToDBFSWithPEP503(ctx context.Context, dir string) (string, error
 	if err != nil {
 		return "", err
 	}
-	defer chdirAndBack(dir)()
+	defer libs.ChdirAndBack(dir)()
 	dist, err := ReadDistribution(ctx)
 	if err != nil {
 		return "", err
