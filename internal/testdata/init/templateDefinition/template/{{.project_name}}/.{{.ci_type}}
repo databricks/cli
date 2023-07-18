@@ -1,5 +1,0 @@
-{{if .is_production}}
-This is a production project
-{{else}}
-This is a development project
-{{end}}

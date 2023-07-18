@@ -1,19 +1,18 @@
 {
     "properties": {
-        "project_name": {
-            "description": "Name of the project",
+        "directory_name": {
+            "description": "Name of the directory",
             "type": "string"
         },
-        "cloud_type": {
-            "description": "type of the cloud for the project",
+        "skip_extra_content_if_abc": {
             "type": "string"
         },
-        "is_production": {
+        "skip_file_if_true": {
             "type": "boolean"
         },
-        "ci_type": {
+        "file_name": {
             "type": "string",
-            "description": "type of the CI runner, eg: github, azure devops"
+            "description": "Name of the file"
         }
     }
 }

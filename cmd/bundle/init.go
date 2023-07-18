@@ -6,7 +6,7 @@ import (
 )
 
 var initCmd = &cobra.Command{
-	Use:   "init TEMPLATE_PATH INSTANCE_PATH",
+	Use:   "init TEMPLATE_PATH",
 	Short: "Initialize Template",
 	Long:  `Initialize template`,
 	Args:  cobra.ExactArgs(1),

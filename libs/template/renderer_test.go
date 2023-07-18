@@ -1,6 +1,7 @@
 package template
 
 import (
+	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
@@ -129,19 +130,154 @@ func TestGenerateFile(t *testing.T) {
 		},
 		baseTemplate: template.New("base"),
 	}
-	err := r.generateFile(pathTemplate, contentTemplate, 0444)
+	f, err := r.generateFile(pathTemplate, contentTemplate, 0444)
 	require.NoError(t, err)
 
-	// assert file exists
-	assert.FileExists(t, filepath.Join(tmp, "cat", "wool", "foo", "1.txt"))
-
-	// assert file content is created correctly
-	b, err := os.ReadFile(filepath.Join(tmp, "cat", "wool", "foo", "1.txt"))
-	require.NoError(t, err)
-	assert.Equal(t, "\"1 items are made of wool\".\n\t\n\tcat wool is not too bad...\n\t\n\t", string(b))
+	// assert file content
+	assert.Equal(t, "\"1 items are made of wool\".\n\t\n\tcat wool is not too bad...\n\t\n\t", f.content)
 
 	// assert file permissions are correctly assigned
-	stat, err := os.Stat(filepath.Join(tmp, "cat", "wool", "foo", "1.txt"))
+	assert.Equal(t, fs.FileMode(0444), f.perm)
+
+	// assert file path
+	assert.Equal(t, filepath.Join(tmp, "cat", "wool", "foo", "1.txt"), f.path)
+}
+
+func TestDeleteSkippedFiles(t *testing.T) {
+	tmpDir := t.TempDir()
+	inputFiles := map[*inMemoryFile]any{
+		{
+			path:    filepath.Join(tmpDir, "aaa"),
+			content: "one",
+			perm:    0444,
+		}: nil,
+		{
+			path:    filepath.Join(tmpDir, "abb"),
+			content: "two",
+			perm:    0444,
+		}: nil,
+		{
+			path:    filepath.Join(tmpDir, "bbb"),
+			content: "three",
+			perm:    0666,
+		}: nil,
+	}
+
+	err := deleteSkippedFiles(inputFiles, []string{"aaa", "abb"})
 	require.NoError(t, err)
-	assert.Equal(t, uint(0444), uint(stat.Mode().Perm()))
+
+	assert.Len(t, inputFiles, 1)
+	for v := range inputFiles {
+		assert.Equal(t, inMemoryFile{
+			path:    filepath.Join(tmpDir, "bbb"),
+			content: "three",
+			perm:    0666,
+		}, *v)
+	}
+}
+
+func TestDeleteSkippedFilesWithGlobPatterns(t *testing.T) {
+	tmpDir := t.TempDir()
+	inputFiles := map[*inMemoryFile]any{
+		{
+			path:    filepath.Join(tmpDir, "aaa"),
+			content: "one",
+			perm:    0444,
+		}: nil,
+		{
+			path:    filepath.Join(tmpDir, "abb"),
+			content: "two",
+			perm:    0444,
+		}: nil,
+		{
+			path:    filepath.Join(tmpDir, "bbb"),
+			content: "three",
+			perm:    0666,
+		}: nil,
+		{
+			path:    filepath.Join(tmpDir, "ddd"),
+			content: "four",
+			perm:    0666,
+		}: nil,
+	}
+
+	err := deleteSkippedFiles(inputFiles, []string{"a*"})
+	require.NoError(t, err)
+
+	files := make([]inMemoryFile, 0)
+	for v := range inputFiles {
+		files = append(files, *v)
+	}
+	assert.Len(t, files, 2)
+	assert.Contains(t, files, inMemoryFile{
+		path:    filepath.Join(tmpDir, "bbb"),
+		content: "three",
+		perm:    0666,
+	})
+	assert.Contains(t, files, inMemoryFile{
+		path:    filepath.Join(tmpDir, "ddd"),
+		content: "four",
+		perm:    0666,
+	})
+}
+
+func TestSkipAllFiles(t *testing.T) {
+	tmpDir := t.TempDir()
+	inputFiles := map[*inMemoryFile]any{
+		{
+			path:    filepath.Join(tmpDir, "aaa"),
+			content: "one",
+			perm:    0444,
+		}: nil,
+		{
+			path:    filepath.Join(tmpDir, "abb"),
+			content: "two",
+			perm:    0444,
+		}: nil,
+		{
+			path:    filepath.Join(tmpDir, "bbb"),
+			content: "three",
+			perm:    0666,
+		}: nil,
+	}
+
+	err := deleteSkippedFiles(inputFiles, []string{"*"})
+	require.NoError(t, err)
+	assert.Len(t, inputFiles, 0)
+}
+
+func TestTemplateMaterializeFiles(t *testing.T) {
+	tmpDir := t.TempDir()
+	inputFiles := map[*inMemoryFile]any{
+		{
+			path:    filepath.Join(tmpDir, "aaa"),
+			content: "one",
+			perm:    0444,
+		}: nil,
+		{
+			path:    filepath.Join(tmpDir, "abb"),
+			content: "two",
+			perm:    0444,
+		}: nil,
+		{
+			path:    filepath.Join(tmpDir, "bbb"),
+			content: "three",
+			perm:    0666,
+		}: nil,
+	}
+
+	err := materializeFiles(inputFiles)
+	assert.NoError(t, err)
+
+	path := filepath.Join(tmpDir, "aaa")
+	assertFilePerm(t, path, 0444)
+	assertFileContent(t, path, "one")
+
+	path = filepath.Join(tmpDir, "abb")
+	assertFilePerm(t, path, 0444)
+	assertFileContent(t, path, "two")
+
+	path = filepath.Join(tmpDir, "bbb")
+	assertFilePerm(t, path, 0666)
+	assertFileContent(t, path, "three")
 }

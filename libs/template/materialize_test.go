@@ -28,6 +28,12 @@ func assertFilePerm(t *testing.T, path string, perm fs.FileMode) {
 	assert.Equal(t, perm, stat.Mode().Perm())
 }
 
+func assertFileContent(t *testing.T, path string, content string) {
+	b, err := os.ReadFile(path)
+	require.NoError(t, err)
+	assert.Equal(t, content, string(b))
+}
+
 func TestMaterializeEmptyDirsAreNotGenerated(t *testing.T) {
 	tmp := setupConfig(t, `
 	{
