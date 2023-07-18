@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/artifacts/notebook"
 )
 
 func UploadAll() bundle.Mutator {
@@ -33,9 +32,9 @@ func (m *upload) Apply(ctx context.Context, b *bundle.Bundle) error {
 		return fmt.Errorf("artifact doesn't exist: %s", m.name)
 	}
 
-	if artifact.Notebook != nil {
-		return bundle.Apply(ctx, b, notebook.Upload(m.name))
+	if artifact.File == "" {
+		return fmt.Errorf("artifact source is not configured: %s", m.name)
 	}
 
-	return nil
+	return bundle.Apply(ctx, b, getUploadMutator(artifact.Type, m.name))
 }

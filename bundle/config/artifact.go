@@ -1,20 +1,43 @@
 package config
 
-import "github.com/databricks/databricks-sdk-go/service/workspace"
+import (
+	"context"
+	"fmt"
+	"os/exec"
+	"strings"
+
+	"github.com/databricks/databricks-sdk-go/service/compute"
+)
+
+type ArtifactType string
+
+const ArtifactPythonWheel ArtifactType = `whl`
 
 // Artifact defines a single local code artifact that can be
 // built/uploaded/referenced in the context of this bundle.
 type Artifact struct {
-	Notebook *NotebookArtifact `json:"notebook,omitempty"`
+	Type         ArtifactType `json:"type"`
+	Path         string       `json:"path"`
+	File         string       `json:"file"`
+	BuildCommand string       `json:"build"`
+	RemotePath   string       `json:"-" bundle:"readonly"`
 }
 
-type NotebookArtifact struct {
-	Path string `json:"path"`
+func (a *Artifact) Build(ctx context.Context) ([]byte, error) {
+	if a.BuildCommand == "" {
+		return nil, fmt.Errorf("no build property defined")
+	}
 
-	// Language is detected during build step.
-	Language workspace.Language `json:"language,omitempty" bundle:"readonly"`
+	buildParts := strings.Split(a.BuildCommand, " ")
+	return exec.CommandContext(ctx, buildParts[0], buildParts[1:]...).CombinedOutput()
+}
 
-	// Paths are synthesized during build step.
-	LocalPath  string `json:"local_path,omitempty" bundle:"readonly"`
-	RemotePath string `json:"remote_path,omitempty" bundle:"readonly"`
+func (a *Artifact) Library() compute.Library {
+	lib := compute.Library{}
+	switch a.Type {
+	case ArtifactPythonWheel:
+		lib.Whl = a.RemotePath
+	}
+
+	return lib
 }
