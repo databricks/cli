@@ -138,6 +138,7 @@ func TestRendererIsSkipped(t *testing.T) {
 // TODO: have a test that directories matching glob patterns are skipped, and not generated in the first place
 // TODO: make glob patterns work for windows too. PR test runner should be enough to test this
 // TODO: add test for skip all files from current directory
+// TODO: add test for "fail" method
 
 func TestRendererPersistToDisk(t *testing.T) {
 	tmpDir := t.TempDir()
