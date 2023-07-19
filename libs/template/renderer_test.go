@@ -136,9 +136,6 @@ func TestRendererIsSkipped(t *testing.T) {
 	assert.False(t, isSkipped)
 }
 
-// TODO: make glob patterns work for windows too. PR test runner should be enough to test this
-// TODO: test config is applied
-
 func TestRendererPersistToDisk(t *testing.T) {
 	tmpDir := t.TempDir()
 	ctx := context.Background()
