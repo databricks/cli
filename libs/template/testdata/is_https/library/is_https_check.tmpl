@@ -1,0 +1,6 @@
+{{define "is_https_check" -}}
+    {{- $regex := regexpCompile `^https` -}}
+    {{- if not ($regex.MatchString .) -}}
+        {{- fail "expected %s to start with https" . -}}
+    {{- end -}}
+{{- end}}
