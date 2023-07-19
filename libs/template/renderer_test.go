@@ -140,6 +140,7 @@ func TestRendererIsSkipped(t *testing.T) {
 // TODO: make glob patterns work for windows too. PR test runner should be enough to test this
 // TODO: add test for skip all files from current directory
 // TODO: add test for "fail" method
+// TODO: test for skip patterns being relatively evaluated
 
 func TestRendererPersistToDisk(t *testing.T) {
 	tmpDir := t.TempDir()
@@ -179,4 +180,31 @@ func TestRendererPersistToDisk(t *testing.T) {
 	assert.NoFileExists(t, filepath.Join(tmpDir, "mno"))
 	assertFileContent(t, filepath.Join(tmpDir, "a", "b", "d"), "123")
 	assertFileContent(t, filepath.Join(tmpDir, "mmnn"), "456")
+}
+
+func TestRendererWalk(t *testing.T) {
+	ctx := context.Background()
+	tmpDir := t.TempDir()
+
+	r, err := newRenderer(ctx, nil, "./testdata/walk/library", tmpDir, "./testdata/walk/template")
+	require.NoError(t, err)
+
+	err = r.walk()
+	assert.NoError(t, err)
+
+	getContent := func(r *renderer, path string) string {
+		for _, f := range r.files {
+			if f.path == path {
+				return strings.Trim(string(f.content), "\r\n")
+			}
+		}
+		require.FailNow(t, "file is absent: "+path)
+		return ""
+	}
+
+	assert.Len(t, r.files, 4)
+	assert.Equal(t, "file one", getContent(r, "file1"))
+	assert.Equal(t, "file two", getContent(r, "file2"))
+	assert.Equal(t, "file three", getContent(r, "dir1/dir3/file3"))
+	assert.Equal(t, "file four", getContent(r, "dir2/file4"))
 }
