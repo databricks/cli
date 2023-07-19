@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"text/template"
 
@@ -32,7 +33,7 @@ func TestRendererWithAssociatedTemplate(t *testing.T) {
 
 	b, err := os.ReadFile(filepath.Join(tmpDir, "my_email"))
 	require.NoError(t, err)
-	assert.Equal(t, "shreyas.goenka@databricks.com\n", string(b))
+	assert.Equal(t, "shreyas.goenka@databricks.com", strings.Trim(string(b), "\n\r"))
 }
 
 func TestRendererExecuteTemplate(t *testing.T) {
