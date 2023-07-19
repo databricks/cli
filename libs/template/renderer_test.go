@@ -137,8 +137,7 @@ func TestRendererIsSkipped(t *testing.T) {
 }
 
 // TODO: make glob patterns work for windows too. PR test runner should be enough to test this
-// TODO: add test for skip all files from current directory
-// TODO: test for skip patterns being relatively evaluated
+// TODO: test config is applied
 
 func TestRendererPersistToDisk(t *testing.T) {
 	tmpDir := t.TempDir()
@@ -250,4 +249,20 @@ func TestRendererSkipAllFilesInCurrentDirectory(t *testing.T) {
 	require.NoError(t, err)
 	// Assert none of the files are persisted to disk, because of {{skip "*"}}
 	assert.Len(t, entries, 0)
+}
+
+func TestRendererSkipPatternsAreRelativeToFileDirectory(t *testing.T) {
+	ctx := context.Background()
+	tmpDir := t.TempDir()
+
+	r, err := newRenderer(ctx, nil, "./testdata/skip-is-relative/library", tmpDir, "./testdata/skip-is-relative/template")
+	require.NoError(t, err)
+
+	err = r.walk()
+	assert.NoError(t, err)
+
+	assert.Len(t, r.skipPatterns, 3)
+	assert.Contains(t, r.skipPatterns, "a")
+	assert.Contains(t, r.skipPatterns, "dir1/b")
+	assert.Contains(t, r.skipPatterns, "dir1/dir2/c")
 }
