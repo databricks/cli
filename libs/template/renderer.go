@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/fs"
 	"path"
 	"path/filepath"
 	"strings"
@@ -209,76 +208,6 @@ func (r *renderer) walk() error {
 			r.files = append(r.files, f)
 		}
 
-	}
-	return nil
-}
-
-func walk(r *renderer, dirPathTemplate string) error {
-	entries, err := r.templateFiler.ReadDir(r.ctx, dirPathTemplate)
-	if err != nil {
-		return err
-	}
-
-	// Separate files and directories from entries. We would like to process
-	// all the files first to capture all skip glob patterns.
-	files := make([]fs.DirEntry, 0)
-	directories := make([]fs.DirEntry, 0)
-	for _, entry := range entries {
-		if entry.IsDir() {
-			directories = append(directories, entry)
-		} else {
-			files = append(files, entry)
-		}
-	}
-
-	dirPath, err := r.executeTemplate(dirPathTemplate)
-	if err != nil {
-		return err
-	}
-
-	// Add skip functional closure
-	r.baseTemplate.Funcs(template.FuncMap{
-		"skip": func(relPattern string) error {
-			// patterns are specified relative to current directory of the file
-			// {{skip}} function is called from
-			pattern := path.Join(dirPath, relPattern)
-			if !slices.Contains(r.skipPatterns, pattern) {
-				logger.Infof(r.ctx, "adding skip pattern: %s", pattern)
-				r.skipPatterns = append(r.skipPatterns, pattern)
-			}
-			return nil
-		},
-	})
-
-	// Compute files in current directory, and add them to file tree
-	for _, f := range files {
-		instanceFile, err := r.computeFile(path.Join(dirPathTemplate, f.Name()))
-		if err != nil {
-			return err
-		}
-		logger.Infof(r.ctx, "added file to in memory file tree: %s", instanceFile)
-		r.files = append(r.files, instanceFile)
-	}
-
-	// Recursively walk subdirectories, skipping any that match any of the currently
-	// accumulated skip patterns
-	for _, d := range directories {
-		templatePath, err := r.executeTemplate(path.Join(dirPath, d.Name()))
-		if err != nil {
-			return err
-		}
-		isSkipped, err := r.isSkipped(templatePath)
-		if err != nil {
-			return err
-		}
-		if isSkipped {
-			logger.Infof(r.ctx, "skipping walking directory: %s", templatePath)
-			continue
-		}
-		err = walk(r, path.Join(dirPathTemplate, d.Name()))
-		if err != nil {
-			return err
-		}
 	}
 	return nil
 }
