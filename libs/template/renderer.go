@@ -23,7 +23,7 @@ type inMemoryFile struct {
 	content []byte
 }
 
-// This structure renders any template files during project initialization
+// Renders a databricks template as a project
 type renderer struct {
 	ctx context.Context
 
@@ -37,22 +37,37 @@ type renderer struct {
 	// templates during file tree walk
 	baseTemplate *template.Template
 
-	// List of in memory files being generated from template.
-	files        []*inMemoryFile
+	// List of in memory files generated from template
+	files []*inMemoryFile
+
+	// Glob patterns for files and directories to skip. There are three possible
+	// outcomes for skip:
+	//
+	// 1. File is not generated. This happens if one of the file's parent directories
+	// match a glob pattern
+	//
+	// 2. File is generated but not persisted to disk. This happens if the file itself
+	// matches a glob pattern, but none of it's parents match a glob pattern from the list
+	//
+	// 3. File is persisted to disk. This happens if the file and it's parent directories
+	// do not match any glob patterns from this list
 	skipPatterns []string
 
+	// Filer rooted at template root. The file tree from this root is walked to
+	// generate the project
 	templateFiler filer.Filer
+
+	// Filer rooted at the project instance root. Allows writing files generated
+	// when walking the template file tree
 	instanceFiler filer.Filer
 }
 
 func newRenderer(ctx context.Context, config map[string]any, libraryRoot, instanceRoot, templateRoot string) (*renderer, error) {
-	// All user defined functions will be available inside library root
-	libraryGlob := filepath.Join(libraryRoot, "*")
-
 	// Initialize new template, with helper functions loaded
 	tmpl := template.New("").Funcs(HelperFuncs)
 
-	// Load files in the library to the template
+	// Load user defined associated templates from the library root
+	libraryGlob := filepath.Join(libraryRoot, "*")
 	matches, err := filepath.Glob(libraryGlob)
 	if err != nil {
 		return nil, err
@@ -64,7 +79,6 @@ func newRenderer(ctx context.Context, config map[string]any, libraryRoot, instan
 		}
 	}
 
-	// create template filer
 	templateFiler, err := filer.NewLocalClient(templateRoot)
 	if err != nil {
 		return nil, err
@@ -78,12 +92,12 @@ func newRenderer(ctx context.Context, config map[string]any, libraryRoot, instan
 	ctx = log.NewContext(ctx, log.GetLogger(ctx).With("action", "initialize-template"))
 
 	return &renderer{
+		ctx:           ctx,
 		config:        config,
 		baseTemplate:  tmpl,
 		files:         make([]*inMemoryFile, 0),
-		templateFiler: templateFiler,
-		ctx:           ctx,
 		skipPatterns:  make([]string, 0),
+		templateFiler: templateFiler,
 		instanceFiler: instanceFiler,
 	}, nil
 }

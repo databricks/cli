@@ -19,7 +19,7 @@ func assertFileContent(t *testing.T, path string, content string) {
 	assert.Equal(t, content, string(b))
 }
 
-func TestRendererWithAssociatedTemplate(t *testing.T) {
+func TestRendererWithAssociatedTemplateInLibrary(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	r, err := newRenderer(context.Background(), nil, "./testdata/email/library", tmpDir, "./testdata/email/template")
