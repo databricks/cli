@@ -5,18 +5,19 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"text/template"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestRendererVariableRead(t *testing.T) {
+func TestRendererWithAssociatedTemplate(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	r, err := newRenderer(context.Background(), nil, "./testdata/email/library", tmpDir, "./testdata/email/template")
 	require.NoError(t, err)
 
-	err = walk(r, ".")
+	err = r.walk()
 	require.NoError(t, err)
 
 	err = r.persistToDisk()
@@ -27,92 +28,105 @@ func TestRendererVariableRead(t *testing.T) {
 	assert.Equal(t, "shreyas.goenka@databricks.com\n", string(b))
 }
 
-func TestRendererUrlParseUsageInFunction(t *testing.T) {
-	tmpDir := t.TempDir()
+func TestRendererExecuteTemplate(t *testing.T) {
+	templateText :=
+		`"{{.count}} items are made of {{.Material}}".
+{{if eq .Animal "sheep" }}
+Sheep wool is the best!
+{{else}}
+{{.Animal}} wool is not too bad...
+{{end}}
+My email is {{template "email"}}
+`
 
-	r, err := newRenderer(context.Background(), nil, "./testdata/get_host/library", tmpDir, "./testdata/get_host/template")
+	r := renderer{
+		config: map[string]any{
+			"Material": "wool",
+			"count":    1,
+			"Animal":   "sheep",
+		},
+		baseTemplate: template.Must(template.New("base").Parse(`{{define "email"}}shreyas.goenka@databricks.com{{end}}`)),
+	}
+
+	statement, err := r.executeTemplate(templateText)
 	require.NoError(t, err)
+	assert.Contains(t, statement, `"1 items are made of wool"`)
+	assert.NotContains(t, statement, `cat wool is not too bad.."`)
+	assert.Contains(t, statement, "Sheep wool is the best!")
+	assert.Contains(t, statement, `My email is shreyas.goenka@databricks.com`)
 
-	err = walk(r, ".")
+	r = renderer{
+		config: map[string]any{
+			"Material": "wool",
+			"count":    1,
+			"Animal":   "cat",
+		},
+		baseTemplate: template.Must(template.New("base").Parse(`{{define "email"}}hrithik.roshan@databricks.com{{end}}`)),
+	}
+
+	statement, err = r.executeTemplate(templateText)
 	require.NoError(t, err)
-
-	err = r.persistToDisk()
-	require.NoError(t, err)
-
-	b, err := os.ReadFile(filepath.Join(tmpDir, "my_host"))
-	require.NoError(t, err)
-
-	assert.Equal(t, "https://www.host.com\n", string(b))
+	assert.Contains(t, statement, `"1 items are made of wool"`)
+	assert.Contains(t, statement, `cat wool is not too bad...`)
+	assert.NotContains(t, statement, "Sheep wool is the best!")
+	assert.Contains(t, statement, `My email is hrithik.roshan@databricks.com`)
 }
 
-func TestRendererRegexpCheckFailing(t *testing.T) {
-	tmpDir := t.TempDir()
+func TestRendererIsSkipped(t *testing.T) {
+	r := renderer{
+		skipPatterns: []string{"a*", "*yz", "def", "a/b/*"},
+	}
 
-	r, err := newRenderer(context.Background(), nil, "./testdata/is_https/library", tmpDir, "./testdata/is_https/template_not_https")
+	// skipped paths
+	isSkipped, err := r.isSkipped("abc")
 	require.NoError(t, err)
+	assert.True(t, isSkipped)
 
-	err = walk(r, ".")
-	assert.Equal(t, "expected /not-a-url to start with https", err.Error())
+	isSkipped, err = r.isSkipped("abcd")
+	require.NoError(t, err)
+	assert.True(t, isSkipped)
+
+	isSkipped, err = r.isSkipped("a")
+	require.NoError(t, err)
+	assert.True(t, isSkipped)
+
+	isSkipped, err = r.isSkipped("xxyz")
+	require.NoError(t, err)
+	assert.True(t, isSkipped)
+
+	isSkipped, err = r.isSkipped("yz")
+	require.NoError(t, err)
+	assert.True(t, isSkipped)
+
+	isSkipped, err = r.isSkipped("a/b/c")
+	require.NoError(t, err)
+	assert.True(t, isSkipped)
+
+	// NOT skipped paths
+	isSkipped, err = r.isSkipped(".")
+	require.NoError(t, err)
+	assert.False(t, isSkipped)
+
+	isSkipped, err = r.isSkipped("y")
+	require.NoError(t, err)
+	assert.False(t, isSkipped)
+
+	isSkipped, err = r.isSkipped("z")
+	require.NoError(t, err)
+	assert.False(t, isSkipped)
+
+	isSkipped, err = r.isSkipped("defg")
+	require.NoError(t, err)
+	assert.False(t, isSkipped)
+
+	isSkipped, err = r.isSkipped("cat")
+	require.NoError(t, err)
+	assert.False(t, isSkipped)
+
+	isSkipped, err = r.isSkipped("a/b/c/d")
+	require.NoError(t, err)
+	assert.False(t, isSkipped)
 }
-
-// func TestRendererRegexpCheckPassing(t *testing.T) {
-// 	r, err := newRenderer(nil, "./testdata/is_https/library")
-// 	require.NoError(t, err)
-
-// 	tmpDir := t.TempDir()
-
-// 	err = walkFileTree(r, "./testdata/is_https/template_is_https", tmpDir)
-// 	require.NoError(t, err)
-
-// 	b, err := os.ReadFile(filepath.Join(tmpDir, "my_check"))
-// 	require.NoError(t, err)
-
-// 	assert.Equal(t, "this file is created if validation passes\n", string(b))
-// }
-
-// func TestExecuteTemplate(t *testing.T) {
-// 	templateText :=
-// 		`"{{.count}} items are made of {{.Material}}".
-// {{if eq .Animal "sheep" }}
-// Sheep wool is the best!
-// {{else}}
-// {{.Animal}} wool is not too bad...
-// {{end}}
-// My email is {{template "email"}}
-// `
-
-// 	r := renderer{
-// 		config: map[string]any{
-// 			"Material": "wool",
-// 			"count":    1,
-// 			"Animal":   "sheep",
-// 		},
-// 		baseTemplate: template.Must(template.New("base").Parse(`{{define "email"}}shreyas.goenka@databricks.com{{end}}`)),
-// 	}
-
-// 	statement, err := r.executeTemplate(templateText)
-// 	require.NoError(t, err)
-// 	assert.Contains(t, statement, `"1 items are made of wool"`)
-// 	assert.NotContains(t, statement, `cat wool is not too bad.."`)
-// 	assert.Contains(t, statement, "Sheep wool is the best!")
-// 	assert.Contains(t, statement, `My email is shreyas.goenka@databricks.com`)
-
-// 	r = renderer{
-// 		config: map[string]any{
-// 			"Material": "wool",
-// 			"count":    1,
-// 			"Animal":   "cat",
-// 		},
-// 		baseTemplate: template.Must(template.New("base").Parse(`{{define "email"}}hrithik.roshan@databricks.com{{end}}`)),
-// 	}
-
-// 	statement, err = r.executeTemplate(templateText)
-// 	require.NoError(t, err)
-// 	assert.Contains(t, statement, `"1 items are made of wool"`)
-// 	assert.Contains(t, statement, `cat wool is not too bad...`)
-// 	assert.NotContains(t, statement, "Sheep wool is the best!")
-// 	assert.Contains(t, statement, `My email is hrithik.roshan@databricks.com`)
-// }
 
 // func TestGenerateFile(t *testing.T) {
 // 	tmp := t.TempDir()

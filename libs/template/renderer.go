@@ -1,6 +1,7 @@
 package template
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -17,9 +18,8 @@ import (
 )
 
 type inMemoryFile struct {
-	path string
-	// TODO: use bytes in to serialize for binary files, Can we just use string here, is it the same
-	content string
+	path    string
+	content []byte
 	perm    fs.FileMode
 }
 
@@ -147,9 +147,76 @@ func (r *renderer) computeFile(relPathTemplate string) (*inMemoryFile, error) {
 
 	return &inMemoryFile{
 		path:    relPath,
-		content: content,
+		content: []byte(content),
 		perm:    perm,
 	}, nil
+}
+
+func (r *renderer) walk() error {
+	directories := []string{"."}
+	var currentDirectory string
+
+	for len(directories) > 0 {
+		currentDirectory, directories = directories[0], directories[1:]
+
+		// Skip current directory if it matches any of accumulated skip patterns
+		instanceDirectory, err := r.executeTemplate(currentDirectory)
+		if err != nil {
+			return err
+		}
+		isSkipped, err := r.isSkipped(instanceDirectory)
+		if err != nil {
+			return err
+		}
+		if isSkipped {
+			logger.Infof(r.ctx, "skipping walking directory: %s", instanceDirectory)
+			continue
+		}
+
+		// Add skip function, which accumulates skip patterns relative to current
+		// directory
+		r.baseTemplate.Funcs(template.FuncMap{
+			"skip": func(relPattern string) error {
+				// patterns are specified relative to current directory of the file
+				// {{skip}} function is called from
+				pattern := filepath.Join(currentDirectory, relPattern)
+				if !slices.Contains(r.skipPatterns, pattern) {
+					logger.Infof(r.ctx, "adding skip pattern: %s", pattern)
+					r.skipPatterns = append(r.skipPatterns, pattern)
+				}
+				return nil
+			},
+		})
+
+		// Process all entries in current directory
+		//
+		// 1. For files: the templates in the file name and content are executed, and
+		//     a in memory representation of the file is generated
+		//
+		// 2. For directories: They are appended to a slice, which acts as a queue
+		//     allowing BFS traversal of the template file tree
+		entries, err := r.templateFiler.ReadDir(r.ctx, currentDirectory)
+		if err != nil {
+			return err
+		}
+		for _, entry := range entries {
+			if entry.IsDir() {
+				// Add to slice, for BFS traversal
+				directories = append(directories, filepath.Join(currentDirectory, entry.Name()))
+				continue
+			}
+
+			// Generate in memory representation of file
+			f, err := r.computeFile(filepath.Join(currentDirectory, entry.Name()))
+			if err != nil {
+				return err
+			}
+			logger.Infof(r.ctx, "added file to in memory file tree: %s", f.path)
+			r.files = append(r.files, f)
+		}
+
+	}
+	return nil
 }
 
 func walk(r *renderer, dirPathTemplate string) error {
@@ -232,7 +299,7 @@ func (r *renderer) persistToDisk() error {
 			log.Infof(r.ctx, "skipping file: %s", file.path)
 			continue
 		}
-		err = r.instanceFiler.Write(r.ctx, file.path, strings.NewReader(file.content), filer.CreateParentDirectories)
+		err = r.instanceFiler.Write(r.ctx, file.path, bytes.NewReader(file.content), filer.CreateParentDirectories)
 		if err != nil {
 			return err
 		}

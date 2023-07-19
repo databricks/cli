@@ -1,2 +1,0 @@
-{{- template "is_https_check" "https://www.databricks.com" -}}
-this file is created if validation passes

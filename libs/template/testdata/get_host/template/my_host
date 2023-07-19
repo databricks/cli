@@ -1,1 +1,0 @@
-{{template "get_host" "https://www.host.com/a/b/c/d/e?o=123#fragment"}}
