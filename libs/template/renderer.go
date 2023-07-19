@@ -1,19 +1,32 @@
 package template
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
-	"os"
 	"path/filepath"
 	"strings"
 	"text/template"
 
+	"github.com/databricks/cli/libs/filer"
+	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/databricks-sdk-go/logger"
 	"golang.org/x/exp/slices"
 )
 
+type inMemoryFile struct {
+	path string
+	// TODO: use bytes in to serialize for binary files, Can we just use string here, is it the same
+	content string
+	perm    fs.FileMode
+}
+
 // This structure renders any template files during project initialization
 type renderer struct {
+	ctx context.Context
+
 	// A config that is the "dot" value available to any template being rendered.
 	// Refer to https://pkg.go.dev/text/template for how templates can use
 	// this "dot" value
@@ -23,9 +36,15 @@ type renderer struct {
 	// library directory loaded. This is used as the base to compute any project
 	// templates during file tree walk
 	baseTemplate *template.Template
+
+	files        []*inMemoryFile
+	skipPatterns []string
+
+	templateFiler filer.Filer
+	instanceFiler filer.Filer
 }
 
-func newRenderer(config map[string]any, libraryRoot string) (*renderer, error) {
+func newRenderer(ctx context.Context, config map[string]any, libraryRoot, instanceRoot, templateRoot string) (*renderer, error) {
 	// All user defined functions will be available inside library root
 	libraryGlob := filepath.Join(libraryRoot, "*")
 
@@ -44,9 +63,27 @@ func newRenderer(config map[string]any, libraryRoot string) (*renderer, error) {
 		}
 	}
 
+	// create template filer
+	templateFiler, err := filer.NewLocalClient(templateRoot)
+	if err != nil {
+		return nil, err
+	}
+
+	instanceFiler, err := filer.NewLocalClient(instanceRoot)
+	if err != nil {
+		return nil, err
+	}
+
+	ctx = log.NewContext(ctx, log.GetLogger(ctx).With("action", "initialize-template"))
+
 	return &renderer{
-		config:       config,
-		baseTemplate: tmpl,
+		config:        config,
+		baseTemplate:  tmpl,
+		files:         make([]*inMemoryFile, 0),
+		templateFiler: templateFiler,
+		ctx:           ctx,
+		skipPatterns:  make([]string, 0),
+		instanceFiler: instanceFiler,
 	}, nil
 }
 
@@ -74,125 +111,110 @@ func (r *renderer) executeTemplate(templateDefinition string) (string, error) {
 	return result.String(), nil
 }
 
-func (r *renderer) generateFile(pathTemplate, contentTemplate string, perm fs.FileMode) (*inMemoryFile, error) {
-	// compute file content
-	fileContent, err := r.executeTemplate(contentTemplate)
-	if errors.Is(err, errSkipThisFile) {
-		// skip this file
-		return nil, nil
+func (r *renderer) computeFile(relPathTemplate string) (*inMemoryFile, error) {
+	// read template file contents
+	templateReader, err := r.templateFiler.Read(r.ctx, relPathTemplate)
+	if err != nil {
+		return nil, err
+	}
+	contentTemplate, err := io.ReadAll(templateReader)
+	if err != nil {
+		return nil, err
 	}
 
+	// execute the contents of the file as a template
+	content, err := r.executeTemplate(string(contentTemplate))
 	// Capture errors caused by the "fail" helper function
 	if target := (&ErrFail{}); errors.As(err, target) {
 		return nil, target
 	}
 	if err != nil {
-		return nil, fmt.Errorf("failed to compute file content for %s. %w", pathTemplate, err)
+		return nil, fmt.Errorf("failed to compute file content for %s. %w", relPathTemplate, err)
 	}
 
-	// compute the path for this file
-	path, err := r.executeTemplate(pathTemplate)
-	if err != nil {
-		return nil, fmt.Errorf("failed to compute path for %s. %w", pathTemplate, err)
-	}
-
-	return &inMemoryFile{
-		path:    path,
-		content: fileContent,
-		perm:    perm,
-	}, nil
-}
-
-type inMemoryFile struct {
-	path    string
-	// TODO: use bytes in to serialize for binary files, Can we just use string here, is it the same
-	content string
-	perm    fs.FileMode
-}
-
-func (r *renderer) generateDir(templateDir, instanceDir string) (map[*inMemoryFile]any, error) {
-	entries, err := os.ReadDir(templateDir)
+	// Execute relative path template to get materialized path for the file
+	relPath, err := r.executeTemplate(relPathTemplate)
 	if err != nil {
 		return nil, err
 	}
 
-	// Args from any calls to the {{skip}} helper function will be appended to this list.
-	skipPatterns := make([]string, 0)
-	// Add skip functional closure which uses the newly initialized slice to store patterns
+	// Read permissions for the file
+	info, err := r.templateFiler.Stat(r.ctx, relPathTemplate)
+	if err != nil {
+		return nil, err
+	}
+	perm := info.Mode().Perm()
+
+	return &inMemoryFile{
+		path:    relPath,
+		content: content,
+		perm:    perm,
+	}, nil
+}
+
+func walk(r *renderer, dirPathTemplate string) error {
+	entries, err := r.templateFiler.ReadDir(r.ctx, dirPathTemplate)
+	if err != nil {
+		return err
+	}
+
+	// Separate files and directories from entries. We would like to process
+	// all the files first to capture all skip glob patterns.
+	files := make([]fs.DirEntry, 0)
+	directories := make([]fs.DirEntry, 0)
+	for _, entry := range entries {
+		if entry.IsDir() {
+			directories = append(directories, entry)
+		} else {
+			files = append(files, entry)
+		}
+	}
+
+	dirPath, err := r.executeTemplate(dirPathTemplate)
+	if err != nil {
+		return err
+	}
+
+	// Add skip functional closure
 	r.baseTemplate.Funcs(template.FuncMap{
-		"skip": func(pattern string) error {
-			if !slices.Contains(skipPatterns, pattern) {
-				skipPatterns = append(skipPatterns, pattern)
+		"skip": func(relPattern string) error {
+			// patterns are specified relative to current directory of the file
+			// {{skip}} function is called from
+			pattern := filepath.Join(dirPath, relPattern)
+			if !slices.Contains(r.skipPatterns, pattern) {
+				logger.Infof(r.ctx, "adding skip pattern: %s", pattern)
+				r.skipPatterns = append(r.skipPatterns, pattern)
 			}
 			return nil
 		},
 	})
 
-	// Initialize set to contain in memory files
-	files := make(map[*inMemoryFile]any, 0)
-
-	// TODO: use slice and pure functions for skip computation
-	// TODO: Have a global list of skip patterns accumulated for the entire file tree
-	// TODO: Write file tree to disk all at once
-	// TODO: optimization skip subdirectoies if we already already can
-
-	// Compute the in memory file representation for the executed template
-	for _, entry := range entries {
-		if entry.IsDir() {
-			continue
-		}
-
-		// read template file to get the templatized content for the file
-		b, err := os.ReadFile(filepath.Join(templateDir, entry.Name()))
+	// Compute files in current directory, and add them to file tree
+	for _, f := range files {
+		instanceFile, err := r.computeFile(filepath.Join(dirPathTemplate, f.Name()))
 		if err != nil {
-			return nil, err
+			return err
 		}
-		contentTemplate := string(b)
-
-		// Generate an in memory representation of the file, by executing the template
-		f, err := r.generateFile(filepath.Join(instanceDir, entry.Name()), contentTemplate, entry.Type().Perm())
-		if err != nil {
-			return nil, err
-		}
-		files[f] = nil
+		logger.Infof(r.ctx, "added file to in memory file tree: %s", instanceFile)
+		r.files = append(r.files, instanceFile)
 	}
 
-	// Match glob patterns stored, and delete matching in memory files
-	return nil, deleteSkippedFiles(files, skipPatterns)
-}
-
-// deletes any files in [files] whose name matches a glob pattern in [skipPatterns]
-func deleteSkippedFiles(files map[*inMemoryFile]any, skipPatterns []string) error {
-	for f := range files {
-		isSkipped := false
-		for _, pattern := range skipPatterns {
-			matched, err := filepath.Match(pattern, filepath.Base(f.path))
-			if err != nil {
-				return fmt.Errorf("error while trying to match file %s against glob pattern %s: %w", filepath.Base(f.path), pattern, err)
-			}
-			if matched {
-				isSkipped = true
-				break
-			}
+	// Recursively walk subdirectories, skipping any that match any of the currently
+	// accumulated skip patterns
+	for _, d := range directories {
+		path, err := r.executeTemplate(filepath.Join(dirPath, d.Name()))
+		if err != nil {
+			return err
+		}
+		isSkipped, err := r.isSkipped(path)
+		if err != nil {
+			return err
 		}
 		if isSkipped {
-			delete(files, f)
+			logger.Infof(r.ctx, "skipping walking directory: %s", path)
+			continue
 		}
-	}
-	return nil
-}
-
-func materializeFiles(files map[*inMemoryFile]any) error {
-	for f := range files {
-		// create any intermediate directories required. Directories are lazily generated
-		// only when they are required for a file.
-		err := os.MkdirAll(filepath.Dir(f.path), 0755)
-		if err != nil {
-			return err
-		}
-
-		// write content to file
-		err = os.WriteFile(f.path, []byte(f.content), f.perm)
+		err = walk(r, filepath.Join(dirPathTemplate, d.Name()))
 		if err != nil {
 			return err
 		}
@@ -200,31 +222,33 @@ func materializeFiles(files map[*inMemoryFile]any) error {
 	return nil
 }
 
-func walkFileTree(r *renderer, templateRoot, instanceRoot string) error {
-	return filepath.WalkDir(templateRoot, func(path string, d fs.DirEntry, err error) error {
+func (r *renderer) persistToDisk() error {
+	for _, file := range r.files {
+		isSkipped, err := r.isSkipped(file.path)
 		if err != nil {
 			return err
 		}
-
-		// skip if current entry is not a directory
-		if !d.IsDir() {
-			return nil
+		if isSkipped {
+			log.Infof(r.ctx, "skipping file: %s", file.path)
+			continue
 		}
-
-		// get relative path to the template file, This forms the template for the
-		// path to the file
-		relPathTemplate, err := filepath.Rel(templateRoot, path)
+		err = r.instanceFiler.Write(r.ctx, file.path, strings.NewReader(file.content), filer.CreateParentDirectories)
 		if err != nil {
 			return err
 		}
+	}
+	return nil
+}
 
-		// Compute in memory representation for files in the current directory
-		files, err := r.generateDir(path, filepath.Join(instanceRoot, relPathTemplate))
+func (r *renderer) isSkipped(path string) (bool, error) {
+	for _, pattern := range r.skipPatterns {
+		isMatch, err := filepath.Match(pattern, path)
 		if err != nil {
-			return err
+			return false, err
 		}
-
-		// Materialize these files onto the disk
-		return materializeFiles(files)
-	})
+		if isMatch {
+			return true, nil
+		}
+	}
+	return false, nil
 }

@@ -1,6 +1,7 @@
 package template
 
 import (
+	"context"
 	"path/filepath"
 )
 
@@ -21,11 +22,11 @@ func Materialize(templateRoot, instanceRoot, configPath string) error {
 		return err
 	}
 
-	r, err := newRenderer(config, filepath.Join(templateRoot, libraryDirName))
+	r, err := newRenderer(context.TODO(), config, filepath.Join(templateRoot, libraryDirName), instanceRoot, filepath.Join(templateRoot, templateDirName))
 	if err != nil {
 		return err
 	}
 
 	// materialize the template
-	return walkFileTree(r, filepath.Join(templateRoot, templateDirName), instanceRoot)
+	return walk(r, ".")
 }
