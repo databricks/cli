@@ -244,7 +244,9 @@ func TestRendererSkipAllFilesInCurrentDirectory(t *testing.T) {
 	// All 3 files are executed and have in memory representations
 	require.Len(t, r.files, 3)
 
-	r.persistToDisk()
+	err = r.persistToDisk()
+	require.NoError(t, err)
+
 	entries, err := os.ReadDir(tmpDir)
 	require.NoError(t, err)
 	// Assert none of the files are persisted to disk, because of {{skip "*"}}
@@ -265,4 +267,27 @@ func TestRendererSkipPatternsAreRelativeToFileDirectory(t *testing.T) {
 	assert.Contains(t, r.skipPatterns, "a")
 	assert.Contains(t, r.skipPatterns, "dir1/b")
 	assert.Contains(t, r.skipPatterns, "dir1/dir2/c")
+}
+
+func TestRendererSkip(t *testing.T) {
+	ctx := context.Background()
+	tmpDir := t.TempDir()
+
+	r, err := newRenderer(ctx, nil, "./testdata/skip/library", tmpDir, "./testdata/skip/template")
+	require.NoError(t, err)
+
+	err = r.walk()
+	assert.NoError(t, err)
+
+	err = r.persistToDisk()
+	require.NoError(t, err)
+
+	assert.FileExists(t, filepath.Join(tmpDir, "file1"))
+	assert.FileExists(t, filepath.Join(tmpDir, "file2"))
+	assert.FileExists(t, filepath.Join(tmpDir, "dir1/file5"))
+
+	// These files have been skipped
+	assert.NoFileExists(t, filepath.Join(tmpDir, "file3"))
+	assert.NoFileExists(t, filepath.Join(tmpDir, "dir1/file4"))
+	assert.NoDirExists(t, filepath.Join(tmpDir, "dir2"))
 }
