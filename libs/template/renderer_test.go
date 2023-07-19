@@ -278,6 +278,9 @@ func TestRendererSkip(t *testing.T) {
 
 	err = r.walk()
 	assert.NoError(t, err)
+	// All 6 files are computed, even though "dir2/*" is present as a skip pattern
+	// This is because "dir2/*" matches the files in dir2, but not dir2 itself
+	assert.Len(t, r.files, 6)
 
 	err = r.persistToDisk()
 	require.NoError(t, err)
@@ -290,4 +293,5 @@ func TestRendererSkip(t *testing.T) {
 	assert.NoFileExists(t, filepath.Join(tmpDir, "file3"))
 	assert.NoFileExists(t, filepath.Join(tmpDir, "dir1/file4"))
 	assert.NoDirExists(t, filepath.Join(tmpDir, "dir2"))
+	assert.NoFileExists(t, filepath.Join(tmpDir, "dir2/file6"))
 }
