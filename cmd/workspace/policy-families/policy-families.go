@@ -37,7 +37,11 @@ func init() {
 }
 
 var getCmd = &cobra.Command{
-	Use: "get POLICY_FAMILY_ID",
+	Use:   "get POLICY_FAMILY_ID",
+	Short: `Get policy family information.`,
+	Long: `Get policy family information.
+  
+  Retrieve the information for an policy family based on its identifier.`,
 
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
@@ -77,7 +81,11 @@ func init() {
 }
 
 var listCmd = &cobra.Command{
-	Use: "list",
+	Use:   "list",
+	Short: `List policy families.`,
+	Long: `List policy families.
+  
+  Retrieve a list of policy families. This API is paginated.`,
 
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {

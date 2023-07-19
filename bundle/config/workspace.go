@@ -21,8 +21,13 @@ type Workspace struct {
 	//
 
 	// Generic attributes.
-	Host    string `json:"host,omitempty"`
-	Profile string `json:"profile,omitempty"`
+	Host               string `json:"host,omitempty"`
+	Profile            string `json:"profile,omitempty"`
+	AuthType           string `json:"auth_type,omitempty"`
+	MetadataServiceURL string `json:"metadata_service_url,omitempty"`
+
+	// OAuth specific attributes.
+	ClientID string `json:"client_id,omitempty"`
 
 	// Google specific attributes.
 	GoogleServiceAccount string `json:"google_service_account,omitempty"`
@@ -60,8 +65,13 @@ type Workspace struct {
 func (w *Workspace) Client() (*databricks.WorkspaceClient, error) {
 	cfg := databricks.Config{
 		// Generic
-		Host:    w.Host,
-		Profile: w.Profile,
+		Host:               w.Host,
+		Profile:            w.Profile,
+		AuthType:           w.AuthType,
+		MetadataServiceURL: w.MetadataServiceURL,
+
+		// OAuth
+		ClientID: w.ClientID,
 
 		// Google
 		GoogleServiceAccount: w.GoogleServiceAccount,

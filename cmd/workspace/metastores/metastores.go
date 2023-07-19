@@ -217,6 +217,64 @@ var deleteCmd = &cobra.Command{
 	ValidArgsFunction: cobra.NoFileCompletions,
 }
 
+// start enable-optimization command
+var enableOptimizationReq catalog.UpdatePredictiveOptimization
+var enableOptimizationJson flags.JsonFlag
+
+func init() {
+	Cmd.AddCommand(enableOptimizationCmd)
+	// TODO: short flags
+	enableOptimizationCmd.Flags().Var(&enableOptimizationJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+}
+
+var enableOptimizationCmd = &cobra.Command{
+	Use:   "enable-optimization METASTORE_ID ENABLE",
+	Short: `Toggle predictive optimization on the metastore.`,
+	Long: `Toggle predictive optimization on the metastore.
+  
+  Enables or disables predictive optimization on the metastore.`,
+
+	// This command is being previewed; hide from help output.
+	Hidden: true,
+
+	Annotations: map[string]string{},
+	Args: func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(2)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	},
+	PreRunE: root.MustWorkspaceClient,
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			err = enableOptimizationJson.Unmarshal(&enableOptimizationReq)
+			if err != nil {
+				return err
+			}
+		} else {
+			enableOptimizationReq.MetastoreId = args[0]
+			_, err = fmt.Sscan(args[1], &enableOptimizationReq.Enable)
+			if err != nil {
+				return fmt.Errorf("invalid ENABLE: %s", args[1])
+			}
+		}
+
+		response, err := w.Metastores.EnableOptimization(ctx, enableOptimizationReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	},
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	ValidArgsFunction: cobra.NoFileCompletions,
+}
+
 // start get command
 var getReq catalog.GetMetastoreRequest
 
@@ -292,64 +350,6 @@ var listCmd = &cobra.Command{
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 		response, err := w.Metastores.ListAll(ctx)
-		if err != nil {
-			return err
-		}
-		return cmdio.Render(ctx, response)
-	},
-	// Disable completions since they are not applicable.
-	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
-}
-
-// start maintenance command
-var maintenanceReq catalog.UpdateAutoMaintenance
-var maintenanceJson flags.JsonFlag
-
-func init() {
-	Cmd.AddCommand(maintenanceCmd)
-	// TODO: short flags
-	maintenanceCmd.Flags().Var(&maintenanceJson, "json", `either inline JSON string or @path/to/file.json with request body`)
-
-}
-
-var maintenanceCmd = &cobra.Command{
-	Use:   "maintenance METASTORE_ID ENABLE",
-	Short: `Enables or disables auto maintenance on the metastore.`,
-	Long: `Enables or disables auto maintenance on the metastore.
-  
-  Enables or disables auto maintenance on the metastore.`,
-
-	// This command is being previewed; hide from help output.
-	Hidden: true,
-
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(2)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
-		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		ctx := cmd.Context()
-		w := root.WorkspaceClient(ctx)
-
-		if cmd.Flags().Changed("json") {
-			err = maintenanceJson.Unmarshal(&maintenanceReq)
-			if err != nil {
-				return err
-			}
-		} else {
-			maintenanceReq.MetastoreId = args[0]
-			_, err = fmt.Sscan(args[1], &maintenanceReq.Enable)
-			if err != nil {
-				return fmt.Errorf("invalid ENABLE: %s", args[1])
-			}
-		}
-
-		response, err := w.Metastores.Maintenance(ctx, maintenanceReq)
 		if err != nil {
 			return err
 		}

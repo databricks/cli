@@ -12,8 +12,16 @@ import (
 
 var Cmd = &cobra.Command{
 	Use:   "settings",
-	Short: `TBD.`,
-	Long:  `TBD`,
+	Short: `The Personal Compute enablement setting lets you control which users can use the Personal Compute default policy to create compute resources.`,
+	Long: `The Personal Compute enablement setting lets you control which users can use
+  the Personal Compute default policy to create compute resources. By default
+  all users in all workspaces have access (ON), but you can change the setting
+  to instead let individual workspaces configure access control (DELEGATE).
+  
+  There is only one instance of this setting per account. Since this setting has
+  a default value, this setting is present on all accounts even though it's
+  never set on a given account. Deletion reverts the value of the setting back
+  to the default value.`,
 	Annotations: map[string]string{
 		"package": "settings",
 	},
@@ -24,30 +32,23 @@ var Cmd = &cobra.Command{
 
 // start delete-personal-compute-setting command
 var deletePersonalComputeSettingReq settings.DeletePersonalComputeSettingRequest
-var deletePersonalComputeSettingJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(deletePersonalComputeSettingCmd)
 	// TODO: short flags
-	deletePersonalComputeSettingCmd.Flags().Var(&deletePersonalComputeSettingJson, "json", `either inline JSON string or @path/to/file.json with request body`)
-
-	deletePersonalComputeSettingCmd.Flags().StringVar(&deletePersonalComputeSettingReq.Etag, "etag", deletePersonalComputeSettingReq.Etag, `TBD.`)
 
 }
 
 var deletePersonalComputeSettingCmd = &cobra.Command{
-	Use:   "delete-personal-compute-setting",
+	Use:   "delete-personal-compute-setting ETAG",
 	Short: `Delete Personal Compute setting.`,
 	Long: `Delete Personal Compute setting.
   
-  TBD`,
+  Reverts back the Personal Compute setting value to default (ON)`,
 
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(0)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
+		check := cobra.ExactArgs(1)
 		return check(cmd, args)
 	},
 	PreRunE: root.MustAccountClient,
@@ -55,13 +56,7 @@ var deletePersonalComputeSettingCmd = &cobra.Command{
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
 
-		if cmd.Flags().Changed("json") {
-			err = deletePersonalComputeSettingJson.Unmarshal(&deletePersonalComputeSettingReq)
-			if err != nil {
-				return err
-			}
-		} else {
-		}
+		deletePersonalComputeSettingReq.Etag = args[0]
 
 		response, err := a.Settings.DeletePersonalComputeSetting(ctx, deletePersonalComputeSettingReq)
 		if err != nil {
@@ -76,30 +71,23 @@ var deletePersonalComputeSettingCmd = &cobra.Command{
 
 // start read-personal-compute-setting command
 var readPersonalComputeSettingReq settings.ReadPersonalComputeSettingRequest
-var readPersonalComputeSettingJson flags.JsonFlag
 
 func init() {
 	Cmd.AddCommand(readPersonalComputeSettingCmd)
 	// TODO: short flags
-	readPersonalComputeSettingCmd.Flags().Var(&readPersonalComputeSettingJson, "json", `either inline JSON string or @path/to/file.json with request body`)
-
-	readPersonalComputeSettingCmd.Flags().StringVar(&readPersonalComputeSettingReq.Etag, "etag", readPersonalComputeSettingReq.Etag, `TBD.`)
 
 }
 
 var readPersonalComputeSettingCmd = &cobra.Command{
-	Use:   "read-personal-compute-setting",
+	Use:   "read-personal-compute-setting ETAG",
 	Short: `Get Personal Compute setting.`,
 	Long: `Get Personal Compute setting.
   
-  TBD`,
+  Gets the value of the Personal Compute setting.`,
 
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(0)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
+		check := cobra.ExactArgs(1)
 		return check(cmd, args)
 	},
 	PreRunE: root.MustAccountClient,
@@ -107,13 +95,7 @@ var readPersonalComputeSettingCmd = &cobra.Command{
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
 
-		if cmd.Flags().Changed("json") {
-			err = readPersonalComputeSettingJson.Unmarshal(&readPersonalComputeSettingReq)
-			if err != nil {
-				return err
-			}
-		} else {
-		}
+		readPersonalComputeSettingReq.Etag = args[0]
 
 		response, err := a.Settings.ReadPersonalComputeSetting(ctx, readPersonalComputeSettingReq)
 		if err != nil {
@@ -135,7 +117,7 @@ func init() {
 	// TODO: short flags
 	updatePersonalComputeSettingCmd.Flags().Var(&updatePersonalComputeSettingJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	updatePersonalComputeSettingCmd.Flags().BoolVar(&updatePersonalComputeSettingReq.AllowMissing, "allow-missing", updatePersonalComputeSettingReq.AllowMissing, `TBD.`)
+	updatePersonalComputeSettingCmd.Flags().BoolVar(&updatePersonalComputeSettingReq.AllowMissing, "allow-missing", updatePersonalComputeSettingReq.AllowMissing, `This should always be set to true for Settings RPCs.`)
 	// TODO: complex arg: setting
 
 }
@@ -145,7 +127,7 @@ var updatePersonalComputeSettingCmd = &cobra.Command{
 	Short: `Update Personal Compute setting.`,
 	Long: `Update Personal Compute setting.
   
-  TBD`,
+  Updates the value of the Personal Compute setting.`,
 
 	Annotations: map[string]string{},
 	Args: func(cmd *cobra.Command, args []string) error {
