@@ -136,10 +136,8 @@ func TestRendererIsSkipped(t *testing.T) {
 	assert.False(t, isSkipped)
 }
 
-// TODO: have a test that directories matching glob patterns are skipped, and not generated in the first place
 // TODO: make glob patterns work for windows too. PR test runner should be enough to test this
 // TODO: add test for skip all files from current directory
-// TODO: add test for "fail" method
 // TODO: test for skip patterns being relatively evaluated
 
 func TestRendererPersistToDisk(t *testing.T) {
@@ -218,4 +216,19 @@ func TestRendererFailFunction(t *testing.T) {
 
 	err = r.walk()
 	assert.Equal(t, "I am a error message", err.Error())
+}
+
+func TestRendererSkipsDirsEagerly(t *testing.T) {
+	ctx := context.Background()
+	tmpDir := t.TempDir()
+
+	r, err := newRenderer(ctx, nil, "./testdata/skip-dir-eagerly/library", tmpDir, "./testdata/skip-dir-eagerly/template")
+	require.NoError(t, err)
+
+	err = r.walk()
+	assert.NoError(t, err)
+
+	assert.Len(t, r.files, 1)
+	content := string(r.files[0].content)
+	assert.Equal(t, "I should be the only file created", strings.Trim(content, "\r\n"))
 }

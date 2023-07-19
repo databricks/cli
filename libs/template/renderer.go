@@ -169,7 +169,7 @@ func (r *renderer) walk() error {
 		// Add skip function, which accumulates skip patterns relative to current
 		// directory
 		r.baseTemplate.Funcs(template.FuncMap{
-			"skip": func(relPattern string) error {
+			"skip": func(relPattern string) string {
 				// patterns are specified relative to current directory of the file
 				// {{skip}} function is called from
 				pattern := path.Join(currentDirectory, relPattern)
@@ -177,7 +177,9 @@ func (r *renderer) walk() error {
 					logger.Infof(r.ctx, "adding skip pattern: %s", pattern)
 					r.skipPatterns = append(r.skipPatterns, pattern)
 				}
-				return nil
+				// return empty string will print nothing at function call site
+				// when executing the template
+				return ""
 			},
 		})
 
