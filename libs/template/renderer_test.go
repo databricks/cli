@@ -232,3 +232,22 @@ func TestRendererSkipsDirsEagerly(t *testing.T) {
 	content := string(r.files[0].content)
 	assert.Equal(t, "I should be the only file created", strings.Trim(content, "\r\n"))
 }
+
+func TestRendererSkipAllFilesInCurrentDirectory(t *testing.T) {
+	ctx := context.Background()
+	tmpDir := t.TempDir()
+
+	r, err := newRenderer(ctx, nil, "./testdata/skip-all-files-in-cwd/library", tmpDir, "./testdata/skip-all-files-in-cwd/template")
+	require.NoError(t, err)
+
+	err = r.walk()
+	assert.NoError(t, err)
+	// All 3 files are executed and have in memory representations
+	require.Len(t, r.files, 3)
+
+	r.persistToDisk()
+	entries, err := os.ReadDir(tmpDir)
+	require.NoError(t, err)
+	// Assert none of the files are persisted to disk, because of {{skip "*"}}
+	assert.Len(t, entries, 0)
+}
