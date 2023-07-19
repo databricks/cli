@@ -7,9 +7,16 @@ import (
 	"testing"
 	"text/template"
 
+	"github.com/databricks/cli/libs/filer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func assertFileContent(t *testing.T, path string, content string) {
+	b, err := os.ReadFile(path)
+	require.NoError(t, err)
+	assert.Equal(t, content, string(b))
+}
 
 func TestRendererWithAssociatedTemplate(t *testing.T) {
 	tmpDir := t.TempDir()
@@ -126,6 +133,49 @@ func TestRendererIsSkipped(t *testing.T) {
 	isSkipped, err = r.isSkipped("a/b/c/d")
 	require.NoError(t, err)
 	assert.False(t, isSkipped)
+}
+
+// TODO: have a test that directories matching glob patterns are skipped, and not generated in the first place
+// TODO: make glob patterns work for windows too. PR test runner should be enough to test this
+
+func TestRendererPersistToDisk(t *testing.T) {
+	tmpDir := t.TempDir()
+	ctx := context.Background()
+
+	instanceFiler, err := filer.NewLocalClient(tmpDir)
+	require.NoError(t, err)
+
+	r := &renderer{
+		ctx:           ctx,
+		instanceFiler: instanceFiler,
+		skipPatterns:  []string{"a/b/c", "mn*"},
+		files: []*inMemoryFile{
+			{
+				path:    "a/b/c",
+				content: nil,
+			},
+			{
+				path:    "mno",
+				content: nil,
+			},
+			{
+				path:    "a/b/d",
+				content: []byte("123"),
+			},
+			{
+				path:    "mmnn",
+				content: []byte("456"),
+			},
+		},
+	}
+
+	err = r.persistToDisk()
+	require.NoError(t, err)
+
+	assert.NoFileExists(t, filepath.Join(tmpDir, "a", "b", "c"))
+	assert.NoFileExists(t, filepath.Join(tmpDir, "mno"))
+	assertFileContent(t, filepath.Join(tmpDir, "a", "b", "d"), "123")
+	assertFileContent(t, filepath.Join(tmpDir, "mmnn"), "456")
 }
 
 // func TestGenerateFile(t *testing.T) {

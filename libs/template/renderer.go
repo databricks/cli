@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"path"
 	"path/filepath"
 	"strings"
 	"text/template"
@@ -18,9 +19,9 @@ import (
 )
 
 type inMemoryFile struct {
+	// Unix like path for the file (using '/' as the separator)
 	path    string
 	content []byte
-	perm    fs.FileMode
 }
 
 // This structure renders any template files during project initialization
@@ -37,6 +38,7 @@ type renderer struct {
 	// templates during file tree walk
 	baseTemplate *template.Template
 
+	// List of in memory files being generated from template.
 	files        []*inMemoryFile
 	skipPatterns []string
 
@@ -138,17 +140,9 @@ func (r *renderer) computeFile(relPathTemplate string) (*inMemoryFile, error) {
 		return nil, err
 	}
 
-	// Read permissions for the file
-	info, err := r.templateFiler.Stat(r.ctx, relPathTemplate)
-	if err != nil {
-		return nil, err
-	}
-	perm := info.Mode().Perm()
-
 	return &inMemoryFile{
 		path:    relPath,
 		content: []byte(content),
-		perm:    perm,
 	}, nil
 }
 
@@ -179,7 +173,7 @@ func (r *renderer) walk() error {
 			"skip": func(relPattern string) error {
 				// patterns are specified relative to current directory of the file
 				// {{skip}} function is called from
-				pattern := filepath.Join(currentDirectory, relPattern)
+				pattern := path.Join(currentDirectory, relPattern)
 				if !slices.Contains(r.skipPatterns, pattern) {
 					logger.Infof(r.ctx, "adding skip pattern: %s", pattern)
 					r.skipPatterns = append(r.skipPatterns, pattern)
@@ -202,12 +196,12 @@ func (r *renderer) walk() error {
 		for _, entry := range entries {
 			if entry.IsDir() {
 				// Add to slice, for BFS traversal
-				directories = append(directories, filepath.Join(currentDirectory, entry.Name()))
+				directories = append(directories, path.Join(currentDirectory, entry.Name()))
 				continue
 			}
 
 			// Generate in memory representation of file
-			f, err := r.computeFile(filepath.Join(currentDirectory, entry.Name()))
+			f, err := r.computeFile(path.Join(currentDirectory, entry.Name()))
 			if err != nil {
 				return err
 			}
@@ -247,7 +241,7 @@ func walk(r *renderer, dirPathTemplate string) error {
 		"skip": func(relPattern string) error {
 			// patterns are specified relative to current directory of the file
 			// {{skip}} function is called from
-			pattern := filepath.Join(dirPath, relPattern)
+			pattern := path.Join(dirPath, relPattern)
 			if !slices.Contains(r.skipPatterns, pattern) {
 				logger.Infof(r.ctx, "adding skip pattern: %s", pattern)
 				r.skipPatterns = append(r.skipPatterns, pattern)
@@ -258,7 +252,7 @@ func walk(r *renderer, dirPathTemplate string) error {
 
 	// Compute files in current directory, and add them to file tree
 	for _, f := range files {
-		instanceFile, err := r.computeFile(filepath.Join(dirPathTemplate, f.Name()))
+		instanceFile, err := r.computeFile(path.Join(dirPathTemplate, f.Name()))
 		if err != nil {
 			return err
 		}
@@ -269,19 +263,19 @@ func walk(r *renderer, dirPathTemplate string) error {
 	// Recursively walk subdirectories, skipping any that match any of the currently
 	// accumulated skip patterns
 	for _, d := range directories {
-		path, err := r.executeTemplate(filepath.Join(dirPath, d.Name()))
+		templatePath, err := r.executeTemplate(path.Join(dirPath, d.Name()))
 		if err != nil {
 			return err
 		}
-		isSkipped, err := r.isSkipped(path)
+		isSkipped, err := r.isSkipped(templatePath)
 		if err != nil {
 			return err
 		}
 		if isSkipped {
-			logger.Infof(r.ctx, "skipping walking directory: %s", path)
+			logger.Infof(r.ctx, "skipping walking directory: %s", templatePath)
 			continue
 		}
-		err = walk(r, filepath.Join(dirPathTemplate, d.Name()))
+		err = walk(r, path.Join(dirPathTemplate, d.Name()))
 		if err != nil {
 			return err
 		}
@@ -307,9 +301,9 @@ func (r *renderer) persistToDisk() error {
 	return nil
 }
 
-func (r *renderer) isSkipped(path string) (bool, error) {
+func (r *renderer) isSkipped(filePath string) (bool, error) {
 	for _, pattern := range r.skipPatterns {
-		isMatch, err := filepath.Match(pattern, path)
+		isMatch, err := path.Match(pattern, filePath)
 		if err != nil {
 			return false, err
 		}
