@@ -1,4 +1,0 @@
-{{if eq .d "foo"}}
-{{skipThisFile}}
-{{end}}
-Hello, World
