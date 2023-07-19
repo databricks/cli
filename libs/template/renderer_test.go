@@ -208,3 +208,14 @@ func TestRendererWalk(t *testing.T) {
 	assert.Equal(t, "file three", getContent(r, "dir1/dir3/file3"))
 	assert.Equal(t, "file four", getContent(r, "dir2/file4"))
 }
+
+func TestRendererFailFunction(t *testing.T) {
+	ctx := context.Background()
+	tmpDir := t.TempDir()
+
+	r, err := newRenderer(ctx, nil, "./testdata/fail/library", tmpDir, "./testdata/fail/template")
+	require.NoError(t, err)
+
+	err = r.walk()
+	assert.Equal(t, "I am a error message", err.Error())
+}
