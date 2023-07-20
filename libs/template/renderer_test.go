@@ -227,7 +227,7 @@ func TestRendererFailFunction(t *testing.T) {
 	require.NoError(t, err)
 
 	err = r.walk()
-	assert.Equal(t, "I am a error message", err.Error())
+	assert.Equal(t, "I am an error message", err.Error())
 }
 
 func TestRendererSkipsDirsEagerly(t *testing.T) {
