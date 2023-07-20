@@ -2,6 +2,7 @@ package template
 
 import (
 	"context"
+	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -383,4 +384,51 @@ func TestRendererReadsPermissionsBits(t *testing.T) {
 	assert.Len(t, r.files, 2)
 	assert.Equal(t, getPermissions(r, "script.sh"), fs.FileMode(0755))
 	assert.Equal(t, getPermissions(r, "not-a-script"), fs.FileMode(0644))
+}
+
+func TestRendererErrorOnConflictingFile(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	_, err := os.Create(filepath.Join(tmpDir, "a"))
+	require.NoError(t, err)
+
+	r := renderer{
+		skipPatterns: []string{},
+		files: []*inMemoryFile{
+			{
+				root:    tmpDir,
+				relPath: "a",
+				content: []byte("123"),
+				perm:    0444,
+			},
+		},
+	}
+	err = r.persistToDisk()
+	assert.EqualError(t, err, fmt.Sprintf("failed to persist to disk, conflict with existing file: %s", filepath.Join(tmpDir, "a")))
+}
+
+func TestRendererNoErrorOnConflictingFileIfSkipped(t *testing.T) {
+	tmpDir := t.TempDir()
+	ctx := context.Background()
+
+	_, err := os.Create(filepath.Join(tmpDir, "a"))
+	require.NoError(t, err)
+
+	r := renderer{
+		ctx:          ctx,
+		skipPatterns: []string{"a"},
+		files: []*inMemoryFile{
+			{
+				root:    tmpDir,
+				relPath: "a",
+				content: []byte("123"),
+				perm:    0444,
+			},
+		},
+	}
+	err = r.persistToDisk()
+	// No error is returned even though a conflicting file exists. This is because
+	// the generated file is being skipped
+	assert.NoError(t, err)
+	assert.Len(t, r.files, 1)
 }

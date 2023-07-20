@@ -154,7 +154,6 @@ func (r *renderer) computeFile(relPathTemplate string) (*inMemoryFile, error) {
 	}
 
 	// read file permissions
-	// TODO: add test for permissions copy, wrt executable bit
 	info, err := r.templateFiler.Stat(r.ctx, relPathTemplate)
 	if err != nil {
 		return nil, err
@@ -271,7 +270,6 @@ func (r *renderer) persistToDisk() error {
 	}
 
 	// Assert no conflicting files exist
-	// TODO: test this error, in both cases, when skipped and when conflict
 	for _, file := range filesToPersist {
 		path := file.fullPath()
 		_, err := os.Stat(path)
