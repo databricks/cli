@@ -1,11 +1,12 @@
 package template
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
+	"os"
 	"path"
 	"path/filepath"
 	"strings"
@@ -18,9 +19,31 @@ import (
 )
 
 type inMemoryFile struct {
-	// Unix like path for the file (using '/' as the separator)
-	path    string
+	// Root path for the project instance. This path uses the system's default
+	// file separator. For example /foo/bar on Unix and C:\foo\bar on windows
+	root string
+
+	// Unix like relPath for the file (using '/' as the separator). This path
+	// is relative to the root. Using unix like relative paths enables skip patterns
+	// to work cross platform.
+	relPath string
 	content []byte
+	perm    fs.FileMode
+}
+
+// TODO: test these methods
+func (f *inMemoryFile) fullPath() string {
+	return filepath.Join(f.root, filepath.FromSlash(f.relPath))
+}
+
+func (f *inMemoryFile) persistToDisk() error {
+	path := f.fullPath()
+
+	err := os.MkdirAll(filepath.Dir(path), 0755)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(path, f.content, f.perm)
 }
 
 // Renders a databricks template as a project
@@ -57,9 +80,8 @@ type renderer struct {
 	// generate the project
 	templateFiler filer.Filer
 
-	// Filer rooted at the project instance root. Allows writing files generated
-	// when walking the template file tree
-	instanceFiler filer.Filer
+	// Root directory for the project instantiated from the template
+	instanceRoot string
 }
 
 func newRenderer(ctx context.Context, config map[string]any, libraryRoot, instanceRoot, templateRoot string) (*renderer, error) {
@@ -84,11 +106,6 @@ func newRenderer(ctx context.Context, config map[string]any, libraryRoot, instan
 		return nil, err
 	}
 
-	instanceFiler, err := filer.NewLocalClient(instanceRoot)
-	if err != nil {
-		return nil, err
-	}
-
 	ctx = log.NewContext(ctx, log.GetLogger(ctx).With("action", "initialize-template"))
 
 	return &renderer{
@@ -98,7 +115,7 @@ func newRenderer(ctx context.Context, config map[string]any, libraryRoot, instan
 		files:         make([]*inMemoryFile, 0),
 		skipPatterns:  make([]string, 0),
 		templateFiler: templateFiler,
-		instanceFiler: instanceFiler,
+		instanceRoot:  instanceRoot,
 	}, nil
 }
 
@@ -137,6 +154,14 @@ func (r *renderer) computeFile(relPathTemplate string) (*inMemoryFile, error) {
 		return nil, err
 	}
 
+	// read file permissions
+	// TODO: add test for permissions copy, wrt executable bit
+	info, err := r.templateFiler.Stat(r.ctx, relPathTemplate)
+	if err != nil {
+		return nil, err
+	}
+	perm := info.Mode().Perm()
+
 	// execute the contents of the file as a template
 	content, err := r.executeTemplate(string(contentTemplate))
 	// Capture errors caused by the "fail" helper function
@@ -154,8 +179,10 @@ func (r *renderer) computeFile(relPathTemplate string) (*inMemoryFile, error) {
 	}
 
 	return &inMemoryFile{
-		path:    relPath,
+		root:    r.instanceRoot,
+		relPath: relPath,
 		content: []byte(content),
+		perm:    perm,
 	}, nil
 }
 
@@ -220,7 +247,7 @@ func (r *renderer) walk() error {
 			if err != nil {
 				return err
 			}
-			logger.Infof(r.ctx, "added file to in memory file tree: %s", f.path)
+			logger.Infof(r.ctx, "added file to in memory file tree: %s", f.relPath)
 			r.files = append(r.files, f)
 		}
 
@@ -229,16 +256,34 @@ func (r *renderer) walk() error {
 }
 
 func (r *renderer) persistToDisk() error {
+	// Accumulate files which we will persist, skipping files whose path matches
+	// any of the skip patterns
+	filesToPersist := make([]*inMemoryFile, 0)
 	for _, file := range r.files {
-		isSkipped, err := r.isSkipped(file.path)
+		isSkipped, err := r.isSkipped(file.relPath)
 		if err != nil {
 			return err
 		}
 		if isSkipped {
-			log.Infof(r.ctx, "skipping file: %s", file.path)
+			log.Infof(r.ctx, "skipping file: %s", file.relPath)
 			continue
 		}
-		err = r.instanceFiler.Write(r.ctx, file.path, bytes.NewReader(file.content), filer.CreateParentDirectories)
+		filesToPersist = append(filesToPersist, file)
+	}
+
+	// Assert no conflicting files exist
+	// TODO: test this error, in both cases, when skipped and when conflict
+	for _, file := range filesToPersist {
+		path := file.fullPath()
+		_, err := os.Stat(path)
+		if !os.IsNotExist(err) {
+			return fmt.Errorf("failed to persist to disk, conflict with existing file: %s", path)
+		}
+	}
+
+	// Persist files to disk
+	for _, file := range filesToPersist {
+		err := file.persistToDisk()
 		if err != nil {
 			return err
 		}

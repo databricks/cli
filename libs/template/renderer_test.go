@@ -2,13 +2,13 @@ package template
 
 import (
 	"context"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 	"text/template"
 
-	"github.com/databricks/cli/libs/filer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -17,6 +17,12 @@ func assertFileContent(t *testing.T, path string, content string) {
 	b, err := os.ReadFile(path)
 	require.NoError(t, err)
 	assert.Equal(t, content, string(b))
+}
+
+func assertFilePermissions(t *testing.T, path string, perm fs.FileMode) {
+	info, err := os.Stat(path)
+	require.NoError(t, err)
+	assert.Equal(t, perm, info.Mode().Perm())
 }
 
 func TestRendererWithAssociatedTemplateInLibrary(t *testing.T) {
@@ -140,40 +146,48 @@ func TestRendererPersistToDisk(t *testing.T) {
 	tmpDir := t.TempDir()
 	ctx := context.Background()
 
-	instanceFiler, err := filer.NewLocalClient(tmpDir)
-	require.NoError(t, err)
-
 	r := &renderer{
-		ctx:           ctx,
-		instanceFiler: instanceFiler,
-		skipPatterns:  []string{"a/b/c", "mn*"},
+		ctx:          ctx,
+		instanceRoot: tmpDir,
+		skipPatterns: []string{"a/b/c", "mn*"},
 		files: []*inMemoryFile{
 			{
-				path:    "a/b/c",
+				root:    tmpDir,
+				relPath: "a/b/c",
 				content: nil,
+				perm:    0444,
 			},
 			{
-				path:    "mno",
+				root:    tmpDir,
+				relPath: "mno",
 				content: nil,
+				perm:    0444,
 			},
 			{
-				path:    "a/b/d",
+				root:    tmpDir,
+				relPath: "a/b/d",
 				content: []byte("123"),
+				perm:    0444,
 			},
 			{
-				path:    "mmnn",
+				root:    tmpDir,
+				relPath: "mmnn",
 				content: []byte("456"),
+				perm:    0444,
 			},
 		},
 	}
 
-	err = r.persistToDisk()
+	err := r.persistToDisk()
 	require.NoError(t, err)
 
 	assert.NoFileExists(t, filepath.Join(tmpDir, "a", "b", "c"))
 	assert.NoFileExists(t, filepath.Join(tmpDir, "mno"))
+
 	assertFileContent(t, filepath.Join(tmpDir, "a", "b", "d"), "123")
+	assertFilePermissions(t, filepath.Join(tmpDir, "a", "b", "d"), 0444)
 	assertFileContent(t, filepath.Join(tmpDir, "mmnn"), "456")
+	assertFilePermissions(t, filepath.Join(tmpDir, "mmnn"), 0444)
 }
 
 func TestRendererWalk(t *testing.T) {
@@ -188,7 +202,7 @@ func TestRendererWalk(t *testing.T) {
 
 	getContent := func(r *renderer, path string) string {
 		for _, f := range r.files {
-			if f.path == path {
+			if f.relPath == path {
 				return strings.Trim(string(f.content), "\r\n")
 			}
 		}
