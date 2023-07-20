@@ -25,7 +25,7 @@ type inMemoryFile struct {
 
 	// Unix like relPath for the file (using '/' as the separator). This path
 	// is relative to the root. Using unix like relative paths enables skip patterns
-	// to work cross platform.
+	// to work across both windows and unix based operating systems.
 	relPath string
 	content []byte
 	perm    fs.FileMode
@@ -54,9 +54,9 @@ type renderer struct {
 	// this "dot" value
 	config map[string]any
 
-	// A base template with helper functions and user defined template in the
-	// library directory loaded. This is used as the base to compute any project
-	// templates during file tree walk
+	// A base template with helper functions and user defined templates in the
+	// library directory loaded. This is cloned for each project template computation
+	// during file tree walk
 	baseTemplate *template.Template
 
 	// List of in memory files generated from template
@@ -201,7 +201,7 @@ func (r *renderer) walk() error {
 			return err
 		}
 		if isSkipped {
-			logger.Infof(r.ctx, "skipping walking directory: %s", instanceDirectory)
+			logger.Infof(r.ctx, "skipping directory: %s", instanceDirectory)
 			continue
 		}
 
@@ -210,7 +210,7 @@ func (r *renderer) walk() error {
 		r.baseTemplate.Funcs(template.FuncMap{
 			"skip": func(relPattern string) string {
 				// patterns are specified relative to current directory of the file
-				// {{skip}} function is called from
+				// the {{skip}} function is called from.
 				pattern := path.Join(currentDirectory, relPattern)
 				if !slices.Contains(r.skipPatterns, pattern) {
 					logger.Infof(r.ctx, "adding skip pattern: %s", pattern)
@@ -245,7 +245,7 @@ func (r *renderer) walk() error {
 			if err != nil {
 				return err
 			}
-			logger.Infof(r.ctx, "added file to in memory file tree: %s", f.relPath)
+			logger.Infof(r.ctx, "added file to list of in memory files: %s", f.relPath)
 			r.files = append(r.files, f)
 		}
 
