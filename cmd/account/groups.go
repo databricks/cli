@@ -32,11 +32,3 @@ func Groups() []cobra.Group {
 		},
 	}
 }
-
-func init() {
-	// Register groups with parent command
-	groups := Groups()
-	for i := range groups {
-		accountCmd.AddGroup(&groups[i])
-	}
-}
