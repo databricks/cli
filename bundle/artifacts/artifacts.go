@@ -63,9 +63,6 @@ func (m *basicBuild) Apply(ctx context.Context, b *bundle.Bundle) error {
 
 	cmdio.LogString(ctx, fmt.Sprintf("artifacts.Build(%s): Building...", m.name))
 
-	dir := artifact.Path
-	defer libs.ChdirAndBack(dir)
-
 	out, err := artifact.Build(ctx)
 	if err != nil {
 		return fmt.Errorf("artifacts.Build(%s): %w, output: %s", m.name, err, out)

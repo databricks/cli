@@ -5,7 +5,6 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/databricks/cli/libs"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -32,7 +31,7 @@ func TestFreeze(t *testing.T) {
 }
 
 func TestPyInlineX(t *testing.T) {
-	defer libs.ChdirAndBack("testdata/simple-python-wheel")()
+	defer chdirAndBack("testdata/simple-python-wheel")()
 	dist, err := ReadDistribution(context.Background())
 	assert.NoError(t, err)
 	assert.Equal(t, "dummy", dist.Name)
