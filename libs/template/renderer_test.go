@@ -318,3 +318,42 @@ func TestRendererInMemoryFileFullPathForWindows(t *testing.T) {
 	}
 	assert.Equal(t, `c:\a\b\c\d\e`, f.fullPath())
 }
+
+func TestRendererInMemoryFilePersistToDiskSetsExecutableBit(t *testing.T) {
+	if runtime.GOOS != "linux" && runtime.GOOS != "darwin" {
+		t.SkipNow()
+	}
+	tmpDir := t.TempDir()
+
+	f := &inMemoryFile{
+		root:    tmpDir,
+		relPath: "a/b/c",
+		content: []byte("123"),
+		perm:    0755,
+	}
+	err := f.persistToDisk()
+	assert.NoError(t, err)
+
+	assertFileContent(t, filepath.Join(tmpDir, "a/b/c"), "123")
+	assertFilePermissions(t, filepath.Join(tmpDir, "a/b/c"), 0755)
+}
+
+func TestRendererInMemoryFilePersistToDiskForWindows(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.SkipNow()
+	}
+	tmpDir := t.TempDir()
+
+	f := &inMemoryFile{
+		root:    tmpDir,
+		relPath: "a/b/c",
+		content: []byte("123"),
+		perm:    0666,
+	}
+	err := f.persistToDisk()
+	assert.NoError(t, err)
+
+	assertFileContent(t, filepath.Join(tmpDir, "a/b/c"), "123")
+	assertFilePermissions(t, filepath.Join(tmpDir, "a/b/c"), 0666)
+}
+
