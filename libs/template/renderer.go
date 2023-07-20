@@ -83,7 +83,7 @@ type renderer struct {
 	instanceRoot string
 }
 
-func newRenderer(ctx context.Context, config map[string]any, libraryRoot, instanceRoot, templateRoot string) (*renderer, error) {
+func newRenderer(ctx context.Context, config map[string]any, templateRoot, libraryRoot, instanceRoot string) (*renderer, error) {
 	// Initialize new template, with helper functions loaded
 	tmpl := template.New("").Funcs(HelperFuncs)
 

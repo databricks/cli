@@ -30,7 +30,7 @@ func assertFilePermissions(t *testing.T, path string, perm fs.FileMode) {
 func TestRendererWithAssociatedTemplateInLibrary(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	r, err := newRenderer(context.Background(), nil, "./testdata/email/library", tmpDir, "./testdata/email/template")
+	r, err := newRenderer(context.Background(), nil, "./testdata/email/template", "./testdata/email/library", tmpDir)
 	require.NoError(t, err)
 
 	err = r.walk()
@@ -196,7 +196,7 @@ func TestRendererWalk(t *testing.T) {
 	ctx := context.Background()
 	tmpDir := t.TempDir()
 
-	r, err := newRenderer(ctx, nil, "./testdata/walk/library", tmpDir, "./testdata/walk/template")
+	r, err := newRenderer(ctx, nil, "./testdata/walk/template", "./testdata/walk/library", tmpDir)
 	require.NoError(t, err)
 
 	err = r.walk()
@@ -223,7 +223,7 @@ func TestRendererFailFunction(t *testing.T) {
 	ctx := context.Background()
 	tmpDir := t.TempDir()
 
-	r, err := newRenderer(ctx, nil, "./testdata/fail/library", tmpDir, "./testdata/fail/template")
+	r, err := newRenderer(ctx, nil, "./testdata/fail/template", "./testdata/fail/library", tmpDir)
 	require.NoError(t, err)
 
 	err = r.walk()
@@ -234,7 +234,7 @@ func TestRendererSkipsDirsEagerly(t *testing.T) {
 	ctx := context.Background()
 	tmpDir := t.TempDir()
 
-	r, err := newRenderer(ctx, nil, "./testdata/skip-dir-eagerly/library", tmpDir, "./testdata/skip-dir-eagerly/template")
+	r, err := newRenderer(ctx, nil, "./testdata/skip-dir-eagerly/template", "./testdata/skip-dir-eagerly/library", tmpDir)
 	require.NoError(t, err)
 
 	err = r.walk()
@@ -249,7 +249,7 @@ func TestRendererSkipAllFilesInCurrentDirectory(t *testing.T) {
 	ctx := context.Background()
 	tmpDir := t.TempDir()
 
-	r, err := newRenderer(ctx, nil, "./testdata/skip-all-files-in-cwd/library", tmpDir, "./testdata/skip-all-files-in-cwd/template")
+	r, err := newRenderer(ctx, nil, "./testdata/skip-all-files-in-cwd/template", "./testdata/skip-all-files-in-cwd/library", tmpDir)
 	require.NoError(t, err)
 
 	err = r.walk()
@@ -270,7 +270,7 @@ func TestRendererSkipPatternsAreRelativeToFileDirectory(t *testing.T) {
 	ctx := context.Background()
 	tmpDir := t.TempDir()
 
-	r, err := newRenderer(ctx, nil, "./testdata/skip-is-relative/library", tmpDir, "./testdata/skip-is-relative/template")
+	r, err := newRenderer(ctx, nil, "./testdata/skip-is-relative/template", "./testdata/skip-is-relative/library", tmpDir)
 	require.NoError(t, err)
 
 	err = r.walk()
@@ -286,7 +286,7 @@ func TestRendererSkip(t *testing.T) {
 	ctx := context.Background()
 	tmpDir := t.TempDir()
 
-	r, err := newRenderer(ctx, nil, "./testdata/skip/library", tmpDir, "./testdata/skip/template")
+	r, err := newRenderer(ctx, nil, "./testdata/skip/template", "./testdata/skip/library", tmpDir)
 	require.NoError(t, err)
 
 	err = r.walk()
@@ -365,7 +365,7 @@ func TestRendererReadsPermissionsBits(t *testing.T) {
 	tmpDir := t.TempDir()
 	ctx := context.Background()
 
-	r, err := newRenderer(ctx, nil, "./testdata/executable-bit-read/library", tmpDir, "./testdata/executable-bit-read/template")
+	r, err := newRenderer(ctx, nil, "./testdata/executable-bit-read/template", "./testdata/executable-bit-read/library", tmpDir)
 	require.NoError(t, err)
 
 	err = r.walk()
