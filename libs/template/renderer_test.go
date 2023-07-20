@@ -357,3 +357,30 @@ func TestRendererInMemoryFilePersistToDiskForWindows(t *testing.T) {
 	assertFilePermissions(t, filepath.Join(tmpDir, "a/b/c"), 0666)
 }
 
+func TestRendererReadsPermissionsBits(t *testing.T) {
+	if runtime.GOOS != "linux" && runtime.GOOS != "darwin" {
+		t.SkipNow()
+	}
+	tmpDir := t.TempDir()
+	ctx := context.Background()
+
+	r, err := newRenderer(ctx, nil, "./testdata/executable-bit-read/library", tmpDir, "./testdata/executable-bit-read/template")
+	require.NoError(t, err)
+
+	err = r.walk()
+	assert.NoError(t, err)
+
+	getPermissions := func(r *renderer, path string) fs.FileMode {
+		for _, f := range r.files {
+			if f.relPath == path {
+				return f.perm
+			}
+		}
+		require.FailNow(t, "file is absent: "+path)
+		return 0
+	}
+
+	assert.Len(t, r.files, 2)
+	assert.Equal(t, getPermissions(r, "script.sh"), fs.FileMode(0755))
+	assert.Equal(t, getPermissions(r, "not-a-script"), fs.FileMode(0644))
+}
