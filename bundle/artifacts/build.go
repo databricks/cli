@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/databricks/cli/bundle"
 )
@@ -49,6 +50,10 @@ func (m *build) Apply(ctx context.Context, b *bundle.Bundle) error {
 			return nil
 		}
 		artifact.Path = path
+	}
+
+	if !filepath.IsAbs(artifact.Path) {
+		artifact.Path = filepath.Join(b.Config.Path, artifact.Path)
 	}
 
 	return bundle.Apply(ctx, b, getBuildMutator(artifact.Type, m.name))

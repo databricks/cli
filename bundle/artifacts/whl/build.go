@@ -41,7 +41,8 @@ func (m *build) Apply(ctx context.Context, b *bundle.Bundle) error {
 
 	dir := artifact.Path
 
-	os.RemoveAll(filepath.Join(dir, "dist"))
+	distPath := filepath.Join(dir, "dist")
+	os.RemoveAll(distPath)
 	python.CleanupWheelFolder(dir)
 
 	out, err := artifact.Build(ctx)
@@ -50,7 +51,7 @@ func (m *build) Apply(ctx context.Context, b *bundle.Bundle) error {
 	}
 	cmdio.LogString(ctx, fmt.Sprintf("artifacts.whl.Build(%s): Build succeeded", m.name))
 
-	wheel := python.FindFileWithSuffixInPath("dist", ".whl")
+	wheel := python.FindFileWithSuffixInPath(distPath, ".whl")
 	if wheel == "" {
 		return fmt.Errorf("artifacts.whl.Build(%s): cannot find built wheel in %s", m.name, dir)
 	}
