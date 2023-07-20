@@ -11,20 +11,21 @@ import (
 	{{.SnakeName}} "github.com/databricks/cli/cmd/account/{{(.TrimPrefix "account").KebabName}}"{{end}}{{end}}{{end}}
 )
 
-var accountCmd = &cobra.Command{
-	Use:   "account",
-	Short: `Databricks Account Commands`,
-}
-
-func init() {
-	root.RootCmd.AddCommand(accountCmd)
+func New() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "account",
+		Short: `Databricks Account Commands`,
+	}
 
 	{{range .Services}}{{if .IsAccounts}}{{if not (in $excludes .KebabName) -}}
-	accountCmd.AddCommand({{.SnakeName}}.Cmd)
+	cmd.AddCommand({{.SnakeName}}.New())
 	{{end}}{{end}}{{end}}
 
-	// Register commands with groups
-	{{range .Services}}{{if .IsAccounts}}{{if not (in $excludes .KebabName) -}}
-	{{.SnakeName}}.Cmd.GroupID = "{{ .Package.Name }}"
-	{{end}}{{end}}{{end}}
+	// Register all groups with the parent command.
+	groups := Groups()
+	for i := range groups {
+		cmd.AddGroup(&groups[i])
+	}
+
+	return cmd
 }

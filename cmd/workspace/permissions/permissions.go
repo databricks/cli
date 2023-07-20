@@ -10,40 +10,58 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var Cmd = &cobra.Command{
-	Use:   "permissions",
-	Short: `Permissions API are used to create read, write, edit, update and manage access for various users on different objects and endpoints.`,
-	Long: `Permissions API are used to create read, write, edit, update and manage access
+func New() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "permissions",
+		Short: `Permissions API are used to create read, write, edit, update and manage access for various users on different objects and endpoints.`,
+		Long: `Permissions API are used to create read, write, edit, update and manage access
   for various users on different objects and endpoints.`,
-	Annotations: map[string]string{
-		"package": "iam",
-	},
+		GroupID: "iam",
+		Annotations: map[string]string{
+			"package": "iam",
+		},
+	}
+
+	cmd.AddCommand(newGet())
+	cmd.AddCommand(newGetPermissionLevels())
+	cmd.AddCommand(newSet())
+	cmd.AddCommand(newUpdate())
+
+	return cmd
 }
 
 // start get command
-var getReq iam.GetPermissionRequest
 
-func init() {
-	Cmd.AddCommand(getCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getOverrides []func(
+	*cobra.Command,
+	*iam.GetPermissionRequest,
+)
+
+func newGet() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getReq iam.GetPermissionRequest
+
 	// TODO: short flags
 
-}
-
-var getCmd = &cobra.Command{
-	Use:   "get REQUEST_OBJECT_TYPE REQUEST_OBJECT_ID",
-	Short: `Get object permissions.`,
-	Long: `Get object permissions.
+	cmd.Use = "get REQUEST_OBJECT_TYPE REQUEST_OBJECT_ID"
+	cmd.Short = `Get object permissions.`
+	cmd.Long = `Get object permissions.
   
   Gets the permission of an object. Objects can inherit permissions from their
-  parent objects or root objects.`,
+  parent objects or root objects.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -55,35 +73,51 @@ var getCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getOverrides {
+		fn(cmd, &getReq)
+	}
+
+	return cmd
 }
 
 // start get-permission-levels command
-var getPermissionLevelsReq iam.GetPermissionLevelsRequest
 
-func init() {
-	Cmd.AddCommand(getPermissionLevelsCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getPermissionLevelsOverrides []func(
+	*cobra.Command,
+	*iam.GetPermissionLevelsRequest,
+)
+
+func newGetPermissionLevels() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getPermissionLevelsReq iam.GetPermissionLevelsRequest
+
 	// TODO: short flags
 
-}
-
-var getPermissionLevelsCmd = &cobra.Command{
-	Use:   "get-permission-levels REQUEST_OBJECT_TYPE REQUEST_OBJECT_ID",
-	Short: `Get permission levels.`,
-	Long: `Get permission levels.
+	cmd.Use = "get-permission-levels REQUEST_OBJECT_TYPE REQUEST_OBJECT_ID"
+	cmd.Short = `Get permission levels.`
+	cmd.Long = `Get permission levels.
   
-  Gets the permission levels that a user can have on an object.`,
+  Gets the permission levels that a user can have on an object.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -95,40 +129,56 @@ var getPermissionLevelsCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getPermissionLevelsOverrides {
+		fn(cmd, &getPermissionLevelsReq)
+	}
+
+	return cmd
 }
 
 // start set command
-var setReq iam.PermissionsRequest
-var setJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(setCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var setOverrides []func(
+	*cobra.Command,
+	*iam.PermissionsRequest,
+)
+
+func newSet() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var setReq iam.PermissionsRequest
+	var setJson flags.JsonFlag
+
 	// TODO: short flags
-	setCmd.Flags().Var(&setJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&setJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: access_control_list
 
-}
-
-var setCmd = &cobra.Command{
-	Use:   "set REQUEST_OBJECT_TYPE REQUEST_OBJECT_ID",
-	Short: `Set permissions.`,
-	Long: `Set permissions.
+	cmd.Use = "set REQUEST_OBJECT_TYPE REQUEST_OBJECT_ID"
+	cmd.Short = `Set permissions.`
+	cmd.Long = `Set permissions.
   
   Sets permissions on object. Objects can inherit permissions from their parent
-  objects and root objects.`,
+  objects and root objects.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -146,39 +196,55 @@ var setCmd = &cobra.Command{
 			return err
 		}
 		return nil
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range setOverrides {
+		fn(cmd, &setReq)
+	}
+
+	return cmd
 }
 
 // start update command
-var updateReq iam.PermissionsRequest
-var updateJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(updateCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updateOverrides []func(
+	*cobra.Command,
+	*iam.PermissionsRequest,
+)
+
+func newUpdate() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updateReq iam.PermissionsRequest
+	var updateJson flags.JsonFlag
+
 	// TODO: short flags
-	updateCmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: access_control_list
 
-}
-
-var updateCmd = &cobra.Command{
-	Use:   "update REQUEST_OBJECT_TYPE REQUEST_OBJECT_ID",
-	Short: `Update permission.`,
-	Long: `Update permission.
+	cmd.Use = "update REQUEST_OBJECT_TYPE REQUEST_OBJECT_ID"
+	cmd.Short = `Update permission.`
+	cmd.Long = `Update permission.
   
-  Updates the permissions on an object.`,
+  Updates the permissions on an object.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -196,10 +262,18 @@ var updateCmd = &cobra.Command{
 			return err
 		}
 		return nil
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updateOverrides {
+		fn(cmd, &updateReq)
+	}
+
+	return cmd
 }
 
 // end service Permissions

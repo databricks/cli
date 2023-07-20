@@ -12,10 +12,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var Cmd = &cobra.Command{
-	Use:   "ip-access-lists",
-	Short: `The Accounts IP Access List API enables account admins to configure IP access lists for access to the account console.`,
-	Long: `The Accounts IP Access List API enables account admins to configure IP access
+func New() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "ip-access-lists",
+		Short: `The Accounts IP Access List API enables account admins to configure IP access lists for access to the account console.`,
+		Long: `The Accounts IP Access List API enables account admins to configure IP access
   lists for access to the account console.
   
   Account IP Access Lists affect web application access and REST API access to
@@ -37,26 +38,43 @@ var Cmd = &cobra.Command{
   
   After changes to the account-level IP access lists, it can take a few minutes
   for changes to take effect.`,
-	Annotations: map[string]string{
-		"package": "settings",
-	},
+		GroupID: "settings",
+		Annotations: map[string]string{
+			"package": "settings",
+		},
+	}
+
+	cmd.AddCommand(newCreate())
+	cmd.AddCommand(newDelete())
+	cmd.AddCommand(newGet())
+	cmd.AddCommand(newList())
+	cmd.AddCommand(newReplace())
+	cmd.AddCommand(newUpdate())
+
+	return cmd
 }
 
 // start create command
-var createReq settings.CreateIpAccessList
-var createJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(createCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var createOverrides []func(
+	*cobra.Command,
+	*settings.CreateIpAccessList,
+)
+
+func newCreate() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var createReq settings.CreateIpAccessList
+	var createJson flags.JsonFlag
+
 	// TODO: short flags
-	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-}
-
-var createCmd = &cobra.Command{
-	Use:   "create",
-	Short: `Create access list.`,
-	Long: `Create access list.
+	cmd.Use = "create"
+	cmd.Short = `Create access list.`
+	cmd.Long = `Create access list.
   
   Creates an IP access list for the account.
   
@@ -71,11 +89,12 @@ var createCmd = &cobra.Command{
   * If the new list would block the calling user's current IP, error 400 is
   returned with error_code value INVALID_STATE.
   
-  It can take a few minutes for the changes to take effect.`,
+  It can take a few minutes for the changes to take effect.`
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustAccountClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustAccountClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
 
@@ -93,51 +112,54 @@ var createCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range createOverrides {
+		fn(cmd, &createReq)
+	}
+
+	return cmd
 }
 
 // start delete command
-var deleteReq settings.DeleteAccountIpAccessListRequest
 
-func init() {
-	Cmd.AddCommand(deleteCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var deleteOverrides []func(
+	*cobra.Command,
+	*settings.DeleteAccountIpAccessListRequest,
+)
+
+func newDelete() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var deleteReq settings.DeleteAccountIpAccessListRequest
+
 	// TODO: short flags
 
-}
-
-var deleteCmd = &cobra.Command{
-	Use:   "delete IP_ACCESS_LIST_ID",
-	Short: `Delete access list.`,
-	Long: `Delete access list.
+	cmd.Use = "delete IP_ACCESS_LIST_ID"
+	cmd.Short = `Delete access list.`
+	cmd.Long = `Delete access list.
   
-  Deletes an IP access list, specified by its list ID.`,
+  Deletes an IP access list, specified by its list ID.`
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustAccountClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustAccountClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
 
-		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No IP_ACCESS_LIST_ID argument specified. Loading names for Account Ip Access Lists drop-down."
-			names, err := a.IpAccessLists.IpAccessListInfoLabelToListIdMap(ctx)
-			close(promptSpinner)
-			if err != nil {
-				return fmt.Errorf("failed to load names for Account Ip Access Lists drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "The ID for the corresponding IP access list")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have the id for the corresponding ip access list")
-		}
 		deleteReq.IpAccessListId = args[0]
 
 		err = a.IpAccessLists.Delete(ctx, deleteReq)
@@ -145,51 +167,54 @@ var deleteCmd = &cobra.Command{
 			return err
 		}
 		return nil
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range deleteOverrides {
+		fn(cmd, &deleteReq)
+	}
+
+	return cmd
 }
 
 // start get command
-var getReq settings.GetAccountIpAccessListRequest
 
-func init() {
-	Cmd.AddCommand(getCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getOverrides []func(
+	*cobra.Command,
+	*settings.GetAccountIpAccessListRequest,
+)
+
+func newGet() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getReq settings.GetAccountIpAccessListRequest
+
 	// TODO: short flags
 
-}
-
-var getCmd = &cobra.Command{
-	Use:   "get IP_ACCESS_LIST_ID",
-	Short: `Get IP access list.`,
-	Long: `Get IP access list.
+	cmd.Use = "get IP_ACCESS_LIST_ID"
+	cmd.Short = `Get IP access list.`
+	cmd.Long = `Get IP access list.
   
-  Gets an IP access list, specified by its list ID.`,
+  Gets an IP access list, specified by its list ID.`
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustAccountClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustAccountClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
 
-		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No IP_ACCESS_LIST_ID argument specified. Loading names for Account Ip Access Lists drop-down."
-			names, err := a.IpAccessLists.IpAccessListInfoLabelToListIdMap(ctx)
-			close(promptSpinner)
-			if err != nil {
-				return fmt.Errorf("failed to load names for Account Ip Access Lists drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "The ID for the corresponding IP access list")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have the id for the corresponding ip access list")
-		}
 		getReq.IpAccessListId = args[0]
 
 		response, err := a.IpAccessLists.Get(ctx, getReq)
@@ -197,29 +222,41 @@ var getCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getOverrides {
+		fn(cmd, &getReq)
+	}
+
+	return cmd
 }
 
 // start list command
 
-func init() {
-	Cmd.AddCommand(listCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listOverrides []func(
+	*cobra.Command,
+)
 
-}
+func newList() *cobra.Command {
+	cmd := &cobra.Command{}
 
-var listCmd = &cobra.Command{
-	Use:   "list",
-	Short: `Get access lists.`,
-	Long: `Get access lists.
+	cmd.Use = "list"
+	cmd.Short = `Get access lists.`
+	cmd.Long = `Get access lists.
   
-  Gets all IP access lists for the specified account.`,
+  Gets all IP access lists for the specified account.`
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustAccountClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustAccountClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
 		response, err := a.IpAccessLists.ListAll(ctx)
@@ -227,29 +264,43 @@ var listCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listOverrides {
+		fn(cmd)
+	}
+
+	return cmd
 }
 
 // start replace command
-var replaceReq settings.ReplaceIpAccessList
-var replaceJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(replaceCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var replaceOverrides []func(
+	*cobra.Command,
+	*settings.ReplaceIpAccessList,
+)
+
+func newReplace() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var replaceReq settings.ReplaceIpAccessList
+	var replaceJson flags.JsonFlag
+
 	// TODO: short flags
-	replaceCmd.Flags().Var(&replaceJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&replaceJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	replaceCmd.Flags().StringVar(&replaceReq.ListId, "list-id", replaceReq.ListId, `Universally unique identifier (UUID) of the IP access list.`)
+	cmd.Flags().StringVar(&replaceReq.ListId, "list-id", replaceReq.ListId, `Universally unique identifier (UUID) of the IP access list.`)
 
-}
-
-var replaceCmd = &cobra.Command{
-	Use:   "replace",
-	Short: `Replace access list.`,
-	Long: `Replace access list.
+	cmd.Use = "replace"
+	cmd.Short = `Replace access list.`
+	cmd.Long = `Replace access list.
   
   Replaces an IP access list, specified by its ID.
   
@@ -260,11 +311,12 @@ var replaceCmd = &cobra.Command{
   counts as a single value. Attempts to exceed that number return error 400 with
   error_code value QUOTA_EXCEEDED. * If the resulting list would block the
   calling user's current IP, error 400 is returned with error_code value
-  INVALID_STATE. It can take a few minutes for the changes to take effect.`,
+  INVALID_STATE. It can take a few minutes for the changes to take effect.`
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustAccountClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustAccountClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
 
@@ -282,29 +334,43 @@ var replaceCmd = &cobra.Command{
 			return err
 		}
 		return nil
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range replaceOverrides {
+		fn(cmd, &replaceReq)
+	}
+
+	return cmd
 }
 
 // start update command
-var updateReq settings.UpdateIpAccessList
-var updateJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(updateCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updateOverrides []func(
+	*cobra.Command,
+	*settings.UpdateIpAccessList,
+)
+
+func newUpdate() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updateReq settings.UpdateIpAccessList
+	var updateJson flags.JsonFlag
+
 	// TODO: short flags
-	updateCmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	updateCmd.Flags().StringVar(&updateReq.ListId, "list-id", updateReq.ListId, `Universally unique identifier (UUID) of the IP access list.`)
+	cmd.Flags().StringVar(&updateReq.ListId, "list-id", updateReq.ListId, `Universally unique identifier (UUID) of the IP access list.`)
 
-}
-
-var updateCmd = &cobra.Command{
-	Use:   "update",
-	Short: `Update access list.`,
-	Long: `Update access list.
+	cmd.Use = "update"
+	cmd.Short = `Update access list.`
+	cmd.Long = `Update access list.
   
   Updates an existing IP access list, specified by its ID.
   
@@ -319,11 +385,12 @@ var updateCmd = &cobra.Command{
   * If the updated list would block the calling user's current IP, error 400 is
   returned with error_code value INVALID_STATE.
   
-  It can take a few minutes for the changes to take effect.`,
+  It can take a few minutes for the changes to take effect.`
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustAccountClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustAccountClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
 
@@ -341,10 +408,18 @@ var updateCmd = &cobra.Command{
 			return err
 		}
 		return nil
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updateOverrides {
+		fn(cmd, &updateReq)
+	}
+
+	return cmd
 }
 
 // end service AccountIpAccessLists

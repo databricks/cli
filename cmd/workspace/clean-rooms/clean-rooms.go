@@ -12,47 +12,65 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var Cmd = &cobra.Command{
-	Use:   "clean-rooms",
-	Short: `A clean room is a secure, privacy-protecting environment where two or more parties can share sensitive enterprise data, including customer data, for measurements, insights, activation and other use cases.`,
-	Long: `A clean room is a secure, privacy-protecting environment where two or more
+func New() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "clean-rooms",
+		Short: `A clean room is a secure, privacy-protecting environment where two or more parties can share sensitive enterprise data, including customer data, for measurements, insights, activation and other use cases.`,
+		Long: `A clean room is a secure, privacy-protecting environment where two or more
   parties can share sensitive enterprise data, including customer data, for
   measurements, insights, activation and other use cases.
   
   To create clean rooms, you must be a metastore admin or a user with the
   **CREATE_CLEAN_ROOM** privilege.`,
-	Annotations: map[string]string{
-		"package": "sharing",
-	},
+		GroupID: "sharing",
+		Annotations: map[string]string{
+			"package": "sharing",
+		},
 
-	// This service is being previewed; hide from help output.
-	Hidden: true,
+		// This service is being previewed; hide from help output.
+		Hidden: true,
+	}
+
+	cmd.AddCommand(newCreate())
+	cmd.AddCommand(newDelete())
+	cmd.AddCommand(newGet())
+	cmd.AddCommand(newList())
+	cmd.AddCommand(newUpdate())
+
+	return cmd
 }
 
 // start create command
-var createReq sharing.CreateCleanRoom
-var createJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(createCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var createOverrides []func(
+	*cobra.Command,
+	*sharing.CreateCleanRoom,
+)
+
+func newCreate() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var createReq sharing.CreateCleanRoom
+	var createJson flags.JsonFlag
+
 	// TODO: short flags
-	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	createCmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `User-provided free-form text description.`)
+	cmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `User-provided free-form text description.`)
 
-}
-
-var createCmd = &cobra.Command{
-	Use:   "create",
-	Short: `Create a clean room.`,
-	Long: `Create a clean room.
+	cmd.Use = "create"
+	cmd.Short = `Create a clean room.`
+	cmd.Long = `Create a clean room.
   
   Creates a new clean room with specified colaborators. The caller must be a
-  metastore admin or have the **CREATE_CLEAN_ROOM** privilege on the metastore.`,
+  metastore admin or have the **CREATE_CLEAN_ROOM** privilege on the metastore.`
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -70,36 +88,52 @@ var createCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range createOverrides {
+		fn(cmd, &createReq)
+	}
+
+	return cmd
 }
 
 // start delete command
-var deleteReq sharing.DeleteCleanRoomRequest
 
-func init() {
-	Cmd.AddCommand(deleteCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var deleteOverrides []func(
+	*cobra.Command,
+	*sharing.DeleteCleanRoomRequest,
+)
+
+func newDelete() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var deleteReq sharing.DeleteCleanRoomRequest
+
 	// TODO: short flags
 
-}
-
-var deleteCmd = &cobra.Command{
-	Use:   "delete NAME_ARG",
-	Short: `Delete a clean room.`,
-	Long: `Delete a clean room.
+	cmd.Use = "delete NAME_ARG"
+	cmd.Short = `Delete a clean room.`
+	cmd.Long = `Delete a clean room.
   
   Deletes a data object clean room from the metastore. The caller must be an
-  owner of the clean room.`,
+  owner of the clean room.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -110,38 +144,54 @@ var deleteCmd = &cobra.Command{
 			return err
 		}
 		return nil
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range deleteOverrides {
+		fn(cmd, &deleteReq)
+	}
+
+	return cmd
 }
 
 // start get command
-var getReq sharing.GetCleanRoomRequest
 
-func init() {
-	Cmd.AddCommand(getCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getOverrides []func(
+	*cobra.Command,
+	*sharing.GetCleanRoomRequest,
+)
+
+func newGet() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getReq sharing.GetCleanRoomRequest
+
 	// TODO: short flags
 
-	getCmd.Flags().BoolVar(&getReq.IncludeRemoteDetails, "include-remote-details", getReq.IncludeRemoteDetails, `Whether to include remote details (central) on the clean room.`)
+	cmd.Flags().BoolVar(&getReq.IncludeRemoteDetails, "include-remote-details", getReq.IncludeRemoteDetails, `Whether to include remote details (central) on the clean room.`)
 
-}
-
-var getCmd = &cobra.Command{
-	Use:   "get NAME_ARG",
-	Short: `Get a clean room.`,
-	Long: `Get a clean room.
+	cmd.Use = "get NAME_ARG"
+	cmd.Short = `Get a clean room.`
+	cmd.Long = `Get a clean room.
   
   Gets a data object clean room from the metastore. The caller must be a
-  metastore admin or the owner of the clean room.`,
+  metastore admin or the owner of the clean room.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -152,31 +202,43 @@ var getCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getOverrides {
+		fn(cmd, &getReq)
+	}
+
+	return cmd
 }
 
 // start list command
 
-func init() {
-	Cmd.AddCommand(listCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listOverrides []func(
+	*cobra.Command,
+)
 
-}
+func newList() *cobra.Command {
+	cmd := &cobra.Command{}
 
-var listCmd = &cobra.Command{
-	Use:   "list",
-	Short: `List clean rooms.`,
-	Long: `List clean rooms.
+	cmd.Use = "list"
+	cmd.Short = `List clean rooms.`
+	cmd.Long = `List clean rooms.
   
   Gets an array of data object clean rooms from the metastore. The caller must
   be a metastore admin or the owner of the clean room. There is no guarantee of
-  a specific ordering of the elements in the array.`,
+  a specific ordering of the elements in the array.`
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 		response, err := w.CleanRooms.ListAll(ctx)
@@ -184,32 +246,46 @@ var listCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listOverrides {
+		fn(cmd)
+	}
+
+	return cmd
 }
 
 // start update command
-var updateReq sharing.UpdateCleanRoom
-var updateJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(updateCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updateOverrides []func(
+	*cobra.Command,
+	*sharing.UpdateCleanRoom,
+)
+
+func newUpdate() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updateReq sharing.UpdateCleanRoom
+	var updateJson flags.JsonFlag
+
 	// TODO: short flags
-	updateCmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: catalog_updates
-	updateCmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `User-provided free-form text description.`)
-	updateCmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `Name of the clean room.`)
-	updateCmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of current owner of clean room.`)
+	cmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `User-provided free-form text description.`)
+	cmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `Name of the clean room.`)
+	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of current owner of clean room.`)
 
-}
-
-var updateCmd = &cobra.Command{
-	Use:   "update NAME_ARG",
-	Short: `Update a clean room.`,
-	Long: `Update a clean room.
+	cmd.Use = "update NAME_ARG"
+	cmd.Short = `Update a clean room.`
+	cmd.Long = `Update a clean room.
   
   Updates the clean room with the changes and data objects in the request. The
   caller must be the owner of the clean room or a metastore admin.
@@ -224,15 +300,17 @@ var updateCmd = &cobra.Command{
   indefinitely for recipients to be able to access the table. Typically, you
   should use a group as the clean room owner.
   
-  Table removals through **update** do not require additional privileges.`,
+  Table removals through **update** do not require additional privileges.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -249,10 +327,18 @@ var updateCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updateOverrides {
+		fn(cmd, &updateReq)
+	}
+
+	return cmd
 }
 
 // end service CleanRooms

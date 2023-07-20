@@ -13,10 +13,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var Cmd = &cobra.Command{
-	Use:   "serving-endpoints",
-	Short: `The Serving Endpoints API allows you to create, update, and delete model serving endpoints.`,
-	Long: `The Serving Endpoints API allows you to create, update, and delete model
+func New() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "serving-endpoints",
+		Short: `The Serving Endpoints API allows you to create, update, and delete model serving endpoints.`,
+		Long: `The Serving Endpoints API allows you to create, update, and delete model
   serving endpoints.
   
   You can use a serving endpoint to serve models from the Databricks Model
@@ -29,35 +30,57 @@ var Cmd = &cobra.Command{
   settings to define how requests should be routed to your served models behind
   an endpoint. Additionally, you can configure the scale of resources that
   should be applied to each served model.`,
-	Annotations: map[string]string{
-		"package": "serving",
-	},
+		GroupID: "serving",
+		Annotations: map[string]string{
+			"package": "serving",
+		},
+	}
+
+	cmd.AddCommand(newBuildLogs())
+	cmd.AddCommand(newCreate())
+	cmd.AddCommand(newDelete())
+	cmd.AddCommand(newExportMetrics())
+	cmd.AddCommand(newGet())
+	cmd.AddCommand(newList())
+	cmd.AddCommand(newLogs())
+	cmd.AddCommand(newQuery())
+	cmd.AddCommand(newUpdateConfig())
+
+	return cmd
 }
 
 // start build-logs command
-var buildLogsReq serving.BuildLogsRequest
 
-func init() {
-	Cmd.AddCommand(buildLogsCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var buildLogsOverrides []func(
+	*cobra.Command,
+	*serving.BuildLogsRequest,
+)
+
+func newBuildLogs() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var buildLogsReq serving.BuildLogsRequest
+
 	// TODO: short flags
 
-}
-
-var buildLogsCmd = &cobra.Command{
-	Use:   "build-logs NAME SERVED_MODEL_NAME",
-	Short: `Retrieve the logs associated with building the model's environment for a given serving endpoint's served model.`,
-	Long: `Retrieve the logs associated with building the model's environment for a given
+	cmd.Use = "build-logs NAME SERVED_MODEL_NAME"
+	cmd.Short = `Retrieve the logs associated with building the model's environment for a given serving endpoint's served model.`
+	cmd.Long = `Retrieve the logs associated with building the model's environment for a given
   serving endpoint's served model.
   
-  Retrieves the build logs associated with the provided served model.`,
+  Retrieves the build logs associated with the provided served model.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -69,37 +92,51 @@ var buildLogsCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range buildLogsOverrides {
+		fn(cmd, &buildLogsReq)
+	}
+
+	return cmd
 }
 
 // start create command
-var createReq serving.CreateServingEndpoint
-var createJson flags.JsonFlag
 
-var createSkipWait bool
-var createTimeout time.Duration
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var createOverrides []func(
+	*cobra.Command,
+	*serving.CreateServingEndpoint,
+)
 
-func init() {
-	Cmd.AddCommand(createCmd)
+func newCreate() *cobra.Command {
+	cmd := &cobra.Command{}
 
-	createCmd.Flags().BoolVar(&createSkipWait, "no-wait", createSkipWait, `do not wait to reach NOT_UPDATING state`)
-	createCmd.Flags().DurationVar(&createTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach NOT_UPDATING state`)
+	var createReq serving.CreateServingEndpoint
+	var createJson flags.JsonFlag
+
+	var createSkipWait bool
+	var createTimeout time.Duration
+
+	cmd.Flags().BoolVar(&createSkipWait, "no-wait", createSkipWait, `do not wait to reach NOT_UPDATING state`)
+	cmd.Flags().DurationVar(&createTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach NOT_UPDATING state`)
 	// TODO: short flags
-	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-}
+	cmd.Use = "create"
+	cmd.Short = `Create a new serving endpoint.`
+	cmd.Long = `Create a new serving endpoint.`
 
-var createCmd = &cobra.Command{
-	Use:   "create",
-	Short: `Create a new serving endpoint.`,
-	Long:  `Create a new serving endpoint.`,
+	cmd.Annotations = make(map[string]string)
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -130,33 +167,49 @@ var createCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, info)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range createOverrides {
+		fn(cmd, &createReq)
+	}
+
+	return cmd
 }
 
 // start delete command
-var deleteReq serving.DeleteServingEndpointRequest
 
-func init() {
-	Cmd.AddCommand(deleteCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var deleteOverrides []func(
+	*cobra.Command,
+	*serving.DeleteServingEndpointRequest,
+)
+
+func newDelete() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var deleteReq serving.DeleteServingEndpointRequest
+
 	// TODO: short flags
 
-}
+	cmd.Use = "delete NAME"
+	cmd.Short = `Delete a serving endpoint.`
+	cmd.Long = `Delete a serving endpoint.`
 
-var deleteCmd = &cobra.Command{
-	Use:   "delete NAME",
-	Short: `Delete a serving endpoint.`,
-	Long:  `Delete a serving endpoint.`,
+	cmd.Annotations = make(map[string]string)
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -167,36 +220,52 @@ var deleteCmd = &cobra.Command{
 			return err
 		}
 		return nil
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range deleteOverrides {
+		fn(cmd, &deleteReq)
+	}
+
+	return cmd
 }
 
 // start export-metrics command
-var exportMetricsReq serving.ExportMetricsRequest
 
-func init() {
-	Cmd.AddCommand(exportMetricsCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var exportMetricsOverrides []func(
+	*cobra.Command,
+	*serving.ExportMetricsRequest,
+)
+
+func newExportMetrics() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var exportMetricsReq serving.ExportMetricsRequest
+
 	// TODO: short flags
 
-}
-
-var exportMetricsCmd = &cobra.Command{
-	Use:   "export-metrics NAME",
-	Short: `Retrieve the metrics associated with a serving endpoint.`,
-	Long: `Retrieve the metrics associated with a serving endpoint.
+	cmd.Use = "export-metrics NAME"
+	cmd.Short = `Retrieve the metrics associated with a serving endpoint.`
+	cmd.Long = `Retrieve the metrics associated with a serving endpoint.
   
   Retrieves the metrics associated with the provided serving endpoint in either
-  Prometheus or OpenMetrics exposition format.`,
+  Prometheus or OpenMetrics exposition format.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -207,35 +276,51 @@ var exportMetricsCmd = &cobra.Command{
 			return err
 		}
 		return nil
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range exportMetricsOverrides {
+		fn(cmd, &exportMetricsReq)
+	}
+
+	return cmd
 }
 
 // start get command
-var getReq serving.GetServingEndpointRequest
 
-func init() {
-	Cmd.AddCommand(getCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getOverrides []func(
+	*cobra.Command,
+	*serving.GetServingEndpointRequest,
+)
+
+func newGet() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getReq serving.GetServingEndpointRequest
+
 	// TODO: short flags
 
-}
-
-var getCmd = &cobra.Command{
-	Use:   "get NAME",
-	Short: `Get a single serving endpoint.`,
-	Long: `Get a single serving endpoint.
+	cmd.Use = "get NAME"
+	cmd.Short = `Get a single serving endpoint.`
+	cmd.Long = `Get a single serving endpoint.
   
-  Retrieves the details for a single serving endpoint.`,
+  Retrieves the details for a single serving endpoint.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -246,27 +331,39 @@ var getCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getOverrides {
+		fn(cmd, &getReq)
+	}
+
+	return cmd
 }
 
 // start list command
 
-func init() {
-	Cmd.AddCommand(listCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listOverrides []func(
+	*cobra.Command,
+)
 
-}
+func newList() *cobra.Command {
+	cmd := &cobra.Command{}
 
-var listCmd = &cobra.Command{
-	Use:   "list",
-	Short: `Retrieve all serving endpoints.`,
-	Long:  `Retrieve all serving endpoints.`,
+	cmd.Use = "list"
+	cmd.Short = `Retrieve all serving endpoints.`
+	cmd.Long = `Retrieve all serving endpoints.`
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 		response, err := w.ServingEndpoints.ListAll(ctx)
@@ -274,36 +371,52 @@ var listCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listOverrides {
+		fn(cmd)
+	}
+
+	return cmd
 }
 
 // start logs command
-var logsReq serving.LogsRequest
 
-func init() {
-	Cmd.AddCommand(logsCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var logsOverrides []func(
+	*cobra.Command,
+	*serving.LogsRequest,
+)
+
+func newLogs() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var logsReq serving.LogsRequest
+
 	// TODO: short flags
 
-}
-
-var logsCmd = &cobra.Command{
-	Use:   "logs NAME SERVED_MODEL_NAME",
-	Short: `Retrieve the most recent log lines associated with a given serving endpoint's served model.`,
-	Long: `Retrieve the most recent log lines associated with a given serving endpoint's
+	cmd.Use = "logs NAME SERVED_MODEL_NAME"
+	cmd.Short = `Retrieve the most recent log lines associated with a given serving endpoint's served model.`
+	cmd.Long = `Retrieve the most recent log lines associated with a given serving endpoint's
   served model.
   
-  Retrieves the service logs associated with the provided served model.`,
+  Retrieves the service logs associated with the provided served model.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -315,33 +428,49 @@ var logsCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range logsOverrides {
+		fn(cmd, &logsReq)
+	}
+
+	return cmd
 }
 
 // start query command
-var queryReq serving.QueryRequest
 
-func init() {
-	Cmd.AddCommand(queryCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var queryOverrides []func(
+	*cobra.Command,
+	*serving.QueryRequest,
+)
+
+func newQuery() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var queryReq serving.QueryRequest
+
 	// TODO: short flags
 
-}
+	cmd.Use = "query NAME"
+	cmd.Short = `Query a serving endpoint with provided model input.`
+	cmd.Long = `Query a serving endpoint with provided model input.`
 
-var queryCmd = &cobra.Command{
-	Use:   "query NAME",
-	Short: `Query a serving endpoint with provided model input.`,
-	Long:  `Query a serving endpoint with provided model input.`,
+	cmd.Annotations = make(map[string]string)
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -352,44 +481,58 @@ var queryCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range queryOverrides {
+		fn(cmd, &queryReq)
+	}
+
+	return cmd
 }
 
 // start update-config command
-var updateConfigReq serving.EndpointCoreConfigInput
-var updateConfigJson flags.JsonFlag
 
-var updateConfigSkipWait bool
-var updateConfigTimeout time.Duration
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updateConfigOverrides []func(
+	*cobra.Command,
+	*serving.EndpointCoreConfigInput,
+)
 
-func init() {
-	Cmd.AddCommand(updateConfigCmd)
+func newUpdateConfig() *cobra.Command {
+	cmd := &cobra.Command{}
 
-	updateConfigCmd.Flags().BoolVar(&updateConfigSkipWait, "no-wait", updateConfigSkipWait, `do not wait to reach NOT_UPDATING state`)
-	updateConfigCmd.Flags().DurationVar(&updateConfigTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach NOT_UPDATING state`)
+	var updateConfigReq serving.EndpointCoreConfigInput
+	var updateConfigJson flags.JsonFlag
+
+	var updateConfigSkipWait bool
+	var updateConfigTimeout time.Duration
+
+	cmd.Flags().BoolVar(&updateConfigSkipWait, "no-wait", updateConfigSkipWait, `do not wait to reach NOT_UPDATING state`)
+	cmd.Flags().DurationVar(&updateConfigTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach NOT_UPDATING state`)
 	// TODO: short flags
-	updateConfigCmd.Flags().Var(&updateConfigJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&updateConfigJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: traffic_config
 
-}
-
-var updateConfigCmd = &cobra.Command{
-	Use:   "update-config",
-	Short: `Update a serving endpoint with a new config.`,
-	Long: `Update a serving endpoint with a new config.
+	cmd.Use = "update-config"
+	cmd.Short = `Update a serving endpoint with a new config.`
+	cmd.Long = `Update a serving endpoint with a new config.
   
   Updates any combination of the serving endpoint's served models, the compute
   configuration of those served models, and the endpoint's traffic config. An
   endpoint that already has an update in progress can not be updated until the
-  current update completes or fails.`,
+  current update completes or fails.`
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -420,10 +563,18 @@ var updateConfigCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, info)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updateConfigOverrides {
+		fn(cmd, &updateConfigReq)
+	}
+
+	return cmd
 }
 
 // end service ServingEndpoints

@@ -10,38 +10,54 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var Cmd = &cobra.Command{
-	Use:   "workspace-conf",
-	Short: `This API allows updating known workspace settings for advanced users.`,
-	Long:  `This API allows updating known workspace settings for advanced users.`,
-	Annotations: map[string]string{
-		"package": "settings",
-	},
+func New() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:     "workspace-conf",
+		Short:   `This API allows updating known workspace settings for advanced users.`,
+		Long:    `This API allows updating known workspace settings for advanced users.`,
+		GroupID: "settings",
+		Annotations: map[string]string{
+			"package": "settings",
+		},
+	}
+
+	cmd.AddCommand(newGetStatus())
+	cmd.AddCommand(newSetStatus())
+
+	return cmd
 }
 
 // start get-status command
-var getStatusReq settings.GetStatusRequest
 
-func init() {
-	Cmd.AddCommand(getStatusCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getStatusOverrides []func(
+	*cobra.Command,
+	*settings.GetStatusRequest,
+)
+
+func newGetStatus() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getStatusReq settings.GetStatusRequest
+
 	// TODO: short flags
 
-}
-
-var getStatusCmd = &cobra.Command{
-	Use:   "get-status KEYS",
-	Short: `Check configuration status.`,
-	Long: `Check configuration status.
+	cmd.Use = "get-status KEYS"
+	cmd.Short = `Check configuration status.`
+	cmd.Long = `Check configuration status.
   
-  Gets the configuration status for a workspace.`,
+  Gets the configuration status for a workspace.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -52,41 +68,57 @@ var getStatusCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getStatusOverrides {
+		fn(cmd, &getStatusReq)
+	}
+
+	return cmd
 }
 
 // start set-status command
-var setStatusReq settings.WorkspaceConf
-var setStatusJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(setStatusCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var setStatusOverrides []func(
+	*cobra.Command,
+	*settings.WorkspaceConf,
+)
+
+func newSetStatus() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var setStatusReq settings.WorkspaceConf
+	var setStatusJson flags.JsonFlag
+
 	// TODO: short flags
-	setStatusCmd.Flags().Var(&setStatusJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&setStatusJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-}
-
-var setStatusCmd = &cobra.Command{
-	Use:   "set-status",
-	Short: `Enable/disable features.`,
-	Long: `Enable/disable features.
+	cmd.Use = "set-status"
+	cmd.Short = `Enable/disable features.`
+	cmd.Long = `Enable/disable features.
   
   Sets the configuration status for a workspace, including enabling or disabling
-  it.`,
+  it.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {
 			check = cobra.ExactArgs(0)
 		}
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -103,10 +135,18 @@ var setStatusCmd = &cobra.Command{
 			return err
 		}
 		return nil
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range setStatusOverrides {
+		fn(cmd, &setStatusReq)
+	}
+
+	return cmd
 }
 
 // end service WorkspaceConf

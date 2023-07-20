@@ -3,18 +3,17 @@
 package tables
 
 import (
-	"fmt"
-
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/spf13/cobra"
 )
 
-var Cmd = &cobra.Command{
-	Use:   "tables",
-	Short: `A table resides in the third layer of Unity Catalog’s three-level namespace.`,
-	Long: `A table resides in the third layer of Unity Catalog’s three-level namespace.
+func New() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "tables",
+		Short: `A table resides in the third layer of Unity Catalog’s three-level namespace.`,
+		Long: `A table resides in the third layer of Unity Catalog’s three-level namespace.
   It contains rows of data. To create a table, users must have CREATE_TABLE and
   USE_SCHEMA permissions on the schema, and they must have the USE_CATALOG
   permission on its parent catalog. To query a table, users must have the SELECT
@@ -23,54 +22,59 @@ var Cmd = &cobra.Command{
   
   A table can be managed or external. From an API perspective, a __VIEW__ is a
   particular kind of table (rather than a managed or external table).`,
-	Annotations: map[string]string{
-		"package": "catalog",
-	},
+		GroupID: "catalog",
+		Annotations: map[string]string{
+			"package": "catalog",
+		},
+	}
+
+	cmd.AddCommand(newDelete())
+	cmd.AddCommand(newGet())
+	cmd.AddCommand(newList())
+	cmd.AddCommand(newListSummaries())
+	cmd.AddCommand(newUpdate())
+
+	return cmd
 }
 
 // start delete command
-var deleteReq catalog.DeleteTableRequest
 
-func init() {
-	Cmd.AddCommand(deleteCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var deleteOverrides []func(
+	*cobra.Command,
+	*catalog.DeleteTableRequest,
+)
+
+func newDelete() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var deleteReq catalog.DeleteTableRequest
+
 	// TODO: short flags
 
-}
-
-var deleteCmd = &cobra.Command{
-	Use:   "delete FULL_NAME",
-	Short: `Delete a table.`,
-	Long: `Delete a table.
+	cmd.Use = "delete FULL_NAME"
+	cmd.Short = `Delete a table.`
+	cmd.Long = `Delete a table.
   
   Deletes a table from the specified parent catalog and schema. The caller must
   be the owner of the parent catalog, have the **USE_CATALOG** privilege on the
   parent catalog and be the owner of the parent schema, or be the owner of the
   table and have the **USE_CATALOG** privilege on the parent catalog and the
-  **USE_SCHEMA** privilege on the parent schema.`,
+  **USE_SCHEMA** privilege on the parent schema.`
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No FULL_NAME argument specified. Loading names for Tables drop-down."
-			names, err := w.Tables.TableInfoNameToTableIdMap(ctx, catalog.ListTablesRequest{})
-			close(promptSpinner)
-			if err != nil {
-				return fmt.Errorf("failed to load names for Tables drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "Full name of the table")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have full name of the table")
-		}
 		deleteReq.FullName = args[0]
 
 		err = w.Tables.Delete(ctx, deleteReq)
@@ -78,57 +82,60 @@ var deleteCmd = &cobra.Command{
 			return err
 		}
 		return nil
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range deleteOverrides {
+		fn(cmd, &deleteReq)
+	}
+
+	return cmd
 }
 
 // start get command
-var getReq catalog.GetTableRequest
 
-func init() {
-	Cmd.AddCommand(getCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getOverrides []func(
+	*cobra.Command,
+	*catalog.GetTableRequest,
+)
+
+func newGet() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getReq catalog.GetTableRequest
+
 	// TODO: short flags
 
-	getCmd.Flags().BoolVar(&getReq.IncludeDeltaMetadata, "include-delta-metadata", getReq.IncludeDeltaMetadata, `Whether delta metadata should be included in the response.`)
+	cmd.Flags().BoolVar(&getReq.IncludeDeltaMetadata, "include-delta-metadata", getReq.IncludeDeltaMetadata, `Whether delta metadata should be included in the response.`)
 
-}
-
-var getCmd = &cobra.Command{
-	Use:   "get FULL_NAME",
-	Short: `Get a table.`,
-	Long: `Get a table.
+	cmd.Use = "get FULL_NAME"
+	cmd.Short = `Get a table.`
+	cmd.Long = `Get a table.
   
   Gets a table from the metastore for a specific catalog and schema. The caller
   must be a metastore admin, be the owner of the table and have the
   **USE_CATALOG** privilege on the parent catalog and the **USE_SCHEMA**
   privilege on the parent schema, or be the owner of the table and have the
-  **SELECT** privilege on it as well.`,
+  **SELECT** privilege on it as well.`
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No FULL_NAME argument specified. Loading names for Tables drop-down."
-			names, err := w.Tables.TableInfoNameToTableIdMap(ctx, catalog.ListTablesRequest{})
-			close(promptSpinner)
-			if err != nil {
-				return fmt.Errorf("failed to load names for Tables drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "Full name of the table")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have full name of the table")
-		}
 		getReq.FullName = args[0]
 
 		response, err := w.Tables.Get(ctx, getReq)
@@ -136,44 +143,60 @@ var getCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getOverrides {
+		fn(cmd, &getReq)
+	}
+
+	return cmd
 }
 
 // start list command
-var listReq catalog.ListTablesRequest
 
-func init() {
-	Cmd.AddCommand(listCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listOverrides []func(
+	*cobra.Command,
+	*catalog.ListTablesRequest,
+)
+
+func newList() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var listReq catalog.ListTablesRequest
+
 	// TODO: short flags
 
-	listCmd.Flags().BoolVar(&listReq.IncludeDeltaMetadata, "include-delta-metadata", listReq.IncludeDeltaMetadata, `Whether delta metadata should be included in the response.`)
-	listCmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of tables to return (page length).`)
-	listCmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque token to send for the next page of results (pagination).`)
+	cmd.Flags().BoolVar(&listReq.IncludeDeltaMetadata, "include-delta-metadata", listReq.IncludeDeltaMetadata, `Whether delta metadata should be included in the response.`)
+	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of tables to return (page length).`)
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque token to send for the next page of results (pagination).`)
 
-}
-
-var listCmd = &cobra.Command{
-	Use:   "list CATALOG_NAME SCHEMA_NAME",
-	Short: `List tables.`,
-	Long: `List tables.
+	cmd.Use = "list CATALOG_NAME SCHEMA_NAME"
+	cmd.Short = `List tables.`
+	cmd.Long = `List tables.
   
   Gets an array of all tables for the current metastore under the parent catalog
   and schema. The caller must be a metastore admin or an owner of (or have the
   **SELECT** privilege on) the table. For the latter case, the caller must also
   be the owner or have the **USE_CATALOG** privilege on the parent catalog and
   the **USE_SCHEMA** privilege on the parent schema. There is no guarantee of a
-  specific ordering of the elements in the array.`,
+  specific ordering of the elements in the array.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -185,30 +208,44 @@ var listCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listOverrides {
+		fn(cmd, &listReq)
+	}
+
+	return cmd
 }
 
 // start list-summaries command
-var listSummariesReq catalog.ListSummariesRequest
 
-func init() {
-	Cmd.AddCommand(listSummariesCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listSummariesOverrides []func(
+	*cobra.Command,
+	*catalog.ListSummariesRequest,
+)
+
+func newListSummaries() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var listSummariesReq catalog.ListSummariesRequest
+
 	// TODO: short flags
 
-	listSummariesCmd.Flags().IntVar(&listSummariesReq.MaxResults, "max-results", listSummariesReq.MaxResults, `Maximum number of tables to return (page length).`)
-	listSummariesCmd.Flags().StringVar(&listSummariesReq.PageToken, "page-token", listSummariesReq.PageToken, `Opaque token to send for the next page of results (pagination).`)
-	listSummariesCmd.Flags().StringVar(&listSummariesReq.SchemaNamePattern, "schema-name-pattern", listSummariesReq.SchemaNamePattern, `A sql LIKE pattern (% and _) for schema names.`)
-	listSummariesCmd.Flags().StringVar(&listSummariesReq.TableNamePattern, "table-name-pattern", listSummariesReq.TableNamePattern, `A sql LIKE pattern (% and _) for table names.`)
+	cmd.Flags().IntVar(&listSummariesReq.MaxResults, "max-results", listSummariesReq.MaxResults, `Maximum number of tables to return (page length).`)
+	cmd.Flags().StringVar(&listSummariesReq.PageToken, "page-token", listSummariesReq.PageToken, `Opaque token to send for the next page of results (pagination).`)
+	cmd.Flags().StringVar(&listSummariesReq.SchemaNamePattern, "schema-name-pattern", listSummariesReq.SchemaNamePattern, `A sql LIKE pattern (% and _) for schema names.`)
+	cmd.Flags().StringVar(&listSummariesReq.TableNamePattern, "table-name-pattern", listSummariesReq.TableNamePattern, `A sql LIKE pattern (% and _) for table names.`)
 
-}
-
-var listSummariesCmd = &cobra.Command{
-	Use:   "list-summaries CATALOG_NAME",
-	Short: `List table summaries.`,
-	Long: `List table summaries.
+	cmd.Use = "list-summaries CATALOG_NAME"
+	cmd.Short = `List table summaries.`
+	cmd.Long = `List table summaries.
   
   Gets an array of summaries for tables for a schema and catalog within the
   metastore. The table summaries returned are either:
@@ -220,31 +257,20 @@ var listSummariesCmd = &cobra.Command{
   or **USE_SCHEMA** privilege on the schema, provided that the user also has
   ownership or the **USE_CATALOG** privilege on the parent catalog.
   
-  There is no guarantee of a specific ordering of the elements in the array.`,
+  There is no guarantee of a specific ordering of the elements in the array.`
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No CATALOG_NAME argument specified. Loading names for Tables drop-down."
-			names, err := w.Tables.TableInfoNameToTableIdMap(ctx, catalog.ListTablesRequest{})
-			close(promptSpinner)
-			if err != nil {
-				return fmt.Errorf("failed to load names for Tables drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "Name of parent catalog for tables of interest")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have name of parent catalog for tables of interest")
-		}
 		listSummariesReq.CatalogName = args[0]
 
 		response, err := w.Tables.ListSummariesAll(ctx, listSummariesReq)
@@ -252,60 +278,63 @@ var listSummariesCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listSummariesOverrides {
+		fn(cmd, &listSummariesReq)
+	}
+
+	return cmd
 }
 
 // start update command
-var updateReq catalog.UpdateTableRequest
 
-func init() {
-	Cmd.AddCommand(updateCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updateOverrides []func(
+	*cobra.Command,
+	*catalog.UpdateTableRequest,
+)
+
+func newUpdate() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updateReq catalog.UpdateTableRequest
+
 	// TODO: short flags
 
-	updateCmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, ``)
+	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, ``)
 
-}
-
-var updateCmd = &cobra.Command{
-	Use:   "update FULL_NAME",
-	Short: `Update a table owner.`,
-	Long: `Update a table owner.
+	cmd.Use = "update FULL_NAME"
+	cmd.Short = `Update a table owner.`
+	cmd.Long = `Update a table owner.
   
   Change the owner of the table. The caller must be the owner of the parent
   catalog, have the **USE_CATALOG** privilege on the parent catalog and be the
   owner of the parent schema, or be the owner of the table and have the
   **USE_CATALOG** privilege on the parent catalog and the **USE_SCHEMA**
-  privilege on the parent schema.`,
+  privilege on the parent schema.`
 
 	// This command is being previewed; hide from help output.
-	Hidden: true,
+	cmd.Hidden = true
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No FULL_NAME argument specified. Loading names for Tables drop-down."
-			names, err := w.Tables.TableInfoNameToTableIdMap(ctx, catalog.ListTablesRequest{})
-			close(promptSpinner)
-			if err != nil {
-				return fmt.Errorf("failed to load names for Tables drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "Full name of the table")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have full name of the table")
-		}
 		updateReq.FullName = args[0]
 
 		err = w.Tables.Update(ctx, updateReq)
@@ -313,10 +342,18 @@ var updateCmd = &cobra.Command{
 			return err
 		}
 		return nil
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updateOverrides {
+		fn(cmd, &updateReq)
+	}
+
+	return cmd
 }
 
 // end service Tables

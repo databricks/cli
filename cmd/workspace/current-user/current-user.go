@@ -8,33 +8,44 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var Cmd = &cobra.Command{
-	Use:   "current-user",
-	Short: `This API allows retrieving information about currently authenticated user or service principal.`,
-	Long: `This API allows retrieving information about currently authenticated user or
+func New() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "current-user",
+		Short: `This API allows retrieving information about currently authenticated user or service principal.`,
+		Long: `This API allows retrieving information about currently authenticated user or
   service principal.`,
-	Annotations: map[string]string{
-		"package": "iam",
-	},
+		GroupID: "iam",
+		Annotations: map[string]string{
+			"package": "iam",
+		},
+	}
+
+	cmd.AddCommand(newMe())
+
+	return cmd
 }
 
 // start me command
 
-func init() {
-	Cmd.AddCommand(meCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var meOverrides []func(
+	*cobra.Command,
+)
 
-}
+func newMe() *cobra.Command {
+	cmd := &cobra.Command{}
 
-var meCmd = &cobra.Command{
-	Use:   "me",
-	Short: `Get current user info.`,
-	Long: `Get current user info.
+	cmd.Use = "me"
+	cmd.Short = `Get current user info.`
+	cmd.Long = `Get current user info.
   
-  Get details about the current method caller's identity.`,
+  Get details about the current method caller's identity.`
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 		response, err := w.CurrentUser.Me(ctx)
@@ -42,10 +53,18 @@ var meCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range meOverrides {
+		fn(cmd)
+	}
+
+	return cmd
 }
 
 // end service CurrentUser

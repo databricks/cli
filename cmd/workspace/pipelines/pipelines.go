@@ -13,10 +13,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var Cmd = &cobra.Command{
-	Use:   "pipelines",
-	Short: `The Delta Live Tables API allows you to create, edit, delete, start, and view details about pipelines.`,
-	Long: `The Delta Live Tables API allows you to create, edit, delete, start, and view
+func New() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "pipelines",
+		Short: `The Delta Live Tables API allows you to create, edit, delete, start, and view details about pipelines.`,
+		Long: `The Delta Live Tables API allows you to create, edit, delete, start, and view
   details about pipelines.
   
   Delta Live Tables is a framework for building reliable, maintainable, and
@@ -30,40 +31,64 @@ var Cmd = &cobra.Command{
   quality with Delta Live Tables expectations. Expectations allow you to define
   expected data quality and specify how to handle records that fail those
   expectations.`,
-	Annotations: map[string]string{
-		"package": "pipelines",
-	},
+		GroupID: "pipelines",
+		Annotations: map[string]string{
+			"package": "pipelines",
+		},
+	}
+
+	cmd.AddCommand(newCreate())
+	cmd.AddCommand(newDelete())
+	cmd.AddCommand(newGet())
+	cmd.AddCommand(newGetUpdate())
+	cmd.AddCommand(newListPipelineEvents())
+	cmd.AddCommand(newListPipelines())
+	cmd.AddCommand(newListUpdates())
+	cmd.AddCommand(newReset())
+	cmd.AddCommand(newStartUpdate())
+	cmd.AddCommand(newStop())
+	cmd.AddCommand(newUpdate())
+
+	return cmd
 }
 
 // start create command
-var createReq pipelines.CreatePipeline
-var createJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(createCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var createOverrides []func(
+	*cobra.Command,
+	*pipelines.CreatePipeline,
+)
+
+func newCreate() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var createReq pipelines.CreatePipeline
+	var createJson flags.JsonFlag
+
 	// TODO: short flags
-	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-}
-
-var createCmd = &cobra.Command{
-	Use:   "create",
-	Short: `Create a pipeline.`,
-	Long: `Create a pipeline.
+	cmd.Use = "create"
+	cmd.Short = `Create a pipeline.`
+	cmd.Long = `Create a pipeline.
   
   Creates a new data processing pipeline based on the requested configuration.
-  If successful, this method returns the ID of the new pipeline.`,
+  If successful, this method returns the ID of the new pipeline.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {
 			check = cobra.ExactArgs(0)
 		}
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -81,51 +106,54 @@ var createCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range createOverrides {
+		fn(cmd, &createReq)
+	}
+
+	return cmd
 }
 
 // start delete command
-var deleteReq pipelines.DeletePipelineRequest
 
-func init() {
-	Cmd.AddCommand(deleteCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var deleteOverrides []func(
+	*cobra.Command,
+	*pipelines.DeletePipelineRequest,
+)
+
+func newDelete() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var deleteReq pipelines.DeletePipelineRequest
+
 	// TODO: short flags
 
-}
-
-var deleteCmd = &cobra.Command{
-	Use:   "delete PIPELINE_ID",
-	Short: `Delete a pipeline.`,
-	Long: `Delete a pipeline.
+	cmd.Use = "delete PIPELINE_ID"
+	cmd.Short = `Delete a pipeline.`
+	cmd.Long = `Delete a pipeline.
   
-  Deletes a pipeline.`,
+  Deletes a pipeline.`
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No PIPELINE_ID argument specified. Loading names for Pipelines drop-down."
-			names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
-			close(promptSpinner)
-			if err != nil {
-				return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have ")
-		}
 		deleteReq.PipelineId = args[0]
 
 		err = w.Pipelines.Delete(ctx, deleteReq)
@@ -133,55 +161,57 @@ var deleteCmd = &cobra.Command{
 			return err
 		}
 		return nil
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range deleteOverrides {
+		fn(cmd, &deleteReq)
+	}
+
+	return cmd
 }
 
 // start get command
-var getReq pipelines.GetPipelineRequest
 
-var getSkipWait bool
-var getTimeout time.Duration
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getOverrides []func(
+	*cobra.Command,
+	*pipelines.GetPipelineRequest,
+)
 
-func init() {
-	Cmd.AddCommand(getCmd)
+func newGet() *cobra.Command {
+	cmd := &cobra.Command{}
 
-	getCmd.Flags().BoolVar(&getSkipWait, "no-wait", getSkipWait, `do not wait to reach RUNNING state`)
-	getCmd.Flags().DurationVar(&getTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
+	var getReq pipelines.GetPipelineRequest
+
+	var getSkipWait bool
+	var getTimeout time.Duration
+
+	cmd.Flags().BoolVar(&getSkipWait, "no-wait", getSkipWait, `do not wait to reach RUNNING state`)
+	cmd.Flags().DurationVar(&getTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
 	// TODO: short flags
 
-}
+	cmd.Use = "get PIPELINE_ID"
+	cmd.Short = `Get a pipeline.`
+	cmd.Long = `Get a pipeline.`
 
-var getCmd = &cobra.Command{
-	Use:   "get PIPELINE_ID",
-	Short: `Get a pipeline.`,
-	Long:  `Get a pipeline.`,
+	cmd.Annotations = make(map[string]string)
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No PIPELINE_ID argument specified. Loading names for Pipelines drop-down."
-			names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
-			close(promptSpinner)
-			if err != nil {
-				return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have ")
-		}
 		getReq.PipelineId = args[0]
 
 		response, err := w.Pipelines.Get(ctx, getReq)
@@ -189,35 +219,51 @@ var getCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getOverrides {
+		fn(cmd, &getReq)
+	}
+
+	return cmd
 }
 
 // start get-update command
-var getUpdateReq pipelines.GetUpdateRequest
 
-func init() {
-	Cmd.AddCommand(getUpdateCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getUpdateOverrides []func(
+	*cobra.Command,
+	*pipelines.GetUpdateRequest,
+)
+
+func newGetUpdate() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getUpdateReq pipelines.GetUpdateRequest
+
 	// TODO: short flags
 
-}
-
-var getUpdateCmd = &cobra.Command{
-	Use:   "get-update PIPELINE_ID UPDATE_ID",
-	Short: `Get a pipeline update.`,
-	Long: `Get a pipeline update.
+	cmd.Use = "get-update PIPELINE_ID UPDATE_ID"
+	cmd.Short = `Get a pipeline update.`
+	cmd.Long = `Get a pipeline update.
   
-  Gets an update from an active pipeline.`,
+  Gets an update from an active pipeline.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -229,38 +275,58 @@ var getUpdateCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getUpdateOverrides {
+		fn(cmd, &getUpdateReq)
+	}
+
+	return cmd
 }
 
 // start list-pipeline-events command
-var listPipelineEventsReq pipelines.ListPipelineEventsRequest
-var listPipelineEventsJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(listPipelineEventsCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listPipelineEventsOverrides []func(
+	*cobra.Command,
+	*pipelines.ListPipelineEventsRequest,
+)
+
+func newListPipelineEvents() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var listPipelineEventsReq pipelines.ListPipelineEventsRequest
+	var listPipelineEventsJson flags.JsonFlag
+
 	// TODO: short flags
-	listPipelineEventsCmd.Flags().Var(&listPipelineEventsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&listPipelineEventsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	listPipelineEventsCmd.Flags().StringVar(&listPipelineEventsReq.Filter, "filter", listPipelineEventsReq.Filter, `Criteria to select a subset of results, expressed using a SQL-like syntax.`)
-	listPipelineEventsCmd.Flags().IntVar(&listPipelineEventsReq.MaxResults, "max-results", listPipelineEventsReq.MaxResults, `Max number of entries to return in a single page.`)
+	cmd.Flags().StringVar(&listPipelineEventsReq.Filter, "filter", listPipelineEventsReq.Filter, `Criteria to select a subset of results, expressed using a SQL-like syntax.`)
+	cmd.Flags().IntVar(&listPipelineEventsReq.MaxResults, "max-results", listPipelineEventsReq.MaxResults, `Max number of entries to return in a single page.`)
 	// TODO: array: order_by
-	listPipelineEventsCmd.Flags().StringVar(&listPipelineEventsReq.PageToken, "page-token", listPipelineEventsReq.PageToken, `Page token returned by previous call.`)
+	cmd.Flags().StringVar(&listPipelineEventsReq.PageToken, "page-token", listPipelineEventsReq.PageToken, `Page token returned by previous call.`)
 
-}
-
-var listPipelineEventsCmd = &cobra.Command{
-	Use:   "list-pipeline-events PIPELINE_ID",
-	Short: `List pipeline events.`,
-	Long: `List pipeline events.
+	cmd.Use = "list-pipeline-events PIPELINE_ID"
+	cmd.Short = `List pipeline events.`
+	cmd.Long = `List pipeline events.
   
-  Retrieves events for a pipeline.`,
+  Retrieves events for a pipeline.`
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -270,23 +336,6 @@ var listPipelineEventsCmd = &cobra.Command{
 				return err
 			}
 		}
-		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No PIPELINE_ID argument specified. Loading names for Pipelines drop-down."
-			names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
-			close(promptSpinner)
-			if err != nil {
-				return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have ")
-		}
 		listPipelineEventsReq.PipelineId = args[0]
 
 		response, err := w.Pipelines.ListPipelineEventsAll(ctx, listPipelineEventsReq)
@@ -294,45 +343,61 @@ var listPipelineEventsCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listPipelineEventsOverrides {
+		fn(cmd, &listPipelineEventsReq)
+	}
+
+	return cmd
 }
 
 // start list-pipelines command
-var listPipelinesReq pipelines.ListPipelinesRequest
-var listPipelinesJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(listPipelinesCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listPipelinesOverrides []func(
+	*cobra.Command,
+	*pipelines.ListPipelinesRequest,
+)
+
+func newListPipelines() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var listPipelinesReq pipelines.ListPipelinesRequest
+	var listPipelinesJson flags.JsonFlag
+
 	// TODO: short flags
-	listPipelinesCmd.Flags().Var(&listPipelinesJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&listPipelinesJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	listPipelinesCmd.Flags().StringVar(&listPipelinesReq.Filter, "filter", listPipelinesReq.Filter, `Select a subset of results based on the specified criteria.`)
-	listPipelinesCmd.Flags().IntVar(&listPipelinesReq.MaxResults, "max-results", listPipelinesReq.MaxResults, `The maximum number of entries to return in a single page.`)
+	cmd.Flags().StringVar(&listPipelinesReq.Filter, "filter", listPipelinesReq.Filter, `Select a subset of results based on the specified criteria.`)
+	cmd.Flags().IntVar(&listPipelinesReq.MaxResults, "max-results", listPipelinesReq.MaxResults, `The maximum number of entries to return in a single page.`)
 	// TODO: array: order_by
-	listPipelinesCmd.Flags().StringVar(&listPipelinesReq.PageToken, "page-token", listPipelinesReq.PageToken, `Page token returned by previous call.`)
+	cmd.Flags().StringVar(&listPipelinesReq.PageToken, "page-token", listPipelinesReq.PageToken, `Page token returned by previous call.`)
 
-}
-
-var listPipelinesCmd = &cobra.Command{
-	Use:   "list-pipelines",
-	Short: `List pipelines.`,
-	Long: `List pipelines.
+	cmd.Use = "list-pipelines"
+	cmd.Short = `List pipelines.`
+	cmd.Long = `List pipelines.
   
-  Lists pipelines defined in the Delta Live Tables system.`,
+  Lists pipelines defined in the Delta Live Tables system.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {
 			check = cobra.ExactArgs(0)
 		}
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -349,55 +414,58 @@ var listPipelinesCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listPipelinesOverrides {
+		fn(cmd, &listPipelinesReq)
+	}
+
+	return cmd
 }
 
 // start list-updates command
-var listUpdatesReq pipelines.ListUpdatesRequest
 
-func init() {
-	Cmd.AddCommand(listUpdatesCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listUpdatesOverrides []func(
+	*cobra.Command,
+	*pipelines.ListUpdatesRequest,
+)
+
+func newListUpdates() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var listUpdatesReq pipelines.ListUpdatesRequest
+
 	// TODO: short flags
 
-	listUpdatesCmd.Flags().IntVar(&listUpdatesReq.MaxResults, "max-results", listUpdatesReq.MaxResults, `Max number of entries to return in a single page.`)
-	listUpdatesCmd.Flags().StringVar(&listUpdatesReq.PageToken, "page-token", listUpdatesReq.PageToken, `Page token returned by previous call.`)
-	listUpdatesCmd.Flags().StringVar(&listUpdatesReq.UntilUpdateId, "until-update-id", listUpdatesReq.UntilUpdateId, `If present, returns updates until and including this update_id.`)
+	cmd.Flags().IntVar(&listUpdatesReq.MaxResults, "max-results", listUpdatesReq.MaxResults, `Max number of entries to return in a single page.`)
+	cmd.Flags().StringVar(&listUpdatesReq.PageToken, "page-token", listUpdatesReq.PageToken, `Page token returned by previous call.`)
+	cmd.Flags().StringVar(&listUpdatesReq.UntilUpdateId, "until-update-id", listUpdatesReq.UntilUpdateId, `If present, returns updates until and including this update_id.`)
 
-}
-
-var listUpdatesCmd = &cobra.Command{
-	Use:   "list-updates PIPELINE_ID",
-	Short: `List pipeline updates.`,
-	Long: `List pipeline updates.
+	cmd.Use = "list-updates PIPELINE_ID"
+	cmd.Short = `List pipeline updates.`
+	cmd.Long = `List pipeline updates.
   
-  List updates for an active pipeline.`,
+  List updates for an active pipeline.`
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No PIPELINE_ID argument specified. Loading names for Pipelines drop-down."
-			names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
-			close(promptSpinner)
-			if err != nil {
-				return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "The pipeline to return updates for")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have the pipeline to return updates for")
-		}
 		listUpdatesReq.PipelineId = args[0]
 
 		response, err := w.Pipelines.ListUpdates(ctx, listUpdatesReq)
@@ -405,57 +473,59 @@ var listUpdatesCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listUpdatesOverrides {
+		fn(cmd, &listUpdatesReq)
+	}
+
+	return cmd
 }
 
 // start reset command
-var resetReq pipelines.ResetRequest
 
-var resetSkipWait bool
-var resetTimeout time.Duration
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var resetOverrides []func(
+	*cobra.Command,
+	*pipelines.ResetRequest,
+)
 
-func init() {
-	Cmd.AddCommand(resetCmd)
+func newReset() *cobra.Command {
+	cmd := &cobra.Command{}
 
-	resetCmd.Flags().BoolVar(&resetSkipWait, "no-wait", resetSkipWait, `do not wait to reach RUNNING state`)
-	resetCmd.Flags().DurationVar(&resetTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
+	var resetReq pipelines.ResetRequest
+
+	var resetSkipWait bool
+	var resetTimeout time.Duration
+
+	cmd.Flags().BoolVar(&resetSkipWait, "no-wait", resetSkipWait, `do not wait to reach RUNNING state`)
+	cmd.Flags().DurationVar(&resetTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
 	// TODO: short flags
 
-}
-
-var resetCmd = &cobra.Command{
-	Use:   "reset PIPELINE_ID",
-	Short: `Reset a pipeline.`,
-	Long: `Reset a pipeline.
+	cmd.Use = "reset PIPELINE_ID"
+	cmd.Short = `Reset a pipeline.`
+	cmd.Long = `Reset a pipeline.
   
-  Resets a pipeline.`,
+  Resets a pipeline.`
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No PIPELINE_ID argument specified. Loading names for Pipelines drop-down."
-			names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
-			close(promptSpinner)
-			if err != nil {
-				return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have ")
-		}
 		resetReq.PipelineId = args[0]
 
 		wait, err := w.Pipelines.Reset(ctx, resetReq)
@@ -475,38 +545,58 @@ var resetCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, info)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range resetOverrides {
+		fn(cmd, &resetReq)
+	}
+
+	return cmd
 }
 
 // start start-update command
-var startUpdateReq pipelines.StartUpdate
-var startUpdateJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(startUpdateCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var startUpdateOverrides []func(
+	*cobra.Command,
+	*pipelines.StartUpdate,
+)
+
+func newStartUpdate() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var startUpdateReq pipelines.StartUpdate
+	var startUpdateJson flags.JsonFlag
+
 	// TODO: short flags
-	startUpdateCmd.Flags().Var(&startUpdateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&startUpdateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	startUpdateCmd.Flags().Var(&startUpdateReq.Cause, "cause", ``)
-	startUpdateCmd.Flags().BoolVar(&startUpdateReq.FullRefresh, "full-refresh", startUpdateReq.FullRefresh, `If true, this update will reset all tables before running.`)
+	cmd.Flags().Var(&startUpdateReq.Cause, "cause", ``)
+	cmd.Flags().BoolVar(&startUpdateReq.FullRefresh, "full-refresh", startUpdateReq.FullRefresh, `If true, this update will reset all tables before running.`)
 	// TODO: array: full_refresh_selection
 	// TODO: array: refresh_selection
 
-}
-
-var startUpdateCmd = &cobra.Command{
-	Use:   "start-update PIPELINE_ID",
-	Short: `Queue a pipeline update.`,
-	Long: `Queue a pipeline update.
+	cmd.Use = "start-update PIPELINE_ID"
+	cmd.Short = `Queue a pipeline update.`
+	cmd.Long = `Queue a pipeline update.
   
-  Starts or queues a pipeline update.`,
+  Starts or queues a pipeline update.`
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -516,23 +606,6 @@ var startUpdateCmd = &cobra.Command{
 				return err
 			}
 		}
-		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No PIPELINE_ID argument specified. Loading names for Pipelines drop-down."
-			names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
-			close(promptSpinner)
-			if err != nil {
-				return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have ")
-		}
 		startUpdateReq.PipelineId = args[0]
 
 		response, err := w.Pipelines.StartUpdate(ctx, startUpdateReq)
@@ -540,57 +613,59 @@ var startUpdateCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range startUpdateOverrides {
+		fn(cmd, &startUpdateReq)
+	}
+
+	return cmd
 }
 
 // start stop command
-var stopReq pipelines.StopRequest
 
-var stopSkipWait bool
-var stopTimeout time.Duration
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var stopOverrides []func(
+	*cobra.Command,
+	*pipelines.StopRequest,
+)
 
-func init() {
-	Cmd.AddCommand(stopCmd)
+func newStop() *cobra.Command {
+	cmd := &cobra.Command{}
 
-	stopCmd.Flags().BoolVar(&stopSkipWait, "no-wait", stopSkipWait, `do not wait to reach IDLE state`)
-	stopCmd.Flags().DurationVar(&stopTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach IDLE state`)
+	var stopReq pipelines.StopRequest
+
+	var stopSkipWait bool
+	var stopTimeout time.Duration
+
+	cmd.Flags().BoolVar(&stopSkipWait, "no-wait", stopSkipWait, `do not wait to reach IDLE state`)
+	cmd.Flags().DurationVar(&stopTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach IDLE state`)
 	// TODO: short flags
 
-}
-
-var stopCmd = &cobra.Command{
-	Use:   "stop PIPELINE_ID",
-	Short: `Stop a pipeline.`,
-	Long: `Stop a pipeline.
+	cmd.Use = "stop PIPELINE_ID"
+	cmd.Short = `Stop a pipeline.`
+	cmd.Long = `Stop a pipeline.
   
-  Stops a pipeline.`,
+  Stops a pipeline.`
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No PIPELINE_ID argument specified. Loading names for Pipelines drop-down."
-			names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
-			close(promptSpinner)
-			if err != nil {
-				return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have ")
-		}
 		stopReq.PipelineId = args[0]
 
 		wait, err := w.Pipelines.Stop(ctx, stopReq)
@@ -610,53 +685,76 @@ var stopCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, info)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range stopOverrides {
+		fn(cmd, &stopReq)
+	}
+
+	return cmd
 }
 
 // start update command
-var updateReq pipelines.EditPipeline
-var updateJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(updateCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updateOverrides []func(
+	*cobra.Command,
+	*pipelines.EditPipeline,
+)
+
+func newUpdate() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updateReq pipelines.EditPipeline
+	var updateJson flags.JsonFlag
+
 	// TODO: short flags
-	updateCmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	updateCmd.Flags().BoolVar(&updateReq.AllowDuplicateNames, "allow-duplicate-names", updateReq.AllowDuplicateNames, `If false, deployment will fail if name has changed and conflicts the name of another pipeline.`)
-	updateCmd.Flags().StringVar(&updateReq.Catalog, "catalog", updateReq.Catalog, `A catalog in Unity Catalog to publish data from this pipeline to.`)
-	updateCmd.Flags().StringVar(&updateReq.Channel, "channel", updateReq.Channel, `DLT Release Channel that specifies which version to use.`)
+	cmd.Flags().BoolVar(&updateReq.AllowDuplicateNames, "allow-duplicate-names", updateReq.AllowDuplicateNames, `If false, deployment will fail if name has changed and conflicts the name of another pipeline.`)
+	cmd.Flags().StringVar(&updateReq.Catalog, "catalog", updateReq.Catalog, `A catalog in Unity Catalog to publish data from this pipeline to.`)
+	cmd.Flags().StringVar(&updateReq.Channel, "channel", updateReq.Channel, `DLT Release Channel that specifies which version to use.`)
 	// TODO: array: clusters
 	// TODO: map via StringToStringVar: configuration
-	updateCmd.Flags().BoolVar(&updateReq.Continuous, "continuous", updateReq.Continuous, `Whether the pipeline is continuous or triggered.`)
-	updateCmd.Flags().BoolVar(&updateReq.Development, "development", updateReq.Development, `Whether the pipeline is in Development mode.`)
-	updateCmd.Flags().StringVar(&updateReq.Edition, "edition", updateReq.Edition, `Pipeline product edition.`)
-	updateCmd.Flags().Int64Var(&updateReq.ExpectedLastModified, "expected-last-modified", updateReq.ExpectedLastModified, `If present, the last-modified time of the pipeline settings before the edit.`)
+	cmd.Flags().BoolVar(&updateReq.Continuous, "continuous", updateReq.Continuous, `Whether the pipeline is continuous or triggered.`)
+	cmd.Flags().BoolVar(&updateReq.Development, "development", updateReq.Development, `Whether the pipeline is in Development mode.`)
+	cmd.Flags().StringVar(&updateReq.Edition, "edition", updateReq.Edition, `Pipeline product edition.`)
+	cmd.Flags().Int64Var(&updateReq.ExpectedLastModified, "expected-last-modified", updateReq.ExpectedLastModified, `If present, the last-modified time of the pipeline settings before the edit.`)
 	// TODO: complex arg: filters
-	updateCmd.Flags().StringVar(&updateReq.Id, "id", updateReq.Id, `Unique identifier for this pipeline.`)
+	cmd.Flags().StringVar(&updateReq.Id, "id", updateReq.Id, `Unique identifier for this pipeline.`)
 	// TODO: array: libraries
-	updateCmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `Friendly identifier for this pipeline.`)
-	updateCmd.Flags().BoolVar(&updateReq.Photon, "photon", updateReq.Photon, `Whether Photon is enabled for this pipeline.`)
-	updateCmd.Flags().StringVar(&updateReq.PipelineId, "pipeline-id", updateReq.PipelineId, `Unique identifier for this pipeline.`)
-	updateCmd.Flags().BoolVar(&updateReq.Serverless, "serverless", updateReq.Serverless, `Whether serverless compute is enabled for this pipeline.`)
-	updateCmd.Flags().StringVar(&updateReq.Storage, "storage", updateReq.Storage, `DBFS root directory for storing checkpoints and tables.`)
-	updateCmd.Flags().StringVar(&updateReq.Target, "target", updateReq.Target, `Target schema (database) to add tables in this pipeline to.`)
+	cmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `Friendly identifier for this pipeline.`)
+	cmd.Flags().BoolVar(&updateReq.Photon, "photon", updateReq.Photon, `Whether Photon is enabled for this pipeline.`)
+	cmd.Flags().StringVar(&updateReq.PipelineId, "pipeline-id", updateReq.PipelineId, `Unique identifier for this pipeline.`)
+	cmd.Flags().BoolVar(&updateReq.Serverless, "serverless", updateReq.Serverless, `Whether serverless compute is enabled for this pipeline.`)
+	cmd.Flags().StringVar(&updateReq.Storage, "storage", updateReq.Storage, `DBFS root directory for storing checkpoints and tables.`)
+	cmd.Flags().StringVar(&updateReq.Target, "target", updateReq.Target, `Target schema (database) to add tables in this pipeline to.`)
 	// TODO: complex arg: trigger
 
-}
-
-var updateCmd = &cobra.Command{
-	Use:   "update PIPELINE_ID",
-	Short: `Edit a pipeline.`,
-	Long: `Edit a pipeline.
+	cmd.Use = "update PIPELINE_ID"
+	cmd.Short = `Edit a pipeline.`
+	cmd.Long = `Edit a pipeline.
   
-  Updates a pipeline with the supplied configuration.`,
+  Updates a pipeline with the supplied configuration.`
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -666,23 +764,6 @@ var updateCmd = &cobra.Command{
 				return err
 			}
 		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No PIPELINE_ID argument specified. Loading names for Pipelines drop-down."
-				names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "Unique identifier for this pipeline")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have unique identifier for this pipeline")
-			}
 			updateReq.PipelineId = args[0]
 		}
 
@@ -691,10 +772,18 @@ var updateCmd = &cobra.Command{
 			return err
 		}
 		return nil
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updateOverrides {
+		fn(cmd, &updateReq)
+	}
+
+	return cmd
 }
 
 // end service Pipelines

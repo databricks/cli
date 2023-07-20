@@ -12,43 +12,62 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var Cmd = &cobra.Command{
-	Use:   "metastore-assignments",
-	Short: `These APIs manage metastore assignments to a workspace.`,
-	Long:  `These APIs manage metastore assignments to a workspace.`,
-	Annotations: map[string]string{
-		"package": "catalog",
-	},
+func New() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:     "metastore-assignments",
+		Short:   `These APIs manage metastore assignments to a workspace.`,
+		Long:    `These APIs manage metastore assignments to a workspace.`,
+		GroupID: "catalog",
+		Annotations: map[string]string{
+			"package": "catalog",
+		},
+	}
+
+	cmd.AddCommand(newCreate())
+	cmd.AddCommand(newDelete())
+	cmd.AddCommand(newGet())
+	cmd.AddCommand(newList())
+	cmd.AddCommand(newUpdate())
+
+	return cmd
 }
 
 // start create command
-var createReq catalog.AccountsCreateMetastoreAssignment
-var createJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(createCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var createOverrides []func(
+	*cobra.Command,
+	*catalog.AccountsCreateMetastoreAssignment,
+)
+
+func newCreate() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var createReq catalog.AccountsCreateMetastoreAssignment
+	var createJson flags.JsonFlag
+
 	// TODO: short flags
-	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: metastore_assignment
 
-}
-
-var createCmd = &cobra.Command{
-	Use:   "create WORKSPACE_ID METASTORE_ID",
-	Short: `Assigns a workspace to a metastore.`,
-	Long: `Assigns a workspace to a metastore.
+	cmd.Use = "create WORKSPACE_ID METASTORE_ID"
+	cmd.Short = `Assigns a workspace to a metastore.`
+	cmd.Long = `Assigns a workspace to a metastore.
   
   Creates an assignment to a metastore for a workspace Please add a header
-  X-Databricks-Account-Console-API-Version: 2.0 to access this API.`,
+  X-Databricks-Account-Console-API-Version: 2.0 to access this API.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		return check(cmd, args)
-	},
-	PreRunE: root.MustAccountClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustAccountClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
 
@@ -69,37 +88,53 @@ var createCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range createOverrides {
+		fn(cmd, &createReq)
+	}
+
+	return cmd
 }
 
 // start delete command
-var deleteReq catalog.DeleteAccountMetastoreAssignmentRequest
 
-func init() {
-	Cmd.AddCommand(deleteCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var deleteOverrides []func(
+	*cobra.Command,
+	*catalog.DeleteAccountMetastoreAssignmentRequest,
+)
+
+func newDelete() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var deleteReq catalog.DeleteAccountMetastoreAssignmentRequest
+
 	// TODO: short flags
 
-}
-
-var deleteCmd = &cobra.Command{
-	Use:   "delete WORKSPACE_ID METASTORE_ID",
-	Short: `Delete a metastore assignment.`,
-	Long: `Delete a metastore assignment.
+	cmd.Use = "delete WORKSPACE_ID METASTORE_ID"
+	cmd.Short = `Delete a metastore assignment.`
+	cmd.Long = `Delete a metastore assignment.
   
   Deletes a metastore assignment to a workspace, leaving the workspace with no
   metastore. Please add a header X-Databricks-Account-Console-API-Version: 2.0
-  to access this API.`,
+  to access this API.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		return check(cmd, args)
-	},
-	PreRunE: root.MustAccountClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustAccountClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
 
@@ -114,39 +149,55 @@ var deleteCmd = &cobra.Command{
 			return err
 		}
 		return nil
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range deleteOverrides {
+		fn(cmd, &deleteReq)
+	}
+
+	return cmd
 }
 
 // start get command
-var getReq catalog.GetAccountMetastoreAssignmentRequest
 
-func init() {
-	Cmd.AddCommand(getCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getOverrides []func(
+	*cobra.Command,
+	*catalog.GetAccountMetastoreAssignmentRequest,
+)
+
+func newGet() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getReq catalog.GetAccountMetastoreAssignmentRequest
+
 	// TODO: short flags
 
-}
-
-var getCmd = &cobra.Command{
-	Use:   "get WORKSPACE_ID",
-	Short: `Gets the metastore assignment for a workspace.`,
-	Long: `Gets the metastore assignment for a workspace.
+	cmd.Use = "get WORKSPACE_ID"
+	cmd.Short = `Gets the metastore assignment for a workspace.`
+	cmd.Long = `Gets the metastore assignment for a workspace.
   
   Gets the metastore assignment, if any, for the workspace specified by ID. If
   the workspace is assigned a metastore, the mappig will be returned. If no
   metastore is assigned to the workspace, the assignment will not be found and a
   404 returned. Please add a header X-Databricks-Account-Console-API-Version:
-  2.0 to access this API.`,
+  2.0 to access this API.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		return check(cmd, args)
-	},
-	PreRunE: root.MustAccountClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustAccountClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
 
@@ -160,37 +211,53 @@ var getCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getOverrides {
+		fn(cmd, &getReq)
+	}
+
+	return cmd
 }
 
 // start list command
-var listReq catalog.ListAccountMetastoreAssignmentsRequest
 
-func init() {
-	Cmd.AddCommand(listCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listOverrides []func(
+	*cobra.Command,
+	*catalog.ListAccountMetastoreAssignmentsRequest,
+)
+
+func newList() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var listReq catalog.ListAccountMetastoreAssignmentsRequest
+
 	// TODO: short flags
 
-}
-
-var listCmd = &cobra.Command{
-	Use:   "list METASTORE_ID",
-	Short: `Get all workspaces assigned to a metastore.`,
-	Long: `Get all workspaces assigned to a metastore.
+	cmd.Use = "list METASTORE_ID"
+	cmd.Short = `Get all workspaces assigned to a metastore.`
+	cmd.Long = `Get all workspaces assigned to a metastore.
   
   Gets a list of all Databricks workspace IDs that have been assigned to given
   metastore. Please add a header X-Databricks-Account-Console-API-Version: 2.0
-  to access this API`,
+  to access this API`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		return check(cmd, args)
-	},
-	PreRunE: root.MustAccountClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustAccountClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
 
@@ -201,41 +268,57 @@ var listCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listOverrides {
+		fn(cmd, &listReq)
+	}
+
+	return cmd
 }
 
 // start update command
-var updateReq catalog.AccountsUpdateMetastoreAssignment
-var updateJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(updateCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updateOverrides []func(
+	*cobra.Command,
+	*catalog.AccountsUpdateMetastoreAssignment,
+)
+
+func newUpdate() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updateReq catalog.AccountsUpdateMetastoreAssignment
+	var updateJson flags.JsonFlag
+
 	// TODO: short flags
-	updateCmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: metastore_assignment
 
-}
-
-var updateCmd = &cobra.Command{
-	Use:   "update WORKSPACE_ID METASTORE_ID",
-	Short: `Updates a metastore assignment to a workspaces.`,
-	Long: `Updates a metastore assignment to a workspaces.
+	cmd.Use = "update WORKSPACE_ID METASTORE_ID"
+	cmd.Short = `Updates a metastore assignment to a workspaces.`
+	cmd.Long = `Updates a metastore assignment to a workspaces.
   
   Updates an assignment to a metastore for a workspace. Currently, only the
   default catalog may be updated. Please add a header
-  X-Databricks-Account-Console-API-Version: 2.0 to access this API.`,
+  X-Databricks-Account-Console-API-Version: 2.0 to access this API.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		return check(cmd, args)
-	},
-	PreRunE: root.MustAccountClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustAccountClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
 
@@ -256,10 +339,18 @@ var updateCmd = &cobra.Command{
 			return err
 		}
 		return nil
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updateOverrides {
+		fn(cmd, &updateReq)
+	}
+
+	return cmd
 }
 
 // end service AccountMetastoreAssignments

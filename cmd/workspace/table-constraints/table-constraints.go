@@ -12,10 +12,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var Cmd = &cobra.Command{
-	Use:   "table-constraints",
-	Short: `Primary key and foreign key constraints encode relationships between fields in tables.`,
-	Long: `Primary key and foreign key constraints encode relationships between fields in
+func New() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "table-constraints",
+		Short: `Primary key and foreign key constraints encode relationships between fields in tables.`,
+		Long: `Primary key and foreign key constraints encode relationships between fields in
   tables.
   
   Primary and foreign keys are informational only and are not enforced. Foreign
@@ -28,26 +29,39 @@ var Cmd = &cobra.Command{
   You can declare primary keys and foreign keys as part of the table
   specification during table creation. You can also add or drop constraints on
   existing tables.`,
-	Annotations: map[string]string{
-		"package": "catalog",
-	},
+		GroupID: "catalog",
+		Annotations: map[string]string{
+			"package": "catalog",
+		},
+	}
+
+	cmd.AddCommand(newCreate())
+	cmd.AddCommand(newDelete())
+
+	return cmd
 }
 
 // start create command
-var createReq catalog.CreateTableConstraint
-var createJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(createCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var createOverrides []func(
+	*cobra.Command,
+	*catalog.CreateTableConstraint,
+)
+
+func newCreate() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var createReq catalog.CreateTableConstraint
+	var createJson flags.JsonFlag
+
 	// TODO: short flags
-	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-}
-
-var createCmd = &cobra.Command{
-	Use:   "create",
-	Short: `Create a table constraint.`,
-	Long: `Create a table constraint.
+	cmd.Use = "create"
+	cmd.Short = `Create a table constraint.`
+	cmd.Long = `Create a table constraint.
   
   Creates a new table constraint.
   
@@ -58,11 +72,12 @@ var createCmd = &cobra.Command{
   __ForeignKeyConstraint__, the user must have the **USE_CATALOG** privilege on
   the referenced parent table's catalog, the **USE_SCHEMA** privilege on the
   referenced parent table's schema, and be the owner of the referenced parent
-  table.`,
+  table.`
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -80,25 +95,39 @@ var createCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range createOverrides {
+		fn(cmd, &createReq)
+	}
+
+	return cmd
 }
 
 // start delete command
-var deleteReq catalog.DeleteTableConstraintRequest
 
-func init() {
-	Cmd.AddCommand(deleteCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var deleteOverrides []func(
+	*cobra.Command,
+	*catalog.DeleteTableConstraintRequest,
+)
+
+func newDelete() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var deleteReq catalog.DeleteTableConstraintRequest
+
 	// TODO: short flags
 
-}
-
-var deleteCmd = &cobra.Command{
-	Use:   "delete FULL_NAME CONSTRAINT_NAME CASCADE",
-	Short: `Delete a table constraint.`,
-	Long: `Delete a table constraint.
+	cmd.Use = "delete FULL_NAME CONSTRAINT_NAME CASCADE"
+	cmd.Short = `Delete a table constraint.`
+	cmd.Long = `Delete a table constraint.
   
   Deletes a table constraint.
   
@@ -108,15 +137,17 @@ var deleteCmd = &cobra.Command{
   schema, and be the owner of the table. - if __cascade__ argument is **true**,
   the user must have the following permissions on all of the child tables: the
   **USE_CATALOG** privilege on the table's catalog, the **USE_SCHEMA** privilege
-  on the table's schema, and be the owner of the table.`,
+  on the table's schema, and be the owner of the table.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(3)
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -132,10 +163,18 @@ var deleteCmd = &cobra.Command{
 			return err
 		}
 		return nil
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range deleteOverrides {
+		fn(cmd, &deleteReq)
+	}
+
+	return cmd
 }
 
 // end service TableConstraints

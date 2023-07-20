@@ -12,10 +12,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var Cmd = &cobra.Command{
-	Use:   "encryption-keys",
-	Short: `These APIs manage encryption key configurations for this workspace (optional).`,
-	Long: `These APIs manage encryption key configurations for this workspace (optional).
+func New() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "encryption-keys",
+		Short: `These APIs manage encryption key configurations for this workspace (optional).`,
+		Long: `These APIs manage encryption key configurations for this workspace (optional).
   A key configuration encapsulates the AWS KMS key information and some
   information about how the key configuration can be used. There are two
   possible uses for key configurations:
@@ -31,29 +32,44 @@ var Cmd = &cobra.Command{
   encryption requires that the workspace is on the E2 version of the platform.
   If you have an older workspace, it might not be on the E2 version of the
   platform. If you are not sure, contact your Databricks representative.`,
-	Annotations: map[string]string{
-		"package": "provisioning",
-	},
+		GroupID: "provisioning",
+		Annotations: map[string]string{
+			"package": "provisioning",
+		},
+	}
+
+	cmd.AddCommand(newCreate())
+	cmd.AddCommand(newDelete())
+	cmd.AddCommand(newGet())
+	cmd.AddCommand(newList())
+
+	return cmd
 }
 
 // start create command
-var createReq provisioning.CreateCustomerManagedKeyRequest
-var createJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(createCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var createOverrides []func(
+	*cobra.Command,
+	*provisioning.CreateCustomerManagedKeyRequest,
+)
+
+func newCreate() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var createReq provisioning.CreateCustomerManagedKeyRequest
+	var createJson flags.JsonFlag
+
 	// TODO: short flags
-	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: aws_key_info
 	// TODO: complex arg: gcp_key_info
 
-}
-
-var createCmd = &cobra.Command{
-	Use:   "create",
-	Short: `Create encryption key configuration.`,
-	Long: `Create encryption key configuration.
+	cmd.Use = "create"
+	cmd.Short = `Create encryption key configuration.`
+	cmd.Long = `Create encryption key configuration.
   
   Creates a customer-managed key configuration object for an account, specified
   by ID. This operation uploads a reference to a customer-managed key to
@@ -71,11 +87,12 @@ var createCmd = &cobra.Command{
   
   This operation is available only if your account is on the E2 version of the
   platform or on a select custom plan that allows multiple workspaces per
-  account.`,
+  account.`
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustAccountClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustAccountClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
 
@@ -93,36 +110,52 @@ var createCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range createOverrides {
+		fn(cmd, &createReq)
+	}
+
+	return cmd
 }
 
 // start delete command
-var deleteReq provisioning.DeleteEncryptionKeyRequest
 
-func init() {
-	Cmd.AddCommand(deleteCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var deleteOverrides []func(
+	*cobra.Command,
+	*provisioning.DeleteEncryptionKeyRequest,
+)
+
+func newDelete() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var deleteReq provisioning.DeleteEncryptionKeyRequest
+
 	// TODO: short flags
 
-}
-
-var deleteCmd = &cobra.Command{
-	Use:   "delete CUSTOMER_MANAGED_KEY_ID",
-	Short: `Delete encryption key configuration.`,
-	Long: `Delete encryption key configuration.
+	cmd.Use = "delete CUSTOMER_MANAGED_KEY_ID"
+	cmd.Short = `Delete encryption key configuration.`
+	cmd.Long = `Delete encryption key configuration.
   
   Deletes a customer-managed key configuration object for an account. You cannot
-  delete a configuration that is associated with a running workspace.`,
+  delete a configuration that is associated with a running workspace.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		return check(cmd, args)
-	},
-	PreRunE: root.MustAccountClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustAccountClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
 
@@ -133,25 +166,39 @@ var deleteCmd = &cobra.Command{
 			return err
 		}
 		return nil
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range deleteOverrides {
+		fn(cmd, &deleteReq)
+	}
+
+	return cmd
 }
 
 // start get command
-var getReq provisioning.GetEncryptionKeyRequest
 
-func init() {
-	Cmd.AddCommand(getCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getOverrides []func(
+	*cobra.Command,
+	*provisioning.GetEncryptionKeyRequest,
+)
+
+func newGet() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getReq provisioning.GetEncryptionKeyRequest
+
 	// TODO: short flags
 
-}
-
-var getCmd = &cobra.Command{
-	Use:   "get CUSTOMER_MANAGED_KEY_ID",
-	Short: `Get encryption key configuration.`,
-	Long: `Get encryption key configuration.
+	cmd.Use = "get CUSTOMER_MANAGED_KEY_ID"
+	cmd.Short = `Get encryption key configuration.`
+	cmd.Long = `Get encryption key configuration.
   
   Gets a customer-managed key configuration object for an account, specified by
   ID. This operation uploads a reference to a customer-managed key to
@@ -167,15 +214,17 @@ var getCmd = &cobra.Command{
   types, subscription types, and AWS regions.
   
   This operation is available only if your account is on the E2 version of the
-  platform.",`,
+  platform.",`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		return check(cmd, args)
-	},
-	PreRunE: root.MustAccountClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustAccountClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
 
@@ -186,23 +235,34 @@ var getCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getOverrides {
+		fn(cmd, &getReq)
+	}
+
+	return cmd
 }
 
 // start list command
 
-func init() {
-	Cmd.AddCommand(listCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listOverrides []func(
+	*cobra.Command,
+)
 
-}
+func newList() *cobra.Command {
+	cmd := &cobra.Command{}
 
-var listCmd = &cobra.Command{
-	Use:   "list",
-	Short: `Get all encryption key configurations.`,
-	Long: `Get all encryption key configurations.
+	cmd.Use = "list"
+	cmd.Short = `Get all encryption key configurations.`
+	cmd.Long = `Get all encryption key configurations.
   
   Gets all customer-managed key configuration objects for an account. If the key
   is specified as a workspace's managed services customer-managed key,
@@ -216,11 +276,12 @@ var listCmd = &cobra.Command{
   types, subscription types, and AWS regions.
   
   This operation is available only if your account is on the E2 version of the
-  platform.`,
+  platform.`
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustAccountClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustAccountClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
 		response, err := a.EncryptionKeys.List(ctx)
@@ -228,10 +289,18 @@ var listCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listOverrides {
+		fn(cmd)
+	}
+
+	return cmd
 }
 
 // end service EncryptionKeys

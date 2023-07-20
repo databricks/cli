@@ -10,10 +10,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var Cmd = &cobra.Command{
-	Use:   "settings",
-	Short: `The Personal Compute enablement setting lets you control which users can use the Personal Compute default policy to create compute resources.`,
-	Long: `The Personal Compute enablement setting lets you control which users can use
+func New() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "settings",
+		Short: `The Personal Compute enablement setting lets you control which users can use the Personal Compute default policy to create compute resources.`,
+		Long: `The Personal Compute enablement setting lets you control which users can use
   the Personal Compute default policy to create compute resources. By default
   all users in all workspaces have access (ON), but you can change the setting
   to instead let individual workspaces configure access control (DELEGATE).
@@ -22,37 +23,53 @@ var Cmd = &cobra.Command{
   a default value, this setting is present on all accounts even though it's
   never set on a given account. Deletion reverts the value of the setting back
   to the default value.`,
-	Annotations: map[string]string{
-		"package": "settings",
-	},
+		GroupID: "settings",
+		Annotations: map[string]string{
+			"package": "settings",
+		},
 
-	// This service is being previewed; hide from help output.
-	Hidden: true,
+		// This service is being previewed; hide from help output.
+		Hidden: true,
+	}
+
+	cmd.AddCommand(newDeletePersonalComputeSetting())
+	cmd.AddCommand(newReadPersonalComputeSetting())
+	cmd.AddCommand(newUpdatePersonalComputeSetting())
+
+	return cmd
 }
 
 // start delete-personal-compute-setting command
-var deletePersonalComputeSettingReq settings.DeletePersonalComputeSettingRequest
 
-func init() {
-	Cmd.AddCommand(deletePersonalComputeSettingCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var deletePersonalComputeSettingOverrides []func(
+	*cobra.Command,
+	*settings.DeletePersonalComputeSettingRequest,
+)
+
+func newDeletePersonalComputeSetting() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var deletePersonalComputeSettingReq settings.DeletePersonalComputeSettingRequest
+
 	// TODO: short flags
 
-}
-
-var deletePersonalComputeSettingCmd = &cobra.Command{
-	Use:   "delete-personal-compute-setting ETAG",
-	Short: `Delete Personal Compute setting.`,
-	Long: `Delete Personal Compute setting.
+	cmd.Use = "delete-personal-compute-setting ETAG"
+	cmd.Short = `Delete Personal Compute setting.`
+	cmd.Long = `Delete Personal Compute setting.
   
-  Reverts back the Personal Compute setting value to default (ON)`,
+  Reverts back the Personal Compute setting value to default (ON)`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		return check(cmd, args)
-	},
-	PreRunE: root.MustAccountClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustAccountClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
 
@@ -63,35 +80,51 @@ var deletePersonalComputeSettingCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range deletePersonalComputeSettingOverrides {
+		fn(cmd, &deletePersonalComputeSettingReq)
+	}
+
+	return cmd
 }
 
 // start read-personal-compute-setting command
-var readPersonalComputeSettingReq settings.ReadPersonalComputeSettingRequest
 
-func init() {
-	Cmd.AddCommand(readPersonalComputeSettingCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var readPersonalComputeSettingOverrides []func(
+	*cobra.Command,
+	*settings.ReadPersonalComputeSettingRequest,
+)
+
+func newReadPersonalComputeSetting() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var readPersonalComputeSettingReq settings.ReadPersonalComputeSettingRequest
+
 	// TODO: short flags
 
-}
-
-var readPersonalComputeSettingCmd = &cobra.Command{
-	Use:   "read-personal-compute-setting ETAG",
-	Short: `Get Personal Compute setting.`,
-	Long: `Get Personal Compute setting.
+	cmd.Use = "read-personal-compute-setting ETAG"
+	cmd.Short = `Get Personal Compute setting.`
+	cmd.Long = `Get Personal Compute setting.
   
-  Gets the value of the Personal Compute setting.`,
+  Gets the value of the Personal Compute setting.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		return check(cmd, args)
-	},
-	PreRunE: root.MustAccountClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustAccountClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
 
@@ -102,43 +135,59 @@ var readPersonalComputeSettingCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range readPersonalComputeSettingOverrides {
+		fn(cmd, &readPersonalComputeSettingReq)
+	}
+
+	return cmd
 }
 
 // start update-personal-compute-setting command
-var updatePersonalComputeSettingReq settings.UpdatePersonalComputeSettingRequest
-var updatePersonalComputeSettingJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(updatePersonalComputeSettingCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updatePersonalComputeSettingOverrides []func(
+	*cobra.Command,
+	*settings.UpdatePersonalComputeSettingRequest,
+)
+
+func newUpdatePersonalComputeSetting() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updatePersonalComputeSettingReq settings.UpdatePersonalComputeSettingRequest
+	var updatePersonalComputeSettingJson flags.JsonFlag
+
 	// TODO: short flags
-	updatePersonalComputeSettingCmd.Flags().Var(&updatePersonalComputeSettingJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&updatePersonalComputeSettingJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	updatePersonalComputeSettingCmd.Flags().BoolVar(&updatePersonalComputeSettingReq.AllowMissing, "allow-missing", updatePersonalComputeSettingReq.AllowMissing, `This should always be set to true for Settings RPCs.`)
+	cmd.Flags().BoolVar(&updatePersonalComputeSettingReq.AllowMissing, "allow-missing", updatePersonalComputeSettingReq.AllowMissing, `This should always be set to true for Settings RPCs.`)
 	// TODO: complex arg: setting
 
-}
-
-var updatePersonalComputeSettingCmd = &cobra.Command{
-	Use:   "update-personal-compute-setting",
-	Short: `Update Personal Compute setting.`,
-	Long: `Update Personal Compute setting.
+	cmd.Use = "update-personal-compute-setting"
+	cmd.Short = `Update Personal Compute setting.`
+	cmd.Long = `Update Personal Compute setting.
   
-  Updates the value of the Personal Compute setting.`,
+  Updates the value of the Personal Compute setting.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {
 			check = cobra.ExactArgs(0)
 		}
 		return check(cmd, args)
-	},
-	PreRunE: root.MustAccountClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustAccountClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
 
@@ -155,10 +204,18 @@ var updatePersonalComputeSettingCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updatePersonalComputeSettingOverrides {
+		fn(cmd, &updatePersonalComputeSettingReq)
+	}
+
+	return cmd
 }
 
 // end service AccountSettings
