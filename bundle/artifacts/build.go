@@ -51,5 +51,9 @@ func (m *build) Apply(ctx context.Context, b *bundle.Bundle) error {
 		artifact.Path = filepath.Join(b.Config.Path, artifact.Path)
 	}
 
+	if !filepath.IsAbs(artifact.Path) {
+		artifact.Path = filepath.Join(b.Config.Path, artifact.Path)
+	}
+
 	return bundle.Apply(ctx, b, getBuildMutator(artifact.Type, m.name))
 }
