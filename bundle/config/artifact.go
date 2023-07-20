@@ -16,11 +16,17 @@ const ArtifactPythonWheel ArtifactType = `whl`
 // Artifact defines a single local code artifact that can be
 // built/uploaded/referenced in the context of this bundle.
 type Artifact struct {
-	Type         ArtifactType `json:"type"`
-	Path         string       `json:"path"`
-	File         string       `json:"file"`
-	BuildCommand string       `json:"build"`
-	RemotePath   string       `json:"-" bundle:"readonly"`
+	Type ArtifactType `json:"type"`
+
+	// The local path to the directory with a root of artifact,
+	// for example, where setup.py is for Python projects
+	Path string `json:"path"`
+
+	// The relative or absolute path to the built artifact file
+	// (Python wheel, Java jar and etc) itself
+	File         string `json:"file"`
+	BuildCommand string `json:"build"`
+	RemotePath   string `json:"-" bundle:"readonly"`
 }
 
 func (a *Artifact) Build(ctx context.Context) ([]byte, error) {

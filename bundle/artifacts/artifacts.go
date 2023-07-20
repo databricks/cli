@@ -120,7 +120,7 @@ func uploadArtifact(ctx context.Context, a *config.Artifact, b *bundle.Bundle) (
 		return "", fmt.Errorf("remote artifact path not configured")
 	}
 
-	remotePath := path.Join("/Workspace", artifactPath, path.Base(a.File))
+	remotePath := path.Join(artifactPath, path.Base(a.File))
 
 	// Make sure target directory exists.
 	err = b.WorkspaceClient().Workspace.MkdirsByPath(ctx, path.Dir(remotePath))

@@ -6,6 +6,8 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/databricks-sdk-go/service/compute"
+	"golang.org/x/exp/slices"
 )
 
 type attach struct {
@@ -34,8 +36,14 @@ func (a *attach) Apply(ctx context.Context, b *bundle.Bundle) error {
 					return fmt.Errorf("artifact not found: %s. Please define the artifact in bundle artifacts section", packageName)
 				}
 
-				log.Debugf(ctx, "Attaching %s (%s) to %s", packageName, artifact.RemotePath, task.TaskKey)
-				task.Libraries = append(task.Libraries, artifact.Library())
+				lib := artifact.Library()
+				alreadyAdded := slices.ContainsFunc(task.Libraries, func(e compute.Library) bool {
+					return e.Whl != "" && e.Whl == lib.Whl
+				})
+				if !alreadyAdded {
+					log.Debugf(ctx, "Attaching %s (%s) to %s", packageName, artifact.RemotePath, task.TaskKey)
+					task.Libraries = append(task.Libraries, lib)
+				}
 			}
 		}
 	}

@@ -3,7 +3,6 @@ package artifacts
 import (
 	"context"
 	"fmt"
-	"os"
 	"path/filepath"
 
 	"github.com/databricks/cli/bundle"
@@ -43,13 +42,9 @@ func (m *build) Apply(ctx context.Context, b *bundle.Bundle) error {
 		return nil
 	}
 
-	// If artifact path is not provided, use current dir
+	// If artifact path is not provided, use bundle root dir
 	if artifact.Path == "" {
-		path, err := os.Getwd()
-		if err != nil {
-			return nil
-		}
-		artifact.Path = path
+		artifact.Path = b.Config.Path
 	}
 
 	if !filepath.IsAbs(artifact.Path) {
