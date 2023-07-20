@@ -7,10 +7,13 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/phases"
+	"github.com/databricks/cli/internal"
 	"github.com/stretchr/testify/require"
 )
 
-func TestBundlePythonWheelBuild(t *testing.T) {
+func TestAccBundlePythonWheelBuild(t *testing.T) {
+	t.Log(internal.GetEnvOrSkipTest(t, "CLOUD_ENV"))
+
 	b, err := bundle.Load("./python_wheel")
 	require.NoError(t, err)
 
