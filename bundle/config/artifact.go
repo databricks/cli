@@ -29,7 +29,9 @@ func (a *Artifact) Build(ctx context.Context) ([]byte, error) {
 	}
 
 	buildParts := strings.Split(a.BuildCommand, " ")
-	return exec.CommandContext(ctx, buildParts[0], buildParts[1:]...).CombinedOutput()
+	cmd := exec.CommandContext(ctx, buildParts[0], buildParts[1:]...)
+	cmd.Dir = a.Path
+	return cmd.CombinedOutput()
 }
 
 func (a *Artifact) Library() compute.Library {

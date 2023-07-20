@@ -4,10 +4,9 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"path"
+	"path/filepath"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/libs"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/python"
 )
@@ -32,8 +31,9 @@ func (m *build) Apply(ctx context.Context, b *bundle.Bundle) error {
 		return fmt.Errorf("artifact doesn't exist: %s", m.name)
 	}
 
+	// TODO: If not set, BuildCommand should be infer prior to this
+	// via a mutator so that it can be observable.
 	if artifact.BuildCommand == "" {
-		//TODO: infer build step if not provided
 		return fmt.Errorf("artifacts.whl.Build(%s): missing build property for the artifact", m.name)
 	}
 
@@ -41,9 +41,8 @@ func (m *build) Apply(ctx context.Context, b *bundle.Bundle) error {
 
 	dir := artifact.Path
 
-	defer libs.ChdirAndBack(dir)
-	os.RemoveAll("dist")
-	python.CleanupWheelFolder(".")
+	os.RemoveAll(filepath.Join(dir, "dist"))
+	python.CleanupWheelFolder(dir)
 
 	out, err := artifact.Build(ctx)
 	if err != nil {
@@ -55,7 +54,7 @@ func (m *build) Apply(ctx context.Context, b *bundle.Bundle) error {
 	if wheel == "" {
 		return fmt.Errorf("artifacts.whl.Build(%s): cannot find built wheel in %s", m.name, dir)
 	}
-	artifact.File = path.Join(dir, wheel)
+	artifact.File = filepath.Join(dir, wheel)
 
 	return nil
 }

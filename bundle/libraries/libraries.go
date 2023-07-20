@@ -23,8 +23,8 @@ func (a *attach) Apply(ctx context.Context, b *bundle.Bundle) error {
 	r := b.Config.Resources
 	for k := range b.Config.Resources.Jobs {
 		tasks := r.Jobs[k].JobSettings.Tasks
-		for tK := range tasks {
-			task := tasks[tK]
+		for i := range tasks {
+			task := &tasks[i]
 			if task.PythonWheelTask != nil {
 				packageName := task.PythonWheelTask.PackageName
 				artifact, ok := b.Config.Artifacts[packageName]
@@ -35,7 +35,7 @@ func (a *attach) Apply(ctx context.Context, b *bundle.Bundle) error {
 				}
 
 				log.Debugf(ctx, "Attaching %s (%s) to %s", packageName, artifact.RemotePath, task.TaskKey)
-				r.Jobs[k].JobSettings.Tasks[tK].Libraries = append(r.Jobs[k].JobSettings.Tasks[tK].Libraries, artifact.Library())
+				task.Libraries = append(task.Libraries, artifact.Library())
 			}
 		}
 	}

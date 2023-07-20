@@ -11,7 +11,6 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/artifacts/whl"
 	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/libs"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
@@ -62,9 +61,6 @@ func (m *basicBuild) Apply(ctx context.Context, b *bundle.Bundle) error {
 	}
 
 	cmdio.LogString(ctx, fmt.Sprintf("artifacts.Build(%s): Building...", m.name))
-
-	dir := artifact.Path
-	defer libs.ChdirAndBack(dir)
 
 	out, err := artifact.Build(ctx)
 	if err != nil {
