@@ -5,6 +5,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"text/template"
@@ -305,4 +306,15 @@ func TestRendererSkip(t *testing.T) {
 	assert.NoFileExists(t, filepath.Join(tmpDir, "dir1/file4"))
 	assert.NoDirExists(t, filepath.Join(tmpDir, "dir2"))
 	assert.NoFileExists(t, filepath.Join(tmpDir, "dir2/file6"))
+}
+
+func TestRendererInMemoryFileFullPathForWindows(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.SkipNow()
+	}
+	f := &inMemoryFile{
+		root:    `c:\a\b\c`,
+		relPath: "d/e",
+	}
+	assert.Equal(t, `c:\a\b\c\d\e`, f.fullPath())
 }

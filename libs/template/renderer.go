@@ -32,6 +32,7 @@ type inMemoryFile struct {
 }
 
 // TODO: test these methods
+// TODO: add test for unix execution bit being read from template
 func (f *inMemoryFile) fullPath() string {
 	return filepath.Join(f.root, filepath.FromSlash(f.relPath))
 }
