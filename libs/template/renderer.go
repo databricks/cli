@@ -85,7 +85,7 @@ type renderer struct {
 
 func newRenderer(ctx context.Context, config map[string]any, templateRoot, libraryRoot, instanceRoot string) (*renderer, error) {
 	// Initialize new template, with helper functions loaded
-	tmpl := template.New("").Funcs(HelperFuncs)
+	tmpl := template.New("").Funcs(helperFuncs)
 
 	// Load user defined associated templates from the library root
 	libraryGlob := filepath.Join(libraryRoot, "*")
