@@ -94,7 +94,7 @@ func newRenderer(ctx context.Context, config map[string]any, templateRoot, libra
 		return nil, err
 	}
 	if len(matches) != 0 {
-		tmpl, err = tmpl.ParseGlob(libraryGlob)
+		tmpl, err = tmpl.ParseFiles(matches...)
 		if err != nil {
 			return nil, err
 		}
