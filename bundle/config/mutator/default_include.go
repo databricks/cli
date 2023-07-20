@@ -20,11 +20,8 @@ func DefineDefaultInclude() bundle.Mutator {
 		// Load YAML files in subdirectories.
 		"*/*.yml",
 	}
-	if extraIncludePaths := bundle.GetExtraIncludePaths(); len(extraIncludePaths) > 0 {
-		includePaths = append(includePaths, extraIncludePaths...)
-	}
 	return &defineDefaultInclude{
-		include: includePaths,
+		include: append(includePaths, bundle.GetExtraIncludePaths()...),
 	}
 }
 

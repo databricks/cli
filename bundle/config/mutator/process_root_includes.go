@@ -80,6 +80,18 @@ func (m *processRootIncludes) Apply(ctx context.Context, b *bundle.Bundle) error
 		}
 	}
 
+	extraIncludePaths := bundle.GetExtraIncludePaths()
+	for _, extraIncludePath := range extraIncludePaths {
+		if filepath.IsAbs(extraIncludePath) {
+			extraIncludePath, err := filepath.Rel(b.Config.Path, extraIncludePath)
+			if err != nil {
+				return fmt.Errorf("included file '%s' is not inside bundle root %s: %w", extraIncludePath, b.Config.Path, err)
+			}
+		}
+		out = append(out, ProcessInclude(filepath.Join(b.Config.Path, extraIncludePath), extraIncludePath))
+	}
+	files = append(files, bundle.GetExtraIncludePaths()...)
+
 	// Swap out the original includes list with the expanded globs.
 	b.Config.Include = files
 
