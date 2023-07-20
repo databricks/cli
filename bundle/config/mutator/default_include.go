@@ -13,14 +13,18 @@ type defineDefaultInclude struct {
 
 // DefineDefaultInclude sets the list of includes to a default if it hasn't been set.
 func DefineDefaultInclude() bundle.Mutator {
-	return &defineDefaultInclude{
+	var includePaths = []string{
 		// When we support globstar we can collapse below into a single line.
-		include: []string{
-			// Load YAML files in the same directory.
-			"*.yml",
-			// Load YAML files in subdirectories.
-			"*/*.yml",
-		},
+		// Load YAML files in the same directory.
+		"*.yml",
+		// Load YAML files in subdirectories.
+		"*/*.yml",
+	}
+	if extraIncludePaths := bundle.GetExtraIncludePaths(); len(extraIncludePaths) > 0 {
+		includePaths = append(includePaths, extraIncludePaths...)
+	}
+	return &defineDefaultInclude{
+		include: includePaths,
 	}
 }
 

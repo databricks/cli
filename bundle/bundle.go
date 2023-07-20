@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	"github.com/databricks/cli/bundle/config"
@@ -43,6 +44,29 @@ type Bundle struct {
 	AutoApprove bool
 }
 
+const extraIncludePathsKey string = "DATABRICKS_BUNDLE_INCLUDE_PATHS"
+
+// Get extra include paths from environment variable
+func GetExtraIncludePaths() []string {
+	value, exists := os.LookupEnv(extraIncludePathsKey)
+	if !exists {
+		return []string{}
+	}
+	return strings.Split(os.Getenv(value), ":")
+}
+
+// Try loading bundle config from one of the extra include paths from the environment variable
+// If not able to load, do not return an error, just return nil
+func tryLoadFromExtraIncludePaths() *Bundle {
+	for _, extraIncludePath := range GetExtraIncludePaths() {
+		bundle := &Bundle{}
+		if err := bundle.Config.Load(extraIncludePath); err == nil {
+			return bundle
+		}
+	}
+	return nil
+}
+
 func Load(path string) (*Bundle, error) {
 	bundle := &Bundle{}
 	configFile, err := config.FileNames.FindInPath(path)
@@ -73,14 +97,20 @@ func MustLoad() (*Bundle, error) {
 func TryLoad() (*Bundle, error) {
 	root, err := tryGetRoot()
 	if err != nil {
+		if b := tryLoadFromExtraIncludePaths(); b != nil {
+			return b, nil
+		}
 		return nil, err
 	}
 
 	// No root is fine in this function.
 	if root == "" {
-		return nil, nil
+		return tryLoadFromExtraIncludePaths(), nil
 	}
 
+	// We only fallback to extra include paths if root config is NOT FOUND.
+	// Therefore, the intended UX for end users is that they always have a VALID root config.
+	// The loading of extra include paths is only for the convenience of interfacing with internal tools.
 	return Load(root)
 }
 
