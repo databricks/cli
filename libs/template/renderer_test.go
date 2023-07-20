@@ -389,7 +389,9 @@ func TestRendererReadsPermissionsBits(t *testing.T) {
 func TestRendererErrorOnConflictingFile(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	_, err := os.Create(filepath.Join(tmpDir, "a"))
+	f, err := os.Create(filepath.Join(tmpDir, "a"))
+	require.NoError(t, err)
+	err = f.Close()
 	require.NoError(t, err)
 
 	r := renderer{
@@ -411,7 +413,9 @@ func TestRendererNoErrorOnConflictingFileIfSkipped(t *testing.T) {
 	tmpDir := t.TempDir()
 	ctx := context.Background()
 
-	_, err := os.Create(filepath.Join(tmpDir, "a"))
+	f, err := os.Create(filepath.Join(tmpDir, "a"))
+	require.NoError(t, err)
+	err = f.Close()
 	require.NoError(t, err)
 
 	r := renderer{
