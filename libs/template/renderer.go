@@ -184,6 +184,17 @@ func (r *renderer) computeFile(relPathTemplate string) (*inMemoryFile, error) {
 	}, nil
 }
 
+
+// This function walks the template file tree to generate an in memory representation
+// of a project.
+//
+// During file tree walk, in the current directory, we would like to determine
+// all possible {{skip}} function calls before we process any of the directories
+// so that we can skip them eagerly if needed. That is in the current working directory
+// we would like to process all files before we process any of the directories.
+//
+// This is not possible using the std library WalkDir which processes the files in
+// lexical order which is why this function implements BFS.
 func (r *renderer) walk() error {
 	directories := []string{"."}
 	var currentDirectory string
