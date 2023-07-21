@@ -55,9 +55,14 @@ func GetExtraIncludePaths() []string {
 	return strings.Split(value, string(os.PathListSeparator))
 }
 
-// Try loading bundle config from one of the extra include paths from the environment variable
+// Try loading bundle config from one of the extra include paths
+// from the environment variable, if the bundle root is known but no
+// bundle config is found in the bundle root.
 // If not able to load, do not return an error, just return nil
-func tryLoadFromExtraIncludePaths() *Bundle {
+func tryLoadFromExtraIncludePaths(bundleRoot string) *Bundle {
+	if _, err := config.FileNames.FindInPath(bundleRoot); err == nil {
+		return nil
+	}
 	for _, extraIncludePath := range GetExtraIncludePaths() {
 		bundle := &Bundle{}
 		if err := bundle.Config.Load(extraIncludePath); err == nil {
@@ -108,8 +113,8 @@ func TryLoad() (*Bundle, error) {
 	// We only fallback to extra include paths if bundle root is defined but a root config is NOT FOUND
 	// Therefore, the intended UX for end users is that they always have a VALID root config.
 	// The loading of extra include paths is only for the convenience of interfacing with internal tools.
-	if _, err := config.FileNames.FindInPath(root); err != nil {
-		return tryLoadFromExtraIncludePaths(), nil
+	if b := tryLoadFromExtraIncludePaths(root); b != nil {
+		return b, nil
 	}
 
 	return Load(root)
