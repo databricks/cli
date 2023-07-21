@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 
@@ -52,7 +53,11 @@ func GetExtraIncludePaths() []string {
 	if !exists {
 		return []string{}
 	}
-	return strings.Split(value, ":")
+	var sep = ":"
+	if runtime.GOOS == "windows" {
+		sep = ";"
+	}
+	return strings.Split(value, sep)
 }
 
 // Try loading bundle config from one of the extra include paths from the environment variable
