@@ -149,10 +149,7 @@ func TestProcessRootIncludesDedupExtrasFromEnvVar(t *testing.T) {
 	rootPath := t.TempDir()
 	testYamlName := "extra_include_path.yml"
 	touch(t, rootPath, testYamlName)
-	os.Setenv(bundle.ExtraIncludePathsKey, fmt.Sprintf("%s:%s", path.Join(rootPath, testYamlName), path.Join(rootPath, testYamlName)))
-	t.Cleanup(func() {
-		os.Unsetenv(bundle.ExtraIncludePathsKey)
-	})
+	t.Setenv(bundle.ExtraIncludePathsKey, fmt.Sprintf("%s:%s", path.Join(rootPath, testYamlName), path.Join(rootPath, testYamlName)))
 
 	bundle := &bundle.Bundle{
 		Config: config.Root{
