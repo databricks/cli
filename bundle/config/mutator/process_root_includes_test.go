@@ -2,7 +2,9 @@ package mutator_test
 
 import (
 	"context"
+	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"runtime"
 	"testing"
@@ -121,4 +123,44 @@ func TestProcessRootIncludesNotExists(t *testing.T) {
 	err := mutator.ProcessRootIncludes().Apply(context.Background(), bundle)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "notexist.yml defined in 'include' section does not match any files")
+}
+
+func TestProcessRootIncludesExtrasFromEnvVar(t *testing.T) {
+	rootPath := t.TempDir()
+	testYamlName := "extra_include_path.yml"
+	touch(t, rootPath, testYamlName)
+	os.Setenv(bundle.ExtraIncludePathsKey, path.Join(rootPath, testYamlName))
+	t.Cleanup(func() {
+		os.Unsetenv(bundle.ExtraIncludePathsKey)
+	})
+
+	bundle := &bundle.Bundle{
+		Config: config.Root{
+			Path: rootPath,
+		},
+	}
+
+	err := mutator.ProcessRootIncludes().Apply(context.Background(), bundle)
+	require.NoError(t, err)
+	assert.Contains(t, bundle.Config.Include, testYamlName)
+}
+
+func TestProcessRootIncludesDedupExtrasFromEnvVar(t *testing.T) {
+	rootPath := t.TempDir()
+	testYamlName := "extra_include_path.yml"
+	touch(t, rootPath, testYamlName)
+	os.Setenv(bundle.ExtraIncludePathsKey, fmt.Sprintf("%s:%s", path.Join(rootPath, testYamlName), path.Join(rootPath, testYamlName)))
+	t.Cleanup(func() {
+		os.Unsetenv(bundle.ExtraIncludePathsKey)
+	})
+
+	bundle := &bundle.Bundle{
+		Config: config.Root{
+			Path: rootPath,
+		},
+	}
+
+	err := mutator.ProcessRootIncludes().Apply(context.Background(), bundle)
+	require.NoError(t, err)
+	assert.Equal(t, []string{testYamlName}, bundle.Config.Include)
 }

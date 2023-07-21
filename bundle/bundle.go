@@ -44,15 +44,15 @@ type Bundle struct {
 	AutoApprove bool
 }
 
-const extraIncludePathsKey string = "DATABRICKS_BUNDLE_INCLUDE_PATHS"
+const ExtraIncludePathsKey string = "DATABRICKS_BUNDLE_INCLUDE_PATHS"
 
 // Get extra include paths from environment variable
 func GetExtraIncludePaths() []string {
-	value, exists := os.LookupEnv(extraIncludePathsKey)
+	value, exists := os.LookupEnv(ExtraIncludePathsKey)
 	if !exists {
 		return []string{}
 	}
-	return strings.Split(os.Getenv(value), ":")
+	return strings.Split(value, ":")
 }
 
 // Try loading bundle config from one of the extra include paths from the environment variable

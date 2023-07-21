@@ -106,3 +106,12 @@ func TestBundleTryLoadOkIfNotFound(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Nil(t, b)
 }
+
+func TestBundleTryLoadFallbackToExtraIncludePaths(t *testing.T) {
+	wd, err := os.Getwd()
+	assert.NoError(t, err)
+	t.Setenv(ExtraIncludePathsKey, filepath.Join(wd, "./tests/basic/databricks.yml"))
+	b, err := TryLoad()
+	assert.NoError(t, err)
+	assert.NotNil(t, b)
+}
