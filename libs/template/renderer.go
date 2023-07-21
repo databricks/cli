@@ -184,7 +184,6 @@ func (r *renderer) computeFile(relPathTemplate string) (*inMemoryFile, error) {
 	}, nil
 }
 
-
 // This function walks the template file tree to generate an in memory representation
 // of a project.
 //
