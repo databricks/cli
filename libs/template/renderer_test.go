@@ -3,6 +3,7 @@ package template
 import (
 	"context"
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -168,13 +169,13 @@ func TestRendererPersistToDisk(t *testing.T) {
 			{
 				root:    tmpDir,
 				relPath: "a/b/d",
-				content: []byte("123"),
+				content: io.NopCloser(strings.NewReader("123")),
 				perm:    0444,
 			},
 			{
 				root:    tmpDir,
 				relPath: "mmnn",
-				content: []byte("456"),
+				content: io.NopCloser(strings.NewReader("456")),
 				perm:    0444,
 			},
 		},
@@ -205,7 +206,9 @@ func TestRendererWalk(t *testing.T) {
 	getContent := func(r *renderer, path string) string {
 		for _, f := range r.files {
 			if f.relPath == path {
-				return strings.Trim(string(f.content), "\r\n")
+				b, err := io.ReadAll(f.content)
+				require.NoError(t, err)
+				return strings.Trim(string(b), "\r\n")
 			}
 		}
 		require.FailNow(t, "file is absent: "+path)
@@ -241,7 +244,10 @@ func TestRendererSkipsDirsEagerly(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Len(t, r.files, 1)
-	content := string(r.files[0].content)
+
+	b, err := io.ReadAll(r.files[0].content)
+	require.NoError(t, err)
+	content := string(b)
 	assert.Equal(t, "I should be the only file created", strings.Trim(content, "\r\n"))
 }
 
@@ -317,7 +323,7 @@ func TestRendererInMemoryFileFullPathForWindows(t *testing.T) {
 		root:    `c:\a\b\c`,
 		relPath: "d/e",
 	}
-	assert.Equal(t, `c:\a\b\c\d\e`, f.fullPath())
+	assert.Equal(t, `c:\a\b\c\d\e`, f.path())
 }
 
 func TestRendererInMemoryFilePersistToDiskSetsExecutableBit(t *testing.T) {
@@ -329,7 +335,7 @@ func TestRendererInMemoryFilePersistToDiskSetsExecutableBit(t *testing.T) {
 	f := &inMemoryFile{
 		root:    tmpDir,
 		relPath: "a/b/c",
-		content: []byte("123"),
+		content: io.NopCloser(strings.NewReader("123")),
 		perm:    0755,
 	}
 	err := f.persistToDisk()
@@ -348,7 +354,7 @@ func TestRendererInMemoryFilePersistToDiskForWindows(t *testing.T) {
 	f := &inMemoryFile{
 		root:    tmpDir,
 		relPath: "a/b/c",
-		content: []byte("123"),
+		content: io.NopCloser(strings.NewReader("123")),
 		perm:    0666,
 	}
 	err := f.persistToDisk()
@@ -400,7 +406,7 @@ func TestRendererErrorOnConflictingFile(t *testing.T) {
 			{
 				root:    tmpDir,
 				relPath: "a",
-				content: []byte("123"),
+				content: io.NopCloser(strings.NewReader("123")),
 				perm:    0444,
 			},
 		},
@@ -425,7 +431,7 @@ func TestRendererNoErrorOnConflictingFileIfSkipped(t *testing.T) {
 			{
 				root:    tmpDir,
 				relPath: "a",
-				content: []byte("123"),
+				content: io.NopCloser(strings.NewReader("123")),
 				perm:    0444,
 			},
 		},

@@ -18,6 +18,10 @@ import (
 	"golang.org/x/exp/slices"
 )
 
+// TODO: add test for paths being executed
+
+const TemplateExtension = ".tmpl"
+
 type inMemoryFile struct {
 	// Root path for the project instance. This path uses the system's default
 	// file separator. For example /foo/bar on Unix and C:\foo\bar on windows
@@ -27,22 +31,31 @@ type inMemoryFile struct {
 	// is relative to the root. Using unix like relative paths enables skip patterns
 	// to work across both windows and unix based operating systems.
 	relPath string
-	content []byte
+	content io.ReadCloser
 	perm    fs.FileMode
 }
 
-func (f *inMemoryFile) fullPath() string {
+func (f *inMemoryFile) path() string {
 	return filepath.Join(f.root, filepath.FromSlash(f.relPath))
 }
 
 func (f *inMemoryFile) persistToDisk() error {
-	path := f.fullPath()
+	path := f.path()
 
 	err := os.MkdirAll(filepath.Dir(path), 0755)
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(path, f.content, f.perm)
+
+	dstFile, err := os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_WRONLY, f.perm)
+	if err != nil {
+		return err
+	}
+	_, err = io.Copy(dstFile, f.content)
+	if err != nil {
+		return err
+	}
+	return f.content.Close()
 }
 
 // Renders a databricks template as a project
@@ -148,10 +161,6 @@ func (r *renderer) computeFile(relPathTemplate string) (*inMemoryFile, error) {
 	if err != nil {
 		return nil, err
 	}
-	contentTemplate, err := io.ReadAll(templateReader)
-	if err != nil {
-		return nil, err
-	}
 
 	// read file permissions
 	info, err := r.templateFiler.Stat(r.ctx, relPathTemplate)
@@ -160,7 +169,22 @@ func (r *renderer) computeFile(relPathTemplate string) (*inMemoryFile, error) {
 	}
 	perm := info.Mode().Perm()
 
+	// If file name does not specify the `.tmpl` extension, then it is copied
+	// over as is, without treating it as a template
+	if !strings.HasSuffix(relPathTemplate, TemplateExtension) {
+		return &inMemoryFile{
+			root:    r.instanceRoot,
+			relPath: relPathTemplate,
+			content: templateReader,
+			perm:    perm,
+		}, nil
+	}
+
 	// execute the contents of the file as a template
+	contentTemplate, err := io.ReadAll(templateReader)
+	if err != nil {
+		return nil, err
+	}
 	content, err := r.executeTemplate(string(contentTemplate))
 	// Capture errors caused by the "fail" helper function
 	if target := (&ErrFail{}); errors.As(err, target) {
@@ -171,6 +195,7 @@ func (r *renderer) computeFile(relPathTemplate string) (*inMemoryFile, error) {
 	}
 
 	// Execute relative path template to get materialized path for the file
+	relPathTemplate = strings.TrimSuffix(relPathTemplate, TemplateExtension)
 	relPath, err := r.executeTemplate(relPathTemplate)
 	if err != nil {
 		return nil, err
@@ -179,11 +204,10 @@ func (r *renderer) computeFile(relPathTemplate string) (*inMemoryFile, error) {
 	return &inMemoryFile{
 		root:    r.instanceRoot,
 		relPath: relPath,
-		content: []byte(content),
+		content: io.NopCloser(strings.NewReader(content)),
 		perm:    perm,
 	}, nil
 }
-
 
 // This function walks the template file tree to generate an in memory representation
 // of a project.
@@ -282,7 +306,7 @@ func (r *renderer) persistToDisk() error {
 
 	// Assert no conflicting files exist
 	for _, file := range filesToPersist {
-		path := file.fullPath()
+		path := file.path()
 		_, err := os.Stat(path)
 		if err == nil {
 			return fmt.Errorf("failed to persist to disk, conflict with existing file: %s", path)
