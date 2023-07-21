@@ -11,6 +11,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var cmdOverrides []func(*cobra.Command)
+
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "system-schemas",
@@ -30,6 +34,11 @@ func New() *cobra.Command {
 	cmd.AddCommand(newDisable())
 	cmd.AddCommand(newEnable())
 	cmd.AddCommand(newList())
+
+	// Apply optional overrides to this command.
+	for _, fn := range cmdOverrides {
+		fn(cmd)
+	}
 
 	return cmd
 }

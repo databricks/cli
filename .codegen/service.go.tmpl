@@ -19,6 +19,10 @@ import (
 {{end}}
 
 {{define "service"}}
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var cmdOverrides []func(*cobra.Command)
+
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "{{(.TrimPrefix "account").KebabName}}",
@@ -44,6 +48,11 @@ func New() *cobra.Command {
 	{{- end -}}
 	cmd.AddCommand(new{{.PascalName}}())
 	{{ end }}
+
+	// Apply optional overrides to this command.
+	for _, fn := range cmdOverrides {
+		fn(cmd)
+	}
 
 	return cmd
 }
