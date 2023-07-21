@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"sync"
 
@@ -51,13 +50,9 @@ const ExtraIncludePathsKey string = "DATABRICKS_BUNDLE_INCLUDE_PATHS"
 func GetExtraIncludePaths() []string {
 	value, exists := os.LookupEnv(ExtraIncludePathsKey)
 	if !exists {
-		return []string{}
+		return nil
 	}
-	var sep = ":"
-	if runtime.GOOS == "windows" {
-		sep = ";"
-	}
-	return strings.Split(value, sep)
+	return strings.Split(value, string(os.PathListSeparator))
 }
 
 // Try loading bundle config from one of the extra include paths from the environment variable
@@ -102,20 +97,21 @@ func MustLoad() (*Bundle, error) {
 func TryLoad() (*Bundle, error) {
 	root, err := tryGetRoot()
 	if err != nil {
-		if b := tryLoadFromExtraIncludePaths(); b != nil {
-			return b, nil
-		}
 		return nil, err
 	}
 
 	// No root is fine in this function.
 	if root == "" {
+		return nil, nil
+	}
+
+	// We only fallback to extra include paths if bundle root is defined but a root config is NOT FOUND
+	// Therefore, the intended UX for end users is that they always have a VALID root config.
+	// The loading of extra include paths is only for the convenience of interfacing with internal tools.
+	if _, err := config.FileNames.FindInPath(root); err != nil {
 		return tryLoadFromExtraIncludePaths(), nil
 	}
 
-	// We only fallback to extra include paths if root config is NOT FOUND.
-	// Therefore, the intended UX for end users is that they always have a VALID root config.
-	// The loading of extra include paths is only for the convenience of interfacing with internal tools.
 	return Load(root)
 }
 
