@@ -126,8 +126,8 @@ func validateProductionMode(ctx context.Context, b *bundle.Bundle, isPrincipalUs
 			}
 		}
 
-		if !arePermissionsSetExplicitly(r) {
-			return fmt.Errorf("'permissions' and 'run_as' must be set when using 'mode_production'")
+		if !isRunAsSet(r) {
+			return fmt.Errorf("'run_as' must be set for all jobs when using 'mode: production'")
 		}
 	}
 	return nil
@@ -146,22 +146,11 @@ func isServicePrincipalUsed(ctx context.Context, b *bundle.Bundle) (bool, error)
 	return len(matches) > 0, nil
 }
 
-// Determines whether permissions and run_as are explicitly set for all resources.
-// We do this in a best-effort fashion; we may not actually test all resources,
-// as we expect customers to use the top-level 'permissions' and 'run_as' fields.
-// We'd rather not check for those specific fields though, as customers might
-// set specific permissions instead!
-func arePermissionsSetExplicitly(r config.Resources) bool {
-	for i := range r.Pipelines {
-		if r.Pipelines[i].Permissions == nil {
-			return false
-		}
-	}
-
+// Determines whether run_as is explicitly set for all resources.
+// We do this in a best-effort fashion rather than check the top-level
+// 'run_as' field because the latter is not required to be set.
+func isRunAsSet(r config.Resources) bool {
 	for i := range r.Jobs {
-		if r.Jobs[i].Permissions == nil {
-			return false
-		}
 		if r.Jobs[i].RunAs == nil {
 			return false
 		}
