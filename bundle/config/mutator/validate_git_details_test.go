@@ -42,7 +42,7 @@ func TestValidateGitDetailsNonMatchingBranches(t *testing.T) {
 	m := ValidateGitDetails()
 	err := m.Apply(context.Background(), bundle)
 
-	expectedError := "not on the right Git branch:\n  expected according to configuration: main\n  actual: feature"
+	expectedError := "not on the right Git branch:\n  expected according to configuration: main\n  actual: feature\nuse --force to override"
 	assert.EqualError(t, err, expectedError)
 }
 

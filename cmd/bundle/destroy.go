@@ -30,7 +30,7 @@ func newDestroyCommand() *cobra.Command {
 		b := bundle.Get(ctx)
 
 		// If `--force` is specified, force acquisition of the deployment lock.
-		b.Config.Bundle.Lock.Force = forceDestroy
+		b.Config.Bundle.Force = forceDestroy
 
 		// If `--auto-approve`` is specified, we skip confirmation checks
 		b.AutoApprove = autoApprove
