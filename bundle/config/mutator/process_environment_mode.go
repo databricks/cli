@@ -8,7 +8,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 )
@@ -137,15 +137,13 @@ func validateProductionMode(ctx context.Context, b *bundle.Bundle, isPrincipalUs
 func isServicePrincipalUsed(ctx context.Context, b *bundle.Bundle) (bool, error) {
 	ws := b.WorkspaceClient()
 
-	_, err := ws.ServicePrincipals.GetById(ctx, b.Config.Workspace.CurrentUser.Id)
+	matches, err := ws.ServicePrincipals.ListAll(ctx, iam.ListServicePrincipalsRequest{
+		Filter: "id eq " + b.Config.Workspace.CurrentUser.Id,
+	})
 	if err != nil {
-		apiError, ok := err.(*apierr.APIError)
-		if ok && apiError.StatusCode == 404 {
-			return false, nil
-		}
 		return false, err
 	}
-	return false, nil
+	return len(matches) > 0, nil
 }
 
 // Determines whether permissions and run_as are explicitly set for all resources.
