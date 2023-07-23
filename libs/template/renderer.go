@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/fs"
 	"os"
 	"path"
 	"path/filepath"
@@ -20,43 +19,7 @@ import (
 
 // TODO: add test for paths being executed
 
-const TemplateExtension = ".tmpl"
-
-type inMemoryFile struct {
-	// Root path for the project instance. This path uses the system's default
-	// file separator. For example /foo/bar on Unix and C:\foo\bar on windows
-	root string
-
-	// Unix like relPath for the file (using '/' as the separator). This path
-	// is relative to the root. Using unix like relative paths enables skip patterns
-	// to work across both windows and unix based operating systems.
-	relPath string
-	content io.ReadCloser
-	perm    fs.FileMode
-}
-
-func (f *inMemoryFile) path() string {
-	return filepath.Join(f.root, filepath.FromSlash(f.relPath))
-}
-
-func (f *inMemoryFile) persistToDisk() error {
-	path := f.path()
-
-	err := os.MkdirAll(filepath.Dir(path), 0755)
-	if err != nil {
-		return err
-	}
-
-	dstFile, err := os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_WRONLY, f.perm)
-	if err != nil {
-		return err
-	}
-	_, err = io.Copy(dstFile, f.content)
-	if err != nil {
-		return err
-	}
-	return f.content.Close()
-}
+const templateExtension = ".tmpl"
 
 // Renders a databricks template as a project
 type renderer struct {
@@ -73,7 +36,7 @@ type renderer struct {
 	baseTemplate *template.Template
 
 	// List of in memory files generated from template
-	files []*inMemoryFile
+	files []file
 
 	// Glob patterns for files and directories to skip. There are three possible
 	// outcomes for skip:
@@ -124,7 +87,7 @@ func newRenderer(ctx context.Context, config map[string]any, templateRoot, libra
 		ctx:           ctx,
 		config:        config,
 		baseTemplate:  tmpl,
-		files:         make([]*inMemoryFile, 0),
+		files:         make([]file, 0),
 		skipPatterns:  make([]string, 0),
 		templateFiler: templateFiler,
 		instanceRoot:  instanceRoot,
@@ -155,12 +118,13 @@ func (r *renderer) executeTemplate(templateDefinition string) (string, error) {
 	return result.String(), nil
 }
 
-func (r *renderer) computeFile(relPathTemplate string) (*inMemoryFile, error) {
+func (r *renderer) computeFile(relPathTemplate string) (file, error) {
 	// read template file contents
 	templateReader, err := r.templateFiler.Read(r.ctx, relPathTemplate)
 	if err != nil {
 		return nil, err
 	}
+	defer templateReader.Close()
 
 	// read file permissions
 	info, err := r.templateFiler.Stat(r.ctx, relPathTemplate)
@@ -171,12 +135,16 @@ func (r *renderer) computeFile(relPathTemplate string) (*inMemoryFile, error) {
 
 	// If file name does not specify the `.tmpl` extension, then it is copied
 	// over as is, without treating it as a template
-	if !strings.HasSuffix(relPathTemplate, TemplateExtension) {
-		return &inMemoryFile{
-			root:    r.instanceRoot,
-			relPath: relPathTemplate,
-			content: templateReader,
-			perm:    perm,
+	if !strings.HasSuffix(relPathTemplate, templateExtension) {
+		return &copyFile{
+			fileCommon: &fileCommon{
+				root:    r.instanceRoot,
+				relPath: relPathTemplate,
+				perm:    perm,
+			},
+			ctx:      r.ctx,
+			srcPath:  relPathTemplate,
+			srcFiler: r.templateFiler,
 		}, nil
 	}
 
@@ -195,17 +163,19 @@ func (r *renderer) computeFile(relPathTemplate string) (*inMemoryFile, error) {
 	}
 
 	// Execute relative path template to get materialized path for the file
-	relPathTemplate = strings.TrimSuffix(relPathTemplate, TemplateExtension)
+	relPathTemplate = strings.TrimSuffix(relPathTemplate, templateExtension)
 	relPath, err := r.executeTemplate(relPathTemplate)
 	if err != nil {
 		return nil, err
 	}
 
 	return &inMemoryFile{
-		root:    r.instanceRoot,
-		relPath: relPath,
-		content: io.NopCloser(strings.NewReader(content)),
-		perm:    perm,
+		fileCommon: &fileCommon{
+			root:    r.instanceRoot,
+			relPath: relPath,
+			perm:    perm,
+		},
+		content: []byte(content),
 	}, nil
 }
 
@@ -280,7 +250,7 @@ func (r *renderer) walk() error {
 			if err != nil {
 				return err
 			}
-			logger.Infof(r.ctx, "added file to list of in memory files: %s", f.relPath)
+			logger.Infof(r.ctx, "added file to list of in memory files: %s", f.Path())
 			r.files = append(r.files, f)
 		}
 
@@ -291,14 +261,14 @@ func (r *renderer) walk() error {
 func (r *renderer) persistToDisk() error {
 	// Accumulate files which we will persist, skipping files whose path matches
 	// any of the skip patterns
-	filesToPersist := make([]*inMemoryFile, 0)
+	filesToPersist := make([]file, 0)
 	for _, file := range r.files {
-		isSkipped, err := r.isSkipped(file.relPath)
+		isSkipped, err := file.IsSkipped(r.skipPatterns)
 		if err != nil {
 			return err
 		}
 		if isSkipped {
-			log.Infof(r.ctx, "skipping file: %s", file.relPath)
+			log.Infof(r.ctx, "skipping file: %s", file.Path())
 			continue
 		}
 		filesToPersist = append(filesToPersist, file)
@@ -306,7 +276,7 @@ func (r *renderer) persistToDisk() error {
 
 	// Assert no conflicting files exist
 	for _, file := range filesToPersist {
-		path := file.path()
+		path := file.Path()
 		_, err := os.Stat(path)
 		if err == nil {
 			return fmt.Errorf("failed to persist to disk, conflict with existing file: %s", path)
@@ -318,7 +288,7 @@ func (r *renderer) persistToDisk() error {
 
 	// Persist files to disk
 	for _, file := range filesToPersist {
-		err := file.persistToDisk()
+		err := file.PersistToDisk()
 		if err != nil {
 			return err
 		}

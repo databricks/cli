@@ -7,6 +7,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"reflect"
 	"runtime"
 	"strings"
 	"testing"
@@ -153,30 +154,38 @@ func TestRendererPersistToDisk(t *testing.T) {
 		ctx:          ctx,
 		instanceRoot: tmpDir,
 		skipPatterns: []string{"a/b/c", "mn*"},
-		files: []*inMemoryFile{
-			{
-				root:    tmpDir,
-				relPath: "a/b/c",
+		files: []file{
+			&inMemoryFile{
+				fileCommon: &fileCommon{
+					root:    tmpDir,
+					relPath: "a/b/c",
+					perm:    0444,
+				},
 				content: nil,
-				perm:    0444,
 			},
-			{
-				root:    tmpDir,
-				relPath: "mno",
+			&inMemoryFile{
+				fileCommon: &fileCommon{
+					root:    tmpDir,
+					relPath: "mno",
+					perm:    0444,
+				},
 				content: nil,
-				perm:    0444,
 			},
-			{
-				root:    tmpDir,
-				relPath: "a/b/d",
-				content: io.NopCloser(strings.NewReader("123")),
-				perm:    0444,
+			&inMemoryFile{
+				fileCommon: &fileCommon{
+					root:    tmpDir,
+					relPath: "a/b/d",
+					perm:    0444,
+				},
+				content: []byte("123"),
 			},
-			{
-				root:    tmpDir,
-				relPath: "mmnn",
-				content: io.NopCloser(strings.NewReader("456")),
-				perm:    0444,
+			&inMemoryFile{
+				fileCommon: &fileCommon{
+					root:    tmpDir,
+					relPath: "mmnn",
+					perm:    0444,
+				},
+				content: []byte("456"),
 			},
 		},
 	}
@@ -205,10 +214,25 @@ func TestRendererWalk(t *testing.T) {
 
 	getContent := func(r *renderer, path string) string {
 		for _, f := range r.files {
-			if f.relPath == path {
-				b, err := io.ReadAll(f.content)
+			switch reflect.TypeOf(f) {
+			case reflect.TypeOf(&inMemoryFile{}):
+				if f.(*inMemoryFile).relPath != path {
+					continue
+				}
+				content := string(f.(*inMemoryFile).content)
+				return strings.Trim(content, "\r\n")
+			case reflect.TypeOf(&copyFile{}):
+				if f.(*copyFile).relPath != path {
+					continue
+				}
+				srcPath := f.(*copyFile).srcPath
+				r, err := r.templateFiler.Read(context.Background(), srcPath)
+				require.NoError(t, err)
+				b, err := io.ReadAll(r)
 				require.NoError(t, err)
 				return strings.Trim(string(b), "\r\n")
+			default:
+				require.FailNow(t, "execution should not reach here")
 			}
 		}
 		require.FailNow(t, "file is absent: "+path)
@@ -244,10 +268,7 @@ func TestRendererSkipsDirsEagerly(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Len(t, r.files, 1)
-
-	b, err := io.ReadAll(r.files[0].content)
-	require.NoError(t, err)
-	content := string(b)
+	content := string(r.files[0].(*inMemoryFile).content)
 	assert.Equal(t, "I should be the only file created", strings.Trim(content, "\r\n"))
 }
 
@@ -320,10 +341,12 @@ func TestRendererInMemoryFileFullPathForWindows(t *testing.T) {
 		t.SkipNow()
 	}
 	f := &inMemoryFile{
-		root:    `c:\a\b\c`,
-		relPath: "d/e",
+		fileCommon: &fileCommon{
+			root:    `c:\a\b\c`,
+			relPath: "d/e",
+		},
 	}
-	assert.Equal(t, `c:\a\b\c\d\e`, f.path())
+	assert.Equal(t, `c:\a\b\c\d\e`, f.Path())
 }
 
 func TestRendererInMemoryFilePersistToDiskSetsExecutableBit(t *testing.T) {
@@ -333,12 +356,14 @@ func TestRendererInMemoryFilePersistToDiskSetsExecutableBit(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	f := &inMemoryFile{
-		root:    tmpDir,
-		relPath: "a/b/c",
-		content: io.NopCloser(strings.NewReader("123")),
-		perm:    0755,
+		fileCommon: &fileCommon{
+			root:    tmpDir,
+			relPath: "a/b/c",
+			perm:    0755,
+		},
+		content: []byte("123"),
 	}
-	err := f.persistToDisk()
+	err := f.PersistToDisk()
 	assert.NoError(t, err)
 
 	assertFileContent(t, filepath.Join(tmpDir, "a/b/c"), "123")
@@ -352,12 +377,14 @@ func TestRendererInMemoryFilePersistToDiskForWindows(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	f := &inMemoryFile{
-		root:    tmpDir,
-		relPath: "a/b/c",
-		content: io.NopCloser(strings.NewReader("123")),
-		perm:    0666,
+		fileCommon: &fileCommon{
+			root:    tmpDir,
+			relPath: "a/b/c",
+			perm:    0666,
+		},
+		content: []byte("123"),
 	}
-	err := f.persistToDisk()
+	err := f.PersistToDisk()
 	assert.NoError(t, err)
 
 	assertFileContent(t, filepath.Join(tmpDir, "a/b/c"), "123")
@@ -379,8 +406,18 @@ func TestRendererReadsPermissionsBits(t *testing.T) {
 
 	getPermissions := func(r *renderer, path string) fs.FileMode {
 		for _, f := range r.files {
-			if f.relPath == path {
-				return f.perm
+			switch reflect.TypeOf(f) {
+			case reflect.TypeOf(&inMemoryFile{}):
+				if f.(*inMemoryFile).relPath == path {
+					return f.(*inMemoryFile).perm
+				}
+
+			case reflect.TypeOf(&copyFile{}):
+				if f.(*copyFile).relPath == path {
+					return f.(*copyFile).perm
+				}
+			default:
+				require.FailNow(t, "execution should not reach here")
 			}
 		}
 		require.FailNow(t, "file is absent: "+path)
@@ -402,12 +439,14 @@ func TestRendererErrorOnConflictingFile(t *testing.T) {
 
 	r := renderer{
 		skipPatterns: []string{},
-		files: []*inMemoryFile{
-			{
-				root:    tmpDir,
-				relPath: "a",
-				content: io.NopCloser(strings.NewReader("123")),
-				perm:    0444,
+		files: []file{
+			&inMemoryFile{
+				fileCommon: &fileCommon{
+					root:    tmpDir,
+					relPath: "a",
+					perm:    0444,
+				},
+				content: []byte("123"),
 			},
 		},
 	}
@@ -427,12 +466,14 @@ func TestRendererNoErrorOnConflictingFileIfSkipped(t *testing.T) {
 	r := renderer{
 		ctx:          ctx,
 		skipPatterns: []string{"a"},
-		files: []*inMemoryFile{
-			{
-				root:    tmpDir,
-				relPath: "a",
-				content: io.NopCloser(strings.NewReader("123")),
-				perm:    0444,
+		files: []file{
+			&inMemoryFile{
+				fileCommon: &fileCommon{
+					root:    tmpDir,
+					relPath: "a",
+					perm:    0444,
+				},
+				content: []byte("123"),
 			},
 		},
 	}
