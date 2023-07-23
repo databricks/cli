@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestTemplateSchematIsInterger(t *testing.T) {
+func TestTemplateSchemaIsInteger(t *testing.T) {
 	assert.False(t, isIntegerValue(1.1))
 	assert.False(t, isIntegerValue(0.1))
 	assert.False(t, isIntegerValue(-0.1))
@@ -58,7 +58,7 @@ func TestTemplateSchemaCastFloatToInt(t *testing.T) {
 	assert.IsType(t, true, config["bool_val"])
 	assert.IsType(t, "abc", config["string_val"])
 
-	err = castFloatToInt(config, &schema)
+	err = castFloatConfigValuesToInt(config, &schema)
 	require.NoError(t, err)
 
 	// assert type after casting, that the float value was converted to an integer
@@ -90,7 +90,7 @@ func TestTemplateSchemaCastFloatToIntFailsForUnknownTypes(t *testing.T) {
 	err = json.Unmarshal([]byte(configJson), &config)
 	require.NoError(t, err)
 
-	err = castFloatToInt(config, &schema)
+	err = castFloatConfigValuesToInt(config, &schema)
 	assert.ErrorContains(t, err, "bar is not defined as an input parameter for the template")
 }
 
@@ -115,7 +115,7 @@ func TestTemplateSchemaCastFloatToIntFailsWhenWithNonIntValues(t *testing.T) {
 	err = json.Unmarshal([]byte(configJson), &config)
 	require.NoError(t, err)
 
-	err = castFloatToInt(config, &schema)
+	err = castFloatConfigValuesToInt(config, &schema)
 	assert.ErrorContains(t, err, "expected foo to have integer value but it is 1.1")
 }
 
@@ -202,7 +202,7 @@ func TestTemplateSchemaValidateConfig(t *testing.T) {
 		"string_val": "abc",
 	}
 
-	err = schema.ValidateConfig(config)
+	err = validateConfigValueTypes(config, &schema)
 	assert.NoError(t, err)
 }
 
@@ -236,7 +236,7 @@ func TestTemplateSchemaValidateConfigFailsForUnknownField(t *testing.T) {
 		"string_val": "abc",
 	}
 
-	err = schema.ValidateConfig(config)
+	err = validateConfigValueTypes(config, &schema)
 	assert.ErrorContains(t, err, "foo is not defined as an input parameter for the template")
 }
 
@@ -270,7 +270,7 @@ func TestTemplateSchemaValidateConfigFailsForWhenIncorrectTypes(t *testing.T) {
 		"string_val": "abc",
 	}
 
-	err = schema.ValidateConfig(config)
+	err = validateConfigValueTypes(config, &schema)
 	assert.ErrorContains(t, err, "incorrect type for bool_val. expected type boolean, but value is \"true\"")
 }
 
@@ -295,6 +295,28 @@ func TestTemplateSchemaValidateConfigFailsForWhenMissingInputParams(t *testing.T
 		"int_val": 1,
 	}
 
-	err = schema.ValidateConfig(config)
+	err = assignDefaultConfigValues(config, &schema)
 	assert.ErrorContains(t, err, "input parameter string_val is not defined in config")
+}
+
+func TestTemplateDefaultAssignment(t *testing.T) {
+	// define schema for config
+	schemaJson := `{
+		"properties": {
+			"foo": {
+				"type": "integer",
+				"default": 1
+			}
+		}
+		}`
+	var schema Schema
+	err := json.Unmarshal([]byte(schemaJson), &schema)
+	require.NoError(t, err)
+
+	// define the config
+	config := map[string]any{}
+
+	err = assignDefaultConfigValues(config, &schema)
+	assert.NoError(t, err)
+	assert.Equal(t, 1.0, config["foo"])
 }

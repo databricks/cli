@@ -7,7 +7,15 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-type Validator func(v any) error
+type validator func(v any) error
+
+func validateType(v any, fieldType PropertyType) error {
+	validateFunc, ok := validators[fieldType]
+	if !ok {
+		return nil
+	}
+	return validateFunc(v)
+}
 
 func validateString(v any) error {
 	if _, ok := v.(string); !ok {
@@ -39,7 +47,7 @@ func validateInteger(v any) error {
 	return nil
 }
 
-var validators map[PropertyType]Validator = map[PropertyType]Validator{
+var validators map[PropertyType]validator = map[PropertyType]validator{
 	PropertyTypeString:  validateString,
 	PropertyTypeBoolean: validateBoolean,
 	PropertyTypeInt:     validateInteger,

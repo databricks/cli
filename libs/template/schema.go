@@ -7,8 +7,6 @@ import (
 	"reflect"
 )
 
-const LatestSchemaVersion = 0
-
 // This is a JSON Schema compliant struct that we use to do validation checks on
 // the provided configuration
 type Schema struct {
@@ -28,6 +26,7 @@ const (
 type Property struct {
 	Type        PropertyType `json:"type"`
 	Description string       `json:"description"`
+	Default     any          `json:"default"`
 }
 
 // function to check whether a float value represents an integer
@@ -38,8 +37,8 @@ func isIntegerValue(v float64) bool {
 // cast value to integer for config values that are floats but are supposed to be
 // integers according to the schema
 //
-// Needed because the default json unmarshaller for maps converts all numbers to floats
-func castFloatToInt(config map[string]any, schema *Schema) error {
+// Needed because the default json unmarshaler for maps converts all numbers to floats
+func castFloatConfigValuesToInt(config map[string]any, schema *Schema) error {
 	for k, v := range config {
 		// error because all config keys should be defined in schema too
 		if _, ok := schema.Properties[k]; !ok {
@@ -72,15 +71,19 @@ func castFloatToInt(config map[string]any, schema *Schema) error {
 	return nil
 }
 
-func validateType(v any, fieldType PropertyType) error {
-	validateFunc, ok := validators[fieldType]
-	if !ok {
-		return nil
+func assignDefaultConfigValues(config map[string]any, schema *Schema) error {
+	for k, v := range schema.Properties {
+		if _, ok := config[k]; !ok {
+			if v.Default == nil {
+				return fmt.Errorf("input parameter %s is not defined in config", k)
+			}
+			config[k] = v.Default
+		}
 	}
-	return validateFunc(v)
+	return nil
 }
 
-func (schema *Schema) ValidateConfig(config map[string]any) error {
+func validateConfigValueTypes(config map[string]any, schema *Schema) error {
 	// validate types defined in config
 	for k, v := range config {
 		fieldMetadata, ok := schema.Properties[k]
@@ -90,12 +93,6 @@ func (schema *Schema) ValidateConfig(config map[string]any) error {
 		err := validateType(v, fieldMetadata.Type)
 		if err != nil {
 			return fmt.Errorf("incorrect type for %s. %w", k, err)
-		}
-	}
-	// assert all fields are defined in
-	for k := range schema.Properties {
-		if _, ok := config[k]; !ok {
-			return fmt.Errorf("input parameter %s is not defined in config", k)
 		}
 	}
 	return nil
@@ -115,6 +112,7 @@ func ReadSchema(path string) (*Schema, error) {
 }
 
 func (schema *Schema) ReadConfig(path string) (map[string]any, error) {
+	// Read config file
 	var config map[string]any
 	b, err := os.ReadFile(path)
 	if err != nil {
@@ -125,15 +123,21 @@ func (schema *Schema) ReadConfig(path string) (map[string]any, error) {
 		return nil, err
 	}
 
+	// Assign default value to any fields that do not have a value yet
+	err = assignDefaultConfigValues(config, schema)
+	if err != nil {
+		return nil, err
+	}
+
 	// cast any fields that are supposed to be integers. The json unmarshalling
 	// for a generic map converts all numbers to floating point
-	err = castFloatToInt(config, schema)
+	err = castFloatConfigValuesToInt(config, schema)
 	if err != nil {
 		return nil, err
 	}
 
 	// validate config according to schema
-	err = schema.ValidateConfig(config)
+	err = validateConfigValueTypes(config, schema)
 	if err != nil {
 		return nil, err
 	}
