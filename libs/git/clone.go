@@ -40,7 +40,7 @@ func Clone(ctx context.Context, url, reference, targetPath string) error {
 	// `/` characters and the url is only made up of alphanumeric characters and
 	// ".", "_" and "-". This repository is resolved again databricks github account.
 	fullUrl := url
-	if !strings.Contains(url, `/`) && githubRepoRegex.MatchString(url) {
+	if githubRepoRegex.MatchString(url) {
 		fullUrl = strings.Join([]string{githubUrl, databricksOrg, url}, "/")
 	}
 
