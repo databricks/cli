@@ -1,8 +1,0 @@
-{{if eq .skip_extra_content_if_abc "abc" -}}
-this is extra content
-{{- end -}}
-
-{{if eq .skip_file_if_true }}
-this is extra content
-{{- end -}}
-{{- skipThisFile -}}
