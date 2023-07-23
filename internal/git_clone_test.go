@@ -32,67 +32,25 @@ func TestAccGitClone(t *testing.T) {
 	assert.Contains(t, string(b), "ide")
 }
 
-func TestAccGitCloneForExternalRepo(t *testing.T) {
+func TestAccGitCloneWithOnlyRepoNameOnAlternateBranch(t *testing.T) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	tmpDir := t.TempDir()
 	ctx := context.Background()
 	var err error
 
-	err = git.Clone(ctx, "https://github.com/ShreyasGoenka/empty-databricks-cli-repo.git", "", tmpDir)
-	assert.NoError(t, err)
+	err = git.Clone(ctx, "notebook-best-practices", "dais-2022", tmpDir)
 
 	// assert on repo content
+	assert.NoError(t, err)
 	b, err := os.ReadFile(filepath.Join(tmpDir, "README.md"))
 	assert.NoError(t, err)
-	assert.Contains(t, string(b), "empty-databricks-cli-repo")
+	assert.Contains(t, string(b), "Software engineering best practices for Databricks notebooks")
 
 	// assert current branch is main, ie default for the repo
 	b, err = os.ReadFile(filepath.Join(tmpDir, ".git/HEAD"))
 	assert.NoError(t, err)
-	assert.Contains(t, string(b), "main")
-}
-
-func TestAccGitCloneWithOrgAndRepoName(t *testing.T) {
-	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
-
-	tmpDir := t.TempDir()
-	ctx := context.Background()
-	var err error
-
-	err = git.Clone(ctx, "ShreyasGoenka/empty-databricks-cli-repo", "cli", tmpDir)
-
-	// assert on repo content
-	assert.NoError(t, err)
-	b, err := os.ReadFile(filepath.Join(tmpDir, "README.md"))
-	assert.NoError(t, err)
-	assert.Contains(t, string(b), "empty-databricks-cli-repo")
-
-	// assert current branch is "cli"
-	b, err = os.ReadFile(filepath.Join(tmpDir, ".git/HEAD"))
-	assert.NoError(t, err)
-	assert.Contains(t, string(b), "cli")
-}
-
-func TestAccGitCloneWithOnlyRepoName(t *testing.T) {
-	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
-
-	tmpDir := t.TempDir()
-	ctx := context.Background()
-	var err error
-
-	err = git.Clone(ctx, "databricks-empty-ide-project", "", tmpDir)
-
-	// assert on repo content
-	assert.NoError(t, err)
-	b, err := os.ReadFile(filepath.Join(tmpDir, "README-IDE.md"))
-	assert.NoError(t, err)
-	assert.Contains(t, string(b), "This folder contains a project that was synchronized from an IDE.")
-
-	// assert current branch is ide, ie default for the repo
-	b, err = os.ReadFile(filepath.Join(tmpDir, ".git/HEAD"))
-	assert.NoError(t, err)
-	assert.Contains(t, string(b), "ide")
+	assert.Contains(t, string(b), "dais-2022")
 }
 
 func TestAccGitCloneRepositoryDoesNotExist(t *testing.T) {
