@@ -17,4 +17,7 @@ var helperFuncs = template.FuncMap{
 	"fail": func(format string, args ...any) (any, error) {
 		return nil, ErrFail{fmt.Sprintf(format, args...)}
 	},
+	"raw": func(s string) string {
+		return s
+	},
 }
