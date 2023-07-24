@@ -33,10 +33,6 @@ func (m *build) Apply(ctx context.Context, b *bundle.Bundle) error {
 		return fmt.Errorf("artifact doesn't exist: %s", m.name)
 	}
 
-	if len(artifact.Files) == 0 && artifact.BuildCommand == "" {
-		return fmt.Errorf("artifact %s misconfigured: 'files' or 'build' property is required", m.name)
-	}
-
 	// If artifact file is explicitly defined, skip building the artifact
 	if len(artifact.Files) != 0 {
 		return nil
