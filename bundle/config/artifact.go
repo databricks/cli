@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os/exec"
+	"path"
 	"strings"
 
 	"github.com/databricks/databricks-sdk-go/service/compute"
@@ -51,9 +52,11 @@ func (a *Artifact) NormalisePaths() {
 			continue
 		}
 
+		wsfsBase := "/Workspace"
+		remotePath := path.Join(wsfsBase, f.RemotePath)
 		switch a.Type {
 		case ArtifactPythonWheel:
-			f.Library.Whl = f.RemotePath
+			f.Library.Whl = remotePath
 		}
 	}
 }
