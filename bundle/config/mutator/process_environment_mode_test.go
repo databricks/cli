@@ -91,7 +91,7 @@ func TestProcessEnvironmentModeProduction(t *testing.T) {
 	bundle.Config.Workspace.FilesPath = "/Shared/.bundle/x/y/files"
 
 	err = validateProductionMode(context.Background(), bundle, false)
-	require.ErrorContains(t, err, "permissions")
+	require.ErrorContains(t, err, "production")
 
 	permissions := []resources.Permission{
 		{
