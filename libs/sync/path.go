@@ -26,6 +26,9 @@ func repoPathForPath(me *iam.User, remotePath string) string {
 // expected base paths and if it is a directory or repository.
 func EnsureRemotePathIsUsable(ctx context.Context, wsc *databricks.WorkspaceClient, remotePath string, me *iam.User) error {
 	var err error
+
+	// TODO: we should cache CurrentUser.Me at the SDK level
+	//      for now we let clients pass in any existing user they might already have
 	if me == nil {
 		me, err = wsc.CurrentUser.Me(ctx)
 		if err != nil {
