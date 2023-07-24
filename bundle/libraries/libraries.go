@@ -64,7 +64,7 @@ func findArtifactsAndMarkForUpload(ctx context.Context, lib *compute.Library, b 
 		if err != nil {
 			cmdio.LogString(ctx, fmt.Sprintf("%s. Skipping %s. In order to use the library upload it manually", err.Error(), match))
 		} else {
-			af.Library = lib
+			af.Libraries = append(af.Libraries, lib)
 		}
 	}
 

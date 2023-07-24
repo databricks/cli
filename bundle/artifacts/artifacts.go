@@ -2,7 +2,6 @@ package artifacts
 
 import (
 	"context"
-	"crypto/sha256"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -106,7 +105,7 @@ func (m *basicUpload) Apply(ctx context.Context, b *bundle.Bundle) error {
 func uploadArtifact(ctx context.Context, a *config.Artifact, b *bundle.Bundle) error {
 	for i := range a.Files {
 		f := &a.Files[i]
-		if f.Library != nil {
+		if f.Libraries != nil {
 			filename := path.Base(f.Source)
 			cmdio.LogString(ctx, fmt.Sprintf("artifacts.Upload(%s): Uploading...", filename))
 			remotePath, err := uploadArtifactFile(ctx, f.Source, b)
@@ -135,8 +134,8 @@ func uploadArtifactFile(ctx context.Context, file string, b *bundle.Bundle) (str
 		return "", fmt.Errorf("remote artifact path not configured")
 	}
 
-	fileHash := sha256.Sum256(raw)
-	remotePath := path.Join(artifactPath, fmt.Sprintf("%x", fileHash), path.Base(file))
+	//fileHash := sha256.Sum256(raw)
+	remotePath := path.Join(artifactPath, path.Base(file))
 	// Make sure target directory exists.
 	err = b.WorkspaceClient().Workspace.MkdirsByPath(ctx, path.Dir(remotePath))
 	if err != nil {

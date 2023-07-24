@@ -15,9 +15,9 @@ type ArtifactType string
 const ArtifactPythonWheel ArtifactType = `whl`
 
 type ArtifactFile struct {
-	Source     string           `json:"source"`
-	RemotePath string           `json:"-" bundle:"readonly"`
-	Library    *compute.Library `json:"-" bundle:"readonly"`
+	Source     string             `json:"source"`
+	RemotePath string             `json:"-" bundle:"readonly"`
+	Libraries  []*compute.Library `json:"-" bundle:"readonly"`
 }
 
 // Artifact defines a single local code artifact that can be
@@ -48,15 +48,19 @@ func (a *Artifact) Build(ctx context.Context) ([]byte, error) {
 
 func (a *Artifact) NormalisePaths() {
 	for _, f := range a.Files {
-		if f.Library == nil {
+		if f.Libraries == nil {
 			continue
 		}
 
 		wsfsBase := "/Workspace"
 		remotePath := path.Join(wsfsBase, f.RemotePath)
-		switch a.Type {
-		case ArtifactPythonWheel:
-			f.Library.Whl = remotePath
+		for i := range f.Libraries {
+			lib := f.Libraries[i]
+			switch a.Type {
+			case ArtifactPythonWheel:
+				lib.Whl = remotePath
+			}
 		}
+
 	}
 }
