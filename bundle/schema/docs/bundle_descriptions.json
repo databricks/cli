@@ -1838,7 +1838,7 @@
       }
     },
     "include": {
-      "description": "A list of patterns of file names to load and merge into the this configuration. It defaults to loading `*.yml` and `*/*.yml`.",
+      "description": "A list of patterns of file names to load and merge into the this configuration. No files are included by default.",
       "items": {
         "description": ""
       }
