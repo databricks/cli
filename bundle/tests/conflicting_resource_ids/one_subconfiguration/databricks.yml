@@ -4,6 +4,9 @@ bundle:
 workspace:
   profile: test
 
+include:
+  - "*.yml"
+
 resources:
   jobs:
     foo:
