@@ -90,29 +90,43 @@ func (m *basicUpload) Apply(ctx context.Context, b *bundle.Bundle) error {
 		return fmt.Errorf("artifact doesn't exist: %s", m.name)
 	}
 
-	if artifact.File == "" {
+	if len(artifact.Files) == 0 {
 		return fmt.Errorf("artifact source is not configured: %s", m.name)
 	}
 
-	cmdio.LogString(ctx, fmt.Sprintf("artifacts.Upload(%s): Uploading...", m.name))
-
-	r, err := uploadArtifact(ctx, artifact, b)
+	err := uploadArtifact(ctx, artifact, b)
 	if err != nil {
 		return fmt.Errorf("artifacts.Upload(%s): %w", m.name, err)
 	}
 
-	artifact.RemotePath = r
-	cmdio.LogString(ctx, fmt.Sprintf("artifacts.Upload(%s): Upload succeeded", m.name))
 	return nil
 }
 
-// Function to upload artifact as a library to Workspace
-// Currenly it does not work correctly because Workspace.Import API can not import libraries
-// but only notebooks or files
-func uploadArtifact(ctx context.Context, a *config.Artifact, b *bundle.Bundle) (string, error) {
-	raw, err := os.ReadFile(a.File)
+func uploadArtifact(ctx context.Context, a *config.Artifact, b *bundle.Bundle) error {
+	for i := range a.Files {
+		f := &a.Files[i]
+		if f.Library != nil {
+			filename := path.Base(f.Source)
+			cmdio.LogString(ctx, fmt.Sprintf("artifacts.Upload(%s): Uploading...", filename))
+			remotePath, err := uploadArtifactFile(ctx, f.Source, b)
+			if err != nil {
+				return err
+			}
+			cmdio.LogString(ctx, fmt.Sprintf("artifacts.Upload(%s): Upload succeeded", filename))
+
+			f.RemotePath = remotePath
+		}
+	}
+
+	a.NormalisePaths()
+	return nil
+}
+
+// Function to upload artifact file to Workspace
+func uploadArtifactFile(ctx context.Context, file string, b *bundle.Bundle) (string, error) {
+	raw, err := os.ReadFile(file)
 	if err != nil {
-		return "", fmt.Errorf("unable to read %s: %w", a.File, errors.Unwrap(err))
+		return "", fmt.Errorf("unable to read %s: %w", file, errors.Unwrap(err))
 	}
 
 	artifactPath := b.Config.Workspace.ArtifactsPath
@@ -120,7 +134,7 @@ func uploadArtifact(ctx context.Context, a *config.Artifact, b *bundle.Bundle) (
 		return "", fmt.Errorf("remote artifact path not configured")
 	}
 
-	remotePath := path.Join(artifactPath, path.Base(a.File))
+	remotePath := path.Join(artifactPath, path.Base(file))
 
 	// Make sure target directory exists.
 	err = b.WorkspaceClient().Workspace.MkdirsByPath(ctx, path.Dir(remotePath))

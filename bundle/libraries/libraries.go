@@ -3,49 +3,96 @@ package libraries
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go/service/compute"
-	"golang.org/x/exp/slices"
 )
 
-type attach struct {
+type match struct {
 }
 
-func AttachToResources() bundle.Mutator {
-	return &attach{}
+func MatchWithArtifacts() bundle.Mutator {
+	return &match{}
 }
 
-func (a *attach) Name() string {
-	return "libraries.AttachToResources"
+func (a *match) Name() string {
+	return "libraries.MatchWithArtifacts"
 }
 
-func (a *attach) Apply(ctx context.Context, b *bundle.Bundle) error {
+func (a *match) Apply(ctx context.Context, b *bundle.Bundle) error {
 	r := b.Config.Resources
 	for k := range b.Config.Resources.Jobs {
 		tasks := r.Jobs[k].JobSettings.Tasks
 		for i := range tasks {
 			task := &tasks[i]
-			if task.PythonWheelTask != nil {
-				packageName := task.PythonWheelTask.PackageName
-				artifact, ok := b.Config.Artifacts[packageName]
-				if !ok {
-					// TODO: we can be even more smart about it and automatically detect potential artifact
-					// (like Python wheel) and try to build it first
-					return fmt.Errorf("artifact not found: %s. Please define the artifact in bundle artifacts section", packageName)
-				}
-
-				lib := artifact.Library()
-				alreadyAdded := slices.ContainsFunc(task.Libraries, func(e compute.Library) bool {
-					return e.Whl != "" && e.Whl == lib.Whl
-				})
-				if !alreadyAdded {
-					log.Debugf(ctx, "Attaching %s (%s) to %s", packageName, artifact.RemotePath, task.TaskKey)
-					task.Libraries = append(task.Libraries, lib)
+			for j := range task.Libraries {
+				lib := &task.Libraries[j]
+				err := findArtifactsAndMarkForUpload(ctx, lib, b)
+				if err != nil {
+					return err
 				}
 			}
 		}
 	}
 	return nil
+}
+
+func findLibraryMatches(lib *compute.Library, b *bundle.Bundle) ([]string, error) {
+	path := libPath(lib)
+	if path == "" {
+		return nil, nil
+	}
+
+	fullPath := filepath.Join(b.Config.Path, path)
+	return filepath.Glob(fullPath)
+}
+
+func findArtifactsAndMarkForUpload(ctx context.Context, lib *compute.Library, b *bundle.Bundle) error {
+	matches, err := findLibraryMatches(lib, b)
+	if err != nil {
+		return err
+	}
+	if len(matches) == 0 {
+		return fmt.Errorf("no file matches found for library %s", libPath(lib))
+	}
+
+	for _, match := range matches {
+		af, err := findArtifactFileByLocalPath(match, b)
+		if err != nil {
+			cmdio.LogString(ctx, fmt.Sprintf("%s. Skipping %s. In order to use the library upload it manually", err.Error(), match))
+		} else {
+			af.Library = lib
+		}
+	}
+
+	return nil
+}
+
+func findArtifactFileByLocalPath(path string, b *bundle.Bundle) (*config.ArtifactFile, error) {
+	for _, a := range b.Config.Artifacts {
+		for k := range a.Files {
+			if a.Files[k].Source == path {
+				return &a.Files[k], nil
+			}
+		}
+	}
+
+	return nil, fmt.Errorf("artifact file is not found for path %s", path)
+}
+
+func libPath(library *compute.Library) string {
+	if library.Whl != "" {
+		return library.Whl
+	}
+	if library.Jar != "" {
+		return library.Jar
+	}
+	if library.Egg != "" {
+		return library.Egg
+	}
+
+	return ""
 }

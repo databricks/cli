@@ -13,6 +13,12 @@ type ArtifactType string
 
 const ArtifactPythonWheel ArtifactType = `whl`
 
+type ArtifactFile struct {
+	Source     string           `json:"source"`
+	RemotePath string           `json:"-" bundle:"readonly"`
+	Library    *compute.Library `json:"-" bundle:"readonly"`
+}
+
 // Artifact defines a single local code artifact that can be
 // built/uploaded/referenced in the context of this bundle.
 type Artifact struct {
@@ -22,11 +28,10 @@ type Artifact struct {
 	// for example, where setup.py is for Python projects
 	Path string `json:"path"`
 
-	// The relative or absolute path to the built artifact file
+	// The relative or absolute path to the built artifact files
 	// (Python wheel, Java jar and etc) itself
-	File         string `json:"file"`
-	BuildCommand string `json:"build"`
-	RemotePath   string `json:"-" bundle:"readonly"`
+	Files        []ArtifactFile `json:"files"`
+	BuildCommand string         `json:"build"`
 }
 
 func (a *Artifact) Build(ctx context.Context) ([]byte, error) {
@@ -40,12 +45,15 @@ func (a *Artifact) Build(ctx context.Context) ([]byte, error) {
 	return cmd.CombinedOutput()
 }
 
-func (a *Artifact) Library() compute.Library {
-	lib := compute.Library{}
-	switch a.Type {
-	case ArtifactPythonWheel:
-		lib.Whl = a.RemotePath
-	}
+func (a *Artifact) NormalisePaths() {
+	for _, f := range a.Files {
+		if f.Library == nil {
+			continue
+		}
 
-	return lib
+		switch a.Type {
+		case ArtifactPythonWheel:
+			f.Library.Whl = f.RemotePath
+		}
+	}
 }

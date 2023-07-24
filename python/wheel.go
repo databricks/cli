@@ -28,11 +28,14 @@ func BuildWheel(ctx context.Context, dir string) (string, error) {
 	// and cleanup afterwards
 	CleanupWheelFolder(".")
 
-	wheel := FindFileWithSuffixInPath("dist", ".whl")
-	if wheel == "" {
+	wheels := FindFilesWithSuffixInPath("dist", ".whl")
+	if len(wheels) == 0 {
 		return "", fmt.Errorf("cannot find built wheel in %s", dir)
 	}
-	return path.Join(dir, wheel), nil
+	if len(wheels) != 1 {
+		return "", fmt.Errorf("more than 1 wheel file found in %s", dir)
+	}
+	return path.Join(dir, wheels[0]), nil
 }
 
 const DBFSWheelLocation = "dbfs:/FileStore/wheels/simple"

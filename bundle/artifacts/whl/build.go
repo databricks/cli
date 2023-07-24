@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/python"
 )
@@ -51,11 +52,15 @@ func (m *build) Apply(ctx context.Context, b *bundle.Bundle) error {
 	}
 	cmdio.LogString(ctx, fmt.Sprintf("artifacts.whl.Build(%s): Build succeeded", m.name))
 
-	wheel := python.FindFileWithSuffixInPath(distPath, ".whl")
-	if wheel == "" {
+	wheels := python.FindFilesWithSuffixInPath(distPath, ".whl")
+	if len(wheels) == 0 {
 		return fmt.Errorf("artifacts.whl.Build(%s): cannot find built wheel in %s", m.name, dir)
 	}
-	artifact.File = filepath.Join(dir, wheel)
+	for _, wheel := range wheels {
+		artifact.Files = append(artifact.Files, config.ArtifactFile{
+			Source: wheel,
+		})
+	}
 
 	return nil
 }

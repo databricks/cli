@@ -32,7 +32,7 @@ func (m *upload) Apply(ctx context.Context, b *bundle.Bundle) error {
 		return fmt.Errorf("artifact doesn't exist: %s", m.name)
 	}
 
-	if artifact.File == "" {
+	if len(artifact.Files) == 0 {
 		return fmt.Errorf("artifact source is not configured: %s", m.name)
 	}
 
