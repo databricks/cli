@@ -17,6 +17,7 @@ func Deploy() bundle.Mutator {
 			bundle.Seq(
 				files.Upload(),
 				libraries.MatchWithArtifacts(),
+				artifacts.CleanUp(),
 				artifacts.UploadAll(),
 				terraform.Interpolate(),
 				terraform.Write(),

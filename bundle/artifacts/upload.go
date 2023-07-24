@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
 func UploadAll() bundle.Mutator {
@@ -12,6 +13,10 @@ func UploadAll() bundle.Mutator {
 		name: "Upload",
 		fn:   uploadArtifactByName,
 	}
+}
+
+func CleanUp() bundle.Mutator {
+	return &cleanUp{}
 }
 
 type upload struct {
@@ -37,4 +42,25 @@ func (m *upload) Apply(ctx context.Context, b *bundle.Bundle) error {
 	}
 
 	return bundle.Apply(ctx, b, getUploadMutator(artifact.Type, m.name))
+}
+
+type cleanUp struct{}
+
+func (m *cleanUp) Name() string {
+	return "artifacts.CleanUp"
+}
+
+func (m *cleanUp) Apply(ctx context.Context, b *bundle.Bundle) error {
+	artifactPath := b.Config.Workspace.ArtifactsPath
+	b.WorkspaceClient().Workspace.Delete(ctx, workspace.Delete{
+		Path:      artifactPath,
+		Recursive: true,
+	})
+
+	err := b.WorkspaceClient().Workspace.MkdirsByPath(ctx, artifactPath)
+	if err != nil {
+		return fmt.Errorf("unable to create directory for %s: %w", artifactPath, err)
+	}
+
+	return nil
 }
