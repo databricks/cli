@@ -20,7 +20,7 @@ func TestTemplatePrintStringWithoutProcessing(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Len(t, r.files, 1)
-	cleanContent := strings.Trim(string(r.files[0].content), "\n\r")
+	cleanContent := strings.Trim(string(r.files[0].(*inMemoryFile).content), "\n\r")
 	assert.Equal(t, `{{ fail "abc" }}`, cleanContent)
 }
 
@@ -35,7 +35,7 @@ func TestTemplateRegexpCompileFunction(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Len(t, r.files, 1)
-	content := string(r.files[0].content)
+	content := string(r.files[0].(*inMemoryFile).content)
 	assert.Contains(t, content, "0:food")
 	assert.Contains(t, content, "1:fool")
 }
