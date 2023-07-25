@@ -43,10 +43,26 @@ type Bundle struct {
 	AutoApprove bool
 }
 
+const ExtraIncludePathsKey string = "DATABRICKS_BUNDLE_INCLUDES"
+
 func Load(path string) (*Bundle, error) {
 	bundle := &Bundle{}
+	stat, err := os.Stat(path)
+	if err != nil {
+		return nil, err
+	}
 	configFile, err := config.FileNames.FindInPath(path)
 	if err != nil {
+		_, hasIncludePathEnv := os.LookupEnv(ExtraIncludePathsKey)
+		if hasIncludePathEnv && stat.IsDir() {
+			bundle.Config = config.Root{
+				Path: path,
+				Bundle: config.Bundle{
+					Name: filepath.Base(path),
+				},
+			}
+			return bundle, nil
+		}
 		return nil, err
 	}
 	err = bundle.Config.Load(configFile)
