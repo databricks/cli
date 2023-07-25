@@ -12,7 +12,7 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-const ExtraIncludePathsKey string = "DATABRICKS_BUNDLE_INCLUDE_PATHS"
+const ExtraIncludePathsKey string = "DATABRICKS_BUNDLE_INCLUDES"
 
 // Get extra include paths from environment variable
 func GetExtraIncludePaths() []string {
