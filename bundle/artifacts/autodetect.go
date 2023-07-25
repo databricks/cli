@@ -5,6 +5,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/artifacts/whl"
+	"github.com/databricks/cli/libs/log"
 )
 
 func DetectPackages() bundle.Mutator {
@@ -21,6 +22,7 @@ func (m *autodetect) Name() string {
 func (m *autodetect) Apply(ctx context.Context, b *bundle.Bundle) error {
 	// If artifacts section explicitly defined, do not try to auto detect packages
 	if b.Config.Artifacts != nil {
+		log.Debugf(ctx, "artifacts block is defined, skipping auto-detecting")
 		return nil
 	}
 

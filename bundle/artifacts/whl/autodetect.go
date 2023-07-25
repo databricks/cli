@@ -57,7 +57,7 @@ func extractModuleName(setupPy string) string {
 	}
 
 	content := string(bytes)
-	r := regexp.MustCompile("name=['\"](.*)['\"]")
+	r := regexp.MustCompile(`name=['"](.*)['"]`)
 	matches := r.FindStringSubmatch(content)
 	if len(matches) == 0 {
 		return randomName()
