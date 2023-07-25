@@ -1,4 +1,4 @@
 resources:
   jobs:
-    this_job_isnt_defined:
+    my_first_job:
       id: 1
