@@ -3,6 +3,7 @@ package mutator
 import (
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -10,6 +11,17 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"golang.org/x/exp/slices"
 )
+
+const ExtraIncludePathsKey string = "DATABRICKS_BUNDLE_INCLUDE_PATHS"
+
+// Get extra include paths from environment variable
+func GetExtraIncludePaths() []string {
+	value, exists := os.LookupEnv(ExtraIncludePathsKey)
+	if !exists {
+		return nil
+	}
+	return strings.Split(value, string(os.PathListSeparator))
+}
 
 type processRootIncludes struct{}
 
@@ -80,7 +92,7 @@ func (m *processRootIncludes) Apply(ctx context.Context, b *bundle.Bundle) error
 		}
 	}
 
-	var extraIncludePaths = bundle.GetExtraIncludePaths()
+	var extraIncludePaths = GetExtraIncludePaths()
 	for _, extraIncludePath := range extraIncludePaths {
 		if filepath.IsAbs(extraIncludePath) {
 			rel, err := filepath.Rel(b.Config.Path, extraIncludePath)

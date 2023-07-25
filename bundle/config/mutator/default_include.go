@@ -21,7 +21,7 @@ func DefineDefaultInclude() bundle.Mutator {
 		"*/*.yml",
 	}
 	return &defineDefaultInclude{
-		include: append(includePaths, bundle.GetExtraIncludePaths()...),
+		include: append(includePaths, GetExtraIncludePaths()...),
 	}
 }
 
