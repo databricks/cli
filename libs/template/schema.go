@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"reflect"
 
 	"github.com/databricks/cli/libs/jsonschema"
 )
@@ -31,16 +30,13 @@ func castFloatConfigValuesToInt(config map[string]any, jsonSchema *jsonschema.Sc
 		}
 
 		// convert floating point type values to integer
-		valueType := reflect.TypeOf(v)
-		switch valueType.Kind() {
-		case reflect.Float32:
-			floatVal := v.(float32)
+		switch floatVal := v.(type) {
+		case float32:
 			if !isIntegerValue(float64(floatVal)) {
 				return fmt.Errorf("expected %s to have integer value but it is %v", k, v)
 			}
 			config[k] = int(floatVal)
-		case reflect.Float64:
-			floatVal := v.(float64)
+		case float64:
 			if !isIntegerValue(floatVal) {
 				return fmt.Errorf("expected %s to have integer value but it is %v", k, v)
 			}
