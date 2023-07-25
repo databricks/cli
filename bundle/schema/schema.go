@@ -5,40 +5,9 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+
+	"github.com/databricks/cli/libs/schema"
 )
-
-// defines schema for a json object
-type Schema struct {
-	// Type of the object
-	Type JavascriptType `json:"type,omitempty"`
-
-	// Description of the object. This is rendered as inline documentation in the
-	// IDE. This is manually injected here using schema.Docs
-	Description string `json:"description,omitempty"`
-
-	// Schemas for the fields of an struct. The keys are the first json tag.
-	// The values are the schema for the type of the field
-	Properties map[string]*Schema `json:"properties,omitempty"`
-
-	// The schema for all values of an array
-	Items *Schema `json:"items,omitempty"`
-
-	// The schema for any properties not mentioned in the Schema.Properties field.
-	// this validates maps[string]any in bundle configuration
-	// OR
-	// A boolean type with value false. Setting false here validates that all
-	// properties in the config have been defined in the json schema as properties
-	//
-	// Its type during runtime will either be *Schema or bool
-	AdditionalProperties any `json:"additionalProperties,omitempty"`
-
-	// Required properties for the object. Any fields missing the "omitempty"
-	// json tag will be included
-	Required []string `json:"required,omitempty"`
-
-	// URI to a json schema
-	Reference *string `json:"$ref,omitempty"`
-}
 
 // This function translates golang types into json schema. Here is the mapping
 // between json schema types and golang types
@@ -61,7 +30,7 @@ type Schema struct {
 //
 //   - []MyStruct               ->   {type: object, properties: {}, additionalProperties: false}
 //     for details visit: https://json-schema.org/understanding-json-schema/reference/object.html#properties
-func New(golangType reflect.Type, docs *Docs) (*Schema, error) {
+func New(golangType reflect.Type, docs *Docs) (*schema.Schema, error) {
 	tracker := newTracker()
 	schema, err := safeToSchema(golangType, docs, "", tracker)
 	if err != nil {
@@ -70,39 +39,28 @@ func New(golangType reflect.Type, docs *Docs) (*Schema, error) {
 	return schema, nil
 }
 
-type JavascriptType string
-
-const (
-	Invalid JavascriptType = "invalid"
-	Boolean JavascriptType = "boolean"
-	String  JavascriptType = "string"
-	Number  JavascriptType = "number"
-	Object  JavascriptType = "object"
-	Array   JavascriptType = "array"
-)
-
-func javascriptType(golangType reflect.Type) (JavascriptType, error) {
+func jsonSchemaType(golangType reflect.Type) (schema.Type, error) {
 	switch golangType.Kind() {
 	case reflect.Bool:
-		return Boolean, nil
+		return schema.BooleanType, nil
 	case reflect.String:
-		return String, nil
+		return schema.StringType, nil
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
 		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
 		reflect.Float32, reflect.Float64:
 
-		return Number, nil
+		return schema.NumberType, nil
 	case reflect.Struct:
-		return Object, nil
+		return schema.ObjectType, nil
 	case reflect.Map:
 		if golangType.Key().Kind() != reflect.String {
-			return Invalid, fmt.Errorf("only strings map keys are valid. key type: %v", golangType.Key().Kind())
+			return schema.InvalidType, fmt.Errorf("only strings map keys are valid. key type: %v", golangType.Key().Kind())
 		}
-		return Object, nil
+		return schema.ObjectType, nil
 	case reflect.Array, reflect.Slice:
-		return Array, nil
+		return schema.ArrayType, nil
 	default:
-		return Invalid, fmt.Errorf("unhandled golang type: %s", golangType)
+		return schema.InvalidType, fmt.Errorf("unhandled golang type: %s", golangType)
 	}
 }
 
@@ -121,7 +79,7 @@ func javascriptType(golangType reflect.Type) (JavascriptType, error) {
 //     like array, map or no json tags
 //
 //   - tracker: Keeps track of types / traceIds seen during recursive traversal
-func safeToSchema(golangType reflect.Type, docs *Docs, traceId string, tracker *tracker) (*Schema, error) {
+func safeToSchema(golangType reflect.Type, docs *Docs, traceId string, tracker *tracker) (*schema.Schema, error) {
 	// WE ERROR OUT IF THERE ARE CYCLES IN THE JSON SCHEMA
 	// There are mechanisms to deal with cycles though recursive identifiers in json
 	// schema. However if we use them, we would need to make sure we are able to detect
@@ -174,29 +132,29 @@ func getStructFields(golangType reflect.Type) []reflect.StructField {
 	return fields
 }
 
-func toSchema(golangType reflect.Type, docs *Docs, tracker *tracker) (*Schema, error) {
+func toSchema(golangType reflect.Type, docs *Docs, tracker *tracker) (*schema.Schema, error) {
 	// *Struct and Struct generate identical json schemas
 	if golangType.Kind() == reflect.Pointer {
 		return safeToSchema(golangType.Elem(), docs, "", tracker)
 	}
 	if golangType.Kind() == reflect.Interface {
-		return &Schema{}, nil
+		return &schema.Schema{}, nil
 	}
 
-	rootJavascriptType, err := javascriptType(golangType)
+	rootJavascriptType, err := jsonSchemaType(golangType)
 	if err != nil {
 		return nil, err
 	}
-	schema := &Schema{Type: rootJavascriptType}
+	jsonSchema := &schema.Schema{Type: rootJavascriptType}
 
 	if docs != nil {
-		schema.Description = docs.Description
+		jsonSchema.Description = docs.Description
 	}
 
 	// case array/slice
 	if golangType.Kind() == reflect.Array || golangType.Kind() == reflect.Slice {
 		elemGolangType := golangType.Elem()
-		elemJavascriptType, err := javascriptType(elemGolangType)
+		elemJavascriptType, err := jsonSchemaType(elemGolangType)
 		if err != nil {
 			return nil, err
 		}
@@ -208,7 +166,7 @@ func toSchema(golangType reflect.Type, docs *Docs, tracker *tracker) (*Schema, e
 		if err != nil {
 			return nil, err
 		}
-		schema.Items = &Schema{
+		jsonSchema.Items = &schema.Schema{
 			Type:                 elemJavascriptType,
 			Properties:           elemProps.Properties,
 			AdditionalProperties: elemProps.AdditionalProperties,
@@ -226,7 +184,7 @@ func toSchema(golangType reflect.Type, docs *Docs, tracker *tracker) (*Schema, e
 		if docs != nil {
 			childDocs = docs.AdditionalProperties
 		}
-		schema.AdditionalProperties, err = safeToSchema(golangType.Elem(), childDocs, "", tracker)
+		jsonSchema.AdditionalProperties, err = safeToSchema(golangType.Elem(), childDocs, "", tracker)
 		if err != nil {
 			return nil, err
 		}
@@ -235,7 +193,7 @@ func toSchema(golangType reflect.Type, docs *Docs, tracker *tracker) (*Schema, e
 	// case struct
 	if golangType.Kind() == reflect.Struct {
 		children := getStructFields(golangType)
-		properties := map[string]*Schema{}
+		properties := map[string]*schema.Schema{}
 		required := []string{}
 		for _, child := range children {
 			bundleTag := child.Tag.Get("bundle")
@@ -281,10 +239,10 @@ func toSchema(golangType reflect.Type, docs *Docs, tracker *tracker) (*Schema, e
 			properties[childName] = fieldProps
 		}
 
-		schema.AdditionalProperties = false
-		schema.Properties = properties
-		schema.Required = required
+		jsonSchema.AdditionalProperties = false
+		jsonSchema.Properties = properties
+		jsonSchema.Required = required
 	}
 
-	return schema, nil
+	return jsonSchema, nil
 }

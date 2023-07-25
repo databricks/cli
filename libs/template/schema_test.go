@@ -4,22 +4,12 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/databricks/cli/libs/schema"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestTemplateSchemaIsInteger(t *testing.T) {
-	assert.False(t, isIntegerValue(1.1))
-	assert.False(t, isIntegerValue(0.1))
-	assert.False(t, isIntegerValue(-0.1))
-
-	assert.True(t, isIntegerValue(-1.0))
-	assert.True(t, isIntegerValue(0.0))
-	assert.True(t, isIntegerValue(2.0))
-}
-
-func TestTemplateSchemaCastFloatToInt(t *testing.T) {
-	// define schema for config
+func testSchema(t *testing.T) *schema.Schema {
 	schemaJson := `{
 		"properties": {
 			"int_val": {
@@ -36,9 +26,25 @@ func TestTemplateSchemaCastFloatToInt(t *testing.T) {
 			}
 		}
 	}`
-	var schema Schema
-	err := json.Unmarshal([]byte(schemaJson), &schema)
+	var jsonSchema schema.Schema
+	err := json.Unmarshal([]byte(schemaJson), &jsonSchema)
 	require.NoError(t, err)
+	return &jsonSchema
+}
+
+func TestTemplateSchemaIsInteger(t *testing.T) {
+	assert.False(t, isIntegerValue(1.1))
+	assert.False(t, isIntegerValue(0.1))
+	assert.False(t, isIntegerValue(-0.1))
+
+	assert.True(t, isIntegerValue(-1.0))
+	assert.True(t, isIntegerValue(0.0))
+	assert.True(t, isIntegerValue(2.0))
+}
+
+func TestTemplateSchemaCastFloatToInt(t *testing.T) {
+	// define schema for config
+	jsonSchema := testSchema(t)
 
 	// define the config
 	configJson := `{
@@ -48,7 +54,7 @@ func TestTemplateSchemaCastFloatToInt(t *testing.T) {
 		"string_val": "main hoon na"
 	}`
 	var config map[string]any
-	err = json.Unmarshal([]byte(configJson), &config)
+	err := json.Unmarshal([]byte(configJson), &config)
 	require.NoError(t, err)
 
 	// assert types before casting, checking that the integer was indeed loaded
@@ -58,7 +64,7 @@ func TestTemplateSchemaCastFloatToInt(t *testing.T) {
 	assert.IsType(t, true, config["bool_val"])
 	assert.IsType(t, "abc", config["string_val"])
 
-	err = castFloatConfigValuesToInt(config, &schema)
+	err = castFloatConfigValuesToInt(config, jsonSchema)
 	require.NoError(t, err)
 
 	// assert type after casting, that the float value was converted to an integer
@@ -78,8 +84,8 @@ func TestTemplateSchemaCastFloatToIntFailsForUnknownTypes(t *testing.T) {
 			}
 		}
 	}`
-	var schema Schema
-	err := json.Unmarshal([]byte(schemaJson), &schema)
+	var jsonSchema schema.Schema
+	err := json.Unmarshal([]byte(schemaJson), &jsonSchema)
 	require.NoError(t, err)
 
 	// define the config
@@ -90,7 +96,7 @@ func TestTemplateSchemaCastFloatToIntFailsForUnknownTypes(t *testing.T) {
 	err = json.Unmarshal([]byte(configJson), &config)
 	require.NoError(t, err)
 
-	err = castFloatConfigValuesToInt(config, &schema)
+	err = castFloatConfigValuesToInt(config, &jsonSchema)
 	assert.ErrorContains(t, err, "bar is not defined as an input parameter for the template")
 }
 
@@ -103,8 +109,8 @@ func TestTemplateSchemaCastFloatToIntFailsWhenWithNonIntValues(t *testing.T) {
 			}
 		}
 	}`
-	var schema Schema
-	err := json.Unmarshal([]byte(schemaJson), &schema)
+	var jsonSchema schema.Schema
+	err := json.Unmarshal([]byte(schemaJson), &jsonSchema)
 	require.NoError(t, err)
 
 	// define the config
@@ -115,84 +121,66 @@ func TestTemplateSchemaCastFloatToIntFailsWhenWithNonIntValues(t *testing.T) {
 	err = json.Unmarshal([]byte(configJson), &config)
 	require.NoError(t, err)
 
-	err = castFloatConfigValuesToInt(config, &schema)
+	err = castFloatConfigValuesToInt(config, &jsonSchema)
 	assert.ErrorContains(t, err, "expected foo to have integer value but it is 1.1")
 }
 
 func TestTemplateSchemaValidateType(t *testing.T) {
 	// assert validation passing
-	err := validateType(int(0), PropertyTypeInt)
+	err := validateType(int(0), schema.IntegerType)
 	assert.NoError(t, err)
-	err = validateType(int32(1), PropertyTypeInt)
+	err = validateType(int32(1), schema.IntegerType)
 	assert.NoError(t, err)
-	err = validateType(int64(1), PropertyTypeInt)
-	assert.NoError(t, err)
-
-	err = validateType(float32(1.1), PropertyTypeNumber)
-	assert.NoError(t, err)
-	err = validateType(float64(1.2), PropertyTypeNumber)
-	assert.NoError(t, err)
-	err = validateType(int(1), PropertyTypeNumber)
+	err = validateType(int64(1), schema.IntegerType)
 	assert.NoError(t, err)
 
-	err = validateType(false, PropertyTypeBoolean)
+	err = validateType(float32(1.1), schema.NumberType)
+	assert.NoError(t, err)
+	err = validateType(float64(1.2), schema.NumberType)
+	assert.NoError(t, err)
+	err = validateType(int(1), schema.NumberType)
 	assert.NoError(t, err)
 
-	err = validateType("abc", PropertyTypeString)
+	err = validateType(false, schema.BooleanType)
+	assert.NoError(t, err)
+
+	err = validateType("abc", schema.StringType)
 	assert.NoError(t, err)
 
 	// assert validation failing for integers
-	err = validateType(float64(1.2), PropertyTypeInt)
+	err = validateType(float64(1.2), schema.IntegerType)
 	assert.ErrorContains(t, err, "expected type integer, but value is 1.2")
-	err = validateType(true, PropertyTypeInt)
+	err = validateType(true, schema.IntegerType)
 	assert.ErrorContains(t, err, "expected type integer, but value is true")
-	err = validateType("abc", PropertyTypeInt)
+	err = validateType("abc", schema.IntegerType)
 	assert.ErrorContains(t, err, "expected type integer, but value is \"abc\"")
 
 	// assert validation failing for floats
-	err = validateType(true, PropertyTypeNumber)
+	err = validateType(true, schema.NumberType)
 	assert.ErrorContains(t, err, "expected type float, but value is true")
-	err = validateType("abc", PropertyTypeNumber)
+	err = validateType("abc", schema.NumberType)
 	assert.ErrorContains(t, err, "expected type float, but value is \"abc\"")
 
 	// assert validation failing for boolean
-	err = validateType(int(1), PropertyTypeBoolean)
+	err = validateType(int(1), schema.BooleanType)
 	assert.ErrorContains(t, err, "expected type boolean, but value is 1")
-	err = validateType(float64(1), PropertyTypeBoolean)
+	err = validateType(float64(1), schema.BooleanType)
 	assert.ErrorContains(t, err, "expected type boolean, but value is 1")
-	err = validateType("abc", PropertyTypeBoolean)
+	err = validateType("abc", schema.BooleanType)
 	assert.ErrorContains(t, err, "expected type boolean, but value is \"abc\"")
 
 	// assert validation failing for string
-	err = validateType(int(1), PropertyTypeString)
+	err = validateType(int(1), schema.StringType)
 	assert.ErrorContains(t, err, "expected type string, but value is 1")
-	err = validateType(float64(1), PropertyTypeString)
+	err = validateType(float64(1), schema.StringType)
 	assert.ErrorContains(t, err, "expected type string, but value is 1")
-	err = validateType(false, PropertyTypeString)
+	err = validateType(false, schema.StringType)
 	assert.ErrorContains(t, err, "expected type string, but value is false")
 }
 
 func TestTemplateSchemaValidateConfig(t *testing.T) {
 	// define schema for config
-	schemaJson := `{
-			"properties": {
-				"int_val": {
-					"type": "integer"
-				},
-				"float_val": {
-					"type": "number"
-				},
-				"bool_val": {
-					"type": "boolean"
-				},
-				"string_val": {
-					"type": "string"
-				}
-			}
-		}`
-	var schema Schema
-	err := json.Unmarshal([]byte(schemaJson), &schema)
-	require.NoError(t, err)
+	jsonSchema := testSchema(t)
 
 	// define the config
 	config := map[string]any{
@@ -202,31 +190,13 @@ func TestTemplateSchemaValidateConfig(t *testing.T) {
 		"string_val": "abc",
 	}
 
-	err = validateConfigValueTypes(config, &schema)
+	err := validateConfigValueTypes(config, jsonSchema)
 	assert.NoError(t, err)
 }
 
 func TestTemplateSchemaValidateConfigFailsForUnknownField(t *testing.T) {
 	// define schema for config
-	schemaJson := `{
-		"properties": {
-			"int_val": {
-				"type": "integer"
-			},
-			"float_val": {
-				"type": "number"
-			},
-			"bool_val": {
-				"type": "boolean"
-			},
-			"string_val": {
-				"type": "string"
-			}
-		}
-	}`
-	var schema Schema
-	err := json.Unmarshal([]byte(schemaJson), &schema)
-	require.NoError(t, err)
+	jsonSchema := testSchema(t)
 
 	// define the config
 	config := map[string]any{
@@ -236,31 +206,13 @@ func TestTemplateSchemaValidateConfigFailsForUnknownField(t *testing.T) {
 		"string_val": "abc",
 	}
 
-	err = validateConfigValueTypes(config, &schema)
+	err := validateConfigValueTypes(config, jsonSchema)
 	assert.ErrorContains(t, err, "foo is not defined as an input parameter for the template")
 }
 
 func TestTemplateSchemaValidateConfigFailsForWhenIncorrectTypes(t *testing.T) {
 	// define schema for config
-	schemaJson := `{
-		"properties": {
-			"int_val": {
-				"type": "integer"
-			},
-			"float_val": {
-				"type": "number"
-			},
-			"bool_val": {
-				"type": "boolean"
-			},
-			"string_val": {
-				"type": "string"
-			}
-		}
-	}`
-	var schema Schema
-	err := json.Unmarshal([]byte(schemaJson), &schema)
-	require.NoError(t, err)
+	jsonSchema := testSchema(t)
 
 	// define the config
 	config := map[string]any{
@@ -270,7 +222,7 @@ func TestTemplateSchemaValidateConfigFailsForWhenIncorrectTypes(t *testing.T) {
 		"string_val": "abc",
 	}
 
-	err = validateConfigValueTypes(config, &schema)
+	err := validateConfigValueTypes(config, jsonSchema)
 	assert.ErrorContains(t, err, "incorrect type for bool_val. expected type boolean, but value is \"true\"")
 }
 
@@ -286,8 +238,8 @@ func TestTemplateSchemaValidateConfigFailsForWhenMissingInputParams(t *testing.T
 			}
 		}
 		}`
-	var schema Schema
-	err := json.Unmarshal([]byte(schemaJson), &schema)
+	var jsonSchema schema.Schema
+	err := json.Unmarshal([]byte(schemaJson), &jsonSchema)
 	require.NoError(t, err)
 
 	// define the config
@@ -295,7 +247,7 @@ func TestTemplateSchemaValidateConfigFailsForWhenMissingInputParams(t *testing.T
 		"int_val": 1,
 	}
 
-	err = assignDefaultConfigValues(config, &schema)
+	err = assignDefaultConfigValues(config, &jsonSchema)
 	assert.ErrorContains(t, err, "input parameter string_val is not defined in config")
 }
 
@@ -309,14 +261,14 @@ func TestTemplateDefaultAssignment(t *testing.T) {
 			}
 		}
 		}`
-	var schema Schema
-	err := json.Unmarshal([]byte(schemaJson), &schema)
+	var jsonSchema schema.Schema
+	err := json.Unmarshal([]byte(schemaJson), &jsonSchema)
 	require.NoError(t, err)
 
 	// define the config
 	config := map[string]any{}
 
-	err = assignDefaultConfigValues(config, &schema)
+	err = assignDefaultConfigValues(config, &jsonSchema)
 	assert.NoError(t, err)
 	assert.Equal(t, 1.0, config["foo"])
 }

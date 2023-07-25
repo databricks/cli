@@ -281,7 +281,7 @@ func TestStructOfMapsSchema(t *testing.T) {
 func TestStructOfSliceSchema(t *testing.T) {
 	type Bar struct {
 		MySlice []string `json:"my_slice"`
-	}
+	},
 
 	type Foo struct {
 		Bar Bar `json:"bar"`
