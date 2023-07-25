@@ -66,5 +66,5 @@ func (m *cleanUp) Apply(ctx context.Context, b *bundle.Bundle) error {
 		return fmt.Errorf("unable to create directory for %s: %w", uploadPath, err)
 	}
 
-	return bundle.Apply(ctx, b, getUploadMutator(artifact.Type, m.name))
+	return nil
 }
