@@ -1,7 +1,0 @@
-bundle:
-  name: include_override
-
-# Setting this explicitly means default globs are not processed.
-# As a result, ./this_file_isnt_included.yml isn't included.
-include:
-  - doesnt-exist/*.yml

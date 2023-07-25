@@ -6,7 +6,6 @@ import (
 
 func DefaultMutators() []bundle.Mutator {
 	return []bundle.Mutator{
-		DefineDefaultInclude(),
 		ProcessRootIncludes(),
 		DefineDefaultEnvironment(),
 		LoadGitDetails(),
