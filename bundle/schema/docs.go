@@ -8,7 +8,7 @@ import (
 	"reflect"
 
 	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/libs/schema"
+	"github.com/databricks/cli/libs/jsonschema"
 	"github.com/databricks/databricks-sdk-go/openapi"
 )
 
@@ -40,7 +40,7 @@ func BundleDocs(openapiSpecPath string) (*Docs, error) {
 		}
 		openapiReader := &OpenapiReader{
 			OpenapiSpec: spec,
-			Memo:        make(map[string]*schema.Schema),
+			Memo:        make(map[string]*jsonschema.Schema),
 		}
 		resourcesDocs, err := openapiReader.ResourcesDocs()
 		if err != nil {
@@ -89,7 +89,7 @@ func initializeBundleDocs() (*Docs, error) {
 }
 
 // *Docs are a subset of *Schema, this function selects that subset
-func schemaToDocs(jsonSchema *schema.Schema) *Docs {
+func schemaToDocs(jsonSchema *jsonschema.Schema) *Docs {
 	// terminate recursion if schema is nil
 	if jsonSchema == nil {
 		return nil
@@ -104,7 +104,7 @@ func schemaToDocs(jsonSchema *schema.Schema) *Docs {
 		docs.Properties[k] = schemaToDocs(v)
 	}
 	docs.Items = schemaToDocs(jsonSchema.Items)
-	if additionalProperties, ok := jsonSchema.AdditionalProperties.(*schema.Schema); ok {
+	if additionalProperties, ok := jsonSchema.AdditionalProperties.(*jsonschema.Schema); ok {
 		docs.AdditionalProperties = schemaToDocs(additionalProperties)
 	}
 	return docs

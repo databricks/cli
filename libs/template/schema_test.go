@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/databricks/cli/libs/schema"
+	"github.com/databricks/cli/libs/jsonschema"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func testSchema(t *testing.T) *schema.Schema {
+func testSchema(t *testing.T) *jsonschema.Schema {
 	schemaJson := `{
 		"properties": {
 			"int_val": {
@@ -26,7 +26,7 @@ func testSchema(t *testing.T) *schema.Schema {
 			}
 		}
 	}`
-	var jsonSchema schema.Schema
+	var jsonSchema jsonschema.Schema
 	err := json.Unmarshal([]byte(schemaJson), &jsonSchema)
 	require.NoError(t, err)
 	return &jsonSchema
@@ -84,7 +84,7 @@ func TestTemplateSchemaCastFloatToIntFailsForUnknownTypes(t *testing.T) {
 			}
 		}
 	}`
-	var jsonSchema schema.Schema
+	var jsonSchema jsonschema.Schema
 	err := json.Unmarshal([]byte(schemaJson), &jsonSchema)
 	require.NoError(t, err)
 
@@ -109,7 +109,7 @@ func TestTemplateSchemaCastFloatToIntFailsWhenWithNonIntValues(t *testing.T) {
 			}
 		}
 	}`
-	var jsonSchema schema.Schema
+	var jsonSchema jsonschema.Schema
 	err := json.Unmarshal([]byte(schemaJson), &jsonSchema)
 	require.NoError(t, err)
 
@@ -127,54 +127,54 @@ func TestTemplateSchemaCastFloatToIntFailsWhenWithNonIntValues(t *testing.T) {
 
 func TestTemplateSchemaValidateType(t *testing.T) {
 	// assert validation passing
-	err := validateType(int(0), schema.IntegerType)
+	err := validateType(int(0), jsonschema.IntegerType)
 	assert.NoError(t, err)
-	err = validateType(int32(1), schema.IntegerType)
+	err = validateType(int32(1), jsonschema.IntegerType)
 	assert.NoError(t, err)
-	err = validateType(int64(1), schema.IntegerType)
-	assert.NoError(t, err)
-
-	err = validateType(float32(1.1), schema.NumberType)
-	assert.NoError(t, err)
-	err = validateType(float64(1.2), schema.NumberType)
-	assert.NoError(t, err)
-	err = validateType(int(1), schema.NumberType)
+	err = validateType(int64(1), jsonschema.IntegerType)
 	assert.NoError(t, err)
 
-	err = validateType(false, schema.BooleanType)
+	err = validateType(float32(1.1), jsonschema.NumberType)
+	assert.NoError(t, err)
+	err = validateType(float64(1.2), jsonschema.NumberType)
+	assert.NoError(t, err)
+	err = validateType(int(1), jsonschema.NumberType)
 	assert.NoError(t, err)
 
-	err = validateType("abc", schema.StringType)
+	err = validateType(false, jsonschema.BooleanType)
+	assert.NoError(t, err)
+
+	err = validateType("abc", jsonschema.StringType)
 	assert.NoError(t, err)
 
 	// assert validation failing for integers
-	err = validateType(float64(1.2), schema.IntegerType)
+	err = validateType(float64(1.2), jsonschema.IntegerType)
 	assert.ErrorContains(t, err, "expected type integer, but value is 1.2")
-	err = validateType(true, schema.IntegerType)
+	err = validateType(true, jsonschema.IntegerType)
 	assert.ErrorContains(t, err, "expected type integer, but value is true")
-	err = validateType("abc", schema.IntegerType)
+	err = validateType("abc", jsonschema.IntegerType)
 	assert.ErrorContains(t, err, "expected type integer, but value is \"abc\"")
 
 	// assert validation failing for floats
-	err = validateType(true, schema.NumberType)
+	err = validateType(true, jsonschema.NumberType)
 	assert.ErrorContains(t, err, "expected type float, but value is true")
-	err = validateType("abc", schema.NumberType)
+	err = validateType("abc", jsonschema.NumberType)
 	assert.ErrorContains(t, err, "expected type float, but value is \"abc\"")
 
 	// assert validation failing for boolean
-	err = validateType(int(1), schema.BooleanType)
+	err = validateType(int(1), jsonschema.BooleanType)
 	assert.ErrorContains(t, err, "expected type boolean, but value is 1")
-	err = validateType(float64(1), schema.BooleanType)
+	err = validateType(float64(1), jsonschema.BooleanType)
 	assert.ErrorContains(t, err, "expected type boolean, but value is 1")
-	err = validateType("abc", schema.BooleanType)
+	err = validateType("abc", jsonschema.BooleanType)
 	assert.ErrorContains(t, err, "expected type boolean, but value is \"abc\"")
 
 	// assert validation failing for string
-	err = validateType(int(1), schema.StringType)
+	err = validateType(int(1), jsonschema.StringType)
 	assert.ErrorContains(t, err, "expected type string, but value is 1")
-	err = validateType(float64(1), schema.StringType)
+	err = validateType(float64(1), jsonschema.StringType)
 	assert.ErrorContains(t, err, "expected type string, but value is 1")
-	err = validateType(false, schema.StringType)
+	err = validateType(false, jsonschema.StringType)
 	assert.ErrorContains(t, err, "expected type string, but value is false")
 }
 
@@ -238,7 +238,7 @@ func TestTemplateSchemaValidateConfigFailsForWhenMissingInputParams(t *testing.T
 			}
 		}
 		}`
-	var jsonSchema schema.Schema
+	var jsonSchema jsonschema.Schema
 	err := json.Unmarshal([]byte(schemaJson), &jsonSchema)
 	require.NoError(t, err)
 
@@ -261,7 +261,7 @@ func TestTemplateDefaultAssignment(t *testing.T) {
 			}
 		}
 		}`
-	var jsonSchema schema.Schema
+	var jsonSchema jsonschema.Schema
 	err := json.Unmarshal([]byte(schemaJson), &jsonSchema)
 	require.NoError(t, err)
 

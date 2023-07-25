@@ -6,7 +6,7 @@ import (
 	"os"
 	"reflect"
 
-	"github.com/databricks/cli/libs/schema"
+	"github.com/databricks/cli/libs/jsonschema"
 )
 
 // function to check whether a float value represents an integer
@@ -18,7 +18,7 @@ func isIntegerValue(v float64) bool {
 // integers according to the schema
 //
 // Needed because the default json unmarshaler for maps converts all numbers to floats
-func castFloatConfigValuesToInt(config map[string]any, jsonSchema *schema.Schema) error {
+func castFloatConfigValuesToInt(config map[string]any, jsonSchema *jsonschema.Schema) error {
 	for k, v := range config {
 		// error because all config keys should be defined in schema too
 		fieldInfo, ok := jsonSchema.Properties[k]
@@ -26,7 +26,7 @@ func castFloatConfigValuesToInt(config map[string]any, jsonSchema *schema.Schema
 			return fmt.Errorf("%s is not defined as an input parameter for the template", k)
 		}
 		// skip non integer fields
-		if fieldInfo.Type != schema.IntegerType {
+		if fieldInfo.Type != jsonschema.IntegerType {
 			continue
 		}
 
@@ -50,7 +50,7 @@ func castFloatConfigValuesToInt(config map[string]any, jsonSchema *schema.Schema
 	return nil
 }
 
-func assignDefaultConfigValues(config map[string]any, schema *schema.Schema) error {
+func assignDefaultConfigValues(config map[string]any, schema *jsonschema.Schema) error {
 	for k, v := range schema.Properties {
 		if _, ok := config[k]; ok {
 			continue
@@ -63,7 +63,7 @@ func assignDefaultConfigValues(config map[string]any, schema *schema.Schema) err
 	return nil
 }
 
-func validateConfigValueTypes(config map[string]any, schema *schema.Schema) error {
+func validateConfigValueTypes(config map[string]any, schema *jsonschema.Schema) error {
 	// validate types defined in config
 	for k, v := range config {
 		fieldInfo, ok := schema.Properties[k]
@@ -78,12 +78,12 @@ func validateConfigValueTypes(config map[string]any, schema *schema.Schema) erro
 	return nil
 }
 
-func ReadSchema(path string) (*schema.Schema, error) {
+func ReadSchema(path string) (*jsonschema.Schema, error) {
 	schemaBytes, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
-	schema := &schema.Schema{}
+	schema := &jsonschema.Schema{}
 	err = json.Unmarshal(schemaBytes, schema)
 	if err != nil {
 		return nil, err
@@ -91,7 +91,7 @@ func ReadSchema(path string) (*schema.Schema, error) {
 	return schema, nil
 }
 
-func ReadConfig(path string, jsonSchema *schema.Schema) (map[string]any, error) {
+func ReadConfig(path string, jsonSchema *jsonschema.Schema) (map[string]any, error) {
 	// Read config file
 	var config map[string]any
 	b, err := os.ReadFile(path)

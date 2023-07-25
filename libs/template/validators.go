@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/databricks/cli/libs/schema"
+	"github.com/databricks/cli/libs/jsonschema"
 	"golang.org/x/exp/slices"
 )
 
 type validator func(v any) error
 
-func validateType(v any, fieldType schema.Type) error {
+func validateType(v any, fieldType jsonschema.Type) error {
 	validateFunc, ok := validators[fieldType]
 	if !ok {
 		return nil
@@ -52,9 +52,9 @@ func validateInteger(v any) error {
 	return nil
 }
 
-var validators map[schema.Type]validator = map[schema.Type]validator{
-	schema.StringType:  validateString,
-	schema.BooleanType: validateBoolean,
-	schema.IntegerType: validateInteger,
-	schema.NumberType:  validateNumber,
+var validators map[jsonschema.Type]validator = map[jsonschema.Type]validator{
+	jsonschema.StringType:  validateString,
+	jsonschema.BooleanType: validateBoolean,
+	jsonschema.IntegerType: validateInteger,
+	jsonschema.NumberType:  validateNumber,
 }

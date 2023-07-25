@@ -1,4 +1,4 @@
-package schema
+package jsonschema
 
 // defines schema for a json object
 type Schema struct {

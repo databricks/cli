@@ -5,18 +5,18 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/databricks/cli/libs/schema"
+	"github.com/databricks/cli/libs/jsonschema"
 	"github.com/databricks/databricks-sdk-go/openapi"
 )
 
 type OpenapiReader struct {
 	OpenapiSpec *openapi.Specification
-	Memo        map[string]*schema.Schema
+	Memo        map[string]*jsonschema.Schema
 }
 
 const SchemaPathPrefix = "#/components/schemas/"
 
-func (reader *OpenapiReader) readOpenapiSchema(path string) (*schema.Schema, error) {
+func (reader *OpenapiReader) readOpenapiSchema(path string) (*jsonschema.Schema, error) {
 	schemaKey := strings.TrimPrefix(path, SchemaPathPrefix)
 
 	// return early if we already have a computed schema
@@ -36,7 +36,7 @@ func (reader *OpenapiReader) readOpenapiSchema(path string) (*schema.Schema, err
 	if err != nil {
 		return nil, err
 	}
-	jsonSchema := &schema.Schema{}
+	jsonSchema := &jsonschema.Schema{}
 	err = json.Unmarshal(bytes, jsonSchema)
 	if err != nil {
 		return nil, err
@@ -51,7 +51,7 @@ func (reader *OpenapiReader) readOpenapiSchema(path string) (*schema.Schema, err
 		if err != nil {
 			return nil, err
 		}
-		additionalProperties := &schema.Schema{}
+		additionalProperties := &jsonschema.Schema{}
 		err = json.Unmarshal(b, additionalProperties)
 		if err != nil {
 			return nil, err
@@ -66,7 +66,7 @@ func (reader *OpenapiReader) readOpenapiSchema(path string) (*schema.Schema, err
 }
 
 // safe againt loops in refs
-func (reader *OpenapiReader) safeResolveRefs(root *schema.Schema, tracker *tracker) (*schema.Schema, error) {
+func (reader *OpenapiReader) safeResolveRefs(root *jsonschema.Schema, tracker *tracker) (*jsonschema.Schema, error) {
 	if root.Reference == nil {
 		return reader.traverseSchema(root, tracker)
 	}
@@ -101,9 +101,9 @@ func (reader *OpenapiReader) safeResolveRefs(root *schema.Schema, tracker *track
 	return root, err
 }
 
-func (reader *OpenapiReader) traverseSchema(root *schema.Schema, tracker *tracker) (*schema.Schema, error) {
+func (reader *OpenapiReader) traverseSchema(root *jsonschema.Schema, tracker *tracker) (*jsonschema.Schema, error) {
 	// case primitive (or invalid)
-	if root.Type != schema.ObjectType && root.Type != schema.ArrayType {
+	if root.Type != jsonschema.ObjectType && root.Type != jsonschema.ArrayType {
 		return root, nil
 	}
 	// only root references are resolved
@@ -129,7 +129,7 @@ func (reader *OpenapiReader) traverseSchema(root *schema.Schema, tracker *tracke
 		root.Items = itemsSchema
 	}
 	// case map
-	additionalProperties, ok := root.AdditionalProperties.(*schema.Schema)
+	additionalProperties, ok := root.AdditionalProperties.(*jsonschema.Schema)
 	if ok && additionalProperties != nil {
 		valueSchema, err := reader.safeResolveRefs(additionalProperties, tracker)
 		if err != nil {
@@ -140,7 +140,7 @@ func (reader *OpenapiReader) traverseSchema(root *schema.Schema, tracker *tracke
 	return root, nil
 }
 
-func (reader *OpenapiReader) readResolvedSchema(path string) (*schema.Schema, error) {
+func (reader *OpenapiReader) readResolvedSchema(path string) (*jsonschema.Schema, error) {
 	root, err := reader.readOpenapiSchema(path)
 	if err != nil {
 		return nil, err
