@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go/service/compute"
+	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
 type match struct {
@@ -28,6 +29,9 @@ func (a *match) Apply(ctx context.Context, b *bundle.Bundle) error {
 		tasks := r.Jobs[k].JobSettings.Tasks
 		for i := range tasks {
 			task := &tasks[i]
+			if isMissingRequiredLibraries(task) {
+				return fmt.Errorf("task '%s' is missing required libraries. Please include your package code in task libraries block", task.TaskKey)
+			}
 			for j := range task.Libraries {
 				lib := &task.Libraries[j]
 				err := findArtifactsAndMarkForUpload(ctx, lib, b)
@@ -38,6 +42,14 @@ func (a *match) Apply(ctx context.Context, b *bundle.Bundle) error {
 		}
 	}
 	return nil
+}
+
+func isMissingRequiredLibraries(task *jobs.Task) bool {
+	if task.Libraries != nil {
+		return false
+	}
+
+	return task.PythonWheelTask != nil || task.SparkJarTask != nil
 }
 
 func findLibraryMatches(lib *compute.Library, b *bundle.Bundle) ([]string, error) {
