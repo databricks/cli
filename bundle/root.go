@@ -36,11 +36,15 @@ func getRootWithTraversal() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	path, err := folders.FindDirWithLeaf(wd, config.FileName)
-	if err != nil {
-		return "", fmt.Errorf(`unable to locate bundle root: %s not found`, config.FileName)
+
+	for _, file := range config.FileNames {
+		path, err := folders.FindDirWithLeaf(wd, file)
+		if err == nil {
+			return path, nil
+		}
 	}
-	return path, nil
+
+	return "", fmt.Errorf(`unable to locate bundle root: %s not found`, config.FileNames[0])
 }
 
 // mustGetRoot returns a bundle root or an error if one cannot be found.

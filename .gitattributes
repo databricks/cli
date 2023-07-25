@@ -25,6 +25,7 @@ cmd/account/workspace-assignment/workspace-assignment.go linguist-generated=true
 cmd/account/workspaces/workspaces.go linguist-generated=true
 cmd/workspace/alerts/alerts.go linguist-generated=true
 cmd/workspace/catalogs/catalogs.go linguist-generated=true
+cmd/workspace/clean-rooms/clean-rooms.go linguist-generated=true
 cmd/workspace/cluster-policies/cluster-policies.go linguist-generated=true
 cmd/workspace/clusters/clusters.go linguist-generated=true
 cmd/workspace/cmd.go linguist-generated=true

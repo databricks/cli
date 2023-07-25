@@ -26,7 +26,7 @@ func TestConvertJob(t *testing.T) {
 				},
 			},
 			GitSource: &jobs.GitSource{
-				GitProvider: jobs.GitProviderGithub,
+				GitProvider: jobs.GitProviderGitHub,
 				GitUrl:      "https://github.com/foo/bar",
 			},
 		},

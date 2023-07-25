@@ -34,7 +34,7 @@ func init() {
 	addCmd.Flags().Var(&addJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	addCmd.Flags().StringVar(&addReq.IamRoleArn, "iam-role-arn", addReq.IamRoleArn, `The AWS IAM role ARN of the role associated with the instance profile.`)
-	addCmd.Flags().BoolVar(&addReq.IsMetaInstanceProfile, "is-meta-instance-profile", addReq.IsMetaInstanceProfile, `By default, Databricks validates that it has sufficient permissions to launch instances with the instance profile.`)
+	addCmd.Flags().BoolVar(&addReq.IsMetaInstanceProfile, "is-meta-instance-profile", addReq.IsMetaInstanceProfile, `Boolean flag indicating whether the instance profile should only be used in credential passthrough scenarios.`)
 	addCmd.Flags().BoolVar(&addReq.SkipValidation, "skip-validation", addReq.SkipValidation, `By default, Databricks validates that it has sufficient permissions to launch instances with the instance profile.`)
 
 }
@@ -90,7 +90,7 @@ func init() {
 	editCmd.Flags().Var(&editJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	editCmd.Flags().StringVar(&editReq.IamRoleArn, "iam-role-arn", editReq.IamRoleArn, `The AWS IAM role ARN of the role associated with the instance profile.`)
-	editCmd.Flags().BoolVar(&editReq.IsMetaInstanceProfile, "is-meta-instance-profile", editReq.IsMetaInstanceProfile, `By default, Databricks validates that it has sufficient permissions to launch instances with the instance profile.`)
+	editCmd.Flags().BoolVar(&editReq.IsMetaInstanceProfile, "is-meta-instance-profile", editReq.IsMetaInstanceProfile, `Boolean flag indicating whether the instance profile should only be used in credential passthrough scenarios.`)
 
 }
 

@@ -72,7 +72,7 @@ var syncCmd = &cobra.Command{
 
 		//
 		// To be uncommented and used once our VS Code extension is bundle aware.
-		// Until then, this could interfere with extension usage where a `bundle.yml` file is present.
+		// Until then, this could interfere with extension usage where a `databricks.yml` file is present.
 		// See https://github.com/databricks/cli/pull/207.
 		//
 		// b := bundle.GetOrNil(cmd.Context())
