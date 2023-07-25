@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestTemplateRawFunction(t *testing.T) {
+func TestTemplateUrlFunction(t *testing.T) {
 	ctx := context.Background()
 	tmpDir := t.TempDir()
 

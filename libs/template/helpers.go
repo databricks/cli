@@ -19,7 +19,7 @@ var helperFuncs = template.FuncMap{
 		return nil, ErrFail{fmt.Sprintf(format, args...)}
 	},
 	// Alias for https://pkg.go.dev/net/url#Parse. Allows usage of all methods of url.URL
-	"urlParse": func(rawUrl string) (*url.URL, error) {
+	"url": func(rawUrl string) (*url.URL, error) {
 		return url.Parse(rawUrl)
 	},
 }
