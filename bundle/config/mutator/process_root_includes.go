@@ -49,6 +49,18 @@ func (m *processRootIncludes) Apply(ctx context.Context, b *bundle.Bundle) error
 	// This is stored in the bundle configuration for observability.
 	var files []string
 
+	// Converts extra include paths from environment variable to relative paths
+	for _, extraIncludePath := range GetExtraIncludePaths() {
+		if filepath.IsAbs(extraIncludePath) {
+			rel, err := filepath.Rel(b.Config.Path, extraIncludePath)
+			if err != nil {
+				return fmt.Errorf("unable to include file '%s': %w", extraIncludePath, err)
+			}
+			extraIncludePath = rel
+		}
+		b.Config.Include = append(b.Config.Include, extraIncludePath)
+	}
+
 	// For each glob, find all files to load.
 	// Ordering of the list of globs is maintained in the output.
 	// For matches that appear in multiple globs, only the first is kept.
@@ -90,23 +102,6 @@ func (m *processRootIncludes) Apply(ctx context.Context, b *bundle.Bundle) error
 		for _, include := range includes {
 			out = append(out, ProcessInclude(filepath.Join(b.Config.Path, include), include))
 		}
-	}
-
-	var extraIncludePaths = GetExtraIncludePaths()
-	for _, extraIncludePath := range extraIncludePaths {
-		if filepath.IsAbs(extraIncludePath) {
-			rel, err := filepath.Rel(b.Config.Path, extraIncludePath)
-			if err != nil {
-				return fmt.Errorf("unable to include file '%s': %w", extraIncludePath, err)
-			}
-			extraIncludePath = rel
-		}
-		if _, ok := seen[extraIncludePath]; ok {
-			continue
-		}
-		seen[extraIncludePath] = true
-		out = append(out, ProcessInclude(filepath.Join(b.Config.Path, extraIncludePath), extraIncludePath))
-		files = append(files, extraIncludePath)
 	}
 
 	// Swap out the original includes list with the expanded globs.
