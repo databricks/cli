@@ -9,11 +9,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestTemplateRawFunction(t *testing.T) {
+func TestTemplatePrintStringWithoutProcessing(t *testing.T) {
 	ctx := context.Background()
 	tmpDir := t.TempDir()
 
-	r, err := newRenderer(ctx, nil, "./testdata/raw-function/template", "./testdata/raw-function/library", tmpDir)
+	r, err := newRenderer(ctx, nil, "./testdata/print-without-processing/template", "./testdata/print-without-processing/library", tmpDir)
 	require.NoError(t, err)
 
 	err = r.walk()
