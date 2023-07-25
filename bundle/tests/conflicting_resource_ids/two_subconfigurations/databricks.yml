@@ -3,3 +3,6 @@ bundle:
 
 workspace:
   profile: test
+
+include:
+  - "*.yml"
