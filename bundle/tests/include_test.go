@@ -32,3 +32,27 @@ func TestIncludeWithGlob(t *testing.T) {
 	assert.Equal(t, "1", job.ID)
 	assert.Equal(t, "include_with_glob/job.yml", filepath.ToSlash(job.ConfigFilePath))
 }
+
+func TestIncludeDefault(t *testing.T) {
+	b := load(t, "./include_default")
+
+	// No jobs should have been loaded
+	assert.Empty(t, b.Config.Resources.Jobs)
+}
+
+func TestIncludeForMultipleMatches(t *testing.T) {
+	b := load(t, "./include_multiple")
+
+	// Test that both jobs were loaded.
+	keys := maps.Keys(b.Config.Resources.Jobs)
+	sort.Strings(keys)
+	assert.Equal(t, []string{"my_first_job", "my_second_job"}, keys)
+
+	first := b.Config.Resources.Jobs["my_first_job"]
+	assert.Equal(t, "1", first.ID)
+	assert.Equal(t, "include_multiple/my_first_job/resource.yml", filepath.ToSlash(first.ConfigFilePath))
+
+	second := b.Config.Resources.Jobs["my_second_job"]
+	assert.Equal(t, "2", second.ID)
+	assert.Equal(t, "include_multiple/my_second_job/resource.yml", filepath.ToSlash(second.ConfigFilePath))
+}
