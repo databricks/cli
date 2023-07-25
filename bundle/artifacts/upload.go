@@ -51,15 +51,19 @@ func (m *cleanUp) Name() string {
 }
 
 func (m *cleanUp) Apply(ctx context.Context, b *bundle.Bundle) error {
-	artifactPath := b.Config.Workspace.ArtifactsPath
+	uploadPath, err := getUploadBasePath(b)
+	if err != nil {
+		return err
+	}
+
 	b.WorkspaceClient().Workspace.Delete(ctx, workspace.Delete{
-		Path:      artifactPath,
+		Path:      uploadPath,
 		Recursive: true,
 	})
 
-	err := b.WorkspaceClient().Workspace.MkdirsByPath(ctx, artifactPath)
+	err = b.WorkspaceClient().Workspace.MkdirsByPath(ctx, uploadPath)
 	if err != nil {
-		return fmt.Errorf("unable to create directory for %s: %w", artifactPath, err)
+		return fmt.Errorf("unable to create directory for %s: %w", uploadPath, err)
 	}
 
 	return nil

@@ -55,9 +55,6 @@ func findArtifactsAndMarkForUpload(ctx context.Context, lib *compute.Library, b 
 	if err != nil {
 		return err
 	}
-	if len(matches) == 0 {
-		return fmt.Errorf("no file matches found for library %s", libPath(lib))
-	}
 
 	for _, match := range matches {
 		af, err := findArtifactFileByLocalPath(match, b)

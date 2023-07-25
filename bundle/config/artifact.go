@@ -48,6 +48,7 @@ func (a *Artifact) Build(ctx context.Context) ([]byte, error) {
 
 func (a *Artifact) NormalisePaths() {
 	for _, f := range a.Files {
+		// If no libraries attached, nothing to normalise, skipping
 		if f.Libraries == nil {
 			continue
 		}
@@ -63,4 +64,13 @@ func (a *Artifact) NormalisePaths() {
 		}
 
 	}
+}
+
+// This function determines if artifact files needs to be uploaded.
+// During the bundle processing we analyse which library uses which artifact file.
+// If artifact file is used as a library, we store the reference to this library in artifact file Libraries field.
+// If artifact file has libraries it's been used in, it means than we need to upload this file.
+// Otherwise this artifact file is not used and we skip uploading
+func (af *ArtifactFile) NeedsUpload() bool {
+	return af.Libraries != nil
 }
