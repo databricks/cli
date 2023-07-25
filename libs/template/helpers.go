@@ -19,7 +19,7 @@ var helperFuncs = template.FuncMap{
 		return nil, ErrFail{fmt.Sprintf(format, args...)}
 	},
 	// Alias for https://pkg.go.dev/regexp#Compile. Allows usage of all methods of regexp.Regexp
-	"regexpCompile": func(expr string) (*regexp.Regexp, error) {
+	"regexp": func(expr string) (*regexp.Regexp, error) {
 		return regexp.Compile(expr)
 	},
 }

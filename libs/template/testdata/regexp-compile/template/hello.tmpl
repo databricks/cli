@@ -1,4 +1,4 @@
-{{with (regexpCompile "foo.?")}}
+{{with (regexp "foo.?")}}
 {{range $index, $element := (.FindAllString "seafood fool" -1) }}
 {{print $index ":" $element}}
 {{end}}
