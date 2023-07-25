@@ -10,7 +10,6 @@ import (
 
 type validator func(v any) error
 
-// Maybe this can be a part of the schema library itself?
 func validateType(v any, fieldType schema.Type) error {
 	validateFunc, ok := validators[fieldType]
 	if !ok {
