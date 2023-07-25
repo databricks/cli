@@ -7,7 +7,6 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"reflect"
 	"runtime"
 	"strings"
 	"testing"
@@ -214,19 +213,17 @@ func TestRendererWalk(t *testing.T) {
 
 	getContent := func(r *renderer, path string) string {
 		for _, f := range r.files {
-			switch reflect.TypeOf(f) {
-			case reflect.TypeOf(&inMemoryFile{}):
-				if f.(*inMemoryFile).relPath != path {
+			switch v := f.(type) {
+			case *inMemoryFile:
+				if v.relPath != path {
 					continue
 				}
-				content := string(f.(*inMemoryFile).content)
-				return strings.Trim(content, "\r\n")
-			case reflect.TypeOf(&copyFile{}):
-				if f.(*copyFile).relPath != path {
+				return strings.Trim(string(v.content), "\r\n")
+			case *copyFile:
+				if v.relPath != path {
 					continue
 				}
-				srcPath := f.(*copyFile).srcPath
-				r, err := r.templateFiler.Read(context.Background(), srcPath)
+				r, err := r.templateFiler.Read(context.Background(), v.srcPath)
 				require.NoError(t, err)
 				b, err := io.ReadAll(r)
 				require.NoError(t, err)
@@ -406,15 +403,15 @@ func TestRendererReadsPermissionsBits(t *testing.T) {
 
 	getPermissions := func(r *renderer, path string) fs.FileMode {
 		for _, f := range r.files {
-			switch reflect.TypeOf(f) {
-			case reflect.TypeOf(&inMemoryFile{}):
-				if f.(*inMemoryFile).relPath == path {
-					return f.(*inMemoryFile).perm
+			switch v := f.(type) {
+			case *inMemoryFile:
+				if v.relPath == path {
+					return v.perm
 				}
 
-			case reflect.TypeOf(&copyFile{}):
-				if f.(*copyFile).relPath == path {
-					return f.(*copyFile).perm
+			case *copyFile:
+				if v.relPath == path {
+					return v.perm
 				}
 			default:
 				require.FailNow(t, "execution should not reach here")
