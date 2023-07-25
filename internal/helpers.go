@@ -15,7 +15,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/cmd"
 	_ "github.com/databricks/cli/cmd/version"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -117,7 +117,7 @@ func (t *cobraTestRunner) RunBackground() {
 	var stdoutW, stderrW io.WriteCloser
 	stdoutR, stdoutW = io.Pipe()
 	stderrR, stderrW = io.Pipe()
-	root := root.RootCmd
+	root := cmd.New()
 	root.SetOut(stdoutW)
 	root.SetErr(stderrW)
 	root.SetArgs(t.args)

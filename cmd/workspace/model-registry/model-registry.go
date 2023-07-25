@@ -12,46 +12,68 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var Cmd = &cobra.Command{
-	Use:   "model-registry",
-	Short: `MLflow Model Registry is a centralized model repository and a UI and set of APIs that enable you to manage the full lifecycle of MLflow Models.`,
-	Long: `MLflow Model Registry is a centralized model repository and a UI and set of
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var cmdOverrides []func(*cobra.Command)
+
+func New() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "model-registry",
+		Short: `MLflow Model Registry is a centralized model repository and a UI and set of APIs that enable you to manage the full lifecycle of MLflow Models.`,
+		Long: `MLflow Model Registry is a centralized model repository and a UI and set of
   APIs that enable you to manage the full lifecycle of MLflow Models.`,
-	Annotations: map[string]string{
-		"package": "ml",
-	},
+		GroupID: "ml",
+		Annotations: map[string]string{
+			"package": "ml",
+		},
+	}
+
+	// Apply optional overrides to this command.
+	for _, fn := range cmdOverrides {
+		fn(cmd)
+	}
+
+	return cmd
 }
 
 // start approve-transition-request command
-var approveTransitionRequestReq ml.ApproveTransitionRequest
-var approveTransitionRequestJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(approveTransitionRequestCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var approveTransitionRequestOverrides []func(
+	*cobra.Command,
+	*ml.ApproveTransitionRequest,
+)
+
+func newApproveTransitionRequest() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var approveTransitionRequestReq ml.ApproveTransitionRequest
+	var approveTransitionRequestJson flags.JsonFlag
+
 	// TODO: short flags
-	approveTransitionRequestCmd.Flags().Var(&approveTransitionRequestJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&approveTransitionRequestJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	approveTransitionRequestCmd.Flags().StringVar(&approveTransitionRequestReq.Comment, "comment", approveTransitionRequestReq.Comment, `User-provided comment on the action.`)
+	cmd.Flags().StringVar(&approveTransitionRequestReq.Comment, "comment", approveTransitionRequestReq.Comment, `User-provided comment on the action.`)
 
-}
-
-var approveTransitionRequestCmd = &cobra.Command{
-	Use:   "approve-transition-request NAME VERSION STAGE ARCHIVE_EXISTING_VERSIONS",
-	Short: `Approve transition request.`,
-	Long: `Approve transition request.
+	cmd.Use = "approve-transition-request NAME VERSION STAGE ARCHIVE_EXISTING_VERSIONS"
+	cmd.Short = `Approve transition request.`
+	cmd.Long = `Approve transition request.
   
-  Approves a model version stage transition request.`,
+  Approves a model version stage transition request.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(4)
 		if cmd.Flags().Changed("json") {
 			check = cobra.ExactArgs(0)
 		}
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -78,42 +100,64 @@ var approveTransitionRequestCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range approveTransitionRequestOverrides {
+		fn(cmd, &approveTransitionRequestReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newApproveTransitionRequest())
+	})
 }
 
 // start create-comment command
-var createCommentReq ml.CreateComment
-var createCommentJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(createCommentCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var createCommentOverrides []func(
+	*cobra.Command,
+	*ml.CreateComment,
+)
+
+func newCreateComment() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var createCommentReq ml.CreateComment
+	var createCommentJson flags.JsonFlag
+
 	// TODO: short flags
-	createCommentCmd.Flags().Var(&createCommentJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&createCommentJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-}
-
-var createCommentCmd = &cobra.Command{
-	Use:   "create-comment NAME VERSION COMMENT",
-	Short: `Post a comment.`,
-	Long: `Post a comment.
+	cmd.Use = "create-comment NAME VERSION COMMENT"
+	cmd.Short = `Post a comment.`
+	cmd.Long = `Post a comment.
   
   Posts a comment on a model version. A comment can be submitted either by a
   user or programmatically to display relevant information about the model. For
-  example, test results or deployment errors.`,
+  example, test results or deployment errors.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(3)
 		if cmd.Flags().Changed("json") {
 			check = cobra.ExactArgs(0)
 		}
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -133,46 +177,68 @@ var createCommentCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range createCommentOverrides {
+		fn(cmd, &createCommentReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newCreateComment())
+	})
 }
 
 // start create-model command
-var createModelReq ml.CreateModelRequest
-var createModelJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(createModelCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var createModelOverrides []func(
+	*cobra.Command,
+	*ml.CreateModelRequest,
+)
+
+func newCreateModel() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var createModelReq ml.CreateModelRequest
+	var createModelJson flags.JsonFlag
+
 	// TODO: short flags
-	createModelCmd.Flags().Var(&createModelJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&createModelJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	createModelCmd.Flags().StringVar(&createModelReq.Description, "description", createModelReq.Description, `Optional description for registered model.`)
+	cmd.Flags().StringVar(&createModelReq.Description, "description", createModelReq.Description, `Optional description for registered model.`)
 	// TODO: array: tags
 
-}
-
-var createModelCmd = &cobra.Command{
-	Use:   "create-model NAME",
-	Short: `Create a model.`,
-	Long: `Create a model.
+	cmd.Use = "create-model NAME"
+	cmd.Short = `Create a model.`
+	cmd.Long = `Create a model.
   
   Creates a new registered model with the name specified in the request body.
   
   Throws RESOURCE_ALREADY_EXISTS if a registered model with the given name
-  exists.`,
+  exists.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
 			check = cobra.ExactArgs(0)
 		}
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -190,45 +256,67 @@ var createModelCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range createModelOverrides {
+		fn(cmd, &createModelReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newCreateModel())
+	})
 }
 
 // start create-model-version command
-var createModelVersionReq ml.CreateModelVersionRequest
-var createModelVersionJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(createModelVersionCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var createModelVersionOverrides []func(
+	*cobra.Command,
+	*ml.CreateModelVersionRequest,
+)
+
+func newCreateModelVersion() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var createModelVersionReq ml.CreateModelVersionRequest
+	var createModelVersionJson flags.JsonFlag
+
 	// TODO: short flags
-	createModelVersionCmd.Flags().Var(&createModelVersionJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&createModelVersionJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	createModelVersionCmd.Flags().StringVar(&createModelVersionReq.Description, "description", createModelVersionReq.Description, `Optional description for model version.`)
-	createModelVersionCmd.Flags().StringVar(&createModelVersionReq.RunId, "run-id", createModelVersionReq.RunId, `MLflow run ID for correlation, if source was generated by an experiment run in MLflow tracking server.`)
-	createModelVersionCmd.Flags().StringVar(&createModelVersionReq.RunLink, "run-link", createModelVersionReq.RunLink, `MLflow run link - this is the exact link of the run that generated this model version, potentially hosted at another instance of MLflow.`)
+	cmd.Flags().StringVar(&createModelVersionReq.Description, "description", createModelVersionReq.Description, `Optional description for model version.`)
+	cmd.Flags().StringVar(&createModelVersionReq.RunId, "run-id", createModelVersionReq.RunId, `MLflow run ID for correlation, if source was generated by an experiment run in MLflow tracking server.`)
+	cmd.Flags().StringVar(&createModelVersionReq.RunLink, "run-link", createModelVersionReq.RunLink, `MLflow run link - this is the exact link of the run that generated this model version, potentially hosted at another instance of MLflow.`)
 	// TODO: array: tags
 
-}
-
-var createModelVersionCmd = &cobra.Command{
-	Use:   "create-model-version NAME SOURCE",
-	Short: `Create a model version.`,
-	Long: `Create a model version.
+	cmd.Use = "create-model-version NAME SOURCE"
+	cmd.Short = `Create a model version.`
+	cmd.Long = `Create a model version.
   
-  Creates a model version.`,
+  Creates a model version.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
 			check = cobra.ExactArgs(0)
 		}
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -247,42 +335,64 @@ var createModelVersionCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range createModelVersionOverrides {
+		fn(cmd, &createModelVersionReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newCreateModelVersion())
+	})
 }
 
 // start create-transition-request command
-var createTransitionRequestReq ml.CreateTransitionRequest
-var createTransitionRequestJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(createTransitionRequestCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var createTransitionRequestOverrides []func(
+	*cobra.Command,
+	*ml.CreateTransitionRequest,
+)
+
+func newCreateTransitionRequest() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var createTransitionRequestReq ml.CreateTransitionRequest
+	var createTransitionRequestJson flags.JsonFlag
+
 	// TODO: short flags
-	createTransitionRequestCmd.Flags().Var(&createTransitionRequestJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&createTransitionRequestJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	createTransitionRequestCmd.Flags().StringVar(&createTransitionRequestReq.Comment, "comment", createTransitionRequestReq.Comment, `User-provided comment on the action.`)
+	cmd.Flags().StringVar(&createTransitionRequestReq.Comment, "comment", createTransitionRequestReq.Comment, `User-provided comment on the action.`)
 
-}
-
-var createTransitionRequestCmd = &cobra.Command{
-	Use:   "create-transition-request NAME VERSION STAGE",
-	Short: `Make a transition request.`,
-	Long: `Make a transition request.
+	cmd.Use = "create-transition-request NAME VERSION STAGE"
+	cmd.Short = `Make a transition request.`
+	cmd.Long = `Make a transition request.
   
-  Creates a model version stage transition request.`,
+  Creates a model version stage transition request.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(3)
 		if cmd.Flags().Changed("json") {
 			check = cobra.ExactArgs(0)
 		}
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -305,41 +415,62 @@ var createTransitionRequestCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range createTransitionRequestOverrides {
+		fn(cmd, &createTransitionRequestReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newCreateTransitionRequest())
+	})
 }
 
 // start create-webhook command
-var createWebhookReq ml.CreateRegistryWebhook
-var createWebhookJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(createWebhookCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var createWebhookOverrides []func(
+	*cobra.Command,
+	*ml.CreateRegistryWebhook,
+)
+
+func newCreateWebhook() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var createWebhookReq ml.CreateRegistryWebhook
+	var createWebhookJson flags.JsonFlag
+
 	// TODO: short flags
-	createWebhookCmd.Flags().Var(&createWebhookJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&createWebhookJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	createWebhookCmd.Flags().StringVar(&createWebhookReq.Description, "description", createWebhookReq.Description, `User-specified description for the webhook.`)
+	cmd.Flags().StringVar(&createWebhookReq.Description, "description", createWebhookReq.Description, `User-specified description for the webhook.`)
 	// TODO: complex arg: http_url_spec
 	// TODO: complex arg: job_spec
-	createWebhookCmd.Flags().StringVar(&createWebhookReq.ModelName, "model-name", createWebhookReq.ModelName, `Name of the model whose events would trigger this webhook.`)
-	createWebhookCmd.Flags().Var(&createWebhookReq.Status, "status", `This describes an enum.`)
+	cmd.Flags().StringVar(&createWebhookReq.ModelName, "model-name", createWebhookReq.ModelName, `Name of the model whose events would trigger this webhook.`)
+	cmd.Flags().Var(&createWebhookReq.Status, "status", `This describes an enum.`)
 
-}
-
-var createWebhookCmd = &cobra.Command{
-	Use:   "create-webhook",
-	Short: `Create a webhook.`,
-	Long: `Create a webhook.
+	cmd.Use = "create-webhook"
+	cmd.Short = `Create a webhook.`
+	cmd.Long = `Create a webhook.
   
   **NOTE**: This endpoint is in Public Preview.
   
-  Creates a registry webhook.`,
+  Creates a registry webhook.`
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -357,35 +488,57 @@ var createWebhookCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range createWebhookOverrides {
+		fn(cmd, &createWebhookReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newCreateWebhook())
+	})
 }
 
 // start delete-comment command
-var deleteCommentReq ml.DeleteCommentRequest
 
-func init() {
-	Cmd.AddCommand(deleteCommentCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var deleteCommentOverrides []func(
+	*cobra.Command,
+	*ml.DeleteCommentRequest,
+)
+
+func newDeleteComment() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var deleteCommentReq ml.DeleteCommentRequest
+
 	// TODO: short flags
 
-}
-
-var deleteCommentCmd = &cobra.Command{
-	Use:   "delete-comment ID",
-	Short: `Delete a comment.`,
-	Long: `Delete a comment.
+	cmd.Use = "delete-comment ID"
+	cmd.Short = `Delete a comment.`
+	cmd.Long = `Delete a comment.
   
-  Deletes a comment on a model version.`,
+  Deletes a comment on a model version.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -396,35 +549,57 @@ var deleteCommentCmd = &cobra.Command{
 			return err
 		}
 		return nil
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range deleteCommentOverrides {
+		fn(cmd, &deleteCommentReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newDeleteComment())
+	})
 }
 
 // start delete-model command
-var deleteModelReq ml.DeleteModelRequest
 
-func init() {
-	Cmd.AddCommand(deleteModelCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var deleteModelOverrides []func(
+	*cobra.Command,
+	*ml.DeleteModelRequest,
+)
+
+func newDeleteModel() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var deleteModelReq ml.DeleteModelRequest
+
 	// TODO: short flags
 
-}
-
-var deleteModelCmd = &cobra.Command{
-	Use:   "delete-model NAME",
-	Short: `Delete a model.`,
-	Long: `Delete a model.
+	cmd.Use = "delete-model NAME"
+	cmd.Short = `Delete a model.`
+	cmd.Long = `Delete a model.
   
-  Deletes a registered model.`,
+  Deletes a registered model.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -435,35 +610,57 @@ var deleteModelCmd = &cobra.Command{
 			return err
 		}
 		return nil
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range deleteModelOverrides {
+		fn(cmd, &deleteModelReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newDeleteModel())
+	})
 }
 
 // start delete-model-tag command
-var deleteModelTagReq ml.DeleteModelTagRequest
 
-func init() {
-	Cmd.AddCommand(deleteModelTagCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var deleteModelTagOverrides []func(
+	*cobra.Command,
+	*ml.DeleteModelTagRequest,
+)
+
+func newDeleteModelTag() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var deleteModelTagReq ml.DeleteModelTagRequest
+
 	// TODO: short flags
 
-}
-
-var deleteModelTagCmd = &cobra.Command{
-	Use:   "delete-model-tag NAME KEY",
-	Short: `Delete a model tag.`,
-	Long: `Delete a model tag.
+	cmd.Use = "delete-model-tag NAME KEY"
+	cmd.Short = `Delete a model tag.`
+	cmd.Long = `Delete a model tag.
   
-  Deletes the tag for a registered model.`,
+  Deletes the tag for a registered model.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -475,35 +672,57 @@ var deleteModelTagCmd = &cobra.Command{
 			return err
 		}
 		return nil
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range deleteModelTagOverrides {
+		fn(cmd, &deleteModelTagReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newDeleteModelTag())
+	})
 }
 
 // start delete-model-version command
-var deleteModelVersionReq ml.DeleteModelVersionRequest
 
-func init() {
-	Cmd.AddCommand(deleteModelVersionCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var deleteModelVersionOverrides []func(
+	*cobra.Command,
+	*ml.DeleteModelVersionRequest,
+)
+
+func newDeleteModelVersion() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var deleteModelVersionReq ml.DeleteModelVersionRequest
+
 	// TODO: short flags
 
-}
-
-var deleteModelVersionCmd = &cobra.Command{
-	Use:   "delete-model-version NAME VERSION",
-	Short: `Delete a model version.`,
-	Long: `Delete a model version.
+	cmd.Use = "delete-model-version NAME VERSION"
+	cmd.Short = `Delete a model version.`
+	cmd.Long = `Delete a model version.
   
-  Deletes a model version.`,
+  Deletes a model version.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -515,35 +734,57 @@ var deleteModelVersionCmd = &cobra.Command{
 			return err
 		}
 		return nil
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range deleteModelVersionOverrides {
+		fn(cmd, &deleteModelVersionReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newDeleteModelVersion())
+	})
 }
 
 // start delete-model-version-tag command
-var deleteModelVersionTagReq ml.DeleteModelVersionTagRequest
 
-func init() {
-	Cmd.AddCommand(deleteModelVersionTagCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var deleteModelVersionTagOverrides []func(
+	*cobra.Command,
+	*ml.DeleteModelVersionTagRequest,
+)
+
+func newDeleteModelVersionTag() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var deleteModelVersionTagReq ml.DeleteModelVersionTagRequest
+
 	// TODO: short flags
 
-}
-
-var deleteModelVersionTagCmd = &cobra.Command{
-	Use:   "delete-model-version-tag NAME VERSION KEY",
-	Short: `Delete a model version tag.`,
-	Long: `Delete a model version tag.
+	cmd.Use = "delete-model-version-tag NAME VERSION KEY"
+	cmd.Short = `Delete a model version tag.`
+	cmd.Long = `Delete a model version tag.
   
-  Deletes a model version tag.`,
+  Deletes a model version tag.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(3)
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -556,37 +797,59 @@ var deleteModelVersionTagCmd = &cobra.Command{
 			return err
 		}
 		return nil
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range deleteModelVersionTagOverrides {
+		fn(cmd, &deleteModelVersionTagReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newDeleteModelVersionTag())
+	})
 }
 
 // start delete-transition-request command
-var deleteTransitionRequestReq ml.DeleteTransitionRequestRequest
 
-func init() {
-	Cmd.AddCommand(deleteTransitionRequestCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var deleteTransitionRequestOverrides []func(
+	*cobra.Command,
+	*ml.DeleteTransitionRequestRequest,
+)
+
+func newDeleteTransitionRequest() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var deleteTransitionRequestReq ml.DeleteTransitionRequestRequest
+
 	// TODO: short flags
 
-	deleteTransitionRequestCmd.Flags().StringVar(&deleteTransitionRequestReq.Comment, "comment", deleteTransitionRequestReq.Comment, `User-provided comment on the action.`)
+	cmd.Flags().StringVar(&deleteTransitionRequestReq.Comment, "comment", deleteTransitionRequestReq.Comment, `User-provided comment on the action.`)
 
-}
-
-var deleteTransitionRequestCmd = &cobra.Command{
-	Use:   "delete-transition-request NAME VERSION STAGE CREATOR",
-	Short: `Delete a transition request.`,
-	Long: `Delete a transition request.
+	cmd.Use = "delete-transition-request NAME VERSION STAGE CREATOR"
+	cmd.Short = `Delete a transition request.`
+	cmd.Long = `Delete a transition request.
   
-  Cancels a model version stage transition request.`,
+  Cancels a model version stage transition request.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(4)
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -603,44 +866,66 @@ var deleteTransitionRequestCmd = &cobra.Command{
 			return err
 		}
 		return nil
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range deleteTransitionRequestOverrides {
+		fn(cmd, &deleteTransitionRequestReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newDeleteTransitionRequest())
+	})
 }
 
 // start delete-webhook command
-var deleteWebhookReq ml.DeleteWebhookRequest
-var deleteWebhookJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(deleteWebhookCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var deleteWebhookOverrides []func(
+	*cobra.Command,
+	*ml.DeleteWebhookRequest,
+)
+
+func newDeleteWebhook() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var deleteWebhookReq ml.DeleteWebhookRequest
+	var deleteWebhookJson flags.JsonFlag
+
 	// TODO: short flags
-	deleteWebhookCmd.Flags().Var(&deleteWebhookJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&deleteWebhookJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	deleteWebhookCmd.Flags().StringVar(&deleteWebhookReq.Id, "id", deleteWebhookReq.Id, `Webhook ID required to delete a registry webhook.`)
+	cmd.Flags().StringVar(&deleteWebhookReq.Id, "id", deleteWebhookReq.Id, `Webhook ID required to delete a registry webhook.`)
 
-}
-
-var deleteWebhookCmd = &cobra.Command{
-	Use:   "delete-webhook",
-	Short: `Delete a webhook.`,
-	Long: `Delete a webhook.
+	cmd.Use = "delete-webhook"
+	cmd.Short = `Delete a webhook.`
+	cmd.Long = `Delete a webhook.
   
   **NOTE:** This endpoint is in Public Preview.
   
-  Deletes a registry webhook.`,
+  Deletes a registry webhook.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {
 			check = cobra.ExactArgs(0)
 		}
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -657,42 +942,64 @@ var deleteWebhookCmd = &cobra.Command{
 			return err
 		}
 		return nil
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range deleteWebhookOverrides {
+		fn(cmd, &deleteWebhookReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newDeleteWebhook())
+	})
 }
 
 // start get-latest-versions command
-var getLatestVersionsReq ml.GetLatestVersionsRequest
-var getLatestVersionsJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(getLatestVersionsCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getLatestVersionsOverrides []func(
+	*cobra.Command,
+	*ml.GetLatestVersionsRequest,
+)
+
+func newGetLatestVersions() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getLatestVersionsReq ml.GetLatestVersionsRequest
+	var getLatestVersionsJson flags.JsonFlag
+
 	// TODO: short flags
-	getLatestVersionsCmd.Flags().Var(&getLatestVersionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&getLatestVersionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: stages
 
-}
-
-var getLatestVersionsCmd = &cobra.Command{
-	Use:   "get-latest-versions NAME",
-	Short: `Get the latest version.`,
-	Long: `Get the latest version.
+	cmd.Use = "get-latest-versions NAME"
+	cmd.Short = `Get the latest version.`
+	cmd.Long = `Get the latest version.
   
-  Gets the latest version of a registered model.`,
+  Gets the latest version of a registered model.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
 			check = cobra.ExactArgs(0)
 		}
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -710,39 +1017,61 @@ var getLatestVersionsCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getLatestVersionsOverrides {
+		fn(cmd, &getLatestVersionsReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newGetLatestVersions())
+	})
 }
 
 // start get-model command
-var getModelReq ml.GetModelRequest
 
-func init() {
-	Cmd.AddCommand(getModelCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getModelOverrides []func(
+	*cobra.Command,
+	*ml.GetModelRequest,
+)
+
+func newGetModel() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getModelReq ml.GetModelRequest
+
 	// TODO: short flags
 
-}
-
-var getModelCmd = &cobra.Command{
-	Use:   "get-model NAME",
-	Short: `Get model.`,
-	Long: `Get model.
+	cmd.Use = "get-model NAME"
+	cmd.Short = `Get model.`
+	cmd.Long = `Get model.
   
   Get the details of a model. This is a Databricks workspace version of the
   [MLflow endpoint] that also returns the model's Databricks workspace ID and
   the permission level of the requesting user on the model.
   
-  [MLflow endpoint]: https://www.mlflow.org/docs/latest/rest-api.html#get-registeredmodel`,
+  [MLflow endpoint]: https://www.mlflow.org/docs/latest/rest-api.html#get-registeredmodel`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -753,35 +1082,57 @@ var getModelCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getModelOverrides {
+		fn(cmd, &getModelReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newGetModel())
+	})
 }
 
 // start get-model-version command
-var getModelVersionReq ml.GetModelVersionRequest
 
-func init() {
-	Cmd.AddCommand(getModelVersionCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getModelVersionOverrides []func(
+	*cobra.Command,
+	*ml.GetModelVersionRequest,
+)
+
+func newGetModelVersion() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getModelVersionReq ml.GetModelVersionRequest
+
 	// TODO: short flags
 
-}
-
-var getModelVersionCmd = &cobra.Command{
-	Use:   "get-model-version NAME VERSION",
-	Short: `Get a model version.`,
-	Long: `Get a model version.
+	cmd.Use = "get-model-version NAME VERSION"
+	cmd.Short = `Get a model version.`
+	cmd.Long = `Get a model version.
   
-  Get a model version.`,
+  Get a model version.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -793,35 +1144,57 @@ var getModelVersionCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getModelVersionOverrides {
+		fn(cmd, &getModelVersionReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newGetModelVersion())
+	})
 }
 
 // start get-model-version-download-uri command
-var getModelVersionDownloadUriReq ml.GetModelVersionDownloadUriRequest
 
-func init() {
-	Cmd.AddCommand(getModelVersionDownloadUriCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getModelVersionDownloadUriOverrides []func(
+	*cobra.Command,
+	*ml.GetModelVersionDownloadUriRequest,
+)
+
+func newGetModelVersionDownloadUri() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getModelVersionDownloadUriReq ml.GetModelVersionDownloadUriRequest
+
 	// TODO: short flags
 
-}
-
-var getModelVersionDownloadUriCmd = &cobra.Command{
-	Use:   "get-model-version-download-uri NAME VERSION",
-	Short: `Get a model version URI.`,
-	Long: `Get a model version URI.
+	cmd.Use = "get-model-version-download-uri NAME VERSION"
+	cmd.Short = `Get a model version URI.`
+	cmd.Long = `Get a model version URI.
   
-  Gets a URI to download the model version.`,
+  Gets a URI to download the model version.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -833,44 +1206,66 @@ var getModelVersionDownloadUriCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getModelVersionDownloadUriOverrides {
+		fn(cmd, &getModelVersionDownloadUriReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newGetModelVersionDownloadUri())
+	})
 }
 
 // start list-models command
-var listModelsReq ml.ListModelsRequest
-var listModelsJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(listModelsCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listModelsOverrides []func(
+	*cobra.Command,
+	*ml.ListModelsRequest,
+)
+
+func newListModels() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var listModelsReq ml.ListModelsRequest
+	var listModelsJson flags.JsonFlag
+
 	// TODO: short flags
-	listModelsCmd.Flags().Var(&listModelsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&listModelsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	listModelsCmd.Flags().IntVar(&listModelsReq.MaxResults, "max-results", listModelsReq.MaxResults, `Maximum number of registered models desired.`)
-	listModelsCmd.Flags().StringVar(&listModelsReq.PageToken, "page-token", listModelsReq.PageToken, `Pagination token to go to the next page based on a previous query.`)
+	cmd.Flags().IntVar(&listModelsReq.MaxResults, "max-results", listModelsReq.MaxResults, `Maximum number of registered models desired.`)
+	cmd.Flags().StringVar(&listModelsReq.PageToken, "page-token", listModelsReq.PageToken, `Pagination token to go to the next page based on a previous query.`)
 
-}
-
-var listModelsCmd = &cobra.Command{
-	Use:   "list-models",
-	Short: `List models.`,
-	Long: `List models.
+	cmd.Use = "list-models"
+	cmd.Short = `List models.`
+	cmd.Long = `List models.
   
   Lists all available registered models, up to the limit specified in
-  __max_results__.`,
+  __max_results__.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {
 			check = cobra.ExactArgs(0)
 		}
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -887,35 +1282,57 @@ var listModelsCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listModelsOverrides {
+		fn(cmd, &listModelsReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newListModels())
+	})
 }
 
 // start list-transition-requests command
-var listTransitionRequestsReq ml.ListTransitionRequestsRequest
 
-func init() {
-	Cmd.AddCommand(listTransitionRequestsCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listTransitionRequestsOverrides []func(
+	*cobra.Command,
+	*ml.ListTransitionRequestsRequest,
+)
+
+func newListTransitionRequests() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var listTransitionRequestsReq ml.ListTransitionRequestsRequest
+
 	// TODO: short flags
 
-}
-
-var listTransitionRequestsCmd = &cobra.Command{
-	Use:   "list-transition-requests NAME VERSION",
-	Short: `List transition requests.`,
-	Long: `List transition requests.
+	cmd.Use = "list-transition-requests NAME VERSION"
+	cmd.Short = `List transition requests.`
+	cmd.Long = `List transition requests.
   
-  Gets a list of all open stage transition requests for the model version.`,
+  Gets a list of all open stage transition requests for the model version.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -927,46 +1344,68 @@ var listTransitionRequestsCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listTransitionRequestsOverrides {
+		fn(cmd, &listTransitionRequestsReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newListTransitionRequests())
+	})
 }
 
 // start list-webhooks command
-var listWebhooksReq ml.ListWebhooksRequest
-var listWebhooksJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(listWebhooksCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listWebhooksOverrides []func(
+	*cobra.Command,
+	*ml.ListWebhooksRequest,
+)
+
+func newListWebhooks() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var listWebhooksReq ml.ListWebhooksRequest
+	var listWebhooksJson flags.JsonFlag
+
 	// TODO: short flags
-	listWebhooksCmd.Flags().Var(&listWebhooksJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&listWebhooksJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: events
-	listWebhooksCmd.Flags().StringVar(&listWebhooksReq.ModelName, "model-name", listWebhooksReq.ModelName, `If not specified, all webhooks associated with the specified events are listed, regardless of their associated model.`)
-	listWebhooksCmd.Flags().StringVar(&listWebhooksReq.PageToken, "page-token", listWebhooksReq.PageToken, `Token indicating the page of artifact results to fetch.`)
+	cmd.Flags().StringVar(&listWebhooksReq.ModelName, "model-name", listWebhooksReq.ModelName, `If not specified, all webhooks associated with the specified events are listed, regardless of their associated model.`)
+	cmd.Flags().StringVar(&listWebhooksReq.PageToken, "page-token", listWebhooksReq.PageToken, `Token indicating the page of artifact results to fetch.`)
 
-}
-
-var listWebhooksCmd = &cobra.Command{
-	Use:   "list-webhooks",
-	Short: `List registry webhooks.`,
-	Long: `List registry webhooks.
+	cmd.Use = "list-webhooks"
+	cmd.Short = `List registry webhooks.`
+	cmd.Long = `List registry webhooks.
   
   **NOTE:** This endpoint is in Public Preview.
   
-  Lists all registry webhooks.`,
+  Lists all registry webhooks.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {
 			check = cobra.ExactArgs(0)
 		}
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -983,42 +1422,64 @@ var listWebhooksCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listWebhooksOverrides {
+		fn(cmd, &listWebhooksReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newListWebhooks())
+	})
 }
 
 // start reject-transition-request command
-var rejectTransitionRequestReq ml.RejectTransitionRequest
-var rejectTransitionRequestJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(rejectTransitionRequestCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var rejectTransitionRequestOverrides []func(
+	*cobra.Command,
+	*ml.RejectTransitionRequest,
+)
+
+func newRejectTransitionRequest() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var rejectTransitionRequestReq ml.RejectTransitionRequest
+	var rejectTransitionRequestJson flags.JsonFlag
+
 	// TODO: short flags
-	rejectTransitionRequestCmd.Flags().Var(&rejectTransitionRequestJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&rejectTransitionRequestJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	rejectTransitionRequestCmd.Flags().StringVar(&rejectTransitionRequestReq.Comment, "comment", rejectTransitionRequestReq.Comment, `User-provided comment on the action.`)
+	cmd.Flags().StringVar(&rejectTransitionRequestReq.Comment, "comment", rejectTransitionRequestReq.Comment, `User-provided comment on the action.`)
 
-}
-
-var rejectTransitionRequestCmd = &cobra.Command{
-	Use:   "reject-transition-request NAME VERSION STAGE",
-	Short: `Reject a transition request.`,
-	Long: `Reject a transition request.
+	cmd.Use = "reject-transition-request NAME VERSION STAGE"
+	cmd.Short = `Reject a transition request.`
+	cmd.Long = `Reject a transition request.
   
-  Rejects a model version stage transition request.`,
+  Rejects a model version stage transition request.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(3)
 		if cmd.Flags().Changed("json") {
 			check = cobra.ExactArgs(0)
 		}
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -1041,42 +1502,64 @@ var rejectTransitionRequestCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range rejectTransitionRequestOverrides {
+		fn(cmd, &rejectTransitionRequestReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newRejectTransitionRequest())
+	})
 }
 
 // start rename-model command
-var renameModelReq ml.RenameModelRequest
-var renameModelJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(renameModelCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var renameModelOverrides []func(
+	*cobra.Command,
+	*ml.RenameModelRequest,
+)
+
+func newRenameModel() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var renameModelReq ml.RenameModelRequest
+	var renameModelJson flags.JsonFlag
+
 	// TODO: short flags
-	renameModelCmd.Flags().Var(&renameModelJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&renameModelJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	renameModelCmd.Flags().StringVar(&renameModelReq.NewName, "new-name", renameModelReq.NewName, `If provided, updates the name for this registered_model.`)
+	cmd.Flags().StringVar(&renameModelReq.NewName, "new-name", renameModelReq.NewName, `If provided, updates the name for this registered_model.`)
 
-}
-
-var renameModelCmd = &cobra.Command{
-	Use:   "rename-model NAME",
-	Short: `Rename a model.`,
-	Long: `Rename a model.
+	cmd.Use = "rename-model NAME"
+	cmd.Short = `Rename a model.`
+	cmd.Long = `Rename a model.
   
-  Renames a registered model.`,
+  Renames a registered model.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
 			check = cobra.ExactArgs(0)
 		}
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -1094,45 +1577,67 @@ var renameModelCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range renameModelOverrides {
+		fn(cmd, &renameModelReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newRenameModel())
+	})
 }
 
 // start search-model-versions command
-var searchModelVersionsReq ml.SearchModelVersionsRequest
-var searchModelVersionsJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(searchModelVersionsCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var searchModelVersionsOverrides []func(
+	*cobra.Command,
+	*ml.SearchModelVersionsRequest,
+)
+
+func newSearchModelVersions() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var searchModelVersionsReq ml.SearchModelVersionsRequest
+	var searchModelVersionsJson flags.JsonFlag
+
 	// TODO: short flags
-	searchModelVersionsCmd.Flags().Var(&searchModelVersionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&searchModelVersionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	searchModelVersionsCmd.Flags().StringVar(&searchModelVersionsReq.Filter, "filter", searchModelVersionsReq.Filter, `String filter condition, like "name='my-model-name'".`)
-	searchModelVersionsCmd.Flags().IntVar(&searchModelVersionsReq.MaxResults, "max-results", searchModelVersionsReq.MaxResults, `Maximum number of models desired.`)
+	cmd.Flags().StringVar(&searchModelVersionsReq.Filter, "filter", searchModelVersionsReq.Filter, `String filter condition, like "name='my-model-name'".`)
+	cmd.Flags().IntVar(&searchModelVersionsReq.MaxResults, "max-results", searchModelVersionsReq.MaxResults, `Maximum number of models desired.`)
 	// TODO: array: order_by
-	searchModelVersionsCmd.Flags().StringVar(&searchModelVersionsReq.PageToken, "page-token", searchModelVersionsReq.PageToken, `Pagination token to go to next page based on previous search query.`)
+	cmd.Flags().StringVar(&searchModelVersionsReq.PageToken, "page-token", searchModelVersionsReq.PageToken, `Pagination token to go to next page based on previous search query.`)
 
-}
-
-var searchModelVersionsCmd = &cobra.Command{
-	Use:   "search-model-versions",
-	Short: `Searches model versions.`,
-	Long: `Searches model versions.
+	cmd.Use = "search-model-versions"
+	cmd.Short = `Searches model versions.`
+	cmd.Long = `Searches model versions.
   
-  Searches for specific model versions based on the supplied __filter__.`,
+  Searches for specific model versions based on the supplied __filter__.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {
 			check = cobra.ExactArgs(0)
 		}
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -1149,45 +1654,67 @@ var searchModelVersionsCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range searchModelVersionsOverrides {
+		fn(cmd, &searchModelVersionsReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newSearchModelVersions())
+	})
 }
 
 // start search-models command
-var searchModelsReq ml.SearchModelsRequest
-var searchModelsJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(searchModelsCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var searchModelsOverrides []func(
+	*cobra.Command,
+	*ml.SearchModelsRequest,
+)
+
+func newSearchModels() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var searchModelsReq ml.SearchModelsRequest
+	var searchModelsJson flags.JsonFlag
+
 	// TODO: short flags
-	searchModelsCmd.Flags().Var(&searchModelsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&searchModelsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	searchModelsCmd.Flags().StringVar(&searchModelsReq.Filter, "filter", searchModelsReq.Filter, `String filter condition, like "name LIKE 'my-model-name'".`)
-	searchModelsCmd.Flags().IntVar(&searchModelsReq.MaxResults, "max-results", searchModelsReq.MaxResults, `Maximum number of models desired.`)
+	cmd.Flags().StringVar(&searchModelsReq.Filter, "filter", searchModelsReq.Filter, `String filter condition, like "name LIKE 'my-model-name'".`)
+	cmd.Flags().IntVar(&searchModelsReq.MaxResults, "max-results", searchModelsReq.MaxResults, `Maximum number of models desired.`)
 	// TODO: array: order_by
-	searchModelsCmd.Flags().StringVar(&searchModelsReq.PageToken, "page-token", searchModelsReq.PageToken, `Pagination token to go to the next page based on a previous search query.`)
+	cmd.Flags().StringVar(&searchModelsReq.PageToken, "page-token", searchModelsReq.PageToken, `Pagination token to go to the next page based on a previous search query.`)
 
-}
-
-var searchModelsCmd = &cobra.Command{
-	Use:   "search-models",
-	Short: `Search models.`,
-	Long: `Search models.
+	cmd.Use = "search-models"
+	cmd.Short = `Search models.`
+	cmd.Long = `Search models.
   
-  Search for registered models based on the specified __filter__.`,
+  Search for registered models based on the specified __filter__.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {
 			check = cobra.ExactArgs(0)
 		}
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -1204,40 +1731,62 @@ var searchModelsCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range searchModelsOverrides {
+		fn(cmd, &searchModelsReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newSearchModels())
+	})
 }
 
 // start set-model-tag command
-var setModelTagReq ml.SetModelTagRequest
-var setModelTagJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(setModelTagCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var setModelTagOverrides []func(
+	*cobra.Command,
+	*ml.SetModelTagRequest,
+)
+
+func newSetModelTag() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var setModelTagReq ml.SetModelTagRequest
+	var setModelTagJson flags.JsonFlag
+
 	// TODO: short flags
-	setModelTagCmd.Flags().Var(&setModelTagJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&setModelTagJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-}
-
-var setModelTagCmd = &cobra.Command{
-	Use:   "set-model-tag NAME KEY VALUE",
-	Short: `Set a tag.`,
-	Long: `Set a tag.
+	cmd.Use = "set-model-tag NAME KEY VALUE"
+	cmd.Short = `Set a tag.`
+	cmd.Long = `Set a tag.
   
-  Sets a tag on a registered model.`,
+  Sets a tag on a registered model.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(3)
 		if cmd.Flags().Changed("json") {
 			check = cobra.ExactArgs(0)
 		}
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -1257,40 +1806,62 @@ var setModelTagCmd = &cobra.Command{
 			return err
 		}
 		return nil
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range setModelTagOverrides {
+		fn(cmd, &setModelTagReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newSetModelTag())
+	})
 }
 
 // start set-model-version-tag command
-var setModelVersionTagReq ml.SetModelVersionTagRequest
-var setModelVersionTagJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(setModelVersionTagCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var setModelVersionTagOverrides []func(
+	*cobra.Command,
+	*ml.SetModelVersionTagRequest,
+)
+
+func newSetModelVersionTag() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var setModelVersionTagReq ml.SetModelVersionTagRequest
+	var setModelVersionTagJson flags.JsonFlag
+
 	// TODO: short flags
-	setModelVersionTagCmd.Flags().Var(&setModelVersionTagJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&setModelVersionTagJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-}
-
-var setModelVersionTagCmd = &cobra.Command{
-	Use:   "set-model-version-tag NAME VERSION KEY VALUE",
-	Short: `Set a version tag.`,
-	Long: `Set a version tag.
+	cmd.Use = "set-model-version-tag NAME VERSION KEY VALUE"
+	cmd.Short = `Set a version tag.`
+	cmd.Long = `Set a version tag.
   
-  Sets a model version tag.`,
+  Sets a model version tag.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(4)
 		if cmd.Flags().Changed("json") {
 			check = cobra.ExactArgs(0)
 		}
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -1311,44 +1882,66 @@ var setModelVersionTagCmd = &cobra.Command{
 			return err
 		}
 		return nil
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range setModelVersionTagOverrides {
+		fn(cmd, &setModelVersionTagReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newSetModelVersionTag())
+	})
 }
 
 // start test-registry-webhook command
-var testRegistryWebhookReq ml.TestRegistryWebhookRequest
-var testRegistryWebhookJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(testRegistryWebhookCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var testRegistryWebhookOverrides []func(
+	*cobra.Command,
+	*ml.TestRegistryWebhookRequest,
+)
+
+func newTestRegistryWebhook() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var testRegistryWebhookReq ml.TestRegistryWebhookRequest
+	var testRegistryWebhookJson flags.JsonFlag
+
 	// TODO: short flags
-	testRegistryWebhookCmd.Flags().Var(&testRegistryWebhookJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&testRegistryWebhookJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	testRegistryWebhookCmd.Flags().Var(&testRegistryWebhookReq.Event, "event", `If event is specified, the test trigger uses the specified event.`)
+	cmd.Flags().Var(&testRegistryWebhookReq.Event, "event", `If event is specified, the test trigger uses the specified event.`)
 
-}
-
-var testRegistryWebhookCmd = &cobra.Command{
-	Use:   "test-registry-webhook ID",
-	Short: `Test a webhook.`,
-	Long: `Test a webhook.
+	cmd.Use = "test-registry-webhook ID"
+	cmd.Short = `Test a webhook.`
+	cmd.Long = `Test a webhook.
   
   **NOTE:** This endpoint is in Public Preview.
   
-  Tests a registry webhook.`,
+  Tests a registry webhook.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
 			check = cobra.ExactArgs(0)
 		}
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -1366,46 +1959,68 @@ var testRegistryWebhookCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range testRegistryWebhookOverrides {
+		fn(cmd, &testRegistryWebhookReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newTestRegistryWebhook())
+	})
 }
 
 // start transition-stage command
-var transitionStageReq ml.TransitionModelVersionStageDatabricks
-var transitionStageJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(transitionStageCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var transitionStageOverrides []func(
+	*cobra.Command,
+	*ml.TransitionModelVersionStageDatabricks,
+)
+
+func newTransitionStage() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var transitionStageReq ml.TransitionModelVersionStageDatabricks
+	var transitionStageJson flags.JsonFlag
+
 	// TODO: short flags
-	transitionStageCmd.Flags().Var(&transitionStageJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&transitionStageJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	transitionStageCmd.Flags().StringVar(&transitionStageReq.Comment, "comment", transitionStageReq.Comment, `User-provided comment on the action.`)
+	cmd.Flags().StringVar(&transitionStageReq.Comment, "comment", transitionStageReq.Comment, `User-provided comment on the action.`)
 
-}
-
-var transitionStageCmd = &cobra.Command{
-	Use:   "transition-stage NAME VERSION STAGE ARCHIVE_EXISTING_VERSIONS",
-	Short: `Transition a stage.`,
-	Long: `Transition a stage.
+	cmd.Use = "transition-stage NAME VERSION STAGE ARCHIVE_EXISTING_VERSIONS"
+	cmd.Short = `Transition a stage.`
+	cmd.Long = `Transition a stage.
   
   Transition a model version's stage. This is a Databricks workspace version of
   the [MLflow endpoint] that also accepts a comment associated with the
   transition to be recorded.",
   
-  [MLflow endpoint]: https://www.mlflow.org/docs/latest/rest-api.html#transition-modelversion-stage`,
+  [MLflow endpoint]: https://www.mlflow.org/docs/latest/rest-api.html#transition-modelversion-stage`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(4)
 		if cmd.Flags().Changed("json") {
 			check = cobra.ExactArgs(0)
 		}
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -1432,40 +2047,62 @@ var transitionStageCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range transitionStageOverrides {
+		fn(cmd, &transitionStageReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newTransitionStage())
+	})
 }
 
 // start update-comment command
-var updateCommentReq ml.UpdateComment
-var updateCommentJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(updateCommentCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updateCommentOverrides []func(
+	*cobra.Command,
+	*ml.UpdateComment,
+)
+
+func newUpdateComment() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updateCommentReq ml.UpdateComment
+	var updateCommentJson flags.JsonFlag
+
 	// TODO: short flags
-	updateCommentCmd.Flags().Var(&updateCommentJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&updateCommentJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-}
-
-var updateCommentCmd = &cobra.Command{
-	Use:   "update-comment ID COMMENT",
-	Short: `Update a comment.`,
-	Long: `Update a comment.
+	cmd.Use = "update-comment ID COMMENT"
+	cmd.Short = `Update a comment.`
+	cmd.Long = `Update a comment.
   
-  Post an edit to a comment on a model version.`,
+  Post an edit to a comment on a model version.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
 			check = cobra.ExactArgs(0)
 		}
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -1484,42 +2121,64 @@ var updateCommentCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updateCommentOverrides {
+		fn(cmd, &updateCommentReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newUpdateComment())
+	})
 }
 
 // start update-model command
-var updateModelReq ml.UpdateModelRequest
-var updateModelJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(updateModelCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updateModelOverrides []func(
+	*cobra.Command,
+	*ml.UpdateModelRequest,
+)
+
+func newUpdateModel() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updateModelReq ml.UpdateModelRequest
+	var updateModelJson flags.JsonFlag
+
 	// TODO: short flags
-	updateModelCmd.Flags().Var(&updateModelJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&updateModelJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	updateModelCmd.Flags().StringVar(&updateModelReq.Description, "description", updateModelReq.Description, `If provided, updates the description for this registered_model.`)
+	cmd.Flags().StringVar(&updateModelReq.Description, "description", updateModelReq.Description, `If provided, updates the description for this registered_model.`)
 
-}
-
-var updateModelCmd = &cobra.Command{
-	Use:   "update-model NAME",
-	Short: `Update model.`,
-	Long: `Update model.
+	cmd.Use = "update-model NAME"
+	cmd.Short = `Update model.`
+	cmd.Long = `Update model.
   
-  Updates a registered model.`,
+  Updates a registered model.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
 			check = cobra.ExactArgs(0)
 		}
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -1537,42 +2196,64 @@ var updateModelCmd = &cobra.Command{
 			return err
 		}
 		return nil
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updateModelOverrides {
+		fn(cmd, &updateModelReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newUpdateModel())
+	})
 }
 
 // start update-model-version command
-var updateModelVersionReq ml.UpdateModelVersionRequest
-var updateModelVersionJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(updateModelVersionCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updateModelVersionOverrides []func(
+	*cobra.Command,
+	*ml.UpdateModelVersionRequest,
+)
+
+func newUpdateModelVersion() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updateModelVersionReq ml.UpdateModelVersionRequest
+	var updateModelVersionJson flags.JsonFlag
+
 	// TODO: short flags
-	updateModelVersionCmd.Flags().Var(&updateModelVersionJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&updateModelVersionJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	updateModelVersionCmd.Flags().StringVar(&updateModelVersionReq.Description, "description", updateModelVersionReq.Description, `If provided, updates the description for this registered_model.`)
+	cmd.Flags().StringVar(&updateModelVersionReq.Description, "description", updateModelVersionReq.Description, `If provided, updates the description for this registered_model.`)
 
-}
-
-var updateModelVersionCmd = &cobra.Command{
-	Use:   "update-model-version NAME VERSION",
-	Short: `Update model version.`,
-	Long: `Update model version.
+	cmd.Use = "update-model-version NAME VERSION"
+	cmd.Short = `Update model version.`
+	cmd.Long = `Update model version.
   
-  Updates the model version.`,
+  Updates the model version.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
 			check = cobra.ExactArgs(0)
 		}
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -1591,48 +2272,70 @@ var updateModelVersionCmd = &cobra.Command{
 			return err
 		}
 		return nil
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updateModelVersionOverrides {
+		fn(cmd, &updateModelVersionReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newUpdateModelVersion())
+	})
 }
 
 // start update-webhook command
-var updateWebhookReq ml.UpdateRegistryWebhook
-var updateWebhookJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(updateWebhookCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updateWebhookOverrides []func(
+	*cobra.Command,
+	*ml.UpdateRegistryWebhook,
+)
+
+func newUpdateWebhook() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updateWebhookReq ml.UpdateRegistryWebhook
+	var updateWebhookJson flags.JsonFlag
+
 	// TODO: short flags
-	updateWebhookCmd.Flags().Var(&updateWebhookJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&updateWebhookJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	updateWebhookCmd.Flags().StringVar(&updateWebhookReq.Description, "description", updateWebhookReq.Description, `User-specified description for the webhook.`)
+	cmd.Flags().StringVar(&updateWebhookReq.Description, "description", updateWebhookReq.Description, `User-specified description for the webhook.`)
 	// TODO: array: events
 	// TODO: complex arg: http_url_spec
 	// TODO: complex arg: job_spec
-	updateWebhookCmd.Flags().Var(&updateWebhookReq.Status, "status", `This describes an enum.`)
+	cmd.Flags().Var(&updateWebhookReq.Status, "status", `This describes an enum.`)
 
-}
-
-var updateWebhookCmd = &cobra.Command{
-	Use:   "update-webhook ID",
-	Short: `Update a webhook.`,
-	Long: `Update a webhook.
+	cmd.Use = "update-webhook ID"
+	cmd.Short = `Update a webhook.`
+	cmd.Long = `Update a webhook.
   
   **NOTE:** This endpoint is in Public Preview.
   
-  Updates a registry webhook.`,
+  Updates a registry webhook.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
 			check = cobra.ExactArgs(0)
 		}
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -1650,10 +2353,24 @@ var updateWebhookCmd = &cobra.Command{
 			return err
 		}
 		return nil
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updateWebhookOverrides {
+		fn(cmd, &updateWebhookReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newUpdateWebhook())
+	})
 }
 
 // end service ModelRegistry
