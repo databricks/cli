@@ -37,10 +37,6 @@ func New() *cobra.Command {
 		},
 	}
 
-	cmd.AddCommand(newGet())
-	cmd.AddCommand(newGetEffective())
-	cmd.AddCommand(newUpdate())
-
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
 		fn(cmd)
@@ -110,6 +106,12 @@ func newGet() *cobra.Command {
 	return cmd
 }
 
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newGet())
+	})
+}
+
 // start get-effective command
 
 // Slice with functions to override default command behavior.
@@ -169,6 +171,12 @@ func newGetEffective() *cobra.Command {
 	}
 
 	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newGetEffective())
+	})
 }
 
 // start update command
@@ -238,6 +246,12 @@ func newUpdate() *cobra.Command {
 	}
 
 	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newUpdate())
+	})
 }
 
 // end service Grants

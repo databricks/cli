@@ -36,10 +36,6 @@ func New() *cobra.Command {
 		Hidden: true,
 	}
 
-	cmd.AddCommand(newDeletePersonalComputeSetting())
-	cmd.AddCommand(newReadPersonalComputeSetting())
-	cmd.AddCommand(newUpdatePersonalComputeSetting())
-
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
 		fn(cmd)
@@ -103,6 +99,12 @@ func newDeletePersonalComputeSetting() *cobra.Command {
 	return cmd
 }
 
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newDeletePersonalComputeSetting())
+	})
+}
+
 // start read-personal-compute-setting command
 
 // Slice with functions to override default command behavior.
@@ -156,6 +158,12 @@ func newReadPersonalComputeSetting() *cobra.Command {
 	}
 
 	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newReadPersonalComputeSetting())
+	})
 }
 
 // start update-personal-compute-setting command
@@ -225,6 +233,12 @@ func newUpdatePersonalComputeSetting() *cobra.Command {
 	}
 
 	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newUpdatePersonalComputeSetting())
+	})
 }
 
 // end service AccountSettings

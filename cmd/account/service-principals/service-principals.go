@@ -30,13 +30,6 @@ func New() *cobra.Command {
 		},
 	}
 
-	cmd.AddCommand(newCreate())
-	cmd.AddCommand(newDelete())
-	cmd.AddCommand(newGet())
-	cmd.AddCommand(newList())
-	cmd.AddCommand(newPatch())
-	cmd.AddCommand(newUpdate())
-
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
 		fn(cmd)
@@ -120,6 +113,12 @@ func newCreate() *cobra.Command {
 	return cmd
 }
 
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newCreate())
+	})
+}
+
 // start delete command
 
 // Slice with functions to override default command behavior.
@@ -173,6 +172,12 @@ func newDelete() *cobra.Command {
 	}
 
 	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newDelete())
+	})
 }
 
 // start get command
@@ -229,6 +234,12 @@ func newGet() *cobra.Command {
 	}
 
 	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newGet())
+	})
 }
 
 // start list command
@@ -305,6 +316,12 @@ func newList() *cobra.Command {
 	return cmd
 }
 
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newList())
+	})
+}
+
 // start patch command
 
 // Slice with functions to override default command behavior.
@@ -370,6 +387,12 @@ func newPatch() *cobra.Command {
 	}
 
 	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newPatch())
+	})
 }
 
 // start update command
@@ -448,6 +471,12 @@ func newUpdate() *cobra.Command {
 	}
 
 	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newUpdate())
+	})
 }
 
 // end service AccountServicePrincipals

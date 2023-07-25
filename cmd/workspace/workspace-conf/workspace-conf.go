@@ -25,9 +25,6 @@ func New() *cobra.Command {
 		},
 	}
 
-	cmd.AddCommand(newGetStatus())
-	cmd.AddCommand(newSetStatus())
-
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
 		fn(cmd)
@@ -89,6 +86,12 @@ func newGetStatus() *cobra.Command {
 	}
 
 	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newGetStatus())
+	})
 }
 
 // start set-status command
@@ -156,6 +159,12 @@ func newSetStatus() *cobra.Command {
 	}
 
 	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newSetStatus())
+	})
 }
 
 // end service WorkspaceConf

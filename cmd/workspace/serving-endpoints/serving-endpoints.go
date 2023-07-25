@@ -40,16 +40,6 @@ func New() *cobra.Command {
 		},
 	}
 
-	cmd.AddCommand(newBuildLogs())
-	cmd.AddCommand(newCreate())
-	cmd.AddCommand(newDelete())
-	cmd.AddCommand(newExportMetrics())
-	cmd.AddCommand(newGet())
-	cmd.AddCommand(newList())
-	cmd.AddCommand(newLogs())
-	cmd.AddCommand(newQuery())
-	cmd.AddCommand(newUpdateConfig())
-
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
 		fn(cmd)
@@ -113,6 +103,12 @@ func newBuildLogs() *cobra.Command {
 	}
 
 	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newBuildLogs())
+	})
 }
 
 // start create command
@@ -190,6 +186,12 @@ func newCreate() *cobra.Command {
 	return cmd
 }
 
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newCreate())
+	})
+}
+
 // start delete command
 
 // Slice with functions to override default command behavior.
@@ -241,6 +243,12 @@ func newDelete() *cobra.Command {
 	}
 
 	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newDelete())
+	})
 }
 
 // start export-metrics command
@@ -299,6 +307,12 @@ func newExportMetrics() *cobra.Command {
 	return cmd
 }
 
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newExportMetrics())
+	})
+}
+
 // start get command
 
 // Slice with functions to override default command behavior.
@@ -354,6 +368,12 @@ func newGet() *cobra.Command {
 	return cmd
 }
 
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newGet())
+	})
+}
+
 // start list command
 
 // Slice with functions to override default command behavior.
@@ -392,6 +412,12 @@ func newList() *cobra.Command {
 	}
 
 	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newList())
+	})
 }
 
 // start logs command
@@ -451,6 +477,12 @@ func newLogs() *cobra.Command {
 	return cmd
 }
 
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newLogs())
+	})
+}
+
 // start query command
 
 // Slice with functions to override default command behavior.
@@ -502,6 +534,12 @@ func newQuery() *cobra.Command {
 	}
 
 	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newQuery())
+	})
 }
 
 // start update-config command
@@ -584,6 +622,12 @@ func newUpdateConfig() *cobra.Command {
 	}
 
 	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newUpdateConfig())
+	})
 }
 
 // end service ServingEndpoints

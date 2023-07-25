@@ -24,9 +24,6 @@ func New() *cobra.Command {
 		},
 	}
 
-	cmd.AddCommand(newGetActivationUrlInfo())
-	cmd.AddCommand(newRetrieveToken())
-
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
 		fn(cmd)
@@ -90,6 +87,12 @@ func newGetActivationUrlInfo() *cobra.Command {
 	return cmd
 }
 
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newGetActivationUrlInfo())
+	})
+}
+
 // start retrieve-token command
 
 // Slice with functions to override default command behavior.
@@ -144,6 +147,12 @@ func newRetrieveToken() *cobra.Command {
 	}
 
 	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newRetrieveToken())
+	})
 }
 
 // end service RecipientActivation

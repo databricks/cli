@@ -24,8 +24,6 @@ func New() *cobra.Command {
 		},
 	}
 
-	cmd.AddCommand(newMe())
-
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
 		fn(cmd)
@@ -74,6 +72,12 @@ func newMe() *cobra.Command {
 	}
 
 	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newMe())
+	})
 }
 
 // end service CurrentUser

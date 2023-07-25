@@ -29,10 +29,6 @@ func New() *cobra.Command {
 		},
 	}
 
-	cmd.AddCommand(newGetAssignableRolesForResource())
-	cmd.AddCommand(newGetRuleSet())
-	cmd.AddCommand(newUpdateRuleSet())
-
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
 		fn(cmd)
@@ -98,6 +94,12 @@ func newGetAssignableRolesForResource() *cobra.Command {
 	return cmd
 }
 
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newGetAssignableRolesForResource())
+	})
+}
+
 // start get-rule-set command
 
 // Slice with functions to override default command behavior.
@@ -154,6 +156,12 @@ func newGetRuleSet() *cobra.Command {
 	}
 
 	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newGetRuleSet())
+	})
 }
 
 // start update-rule-set command
@@ -215,6 +223,12 @@ func newUpdateRuleSet() *cobra.Command {
 	}
 
 	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newUpdateRuleSet())
+	})
 }
 
 // end service AccountAccessControl

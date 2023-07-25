@@ -46,11 +46,6 @@ func New() *cobra.Command {
 		},
 	}
 
-	cmd.AddCommand(newAllClusterStatuses())
-	cmd.AddCommand(newClusterStatus())
-	cmd.AddCommand(newInstall())
-	cmd.AddCommand(newUninstall())
-
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
 		fn(cmd)
@@ -101,6 +96,12 @@ func newAllClusterStatuses() *cobra.Command {
 	}
 
 	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newAllClusterStatuses())
+	})
 }
 
 // start cluster-status command
@@ -172,6 +173,12 @@ func newClusterStatus() *cobra.Command {
 	return cmd
 }
 
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newClusterStatus())
+	})
+}
+
 // start install command
 
 // Slice with functions to override default command behavior.
@@ -236,6 +243,12 @@ func newInstall() *cobra.Command {
 	return cmd
 }
 
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newInstall())
+	})
+}
+
 // start uninstall command
 
 // Slice with functions to override default command behavior.
@@ -295,6 +308,12 @@ func newUninstall() *cobra.Command {
 	}
 
 	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newUninstall())
+	})
 }
 
 // end service Libraries

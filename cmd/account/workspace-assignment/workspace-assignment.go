@@ -28,11 +28,6 @@ func New() *cobra.Command {
 		},
 	}
 
-	cmd.AddCommand(newDelete())
-	cmd.AddCommand(newGet())
-	cmd.AddCommand(newList())
-	cmd.AddCommand(newUpdate())
-
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
 		fn(cmd)
@@ -104,6 +99,12 @@ func newDelete() *cobra.Command {
 	return cmd
 }
 
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newDelete())
+	})
+}
+
 // start get command
 
 // Slice with functions to override default command behavior.
@@ -160,6 +161,12 @@ func newGet() *cobra.Command {
 	}
 
 	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newGet())
+	})
 }
 
 // start list command
@@ -221,6 +228,12 @@ func newList() *cobra.Command {
 	return cmd
 }
 
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newList())
+	})
+}
+
 // start update command
 
 // Slice with functions to override default command behavior.
@@ -279,6 +292,12 @@ func newUpdate() *cobra.Command {
 	}
 
 	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newUpdate())
+	})
 }
 
 // end service WorkspaceAssignment

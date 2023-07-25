@@ -29,13 +29,6 @@ func New() *cobra.Command {
 		},
 	}
 
-	cmd.AddCommand(newDelete())
-	cmd.AddCommand(newExport())
-	cmd.AddCommand(newGetStatus())
-	cmd.AddCommand(newImport())
-	cmd.AddCommand(newList())
-	cmd.AddCommand(newMkdirs())
-
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
 		fn(cmd)
@@ -120,6 +113,12 @@ func newDelete() *cobra.Command {
 	return cmd
 }
 
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newDelete())
+	})
+}
+
 // start export command
 
 // Slice with functions to override default command behavior.
@@ -184,6 +183,12 @@ func newExport() *cobra.Command {
 	return cmd
 }
 
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newExport())
+	})
+}
+
 // start get-status command
 
 // Slice with functions to override default command behavior.
@@ -238,6 +243,12 @@ func newGetStatus() *cobra.Command {
 	}
 
 	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newGetStatus())
+	})
 }
 
 // start import command
@@ -315,6 +326,12 @@ func newImport() *cobra.Command {
 	return cmd
 }
 
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newImport())
+	})
+}
+
 // start list command
 
 // Slice with functions to override default command behavior.
@@ -372,6 +389,12 @@ func newList() *cobra.Command {
 	}
 
 	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newList())
+	})
 }
 
 // start mkdirs command
@@ -444,6 +467,12 @@ func newMkdirs() *cobra.Command {
 	}
 
 	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newMkdirs())
+	})
 }
 
 // end service Workspace

@@ -48,12 +48,6 @@ func New() *cobra.Command {
 		},
 	}
 
-	cmd.AddCommand(newCreate())
-	cmd.AddCommand(newDelete())
-	cmd.AddCommand(newEdit())
-	cmd.AddCommand(newGet())
-	cmd.AddCommand(newList())
-
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
 		fn(cmd)
@@ -135,6 +129,12 @@ func newCreate() *cobra.Command {
 	return cmd
 }
 
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newCreate())
+	})
+}
+
 // start delete command
 
 // Slice with functions to override default command behavior.
@@ -201,6 +201,12 @@ func newDelete() *cobra.Command {
 	}
 
 	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newDelete())
+	})
 }
 
 // start edit command
@@ -278,6 +284,12 @@ func newEdit() *cobra.Command {
 	return cmd
 }
 
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newEdit())
+	})
+}
+
 // start get command
 
 // Slice with functions to override default command behavior.
@@ -331,6 +343,12 @@ func newGet() *cobra.Command {
 	}
 
 	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newGet())
+	})
 }
 
 // start list command
@@ -400,6 +418,12 @@ func newList() *cobra.Command {
 	}
 
 	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newList())
+	})
 }
 
 // end service ClusterPolicies

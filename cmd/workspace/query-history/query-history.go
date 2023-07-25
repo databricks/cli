@@ -25,8 +25,6 @@ func New() *cobra.Command {
 		},
 	}
 
-	cmd.AddCommand(newList())
-
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
 		fn(cmd)
@@ -106,6 +104,12 @@ func newList() *cobra.Command {
 	}
 
 	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newList())
+	})
 }
 
 // end service QueryHistory

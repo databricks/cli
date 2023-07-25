@@ -30,9 +30,6 @@ func New() *cobra.Command {
 		},
 	}
 
-	cmd.AddCommand(newGet())
-	cmd.AddCommand(newUpdate())
-
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
 		fn(cmd)
@@ -95,6 +92,12 @@ func newGet() *cobra.Command {
 	}
 
 	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newGet())
+	})
 }
 
 // start update command
@@ -162,6 +165,12 @@ func newUpdate() *cobra.Command {
 	}
 
 	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newUpdate())
+	})
 }
 
 // end service WorkspaceBindings

@@ -41,14 +41,6 @@ func New() *cobra.Command {
 		{{- end }}
 	}
 
-	{{ range .Methods }}
-	{{- $excludes := list "put-secret" -}}
-	{{- if in $excludes .KebabName -}}
-		{{ continue }}
-	{{- end -}}
-	cmd.AddCommand(new{{.PascalName}}())
-	{{ end }}
-
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
 		fn(cmd)
@@ -253,6 +245,12 @@ func new{{.PascalName}}() *cobra.Command {
 	}
 
 	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(new{{.PascalName}}())
+	})
 }
 {{end}}
 // end service {{.Name}}{{end}}

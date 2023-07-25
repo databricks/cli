@@ -29,9 +29,6 @@ func New() *cobra.Command {
 		},
 	}
 
-	cmd.AddCommand(newCreate())
-	cmd.AddCommand(newGet())
-
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
 		fn(cmd)
@@ -116,6 +113,12 @@ func newCreate() *cobra.Command {
 	return cmd
 }
 
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newCreate())
+	})
+}
+
 // start get command
 
 // Slice with functions to override default command behavior.
@@ -159,6 +162,12 @@ func newGet() *cobra.Command {
 	}
 
 	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newGet())
+	})
 }
 
 // end service OAuthEnrollment

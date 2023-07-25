@@ -41,18 +41,6 @@ func New() *cobra.Command {
 		},
 	}
 
-	cmd.AddCommand(newCreate())
-	cmd.AddCommand(newDelete())
-	cmd.AddCommand(newGet())
-	cmd.AddCommand(newGetUpdate())
-	cmd.AddCommand(newListPipelineEvents())
-	cmd.AddCommand(newListPipelines())
-	cmd.AddCommand(newListUpdates())
-	cmd.AddCommand(newReset())
-	cmd.AddCommand(newStartUpdate())
-	cmd.AddCommand(newStop())
-	cmd.AddCommand(newUpdate())
-
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
 		fn(cmd)
@@ -129,6 +117,12 @@ func newCreate() *cobra.Command {
 	return cmd
 }
 
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newCreate())
+	})
+}
+
 // start delete command
 
 // Slice with functions to override default command behavior.
@@ -182,6 +176,12 @@ func newDelete() *cobra.Command {
 	}
 
 	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newDelete())
+	})
 }
 
 // start get command
@@ -242,6 +242,12 @@ func newGet() *cobra.Command {
 	return cmd
 }
 
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newGet())
+	})
+}
+
 // start get-update command
 
 // Slice with functions to override default command behavior.
@@ -296,6 +302,12 @@ func newGetUpdate() *cobra.Command {
 	}
 
 	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newGetUpdate())
+	})
 }
 
 // start list-pipeline-events command
@@ -364,6 +376,12 @@ func newListPipelineEvents() *cobra.Command {
 	}
 
 	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newListPipelineEvents())
+	})
 }
 
 // start list-pipelines command
@@ -437,6 +455,12 @@ func newListPipelines() *cobra.Command {
 	return cmd
 }
 
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newListPipelines())
+	})
+}
+
 // start list-updates command
 
 // Slice with functions to override default command behavior.
@@ -494,6 +518,12 @@ func newListUpdates() *cobra.Command {
 	}
 
 	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newListUpdates())
+	})
 }
 
 // start reset command
@@ -568,6 +598,12 @@ func newReset() *cobra.Command {
 	return cmd
 }
 
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newReset())
+	})
+}
+
 // start start-update command
 
 // Slice with functions to override default command behavior.
@@ -634,6 +670,12 @@ func newStartUpdate() *cobra.Command {
 	}
 
 	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newStartUpdate())
+	})
 }
 
 // start stop command
@@ -706,6 +748,12 @@ func newStop() *cobra.Command {
 	}
 
 	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newStop())
+	})
 }
 
 // start update command
@@ -793,6 +841,12 @@ func newUpdate() *cobra.Command {
 	}
 
 	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newUpdate())
+	})
 }
 
 // end service Pipelines

@@ -22,11 +22,11 @@ func New() *cobra.Command {
 		Short: `The Repos API allows users to manage their git repos.`,
 		Long: `The Repos API allows users to manage their git repos. Users can use the API to
   access all repos that they have manage permissions on.
-
+  
   Databricks Repos is a visual Git client in Databricks. It supports common Git
   operations such a cloning a repository, committing and pushing, pulling,
   branch management, and visual comparison of diffs when committing.
-
+  
   Within Repos you can develop code in notebooks or other files and follow data
   science and engineering code development best practices using Git for version
   control, collaboration, and CI/CD.`,
@@ -35,12 +35,6 @@ func New() *cobra.Command {
 			"package": "workspace",
 		},
 	}
-
-	cmd.AddCommand(newCreate())
-	cmd.AddCommand(newDelete())
-	cmd.AddCommand(newGet())
-	cmd.AddCommand(newList())
-	cmd.AddCommand(newUpdate())
 
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
@@ -74,7 +68,7 @@ func newCreate() *cobra.Command {
 	cmd.Use = "create URL PROVIDER"
 	cmd.Short = `Create a repo.`
 	cmd.Long = `Create a repo.
-
+  
   Creates a repo in the workspace and links it to the remote Git repo specified.
   Note that repos created programmatically must be linked to a remote Git repo,
   unlike repos created in the browser.`
@@ -123,6 +117,12 @@ func newCreate() *cobra.Command {
 	return cmd
 }
 
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newCreate())
+	})
+}
+
 // start delete command
 
 // Slice with functions to override default command behavior.
@@ -142,7 +142,7 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete REPO_ID"
 	cmd.Short = `Delete a repo.`
 	cmd.Long = `Delete a repo.
-
+  
   Deletes the specified repo.`
 
 	cmd.Annotations = make(map[string]string)
@@ -181,6 +181,12 @@ func newDelete() *cobra.Command {
 	return cmd
 }
 
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newDelete())
+	})
+}
+
 // start get command
 
 // Slice with functions to override default command behavior.
@@ -200,7 +206,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get REPO_ID"
 	cmd.Short = `Get a repo.`
 	cmd.Long = `Get a repo.
-
+  
   Returns the repo with the given repo ID.`
 
 	cmd.Annotations = make(map[string]string)
@@ -239,6 +245,12 @@ func newGet() *cobra.Command {
 	return cmd
 }
 
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newGet())
+	})
+}
+
 // start list command
 
 // Slice with functions to override default command behavior.
@@ -263,7 +275,7 @@ func newList() *cobra.Command {
 	cmd.Use = "list"
 	cmd.Short = `Get repos.`
 	cmd.Long = `Get repos.
-
+  
   Returns repos that the calling user has Manage permissions on. Results are
   paginated with each page containing twenty repos.`
 
@@ -309,6 +321,12 @@ func newList() *cobra.Command {
 	return cmd
 }
 
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newList())
+	})
+}
+
 // start update command
 
 // Slice with functions to override default command behavior.
@@ -334,7 +352,7 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update REPO_ID"
 	cmd.Short = `Update a repo.`
 	cmd.Long = `Update a repo.
-
+  
   Updates the repo to a different branch or tag, or updates the repo to the
   latest commit on the same branch.`
 
@@ -378,6 +396,12 @@ func newUpdate() *cobra.Command {
 	}
 
 	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newUpdate())
+	})
 }
 
 // end service Repos
