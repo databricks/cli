@@ -12,47 +12,69 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var Cmd = &cobra.Command{
-	Use:   "token-management",
-	Short: `Enables administrators to get all tokens and delete tokens for other users.`,
-	Long: `Enables administrators to get all tokens and delete tokens for other users.
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var cmdOverrides []func(*cobra.Command)
+
+func New() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "token-management",
+		Short: `Enables administrators to get all tokens and delete tokens for other users.`,
+		Long: `Enables administrators to get all tokens and delete tokens for other users.
   Admins can either get every token, get a specific token by ID, or get all
   tokens for a particular user.`,
-	Annotations: map[string]string{
-		"package": "settings",
-	},
+		GroupID: "settings",
+		Annotations: map[string]string{
+			"package": "settings",
+		},
+	}
+
+	// Apply optional overrides to this command.
+	for _, fn := range cmdOverrides {
+		fn(cmd)
+	}
+
+	return cmd
 }
 
 // start create-obo-token command
-var createOboTokenReq settings.CreateOboTokenRequest
-var createOboTokenJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(createOboTokenCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var createOboTokenOverrides []func(
+	*cobra.Command,
+	*settings.CreateOboTokenRequest,
+)
+
+func newCreateOboToken() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var createOboTokenReq settings.CreateOboTokenRequest
+	var createOboTokenJson flags.JsonFlag
+
 	// TODO: short flags
-	createOboTokenCmd.Flags().Var(&createOboTokenJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&createOboTokenJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	createOboTokenCmd.Flags().StringVar(&createOboTokenReq.Comment, "comment", createOboTokenReq.Comment, `Comment that describes the purpose of the token.`)
+	cmd.Flags().StringVar(&createOboTokenReq.Comment, "comment", createOboTokenReq.Comment, `Comment that describes the purpose of the token.`)
 
-}
-
-var createOboTokenCmd = &cobra.Command{
-	Use:   "create-obo-token APPLICATION_ID LIFETIME_SECONDS",
-	Short: `Create on-behalf token.`,
-	Long: `Create on-behalf token.
+	cmd.Use = "create-obo-token APPLICATION_ID LIFETIME_SECONDS"
+	cmd.Short = `Create on-behalf token.`
+	cmd.Long = `Create on-behalf token.
   
-  Creates a token on behalf of a service principal.`,
+  Creates a token on behalf of a service principal.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
 			check = cobra.ExactArgs(0)
 		}
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -74,51 +96,60 @@ var createOboTokenCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range createOboTokenOverrides {
+		fn(cmd, &createOboTokenReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newCreateOboToken())
+	})
 }
 
 // start delete command
-var deleteReq settings.DeleteTokenManagementRequest
 
-func init() {
-	Cmd.AddCommand(deleteCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var deleteOverrides []func(
+	*cobra.Command,
+	*settings.DeleteTokenManagementRequest,
+)
+
+func newDelete() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var deleteReq settings.DeleteTokenManagementRequest
+
 	// TODO: short flags
 
-}
-
-var deleteCmd = &cobra.Command{
-	Use:   "delete TOKEN_ID",
-	Short: `Delete a token.`,
-	Long: `Delete a token.
+	cmd.Use = "delete TOKEN_ID"
+	cmd.Short = `Delete a token.`
+	cmd.Long = `Delete a token.
   
-  Deletes a token, specified by its ID.`,
+  Deletes a token, specified by its ID.`
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No TOKEN_ID argument specified. Loading names for Token Management drop-down."
-			names, err := w.TokenManagement.TokenInfoCommentToTokenIdMap(ctx, settings.ListTokenManagementRequest{})
-			close(promptSpinner)
-			if err != nil {
-				return fmt.Errorf("failed to load names for Token Management drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "The ID of the token to get")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have the id of the token to get")
-		}
 		deleteReq.TokenId = args[0]
 
 		err = w.TokenManagement.Delete(ctx, deleteReq)
@@ -126,51 +157,60 @@ var deleteCmd = &cobra.Command{
 			return err
 		}
 		return nil
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range deleteOverrides {
+		fn(cmd, &deleteReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newDelete())
+	})
 }
 
 // start get command
-var getReq settings.GetTokenManagementRequest
 
-func init() {
-	Cmd.AddCommand(getCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getOverrides []func(
+	*cobra.Command,
+	*settings.GetTokenManagementRequest,
+)
+
+func newGet() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getReq settings.GetTokenManagementRequest
+
 	// TODO: short flags
 
-}
-
-var getCmd = &cobra.Command{
-	Use:   "get TOKEN_ID",
-	Short: `Get token info.`,
-	Long: `Get token info.
+	cmd.Use = "get TOKEN_ID"
+	cmd.Short = `Get token info.`
+	cmd.Long = `Get token info.
   
-  Gets information about a token, specified by its ID.`,
+  Gets information about a token, specified by its ID.`
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No TOKEN_ID argument specified. Loading names for Token Management drop-down."
-			names, err := w.TokenManagement.TokenInfoCommentToTokenIdMap(ctx, settings.ListTokenManagementRequest{})
-			close(promptSpinner)
-			if err != nil {
-				return fmt.Errorf("failed to load names for Token Management drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "The ID of the token to get")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have the id of the token to get")
-		}
 		getReq.TokenId = args[0]
 
 		response, err := w.TokenManagement.Get(ctx, getReq)
@@ -178,43 +218,65 @@ var getCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getOverrides {
+		fn(cmd, &getReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newGet())
+	})
 }
 
 // start list command
-var listReq settings.ListTokenManagementRequest
-var listJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(listCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listOverrides []func(
+	*cobra.Command,
+	*settings.ListTokenManagementRequest,
+)
+
+func newList() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var listReq settings.ListTokenManagementRequest
+	var listJson flags.JsonFlag
+
 	// TODO: short flags
-	listCmd.Flags().Var(&listJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&listJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	listCmd.Flags().StringVar(&listReq.CreatedById, "created-by-id", listReq.CreatedById, `User ID of the user that created the token.`)
-	listCmd.Flags().StringVar(&listReq.CreatedByUsername, "created-by-username", listReq.CreatedByUsername, `Username of the user that created the token.`)
+	cmd.Flags().StringVar(&listReq.CreatedById, "created-by-id", listReq.CreatedById, `User ID of the user that created the token.`)
+	cmd.Flags().StringVar(&listReq.CreatedByUsername, "created-by-username", listReq.CreatedByUsername, `Username of the user that created the token.`)
 
-}
-
-var listCmd = &cobra.Command{
-	Use:   "list",
-	Short: `List all tokens.`,
-	Long: `List all tokens.
+	cmd.Use = "list"
+	cmd.Short = `List all tokens.`
+	cmd.Long = `List all tokens.
   
-  Lists all tokens associated with the specified workspace or user.`,
+  Lists all tokens associated with the specified workspace or user.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {
 			check = cobra.ExactArgs(0)
 		}
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -231,10 +293,24 @@ var listCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listOverrides {
+		fn(cmd, &listReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newList())
+	})
 }
 
 // end service TokenManagement

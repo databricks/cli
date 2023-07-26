@@ -118,8 +118,8 @@ func environmentCompletion(cmd *cobra.Command, args []string, toComplete string)
 	return maps.Keys(b.Config.Environments), cobra.ShellCompDirectiveDefault
 }
 
-func init() {
+func initEnvironmentFlag(cmd *cobra.Command) {
 	// To operate in the context of a bundle, all commands must take an "environment" parameter.
-	RootCmd.PersistentFlags().StringP("environment", "e", "", "bundle environment to use (if applicable)")
-	RootCmd.RegisterFlagCompletionFunc("environment", environmentCompletion)
+	cmd.PersistentFlags().StringP("environment", "e", "", "bundle environment to use (if applicable)")
+	cmd.RegisterFlagCompletionFunc("environment", environmentCompletion)
 }

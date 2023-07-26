@@ -54,11 +54,8 @@ type Root struct {
 	Bundle Bundle `json:"bundle"`
 
 	// Include specifies a list of patterns of file names to load and
-	// merge into the this configuration. If not set in `databricks.yml`,
-	// it defaults to loading `*.yml` and `*/*.yml`.
-	//
-	// Also see [mutator.DefineDefaultInclude].
-	//
+	// merge into the this configuration. Only includes defined in the root
+	// `databricks.yml` are processed. Defaults to an empty list.
 	Include []string `json:"include,omitempty"`
 
 	// Workspace contains details about the workspace to connect to

@@ -12,10 +12,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var Cmd = &cobra.Command{
-	Use:   "repos",
-	Short: `The Repos API allows users to manage their git repos.`,
-	Long: `The Repos API allows users to manage their git repos. Users can use the API to
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var cmdOverrides []func(*cobra.Command)
+
+func New() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "repos",
+		Short: `The Repos API allows users to manage their git repos.`,
+		Long: `The Repos API allows users to manage their git repos. Users can use the API to
   access all repos that they have manage permissions on.
   
   Databricks Repos is a visual Git client in Databricks. It supports common Git
@@ -25,44 +30,61 @@ var Cmd = &cobra.Command{
   Within Repos you can develop code in notebooks or other files and follow data
   science and engineering code development best practices using Git for version
   control, collaboration, and CI/CD.`,
-	Annotations: map[string]string{
-		"package": "workspace",
-	},
+		GroupID: "workspace",
+		Annotations: map[string]string{
+			"package": "workspace",
+		},
+	}
+
+	// Apply optional overrides to this command.
+	for _, fn := range cmdOverrides {
+		fn(cmd)
+	}
+
+	return cmd
 }
 
 // start create command
-var createReq workspace.CreateRepo
-var createJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(createCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var createOverrides []func(
+	*cobra.Command,
+	*workspace.CreateRepo,
+)
+
+func newCreate() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var createReq workspace.CreateRepo
+	var createJson flags.JsonFlag
+
 	// TODO: short flags
-	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	createCmd.Flags().StringVar(&createReq.Path, "path", createReq.Path, `Desired path for the repo in the workspace.`)
+	cmd.Flags().StringVar(&createReq.Path, "path", createReq.Path, `Desired path for the repo in the workspace.`)
 	// TODO: complex arg: sparse_checkout
 
-}
-
-var createCmd = &cobra.Command{
-	Use:   "create URL PROVIDER",
-	Short: `Create a repo.`,
-	Long: `Create a repo.
+	cmd.Use = "create URL PROVIDER"
+	cmd.Short = `Create a repo.`
+	cmd.Long = `Create a repo.
   
   Creates a repo in the workspace and links it to the remote Git repo specified.
   Note that repos created programmatically must be linked to a remote Git repo,
-  unlike repos created in the browser.`,
+  unlike repos created in the browser.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
 			check = cobra.ExactArgs(0)
 		}
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -81,51 +103,60 @@ var createCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range createOverrides {
+		fn(cmd, &createReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newCreate())
+	})
 }
 
 // start delete command
-var deleteReq workspace.DeleteRepoRequest
 
-func init() {
-	Cmd.AddCommand(deleteCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var deleteOverrides []func(
+	*cobra.Command,
+	*workspace.DeleteRepoRequest,
+)
+
+func newDelete() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var deleteReq workspace.DeleteRepoRequest
+
 	// TODO: short flags
 
-}
-
-var deleteCmd = &cobra.Command{
-	Use:   "delete REPO_ID",
-	Short: `Delete a repo.`,
-	Long: `Delete a repo.
+	cmd.Use = "delete REPO_ID"
+	cmd.Short = `Delete a repo.`
+	cmd.Long = `Delete a repo.
   
-  Deletes the specified repo.`,
+  Deletes the specified repo.`
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No REPO_ID argument specified. Loading names for Repos drop-down."
-			names, err := w.Repos.RepoInfoPathToIdMap(ctx, workspace.ListReposRequest{})
-			close(promptSpinner)
-			if err != nil {
-				return fmt.Errorf("failed to load names for Repos drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "The ID for the corresponding repo to access")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have the id for the corresponding repo to access")
-		}
 		_, err = fmt.Sscan(args[0], &deleteReq.RepoId)
 		if err != nil {
 			return fmt.Errorf("invalid REPO_ID: %s", args[0])
@@ -136,51 +167,60 @@ var deleteCmd = &cobra.Command{
 			return err
 		}
 		return nil
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range deleteOverrides {
+		fn(cmd, &deleteReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newDelete())
+	})
 }
 
 // start get command
-var getReq workspace.GetRepoRequest
 
-func init() {
-	Cmd.AddCommand(getCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getOverrides []func(
+	*cobra.Command,
+	*workspace.GetRepoRequest,
+)
+
+func newGet() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getReq workspace.GetRepoRequest
+
 	// TODO: short flags
 
-}
-
-var getCmd = &cobra.Command{
-	Use:   "get REPO_ID",
-	Short: `Get a repo.`,
-	Long: `Get a repo.
+	cmd.Use = "get REPO_ID"
+	cmd.Short = `Get a repo.`
+	cmd.Long = `Get a repo.
   
-  Returns the repo with the given repo ID.`,
+  Returns the repo with the given repo ID.`
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No REPO_ID argument specified. Loading names for Repos drop-down."
-			names, err := w.Repos.RepoInfoPathToIdMap(ctx, workspace.ListReposRequest{})
-			close(promptSpinner)
-			if err != nil {
-				return fmt.Errorf("failed to load names for Repos drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "The ID for the corresponding repo to access")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have the id for the corresponding repo to access")
-		}
 		_, err = fmt.Sscan(args[0], &getReq.RepoId)
 		if err != nil {
 			return fmt.Errorf("invalid REPO_ID: %s", args[0])
@@ -191,44 +231,66 @@ var getCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getOverrides {
+		fn(cmd, &getReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newGet())
+	})
 }
 
 // start list command
-var listReq workspace.ListReposRequest
-var listJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(listCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listOverrides []func(
+	*cobra.Command,
+	*workspace.ListReposRequest,
+)
+
+func newList() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var listReq workspace.ListReposRequest
+	var listJson flags.JsonFlag
+
 	// TODO: short flags
-	listCmd.Flags().Var(&listJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&listJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	listCmd.Flags().StringVar(&listReq.NextPageToken, "next-page-token", listReq.NextPageToken, `Token used to get the next page of results.`)
-	listCmd.Flags().StringVar(&listReq.PathPrefix, "path-prefix", listReq.PathPrefix, `Filters repos that have paths starting with the given path prefix.`)
+	cmd.Flags().StringVar(&listReq.NextPageToken, "next-page-token", listReq.NextPageToken, `Token used to get the next page of results.`)
+	cmd.Flags().StringVar(&listReq.PathPrefix, "path-prefix", listReq.PathPrefix, `Filters repos that have paths starting with the given path prefix.`)
 
-}
-
-var listCmd = &cobra.Command{
-	Use:   "list",
-	Short: `Get repos.`,
-	Long: `Get repos.
+	cmd.Use = "list"
+	cmd.Short = `Get repos.`
+	cmd.Long = `Get repos.
   
   Returns repos that the calling user has Manage permissions on. Results are
-  paginated with each page containing twenty repos.`,
+  paginated with each page containing twenty repos.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {
 			check = cobra.ExactArgs(0)
 		}
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -245,38 +307,64 @@ var listCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listOverrides {
+		fn(cmd, &listReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newList())
+	})
 }
 
 // start update command
-var updateReq workspace.UpdateRepo
-var updateJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(updateCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updateOverrides []func(
+	*cobra.Command,
+	*workspace.UpdateRepo,
+)
+
+func newUpdate() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updateReq workspace.UpdateRepo
+	var updateJson flags.JsonFlag
+
 	// TODO: short flags
-	updateCmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	updateCmd.Flags().StringVar(&updateReq.Branch, "branch", updateReq.Branch, `Branch that the local version of the repo is checked out to.`)
+	cmd.Flags().StringVar(&updateReq.Branch, "branch", updateReq.Branch, `Branch that the local version of the repo is checked out to.`)
 	// TODO: complex arg: sparse_checkout
-	updateCmd.Flags().StringVar(&updateReq.Tag, "tag", updateReq.Tag, `Tag that the local version of the repo is checked out to.`)
+	cmd.Flags().StringVar(&updateReq.Tag, "tag", updateReq.Tag, `Tag that the local version of the repo is checked out to.`)
 
-}
-
-var updateCmd = &cobra.Command{
-	Use:   "update REPO_ID",
-	Short: `Update a repo.`,
-	Long: `Update a repo.
+	cmd.Use = "update REPO_ID"
+	cmd.Short = `Update a repo.`
+	cmd.Long = `Update a repo.
   
   Updates the repo to a different branch or tag, or updates the repo to the
-  latest commit on the same branch.`,
+  latest commit on the same branch.`
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -285,23 +373,6 @@ var updateCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-		}
-		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No REPO_ID argument specified. Loading names for Repos drop-down."
-			names, err := w.Repos.RepoInfoPathToIdMap(ctx, workspace.ListReposRequest{})
-			close(promptSpinner)
-			if err != nil {
-				return fmt.Errorf("failed to load names for Repos drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "The ID for the corresponding repo to access")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have the id for the corresponding repo to access")
 		}
 		_, err = fmt.Sscan(args[0], &updateReq.RepoId)
 		if err != nil {
@@ -313,10 +384,24 @@ var updateCmd = &cobra.Command{
 			return err
 		}
 		return nil
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updateOverrides {
+		fn(cmd, &updateReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newUpdate())
+	})
 }
 
 // end service Repos

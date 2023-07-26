@@ -14,8 +14,9 @@ import (
 
 func assertKeyValueInSection(t *testing.T, section *ini.Section, keyName, expectedValue string) {
 	key, err := section.GetKey(keyName)
-	assert.NoError(t, err)
-	assert.Equal(t, key.Value(), expectedValue)
+	if assert.NoError(t, err) {
+		assert.Equal(t, expectedValue, key.Value())
+	}
 }
 
 func setup(t *testing.T) string {
@@ -26,6 +27,7 @@ func setup(t *testing.T) string {
 	}
 	t.Setenv(homeEnvVar, tempHomeDir)
 	t.Setenv("DATABRICKS_CONFIG_FILE", "")
+	t.Setenv("DATABRICKS_TOKEN", "")
 	return tempHomeDir
 }
 

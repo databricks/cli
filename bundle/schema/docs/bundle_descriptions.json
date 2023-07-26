@@ -1788,8 +1788,11 @@
               "artifact_path": {
                 "description": "The remote path to synchronize build artifacts to. This defaults to `${workspace.root}/artifacts`"
               },
+              "auth_type": {
+                "description": "When multiple auth attributes are available in the environment, use the auth type specified by this argument"
+              },
               "azure_client_id": {
-                "description": ""
+                "description": "Azure Client ID."
               },
               "azure_environment": {
                 "description": "Azure environment, one of (Public, UsGov, China, Germany)."
@@ -1798,22 +1801,27 @@
                 "description": "Azure Login Application ID."
               },
               "azure_tenant_id": {
-                "description": ""
+                "description": "Azure Tenant ID."
               },
               "azure_use_msi": {
-                "description": ""
+                "description": "Whether to use Managed Service Identity (MSI) to authenticate to Azure Databricks."
               },
               "azure_workspace_resource_id": {
                 "description": "Azure Resource Manager ID for Azure Databricks workspace."
+              },
+              "client_id": {
+                "description": "OAath client ID for the Databricks workspace."
               },
               "file_path": {
                 "description": "The remote path to synchronize local files artifacts to. This defaults to `${workspace.root}/files`"
               },
               "google_service_account": {
-                "description": ""
               },
               "host": {
                 "description": "Host url of the workspace."
+              },
+              "metadata_service_url": {
+                "description": "The URL of the metadata service to use for authentication."
               },
               "profile": {
                 "description": "Connection profile to use. By default profiles are specified in ~/.databrickscfg."
@@ -1830,7 +1838,7 @@
       }
     },
     "include": {
-      "description": "A list of patterns of file names to load and merge into the this configuration. It defaults to loading `*.yml` and `*/*.yml`.",
+      "description": "A list of glob patterns of files to load and merge into the this configuration. Defaults to no files being included.",
       "items": {
         "description": ""
       }

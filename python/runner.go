@@ -15,7 +15,7 @@ func PyInline(ctx context.Context, inlinePy string) (string, error) {
 }
 
 func Py(ctx context.Context, script string, args ...string) (string, error) {
-	py, err := detectExecutable(ctx)
+	py, err := DetectExecutable(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -70,7 +70,7 @@ func detectVirtualEnv() (string, error) {
 
 var pyExec string
 
-func detectExecutable(ctx context.Context) (string, error) {
+func DetectExecutable(ctx context.Context) (string, error) {
 	if pyExec != "" {
 		return pyExec, nil
 	}

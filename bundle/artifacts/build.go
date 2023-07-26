@@ -3,9 +3,9 @@ package artifacts
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/artifacts/notebook"
 )
 
 func BuildAll() bundle.Mutator {
@@ -33,9 +33,24 @@ func (m *build) Apply(ctx context.Context, b *bundle.Bundle) error {
 		return fmt.Errorf("artifact doesn't exist: %s", m.name)
 	}
 
-	if artifact.Notebook != nil {
-		return bundle.Apply(ctx, b, notebook.Build(m.name))
+	// Skip building if build command is not specified or infered
+	if artifact.BuildCommand == "" {
+		// If no build command was specified or infered and there is no
+		// artifact output files specified, artifact is misconfigured
+		if len(artifact.Files) == 0 {
+			return fmt.Errorf("misconfigured artifact: please specify 'build' or 'files' property")
+		}
+		return nil
 	}
 
-	return nil
+	// If artifact path is not provided, use bundle root dir
+	if artifact.Path == "" {
+		artifact.Path = b.Config.Path
+	}
+
+	if !filepath.IsAbs(artifact.Path) {
+		artifact.Path = filepath.Join(b.Config.Path, artifact.Path)
+	}
+
+	return bundle.Apply(ctx, b, getBuildMutator(artifact.Type, m.name))
 }
