@@ -41,7 +41,7 @@ jobs:
       - name: Pull external libraries
         run: |
           make vendor
-          pip install wheel
+          pip3 install wheel
 
       - name: Run tests
         run: make test
