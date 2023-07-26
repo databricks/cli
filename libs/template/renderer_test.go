@@ -479,3 +479,18 @@ func TestRendererNoErrorOnConflictingFileIfSkipped(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, r.files, 1)
 }
+
+func TestRendererNonTemplatesAreCreatedAsCopyFiles(t *testing.T) {
+	ctx := context.Background()
+	tmpDir := t.TempDir()
+
+	r, err := newRenderer(ctx, nil, "./testdata/copy-file-walk/template", "./testdata/copy-file-walk/library", tmpDir)
+	require.NoError(t, err)
+
+	err = r.walk()
+	assert.NoError(t, err)
+
+	assert.Len(t, r.files, 1)
+	assert.Equal(t, r.files[0].(*copyFile).srcPath, "not-a-template")
+	assert.Equal(t, r.files[0].Path(), filepath.Join(tmpDir, "not-a-template"))
+}
