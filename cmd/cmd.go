@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/cmd/auth"
 	"github.com/databricks/cli/cmd/bundle"
 	"github.com/databricks/cli/cmd/configure"
+	"github.com/databricks/cli/cmd/fs"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/cmd/workspace"
 	"github.com/spf13/cobra"
@@ -42,6 +43,7 @@ func New() *cobra.Command {
 		cli.AddCommand(auth.New())
 		cli.AddCommand(bundle.New())
 		cli.AddCommand(configure.New())
+		cli.AddCommand(fs.New())
 
 		cmd = cli
 	})

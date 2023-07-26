@@ -37,15 +37,21 @@ func toJsonDirEntry(f fs.DirEntry, baseDir string, isAbsolute bool) (*jsonDirEnt
 	}, nil
 }
 
-// lsCmd represents the ls command
-var lsCmd = &cobra.Command{
-	Use:     "ls DIR_PATH",
-	Short:   "Lists files",
-	Long:    `Lists files`,
-	Args:    cobra.ExactArgs(1),
-	PreRunE: root.MustWorkspaceClient,
+func newLsCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:     "ls DIR_PATH",
+		Short:   "Lists files",
+		Long:    `Lists files`,
+		Args:    cobra.ExactArgs(1),
+		PreRunE: root.MustWorkspaceClient,
+	}
 
-	RunE: func(cmd *cobra.Command, args []string) error {
+	var long bool
+	var absolute bool
+	cmd.Flags().BoolVarP(&long, "long", "l", false, "Displays full information including size, file type and modification time since Epoch in milliseconds.")
+	cmd.Flags().BoolVar(&absolute, "absolute", false, "Displays absolute paths.")
+
+	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 
 		f, path, err := filerForPath(ctx, args[0])
@@ -60,7 +66,7 @@ var lsCmd = &cobra.Command{
 
 		jsonDirEntries := make([]jsonDirEntry, len(entries))
 		for i, entry := range entries {
-			jsonDirEntry, err := toJsonDirEntry(entry, args[0], lsAbsolute)
+			jsonDirEntry, err := toJsonDirEntry(entry, args[0], absolute)
 			if err != nil {
 				return err
 			}
@@ -71,7 +77,7 @@ var lsCmd = &cobra.Command{
 		})
 
 		// Use template for long mode if the flag is set
-		if longMode {
+		if long {
 			return cmdio.RenderWithTemplate(ctx, jsonDirEntries, cmdio.Heredoc(`
 			{{range .}}{{if .IsDir}}DIRECTORY {{else}}FILE      {{end}}{{.Size}} {{.ModTime|pretty_date}} {{.Name}}
 			{{end}}
@@ -81,14 +87,7 @@ var lsCmd = &cobra.Command{
 		{{range .}}{{.Name}}
 		{{end}}
 		`))
-	},
-}
+	}
 
-var longMode bool
-var lsAbsolute bool
-
-func init() {
-	lsCmd.Flags().BoolVarP(&longMode, "long", "l", false, "Displays full information including size, file type and modification time since Epoch in milliseconds.")
-	lsCmd.Flags().BoolVar(&lsAbsolute, "absolute", false, "Displays absolute paths.")
-	fsCmd.AddCommand(lsCmd)
+	return cmd
 }
