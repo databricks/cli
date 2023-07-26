@@ -3,11 +3,13 @@ package internal
 import (
 	"context"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
 
 	"github.com/databricks/cli/libs/git"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestAccGitClone(t *testing.T) {
@@ -58,6 +60,14 @@ func TestAccGitCloneRepositoryDoesNotExist(t *testing.T) {
 
 	tmpDir := t.TempDir()
 
-	err := git.Clone(context.Background(), "doesnot-exist", "", tmpDir)
-	assert.ErrorContains(t, err, "git clone failed")
+	cmd := exec.Command("git", `config`, `--global`, `user.name`, `monalisa`)
+	err := cmd.Run()
+	require.NoError(t, err)
+
+	cmd = exec.Command("git", `config`, `--global`, `user.password`, `da_vinci"`)
+	err = cmd.Run()
+	require.NoError(t, err)
+
+	err = git.Clone(context.Background(), "https://github.com/monalisa/doesnot-exist.git", "", tmpDir)
+	assert.Contains(t, err.Error(), `repository 'https://github.com/monalisa/doesnot-exist.git/' not found`)
 }
