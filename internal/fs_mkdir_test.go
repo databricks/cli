@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TesFsMkdirCreatesDirectory(t *testing.T) {
+func TestAccFsMkdirCreatesDirectory(t *testing.T) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	ctx := context.Background()
@@ -36,7 +36,7 @@ func TesFsMkdirCreatesDirectory(t *testing.T) {
 	assert.Equal(t, true, info.IsDir())
 }
 
-func TestFsMkdirCreatesMultipleDirectories(t *testing.T) {
+func TestAccFsMkdirCreatesMultipleDirectories(t *testing.T) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	ctx := context.Background()
@@ -72,7 +72,7 @@ func TestFsMkdirCreatesMultipleDirectories(t *testing.T) {
 	assert.Equal(t, true, infoC.IsDir())
 }
 
-func TestFsMkdirWhenDirectoryAlreadyExists(t *testing.T) {
+func TestAccFsMkdirWhenDirectoryAlreadyExists(t *testing.T) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	ctx := context.Background()
@@ -93,8 +93,8 @@ func TestFsMkdirWhenDirectoryAlreadyExists(t *testing.T) {
 	assert.Equal(t, "", stdout.String())
 }
 
-func TestFsMkdirWhenFileExistsAtPath(t *testing.T) {
-	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+func TestAccFsMkdirWhenFileExistsAtPath(t *testing.T) {
+	// t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	ctx := context.Background()
 	w, err := databricks.NewWorkspaceClient()

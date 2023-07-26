@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestFsRmForFile(t *testing.T) {
+func TestAccFsRmForFile(t *testing.T) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	ctx := context.Background()
@@ -45,7 +45,7 @@ func TestFsRmForFile(t *testing.T) {
 	assert.ErrorIs(t, err, fs.ErrNotExist)
 }
 
-func TestFsRmForEmptyDirectory(t *testing.T) {
+func TestAccFsRmForEmptyDirectory(t *testing.T) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	ctx := context.Background()
@@ -77,7 +77,7 @@ func TestFsRmForEmptyDirectory(t *testing.T) {
 	assert.ErrorIs(t, err, fs.ErrNotExist)
 }
 
-func TestFsRmForNonEmptyDirectory(t *testing.T) {
+func TestAccFsRmForNonEmptyDirectory(t *testing.T) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	ctx := context.Background()
@@ -101,19 +101,19 @@ func TestFsRmForNonEmptyDirectory(t *testing.T) {
 
 	// Run rm command
 	_, _, err = RequireErrorRun(t, "fs", "rm", "dbfs:"+path.Join(tmpDir, "avacado"))
-	assert.ErrorContains(t, err, "Non-recursive delete of non-empty directory")
+	assert.ErrorIs(t, err, fs.ErrInvalid)
+	assert.ErrorContains(t, err, "directory not empty")
 }
 
-func TestFsRmForNonExistentFile(t *testing.T) {
+func TestAccFsRmForNonExistentFile(t *testing.T) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
-	// No error is returned on command run
-	stdout, stderr := RequireSuccessfulRun(t, "fs", "rm", "dbfs:/does-not-exist")
-	assert.Equal(t, "", stderr.String())
-	assert.Equal(t, "", stdout.String())
+	// Expect error if file does not exist
+	_, _, err := RequireErrorRun(t, "fs", "rm", "dbfs:/does-not-exist")
+	assert.ErrorIs(t, err, fs.ErrNotExist)
 }
 
-func TestFsRmForNonEmptyDirectoryWithRecursiveFlag(t *testing.T) {
+func TestAccFsRmForNonEmptyDirectoryWithRecursiveFlag(t *testing.T) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	ctx := context.Background()
