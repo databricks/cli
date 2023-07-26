@@ -94,7 +94,7 @@ func TestAccFsMkdirWhenDirectoryAlreadyExists(t *testing.T) {
 }
 
 func TestAccFsMkdirWhenFileExistsAtPath(t *testing.T) {
-	// t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	ctx := context.Background()
 	w, err := databricks.NewWorkspaceClient()
