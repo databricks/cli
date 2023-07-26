@@ -22,3 +22,16 @@ func TestBundlePythonWheelBuild(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 1, len(matches))
 }
+
+func TestBundlePythonWheelBuildAutoDetect(t *testing.T) {
+	b, err := bundle.Load("./python_wheel_no_artifact")
+	require.NoError(t, err)
+
+	m := phases.Build()
+	err = m.Apply(context.Background(), b)
+	require.NoError(t, err)
+
+	matches, err := filepath.Glob("python_wheel/my_test_code/dist/my_test_code-*.whl")
+	require.NoError(t, err)
+	require.Equal(t, 1, len(matches))
+}

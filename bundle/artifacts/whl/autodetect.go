@@ -42,8 +42,12 @@ func (m *detectPkg) Apply(ctx context.Context, b *bundle.Bundle) error {
 		b.Config.Artifacts = make(map[string]*config.Artifact)
 	}
 
+	pkgPath, err := filepath.Abs(b.Config.Path)
+	if err != nil {
+		return err
+	}
 	b.Config.Artifacts[module] = &config.Artifact{
-		Path: b.Config.Path,
+		Path: pkgPath,
 		Type: config.ArtifactPythonWheel,
 	}
 

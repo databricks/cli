@@ -47,7 +47,7 @@ func (m *infer) Apply(ctx context.Context, b *bundle.Bundle) error {
 		return fmt.Errorf("artifact doesn't exist: %s", m.name)
 	}
 
-	if len(artifact.Files) > 0 || artifact.BuildCommand != "" {
+	if artifact.BuildCommand != "" {
 		return nil
 	}
 
