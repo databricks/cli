@@ -60,7 +60,7 @@ func TestNoErrorOnNonStderrLogFile(t *testing.T) {
 
 func TestDefaultLoggerModeResolution(t *testing.T) {
 	plt, _, _, progressFormat := initializeProgressLoggerTest(t)
-	require.Equal(t, progressFormat, flags.ModeDefault)
+	require.Equal(t, *progressFormat, flags.ModeDefault)
 	ctx, err := plt.progressLoggerFlag.initializeContext(context.Background())
 	require.NoError(t, err)
 	logger, ok := cmdio.FromContext(ctx)
