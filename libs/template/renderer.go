@@ -17,8 +17,6 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-// TODO: add test for paths being executed
-
 const templateExtension = ".tmpl"
 
 // Renders a databricks template as a project

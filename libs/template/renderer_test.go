@@ -345,7 +345,6 @@ func TestRendererInMemoryFileFullPathForWindows(t *testing.T) {
 	assert.Equal(t, `c:\a\b\c\d\e`, f.Path())
 }
 
-
 func TestRendererReadsPermissionsBits(t *testing.T) {
 	if runtime.GOOS != "linux" && runtime.GOOS != "darwin" {
 		t.SkipNow()
