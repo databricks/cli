@@ -12,10 +12,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var Cmd = &cobra.Command{
-	Use:   "experiments",
-	Short: `Experiments are the primary unit of organization in MLflow; all MLflow runs belong to an experiment.`,
-	Long: `Experiments are the primary unit of organization in MLflow; all MLflow runs
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var cmdOverrides []func(*cobra.Command)
+
+func New() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "experiments",
+		Short: `Experiments are the primary unit of organization in MLflow; all MLflow runs belong to an experiment.`,
+		Long: `Experiments are the primary unit of organization in MLflow; all MLflow runs
   belong to an experiment. Each experiment lets you visualize, search, and
   compare runs, as well as download run artifacts or metadata for analysis in
   other tools. Experiments are maintained in a Databricks hosted MLflow tracking
@@ -24,47 +29,64 @@ var Cmd = &cobra.Command{
   Experiments are located in the workspace file tree. You manage experiments
   using the same tools you use to manage other workspace objects such as
   folders, notebooks, and libraries.`,
-	Annotations: map[string]string{
-		"package": "ml",
-	},
+		GroupID: "ml",
+		Annotations: map[string]string{
+			"package": "ml",
+		},
+	}
+
+	// Apply optional overrides to this command.
+	for _, fn := range cmdOverrides {
+		fn(cmd)
+	}
+
+	return cmd
 }
 
 // start create-experiment command
-var createExperimentReq ml.CreateExperiment
-var createExperimentJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(createExperimentCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var createExperimentOverrides []func(
+	*cobra.Command,
+	*ml.CreateExperiment,
+)
+
+func newCreateExperiment() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var createExperimentReq ml.CreateExperiment
+	var createExperimentJson flags.JsonFlag
+
 	// TODO: short flags
-	createExperimentCmd.Flags().Var(&createExperimentJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&createExperimentJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	createExperimentCmd.Flags().StringVar(&createExperimentReq.ArtifactLocation, "artifact-location", createExperimentReq.ArtifactLocation, `Location where all artifacts for the experiment are stored.`)
+	cmd.Flags().StringVar(&createExperimentReq.ArtifactLocation, "artifact-location", createExperimentReq.ArtifactLocation, `Location where all artifacts for the experiment are stored.`)
 	// TODO: array: tags
 
-}
-
-var createExperimentCmd = &cobra.Command{
-	Use:   "create-experiment NAME",
-	Short: `Create experiment.`,
-	Long: `Create experiment.
+	cmd.Use = "create-experiment NAME"
+	cmd.Short = `Create experiment.`
+	cmd.Long = `Create experiment.
   
   Creates an experiment with a name. Returns the ID of the newly created
   experiment. Validates that another experiment with the same name does not
   already exist and fails if another experiment with the same name already
   exists.
   
-  Throws RESOURCE_ALREADY_EXISTS if a experiment with the given name exists.`,
+  Throws RESOURCE_ALREADY_EXISTS if a experiment with the given name exists.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
 			check = cobra.ExactArgs(0)
 		}
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -82,48 +104,70 @@ var createExperimentCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range createExperimentOverrides {
+		fn(cmd, &createExperimentReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newCreateExperiment())
+	})
 }
 
 // start create-run command
-var createRunReq ml.CreateRun
-var createRunJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(createRunCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var createRunOverrides []func(
+	*cobra.Command,
+	*ml.CreateRun,
+)
+
+func newCreateRun() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var createRunReq ml.CreateRun
+	var createRunJson flags.JsonFlag
+
 	// TODO: short flags
-	createRunCmd.Flags().Var(&createRunJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&createRunJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	createRunCmd.Flags().StringVar(&createRunReq.ExperimentId, "experiment-id", createRunReq.ExperimentId, `ID of the associated experiment.`)
-	createRunCmd.Flags().Int64Var(&createRunReq.StartTime, "start-time", createRunReq.StartTime, `Unix timestamp in milliseconds of when the run started.`)
+	cmd.Flags().StringVar(&createRunReq.ExperimentId, "experiment-id", createRunReq.ExperimentId, `ID of the associated experiment.`)
+	cmd.Flags().Int64Var(&createRunReq.StartTime, "start-time", createRunReq.StartTime, `Unix timestamp in milliseconds of when the run started.`)
 	// TODO: array: tags
-	createRunCmd.Flags().StringVar(&createRunReq.UserId, "user-id", createRunReq.UserId, `ID of the user executing the run.`)
+	cmd.Flags().StringVar(&createRunReq.UserId, "user-id", createRunReq.UserId, `ID of the user executing the run.`)
 
-}
-
-var createRunCmd = &cobra.Command{
-	Use:   "create-run",
-	Short: `Create a run.`,
-	Long: `Create a run.
+	cmd.Use = "create-run"
+	cmd.Short = `Create a run.`
+	cmd.Long = `Create a run.
   
   Creates a new run within an experiment. A run is usually a single execution of
   a machine learning or data ETL pipeline. MLflow uses runs to track the
   mlflowParam, mlflowMetric and mlflowRunTag associated with a single
-  execution.`,
+  execution.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {
 			check = cobra.ExactArgs(0)
 		}
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -140,42 +184,64 @@ var createRunCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range createRunOverrides {
+		fn(cmd, &createRunReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newCreateRun())
+	})
 }
 
 // start delete-experiment command
-var deleteExperimentReq ml.DeleteExperiment
-var deleteExperimentJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(deleteExperimentCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var deleteExperimentOverrides []func(
+	*cobra.Command,
+	*ml.DeleteExperiment,
+)
+
+func newDeleteExperiment() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var deleteExperimentReq ml.DeleteExperiment
+	var deleteExperimentJson flags.JsonFlag
+
 	// TODO: short flags
-	deleteExperimentCmd.Flags().Var(&deleteExperimentJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&deleteExperimentJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-}
-
-var deleteExperimentCmd = &cobra.Command{
-	Use:   "delete-experiment EXPERIMENT_ID",
-	Short: `Delete an experiment.`,
-	Long: `Delete an experiment.
+	cmd.Use = "delete-experiment EXPERIMENT_ID"
+	cmd.Short = `Delete an experiment.`
+	cmd.Long = `Delete an experiment.
   
   Marks an experiment and associated metadata, runs, metrics, params, and tags
   for deletion. If the experiment uses FileStore, artifacts associated with
-  experiment are also deleted.`,
+  experiment are also deleted.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
 			check = cobra.ExactArgs(0)
 		}
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -193,40 +259,62 @@ var deleteExperimentCmd = &cobra.Command{
 			return err
 		}
 		return nil
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range deleteExperimentOverrides {
+		fn(cmd, &deleteExperimentReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newDeleteExperiment())
+	})
 }
 
 // start delete-run command
-var deleteRunReq ml.DeleteRun
-var deleteRunJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(deleteRunCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var deleteRunOverrides []func(
+	*cobra.Command,
+	*ml.DeleteRun,
+)
+
+func newDeleteRun() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var deleteRunReq ml.DeleteRun
+	var deleteRunJson flags.JsonFlag
+
 	// TODO: short flags
-	deleteRunCmd.Flags().Var(&deleteRunJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&deleteRunJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-}
-
-var deleteRunCmd = &cobra.Command{
-	Use:   "delete-run RUN_ID",
-	Short: `Delete a run.`,
-	Long: `Delete a run.
+	cmd.Use = "delete-run RUN_ID"
+	cmd.Short = `Delete a run.`
+	cmd.Long = `Delete a run.
   
-  Marks a run for deletion.`,
+  Marks a run for deletion.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
 			check = cobra.ExactArgs(0)
 		}
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -244,41 +332,63 @@ var deleteRunCmd = &cobra.Command{
 			return err
 		}
 		return nil
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range deleteRunOverrides {
+		fn(cmd, &deleteRunReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newDeleteRun())
+	})
 }
 
 // start delete-tag command
-var deleteTagReq ml.DeleteTag
-var deleteTagJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(deleteTagCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var deleteTagOverrides []func(
+	*cobra.Command,
+	*ml.DeleteTag,
+)
+
+func newDeleteTag() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var deleteTagReq ml.DeleteTag
+	var deleteTagJson flags.JsonFlag
+
 	// TODO: short flags
-	deleteTagCmd.Flags().Var(&deleteTagJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&deleteTagJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-}
-
-var deleteTagCmd = &cobra.Command{
-	Use:   "delete-tag RUN_ID KEY",
-	Short: `Delete a tag.`,
-	Long: `Delete a tag.
+	cmd.Use = "delete-tag RUN_ID KEY"
+	cmd.Short = `Delete a tag.`
+	cmd.Long = `Delete a tag.
   
   Deletes a tag on a run. Tags are run metadata that can be updated during a run
-  and after a run completes.`,
+  and after a run completes.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
 			check = cobra.ExactArgs(0)
 		}
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -297,25 +407,45 @@ var deleteTagCmd = &cobra.Command{
 			return err
 		}
 		return nil
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range deleteTagOverrides {
+		fn(cmd, &deleteTagReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newDeleteTag())
+	})
 }
 
 // start get-by-name command
-var getByNameReq ml.GetByNameRequest
 
-func init() {
-	Cmd.AddCommand(getByNameCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getByNameOverrides []func(
+	*cobra.Command,
+	*ml.GetByNameRequest,
+)
+
+func newGetByName() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getByNameReq ml.GetByNameRequest
+
 	// TODO: short flags
 
-}
-
-var getByNameCmd = &cobra.Command{
-	Use:   "get-by-name EXPERIMENT_NAME",
-	Short: `Get metadata.`,
-	Long: `Get metadata.
+	cmd.Use = "get-by-name EXPERIMENT_NAME"
+	cmd.Short = `Get metadata.`
+	cmd.Long = `Get metadata.
   
   Gets metadata for an experiment.
   
@@ -325,15 +455,17 @@ var getByNameCmd = &cobra.Command{
   them.
   
   Throws RESOURCE_DOES_NOT_EXIST if no experiment with the specified name
-  exists.`,
+  exists.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -344,35 +476,57 @@ var getByNameCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getByNameOverrides {
+		fn(cmd, &getByNameReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newGetByName())
+	})
 }
 
 // start get-experiment command
-var getExperimentReq ml.GetExperimentRequest
 
-func init() {
-	Cmd.AddCommand(getExperimentCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getExperimentOverrides []func(
+	*cobra.Command,
+	*ml.GetExperimentRequest,
+)
+
+func newGetExperiment() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getExperimentReq ml.GetExperimentRequest
+
 	// TODO: short flags
 
-}
-
-var getExperimentCmd = &cobra.Command{
-	Use:   "get-experiment EXPERIMENT_ID",
-	Short: `Get an experiment.`,
-	Long: `Get an experiment.
+	cmd.Use = "get-experiment EXPERIMENT_ID"
+	cmd.Short = `Get an experiment.`
+	cmd.Long = `Get an experiment.
   
-  Gets metadata for an experiment. This method works on deleted experiments.`,
+  Gets metadata for an experiment. This method works on deleted experiments.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -383,40 +537,62 @@ var getExperimentCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getExperimentOverrides {
+		fn(cmd, &getExperimentReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newGetExperiment())
+	})
 }
 
 // start get-history command
-var getHistoryReq ml.GetHistoryRequest
 
-func init() {
-	Cmd.AddCommand(getHistoryCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getHistoryOverrides []func(
+	*cobra.Command,
+	*ml.GetHistoryRequest,
+)
+
+func newGetHistory() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getHistoryReq ml.GetHistoryRequest
+
 	// TODO: short flags
 
-	getHistoryCmd.Flags().IntVar(&getHistoryReq.MaxResults, "max-results", getHistoryReq.MaxResults, `Maximum number of Metric records to return per paginated request.`)
-	getHistoryCmd.Flags().StringVar(&getHistoryReq.PageToken, "page-token", getHistoryReq.PageToken, `Token indicating the page of metric histories to fetch.`)
-	getHistoryCmd.Flags().StringVar(&getHistoryReq.RunId, "run-id", getHistoryReq.RunId, `ID of the run from which to fetch metric values.`)
-	getHistoryCmd.Flags().StringVar(&getHistoryReq.RunUuid, "run-uuid", getHistoryReq.RunUuid, `[Deprecated, use run_id instead] ID of the run from which to fetch metric values.`)
+	cmd.Flags().IntVar(&getHistoryReq.MaxResults, "max-results", getHistoryReq.MaxResults, `Maximum number of Metric records to return per paginated request.`)
+	cmd.Flags().StringVar(&getHistoryReq.PageToken, "page-token", getHistoryReq.PageToken, `Token indicating the page of metric histories to fetch.`)
+	cmd.Flags().StringVar(&getHistoryReq.RunId, "run-id", getHistoryReq.RunId, `ID of the run from which to fetch metric values.`)
+	cmd.Flags().StringVar(&getHistoryReq.RunUuid, "run-uuid", getHistoryReq.RunUuid, `[Deprecated, use run_id instead] ID of the run from which to fetch metric values.`)
 
-}
-
-var getHistoryCmd = &cobra.Command{
-	Use:   "get-history METRIC_KEY",
-	Short: `Get history of a given metric within a run.`,
-	Long: `Get history of a given metric within a run.
+	cmd.Use = "get-history METRIC_KEY"
+	cmd.Short = `Get history of a given metric within a run.`
+	cmd.Long = `Get history of a given metric within a run.
   
-  Gets a list of all values for the specified metric for a given run.`,
+  Gets a list of all values for the specified metric for a given run.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -427,42 +603,64 @@ var getHistoryCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getHistoryOverrides {
+		fn(cmd, &getHistoryReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newGetHistory())
+	})
 }
 
 // start get-run command
-var getRunReq ml.GetRunRequest
 
-func init() {
-	Cmd.AddCommand(getRunCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getRunOverrides []func(
+	*cobra.Command,
+	*ml.GetRunRequest,
+)
+
+func newGetRun() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getRunReq ml.GetRunRequest
+
 	// TODO: short flags
 
-	getRunCmd.Flags().StringVar(&getRunReq.RunUuid, "run-uuid", getRunReq.RunUuid, `[Deprecated, use run_id instead] ID of the run to fetch.`)
+	cmd.Flags().StringVar(&getRunReq.RunUuid, "run-uuid", getRunReq.RunUuid, `[Deprecated, use run_id instead] ID of the run to fetch.`)
 
-}
-
-var getRunCmd = &cobra.Command{
-	Use:   "get-run RUN_ID",
-	Short: `Get a run.`,
-	Long: `Get a run.
+	cmd.Use = "get-run RUN_ID"
+	cmd.Short = `Get a run.`
+	cmd.Long = `Get a run.
   
   Gets the metadata, metrics, params, and tags for a run. In the case where
   multiple metrics with the same key are logged for a run, return only the value
   with the latest timestamp.
   
   If there are multiple values with the latest timestamp, return the maximum of
-  these values.`,
+  these values.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -473,46 +671,68 @@ var getRunCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getRunOverrides {
+		fn(cmd, &getRunReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newGetRun())
+	})
 }
 
 // start list-artifacts command
-var listArtifactsReq ml.ListArtifactsRequest
-var listArtifactsJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(listArtifactsCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listArtifactsOverrides []func(
+	*cobra.Command,
+	*ml.ListArtifactsRequest,
+)
+
+func newListArtifacts() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var listArtifactsReq ml.ListArtifactsRequest
+	var listArtifactsJson flags.JsonFlag
+
 	// TODO: short flags
-	listArtifactsCmd.Flags().Var(&listArtifactsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&listArtifactsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	listArtifactsCmd.Flags().StringVar(&listArtifactsReq.PageToken, "page-token", listArtifactsReq.PageToken, `Token indicating the page of artifact results to fetch.`)
-	listArtifactsCmd.Flags().StringVar(&listArtifactsReq.Path, "path", listArtifactsReq.Path, `Filter artifacts matching this path (a relative path from the root artifact directory).`)
-	listArtifactsCmd.Flags().StringVar(&listArtifactsReq.RunId, "run-id", listArtifactsReq.RunId, `ID of the run whose artifacts to list.`)
-	listArtifactsCmd.Flags().StringVar(&listArtifactsReq.RunUuid, "run-uuid", listArtifactsReq.RunUuid, `[Deprecated, use run_id instead] ID of the run whose artifacts to list.`)
+	cmd.Flags().StringVar(&listArtifactsReq.PageToken, "page-token", listArtifactsReq.PageToken, `Token indicating the page of artifact results to fetch.`)
+	cmd.Flags().StringVar(&listArtifactsReq.Path, "path", listArtifactsReq.Path, `Filter artifacts matching this path (a relative path from the root artifact directory).`)
+	cmd.Flags().StringVar(&listArtifactsReq.RunId, "run-id", listArtifactsReq.RunId, `ID of the run whose artifacts to list.`)
+	cmd.Flags().StringVar(&listArtifactsReq.RunUuid, "run-uuid", listArtifactsReq.RunUuid, `[Deprecated, use run_id instead] ID of the run whose artifacts to list.`)
 
-}
-
-var listArtifactsCmd = &cobra.Command{
-	Use:   "list-artifacts",
-	Short: `Get all artifacts.`,
-	Long: `Get all artifacts.
+	cmd.Use = "list-artifacts"
+	cmd.Short = `Get all artifacts.`
+	cmd.Long = `Get all artifacts.
   
   List artifacts for a run. Takes an optional artifact_path prefix. If it is
-  specified, the response contains only artifacts with the specified prefix.",`,
+  specified, the response contains only artifacts with the specified prefix.",`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {
 			check = cobra.ExactArgs(0)
 		}
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -529,44 +749,66 @@ var listArtifactsCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listArtifactsOverrides {
+		fn(cmd, &listArtifactsReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newListArtifacts())
+	})
 }
 
 // start list-experiments command
-var listExperimentsReq ml.ListExperimentsRequest
-var listExperimentsJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(listExperimentsCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listExperimentsOverrides []func(
+	*cobra.Command,
+	*ml.ListExperimentsRequest,
+)
+
+func newListExperiments() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var listExperimentsReq ml.ListExperimentsRequest
+	var listExperimentsJson flags.JsonFlag
+
 	// TODO: short flags
-	listExperimentsCmd.Flags().Var(&listExperimentsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&listExperimentsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	listExperimentsCmd.Flags().IntVar(&listExperimentsReq.MaxResults, "max-results", listExperimentsReq.MaxResults, `Maximum number of experiments desired.`)
-	listExperimentsCmd.Flags().StringVar(&listExperimentsReq.PageToken, "page-token", listExperimentsReq.PageToken, `Token indicating the page of experiments to fetch.`)
-	listExperimentsCmd.Flags().StringVar(&listExperimentsReq.ViewType, "view-type", listExperimentsReq.ViewType, `Qualifier for type of experiments to be returned.`)
+	cmd.Flags().IntVar(&listExperimentsReq.MaxResults, "max-results", listExperimentsReq.MaxResults, `Maximum number of experiments desired.`)
+	cmd.Flags().StringVar(&listExperimentsReq.PageToken, "page-token", listExperimentsReq.PageToken, `Token indicating the page of experiments to fetch.`)
+	cmd.Flags().StringVar(&listExperimentsReq.ViewType, "view-type", listExperimentsReq.ViewType, `Qualifier for type of experiments to be returned.`)
 
-}
-
-var listExperimentsCmd = &cobra.Command{
-	Use:   "list-experiments",
-	Short: `List experiments.`,
-	Long: `List experiments.
+	cmd.Use = "list-experiments"
+	cmd.Short = `List experiments.`
+	cmd.Long = `List experiments.
   
-  Gets a list of all experiments.`,
+  Gets a list of all experiments.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {
 			check = cobra.ExactArgs(0)
 		}
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -583,32 +825,52 @@ var listExperimentsCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listExperimentsOverrides {
+		fn(cmd, &listExperimentsReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newListExperiments())
+	})
 }
 
 // start log-batch command
-var logBatchReq ml.LogBatch
-var logBatchJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(logBatchCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var logBatchOverrides []func(
+	*cobra.Command,
+	*ml.LogBatch,
+)
+
+func newLogBatch() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var logBatchReq ml.LogBatch
+	var logBatchJson flags.JsonFlag
+
 	// TODO: short flags
-	logBatchCmd.Flags().Var(&logBatchJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&logBatchJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: metrics
 	// TODO: array: params
-	logBatchCmd.Flags().StringVar(&logBatchReq.RunId, "run-id", logBatchReq.RunId, `ID of the run to log under.`)
+	cmd.Flags().StringVar(&logBatchReq.RunId, "run-id", logBatchReq.RunId, `ID of the run to log under.`)
 	// TODO: array: tags
 
-}
-
-var logBatchCmd = &cobra.Command{
-	Use:   "log-batch",
-	Short: `Log a batch.`,
-	Long: `Log a batch.
+	cmd.Use = "log-batch"
+	cmd.Short = `Log a batch.`
+	cmd.Long = `Log a batch.
   
   Logs a batch of metrics, params, and tags for a run. If any data failed to be
   persisted, the server will respond with an error (non-200 status code).
@@ -646,18 +908,20 @@ var logBatchCmd = &cobra.Command{
   The following limits also apply to metric, param, and tag keys and values:
   
   * Metric keys, param keys, and tag keys can be up to 250 characters in length
-  * Parameter and tag values can be up to 250 characters in length`,
+  * Parameter and tag values can be up to 250 characters in length`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {
 			check = cobra.ExactArgs(0)
 		}
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -674,44 +938,66 @@ var logBatchCmd = &cobra.Command{
 			return err
 		}
 		return nil
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range logBatchOverrides {
+		fn(cmd, &logBatchReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newLogBatch())
+	})
 }
 
 // start log-inputs command
-var logInputsReq ml.LogInputs
-var logInputsJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(logInputsCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var logInputsOverrides []func(
+	*cobra.Command,
+	*ml.LogInputs,
+)
+
+func newLogInputs() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var logInputsReq ml.LogInputs
+	var logInputsJson flags.JsonFlag
+
 	// TODO: short flags
-	logInputsCmd.Flags().Var(&logInputsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&logInputsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: datasets
-	logInputsCmd.Flags().StringVar(&logInputsReq.RunId, "run-id", logInputsReq.RunId, `ID of the run to log under.`)
+	cmd.Flags().StringVar(&logInputsReq.RunId, "run-id", logInputsReq.RunId, `ID of the run to log under.`)
 
-}
-
-var logInputsCmd = &cobra.Command{
-	Use:   "log-inputs",
-	Short: `Log inputs to a run.`,
-	Long: `Log inputs to a run.
+	cmd.Use = "log-inputs"
+	cmd.Short = `Log inputs to a run.`
+	cmd.Long = `Log inputs to a run.
   
   **NOTE:** Experimental: This API may change or be removed in a future release
-  without warning.`,
+  without warning.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {
 			check = cobra.ExactArgs(0)
 		}
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -728,46 +1014,68 @@ var logInputsCmd = &cobra.Command{
 			return err
 		}
 		return nil
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range logInputsOverrides {
+		fn(cmd, &logInputsReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newLogInputs())
+	})
 }
 
 // start log-metric command
-var logMetricReq ml.LogMetric
-var logMetricJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(logMetricCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var logMetricOverrides []func(
+	*cobra.Command,
+	*ml.LogMetric,
+)
+
+func newLogMetric() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var logMetricReq ml.LogMetric
+	var logMetricJson flags.JsonFlag
+
 	// TODO: short flags
-	logMetricCmd.Flags().Var(&logMetricJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&logMetricJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	logMetricCmd.Flags().StringVar(&logMetricReq.RunId, "run-id", logMetricReq.RunId, `ID of the run under which to log the metric.`)
-	logMetricCmd.Flags().StringVar(&logMetricReq.RunUuid, "run-uuid", logMetricReq.RunUuid, `[Deprecated, use run_id instead] ID of the run under which to log the metric.`)
-	logMetricCmd.Flags().Int64Var(&logMetricReq.Step, "step", logMetricReq.Step, `Step at which to log the metric.`)
+	cmd.Flags().StringVar(&logMetricReq.RunId, "run-id", logMetricReq.RunId, `ID of the run under which to log the metric.`)
+	cmd.Flags().StringVar(&logMetricReq.RunUuid, "run-uuid", logMetricReq.RunUuid, `[Deprecated, use run_id instead] ID of the run under which to log the metric.`)
+	cmd.Flags().Int64Var(&logMetricReq.Step, "step", logMetricReq.Step, `Step at which to log the metric.`)
 
-}
-
-var logMetricCmd = &cobra.Command{
-	Use:   "log-metric KEY VALUE TIMESTAMP",
-	Short: `Log a metric.`,
-	Long: `Log a metric.
+	cmd.Use = "log-metric KEY VALUE TIMESTAMP"
+	cmd.Short = `Log a metric.`
+	cmd.Long = `Log a metric.
   
   Logs a metric for a run. A metric is a key-value pair (string key, float
   value) with an associated timestamp. Examples include the various metrics that
-  represent ML model accuracy. A metric can be logged multiple times.`,
+  represent ML model accuracy. A metric can be logged multiple times.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(3)
 		if cmd.Flags().Changed("json") {
 			check = cobra.ExactArgs(0)
 		}
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -793,44 +1101,66 @@ var logMetricCmd = &cobra.Command{
 			return err
 		}
 		return nil
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range logMetricOverrides {
+		fn(cmd, &logMetricReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newLogMetric())
+	})
 }
 
 // start log-model command
-var logModelReq ml.LogModel
-var logModelJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(logModelCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var logModelOverrides []func(
+	*cobra.Command,
+	*ml.LogModel,
+)
+
+func newLogModel() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var logModelReq ml.LogModel
+	var logModelJson flags.JsonFlag
+
 	// TODO: short flags
-	logModelCmd.Flags().Var(&logModelJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&logModelJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	logModelCmd.Flags().StringVar(&logModelReq.ModelJson, "model-json", logModelReq.ModelJson, `MLmodel file in json format.`)
-	logModelCmd.Flags().StringVar(&logModelReq.RunId, "run-id", logModelReq.RunId, `ID of the run to log under.`)
+	cmd.Flags().StringVar(&logModelReq.ModelJson, "model-json", logModelReq.ModelJson, `MLmodel file in json format.`)
+	cmd.Flags().StringVar(&logModelReq.RunId, "run-id", logModelReq.RunId, `ID of the run to log under.`)
 
-}
-
-var logModelCmd = &cobra.Command{
-	Use:   "log-model",
-	Short: `Log a model.`,
-	Long: `Log a model.
+	cmd.Use = "log-model"
+	cmd.Short = `Log a model.`
+	cmd.Long = `Log a model.
   
   **NOTE:** Experimental: This API may change or be removed in a future release
-  without warning.`,
+  without warning.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {
 			check = cobra.ExactArgs(0)
 		}
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -847,46 +1177,68 @@ var logModelCmd = &cobra.Command{
 			return err
 		}
 		return nil
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range logModelOverrides {
+		fn(cmd, &logModelReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newLogModel())
+	})
 }
 
 // start log-param command
-var logParamReq ml.LogParam
-var logParamJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(logParamCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var logParamOverrides []func(
+	*cobra.Command,
+	*ml.LogParam,
+)
+
+func newLogParam() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var logParamReq ml.LogParam
+	var logParamJson flags.JsonFlag
+
 	// TODO: short flags
-	logParamCmd.Flags().Var(&logParamJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&logParamJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	logParamCmd.Flags().StringVar(&logParamReq.RunId, "run-id", logParamReq.RunId, `ID of the run under which to log the param.`)
-	logParamCmd.Flags().StringVar(&logParamReq.RunUuid, "run-uuid", logParamReq.RunUuid, `[Deprecated, use run_id instead] ID of the run under which to log the param.`)
+	cmd.Flags().StringVar(&logParamReq.RunId, "run-id", logParamReq.RunId, `ID of the run under which to log the param.`)
+	cmd.Flags().StringVar(&logParamReq.RunUuid, "run-uuid", logParamReq.RunUuid, `[Deprecated, use run_id instead] ID of the run under which to log the param.`)
 
-}
-
-var logParamCmd = &cobra.Command{
-	Use:   "log-param KEY VALUE",
-	Short: `Log a param.`,
-	Long: `Log a param.
+	cmd.Use = "log-param KEY VALUE"
+	cmd.Short = `Log a param.`
+	cmd.Long = `Log a param.
   
   Logs a param used for a run. A param is a key-value pair (string key, string
   value). Examples include hyperparameters used for ML model training and
   constant dates and values used in an ETL pipeline. A param can be logged only
-  once for a run.`,
+  once for a run.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
 			check = cobra.ExactArgs(0)
 		}
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -905,45 +1257,67 @@ var logParamCmd = &cobra.Command{
 			return err
 		}
 		return nil
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range logParamOverrides {
+		fn(cmd, &logParamReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newLogParam())
+	})
 }
 
 // start restore-experiment command
-var restoreExperimentReq ml.RestoreExperiment
-var restoreExperimentJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(restoreExperimentCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var restoreExperimentOverrides []func(
+	*cobra.Command,
+	*ml.RestoreExperiment,
+)
+
+func newRestoreExperiment() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var restoreExperimentReq ml.RestoreExperiment
+	var restoreExperimentJson flags.JsonFlag
+
 	// TODO: short flags
-	restoreExperimentCmd.Flags().Var(&restoreExperimentJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&restoreExperimentJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-}
-
-var restoreExperimentCmd = &cobra.Command{
-	Use:   "restore-experiment EXPERIMENT_ID",
-	Short: `Restores an experiment.`,
-	Long: `Restores an experiment.
+	cmd.Use = "restore-experiment EXPERIMENT_ID"
+	cmd.Short = `Restores an experiment.`
+	cmd.Long = `Restores an experiment.
   
   Restore an experiment marked for deletion. This also restores associated
   metadata, runs, metrics, params, and tags. If experiment uses FileStore,
   underlying artifacts associated with experiment are also restored.
   
   Throws RESOURCE_DOES_NOT_EXIST if experiment was never created or was
-  permanently deleted.`,
+  permanently deleted.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
 			check = cobra.ExactArgs(0)
 		}
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -961,40 +1335,62 @@ var restoreExperimentCmd = &cobra.Command{
 			return err
 		}
 		return nil
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range restoreExperimentOverrides {
+		fn(cmd, &restoreExperimentReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newRestoreExperiment())
+	})
 }
 
 // start restore-run command
-var restoreRunReq ml.RestoreRun
-var restoreRunJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(restoreRunCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var restoreRunOverrides []func(
+	*cobra.Command,
+	*ml.RestoreRun,
+)
+
+func newRestoreRun() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var restoreRunReq ml.RestoreRun
+	var restoreRunJson flags.JsonFlag
+
 	// TODO: short flags
-	restoreRunCmd.Flags().Var(&restoreRunJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&restoreRunJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-}
-
-var restoreRunCmd = &cobra.Command{
-	Use:   "restore-run RUN_ID",
-	Short: `Restore a run.`,
-	Long: `Restore a run.
+	cmd.Use = "restore-run RUN_ID"
+	cmd.Short = `Restore a run.`
+	cmd.Long = `Restore a run.
   
-  Restores a deleted run.`,
+  Restores a deleted run.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
 			check = cobra.ExactArgs(0)
 		}
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -1012,46 +1408,68 @@ var restoreRunCmd = &cobra.Command{
 			return err
 		}
 		return nil
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range restoreRunOverrides {
+		fn(cmd, &restoreRunReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newRestoreRun())
+	})
 }
 
 // start search-experiments command
-var searchExperimentsReq ml.SearchExperiments
-var searchExperimentsJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(searchExperimentsCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var searchExperimentsOverrides []func(
+	*cobra.Command,
+	*ml.SearchExperiments,
+)
+
+func newSearchExperiments() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var searchExperimentsReq ml.SearchExperiments
+	var searchExperimentsJson flags.JsonFlag
+
 	// TODO: short flags
-	searchExperimentsCmd.Flags().Var(&searchExperimentsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&searchExperimentsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	searchExperimentsCmd.Flags().StringVar(&searchExperimentsReq.Filter, "filter", searchExperimentsReq.Filter, `String representing a SQL filter condition (e.g.`)
-	searchExperimentsCmd.Flags().Int64Var(&searchExperimentsReq.MaxResults, "max-results", searchExperimentsReq.MaxResults, `Maximum number of experiments desired.`)
+	cmd.Flags().StringVar(&searchExperimentsReq.Filter, "filter", searchExperimentsReq.Filter, `String representing a SQL filter condition (e.g.`)
+	cmd.Flags().Int64Var(&searchExperimentsReq.MaxResults, "max-results", searchExperimentsReq.MaxResults, `Maximum number of experiments desired.`)
 	// TODO: array: order_by
-	searchExperimentsCmd.Flags().StringVar(&searchExperimentsReq.PageToken, "page-token", searchExperimentsReq.PageToken, `Token indicating the page of experiments to fetch.`)
-	searchExperimentsCmd.Flags().Var(&searchExperimentsReq.ViewType, "view-type", `Qualifier for type of experiments to be returned.`)
+	cmd.Flags().StringVar(&searchExperimentsReq.PageToken, "page-token", searchExperimentsReq.PageToken, `Token indicating the page of experiments to fetch.`)
+	cmd.Flags().Var(&searchExperimentsReq.ViewType, "view-type", `Qualifier for type of experiments to be returned.`)
 
-}
-
-var searchExperimentsCmd = &cobra.Command{
-	Use:   "search-experiments",
-	Short: `Search experiments.`,
-	Long: `Search experiments.
+	cmd.Use = "search-experiments"
+	cmd.Short = `Search experiments.`
+	cmd.Long = `Search experiments.
   
-  Searches for experiments that satisfy specified search criteria.`,
+  Searches for experiments that satisfy specified search criteria.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {
 			check = cobra.ExactArgs(0)
 		}
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -1068,49 +1486,71 @@ var searchExperimentsCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range searchExperimentsOverrides {
+		fn(cmd, &searchExperimentsReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newSearchExperiments())
+	})
 }
 
 // start search-runs command
-var searchRunsReq ml.SearchRuns
-var searchRunsJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(searchRunsCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var searchRunsOverrides []func(
+	*cobra.Command,
+	*ml.SearchRuns,
+)
+
+func newSearchRuns() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var searchRunsReq ml.SearchRuns
+	var searchRunsJson flags.JsonFlag
+
 	// TODO: short flags
-	searchRunsCmd.Flags().Var(&searchRunsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&searchRunsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: experiment_ids
-	searchRunsCmd.Flags().StringVar(&searchRunsReq.Filter, "filter", searchRunsReq.Filter, `A filter expression over params, metrics, and tags, that allows returning a subset of runs.`)
-	searchRunsCmd.Flags().IntVar(&searchRunsReq.MaxResults, "max-results", searchRunsReq.MaxResults, `Maximum number of runs desired.`)
+	cmd.Flags().StringVar(&searchRunsReq.Filter, "filter", searchRunsReq.Filter, `A filter expression over params, metrics, and tags, that allows returning a subset of runs.`)
+	cmd.Flags().IntVar(&searchRunsReq.MaxResults, "max-results", searchRunsReq.MaxResults, `Maximum number of runs desired.`)
 	// TODO: array: order_by
-	searchRunsCmd.Flags().StringVar(&searchRunsReq.PageToken, "page-token", searchRunsReq.PageToken, `Token for the current page of runs.`)
-	searchRunsCmd.Flags().Var(&searchRunsReq.RunViewType, "run-view-type", `Whether to display only active, only deleted, or all runs.`)
+	cmd.Flags().StringVar(&searchRunsReq.PageToken, "page-token", searchRunsReq.PageToken, `Token for the current page of runs.`)
+	cmd.Flags().Var(&searchRunsReq.RunViewType, "run-view-type", `Whether to display only active, only deleted, or all runs.`)
 
-}
-
-var searchRunsCmd = &cobra.Command{
-	Use:   "search-runs",
-	Short: `Search for runs.`,
-	Long: `Search for runs.
+	cmd.Use = "search-runs"
+	cmd.Short = `Search for runs.`
+	cmd.Long = `Search for runs.
   
   Searches for runs that satisfy expressions.
   
-  Search expressions can use mlflowMetric and mlflowParam keys.",`,
+  Search expressions can use mlflowMetric and mlflowParam keys.",`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {
 			check = cobra.ExactArgs(0)
 		}
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -1127,40 +1567,62 @@ var searchRunsCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range searchRunsOverrides {
+		fn(cmd, &searchRunsReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newSearchRuns())
+	})
 }
 
 // start set-experiment-tag command
-var setExperimentTagReq ml.SetExperimentTag
-var setExperimentTagJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(setExperimentTagCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var setExperimentTagOverrides []func(
+	*cobra.Command,
+	*ml.SetExperimentTag,
+)
+
+func newSetExperimentTag() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var setExperimentTagReq ml.SetExperimentTag
+	var setExperimentTagJson flags.JsonFlag
+
 	// TODO: short flags
-	setExperimentTagCmd.Flags().Var(&setExperimentTagJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&setExperimentTagJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-}
-
-var setExperimentTagCmd = &cobra.Command{
-	Use:   "set-experiment-tag EXPERIMENT_ID KEY VALUE",
-	Short: `Set a tag.`,
-	Long: `Set a tag.
+	cmd.Use = "set-experiment-tag EXPERIMENT_ID KEY VALUE"
+	cmd.Short = `Set a tag.`
+	cmd.Long = `Set a tag.
   
-  Sets a tag on an experiment. Experiment tags are metadata that can be updated.`,
+  Sets a tag on an experiment. Experiment tags are metadata that can be updated.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(3)
 		if cmd.Flags().Changed("json") {
 			check = cobra.ExactArgs(0)
 		}
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -1180,44 +1642,66 @@ var setExperimentTagCmd = &cobra.Command{
 			return err
 		}
 		return nil
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range setExperimentTagOverrides {
+		fn(cmd, &setExperimentTagReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newSetExperimentTag())
+	})
 }
 
 // start set-tag command
-var setTagReq ml.SetTag
-var setTagJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(setTagCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var setTagOverrides []func(
+	*cobra.Command,
+	*ml.SetTag,
+)
+
+func newSetTag() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var setTagReq ml.SetTag
+	var setTagJson flags.JsonFlag
+
 	// TODO: short flags
-	setTagCmd.Flags().Var(&setTagJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&setTagJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	setTagCmd.Flags().StringVar(&setTagReq.RunId, "run-id", setTagReq.RunId, `ID of the run under which to log the tag.`)
-	setTagCmd.Flags().StringVar(&setTagReq.RunUuid, "run-uuid", setTagReq.RunUuid, `[Deprecated, use run_id instead] ID of the run under which to log the tag.`)
+	cmd.Flags().StringVar(&setTagReq.RunId, "run-id", setTagReq.RunId, `ID of the run under which to log the tag.`)
+	cmd.Flags().StringVar(&setTagReq.RunUuid, "run-uuid", setTagReq.RunUuid, `[Deprecated, use run_id instead] ID of the run under which to log the tag.`)
 
-}
-
-var setTagCmd = &cobra.Command{
-	Use:   "set-tag KEY VALUE",
-	Short: `Set a tag.`,
-	Long: `Set a tag.
+	cmd.Use = "set-tag KEY VALUE"
+	cmd.Short = `Set a tag.`
+	cmd.Long = `Set a tag.
   
   Sets a tag on a run. Tags are run metadata that can be updated during a run
-  and after a run completes.`,
+  and after a run completes.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
 			check = cobra.ExactArgs(0)
 		}
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -1236,42 +1720,64 @@ var setTagCmd = &cobra.Command{
 			return err
 		}
 		return nil
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range setTagOverrides {
+		fn(cmd, &setTagReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newSetTag())
+	})
 }
 
 // start update-experiment command
-var updateExperimentReq ml.UpdateExperiment
-var updateExperimentJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(updateExperimentCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updateExperimentOverrides []func(
+	*cobra.Command,
+	*ml.UpdateExperiment,
+)
+
+func newUpdateExperiment() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updateExperimentReq ml.UpdateExperiment
+	var updateExperimentJson flags.JsonFlag
+
 	// TODO: short flags
-	updateExperimentCmd.Flags().Var(&updateExperimentJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&updateExperimentJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	updateExperimentCmd.Flags().StringVar(&updateExperimentReq.NewName, "new-name", updateExperimentReq.NewName, `If provided, the experiment's name is changed to the new name.`)
+	cmd.Flags().StringVar(&updateExperimentReq.NewName, "new-name", updateExperimentReq.NewName, `If provided, the experiment's name is changed to the new name.`)
 
-}
-
-var updateExperimentCmd = &cobra.Command{
-	Use:   "update-experiment EXPERIMENT_ID",
-	Short: `Update an experiment.`,
-	Long: `Update an experiment.
+	cmd.Use = "update-experiment EXPERIMENT_ID"
+	cmd.Short = `Update an experiment.`
+	cmd.Long = `Update an experiment.
   
-  Updates experiment metadata.`,
+  Updates experiment metadata.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
 			check = cobra.ExactArgs(0)
 		}
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -1289,45 +1795,67 @@ var updateExperimentCmd = &cobra.Command{
 			return err
 		}
 		return nil
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updateExperimentOverrides {
+		fn(cmd, &updateExperimentReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newUpdateExperiment())
+	})
 }
 
 // start update-run command
-var updateRunReq ml.UpdateRun
-var updateRunJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(updateRunCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updateRunOverrides []func(
+	*cobra.Command,
+	*ml.UpdateRun,
+)
+
+func newUpdateRun() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updateRunReq ml.UpdateRun
+	var updateRunJson flags.JsonFlag
+
 	// TODO: short flags
-	updateRunCmd.Flags().Var(&updateRunJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&updateRunJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	updateRunCmd.Flags().Int64Var(&updateRunReq.EndTime, "end-time", updateRunReq.EndTime, `Unix timestamp in milliseconds of when the run ended.`)
-	updateRunCmd.Flags().StringVar(&updateRunReq.RunId, "run-id", updateRunReq.RunId, `ID of the run to update.`)
-	updateRunCmd.Flags().StringVar(&updateRunReq.RunUuid, "run-uuid", updateRunReq.RunUuid, `[Deprecated, use run_id instead] ID of the run to update.`)
-	updateRunCmd.Flags().Var(&updateRunReq.Status, "status", `Updated status of the run.`)
+	cmd.Flags().Int64Var(&updateRunReq.EndTime, "end-time", updateRunReq.EndTime, `Unix timestamp in milliseconds of when the run ended.`)
+	cmd.Flags().StringVar(&updateRunReq.RunId, "run-id", updateRunReq.RunId, `ID of the run to update.`)
+	cmd.Flags().StringVar(&updateRunReq.RunUuid, "run-uuid", updateRunReq.RunUuid, `[Deprecated, use run_id instead] ID of the run to update.`)
+	cmd.Flags().Var(&updateRunReq.Status, "status", `Updated status of the run.`)
 
-}
-
-var updateRunCmd = &cobra.Command{
-	Use:   "update-run",
-	Short: `Update a run.`,
-	Long: `Update a run.
+	cmd.Use = "update-run"
+	cmd.Short = `Update a run.`
+	cmd.Long = `Update a run.
   
-  Updates run metadata.`,
+  Updates run metadata.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {
 			check = cobra.ExactArgs(0)
 		}
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -1344,10 +1872,24 @@ var updateRunCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updateRunOverrides {
+		fn(cmd, &updateRunReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newUpdateRun())
+	})
 }
 
 // end service Experiments

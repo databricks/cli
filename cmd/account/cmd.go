@@ -3,7 +3,6 @@
 package account
 
 import (
-	"github.com/databricks/cli/cmd/root"
 	"github.com/spf13/cobra"
 
 	account_access_control "github.com/databricks/cli/cmd/account/access-control"
@@ -32,63 +31,42 @@ import (
 	workspaces "github.com/databricks/cli/cmd/account/workspaces"
 )
 
-var accountCmd = &cobra.Command{
-	Use:   "account",
-	Short: `Databricks Account Commands`,
-}
+func New() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "account",
+		Short: `Databricks Account Commands`,
+	}
 
-func init() {
-	root.RootCmd.AddCommand(accountCmd)
+	cmd.AddCommand(account_access_control.New())
+	cmd.AddCommand(billable_usage.New())
+	cmd.AddCommand(budgets.New())
+	cmd.AddCommand(credentials.New())
+	cmd.AddCommand(custom_app_integration.New())
+	cmd.AddCommand(encryption_keys.New())
+	cmd.AddCommand(account_groups.New())
+	cmd.AddCommand(account_ip_access_lists.New())
+	cmd.AddCommand(log_delivery.New())
+	cmd.AddCommand(account_metastore_assignments.New())
+	cmd.AddCommand(account_metastores.New())
+	cmd.AddCommand(networks.New())
+	cmd.AddCommand(o_auth_enrollment.New())
+	cmd.AddCommand(private_access.New())
+	cmd.AddCommand(published_app_integration.New())
+	cmd.AddCommand(service_principal_secrets.New())
+	cmd.AddCommand(account_service_principals.New())
+	cmd.AddCommand(account_settings.New())
+	cmd.AddCommand(storage.New())
+	cmd.AddCommand(account_storage_credentials.New())
+	cmd.AddCommand(account_users.New())
+	cmd.AddCommand(vpc_endpoints.New())
+	cmd.AddCommand(workspace_assignment.New())
+	cmd.AddCommand(workspaces.New())
 
-	accountCmd.AddCommand(account_access_control.Cmd)
-	accountCmd.AddCommand(billable_usage.Cmd)
-	accountCmd.AddCommand(budgets.Cmd)
-	accountCmd.AddCommand(credentials.Cmd)
-	accountCmd.AddCommand(custom_app_integration.Cmd)
-	accountCmd.AddCommand(encryption_keys.Cmd)
-	accountCmd.AddCommand(account_groups.Cmd)
-	accountCmd.AddCommand(account_ip_access_lists.Cmd)
-	accountCmd.AddCommand(log_delivery.Cmd)
-	accountCmd.AddCommand(account_metastore_assignments.Cmd)
-	accountCmd.AddCommand(account_metastores.Cmd)
-	accountCmd.AddCommand(networks.Cmd)
-	accountCmd.AddCommand(o_auth_enrollment.Cmd)
-	accountCmd.AddCommand(private_access.Cmd)
-	accountCmd.AddCommand(published_app_integration.Cmd)
-	accountCmd.AddCommand(service_principal_secrets.Cmd)
-	accountCmd.AddCommand(account_service_principals.Cmd)
-	accountCmd.AddCommand(account_settings.Cmd)
-	accountCmd.AddCommand(storage.Cmd)
-	accountCmd.AddCommand(account_storage_credentials.Cmd)
-	accountCmd.AddCommand(account_users.Cmd)
-	accountCmd.AddCommand(vpc_endpoints.Cmd)
-	accountCmd.AddCommand(workspace_assignment.Cmd)
-	accountCmd.AddCommand(workspaces.Cmd)
+	// Register all groups with the parent command.
+	groups := Groups()
+	for i := range groups {
+		cmd.AddGroup(&groups[i])
+	}
 
-	// Register commands with groups
-	account_access_control.Cmd.GroupID = "iam"
-	billable_usage.Cmd.GroupID = "billing"
-	budgets.Cmd.GroupID = "billing"
-	credentials.Cmd.GroupID = "provisioning"
-	custom_app_integration.Cmd.GroupID = "oauth2"
-	encryption_keys.Cmd.GroupID = "provisioning"
-	account_groups.Cmd.GroupID = "iam"
-	account_ip_access_lists.Cmd.GroupID = "settings"
-	log_delivery.Cmd.GroupID = "billing"
-	account_metastore_assignments.Cmd.GroupID = "catalog"
-	account_metastores.Cmd.GroupID = "catalog"
-	networks.Cmd.GroupID = "provisioning"
-	o_auth_enrollment.Cmd.GroupID = "oauth2"
-	private_access.Cmd.GroupID = "provisioning"
-	published_app_integration.Cmd.GroupID = "oauth2"
-	service_principal_secrets.Cmd.GroupID = "oauth2"
-	account_service_principals.Cmd.GroupID = "iam"
-	account_settings.Cmd.GroupID = "settings"
-	storage.Cmd.GroupID = "provisioning"
-	account_storage_credentials.Cmd.GroupID = "catalog"
-	account_users.Cmd.GroupID = "iam"
-	vpc_endpoints.Cmd.GroupID = "provisioning"
-	workspace_assignment.Cmd.GroupID = "iam"
-	workspaces.Cmd.GroupID = "provisioning"
-
+	return cmd
 }

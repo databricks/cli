@@ -12,10 +12,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var Cmd = &cobra.Command{
-	Use:   "log-delivery",
-	Short: `These APIs manage log delivery configurations for this account.`,
-	Long: `These APIs manage log delivery configurations for this account. The two
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var cmdOverrides []func(*cobra.Command)
+
+func New() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "log-delivery",
+		Short: `These APIs manage log delivery configurations for this account.`,
+		Long: `These APIs manage log delivery configurations for this account. The two
   supported log types for this API are _billable usage logs_ and _audit logs_.
   This feature is in Public Preview. This feature works with all account ID
   types.
@@ -75,28 +80,43 @@ var Cmd = &cobra.Command{
   [Billable usage log delivery]: https://docs.databricks.com/administration-guide/account-settings/billable-usage-delivery.html
   [Usage page]: https://docs.databricks.com/administration-guide/account-settings/usage.html
   [create a new AWS S3 bucket]: https://docs.databricks.com/administration-guide/account-api/aws-storage.html`,
-	Annotations: map[string]string{
-		"package": "billing",
-	},
+		GroupID: "billing",
+		Annotations: map[string]string{
+			"package": "billing",
+		},
+	}
+
+	// Apply optional overrides to this command.
+	for _, fn := range cmdOverrides {
+		fn(cmd)
+	}
+
+	return cmd
 }
 
 // start create command
-var createReq billing.WrappedCreateLogDeliveryConfiguration
-var createJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(createCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var createOverrides []func(
+	*cobra.Command,
+	*billing.WrappedCreateLogDeliveryConfiguration,
+)
+
+func newCreate() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var createReq billing.WrappedCreateLogDeliveryConfiguration
+	var createJson flags.JsonFlag
+
 	// TODO: short flags
-	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: log_delivery_configuration
 
-}
-
-var createCmd = &cobra.Command{
-	Use:   "create",
-	Short: `Create a new log delivery configuration.`,
-	Long: `Create a new log delivery configuration.
+	cmd.Use = "create"
+	cmd.Short = `Create a new log delivery configuration.`
+	cmd.Long = `Create a new log delivery configuration.
   
   Creates a new Databricks log delivery configuration to enable delivery of the
   specified type of logs to your storage location. This requires that you
@@ -123,18 +143,20 @@ var createCmd = &cobra.Command{
   configuration](#operation/patch-log-delivery-config-status)).
   
   [Configure audit logging]: https://docs.databricks.com/administration-guide/account-settings/audit-logs.html
-  [Deliver and access billable usage logs]: https://docs.databricks.com/administration-guide/account-settings/billable-usage-delivery.html`,
+  [Deliver and access billable usage logs]: https://docs.databricks.com/administration-guide/account-settings/billable-usage-delivery.html`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {
 			check = cobra.ExactArgs(0)
 		}
 		return check(cmd, args)
-	},
-	PreRunE: root.MustAccountClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustAccountClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
 
@@ -151,52 +173,61 @@ var createCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range createOverrides {
+		fn(cmd, &createReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newCreate())
+	})
 }
 
 // start get command
-var getReq billing.GetLogDeliveryRequest
 
-func init() {
-	Cmd.AddCommand(getCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getOverrides []func(
+	*cobra.Command,
+	*billing.GetLogDeliveryRequest,
+)
+
+func newGet() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getReq billing.GetLogDeliveryRequest
+
 	// TODO: short flags
 
-}
-
-var getCmd = &cobra.Command{
-	Use:   "get LOG_DELIVERY_CONFIGURATION_ID",
-	Short: `Get log delivery configuration.`,
-	Long: `Get log delivery configuration.
+	cmd.Use = "get LOG_DELIVERY_CONFIGURATION_ID"
+	cmd.Short = `Get log delivery configuration.`
+	cmd.Long = `Get log delivery configuration.
   
   Gets a Databricks log delivery configuration object for an account, both
-  specified by ID.`,
+  specified by ID.`
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustAccountClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustAccountClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
 
-		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No LOG_DELIVERY_CONFIGURATION_ID argument specified. Loading names for Log Delivery drop-down."
-			names, err := a.LogDelivery.LogDeliveryConfigurationConfigNameToConfigIdMap(ctx, billing.ListLogDeliveryRequest{})
-			close(promptSpinner)
-			if err != nil {
-				return fmt.Errorf("failed to load names for Log Delivery drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "Databricks log delivery configuration ID")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have databricks log delivery configuration id")
-		}
 		getReq.LogDeliveryConfigurationId = args[0]
 
 		response, err := a.LogDelivery.Get(ctx, getReq)
@@ -204,45 +235,67 @@ var getCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getOverrides {
+		fn(cmd, &getReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newGet())
+	})
 }
 
 // start list command
-var listReq billing.ListLogDeliveryRequest
-var listJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(listCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listOverrides []func(
+	*cobra.Command,
+	*billing.ListLogDeliveryRequest,
+)
+
+func newList() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var listReq billing.ListLogDeliveryRequest
+	var listJson flags.JsonFlag
+
 	// TODO: short flags
-	listCmd.Flags().Var(&listJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&listJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	listCmd.Flags().StringVar(&listReq.CredentialsId, "credentials-id", listReq.CredentialsId, `Filter by credential configuration ID.`)
-	listCmd.Flags().Var(&listReq.Status, "status", `Filter by status ENABLED or DISABLED.`)
-	listCmd.Flags().StringVar(&listReq.StorageConfigurationId, "storage-configuration-id", listReq.StorageConfigurationId, `Filter by storage configuration ID.`)
+	cmd.Flags().StringVar(&listReq.CredentialsId, "credentials-id", listReq.CredentialsId, `Filter by credential configuration ID.`)
+	cmd.Flags().Var(&listReq.Status, "status", `Filter by status ENABLED or DISABLED.`)
+	cmd.Flags().StringVar(&listReq.StorageConfigurationId, "storage-configuration-id", listReq.StorageConfigurationId, `Filter by storage configuration ID.`)
 
-}
-
-var listCmd = &cobra.Command{
-	Use:   "list",
-	Short: `Get all log delivery configurations.`,
-	Long: `Get all log delivery configurations.
+	cmd.Use = "list"
+	cmd.Short = `Get all log delivery configurations.`
+	cmd.Long = `Get all log delivery configurations.
   
   Gets all Databricks log delivery configurations associated with an account
-  specified by ID.`,
+  specified by ID.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {
 			check = cobra.ExactArgs(0)
 		}
 		return check(cmd, args)
-	},
-	PreRunE: root.MustAccountClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustAccountClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
 
@@ -259,39 +312,61 @@ var listCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listOverrides {
+		fn(cmd, &listReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newList())
+	})
 }
 
 // start patch-status command
-var patchStatusReq billing.UpdateLogDeliveryConfigurationStatusRequest
 
-func init() {
-	Cmd.AddCommand(patchStatusCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var patchStatusOverrides []func(
+	*cobra.Command,
+	*billing.UpdateLogDeliveryConfigurationStatusRequest,
+)
+
+func newPatchStatus() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var patchStatusReq billing.UpdateLogDeliveryConfigurationStatusRequest
+
 	// TODO: short flags
 
-}
-
-var patchStatusCmd = &cobra.Command{
-	Use:   "patch-status STATUS LOG_DELIVERY_CONFIGURATION_ID",
-	Short: `Enable or disable log delivery configuration.`,
-	Long: `Enable or disable log delivery configuration.
+	cmd.Use = "patch-status STATUS LOG_DELIVERY_CONFIGURATION_ID"
+	cmd.Short = `Enable or disable log delivery configuration.`
+	cmd.Long = `Enable or disable log delivery configuration.
   
   Enables or disables a log delivery configuration. Deletion of delivery
   configurations is not supported, so disable log delivery configurations that
   are no longer needed. Note that you can't re-enable a delivery configuration
   if this would violate the delivery configuration limits described under
-  [Create log delivery](#operation/create-log-delivery-config).`,
+  [Create log delivery](#operation/create-log-delivery-config).`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		return check(cmd, args)
-	},
-	PreRunE: root.MustAccountClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustAccountClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
 
@@ -306,10 +381,24 @@ var patchStatusCmd = &cobra.Command{
 			return err
 		}
 		return nil
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range patchStatusOverrides {
+		fn(cmd, &patchStatusReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newPatchStatus())
+	})
 }
 
 // end service LogDelivery
