@@ -12,46 +12,68 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var Cmd = &cobra.Command{
-	Use:   "dashboards",
-	Short: `In general, there is little need to modify dashboards using the API.`,
-	Long: `In general, there is little need to modify dashboards using the API. However,
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var cmdOverrides []func(*cobra.Command)
+
+func New() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "dashboards",
+		Short: `In general, there is little need to modify dashboards using the API.`,
+		Long: `In general, there is little need to modify dashboards using the API. However,
   it can be useful to use dashboard objects to look-up a collection of related
   query IDs. The API can also be used to duplicate multiple dashboards at once
   since you can get a dashboard definition with a GET request and then POST it
   to create a new one. Dashboards can be scheduled using the sql_task type of
   the Jobs API, e.g. :method:jobs/create.`,
-	Annotations: map[string]string{
-		"package": "sql",
-	},
+		GroupID: "sql",
+		Annotations: map[string]string{
+			"package": "sql",
+		},
+	}
+
+	// Apply optional overrides to this command.
+	for _, fn := range cmdOverrides {
+		fn(cmd)
+	}
+
+	return cmd
 }
 
 // start create command
-var createReq sql.CreateDashboardRequest
-var createJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(createCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var createOverrides []func(
+	*cobra.Command,
+	*sql.CreateDashboardRequest,
+)
+
+func newCreate() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var createReq sql.CreateDashboardRequest
+	var createJson flags.JsonFlag
+
 	// TODO: short flags
-	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-}
+	cmd.Use = "create"
+	cmd.Short = `Create a dashboard object.`
+	cmd.Long = `Create a dashboard object.`
 
-var createCmd = &cobra.Command{
-	Use:   "create",
-	Short: `Create a dashboard object.`,
-	Long:  `Create a dashboard object.`,
+	cmd.Annotations = make(map[string]string)
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {
 			check = cobra.ExactArgs(0)
 		}
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -69,52 +91,61 @@ var createCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range createOverrides {
+		fn(cmd, &createReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newCreate())
+	})
 }
 
 // start delete command
-var deleteReq sql.DeleteDashboardRequest
 
-func init() {
-	Cmd.AddCommand(deleteCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var deleteOverrides []func(
+	*cobra.Command,
+	*sql.DeleteDashboardRequest,
+)
+
+func newDelete() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var deleteReq sql.DeleteDashboardRequest
+
 	// TODO: short flags
 
-}
-
-var deleteCmd = &cobra.Command{
-	Use:   "delete DASHBOARD_ID",
-	Short: `Remove a dashboard.`,
-	Long: `Remove a dashboard.
+	cmd.Use = "delete DASHBOARD_ID"
+	cmd.Short = `Remove a dashboard.`
+	cmd.Long = `Remove a dashboard.
   
   Moves a dashboard to the trash. Trashed dashboards do not appear in list views
-  or searches, and cannot be shared.`,
+  or searches, and cannot be shared.`
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No DASHBOARD_ID argument specified. Loading names for Dashboards drop-down."
-			names, err := w.Dashboards.DashboardNameToIdMap(ctx, sql.ListDashboardsRequest{})
-			close(promptSpinner)
-			if err != nil {
-				return fmt.Errorf("failed to load names for Dashboards drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have ")
-		}
 		deleteReq.DashboardId = args[0]
 
 		err = w.Dashboards.Delete(ctx, deleteReq)
@@ -122,52 +153,61 @@ var deleteCmd = &cobra.Command{
 			return err
 		}
 		return nil
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range deleteOverrides {
+		fn(cmd, &deleteReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newDelete())
+	})
 }
 
 // start get command
-var getReq sql.GetDashboardRequest
 
-func init() {
-	Cmd.AddCommand(getCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getOverrides []func(
+	*cobra.Command,
+	*sql.GetDashboardRequest,
+)
+
+func newGet() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getReq sql.GetDashboardRequest
+
 	// TODO: short flags
 
-}
-
-var getCmd = &cobra.Command{
-	Use:   "get DASHBOARD_ID",
-	Short: `Retrieve a definition.`,
-	Long: `Retrieve a definition.
+	cmd.Use = "get DASHBOARD_ID"
+	cmd.Short = `Retrieve a definition.`
+	cmd.Long = `Retrieve a definition.
   
   Returns a JSON representation of a dashboard object, including its
-  visualization and query objects.`,
+  visualization and query objects.`
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No DASHBOARD_ID argument specified. Loading names for Dashboards drop-down."
-			names, err := w.Dashboards.DashboardNameToIdMap(ctx, sql.ListDashboardsRequest{})
-			close(promptSpinner)
-			if err != nil {
-				return fmt.Errorf("failed to load names for Dashboards drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have ")
-		}
 		getReq.DashboardId = args[0]
 
 		response, err := w.Dashboards.Get(ctx, getReq)
@@ -175,45 +215,67 @@ var getCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getOverrides {
+		fn(cmd, &getReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newGet())
+	})
 }
 
 // start list command
-var listReq sql.ListDashboardsRequest
-var listJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(listCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listOverrides []func(
+	*cobra.Command,
+	*sql.ListDashboardsRequest,
+)
+
+func newList() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var listReq sql.ListDashboardsRequest
+	var listJson flags.JsonFlag
+
 	// TODO: short flags
-	listCmd.Flags().Var(&listJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&listJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	listCmd.Flags().Var(&listReq.Order, "order", `Name of dashboard attribute to order by.`)
-	listCmd.Flags().IntVar(&listReq.Page, "page", listReq.Page, `Page number to retrieve.`)
-	listCmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `Number of dashboards to return per page.`)
-	listCmd.Flags().StringVar(&listReq.Q, "q", listReq.Q, `Full text search term.`)
+	cmd.Flags().Var(&listReq.Order, "order", `Name of dashboard attribute to order by.`)
+	cmd.Flags().IntVar(&listReq.Page, "page", listReq.Page, `Page number to retrieve.`)
+	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `Number of dashboards to return per page.`)
+	cmd.Flags().StringVar(&listReq.Q, "q", listReq.Q, `Full text search term.`)
 
-}
-
-var listCmd = &cobra.Command{
-	Use:   "list",
-	Short: `Get dashboard objects.`,
-	Long: `Get dashboard objects.
+	cmd.Use = "list"
+	cmd.Short = `Get dashboard objects.`
+	cmd.Long = `Get dashboard objects.
   
-  Fetch a paginated list of dashboard objects.`,
+  Fetch a paginated list of dashboard objects.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {
 			check = cobra.ExactArgs(0)
 		}
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -230,51 +292,60 @@ var listCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listOverrides {
+		fn(cmd, &listReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newList())
+	})
 }
 
 // start restore command
-var restoreReq sql.RestoreDashboardRequest
 
-func init() {
-	Cmd.AddCommand(restoreCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var restoreOverrides []func(
+	*cobra.Command,
+	*sql.RestoreDashboardRequest,
+)
+
+func newRestore() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var restoreReq sql.RestoreDashboardRequest
+
 	// TODO: short flags
 
-}
-
-var restoreCmd = &cobra.Command{
-	Use:   "restore DASHBOARD_ID",
-	Short: `Restore a dashboard.`,
-	Long: `Restore a dashboard.
+	cmd.Use = "restore DASHBOARD_ID"
+	cmd.Short = `Restore a dashboard.`
+	cmd.Long = `Restore a dashboard.
   
-  A restored dashboard appears in list views and searches and can be shared.`,
+  A restored dashboard appears in list views and searches and can be shared.`
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No DASHBOARD_ID argument specified. Loading names for Dashboards drop-down."
-			names, err := w.Dashboards.DashboardNameToIdMap(ctx, sql.ListDashboardsRequest{})
-			close(promptSpinner)
-			if err != nil {
-				return fmt.Errorf("failed to load names for Dashboards drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have ")
-		}
 		restoreReq.DashboardId = args[0]
 
 		err = w.Dashboards.Restore(ctx, restoreReq)
@@ -282,10 +353,24 @@ var restoreCmd = &cobra.Command{
 			return err
 		}
 		return nil
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range restoreOverrides {
+		fn(cmd, &restoreReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newRestore())
+	})
 }
 
 // end service Dashboards

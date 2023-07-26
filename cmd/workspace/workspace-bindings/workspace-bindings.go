@@ -10,44 +10,66 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var Cmd = &cobra.Command{
-	Use:   "workspace-bindings",
-	Short: `A catalog in Databricks can be configured as __OPEN__ or __ISOLATED__.`,
-	Long: `A catalog in Databricks can be configured as __OPEN__ or __ISOLATED__. An
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var cmdOverrides []func(*cobra.Command)
+
+func New() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "workspace-bindings",
+		Short: `A catalog in Databricks can be configured as __OPEN__ or __ISOLATED__.`,
+		Long: `A catalog in Databricks can be configured as __OPEN__ or __ISOLATED__. An
   __OPEN__ catalog can be accessed from any workspace, while an __ISOLATED__
   catalog can only be access from a configured list of workspaces.
   
   A catalog's workspace bindings can be configured by a metastore admin or the
   owner of the catalog.`,
-	Annotations: map[string]string{
-		"package": "catalog",
-	},
+		GroupID: "catalog",
+		Annotations: map[string]string{
+			"package": "catalog",
+		},
+	}
+
+	// Apply optional overrides to this command.
+	for _, fn := range cmdOverrides {
+		fn(cmd)
+	}
+
+	return cmd
 }
 
 // start get command
-var getReq catalog.GetWorkspaceBindingRequest
 
-func init() {
-	Cmd.AddCommand(getCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getOverrides []func(
+	*cobra.Command,
+	*catalog.GetWorkspaceBindingRequest,
+)
+
+func newGet() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getReq catalog.GetWorkspaceBindingRequest
+
 	// TODO: short flags
 
-}
-
-var getCmd = &cobra.Command{
-	Use:   "get NAME",
-	Short: `Get catalog workspace bindings.`,
-	Long: `Get catalog workspace bindings.
+	cmd.Use = "get NAME"
+	cmd.Short = `Get catalog workspace bindings.`
+	cmd.Long = `Get catalog workspace bindings.
   
   Gets workspace bindings of the catalog. The caller must be a metastore admin
-  or an owner of the catalog.`,
+  or an owner of the catalog.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -58,41 +80,63 @@ var getCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getOverrides {
+		fn(cmd, &getReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newGet())
+	})
 }
 
 // start update command
-var updateReq catalog.UpdateWorkspaceBindings
-var updateJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(updateCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updateOverrides []func(
+	*cobra.Command,
+	*catalog.UpdateWorkspaceBindings,
+)
+
+func newUpdate() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updateReq catalog.UpdateWorkspaceBindings
+	var updateJson flags.JsonFlag
+
 	// TODO: short flags
-	updateCmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: assign_workspaces
 	// TODO: array: unassign_workspaces
 
-}
-
-var updateCmd = &cobra.Command{
-	Use:   "update NAME",
-	Short: `Update catalog workspace bindings.`,
-	Long: `Update catalog workspace bindings.
+	cmd.Use = "update NAME"
+	cmd.Short = `Update catalog workspace bindings.`
+	cmd.Long = `Update catalog workspace bindings.
   
   Updates workspace bindings of the catalog. The caller must be a metastore
-  admin or an owner of the catalog.`,
+  admin or an owner of the catalog.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -109,10 +153,24 @@ var updateCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updateOverrides {
+		fn(cmd, &updateReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newUpdate())
+	})
 }
 
 // end service WorkspaceBindings

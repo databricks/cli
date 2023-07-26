@@ -16,6 +16,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
+type importDirOptions struct {
+	sourceDir string
+	targetDir string
+	overwrite bool
+}
+
 // The callback function imports the file specified at sourcePath. This function is
 // meant to be used in conjunction with fs.WalkDir
 //
@@ -31,7 +37,11 @@ import (
 // 1. Read the notebook, referring to it using it's local name "foo\\myNotebook.py"
 // 2. API call to import the notebook to the workspace, using it API payload name "foo/myNotebook.py"
 // 3. The notebook is materialized in the workspace using it's remote name "foo/myNotebook"
-func importFileCallback(ctx context.Context, workspaceFiler filer.Filer, sourceDir, targetDir string) func(string, fs.DirEntry, error) error {
+func (opts importDirOptions) callback(ctx context.Context, workspaceFiler filer.Filer) func(string, fs.DirEntry, error) error {
+	sourceDir := opts.sourceDir
+	targetDir := opts.targetDir
+	overwrite := opts.overwrite
+
 	return func(sourcePath string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -72,7 +82,7 @@ func importFileCallback(ctx context.Context, workspaceFiler filer.Filer, sourceD
 		defer f.Close()
 
 		// Create file in WSFS
-		if importOverwrite {
+		if overwrite {
 			err = workspaceFiler.Write(ctx, nameForApiCall, f, filer.OverwriteIfExists)
 			if err != nil {
 				return err
@@ -94,45 +104,55 @@ func importFileCallback(ctx context.Context, workspaceFiler filer.Filer, sourceD
 	}
 }
 
-var importDirCommand = &cobra.Command{
-	Use:   "import-dir SOURCE_PATH TARGET_PATH",
-	Short: `Import a directory from the local filesystem to a Databricks workspace.`,
-	Long: `
+func newImportDir() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var opts importDirOptions
+
+	cmd.Flags().BoolVar(&opts.overwrite, "overwrite", false, "overwrite existing workspace files")
+
+	cmd.Use = "import-dir SOURCE_PATH TARGET_PATH"
+	cmd.Short = `Import a directory from the local filesystem to a Databricks workspace.`
+	cmd.Long = `
 Import a directory recursively from the local file system to a Databricks workspace.
 Notebooks will have their extensions (one of .scala, .py, .sql, .ipynb, .r) stripped
-`,
-	PreRunE: root.MustWorkspaceClient,
-	Args:    cobra.ExactArgs(2),
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Args = cobra.ExactArgs(2)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		sourceDir := args[0]
-		targetDir := args[1]
+		opts.sourceDir = args[0]
+		opts.targetDir = args[1]
 
 		// Initialize a filer rooted at targetDir
-		workspaceFiler, err := filer.NewWorkspaceFilesClient(w, targetDir)
+		workspaceFiler, err := filer.NewWorkspaceFilesClient(w, opts.targetDir)
 		if err != nil {
 			return err
 		}
 
 		// TODO: print progress events on stderr instead: https://github.com/databricks/cli/issues/448
-		err = cmdio.RenderJson(ctx, newImportStartedEvent(sourceDir))
+		err = cmdio.RenderJson(ctx, newImportStartedEvent(opts.sourceDir))
 		if err != nil {
 			return err
 		}
 
 		// Walk local directory tree and import files to the workspace
-		err = filepath.WalkDir(sourceDir, importFileCallback(ctx, workspaceFiler, sourceDir, targetDir))
+		err = filepath.WalkDir(opts.sourceDir, opts.callback(ctx, workspaceFiler))
 		if err != nil {
 			return err
 		}
-		return cmdio.RenderJson(ctx, newImportCompletedEvent(targetDir))
-	},
+		return cmdio.RenderJson(ctx, newImportCompletedEvent(opts.targetDir))
+	}
+
+	return cmd
 }
 
-var importOverwrite bool
-
 func init() {
-	importDirCommand.Flags().BoolVar(&importOverwrite, "overwrite", false, "overwrite existing workspace files")
-	Cmd.AddCommand(importDirCommand)
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newImportDir())
+	})
 }
