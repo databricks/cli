@@ -5,7 +5,7 @@ artifacts:
     my_test_code:
       type: whl
       path: "./my_test_code"
-      build: "/usr/local/bin/python setup.py bdist_wheel"
+      build: "python setup.py bdist_wheel"
 
 resources:
   jobs:
