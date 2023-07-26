@@ -4,6 +4,10 @@ import (
 	"sync"
 
 	"github.com/databricks/cli/cmd/account"
+	"github.com/databricks/cli/cmd/api"
+	"github.com/databricks/cli/cmd/auth"
+	"github.com/databricks/cli/cmd/bundle"
+	"github.com/databricks/cli/cmd/configure"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/cmd/workspace"
 	"github.com/spf13/cobra"
@@ -32,6 +36,12 @@ func New() *cobra.Command {
 		for i := range groups {
 			cli.AddGroup(&groups[i])
 		}
+
+		// Add other subcommands.
+		cli.AddCommand(api.New())
+		cli.AddCommand(auth.New())
+		cli.AddCommand(bundle.New())
+		cli.AddCommand(configure.New())
 
 		cmd = cli
 	})

@@ -11,7 +11,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func syncOptionsFromBundle(cmd *cobra.Command, b *bundle.Bundle) (*sync.SyncOptions, error) {
+type syncFlags struct {
+	interval time.Duration
+	full     bool
+	watch    bool
+}
+
+func (f *syncFlags) syncOptionsFromBundle(cmd *cobra.Command, b *bundle.Bundle) (*sync.SyncOptions, error) {
 	cacheDir, err := b.CacheDir()
 	if err != nil {
 		return nil, fmt.Errorf("cannot get bundle cache directory: %w", err)
@@ -20,8 +26,8 @@ func syncOptionsFromBundle(cmd *cobra.Command, b *bundle.Bundle) (*sync.SyncOpti
 	opts := sync.SyncOptions{
 		LocalPath:    b.Config.Path,
 		RemotePath:   b.Config.Workspace.FilesPath,
-		Full:         full,
-		PollInterval: interval,
+		Full:         f.full,
+		PollInterval: f.interval,
 
 		SnapshotBasePath: cacheDir,
 		WorkspaceClient:  b.WorkspaceClient(),
@@ -29,13 +35,21 @@ func syncOptionsFromBundle(cmd *cobra.Command, b *bundle.Bundle) (*sync.SyncOpti
 	return &opts, nil
 }
 
-var syncCmd = &cobra.Command{
-	Use:   "sync [flags]",
-	Short: "Synchronize bundle tree to the workspace",
-	Args:  cobra.NoArgs,
+func newSyncCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "sync [flags]",
+		Short: "Synchronize bundle tree to the workspace",
+		Args:  cobra.NoArgs,
 
-	PreRunE: ConfigureBundleWithVariables,
-	RunE: func(cmd *cobra.Command, args []string) error {
+		PreRunE: ConfigureBundleWithVariables,
+	}
+
+	var f syncFlags
+	cmd.Flags().DurationVar(&f.interval, "interval", 1*time.Second, "file system polling interval (for --watch)")
+	cmd.Flags().BoolVar(&f.full, "full", false, "perform full synchronization (default is incremental)")
+	cmd.Flags().BoolVar(&f.watch, "watch", false, "watch local file system for changes")
+
+	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		b := bundle.Get(cmd.Context())
 
 		// Run initialize phase to make sure paths are set.
@@ -44,7 +58,7 @@ var syncCmd = &cobra.Command{
 			return err
 		}
 
-		opts, err := syncOptionsFromBundle(cmd, b)
+		opts, err := f.syncOptionsFromBundle(cmd, b)
 		if err != nil {
 			return err
 		}
@@ -57,21 +71,12 @@ var syncCmd = &cobra.Command{
 
 		log.Infof(ctx, "Remote file sync location: %v", opts.RemotePath)
 
-		if watch {
+		if f.watch {
 			return s.RunContinuous(ctx)
 		}
 
 		return s.RunOnce(ctx)
-	},
-}
+	}
 
-var interval time.Duration
-var full bool
-var watch bool
-
-func init() {
-	AddCommand(syncCmd)
-	syncCmd.Flags().DurationVar(&interval, "interval", 1*time.Second, "file system polling interval (for --watch)")
-	syncCmd.Flags().BoolVar(&full, "full", false, "perform full synchronization (default is incremental)")
-	syncCmd.Flags().BoolVar(&watch, "watch", false, "watch local file system for changes")
+	return cmd
 }
