@@ -32,12 +32,6 @@ func (m *build) Apply(ctx context.Context, b *bundle.Bundle) error {
 		return fmt.Errorf("artifact doesn't exist: %s", m.name)
 	}
 
-	// TODO: If not set, BuildCommand should be infer prior to this
-	// via a mutator so that it can be observable.
-	if artifact.BuildCommand == "" {
-		return fmt.Errorf("artifacts.whl.Build(%s): missing build property for the artifact", m.name)
-	}
-
 	cmdio.LogString(ctx, fmt.Sprintf("artifacts.whl.Build(%s): Building...", m.name))
 
 	dir := artifact.Path

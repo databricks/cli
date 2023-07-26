@@ -11,6 +11,8 @@ func Build() bundle.Mutator {
 	return newPhase(
 		"build",
 		[]bundle.Mutator{
+			artifacts.DetectPackages(),
+			artifacts.InferMissingProperties(),
 			artifacts.BuildAll(),
 			interpolation.Interpolate(
 				interpolation.IncludeLookupsInPath("artifacts"),

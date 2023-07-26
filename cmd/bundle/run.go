@@ -47,7 +47,7 @@ var runCmd = &cobra.Command{
 			return err
 		}
 		if output != nil {
-			switch root.OutputType() {
+			switch root.OutputType(cmd) {
 			case flags.OutputText:
 				resultString, err := output.String()
 				if err != nil {
@@ -61,7 +61,7 @@ var runCmd = &cobra.Command{
 				}
 				cmd.OutOrStdout().Write(b)
 			default:
-				return fmt.Errorf("unknown output type %s", root.OutputType())
+				return fmt.Errorf("unknown output type %s", root.OutputType(cmd))
 			}
 		}
 		return nil
