@@ -90,59 +90,58 @@ My email is {{template "email"}}
 }
 
 func TestRendererIsSkipped(t *testing.T) {
-	r := renderer{
-		skipPatterns: []string{"a*", "*yz", "def", "a/b/*"},
-	}
+
+	skipPatterns := []string{"a*", "*yz", "def", "a/b/*"}
 
 	// skipped paths
-	isSkipped, err := r.isSkipped("abc")
+	match, err := isSkipped("abc", skipPatterns)
 	require.NoError(t, err)
-	assert.True(t, isSkipped)
+	assert.True(t, match)
 
-	isSkipped, err = r.isSkipped("abcd")
+	match, err = isSkipped("abcd", skipPatterns)
 	require.NoError(t, err)
-	assert.True(t, isSkipped)
+	assert.True(t, match)
 
-	isSkipped, err = r.isSkipped("a")
+	match, err = isSkipped("a", skipPatterns)
 	require.NoError(t, err)
-	assert.True(t, isSkipped)
+	assert.True(t, match)
 
-	isSkipped, err = r.isSkipped("xxyz")
+	match, err = isSkipped("xxyz", skipPatterns)
 	require.NoError(t, err)
-	assert.True(t, isSkipped)
+	assert.True(t, match)
 
-	isSkipped, err = r.isSkipped("yz")
+	match, err = isSkipped("yz", skipPatterns)
 	require.NoError(t, err)
-	assert.True(t, isSkipped)
+	assert.True(t, match)
 
-	isSkipped, err = r.isSkipped("a/b/c")
+	match, err = isSkipped("a/b/c", skipPatterns)
 	require.NoError(t, err)
-	assert.True(t, isSkipped)
+	assert.True(t, match)
 
 	// NOT skipped paths
-	isSkipped, err = r.isSkipped(".")
+	match, err = isSkipped(".", skipPatterns)
 	require.NoError(t, err)
-	assert.False(t, isSkipped)
+	assert.False(t, match)
 
-	isSkipped, err = r.isSkipped("y")
+	match, err = isSkipped("y", skipPatterns)
 	require.NoError(t, err)
-	assert.False(t, isSkipped)
+	assert.False(t, match)
 
-	isSkipped, err = r.isSkipped("z")
+	match, err = isSkipped("z", skipPatterns)
 	require.NoError(t, err)
-	assert.False(t, isSkipped)
+	assert.False(t, match)
 
-	isSkipped, err = r.isSkipped("defg")
+	match, err = isSkipped("defg", skipPatterns)
 	require.NoError(t, err)
-	assert.False(t, isSkipped)
+	assert.False(t, match)
 
-	isSkipped, err = r.isSkipped("cat")
+	match, err = isSkipped("cat", skipPatterns)
 	require.NoError(t, err)
-	assert.False(t, isSkipped)
+	assert.False(t, match)
 
-	isSkipped, err = r.isSkipped("a/b/c/d")
+	match, err = isSkipped("a/b/c/d", skipPatterns)
 	require.NoError(t, err)
-	assert.False(t, isSkipped)
+	assert.False(t, match)
 }
 
 func TestRendererPersistToDisk(t *testing.T) {

@@ -5,7 +5,6 @@ import (
 	"io"
 	"io/fs"
 	"os"
-	"path"
 	"path/filepath"
 
 	"github.com/databricks/cli/libs/filer"
@@ -13,12 +12,14 @@ import (
 
 // Interface for an in memory representation of a file
 type file interface {
-	// Path file will be persisted at, if PersistToDisk is called
+	// Full path of the file, in the os native format. For example /foo/bar on
+	// Unix and C:\foo\bar on windows
 	Path() string
 
-	// Does the path of the file, relative to the project root match any of the
-	// specified skip patterns
-	IsSkipped(patterns []string) (bool, error)
+	// Unix like file path relative to the "root" of the instantiated project. Is used to
+	// evaluate whether the file should be skipped by comparing it to a list of
+	// skip glob patterns
+	RelPath() string
 
 	// This function writes this file onto the disk
 	PersistToDisk() error
@@ -42,17 +43,8 @@ func (f *fileCommon) Path() string {
 	return filepath.Join(f.root, filepath.FromSlash(f.relPath))
 }
 
-func (f *fileCommon) IsSkipped(patterns []string) (bool, error) {
-	for _, pattern := range patterns {
-		isMatch, err := path.Match(pattern, f.relPath)
-		if err != nil {
-			return false, err
-		}
-		if isMatch {
-			return true, nil
-		}
-	}
-	return false, nil
+func (f *fileCommon) RelPath() string {
+	return f.relPath
 }
 
 type copyFile struct {

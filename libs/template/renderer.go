@@ -201,11 +201,11 @@ func (r *renderer) walk() error {
 		if err != nil {
 			return err
 		}
-		isSkipped, err := r.isSkipped(instanceDirectory)
+		match, err := isSkipped(instanceDirectory, r.skipPatterns)
 		if err != nil {
 			return err
 		}
-		if isSkipped {
+		if match {
 			logger.Infof(r.ctx, "skipping directory: %s", instanceDirectory)
 			continue
 		}
@@ -263,11 +263,11 @@ func (r *renderer) persistToDisk() error {
 	// any of the skip patterns
 	filesToPersist := make([]file, 0)
 	for _, file := range r.files {
-		isSkipped, err := file.IsSkipped(r.skipPatterns)
+		match, err := isSkipped(file.RelPath(), r.skipPatterns)
 		if err != nil {
 			return err
 		}
-		if isSkipped {
+		if match {
 			log.Infof(r.ctx, "skipping file: %s", file.Path())
 			continue
 		}
@@ -296,8 +296,8 @@ func (r *renderer) persistToDisk() error {
 	return nil
 }
 
-func (r *renderer) isSkipped(filePath string) (bool, error) {
-	for _, pattern := range r.skipPatterns {
+func isSkipped(filePath string, patterns []string) (bool, error) {
+	for _, pattern := range patterns {
 		isMatch, err := path.Match(pattern, filePath)
 		if err != nil {
 			return false, err
