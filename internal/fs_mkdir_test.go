@@ -3,6 +3,7 @@ package internal
 import (
 	"context"
 	"path"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -12,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TesFsMkdirCreatesDirectory(t *testing.T) {
+func TestAccFsMkdirCreatesDirectory(t *testing.T) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	ctx := context.Background()
@@ -36,7 +37,7 @@ func TesFsMkdirCreatesDirectory(t *testing.T) {
 	assert.Equal(t, true, info.IsDir())
 }
 
-func TestFsMkdirCreatesMultipleDirectories(t *testing.T) {
+func TestAccFsMkdirCreatesMultipleDirectories(t *testing.T) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	ctx := context.Background()
@@ -72,7 +73,7 @@ func TestFsMkdirCreatesMultipleDirectories(t *testing.T) {
 	assert.Equal(t, true, infoC.IsDir())
 }
 
-func TestFsMkdirWhenDirectoryAlreadyExists(t *testing.T) {
+func TestAccFsMkdirWhenDirectoryAlreadyExists(t *testing.T) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	ctx := context.Background()
@@ -93,7 +94,7 @@ func TestFsMkdirWhenDirectoryAlreadyExists(t *testing.T) {
 	assert.Equal(t, "", stdout.String())
 }
 
-func TestFsMkdirWhenFileExistsAtPath(t *testing.T) {
+func TestAccFsMkdirWhenFileExistsAtPath(t *testing.T) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	ctx := context.Background()
@@ -110,5 +111,7 @@ func TestFsMkdirWhenFileExistsAtPath(t *testing.T) {
 
 	// assert run fails
 	_, _, err = RequireErrorRun(t, "fs", "mkdir", "dbfs:"+path.Join(tmpDir, "hello"))
-	assert.ErrorContains(t, err, "Cannot create directory")
+	// Different backends return different errors (for example: file in s3 vs dbfs)
+	regex := regexp.MustCompile(`^Path is a file: .*$|^Cannot create directory .* because .* is an existing file`)
+	assert.Regexp(t, regex, err.Error())
 }
