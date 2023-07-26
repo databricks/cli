@@ -59,5 +59,5 @@ func TestAccGitCloneRepositoryDoesNotExist(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	err := git.Clone(context.Background(), "doesnot-exist", "", tmpDir)
-	assert.Error(t, err)
+	assert.Contains(t, err.Error(), `repository 'https://github.com/databricks/doesnot-exist/' not found`)
 }
