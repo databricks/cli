@@ -59,5 +59,5 @@ func TestAccGitCloneRepositoryDoesNotExist(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	err := git.Clone(context.Background(), "doesnot-exist", "", tmpDir)
-	assert.Error(t, err)
+	assert.ErrorContains(t, err, "git clone failed")
 }
