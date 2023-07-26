@@ -21,9 +21,9 @@ var workspaceClient int
 var accountClient int
 var currentUser int
 
-func init() {
-	RootCmd.PersistentFlags().StringP("profile", "p", "", "~/.databrickscfg profile")
-	RootCmd.RegisterFlagCompletionFunc("profile", databrickscfg.ProfileCompletion)
+func initProfileFlag(cmd *cobra.Command) {
+	cmd.PersistentFlags().StringP("profile", "p", "", "~/.databrickscfg profile")
+	cmd.RegisterFlagCompletionFunc("profile", databrickscfg.ProfileCompletion)
 }
 
 func MustAccountClient(cmd *cobra.Command, args []string) error {
