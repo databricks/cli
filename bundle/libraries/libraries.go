@@ -111,5 +111,5 @@ func libPath(library *compute.Library) string {
 }
 
 func isLocalLibrary(library *compute.Library) bool {
-	return library.Whl != "" || library.Jar != ""
+	return libPath(library) != ""
 }
