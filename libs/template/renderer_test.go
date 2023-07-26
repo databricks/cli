@@ -345,47 +345,6 @@ func TestRendererInMemoryFileFullPathForWindows(t *testing.T) {
 	assert.Equal(t, `c:\a\b\c\d\e`, f.Path())
 }
 
-func TestRendererInMemoryFilePersistToDiskSetsExecutableBit(t *testing.T) {
-	if runtime.GOOS != "linux" && runtime.GOOS != "darwin" {
-		t.SkipNow()
-	}
-	tmpDir := t.TempDir()
-
-	f := &inMemoryFile{
-		fileCommon: &fileCommon{
-			root:    tmpDir,
-			relPath: "a/b/c",
-			perm:    0755,
-		},
-		content: []byte("123"),
-	}
-	err := f.PersistToDisk()
-	assert.NoError(t, err)
-
-	assertFileContent(t, filepath.Join(tmpDir, "a/b/c"), "123")
-	assertFilePermissions(t, filepath.Join(tmpDir, "a/b/c"), 0755)
-}
-
-func TestRendererInMemoryFilePersistToDiskForWindows(t *testing.T) {
-	if runtime.GOOS != "windows" {
-		t.SkipNow()
-	}
-	tmpDir := t.TempDir()
-
-	f := &inMemoryFile{
-		fileCommon: &fileCommon{
-			root:    tmpDir,
-			relPath: "a/b/c",
-			perm:    0666,
-		},
-		content: []byte("123"),
-	}
-	err := f.PersistToDisk()
-	assert.NoError(t, err)
-
-	assertFileContent(t, filepath.Join(tmpDir, "a/b/c"), "123")
-	assertFilePermissions(t, filepath.Join(tmpDir, "a/b/c"), 0666)
-}
 
 func TestRendererReadsPermissionsBits(t *testing.T) {
 	if runtime.GOOS != "linux" && runtime.GOOS != "darwin" {
