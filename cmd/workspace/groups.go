@@ -1,7 +1,6 @@
 package workspace
 
 import (
-	"github.com/databricks/cli/cmd/root"
 	"github.com/spf13/cobra"
 )
 
@@ -53,13 +52,5 @@ func Groups() []cobra.Group {
 			ID:    "settings",
 			Title: "Settings",
 		},
-	}
-}
-
-func init() {
-	// Register groups with parent command
-	groups := Groups()
-	for i := range groups {
-		root.RootCmd.AddGroup(&groups[i])
 	}
 }

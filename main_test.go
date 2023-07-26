@@ -3,7 +3,7 @@ package main
 import (
 	"testing"
 
-	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/cmd"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 )
@@ -15,7 +15,7 @@ func TestCommandsDontUseUnderscoreInName(t *testing.T) {
 	// This test lives in the main package because this is where
 	// all commands are imported.
 	//
-	queue := []*cobra.Command{root.RootCmd}
+	queue := []*cobra.Command{cmd.New()}
 	for len(queue) > 0 {
 		cmd := queue[0]
 		assert.NotContains(t, cmd.Name(), "_")
