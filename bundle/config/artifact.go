@@ -1,6 +1,7 @@
 package config
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"os/exec"
@@ -40,10 +41,19 @@ func (a *Artifact) Build(ctx context.Context) ([]byte, error) {
 		return nil, fmt.Errorf("no build property defined")
 	}
 
-	buildParts := strings.Split(a.BuildCommand, " ")
-	cmd := exec.CommandContext(ctx, buildParts[0], buildParts[1:]...)
-	cmd.Dir = a.Path
-	return cmd.CombinedOutput()
+	out := make([][]byte, 0)
+	commands := strings.Split(a.BuildCommand, " && ")
+	for _, command := range commands {
+		buildParts := strings.Split(command, " ")
+		cmd := exec.CommandContext(ctx, buildParts[0], buildParts[1:]...)
+		cmd.Dir = a.Path
+		res, err := cmd.CombinedOutput()
+		if err != nil {
+			return res, err
+		}
+		out = append(out, res)
+	}
+	return bytes.Join(out, []byte{}), nil
 }
 
 func (a *Artifact) NormalisePaths() {
