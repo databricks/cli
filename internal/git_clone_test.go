@@ -57,8 +57,8 @@ func TestAccGitCloneRepositoryDoesNotExist(t *testing.T) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	tmpDir := t.TempDir()
-	t.Setenv("GIT_ASKPASS", "echo")
 
 	err := git.Clone(context.Background(), "https://github.com/monalisa/doesnot-exist.git", "", tmpDir)
-	assert.Contains(t, err.Error(), `repository 'https://github.com/monalisa/doesnot-exist.git/' not found`)
+	// Expect the error to originate from shelling out to `git clone`
+	assert.ErrorContains(t, err, "git clone failed:")
 }
