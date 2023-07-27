@@ -3,18 +3,27 @@ package auth
 import (
 	"context"
 
-	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/spf13/cobra"
 )
 
-var authCmd = &cobra.Command{
-	Use:   "auth",
-	Short: "Authentication related commands",
-}
+func New() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "auth",
+		Short: "Authentication related commands",
+	}
 
-var persistentAuth auth.PersistentAuth
+	var perisistentAuth auth.PersistentAuth
+	cmd.PersistentFlags().StringVar(&perisistentAuth.Host, "host", perisistentAuth.Host, "Databricks Host")
+	cmd.PersistentFlags().StringVar(&perisistentAuth.AccountID, "account-id", perisistentAuth.AccountID, "Databricks Account ID")
+
+	cmd.AddCommand(newEnvCommand())
+	cmd.AddCommand(newLoginCommand(&perisistentAuth))
+	cmd.AddCommand(newProfilesCommand())
+	cmd.AddCommand(newTokenCommand(&perisistentAuth))
+	return cmd
+}
 
 func promptForHost(ctx context.Context) (string, error) {
 	prompt := cmdio.Prompt(ctx)
@@ -40,10 +49,4 @@ func promptForAccountID(ctx context.Context) (string, error) {
 		return "", err
 	}
 	return accountId, nil
-}
-
-func init() {
-	root.RootCmd.AddCommand(authCmd)
-	authCmd.PersistentFlags().StringVar(&persistentAuth.Host, "host", persistentAuth.Host, "Databricks Host")
-	authCmd.PersistentFlags().StringVar(&persistentAuth.AccountID, "account-id", persistentAuth.AccountID, "Databricks Account ID")
 }

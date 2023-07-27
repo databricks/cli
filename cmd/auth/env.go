@@ -89,10 +89,18 @@ func loadFromDatabricksCfg(cfg *config.Config) error {
 	return nil
 }
 
-var envCmd = &cobra.Command{
-	Use:   "env",
-	Short: "Get env",
-	RunE: func(cmd *cobra.Command, args []string) error {
+func newEnvCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "env",
+		Short: "Get env",
+	}
+
+	var host string
+	var profile string
+	cmd.Flags().StringVar(&host, "host", host, "Hostname to get auth env for")
+	cmd.Flags().StringVar(&profile, "profile", profile, "Profile to get auth env for")
+
+	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		cfg := &config.Config{
 			Host:    host,
 			Profile: profile,
@@ -130,14 +138,7 @@ var envCmd = &cobra.Command{
 		}
 		cmd.OutOrStdout().Write(raw)
 		return nil
-	},
-}
+	}
 
-var host string
-var profile string
-
-func init() {
-	authCmd.AddCommand(envCmd)
-	envCmd.Flags().StringVar(&host, "host", host, "Hostname to get auth env for")
-	envCmd.Flags().StringVar(&profile, "profile", profile, "Profile to get auth env for")
+	return cmd
 }

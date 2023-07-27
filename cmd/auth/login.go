@@ -14,10 +14,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var loginTimeout time.Duration
-var configureCluster bool
-
-func configureHost(ctx context.Context, args []string, argIndex int) error {
+func configureHost(ctx context.Context, persistentAuth *auth.PersistentAuth, args []string, argIndex int) error {
 	if len(args) > argIndex {
 		persistentAuth.Host = args[argIndex]
 		return nil
@@ -31,13 +28,23 @@ func configureHost(ctx context.Context, args []string, argIndex int) error {
 	return nil
 }
 
-var loginCmd = &cobra.Command{
-	Use:   "login [HOST]",
-	Short: "Authenticate this machine",
-	RunE: func(cmd *cobra.Command, args []string) error {
+func newLoginCommand(persistentAuth *auth.PersistentAuth) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "login [HOST]",
+		Short: "Authenticate this machine",
+	}
+
+	var loginTimeout time.Duration
+	var configureCluster bool
+	cmd.Flags().DurationVar(&loginTimeout, "timeout", auth.DefaultTimeout,
+		"Timeout for completing login challenge in the browser")
+	cmd.Flags().BoolVar(&configureCluster, "configure-cluster", false,
+		"Prompts to configure cluster")
+
+	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		if persistentAuth.Host == "" {
-			configureHost(ctx, args, 0)
+			configureHost(ctx, persistentAuth, args, 0)
 		}
 		defer persistentAuth.Close()
 
@@ -108,14 +115,7 @@ var loginCmd = &cobra.Command{
 
 		cmdio.LogString(ctx, fmt.Sprintf("Profile %s was successfully saved", profileName))
 		return nil
-	},
-}
+	}
 
-func init() {
-	authCmd.AddCommand(loginCmd)
-	loginCmd.Flags().DurationVar(&loginTimeout, "timeout", auth.DefaultTimeout,
-		"Timeout for completing login challenge in the browser")
-
-	loginCmd.Flags().BoolVar(&configureCluster, "configure-cluster", false,
-		"Prompts to configure cluster")
+	return cmd
 }

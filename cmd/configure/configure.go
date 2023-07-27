@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/url"
 
-	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/databricks-sdk-go/config"
@@ -112,19 +111,30 @@ func configureNonInteractive(cmd *cobra.Command, ctx context.Context, cfg *confi
 	return nil
 }
 
-var configureCmd = &cobra.Command{
-	Use:   "configure",
-	Short: "Configure authentication",
-	Long: `Configure authentication.
+func newConfigureCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "configure",
+		Short: "Configure authentication",
+		Long: `Configure authentication.
 
-This command adds a profile to your ~/.databrickscfg file.
-You can write to a different file by setting the DATABRICKS_CONFIG_FILE environment variable.
+	This command adds a profile to your ~/.databrickscfg file.
+	You can write to a different file by setting the DATABRICKS_CONFIG_FILE environment variable.
 
-If this command is invoked in non-interactive mode, it will read the token from stdin.
-The host must be specified with the --host flag.
-	`,
-	Hidden: true,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	If this command is invoked in non-interactive mode, it will read the token from stdin.
+	The host must be specified with the --host flag.
+		`,
+		Hidden: true,
+	}
+
+	cmd.Flags().String("host", "", "Databricks workspace host.")
+	cmd.Flags().String("profile", "DEFAULT", "Name for the connection profile to configure.")
+
+	// Include token flag for compatibility with the legacy CLI.
+	// It doesn't actually do anything because we always use PATs.
+	cmd.Flags().BoolP("token", "t", true, "Configure using Databricks Personal Access Token")
+	cmd.Flags().MarkHidden("token")
+
+	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		var cfg config.Config
 
 		// Load environment variables, possibly the DEFAULT profile.
@@ -152,16 +162,11 @@ The host must be specified with the --host flag.
 
 		// Save profile to config file.
 		return databrickscfg.SaveToProfile(ctx, &cfg)
-	},
+	}
+
+	return cmd
 }
 
-func init() {
-	root.RootCmd.AddCommand(configureCmd)
-	configureCmd.Flags().String("host", "", "Databricks workspace host.")
-	configureCmd.Flags().String("profile", "DEFAULT", "Name for the connection profile to configure.")
-
-	// Include token flag for compatibility with the legacy CLI.
-	// It doesn't actually do anything because we always use PATs.
-	configureCmd.Flags().BoolP("token", "t", true, "Configure using Databricks Personal Access Token")
-	configureCmd.Flags().MarkHidden("token")
+func New() *cobra.Command {
+	return newConfigureCommand()
 }
