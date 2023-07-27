@@ -53,7 +53,7 @@ func TestAccGitCloneWithOnlyRepoNameOnAlternateBranch(t *testing.T) {
 	assert.Contains(t, string(b), "dais-2022")
 }
 
-func TestAccGitCloneRepositoryDoesNotExist(t *testing.T) {
+func TestAccGitCloneErrorsWhenRepositoryDoesNotExist(t *testing.T) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	tmpDir := t.TempDir()
