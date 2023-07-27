@@ -6,12 +6,19 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var deployCmd = &cobra.Command{
-	Use:   "deploy",
-	Short: "Deploy bundle",
+func newDeployCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:     "deploy",
+		Short:   "Deploy bundle",
+		PreRunE: ConfigureBundleWithVariables,
+	}
 
-	PreRunE: ConfigureBundleWithVariables,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	var forceDeploy bool
+	var computeID string
+	cmd.Flags().BoolVar(&forceDeploy, "force", false, "Force acquisition of deployment lock.")
+	cmd.Flags().StringVarP(&computeID, "compute-id", "c", "", "Override compute in the deployment with the given compute ID.")
+
+	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		b := bundle.Get(cmd.Context())
 
 		// If `--force` is specified, force acquisition of the deployment lock.
@@ -23,14 +30,7 @@ var deployCmd = &cobra.Command{
 			phases.Build(),
 			phases.Deploy(),
 		))
-	},
-}
+	}
 
-var forceDeploy bool
-var computeID string
-
-func init() {
-	AddCommand(deployCmd)
-	deployCmd.Flags().BoolVar(&forceDeploy, "force", false, "Force acquisition of deployment lock.")
-	deployCmd.Flags().StringVarP(&computeID, "compute-id", "c", "", "Override compute in the deployment with the given compute ID.")
+	return cmd
 }

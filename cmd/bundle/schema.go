@@ -9,11 +9,18 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var schemaCmd = &cobra.Command{
-	Use:   "schema",
-	Short: "Generate JSON Schema for bundle configuration",
+func newSchemaCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "schema",
+		Short: "Generate JSON Schema for bundle configuration",
+	}
 
-	RunE: func(cmd *cobra.Command, args []string) error {
+	var openapi string
+	var onlyDocs bool
+	cmd.Flags().StringVar(&openapi, "openapi", "", "path to a databricks openapi spec")
+	cmd.Flags().BoolVar(&onlyDocs, "only-docs", false, "only generate descriptions for the schema")
+
+	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		docs, err := schema.BundleDocs(openapi)
 		if err != nil {
 			return err
@@ -34,14 +41,7 @@ var schemaCmd = &cobra.Command{
 		}
 		cmd.OutOrStdout().Write(result)
 		return nil
-	},
-}
+	}
 
-var openapi string
-var onlyDocs bool
-
-func init() {
-	AddCommand(schemaCmd)
-	schemaCmd.Flags().StringVar(&openapi, "openapi", "", "path to a databricks openapi spec")
-	schemaCmd.Flags().BoolVar(&onlyDocs, "only-docs", false, "only generate descriptions for the schema")
+	return cmd
 }

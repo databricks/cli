@@ -115,6 +115,3 @@ func Execute(cmd *cobra.Command) {
 		os.Exit(1)
 	}
 }
-
-// Keep a global copy until all commands can be initialized.
-var RootCmd = New()

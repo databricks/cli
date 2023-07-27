@@ -27,7 +27,8 @@ func TestSyncOptionsFromBundle(t *testing.T) {
 		},
 	}
 
-	opts, err := syncOptionsFromBundle(syncCmd, []string{}, b)
+	f := syncFlags{}
+	opts, err := f.syncOptionsFromBundle(New(), []string{}, b)
 	require.NoError(t, err)
 	assert.Equal(t, tempDir, opts.LocalPath)
 	assert.Equal(t, "/Users/jane@doe.com/path", opts.RemotePath)
@@ -37,16 +38,18 @@ func TestSyncOptionsFromBundle(t *testing.T) {
 
 func TestSyncOptionsFromArgsRequiredTwoArgs(t *testing.T) {
 	var err error
-	_, err = syncOptionsFromArgs(syncCmd, []string{})
+	f := syncFlags{}
+	_, err = f.syncOptionsFromArgs(New(), []string{})
 	require.ErrorIs(t, err, flag.ErrHelp)
-	_, err = syncOptionsFromArgs(syncCmd, []string{"foo"})
+	_, err = f.syncOptionsFromArgs(New(), []string{"foo"})
 	require.ErrorIs(t, err, flag.ErrHelp)
-	_, err = syncOptionsFromArgs(syncCmd, []string{"foo", "bar", "qux"})
+	_, err = f.syncOptionsFromArgs(New(), []string{"foo", "bar", "qux"})
 	require.ErrorIs(t, err, flag.ErrHelp)
 }
 
 func TestSyncOptionsFromArgs(t *testing.T) {
-	opts, err := syncOptionsFromArgs(syncCmd, []string{"/local", "/remote"})
+	f := syncFlags{}
+	opts, err := f.syncOptionsFromArgs(New(), []string{"/local", "/remote"})
 	require.NoError(t, err)
 	assert.Equal(t, "/local", opts.LocalPath)
 	assert.Equal(t, "/remote", opts.RemotePath)

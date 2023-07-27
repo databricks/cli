@@ -77,13 +77,6 @@ func TestSecretsPutSecretStringValue(tt *testing.T) {
 
 func TestSecretsPutSecretBytesValue(tt *testing.T) {
 	ctx, t := acc.WorkspaceTest(tt)
-
-	if true {
-		// Uncomment below to run this test in isolation.
-		// To be addressed once none of the commands taint global state.
-		t.Skip("skipping because the test above clobbers global state")
-	}
-
 	scope := temporarySecretScope(ctx, t)
 	key := "test-key"
 	value := []byte{0x00, 0x01, 0x02, 0x03}
