@@ -25,14 +25,14 @@ func TestExecAndPassError(t *testing.T) {
 
 func TestDetectPython(t *testing.T) {
 	pyExec = ""
-	py, err := detectExecutable(context.Background())
+	py, err := DetectExecutable(context.Background())
 	assert.NoError(t, err)
 	assert.Contains(t, py, "python3")
 }
 
 func TestDetectPythonCache(t *testing.T) {
 	pyExec = "abc"
-	py, err := detectExecutable(context.Background())
+	py, err := DetectExecutable(context.Background())
 	assert.NoError(t, err)
 	assert.Equal(t, "abc", py)
 	pyExec = ""
@@ -82,7 +82,7 @@ func TestPyInline(t *testing.T) {
 }
 
 func TestPyInlineStderr(t *testing.T) {
-	detectExecutable(context.Background())
+	DetectExecutable(context.Background())
 	inline := "import sys; sys.stderr.write('___msg___'); sys.exit(1)"
 	_, err := PyInline(context.Background(), inline)
 	assert.EqualError(t, err, "___msg___")

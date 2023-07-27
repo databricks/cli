@@ -3,6 +3,7 @@ package template
 import (
 	"fmt"
 	"net/url"
+	"regexp"
 	"text/template"
 )
 
@@ -21,5 +22,9 @@ var helperFuncs = template.FuncMap{
 	// Alias for https://pkg.go.dev/net/url#Parse. Allows usage of all methods of url.URL
 	"url": func(rawUrl string) (*url.URL, error) {
 		return url.Parse(rawUrl)
+	},
+	// Alias for https://pkg.go.dev/regexp#Compile. Allows usage of all methods of regexp.Regexp
+	"regexp": func(expr string) (*regexp.Regexp, error) {
+		return regexp.Compile(expr)
 	},
 }

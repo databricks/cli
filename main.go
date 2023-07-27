@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/databricks/cli/cmd"
 	_ "github.com/databricks/cli/cmd/account"
 	_ "github.com/databricks/cli/cmd/api"
 	_ "github.com/databricks/cli/cmd/auth"
@@ -15,5 +16,5 @@ import (
 )
 
 func main() {
-	root.Execute()
+	root.Execute(cmd.New())
 }

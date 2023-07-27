@@ -3,8 +3,6 @@
 package global_init_scripts
 
 import (
-	"fmt"
-
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
@@ -12,10 +10,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var Cmd = &cobra.Command{
-	Use:   "global-init-scripts",
-	Short: `The Global Init Scripts API enables Workspace administrators to configure global initialization scripts for their workspace.`,
-	Long: `The Global Init Scripts API enables Workspace administrators to configure
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var cmdOverrides []func(*cobra.Command)
+
+func New() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "global-init-scripts",
+		Short: `The Global Init Scripts API enables Workspace administrators to configure global initialization scripts for their workspace.`,
+		Long: `The Global Init Scripts API enables Workspace administrators to configure
   global initialization scripts for their workspace. These scripts run on every
   node in every cluster in the workspace.
   
@@ -24,42 +27,59 @@ var Cmd = &cobra.Command{
   script returns with a bad exit code, the Apache Spark container fails to
   launch and init scripts with later position are skipped. If enough containers
   fail, the entire cluster fails with a GLOBAL_INIT_SCRIPT_FAILURE error code.`,
-	Annotations: map[string]string{
-		"package": "compute",
-	},
+		GroupID: "compute",
+		Annotations: map[string]string{
+			"package": "compute",
+		},
+	}
+
+	// Apply optional overrides to this command.
+	for _, fn := range cmdOverrides {
+		fn(cmd)
+	}
+
+	return cmd
 }
 
 // start create command
-var createReq compute.GlobalInitScriptCreateRequest
-var createJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(createCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var createOverrides []func(
+	*cobra.Command,
+	*compute.GlobalInitScriptCreateRequest,
+)
+
+func newCreate() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var createReq compute.GlobalInitScriptCreateRequest
+	var createJson flags.JsonFlag
+
 	// TODO: short flags
-	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	createCmd.Flags().BoolVar(&createReq.Enabled, "enabled", createReq.Enabled, `Specifies whether the script is enabled.`)
-	createCmd.Flags().IntVar(&createReq.Position, "position", createReq.Position, `The position of a global init script, where 0 represents the first script to run, 1 is the second script to run, in ascending order.`)
+	cmd.Flags().BoolVar(&createReq.Enabled, "enabled", createReq.Enabled, `Specifies whether the script is enabled.`)
+	cmd.Flags().IntVar(&createReq.Position, "position", createReq.Position, `The position of a global init script, where 0 represents the first script to run, 1 is the second script to run, in ascending order.`)
 
-}
-
-var createCmd = &cobra.Command{
-	Use:   "create NAME SCRIPT",
-	Short: `Create init script.`,
-	Long: `Create init script.
+	cmd.Use = "create NAME SCRIPT"
+	cmd.Short = `Create init script.`
+	cmd.Long = `Create init script.
   
-  Creates a new global init script in this workspace.`,
+  Creates a new global init script in this workspace.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
 			check = cobra.ExactArgs(0)
 		}
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -78,51 +98,60 @@ var createCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range createOverrides {
+		fn(cmd, &createReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newCreate())
+	})
 }
 
 // start delete command
-var deleteReq compute.DeleteGlobalInitScriptRequest
 
-func init() {
-	Cmd.AddCommand(deleteCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var deleteOverrides []func(
+	*cobra.Command,
+	*compute.DeleteGlobalInitScriptRequest,
+)
+
+func newDelete() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var deleteReq compute.DeleteGlobalInitScriptRequest
+
 	// TODO: short flags
 
-}
-
-var deleteCmd = &cobra.Command{
-	Use:   "delete SCRIPT_ID",
-	Short: `Delete init script.`,
-	Long: `Delete init script.
+	cmd.Use = "delete SCRIPT_ID"
+	cmd.Short = `Delete init script.`
+	cmd.Long = `Delete init script.
   
-  Deletes a global init script.`,
+  Deletes a global init script.`
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No SCRIPT_ID argument specified. Loading names for Global Init Scripts drop-down."
-			names, err := w.GlobalInitScripts.GlobalInitScriptDetailsNameToScriptIdMap(ctx)
-			close(promptSpinner)
-			if err != nil {
-				return fmt.Errorf("failed to load names for Global Init Scripts drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "The ID of the global init script")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have the id of the global init script")
-		}
 		deleteReq.ScriptId = args[0]
 
 		err = w.GlobalInitScripts.Delete(ctx, deleteReq)
@@ -130,51 +159,60 @@ var deleteCmd = &cobra.Command{
 			return err
 		}
 		return nil
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range deleteOverrides {
+		fn(cmd, &deleteReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newDelete())
+	})
 }
 
 // start get command
-var getReq compute.GetGlobalInitScriptRequest
 
-func init() {
-	Cmd.AddCommand(getCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getOverrides []func(
+	*cobra.Command,
+	*compute.GetGlobalInitScriptRequest,
+)
+
+func newGet() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getReq compute.GetGlobalInitScriptRequest
+
 	// TODO: short flags
 
-}
-
-var getCmd = &cobra.Command{
-	Use:   "get SCRIPT_ID",
-	Short: `Get an init script.`,
-	Long: `Get an init script.
+	cmd.Use = "get SCRIPT_ID"
+	cmd.Short = `Get an init script.`
+	cmd.Long = `Get an init script.
   
-  Gets all the details of a script, including its Base64-encoded contents.`,
+  Gets all the details of a script, including its Base64-encoded contents.`
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No SCRIPT_ID argument specified. Loading names for Global Init Scripts drop-down."
-			names, err := w.GlobalInitScripts.GlobalInitScriptDetailsNameToScriptIdMap(ctx)
-			close(promptSpinner)
-			if err != nil {
-				return fmt.Errorf("failed to load names for Global Init Scripts drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "The ID of the global init script")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have the id of the global init script")
-		}
 		getReq.ScriptId = args[0]
 
 		response, err := w.GlobalInitScripts.Get(ctx, getReq)
@@ -182,32 +220,50 @@ var getCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getOverrides {
+		fn(cmd, &getReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newGet())
+	})
 }
 
 // start list command
 
-func init() {
-	Cmd.AddCommand(listCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listOverrides []func(
+	*cobra.Command,
+)
 
-}
+func newList() *cobra.Command {
+	cmd := &cobra.Command{}
 
-var listCmd = &cobra.Command{
-	Use:   "list",
-	Short: `Get init scripts.`,
-	Long: `Get init scripts.
+	cmd.Use = "list"
+	cmd.Short = `Get init scripts.`
+	cmd.Long = `Get init scripts.
   
   Get a list of all global init scripts for this workspace. This returns all
   properties for each script but **not** the script contents. To retrieve the
   contents of a script, use the [get a global init
-  script](#operation/get-script) operation.`,
+  script](#operation/get-script) operation.`
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 		response, err := w.GlobalInitScripts.ListAll(ctx)
@@ -215,39 +271,61 @@ var listCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listOverrides {
+		fn(cmd)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newList())
+	})
 }
 
 // start update command
-var updateReq compute.GlobalInitScriptUpdateRequest
 
-func init() {
-	Cmd.AddCommand(updateCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updateOverrides []func(
+	*cobra.Command,
+	*compute.GlobalInitScriptUpdateRequest,
+)
+
+func newUpdate() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updateReq compute.GlobalInitScriptUpdateRequest
+
 	// TODO: short flags
 
-	updateCmd.Flags().BoolVar(&updateReq.Enabled, "enabled", updateReq.Enabled, `Specifies whether the script is enabled.`)
-	updateCmd.Flags().IntVar(&updateReq.Position, "position", updateReq.Position, `The position of a script, where 0 represents the first script to run, 1 is the second script to run, in ascending order.`)
+	cmd.Flags().BoolVar(&updateReq.Enabled, "enabled", updateReq.Enabled, `Specifies whether the script is enabled.`)
+	cmd.Flags().IntVar(&updateReq.Position, "position", updateReq.Position, `The position of a script, where 0 represents the first script to run, 1 is the second script to run, in ascending order.`)
 
-}
-
-var updateCmd = &cobra.Command{
-	Use:   "update NAME SCRIPT SCRIPT_ID",
-	Short: `Update init script.`,
-	Long: `Update init script.
+	cmd.Use = "update NAME SCRIPT SCRIPT_ID"
+	cmd.Short = `Update init script.`
+	cmd.Long = `Update init script.
   
   Updates a global init script, specifying only the fields to change. All fields
-  are optional. Unspecified fields retain their current value.`,
+  are optional. Unspecified fields retain their current value.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(3)
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -260,10 +338,24 @@ var updateCmd = &cobra.Command{
 			return err
 		}
 		return nil
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updateOverrides {
+		fn(cmd, &updateReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newUpdate())
+	})
 }
 
 // end service GlobalInitScripts

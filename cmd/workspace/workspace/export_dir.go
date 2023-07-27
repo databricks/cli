@@ -15,9 +15,19 @@ import (
 	"github.com/spf13/cobra"
 )
 
+type exportDirOptions struct {
+	sourceDir string
+	targetDir string
+	overwrite bool
+}
+
 // The callback function exports the file specified at relPath. This function is
 // meant to be used in conjunction with fs.WalkDir
-func exportFileCallback(ctx context.Context, workspaceFiler filer.Filer, sourceDir, targetDir string) func(string, fs.DirEntry, error) error {
+func (opts exportDirOptions) callback(ctx context.Context, workspaceFiler filer.Filer) func(string, fs.DirEntry, error) error {
+	sourceDir := opts.sourceDir
+	targetDir := opts.targetDir
+	overwrite := opts.overwrite
+
 	return func(relPath string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -55,7 +65,7 @@ func exportFileCallback(ctx context.Context, workspaceFiler filer.Filer, sourceD
 		// Skip file if a file already exists in path.
 		// os.Stat returns a fs.ErrNotExist if a file does not exist at path.
 		// If a file exists, and overwrite is not set, we skip exporting the file
-		if _, err := os.Stat(targetPath); err == nil && !exportOverwrite {
+		if _, err := os.Stat(targetPath); err == nil && !overwrite {
 			// Log event that this file/directory has been skipped
 			return cmdio.RenderWithTemplate(ctx, newFileSkippedEvent(relPath, targetPath), "{{.SourcePath}} -> {{.TargetPath}} (skipped; already exists)\n")
 		}
@@ -80,46 +90,56 @@ func exportFileCallback(ctx context.Context, workspaceFiler filer.Filer, sourceD
 	}
 }
 
-var exportDirCommand = &cobra.Command{
-	Use:   "export-dir SOURCE_PATH TARGET_PATH",
-	Short: `Export a directory from a Databricks workspace to the local file system.`,
-	Long: `
-Export a directory recursively from a Databricks workspace to the local file system.
-Notebooks will have one of the following extensions added .scala, .py, .sql, or .r
-based on the language type.
-`,
-	PreRunE: root.MustWorkspaceClient,
-	Args:    cobra.ExactArgs(2),
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+func newExportDir() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var opts exportDirOptions
+
+	cmd.Flags().BoolVar(&opts.overwrite, "overwrite", false, "overwrite existing local files")
+
+	cmd.Use = "export-dir SOURCE_PATH TARGET_PATH"
+	cmd.Short = `Export a directory from a Databricks workspace to the local file system.`
+	cmd.Long = `
+	Export a directory recursively from a Databricks workspace to the local file system.
+	Notebooks will have one of the following extensions added .scala, .py, .sql, or .r
+	based on the language type.
+	`
+
+	cmd.Annotations = make(map[string]string)
+	cmd.Args = cobra.ExactArgs(2)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-		sourceDir := args[0]
-		targetDir := args[1]
+		opts.sourceDir = args[0]
+		opts.targetDir = args[1]
 
 		// Initialize a filer and a file system on the source directory
-		workspaceFiler, err := filer.NewWorkspaceFilesClient(w, sourceDir)
+		workspaceFiler, err := filer.NewWorkspaceFilesClient(w, opts.sourceDir)
 		if err != nil {
 			return err
 		}
 		workspaceFS := filer.NewFS(ctx, workspaceFiler)
 
 		// TODO: print progress events on stderr instead: https://github.com/databricks/cli/issues/448
-		err = cmdio.RenderJson(ctx, newExportStartedEvent(sourceDir))
+		err = cmdio.RenderJson(ctx, newExportStartedEvent(opts.sourceDir))
 		if err != nil {
 			return err
 		}
 
-		err = fs.WalkDir(workspaceFS, ".", exportFileCallback(ctx, workspaceFiler, sourceDir, targetDir))
+		err = fs.WalkDir(workspaceFS, ".", opts.callback(ctx, workspaceFiler))
 		if err != nil {
 			return err
 		}
-		return cmdio.RenderJson(ctx, newExportCompletedEvent(targetDir))
-	},
+		return cmdio.RenderJson(ctx, newExportCompletedEvent(opts.targetDir))
+	}
+
+	return cmd
 }
 
-var exportOverwrite bool
-
 func init() {
-	exportDirCommand.Flags().BoolVar(&exportOverwrite, "overwrite", false, "overwrite existing local files")
-	Cmd.AddCommand(exportDirCommand)
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newExportDir())
+	})
 }

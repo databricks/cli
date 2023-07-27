@@ -16,7 +16,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestFsLsForDbfs(t *testing.T) {
+func TestAccFsLsForDbfs(t *testing.T) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	ctx := context.Background()
@@ -51,7 +51,7 @@ func TestFsLsForDbfs(t *testing.T) {
 	assert.Equal(t, float64(3), parsedStdout[1]["size"])
 }
 
-func TestFsLsForDbfsWithAbsolutePaths(t *testing.T) {
+func TestAccFsLsForDbfsWithAbsolutePaths(t *testing.T) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	ctx := context.Background()
@@ -87,7 +87,7 @@ func TestFsLsForDbfsWithAbsolutePaths(t *testing.T) {
 	assert.Equal(t, float64(3), parsedStdout[1]["size"])
 }
 
-func TestFsLsForDbfsOnFile(t *testing.T) {
+func TestAccFsLsForDbfsOnFile(t *testing.T) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	ctx := context.Background()
@@ -108,7 +108,7 @@ func TestFsLsForDbfsOnFile(t *testing.T) {
 	assert.Regexp(t, regexp.MustCompile("not a directory: .*/a/hello.txt"), err.Error())
 }
 
-func TestFsLsForDbfsOnEmptyDir(t *testing.T) {
+func TestAccFsLsForDbfsOnEmptyDir(t *testing.T) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	w, err := databricks.NewWorkspaceClient()
@@ -126,16 +126,16 @@ func TestFsLsForDbfsOnEmptyDir(t *testing.T) {
 	assert.Equal(t, 0, len(parsedStdout))
 }
 
-func TestFsLsForDbfsForNonexistingDir(t *testing.T) {
+func TestAccFsLsForDbfsForNonexistingDir(t *testing.T) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	_, _, err := RequireErrorRun(t, "fs", "ls", "dbfs:/john-cena", "--output=json")
 	assert.ErrorIs(t, err, fs.ErrNotExist)
 }
 
-func TestFsLsWithoutScheme(t *testing.T) {
+func TestAccFsLsWithoutScheme(t *testing.T) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	_, _, err := RequireErrorRun(t, "fs", "ls", "/ray-mysterio", "--output=json")
-	assert.ErrorContains(t, err, "expected dbfs path (with the dbfs:/ prefix): /ray-mysterio")
+	assert.ErrorIs(t, err, fs.ErrNotExist)
 }
