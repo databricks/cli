@@ -48,7 +48,5 @@ func TestTemplateUrlFunction(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Len(t, r.files, 1)
-	cleanContent := strings.Trim(string(r.files[0].content), "\n\r")
-
-	assert.Equal(t, "https://www.databricks.com", cleanContent)
+	assert.Equal(t, "https://www.databricks.com", string(r.files[0].content))
 }
