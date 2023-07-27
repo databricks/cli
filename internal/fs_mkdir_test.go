@@ -111,7 +111,7 @@ func TestAccFsMkdirWhenFileExistsAtPath(t *testing.T) {
 
 	// assert run fails
 	_, _, err = RequireErrorRun(t, "fs", "mkdir", "dbfs:"+path.Join(tmpDir, "hello"))
-	// Different backends return different errors (for example: file in s3 vs dbfs)
-	regex := regexp.MustCompile(`^Path is a file: .*$|^Cannot create directory .* because .* is an existing file`)
+	// Different cloud providers return different errors.
+	regex := regexp.MustCompile(`^Path is a file: .*$|^Cannot create directory .* because .* is an existing file$|^mkdirs\(hadoopPath: .*, permission: rwxrwxrwx\): failed$`)
 	assert.Regexp(t, regex, err.Error())
 }
