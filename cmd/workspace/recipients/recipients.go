@@ -146,16 +146,28 @@ func newDelete() *cobra.Command {
 
 	cmd.Annotations = make(map[string]string)
 
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
-		return check(cmd, args)
-	}
-
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No NAME argument specified. Loading names for Recipients drop-down."
+			names, err := w.Recipients.RecipientInfoNameToMetastoreIdMap(ctx, sharing.ListRecipientsRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Recipients drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "Name of the recipient")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have name of the recipient")
+		}
 		deleteReq.Name = args[0]
 
 		err = w.Recipients.Delete(ctx, deleteReq)
@@ -209,16 +221,28 @@ func newGet() *cobra.Command {
 
 	cmd.Annotations = make(map[string]string)
 
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
-		return check(cmd, args)
-	}
-
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No NAME argument specified. Loading names for Recipients drop-down."
+			names, err := w.Recipients.RecipientInfoNameToMetastoreIdMap(ctx, sharing.ListRecipientsRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Recipients drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "Name of the recipient")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have name of the recipient")
+		}
 		getReq.Name = args[0]
 
 		response, err := w.Recipients.Get(ctx, getReq)
@@ -414,16 +438,28 @@ func newSharePermissions() *cobra.Command {
 
 	cmd.Annotations = make(map[string]string)
 
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
-		return check(cmd, args)
-	}
-
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No NAME argument specified. Loading names for Recipients drop-down."
+			names, err := w.Recipients.RecipientInfoNameToMetastoreIdMap(ctx, sharing.ListRecipientsRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Recipients drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "The name of the Recipient")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the name of the recipient")
+		}
 		sharePermissionsReq.Name = args[0]
 
 		response, err := w.Recipients.SharePermissions(ctx, sharePermissionsReq)
@@ -485,14 +521,6 @@ func newUpdate() *cobra.Command {
 
 	cmd.Annotations = make(map[string]string)
 
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
-		return check(cmd, args)
-	}
-
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -504,6 +532,23 @@ func newUpdate() *cobra.Command {
 				return err
 			}
 		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No NAME argument specified. Loading names for Recipients drop-down."
+				names, err := w.Recipients.RecipientInfoNameToMetastoreIdMap(ctx, sharing.ListRecipientsRequest{})
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Recipients drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "Name of Recipient")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
+			}
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have name of recipient")
+			}
 			updateReq.Name = args[0]
 		}
 

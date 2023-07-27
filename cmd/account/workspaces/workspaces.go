@@ -185,16 +185,28 @@ func newDelete() *cobra.Command {
 
 	cmd.Annotations = make(map[string]string)
 
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
-		return check(cmd, args)
-	}
-
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
 
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No WORKSPACE_ID argument specified. Loading names for Workspaces drop-down."
+			names, err := a.Workspaces.WorkspaceWorkspaceNameToWorkspaceIdMap(ctx)
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Workspaces drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "Workspace ID")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have workspace id")
+		}
 		_, err = fmt.Sscan(args[0], &deleteReq.WorkspaceId)
 		if err != nil {
 			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
@@ -262,16 +274,28 @@ func newGet() *cobra.Command {
 
 	cmd.Annotations = make(map[string]string)
 
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
-		return check(cmd, args)
-	}
-
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
 
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No WORKSPACE_ID argument specified. Loading names for Workspaces drop-down."
+			names, err := a.Workspaces.WorkspaceWorkspaceNameToWorkspaceIdMap(ctx)
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Workspaces drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "Workspace ID")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have workspace id")
+		}
 		_, err = fmt.Sscan(args[0], &getReq.WorkspaceId)
 		if err != nil {
 			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
@@ -500,16 +524,28 @@ func newUpdate() *cobra.Command {
 
 	cmd.Annotations = make(map[string]string)
 
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
-		return check(cmd, args)
-	}
-
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
 
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No WORKSPACE_ID argument specified. Loading names for Workspaces drop-down."
+			names, err := a.Workspaces.WorkspaceWorkspaceNameToWorkspaceIdMap(ctx)
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Workspaces drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "Workspace ID")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have workspace id")
+		}
 		_, err = fmt.Sscan(args[0], &updateReq.WorkspaceId)
 		if err != nil {
 			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])

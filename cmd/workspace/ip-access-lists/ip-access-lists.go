@@ -159,16 +159,28 @@ func newDelete() *cobra.Command {
 
 	cmd.Annotations = make(map[string]string)
 
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
-		return check(cmd, args)
-	}
-
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No IP_ACCESS_LIST_ID argument specified. Loading names for Ip Access Lists drop-down."
+			names, err := w.IpAccessLists.IpAccessListInfoLabelToListIdMap(ctx)
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Ip Access Lists drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "The ID for the corresponding IP access list to modify")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the id for the corresponding ip access list to modify")
+		}
 		deleteReq.IpAccessListId = args[0]
 
 		err = w.IpAccessLists.Delete(ctx, deleteReq)
@@ -220,16 +232,28 @@ func newGet() *cobra.Command {
 
 	cmd.Annotations = make(map[string]string)
 
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
-		return check(cmd, args)
-	}
-
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No IP_ACCESS_LIST_ID argument specified. Loading names for Ip Access Lists drop-down."
+			names, err := w.IpAccessLists.IpAccessListInfoLabelToListIdMap(ctx)
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Ip Access Lists drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "The ID for the corresponding IP access list to modify")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the id for the corresponding ip access list to modify")
+		}
 		getReq.IpAccessListId = args[0]
 
 		response, err := w.IpAccessLists.Get(ctx, getReq)

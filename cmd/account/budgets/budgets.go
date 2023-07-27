@@ -128,16 +128,28 @@ func newDelete() *cobra.Command {
 
 	cmd.Annotations = make(map[string]string)
 
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
-		return check(cmd, args)
-	}
-
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
 
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No BUDGET_ID argument specified. Loading names for Budgets drop-down."
+			names, err := a.Budgets.BudgetWithStatusNameToBudgetIdMap(ctx)
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Budgets drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "Budget ID")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have budget id")
+		}
 		deleteReq.BudgetId = args[0]
 
 		err = a.Budgets.Delete(ctx, deleteReq)
@@ -190,16 +202,28 @@ func newGet() *cobra.Command {
 
 	cmd.Annotations = make(map[string]string)
 
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
-		return check(cmd, args)
-	}
-
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
 
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No BUDGET_ID argument specified. Loading names for Budgets drop-down."
+			names, err := a.Budgets.BudgetWithStatusNameToBudgetIdMap(ctx)
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Budgets drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "Budget ID")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have budget id")
+		}
 		getReq.BudgetId = args[0]
 
 		response, err := a.Budgets.Get(ctx, getReq)

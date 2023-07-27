@@ -3,6 +3,7 @@
 package clusters
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/databricks/cli/cmd/root"
@@ -292,14 +293,6 @@ func newDelete() *cobra.Command {
 
 	cmd.Annotations = make(map[string]string)
 
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
-		return check(cmd, args)
-	}
-
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -311,6 +304,23 @@ func newDelete() *cobra.Command {
 				return err
 			}
 		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No CLUSTER_ID argument specified. Loading names for Clusters drop-down."
+				names, err := w.Clusters.ClusterDetailsClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Clusters drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "The cluster to be terminated")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
+			}
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have the cluster to be terminated")
+			}
 			deleteReq.ClusterId = args[0]
 		}
 
@@ -516,14 +526,6 @@ func newEvents() *cobra.Command {
 
 	cmd.Annotations = make(map[string]string)
 
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
-		return check(cmd, args)
-	}
-
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -535,6 +537,23 @@ func newEvents() *cobra.Command {
 				return err
 			}
 		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No CLUSTER_ID argument specified. Loading names for Clusters drop-down."
+				names, err := w.Clusters.ClusterDetailsClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Clusters drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "The ID of the cluster to retrieve events about")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
+			}
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have the id of the cluster to retrieve events about")
+			}
 			eventsReq.ClusterId = args[0]
 		}
 
@@ -593,16 +612,28 @@ func newGet() *cobra.Command {
 
 	cmd.Annotations = make(map[string]string)
 
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
-		return check(cmd, args)
-	}
-
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No CLUSTER_ID argument specified. Loading names for Clusters drop-down."
+			names, err := w.Clusters.ClusterDetailsClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Clusters drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "The cluster about which to retrieve information")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the cluster about which to retrieve information")
+		}
 		getReq.ClusterId = args[0]
 
 		response, err := w.Clusters.Get(ctx, getReq)
@@ -841,14 +872,6 @@ func newPermanentDelete() *cobra.Command {
 
 	cmd.Annotations = make(map[string]string)
 
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
-		return check(cmd, args)
-	}
-
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -860,6 +883,23 @@ func newPermanentDelete() *cobra.Command {
 				return err
 			}
 		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No CLUSTER_ID argument specified. Loading names for Clusters drop-down."
+				names, err := w.Clusters.ClusterDetailsClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Clusters drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "The cluster to be deleted")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
+			}
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have the cluster to be deleted")
+			}
 			permanentDeleteReq.ClusterId = args[0]
 		}
 
@@ -916,14 +956,6 @@ func newPin() *cobra.Command {
 
 	cmd.Annotations = make(map[string]string)
 
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
-		return check(cmd, args)
-	}
-
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -935,6 +967,23 @@ func newPin() *cobra.Command {
 				return err
 			}
 		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No CLUSTER_ID argument specified. Loading names for Clusters drop-down."
+				names, err := w.Clusters.ClusterDetailsClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Clusters drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "<needs content added>")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
+			}
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have <needs content added>")
+			}
 			pinReq.ClusterId = args[0]
 		}
 
@@ -998,14 +1047,6 @@ func newResize() *cobra.Command {
 
 	cmd.Annotations = make(map[string]string)
 
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
-		return check(cmd, args)
-	}
-
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -1017,6 +1058,23 @@ func newResize() *cobra.Command {
 				return err
 			}
 		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No CLUSTER_ID argument specified. Loading names for Clusters drop-down."
+				names, err := w.Clusters.ClusterDetailsClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Clusters drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "The cluster to be resized")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
+			}
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have the cluster to be resized")
+			}
 			resizeReq.ClusterId = args[0]
 		}
 
@@ -1091,14 +1149,6 @@ func newRestart() *cobra.Command {
 
 	cmd.Annotations = make(map[string]string)
 
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
-		return check(cmd, args)
-	}
-
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -1110,6 +1160,23 @@ func newRestart() *cobra.Command {
 				return err
 			}
 		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No CLUSTER_ID argument specified. Loading names for Clusters drop-down."
+				names, err := w.Clusters.ClusterDetailsClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Clusters drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "The cluster to be started")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
+			}
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have the cluster to be started")
+			}
 			restartReq.ClusterId = args[0]
 		}
 
@@ -1237,14 +1304,6 @@ func newStart() *cobra.Command {
 
 	cmd.Annotations = make(map[string]string)
 
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
-		return check(cmd, args)
-	}
-
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -1256,6 +1315,23 @@ func newStart() *cobra.Command {
 				return err
 			}
 		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No CLUSTER_ID argument specified. Loading names for Clusters drop-down."
+				names, err := w.Clusters.ClusterDetailsClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Clusters drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "The cluster to be started")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
+			}
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have the cluster to be started")
+			}
 			startReq.ClusterId = args[0]
 		}
 
@@ -1324,14 +1400,6 @@ func newUnpin() *cobra.Command {
 
 	cmd.Annotations = make(map[string]string)
 
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
-		return check(cmd, args)
-	}
-
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -1343,6 +1411,23 @@ func newUnpin() *cobra.Command {
 				return err
 			}
 		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No CLUSTER_ID argument specified. Loading names for Clusters drop-down."
+				names, err := w.Clusters.ClusterDetailsClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Clusters drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "<needs content added>")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
+			}
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have <needs content added>")
+			}
 			unpinReq.ClusterId = args[0]
 		}
 

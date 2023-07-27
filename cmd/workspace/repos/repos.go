@@ -147,16 +147,28 @@ func newDelete() *cobra.Command {
 
 	cmd.Annotations = make(map[string]string)
 
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
-		return check(cmd, args)
-	}
-
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No REPO_ID argument specified. Loading names for Repos drop-down."
+			names, err := w.Repos.RepoInfoPathToIdMap(ctx, workspace.ListReposRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Repos drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "The ID for the corresponding repo to access")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the id for the corresponding repo to access")
+		}
 		_, err = fmt.Sscan(args[0], &deleteReq.RepoId)
 		if err != nil {
 			return fmt.Errorf("invalid REPO_ID: %s", args[0])
@@ -211,16 +223,28 @@ func newGet() *cobra.Command {
 
 	cmd.Annotations = make(map[string]string)
 
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
-		return check(cmd, args)
-	}
-
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No REPO_ID argument specified. Loading names for Repos drop-down."
+			names, err := w.Repos.RepoInfoPathToIdMap(ctx, workspace.ListReposRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Repos drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "The ID for the corresponding repo to access")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the id for the corresponding repo to access")
+		}
 		_, err = fmt.Sscan(args[0], &getReq.RepoId)
 		if err != nil {
 			return fmt.Errorf("invalid REPO_ID: %s", args[0])
@@ -358,11 +382,6 @@ func newUpdate() *cobra.Command {
 
 	cmd.Annotations = make(map[string]string)
 
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
-		return check(cmd, args)
-	}
-
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -373,6 +392,23 @@ func newUpdate() *cobra.Command {
 			if err != nil {
 				return err
 			}
+		}
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No REPO_ID argument specified. Loading names for Repos drop-down."
+			names, err := w.Repos.RepoInfoPathToIdMap(ctx, workspace.ListReposRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Repos drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "The ID for the corresponding repo to access")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the id for the corresponding repo to access")
 		}
 		_, err = fmt.Sscan(args[0], &updateReq.RepoId)
 		if err != nil {
