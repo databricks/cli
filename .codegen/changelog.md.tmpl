@@ -22,7 +22,7 @@ API Changes:
 OpenAPI commit {{.Sha}} ({{.Changed}})
 {{- end }}
 
-{{ if .DependencyUpdates -}}
+{{- if .DependencyUpdates }}
 Dependency updates:
 {{- range .DependencyUpdates}}
  * {{.}}.
