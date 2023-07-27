@@ -3,6 +3,8 @@
 package cluster_policies
 
 import (
+	"fmt"
+
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
@@ -162,14 +164,6 @@ func newDelete() *cobra.Command {
 
 	cmd.Annotations = make(map[string]string)
 
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
-		return check(cmd, args)
-	}
-
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -181,6 +175,23 @@ func newDelete() *cobra.Command {
 				return err
 			}
 		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No POLICY_ID argument specified. Loading names for Cluster Policies drop-down."
+				names, err := w.ClusterPolicies.PolicyNameToPolicyIdMap(ctx, compute.ListClusterPoliciesRequest{})
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Cluster Policies drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "The ID of the policy to delete")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
+			}
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have the id of the policy to delete")
+			}
 			deleteReq.PolicyId = args[0]
 		}
 
@@ -314,16 +325,28 @@ func newGet() *cobra.Command {
 
 	cmd.Annotations = make(map[string]string)
 
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
-		return check(cmd, args)
-	}
-
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No POLICY_ID argument specified. Loading names for Cluster Policies drop-down."
+			names, err := w.ClusterPolicies.PolicyNameToPolicyIdMap(ctx, compute.ListClusterPoliciesRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Cluster Policies drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "Canonical unique identifier for the cluster policy")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have canonical unique identifier for the cluster policy")
+		}
 		getReq.PolicyId = args[0]
 
 		response, err := w.ClusterPolicies.Get(ctx, getReq)

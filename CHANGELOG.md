@@ -1,5 +1,34 @@
 # Version changelog
 
+## 0.202.0
+
+Breaking Change:
+ * Require include glob patterns to be explicitly defined ([#602](https://github.com/databricks/cli/pull/602)).
+
+Bundles:
+ * Add support for more SDK config options ([#587](https://github.com/databricks/cli/pull/587)).
+ * Add template renderer for Databricks templates ([#589](https://github.com/databricks/cli/pull/589)).
+ * Fix formatting in renderer.go ([#593](https://github.com/databricks/cli/pull/593)).
+ * Fixed python wheel test ([#608](https://github.com/databricks/cli/pull/608)).
+ * Auto detect Python wheel packages and infer build command ([#603](https://github.com/databricks/cli/pull/603)).
+ * Added support for artifacts building for bundles ([#583](https://github.com/databricks/cli/pull/583)).
+ * Add support for cloning repositories ([#544](https://github.com/databricks/cli/pull/544)).
+ * Add regexp compile helper function for templates ([#601](https://github.com/databricks/cli/pull/601)).
+ * Add unit test that raw strings are printed as is ([#599](https://github.com/databricks/cli/pull/599)).
+
+Internal:
+ * Fix tests under ./cmd/configure if DATABRICKS_TOKEN is set ([#605](https://github.com/databricks/cli/pull/605)).
+ * Remove dependency on global state in generated commands ([#595](https://github.com/databricks/cli/pull/595)).
+ * Remove dependency on global state for the root command ([#606](https://github.com/databricks/cli/pull/606)).
+ * Add merge_group trigger for build ([#612](https://github.com/databricks/cli/pull/612)).
+ * Added support for build command chaining and error on missing wheel ([#607](https://github.com/databricks/cli/pull/607)).
+ * Add TestAcc prefix to filer test and fix any failing tests ([#611](https://github.com/databricks/cli/pull/611)).
+ * Add url parse helper function for templates ([#600](https://github.com/databricks/cli/pull/600)).
+ * Remove dependency on global state for remaining commands ([#613](https://github.com/databricks/cli/pull/613)).
+ * Update CHANGELOG template ([#588](https://github.com/databricks/cli/pull/588)).
+
+
+
 ## 0.201.0
 
 CLI:

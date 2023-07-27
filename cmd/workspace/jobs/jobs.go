@@ -80,14 +80,6 @@ func newCancelAllRuns() *cobra.Command {
 
 	cmd.Annotations = make(map[string]string)
 
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
-		return check(cmd, args)
-	}
-
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -99,6 +91,23 @@ func newCancelAllRuns() *cobra.Command {
 				return err
 			}
 		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No JOB_ID argument specified. Loading names for Jobs drop-down."
+				names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "The canonical identifier of the job to cancel all runs of")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
+			}
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have the canonical identifier of the job to cancel all runs of")
+			}
 			_, err = fmt.Sscan(args[0], &cancelAllRunsReq.JobId)
 			if err != nil {
 				return fmt.Errorf("invalid JOB_ID: %s", args[0])
@@ -162,14 +171,6 @@ func newCancelRun() *cobra.Command {
 
 	cmd.Annotations = make(map[string]string)
 
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
-		return check(cmd, args)
-	}
-
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -181,6 +182,23 @@ func newCancelRun() *cobra.Command {
 				return err
 			}
 		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No RUN_ID argument specified. Loading names for Jobs drop-down."
+				names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "This field is required")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
+			}
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have this field is required")
+			}
 			_, err = fmt.Sscan(args[0], &cancelRunReq.RunId)
 			if err != nil {
 				return fmt.Errorf("invalid RUN_ID: %s", args[0])
@@ -330,14 +348,6 @@ func newDelete() *cobra.Command {
 
 	cmd.Annotations = make(map[string]string)
 
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
-		return check(cmd, args)
-	}
-
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -349,6 +359,23 @@ func newDelete() *cobra.Command {
 				return err
 			}
 		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No JOB_ID argument specified. Loading names for Jobs drop-down."
+				names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "The canonical identifier of the job to delete")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
+			}
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have the canonical identifier of the job to delete")
+			}
 			_, err = fmt.Sscan(args[0], &deleteReq.JobId)
 			if err != nil {
 				return fmt.Errorf("invalid JOB_ID: %s", args[0])
@@ -406,14 +433,6 @@ func newDeleteRun() *cobra.Command {
 
 	cmd.Annotations = make(map[string]string)
 
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
-		return check(cmd, args)
-	}
-
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -425,6 +444,23 @@ func newDeleteRun() *cobra.Command {
 				return err
 			}
 		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No RUN_ID argument specified. Loading names for Jobs drop-down."
+				names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "The canonical identifier of the run for which to retrieve the metadata")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
+			}
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have the canonical identifier of the run for which to retrieve the metadata")
+			}
 			_, err = fmt.Sscan(args[0], &deleteRunReq.RunId)
 			if err != nil {
 				return fmt.Errorf("invalid RUN_ID: %s", args[0])
@@ -482,16 +518,28 @@ func newExportRun() *cobra.Command {
 
 	cmd.Annotations = make(map[string]string)
 
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
-		return check(cmd, args)
-	}
-
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No RUN_ID argument specified. Loading names for Jobs drop-down."
+			names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "The canonical identifier for the run")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the canonical identifier for the run")
+		}
 		_, err = fmt.Sscan(args[0], &exportRunReq.RunId)
 		if err != nil {
 			return fmt.Errorf("invalid RUN_ID: %s", args[0])
@@ -546,16 +594,28 @@ func newGet() *cobra.Command {
 
 	cmd.Annotations = make(map[string]string)
 
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
-		return check(cmd, args)
-	}
-
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No JOB_ID argument specified. Loading names for Jobs drop-down."
+			names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "The canonical identifier of the job to retrieve information about")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the canonical identifier of the job to retrieve information about")
+		}
 		_, err = fmt.Sscan(args[0], &getReq.JobId)
 		if err != nil {
 			return fmt.Errorf("invalid JOB_ID: %s", args[0])
@@ -617,16 +677,28 @@ func newGetRun() *cobra.Command {
 
 	cmd.Annotations = make(map[string]string)
 
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
-		return check(cmd, args)
-	}
-
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No RUN_ID argument specified. Loading names for Jobs drop-down."
+			names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "The canonical identifier of the run for which to retrieve the metadata")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the canonical identifier of the run for which to retrieve the metadata")
+		}
 		_, err = fmt.Sscan(args[0], &getRunReq.RunId)
 		if err != nil {
 			return fmt.Errorf("invalid RUN_ID: %s", args[0])
@@ -690,16 +762,28 @@ func newGetRunOutput() *cobra.Command {
 
 	cmd.Annotations = make(map[string]string)
 
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
-		return check(cmd, args)
-	}
-
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No RUN_ID argument specified. Loading names for Jobs drop-down."
+			names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "The canonical identifier for the run")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the canonical identifier for the run")
+		}
 		_, err = fmt.Sscan(args[0], &getRunOutputReq.RunId)
 		if err != nil {
 			return fmt.Errorf("invalid RUN_ID: %s", args[0])
@@ -937,14 +1021,6 @@ func newRepairRun() *cobra.Command {
 
 	cmd.Annotations = make(map[string]string)
 
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
-		return check(cmd, args)
-	}
-
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -956,6 +1032,23 @@ func newRepairRun() *cobra.Command {
 				return err
 			}
 		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No RUN_ID argument specified. Loading names for Jobs drop-down."
+				names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "The job run ID of the run to repair")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
+			}
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have the job run id of the run to repair")
+			}
 			_, err = fmt.Sscan(args[0], &repairRunReq.RunId)
 			if err != nil {
 				return fmt.Errorf("invalid RUN_ID: %s", args[0])
@@ -1114,14 +1207,6 @@ func newRunNow() *cobra.Command {
 
 	cmd.Annotations = make(map[string]string)
 
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
-		return check(cmd, args)
-	}
-
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -1133,6 +1218,23 @@ func newRunNow() *cobra.Command {
 				return err
 			}
 		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No JOB_ID argument specified. Loading names for Jobs drop-down."
+				names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "The ID of the job to be executed")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
+			}
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have the id of the job to be executed")
+			}
 			_, err = fmt.Sscan(args[0], &runNowReq.JobId)
 			if err != nil {
 				return fmt.Errorf("invalid JOB_ID: %s", args[0])
@@ -1323,14 +1425,6 @@ func newUpdate() *cobra.Command {
 
 	cmd.Annotations = make(map[string]string)
 
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
-		return check(cmd, args)
-	}
-
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -1342,6 +1436,23 @@ func newUpdate() *cobra.Command {
 				return err
 			}
 		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No JOB_ID argument specified. Loading names for Jobs drop-down."
+				names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "The canonical identifier of the job to update")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
+			}
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have the canonical identifier of the job to update")
+			}
 			_, err = fmt.Sscan(args[0], &updateReq.JobId)
 			if err != nil {
 				return fmt.Errorf("invalid JOB_ID: %s", args[0])
