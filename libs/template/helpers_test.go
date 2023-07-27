@@ -18,7 +18,6 @@ func TestTemplatePrintStringWithoutProcessing(t *testing.T) {
 
 	err = r.walk()
 	assert.NoError(t, err)
-
 	assert.Len(t, r.files, 1)
 
 	cleanContent := strings.Trim(string(r.files[0].content), "\n\r")
