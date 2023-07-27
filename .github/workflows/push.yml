@@ -5,6 +5,8 @@ on:
     types: [opened, synchronize]
   push:
     branches: [main]
+  merge_group:
+    types: [checks_requested]
 
 jobs:
   tests:
@@ -39,7 +41,9 @@ jobs:
           go install honnef.co/go/tools/cmd/staticcheck@latest
 
       - name: Pull external libraries
-        run: make vendor
+        run: |
+          make vendor
+          pip3 install wheel
 
       - name: Run tests
         run: make test
