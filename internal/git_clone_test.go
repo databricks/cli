@@ -53,11 +53,12 @@ func TestAccGitCloneWithOnlyRepoNameOnAlternateBranch(t *testing.T) {
 	assert.Contains(t, string(b), "dais-2022")
 }
 
-func TestAccGitCloneRepositoryDoesNotExist(t *testing.T) {
+func TestAccGitCloneErrorsWhenRepositoryDoesNotExist(t *testing.T) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	tmpDir := t.TempDir()
 
-	err := git.Clone(context.Background(), "doesnot-exist", "", tmpDir)
-	assert.Contains(t, err.Error(), `repository 'https://github.com/databricks/doesnot-exist/' not found`)
+	err := git.Clone(context.Background(), "https://github.com/monalisa/doesnot-exist.git", "", tmpDir)
+	// Expect the error to originate from shelling out to `git clone`
+	assert.ErrorContains(t, err, "git clone failed:")
 }
