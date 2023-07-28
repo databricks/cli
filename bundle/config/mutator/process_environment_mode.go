@@ -137,6 +137,8 @@ func validateProductionMode(ctx context.Context, b *bundle.Bundle, isPrincipalUs
 func isServicePrincipalUsed(ctx context.Context, b *bundle.Bundle) (bool, error) {
 	ws := b.WorkspaceClient()
 
+	// Check if a principal with the current user's ID exists.
+	// We need to use the ListAll method since Get is only usable by admins.
 	matches, err := ws.ServicePrincipals.ListAll(ctx, iam.ListServicePrincipalsRequest{
 		Filter: "id eq " + b.Config.Workspace.CurrentUser.Id,
 	})
