@@ -117,13 +117,6 @@ func (r *renderer) executeTemplate(templateDefinition string) (string, error) {
 }
 
 func (r *renderer) computeFile(relPathTemplate string) (file, error) {
-	// read template file contents
-	templateReader, err := r.templateFiler.Read(r.ctx, relPathTemplate)
-	if err != nil {
-		return nil, err
-	}
-	defer templateReader.Close()
-
 	// read file permissions
 	info, err := r.templateFiler.Stat(r.ctx, relPathTemplate)
 	if err != nil {
@@ -135,16 +128,23 @@ func (r *renderer) computeFile(relPathTemplate string) (file, error) {
 	// over as is, without treating it as a template
 	if !strings.HasSuffix(relPathTemplate, templateExtension) {
 		return &copyFile{
-			fileCommon: &fileCommon{
+			dstPath: &destinationPath{
 				root:    r.instanceRoot,
 				relPath: relPathTemplate,
-				perm:    perm,
 			},
+			perm:     perm,
 			ctx:      r.ctx,
 			srcPath:  relPathTemplate,
 			srcFiler: r.templateFiler,
 		}, nil
 	}
+
+	// read template file contents
+	templateReader, err := r.templateFiler.Read(r.ctx, relPathTemplate)
+	if err != nil {
+		return nil, err
+	}
+	defer templateReader.Close()
 
 	// execute the contents of the file as a template
 	contentTemplate, err := io.ReadAll(templateReader)
@@ -168,11 +168,11 @@ func (r *renderer) computeFile(relPathTemplate string) (file, error) {
 	}
 
 	return &inMemoryFile{
-		fileCommon: &fileCommon{
+		dstPath: &destinationPath{
 			root:    r.instanceRoot,
 			relPath: relPath,
-			perm:    perm,
 		},
+		perm:    perm,
 		content: []byte(content),
 	}, nil
 }
@@ -248,7 +248,7 @@ func (r *renderer) walk() error {
 			if err != nil {
 				return err
 			}
-			logger.Infof(r.ctx, "added file to list of in memory files: %s", f.Path())
+			logger.Infof(r.ctx, "added file to list of possible project files: %s", f.DstPath().relPath)
 			r.files = append(r.files, f)
 		}
 
@@ -261,12 +261,12 @@ func (r *renderer) persistToDisk() error {
 	// any of the skip patterns
 	filesToPersist := make([]file, 0)
 	for _, file := range r.files {
-		match, err := isSkipped(file.RelPath(), r.skipPatterns)
+		match, err := isSkipped(file.DstPath().relPath, r.skipPatterns)
 		if err != nil {
 			return err
 		}
 		if match {
-			log.Infof(r.ctx, "skipping file: %s", file.Path())
+			log.Infof(r.ctx, "skipping file: %s", file.DstPath())
 			continue
 		}
 		filesToPersist = append(filesToPersist, file)
@@ -274,7 +274,7 @@ func (r *renderer) persistToDisk() error {
 
 	// Assert no conflicting files exist
 	for _, file := range filesToPersist {
-		path := file.Path()
+		path := file.DstPath().absPath()
 		_, err := os.Stat(path)
 		if err == nil {
 			return fmt.Errorf("failed to persist to disk, conflict with existing file: %s", path)

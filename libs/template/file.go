@@ -10,57 +10,55 @@ import (
 	"github.com/databricks/cli/libs/filer"
 )
 
-// Interface for an in memory representation of a file
+// Interface representing a file to be materialized from a template into a project
+// instance
 type file interface {
-	// Full path of the file, in the os native format. For example /foo/bar on
-	// Unix and C:\foo\bar on windows
-	Path() string
+	// Destination path for file. This is where the file will be created when
+	// PersistToDisk is called.
+	DstPath() *destinationPath
 
-	// Unix like file path relative to the "root" of the instantiated project. Is used to
-	// evaluate whether the file should be skipped by comparing it to a list of
-	// skip glob patterns
-	RelPath() string
-
-	// This function writes this file onto the disk
+	// Write file to disk at the destination path.
 	PersistToDisk() error
 }
 
-type fileCommon struct {
+type destinationPath struct {
 	// Root path for the project instance. This path uses the system's default
 	// file separator. For example /foo/bar on Unix and C:\foo\bar on windows
 	root string
 
-	// Unix like relPath for the file (using '/' as the separator). This path
-	// is relative to the root. Using unix like relative paths enables skip patterns
-	// to work across both windows and unix based operating systems.
+	// Unix like file path relative to the "root" of the instantiated project. Is used to
+	// evaluate whether the file should be skipped by comparing it to a list of
+	// skip glob patterns.
 	relPath string
-
-	// Permissions bits for the file
-	perm fs.FileMode
 }
 
-func (f *fileCommon) Path() string {
+// Absolute path of the file, in the os native format. For example /foo/bar on
+// Unix and C:\foo\bar on windows
+func (f *destinationPath) absPath() string {
 	return filepath.Join(f.root, filepath.FromSlash(f.relPath))
 }
 
-func (f *fileCommon) RelPath() string {
-	return f.relPath
-}
-
 type copyFile struct {
-	*fileCommon
-
 	ctx context.Context
 
-	// Path of the source file that should be copied over.
-	srcPath string
+	// Permissions bits for the destination file
+	perm fs.FileMode
 
-	// Filer to use to read source path
+	dstPath *destinationPath
+
+	// Filer rooted at template root. Used to read srcPath.
 	srcFiler filer.Filer
+
+	// Relative path from template root for file to be copied.
+	srcPath string
+}
+
+func (f *copyFile) DstPath() *destinationPath {
+	return f.dstPath
 }
 
 func (f *copyFile) PersistToDisk() error {
-	path := f.Path()
+	path := f.DstPath().absPath()
 	err := os.MkdirAll(filepath.Dir(path), 0755)
 	if err != nil {
 		return err
@@ -80,13 +78,20 @@ func (f *copyFile) PersistToDisk() error {
 }
 
 type inMemoryFile struct {
-	*fileCommon
+	dstPath *destinationPath
 
 	content []byte
+
+	// Permissions bits for the destination file
+	perm fs.FileMode
+}
+
+func (f *inMemoryFile) DstPath() *destinationPath {
+	return f.dstPath
 }
 
 func (f *inMemoryFile) PersistToDisk() error {
-	path := f.Path()
+	path := f.DstPath().absPath()
 
 	err := os.MkdirAll(filepath.Dir(path), 0755)
 	if err != nil {

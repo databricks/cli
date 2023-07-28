@@ -2,6 +2,7 @@ package template
 
 import (
 	"context"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -12,126 +13,99 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestTemplateFileCommonPathForWindows(t *testing.T) {
-	if runtime.GOOS != "windows" {
-		t.SkipNow()
+func testInMemoryFile(t *testing.T, perm fs.FileMode) {
+	tmpDir := t.TempDir()
+
+	f := &inMemoryFile{
+		dstPath: &destinationPath{
+			root:    tmpDir,
+			relPath: "a/b/c",
+		},
+		perm:    perm,
+		content: []byte("123"),
 	}
-	f := &fileCommon{
-		root:    `c:\a\b\c`,
-		relPath: "d/e",
-	}
-	assert.Equal(t, `c:\a\b\c\d\e`, f.Path())
-	assert.Equal(t, `d/e`, f.RelPath())
+	err := f.PersistToDisk()
+	assert.NoError(t, err)
+
+	assertFileContent(t, filepath.Join(tmpDir, "a/b/c"), "123")
+	assertFilePermissions(t, filepath.Join(tmpDir, "a/b/c"), perm)
 }
 
-func TestTemplateFileCommonPathForUnix(t *testing.T) {
-	if runtime.GOOS != "linux" && runtime.GOOS != "darwin" {
+func testCopyFile(t *testing.T, perm fs.FileMode) {
+	tmpDir := t.TempDir()
+
+	templateFiler, err := filer.NewLocalClient(tmpDir)
+	require.NoError(t, err)
+	err = os.WriteFile(filepath.Join(tmpDir, "source"), []byte("qwerty"), perm)
+	require.NoError(t, err)
+
+	f := &copyFile{
+		ctx: context.Background(),
+		dstPath: &destinationPath{
+			root:    tmpDir,
+			relPath: "a/b/c",
+		},
+		perm:     perm,
+		srcPath:  "source",
+		srcFiler: templateFiler,
+	}
+	err = f.PersistToDisk()
+	assert.NoError(t, err)
+
+	assertFileContent(t, filepath.Join(tmpDir, "a/b/c"), "qwerty")
+	assertFilePermissions(t, filepath.Join(tmpDir, "a/b/c"), perm)
+}
+
+func TestTemplateFileDestinationPath(t *testing.T) {
+	if runtime.GOOS == "windows" {
 		t.SkipNow()
 	}
-	f := &fileCommon{
+	f := &destinationPath{
 		root:    `a/b/c`,
 		relPath: "d/e",
 	}
-	assert.Equal(t, `a/b/c/d/e`, f.Path())
-	assert.Equal(t, `d/e`, f.RelPath())
+	assert.Equal(t, `a/b/c/d/e`, f.absPath())
 }
 
-func TestTemplateFileInMemoryFilePersistToDisk(t *testing.T) {
-	if runtime.GOOS != "linux" && runtime.GOOS != "darwin" {
-		t.SkipNow()
-	}
-	tmpDir := t.TempDir()
-
-	f := &inMemoryFile{
-		fileCommon: &fileCommon{
-			root:    tmpDir,
-			relPath: "a/b/c",
-			perm:    0755,
-		},
-		content: []byte("123"),
-	}
-	err := f.PersistToDisk()
-	assert.NoError(t, err)
-
-	assertFileContent(t, filepath.Join(tmpDir, "a/b/c"), "123")
-	assertFilePermissions(t, filepath.Join(tmpDir, "a/b/c"), 0755)
-}
-
-func TestTemplateFileCopyFilePersistToDisk(t *testing.T) {
-	if runtime.GOOS != "linux" && runtime.GOOS != "darwin" {
-		t.SkipNow()
-	}
-	tmpDir := t.TempDir()
-
-	templateFiler, err := filer.NewLocalClient(tmpDir)
-	require.NoError(t, err)
-	os.WriteFile(filepath.Join(tmpDir, "source"), []byte("qwerty"), 0644)
-
-	f := &copyFile{
-		ctx: context.Background(),
-		fileCommon: &fileCommon{
-			root:    tmpDir,
-			relPath: "a/b/c",
-			perm:    0644,
-		},
-		srcPath:  "source",
-		srcFiler: templateFiler,
-	}
-	err = f.PersistToDisk()
-	assert.NoError(t, err)
-
-	assertFileContent(t, filepath.Join(tmpDir, "a/b/c"), "qwerty")
-	assertFilePermissions(t, filepath.Join(tmpDir, "a/b/c"), 0644)
-}
-
-// we have separate tests for windows because of differences in valid
-// fs.FileMode values we can use for different operating systems.
-func TestTemplateFileInMemoryFilePersistToDiskForWindows(t *testing.T) {
+func TestTemplateFileDestinationPathForWindows(t *testing.T) {
 	if runtime.GOOS != "windows" {
 		t.SkipNow()
 	}
-	tmpDir := t.TempDir()
-
-	f := &inMemoryFile{
-		fileCommon: &fileCommon{
-			root:    tmpDir,
-			relPath: "a/b/c",
-			perm:    0666,
-		},
-		content: []byte("123"),
+	f := &destinationPath{
+		root:    `c:\a\b\c`,
+		relPath: "d/e",
 	}
-	err := f.PersistToDisk()
-	assert.NoError(t, err)
-
-	assertFileContent(t, filepath.Join(tmpDir, "a/b/c"), "123")
-	assertFilePermissions(t, filepath.Join(tmpDir, "a/b/c"), 0666)
+	assert.Equal(t, `c:\a\b\c\d\e`, f.absPath())
 }
 
-// we have separate tests for windows because of differences in valid
-// fs.FileMode values we can use for different operating systems.
-func TestTemplateFileCopyFilePersistToDiskForWindows(t *testing.T) {
+func TestTemplateInMemoryFilePersistToDisk(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.SkipNow()
+	}
+	testInMemoryFile(t, 0755)
+}
+
+func TestTemplateInMemoryFilePersistToDiskForWindows(t *testing.T) {
 	if runtime.GOOS != "windows" {
 		t.SkipNow()
 	}
-	tmpDir := t.TempDir()
+	// we have separate tests for windows because of differences in valid
+	// fs.FileMode values we can use for different operating systems.
+	testInMemoryFile(t, 0666)
+}
 
-	templateFiler, err := filer.NewLocalClient(tmpDir)
-	require.NoError(t, err)
-	os.WriteFile(filepath.Join(tmpDir, "source"), []byte("qwerty"), 0666)
-
-	f := &copyFile{
-		ctx: context.Background(),
-		fileCommon: &fileCommon{
-			root:    tmpDir,
-			relPath: "a/b/c",
-			perm:    0666,
-		},
-		srcPath:  "source",
-		srcFiler: templateFiler,
+func TestTemplateCopyFilePersistToDisk(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.SkipNow()
 	}
-	err = f.PersistToDisk()
-	assert.NoError(t, err)
+	testCopyFile(t, 0644)
+}
 
-	assertFileContent(t, filepath.Join(tmpDir, "a/b/c"), "qwerty")
-	assertFilePermissions(t, filepath.Join(tmpDir, "a/b/c"), 0666)
+func TestTemplateCopyFilePersistToDiskForWindows(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.SkipNow()
+	}
+	// we have separate tests for windows because of differences in valid
+	// fs.FileMode values we can use for different operating systems.
+	testCopyFile(t, 0666)
 }

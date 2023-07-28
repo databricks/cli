@@ -154,35 +154,35 @@ func TestRendererPersistToDisk(t *testing.T) {
 		skipPatterns: []string{"a/b/c", "mn*"},
 		files: []file{
 			&inMemoryFile{
-				fileCommon: &fileCommon{
+				dstPath: &destinationPath{
 					root:    tmpDir,
 					relPath: "a/b/c",
-					perm:    0444,
 				},
+				perm:    0444,
 				content: nil,
 			},
 			&inMemoryFile{
-				fileCommon: &fileCommon{
+				dstPath: &destinationPath{
 					root:    tmpDir,
 					relPath: "mno",
-					perm:    0444,
 				},
+				perm:    0444,
 				content: nil,
 			},
 			&inMemoryFile{
-				fileCommon: &fileCommon{
+				dstPath: &destinationPath{
 					root:    tmpDir,
 					relPath: "a/b/d",
-					perm:    0444,
 				},
+				perm:    0444,
 				content: []byte("123"),
 			},
 			&inMemoryFile{
-				fileCommon: &fileCommon{
+				dstPath: &destinationPath{
 					root:    tmpDir,
 					relPath: "mmnn",
-					perm:    0444,
 				},
+				perm:    0444,
 				content: []byte("456"),
 			},
 		},
@@ -212,16 +212,13 @@ func TestRendererWalk(t *testing.T) {
 
 	getContent := func(r *renderer, path string) string {
 		for _, f := range r.files {
+			if f.DstPath().relPath != path {
+				continue
+			}
 			switch v := f.(type) {
 			case *inMemoryFile:
-				if v.relPath != path {
-					continue
-				}
 				return strings.Trim(string(v.content), "\r\n")
 			case *copyFile:
-				if v.relPath != path {
-					continue
-				}
 				r, err := r.templateFiler.Read(context.Background(), v.srcPath)
 				require.NoError(t, err)
 				b, err := io.ReadAll(r)
@@ -332,19 +329,6 @@ func TestRendererSkip(t *testing.T) {
 	assert.NoFileExists(t, filepath.Join(tmpDir, "dir2/file6"))
 }
 
-func TestRendererInMemoryFileFullPathForWindows(t *testing.T) {
-	if runtime.GOOS != "windows" {
-		t.SkipNow()
-	}
-	f := &inMemoryFile{
-		fileCommon: &fileCommon{
-			root:    `c:\a\b\c`,
-			relPath: "d/e",
-		},
-	}
-	assert.Equal(t, `c:\a\b\c\d\e`, f.Path())
-}
-
 func TestRendererReadsPermissionsBits(t *testing.T) {
 	if runtime.GOOS != "linux" && runtime.GOOS != "darwin" {
 		t.SkipNow()
@@ -360,16 +344,14 @@ func TestRendererReadsPermissionsBits(t *testing.T) {
 
 	getPermissions := func(r *renderer, path string) fs.FileMode {
 		for _, f := range r.files {
+			if f.DstPath().relPath != path {
+				continue
+			}
 			switch v := f.(type) {
 			case *inMemoryFile:
-				if v.relPath == path {
-					return v.perm
-				}
-
+				return v.perm
 			case *copyFile:
-				if v.relPath == path {
-					return v.perm
-				}
+				return v.perm
 			default:
 				require.FailNow(t, "execution should not reach here")
 			}
@@ -395,11 +377,11 @@ func TestRendererErrorOnConflictingFile(t *testing.T) {
 		skipPatterns: []string{},
 		files: []file{
 			&inMemoryFile{
-				fileCommon: &fileCommon{
+				dstPath: &destinationPath{
 					root:    tmpDir,
 					relPath: "a",
-					perm:    0444,
 				},
+				perm:    0444,
 				content: []byte("123"),
 			},
 		},
@@ -422,11 +404,11 @@ func TestRendererNoErrorOnConflictingFileIfSkipped(t *testing.T) {
 		skipPatterns: []string{"a"},
 		files: []file{
 			&inMemoryFile{
-				fileCommon: &fileCommon{
+				dstPath: &destinationPath{
 					root:    tmpDir,
 					relPath: "a",
-					perm:    0444,
 				},
+				perm:    0444,
 				content: []byte("123"),
 			},
 		},
@@ -450,5 +432,5 @@ func TestRendererNonTemplatesAreCreatedAsCopyFiles(t *testing.T) {
 
 	assert.Len(t, r.files, 1)
 	assert.Equal(t, r.files[0].(*copyFile).srcPath, "not-a-template")
-	assert.Equal(t, r.files[0].Path(), filepath.Join(tmpDir, "not-a-template"))
+	assert.Equal(t, r.files[0].DstPath().absPath(), filepath.Join(tmpDir, "not-a-template"))
 }
