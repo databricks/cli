@@ -139,7 +139,7 @@ func (r *renderer) computeFile(relPathTemplate string) (file, error) {
 		}, nil
 	}
 
-	// read template file contents
+	// read template file's content
 	templateReader, err := r.templateFiler.Read(r.ctx, relPathTemplate)
 	if err != nil {
 		return nil, err
