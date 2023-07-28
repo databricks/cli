@@ -18,9 +18,11 @@ var cmdOverrides []func(*cobra.Command)
 
 func New() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "providers",
-		Short:   `Databricks Providers REST API.`,
-		Long:    `Databricks Providers REST API`,
+		Use:   "providers",
+		Short: `A data provider is an object representing the organization in the real world who shares the data.`,
+		Long: `A data provider is an object representing the organization in the real world
+  who shares the data. A provider contains shares which further contain the
+  shared data.`,
 		GroupID: "sharing",
 		Annotations: map[string]string{
 			"package": "sharing",

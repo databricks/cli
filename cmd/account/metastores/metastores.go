@@ -58,8 +58,7 @@ func newCreate() *cobra.Command {
 	cmd.Short = `Create metastore.`
 	cmd.Long = `Create metastore.
   
-  Creates a Unity Catalog metastore. Please add a header
-  X-Databricks-Account-Console-API-Version: 2.0 to access this API.`
+  Creates a Unity Catalog metastore.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -131,8 +130,7 @@ func newDelete() *cobra.Command {
 	cmd.Short = `Delete a metastore.`
 	cmd.Long = `Delete a metastore.
   
-  Deletes a Unity Catalog metastore for an account, both specified by ID. Please
-  add a header X-Databricks-Account-Console-API-Version: 2.0 to access this API.`
+  Deletes a Unity Catalog metastore for an account, both specified by ID.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -193,8 +191,7 @@ func newGet() *cobra.Command {
 	cmd.Short = `Get a metastore.`
 	cmd.Long = `Get a metastore.
   
-  Gets a Unity Catalog metastore from an account, both specified by ID. Please
-  add a header X-Databricks-Account-Console-API-Version: 2.0 to access this API.`
+  Gets a Unity Catalog metastore from an account, both specified by ID.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -250,9 +247,7 @@ func newList() *cobra.Command {
 	cmd.Short = `Get all metastores associated with an account.`
 	cmd.Long = `Get all metastores associated with an account.
   
-  Gets all Unity Catalog metastores associated with an account specified by ID.
-  Please add a header X-Databricks-Account-Console-API-Version: 2.0 to access
-  this API.`
+  Gets all Unity Catalog metastores associated with an account specified by ID.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -309,8 +304,7 @@ func newUpdate() *cobra.Command {
 	cmd.Short = `Update a metastore.`
 	cmd.Long = `Update a metastore.
   
-  Updates an existing Unity Catalog metastore. Please add a header
-  X-Databricks-Account-Console-API-Version: 2.0 to access this API.`
+  Updates an existing Unity Catalog metastore.`
 
 	cmd.Annotations = make(map[string]string)
 
