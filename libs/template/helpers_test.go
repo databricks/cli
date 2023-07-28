@@ -52,5 +52,5 @@ func TestTemplateUrlFunction(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Len(t, r.files, 1)
-	assert.Equal(t, "https://www.databricks.com", string(r.files[0].content))
+	assert.Equal(t, "https://www.databricks.com", string(r.files[0].(*inMemoryFile).content))
 }
