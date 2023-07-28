@@ -44,7 +44,7 @@ func (c *profileMetadata) IsEmpty() bool {
 	return c.Host == "" && c.AccountID == ""
 }
 
-func (c *profileMetadata) Load(ctx context.Context) {
+func (c *profileMetadata) Load(ctx context.Context, skipValidate bool) {
 	// TODO: disable config loaders other than configfile
 	cfg := &config.Config{Profile: c.Name}
 	_ = cfg.EnsureResolved()
@@ -94,16 +94,22 @@ func (c *profileMetadata) Load(ctx context.Context) {
 	c.Host = cfg.Host
 }
 
-var profilesCmd = &cobra.Command{
-	Use:   "profiles",
-	Short: "Lists profiles from ~/.databrickscfg",
-	Annotations: map[string]string{
-		"template": cmdio.Heredoc(`
-		{{header "Name"}}	{{header "Host"}}	{{header "Valid"}}
-		{{range .Profiles}}{{.Name | green}}	{{.Host|cyan}}	{{bool .Valid}}
-		{{end}}`),
-	},
-	RunE: func(cmd *cobra.Command, args []string) error {
+func newProfilesCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "profiles",
+		Short: "Lists profiles from ~/.databrickscfg",
+		Annotations: map[string]string{
+			"template": cmdio.Heredoc(`
+			{{header "Name"}}	{{header "Host"}}	{{header "Valid"}}
+			{{range .Profiles}}{{.Name | green}}	{{.Host|cyan}}	{{bool .Valid}}
+			{{end}}`),
+		},
+	}
+
+	var skipValidate bool
+	cmd.Flags().BoolVar(&skipValidate, "skip-validate", false, "Whether to skip validating the profiles")
+
+	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		var profiles []*profileMetadata
 		iniFile, err := getDatabricksCfg()
 		if os.IsNotExist(err) {
@@ -126,7 +132,7 @@ var profilesCmd = &cobra.Command{
 			wg.Add(1)
 			go func() {
 				// load more information about profile
-				profile.Load(cmd.Context())
+				profile.Load(cmd.Context(), skipValidate)
 				wg.Done()
 			}()
 			profiles = append(profiles, profile)
@@ -135,12 +141,7 @@ var profilesCmd = &cobra.Command{
 		return cmdio.Render(cmd.Context(), struct {
 			Profiles []*profileMetadata `json:"profiles"`
 		}{profiles})
-	},
-}
+	}
 
-var skipValidate bool
-
-func init() {
-	authCmd.AddCommand(profilesCmd)
-	profilesCmd.Flags().BoolVar(&skipValidate, "skip-validate", false, "Whether to skip validating the profiles")
+	return cmd
 }

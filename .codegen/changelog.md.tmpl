@@ -2,18 +2,29 @@
 
 ## {{.Version}}
 
-{{range .Changes -}}
+CLI:
+{{- range .Changes}}
  * {{.}}.
-{{end}}{{- if .ApiChanges}}
+{{- end}}
+
+Bundles:
+ * **FILL THIS IN MANUALLY BY MOVING RELEVANT ITEMS FROM ABOVE LIST**
+
+Internal:
+ * **FILL THIS IN MANUALLY BY MOVING RELEVANT ITEMS FROM ABOVE LIST**
+
+{{ if .ApiChanges -}}
 API Changes:
-{{range .ApiChanges}}{{if or (eq .X "method") (eq .X "service")}}
+{{- range .ApiChanges}}{{if or (eq .X "method") (eq .X "service")}}
  * {{.Action}} {{template "what" .}}{{if .Extra}} {{.Extra}}{{with .Other}} {{template "what" .}}{{end}}{{end}}.
 {{- end}}{{- end}}
 
-OpenAPI SHA: {{.Sha}}, Date: {{.Changed}}
-{{- end}}{{if .DependencyUpdates}}
+OpenAPI commit {{.Sha}} ({{.Changed}})
+{{- end }}
+
+{{- if .DependencyUpdates }}
 Dependency updates:
-{{range .DependencyUpdates}}
+{{- range .DependencyUpdates}}
  * {{.}}.
 {{- end -}}
 {{end}}

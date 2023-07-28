@@ -9,15 +9,20 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var tokenTimeout time.Duration
+func newTokenCommand(persistentAuth *auth.PersistentAuth) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "token [HOST]",
+		Short: "Get authentication token",
+	}
 
-var tokenCmd = &cobra.Command{
-	Use:   "token [HOST]",
-	Short: "Get authentication token",
-	RunE: func(cmd *cobra.Command, args []string) error {
+	var tokenTimeout time.Duration
+	cmd.Flags().DurationVar(&tokenTimeout, "timeout", auth.DefaultTimeout,
+		"Timeout for acquiring a token.")
+
+	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		if persistentAuth.Host == "" {
-			configureHost(ctx, args, 0)
+			configureHost(ctx, persistentAuth, args, 0)
 		}
 		defer persistentAuth.Close()
 
@@ -33,11 +38,7 @@ var tokenCmd = &cobra.Command{
 		}
 		cmd.OutOrStdout().Write(raw)
 		return nil
-	},
-}
+	}
 
-func init() {
-	authCmd.AddCommand(tokenCmd)
-	tokenCmd.Flags().DurationVar(&tokenTimeout, "timeout", auth.DefaultTimeout,
-		"Timeout for acquiring a token.")
+	return cmd
 }

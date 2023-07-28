@@ -60,7 +60,7 @@ func Clone(ctx context.Context, url, reference, targetPath string) error {
 		return fmt.Errorf("please install git CLI to clone a repository: %w", err)
 	}
 	if err != nil {
-		return err
+		return fmt.Errorf("git clone failed: %w", err)
 	}
 
 	// wait for git clone to complete

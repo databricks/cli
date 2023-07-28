@@ -46,8 +46,3 @@ jobs:
           args: release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  publish:
-    uses: ./.github/workflows/publish-latest.yml
-    needs: goreleaser
-    secrets: inherit

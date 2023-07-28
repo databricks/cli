@@ -1,0 +1,3 @@
+{{ with url "https://www.databricks.com/a/b?o=123#my-fragment" -}}
+{{- print .Scheme `://` .Host -}}
+{{- end -}}
