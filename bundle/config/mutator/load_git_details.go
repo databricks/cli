@@ -31,6 +31,8 @@ func (m *loadGitDetails) Apply(ctx context.Context, b *bundle.Bundle) error {
 			log.Warnf(ctx, "failed to load current branch: %s", err)
 		} else {
 			b.Config.Bundle.Git.Branch = branch
+			b.Config.Bundle.Git.ActualBranch = branch
+			b.Config.Bundle.Git.Inferred = true
 		}
 	}
 	// load commit hash if undefined

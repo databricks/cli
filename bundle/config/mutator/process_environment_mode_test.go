@@ -22,6 +22,10 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 		Config: config.Root{
 			Bundle: config.Bundle{
 				Mode: mode,
+				Git: config.Git{
+					OriginURL: "http://origin",
+					Branch:    "main",
+				},
 			},
 			Workspace: config.Workspace{
 				CurrentUser: &config.User{
@@ -112,6 +116,17 @@ func TestProcessEnvironmentModeProduction(t *testing.T) {
 	assert.Equal(t, "job1", bundle.Config.Resources.Jobs["job1"].Name)
 	assert.Equal(t, "pipeline1", bundle.Config.Resources.Pipelines["pipeline1"].Name)
 	assert.False(t, bundle.Config.Resources.Pipelines["pipeline1"].PipelineSpec.Development)
+}
+
+func TestProcessEnvironmentModeProductionGit(t *testing.T) {
+	bundle := mockBundle(config.Production)
+
+	// Pretend the user didn't set Git configuration explicitly
+	bundle.Config.Bundle.Git.Inferred = true
+
+	err := validateProductionMode(context.Background(), bundle, false)
+	require.ErrorContains(t, err, "git")
+	bundle.Config.Bundle.Git.Inferred = false
 }
 
 func TestProcessEnvironmentModeProductionOkForPrincipal(t *testing.T) {
