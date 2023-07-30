@@ -225,15 +225,16 @@ func (r *Root) MergeEnvironment(env *Environment) error {
 		r.Bundle.ComputeID = env.ComputeID
 	}
 
+	git := &r.Bundle.Git
 	if env.Git.Branch != "" {
-		r.Bundle.Git.Branch = env.Git.Branch
-		r.Bundle.Git.Inferred = false
+		git.Branch = env.Git.Branch
+		git.Inferred = false
 	}
 	if env.Git.Commit != "" {
-		r.Bundle.Git.Commit = env.Git.Commit
+		git.Commit = env.Git.Commit
 	}
 	if env.Git.OriginURL != "" {
-		r.Bundle.Git.OriginURL = env.Git.OriginURL
+		git.OriginURL = env.Git.OriginURL
 	}
 
 	return nil
