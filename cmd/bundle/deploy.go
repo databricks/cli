@@ -33,4 +33,6 @@ func newDeployCommand() *cobra.Command {
 			phases.Deploy(),
 		))
 	}
+
+	return cmd
 }
