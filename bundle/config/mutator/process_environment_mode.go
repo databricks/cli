@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 	"path"
+	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 )
@@ -26,15 +28,17 @@ func (m *processEnvironmentMode) Name() string {
 // Mark all resources as being for 'development' purposes, i.e.
 // changing their their name, adding tags, and (in the future)
 // marking them as 'hidden' in the UI.
-func processDevelopmentMode(b *bundle.Bundle) error {
+func transformDevelopmentMode(b *bundle.Bundle) error {
 	r := b.Config.Resources
 
+	prefix := "[dev " + b.Config.Workspace.CurrentUser.ShortName + "] "
+
 	for i := range r.Jobs {
-		r.Jobs[i].Name = "[dev] " + r.Jobs[i].Name
+		r.Jobs[i].Name = prefix + r.Jobs[i].Name
 		if r.Jobs[i].Tags == nil {
 			r.Jobs[i].Tags = make(map[string]string)
 		}
-		r.Jobs[i].Tags["dev"] = ""
+		r.Jobs[i].Tags["dev"] = b.Config.Workspace.CurrentUser.DisplayName
 		if r.Jobs[i].MaxConcurrentRuns == 0 {
 			r.Jobs[i].MaxConcurrentRuns = developmentConcurrentRuns
 		}
@@ -50,13 +54,13 @@ func processDevelopmentMode(b *bundle.Bundle) error {
 	}
 
 	for i := range r.Pipelines {
-		r.Pipelines[i].Name = "[dev] " + r.Pipelines[i].Name
+		r.Pipelines[i].Name = prefix + r.Pipelines[i].Name
 		r.Pipelines[i].Development = true
 		// (pipelines don't yet support tags)
 	}
 
 	for i := range r.Models {
-		r.Models[i].Name = "[dev] " + r.Models[i].Name
+		r.Models[i].Name = prefix + r.Models[i].Name
 		r.Models[i].Tags = append(r.Models[i].Tags, ml.ModelTag{Key: "dev", Value: ""})
 	}
 
@@ -65,20 +69,111 @@ func processDevelopmentMode(b *bundle.Bundle) error {
 		dir := path.Dir(filepath)
 		base := path.Base(filepath)
 		if dir == "." {
-			r.Experiments[i].Name = "[dev] " + base
+			r.Experiments[i].Name = prefix + base
 		} else {
-			r.Experiments[i].Name = dir + "/[dev] " + base
+			r.Experiments[i].Name = dir + "/" + prefix + base
 		}
-		r.Experiments[i].Tags = append(r.Experiments[i].Tags, ml.ExperimentTag{Key: "dev", Value: ""})
+		r.Experiments[i].Tags = append(r.Experiments[i].Tags, ml.ExperimentTag{Key: "dev", Value: b.Config.Workspace.CurrentUser.DisplayName})
 	}
 
 	return nil
 }
 
+func validateDevelopmentMode(b *bundle.Bundle) error {
+	if path := findIncorrectPath(b, config.Development); path != "" {
+		return fmt.Errorf("%s must start with '~/' or contain the current username when using 'mode: development'", path)
+	}
+	return nil
+}
+
+func findIncorrectPath(b *bundle.Bundle, mode config.Mode) string {
+	username := b.Config.Workspace.CurrentUser.UserName
+	containsExpected := true
+	if mode == config.Production {
+		containsExpected = false
+	}
+
+	if strings.Contains(b.Config.Workspace.RootPath, username) != containsExpected && b.Config.Workspace.RootPath != "" {
+		return "root_path"
+	}
+	if strings.Contains(b.Config.Workspace.StatePath, username) != containsExpected {
+		return "state_path"
+	}
+	if strings.Contains(b.Config.Workspace.FilesPath, username) != containsExpected {
+		return "files_path"
+	}
+	if strings.Contains(b.Config.Workspace.ArtifactsPath, username) != containsExpected {
+		return "artifacts_path"
+	}
+	return ""
+}
+
+func validateProductionMode(ctx context.Context, b *bundle.Bundle, isPrincipalUsed bool) error {
+	r := b.Config.Resources
+	for i := range r.Pipelines {
+		if r.Pipelines[i].Development {
+			return fmt.Errorf("environment with 'mode: production' cannot specify a pipeline with 'development: true'")
+		}
+	}
+
+	if !isPrincipalUsed {
+		if path := findIncorrectPath(b, config.Production); path != "" {
+			message := "%s must not contain the current username when using 'mode: production'"
+			if path == "root_path" {
+				return fmt.Errorf(message+"\n  tip: set workspace.root_path to a shared path such as /Shared/.bundle/${bundle.name}/${bundle.environment}", path)
+			} else {
+				return fmt.Errorf(message, path)
+			}
+		}
+
+		if !isRunAsSet(r) {
+			return fmt.Errorf("'run_as' must be set for all jobs when using 'mode: production'")
+		}
+	}
+	return nil
+}
+
+// Determines whether a service principal identity is used to run the CLI.
+func isServicePrincipalUsed(ctx context.Context, b *bundle.Bundle) (bool, error) {
+	ws := b.WorkspaceClient()
+
+	// Check if a principal with the current user's ID exists.
+	// We need to use the ListAll method since Get is only usable by admins.
+	matches, err := ws.ServicePrincipals.ListAll(ctx, iam.ListServicePrincipalsRequest{
+		Filter: "id eq " + b.Config.Workspace.CurrentUser.Id,
+	})
+	if err != nil {
+		return false, err
+	}
+	return len(matches) > 0, nil
+}
+
+// Determines whether run_as is explicitly set for all resources.
+// We do this in a best-effort fashion rather than check the top-level
+// 'run_as' field because the latter is not required to be set.
+func isRunAsSet(r config.Resources) bool {
+	for i := range r.Jobs {
+		if r.Jobs[i].RunAs == nil {
+			return false
+		}
+	}
+	return true
+}
+
 func (m *processEnvironmentMode) Apply(ctx context.Context, b *bundle.Bundle) error {
 	switch b.Config.Bundle.Mode {
 	case config.Development:
-		return processDevelopmentMode(b)
+		err := validateDevelopmentMode(b)
+		if err != nil {
+			return err
+		}
+		return transformDevelopmentMode(b)
+	case config.Production:
+		isPrincipal, err := isServicePrincipalUsed(ctx, b)
+		if err != nil {
+			return err
+		}
+		return validateProductionMode(ctx, b, isPrincipal)
 	case "":
 		// No action
 	default:

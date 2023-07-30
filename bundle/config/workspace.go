@@ -42,7 +42,7 @@ type Workspace struct {
 
 	// CurrentUser holds the current user.
 	// This is set after configuration initialization.
-	CurrentUser *iam.User `json:"current_user,omitempty" bundle:"readonly"`
+	CurrentUser *User `json:"current_user,omitempty" bundle:"readonly"`
 
 	// Remote workspace base path for deployment state, for artifacts, as synchronization target.
 	// This defaults to "~/.bundle/${bundle.name}/${bundle.environment}" where "~" expands to
@@ -60,6 +60,13 @@ type Workspace struct {
 	// Remote workspace path for deployment state.
 	// This defaults to "${workspace.root}/state".
 	StatePath string `json:"state_path,omitempty"`
+}
+
+type User struct {
+	// A short name for the user, based on the user's UserName.
+	ShortName string `json:"short_name,omitempty" bundle:"readonly"`
+
+	*iam.User
 }
 
 func (w *Workspace) Client() (*databricks.WorkspaceClient, error) {
