@@ -42,7 +42,7 @@ func (m *acquire) Apply(ctx context.Context, b *bundle.Bundle) error {
 		return err
 	}
 
-	force := b.Config.Bundle.Force
+	force := b.Config.Bundle.Lock.Force
 	log.Infof(ctx, "Acquiring deployment lock (force: %v)", force)
 	err = b.Locker.Lock(ctx, force)
 	if err != nil {
