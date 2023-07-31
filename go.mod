@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/briandowns/spinner v1.23.0 // Apache 2.0
-	github.com/databricks/databricks-sdk-go v0.13.0 // Apache 2.0
+	github.com/databricks/databricks-sdk-go v0.14.1 // Apache 2.0
 	github.com/fatih/color v1.15.0 // MIT
 	github.com/ghodss/yaml v1.0.0 // MIT + NOTICE
 	github.com/google/uuid v1.3.0 // BSD-3-Clause
