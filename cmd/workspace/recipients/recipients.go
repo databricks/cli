@@ -18,9 +18,25 @@ var cmdOverrides []func(*cobra.Command)
 
 func New() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "recipients",
-		Short:   `Databricks Recipients REST API.`,
-		Long:    `Databricks Recipients REST API`,
+		Use:   "recipients",
+		Short: `A recipient is an object you create using :method:recipients/create to represent an organization which you want to allow access shares.`,
+		Long: `A recipient is an object you create using :method:recipients/create to
+  represent an organization which you want to allow access shares. The way how
+  sharing works differs depending on whether or not your recipient has access to
+  a Databricks workspace that is enabled for Unity Catalog:
+  
+  - For recipients with access to a Databricks workspace that is enabled for
+  Unity Catalog, you can create a recipient object along with a unique sharing
+  identifier you get from the recipient. The sharing identifier is the key
+  identifier that enables the secure connection. This sharing mode is called
+  **Databricks-to-Databricks sharing**.
+  
+  - For recipients without access to a Databricks workspace that is enabled for
+  Unity Catalog, when you create a recipient object, Databricks generates an
+  activation link you can send to the recipient. The recipient follows the
+  activation link to download the credential file, and then uses the credential
+  file to establish a secure connection to receive the shared data. This sharing
+  mode is called **open sharing**.`,
 		GroupID: "sharing",
 		Annotations: map[string]string{
 			"package": "sharing",
