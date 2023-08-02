@@ -43,8 +43,36 @@ func newLoginCommand(persistentAuth *auth.PersistentAuth) *cobra.Command {
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
+
+		var profileName string
+		profileFlag := cmd.Flag("profile")
+		if profileFlag != nil && profileFlag.Value.String() != "" {
+			profileName = profileFlag.Value.String()
+		} else {
+			prompt := cmdio.Prompt(ctx)
+			prompt.Label = "Databricks Profile Name"
+			prompt.Default = persistentAuth.ProfileName()
+			prompt.AllowEdit = true
+			profile, err := prompt.Run()
+			if err != nil {
+				return err
+			}
+			profileName = profile
+		}
+
+		// If the chosen profile has a hostname and the user hasn't specified a host, infer the host from the profile.
+		_, profiles, err := databrickscfg.LoadProfiles(databrickscfg.DefaultPath, func(p databrickscfg.Profile) bool {
+			return p.Name == profileName
+		})
+		if err != nil {
+			return err
+		}
 		if persistentAuth.Host == "" {
-			configureHost(ctx, persistentAuth, args, 0)
+			if len(profiles) > 0 && profiles[0].Host != "" {
+				persistentAuth.Host = profiles[0].Host
+			} else {
+				configureHost(ctx, persistentAuth, args, 0)
+			}
 		}
 		defer persistentAuth.Close()
 
@@ -66,22 +94,7 @@ func newLoginCommand(persistentAuth *auth.PersistentAuth) *cobra.Command {
 		ctx, cancel := context.WithTimeout(ctx, loginTimeout)
 		defer cancel()
 
-		var profileName string
-		profileFlag := cmd.Flag("profile")
-		if profileFlag != nil && profileFlag.Value.String() != "" {
-			profileName = profileFlag.Value.String()
-		} else {
-			prompt := cmdio.Prompt(ctx)
-			prompt.Label = "Databricks Profile Name"
-			prompt.Default = persistentAuth.ProfileName()
-			prompt.AllowEdit = true
-			profile, err := prompt.Run()
-			if err != nil {
-				return err
-			}
-			profileName = profile
-		}
-		err := persistentAuth.Challenge(ctx)
+		err = persistentAuth.Challenge(ctx)
 		if err != nil {
 			return err
 		}
