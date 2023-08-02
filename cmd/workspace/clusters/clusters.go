@@ -13,10 +13,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var Cmd = &cobra.Command{
-	Use:   "clusters",
-	Short: `The Clusters API allows you to create, start, edit, list, terminate, and delete clusters.`,
-	Long: `The Clusters API allows you to create, start, edit, list, terminate, and
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var cmdOverrides []func(*cobra.Command)
+
+func New() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "clusters",
+		Short: `The Clusters API allows you to create, start, edit, list, terminate, and delete clusters.`,
+		Long: `The Clusters API allows you to create, start, edit, list, terminate, and
   delete clusters.
   
   Databricks maps cluster node instance types to compute units known as DBUs.
@@ -43,40 +48,57 @@ var Cmd = &cobra.Command{
   recently terminated by the job scheduler. To keep an all-purpose cluster
   configuration even after it has been terminated for more than 30 days, an
   administrator can pin a cluster to the cluster list.`,
-	Annotations: map[string]string{
-		"package": "compute",
-	},
+		GroupID: "compute",
+		Annotations: map[string]string{
+			"package": "compute",
+		},
+	}
+
+	// Apply optional overrides to this command.
+	for _, fn := range cmdOverrides {
+		fn(cmd)
+	}
+
+	return cmd
 }
 
 // start change-owner command
-var changeOwnerReq compute.ChangeClusterOwner
-var changeOwnerJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(changeOwnerCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var changeOwnerOverrides []func(
+	*cobra.Command,
+	*compute.ChangeClusterOwner,
+)
+
+func newChangeOwner() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var changeOwnerReq compute.ChangeClusterOwner
+	var changeOwnerJson flags.JsonFlag
+
 	// TODO: short flags
-	changeOwnerCmd.Flags().Var(&changeOwnerJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&changeOwnerJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-}
-
-var changeOwnerCmd = &cobra.Command{
-	Use:   "change-owner CLUSTER_ID OWNER_USERNAME",
-	Short: `Change cluster owner.`,
-	Long: `Change cluster owner.
+	cmd.Use = "change-owner CLUSTER_ID OWNER_USERNAME"
+	cmd.Short = `Change cluster owner.`
+	cmd.Long = `Change cluster owner.
   
   Change the owner of the cluster. You must be an admin to perform this
-  operation.`,
+  operation.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
 			check = cobra.ExactArgs(0)
 		}
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -95,58 +117,77 @@ var changeOwnerCmd = &cobra.Command{
 			return err
 		}
 		return nil
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range changeOwnerOverrides {
+		fn(cmd, &changeOwnerReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newChangeOwner())
+	})
 }
 
 // start create command
-var createReq compute.CreateCluster
-var createJson flags.JsonFlag
 
-var createSkipWait bool
-var createTimeout time.Duration
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var createOverrides []func(
+	*cobra.Command,
+	*compute.CreateCluster,
+)
 
-func init() {
-	Cmd.AddCommand(createCmd)
+func newCreate() *cobra.Command {
+	cmd := &cobra.Command{}
 
-	createCmd.Flags().BoolVar(&createSkipWait, "no-wait", createSkipWait, `do not wait to reach RUNNING state`)
-	createCmd.Flags().DurationVar(&createTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
+	var createReq compute.CreateCluster
+	var createJson flags.JsonFlag
+
+	var createSkipWait bool
+	var createTimeout time.Duration
+
+	cmd.Flags().BoolVar(&createSkipWait, "no-wait", createSkipWait, `do not wait to reach RUNNING state`)
+	cmd.Flags().DurationVar(&createTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
 	// TODO: short flags
-	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	createCmd.Flags().BoolVar(&createReq.ApplyPolicyDefaultValues, "apply-policy-default-values", createReq.ApplyPolicyDefaultValues, `Note: This field won't be true for webapp requests.`)
+	cmd.Flags().BoolVar(&createReq.ApplyPolicyDefaultValues, "apply-policy-default-values", createReq.ApplyPolicyDefaultValues, `Note: This field won't be true for webapp requests.`)
 	// TODO: complex arg: autoscale
-	createCmd.Flags().IntVar(&createReq.AutoterminationMinutes, "autotermination-minutes", createReq.AutoterminationMinutes, `Automatically terminates the cluster after it is inactive for this time in minutes.`)
+	cmd.Flags().IntVar(&createReq.AutoterminationMinutes, "autotermination-minutes", createReq.AutoterminationMinutes, `Automatically terminates the cluster after it is inactive for this time in minutes.`)
 	// TODO: complex arg: aws_attributes
 	// TODO: complex arg: azure_attributes
 	// TODO: complex arg: cluster_log_conf
-	createCmd.Flags().StringVar(&createReq.ClusterName, "cluster-name", createReq.ClusterName, `Cluster name requested by the user.`)
-	createCmd.Flags().Var(&createReq.ClusterSource, "cluster-source", `Determines whether the cluster was created by a user through the UI, created by the Databricks Jobs Scheduler, or through an API request.`)
+	cmd.Flags().StringVar(&createReq.ClusterName, "cluster-name", createReq.ClusterName, `Cluster name requested by the user.`)
+	cmd.Flags().Var(&createReq.ClusterSource, "cluster-source", `Determines whether the cluster was created by a user through the UI, created by the Databricks Jobs Scheduler, or through an API request.`)
 	// TODO: map via StringToStringVar: custom_tags
-	createCmd.Flags().StringVar(&createReq.DriverInstancePoolId, "driver-instance-pool-id", createReq.DriverInstancePoolId, `The optional ID of the instance pool for the driver of the cluster belongs.`)
-	createCmd.Flags().StringVar(&createReq.DriverNodeTypeId, "driver-node-type-id", createReq.DriverNodeTypeId, `The node type of the Spark driver.`)
-	createCmd.Flags().BoolVar(&createReq.EnableElasticDisk, "enable-elastic-disk", createReq.EnableElasticDisk, `Autoscaling Local Storage: when enabled, this cluster will dynamically acquire additional disk space when its Spark workers are running low on disk space.`)
-	createCmd.Flags().BoolVar(&createReq.EnableLocalDiskEncryption, "enable-local-disk-encryption", createReq.EnableLocalDiskEncryption, `Whether to enable LUKS on cluster VMs' local disks.`)
+	cmd.Flags().StringVar(&createReq.DriverInstancePoolId, "driver-instance-pool-id", createReq.DriverInstancePoolId, `The optional ID of the instance pool for the driver of the cluster belongs.`)
+	cmd.Flags().StringVar(&createReq.DriverNodeTypeId, "driver-node-type-id", createReq.DriverNodeTypeId, `The node type of the Spark driver.`)
+	cmd.Flags().BoolVar(&createReq.EnableElasticDisk, "enable-elastic-disk", createReq.EnableElasticDisk, `Autoscaling Local Storage: when enabled, this cluster will dynamically acquire additional disk space when its Spark workers are running low on disk space.`)
+	cmd.Flags().BoolVar(&createReq.EnableLocalDiskEncryption, "enable-local-disk-encryption", createReq.EnableLocalDiskEncryption, `Whether to enable LUKS on cluster VMs' local disks.`)
 	// TODO: complex arg: gcp_attributes
 	// TODO: array: init_scripts
-	createCmd.Flags().StringVar(&createReq.InstancePoolId, "instance-pool-id", createReq.InstancePoolId, `The optional ID of the instance pool to which the cluster belongs.`)
-	createCmd.Flags().StringVar(&createReq.NodeTypeId, "node-type-id", createReq.NodeTypeId, `This field encodes, through a single value, the resources available to each of the Spark nodes in this cluster.`)
-	createCmd.Flags().IntVar(&createReq.NumWorkers, "num-workers", createReq.NumWorkers, `Number of worker nodes that this cluster should have.`)
-	createCmd.Flags().StringVar(&createReq.PolicyId, "policy-id", createReq.PolicyId, `The ID of the cluster policy used to create the cluster if applicable.`)
-	createCmd.Flags().Var(&createReq.RuntimeEngine, "runtime-engine", `Decides which runtime engine to be use, e.g.`)
+	cmd.Flags().StringVar(&createReq.InstancePoolId, "instance-pool-id", createReq.InstancePoolId, `The optional ID of the instance pool to which the cluster belongs.`)
+	cmd.Flags().StringVar(&createReq.NodeTypeId, "node-type-id", createReq.NodeTypeId, `This field encodes, through a single value, the resources available to each of the Spark nodes in this cluster.`)
+	cmd.Flags().IntVar(&createReq.NumWorkers, "num-workers", createReq.NumWorkers, `Number of worker nodes that this cluster should have.`)
+	cmd.Flags().StringVar(&createReq.PolicyId, "policy-id", createReq.PolicyId, `The ID of the cluster policy used to create the cluster if applicable.`)
+	cmd.Flags().Var(&createReq.RuntimeEngine, "runtime-engine", `Decides which runtime engine to be use, e.g.`)
 	// TODO: map via StringToStringVar: spark_conf
 	// TODO: map via StringToStringVar: spark_env_vars
 	// TODO: array: ssh_public_keys
 	// TODO: complex arg: workload_type
 
-}
-
-var createCmd = &cobra.Command{
-	Use:   "create SPARK_VERSION",
-	Short: `Create new cluster.`,
-	Long: `Create new cluster.
+	cmd.Use = "create SPARK_VERSION"
+	cmd.Short = `Create new cluster.`
+	cmd.Long = `Create new cluster.
   
   Creates a new Spark cluster. This method will acquire new instances from the
   cloud provider if necessary. Note: Databricks may not be able to acquire some
@@ -155,18 +196,20 @@ var createCmd = &cobra.Command{
   
   If Databricks acquires at least 85% of the requested on-demand nodes, cluster
   creation will succeed. Otherwise the cluster will terminate with an
-  informative error message.`,
+  informative error message.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
 			check = cobra.ExactArgs(0)
 		}
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -196,42 +239,62 @@ var createCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, info)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range createOverrides {
+		fn(cmd, &createReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newCreate())
+	})
 }
 
 // start delete command
-var deleteReq compute.DeleteCluster
-var deleteJson flags.JsonFlag
 
-var deleteSkipWait bool
-var deleteTimeout time.Duration
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var deleteOverrides []func(
+	*cobra.Command,
+	*compute.DeleteCluster,
+)
 
-func init() {
-	Cmd.AddCommand(deleteCmd)
+func newDelete() *cobra.Command {
+	cmd := &cobra.Command{}
 
-	deleteCmd.Flags().BoolVar(&deleteSkipWait, "no-wait", deleteSkipWait, `do not wait to reach TERMINATED state`)
-	deleteCmd.Flags().DurationVar(&deleteTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach TERMINATED state`)
+	var deleteReq compute.DeleteCluster
+	var deleteJson flags.JsonFlag
+
+	var deleteSkipWait bool
+	var deleteTimeout time.Duration
+
+	cmd.Flags().BoolVar(&deleteSkipWait, "no-wait", deleteSkipWait, `do not wait to reach TERMINATED state`)
+	cmd.Flags().DurationVar(&deleteTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach TERMINATED state`)
 	// TODO: short flags
-	deleteCmd.Flags().Var(&deleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&deleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-}
-
-var deleteCmd = &cobra.Command{
-	Use:   "delete CLUSTER_ID",
-	Short: `Terminate cluster.`,
-	Long: `Terminate cluster.
+	cmd.Use = "delete CLUSTER_ID"
+	cmd.Short = `Terminate cluster.`
+	cmd.Long = `Terminate cluster.
   
   Terminates the Spark cluster with the specified ID. The cluster is removed
   asynchronously. Once the termination has completed, the cluster will be in a
   TERMINATED state. If the cluster is already in a TERMINATING or
-  TERMINATED state, nothing will happen.`,
+  TERMINATED state, nothing will happen.`
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -278,61 +341,80 @@ var deleteCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, info)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range deleteOverrides {
+		fn(cmd, &deleteReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newDelete())
+	})
 }
 
 // start edit command
-var editReq compute.EditCluster
-var editJson flags.JsonFlag
 
-var editSkipWait bool
-var editTimeout time.Duration
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var editOverrides []func(
+	*cobra.Command,
+	*compute.EditCluster,
+)
 
-func init() {
-	Cmd.AddCommand(editCmd)
+func newEdit() *cobra.Command {
+	cmd := &cobra.Command{}
 
-	editCmd.Flags().BoolVar(&editSkipWait, "no-wait", editSkipWait, `do not wait to reach RUNNING state`)
-	editCmd.Flags().DurationVar(&editTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
+	var editReq compute.EditCluster
+	var editJson flags.JsonFlag
+
+	var editSkipWait bool
+	var editTimeout time.Duration
+
+	cmd.Flags().BoolVar(&editSkipWait, "no-wait", editSkipWait, `do not wait to reach RUNNING state`)
+	cmd.Flags().DurationVar(&editTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
 	// TODO: short flags
-	editCmd.Flags().Var(&editJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&editJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	editCmd.Flags().BoolVar(&editReq.ApplyPolicyDefaultValues, "apply-policy-default-values", editReq.ApplyPolicyDefaultValues, `Note: This field won't be true for webapp requests.`)
+	cmd.Flags().BoolVar(&editReq.ApplyPolicyDefaultValues, "apply-policy-default-values", editReq.ApplyPolicyDefaultValues, `Note: This field won't be true for webapp requests.`)
 	// TODO: complex arg: autoscale
-	editCmd.Flags().IntVar(&editReq.AutoterminationMinutes, "autotermination-minutes", editReq.AutoterminationMinutes, `Automatically terminates the cluster after it is inactive for this time in minutes.`)
+	cmd.Flags().IntVar(&editReq.AutoterminationMinutes, "autotermination-minutes", editReq.AutoterminationMinutes, `Automatically terminates the cluster after it is inactive for this time in minutes.`)
 	// TODO: complex arg: aws_attributes
 	// TODO: complex arg: azure_attributes
 	// TODO: complex arg: cluster_log_conf
-	editCmd.Flags().StringVar(&editReq.ClusterName, "cluster-name", editReq.ClusterName, `Cluster name requested by the user.`)
-	editCmd.Flags().Var(&editReq.ClusterSource, "cluster-source", `Determines whether the cluster was created by a user through the UI, created by the Databricks Jobs Scheduler, or through an API request.`)
+	cmd.Flags().StringVar(&editReq.ClusterName, "cluster-name", editReq.ClusterName, `Cluster name requested by the user.`)
+	cmd.Flags().Var(&editReq.ClusterSource, "cluster-source", `Determines whether the cluster was created by a user through the UI, created by the Databricks Jobs Scheduler, or through an API request.`)
 	// TODO: map via StringToStringVar: custom_tags
-	editCmd.Flags().Var(&editReq.DataSecurityMode, "data-security-mode", `This describes an enum.`)
+	cmd.Flags().Var(&editReq.DataSecurityMode, "data-security-mode", `This describes an enum.`)
 	// TODO: complex arg: docker_image
-	editCmd.Flags().StringVar(&editReq.DriverInstancePoolId, "driver-instance-pool-id", editReq.DriverInstancePoolId, `The optional ID of the instance pool for the driver of the cluster belongs.`)
-	editCmd.Flags().StringVar(&editReq.DriverNodeTypeId, "driver-node-type-id", editReq.DriverNodeTypeId, `The node type of the Spark driver.`)
-	editCmd.Flags().BoolVar(&editReq.EnableElasticDisk, "enable-elastic-disk", editReq.EnableElasticDisk, `Autoscaling Local Storage: when enabled, this cluster will dynamically acquire additional disk space when its Spark workers are running low on disk space.`)
-	editCmd.Flags().BoolVar(&editReq.EnableLocalDiskEncryption, "enable-local-disk-encryption", editReq.EnableLocalDiskEncryption, `Whether to enable LUKS on cluster VMs' local disks.`)
+	cmd.Flags().StringVar(&editReq.DriverInstancePoolId, "driver-instance-pool-id", editReq.DriverInstancePoolId, `The optional ID of the instance pool for the driver of the cluster belongs.`)
+	cmd.Flags().StringVar(&editReq.DriverNodeTypeId, "driver-node-type-id", editReq.DriverNodeTypeId, `The node type of the Spark driver.`)
+	cmd.Flags().BoolVar(&editReq.EnableElasticDisk, "enable-elastic-disk", editReq.EnableElasticDisk, `Autoscaling Local Storage: when enabled, this cluster will dynamically acquire additional disk space when its Spark workers are running low on disk space.`)
+	cmd.Flags().BoolVar(&editReq.EnableLocalDiskEncryption, "enable-local-disk-encryption", editReq.EnableLocalDiskEncryption, `Whether to enable LUKS on cluster VMs' local disks.`)
 	// TODO: complex arg: gcp_attributes
 	// TODO: array: init_scripts
-	editCmd.Flags().StringVar(&editReq.InstancePoolId, "instance-pool-id", editReq.InstancePoolId, `The optional ID of the instance pool to which the cluster belongs.`)
-	editCmd.Flags().StringVar(&editReq.NodeTypeId, "node-type-id", editReq.NodeTypeId, `This field encodes, through a single value, the resources available to each of the Spark nodes in this cluster.`)
-	editCmd.Flags().IntVar(&editReq.NumWorkers, "num-workers", editReq.NumWorkers, `Number of worker nodes that this cluster should have.`)
-	editCmd.Flags().StringVar(&editReq.PolicyId, "policy-id", editReq.PolicyId, `The ID of the cluster policy used to create the cluster if applicable.`)
-	editCmd.Flags().Var(&editReq.RuntimeEngine, "runtime-engine", `Decides which runtime engine to be use, e.g.`)
-	editCmd.Flags().StringVar(&editReq.SingleUserName, "single-user-name", editReq.SingleUserName, `Single user name if data_security_mode is SINGLE_USER.`)
+	cmd.Flags().StringVar(&editReq.InstancePoolId, "instance-pool-id", editReq.InstancePoolId, `The optional ID of the instance pool to which the cluster belongs.`)
+	cmd.Flags().StringVar(&editReq.NodeTypeId, "node-type-id", editReq.NodeTypeId, `This field encodes, through a single value, the resources available to each of the Spark nodes in this cluster.`)
+	cmd.Flags().IntVar(&editReq.NumWorkers, "num-workers", editReq.NumWorkers, `Number of worker nodes that this cluster should have.`)
+	cmd.Flags().StringVar(&editReq.PolicyId, "policy-id", editReq.PolicyId, `The ID of the cluster policy used to create the cluster if applicable.`)
+	cmd.Flags().Var(&editReq.RuntimeEngine, "runtime-engine", `Decides which runtime engine to be use, e.g.`)
+	cmd.Flags().StringVar(&editReq.SingleUserName, "single-user-name", editReq.SingleUserName, `Single user name if data_security_mode is SINGLE_USER.`)
 	// TODO: map via StringToStringVar: spark_conf
 	// TODO: map via StringToStringVar: spark_env_vars
 	// TODO: array: ssh_public_keys
 	// TODO: complex arg: workload_type
 
-}
-
-var editCmd = &cobra.Command{
-	Use:   "edit CLUSTER_ID SPARK_VERSION",
-	Short: `Update cluster configuration.`,
-	Long: `Update cluster configuration.
+	cmd.Use = "edit CLUSTER_ID SPARK_VERSION"
+	cmd.Short = `Update cluster configuration.`
+	cmd.Long = `Update cluster configuration.
   
   Updates the configuration of a cluster to match the provided attributes and
   size. A cluster can be updated if it is in a RUNNING or TERMINATED state.
@@ -345,18 +427,20 @@ var editCmd = &cobra.Command{
   new attributes will take effect. Any attempt to update a cluster in any other
   state will be rejected with an INVALID_STATE error code.
   
-  Clusters created by the Databricks Jobs service cannot be edited.`,
+  Clusters created by the Databricks Jobs service cannot be edited.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
 			check = cobra.ExactArgs(0)
 		}
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -387,42 +471,63 @@ var editCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, info)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range editOverrides {
+		fn(cmd, &editReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newEdit())
+	})
 }
 
 // start events command
-var eventsReq compute.GetEvents
-var eventsJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(eventsCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var eventsOverrides []func(
+	*cobra.Command,
+	*compute.GetEvents,
+)
+
+func newEvents() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var eventsReq compute.GetEvents
+	var eventsJson flags.JsonFlag
+
 	// TODO: short flags
-	eventsCmd.Flags().Var(&eventsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&eventsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	eventsCmd.Flags().Int64Var(&eventsReq.EndTime, "end-time", eventsReq.EndTime, `The end time in epoch milliseconds.`)
+	cmd.Flags().Int64Var(&eventsReq.EndTime, "end-time", eventsReq.EndTime, `The end time in epoch milliseconds.`)
 	// TODO: array: event_types
-	eventsCmd.Flags().Int64Var(&eventsReq.Limit, "limit", eventsReq.Limit, `The maximum number of events to include in a page of events.`)
-	eventsCmd.Flags().Int64Var(&eventsReq.Offset, "offset", eventsReq.Offset, `The offset in the result set.`)
-	eventsCmd.Flags().Var(&eventsReq.Order, "order", `The order to list events in; either "ASC" or "DESC".`)
-	eventsCmd.Flags().Int64Var(&eventsReq.StartTime, "start-time", eventsReq.StartTime, `The start time in epoch milliseconds.`)
+	cmd.Flags().Int64Var(&eventsReq.Limit, "limit", eventsReq.Limit, `The maximum number of events to include in a page of events.`)
+	cmd.Flags().Int64Var(&eventsReq.Offset, "offset", eventsReq.Offset, `The offset in the result set.`)
+	cmd.Flags().Var(&eventsReq.Order, "order", `The order to list events in; either "ASC" or "DESC".`)
+	cmd.Flags().Int64Var(&eventsReq.StartTime, "start-time", eventsReq.StartTime, `The start time in epoch milliseconds.`)
 
-}
-
-var eventsCmd = &cobra.Command{
-	Use:   "events CLUSTER_ID",
-	Short: `List cluster activity events.`,
-	Long: `List cluster activity events.
+	cmd.Use = "events CLUSTER_ID"
+	cmd.Short = `List cluster activity events.`
+	cmd.Long = `List cluster activity events.
   
   Retrieves a list of events about the activity of a cluster. This API is
   paginated. If there are more events to read, the response includes all the
-  nparameters necessary to request the next page of events.`,
+  nparameters necessary to request the next page of events.`
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -457,38 +562,58 @@ var eventsCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range eventsOverrides {
+		fn(cmd, &eventsReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newEvents())
+	})
 }
 
 // start get command
-var getReq compute.GetClusterRequest
 
-var getSkipWait bool
-var getTimeout time.Duration
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getOverrides []func(
+	*cobra.Command,
+	*compute.GetClusterRequest,
+)
 
-func init() {
-	Cmd.AddCommand(getCmd)
+func newGet() *cobra.Command {
+	cmd := &cobra.Command{}
 
-	getCmd.Flags().BoolVar(&getSkipWait, "no-wait", getSkipWait, `do not wait to reach RUNNING state`)
-	getCmd.Flags().DurationVar(&getTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
+	var getReq compute.GetClusterRequest
+
+	var getSkipWait bool
+	var getTimeout time.Duration
+
+	cmd.Flags().BoolVar(&getSkipWait, "no-wait", getSkipWait, `do not wait to reach RUNNING state`)
+	cmd.Flags().DurationVar(&getTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
 	// TODO: short flags
 
-}
-
-var getCmd = &cobra.Command{
-	Use:   "get CLUSTER_ID",
-	Short: `Get cluster info.`,
-	Long: `Get cluster info.
+	cmd.Use = "get CLUSTER_ID"
+	cmd.Short = `Get cluster info.`
+	cmd.Long = `Get cluster info.
   
   Retrieves the information for a cluster given its identifier. Clusters can be
-  described while they are running, or up to 60 days after they are terminated.`,
+  described while they are running, or up to 60 days after they are terminated.`
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -516,29 +641,49 @@ var getCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getOverrides {
+		fn(cmd, &getReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newGet())
+	})
 }
 
 // start list command
-var listReq compute.ListClustersRequest
-var listJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(listCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listOverrides []func(
+	*cobra.Command,
+	*compute.ListClustersRequest,
+)
+
+func newList() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var listReq compute.ListClustersRequest
+	var listJson flags.JsonFlag
+
 	// TODO: short flags
-	listCmd.Flags().Var(&listJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&listJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	listCmd.Flags().StringVar(&listReq.CanUseClient, "can-use-client", listReq.CanUseClient, `Filter clusters based on what type of client it can be used for.`)
+	cmd.Flags().StringVar(&listReq.CanUseClient, "can-use-client", listReq.CanUseClient, `Filter clusters based on what type of client it can be used for.`)
 
-}
-
-var listCmd = &cobra.Command{
-	Use:   "list",
-	Short: `List all clusters.`,
-	Long: `List all clusters.
+	cmd.Use = "list"
+	cmd.Short = `List all clusters.`
+	cmd.Long = `List all clusters.
   
   Return information about all pinned clusters, active clusters, up to 200 of
   the most recently terminated all-purpose clusters in the past 30 days, and up
@@ -548,18 +693,20 @@ var listCmd = &cobra.Command{
   all-purpose clusters in the past 30 days, and 50 terminated job clusters in
   the past 30 days, then this API returns the 1 pinned cluster, 4 active
   clusters, all 45 terminated all-purpose clusters, and the 30 most recently
-  terminated job clusters.`,
+  terminated job clusters.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {
 			check = cobra.ExactArgs(0)
 		}
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -576,30 +723,48 @@ var listCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listOverrides {
+		fn(cmd, &listReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newList())
+	})
 }
 
 // start list-node-types command
 
-func init() {
-	Cmd.AddCommand(listNodeTypesCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listNodeTypesOverrides []func(
+	*cobra.Command,
+)
 
-}
+func newListNodeTypes() *cobra.Command {
+	cmd := &cobra.Command{}
 
-var listNodeTypesCmd = &cobra.Command{
-	Use:   "list-node-types",
-	Short: `List node types.`,
-	Long: `List node types.
+	cmd.Use = "list-node-types"
+	cmd.Short = `List node types.`
+	cmd.Long = `List node types.
   
   Returns a list of supported Spark node types. These node types can be used to
-  launch a cluster.`,
+  launch a cluster.`
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 		response, err := w.Clusters.ListNodeTypes(ctx)
@@ -607,30 +772,48 @@ var listNodeTypesCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listNodeTypesOverrides {
+		fn(cmd)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newListNodeTypes())
+	})
 }
 
 // start list-zones command
 
-func init() {
-	Cmd.AddCommand(listZonesCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listZonesOverrides []func(
+	*cobra.Command,
+)
 
-}
+func newListZones() *cobra.Command {
+	cmd := &cobra.Command{}
 
-var listZonesCmd = &cobra.Command{
-	Use:   "list-zones",
-	Short: `List availability zones.`,
-	Long: `List availability zones.
+	cmd.Use = "list-zones"
+	cmd.Short = `List availability zones.`
+	cmd.Long = `List availability zones.
   
   Returns a list of availability zones where clusters can be created in (For
-  example, us-west-2a). These zones can be used to launch a cluster.`,
+  example, us-west-2a). These zones can be used to launch a cluster.`
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 		response, err := w.Clusters.ListZones(ctx)
@@ -638,38 +821,59 @@ var listZonesCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listZonesOverrides {
+		fn(cmd)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newListZones())
+	})
 }
 
 // start permanent-delete command
-var permanentDeleteReq compute.PermanentDeleteCluster
-var permanentDeleteJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(permanentDeleteCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var permanentDeleteOverrides []func(
+	*cobra.Command,
+	*compute.PermanentDeleteCluster,
+)
+
+func newPermanentDelete() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var permanentDeleteReq compute.PermanentDeleteCluster
+	var permanentDeleteJson flags.JsonFlag
+
 	// TODO: short flags
-	permanentDeleteCmd.Flags().Var(&permanentDeleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&permanentDeleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-}
-
-var permanentDeleteCmd = &cobra.Command{
-	Use:   "permanent-delete CLUSTER_ID",
-	Short: `Permanently delete cluster.`,
-	Long: `Permanently delete cluster.
+	cmd.Use = "permanent-delete CLUSTER_ID"
+	cmd.Short = `Permanently delete cluster.`
+	cmd.Long = `Permanently delete cluster.
   
   Permanently deletes a Spark cluster. This cluster is terminated and resources
   are asynchronously removed.
   
   In addition, users will no longer see permanently deleted clusters in the
   cluster list, and API users can no longer perform any action on permanently
-  deleted clusters.`,
+  deleted clusters.`
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -704,35 +908,56 @@ var permanentDeleteCmd = &cobra.Command{
 			return err
 		}
 		return nil
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range permanentDeleteOverrides {
+		fn(cmd, &permanentDeleteReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newPermanentDelete())
+	})
 }
 
 // start pin command
-var pinReq compute.PinCluster
-var pinJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(pinCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var pinOverrides []func(
+	*cobra.Command,
+	*compute.PinCluster,
+)
+
+func newPin() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var pinReq compute.PinCluster
+	var pinJson flags.JsonFlag
+
 	// TODO: short flags
-	pinCmd.Flags().Var(&pinJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&pinJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-}
-
-var pinCmd = &cobra.Command{
-	Use:   "pin CLUSTER_ID",
-	Short: `Pin cluster.`,
-	Long: `Pin cluster.
+	cmd.Use = "pin CLUSTER_ID"
+	cmd.Short = `Pin cluster.`
+	cmd.Long = `Pin cluster.
   
   Pinning a cluster ensures that the cluster will always be returned by the
   ListClusters API. Pinning a cluster that is already pinned will have no
-  effect. This API can only be called by workspace admins.`,
+  effect. This API can only be called by workspace admins.`
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -767,43 +992,63 @@ var pinCmd = &cobra.Command{
 			return err
 		}
 		return nil
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range pinOverrides {
+		fn(cmd, &pinReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newPin())
+	})
 }
 
 // start resize command
-var resizeReq compute.ResizeCluster
-var resizeJson flags.JsonFlag
 
-var resizeSkipWait bool
-var resizeTimeout time.Duration
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var resizeOverrides []func(
+	*cobra.Command,
+	*compute.ResizeCluster,
+)
 
-func init() {
-	Cmd.AddCommand(resizeCmd)
+func newResize() *cobra.Command {
+	cmd := &cobra.Command{}
 
-	resizeCmd.Flags().BoolVar(&resizeSkipWait, "no-wait", resizeSkipWait, `do not wait to reach RUNNING state`)
-	resizeCmd.Flags().DurationVar(&resizeTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
+	var resizeReq compute.ResizeCluster
+	var resizeJson flags.JsonFlag
+
+	var resizeSkipWait bool
+	var resizeTimeout time.Duration
+
+	cmd.Flags().BoolVar(&resizeSkipWait, "no-wait", resizeSkipWait, `do not wait to reach RUNNING state`)
+	cmd.Flags().DurationVar(&resizeTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
 	// TODO: short flags
-	resizeCmd.Flags().Var(&resizeJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&resizeJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: autoscale
-	resizeCmd.Flags().IntVar(&resizeReq.NumWorkers, "num-workers", resizeReq.NumWorkers, `Number of worker nodes that this cluster should have.`)
+	cmd.Flags().IntVar(&resizeReq.NumWorkers, "num-workers", resizeReq.NumWorkers, `Number of worker nodes that this cluster should have.`)
 
-}
-
-var resizeCmd = &cobra.Command{
-	Use:   "resize CLUSTER_ID",
-	Short: `Resize cluster.`,
-	Long: `Resize cluster.
+	cmd.Use = "resize CLUSTER_ID"
+	cmd.Short = `Resize cluster.`
+	cmd.Long = `Resize cluster.
   
   Resizes a cluster to have a desired number of workers. This will fail unless
-  the cluster is in a RUNNING state.`,
+  the cluster is in a RUNNING state.`
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -850,42 +1095,62 @@ var resizeCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, info)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range resizeOverrides {
+		fn(cmd, &resizeReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newResize())
+	})
 }
 
 // start restart command
-var restartReq compute.RestartCluster
-var restartJson flags.JsonFlag
 
-var restartSkipWait bool
-var restartTimeout time.Duration
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var restartOverrides []func(
+	*cobra.Command,
+	*compute.RestartCluster,
+)
 
-func init() {
-	Cmd.AddCommand(restartCmd)
+func newRestart() *cobra.Command {
+	cmd := &cobra.Command{}
 
-	restartCmd.Flags().BoolVar(&restartSkipWait, "no-wait", restartSkipWait, `do not wait to reach RUNNING state`)
-	restartCmd.Flags().DurationVar(&restartTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
+	var restartReq compute.RestartCluster
+	var restartJson flags.JsonFlag
+
+	var restartSkipWait bool
+	var restartTimeout time.Duration
+
+	cmd.Flags().BoolVar(&restartSkipWait, "no-wait", restartSkipWait, `do not wait to reach RUNNING state`)
+	cmd.Flags().DurationVar(&restartTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
 	// TODO: short flags
-	restartCmd.Flags().Var(&restartJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&restartJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	restartCmd.Flags().StringVar(&restartReq.RestartUser, "restart-user", restartReq.RestartUser, `<needs content added>.`)
+	cmd.Flags().StringVar(&restartReq.RestartUser, "restart-user", restartReq.RestartUser, `<needs content added>.`)
 
-}
-
-var restartCmd = &cobra.Command{
-	Use:   "restart CLUSTER_ID",
-	Short: `Restart cluster.`,
-	Long: `Restart cluster.
+	cmd.Use = "restart CLUSTER_ID"
+	cmd.Short = `Restart cluster.`
+	cmd.Long = `Restart cluster.
   
   Restarts a Spark cluster with the supplied ID. If the cluster is not currently
-  in a RUNNING state, nothing will happen.`,
+  in a RUNNING state, nothing will happen.`
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -932,30 +1197,48 @@ var restartCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, info)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range restartOverrides {
+		fn(cmd, &restartReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newRestart())
+	})
 }
 
 // start spark-versions command
 
-func init() {
-	Cmd.AddCommand(sparkVersionsCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var sparkVersionsOverrides []func(
+	*cobra.Command,
+)
 
-}
+func newSparkVersions() *cobra.Command {
+	cmd := &cobra.Command{}
 
-var sparkVersionsCmd = &cobra.Command{
-	Use:   "spark-versions",
-	Short: `List available Spark versions.`,
-	Long: `List available Spark versions.
+	cmd.Use = "spark-versions"
+	cmd.Short = `List available Spark versions.`
+	cmd.Long = `List available Spark versions.
   
   Returns the list of available Spark versions. These versions can be used to
-  launch a cluster.`,
+  launch a cluster.`
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 		response, err := w.Clusters.SparkVersions(ctx)
@@ -963,33 +1246,52 @@ var sparkVersionsCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range sparkVersionsOverrides {
+		fn(cmd)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newSparkVersions())
+	})
 }
 
 // start start command
-var startReq compute.StartCluster
-var startJson flags.JsonFlag
 
-var startSkipWait bool
-var startTimeout time.Duration
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var startOverrides []func(
+	*cobra.Command,
+	*compute.StartCluster,
+)
 
-func init() {
-	Cmd.AddCommand(startCmd)
+func newStart() *cobra.Command {
+	cmd := &cobra.Command{}
 
-	startCmd.Flags().BoolVar(&startSkipWait, "no-wait", startSkipWait, `do not wait to reach RUNNING state`)
-	startCmd.Flags().DurationVar(&startTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
+	var startReq compute.StartCluster
+	var startJson flags.JsonFlag
+
+	var startSkipWait bool
+	var startTimeout time.Duration
+
+	cmd.Flags().BoolVar(&startSkipWait, "no-wait", startSkipWait, `do not wait to reach RUNNING state`)
+	cmd.Flags().DurationVar(&startTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
 	// TODO: short flags
-	startCmd.Flags().Var(&startJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&startJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-}
-
-var startCmd = &cobra.Command{
-	Use:   "start CLUSTER_ID",
-	Short: `Start terminated cluster.`,
-	Long: `Start terminated cluster.
+	cmd.Use = "start CLUSTER_ID"
+	cmd.Short = `Start terminated cluster.`
+	cmd.Long = `Start terminated cluster.
   
   Starts a terminated Spark cluster with the supplied ID. This works similar to
   createCluster except:
@@ -998,11 +1300,12 @@ var startCmd = &cobra.Command{
   with the last specified cluster size. * If the previous cluster was an
   autoscaling cluster, the current cluster starts with the minimum number of
   nodes. * If the cluster is not currently in a TERMINATED state, nothing will
-  happen. * Clusters launched to run a job cannot be started.`,
+  happen. * Clusters launched to run a job cannot be started.`
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -1049,35 +1352,56 @@ var startCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, info)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range startOverrides {
+		fn(cmd, &startReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newStart())
+	})
 }
 
 // start unpin command
-var unpinReq compute.UnpinCluster
-var unpinJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(unpinCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var unpinOverrides []func(
+	*cobra.Command,
+	*compute.UnpinCluster,
+)
+
+func newUnpin() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var unpinReq compute.UnpinCluster
+	var unpinJson flags.JsonFlag
+
 	// TODO: short flags
-	unpinCmd.Flags().Var(&unpinJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&unpinJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-}
-
-var unpinCmd = &cobra.Command{
-	Use:   "unpin CLUSTER_ID",
-	Short: `Unpin cluster.`,
-	Long: `Unpin cluster.
+	cmd.Use = "unpin CLUSTER_ID"
+	cmd.Short = `Unpin cluster.`
+	cmd.Long = `Unpin cluster.
   
   Unpinning a cluster will allow the cluster to eventually be removed from the
   ListClusters API. Unpinning a cluster that is not pinned will have no effect.
-  This API can only be called by workspace admins.`,
+  This API can only be called by workspace admins.`
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -1112,10 +1436,24 @@ var unpinCmd = &cobra.Command{
 			return err
 		}
 		return nil
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range unpinOverrides {
+		fn(cmd, &unpinReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newUnpin())
+	})
 }
 
 // end service Clusters

@@ -29,10 +29,18 @@ type Environment struct {
 	// Does not permit defining new variables or redefining existing ones
 	// in the scope of an environment
 	Variables map[string]string `json:"variables,omitempty"`
+
+	Git Git `json:"git,omitempty"`
 }
 
 const (
-	// Right now, we just have a default / "" mode and a "development" mode.
-	// Additional modes are expected to come for pull-requests and production.
+	// Development mode: deployments done purely for running things in development.
+	// Any deployed resources will be marked as "dev" and might be hidden or cleaned up.
 	Development Mode = "development"
+
+	// Production mode: deployments done for production purposes.
+	// Any deployed resources will not be changed but this mode will enable
+	// various strictness checks to make sure that a deployment is correctly setup
+	// for production purposes.
+	Production Mode = "production"
 )

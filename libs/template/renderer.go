@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/fs"
 	"os"
 	"path"
 	"path/filepath"
@@ -18,32 +17,7 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-type inMemoryFile struct {
-	// Root path for the project instance. This path uses the system's default
-	// file separator. For example /foo/bar on Unix and C:\foo\bar on windows
-	root string
-
-	// Unix like relPath for the file (using '/' as the separator). This path
-	// is relative to the root. Using unix like relative paths enables skip patterns
-	// to work across both windows and unix based operating systems.
-	relPath string
-	content []byte
-	perm    fs.FileMode
-}
-
-func (f *inMemoryFile) fullPath() string {
-	return filepath.Join(f.root, filepath.FromSlash(f.relPath))
-}
-
-func (f *inMemoryFile) persistToDisk() error {
-	path := f.fullPath()
-
-	err := os.MkdirAll(filepath.Dir(path), 0755)
-	if err != nil {
-		return err
-	}
-	return os.WriteFile(path, f.content, f.perm)
-}
+const templateExtension = ".tmpl"
 
 // Renders a databricks template as a project
 type renderer struct {
@@ -60,7 +34,7 @@ type renderer struct {
 	baseTemplate *template.Template
 
 	// List of in memory files generated from template
-	files []*inMemoryFile
+	files []file
 
 	// Glob patterns for files and directories to skip. There are three possible
 	// outcomes for skip:
@@ -111,7 +85,7 @@ func newRenderer(ctx context.Context, config map[string]any, templateRoot, libra
 		ctx:           ctx,
 		config:        config,
 		baseTemplate:  tmpl,
-		files:         make([]*inMemoryFile, 0),
+		files:         make([]file, 0),
 		skipPatterns:  make([]string, 0),
 		templateFiler: templateFiler,
 		instanceRoot:  instanceRoot,
@@ -142,17 +116,7 @@ func (r *renderer) executeTemplate(templateDefinition string) (string, error) {
 	return result.String(), nil
 }
 
-func (r *renderer) computeFile(relPathTemplate string) (*inMemoryFile, error) {
-	// read template file contents
-	templateReader, err := r.templateFiler.Read(r.ctx, relPathTemplate)
-	if err != nil {
-		return nil, err
-	}
-	contentTemplate, err := io.ReadAll(templateReader)
-	if err != nil {
-		return nil, err
-	}
-
+func (r *renderer) computeFile(relPathTemplate string) (file, error) {
 	// read file permissions
 	info, err := r.templateFiler.Stat(r.ctx, relPathTemplate)
 	if err != nil {
@@ -160,7 +124,33 @@ func (r *renderer) computeFile(relPathTemplate string) (*inMemoryFile, error) {
 	}
 	perm := info.Mode().Perm()
 
+	// If file name does not specify the `.tmpl` extension, then it is copied
+	// over as is, without treating it as a template
+	if !strings.HasSuffix(relPathTemplate, templateExtension) {
+		return &copyFile{
+			dstPath: &destinationPath{
+				root:    r.instanceRoot,
+				relPath: relPathTemplate,
+			},
+			perm:     perm,
+			ctx:      r.ctx,
+			srcPath:  relPathTemplate,
+			srcFiler: r.templateFiler,
+		}, nil
+	}
+
+	// read template file's content
+	templateReader, err := r.templateFiler.Read(r.ctx, relPathTemplate)
+	if err != nil {
+		return nil, err
+	}
+	defer templateReader.Close()
+
 	// execute the contents of the file as a template
+	contentTemplate, err := io.ReadAll(templateReader)
+	if err != nil {
+		return nil, err
+	}
 	content, err := r.executeTemplate(string(contentTemplate))
 	// Capture errors caused by the "fail" helper function
 	if target := (&ErrFail{}); errors.As(err, target) {
@@ -171,16 +161,19 @@ func (r *renderer) computeFile(relPathTemplate string) (*inMemoryFile, error) {
 	}
 
 	// Execute relative path template to get materialized path for the file
+	relPathTemplate = strings.TrimSuffix(relPathTemplate, templateExtension)
 	relPath, err := r.executeTemplate(relPathTemplate)
 	if err != nil {
 		return nil, err
 	}
 
 	return &inMemoryFile{
-		root:    r.instanceRoot,
-		relPath: relPath,
-		content: []byte(content),
+		dstPath: &destinationPath{
+			root:    r.instanceRoot,
+			relPath: relPath,
+		},
 		perm:    perm,
+		content: []byte(content),
 	}, nil
 }
 
@@ -206,11 +199,11 @@ func (r *renderer) walk() error {
 		if err != nil {
 			return err
 		}
-		isSkipped, err := r.isSkipped(instanceDirectory)
+		match, err := isSkipped(instanceDirectory, r.skipPatterns)
 		if err != nil {
 			return err
 		}
-		if isSkipped {
+		if match {
 			logger.Infof(r.ctx, "skipping directory: %s", instanceDirectory)
 			continue
 		}
@@ -255,7 +248,7 @@ func (r *renderer) walk() error {
 			if err != nil {
 				return err
 			}
-			logger.Infof(r.ctx, "added file to list of in memory files: %s", f.relPath)
+			logger.Infof(r.ctx, "added file to list of possible project files: %s", f.DstPath().relPath)
 			r.files = append(r.files, f)
 		}
 
@@ -266,14 +259,14 @@ func (r *renderer) walk() error {
 func (r *renderer) persistToDisk() error {
 	// Accumulate files which we will persist, skipping files whose path matches
 	// any of the skip patterns
-	filesToPersist := make([]*inMemoryFile, 0)
+	filesToPersist := make([]file, 0)
 	for _, file := range r.files {
-		isSkipped, err := r.isSkipped(file.relPath)
+		match, err := isSkipped(file.DstPath().relPath, r.skipPatterns)
 		if err != nil {
 			return err
 		}
-		if isSkipped {
-			log.Infof(r.ctx, "skipping file: %s", file.relPath)
+		if match {
+			log.Infof(r.ctx, "skipping file: %s", file.DstPath())
 			continue
 		}
 		filesToPersist = append(filesToPersist, file)
@@ -281,7 +274,7 @@ func (r *renderer) persistToDisk() error {
 
 	// Assert no conflicting files exist
 	for _, file := range filesToPersist {
-		path := file.fullPath()
+		path := file.DstPath().absPath()
 		_, err := os.Stat(path)
 		if err == nil {
 			return fmt.Errorf("failed to persist to disk, conflict with existing file: %s", path)
@@ -293,7 +286,7 @@ func (r *renderer) persistToDisk() error {
 
 	// Persist files to disk
 	for _, file := range filesToPersist {
-		err := file.persistToDisk()
+		err := file.PersistToDisk()
 		if err != nil {
 			return err
 		}
@@ -301,8 +294,8 @@ func (r *renderer) persistToDisk() error {
 	return nil
 }
 
-func (r *renderer) isSkipped(filePath string) (bool, error) {
-	for _, pattern := range r.skipPatterns {
+func isSkipped(filePath string, patterns []string) (bool, error) {
+	for _, pattern := range patterns {
 		isMatch, err := path.Match(pattern, filePath)
 		if err != nil {
 			return false, err

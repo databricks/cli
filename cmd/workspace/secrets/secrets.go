@@ -12,10 +12,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var Cmd = &cobra.Command{
-	Use:   "secrets",
-	Short: `The Secrets API allows you to manage secrets, secret scopes, and access permissions.`,
-	Long: `The Secrets API allows you to manage secrets, secret scopes, and access
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var cmdOverrides []func(*cobra.Command)
+
+func New() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "secrets",
+		Short: `The Secrets API allows you to manage secrets, secret scopes, and access permissions.`,
+		Long: `The Secrets API allows you to manage secrets, secret scopes, and access
   permissions.
   
   Sometimes accessing data requires that you authenticate to external data
@@ -27,45 +32,62 @@ var Cmd = &cobra.Command{
   Databricks secrets. While Databricks makes an effort to redact secret values
   that might be displayed in notebooks, it is not possible to prevent such users
   from reading secrets.`,
-	Annotations: map[string]string{
-		"package": "workspace",
-	},
+		GroupID: "workspace",
+		Annotations: map[string]string{
+			"package": "workspace",
+		},
+	}
+
+	// Apply optional overrides to this command.
+	for _, fn := range cmdOverrides {
+		fn(cmd)
+	}
+
+	return cmd
 }
 
 // start create-scope command
-var createScopeReq workspace.CreateScope
-var createScopeJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(createScopeCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var createScopeOverrides []func(
+	*cobra.Command,
+	*workspace.CreateScope,
+)
+
+func newCreateScope() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var createScopeReq workspace.CreateScope
+	var createScopeJson flags.JsonFlag
+
 	// TODO: short flags
-	createScopeCmd.Flags().Var(&createScopeJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&createScopeJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: backend_azure_keyvault
-	createScopeCmd.Flags().StringVar(&createScopeReq.InitialManagePrincipal, "initial-manage-principal", createScopeReq.InitialManagePrincipal, `The principal that is initially granted MANAGE permission to the created scope.`)
-	createScopeCmd.Flags().Var(&createScopeReq.ScopeBackendType, "scope-backend-type", `The backend type the scope will be created with.`)
+	cmd.Flags().StringVar(&createScopeReq.InitialManagePrincipal, "initial-manage-principal", createScopeReq.InitialManagePrincipal, `The principal that is initially granted MANAGE permission to the created scope.`)
+	cmd.Flags().Var(&createScopeReq.ScopeBackendType, "scope-backend-type", `The backend type the scope will be created with.`)
 
-}
-
-var createScopeCmd = &cobra.Command{
-	Use:   "create-scope SCOPE",
-	Short: `Create a new secret scope.`,
-	Long: `Create a new secret scope.
+	cmd.Use = "create-scope SCOPE"
+	cmd.Short = `Create a new secret scope.`
+	cmd.Long = `Create a new secret scope.
   
   The scope name must consist of alphanumeric characters, dashes, underscores,
   and periods, and may not exceed 128 characters. The maximum number of scopes
-  in a workspace is 100.`,
+  in a workspace is 100.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
 			check = cobra.ExactArgs(0)
 		}
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -83,45 +105,67 @@ var createScopeCmd = &cobra.Command{
 			return err
 		}
 		return nil
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range createScopeOverrides {
+		fn(cmd, &createScopeReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newCreateScope())
+	})
 }
 
 // start delete-acl command
-var deleteAclReq workspace.DeleteAcl
-var deleteAclJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(deleteAclCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var deleteAclOverrides []func(
+	*cobra.Command,
+	*workspace.DeleteAcl,
+)
+
+func newDeleteAcl() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var deleteAclReq workspace.DeleteAcl
+	var deleteAclJson flags.JsonFlag
+
 	// TODO: short flags
-	deleteAclCmd.Flags().Var(&deleteAclJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&deleteAclJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-}
-
-var deleteAclCmd = &cobra.Command{
-	Use:   "delete-acl SCOPE PRINCIPAL",
-	Short: `Delete an ACL.`,
-	Long: `Delete an ACL.
+	cmd.Use = "delete-acl SCOPE PRINCIPAL"
+	cmd.Short = `Delete an ACL.`
+	cmd.Long = `Delete an ACL.
   
   Deletes the given ACL on the given scope.
   
   Users must have the MANAGE permission to invoke this API. Throws
   RESOURCE_DOES_NOT_EXIST if no such secret scope, principal, or ACL exists.
   Throws PERMISSION_DENIED if the user does not have permission to make this
-  API call.`,
+  API call.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
 			check = cobra.ExactArgs(0)
 		}
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -140,44 +184,66 @@ var deleteAclCmd = &cobra.Command{
 			return err
 		}
 		return nil
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range deleteAclOverrides {
+		fn(cmd, &deleteAclReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newDeleteAcl())
+	})
 }
 
 // start delete-scope command
-var deleteScopeReq workspace.DeleteScope
-var deleteScopeJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(deleteScopeCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var deleteScopeOverrides []func(
+	*cobra.Command,
+	*workspace.DeleteScope,
+)
+
+func newDeleteScope() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var deleteScopeReq workspace.DeleteScope
+	var deleteScopeJson flags.JsonFlag
+
 	// TODO: short flags
-	deleteScopeCmd.Flags().Var(&deleteScopeJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&deleteScopeJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-}
-
-var deleteScopeCmd = &cobra.Command{
-	Use:   "delete-scope SCOPE",
-	Short: `Delete a secret scope.`,
-	Long: `Delete a secret scope.
+	cmd.Use = "delete-scope SCOPE"
+	cmd.Short = `Delete a secret scope.`
+	cmd.Long = `Delete a secret scope.
   
   Deletes a secret scope.
   
   Throws RESOURCE_DOES_NOT_EXIST if the scope does not exist. Throws
   PERMISSION_DENIED if the user does not have permission to make this API
-  call.`,
+  call.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
 			check = cobra.ExactArgs(0)
 		}
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -195,45 +261,67 @@ var deleteScopeCmd = &cobra.Command{
 			return err
 		}
 		return nil
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range deleteScopeOverrides {
+		fn(cmd, &deleteScopeReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newDeleteScope())
+	})
 }
 
 // start delete-secret command
-var deleteSecretReq workspace.DeleteSecret
-var deleteSecretJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(deleteSecretCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var deleteSecretOverrides []func(
+	*cobra.Command,
+	*workspace.DeleteSecret,
+)
+
+func newDeleteSecret() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var deleteSecretReq workspace.DeleteSecret
+	var deleteSecretJson flags.JsonFlag
+
 	// TODO: short flags
-	deleteSecretCmd.Flags().Var(&deleteSecretJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&deleteSecretJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-}
-
-var deleteSecretCmd = &cobra.Command{
-	Use:   "delete-secret SCOPE KEY",
-	Short: `Delete a secret.`,
-	Long: `Delete a secret.
+	cmd.Use = "delete-secret SCOPE KEY"
+	cmd.Short = `Delete a secret.`
+	cmd.Long = `Delete a secret.
   
   Deletes the secret stored in this secret scope. You must have WRITE or
   MANAGE permission on the secret scope.
   
   Throws RESOURCE_DOES_NOT_EXIST if no such secret scope or secret exists.
   Throws PERMISSION_DENIED if the user does not have permission to make this
-  API call.`,
+  API call.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
 			check = cobra.ExactArgs(0)
 		}
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -252,40 +340,62 @@ var deleteSecretCmd = &cobra.Command{
 			return err
 		}
 		return nil
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range deleteSecretOverrides {
+		fn(cmd, &deleteSecretReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newDeleteSecret())
+	})
 }
 
 // start get-acl command
-var getAclReq workspace.GetAclRequest
 
-func init() {
-	Cmd.AddCommand(getAclCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getAclOverrides []func(
+	*cobra.Command,
+	*workspace.GetAclRequest,
+)
+
+func newGetAcl() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getAclReq workspace.GetAclRequest
+
 	// TODO: short flags
 
-}
-
-var getAclCmd = &cobra.Command{
-	Use:   "get-acl SCOPE PRINCIPAL",
-	Short: `Get secret ACL details.`,
-	Long: `Get secret ACL details.
+	cmd.Use = "get-acl SCOPE PRINCIPAL"
+	cmd.Short = `Get secret ACL details.`
+	cmd.Long = `Get secret ACL details.
   
   Gets the details about the given ACL, such as the group and permission. Users
   must have the MANAGE permission to invoke this API.
   
   Throws RESOURCE_DOES_NOT_EXIST if no such secret scope exists. Throws
   PERMISSION_DENIED if the user does not have permission to make this API
-  call.`,
+  call.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -297,40 +407,62 @@ var getAclCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getAclOverrides {
+		fn(cmd, &getAclReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newGetAcl())
+	})
 }
 
 // start list-acls command
-var listAclsReq workspace.ListAclsRequest
 
-func init() {
-	Cmd.AddCommand(listAclsCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listAclsOverrides []func(
+	*cobra.Command,
+	*workspace.ListAclsRequest,
+)
+
+func newListAcls() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var listAclsReq workspace.ListAclsRequest
+
 	// TODO: short flags
 
-}
-
-var listAclsCmd = &cobra.Command{
-	Use:   "list-acls SCOPE",
-	Short: `Lists ACLs.`,
-	Long: `Lists ACLs.
+	cmd.Use = "list-acls SCOPE"
+	cmd.Short = `Lists ACLs.`
+	cmd.Long = `Lists ACLs.
   
   List the ACLs for a given secret scope. Users must have the MANAGE
   permission to invoke this API.
   
   Throws RESOURCE_DOES_NOT_EXIST if no such secret scope exists. Throws
   PERMISSION_DENIED if the user does not have permission to make this API
-  call.`,
+  call.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -341,32 +473,50 @@ var listAclsCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listAclsOverrides {
+		fn(cmd, &listAclsReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newListAcls())
+	})
 }
 
 // start list-scopes command
 
-func init() {
-	Cmd.AddCommand(listScopesCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listScopesOverrides []func(
+	*cobra.Command,
+)
 
-}
+func newListScopes() *cobra.Command {
+	cmd := &cobra.Command{}
 
-var listScopesCmd = &cobra.Command{
-	Use:   "list-scopes",
-	Short: `List all scopes.`,
-	Long: `List all scopes.
+	cmd.Use = "list-scopes"
+	cmd.Short = `List all scopes.`
+	cmd.Long = `List all scopes.
   
   Lists all secret scopes available in the workspace.
   
   Throws PERMISSION_DENIED if the user does not have permission to make this
-  API call.`,
+  API call.`
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 		response, err := w.Secrets.ListScopesAll(ctx)
@@ -374,25 +524,45 @@ var listScopesCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listScopesOverrides {
+		fn(cmd)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newListScopes())
+	})
 }
 
 // start list-secrets command
-var listSecretsReq workspace.ListSecretsRequest
 
-func init() {
-	Cmd.AddCommand(listSecretsCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listSecretsOverrides []func(
+	*cobra.Command,
+	*workspace.ListSecretsRequest,
+)
+
+func newListSecrets() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var listSecretsReq workspace.ListSecretsRequest
+
 	// TODO: short flags
 
-}
-
-var listSecretsCmd = &cobra.Command{
-	Use:   "list-secrets SCOPE",
-	Short: `List secret keys.`,
-	Long: `List secret keys.
+	cmd.Use = "list-secrets SCOPE"
+	cmd.Short = `List secret keys.`
+	cmd.Long = `List secret keys.
   
   Lists the secret keys that are stored at this scope. This is a metadata-only
   operation; secret data cannot be retrieved using this API. Users need the READ
@@ -401,15 +571,17 @@ var listSecretsCmd = &cobra.Command{
   The lastUpdatedTimestamp returned is in milliseconds since epoch. Throws
   RESOURCE_DOES_NOT_EXIST if no such secret scope exists. Throws
   PERMISSION_DENIED if the user does not have permission to make this API
-  call.`,
+  call.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -420,27 +592,47 @@ var listSecretsCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listSecretsOverrides {
+		fn(cmd, &listSecretsReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newListSecrets())
+	})
 }
 
 // start put-acl command
-var putAclReq workspace.PutAcl
-var putAclJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(putAclCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var putAclOverrides []func(
+	*cobra.Command,
+	*workspace.PutAcl,
+)
+
+func newPutAcl() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var putAclReq workspace.PutAcl
+	var putAclJson flags.JsonFlag
+
 	// TODO: short flags
-	putAclCmd.Flags().Var(&putAclJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&putAclJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-}
-
-var putAclCmd = &cobra.Command{
-	Use:   "put-acl SCOPE PRINCIPAL PERMISSION",
-	Short: `Create/update an ACL.`,
-	Long: `Create/update an ACL.
+	cmd.Use = "put-acl SCOPE PRINCIPAL PERMISSION"
+	cmd.Short = `Create/update an ACL.`
+	cmd.Long = `Create/update an ACL.
   
   Creates or overwrites the Access Control List (ACL) associated with the given
   principal (user or group) on the specified scope point.
@@ -467,18 +659,20 @@ var putAclCmd = &cobra.Command{
   RESOURCE_ALREADY_EXISTS if a permission for the principal already exists.
   Throws INVALID_PARAMETER_VALUE if the permission or principal is invalid.
   Throws PERMISSION_DENIED if the user does not have permission to make this
-  API call.`,
+  API call.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(3)
 		if cmd.Flags().Changed("json") {
 			check = cobra.ExactArgs(0)
 		}
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -501,10 +695,24 @@ var putAclCmd = &cobra.Command{
 			return err
 		}
 		return nil
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range putAclOverrides {
+		fn(cmd, &putAclReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newPutAcl())
+	})
 }
 
 // end service Secrets

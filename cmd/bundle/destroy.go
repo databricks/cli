@@ -12,16 +12,24 @@ import (
 	"golang.org/x/term"
 )
 
-var destroyCmd = &cobra.Command{
-	Use:   "destroy",
-	Short: "Destroy deployed bundle resources",
+func newDestroyCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "destroy",
+		Short: "Destroy deployed bundle resources",
 
-	PreRunE: ConfigureBundleWithVariables,
-	RunE: func(cmd *cobra.Command, args []string) error {
+		PreRunE: ConfigureBundleWithVariables,
+	}
+
+	var autoApprove bool
+	var forceDestroy bool
+	cmd.Flags().BoolVar(&autoApprove, "auto-approve", false, "Skip interactive approvals for deleting resources and files")
+	cmd.Flags().BoolVar(&forceDestroy, "force-lock", false, "Force acquisition of deployment lock.")
+
+	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		b := bundle.Get(ctx)
 
-		// If `--force` is specified, force acquisition of the deployment lock.
+		// If `--force-lock` is specified, force acquisition of the deployment lock.
 		b.Config.Bundle.Lock.Force = forceDestroy
 
 		// If `--auto-approve`` is specified, we skip confirmation checks
@@ -47,14 +55,7 @@ var destroyCmd = &cobra.Command{
 			phases.Build(),
 			phases.Destroy(),
 		))
-	},
-}
+	}
 
-var autoApprove bool
-var forceDestroy bool
-
-func init() {
-	AddCommand(destroyCmd)
-	destroyCmd.Flags().BoolVar(&autoApprove, "auto-approve", false, "Skip interactive approvals for deleting resources and files")
-	destroyCmd.Flags().BoolVar(&forceDestroy, "force", false, "Force acquisition of deployment lock.")
+	return cmd
 }

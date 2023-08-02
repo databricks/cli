@@ -10,47 +10,68 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var Cmd = &cobra.Command{
-	Use:   "metastores",
-	Short: `These APIs manage Unity Catalog metastores for an account.`,
-	Long: `These APIs manage Unity Catalog metastores for an account. A metastore
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var cmdOverrides []func(*cobra.Command)
+
+func New() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "metastores",
+		Short: `These APIs manage Unity Catalog metastores for an account.`,
+		Long: `These APIs manage Unity Catalog metastores for an account. A metastore
   contains catalogs that can be associated with workspaces`,
-	Annotations: map[string]string{
-		"package": "catalog",
-	},
+		GroupID: "catalog",
+		Annotations: map[string]string{
+			"package": "catalog",
+		},
+	}
+
+	// Apply optional overrides to this command.
+	for _, fn := range cmdOverrides {
+		fn(cmd)
+	}
+
+	return cmd
 }
 
 // start create command
-var createReq catalog.AccountsCreateMetastore
-var createJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(createCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var createOverrides []func(
+	*cobra.Command,
+	*catalog.AccountsCreateMetastore,
+)
+
+func newCreate() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var createReq catalog.AccountsCreateMetastore
+	var createJson flags.JsonFlag
+
 	// TODO: short flags
-	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: metastore_info
 
-}
-
-var createCmd = &cobra.Command{
-	Use:   "create",
-	Short: `Create metastore.`,
-	Long: `Create metastore.
+	cmd.Use = "create"
+	cmd.Short = `Create metastore.`
+	cmd.Long = `Create metastore.
   
-  Creates a Unity Catalog metastore. Please add a header
-  X-Databricks-Account-Console-API-Version: 2.0 to access this API.`,
+  Creates a Unity Catalog metastore.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {
 			check = cobra.ExactArgs(0)
 		}
 		return check(cmd, args)
-	},
-	PreRunE: root.MustAccountClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustAccountClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
 
@@ -67,38 +88,59 @@ var createCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range createOverrides {
+		fn(cmd, &createReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newCreate())
+	})
 }
 
 // start delete command
-var deleteReq catalog.DeleteAccountMetastoreRequest
 
-func init() {
-	Cmd.AddCommand(deleteCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var deleteOverrides []func(
+	*cobra.Command,
+	*catalog.DeleteAccountMetastoreRequest,
+)
+
+func newDelete() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var deleteReq catalog.DeleteAccountMetastoreRequest
+
 	// TODO: short flags
 
-	deleteCmd.Flags().BoolVar(&deleteReq.Force, "force", deleteReq.Force, `Force deletion even if the metastore is not empty.`)
+	cmd.Flags().BoolVar(&deleteReq.Force, "force", deleteReq.Force, `Force deletion even if the metastore is not empty.`)
 
-}
-
-var deleteCmd = &cobra.Command{
-	Use:   "delete METASTORE_ID",
-	Short: `Delete a metastore.`,
-	Long: `Delete a metastore.
+	cmd.Use = "delete METASTORE_ID"
+	cmd.Short = `Delete a metastore.`
+	cmd.Long = `Delete a metastore.
   
-  Deletes a Unity Catalog metastore for an account, both specified by ID. Please
-  add a header X-Databricks-Account-Console-API-Version: 2.0 to access this API.`,
+  Deletes a Unity Catalog metastore for an account, both specified by ID.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		return check(cmd, args)
-	},
-	PreRunE: root.MustAccountClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustAccountClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
 
@@ -109,36 +151,57 @@ var deleteCmd = &cobra.Command{
 			return err
 		}
 		return nil
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range deleteOverrides {
+		fn(cmd, &deleteReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newDelete())
+	})
 }
 
 // start get command
-var getReq catalog.GetAccountMetastoreRequest
 
-func init() {
-	Cmd.AddCommand(getCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getOverrides []func(
+	*cobra.Command,
+	*catalog.GetAccountMetastoreRequest,
+)
+
+func newGet() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getReq catalog.GetAccountMetastoreRequest
+
 	// TODO: short flags
 
-}
-
-var getCmd = &cobra.Command{
-	Use:   "get METASTORE_ID",
-	Short: `Get a metastore.`,
-	Long: `Get a metastore.
+	cmd.Use = "get METASTORE_ID"
+	cmd.Short = `Get a metastore.`
+	cmd.Long = `Get a metastore.
   
-  Gets a Unity Catalog metastore from an account, both specified by ID. Please
-  add a header X-Databricks-Account-Console-API-Version: 2.0 to access this API.`,
+  Gets a Unity Catalog metastore from an account, both specified by ID.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		return check(cmd, args)
-	},
-	PreRunE: root.MustAccountClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustAccountClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
 
@@ -149,31 +212,47 @@ var getCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getOverrides {
+		fn(cmd, &getReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newGet())
+	})
 }
 
 // start list command
 
-func init() {
-	Cmd.AddCommand(listCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listOverrides []func(
+	*cobra.Command,
+)
 
-}
+func newList() *cobra.Command {
+	cmd := &cobra.Command{}
 
-var listCmd = &cobra.Command{
-	Use:   "list",
-	Short: `Get all metastores associated with an account.`,
-	Long: `Get all metastores associated with an account.
+	cmd.Use = "list"
+	cmd.Short = `Get all metastores associated with an account.`
+	cmd.Long = `Get all metastores associated with an account.
   
-  Gets all Unity Catalog metastores associated with an account specified by ID.
-  Please add a header X-Databricks-Account-Console-API-Version: 2.0 to access
-  this API.`,
+  Gets all Unity Catalog metastores associated with an account specified by ID.`
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustAccountClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustAccountClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
 		response, err := a.Metastores.List(ctx)
@@ -181,40 +260,61 @@ var listCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listOverrides {
+		fn(cmd)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newList())
+	})
 }
 
 // start update command
-var updateReq catalog.AccountsUpdateMetastore
-var updateJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(updateCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updateOverrides []func(
+	*cobra.Command,
+	*catalog.AccountsUpdateMetastore,
+)
+
+func newUpdate() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updateReq catalog.AccountsUpdateMetastore
+	var updateJson flags.JsonFlag
+
 	// TODO: short flags
-	updateCmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: metastore_info
 
-}
-
-var updateCmd = &cobra.Command{
-	Use:   "update METASTORE_ID",
-	Short: `Update a metastore.`,
-	Long: `Update a metastore.
+	cmd.Use = "update METASTORE_ID"
+	cmd.Short = `Update a metastore.`
+	cmd.Long = `Update a metastore.
   
-  Updates an existing Unity Catalog metastore. Please add a header
-  X-Databricks-Account-Console-API-Version: 2.0 to access this API.`,
+  Updates an existing Unity Catalog metastore.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		return check(cmd, args)
-	},
-	PreRunE: root.MustAccountClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustAccountClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
 
@@ -231,10 +331,24 @@ var updateCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updateOverrides {
+		fn(cmd, &updateReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newUpdate())
+	})
 }
 
 // end service AccountMetastores

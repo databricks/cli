@@ -13,16 +13,22 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var runOptions run.Options
-var noWait bool
+func newRunCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "run [flags] KEY",
+		Short: "Run a workload (e.g. a job or a pipeline)",
 
-var runCmd = &cobra.Command{
-	Use:   "run [flags] KEY",
-	Short: "Run a workload (e.g. a job or a pipeline)",
+		Args:    cobra.ExactArgs(1),
+		PreRunE: ConfigureBundleWithVariables,
+	}
 
-	Args:    cobra.ExactArgs(1),
-	PreRunE: ConfigureBundleWithVariables,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	var runOptions run.Options
+	runOptions.Define(cmd.Flags())
+
+	var noWait bool
+	cmd.Flags().BoolVar(&noWait, "no-wait", false, "Don't wait for the run to complete.")
+
+	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		b := bundle.Get(cmd.Context())
 
 		err := bundle.Apply(cmd.Context(), b, bundle.Seq(
@@ -47,7 +53,7 @@ var runCmd = &cobra.Command{
 			return err
 		}
 		if output != nil {
-			switch root.OutputType() {
+			switch root.OutputType(cmd) {
 			case flags.OutputText:
 				resultString, err := output.String()
 				if err != nil {
@@ -61,13 +67,13 @@ var runCmd = &cobra.Command{
 				}
 				cmd.OutOrStdout().Write(b)
 			default:
-				return fmt.Errorf("unknown output type %s", root.OutputType())
+				return fmt.Errorf("unknown output type %s", root.OutputType(cmd))
 			}
 		}
 		return nil
-	},
+	}
 
-	ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	cmd.ValidArgsFunction = func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		if len(args) > 0 {
 			return nil, cobra.ShellCompDirectiveNoFileComp
 		}
@@ -86,11 +92,7 @@ var runCmd = &cobra.Command{
 		}
 
 		return run.ResourceCompletions(b), cobra.ShellCompDirectiveNoFileComp
-	},
-}
+	}
 
-func init() {
-	runOptions.Define(runCmd.Flags())
-	rootCmd.AddCommand(runCmd)
-	runCmd.Flags().BoolVar(&noWait, "no-wait", false, "Don't wait for the run to complete.")
+	return cmd
 }

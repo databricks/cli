@@ -6,14 +6,16 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var catCmd = &cobra.Command{
-	Use:     "cat FILE_PATH",
-	Short:   "Show file content",
-	Long:    `Show the contents of a file.`,
-	Args:    cobra.ExactArgs(1),
-	PreRunE: root.MustWorkspaceClient,
+func newCatCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:     "cat FILE_PATH",
+		Short:   "Show file content",
+		Long:    `Show the contents of a file.`,
+		Args:    cobra.ExactArgs(1),
+		PreRunE: root.MustWorkspaceClient,
+	}
 
-	RunE: func(cmd *cobra.Command, args []string) error {
+	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 
 		f, path, err := filerForPath(ctx, args[0])
@@ -26,9 +28,7 @@ var catCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.RenderReader(ctx, r)
-	},
-}
+	}
 
-func init() {
-	fsCmd.AddCommand(catCmd)
+	return cmd
 }

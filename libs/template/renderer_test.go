@@ -3,6 +3,7 @@ package template
 import (
 	"context"
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -89,59 +90,58 @@ My email is {{template "email"}}
 }
 
 func TestRendererIsSkipped(t *testing.T) {
-	r := renderer{
-		skipPatterns: []string{"a*", "*yz", "def", "a/b/*"},
-	}
+
+	skipPatterns := []string{"a*", "*yz", "def", "a/b/*"}
 
 	// skipped paths
-	isSkipped, err := r.isSkipped("abc")
+	match, err := isSkipped("abc", skipPatterns)
 	require.NoError(t, err)
-	assert.True(t, isSkipped)
+	assert.True(t, match)
 
-	isSkipped, err = r.isSkipped("abcd")
+	match, err = isSkipped("abcd", skipPatterns)
 	require.NoError(t, err)
-	assert.True(t, isSkipped)
+	assert.True(t, match)
 
-	isSkipped, err = r.isSkipped("a")
+	match, err = isSkipped("a", skipPatterns)
 	require.NoError(t, err)
-	assert.True(t, isSkipped)
+	assert.True(t, match)
 
-	isSkipped, err = r.isSkipped("xxyz")
+	match, err = isSkipped("xxyz", skipPatterns)
 	require.NoError(t, err)
-	assert.True(t, isSkipped)
+	assert.True(t, match)
 
-	isSkipped, err = r.isSkipped("yz")
+	match, err = isSkipped("yz", skipPatterns)
 	require.NoError(t, err)
-	assert.True(t, isSkipped)
+	assert.True(t, match)
 
-	isSkipped, err = r.isSkipped("a/b/c")
+	match, err = isSkipped("a/b/c", skipPatterns)
 	require.NoError(t, err)
-	assert.True(t, isSkipped)
+	assert.True(t, match)
 
 	// NOT skipped paths
-	isSkipped, err = r.isSkipped(".")
+	match, err = isSkipped(".", skipPatterns)
 	require.NoError(t, err)
-	assert.False(t, isSkipped)
+	assert.False(t, match)
 
-	isSkipped, err = r.isSkipped("y")
+	match, err = isSkipped("y", skipPatterns)
 	require.NoError(t, err)
-	assert.False(t, isSkipped)
+	assert.False(t, match)
 
-	isSkipped, err = r.isSkipped("z")
+	match, err = isSkipped("z", skipPatterns)
 	require.NoError(t, err)
-	assert.False(t, isSkipped)
+	assert.False(t, match)
 
-	isSkipped, err = r.isSkipped("defg")
+	match, err = isSkipped("defg", skipPatterns)
 	require.NoError(t, err)
-	assert.False(t, isSkipped)
+	assert.False(t, match)
 
-	isSkipped, err = r.isSkipped("cat")
+	match, err = isSkipped("cat", skipPatterns)
 	require.NoError(t, err)
-	assert.False(t, isSkipped)
+	assert.False(t, match)
 
-	isSkipped, err = r.isSkipped("a/b/c/d")
+	match, err = isSkipped("a/b/c/d", skipPatterns)
 	require.NoError(t, err)
-	assert.False(t, isSkipped)
+	assert.False(t, match)
 }
 
 func TestRendererPersistToDisk(t *testing.T) {
@@ -152,30 +152,38 @@ func TestRendererPersistToDisk(t *testing.T) {
 		ctx:          ctx,
 		instanceRoot: tmpDir,
 		skipPatterns: []string{"a/b/c", "mn*"},
-		files: []*inMemoryFile{
-			{
-				root:    tmpDir,
-				relPath: "a/b/c",
-				content: nil,
+		files: []file{
+			&inMemoryFile{
+				dstPath: &destinationPath{
+					root:    tmpDir,
+					relPath: "a/b/c",
+				},
 				perm:    0444,
-			},
-			{
-				root:    tmpDir,
-				relPath: "mno",
 				content: nil,
-				perm:    0444,
 			},
-			{
-				root:    tmpDir,
-				relPath: "a/b/d",
+			&inMemoryFile{
+				dstPath: &destinationPath{
+					root:    tmpDir,
+					relPath: "mno",
+				},
+				perm:    0444,
+				content: nil,
+			},
+			&inMemoryFile{
+				dstPath: &destinationPath{
+					root:    tmpDir,
+					relPath: "a/b/d",
+				},
+				perm:    0444,
 				content: []byte("123"),
-				perm:    0444,
 			},
-			{
-				root:    tmpDir,
-				relPath: "mmnn",
-				content: []byte("456"),
+			&inMemoryFile{
+				dstPath: &destinationPath{
+					root:    tmpDir,
+					relPath: "mmnn",
+				},
 				perm:    0444,
+				content: []byte("456"),
 			},
 		},
 	}
@@ -204,8 +212,20 @@ func TestRendererWalk(t *testing.T) {
 
 	getContent := func(r *renderer, path string) string {
 		for _, f := range r.files {
-			if f.relPath == path {
-				return strings.Trim(string(f.content), "\r\n")
+			if f.DstPath().relPath != path {
+				continue
+			}
+			switch v := f.(type) {
+			case *inMemoryFile:
+				return strings.Trim(string(v.content), "\r\n")
+			case *copyFile:
+				r, err := r.templateFiler.Read(context.Background(), v.srcPath)
+				require.NoError(t, err)
+				b, err := io.ReadAll(r)
+				require.NoError(t, err)
+				return strings.Trim(string(b), "\r\n")
+			default:
+				require.FailNow(t, "execution should not reach here")
 			}
 		}
 		require.FailNow(t, "file is absent: "+path)
@@ -241,7 +261,7 @@ func TestRendererSkipsDirsEagerly(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Len(t, r.files, 1)
-	content := string(r.files[0].content)
+	content := string(r.files[0].(*inMemoryFile).content)
 	assert.Equal(t, "I should be the only file created", strings.Trim(content, "\r\n"))
 }
 
@@ -309,55 +329,6 @@ func TestRendererSkip(t *testing.T) {
 	assert.NoFileExists(t, filepath.Join(tmpDir, "dir2/file6"))
 }
 
-func TestRendererInMemoryFileFullPathForWindows(t *testing.T) {
-	if runtime.GOOS != "windows" {
-		t.SkipNow()
-	}
-	f := &inMemoryFile{
-		root:    `c:\a\b\c`,
-		relPath: "d/e",
-	}
-	assert.Equal(t, `c:\a\b\c\d\e`, f.fullPath())
-}
-
-func TestRendererInMemoryFilePersistToDiskSetsExecutableBit(t *testing.T) {
-	if runtime.GOOS != "linux" && runtime.GOOS != "darwin" {
-		t.SkipNow()
-	}
-	tmpDir := t.TempDir()
-
-	f := &inMemoryFile{
-		root:    tmpDir,
-		relPath: "a/b/c",
-		content: []byte("123"),
-		perm:    0755,
-	}
-	err := f.persistToDisk()
-	assert.NoError(t, err)
-
-	assertFileContent(t, filepath.Join(tmpDir, "a/b/c"), "123")
-	assertFilePermissions(t, filepath.Join(tmpDir, "a/b/c"), 0755)
-}
-
-func TestRendererInMemoryFilePersistToDiskForWindows(t *testing.T) {
-	if runtime.GOOS != "windows" {
-		t.SkipNow()
-	}
-	tmpDir := t.TempDir()
-
-	f := &inMemoryFile{
-		root:    tmpDir,
-		relPath: "a/b/c",
-		content: []byte("123"),
-		perm:    0666,
-	}
-	err := f.persistToDisk()
-	assert.NoError(t, err)
-
-	assertFileContent(t, filepath.Join(tmpDir, "a/b/c"), "123")
-	assertFilePermissions(t, filepath.Join(tmpDir, "a/b/c"), 0666)
-}
-
 func TestRendererReadsPermissionsBits(t *testing.T) {
 	if runtime.GOOS != "linux" && runtime.GOOS != "darwin" {
 		t.SkipNow()
@@ -373,8 +344,16 @@ func TestRendererReadsPermissionsBits(t *testing.T) {
 
 	getPermissions := func(r *renderer, path string) fs.FileMode {
 		for _, f := range r.files {
-			if f.relPath == path {
-				return f.perm
+			if f.DstPath().relPath != path {
+				continue
+			}
+			switch v := f.(type) {
+			case *inMemoryFile:
+				return v.perm
+			case *copyFile:
+				return v.perm
+			default:
+				require.FailNow(t, "execution should not reach here")
 			}
 		}
 		require.FailNow(t, "file is absent: "+path)
@@ -396,12 +375,14 @@ func TestRendererErrorOnConflictingFile(t *testing.T) {
 
 	r := renderer{
 		skipPatterns: []string{},
-		files: []*inMemoryFile{
-			{
-				root:    tmpDir,
-				relPath: "a",
-				content: []byte("123"),
+		files: []file{
+			&inMemoryFile{
+				dstPath: &destinationPath{
+					root:    tmpDir,
+					relPath: "a",
+				},
 				perm:    0444,
+				content: []byte("123"),
 			},
 		},
 	}
@@ -421,12 +402,14 @@ func TestRendererNoErrorOnConflictingFileIfSkipped(t *testing.T) {
 	r := renderer{
 		ctx:          ctx,
 		skipPatterns: []string{"a"},
-		files: []*inMemoryFile{
-			{
-				root:    tmpDir,
-				relPath: "a",
-				content: []byte("123"),
+		files: []file{
+			&inMemoryFile{
+				dstPath: &destinationPath{
+					root:    tmpDir,
+					relPath: "a",
+				},
 				perm:    0444,
+				content: []byte("123"),
 			},
 		},
 	}
@@ -435,4 +418,19 @@ func TestRendererNoErrorOnConflictingFileIfSkipped(t *testing.T) {
 	// the generated file is being skipped
 	assert.NoError(t, err)
 	assert.Len(t, r.files, 1)
+}
+
+func TestRendererNonTemplatesAreCreatedAsCopyFiles(t *testing.T) {
+	ctx := context.Background()
+	tmpDir := t.TempDir()
+
+	r, err := newRenderer(ctx, nil, "./testdata/copy-file-walk/template", "./testdata/copy-file-walk/library", tmpDir)
+	require.NoError(t, err)
+
+	err = r.walk()
+	assert.NoError(t, err)
+
+	assert.Len(t, r.files, 1)
+	assert.Equal(t, r.files[0].(*copyFile).srcPath, "not-a-template")
+	assert.Equal(t, r.files[0].DstPath().absPath(), filepath.Join(tmpDir, "not-a-template"))
 }

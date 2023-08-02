@@ -13,26 +13,34 @@ import (
 	"golang.org/x/exp/slog"
 )
 
-// RootCmd represents the base command when called without any subcommands
-var RootCmd = &cobra.Command{
-	Use:     "databricks",
-	Short:   "Databricks CLI",
-	Version: build.GetInfo().Version,
+func New() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:     "databricks",
+		Short:   "Databricks CLI",
+		Version: build.GetInfo().Version,
 
-	// Cobra prints the usage string to stderr if a command returns an error.
-	// This usage string should only be displayed if an invalid combination of flags
-	// is specified and not when runtime errors occur (e.g. resource not found).
-	// The usage string is include in [flagErrorFunc] for flag errors only.
-	SilenceUsage: true,
+		// Cobra prints the usage string to stderr if a command returns an error.
+		// This usage string should only be displayed if an invalid combination of flags
+		// is specified and not when runtime errors occur (e.g. resource not found).
+		// The usage string is include in [flagErrorFunc] for flag errors only.
+		SilenceUsage: true,
 
-	// Silence error printing by cobra. Errors are printed through cmdio.
-	SilenceErrors: true,
+		// Silence error printing by cobra. Errors are printed through cmdio.
+		SilenceErrors: true,
+	}
 
-	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+	// Initialize flags
+	logFlags := initLogFlags(cmd)
+	progressLoggerFlag := initProgressLoggerFlag(cmd, logFlags)
+	outputFlag := initOutputFlag(cmd)
+	initProfileFlag(cmd)
+	initEnvironmentFlag(cmd)
+
+	cmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 
 		// Configure default logger.
-		ctx, err := initializeLogger(ctx)
+		ctx, err := logFlags.initializeContext(ctx)
 		if err != nil {
 			return err
 		}
@@ -43,7 +51,7 @@ var RootCmd = &cobra.Command{
 			slog.String("args", strings.Join(os.Args, ", ")))
 
 		// Configure progress logger
-		ctx, err = initializeProgressLogger(ctx)
+		ctx, err = progressLoggerFlag.initializeContext(ctx)
 		if err != nil {
 			return err
 		}
@@ -51,7 +59,7 @@ var RootCmd = &cobra.Command{
 		cmd.SetContext(ctx)
 
 		// Configure command IO
-		err = initializeIO(cmd)
+		err = outputFlag.initializeIO(cmd)
 		if err != nil {
 			return err
 		}
@@ -63,7 +71,11 @@ var RootCmd = &cobra.Command{
 		ctx = withUpstreamInUserAgent(ctx)
 		cmd.SetContext(ctx)
 		return nil
-	},
+	}
+
+	cmd.SetFlagErrorFunc(flagErrorFunc)
+	cmd.SetVersionTemplate("Databricks CLI v{{.Version}}\n")
+	return cmd
 }
 
 // Wrap flag errors to include the usage string.
@@ -73,12 +85,12 @@ func flagErrorFunc(c *cobra.Command, err error) error {
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
-func Execute() {
+func Execute(cmd *cobra.Command) {
 	// TODO: deferred panic recovery
 	ctx := context.Background()
 
 	// Run the command
-	cmd, err := RootCmd.ExecuteContextC(ctx)
+	cmd, err := cmd.ExecuteContextC(ctx)
 	if err != nil {
 		// If cmdio logger initialization succeeds, then this function logs with the
 		// initialized cmdio logger, otherwise with the default cmdio logger
@@ -102,9 +114,4 @@ func Execute() {
 	if err != nil {
 		os.Exit(1)
 	}
-}
-
-func init() {
-	RootCmd.SetFlagErrorFunc(flagErrorFunc)
-	RootCmd.SetVersionTemplate("Databricks CLI v{{.Version}}\n")
 }

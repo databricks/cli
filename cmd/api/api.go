@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/client"
@@ -13,9 +12,22 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var apiCmd = &cobra.Command{
-	Use:   "api",
-	Short: "Perform Databricks API call",
+func New() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "api",
+		Short: "Perform Databricks API call",
+	}
+
+	cmd.AddCommand(
+		makeCommand(http.MethodGet),
+		makeCommand(http.MethodHead),
+		makeCommand(http.MethodPost),
+		makeCommand(http.MethodPut),
+		makeCommand(http.MethodPatch),
+		makeCommand(http.MethodDelete),
+	)
+
+	return cmd
 }
 
 func makeCommand(method string) *cobra.Command {
@@ -58,16 +70,4 @@ func makeCommand(method string) *cobra.Command {
 
 	command.Flags().Var(&payload, "json", `either inline JSON string or @path/to/file.json with request body`)
 	return command
-}
-
-func init() {
-	apiCmd.AddCommand(
-		makeCommand(http.MethodGet),
-		makeCommand(http.MethodHead),
-		makeCommand(http.MethodPost),
-		makeCommand(http.MethodPut),
-		makeCommand(http.MethodPatch),
-		makeCommand(http.MethodDelete),
-	)
-	root.RootCmd.AddCommand(apiCmd)
 }

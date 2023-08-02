@@ -1,0 +1,19 @@
+bundle:
+  name: python-wheel
+
+artifacts:
+    my_test_code:
+      type: whl
+      path: "./my_test_code"
+      build: "python3 setup.py bdist_wheel"
+
+resources:
+  jobs:
+    test_job:
+      name: "[${bundle.environment}] My Wheel Job"
+      tasks:
+        - task_key: TestTask
+          existing_cluster_id: "0717-132531-5opeqon1"
+          python_wheel_task:
+            package_name: "my_test_code"
+            entry_point: "run"

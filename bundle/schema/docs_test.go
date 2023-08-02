@@ -4,30 +4,31 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/databricks/cli/libs/jsonschema"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestSchemaToDocs(t *testing.T) {
-	schema := &Schema{
+	jsonSchema := &jsonschema.Schema{
 		Type:        "object",
 		Description: "root doc",
-		Properties: map[string]*Schema{
+		Properties: map[string]*jsonschema.Schema{
 			"foo": {Type: "number", Description: "foo doc"},
 			"bar": {Type: "string"},
 			"octave": {
 				Type:                 "object",
-				AdditionalProperties: &Schema{Type: "number"},
+				AdditionalProperties: &jsonschema.Schema{Type: "number"},
 				Description:          "octave docs",
 			},
 			"scales": {
 				Type:        "object",
 				Description: "scale docs",
-				Items:       &Schema{Type: "string"},
+				Items:       &jsonschema.Schema{Type: "string"},
 			},
 		},
 	}
-	docs := schemaToDocs(schema)
+	docs := schemaToDocs(jsonSchema)
 	docsJson, err := json.MarshalIndent(docs, "		", "	")
 	require.NoError(t, err)
 

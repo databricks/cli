@@ -25,6 +25,9 @@ type Bundle struct {
 	// Lock configures locking behavior on deployment.
 	Lock Lock `json:"lock" bundle:"readonly"`
 
+	// Force-override Git branch validation.
+	Force bool `json:"force" bundle:"readonly"`
+
 	// Contains Git information like current commit, current branch and
 	// origin url. Automatically loaded by reading .git directory if not specified
 	Git Git `json:"git,omitempty"`

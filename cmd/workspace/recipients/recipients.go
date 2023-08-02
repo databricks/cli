@@ -12,52 +12,90 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var Cmd = &cobra.Command{
-	Use:   "recipients",
-	Short: `Databricks Recipients REST API.`,
-	Long:  `Databricks Recipients REST API`,
-	Annotations: map[string]string{
-		"package": "sharing",
-	},
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var cmdOverrides []func(*cobra.Command)
+
+func New() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "recipients",
+		Short: `A recipient is an object you create using :method:recipients/create to represent an organization which you want to allow access shares.`,
+		Long: `A recipient is an object you create using :method:recipients/create to
+  represent an organization which you want to allow access shares. The way how
+  sharing works differs depending on whether or not your recipient has access to
+  a Databricks workspace that is enabled for Unity Catalog:
+  
+  - For recipients with access to a Databricks workspace that is enabled for
+  Unity Catalog, you can create a recipient object along with a unique sharing
+  identifier you get from the recipient. The sharing identifier is the key
+  identifier that enables the secure connection. This sharing mode is called
+  **Databricks-to-Databricks sharing**.
+  
+  - For recipients without access to a Databricks workspace that is enabled for
+  Unity Catalog, when you create a recipient object, Databricks generates an
+  activation link you can send to the recipient. The recipient follows the
+  activation link to download the credential file, and then uses the credential
+  file to establish a secure connection to receive the shared data. This sharing
+  mode is called **open sharing**.`,
+		GroupID: "sharing",
+		Annotations: map[string]string{
+			"package": "sharing",
+		},
+	}
+
+	// Apply optional overrides to this command.
+	for _, fn := range cmdOverrides {
+		fn(cmd)
+	}
+
+	return cmd
 }
 
 // start create command
-var createReq sharing.CreateRecipient
-var createJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(createCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var createOverrides []func(
+	*cobra.Command,
+	*sharing.CreateRecipient,
+)
+
+func newCreate() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var createReq sharing.CreateRecipient
+	var createJson flags.JsonFlag
+
 	// TODO: short flags
-	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	createCmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `Description about the recipient.`)
+	cmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `Description about the recipient.`)
 	// TODO: any: data_recipient_global_metastore_id
 	// TODO: complex arg: ip_access_list
-	createCmd.Flags().StringVar(&createReq.Owner, "owner", createReq.Owner, `Username of the recipient owner.`)
+	cmd.Flags().StringVar(&createReq.Owner, "owner", createReq.Owner, `Username of the recipient owner.`)
 	// TODO: complex arg: properties_kvpairs
-	createCmd.Flags().StringVar(&createReq.SharingCode, "sharing-code", createReq.SharingCode, `The one-time sharing code provided by the data recipient.`)
+	cmd.Flags().StringVar(&createReq.SharingCode, "sharing-code", createReq.SharingCode, `The one-time sharing code provided by the data recipient.`)
 
-}
-
-var createCmd = &cobra.Command{
-	Use:   "create NAME AUTHENTICATION_TYPE",
-	Short: `Create a share recipient.`,
-	Long: `Create a share recipient.
+	cmd.Use = "create NAME AUTHENTICATION_TYPE"
+	cmd.Short = `Create a share recipient.`
+	cmd.Long = `Create a share recipient.
   
   Creates a new recipient with the delta sharing authentication type in the
   metastore. The caller must be a metastore admin or has the
-  **CREATE_RECIPIENT** privilege on the metastore.`,
+  **CREATE_RECIPIENT** privilege on the metastore.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		if cmd.Flags().Changed("json") {
 			check = cobra.ExactArgs(0)
 		}
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -79,32 +117,53 @@ var createCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range createOverrides {
+		fn(cmd, &createReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newCreate())
+	})
 }
 
 // start delete command
-var deleteReq sharing.DeleteRecipientRequest
 
-func init() {
-	Cmd.AddCommand(deleteCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var deleteOverrides []func(
+	*cobra.Command,
+	*sharing.DeleteRecipientRequest,
+)
+
+func newDelete() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var deleteReq sharing.DeleteRecipientRequest
+
 	// TODO: short flags
 
-}
-
-var deleteCmd = &cobra.Command{
-	Use:   "delete NAME",
-	Short: `Delete a share recipient.`,
-	Long: `Delete a share recipient.
+	cmd.Use = "delete NAME"
+	cmd.Short = `Delete a share recipient.`
+	cmd.Long = `Delete a share recipient.
   
   Deletes the specified recipient from the metastore. The caller must be the
-  owner of the recipient.`,
+  owner of the recipient.`
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -132,33 +191,54 @@ var deleteCmd = &cobra.Command{
 			return err
 		}
 		return nil
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range deleteOverrides {
+		fn(cmd, &deleteReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newDelete())
+	})
 }
 
 // start get command
-var getReq sharing.GetRecipientRequest
 
-func init() {
-	Cmd.AddCommand(getCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getOverrides []func(
+	*cobra.Command,
+	*sharing.GetRecipientRequest,
+)
+
+func newGet() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getReq sharing.GetRecipientRequest
+
 	// TODO: short flags
 
-}
-
-var getCmd = &cobra.Command{
-	Use:   "get NAME",
-	Short: `Get a share recipient.`,
-	Long: `Get a share recipient.
+	cmd.Use = "get NAME"
+	cmd.Short = `Get a share recipient.`
+	cmd.Long = `Get a share recipient.
   
   Gets a share recipient from the metastore if:
   
-  * the caller is the owner of the share recipient, or: * is a metastore admin`,
+  * the caller is the owner of the share recipient, or: * is a metastore admin`
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -186,45 +266,67 @@ var getCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getOverrides {
+		fn(cmd, &getReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newGet())
+	})
 }
 
 // start list command
-var listReq sharing.ListRecipientsRequest
-var listJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(listCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listOverrides []func(
+	*cobra.Command,
+	*sharing.ListRecipientsRequest,
+)
+
+func newList() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var listReq sharing.ListRecipientsRequest
+	var listJson flags.JsonFlag
+
 	// TODO: short flags
-	listCmd.Flags().Var(&listJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&listJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	listCmd.Flags().StringVar(&listReq.DataRecipientGlobalMetastoreId, "data-recipient-global-metastore-id", listReq.DataRecipientGlobalMetastoreId, `If not provided, all recipients will be returned.`)
+	cmd.Flags().StringVar(&listReq.DataRecipientGlobalMetastoreId, "data-recipient-global-metastore-id", listReq.DataRecipientGlobalMetastoreId, `If not provided, all recipients will be returned.`)
 
-}
-
-var listCmd = &cobra.Command{
-	Use:   "list",
-	Short: `List share recipients.`,
-	Long: `List share recipients.
+	cmd.Use = "list"
+	cmd.Short = `List share recipients.`
+	cmd.Long = `List share recipients.
   
   Gets an array of all share recipients within the current metastore where:
   
   * the caller is a metastore admin, or * the caller is the owner. There is no
-  guarantee of a specific ordering of the elements in the array.`,
+  guarantee of a specific ordering of the elements in the array.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
 		if cmd.Flags().Changed("json") {
 			check = cobra.ExactArgs(0)
 		}
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -241,36 +343,58 @@ var listCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listOverrides {
+		fn(cmd, &listReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newList())
+	})
 }
 
 // start rotate-token command
-var rotateTokenReq sharing.RotateRecipientToken
 
-func init() {
-	Cmd.AddCommand(rotateTokenCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var rotateTokenOverrides []func(
+	*cobra.Command,
+	*sharing.RotateRecipientToken,
+)
+
+func newRotateToken() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var rotateTokenReq sharing.RotateRecipientToken
+
 	// TODO: short flags
 
-}
-
-var rotateTokenCmd = &cobra.Command{
-	Use:   "rotate-token EXISTING_TOKEN_EXPIRE_IN_SECONDS NAME",
-	Short: `Rotate a token.`,
-	Long: `Rotate a token.
+	cmd.Use = "rotate-token EXISTING_TOKEN_EXPIRE_IN_SECONDS NAME"
+	cmd.Short = `Rotate a token.`
+	cmd.Long = `Rotate a token.
   
   Refreshes the specified recipient's delta sharing authentication token with
-  the provided token info. The caller must be the owner of the recipient.`,
+  the provided token info. The caller must be the owner of the recipient.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -285,32 +409,53 @@ var rotateTokenCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range rotateTokenOverrides {
+		fn(cmd, &rotateTokenReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newRotateToken())
+	})
 }
 
 // start share-permissions command
-var sharePermissionsReq sharing.SharePermissionsRequest
 
-func init() {
-	Cmd.AddCommand(sharePermissionsCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var sharePermissionsOverrides []func(
+	*cobra.Command,
+	*sharing.SharePermissionsRequest,
+)
+
+func newSharePermissions() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var sharePermissionsReq sharing.SharePermissionsRequest
+
 	// TODO: short flags
 
-}
-
-var sharePermissionsCmd = &cobra.Command{
-	Use:   "share-permissions NAME",
-	Short: `Get recipient share permissions.`,
-	Long: `Get recipient share permissions.
+	cmd.Use = "share-permissions NAME"
+	cmd.Short = `Get recipient share permissions.`
+	cmd.Long = `Get recipient share permissions.
   
   Gets the share permissions for the specified Recipient. The caller must be a
-  metastore admin or the owner of the Recipient.`,
+  metastore admin or the owner of the Recipient.`
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -338,41 +483,62 @@ var sharePermissionsCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range sharePermissionsOverrides {
+		fn(cmd, &sharePermissionsReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newSharePermissions())
+	})
 }
 
 // start update command
-var updateReq sharing.UpdateRecipient
-var updateJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(updateCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updateOverrides []func(
+	*cobra.Command,
+	*sharing.UpdateRecipient,
+)
+
+func newUpdate() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updateReq sharing.UpdateRecipient
+	var updateJson flags.JsonFlag
+
 	// TODO: short flags
-	updateCmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	updateCmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `Description about the recipient.`)
+	cmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `Description about the recipient.`)
 	// TODO: complex arg: ip_access_list
-	updateCmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `Name of Recipient.`)
-	updateCmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of the recipient owner.`)
+	cmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `Name of Recipient.`)
+	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of the recipient owner.`)
 	// TODO: complex arg: properties_kvpairs
 
-}
-
-var updateCmd = &cobra.Command{
-	Use:   "update NAME",
-	Short: `Update a share recipient.`,
-	Long: `Update a share recipient.
+	cmd.Use = "update NAME"
+	cmd.Short = `Update a share recipient.`
+	cmd.Long = `Update a share recipient.
   
   Updates an existing recipient in the metastore. The caller must be a metastore
   admin or the owner of the recipient. If the recipient name will be updated,
-  the user must be both a metastore admin and the owner of the recipient.`,
+  the user must be both a metastore admin and the owner of the recipient.`
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -407,10 +573,24 @@ var updateCmd = &cobra.Command{
 			return err
 		}
 		return nil
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updateOverrides {
+		fn(cmd, &updateReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newUpdate())
+	})
 }
 
 // end service Recipients

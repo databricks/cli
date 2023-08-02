@@ -12,36 +12,56 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var Cmd = &cobra.Command{
-	Use:   "workspace",
-	Short: `The Workspace API allows you to list, import, export, and delete notebooks and folders.`,
-	Long: `The Workspace API allows you to list, import, export, and delete notebooks and
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var cmdOverrides []func(*cobra.Command)
+
+func New() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "workspace",
+		Short: `The Workspace API allows you to list, import, export, and delete notebooks and folders.`,
+		Long: `The Workspace API allows you to list, import, export, and delete notebooks and
   folders.
   
   A notebook is a web-based interface to a document that contains runnable code,
   visualizations, and explanatory text.`,
-	Annotations: map[string]string{
-		"package": "workspace",
-	},
+		GroupID: "workspace",
+		Annotations: map[string]string{
+			"package": "workspace",
+		},
+	}
+
+	// Apply optional overrides to this command.
+	for _, fn := range cmdOverrides {
+		fn(cmd)
+	}
+
+	return cmd
 }
 
 // start delete command
-var deleteReq workspace.Delete
-var deleteJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(deleteCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var deleteOverrides []func(
+	*cobra.Command,
+	*workspace.Delete,
+)
+
+func newDelete() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var deleteReq workspace.Delete
+	var deleteJson flags.JsonFlag
+
 	// TODO: short flags
-	deleteCmd.Flags().Var(&deleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&deleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	deleteCmd.Flags().BoolVar(&deleteReq.Recursive, "recursive", deleteReq.Recursive, `The flag that specifies whether to delete the object recursively.`)
+	cmd.Flags().BoolVar(&deleteReq.Recursive, "recursive", deleteReq.Recursive, `The flag that specifies whether to delete the object recursively.`)
 
-}
-
-var deleteCmd = &cobra.Command{
-	Use:   "delete PATH",
-	Short: `Delete a workspace object.`,
-	Long: `Delete a workspace object.
+	cmd.Use = "delete PATH"
+	cmd.Short = `Delete a workspace object.`
+	cmd.Long = `Delete a workspace object.
   
   Deletes an object or a directory (and optionally recursively deletes all
   objects in the directory). * If path does not exist, this call returns an
@@ -50,11 +70,12 @@ var deleteCmd = &cobra.Command{
   DIRECTORY_NOT_EMPTY.
   
   Object deletion cannot be undone and deleting a directory recursively is not
-  atomic.`,
+  atomic.`
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -89,27 +110,47 @@ var deleteCmd = &cobra.Command{
 			return err
 		}
 		return nil
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range deleteOverrides {
+		fn(cmd, &deleteReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newDelete())
+	})
 }
 
 // start export command
-var exportReq workspace.ExportRequest
 
-func init() {
-	Cmd.AddCommand(exportCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var exportOverrides []func(
+	*cobra.Command,
+	*workspace.ExportRequest,
+)
+
+func newExport() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var exportReq workspace.ExportRequest
+
 	// TODO: short flags
 
-	exportCmd.Flags().Var(&exportReq.Format, "format", `This specifies the format of the exported file.`)
+	cmd.Flags().Var(&exportReq.Format, "format", `This specifies the format of the exported file.`)
 
-}
-
-var exportCmd = &cobra.Command{
-	Use:   "export PATH",
-	Short: `Export a workspace object.`,
-	Long: `Export a workspace object.
+	cmd.Use = "export PATH"
+	cmd.Short = `Export a workspace object.`
+	cmd.Long = `Export a workspace object.
   
   Exports an object or the contents of an entire directory.
   
@@ -118,11 +159,12 @@ var exportCmd = &cobra.Command{
   
   If the exported data would exceed size limit, this call returns
   MAX_NOTEBOOK_SIZE_EXCEEDED. Currently, this API does not support exporting a
-  library.`,
+  library.`
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -150,36 +192,58 @@ var exportCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range exportOverrides {
+		fn(cmd, &exportReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newExport())
+	})
 }
 
 // start get-status command
-var getStatusReq workspace.GetStatusRequest
 
-func init() {
-	Cmd.AddCommand(getStatusCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getStatusOverrides []func(
+	*cobra.Command,
+	*workspace.GetStatusRequest,
+)
+
+func newGetStatus() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getStatusReq workspace.GetStatusRequest
+
 	// TODO: short flags
 
-}
-
-var getStatusCmd = &cobra.Command{
-	Use:   "get-status PATH",
-	Short: `Get status.`,
-	Long: `Get status.
+	cmd.Use = "get-status PATH"
+	cmd.Short = `Get status.`
+	cmd.Long = `Get status.
   
   Gets the status of an object or a directory. If path does not exist, this
-  call returns an error RESOURCE_DOES_NOT_EXIST.`,
+  call returns an error RESOURCE_DOES_NOT_EXIST.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -190,48 +254,70 @@ var getStatusCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getStatusOverrides {
+		fn(cmd, &getStatusReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newGetStatus())
+	})
 }
 
 // start import command
-var importReq workspace.Import
-var importJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(importCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var importOverrides []func(
+	*cobra.Command,
+	*workspace.Import,
+)
+
+func newImport() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var importReq workspace.Import
+	var importJson flags.JsonFlag
+
 	// TODO: short flags
-	importCmd.Flags().Var(&importJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&importJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	importCmd.Flags().StringVar(&importReq.Content, "content", importReq.Content, `The base64-encoded content.`)
-	importCmd.Flags().Var(&importReq.Format, "format", `This specifies the format of the file to be imported.`)
-	importCmd.Flags().Var(&importReq.Language, "language", `The language of the object.`)
-	importCmd.Flags().BoolVar(&importReq.Overwrite, "overwrite", importReq.Overwrite, `The flag that specifies whether to overwrite existing object.`)
+	cmd.Flags().StringVar(&importReq.Content, "content", importReq.Content, `The base64-encoded content.`)
+	cmd.Flags().Var(&importReq.Format, "format", `This specifies the format of the file to be imported.`)
+	cmd.Flags().Var(&importReq.Language, "language", `The language of the object.`)
+	cmd.Flags().BoolVar(&importReq.Overwrite, "overwrite", importReq.Overwrite, `The flag that specifies whether to overwrite existing object.`)
 
-}
-
-var importCmd = &cobra.Command{
-	Use:   "import PATH",
-	Short: `Import a workspace object.`,
-	Long: `Import a workspace object.
+	cmd.Use = "import PATH"
+	cmd.Short = `Import a workspace object.`
+	cmd.Long = `Import a workspace object.
   
   Imports a workspace object (for example, a notebook or file) or the contents
   of an entire directory. If path already exists and overwrite is set to
   false, this call returns an error RESOURCE_ALREADY_EXISTS. One can only
-  use DBC format to import a directory.`,
+  use DBC format to import a directory.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
 			check = cobra.ExactArgs(0)
 		}
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -249,39 +335,61 @@ var importCmd = &cobra.Command{
 			return err
 		}
 		return nil
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range importOverrides {
+		fn(cmd, &importReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newImport())
+	})
 }
 
 // start list command
-var listReq workspace.ListWorkspaceRequest
 
-func init() {
-	Cmd.AddCommand(listCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listOverrides []func(
+	*cobra.Command,
+	*workspace.ListWorkspaceRequest,
+)
+
+func newList() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var listReq workspace.ListWorkspaceRequest
+
 	// TODO: short flags
 
-	listCmd.Flags().IntVar(&listReq.NotebooksModifiedAfter, "notebooks-modified-after", listReq.NotebooksModifiedAfter, `UTC timestamp in milliseconds.`)
+	cmd.Flags().IntVar(&listReq.NotebooksModifiedAfter, "notebooks-modified-after", listReq.NotebooksModifiedAfter, `UTC timestamp in milliseconds.`)
 
-}
-
-var listCmd = &cobra.Command{
-	Use:   "list PATH",
-	Short: `List contents.`,
-	Long: `List contents.
+	cmd.Use = "list PATH"
+	cmd.Short = `List contents.`
+	cmd.Long = `List contents.
   
   Lists the contents of a directory, or the object if it is not a directory. If
   the input path does not exist, this call returns an error
-  RESOURCE_DOES_NOT_EXIST.`,
+  RESOURCE_DOES_NOT_EXIST.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -292,38 +400,59 @@ var listCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listOverrides {
+		fn(cmd, &listReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newList())
+	})
 }
 
 // start mkdirs command
-var mkdirsReq workspace.Mkdirs
-var mkdirsJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(mkdirsCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var mkdirsOverrides []func(
+	*cobra.Command,
+	*workspace.Mkdirs,
+)
+
+func newMkdirs() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var mkdirsReq workspace.Mkdirs
+	var mkdirsJson flags.JsonFlag
+
 	// TODO: short flags
-	mkdirsCmd.Flags().Var(&mkdirsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&mkdirsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-}
-
-var mkdirsCmd = &cobra.Command{
-	Use:   "mkdirs PATH",
-	Short: `Create a directory.`,
-	Long: `Create a directory.
+	cmd.Use = "mkdirs PATH"
+	cmd.Short = `Create a directory.`
+	cmd.Long = `Create a directory.
   
   Creates the specified directory (and necessary parent directories if they do
   not exist). If there is an object (not a directory) at any prefix of the input
   path, this call returns an error RESOURCE_ALREADY_EXISTS.
   
   Note that if this operation fails it may have succeeded in creating some of
-  the necessary parent directories.`,
+  the necessary parent directories.`
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -358,10 +487,24 @@ var mkdirsCmd = &cobra.Command{
 			return err
 		}
 		return nil
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range mkdirsOverrides {
+		fn(cmd, &mkdirsReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newMkdirs())
+	})
 }
 
 // end service Workspace

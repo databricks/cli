@@ -1,17 +1,23 @@
 package fs
 
 import (
-	"github.com/databricks/cli/cmd/root"
 	"github.com/spf13/cobra"
 )
 
-// fsCmd represents the fs command
-var fsCmd = &cobra.Command{
-	Use:   "fs",
-	Short: "Filesystem related commands",
-	Long:  `Commands to do DBFS operations.`,
-}
+func New() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "fs",
+		Short: "Filesystem related commands",
+		Long:  `Commands to do DBFS operations.`,
+	}
 
-func init() {
-	root.RootCmd.AddCommand(fsCmd)
+	cmd.AddCommand(
+		newCatCommand(),
+		newCpCommand(),
+		newLsCommand(),
+		newMkdirCommand(),
+		newRmCommand(),
+	)
+
+	return cmd
 }

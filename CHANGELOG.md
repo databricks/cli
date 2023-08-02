@@ -1,18 +1,49 @@
 # Version changelog
 
+## 0.202.0
+
+Breaking Change:
+ * Require include glob patterns to be explicitly defined ([#602](https://github.com/databricks/cli/pull/602)).
+
+Bundles:
+ * Add support for more SDK config options ([#587](https://github.com/databricks/cli/pull/587)).
+ * Add template renderer for Databricks templates ([#589](https://github.com/databricks/cli/pull/589)).
+ * Fix formatting in renderer.go ([#593](https://github.com/databricks/cli/pull/593)).
+ * Fixed python wheel test ([#608](https://github.com/databricks/cli/pull/608)).
+ * Auto detect Python wheel packages and infer build command ([#603](https://github.com/databricks/cli/pull/603)).
+ * Added support for artifacts building for bundles ([#583](https://github.com/databricks/cli/pull/583)).
+ * Add support for cloning repositories ([#544](https://github.com/databricks/cli/pull/544)).
+ * Add regexp compile helper function for templates ([#601](https://github.com/databricks/cli/pull/601)).
+ * Add unit test that raw strings are printed as is ([#599](https://github.com/databricks/cli/pull/599)).
+
+Internal:
+ * Fix tests under ./cmd/configure if DATABRICKS_TOKEN is set ([#605](https://github.com/databricks/cli/pull/605)).
+ * Remove dependency on global state in generated commands ([#595](https://github.com/databricks/cli/pull/595)).
+ * Remove dependency on global state for the root command ([#606](https://github.com/databricks/cli/pull/606)).
+ * Add merge_group trigger for build ([#612](https://github.com/databricks/cli/pull/612)).
+ * Added support for build command chaining and error on missing wheel ([#607](https://github.com/databricks/cli/pull/607)).
+ * Add TestAcc prefix to filer test and fix any failing tests ([#611](https://github.com/databricks/cli/pull/611)).
+ * Add url parse helper function for templates ([#600](https://github.com/databricks/cli/pull/600)).
+ * Remove dependency on global state for remaining commands ([#613](https://github.com/databricks/cli/pull/613)).
+ * Update CHANGELOG template ([#588](https://github.com/databricks/cli/pull/588)).
+
+
+
 ## 0.201.0
 
-* Add development runs ([#522](https://github.com/databricks/cli/pull/522)).
-* Support tab completion for profiles ([#572](https://github.com/databricks/cli/pull/572)).
-* Correctly use --profile flag passed for all bundle commands ([#571](https://github.com/databricks/cli/pull/571)).
-* Disallow notebooks in paths where files are expected ([#573](https://github.com/databricks/cli/pull/573)).
-* Improve auth login experience ([#570](https://github.com/databricks/cli/pull/570)).
-* Remove base path checks during sync ([#576](https://github.com/databricks/cli/pull/576)).
-* First look for databricks.yml before falling back to bundle.yml ([#580](https://github.com/databricks/cli/pull/580)).
-* Integrate with auto-release infra ([#581](https://github.com/databricks/cli/pull/581)).
+CLI:
+ * Support tab completion for profiles ([#572](https://github.com/databricks/cli/pull/572)).
+ * Improve auth login experience ([#570](https://github.com/databricks/cli/pull/570)).
+ * Integrate with auto-release infra ([#581](https://github.com/databricks/cli/pull/581)).
+
+Bundles:
+ * Add development runs ([#522](https://github.com/databricks/cli/pull/522)).
+ * Correctly use --profile flag passed for all bundle commands ([#571](https://github.com/databricks/cli/pull/571)).
+ * Disallow notebooks in paths where files are expected ([#573](https://github.com/databricks/cli/pull/573)).
+ * Remove base path checks during sync ([#576](https://github.com/databricks/cli/pull/576)).
+ * First look for databricks.yml before falling back to bundle.yml ([#580](https://github.com/databricks/cli/pull/580)).
 
 API Changes:
-
  * Removed `databricks metastores maintenance` command.
  * Added `databricks metastores enable-optimization` command.
  * Added `databricks tables update` command.
@@ -20,9 +51,9 @@ API Changes:
  * Changed `databricks account settings read-personal-compute-setting` command with new required argument order.
  * Added `databricks clean-rooms` command group.
 
-OpenAPI SHA: 850a075ed9758d21a6bc4409506b48c8b9f93ab4, Date: 2023-07-18
-Dependency updates:
+OpenAPI commit 850a075ed9758d21a6bc4409506b48c8b9f93ab4 (2023-07-18)
 
+Dependency updates:
  * Bump golang.org/x/term from 0.9.0 to 0.10.0 ([#567](https://github.com/databricks/cli/pull/567)).
  * Bump golang.org/x/oauth2 from 0.9.0 to 0.10.0 ([#566](https://github.com/databricks/cli/pull/566)).
  * Bump golang.org/x/mod from 0.11.0 to 0.12.0 ([#568](https://github.com/databricks/cli/pull/568)).

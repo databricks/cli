@@ -13,10 +13,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var Cmd = &cobra.Command{
-	Use:   "workspaces",
-	Short: `These APIs manage workspaces for this account.`,
-	Long: `These APIs manage workspaces for this account. A Databricks workspace is an
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var cmdOverrides []func(*cobra.Command)
+
+func New() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "workspaces",
+		Short: `These APIs manage workspaces for this account.`,
+		Long: `These APIs manage workspaces for this account. A Databricks workspace is an
   environment for accessing all of your Databricks assets. The workspace
   organizes objects (notebooks, libraries, and experiments) into folders, and
   provides access to data and computational resources such as clusters and jobs.
@@ -24,45 +29,59 @@ var Cmd = &cobra.Command{
   These endpoints are available if your account is on the E2 version of the
   platform or on a select custom plan that allows multiple workspaces per
   account.`,
-	Annotations: map[string]string{
-		"package": "provisioning",
-	},
+		GroupID: "provisioning",
+		Annotations: map[string]string{
+			"package": "provisioning",
+		},
+	}
+
+	// Apply optional overrides to this command.
+	for _, fn := range cmdOverrides {
+		fn(cmd)
+	}
+
+	return cmd
 }
 
 // start create command
-var createReq provisioning.CreateWorkspaceRequest
-var createJson flags.JsonFlag
 
-var createSkipWait bool
-var createTimeout time.Duration
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var createOverrides []func(
+	*cobra.Command,
+	*provisioning.CreateWorkspaceRequest,
+)
 
-func init() {
-	Cmd.AddCommand(createCmd)
+func newCreate() *cobra.Command {
+	cmd := &cobra.Command{}
 
-	createCmd.Flags().BoolVar(&createSkipWait, "no-wait", createSkipWait, `do not wait to reach RUNNING state`)
-	createCmd.Flags().DurationVar(&createTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
+	var createReq provisioning.CreateWorkspaceRequest
+	var createJson flags.JsonFlag
+
+	var createSkipWait bool
+	var createTimeout time.Duration
+
+	cmd.Flags().BoolVar(&createSkipWait, "no-wait", createSkipWait, `do not wait to reach RUNNING state`)
+	cmd.Flags().DurationVar(&createTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
 	// TODO: short flags
-	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	createCmd.Flags().StringVar(&createReq.AwsRegion, "aws-region", createReq.AwsRegion, `The AWS region of the workspace's data plane.`)
-	createCmd.Flags().StringVar(&createReq.Cloud, "cloud", createReq.Cloud, `The cloud provider which the workspace uses.`)
+	cmd.Flags().StringVar(&createReq.AwsRegion, "aws-region", createReq.AwsRegion, `The AWS region of the workspace's data plane.`)
+	cmd.Flags().StringVar(&createReq.Cloud, "cloud", createReq.Cloud, `The cloud provider which the workspace uses.`)
 	// TODO: complex arg: cloud_resource_container
-	createCmd.Flags().StringVar(&createReq.CredentialsId, "credentials-id", createReq.CredentialsId, `ID of the workspace's credential configuration object.`)
-	createCmd.Flags().StringVar(&createReq.DeploymentName, "deployment-name", createReq.DeploymentName, `The deployment name defines part of the subdomain for the workspace.`)
-	createCmd.Flags().StringVar(&createReq.Location, "location", createReq.Location, `The Google Cloud region of the workspace data plane in your Google account.`)
-	createCmd.Flags().StringVar(&createReq.ManagedServicesCustomerManagedKeyId, "managed-services-customer-managed-key-id", createReq.ManagedServicesCustomerManagedKeyId, `The ID of the workspace's managed services encryption key configuration object.`)
-	createCmd.Flags().StringVar(&createReq.NetworkId, "network-id", createReq.NetworkId, ``)
-	createCmd.Flags().Var(&createReq.PricingTier, "pricing-tier", `The pricing tier of the workspace.`)
-	createCmd.Flags().StringVar(&createReq.PrivateAccessSettingsId, "private-access-settings-id", createReq.PrivateAccessSettingsId, `ID of the workspace's private access settings object.`)
-	createCmd.Flags().StringVar(&createReq.StorageConfigurationId, "storage-configuration-id", createReq.StorageConfigurationId, `The ID of the workspace's storage configuration object.`)
-	createCmd.Flags().StringVar(&createReq.StorageCustomerManagedKeyId, "storage-customer-managed-key-id", createReq.StorageCustomerManagedKeyId, `The ID of the workspace's storage encryption key configuration object.`)
+	cmd.Flags().StringVar(&createReq.CredentialsId, "credentials-id", createReq.CredentialsId, `ID of the workspace's credential configuration object.`)
+	cmd.Flags().StringVar(&createReq.DeploymentName, "deployment-name", createReq.DeploymentName, `The deployment name defines part of the subdomain for the workspace.`)
+	cmd.Flags().StringVar(&createReq.Location, "location", createReq.Location, `The Google Cloud region of the workspace data plane in your Google account.`)
+	cmd.Flags().StringVar(&createReq.ManagedServicesCustomerManagedKeyId, "managed-services-customer-managed-key-id", createReq.ManagedServicesCustomerManagedKeyId, `The ID of the workspace's managed services encryption key configuration object.`)
+	cmd.Flags().StringVar(&createReq.NetworkId, "network-id", createReq.NetworkId, ``)
+	cmd.Flags().Var(&createReq.PricingTier, "pricing-tier", `The pricing tier of the workspace.`)
+	cmd.Flags().StringVar(&createReq.PrivateAccessSettingsId, "private-access-settings-id", createReq.PrivateAccessSettingsId, `ID of the workspace's private access settings object.`)
+	cmd.Flags().StringVar(&createReq.StorageConfigurationId, "storage-configuration-id", createReq.StorageConfigurationId, `The ID of the workspace's storage configuration object.`)
+	cmd.Flags().StringVar(&createReq.StorageCustomerManagedKeyId, "storage-customer-managed-key-id", createReq.StorageCustomerManagedKeyId, `The ID of the workspace's storage encryption key configuration object.`)
 
-}
-
-var createCmd = &cobra.Command{
-	Use:   "create WORKSPACE_NAME",
-	Short: `Create a new workspace.`,
-	Long: `Create a new workspace.
+	cmd.Use = "create WORKSPACE_NAME"
+	cmd.Short = `Create a new workspace.`
+	cmd.Long = `Create a new workspace.
   
   Creates a new workspace.
   
@@ -72,18 +91,20 @@ var createCmd = &cobra.Command{
   workspace status is typically PROVISIONING. Use the workspace ID
   (workspace_id) field in the response to identify the new workspace and make
   repeated GET requests with the workspace ID and check its status. The
-  workspace becomes available when the status changes to RUNNING.`,
+  workspace becomes available when the status changes to RUNNING.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
 		if cmd.Flags().Changed("json") {
 			check = cobra.ExactArgs(0)
 		}
 		return check(cmd, args)
-	},
-	PreRunE: root.MustAccountClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustAccountClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
 
@@ -113,25 +134,45 @@ var createCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, info)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range createOverrides {
+		fn(cmd, &createReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newCreate())
+	})
 }
 
 // start delete command
-var deleteReq provisioning.DeleteWorkspaceRequest
 
-func init() {
-	Cmd.AddCommand(deleteCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var deleteOverrides []func(
+	*cobra.Command,
+	*provisioning.DeleteWorkspaceRequest,
+)
+
+func newDelete() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var deleteReq provisioning.DeleteWorkspaceRequest
+
 	// TODO: short flags
 
-}
-
-var deleteCmd = &cobra.Command{
-	Use:   "delete WORKSPACE_ID",
-	Short: `Delete a workspace.`,
-	Long: `Delete a workspace.
+	cmd.Use = "delete WORKSPACE_ID"
+	cmd.Short = `Delete a workspace.`
+	cmd.Long = `Delete a workspace.
   
   Terminates and deletes a Databricks workspace. From an API perspective,
   deletion is immediate. However, it might take a few minutes for all workspaces
@@ -140,11 +181,12 @@ var deleteCmd = &cobra.Command{
   
   This operation is available only if your account is on the E2 version of the
   platform or on a select custom plan that allows multiple workspaces per
-  account.`,
+  account.`
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustAccountClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustAccountClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
 
@@ -175,25 +217,45 @@ var deleteCmd = &cobra.Command{
 			return err
 		}
 		return nil
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range deleteOverrides {
+		fn(cmd, &deleteReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newDelete())
+	})
 }
 
 // start get command
-var getReq provisioning.GetWorkspaceRequest
 
-func init() {
-	Cmd.AddCommand(getCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getOverrides []func(
+	*cobra.Command,
+	*provisioning.GetWorkspaceRequest,
+)
+
+func newGet() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getReq provisioning.GetWorkspaceRequest
+
 	// TODO: short flags
 
-}
-
-var getCmd = &cobra.Command{
-	Use:   "get WORKSPACE_ID",
-	Short: `Get a workspace.`,
-	Long: `Get a workspace.
+	cmd.Use = "get WORKSPACE_ID"
+	cmd.Short = `Get a workspace.`
+	cmd.Long = `Get a workspace.
   
   Gets information including status for a Databricks workspace, specified by ID.
   In the response, the workspace_status field indicates the current status.
@@ -208,11 +270,12 @@ var getCmd = &cobra.Command{
   platform or on a select custom plan that allows multiple workspaces per
   account.
   
-  [Create a new workspace using the Account API]: http://docs.databricks.com/administration-guide/account-api/new-workspace.html`,
+  [Create a new workspace using the Account API]: http://docs.databricks.com/administration-guide/account-api/new-workspace.html`
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustAccountClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustAccountClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
 
@@ -243,33 +306,51 @@ var getCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getOverrides {
+		fn(cmd, &getReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newGet())
+	})
 }
 
 // start list command
 
-func init() {
-	Cmd.AddCommand(listCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listOverrides []func(
+	*cobra.Command,
+)
 
-}
+func newList() *cobra.Command {
+	cmd := &cobra.Command{}
 
-var listCmd = &cobra.Command{
-	Use:   "list",
-	Short: `Get all workspaces.`,
-	Long: `Get all workspaces.
+	cmd.Use = "list"
+	cmd.Short = `Get all workspaces.`
+	cmd.Long = `Get all workspaces.
   
   Gets a list of all workspaces associated with an account, specified by ID.
   
   This operation is available only if your account is on the E2 version of the
   platform or on a select custom plan that allows multiple workspaces per
-  account.`,
+  account.`
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustAccountClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustAccountClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
 		response, err := a.Workspaces.List(ctx)
@@ -277,38 +358,57 @@ var listCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listOverrides {
+		fn(cmd)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newList())
+	})
 }
 
 // start update command
-var updateReq provisioning.UpdateWorkspaceRequest
 
-var updateSkipWait bool
-var updateTimeout time.Duration
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updateOverrides []func(
+	*cobra.Command,
+	*provisioning.UpdateWorkspaceRequest,
+)
 
-func init() {
-	Cmd.AddCommand(updateCmd)
+func newUpdate() *cobra.Command {
+	cmd := &cobra.Command{}
 
-	updateCmd.Flags().BoolVar(&updateSkipWait, "no-wait", updateSkipWait, `do not wait to reach RUNNING state`)
-	updateCmd.Flags().DurationVar(&updateTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
+	var updateReq provisioning.UpdateWorkspaceRequest
+
+	var updateSkipWait bool
+	var updateTimeout time.Duration
+
+	cmd.Flags().BoolVar(&updateSkipWait, "no-wait", updateSkipWait, `do not wait to reach RUNNING state`)
+	cmd.Flags().DurationVar(&updateTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
 	// TODO: short flags
 
-	updateCmd.Flags().StringVar(&updateReq.AwsRegion, "aws-region", updateReq.AwsRegion, `The AWS region of the workspace's data plane (for example, us-west-2).`)
-	updateCmd.Flags().StringVar(&updateReq.CredentialsId, "credentials-id", updateReq.CredentialsId, `ID of the workspace's credential configuration object.`)
-	updateCmd.Flags().StringVar(&updateReq.ManagedServicesCustomerManagedKeyId, "managed-services-customer-managed-key-id", updateReq.ManagedServicesCustomerManagedKeyId, `The ID of the workspace's managed services encryption key configuration object.`)
-	updateCmd.Flags().StringVar(&updateReq.NetworkId, "network-id", updateReq.NetworkId, `The ID of the workspace's network configuration object.`)
-	updateCmd.Flags().StringVar(&updateReq.StorageConfigurationId, "storage-configuration-id", updateReq.StorageConfigurationId, `The ID of the workspace's storage configuration object.`)
-	updateCmd.Flags().StringVar(&updateReq.StorageCustomerManagedKeyId, "storage-customer-managed-key-id", updateReq.StorageCustomerManagedKeyId, `The ID of the key configuration object for workspace storage.`)
+	cmd.Flags().StringVar(&updateReq.AwsRegion, "aws-region", updateReq.AwsRegion, `The AWS region of the workspace's data plane (for example, us-west-2).`)
+	cmd.Flags().StringVar(&updateReq.CredentialsId, "credentials-id", updateReq.CredentialsId, `ID of the workspace's credential configuration object.`)
+	cmd.Flags().StringVar(&updateReq.ManagedServicesCustomerManagedKeyId, "managed-services-customer-managed-key-id", updateReq.ManagedServicesCustomerManagedKeyId, `The ID of the workspace's managed services encryption key configuration object.`)
+	cmd.Flags().StringVar(&updateReq.NetworkId, "network-id", updateReq.NetworkId, `The ID of the workspace's network configuration object.`)
+	cmd.Flags().StringVar(&updateReq.StorageConfigurationId, "storage-configuration-id", updateReq.StorageConfigurationId, `The ID of the workspace's storage configuration object.`)
+	cmd.Flags().StringVar(&updateReq.StorageCustomerManagedKeyId, "storage-customer-managed-key-id", updateReq.StorageCustomerManagedKeyId, `The ID of the key configuration object for workspace storage.`)
 
-}
-
-var updateCmd = &cobra.Command{
-	Use:   "update WORKSPACE_ID",
-	Short: `Update workspace configuration.`,
-	Long: `Update workspace configuration.
+	cmd.Use = "update WORKSPACE_ID"
+	cmd.Short = `Update workspace configuration.`
+	cmd.Long = `Update workspace configuration.
   
   Updates a workspace configuration for either a running workspace or a failed
   workspace. The elements that can be updated varies between these two use
@@ -420,11 +520,12 @@ var updateCmd = &cobra.Command{
   account.
   
   [Account Console]: https://docs.databricks.com/administration-guide/account-settings-e2/account-console-e2.html
-  [Create a new workspace using the Account API]: http://docs.databricks.com/administration-guide/account-api/new-workspace.html`,
+  [Create a new workspace using the Account API]: http://docs.databricks.com/administration-guide/account-api/new-workspace.html`
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustAccountClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustAccountClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
 
@@ -467,10 +568,24 @@ var updateCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, info)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updateOverrides {
+		fn(cmd, &updateReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newUpdate())
+	})
 }
 
 // end service Workspaces

@@ -12,10 +12,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var Cmd = &cobra.Command{
-	Use:   "volumes",
-	Short: `Volumes are a Unity Catalog (UC) capability for accessing, storing, governing, organizing and processing files.`,
-	Long: `Volumes are a Unity Catalog (UC) capability for accessing, storing, governing,
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var cmdOverrides []func(*cobra.Command)
+
+func New() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "volumes",
+		Short: `Volumes are a Unity Catalog (UC) capability for accessing, storing, governing, organizing and processing files.`,
+		Long: `Volumes are a Unity Catalog (UC) capability for accessing, storing, governing,
   organizing and processing files. Use cases include running machine learning on
   unstructured data such as image, audio, video, or PDF files, organizing data
   sets during the data exploration stages in data science, working with
@@ -23,32 +28,47 @@ var Cmd = &cobra.Command{
   storing library and config files of arbitrary formats such as .whl or .txt
   centrally and providing secure access across workspaces to it, or transforming
   and querying non-tabular data files in ETL.`,
-	Annotations: map[string]string{
-		"package": "catalog",
-	},
+		GroupID: "catalog",
+		Annotations: map[string]string{
+			"package": "catalog",
+		},
 
-	// This service is being previewed; hide from help output.
-	Hidden: true,
+		// This service is being previewed; hide from help output.
+		Hidden: true,
+	}
+
+	// Apply optional overrides to this command.
+	for _, fn := range cmdOverrides {
+		fn(cmd)
+	}
+
+	return cmd
 }
 
 // start create command
-var createReq catalog.CreateVolumeRequestContent
-var createJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(createCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var createOverrides []func(
+	*cobra.Command,
+	*catalog.CreateVolumeRequestContent,
+)
+
+func newCreate() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var createReq catalog.CreateVolumeRequestContent
+	var createJson flags.JsonFlag
+
 	// TODO: short flags
-	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	createCmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `The comment attached to the volume.`)
-	createCmd.Flags().StringVar(&createReq.StorageLocation, "storage-location", createReq.StorageLocation, `The storage location on the cloud.`)
+	cmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `The comment attached to the volume.`)
+	cmd.Flags().StringVar(&createReq.StorageLocation, "storage-location", createReq.StorageLocation, `The storage location on the cloud.`)
 
-}
-
-var createCmd = &cobra.Command{
-	Use:   "create CATALOG_NAME NAME SCHEMA_NAME VOLUME_TYPE",
-	Short: `Create a Volume.`,
-	Long: `Create a Volume.
+	cmd.Use = "create CATALOG_NAME NAME SCHEMA_NAME VOLUME_TYPE"
+	cmd.Short = `Create a Volume.`
+	cmd.Long = `Create a Volume.
   
   Creates a new volume.
   
@@ -67,18 +87,20 @@ var createCmd = &cobra.Command{
   must have **CREATE EXTERNAL VOLUME** privilege on the external location. -
   There are no other tables, nor volumes existing in the specified storage
   location. - The specified storage location is not under the location of other
-  tables, nor volumes, or catalogs or schemas.`,
+  tables, nor volumes, or catalogs or schemas.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(4)
 		if cmd.Flags().Changed("json") {
 			check = cobra.ExactArgs(0)
 		}
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -102,35 +124,56 @@ var createCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range createOverrides {
+		fn(cmd, &createReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newCreate())
+	})
 }
 
 // start delete command
-var deleteReq catalog.DeleteVolumeRequest
 
-func init() {
-	Cmd.AddCommand(deleteCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var deleteOverrides []func(
+	*cobra.Command,
+	*catalog.DeleteVolumeRequest,
+)
+
+func newDelete() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var deleteReq catalog.DeleteVolumeRequest
+
 	// TODO: short flags
 
-}
-
-var deleteCmd = &cobra.Command{
-	Use:   "delete FULL_NAME_ARG",
-	Short: `Delete a Volume.`,
-	Long: `Delete a Volume.
+	cmd.Use = "delete FULL_NAME_ARG"
+	cmd.Short = `Delete a Volume.`
+	cmd.Long = `Delete a Volume.
   
   Deletes a volume from the specified parent catalog and schema.
   
   The caller must be a metastore admin or an owner of the volume. For the latter
   case, the caller must also be the owner or have the **USE_CATALOG** privilege
-  on the parent catalog and the **USE_SCHEMA** privilege on the parent schema.`,
+  on the parent catalog and the **USE_SCHEMA** privilege on the parent schema.`
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -158,25 +201,45 @@ var deleteCmd = &cobra.Command{
 			return err
 		}
 		return nil
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range deleteOverrides {
+		fn(cmd, &deleteReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newDelete())
+	})
 }
 
 // start list command
-var listReq catalog.ListVolumesRequest
 
-func init() {
-	Cmd.AddCommand(listCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listOverrides []func(
+	*cobra.Command,
+	*catalog.ListVolumesRequest,
+)
+
+func newList() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var listReq catalog.ListVolumesRequest
+
 	// TODO: short flags
 
-}
-
-var listCmd = &cobra.Command{
-	Use:   "list CATALOG_NAME SCHEMA_NAME",
-	Short: `List Volumes.`,
-	Long: `List Volumes.
+	cmd.Use = "list CATALOG_NAME SCHEMA_NAME"
+	cmd.Short = `List Volumes.`
+	cmd.Long = `List Volumes.
   
   Gets an array of all volumes for the current metastore under the parent
   catalog and schema.
@@ -188,15 +251,17 @@ var listCmd = &cobra.Command{
   also be the owner or have the **USE_CATALOG** privilege on the parent catalog
   and the **USE_SCHEMA** privilege on the parent schema.
   
-  There is no guarantee of a specific ordering of the elements in the array.`,
+  There is no guarantee of a specific ordering of the elements in the array.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -208,36 +273,57 @@ var listCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listOverrides {
+		fn(cmd, &listReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newList())
+	})
 }
 
 // start read command
-var readReq catalog.ReadVolumeRequest
 
-func init() {
-	Cmd.AddCommand(readCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var readOverrides []func(
+	*cobra.Command,
+	*catalog.ReadVolumeRequest,
+)
+
+func newRead() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var readReq catalog.ReadVolumeRequest
+
 	// TODO: short flags
 
-}
-
-var readCmd = &cobra.Command{
-	Use:   "read FULL_NAME_ARG",
-	Short: `Get a Volume.`,
-	Long: `Get a Volume.
+	cmd.Use = "read FULL_NAME_ARG"
+	cmd.Short = `Get a Volume.`
+	cmd.Long = `Get a Volume.
   
   Gets a volume from the metastore for a specific catalog and schema.
   
   The caller must be a metastore admin or an owner of (or have the **READ
   VOLUME** privilege on) the volume. For the latter case, the caller must also
   be the owner or have the **USE_CATALOG** privilege on the parent catalog and
-  the **USE_SCHEMA** privilege on the parent schema.`,
+  the **USE_SCHEMA** privilege on the parent schema.`
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -265,29 +351,49 @@ var readCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range readOverrides {
+		fn(cmd, &readReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newRead())
+	})
 }
 
 // start update command
-var updateReq catalog.UpdateVolumeRequestContent
 
-func init() {
-	Cmd.AddCommand(updateCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updateOverrides []func(
+	*cobra.Command,
+	*catalog.UpdateVolumeRequestContent,
+)
+
+func newUpdate() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updateReq catalog.UpdateVolumeRequestContent
+
 	// TODO: short flags
 
-	updateCmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `The comment attached to the volume.`)
-	updateCmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `The name of the volume.`)
-	updateCmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `The identifier of the user who owns the volume.`)
+	cmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `The comment attached to the volume.`)
+	cmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `The name of the volume.`)
+	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `The identifier of the user who owns the volume.`)
 
-}
-
-var updateCmd = &cobra.Command{
-	Use:   "update FULL_NAME_ARG",
-	Short: `Update a Volume.`,
-	Long: `Update a Volume.
+	cmd.Use = "update FULL_NAME_ARG"
+	cmd.Short = `Update a Volume.`
+	cmd.Long = `Update a Volume.
   
   Updates the specified volume under the specified parent catalog and schema.
   
@@ -296,11 +402,12 @@ var updateCmd = &cobra.Command{
   on the parent catalog and the **USE_SCHEMA** privilege on the parent schema.
   
   Currently only the name, the owner or the comment of the volume could be
-  updated.`,
+  updated.`
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -328,10 +435,24 @@ var updateCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updateOverrides {
+		fn(cmd, &updateReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newUpdate())
+	})
 }
 
 // end service Volumes
