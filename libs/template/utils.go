@@ -45,19 +45,19 @@ func toString(v any, T jsonschema.Type) (string, error) {
 	case jsonschema.BooleanType:
 		boolVal, ok := v.(bool)
 		if !ok {
-			return "", fmt.Errorf("expected bool, got: %v", v)
+			return "", fmt.Errorf("expected bool, got: %#v", v)
 		}
 		return strconv.FormatBool(boolVal), nil
 	case jsonschema.StringType:
 		strVal, ok := v.(string)
 		if !ok {
-			return "", fmt.Errorf("expected string, got: %v", v)
+			return "", fmt.Errorf("expected string, got: %#v", v)
 		}
 		return strVal, nil
 	case jsonschema.NumberType:
 		floatVal, ok := v.(float64)
 		if !ok {
-			return "", fmt.Errorf("expected float, got: %v", v)
+			return "", fmt.Errorf("expected float, got: %#v", v)
 		}
 		return strconv.FormatFloat(floatVal, 'f', -1, 64), nil
 	case jsonschema.IntegerType:
@@ -88,12 +88,12 @@ func fromString(s string, T jsonschema.Type) (any, error) {
 	case jsonschema.IntegerType:
 		v, err = strconv.ParseInt(s, 10, 64)
 	default:
-		return "", fmt.Errorf("cannot parse string as object of type %s. Value of string: %s", T, s)
+		return "", fmt.Errorf("cannot parse string as object of type %s. Value of string: %q", T, s)
 	}
 
 	// Return more readable error incase of a syntax error
 	if errors.Is(err, strconv.ErrSyntax) {
-		return nil, fmt.Errorf("could not parse %s as a %s: %w", s, T, err)
+		return nil, fmt.Errorf("could not parse %q as a %s: %w", s, T, err)
 	}
 	return v, err
 }
