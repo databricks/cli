@@ -25,19 +25,37 @@ type DataSourceJobJobSettingsSettingsDbtTask struct {
 }
 
 type DataSourceJobJobSettingsSettingsEmailNotifications struct {
-	AlertOnLastAttempt    bool     `json:"alert_on_last_attempt,omitempty"`
-	NoAlertForSkippedRuns bool     `json:"no_alert_for_skipped_runs,omitempty"`
-	OnFailure             []string `json:"on_failure,omitempty"`
-	OnStart               []string `json:"on_start,omitempty"`
-	OnSuccess             []string `json:"on_success,omitempty"`
+	AlertOnLastAttempt                 bool     `json:"alert_on_last_attempt,omitempty"`
+	NoAlertForSkippedRuns              bool     `json:"no_alert_for_skipped_runs,omitempty"`
+	OnDurationWarningThresholdExceeded []string `json:"on_duration_warning_threshold_exceeded,omitempty"`
+	OnFailure                          []string `json:"on_failure,omitempty"`
+	OnStart                            []string `json:"on_start,omitempty"`
+	OnSuccess                          []string `json:"on_success,omitempty"`
+}
+
+type DataSourceJobJobSettingsSettingsGitSourceJobSource struct {
+	DirtyState          string `json:"dirty_state,omitempty"`
+	ImportFromGitBranch string `json:"import_from_git_branch"`
+	JobConfigPath       string `json:"job_config_path"`
 }
 
 type DataSourceJobJobSettingsSettingsGitSource struct {
-	Branch   string `json:"branch,omitempty"`
-	Commit   string `json:"commit,omitempty"`
-	Provider string `json:"provider,omitempty"`
-	Tag      string `json:"tag,omitempty"`
-	Url      string `json:"url"`
+	Branch    string                                              `json:"branch,omitempty"`
+	Commit    string                                              `json:"commit,omitempty"`
+	Provider  string                                              `json:"provider,omitempty"`
+	Tag       string                                              `json:"tag,omitempty"`
+	Url       string                                              `json:"url"`
+	JobSource *DataSourceJobJobSettingsSettingsGitSourceJobSource `json:"job_source,omitempty"`
+}
+
+type DataSourceJobJobSettingsSettingsHealthRules struct {
+	Metric string `json:"metric,omitempty"`
+	Op     string `json:"op,omitempty"`
+	Value  int    `json:"value,omitempty"`
+}
+
+type DataSourceJobJobSettingsSettingsHealth struct {
+	Rules []DataSourceJobJobSettingsSettingsHealthRules `json:"rules,omitempty"`
 }
 
 type DataSourceJobJobSettingsSettingsJobClusterNewClusterAutoscale struct {
@@ -384,7 +402,8 @@ type DataSourceJobJobSettingsSettingsNotificationSettings struct {
 }
 
 type DataSourceJobJobSettingsSettingsPipelineTask struct {
-	PipelineId string `json:"pipeline_id"`
+	FullRefresh bool   `json:"full_refresh,omitempty"`
+	PipelineId  string `json:"pipeline_id"`
 }
 
 type DataSourceJobJobSettingsSettingsPythonWheelTask struct {
@@ -445,11 +464,22 @@ type DataSourceJobJobSettingsSettingsTaskDependsOn struct {
 }
 
 type DataSourceJobJobSettingsSettingsTaskEmailNotifications struct {
-	AlertOnLastAttempt    bool     `json:"alert_on_last_attempt,omitempty"`
-	NoAlertForSkippedRuns bool     `json:"no_alert_for_skipped_runs,omitempty"`
-	OnFailure             []string `json:"on_failure,omitempty"`
-	OnStart               []string `json:"on_start,omitempty"`
-	OnSuccess             []string `json:"on_success,omitempty"`
+	AlertOnLastAttempt                 bool     `json:"alert_on_last_attempt,omitempty"`
+	NoAlertForSkippedRuns              bool     `json:"no_alert_for_skipped_runs,omitempty"`
+	OnDurationWarningThresholdExceeded []string `json:"on_duration_warning_threshold_exceeded,omitempty"`
+	OnFailure                          []string `json:"on_failure,omitempty"`
+	OnStart                            []string `json:"on_start,omitempty"`
+	OnSuccess                          []string `json:"on_success,omitempty"`
+}
+
+type DataSourceJobJobSettingsSettingsTaskHealthRules struct {
+	Metric string `json:"metric,omitempty"`
+	Op     string `json:"op,omitempty"`
+	Value  int    `json:"value,omitempty"`
+}
+
+type DataSourceJobJobSettingsSettingsTaskHealth struct {
+	Rules []DataSourceJobJobSettingsSettingsTaskHealthRules `json:"rules,omitempty"`
 }
 
 type DataSourceJobJobSettingsSettingsTaskLibraryCran struct {
@@ -634,8 +664,15 @@ type DataSourceJobJobSettingsSettingsTaskNotebookTask struct {
 	Source         string            `json:"source,omitempty"`
 }
 
+type DataSourceJobJobSettingsSettingsTaskNotificationSettings struct {
+	AlertOnLastAttempt     bool `json:"alert_on_last_attempt,omitempty"`
+	NoAlertForCanceledRuns bool `json:"no_alert_for_canceled_runs,omitempty"`
+	NoAlertForSkippedRuns  bool `json:"no_alert_for_skipped_runs,omitempty"`
+}
+
 type DataSourceJobJobSettingsSettingsTaskPipelineTask struct {
-	PipelineId string `json:"pipeline_id"`
+	FullRefresh bool   `json:"full_refresh,omitempty"`
+	PipelineId  string `json:"pipeline_id"`
 }
 
 type DataSourceJobJobSettingsSettingsTaskPythonWheelTask struct {
@@ -702,29 +739,31 @@ type DataSourceJobJobSettingsSettingsTaskSqlTask struct {
 }
 
 type DataSourceJobJobSettingsSettingsTask struct {
-	ComputeKey             string                                                  `json:"compute_key,omitempty"`
-	Description            string                                                  `json:"description,omitempty"`
-	ExistingClusterId      string                                                  `json:"existing_cluster_id,omitempty"`
-	JobClusterKey          string                                                  `json:"job_cluster_key,omitempty"`
-	MaxRetries             int                                                     `json:"max_retries,omitempty"`
-	MinRetryIntervalMillis int                                                     `json:"min_retry_interval_millis,omitempty"`
-	RetryOnTimeout         bool                                                    `json:"retry_on_timeout,omitempty"`
-	RunIf                  string                                                  `json:"run_if,omitempty"`
-	TaskKey                string                                                  `json:"task_key,omitempty"`
-	TimeoutSeconds         int                                                     `json:"timeout_seconds,omitempty"`
-	ConditionTask          *DataSourceJobJobSettingsSettingsTaskConditionTask      `json:"condition_task,omitempty"`
-	DbtTask                *DataSourceJobJobSettingsSettingsTaskDbtTask            `json:"dbt_task,omitempty"`
-	DependsOn              []DataSourceJobJobSettingsSettingsTaskDependsOn         `json:"depends_on,omitempty"`
-	EmailNotifications     *DataSourceJobJobSettingsSettingsTaskEmailNotifications `json:"email_notifications,omitempty"`
-	Library                []DataSourceJobJobSettingsSettingsTaskLibrary           `json:"library,omitempty"`
-	NewCluster             *DataSourceJobJobSettingsSettingsTaskNewCluster         `json:"new_cluster,omitempty"`
-	NotebookTask           *DataSourceJobJobSettingsSettingsTaskNotebookTask       `json:"notebook_task,omitempty"`
-	PipelineTask           *DataSourceJobJobSettingsSettingsTaskPipelineTask       `json:"pipeline_task,omitempty"`
-	PythonWheelTask        *DataSourceJobJobSettingsSettingsTaskPythonWheelTask    `json:"python_wheel_task,omitempty"`
-	SparkJarTask           *DataSourceJobJobSettingsSettingsTaskSparkJarTask       `json:"spark_jar_task,omitempty"`
-	SparkPythonTask        *DataSourceJobJobSettingsSettingsTaskSparkPythonTask    `json:"spark_python_task,omitempty"`
-	SparkSubmitTask        *DataSourceJobJobSettingsSettingsTaskSparkSubmitTask    `json:"spark_submit_task,omitempty"`
-	SqlTask                *DataSourceJobJobSettingsSettingsTaskSqlTask            `json:"sql_task,omitempty"`
+	ComputeKey             string                                                    `json:"compute_key,omitempty"`
+	Description            string                                                    `json:"description,omitempty"`
+	ExistingClusterId      string                                                    `json:"existing_cluster_id,omitempty"`
+	JobClusterKey          string                                                    `json:"job_cluster_key,omitempty"`
+	MaxRetries             int                                                       `json:"max_retries,omitempty"`
+	MinRetryIntervalMillis int                                                       `json:"min_retry_interval_millis,omitempty"`
+	RetryOnTimeout         bool                                                      `json:"retry_on_timeout,omitempty"`
+	RunIf                  string                                                    `json:"run_if,omitempty"`
+	TaskKey                string                                                    `json:"task_key,omitempty"`
+	TimeoutSeconds         int                                                       `json:"timeout_seconds,omitempty"`
+	ConditionTask          *DataSourceJobJobSettingsSettingsTaskConditionTask        `json:"condition_task,omitempty"`
+	DbtTask                *DataSourceJobJobSettingsSettingsTaskDbtTask              `json:"dbt_task,omitempty"`
+	DependsOn              []DataSourceJobJobSettingsSettingsTaskDependsOn           `json:"depends_on,omitempty"`
+	EmailNotifications     *DataSourceJobJobSettingsSettingsTaskEmailNotifications   `json:"email_notifications,omitempty"`
+	Health                 *DataSourceJobJobSettingsSettingsTaskHealth               `json:"health,omitempty"`
+	Library                []DataSourceJobJobSettingsSettingsTaskLibrary             `json:"library,omitempty"`
+	NewCluster             *DataSourceJobJobSettingsSettingsTaskNewCluster           `json:"new_cluster,omitempty"`
+	NotebookTask           *DataSourceJobJobSettingsSettingsTaskNotebookTask         `json:"notebook_task,omitempty"`
+	NotificationSettings   *DataSourceJobJobSettingsSettingsTaskNotificationSettings `json:"notification_settings,omitempty"`
+	PipelineTask           *DataSourceJobJobSettingsSettingsTaskPipelineTask         `json:"pipeline_task,omitempty"`
+	PythonWheelTask        *DataSourceJobJobSettingsSettingsTaskPythonWheelTask      `json:"python_wheel_task,omitempty"`
+	SparkJarTask           *DataSourceJobJobSettingsSettingsTaskSparkJarTask         `json:"spark_jar_task,omitempty"`
+	SparkPythonTask        *DataSourceJobJobSettingsSettingsTaskSparkPythonTask      `json:"spark_python_task,omitempty"`
+	SparkSubmitTask        *DataSourceJobJobSettingsSettingsTaskSparkSubmitTask      `json:"spark_submit_task,omitempty"`
+	SqlTask                *DataSourceJobJobSettingsSettingsTaskSqlTask              `json:"sql_task,omitempty"`
 }
 
 type DataSourceJobJobSettingsSettingsTriggerFileArrival struct {
@@ -736,6 +775,10 @@ type DataSourceJobJobSettingsSettingsTriggerFileArrival struct {
 type DataSourceJobJobSettingsSettingsTrigger struct {
 	PauseStatus string                                              `json:"pause_status,omitempty"`
 	FileArrival *DataSourceJobJobSettingsSettingsTriggerFileArrival `json:"file_arrival,omitempty"`
+}
+
+type DataSourceJobJobSettingsSettingsWebhookNotificationsOnDurationWarningThresholdExceeded struct {
+	Id string `json:"id"`
 }
 
 type DataSourceJobJobSettingsSettingsWebhookNotificationsOnFailure struct {
@@ -751,9 +794,10 @@ type DataSourceJobJobSettingsSettingsWebhookNotificationsOnSuccess struct {
 }
 
 type DataSourceJobJobSettingsSettingsWebhookNotifications struct {
-	OnFailure []DataSourceJobJobSettingsSettingsWebhookNotificationsOnFailure `json:"on_failure,omitempty"`
-	OnStart   []DataSourceJobJobSettingsSettingsWebhookNotificationsOnStart   `json:"on_start,omitempty"`
-	OnSuccess []DataSourceJobJobSettingsSettingsWebhookNotificationsOnSuccess `json:"on_success,omitempty"`
+	OnDurationWarningThresholdExceeded []DataSourceJobJobSettingsSettingsWebhookNotificationsOnDurationWarningThresholdExceeded `json:"on_duration_warning_threshold_exceeded,omitempty"`
+	OnFailure                          []DataSourceJobJobSettingsSettingsWebhookNotificationsOnFailure                          `json:"on_failure,omitempty"`
+	OnStart                            []DataSourceJobJobSettingsSettingsWebhookNotificationsOnStart                            `json:"on_start,omitempty"`
+	OnSuccess                          []DataSourceJobJobSettingsSettingsWebhookNotificationsOnSuccess                          `json:"on_success,omitempty"`
 }
 
 type DataSourceJobJobSettingsSettings struct {
@@ -771,6 +815,7 @@ type DataSourceJobJobSettingsSettings struct {
 	DbtTask                *DataSourceJobJobSettingsSettingsDbtTask              `json:"dbt_task,omitempty"`
 	EmailNotifications     *DataSourceJobJobSettingsSettingsEmailNotifications   `json:"email_notifications,omitempty"`
 	GitSource              *DataSourceJobJobSettingsSettingsGitSource            `json:"git_source,omitempty"`
+	Health                 *DataSourceJobJobSettingsSettingsHealth               `json:"health,omitempty"`
 	JobCluster             []DataSourceJobJobSettingsSettingsJobCluster          `json:"job_cluster,omitempty"`
 	Library                []DataSourceJobJobSettingsSettingsLibrary             `json:"library,omitempty"`
 	NewCluster             *DataSourceJobJobSettingsSettingsNewCluster           `json:"new_cluster,omitempty"`

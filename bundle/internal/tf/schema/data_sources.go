@@ -18,6 +18,8 @@ type DataSources struct {
 	InstancePool          map[string]*DataSourceInstancePool          `json:"databricks_instance_pool,omitempty"`
 	Job                   map[string]*DataSourceJob                   `json:"databricks_job,omitempty"`
 	Jobs                  map[string]*DataSourceJobs                  `json:"databricks_jobs,omitempty"`
+	Metastore             map[string]*DataSourceMetastore             `json:"databricks_metastore,omitempty"`
+	Metastores            map[string]*DataSourceMetastores            `json:"databricks_metastores,omitempty"`
 	MwsCredentials        map[string]*DataSourceMwsCredentials        `json:"databricks_mws_credentials,omitempty"`
 	MwsWorkspaces         map[string]*DataSourceMwsWorkspaces         `json:"databricks_mws_workspaces,omitempty"`
 	NodeType              map[string]*DataSourceNodeType              `json:"databricks_node_type,omitempty"`
@@ -55,6 +57,8 @@ func NewDataSources() *DataSources {
 		InstancePool:          make(map[string]*DataSourceInstancePool),
 		Job:                   make(map[string]*DataSourceJob),
 		Jobs:                  make(map[string]*DataSourceJobs),
+		Metastore:             make(map[string]*DataSourceMetastore),
+		Metastores:            make(map[string]*DataSourceMetastores),
 		MwsCredentials:        make(map[string]*DataSourceMwsCredentials),
 		MwsWorkspaces:         make(map[string]*DataSourceMwsWorkspaces),
 		NodeType:              make(map[string]*DataSourceNodeType),
