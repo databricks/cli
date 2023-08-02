@@ -54,7 +54,8 @@ func Load(path string) (*Bundle, error) {
 	configFile, err := config.FileNames.FindInPath(path)
 	if err != nil {
 		_, hasIncludePathEnv := os.LookupEnv(ExtraIncludePathsKey)
-		if hasIncludePathEnv && stat.IsDir() {
+		_, hasBundleRootEnv := os.LookupEnv(envBundleRoot)
+		if hasIncludePathEnv && hasBundleRootEnv && stat.IsDir() {
 			bundle.Config = config.Root{
 				Path: path,
 				Bundle: config.Bundle{

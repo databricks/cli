@@ -104,7 +104,20 @@ func TestRootLookupError(t *testing.T) {
 	require.ErrorContains(t, err, "unable to locate bundle root")
 }
 
-func TestLoadDefautlBundleWhenRootAndIncludesEnvPresent(t *testing.T) {
+func TestLoadYamlWhenIncludesEnvPresent(t *testing.T) {
+	chdir(t, filepath.Join(".", "tests", "basic"))
+	t.Setenv(ExtraIncludePathsKey, "test")
+
+	bundle, err := MustLoad()
+	assert.NoError(t, err)
+	assert.Equal(t, "basic", bundle.Config.Bundle.Name)
+
+	cwd, err := os.Getwd()
+	assert.NoError(t, err)
+	assert.Equal(t, cwd, bundle.Config.Path)
+}
+
+func TestLoadDefautlBundleWhenNoYamlAndRootAndIncludesEnvPresent(t *testing.T) {
 	dir := t.TempDir()
 	chdir(t, dir)
 	t.Setenv(envBundleRoot, dir)
@@ -115,7 +128,7 @@ func TestLoadDefautlBundleWhenRootAndIncludesEnvPresent(t *testing.T) {
 	assert.Equal(t, dir, bundle.Config.Path)
 }
 
-func TestErrorIfNoBundleAndNoRootEnv(t *testing.T) {
+func TestErrorIfNoYamlNoRootEnvAndIncludesEnvPresent(t *testing.T) {
 	dir := t.TempDir()
 	chdir(t, dir)
 	t.Setenv(ExtraIncludePathsKey, "test")
@@ -124,7 +137,7 @@ func TestErrorIfNoBundleAndNoRootEnv(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestErrorIfNoBundleAndNoIncludesEnv(t *testing.T) {
+func TestErrorIfNoYamlNoIncludesEnvAndRootEnvPresent(t *testing.T) {
 	dir := t.TempDir()
 	chdir(t, dir)
 	t.Setenv(envBundleRoot, dir)
