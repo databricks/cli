@@ -9,6 +9,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// TODO: add unit test that assignValuesFromFile does not overwrite any existing
+// config values
+// TODO: write smoke test for the validate function
+// TODO: We need an integration test for the end to end git clone flow
+
+
 func testSchema(t *testing.T) *jsonschema.Schema {
 	schemaJson := `{
 		"properties": {

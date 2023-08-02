@@ -49,7 +49,8 @@ func (c *config) assignValuesFromFile(path string) error {
 		return err
 	}
 
-	// Cast any integer properties, from float to integer.
+	// Cast any integer properties, from float to integer. Required because
+	// the json unmarshaller treats all json numbers as floating point
 	for name, floatVal := range configFromFile {
 		property, ok := c.schema.Properties[name]
 		if !ok {
@@ -65,7 +66,7 @@ func (c *config) assignValuesFromFile(path string) error {
 		configFromFile[name] = v
 	}
 
-	// Write configs from files to input map, not overwriting any existing
+	// Write configs from the file to the input map, not overwriting any existing
 	// configurations.
 	for name, val := range configFromFile {
 		if _, ok := c.values[name]; ok {
@@ -107,7 +108,7 @@ func (c *config) assignDefaultValues() error {
 	return nil
 }
 
-// Prompts user for properties that do not have a value defined yet
+// Prompts user for values for properties that do not have a value set yet
 func (c *config) promptForValues() error {
 	for name, property := range c.schema.Properties {
 		// Config already has a value assigned
@@ -155,7 +156,6 @@ func (c *config) promptOrAssignDefaultValues() error {
 
 // Validates the configuration. If passes, the configuration is ready to be used
 // to initialize the template.
-// TODO: smoke test for this function
 func (c *config) validate() error {
 	validateFns := []func() error{
 		c.validateValuesDefined,
