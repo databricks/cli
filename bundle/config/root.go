@@ -74,6 +74,8 @@ type Root struct {
 	// If not specified, the code below initializes this field with a
 	// single default-initialized environment called "default".
 	Environments map[string]*Environment `json:"environments,omitempty"`
+
+	Experimental *Experimental `json:"experimental,omitempty"`
 }
 
 func Load(path string) (*Root, error) {
