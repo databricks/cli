@@ -24,24 +24,46 @@ func (a *match) Name() string {
 }
 
 func (a *match) Apply(ctx context.Context, b *bundle.Bundle) error {
-	r := b.Config.Resources
-	for k := range b.Config.Resources.Jobs {
-		tasks := r.Jobs[k].JobSettings.Tasks
-		for i := range tasks {
-			task := &tasks[i]
-			if isMissingRequiredLibraries(task) {
-				return fmt.Errorf("task '%s' is missing required libraries. Please include your package code in task libraries block", task.TaskKey)
-			}
-			for j := range task.Libraries {
-				lib := &task.Libraries[j]
-				err := findArtifactsAndMarkForUpload(ctx, lib, b)
-				if err != nil {
-					return err
-				}
+	tasks := findAllTasks(b)
+	for _, task := range tasks {
+		if isMissingRequiredLibraries(task) {
+			return fmt.Errorf("task '%s' is missing required libraries. Please include your package code in task libraries block", task.TaskKey)
+		}
+		for j := range task.Libraries {
+			lib := &task.Libraries[j]
+			err := findArtifactsAndMarkForUpload(ctx, lib, b)
+			if err != nil {
+				return err
 			}
 		}
 	}
 	return nil
+}
+
+func findAllTasks(b *bundle.Bundle) []*jobs.Task {
+	r := b.Config.Resources
+	result := make([]*jobs.Task, 0)
+	for k := range b.Config.Resources.Jobs {
+		tasks := r.Jobs[k].JobSettings.Tasks
+		for i := range tasks {
+			task := &tasks[i]
+			result = append(result, task)
+		}
+	}
+
+	return result
+}
+
+func FindAllWheelTasks(b *bundle.Bundle) []*jobs.Task {
+	tasks := findAllTasks(b)
+	wheelTasks := make([]*jobs.Task, 0)
+	for _, task := range tasks {
+		if task.PythonWheelTask != nil {
+			wheelTasks = append(wheelTasks, task)
+		}
+	}
+
+	return wheelTasks
 }
 
 func isMissingRequiredLibraries(task *jobs.Task) bool {
