@@ -14,7 +14,6 @@ import (
 // TODO: write smoke test for the validate function
 // TODO: We need an integration test for the end to end git clone flow
 
-
 func testSchema(t *testing.T) *jsonschema.Schema {
 	schemaJson := `{
 		"properties": {
