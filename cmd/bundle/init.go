@@ -26,7 +26,6 @@ func newInitCommand() *cobra.Command {
 	var projectDir string
 	cmd.Flags().StringVar(&configFile, "config-file", "", "Input parameters for template initialization.")
 	cmd.Flags().StringVar(&projectDir, "project-dir", "", "The project will be initialized in this directory.")
-	cmd.MarkFlagRequired("config-file")
 	cmd.MarkFlagRequired("output-dir")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
