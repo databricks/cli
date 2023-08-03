@@ -10,7 +10,7 @@ import (
 
 // function to check whether a float value represents an integer
 func isIntegerValue(v float64) bool {
-	return v == float64(int(v))
+	return v == float64(int64(v))
 }
 
 func toInteger(v any) (int64, error) {

@@ -1,6 +1,7 @@
 package template
 
 import (
+	"math"
 	"testing"
 
 	"github.com/databricks/cli/libs/jsonschema"
@@ -26,12 +27,25 @@ func TestTemplateToInteger(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, int64(4), v)
 
+	v, err = toInteger(float64(4))
+	assert.NoError(t, err)
+	assert.Equal(t, int64(4), v)
+
+	v, err = toInteger(float64(math.MaxInt64 - 10))
+	assert.NoError(t, err)
+	assert.Equal(t, int64(9223372036854775807), v)
+
 	v, err = toInteger(2)
 	assert.NoError(t, err)
 	assert.Equal(t, int64(2), v)
 
 	_, err = toInteger(float32(2.2))
 	assert.EqualError(t, err, "expected integer value, got: 2.2")
+
+	// We do not assert on a specific number being printed because precise values
+	// for floating point arithmetic could be system dependent.
+	_, err = toInteger(float64(math.MaxFloat32) + 100.5)
+	assert.ErrorContains(t, err, "expected integer value, got:")
 
 	_, err = toInteger("abcd")
 	assert.EqualError(t, err, "cannot convert \"abcd\" to an integer")
