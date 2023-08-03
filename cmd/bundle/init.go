@@ -64,7 +64,7 @@ func newInitCommand() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		// TODO: test the downloaded repo is cleaned up
+		// TODO: Add automated test that the downloaded git repo is cleaned up.
 		err = git.Clone(ctx, templatePathOrURL, "", templateDir)
 		if err != nil {
 			return err
