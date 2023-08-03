@@ -102,9 +102,16 @@ func TestTemplateFromString(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, int64(12345), v)
 
+	v, err = fromString("123", jsonschema.NumberType)
+	assert.NoError(t, err)
+	assert.Equal(t, float64(123), v)
+
 	_, err = fromString("qrt", jsonschema.ArrayType)
 	assert.EqualError(t, err, "cannot parse string as object of type array. Value of string: \"qrt\"")
 
 	_, err = fromString("abc", jsonschema.IntegerType)
 	assert.EqualError(t, err, "could not parse \"abc\" as a integer: strconv.ParseInt: parsing \"abc\": invalid syntax")
+
+	_, err = fromString("1.0", jsonschema.IntegerType)
+	assert.EqualError(t, err, "could not parse \"1.0\" as a integer: strconv.ParseInt: parsing \"1.0\": invalid syntax")
 }
