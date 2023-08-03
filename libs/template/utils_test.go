@@ -20,15 +20,15 @@ func TestTemplateIsInteger(t *testing.T) {
 func TestTemplateToInteger(t *testing.T) {
 	v, err := toInteger(float32(2))
 	assert.NoError(t, err)
-	assert.Equal(t, int(2), v)
+	assert.Equal(t, int64(2), v)
 
 	v, err = toInteger(float64(4))
 	assert.NoError(t, err)
-	assert.Equal(t, int(4), v)
+	assert.Equal(t, int64(4), v)
 
 	v, err = toInteger(2)
 	assert.NoError(t, err)
-	assert.Equal(t, int(2), v)
+	assert.Equal(t, int64(2), v)
 
 	_, err = toInteger(float32(2.2))
 	assert.EqualError(t, err, "expected integer value, got: 2.2")

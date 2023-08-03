@@ -13,27 +13,27 @@ func isIntegerValue(v float64) bool {
 	return v == float64(int(v))
 }
 
-func toInteger(v any) (int, error) {
+func toInteger(v any) (int64, error) {
 	switch typedVal := v.(type) {
 	// cast float to int
 	case float32:
 		if !isIntegerValue(float64(typedVal)) {
 			return 0, fmt.Errorf("expected integer value, got: %v", v)
 		}
-		return int(typedVal), nil
+		return int64(typedVal), nil
 	case float64:
 		if !isIntegerValue(typedVal) {
 			return 0, fmt.Errorf("expected integer value, got: %v", v)
 		}
-		return int(typedVal), nil
+		return int64(typedVal), nil
 
 	// pass through common integer cases
 	case int:
-		return typedVal, nil
+		return int64(typedVal), nil
 	case int32:
-		return int(typedVal), nil
+		return int64(typedVal), nil
 	case int64:
-		return int(typedVal), nil
+		return typedVal, nil
 
 	default:
 		return 0, fmt.Errorf("cannot convert %#v to an integer", v)
@@ -65,7 +65,7 @@ func toString(v any, T jsonschema.Type) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		return strconv.FormatInt(int64(intVal), 10), nil
+		return strconv.FormatInt(intVal, 10), nil
 	default:
 		return "", fmt.Errorf("cannot format object of type %s as a string. Value of object: %#v", T, v)
 	}

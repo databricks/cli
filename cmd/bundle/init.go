@@ -30,6 +30,7 @@ func isRepoUrl(url string) bool {
 // Computes the repo name from the repo URL. Treats the last non empty word
 // when splitting at '/' as the repo name. For example: for url git@github.com:databricks/cli.git
 // the name would be "cli.git"
+// TODO: manually test that this works as expected for downloading repos.
 func repoName(url string) string {
 	parts := strings.Split(strings.TrimRight(url, "/"), "/")
 	return parts[len(parts)-1]
