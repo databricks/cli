@@ -5,7 +5,6 @@ import (
 
 	"github.com/databricks/cli/libs/jsonschema"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestValidatorString(t *testing.T) {
@@ -41,10 +40,10 @@ func TestValidatorNumber(t *testing.T) {
 	assert.ErrorContains(t, err, "expected type float, but value is true")
 
 	err = validateNumber(int32(1))
-	require.NoError(t, err)
+	assert.ErrorContains(t, err, "expected type float, but value is 1")
 
-	err = validateNumber(int64(1))
-	require.NoError(t, err)
+	err = validateNumber(int64(2))
+	assert.ErrorContains(t, err, "expected type float, but value is 2")
 
 	err = validateNumber(float32(1))
 	assert.NoError(t, err)
@@ -89,8 +88,7 @@ func TestTemplateValidateType(t *testing.T) {
 	assert.NoError(t, err)
 	err = validateType(float64(1.2), jsonschema.NumberType)
 	assert.NoError(t, err)
-	err = validateType(int(1), jsonschema.NumberType)
-	assert.NoError(t, err)
+
 
 	err = validateType(false, jsonschema.BooleanType)
 	assert.NoError(t, err)
@@ -111,6 +109,8 @@ func TestTemplateValidateType(t *testing.T) {
 	assert.ErrorContains(t, err, "expected type float, but value is true")
 	err = validateType("abc", jsonschema.NumberType)
 	assert.ErrorContains(t, err, "expected type float, but value is \"abc\"")
+	err = validateType(int(1), jsonschema.NumberType)
+	assert.ErrorContains(t, err, "expected type float, but value is 1")
 
 	// assert validation failing for boolean
 	err = validateType(int(1), jsonschema.BooleanType)
