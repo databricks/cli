@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/bundle/config"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -101,4 +102,46 @@ func TestRootLookupError(t *testing.T) {
 	_ = chdir(t, t.TempDir())
 	_, err := mustGetRoot()
 	require.ErrorContains(t, err, "unable to locate bundle root")
+}
+
+func TestLoadYamlWhenIncludesEnvPresent(t *testing.T) {
+	chdir(t, filepath.Join(".", "tests", "basic"))
+	t.Setenv(ExtraIncludePathsKey, "test")
+
+	bundle, err := MustLoad()
+	assert.NoError(t, err)
+	assert.Equal(t, "basic", bundle.Config.Bundle.Name)
+
+	cwd, err := os.Getwd()
+	assert.NoError(t, err)
+	assert.Equal(t, cwd, bundle.Config.Path)
+}
+
+func TestLoadDefautlBundleWhenNoYamlAndRootAndIncludesEnvPresent(t *testing.T) {
+	dir := t.TempDir()
+	chdir(t, dir)
+	t.Setenv(envBundleRoot, dir)
+	t.Setenv(ExtraIncludePathsKey, "test")
+
+	bundle, err := MustLoad()
+	assert.NoError(t, err)
+	assert.Equal(t, dir, bundle.Config.Path)
+}
+
+func TestErrorIfNoYamlNoRootEnvAndIncludesEnvPresent(t *testing.T) {
+	dir := t.TempDir()
+	chdir(t, dir)
+	t.Setenv(ExtraIncludePathsKey, "test")
+
+	_, err := MustLoad()
+	assert.Error(t, err)
+}
+
+func TestErrorIfNoYamlNoIncludesEnvAndRootEnvPresent(t *testing.T) {
+	dir := t.TempDir()
+	chdir(t, dir)
+	t.Setenv(envBundleRoot, dir)
+
+	_, err := MustLoad()
+	assert.Error(t, err)
 }
