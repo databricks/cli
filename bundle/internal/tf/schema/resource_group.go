@@ -3,6 +3,7 @@
 package schema
 
 type ResourceGroup struct {
+	AclPrincipalId          string `json:"acl_principal_id,omitempty"`
 	AllowClusterCreate      bool   `json:"allow_cluster_create,omitempty"`
 	AllowInstancePoolCreate bool   `json:"allow_instance_pool_create,omitempty"`
 	DatabricksSqlAccess     bool   `json:"databricks_sql_access,omitempty"`
