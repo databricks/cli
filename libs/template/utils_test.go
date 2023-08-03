@@ -31,9 +31,9 @@ func TestTemplateToInteger(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, int64(4), v)
 
-	v, err = toInteger(float64(math.MaxInt64 - 10))
+	v, err = toInteger(float64(math.MaxInt32 + 10))
 	assert.NoError(t, err)
-	assert.Equal(t, int64(9223372036854775807), v)
+	assert.Equal(t, int64(2147483657), v)
 
 	v, err = toInteger(2)
 	assert.NoError(t, err)
@@ -42,10 +42,8 @@ func TestTemplateToInteger(t *testing.T) {
 	_, err = toInteger(float32(2.2))
 	assert.EqualError(t, err, "expected integer value, got: 2.2")
 
-	// We do not assert on a specific number being printed because precise values
-	// for floating point arithmetic could be system dependent.
-	_, err = toInteger(float64(math.MaxFloat32) + 100.5)
-	assert.ErrorContains(t, err, "expected integer value, got:")
+	_, err = toInteger(float64(math.MaxInt32 + 100.1))
+	assert.ErrorContains(t, err, "expected integer value, got: 2.1474837471e+09")
 
 	_, err = toInteger("abcd")
 	assert.EqualError(t, err, "cannot convert \"abcd\" to an integer")
