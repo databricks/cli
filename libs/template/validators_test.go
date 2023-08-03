@@ -89,7 +89,6 @@ func TestTemplateValidateType(t *testing.T) {
 	err = validateType(float64(1.2), jsonschema.NumberType)
 	assert.NoError(t, err)
 
-
 	err = validateType(false, jsonschema.BooleanType)
 	assert.NoError(t, err)
 
