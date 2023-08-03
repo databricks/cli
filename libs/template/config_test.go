@@ -9,11 +9,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TODO: add unit test that assignValuesFromFile does not overwrite any existing
-// config values
-// TODO: write smoke test for the validate function
-// TODO: We need an integration test for the end to end git clone flow
-
 func testSchema(t *testing.T) *jsonschema.Schema {
 	schemaJson := `{
 		"properties": {
@@ -72,6 +67,23 @@ func TestTemplateConfigAssignValuesFromFileForInvalidIntegerValue(t *testing.T) 
 
 	err := c.assignValuesFromFile("./testdata/config-assign-from-file-invalid-int/config.json")
 	assert.EqualError(t, err, "failed to cast value abc of property int_val from file ./testdata/config-assign-from-file-invalid-int/config.json to an integer: cannot convert \"abc\" to an integer")
+}
+
+func TestTemplateConfigAssignValuesFromFileDoesNotOverwriteExistingConfigs(t *testing.T) {
+	c := config{
+		schema: testSchema(t),
+		values: map[string]any{
+			"string_val": "this-is-not-overwritten",
+		},
+	}
+
+	err := c.assignValuesFromFile("./testdata/config-assign-from-file/config.json")
+	assert.NoError(t, err)
+
+	assert.Equal(t, int(1), c.values["int_val"])
+	assert.Equal(t, float64(2), c.values["float_val"])
+	assert.Equal(t, true, c.values["bool_val"])
+	assert.Equal(t, "this-is-not-overwritten", c.values["string_val"])
 }
 
 func TestTemplateConfigAssignDefaultValues(t *testing.T) {
@@ -144,5 +156,8 @@ func TestTemplateConfigValidateTypeForInvalidType(t *testing.T) {
 	}
 
 	err := c.validateValuesType()
+	assert.EqualError(t, err, `incorrect type for int_val. expected type integer, but value is "this-should-be-an-int"`)
+
+	err = c.validate()
 	assert.EqualError(t, err, `incorrect type for int_val. expected type integer, but value is "this-should-be-an-int"`)
 }
