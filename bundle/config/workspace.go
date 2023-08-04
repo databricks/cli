@@ -23,7 +23,7 @@ type Workspace struct {
 	// Generic attributes.
 	Host               string `json:"host,omitempty"`
 	Profile            string `json:"profile,omitempty"`
-	AuthType           string `json:"auth_type,omitempty" bundle:"preview"`
+	AuthType           string `json:"auth_type,omitempty"`
 	MetadataServiceURL string `json:"metadata_service_url,omitempty"`
 
 	// OAuth specific attributes.
