@@ -12,7 +12,7 @@ type Environment struct {
 	// Determines the mode of the environment.
 	// For example, 'mode: development' can be used for deployments for
 	// development purposes.
-	// TODO: remove the todo tag once this field is operational
+	// TODO: remove the "preview" tag once this field is operational
 	Mode Mode `json:"mode,omitempty" bundle:"preview"`
 
 	// Overrides the compute used for jobs and other supported assets.
