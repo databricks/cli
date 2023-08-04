@@ -16,5 +16,5 @@ func TestBundleInitIsRepoUrl(t *testing.T) {
 
 func TestBundleInitRepoName(t *testing.T) {
 	assert.Equal(t, repoName("git@github.com:databricks/cli.git"), "cli.git")
-	assert.Equal(t, repoName("https://github.com/databricks/cli"), "cli")
+	assert.Equal(t, repoName("https://github.com/databricks/cli/"), "cli")
 }

@@ -48,24 +48,25 @@ func newInitCommand() *cobra.Command {
 	cmd.MarkFlagRequired("project-dir")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		templatePathOrURL := args[0]
+		templatePath := args[0]
 		ctx := cmd.Context()
 
-		if !isRepoUrl(templatePathOrURL) {
+		if !isRepoUrl(templatePath) {
 			// skip downloading the repo because input arg is not a URL. We assume
 			// it's a path on the local file system in that case
-			return template.Materialize(ctx, configFile, templatePathOrURL, projectDir)
+			return template.Materialize(ctx, configFile, templatePath, projectDir)
 		}
 
 		// Download the template in a temporary directory
 		tmpDir := os.TempDir()
-		templateDir := filepath.Join(tmpDir, repoName(templatePathOrURL))
+		templateURL := templatePath
+		templateDir := filepath.Join(tmpDir, repoName(templateURL))
 		err := os.MkdirAll(templateDir, 0755)
 		if err != nil {
 			return err
 		}
 		// TODO: Add automated test that the downloaded git repo is cleaned up.
-		err = git.Clone(ctx, templatePathOrURL, "", templateDir)
+		err = git.Clone(ctx, templateURL, "", templateDir)
 		if err != nil {
 			return err
 		}
