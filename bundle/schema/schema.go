@@ -9,6 +9,15 @@ import (
 	"github.com/databricks/cli/libs/jsonschema"
 )
 
+// Fields tagged "readonly" should not be emitted in the schema as they are
+// computed at runtime, and should not be assigned a value by the bundle author.
+const readonlyTag = "readonly"
+
+// Fields tagged "preview" are still under active development and should not
+// be shown to users in the schema. This tag is meant to be  temporary and
+// should be removed once the field is ready to be used widely by customers.
+const previewTag = "preview"
+
 // This function translates golang types into json schema. Here is the mapping
 // between json schema types and golang types
 //
@@ -197,7 +206,7 @@ func toSchema(golangType reflect.Type, docs *Docs, tracker *tracker) (*jsonschem
 		required := []string{}
 		for _, child := range children {
 			bundleTag := child.Tag.Get("bundle")
-			if bundleTag == "readonly" {
+			if bundleTag == readonlyTag || bundleTag == previewTag {
 				continue
 			}
 
