@@ -12,8 +12,7 @@ type Environment struct {
 	// Determines the mode of the environment.
 	// For example, 'mode: development' can be used for deployments for
 	// development purposes.
-	// TODO: remove the "preview" tag once this field is operational
-	Mode Mode `json:"mode,omitempty" bundle:"preview"`
+	Mode Mode `json:"mode,omitempty"`
 
 	// Overrides the compute used for jobs and other supported assets.
 	ComputeID string `json:"compute_id,omitempty"`
