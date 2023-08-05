@@ -7,6 +7,7 @@ import (
 	"github.com/databricks/cli/cmd/bundle"
 	"github.com/databricks/cli/cmd/configure"
 	"github.com/databricks/cli/cmd/fs"
+	"github.com/databricks/cli/cmd/labs"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/cmd/sync"
 	"github.com/databricks/cli/cmd/version"
@@ -37,6 +38,7 @@ func New() *cobra.Command {
 	cli.AddCommand(bundle.New())
 	cli.AddCommand(configure.New())
 	cli.AddCommand(fs.New())
+	cli.AddCommand(labs.New())
 	cli.AddCommand(sync.New())
 	cli.AddCommand(version.New())
 
