@@ -1,4 +1,4 @@
 bundle:
   name: "Dancing Feet"
   git:
-    branch: "this-branch-is-for-sure-not-checked-out-123"
+    branch: "feature-a"
