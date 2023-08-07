@@ -24,7 +24,7 @@ type Workspace struct {
 	Host               string `json:"host,omitempty"`
 	Profile            string `json:"profile,omitempty"`
 	AuthType           string `json:"auth_type,omitempty"`
-	MetadataServiceURL string `json:"metadata_service_url,omitempty"`
+	MetadataServiceURL string `json:"metadata_service_url,omitempty" bundle:"internal"`
 
 	// OAuth specific attributes.
 	ClientID string `json:"client_id,omitempty"`

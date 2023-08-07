@@ -1463,16 +1463,16 @@ func TestBundleReadOnlytag(t *testing.T) {
 	assert.Equal(t, expected, string(jsonSchema))
 }
 
-func TestBundlePreviewTag(t *testing.T) {
+func TestBundleInternalTag(t *testing.T) {
 	type Pokemon struct {
-		Pikachu string `json:"pikachu" bundle:"preview"`
+		Pikachu string `json:"pikachu" bundle:"internal"`
 		Raichu  string `json:"raichu"`
 	}
 
 	type Foo struct {
 		Pokemon *Pokemon `json:"pokemon"`
 		Apple   int      `json:"apple"`
-		Mango   string   `json:"mango" bundle:"preview"`
+		Mango   string   `json:"mango" bundle:"internal"`
 	}
 
 	elem := Foo{}
