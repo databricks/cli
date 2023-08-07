@@ -11,6 +11,7 @@ import (
 )
 
 const gitIgnoreFileName = ".gitignore"
+
 var GitDirectoryName = ".git"
 
 // Repository represents a Git repository or a directory
