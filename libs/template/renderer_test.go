@@ -434,3 +434,28 @@ func TestRendererNonTemplatesAreCreatedAsCopyFiles(t *testing.T) {
 	assert.Equal(t, r.files[0].(*copyFile).srcPath, "not-a-template")
 	assert.Equal(t, r.files[0].DstPath().absPath(), filepath.Join(tmpDir, "not-a-template"))
 }
+
+func TestRendererFileTreeRendering(t *testing.T) {
+	ctx := context.Background()
+	tmpDir := t.TempDir()
+
+	r, err := newRenderer(ctx, map[string]any{
+		"dir_name":  "my_directory",
+		"file_name": "my_file",
+	}, "./testdata/file-tree-rendering/template", "./testdata/file-tree-rendering/library", tmpDir)
+	require.NoError(t, err)
+
+	err = r.walk()
+	assert.NoError(t, err)
+
+	// Assert in memory representation is created.
+	assert.Len(t, r.files, 1)
+	assert.Equal(t, r.files[0].DstPath().absPath(), filepath.Join(tmpDir, "my_directory", "my_file"))
+
+	err = r.persistToDisk()
+	require.NoError(t, err)
+
+	// Assert files and directories are correctly materialized.
+	assert.DirExists(t, filepath.Join(tmpDir, "my_directory"))
+	assert.FileExists(t, filepath.Join(tmpDir, "my_directory", "my_file"))
+}
