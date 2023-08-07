@@ -50,6 +50,21 @@ type commandInput struct {
 	OutputType string         `json:"output_type"`
 }
 
+func propagateEnvConfig(cfg *config.Config) error {
+	for _, a := range config.ConfigAttributes {
+		if a.IsZero(cfg) {
+			continue
+		}
+		for _, ev := range a.EnvVars {
+			err := os.Setenv(ev, a.GetString(cfg))
+			if err != nil {
+				return fmt.Errorf("set %s: %w", a.Name, err)
+			}
+		}
+	}
+	return nil
+}
+
 func infuse(cmd *cobra.Command) error {
 	ctx := cmd.Context()
 	all, err := feature.LoadAll(ctx)
@@ -79,17 +94,7 @@ func infuse(cmd *cobra.Command) error {
 						}
 						// TODO: add account-level init as well
 						w := root.WorkspaceClient(cmd.Context())
-						for _, a := range config.ConfigAttributes {
-							if a.IsZero(w.Config) {
-								continue
-							}
-							for _, ev := range a.EnvVars {
-								err = os.Setenv(ev, a.GetString(w.Config))
-								if err != nil {
-									return fmt.Errorf("set %s: %w", a.Name, err)
-								}
-							}
-						}
+						propagateEnvConfig(w.Config)
 					}
 					ci := &commandInput{
 						Command: l.Name,

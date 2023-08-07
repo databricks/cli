@@ -10,6 +10,6 @@ import (
 
 func TestInstallDbx(t *testing.T) {
 	ctx := context.Background()
-	_, err := internal.RunGetOutput(ctx, "labs", "install", "dbx")
+	_, err := internal.RunGetOutput(ctx, "labs", "install", "dbx@metadata", "--profile", "bogdan")
 	assert.NoError(t, err)
 }
