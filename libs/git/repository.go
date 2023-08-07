@@ -43,6 +43,11 @@ func (r *Repository) Root() string {
 	return r.rootPath
 }
 
+// Returns if the *Repository struct represents a real git repository
+func (r *Repository) IsRealRepo() bool {
+	return r.real
+}
+
 func (r *Repository) CurrentBranch() (string, error) {
 	// load .git/HEAD
 	ref, err := LoadReferenceFile(filepath.Join(r.rootPath, ".git", "HEAD"))

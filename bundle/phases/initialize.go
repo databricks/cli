@@ -28,6 +28,7 @@ func Initialize() bundle.Mutator {
 			mutator.OverrideCompute(),
 			mutator.ProcessEnvironmentMode(),
 			mutator.TranslatePaths(),
+			mutator.SetJobSources(),
 			terraform.Initialize(),
 		},
 	)
