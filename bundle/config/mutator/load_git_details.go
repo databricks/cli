@@ -27,13 +27,13 @@ func (m *loadGitDetails) Apply(ctx context.Context, b *bundle.Bundle) error {
 
 	// Read branch name of current checkout
 	branch, err := repo.CurrentBranch()
-	if err == nil && b.Config.Bundle.Git.Branch == "" {
-		// Only load branch if there's no user defined value
-		b.Config.Bundle.Git.Inferred = true
-		b.Config.Bundle.Git.Branch = branch
-	}
 	if err == nil {
 		b.Config.Bundle.Git.ActualBranch = branch
+		if b.Config.Bundle.Git.Branch == "" {
+			// Only load branch if there's no user defined value
+			b.Config.Bundle.Git.Inferred = true
+			b.Config.Bundle.Git.Branch = branch
+		}
 	} else {
 		log.Warnf(ctx, "failed to load current branch: %s", err)
 	}
