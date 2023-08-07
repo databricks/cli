@@ -7,9 +7,9 @@ resources:
       name: "[${bundle.environment}] My Wheel Job"
       tasks:
         - task_key: TestTask
-          existing_cluster_id: "0717-aaaaa-bbbbbb"
+          existing_cluster_id: "0717-132531-5opeqon1"
           python_wheel_task:
             package_name: "my_test_code"
             entry_point: "run"
           libraries:
-          - whl: ./dist/*.whl
+          - whl: dbfs://path/to/dist/mywheel.whl
