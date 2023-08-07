@@ -11,7 +11,6 @@ import (
 
 type setJobSources struct{}
 
-// TranslatePaths converts paths to local notebook files into paths in the workspace file system.
 func SetJobSources() bundle.Mutator {
 	return &setJobSources{}
 }
