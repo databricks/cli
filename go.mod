@@ -24,7 +24,7 @@ require (
 	github.com/whilp/git-urls v1.0.0 // MIT
 	golang.org/x/exp v0.0.0-20230310171629-522b1b587ee0
 	golang.org/x/mod v0.12.0
-	golang.org/x/oauth2 v0.10.0
+	golang.org/x/oauth2 v0.11.0
 	golang.org/x/sync v0.3.0
 	golang.org/x/term v0.11.0
 	golang.org/x/text v0.12.0
@@ -50,8 +50,8 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/zclconf/go-cty v1.13.2 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	golang.org/x/crypto v0.11.0 // indirect
-	golang.org/x/net v0.12.0 // indirect
+	golang.org/x/crypto v0.12.0 // indirect
+	golang.org/x/net v0.14.0 // indirect
 	golang.org/x/sys v0.11.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	google.golang.org/api v0.131.0 // indirect
