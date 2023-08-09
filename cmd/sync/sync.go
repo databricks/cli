@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/sync"
@@ -68,6 +69,23 @@ func (f *syncFlags) syncOptionsFromArgs(cmd *cobra.Command, args []string) (*syn
 	return &opts, nil
 }
 
+func (f *syncFlags) syncOptions(cmd *cobra.Command, args []string) (*sync.SyncOptions, error) {
+	err := root.TryConfigureBundle(cmd, args)
+	if err != nil {
+		return f.syncOptionsFromArgs(cmd, args)
+	}
+	b := bundle.GetOrNil(cmd.Context())
+	if b != nil {
+		// Run initialize phase to make sure paths are set.
+		err = bundle.Apply(cmd.Context(), b, phases.Initialize())
+		if err != nil {
+			return nil, err
+		}
+		return f.syncOptionsFromBundle(cmd, args, b)
+	}
+	return f.syncOptionsFromArgs(cmd, args)
+}
+
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "sync [flags] SRC DST",
@@ -84,25 +102,12 @@ func New() *cobra.Command {
 	cmd.Flags().Var(&f.output, "output", "type of output format")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		var opts *sync.SyncOptions
-		var err error
-
-		//
 		// To be uncommented and used once our VS Code extension is bundle aware.
 		// Until then, this could interfere with extension usage where a `databricks.yml` file is present.
 		// See https://github.com/databricks/cli/pull/207.
 		//
-		// b := bundle.GetOrNil(cmd.Context())
-		// if b != nil {
-		// 	// Run initialize phase to make sure paths are set.
-		// 	err = bundle.Apply(cmd.Context(), b, phases.Initialize())
-		// 	if err != nil {
-		// 		return err
-		// 	}
-		// 	opts, err = syncOptionsFromBundle(cmd, args, b)
-		// } else {
-		opts, err = f.syncOptionsFromArgs(cmd, args)
-		// }
+		opts, err := f.syncOptions(cmd, args)
+
 		if err != nil {
 			return err
 		}
