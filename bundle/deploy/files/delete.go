@@ -27,7 +27,7 @@ func (m *delete) Apply(ctx context.Context, b *bundle.Bundle) error {
 
 	red := color.New(color.FgRed).SprintFunc()
 	if !b.AutoApprove {
-		proceed, err := cmdio.Ask(ctx, fmt.Sprintf("\n%s and all files in it will be %s Proceed? [y/n]: ", b.Config.Workspace.RootPath, red("deleted permanently!")))
+		proceed, err := cmdio.Ask(ctx, fmt.Sprintf("\n%s and all files in it will be %s Proceed?", b.Config.Workspace.RootPath, red("deleted permanently!")))
 		if err != nil {
 			return err
 		}

@@ -87,6 +87,8 @@ func (l *Logger) Ask(question string) (bool, error) {
 		return false, fmt.Errorf("question prompts are not supported in json mode")
 	}
 
+	// Add acceptable answers to the question prompt.
+	question += ` [y/n]:`
 	l.Writer.Write([]byte(question))
 	ans, err := l.Reader.ReadString('\n')
 
