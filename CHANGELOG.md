@@ -1,5 +1,43 @@
 # Version changelog
 
+## 0.203.0
+
+CLI:
+ * Infer host from profile during `auth login` ([#629](https://github.com/databricks/cli/pull/629)).
+
+Bundles:
+ * Extend deployment mode support ([#577](https://github.com/databricks/cli/pull/577)).
+ * Add validation for Git settings in bundles ([#578](https://github.com/databricks/cli/pull/578)).
+ * Only treat files with .tmpl extension as templates ([#594](https://github.com/databricks/cli/pull/594)).
+ * Add JSON schema validation for input template parameters ([#598](https://github.com/databricks/cli/pull/598)).
+ * Add DATABRICKS_BUNDLE_INCLUDE_PATHS to specify include paths through env vars ([#591](https://github.com/databricks/cli/pull/591)).
+ * Initialise a empty default bundle if BUNDLE_ROOT and DATABRICKS_BUNDLE_INCLUDES env vars are present ([#604](https://github.com/databricks/cli/pull/604)).
+ * Regenerate bundle resource structs from latest Terraform provider ([#633](https://github.com/databricks/cli/pull/633)).
+ * Fixed processing jobs libraries with remote path ([#638](https://github.com/databricks/cli/pull/638)).
+ * Add unit test for file name execution during rendering ([#640](https://github.com/databricks/cli/pull/640)).
+ * Add bundle init command and support for prompting user for input values ([#631](https://github.com/databricks/cli/pull/631)).
+ * Fix bundle git branch validation ([#645](https://github.com/databricks/cli/pull/645)).
+
+Internal:
+ * Fix mkdir integration test on GCP ([#620](https://github.com/databricks/cli/pull/620)).
+ * Fix git clone integration test for non-existing repo ([#610](https://github.com/databricks/cli/pull/610)).
+ * Remove push to main trigger for build workflow ([#621](https://github.com/databricks/cli/pull/621)).
+ * Remove workflow to publish binaries to S3 ([#622](https://github.com/databricks/cli/pull/622)).
+ * Fix failing fs mkdir test on azure ([#627](https://github.com/databricks/cli/pull/627)).
+ * Print y/n options when displaying prompts using cmdio.Ask ([#650](https://github.com/databricks/cli/pull/650)).
+
+API Changes:
+ * Changed `databricks account metastore-assignments create` command to not return anything.
+ * Added `databricks account network-policy` command group.
+
+OpenAPI commit 7b57ba3a53f4de3d049b6a24391fe5474212daf8 (2023-07-28)
+
+Dependency updates:
+ * Bump OpenAPI specification & Go SDK Version ([#624](https://github.com/databricks/cli/pull/624)).
+ * Bump golang.org/x/term from 0.10.0 to 0.11.0 ([#643](https://github.com/databricks/cli/pull/643)).
+ * Bump golang.org/x/text from 0.11.0 to 0.12.0 ([#642](https://github.com/databricks/cli/pull/642)).
+ * Bump golang.org/x/oauth2 from 0.10.0 to 0.11.0 ([#641](https://github.com/databricks/cli/pull/641)).
+
 ## 0.202.0
 
 Breaking Change:
