@@ -124,16 +124,15 @@ func (r *renderer) computeFile(relPathTemplate string) (file, error) {
 	}
 	perm := info.Mode().Perm()
 
-	// Execute relative path template to get materialized path for the file
-	relPathTemplate = strings.TrimSuffix(relPathTemplate, templateExtension)
-	relPath, err := r.executeTemplate(relPathTemplate)
-	if err != nil {
-		return nil, err
-	}
-
 	// If file name does not specify the `.tmpl` extension, then it is copied
 	// over as is, without treating it as a template
 	if !strings.HasSuffix(relPathTemplate, templateExtension) {
+		// Execute relative path template to get destination path for the file
+		relPath, err := r.executeTemplate(relPathTemplate)
+		if err != nil {
+			return nil, err
+		}
+
 		return &copyFile{
 			dstPath: &destinationPath{
 				root:    r.instanceRoot,
@@ -152,6 +151,13 @@ func (r *renderer) computeFile(relPathTemplate string) (file, error) {
 		return nil, err
 	}
 	defer templateReader.Close()
+
+	// Execute relative path template after stripping the .tmpl extension to
+	// get destination path for the file
+	relPath, err := r.executeTemplate(strings.TrimSuffix(relPathTemplate, templateExtension))
+	if err != nil {
+		return nil, err
+	}
 
 	// execute the contents of the file as a template
 	contentTemplate, err := io.ReadAll(templateReader)

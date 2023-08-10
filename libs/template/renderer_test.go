@@ -470,6 +470,6 @@ func TestRendererSubTemplateInPath(t *testing.T) {
 	err = r.walk()
 	require.NoError(t, err)
 
-	assert.Equal(t, filepath.Join(tmpDir, "my_directory/my_file"), r.files[0].DstPath().absPath())
+	assert.Equal(t, filepath.Join(tmpDir, "my_directory", "my_file"), r.files[0].DstPath().absPath())
 	assert.Equal(t, "my_directory/my_file", r.files[0].DstPath().relPath)
 }
