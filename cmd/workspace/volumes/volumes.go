@@ -32,9 +32,6 @@ func New() *cobra.Command {
 		Annotations: map[string]string{
 			"package": "catalog",
 		},
-
-		// This service is being previewed; hide from help output.
-		Hidden: true,
 	}
 
 	// Apply optional overrides to this command.
@@ -252,6 +249,9 @@ func newList() *cobra.Command {
   and the **USE_SCHEMA** privilege on the parent schema.
   
   There is no guarantee of a specific ordering of the elements in the array.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 

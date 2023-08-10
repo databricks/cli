@@ -557,6 +557,129 @@ func init() {
 	})
 }
 
+// start get-experiment-permission-levels command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getExperimentPermissionLevelsOverrides []func(
+	*cobra.Command,
+	*ml.GetExperimentPermissionLevelsRequest,
+)
+
+func newGetExperimentPermissionLevels() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getExperimentPermissionLevelsReq ml.GetExperimentPermissionLevelsRequest
+
+	// TODO: short flags
+
+	cmd.Use = "get-experiment-permission-levels EXPERIMENT_ID"
+	cmd.Short = `Get experiment permission levels.`
+	cmd.Long = `Get experiment permission levels.
+  
+  Gets the permission levels that a user can have on an object.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		getExperimentPermissionLevelsReq.ExperimentId = args[0]
+
+		response, err := w.Experiments.GetExperimentPermissionLevels(ctx, getExperimentPermissionLevelsReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getExperimentPermissionLevelsOverrides {
+		fn(cmd, &getExperimentPermissionLevelsReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newGetExperimentPermissionLevels())
+	})
+}
+
+// start get-experiment-permissions command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getExperimentPermissionsOverrides []func(
+	*cobra.Command,
+	*ml.GetExperimentPermissionsRequest,
+)
+
+func newGetExperimentPermissions() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getExperimentPermissionsReq ml.GetExperimentPermissionsRequest
+
+	// TODO: short flags
+
+	cmd.Use = "get-experiment-permissions EXPERIMENT_ID"
+	cmd.Short = `Get experiment permissions.`
+	cmd.Long = `Get experiment permissions.
+  
+  Gets the permissions of an experiment. Experiments can inherit permissions
+  from their root object.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		getExperimentPermissionsReq.ExperimentId = args[0]
+
+		response, err := w.Experiments.GetExperimentPermissions(ctx, getExperimentPermissionsReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getExperimentPermissionsOverrides {
+		fn(cmd, &getExperimentPermissionsReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newGetExperimentPermissions())
+	})
+}
+
 // start get-history command
 
 // Slice with functions to override default command behavior.
@@ -1587,6 +1710,78 @@ func init() {
 	})
 }
 
+// start set-experiment-permissions command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var setExperimentPermissionsOverrides []func(
+	*cobra.Command,
+	*ml.ExperimentPermissionsRequest,
+)
+
+func newSetExperimentPermissions() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var setExperimentPermissionsReq ml.ExperimentPermissionsRequest
+	var setExperimentPermissionsJson flags.JsonFlag
+
+	// TODO: short flags
+	cmd.Flags().Var(&setExperimentPermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	// TODO: array: access_control_list
+
+	cmd.Use = "set-experiment-permissions EXPERIMENT_ID"
+	cmd.Short = `Set experiment permissions.`
+	cmd.Long = `Set experiment permissions.
+  
+  Sets permissions on an experiment. Experiments can inherit permissions from
+  their root object.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			err = setExperimentPermissionsJson.Unmarshal(&setExperimentPermissionsReq)
+			if err != nil {
+				return err
+			}
+		}
+		setExperimentPermissionsReq.ExperimentId = args[0]
+
+		response, err := w.Experiments.SetExperimentPermissions(ctx, setExperimentPermissionsReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range setExperimentPermissionsOverrides {
+		fn(cmd, &setExperimentPermissionsReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newSetExperimentPermissions())
+	})
+}
+
 // start set-experiment-tag command
 
 // Slice with functions to override default command behavior.
@@ -1812,6 +2007,78 @@ func newUpdateExperiment() *cobra.Command {
 func init() {
 	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
 		cmd.AddCommand(newUpdateExperiment())
+	})
+}
+
+// start update-experiment-permissions command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updateExperimentPermissionsOverrides []func(
+	*cobra.Command,
+	*ml.ExperimentPermissionsRequest,
+)
+
+func newUpdateExperimentPermissions() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updateExperimentPermissionsReq ml.ExperimentPermissionsRequest
+	var updateExperimentPermissionsJson flags.JsonFlag
+
+	// TODO: short flags
+	cmd.Flags().Var(&updateExperimentPermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	// TODO: array: access_control_list
+
+	cmd.Use = "update-experiment-permissions EXPERIMENT_ID"
+	cmd.Short = `Update experiment permissions.`
+	cmd.Long = `Update experiment permissions.
+  
+  Updates the permissions on an experiment. Experiments can inherit permissions
+  from their root object.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			err = updateExperimentPermissionsJson.Unmarshal(&updateExperimentPermissionsReq)
+			if err != nil {
+				return err
+			}
+		}
+		updateExperimentPermissionsReq.ExperimentId = args[0]
+
+		response, err := w.Experiments.UpdateExperimentPermissions(ctx, updateExperimentPermissionsReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updateExperimentPermissionsOverrides {
+		fn(cmd, &updateExperimentPermissionsReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newUpdateExperimentPermissions())
 	})
 }
 

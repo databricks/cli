@@ -71,6 +71,8 @@ func newCreate() *cobra.Command {
 	// TODO: complex arg: cloud_resource_container
 	cmd.Flags().StringVar(&createReq.CredentialsId, "credentials-id", createReq.CredentialsId, `ID of the workspace's credential configuration object.`)
 	cmd.Flags().StringVar(&createReq.DeploymentName, "deployment-name", createReq.DeploymentName, `The deployment name defines part of the subdomain for the workspace.`)
+	// TODO: complex arg: gcp_managed_network_config
+	// TODO: complex arg: gke_config
 	cmd.Flags().StringVar(&createReq.Location, "location", createReq.Location, `The Google Cloud region of the workspace data plane in your Google account.`)
 	cmd.Flags().StringVar(&createReq.ManagedServicesCustomerManagedKeyId, "managed-services-customer-managed-key-id", createReq.ManagedServicesCustomerManagedKeyId, `The ID of the workspace's managed services encryption key configuration object.`)
 	cmd.Flags().StringVar(&createReq.NetworkId, "network-id", createReq.NetworkId, ``)

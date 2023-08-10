@@ -418,6 +418,153 @@ func init() {
 	})
 }
 
+// start get-warehouse-permission-levels command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getWarehousePermissionLevelsOverrides []func(
+	*cobra.Command,
+	*sql.GetWarehousePermissionLevelsRequest,
+)
+
+func newGetWarehousePermissionLevels() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getWarehousePermissionLevelsReq sql.GetWarehousePermissionLevelsRequest
+
+	// TODO: short flags
+
+	cmd.Use = "get-warehouse-permission-levels WAREHOUSE_ID"
+	cmd.Short = `Get SQL warehouse permission levels.`
+	cmd.Long = `Get SQL warehouse permission levels.
+  
+  Gets the permission levels that a user can have on an object.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No WAREHOUSE_ID argument specified. Loading names for Warehouses drop-down."
+			names, err := w.Warehouses.EndpointInfoNameToIdMap(ctx, sql.ListWarehousesRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Warehouses drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "The SQL warehouse for which to get or manage permissions")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the sql warehouse for which to get or manage permissions")
+		}
+		getWarehousePermissionLevelsReq.WarehouseId = args[0]
+
+		response, err := w.Warehouses.GetWarehousePermissionLevels(ctx, getWarehousePermissionLevelsReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getWarehousePermissionLevelsOverrides {
+		fn(cmd, &getWarehousePermissionLevelsReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newGetWarehousePermissionLevels())
+	})
+}
+
+// start get-warehouse-permissions command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getWarehousePermissionsOverrides []func(
+	*cobra.Command,
+	*sql.GetWarehousePermissionsRequest,
+)
+
+func newGetWarehousePermissions() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getWarehousePermissionsReq sql.GetWarehousePermissionsRequest
+
+	// TODO: short flags
+
+	cmd.Use = "get-warehouse-permissions WAREHOUSE_ID"
+	cmd.Short = `Get SQL warehouse permissions.`
+	cmd.Long = `Get SQL warehouse permissions.
+  
+  Gets the permissions of a SQL warehouse. SQL warehouses can inherit
+  permissions from their root object.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No WAREHOUSE_ID argument specified. Loading names for Warehouses drop-down."
+			names, err := w.Warehouses.EndpointInfoNameToIdMap(ctx, sql.ListWarehousesRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Warehouses drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "The SQL warehouse for which to get or manage permissions")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the sql warehouse for which to get or manage permissions")
+		}
+		getWarehousePermissionsReq.WarehouseId = args[0]
+
+		response, err := w.Warehouses.GetWarehousePermissions(ctx, getWarehousePermissionsReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getWarehousePermissionsOverrides {
+		fn(cmd, &getWarehousePermissionsReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newGetWarehousePermissions())
+	})
+}
+
 // start get-workspace-warehouse-config command
 
 // Slice with functions to override default command behavior.
@@ -538,6 +685,90 @@ func newList() *cobra.Command {
 func init() {
 	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
 		cmd.AddCommand(newList())
+	})
+}
+
+// start set-warehouse-permissions command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var setWarehousePermissionsOverrides []func(
+	*cobra.Command,
+	*sql.WarehousePermissionsRequest,
+)
+
+func newSetWarehousePermissions() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var setWarehousePermissionsReq sql.WarehousePermissionsRequest
+	var setWarehousePermissionsJson flags.JsonFlag
+
+	// TODO: short flags
+	cmd.Flags().Var(&setWarehousePermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	// TODO: array: access_control_list
+
+	cmd.Use = "set-warehouse-permissions WAREHOUSE_ID"
+	cmd.Short = `Set SQL warehouse permissions.`
+	cmd.Long = `Set SQL warehouse permissions.
+  
+  Sets permissions on a SQL warehouse. SQL warehouses can inherit permissions
+  from their root object.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			err = setWarehousePermissionsJson.Unmarshal(&setWarehousePermissionsReq)
+			if err != nil {
+				return err
+			}
+		}
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No WAREHOUSE_ID argument specified. Loading names for Warehouses drop-down."
+			names, err := w.Warehouses.EndpointInfoNameToIdMap(ctx, sql.ListWarehousesRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Warehouses drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "The SQL warehouse for which to get or manage permissions")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the sql warehouse for which to get or manage permissions")
+		}
+		setWarehousePermissionsReq.WarehouseId = args[0]
+
+		response, err := w.Warehouses.SetWarehousePermissions(ctx, setWarehousePermissionsReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range setWarehousePermissionsOverrides {
+		fn(cmd, &setWarehousePermissionsReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newSetWarehousePermissions())
 	})
 }
 
@@ -815,6 +1046,90 @@ func newStop() *cobra.Command {
 func init() {
 	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
 		cmd.AddCommand(newStop())
+	})
+}
+
+// start update-warehouse-permissions command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updateWarehousePermissionsOverrides []func(
+	*cobra.Command,
+	*sql.WarehousePermissionsRequest,
+)
+
+func newUpdateWarehousePermissions() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updateWarehousePermissionsReq sql.WarehousePermissionsRequest
+	var updateWarehousePermissionsJson flags.JsonFlag
+
+	// TODO: short flags
+	cmd.Flags().Var(&updateWarehousePermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	// TODO: array: access_control_list
+
+	cmd.Use = "update-warehouse-permissions WAREHOUSE_ID"
+	cmd.Short = `Update SQL warehouse permissions.`
+	cmd.Long = `Update SQL warehouse permissions.
+  
+  Updates the permissions on a SQL warehouse. SQL warehouses can inherit
+  permissions from their root object.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			err = updateWarehousePermissionsJson.Unmarshal(&updateWarehousePermissionsReq)
+			if err != nil {
+				return err
+			}
+		}
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No WAREHOUSE_ID argument specified. Loading names for Warehouses drop-down."
+			names, err := w.Warehouses.EndpointInfoNameToIdMap(ctx, sql.ListWarehousesRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Warehouses drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "The SQL warehouse for which to get or manage permissions")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the sql warehouse for which to get or manage permissions")
+		}
+		updateWarehousePermissionsReq.WarehouseId = args[0]
+
+		response, err := w.Warehouses.UpdateWarehousePermissions(ctx, updateWarehousePermissionsReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updateWarehousePermissionsOverrides {
+		fn(cmd, &updateWarehousePermissionsReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newUpdateWarehousePermissions())
 	})
 }
 

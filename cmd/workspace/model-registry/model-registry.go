@@ -1226,6 +1226,129 @@ func init() {
 	})
 }
 
+// start get-registered-model-permission-levels command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getRegisteredModelPermissionLevelsOverrides []func(
+	*cobra.Command,
+	*ml.GetRegisteredModelPermissionLevelsRequest,
+)
+
+func newGetRegisteredModelPermissionLevels() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getRegisteredModelPermissionLevelsReq ml.GetRegisteredModelPermissionLevelsRequest
+
+	// TODO: short flags
+
+	cmd.Use = "get-registered-model-permission-levels REGISTERED_MODEL_ID"
+	cmd.Short = `Get registered model permission levels.`
+	cmd.Long = `Get registered model permission levels.
+  
+  Gets the permission levels that a user can have on an object.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		getRegisteredModelPermissionLevelsReq.RegisteredModelId = args[0]
+
+		response, err := w.ModelRegistry.GetRegisteredModelPermissionLevels(ctx, getRegisteredModelPermissionLevelsReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getRegisteredModelPermissionLevelsOverrides {
+		fn(cmd, &getRegisteredModelPermissionLevelsReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newGetRegisteredModelPermissionLevels())
+	})
+}
+
+// start get-registered-model-permissions command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getRegisteredModelPermissionsOverrides []func(
+	*cobra.Command,
+	*ml.GetRegisteredModelPermissionsRequest,
+)
+
+func newGetRegisteredModelPermissions() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getRegisteredModelPermissionsReq ml.GetRegisteredModelPermissionsRequest
+
+	// TODO: short flags
+
+	cmd.Use = "get-registered-model-permissions REGISTERED_MODEL_ID"
+	cmd.Short = `Get registered model permissions.`
+	cmd.Long = `Get registered model permissions.
+  
+  Gets the permissions of a registered model. Registered models can inherit
+  permissions from their root object.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		getRegisteredModelPermissionsReq.RegisteredModelId = args[0]
+
+		response, err := w.ModelRegistry.GetRegisteredModelPermissions(ctx, getRegisteredModelPermissionsReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getRegisteredModelPermissionsOverrides {
+		fn(cmd, &getRegisteredModelPermissionsReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newGetRegisteredModelPermissions())
+	})
+}
+
 // start list-models command
 
 // Slice with functions to override default command behavior.
@@ -1902,6 +2025,78 @@ func init() {
 	})
 }
 
+// start set-registered-model-permissions command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var setRegisteredModelPermissionsOverrides []func(
+	*cobra.Command,
+	*ml.RegisteredModelPermissionsRequest,
+)
+
+func newSetRegisteredModelPermissions() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var setRegisteredModelPermissionsReq ml.RegisteredModelPermissionsRequest
+	var setRegisteredModelPermissionsJson flags.JsonFlag
+
+	// TODO: short flags
+	cmd.Flags().Var(&setRegisteredModelPermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	// TODO: array: access_control_list
+
+	cmd.Use = "set-registered-model-permissions REGISTERED_MODEL_ID"
+	cmd.Short = `Set registered model permissions.`
+	cmd.Long = `Set registered model permissions.
+  
+  Sets permissions on a registered model. Registered models can inherit
+  permissions from their root object.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			err = setRegisteredModelPermissionsJson.Unmarshal(&setRegisteredModelPermissionsReq)
+			if err != nil {
+				return err
+			}
+		}
+		setRegisteredModelPermissionsReq.RegisteredModelId = args[0]
+
+		response, err := w.ModelRegistry.SetRegisteredModelPermissions(ctx, setRegisteredModelPermissionsReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range setRegisteredModelPermissionsOverrides {
+		fn(cmd, &setRegisteredModelPermissionsReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newSetRegisteredModelPermissions())
+	})
+}
+
 // start test-registry-webhook command
 
 // Slice with functions to override default command behavior.
@@ -2289,6 +2484,78 @@ func newUpdateModelVersion() *cobra.Command {
 func init() {
 	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
 		cmd.AddCommand(newUpdateModelVersion())
+	})
+}
+
+// start update-registered-model-permissions command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updateRegisteredModelPermissionsOverrides []func(
+	*cobra.Command,
+	*ml.RegisteredModelPermissionsRequest,
+)
+
+func newUpdateRegisteredModelPermissions() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updateRegisteredModelPermissionsReq ml.RegisteredModelPermissionsRequest
+	var updateRegisteredModelPermissionsJson flags.JsonFlag
+
+	// TODO: short flags
+	cmd.Flags().Var(&updateRegisteredModelPermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	// TODO: array: access_control_list
+
+	cmd.Use = "update-registered-model-permissions REGISTERED_MODEL_ID"
+	cmd.Short = `Update registered model permissions.`
+	cmd.Long = `Update registered model permissions.
+  
+  Updates the permissions on a registered model. Registered models can inherit
+  permissions from their root object.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			err = updateRegisteredModelPermissionsJson.Unmarshal(&updateRegisteredModelPermissionsReq)
+			if err != nil {
+				return err
+			}
+		}
+		updateRegisteredModelPermissionsReq.RegisteredModelId = args[0]
+
+		response, err := w.ModelRegistry.UpdateRegisteredModelPermissions(ctx, updateRegisteredModelPermissionsReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updateRegisteredModelPermissionsOverrides {
+		fn(cmd, &updateRegisteredModelPermissionsReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newUpdateRegisteredModelPermissions())
 	})
 }
 

@@ -262,6 +262,103 @@ func init() {
 	})
 }
 
+// start get-token-permission-levels command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getTokenPermissionLevelsOverrides []func(
+	*cobra.Command,
+)
+
+func newGetTokenPermissionLevels() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	cmd.Use = "get-token-permission-levels"
+	cmd.Short = `Get token permission levels.`
+	cmd.Long = `Get token permission levels.
+  
+  Gets the permission levels that a user can have on an object.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+		response, err := w.TokenManagement.GetTokenPermissionLevels(ctx)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getTokenPermissionLevelsOverrides {
+		fn(cmd)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newGetTokenPermissionLevels())
+	})
+}
+
+// start get-token-permissions command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getTokenPermissionsOverrides []func(
+	*cobra.Command,
+)
+
+func newGetTokenPermissions() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	cmd.Use = "get-token-permissions"
+	cmd.Short = `Get token permissions.`
+	cmd.Long = `Get token permissions.
+  
+  Gets the permissions of all tokens. Tokens can inherit permissions from their
+  root object.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+		response, err := w.TokenManagement.GetTokenPermissions(ctx)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getTokenPermissionsOverrides {
+		fn(cmd)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newGetTokenPermissions())
+	})
+}
+
 // start list command
 
 // Slice with functions to override default command behavior.
@@ -334,6 +431,156 @@ func newList() *cobra.Command {
 func init() {
 	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
 		cmd.AddCommand(newList())
+	})
+}
+
+// start set-token-permissions command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var setTokenPermissionsOverrides []func(
+	*cobra.Command,
+	*settings.TokenPermissionsRequest,
+)
+
+func newSetTokenPermissions() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var setTokenPermissionsReq settings.TokenPermissionsRequest
+	var setTokenPermissionsJson flags.JsonFlag
+
+	// TODO: short flags
+	cmd.Flags().Var(&setTokenPermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	// TODO: array: access_control_list
+
+	cmd.Use = "set-token-permissions"
+	cmd.Short = `Set token permissions.`
+	cmd.Long = `Set token permissions.
+  
+  Sets permissions on all tokens. Tokens can inherit permissions from their root
+  object.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(0)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			err = setTokenPermissionsJson.Unmarshal(&setTokenPermissionsReq)
+			if err != nil {
+				return err
+			}
+		} else {
+		}
+
+		response, err := w.TokenManagement.SetTokenPermissions(ctx, setTokenPermissionsReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range setTokenPermissionsOverrides {
+		fn(cmd, &setTokenPermissionsReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newSetTokenPermissions())
+	})
+}
+
+// start update-token-permissions command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updateTokenPermissionsOverrides []func(
+	*cobra.Command,
+	*settings.TokenPermissionsRequest,
+)
+
+func newUpdateTokenPermissions() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updateTokenPermissionsReq settings.TokenPermissionsRequest
+	var updateTokenPermissionsJson flags.JsonFlag
+
+	// TODO: short flags
+	cmd.Flags().Var(&updateTokenPermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	// TODO: array: access_control_list
+
+	cmd.Use = "update-token-permissions"
+	cmd.Short = `Update token permissions.`
+	cmd.Long = `Update token permissions.
+  
+  Updates the permissions on all tokens. Tokens can inherit permissions from
+  their root object.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(0)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			err = updateTokenPermissionsJson.Unmarshal(&updateTokenPermissionsReq)
+			if err != nil {
+				return err
+			}
+		} else {
+		}
+
+		response, err := w.TokenManagement.UpdateTokenPermissions(ctx, updateTokenPermissionsReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updateTokenPermissionsOverrides {
+		fn(cmd, &updateTokenPermissionsReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newUpdateTokenPermissions())
 	})
 }
 

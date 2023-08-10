@@ -272,6 +272,153 @@ func init() {
 	})
 }
 
+// start get-pipeline-permission-levels command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getPipelinePermissionLevelsOverrides []func(
+	*cobra.Command,
+	*pipelines.GetPipelinePermissionLevelsRequest,
+)
+
+func newGetPipelinePermissionLevels() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getPipelinePermissionLevelsReq pipelines.GetPipelinePermissionLevelsRequest
+
+	// TODO: short flags
+
+	cmd.Use = "get-pipeline-permission-levels PIPELINE_ID"
+	cmd.Short = `Get pipeline permission levels.`
+	cmd.Long = `Get pipeline permission levels.
+  
+  Gets the permission levels that a user can have on an object.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No PIPELINE_ID argument specified. Loading names for Pipelines drop-down."
+			names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "The pipeline for which to get or manage permissions")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the pipeline for which to get or manage permissions")
+		}
+		getPipelinePermissionLevelsReq.PipelineId = args[0]
+
+		response, err := w.Pipelines.GetPipelinePermissionLevels(ctx, getPipelinePermissionLevelsReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getPipelinePermissionLevelsOverrides {
+		fn(cmd, &getPipelinePermissionLevelsReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newGetPipelinePermissionLevels())
+	})
+}
+
+// start get-pipeline-permissions command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getPipelinePermissionsOverrides []func(
+	*cobra.Command,
+	*pipelines.GetPipelinePermissionsRequest,
+)
+
+func newGetPipelinePermissions() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getPipelinePermissionsReq pipelines.GetPipelinePermissionsRequest
+
+	// TODO: short flags
+
+	cmd.Use = "get-pipeline-permissions PIPELINE_ID"
+	cmd.Short = `Get pipeline permissions.`
+	cmd.Long = `Get pipeline permissions.
+  
+  Gets the permissions of a pipeline. Pipelines can inherit permissions from
+  their root object.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No PIPELINE_ID argument specified. Loading names for Pipelines drop-down."
+			names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "The pipeline for which to get or manage permissions")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the pipeline for which to get or manage permissions")
+		}
+		getPipelinePermissionsReq.PipelineId = args[0]
+
+		response, err := w.Pipelines.GetPipelinePermissions(ctx, getPipelinePermissionsReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getPipelinePermissionsOverrides {
+		fn(cmd, &getPipelinePermissionsReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newGetPipelinePermissions())
+	})
+}
+
 // start get-update command
 
 // Slice with functions to override default command behavior.
@@ -664,6 +811,90 @@ func init() {
 	})
 }
 
+// start set-pipeline-permissions command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var setPipelinePermissionsOverrides []func(
+	*cobra.Command,
+	*pipelines.PipelinePermissionsRequest,
+)
+
+func newSetPipelinePermissions() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var setPipelinePermissionsReq pipelines.PipelinePermissionsRequest
+	var setPipelinePermissionsJson flags.JsonFlag
+
+	// TODO: short flags
+	cmd.Flags().Var(&setPipelinePermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	// TODO: array: access_control_list
+
+	cmd.Use = "set-pipeline-permissions PIPELINE_ID"
+	cmd.Short = `Set pipeline permissions.`
+	cmd.Long = `Set pipeline permissions.
+  
+  Sets permissions on a pipeline. Pipelines can inherit permissions from their
+  root object.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			err = setPipelinePermissionsJson.Unmarshal(&setPipelinePermissionsReq)
+			if err != nil {
+				return err
+			}
+		}
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No PIPELINE_ID argument specified. Loading names for Pipelines drop-down."
+			names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "The pipeline for which to get or manage permissions")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the pipeline for which to get or manage permissions")
+		}
+		setPipelinePermissionsReq.PipelineId = args[0]
+
+		response, err := w.Pipelines.SetPipelinePermissions(ctx, setPipelinePermissionsReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range setPipelinePermissionsOverrides {
+		fn(cmd, &setPipelinePermissionsReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newSetPipelinePermissions())
+	})
+}
+
 // start start-update command
 
 // Slice with functions to override default command behavior.
@@ -939,6 +1170,90 @@ func newUpdate() *cobra.Command {
 func init() {
 	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
 		cmd.AddCommand(newUpdate())
+	})
+}
+
+// start update-pipeline-permissions command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updatePipelinePermissionsOverrides []func(
+	*cobra.Command,
+	*pipelines.PipelinePermissionsRequest,
+)
+
+func newUpdatePipelinePermissions() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updatePipelinePermissionsReq pipelines.PipelinePermissionsRequest
+	var updatePipelinePermissionsJson flags.JsonFlag
+
+	// TODO: short flags
+	cmd.Flags().Var(&updatePipelinePermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	// TODO: array: access_control_list
+
+	cmd.Use = "update-pipeline-permissions PIPELINE_ID"
+	cmd.Short = `Update pipeline permissions.`
+	cmd.Long = `Update pipeline permissions.
+  
+  Updates the permissions on a pipeline. Pipelines can inherit permissions from
+  their root object.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			err = updatePipelinePermissionsJson.Unmarshal(&updatePipelinePermissionsReq)
+			if err != nil {
+				return err
+			}
+		}
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No PIPELINE_ID argument specified. Loading names for Pipelines drop-down."
+			names, err := w.Pipelines.PipelineStateInfoNameToPipelineIdMap(ctx, pipelines.ListPipelinesRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Pipelines drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "The pipeline for which to get or manage permissions")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the pipeline for which to get or manage permissions")
+		}
+		updatePipelinePermissionsReq.PipelineId = args[0]
+
+		response, err := w.Pipelines.UpdatePipelinePermissions(ctx, updatePipelinePermissionsReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updatePipelinePermissionsOverrides {
+		fn(cmd, &updatePipelinePermissionsReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newUpdatePipelinePermissions())
 	})
 }
 

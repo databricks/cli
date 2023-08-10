@@ -275,6 +275,153 @@ func init() {
 	})
 }
 
+// start get-repo-permission-levels command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getRepoPermissionLevelsOverrides []func(
+	*cobra.Command,
+	*workspace.GetRepoPermissionLevelsRequest,
+)
+
+func newGetRepoPermissionLevels() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getRepoPermissionLevelsReq workspace.GetRepoPermissionLevelsRequest
+
+	// TODO: short flags
+
+	cmd.Use = "get-repo-permission-levels REPO_ID"
+	cmd.Short = `Get repo permission levels.`
+	cmd.Long = `Get repo permission levels.
+  
+  Gets the permission levels that a user can have on an object.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No REPO_ID argument specified. Loading names for Repos drop-down."
+			names, err := w.Repos.RepoInfoPathToIdMap(ctx, workspace.ListReposRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Repos drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "The repo for which to get or manage permissions")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the repo for which to get or manage permissions")
+		}
+		getRepoPermissionLevelsReq.RepoId = args[0]
+
+		response, err := w.Repos.GetRepoPermissionLevels(ctx, getRepoPermissionLevelsReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getRepoPermissionLevelsOverrides {
+		fn(cmd, &getRepoPermissionLevelsReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newGetRepoPermissionLevels())
+	})
+}
+
+// start get-repo-permissions command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getRepoPermissionsOverrides []func(
+	*cobra.Command,
+	*workspace.GetRepoPermissionsRequest,
+)
+
+func newGetRepoPermissions() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getRepoPermissionsReq workspace.GetRepoPermissionsRequest
+
+	// TODO: short flags
+
+	cmd.Use = "get-repo-permissions REPO_ID"
+	cmd.Short = `Get repo permissions.`
+	cmd.Long = `Get repo permissions.
+  
+  Gets the permissions of a repo. Repos can inherit permissions from their root
+  object.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No REPO_ID argument specified. Loading names for Repos drop-down."
+			names, err := w.Repos.RepoInfoPathToIdMap(ctx, workspace.ListReposRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Repos drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "The repo for which to get or manage permissions")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the repo for which to get or manage permissions")
+		}
+		getRepoPermissionsReq.RepoId = args[0]
+
+		response, err := w.Repos.GetRepoPermissions(ctx, getRepoPermissionsReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getRepoPermissionsOverrides {
+		fn(cmd, &getRepoPermissionsReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newGetRepoPermissions())
+	})
+}
+
 // start list command
 
 // Slice with functions to override default command behavior.
@@ -348,6 +495,90 @@ func newList() *cobra.Command {
 func init() {
 	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
 		cmd.AddCommand(newList())
+	})
+}
+
+// start set-repo-permissions command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var setRepoPermissionsOverrides []func(
+	*cobra.Command,
+	*workspace.RepoPermissionsRequest,
+)
+
+func newSetRepoPermissions() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var setRepoPermissionsReq workspace.RepoPermissionsRequest
+	var setRepoPermissionsJson flags.JsonFlag
+
+	// TODO: short flags
+	cmd.Flags().Var(&setRepoPermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	// TODO: array: access_control_list
+
+	cmd.Use = "set-repo-permissions REPO_ID"
+	cmd.Short = `Set repo permissions.`
+	cmd.Long = `Set repo permissions.
+  
+  Sets permissions on a repo. Repos can inherit permissions from their root
+  object.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			err = setRepoPermissionsJson.Unmarshal(&setRepoPermissionsReq)
+			if err != nil {
+				return err
+			}
+		}
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No REPO_ID argument specified. Loading names for Repos drop-down."
+			names, err := w.Repos.RepoInfoPathToIdMap(ctx, workspace.ListReposRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Repos drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "The repo for which to get or manage permissions")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the repo for which to get or manage permissions")
+		}
+		setRepoPermissionsReq.RepoId = args[0]
+
+		response, err := w.Repos.SetRepoPermissions(ctx, setRepoPermissionsReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range setRepoPermissionsOverrides {
+		fn(cmd, &setRepoPermissionsReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newSetRepoPermissions())
 	})
 }
 
@@ -437,6 +668,90 @@ func newUpdate() *cobra.Command {
 func init() {
 	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
 		cmd.AddCommand(newUpdate())
+	})
+}
+
+// start update-repo-permissions command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updateRepoPermissionsOverrides []func(
+	*cobra.Command,
+	*workspace.RepoPermissionsRequest,
+)
+
+func newUpdateRepoPermissions() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updateRepoPermissionsReq workspace.RepoPermissionsRequest
+	var updateRepoPermissionsJson flags.JsonFlag
+
+	// TODO: short flags
+	cmd.Flags().Var(&updateRepoPermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	// TODO: array: access_control_list
+
+	cmd.Use = "update-repo-permissions REPO_ID"
+	cmd.Short = `Update repo permissions.`
+	cmd.Long = `Update repo permissions.
+  
+  Updates the permissions on a repo. Repos can inherit permissions from their
+  root object.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			err = updateRepoPermissionsJson.Unmarshal(&updateRepoPermissionsReq)
+			if err != nil {
+				return err
+			}
+		}
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No REPO_ID argument specified. Loading names for Repos drop-down."
+			names, err := w.Repos.RepoInfoPathToIdMap(ctx, workspace.ListReposRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Repos drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "The repo for which to get or manage permissions")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the repo for which to get or manage permissions")
+		}
+		updateRepoPermissionsReq.RepoId = args[0]
+
+		response, err := w.Repos.UpdateRepoPermissions(ctx, updateRepoPermissionsReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updateRepoPermissionsOverrides {
+		fn(cmd, &updateRepoPermissionsReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newUpdateRepoPermissions())
 	})
 }
 

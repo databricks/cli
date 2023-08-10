@@ -661,6 +661,153 @@ func init() {
 	})
 }
 
+// start get-cluster-permission-levels command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getClusterPermissionLevelsOverrides []func(
+	*cobra.Command,
+	*compute.GetClusterPermissionLevelsRequest,
+)
+
+func newGetClusterPermissionLevels() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getClusterPermissionLevelsReq compute.GetClusterPermissionLevelsRequest
+
+	// TODO: short flags
+
+	cmd.Use = "get-cluster-permission-levels CLUSTER_ID"
+	cmd.Short = `Get cluster permission levels.`
+	cmd.Long = `Get cluster permission levels.
+  
+  Gets the permission levels that a user can have on an object.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No CLUSTER_ID argument specified. Loading names for Clusters drop-down."
+			names, err := w.Clusters.ClusterDetailsClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Clusters drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "The cluster for which to get or manage permissions")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the cluster for which to get or manage permissions")
+		}
+		getClusterPermissionLevelsReq.ClusterId = args[0]
+
+		response, err := w.Clusters.GetClusterPermissionLevels(ctx, getClusterPermissionLevelsReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getClusterPermissionLevelsOverrides {
+		fn(cmd, &getClusterPermissionLevelsReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newGetClusterPermissionLevels())
+	})
+}
+
+// start get-cluster-permissions command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getClusterPermissionsOverrides []func(
+	*cobra.Command,
+	*compute.GetClusterPermissionsRequest,
+)
+
+func newGetClusterPermissions() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getClusterPermissionsReq compute.GetClusterPermissionsRequest
+
+	// TODO: short flags
+
+	cmd.Use = "get-cluster-permissions CLUSTER_ID"
+	cmd.Short = `Get cluster permissions.`
+	cmd.Long = `Get cluster permissions.
+  
+  Gets the permissions of a cluster. Clusters can inherit permissions from their
+  root object.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No CLUSTER_ID argument specified. Loading names for Clusters drop-down."
+			names, err := w.Clusters.ClusterDetailsClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Clusters drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "The cluster for which to get or manage permissions")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the cluster for which to get or manage permissions")
+		}
+		getClusterPermissionsReq.ClusterId = args[0]
+
+		response, err := w.Clusters.GetClusterPermissions(ctx, getClusterPermissionsReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getClusterPermissionsOverrides {
+		fn(cmd, &getClusterPermissionsReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newGetClusterPermissions())
+	})
+}
+
 // start list command
 
 // Slice with functions to override default command behavior.
@@ -1217,6 +1364,90 @@ func init() {
 	})
 }
 
+// start set-cluster-permissions command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var setClusterPermissionsOverrides []func(
+	*cobra.Command,
+	*compute.ClusterPermissionsRequest,
+)
+
+func newSetClusterPermissions() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var setClusterPermissionsReq compute.ClusterPermissionsRequest
+	var setClusterPermissionsJson flags.JsonFlag
+
+	// TODO: short flags
+	cmd.Flags().Var(&setClusterPermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	// TODO: array: access_control_list
+
+	cmd.Use = "set-cluster-permissions CLUSTER_ID"
+	cmd.Short = `Set cluster permissions.`
+	cmd.Long = `Set cluster permissions.
+  
+  Sets permissions on a cluster. Clusters can inherit permissions from their
+  root object.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			err = setClusterPermissionsJson.Unmarshal(&setClusterPermissionsReq)
+			if err != nil {
+				return err
+			}
+		}
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No CLUSTER_ID argument specified. Loading names for Clusters drop-down."
+			names, err := w.Clusters.ClusterDetailsClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Clusters drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "The cluster for which to get or manage permissions")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the cluster for which to get or manage permissions")
+		}
+		setClusterPermissionsReq.ClusterId = args[0]
+
+		response, err := w.Clusters.SetClusterPermissions(ctx, setClusterPermissionsReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range setClusterPermissionsOverrides {
+		fn(cmd, &setClusterPermissionsReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newSetClusterPermissions())
+	})
+}
+
 // start spark-versions command
 
 // Slice with functions to override default command behavior.
@@ -1453,6 +1684,90 @@ func newUnpin() *cobra.Command {
 func init() {
 	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
 		cmd.AddCommand(newUnpin())
+	})
+}
+
+// start update-cluster-permissions command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updateClusterPermissionsOverrides []func(
+	*cobra.Command,
+	*compute.ClusterPermissionsRequest,
+)
+
+func newUpdateClusterPermissions() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updateClusterPermissionsReq compute.ClusterPermissionsRequest
+	var updateClusterPermissionsJson flags.JsonFlag
+
+	// TODO: short flags
+	cmd.Flags().Var(&updateClusterPermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	// TODO: array: access_control_list
+
+	cmd.Use = "update-cluster-permissions CLUSTER_ID"
+	cmd.Short = `Update cluster permissions.`
+	cmd.Long = `Update cluster permissions.
+  
+  Updates the permissions on a cluster. Clusters can inherit permissions from
+  their root object.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			err = updateClusterPermissionsJson.Unmarshal(&updateClusterPermissionsReq)
+			if err != nil {
+				return err
+			}
+		}
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No CLUSTER_ID argument specified. Loading names for Clusters drop-down."
+			names, err := w.Clusters.ClusterDetailsClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Clusters drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "The cluster for which to get or manage permissions")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the cluster for which to get or manage permissions")
+		}
+		updateClusterPermissionsReq.ClusterId = args[0]
+
+		response, err := w.Clusters.UpdateClusterPermissions(ctx, updateClusterPermissionsReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updateClusterPermissionsOverrides {
+		fn(cmd, &updateClusterPermissionsReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newUpdateClusterPermissions())
 	})
 }
 

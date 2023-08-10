@@ -383,6 +383,153 @@ func init() {
 	})
 }
 
+// start get-instance-pool-permission-levels command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getInstancePoolPermissionLevelsOverrides []func(
+	*cobra.Command,
+	*compute.GetInstancePoolPermissionLevelsRequest,
+)
+
+func newGetInstancePoolPermissionLevels() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getInstancePoolPermissionLevelsReq compute.GetInstancePoolPermissionLevelsRequest
+
+	// TODO: short flags
+
+	cmd.Use = "get-instance-pool-permission-levels INSTANCE_POOL_ID"
+	cmd.Short = `Get instance pool permission levels.`
+	cmd.Long = `Get instance pool permission levels.
+  
+  Gets the permission levels that a user can have on an object.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No INSTANCE_POOL_ID argument specified. Loading names for Instance Pools drop-down."
+			names, err := w.InstancePools.InstancePoolAndStatsInstancePoolNameToInstancePoolIdMap(ctx)
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Instance Pools drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "The instance pool for which to get or manage permissions")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the instance pool for which to get or manage permissions")
+		}
+		getInstancePoolPermissionLevelsReq.InstancePoolId = args[0]
+
+		response, err := w.InstancePools.GetInstancePoolPermissionLevels(ctx, getInstancePoolPermissionLevelsReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getInstancePoolPermissionLevelsOverrides {
+		fn(cmd, &getInstancePoolPermissionLevelsReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newGetInstancePoolPermissionLevels())
+	})
+}
+
+// start get-instance-pool-permissions command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getInstancePoolPermissionsOverrides []func(
+	*cobra.Command,
+	*compute.GetInstancePoolPermissionsRequest,
+)
+
+func newGetInstancePoolPermissions() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getInstancePoolPermissionsReq compute.GetInstancePoolPermissionsRequest
+
+	// TODO: short flags
+
+	cmd.Use = "get-instance-pool-permissions INSTANCE_POOL_ID"
+	cmd.Short = `Get instance pool permissions.`
+	cmd.Long = `Get instance pool permissions.
+  
+  Gets the permissions of an instance pool. Instance pools can inherit
+  permissions from their root object.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No INSTANCE_POOL_ID argument specified. Loading names for Instance Pools drop-down."
+			names, err := w.InstancePools.InstancePoolAndStatsInstancePoolNameToInstancePoolIdMap(ctx)
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Instance Pools drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "The instance pool for which to get or manage permissions")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the instance pool for which to get or manage permissions")
+		}
+		getInstancePoolPermissionsReq.InstancePoolId = args[0]
+
+		response, err := w.InstancePools.GetInstancePoolPermissions(ctx, getInstancePoolPermissionsReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getInstancePoolPermissionsOverrides {
+		fn(cmd, &getInstancePoolPermissionsReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newGetInstancePoolPermissions())
+	})
+}
+
 // start list command
 
 // Slice with functions to override default command behavior.
@@ -428,6 +575,174 @@ func newList() *cobra.Command {
 func init() {
 	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
 		cmd.AddCommand(newList())
+	})
+}
+
+// start set-instance-pool-permissions command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var setInstancePoolPermissionsOverrides []func(
+	*cobra.Command,
+	*compute.InstancePoolPermissionsRequest,
+)
+
+func newSetInstancePoolPermissions() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var setInstancePoolPermissionsReq compute.InstancePoolPermissionsRequest
+	var setInstancePoolPermissionsJson flags.JsonFlag
+
+	// TODO: short flags
+	cmd.Flags().Var(&setInstancePoolPermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	// TODO: array: access_control_list
+
+	cmd.Use = "set-instance-pool-permissions INSTANCE_POOL_ID"
+	cmd.Short = `Set instance pool permissions.`
+	cmd.Long = `Set instance pool permissions.
+  
+  Sets permissions on an instance pool. Instance pools can inherit permissions
+  from their root object.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			err = setInstancePoolPermissionsJson.Unmarshal(&setInstancePoolPermissionsReq)
+			if err != nil {
+				return err
+			}
+		}
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No INSTANCE_POOL_ID argument specified. Loading names for Instance Pools drop-down."
+			names, err := w.InstancePools.InstancePoolAndStatsInstancePoolNameToInstancePoolIdMap(ctx)
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Instance Pools drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "The instance pool for which to get or manage permissions")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the instance pool for which to get or manage permissions")
+		}
+		setInstancePoolPermissionsReq.InstancePoolId = args[0]
+
+		response, err := w.InstancePools.SetInstancePoolPermissions(ctx, setInstancePoolPermissionsReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range setInstancePoolPermissionsOverrides {
+		fn(cmd, &setInstancePoolPermissionsReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newSetInstancePoolPermissions())
+	})
+}
+
+// start update-instance-pool-permissions command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updateInstancePoolPermissionsOverrides []func(
+	*cobra.Command,
+	*compute.InstancePoolPermissionsRequest,
+)
+
+func newUpdateInstancePoolPermissions() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updateInstancePoolPermissionsReq compute.InstancePoolPermissionsRequest
+	var updateInstancePoolPermissionsJson flags.JsonFlag
+
+	// TODO: short flags
+	cmd.Flags().Var(&updateInstancePoolPermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	// TODO: array: access_control_list
+
+	cmd.Use = "update-instance-pool-permissions INSTANCE_POOL_ID"
+	cmd.Short = `Update instance pool permissions.`
+	cmd.Long = `Update instance pool permissions.
+  
+  Updates the permissions on an instance pool. Instance pools can inherit
+  permissions from their root object.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			err = updateInstancePoolPermissionsJson.Unmarshal(&updateInstancePoolPermissionsReq)
+			if err != nil {
+				return err
+			}
+		}
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No INSTANCE_POOL_ID argument specified. Loading names for Instance Pools drop-down."
+			names, err := w.InstancePools.InstancePoolAndStatsInstancePoolNameToInstancePoolIdMap(ctx)
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Instance Pools drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "The instance pool for which to get or manage permissions")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the instance pool for which to get or manage permissions")
+		}
+		updateInstancePoolPermissionsReq.InstancePoolId = args[0]
+
+		response, err := w.InstancePools.UpdateInstancePoolPermissions(ctx, updateInstancePoolPermissionsReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updateInstancePoolPermissionsOverrides {
+		fn(cmd, &updateInstancePoolPermissionsReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newUpdateInstancePoolPermissions())
 	})
 }
 

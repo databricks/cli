@@ -276,6 +276,103 @@ func init() {
 	})
 }
 
+// start get-password-permission-levels command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getPasswordPermissionLevelsOverrides []func(
+	*cobra.Command,
+)
+
+func newGetPasswordPermissionLevels() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	cmd.Use = "get-password-permission-levels"
+	cmd.Short = `Get password permission levels.`
+	cmd.Long = `Get password permission levels.
+  
+  Gets the permission levels that a user can have on an object.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+		response, err := w.Users.GetPasswordPermissionLevels(ctx)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getPasswordPermissionLevelsOverrides {
+		fn(cmd)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newGetPasswordPermissionLevels())
+	})
+}
+
+// start get-password-permissions command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getPasswordPermissionsOverrides []func(
+	*cobra.Command,
+)
+
+func newGetPasswordPermissions() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	cmd.Use = "get-password-permissions"
+	cmd.Short = `Get password permissions.`
+	cmd.Long = `Get password permissions.
+  
+  Gets the permissions of all passwords. Passwords can inherit permissions from
+  their root object.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+		response, err := w.Users.GetPasswordPermissions(ctx)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getPasswordPermissionsOverrides {
+		fn(cmd)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newGetPasswordPermissions())
+	})
+}
+
 // start list command
 
 // Slice with functions to override default command behavior.
@@ -441,6 +538,81 @@ func init() {
 	})
 }
 
+// start set-password-permissions command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var setPasswordPermissionsOverrides []func(
+	*cobra.Command,
+	*iam.PasswordPermissionsRequest,
+)
+
+func newSetPasswordPermissions() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var setPasswordPermissionsReq iam.PasswordPermissionsRequest
+	var setPasswordPermissionsJson flags.JsonFlag
+
+	// TODO: short flags
+	cmd.Flags().Var(&setPasswordPermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	// TODO: array: access_control_list
+
+	cmd.Use = "set-password-permissions"
+	cmd.Short = `Set password permissions.`
+	cmd.Long = `Set password permissions.
+  
+  Sets permissions on all passwords. Passwords can inherit permissions from
+  their root object.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(0)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			err = setPasswordPermissionsJson.Unmarshal(&setPasswordPermissionsReq)
+			if err != nil {
+				return err
+			}
+		} else {
+		}
+
+		response, err := w.Users.SetPasswordPermissions(ctx, setPasswordPermissionsReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range setPasswordPermissionsOverrides {
+		fn(cmd, &setPasswordPermissionsReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newSetPasswordPermissions())
+	})
+}
+
 // start update command
 
 // Slice with functions to override default command behavior.
@@ -531,6 +703,81 @@ func newUpdate() *cobra.Command {
 func init() {
 	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
 		cmd.AddCommand(newUpdate())
+	})
+}
+
+// start update-password-permissions command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updatePasswordPermissionsOverrides []func(
+	*cobra.Command,
+	*iam.PasswordPermissionsRequest,
+)
+
+func newUpdatePasswordPermissions() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updatePasswordPermissionsReq iam.PasswordPermissionsRequest
+	var updatePasswordPermissionsJson flags.JsonFlag
+
+	// TODO: short flags
+	cmd.Flags().Var(&updatePasswordPermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	// TODO: array: access_control_list
+
+	cmd.Use = "update-password-permissions"
+	cmd.Short = `Update password permissions.`
+	cmd.Long = `Update password permissions.
+  
+  Updates the permissions on all passwords. Passwords can inherit permissions
+  from their root object.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(0)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			err = updatePasswordPermissionsJson.Unmarshal(&updatePasswordPermissionsReq)
+			if err != nil {
+				return err
+			}
+		} else {
+		}
+
+		response, err := w.Users.UpdatePasswordPermissions(ctx, updatePasswordPermissionsReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updatePasswordPermissionsOverrides {
+		fn(cmd, &updatePasswordPermissionsReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newUpdatePasswordPermissions())
 	})
 }
 
