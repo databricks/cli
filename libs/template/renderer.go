@@ -152,13 +152,6 @@ func (r *renderer) computeFile(relPathTemplate string) (file, error) {
 	}
 	defer templateReader.Close()
 
-	// Execute relative path template after stripping the .tmpl extension to
-	// get destination path for the file
-	relPath, err := r.executeTemplate(strings.TrimSuffix(relPathTemplate, templateExtension))
-	if err != nil {
-		return nil, err
-	}
-
 	// execute the contents of the file as a template
 	contentTemplate, err := io.ReadAll(templateReader)
 	if err != nil {
@@ -171,6 +164,14 @@ func (r *renderer) computeFile(relPathTemplate string) (file, error) {
 	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to compute file content for %s. %w", relPathTemplate, err)
+	}
+
+	// Execute relative path template after stripping the .tmpl extension to
+	// get destination path for the file
+	relPathTemplate = strings.TrimSuffix(relPathTemplate, templateExtension)
+	relPath, err := r.executeTemplate(relPathTemplate)
+	if err != nil {
+		return nil, err
 	}
 
 	return &inMemoryFile{
