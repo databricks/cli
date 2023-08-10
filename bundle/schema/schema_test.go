@@ -1462,3 +1462,55 @@ func TestBundleReadOnlytag(t *testing.T) {
 	t.Log("[DEBUG] expected: ", expected)
 	assert.Equal(t, expected, string(jsonSchema))
 }
+
+func TestBundleInternalTag(t *testing.T) {
+	type Pokemon struct {
+		Pikachu string `json:"pikachu" bundle:"internal"`
+		Raichu  string `json:"raichu"`
+	}
+
+	type Foo struct {
+		Pokemon *Pokemon `json:"pokemon"`
+		Apple   int      `json:"apple"`
+		Mango   string   `json:"mango" bundle:"internal"`
+	}
+
+	elem := Foo{}
+
+	schema, err := New(reflect.TypeOf(elem), nil)
+	assert.NoError(t, err)
+
+	jsonSchema, err := json.MarshalIndent(schema, "		", "	")
+	assert.NoError(t, err)
+
+	expected :=
+		`{
+			"type": "object",
+			"properties": {
+				"apple": {
+					"type": "number"
+				},
+				"pokemon": {
+					"type": "object",
+					"properties": {
+						"raichu": {
+							"type": "string"
+						}
+					},
+					"additionalProperties": false,
+					"required": [
+						"raichu"
+					]
+				}
+			},
+			"additionalProperties": false,
+			"required": [
+				"pokemon",
+				"apple"
+			]
+		}`
+
+	t.Log("[DEBUG] actual: ", string(jsonSchema))
+	t.Log("[DEBUG] expected: ", expected)
+	assert.Equal(t, expected, string(jsonSchema))
+}
