@@ -7,6 +7,7 @@
 package bundle
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -16,6 +17,7 @@ import (
 	"github.com/databricks/cli/folders"
 	"github.com/databricks/cli/libs/git"
 	"github.com/databricks/cli/libs/locker"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/terraform"
 	"github.com/databricks/databricks-sdk-go"
 	sdkconfig "github.com/databricks/databricks-sdk-go/config"
@@ -45,7 +47,7 @@ type Bundle struct {
 
 const ExtraIncludePathsKey string = "DATABRICKS_BUNDLE_INCLUDES"
 
-func Load(path string) (*Bundle, error) {
+func Load(ctx context.Context, path string) (*Bundle, error) {
 	bundle := &Bundle{}
 	stat, err := os.Stat(path)
 	if err != nil {
@@ -56,6 +58,7 @@ func Load(path string) (*Bundle, error) {
 		_, hasIncludePathEnv := os.LookupEnv(ExtraIncludePathsKey)
 		_, hasBundleRootEnv := os.LookupEnv(envBundleRoot)
 		if hasIncludePathEnv && hasBundleRootEnv && stat.IsDir() {
+			log.Debugf(ctx, "No bundle configuration; using bundle root: %s", path)
 			bundle.Config = config.Root{
 				Path: path,
 				Bundle: config.Bundle{
@@ -66,6 +69,7 @@ func Load(path string) (*Bundle, error) {
 		}
 		return nil, err
 	}
+	log.Debugf(ctx, "Loading bundle configuration from: %s", configFile)
 	err = bundle.Config.Load(configFile)
 	if err != nil {
 		return nil, err
@@ -75,19 +79,19 @@ func Load(path string) (*Bundle, error) {
 
 // MustLoad returns a bundle configuration.
 // It returns an error if a bundle was not found or could not be loaded.
-func MustLoad() (*Bundle, error) {
+func MustLoad(ctx context.Context) (*Bundle, error) {
 	root, err := mustGetRoot()
 	if err != nil {
 		return nil, err
 	}
 
-	return Load(root)
+	return Load(ctx, root)
 }
 
 // TryLoad returns a bundle configuration if there is one, but doesn't fail if there isn't one.
 // It returns an error if a bundle was found but could not be loaded.
 // It returns a `nil` bundle if a bundle was not found.
-func TryLoad() (*Bundle, error) {
+func TryLoad(ctx context.Context) (*Bundle, error) {
 	root, err := tryGetRoot()
 	if err != nil {
 		return nil, err
@@ -98,7 +102,7 @@ func TryLoad() (*Bundle, error) {
 		return nil, nil
 	}
 
-	return Load(root)
+	return Load(ctx, root)
 }
 
 func (b *Bundle) WorkspaceClient() *databricks.WorkspaceClient {

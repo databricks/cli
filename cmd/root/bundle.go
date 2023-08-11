@@ -1,6 +1,7 @@
 package root
 
 import (
+	"context"
 	"os"
 
 	"github.com/databricks/cli/bundle"
@@ -41,8 +42,9 @@ func getProfile(cmd *cobra.Command) (value string) {
 }
 
 // loadBundle loads the bundle configuration and applies default mutators.
-func loadBundle(cmd *cobra.Command, args []string, load func() (*bundle.Bundle, error)) (*bundle.Bundle, error) {
-	b, err := load()
+func loadBundle(cmd *cobra.Command, args []string, load func(ctx context.Context) (*bundle.Bundle, error)) (*bundle.Bundle, error) {
+	ctx := cmd.Context()
+	b, err := load(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -57,7 +59,6 @@ func loadBundle(cmd *cobra.Command, args []string, load func() (*bundle.Bundle, 
 		b.Config.Workspace.Profile = profile
 	}
 
-	ctx := cmd.Context()
 	err = bundle.Apply(ctx, b, bundle.Seq(mutator.DefaultMutators()...))
 	if err != nil {
 		return nil, err
@@ -67,7 +68,7 @@ func loadBundle(cmd *cobra.Command, args []string, load func() (*bundle.Bundle, 
 }
 
 // configureBundle loads the bundle configuration and configures it on the command's context.
-func configureBundle(cmd *cobra.Command, args []string, load func() (*bundle.Bundle, error)) error {
+func configureBundle(cmd *cobra.Command, args []string, load func(ctx context.Context) (*bundle.Bundle, error)) error {
 	b, err := loadBundle(cmd, args, load)
 	if err != nil {
 		return err
