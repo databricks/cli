@@ -1,0 +1,30 @@
+bundle:
+  name: job_with_notebook_tasks
+
+workspace:
+  host: https://e2-dogfood.staging.cloud.databricks.com
+
+resources:
+  jobs:
+    job_with_notebook_tasks:
+      name: "Demonstrate programmatically retrieving notebook output"
+      job_clusters:
+        - job_cluster_key: cluster
+          new_cluster:
+            spark_version: 13.3.x-scala2.12
+            node_type_id: i3.xlarge
+            num_workers: 1
+      tasks:
+        - task_key: task1
+          job_cluster_key: cluster
+          notebook_task:
+            notebook_path: ./notebook.py
+            base_parameters:
+              hello: world
+
+        - task_key: task2
+          job_cluster_key: cluster
+          notebook_task:
+            notebook_path: ./notebook.py
+            base_parameters:
+              hello: universe
