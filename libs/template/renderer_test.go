@@ -459,3 +459,17 @@ func TestRendererFileTreeRendering(t *testing.T) {
 	assert.DirExists(t, filepath.Join(tmpDir, "my_directory"))
 	assert.FileExists(t, filepath.Join(tmpDir, "my_directory", "my_file"))
 }
+
+func TestRendererSubTemplateInPath(t *testing.T) {
+	ctx := context.Background()
+	tmpDir := t.TempDir()
+
+	r, err := newRenderer(ctx, nil, "./testdata/template-in-path/template", "./testdata/template-in-path/library", tmpDir)
+	require.NoError(t, err)
+
+	err = r.walk()
+	require.NoError(t, err)
+
+	assert.Equal(t, filepath.Join(tmpDir, "my_directory", "my_file"), r.files[0].DstPath().absPath())
+	assert.Equal(t, "my_directory/my_file", r.files[0].DstPath().relPath)
+}
