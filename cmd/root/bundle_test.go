@@ -39,7 +39,7 @@ func emptyCommand(t *testing.T) *cobra.Command {
 func setup(t *testing.T, cmd *cobra.Command, host string) *bundle.Bundle {
 	setupDatabricksCfg(t)
 
-	err := configureBundle(cmd, []string{"validate"}, func() (*bundle.Bundle, error) {
+	err := configureBundle(cmd, []string{"validate"}, func(_ context.Context) (*bundle.Bundle, error) {
 		return &bundle.Bundle{
 			Config: config.Root{
 				Bundle: config.Bundle{

@@ -10,9 +10,10 @@ import (
 )
 
 func load(t *testing.T, path string) *bundle.Bundle {
-	b, err := bundle.Load(path)
+	ctx := context.Background()
+	b, err := bundle.Load(ctx, path)
 	require.NoError(t, err)
-	err = bundle.Apply(context.Background(), b, bundle.Seq(mutator.DefaultMutators()...))
+	err = bundle.Apply(ctx, b, bundle.Seq(mutator.DefaultMutators()...))
 	require.NoError(t, err)
 	return b
 }
