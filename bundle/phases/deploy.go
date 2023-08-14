@@ -18,11 +18,11 @@ func Deploy() bundle.Mutator {
 		bundle.Defer(
 			bundle.Seq(
 				mutator.ValidateGitDetails(),
-				files.Upload(),
 				libraries.MatchWithArtifacts(),
 				artifacts.CleanUp(),
 				artifacts.UploadAll(),
 				python.TransformWheelTask(),
+				files.Upload(),
 				terraform.Interpolate(),
 				terraform.Write(),
 				terraform.StatePull(),

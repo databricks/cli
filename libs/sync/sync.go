@@ -3,21 +3,27 @@ package sync
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 	"time"
 
 	"github.com/databricks/cli/libs/filer"
+	"github.com/databricks/cli/libs/fileset"
 	"github.com/databricks/cli/libs/git"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/iam"
+	"golang.org/x/exp/slices"
 )
 
 type SyncOptions struct {
 	LocalPath  string
 	RemotePath string
+	Include    []string
+	Exclude    []string
 
 	Full bool
 
+	InternalDir      string
 	SnapshotBasePath string
 
 	PollInterval time.Duration
@@ -32,7 +38,10 @@ type SyncOptions struct {
 type Sync struct {
 	*SyncOptions
 
-	fileSet  *git.FileSet
+	fileSet        *git.FileSet
+	includeFileSet *fileset.GlobSet
+	excludeFileSet *fileset.GlobSet
+
 	snapshot *Snapshot
 	filer    filer.Filer
 
@@ -51,6 +60,17 @@ func New(ctx context.Context, opts SyncOptions) (*Sync, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	includes := []string{}
+	if opts.InternalDir != "" {
+		includes = append(includes, filepath.Join(opts.InternalDir, "*.*"))
+	}
+	if opts.Include != nil {
+		includes = append(includes, opts.Include...)
+	}
+
+	includeFileSet := fileset.NewGlobSet(opts.LocalPath, includes)
+	excludeFileSet := fileset.NewGlobSet(opts.LocalPath, opts.Exclude)
 
 	// Verify that the remote path we're about to synchronize to is valid and allowed.
 	err = EnsureRemotePathIsUsable(ctx, opts.WorkspaceClient, opts.RemotePath, opts.CurrentUser)
@@ -88,11 +108,13 @@ func New(ctx context.Context, opts SyncOptions) (*Sync, error) {
 	return &Sync{
 		SyncOptions: &opts,
 
-		fileSet:  fileSet,
-		snapshot: snapshot,
-		filer:    filer,
-		notifier: &NopNotifier{},
-		seq:      0,
+		fileSet:        fileSet,
+		includeFileSet: includeFileSet,
+		excludeFileSet: excludeFileSet,
+		snapshot:       snapshot,
+		filer:          filer,
+		notifier:       &NopNotifier{},
+		seq:            0,
 	}, nil
 }
 
@@ -132,15 +154,44 @@ func (s *Sync) notifyComplete(ctx context.Context, d diff) {
 }
 
 func (s *Sync) RunOnce(ctx context.Context) error {
-	// tradeoff: doing portable monitoring only due to macOS max descriptor manual ulimit setting requirement
-	// https://github.com/gorakhargosh/watchdog/blob/master/src/watchdog/observers/kqueue.py#L394-L418
-	all, err := s.fileSet.All()
+	all := make([]fileset.File, 0)
+	if s.SyncOptions.Include == nil {
+		// tradeoff: doing portable monitoring only due to macOS max descriptor manual ulimit setting requirement
+		// https://github.com/gorakhargosh/watchdog/blob/master/src/watchdog/observers/kqueue.py#L394-L418
+		gitFiles, err := s.fileSet.All()
+		if err != nil {
+			log.Errorf(ctx, "cannot list files: %s", err)
+			return err
+		}
+		all = append(all, gitFiles...)
+	}
+
+	include, err := s.includeFileSet.All()
 	if err != nil {
-		log.Errorf(ctx, "cannot list files: %s", err)
+		log.Errorf(ctx, "cannot list include files: %s", err)
 		return err
 	}
 
-	change, err := s.snapshot.diff(ctx, all)
+	all = append(all, include...)
+
+	exclude, err := s.excludeFileSet.All()
+	if err != nil {
+		log.Errorf(ctx, "cannot list exclude files: %s", err)
+		return err
+	}
+
+	files := make([]fileset.File, 0)
+	for _, f := range all {
+		if slices.ContainsFunc(exclude, func(a fileset.File) bool {
+			return a.Absolute == f.Absolute
+		}) {
+			continue
+		}
+
+		files = append(files, f)
+	}
+
+	change, err := s.snapshot.diff(ctx, files)
 	if err != nil {
 		return err
 	}

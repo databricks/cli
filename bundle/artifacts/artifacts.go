@@ -165,36 +165,3 @@ func getUploadBasePath(b *bundle.Bundle) (string, error) {
 
 	return path.Join(artifactPath, ".internal"), nil
 }
-
-func UploadNotebook(ctx context.Context, notebook string, b *bundle.Bundle) (string, error) {
-	raw, err := os.ReadFile(notebook)
-	if err != nil {
-		return "", fmt.Errorf("unable to read %s: %w", notebook, errors.Unwrap(err))
-	}
-
-	uploadPath, err := getUploadBasePath(b)
-	if err != nil {
-		return "", err
-	}
-
-	remotePath := path.Join(uploadPath, path.Base(notebook))
-	// Make sure target directory exists.
-	err = b.WorkspaceClient().Workspace.MkdirsByPath(ctx, path.Dir(remotePath))
-	if err != nil {
-		return "", fmt.Errorf("unable to create directory for %s: %w", remotePath, err)
-	}
-
-	// Import to workspace.
-	err = b.WorkspaceClient().Workspace.Import(ctx, workspace.Import{
-		Path:      remotePath,
-		Overwrite: true,
-		Format:    workspace.ImportFormatSource,
-		Content:   base64.StdEncoding.EncodeToString(raw),
-		Language:  workspace.LanguagePython,
-	})
-	if err != nil {
-		return "", fmt.Errorf("unable to import %s: %w", remotePath, err)
-	}
-
-	return remotePath, nil
-}
