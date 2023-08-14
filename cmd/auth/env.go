@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
 	"gopkg.in/ini.v1"
@@ -28,7 +29,7 @@ func canonicalHost(host string) (string, error) {
 
 var ErrNoMatchingProfiles = errors.New("no matching profiles found")
 
-func resolveSection(cfg *config.Config, iniFile *ini.File) (*ini.Section, error) {
+func resolveSection(cfg *config.Config, iniFile *config.File) (*ini.Section, error) {
 	var candidates []*ini.Section
 	configuredHost, err := canonicalHost(cfg.Host)
 	if err != nil {
@@ -68,7 +69,7 @@ func resolveSection(cfg *config.Config, iniFile *ini.File) (*ini.Section, error)
 }
 
 func loadFromDatabricksCfg(cfg *config.Config) error {
-	iniFile, err := getDatabricksCfg()
+	iniFile, err := databrickscfg.GetDatabricksCfg()
 	if errors.Is(err, fs.ErrNotExist) {
 		// it's fine not to have ~/.databrickscfg
 		return nil

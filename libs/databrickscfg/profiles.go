@@ -1,7 +1,9 @@
 package databrickscfg
 
 import (
+	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/databricks/databricks-sdk-go/config"
@@ -64,12 +66,34 @@ func MatchAllProfiles(p Profile) bool {
 	return true
 }
 
-const DefaultPath = "~/.databrickscfg"
+// Get the path to the .databrickscfg file, falling back to the default in the current user's home directory.
+func GetDatabricksCfgPath() (string, error) {
+	configFile := os.Getenv("DATABRICKS_CONFIG_FILE")
+	if configFile == "" {
+		configFile = "~/.databrickscfg"
+	}
+	if strings.HasPrefix(configFile, "~") {
+		homedir, err := os.UserHomeDir()
+		if err != nil {
+			return "", fmt.Errorf("cannot find homedir: %w", err)
+		}
+		configFile = filepath.Join(homedir, configFile[1:])
+	}
+	return configFile, nil
+}
 
-func LoadProfiles(path string, fn ProfileMatchFunction) (file string, profiles Profiles, err error) {
-	f, err := config.LoadFile(path)
+func GetDatabricksCfg() (*config.File, error) {
+	configFile, err := GetDatabricksCfgPath()
 	if err != nil {
-		return
+		return nil, fmt.Errorf("cannot determine Databricks config file path: %w", err)
+	}
+	return config.LoadFile(configFile)
+}
+
+func LoadProfiles(fn ProfileMatchFunction) (file string, profiles Profiles, err error) {
+	f, err := GetDatabricksCfg()
+	if err != nil {
+		return "", nil, fmt.Errorf("cannot load Databricks config file: %w", err)
 	}
 
 	homedir, err := os.UserHomeDir()
@@ -106,7 +130,7 @@ func LoadProfiles(path string, fn ProfileMatchFunction) (file string, profiles P
 }
 
 func ProfileCompletion(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-	_, profiles, err := LoadProfiles(DefaultPath, MatchAllProfiles)
+	_, profiles, err := LoadProfiles(MatchAllProfiles)
 	if err != nil {
 		return nil, cobra.ShellCompDirectiveError
 	}
