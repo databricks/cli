@@ -166,7 +166,7 @@ func (r *Root) Merge(other *Root) error {
 	}
 
 	// TODO: define and test semantics for merging.
-	return mergo.MergeWithOverwrite(r, other)
+	return mergo.Merge(r, other, mergo.WithOverride)
 }
 
 func (r *Root) MergeEnvironment(env *Environment) error {
