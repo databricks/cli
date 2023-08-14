@@ -69,9 +69,6 @@ func toString(v any, T jsonschema.Type) (string, error) {
 	case jsonschema.ArrayType, jsonschema.ObjectType:
 		return "", fmt.Errorf("cannot format object of type %s as a string. Value of object: %#v", T, v)
 	default:
-		if T == "int" {
-			return "", fmt.Errorf(`unknown json schema type %q. Please use "integer" instead`, T)
-		}
 		return "", fmt.Errorf("unknown json schema type: %q", T)
 	}
 }
@@ -95,9 +92,6 @@ func fromString(s string, T jsonschema.Type) (any, error) {
 	case jsonschema.ArrayType, jsonschema.ObjectType:
 		return "", fmt.Errorf("cannot parse string as object of type %s. Value of string: %q", T, s)
 	default:
-		if T == "int" {
-			return "", fmt.Errorf(`unknown json schema type %q. Please use "integer" instead`, T)
-		}
 		return "", fmt.Errorf("unknown json schema type: %q", T)
 	}
 

@@ -27,6 +27,9 @@ func newConfig(ctx context.Context, schemaPath string) (*config, error) {
 	if err != nil {
 		return nil, err
 	}
+	if err := validateSchema(schema); err != nil {
+		return nil, err
+	}
 
 	// Return config
 	return &config{
@@ -34,6 +37,22 @@ func newConfig(ctx context.Context, schemaPath string) (*config, error) {
 		schema: schema,
 		values: make(map[string]any, 0),
 	}, nil
+}
+
+func validateSchema(schema *jsonschema.Schema) error {
+	for _, v := range schema.Properties {
+		switch v.Type {
+		case jsonschema.NumberType, jsonschema.BooleanType, jsonschema.StringType, jsonschema.IntegerType:
+			continue
+		case jsonschema.ArrayType, jsonschema.ObjectType:
+			return fmt.Errorf("property type %s is not supported by bundle templates", v.Type)
+		case "int", "int32", "int64":
+			return fmt.Errorf("type %s is not a recognized json schema type. Please use \"integer\" instead", v.Type)
+		default:
+			return fmt.Errorf("type %s is not a recognized json schema type", v.Type)
+		}
+	}
+	return nil
 }
 
 // Reads json file at path and assigns values from the file

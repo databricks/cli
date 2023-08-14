@@ -161,3 +161,40 @@ func TestTemplateConfigValidateTypeForInvalidType(t *testing.T) {
 	err = c.validate()
 	assert.EqualError(t, err, `incorrect type for int_val. expected type integer, but value is "this-should-be-an-int"`)
 }
+
+func TestTemplateValidateSchema(t *testing.T) {
+	var err error
+	toSchema := func(s string) *jsonschema.Schema {
+		return &jsonschema.Schema{
+			Properties: map[string]*jsonschema.Schema{
+				"foo": {
+					Type: jsonschema.Type(s),
+				},
+			},
+		}
+	}
+
+	err = validateSchema(toSchema("string"))
+	assert.NoError(t, err)
+
+	err = validateSchema(toSchema("boolean"))
+	assert.NoError(t, err)
+
+	err = validateSchema(toSchema("number"))
+	assert.NoError(t, err)
+
+	err = validateSchema(toSchema("integer"))
+	assert.NoError(t, err)
+
+	err = validateSchema(toSchema("object"))
+	assert.EqualError(t, err, "property type object is not supported by bundle templates")
+
+	err = validateSchema(toSchema("array"))
+	assert.EqualError(t, err, "property type array is not supported by bundle templates")
+
+	err = validateSchema(toSchema("int"))
+	assert.EqualError(t, err, "type int is not a recognized json schema type. Please use \"integer\" instead")
+
+	err = validateSchema(toSchema("foobar"))
+	assert.EqualError(t, err, "type foobar is not a recognized json schema type")
+}

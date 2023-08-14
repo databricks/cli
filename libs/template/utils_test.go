@@ -83,9 +83,6 @@ func TestTemplateToString(t *testing.T) {
 
 	_, err = toString("abc", "foobar")
 	assert.EqualError(t, err, "unknown json schema type: \"foobar\"")
-
-	_, err = toString("abc", "int")
-	assert.EqualError(t, err, "unknown json schema type \"int\". Please use \"integer\" instead")
 }
 
 func TestTemplateFromString(t *testing.T) {
@@ -121,7 +118,4 @@ func TestTemplateFromString(t *testing.T) {
 
 	_, err = fromString("1.0", "foobar")
 	assert.EqualError(t, err, "unknown json schema type: \"foobar\"")
-
-	_, err = fromString("1.0", "int")
-	assert.EqualError(t, err, "unknown json schema type \"int\". Please use \"integer\" instead")
 }
