@@ -8,31 +8,50 @@ import (
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/jsonschema"
+	"golang.org/x/exp/slices"
 )
 
-type config struct {
-	ctx    context.Context
-	values map[string]any
-	schema *jsonschema.Schema
+type Metadata struct {
+	// A ordered subset of names of input parameters defined in the template schema.
+	// Properties in this array will be prompted for first. Any properties not in this
+	// array will be prompted for in lexicographical order otherwise.
+	PromptOrder []string `json:"prompt_order"`
 }
 
-func newConfig(ctx context.Context, schemaPath string) (*config, error) {
-	// Read config schema
-	schemaBytes, err := os.ReadFile(schemaPath)
+type config struct {
+	ctx      context.Context
+	values   map[string]any
+	schema   *jsonschema.Schema
+	metadata *Metadata
+}
+
+func parseFromFile(path string, pointer interface{}) error {
+	b, err := os.ReadFile(path)
 	if err != nil {
+		return err
+	}
+	return json.Unmarshal(b, pointer)
+}
+
+func newConfig(ctx context.Context, schemaPath string, metadataPath string) (*config, error) {
+	// Read config schema
+	schema := &jsonschema.Schema{}
+	if err := parseFromFile(schemaPath, schema); err != nil {
 		return nil, err
 	}
-	schema := &jsonschema.Schema{}
-	err = json.Unmarshal(schemaBytes, schema)
-	if err != nil {
+
+	// Read metadata
+	metadata := &Metadata{}
+	if err := parseFromFile(metadataPath, metadata); err != nil {
 		return nil, err
 	}
 
 	// Return config
 	return &config{
-		ctx:    ctx,
-		schema: schema,
-		values: make(map[string]any, 0),
+		ctx:      ctx,
+		schema:   schema,
+		values:   make(map[string]any, 0),
+		metadata: metadata,
 	}, nil
 }
 
@@ -108,9 +127,41 @@ func (c *config) assignDefaultValues() error {
 	return nil
 }
 
+func (c *config) promptOrder() ([]string, error) {
+	// First add property order that is explicitly defined in metadata
+	promptOrder := make([]string, len(c.metadata.PromptOrder))
+	for i, name := range c.metadata.PromptOrder {
+		if _, ok := c.schema.Properties[name]; !ok {
+			return nil, fmt.Errorf("property not defined in schema but is defined in prompt_order: %s", name)
+		}
+		if slices.Contains(promptOrder, name) {
+			return nil, fmt.Errorf("property defined more than once in prompt_order: %s", name)
+		}
+		promptOrder[i] = name
+	}
+
+	// accumulate and sort leftover properties
+	leftover := []string{}
+	for name := range c.schema.Properties {
+		if slices.Contains(promptOrder, name) {
+			continue
+		}
+		leftover = append(leftover, name)
+	}
+	slices.Sort(leftover)
+
+	promptOrder = append(promptOrder, leftover...)
+	return promptOrder, nil
+}
+
 // Prompts user for values for properties that do not have a value set yet
 func (c *config) promptForValues() error {
-	for name, property := range c.schema.Properties {
+	promptOrder, err := c.promptOrder()
+	if err != nil {
+		return err
+	}
+
+	for _, name := range promptOrder {
 		// Config already has a value assigned
 		if _, ok := c.values[name]; ok {
 			continue
@@ -118,6 +169,7 @@ func (c *config) promptForValues() error {
 
 		// Initialize Prompt dialog
 		var err error
+		property := c.schema.Properties[name]
 		prompt := cmdio.Prompt(c.ctx)
 		prompt.Label = property.Description
 		prompt.AllowEdit = true

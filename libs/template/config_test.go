@@ -161,3 +161,60 @@ func TestTemplateConfigValidateTypeForInvalidType(t *testing.T) {
 	err = c.validate()
 	assert.EqualError(t, err, `incorrect type for int_val. expected type integer, but value is "this-should-be-an-int"`)
 }
+
+func TestTemplatePromptOrder(t *testing.T) {
+	c := &config{
+		schema: &jsonschema.Schema{
+			Properties: map[string]*jsonschema.Schema{
+				"a": {Type: jsonschema.IntegerType},
+				"b": {Type: jsonschema.BooleanType},
+				"c": {Type: jsonschema.NumberType},
+				"d": {Type: jsonschema.IntegerType},
+				"e": {Type: jsonschema.IntegerType},
+				"f": {Type: jsonschema.IntegerType},
+			},
+		},
+		metadata: &Metadata{
+			PromptOrder: []string{"f", "b", "c"},
+		},
+	}
+
+	order, err := c.promptOrder()
+	require.NoError(t, err)
+	assert.Equal(t, []string{"f", "b", "c", "a", "d", "e"}, order)
+}
+
+func TestTemplatePromptOrderForUndefinedProperty(t *testing.T) {
+	c := &config{
+		schema: &jsonschema.Schema{
+			Properties: map[string]*jsonschema.Schema{
+				"a": {Type: jsonschema.IntegerType},
+				"b": {Type: jsonschema.BooleanType},
+			},
+		},
+		metadata: &Metadata{
+			PromptOrder: []string{"a", "c"},
+		},
+	}
+
+	_, err := c.promptOrder()
+	assert.EqualError(t, err, "property not defined in schema but is defined in prompt_order: c")
+}
+
+func TestTemplatePromptOrderForPropertyDefinedMultipleTimes(t *testing.T) {
+	c := &config{
+		schema: &jsonschema.Schema{
+			Properties: map[string]*jsonschema.Schema{
+				"a": {Type: jsonschema.IntegerType},
+				"b": {Type: jsonschema.BooleanType},
+				"c": {Type: jsonschema.BooleanType},
+			},
+		},
+		metadata: &Metadata{
+			PromptOrder: []string{"a", "b", "a"},
+		},
+	}
+
+	_, err := c.promptOrder()
+	assert.EqualError(t, err, "property defined more than once in prompt_order: a")
+}

@@ -8,6 +8,7 @@ import (
 const libraryDirName = "library"
 const templateDirName = "template"
 const schemaFileName = "databricks_template_schema.json"
+const metadataFileName = "databricks_template_metadata.json"
 
 // This function materializes the input templates as a project, using user defined
 // configurations.
@@ -21,8 +22,9 @@ func Materialize(ctx context.Context, configFilePath, templateRoot, projectDir s
 	templatePath := filepath.Join(templateRoot, templateDirName)
 	libraryPath := filepath.Join(templateRoot, libraryDirName)
 	schemaPath := filepath.Join(templateRoot, schemaFileName)
+	metadataPath := filepath.Join(templateRoot, metadataFileName)
 
-	config, err := newConfig(ctx, schemaPath)
+	config, err := newConfig(ctx, schemaPath, metadataPath)
 	if err != nil {
 		return err
 	}
