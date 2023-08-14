@@ -113,3 +113,14 @@ func (r *Resources) SetConfigFilePath(path string) {
 		e.ConfigFilePath = path
 	}
 }
+
+// MergeJobClusters iterates over all jobs and merges their job clusters.
+// This is called after applying the environment overrides.
+func (r *Resources) MergeJobClusters() error {
+	for _, job := range r.Jobs {
+		if err := job.MergeJobClusters(); err != nil {
+			return err
+		}
+	}
+	return nil
+}

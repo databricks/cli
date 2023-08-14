@@ -203,6 +203,11 @@ func (r *Root) MergeEnvironment(env *Environment) error {
 		if err != nil {
 			return err
 		}
+
+		err = r.Resources.MergeJobClusters()
+		if err != nil {
+			return err
+		}
 	}
 
 	if env.Variables != nil {
