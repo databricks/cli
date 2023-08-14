@@ -95,7 +95,7 @@ func newProfilesCommand() *cobra.Command {
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		var profiles []*profileMetadata
-		iniFile, err := databrickscfg.GetDatabricksCfg()
+		iniFile, err := databrickscfg.Get()
 		if os.IsNotExist(err) {
 			// return empty list for non-configured machines
 			iniFile = &config.File{

@@ -121,7 +121,7 @@ func transformLoadError(path string, err error) error {
 }
 
 func askForWorkspaceProfile() (string, error) {
-	path, err := databrickscfg.GetDatabricksCfgPath()
+	path, err := databrickscfg.GetPath()
 	if err != nil {
 		return "", fmt.Errorf("cannot determine Databricks config file path: %w", err)
 	}
@@ -156,7 +156,7 @@ func askForWorkspaceProfile() (string, error) {
 }
 
 func askForAccountProfile() (string, error) {
-	path, err := databrickscfg.GetDatabricksCfgPath()
+	path, err := databrickscfg.GetPath()
 	if err != nil {
 		return "", fmt.Errorf("cannot determine Databricks config file path: %w", err)
 	}

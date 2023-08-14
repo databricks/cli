@@ -67,7 +67,7 @@ func MatchAllProfiles(p Profile) bool {
 }
 
 // Get the path to the .databrickscfg file, falling back to the default in the current user's home directory.
-func GetDatabricksCfgPath() (string, error) {
+func GetPath() (string, error) {
 	configFile := os.Getenv("DATABRICKS_CONFIG_FILE")
 	if configFile == "" {
 		configFile = "~/.databrickscfg"
@@ -82,8 +82,8 @@ func GetDatabricksCfgPath() (string, error) {
 	return configFile, nil
 }
 
-func GetDatabricksCfg() (*config.File, error) {
-	configFile, err := GetDatabricksCfgPath()
+func Get() (*config.File, error) {
+	configFile, err := GetPath()
 	if err != nil {
 		return nil, fmt.Errorf("cannot determine Databricks config file path: %w", err)
 	}
@@ -91,7 +91,7 @@ func GetDatabricksCfg() (*config.File, error) {
 }
 
 func LoadProfiles(fn ProfileMatchFunction) (file string, profiles Profiles, err error) {
-	f, err := GetDatabricksCfg()
+	f, err := Get()
 	if err != nil {
 		return "", nil, fmt.Errorf("cannot load Databricks config file: %w", err)
 	}

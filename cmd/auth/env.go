@@ -69,7 +69,7 @@ func resolveSection(cfg *config.Config, iniFile *config.File) (*ini.Section, err
 }
 
 func loadFromDatabricksCfg(cfg *config.Config) error {
-	iniFile, err := databrickscfg.GetDatabricksCfg()
+	iniFile, err := databrickscfg.Get()
 	if errors.Is(err, fs.ErrNotExist) {
 		// it's fine not to have ~/.databrickscfg
 		return nil
