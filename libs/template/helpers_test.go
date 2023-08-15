@@ -54,3 +54,18 @@ func TestTemplateUrlFunction(t *testing.T) {
 	assert.Len(t, r.files, 1)
 	assert.Equal(t, "https://www.databricks.com", string(r.files[0].(*inMemoryFile).content))
 }
+
+func TestTemplateMapPairFunction(t *testing.T) {
+	ctx := context.Background()
+	tmpDir := t.TempDir()
+
+	r, err := newRenderer(ctx, nil, "./testdata/map-pair/template", "./testdata/map-pair/library", tmpDir)
+
+	require.NoError(t, err)
+
+	err = r.walk()
+	assert.NoError(t, err)
+
+	assert.Len(t, r.files, 1)
+	assert.Equal(t, "false 123 hello 12.3", string(r.files[0].(*inMemoryFile).content))
+}
