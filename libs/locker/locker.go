@@ -8,12 +8,12 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"slices"
 	"time"
 
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/google/uuid"
-	"golang.org/x/exp/slices"
 )
 
 type UnlockOption int

@@ -3,9 +3,9 @@ package template
 import (
 	"fmt"
 	"reflect"
+	"slices"
 
 	"github.com/databricks/cli/libs/jsonschema"
-	"golang.org/x/exp/slices"
 )
 
 type validator func(v any) error

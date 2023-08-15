@@ -8,13 +8,13 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"slices"
 	"strings"
 	"text/template"
 
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/logger"
-	"golang.org/x/exp/slices"
 )
 
 const templateExtension = ".tmpl"
