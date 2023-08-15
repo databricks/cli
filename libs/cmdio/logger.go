@@ -88,7 +88,20 @@ func AskYesOrNo(ctx context.Context, question string) (bool, error) {
 	if !ok {
 		logger = Default()
 	}
-	return logger.AskYesOrNo(question)
+
+	// Add acceptable answers to the question prompt.
+	question += ` [y/n]`
+
+	// Ask the question
+	ans, err := logger.Ask(question, "")
+	if err != nil {
+		return false, err
+	}
+
+	if ans == "y" {
+		return true, nil
+	}
+	return false, nil
 }
 
 func (l *Logger) Ask(question string, defaultVal string) (string, error) {
@@ -120,30 +133,6 @@ func (l *Logger) Ask(question string, defaultVal string) (string, error) {
 		return defaultVal, nil
 	}
 	return ans, nil
-}
-
-func (l *Logger) AskYesOrNo(question string) (bool, error) {
-	if l.Mode == flags.ModeJson {
-		return false, fmt.Errorf("question prompts are not supported in json mode")
-	}
-
-	// Add acceptable answers to the question prompt.
-	question += ` [y/n]:`
-	_, err := l.Writer.Write([]byte(question))
-	if err != nil {
-		return false, err
-	}
-
-	ans, err := l.Reader.ReadString('\n')
-	if err != nil {
-		return false, err
-	}
-
-	if ans == "y\n" {
-		return true, nil
-	} else {
-		return false, nil
-	}
 }
 
 func (l *Logger) writeJson(event Event) {
