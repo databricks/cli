@@ -10,6 +10,8 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/libs/flags"
+	"golang.org/x/exp/maps"
+	"golang.org/x/exp/slices"
 )
 
 // This is the interface for all io interactions with a user
@@ -102,6 +104,58 @@ func AskYesOrNo(ctx context.Context, question string) (bool, error) {
 		return true, nil
 	}
 	return false, nil
+}
+
+func AskChoice(ctx context.Context, question string, defaultVal string, choices []string) (string, error) {
+	logger, ok := FromContext(ctx)
+	if !ok {
+		logger = Default()
+	}
+
+	// Find index of the default value
+	defaultIndex := ""
+	for i, v := range choices {
+		if v == defaultVal {
+			defaultIndex = fmt.Sprint(i + 1)
+			break
+		}
+	}
+
+	// If default value is not present, return error
+	if defaultIndex == "" {
+		return "", fmt.Errorf("failed to find default value %s among choices %#v", defaultVal, choices)
+	}
+
+	indexToChoice := make(map[string]string, 0)
+	question += ":\n"
+	for index, choice := range choices {
+		// Map choice values against an string representation of their indices.
+		// This helps read choice value corresponding to the index user enters
+		choiceIndex := fmt.Sprint(index + 1)
+		indexToChoice[choiceIndex] = choice
+
+		// Add this choice as a option in the prompt
+		question += fmt.Sprintf("%s. %s\n", choiceIndex, choice)
+
+	}
+
+	// Add text informing user of valid options to choose from
+	question += fmt.Sprintf("Choose from %s", strings.Join(maps.Keys(indexToChoice), ", "))
+
+	// prompt the user.
+	ans, err := logger.Ask(question, defaultIndex)
+	if err != nil {
+		return "", err
+	}
+
+	choice, ok := indexToChoice[ans]
+	if !ok {
+		expectedOptions := maps.Keys(indexToChoice)
+		slices.Sort(expectedOptions)
+		return "", fmt.Errorf("expected one of %s. Got: %s", strings.Join(expectedOptions, ", "), ans)
+	}
+
+	return choice, nil
 }
 
 func (l *Logger) Ask(question string, defaultVal string) (string, error) {

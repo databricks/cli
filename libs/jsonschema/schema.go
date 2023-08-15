@@ -40,6 +40,8 @@ type Schema struct {
 
 	// Default value for the property / object
 	Default any `json:"default,omitempty"`
+
+	Enum []any `json:"enum,omitempty"`
 }
 
 type Type string
