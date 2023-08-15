@@ -123,22 +123,18 @@ func (c *config) promptForValues() error {
 			continue
 		}
 
-		// Initialize Prompt dialog
-		var err error
-		prompt := cmdio.Prompt(c.ctx)
-		prompt.Label = property.Description
-		prompt.AllowEdit = true
-
 		// Compute default value to display by converting it to a string
+		var defaultVal string
+		var err error
 		if property.Default != nil {
-			prompt.Default, err = toString(property.Default, property.Type)
+			defaultVal, err = toString(property.Default, property.Type)
 			if err != nil {
 				return err
 			}
 		}
 
 		// Get user input by running the prompt
-		userInput, err := prompt.Run()
+		userInput, err := cmdio.Ask(c.ctx, property.Description, defaultVal)
 		if err != nil {
 			return err
 		}
