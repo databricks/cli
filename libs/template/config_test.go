@@ -191,10 +191,4 @@ func TestTemplateValidateSchema(t *testing.T) {
 
 	err = validateSchema(toSchema("array"))
 	assert.EqualError(t, err, "property type array is not supported by bundle templates")
-
-	err = validateSchema(toSchema("int"))
-	assert.EqualError(t, err, "type int is not a recognized json schema type. Please use \"integer\" instead")
-
-	err = validateSchema(toSchema("foobar"))
-	assert.EqualError(t, err, "type foobar is not a recognized json schema type")
 }

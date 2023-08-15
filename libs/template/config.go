@@ -18,12 +18,7 @@ type config struct {
 
 func newConfig(ctx context.Context, schemaPath string) (*config, error) {
 	// Read config schema
-	schemaBytes, err := os.ReadFile(schemaPath)
-	if err != nil {
-		return nil, err
-	}
-	schema := &jsonschema.Schema{}
-	err = json.Unmarshal(schemaBytes, schema)
+	schema, err := jsonschema.Load(schemaPath)
 	if err != nil {
 		return nil, err
 	}
@@ -41,15 +36,8 @@ func newConfig(ctx context.Context, schemaPath string) (*config, error) {
 
 func validateSchema(schema *jsonschema.Schema) error {
 	for _, v := range schema.Properties {
-		switch v.Type {
-		case jsonschema.NumberType, jsonschema.BooleanType, jsonschema.StringType, jsonschema.IntegerType:
-			continue
-		case jsonschema.ArrayType, jsonschema.ObjectType:
+		if v.Type == jsonschema.ArrayType || v.Type == jsonschema.ObjectType {
 			return fmt.Errorf("property type %s is not supported by bundle templates", v.Type)
-		case "int", "int32", "int64":
-			return fmt.Errorf("type %s is not a recognized json schema type. Please use \"integer\" instead", v.Type)
-		default:
-			return fmt.Errorf("type %s is not a recognized json schema type", v.Type)
 		}
 	}
 	return nil
