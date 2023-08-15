@@ -18,13 +18,11 @@ type config struct {
 
 func newConfig(ctx context.Context, schemaPath string) (*config, error) {
 	// Read config schema
-	schemaBytes, err := os.ReadFile(schemaPath)
+	schema, err := jsonschema.Load(schemaPath)
 	if err != nil {
 		return nil, err
 	}
-	schema := &jsonschema.Schema{}
-	err = json.Unmarshal(schemaBytes, schema)
-	if err != nil {
+	if err := validateSchema(schema); err != nil {
 		return nil, err
 	}
 
@@ -34,6 +32,15 @@ func newConfig(ctx context.Context, schemaPath string) (*config, error) {
 		schema: schema,
 		values: make(map[string]any, 0),
 	}, nil
+}
+
+func validateSchema(schema *jsonschema.Schema) error {
+	for _, v := range schema.Properties {
+		if v.Type == jsonschema.ArrayType || v.Type == jsonschema.ObjectType {
+			return fmt.Errorf("property type %s is not supported by bundle templates", v.Type)
+		}
+	}
+	return nil
 }
 
 // Reads json file at path and assigns values from the file

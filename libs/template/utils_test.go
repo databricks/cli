@@ -80,6 +80,9 @@ func TestTemplateToString(t *testing.T) {
 
 	_, err = toString("abc", jsonschema.IntegerType)
 	assert.EqualError(t, err, "cannot convert \"abc\" to an integer")
+
+	_, err = toString("abc", "foobar")
+	assert.EqualError(t, err, "unknown json schema type: \"foobar\"")
 }
 
 func TestTemplateFromString(t *testing.T) {
@@ -112,4 +115,7 @@ func TestTemplateFromString(t *testing.T) {
 
 	_, err = fromString("1.0", jsonschema.IntegerType)
 	assert.EqualError(t, err, "could not parse \"1.0\" as a integer: strconv.ParseInt: parsing \"1.0\": invalid syntax")
+
+	_, err = fromString("1.0", "foobar")
+	assert.EqualError(t, err, "unknown json schema type: \"foobar\"")
 }
