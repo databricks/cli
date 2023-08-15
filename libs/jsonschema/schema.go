@@ -54,7 +54,7 @@ const (
 	IntegerType Type = "integer"
 )
 
-func validate(schema *Schema) error {
+func (schema *Schema) validate() error {
 	for _, v := range schema.Properties {
 		switch v.Type {
 		case NumberType, BooleanType, StringType, IntegerType:
@@ -82,5 +82,5 @@ func Load(path string) (*Schema, error) {
 	if err != nil {
 		return nil, err
 	}
-	return schema, validate(schema)
+	return schema, schema.validate()
 }

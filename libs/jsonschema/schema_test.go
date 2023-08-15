@@ -18,27 +18,27 @@ func TestJsonSchemaValidate(t *testing.T) {
 		}
 	}
 
-	err = validate(toSchema("string"))
+	err = toSchema("string").validate()
 	assert.NoError(t, err)
 
-	err = validate(toSchema("boolean"))
+	err = toSchema("boolean").validate()
 	assert.NoError(t, err)
 
-	err = validate(toSchema("number"))
+	err = toSchema("number").validate()
 	assert.NoError(t, err)
 
-	err = validate(toSchema("integer"))
+	err = toSchema("integer").validate()
 	assert.NoError(t, err)
 
-	err = validate(toSchema("int"))
+	err = toSchema("int").validate()
 	assert.EqualError(t, err, "type int is not a recognized json schema type. Please use \"integer\" instead")
 
-	err = validate(toSchema("float"))
+	err = toSchema("float").validate()
 	assert.EqualError(t, err, "type float is not a recognized json schema type. Please use \"number\" instead")
 
-	err = validate(toSchema("bool"))
+	err = toSchema("bool").validate()
 	assert.EqualError(t, err, "type bool is not a recognized json schema type. Please use \"boolean\" instead")
 
-	err = validate(toSchema("foobar"))
+	err = toSchema("foobar").validate()
 	assert.EqualError(t, err, "type foobar is not a recognized json schema type")
 }
