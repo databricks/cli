@@ -1,8 +1,9 @@
 package generator
 
 import (
+	"slices"
+
 	"golang.org/x/exp/maps"
-	"golang.org/x/exp/slices"
 )
 
 // sortKeys returns a sorted copy of the keys in the specified map.

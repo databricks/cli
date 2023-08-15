@@ -166,7 +166,7 @@ func (r *Root) Merge(other *Root) error {
 	}
 
 	// TODO: define and test semantics for merging.
-	return mergo.MergeWithOverwrite(r, other)
+	return mergo.Merge(r, other, mergo.WithOverride)
 }
 
 func (r *Root) MergeEnvironment(env *Environment) error {
@@ -178,28 +178,28 @@ func (r *Root) MergeEnvironment(env *Environment) error {
 	}
 
 	if env.Bundle != nil {
-		err = mergo.MergeWithOverwrite(&r.Bundle, env.Bundle)
+		err = mergo.Merge(&r.Bundle, env.Bundle, mergo.WithOverride)
 		if err != nil {
 			return err
 		}
 	}
 
 	if env.Workspace != nil {
-		err = mergo.MergeWithOverwrite(&r.Workspace, env.Workspace)
+		err = mergo.Merge(&r.Workspace, env.Workspace, mergo.WithOverride)
 		if err != nil {
 			return err
 		}
 	}
 
 	if env.Artifacts != nil {
-		err = mergo.Merge(&r.Artifacts, env.Artifacts, mergo.WithAppendSlice)
+		err = mergo.Merge(&r.Artifacts, env.Artifacts, mergo.WithOverride, mergo.WithAppendSlice)
 		if err != nil {
 			return err
 		}
 	}
 
 	if env.Resources != nil {
-		err = mergo.Merge(&r.Resources, env.Resources, mergo.WithAppendSlice)
+		err = mergo.Merge(&r.Resources, env.Resources, mergo.WithOverride, mergo.WithAppendSlice)
 		if err != nil {
 			return err
 		}
