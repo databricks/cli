@@ -1,6 +1,6 @@
 module github.com/databricks/cli
 
-go 1.18
+go 1.21
 
 require (
 	github.com/briandowns/spinner v1.23.0 // Apache 2.0
