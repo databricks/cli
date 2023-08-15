@@ -123,7 +123,7 @@ func AskChoice(ctx context.Context, question string, defaultVal string, choices 
 
 	// If default value is not present, return error
 	if defaultIndex == "" {
-		return "", fmt.Errorf("failed to find default value %s among choices %#v", defaultVal, choices)
+		return "", fmt.Errorf("failed to find default value %q among choices: %#v", defaultVal, choices)
 	}
 
 	indexToChoice := make(map[string]string, 0)
