@@ -10,13 +10,13 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"slices"
 	"strings"
 	"time"
 
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/client"
-	"golang.org/x/exp/slices"
 )
 
 // Type that implements fs.FileInfo for the Files API.

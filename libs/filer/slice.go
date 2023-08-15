@@ -1,6 +1,6 @@
 package filer
 
-import "golang.org/x/exp/slices"
+import "slices"
 
 // sliceWithout returns a copy of the specified slice without element e, if it is present.
 func sliceWithout[S []E, E comparable](s S, e E) S {
