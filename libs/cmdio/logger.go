@@ -105,10 +105,6 @@ func AskYesOrNo(ctx context.Context, question string) (bool, error) {
 	return false, nil
 }
 
-// TODO: allow enums without a default value specified.
-// TODO: we require enum validation for both config-file and any --parameters introduced.
-// TODO: add validation for default being in enum list.
-
 func AskSelect(ctx context.Context, question string, choices []string) (string, error) {
 	logger, ok := FromContext(ctx)
 	if !ok {
