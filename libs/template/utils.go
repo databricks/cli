@@ -73,6 +73,18 @@ func toString(v any, T jsonschema.Type) (string, error) {
 	}
 }
 
+func toStringSlice(arr []any, T jsonschema.Type) ([]string, error) {
+	res := []string{}
+	for _, v := range arr {
+		s, err := toString(v, T)
+		if err != nil {
+			return nil, err
+		}
+		res = append(res, s)
+	}
+	return res, nil
+}
+
 func fromString(s string, T jsonschema.Type) (any, error) {
 	if T == jsonschema.StringType {
 		return s, nil

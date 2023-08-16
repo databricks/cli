@@ -192,3 +192,32 @@ func TestTemplateValidateSchema(t *testing.T) {
 	err = validateSchema(toSchema("array"))
 	assert.EqualError(t, err, "property type array is not supported by bundle templates")
 }
+
+func TestTemplateEnumValidation(t *testing.T) {
+	schema := jsonschema.Schema{
+		Properties: map[string]*jsonschema.Schema{
+			"abc": {
+				Type: "integer",
+				Enum: []any{1, 2, 3, 4},
+			},
+		},
+	}
+
+	c := &config{
+		schema: &schema,
+		values: map[string]any{
+			"abc": 5,
+		},
+	}
+	assert.EqualError(t, c.validateEnumValues(), "expect value of property \"abc\" to be one of 1, 2, 3, 4. Found: 5")
+	assert.EqualError(t, c.validate(), "expect value of property \"abc\" to be one of 1, 2, 3, 4. Found: 5")
+
+	c = &config{
+		schema: &schema,
+		values: map[string]any{
+			"abc": 4,
+		},
+	}
+	assert.NoError(t, c.validateEnumValues())
+	assert.NoError(t, c.validate())
+}

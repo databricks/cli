@@ -5,6 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
+
+	"slices"
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/jsonschema"
@@ -137,13 +140,9 @@ func (c *config) promptForValues() error {
 		var userInput string
 		if property.Enum != nil {
 			// convert list of enums to string
-			enums := []string{}
-			for _, enum := range property.Enum {
-				v, err := toString(enum, property.Type)
-				if err != nil {
-					return err
-				}
-				enums = append(enums, v)
+			enums, err := toStringSlice(property.Enum, property.Type)
+			if err != nil {
+				return err
 			}
 			userInput, err = cmdio.AskSelect(c.ctx, property.Description, enums)
 			if err != nil {
@@ -181,6 +180,7 @@ func (c *config) validate() error {
 	validateFns := []func() error{
 		c.validateValuesDefined,
 		c.validateValuesType,
+		c.validateEnumValues,
 	}
 
 	for _, fn := range validateFns {
@@ -213,6 +213,27 @@ func (c *config) validateValuesType() error {
 		err := validateType(v, fieldInfo.Type)
 		if err != nil {
 			return fmt.Errorf("incorrect type for %s. %w", k, err)
+		}
+	}
+	return nil
+}
+
+func (c *config) validateEnumValues() error {
+	for k, schema := range c.schema.Properties {
+		if schema.Enum == nil {
+			// skip if property is not enum
+			continue
+		}
+		if !slices.Contains(schema.Enum, c.values[k]) {
+			enums, err := toStringSlice(schema.Enum, schema.Type)
+			if err != nil {
+				return err
+			}
+			valueString, err := toString(c.values[k], schema.Type)
+			if err != nil {
+				return err
+			}
+			return fmt.Errorf("expect value of property %q to be one of %s. Found: %s", k, strings.Join(enums, ", "), valueString)
 		}
 	}
 	return nil
