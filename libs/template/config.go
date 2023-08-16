@@ -8,7 +8,7 @@ import (
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/jsonschema"
-	"golang.org/x/exp/slices"
+	"slices"
 )
 
 type Metadata struct {
