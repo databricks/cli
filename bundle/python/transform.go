@@ -64,7 +64,7 @@ func (m *transform) Apply(ctx context.Context, b *bundle.Bundle) error {
 			return err
 		}
 
-		internalDir, err := b.InternalDir()
+		internalDir, err := getInternalDir(b)
 		if err != nil {
 			return err
 		}
@@ -85,11 +85,21 @@ func (m *transform) Apply(ctx context.Context, b *bundle.Bundle) error {
 	return nil
 }
 
-func generateNotebookWrapper(b *bundle.Bundle, task *jobs.PythonWheelTask, libraries []compute.Library) (string, error) {
-	internalDir, err := b.InternalDir()
+func getInternalDir(b *bundle.Bundle) (string, error) {
+	cacheDir, err := b.CacheDir()
 	if err != nil {
 		return "", err
 	}
+	internalDir := filepath.Join(cacheDir, ".internal")
+	return internalDir, nil
+}
+
+func generateNotebookWrapper(b *bundle.Bundle, task *jobs.PythonWheelTask, libraries []compute.Library) (string, error) {
+	internalDir, err := getInternalDir(b)
+	if err != nil {
+		return "", err
+	}
+
 	notebookName := fmt.Sprintf("notebook_%s_%s", task.PackageName, task.EntryPoint)
 	path := filepath.Join(internalDir, notebookName+".py")
 

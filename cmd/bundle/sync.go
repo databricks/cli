@@ -23,20 +23,12 @@ func (f *syncFlags) syncOptionsFromBundle(cmd *cobra.Command, b *bundle.Bundle) 
 		return nil, fmt.Errorf("cannot get bundle cache directory: %w", err)
 	}
 
-	internalDir, err := b.InternalDir()
-	if err != nil {
-		return nil, fmt.Errorf("cannot get bundle internal directory: %w", err)
-	}
-
 	opts := sync.SyncOptions{
 		LocalPath:    b.Config.Path,
 		RemotePath:   b.Config.Workspace.FilesPath,
-		Include:      b.Config.Sync.Include,
-		Exclude:      b.Config.Sync.Exclude,
 		Full:         f.full,
 		PollInterval: f.interval,
 
-		InternalDir:      internalDir,
 		SnapshotBasePath: cacheDir,
 		WorkspaceClient:  b.WorkspaceClient(),
 	}

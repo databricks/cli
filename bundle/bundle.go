@@ -22,8 +22,6 @@ import (
 	"github.com/hashicorp/terraform-exec/tfexec"
 )
 
-const InternalFolder = ".internal"
-
 type Bundle struct {
 	Config config.Root
 
@@ -148,21 +146,6 @@ func (b *Bundle) CacheDir(paths ...string) (string, error) {
 	err := os.MkdirAll(dir, 0700)
 	if err != nil {
 		return "", err
-	}
-
-	return dir, nil
-}
-
-func (b *Bundle) InternalDir() (string, error) {
-	cacheDir, err := b.CacheDir()
-	if err != nil {
-		return "", err
-	}
-
-	dir := filepath.Join(cacheDir, InternalFolder)
-	err = os.MkdirAll(dir, 0700)
-	if err != nil {
-		return dir, err
 	}
 
 	return dir, nil
