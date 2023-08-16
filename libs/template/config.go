@@ -139,7 +139,7 @@ func (c *config) promptForValues() error {
 		// Get user input by running the prompt
 		var userInput string
 		if property.Enum != nil {
-			// convert list of enums to string
+			// convert list of enums to string slice
 			enums, err := toStringSlice(property.Enum, property.Type)
 			if err != nil {
 				return err
