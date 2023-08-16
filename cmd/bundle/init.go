@@ -42,10 +42,9 @@ func newInitCommand() *cobra.Command {
 	}
 
 	var configFile string
-	var projectDir string
+	var outputDir string
 	cmd.Flags().StringVar(&configFile, "config-file", "", "File containing input parameters for template initialization.")
-	cmd.Flags().StringVar(&projectDir, "project-dir", "", "The project will be initialized in this directory.")
-	cmd.MarkFlagRequired("project-dir")
+	cmd.Flags().StringVar(&outputDir, "output-dir", "", "The project will be initialized in this directory.")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		templatePath := args[0]
@@ -54,7 +53,7 @@ func newInitCommand() *cobra.Command {
 		if !isRepoUrl(templatePath) {
 			// skip downloading the repo because input arg is not a URL. We assume
 			// it's a path on the local file system in that case
-			return template.Materialize(ctx, configFile, templatePath, projectDir)
+			return template.Materialize(ctx, configFile, templatePath, outputDir)
 		}
 
 		// Download the template in a temporary directory
@@ -72,7 +71,7 @@ func newInitCommand() *cobra.Command {
 		}
 		defer os.RemoveAll(templateDir)
 
-		return template.Materialize(ctx, configFile, templateDir, projectDir)
+		return template.Materialize(ctx, configFile, templateDir, outputDir)
 	}
 
 	return cmd
