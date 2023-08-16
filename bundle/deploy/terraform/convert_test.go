@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
+	"github.com/databricks/databricks-sdk-go/service/serving"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -290,5 +291,78 @@ func TestConvertExperimentPermissions(t *testing.T) {
 	p := out.Resource.Permissions["mlflow_experiment_my_experiment"].AccessControl[0]
 	assert.Equal(t, "jane@doe.com", p.UserName)
 	assert.Equal(t, "CAN_READ", p.PermissionLevel)
+
+}
+
+func TestConvertModelServing(t *testing.T) {
+	var src = resources.ModelServingEndpoint{
+		CreateServingEndpoint: &serving.CreateServingEndpoint{
+			Name: "name",
+			Config: serving.EndpointCoreConfigInput{
+				ServedModels: []serving.ServedModelInput{
+					{
+						ModelName:          "model_name",
+						ModelVersion:       "1",
+						ScaleToZeroEnabled: true,
+						WorkloadSize:       "Small",
+					},
+				},
+				TrafficConfig: &serving.TrafficConfig{
+					Routes: []serving.Route{
+						{
+							ServedModelName:   "model_name-1",
+							TrafficPercentage: 100,
+						},
+					},
+				},
+			},
+		},
+	}
+
+	var config = config.Root{
+		Resources: config.Resources{
+			ModelServingEndpoints: map[string]*resources.ModelServingEndpoint{
+				"my_model_serving_endpoint": &src,
+			},
+		},
+	}
+
+	out, _ := BundleToTerraform(&config)
+	resource := out.Resource.ModelServing["my_model_serving_endpoint"]
+	assert.Equal(t, "name", resource.Name)
+	assert.Equal(t, "model_name", resource.Config.ServedModels[0].ModelName)
+	assert.Equal(t, "1", resource.Config.ServedModels[0].ModelVersion)
+	assert.Equal(t, true, resource.Config.ServedModels[0].ScaleToZeroEnabled)
+	assert.Equal(t, "Small", resource.Config.ServedModels[0].WorkloadSize)
+	assert.Equal(t, "model_name-1", resource.Config.TrafficConfig.Routes[0].ServedModelName)
+	assert.Equal(t, 100, resource.Config.TrafficConfig.Routes[0].TrafficPercentage)
+	assert.Nil(t, out.Data)
+}
+
+func TestConvertModelServingPermissions(t *testing.T) {
+	var src = resources.ModelServingEndpoint{
+		Permissions: []resources.Permission{
+			{
+				Level:    "CAN_VIEW",
+				UserName: "jane@doe.com",
+			},
+		},
+	}
+
+	var config = config.Root{
+		Resources: config.Resources{
+			ModelServingEndpoints: map[string]*resources.ModelServingEndpoint{
+				"my_model_serving_endpoint": &src,
+			},
+		},
+	}
+
+	out, _ := BundleToTerraform(&config)
+	assert.NotEmpty(t, out.Resource.Permissions["model_serving_my_model_serving_endpoint"].ServingEndpointId)
+	assert.Len(t, out.Resource.Permissions["model_serving_my_model_serving_endpoint"].AccessControl, 1)
+
+	p := out.Resource.Permissions["model_serving_my_model_serving_endpoint"].AccessControl[0]
+	assert.Equal(t, "jane@doe.com", p.UserName)
+	assert.Equal(t, "CAN_VIEW", p.PermissionLevel)
 
 }

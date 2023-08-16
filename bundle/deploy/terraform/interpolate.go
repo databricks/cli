@@ -25,6 +25,9 @@ func interpolateTerraformResourceIdentifiers(path string, lookup map[string]stri
 		case "experiments":
 			path = strings.Join(append([]string{"databricks_mlflow_experiment"}, parts[2:]...), interpolation.Delimiter)
 			return fmt.Sprintf("${%s}", path), nil
+		case "model_serving_endpoints":
+			path = strings.Join(append([]string{"databricks_model_serving"}, parts[2:]...), interpolation.Delimiter)
+			return fmt.Sprintf("${%s}", path), nil
 		default:
 			panic("TODO: " + parts[1])
 		}

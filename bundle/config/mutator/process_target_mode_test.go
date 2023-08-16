@@ -13,6 +13,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
+	"github.com/databricks/databricks-sdk-go/service/serving"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -53,6 +54,9 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 				Models: map[string]*resources.MlflowModel{
 					"model1": {Model: &ml.Model{Name: "model1"}},
 				},
+				ModelServingEndpoints: map[string]*resources.ModelServingEndpoint{
+					"servingendpoint1": {CreateServingEndpoint: &serving.CreateServingEndpoint{Name: "servingendpoint1"}},
+				},
 			},
 		},
 	}
@@ -69,6 +73,7 @@ func TestProcessTargetModeDevelopment(t *testing.T) {
 	assert.Equal(t, "/Users/lennart.kats@databricks.com/[dev lennart] experiment1", bundle.Config.Resources.Experiments["experiment1"].Name)
 	assert.Equal(t, "[dev lennart] experiment2", bundle.Config.Resources.Experiments["experiment2"].Name)
 	assert.Equal(t, "[dev lennart] model1", bundle.Config.Resources.Models["model1"].Name)
+	assert.Equal(t, "dev_lennart_servingendpoint1", bundle.Config.Resources.ModelServingEndpoints["servingendpoint1"].Name)
 	assert.Equal(t, "dev", bundle.Config.Resources.Experiments["experiment1"].Experiment.Tags[0].Key)
 	assert.True(t, bundle.Config.Resources.Pipelines["pipeline1"].PipelineSpec.Development)
 }
@@ -82,6 +87,7 @@ func TestProcessTargetModeDefault(t *testing.T) {
 	assert.Equal(t, "job1", bundle.Config.Resources.Jobs["job1"].Name)
 	assert.Equal(t, "pipeline1", bundle.Config.Resources.Pipelines["pipeline1"].Name)
 	assert.False(t, bundle.Config.Resources.Pipelines["pipeline1"].PipelineSpec.Development)
+	assert.Equal(t, "servingendpoint1", bundle.Config.Resources.ModelServingEndpoints["servingendpoint1"].Name)
 }
 
 func TestProcessTargetModeProduction(t *testing.T) {
@@ -109,6 +115,7 @@ func TestProcessTargetModeProduction(t *testing.T) {
 	bundle.Config.Resources.Experiments["experiment1"].Permissions = permissions
 	bundle.Config.Resources.Experiments["experiment2"].Permissions = permissions
 	bundle.Config.Resources.Models["model1"].Permissions = permissions
+	bundle.Config.Resources.ModelServingEndpoints["servingendpoint1"].Permissions = permissions
 
 	err = validateProductionMode(context.Background(), bundle, false)
 	require.NoError(t, err)
@@ -116,6 +123,7 @@ func TestProcessTargetModeProduction(t *testing.T) {
 	assert.Equal(t, "job1", bundle.Config.Resources.Jobs["job1"].Name)
 	assert.Equal(t, "pipeline1", bundle.Config.Resources.Pipelines["pipeline1"].Name)
 	assert.False(t, bundle.Config.Resources.Pipelines["pipeline1"].PipelineSpec.Development)
+	assert.Equal(t, "servingendpoint1", bundle.Config.Resources.ModelServingEndpoints["servingendpoint1"].Name)
 }
 
 func TestProcessTargetModeProductionOkForPrincipal(t *testing.T) {
