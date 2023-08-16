@@ -159,12 +159,12 @@ func TestInitializeVariablesUndefinedVariables(t *testing.T) {
 	assert.ErrorContains(t, err, "variable bar has not been defined")
 }
 
-func TestRootMergeTargetWithMode(t *testing.T) {
+func TestRootMergeTargetOverridesWithMode(t *testing.T) {
 	root := &Root{
 		Bundle: Bundle{},
 	}
 	env := &Target{Mode: Development}
-	require.NoError(t, root.MergeTarget(env))
+	require.NoError(t, root.MergeTargetOverrides(env))
 	assert.Equal(t, Development, root.Bundle.Mode)
 }
 

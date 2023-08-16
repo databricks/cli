@@ -151,19 +151,14 @@ func (r *Root) Load(path string) error {
 		return fmt.Errorf("failed to load %s: %w", path, err)
 	}
 
+	if r.Environments != nil && r.Targets != nil {
+		return fmt.Errorf("both 'environments' and 'targets' are specified, only 'targets' should be used %s", path)
+	}
+
 	if r.Environments != nil {
 		//TODO: add a command line notice that this is a deprecated option.
 		r.Targets = r.Environments
 	}
-
-	if r.Bundle.Environment != "" {
-		//TODO: add a command line notice that this is a deprecated option.
-		r.Bundle.Target = r.Bundle.Environment
-	}
-
-	// We do this for backward compatibility so ${bundle.environment} works correctly.
-	// TODO: remove when Environments section is not supported anymore.
-	r.Bundle.Environment = r.Bundle.Target
 
 	r.Path = filepath.Dir(path)
 	r.SetConfigFilePath(path)
@@ -186,7 +181,7 @@ func (r *Root) Merge(other *Root) error {
 	return mergo.Merge(r, other, mergo.WithOverride)
 }
 
-func (r *Root) MergeTarget(target *Target) error {
+func (r *Root) MergeTargetOverrides(target *Target) error {
 	var err error
 
 	// Target may be nil if it's empty.

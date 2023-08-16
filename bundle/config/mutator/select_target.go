@@ -34,7 +34,7 @@ func (m *selectTarget) Apply(_ context.Context, b *bundle.Bundle) error {
 	}
 
 	// Merge specified target into root configuration structure.
-	err := b.Config.MergeTarget(env)
+	err := b.Config.MergeTargetOverrides(env)
 	if err != nil {
 		return err
 	}

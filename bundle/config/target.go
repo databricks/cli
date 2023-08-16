@@ -2,7 +2,7 @@ package config
 
 type Mode string
 
-// Target defines overrides for a single taregt.
+// Target defines overrides for a single target.
 // This structure is recursively merged into the root configuration.
 type Target struct {
 	// Default marks that this target must be used if one isn't specified
