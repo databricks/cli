@@ -15,8 +15,8 @@ func TestDefaultWorkspaceRoot(t *testing.T) {
 	bundle := &bundle.Bundle{
 		Config: config.Root{
 			Bundle: config.Bundle{
-				Name:        "name",
-				Environment: "environment",
+				Name:   "name",
+				Target: "environment",
 			},
 		},
 	}

@@ -58,10 +58,10 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 	}
 }
 
-func TestProcessEnvironmentModeDevelopment(t *testing.T) {
+func TestProcessTargetModeDevelopment(t *testing.T) {
 	bundle := mockBundle(config.Development)
 
-	m := ProcessEnvironmentMode()
+	m := ProcessTargetMode()
 	err := m.Apply(context.Background(), bundle)
 	require.NoError(t, err)
 	assert.Equal(t, "[dev lennart] job1", bundle.Config.Resources.Jobs["job1"].Name)
@@ -73,10 +73,10 @@ func TestProcessEnvironmentModeDevelopment(t *testing.T) {
 	assert.True(t, bundle.Config.Resources.Pipelines["pipeline1"].PipelineSpec.Development)
 }
 
-func TestProcessEnvironmentModeDefault(t *testing.T) {
+func TestProcessTargetModeDefault(t *testing.T) {
 	bundle := mockBundle("")
 
-	m := ProcessEnvironmentMode()
+	m := ProcessTargetMode()
 	err := m.Apply(context.Background(), bundle)
 	require.NoError(t, err)
 	assert.Equal(t, "job1", bundle.Config.Resources.Jobs["job1"].Name)
@@ -84,7 +84,7 @@ func TestProcessEnvironmentModeDefault(t *testing.T) {
 	assert.False(t, bundle.Config.Resources.Pipelines["pipeline1"].PipelineSpec.Development)
 }
 
-func TestProcessEnvironmentModeProduction(t *testing.T) {
+func TestProcessTargetModeProduction(t *testing.T) {
 	bundle := mockBundle(config.Production)
 
 	err := validateProductionMode(context.Background(), bundle, false)
@@ -118,7 +118,7 @@ func TestProcessEnvironmentModeProduction(t *testing.T) {
 	assert.False(t, bundle.Config.Resources.Pipelines["pipeline1"].PipelineSpec.Development)
 }
 
-func TestProcessEnvironmentModeProductionGit(t *testing.T) {
+func TestProcessTargetModeProductionGit(t *testing.T) {
 	bundle := mockBundle(config.Production)
 
 	// Pretend the user didn't set Git configuration explicitly
@@ -129,10 +129,10 @@ func TestProcessEnvironmentModeProductionGit(t *testing.T) {
 	bundle.Config.Bundle.Git.Inferred = false
 }
 
-func TestProcessEnvironmentModeProductionOkForPrincipal(t *testing.T) {
+func TestProcessTargetModeProductionOkForPrincipal(t *testing.T) {
 	bundle := mockBundle(config.Production)
 
-	// Our environment has all kinds of problems when not using service principals ...
+	// Our target has all kinds of problems when not using service principals ...
 	err := validateProductionMode(context.Background(), bundle, false)
 	require.Error(t, err)
 
@@ -152,7 +152,7 @@ func TestAllResourcesMocked(t *testing.T) {
 			assert.True(
 				t,
 				!field.IsNil() && field.Len() > 0,
-				"process_environment_mode should support '%s' (please add it to process_environment_mode.go and extend the test suite)",
+				"process_target_mode should support '%s' (please add it to process_target_mode.go and extend the test suite)",
 				resources.Type().Field(i).Name,
 			)
 		}
@@ -164,7 +164,7 @@ func TestAllResourcesRenamed(t *testing.T) {
 	bundle := mockBundle(config.Development)
 	resources := reflect.ValueOf(bundle.Config.Resources)
 
-	m := ProcessEnvironmentMode()
+	m := ProcessTargetMode()
 	err := m.Apply(context.Background(), bundle)
 	require.NoError(t, err)
 
@@ -179,7 +179,7 @@ func TestAllResourcesRenamed(t *testing.T) {
 					assert.True(
 						t,
 						strings.Contains(nameField.String(), "dev"),
-						"process_environment_mode should rename '%s' in '%s'",
+						"process_target_mode should rename '%s' in '%s'",
 						key,
 						resources.Type().Field(i).Name,
 					)

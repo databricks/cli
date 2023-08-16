@@ -31,16 +31,16 @@ func TestBundleCacheDir(t *testing.T) {
 	bundle, err := Load(context.Background(), projectDir)
 	require.NoError(t, err)
 
-	// Artificially set environment.
-	// This is otherwise done by [mutators.SelectEnvironment].
-	bundle.Config.Bundle.Environment = "default"
+	// Artificially set target.
+	// This is otherwise done by [mutators.SelectTarget].
+	bundle.Config.Bundle.Target = "default"
 
 	// unset env variable in case it's set
 	t.Setenv("DATABRICKS_BUNDLE_TMP", "")
 
 	cacheDir, err := bundle.CacheDir()
 
-	// format is <CWD>/.databricks/bundle/<environment>
+	// format is <CWD>/.databricks/bundle/<target>
 	assert.NoError(t, err)
 	assert.Equal(t, filepath.Join(projectDir, ".databricks", "bundle", "default"), cacheDir)
 }
@@ -55,16 +55,16 @@ func TestBundleCacheDirOverride(t *testing.T) {
 	bundle, err := Load(context.Background(), projectDir)
 	require.NoError(t, err)
 
-	// Artificially set environment.
-	// This is otherwise done by [mutators.SelectEnvironment].
-	bundle.Config.Bundle.Environment = "default"
+	// Artificially set target.
+	// This is otherwise done by [mutators.SelectTarget].
+	bundle.Config.Bundle.Target = "default"
 
 	// now we expect to use 'bundleTmpDir' instead of CWD/.databricks/bundle
 	t.Setenv("DATABRICKS_BUNDLE_TMP", bundleTmpDir)
 
 	cacheDir, err := bundle.CacheDir()
 
-	// format is <DATABRICKS_BUNDLE_TMP>/<environment>
+	// format is <DATABRICKS_BUNDLE_TMP>/<target>
 	assert.NoError(t, err)
 	assert.Equal(t, filepath.Join(bundleTmpDir, "default"), cacheDir)
 }

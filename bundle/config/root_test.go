@@ -57,7 +57,7 @@ func TestRootMergeStruct(t *testing.T) {
 func TestRootMergeMap(t *testing.T) {
 	root := &Root{
 		Path: "path",
-		Environments: map[string]*Environment{
+		Targets: map[string]*Target{
 			"development": {
 				Workspace: &Workspace{
 					Host:    "foo",
@@ -68,7 +68,7 @@ func TestRootMergeMap(t *testing.T) {
 	}
 	other := &Root{
 		Path: "path",
-		Environments: map[string]*Environment{
+		Targets: map[string]*Target{
 			"development": {
 				Workspace: &Workspace{
 					Host: "bar",
@@ -77,7 +77,7 @@ func TestRootMergeMap(t *testing.T) {
 		},
 	}
 	assert.NoError(t, root.Merge(other))
-	assert.Equal(t, &Workspace{Host: "bar", Profile: "profile"}, root.Environments["development"].Workspace)
+	assert.Equal(t, &Workspace{Host: "bar", Profile: "profile"}, root.Targets["development"].Workspace)
 }
 
 func TestDuplicateIdOnLoadReturnsError(t *testing.T) {
@@ -159,12 +159,12 @@ func TestInitializeVariablesUndefinedVariables(t *testing.T) {
 	assert.ErrorContains(t, err, "variable bar has not been defined")
 }
 
-func TestRootMergeEnvironmentWithMode(t *testing.T) {
+func TestRootMergeTargetWithMode(t *testing.T) {
 	root := &Root{
 		Bundle: Bundle{},
 	}
-	env := &Environment{Mode: Development}
-	require.NoError(t, root.MergeEnvironment(env))
+	env := &Target{Mode: Development}
+	require.NoError(t, root.MergeTarget(env))
 	assert.Equal(t, Development, root.Bundle.Mode)
 }
 

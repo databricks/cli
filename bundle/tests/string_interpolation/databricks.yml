@@ -1,0 +1,16 @@
+bundle:
+  name: basic
+  target: development
+
+resources:
+  jobs:
+    test_job_a:
+      name: "[${bundle.environment}] Test A"
+      tasks:
+        - task_key: TestTask
+          existing_cluster_id: "0717-132531-5opeqon1"
+    test_job_b:
+      name: "[${bundle.target}] Test B"
+      tasks:
+        - task_key: TestTask
+          existing_cluster_id: "0717-132531-5opeqon1"
