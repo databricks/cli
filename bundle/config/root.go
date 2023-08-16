@@ -74,6 +74,9 @@ type Root struct {
 	// If not specified, the code below initializes this field with a
 	// single default-initialized environment called "default".
 	Environments map[string]*Environment `json:"environments,omitempty"`
+
+	// Sync section specifies options for files syncronisation
+	Sync Sync `json:"sync"`
 }
 
 func Load(path string) (*Root, error) {
