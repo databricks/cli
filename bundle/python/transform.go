@@ -114,9 +114,14 @@ func generateNotebookWrapper(b *bundle.Bundle, task *jobs.PythonWheelTask, libra
 	}
 	defer f.Close()
 
+	params, err := generateParameters(task)
+	if err != nil {
+		return "", err
+	}
+
 	data := map[string]any{
 		"Libraries": libraries,
-		"Params":    generateParameters(task),
+		"Params":    params,
 		"Task":      task,
 	}
 
@@ -127,7 +132,10 @@ func generateNotebookWrapper(b *bundle.Bundle, task *jobs.PythonWheelTask, libra
 	return notebookName, t.Execute(f, data)
 }
 
-func generateParameters(task *jobs.PythonWheelTask) string {
+func generateParameters(task *jobs.PythonWheelTask) (string, error) {
+	if task.Parameters != nil && task.NamedParameters != nil {
+		return "", fmt.Errorf("not allowed to pass both paramaters and named_parameters")
+	}
 	params := append([]string{"python"}, task.Parameters...)
 	for k, v := range task.NamedParameters {
 		params = append(params, fmt.Sprintf("%s=%s", k, v))
@@ -135,5 +143,5 @@ func generateParameters(task *jobs.PythonWheelTask) string {
 	for i := range params {
 		params[i] = `"` + params[i] + `"`
 	}
-	return strings.Join(params, ", ")
+	return strings.Join(params, ", "), nil
 }

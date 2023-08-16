@@ -15,9 +15,8 @@ func getSync(ctx context.Context, b *bundle.Bundle) (*sync.Sync, error) {
 	}
 
 	opts := sync.SyncOptions{
-		LocalPath:  b.Config.Path,
-		RemotePath: b.Config.Workspace.FilesPath,
-
+		LocalPath:   b.Config.Path,
+		RemotePath:  b.Config.Workspace.FilesPath,
 		Full:        false,
 		CurrentUser: b.Config.Workspace.CurrentUser.User,
 

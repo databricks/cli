@@ -32,8 +32,7 @@ type SyncOptions struct {
 type Sync struct {
 	*SyncOptions
 
-	fileSet *git.FileSet
-
+	fileSet  *git.FileSet
 	snapshot *Snapshot
 	filer    filer.Filer
 
