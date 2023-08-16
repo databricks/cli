@@ -25,24 +25,21 @@ type config struct {
 	metadata *Metadata
 }
 
-func parseFromFile(path string, pointer interface{}) error {
-	b, err := os.ReadFile(path)
-	if err != nil {
-		return err
-	}
-	return json.Unmarshal(b, pointer)
-}
-
 func newConfig(ctx context.Context, schemaPath string, metadataPath string) (*config, error) {
 	// Read config schema
-	schema := &jsonschema.Schema{}
-	if err := parseFromFile(schemaPath, schema); err != nil {
+	schema, err := jsonschema.Load(schemaPath)
+	if err != nil {
 		return nil, err
 	}
 
 	// Read metadata
 	metadata := &Metadata{}
-	if err := parseFromFile(metadataPath, metadata); err != nil {
+	metadataBytes, err := os.ReadFile(metadataPath)
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(metadataBytes, metadata)
+	if err != nil {
 		return nil, err
 	}
 
@@ -53,6 +50,15 @@ func newConfig(ctx context.Context, schemaPath string, metadataPath string) (*co
 		values:   make(map[string]any, 0),
 		metadata: metadata,
 	}, nil
+}
+
+func validateSchema(schema *jsonschema.Schema) error {
+	for _, v := range schema.Properties {
+		if v.Type == jsonschema.ArrayType || v.Type == jsonschema.ObjectType {
+			return fmt.Errorf("property type %s is not supported by bundle templates", v.Type)
+		}
+	}
+	return nil
 }
 
 // Reads json file at path and assigns values from the file
@@ -166,24 +172,20 @@ func (c *config) promptForValues() error {
 		if _, ok := c.values[name]; ok {
 			continue
 		}
-
-		// Initialize Prompt dialog
-		var err error
 		property := c.schema.Properties[name]
-		prompt := cmdio.Prompt(c.ctx)
-		prompt.Label = property.Description
-		prompt.AllowEdit = true
 
 		// Compute default value to display by converting it to a string
+		var defaultVal string
+		var err error
 		if property.Default != nil {
-			prompt.Default, err = toString(property.Default, property.Type)
+			defaultVal, err = toString(property.Default, property.Type)
 			if err != nil {
 				return err
 			}
 		}
 
 		// Get user input by running the prompt
-		userInput, err := prompt.Run()
+		userInput, err := cmdio.Ask(c.ctx, property.Description, defaultVal)
 		if err != nil {
 			return err
 		}

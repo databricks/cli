@@ -57,7 +57,7 @@ func (m *initialize) findExecPath(ctx context.Context, b *bundle.Bundle, tf *con
 	// Download Terraform to private bin directory.
 	installer := &releases.LatestVersion{
 		Product:     product.Terraform,
-		Constraints: version.MustConstraints(version.NewConstraint("<2.0")),
+		Constraints: version.MustConstraints(version.NewConstraint("<=1.5.5")),
 		InstallDir:  binDir,
 	}
 	execPath, err = installer.Install(ctx)

@@ -9,10 +9,11 @@ import (
 	"sort"
 	"strings"
 
+	"slices"
+
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/variable"
 	"golang.org/x/exp/maps"
-	"golang.org/x/exp/slices"
 )
 
 const Delimiter = "."

@@ -6,8 +6,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-
-	"golang.org/x/exp/slices"
+	"slices"
 )
 
 // LocalClient implements the [Filer] interface for the local filesystem.

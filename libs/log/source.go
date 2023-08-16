@@ -1,9 +1,8 @@
 package log
 
 import (
+	"log/slog"
 	"path/filepath"
-
-	"golang.org/x/exp/slog"
 )
 
 // ReplaceSourceAttr rewrites the source attribute to include only the file's basename.

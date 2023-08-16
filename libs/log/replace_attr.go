@@ -1,6 +1,6 @@
 package log
 
-import "golang.org/x/exp/slog"
+import "log/slog"
 
 type ReplaceAttrFunction func(groups []string, a slog.Attr) slog.Attr
 

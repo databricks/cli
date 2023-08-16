@@ -22,7 +22,7 @@ jobs:
         id: go
         uses: actions/setup-go@v3
         with:
-          go-version: 1.19.5
+          go-version: 1.21.0
 
       - name: Locate cache paths
         id: cache
