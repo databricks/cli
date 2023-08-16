@@ -43,8 +43,10 @@ func newInitCommand() *cobra.Command {
 
 	var configFile string
 	var projectDir string
+	var templateDir string
 	cmd.Flags().StringVar(&configFile, "config-file", "", "File containing input parameters for template initialization.")
 	cmd.Flags().StringVar(&projectDir, "project-dir", "", "The project will be initialized in this directory.")
+	cmd.Flags().StringVar(&templateDir, "template-directory", "", "Directory within repository that holds the template specification. This is useful when TEMPLATE_PATH is a repository containing multiple templates.")
 	cmd.MarkFlagRequired("project-dir")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
@@ -60,19 +62,18 @@ func newInitCommand() *cobra.Command {
 		// Download the template in a temporary directory
 		tmpDir := os.TempDir()
 		templateURL := templatePath
-		templateDir := filepath.Join(tmpDir, repoName(templateURL))
-		err := os.MkdirAll(templateDir, 0755)
+		repoDir := filepath.Join(tmpDir, repoName(templateURL))
+		err := os.MkdirAll(repoDir, 0755)
 		if err != nil {
 			return err
 		}
 		// TODO: Add automated test that the downloaded git repo is cleaned up.
-		err = git.Clone(ctx, templateURL, "", templateDir)
+		err = git.Clone(ctx, templateURL, "", repoDir)
 		if err != nil {
 			return err
 		}
-		defer os.RemoveAll(templateDir)
-
-		return template.Materialize(ctx, configFile, templateDir, projectDir)
+		defer os.RemoveAll(repoDir)
+		return template.Materialize(ctx, configFile, filepath.Join(repoDir, templateDir), projectDir)
 	}
 
 	return cmd
