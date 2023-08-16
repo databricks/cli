@@ -5,7 +5,8 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/phases"
+	"github.com/databricks/cli/bundle/config/interpolation"
+	"github.com/databricks/cli/bundle/config/variable"
 	"github.com/stretchr/testify/require"
 )
 
@@ -14,7 +15,11 @@ func TestBundleEnvironmentStringInterpolation(t *testing.T) {
 	b, err := bundle.Load(ctx, "./string_interpolation")
 	require.NoError(t, err)
 
-	init := phases.Initialize()
+	init := interpolation.Interpolate(
+		interpolation.IncludeLookupsInPath("bundle"),
+		interpolation.IncludeLookupsInPath("workspace"),
+		interpolation.IncludeLookupsInPath(variable.VariableReferencePrefix),
+	)
 	err = init.Apply(ctx, b)
 	require.NoError(t, err)
 
