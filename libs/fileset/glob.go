@@ -15,7 +15,7 @@ func NewGlobSet(root string, includes []string) *GlobSet {
 	return &GlobSet{root, includes}
 }
 
-// Return all tracked files for Repo
+// Return all files which matches defined glob patterns
 func (s *GlobSet) All() ([]File, error) {
 	files := make([]File, 0)
 	for _, pattern := range s.patterns {
