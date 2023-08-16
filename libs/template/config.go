@@ -134,7 +134,7 @@ func (c *config) assignDefaultValues() error {
 }
 
 func (c *config) promptOrder() ([]string, error) {
-	// First add property order that is explicitly defined in metadata
+	// First add properties in the order that is explicitly defined in the metadata
 	promptOrder := make([]string, len(c.metadata.PromptOrder))
 	for i, name := range c.metadata.PromptOrder {
 		if _, ok := c.schema.Properties[name]; !ok {
@@ -146,7 +146,7 @@ func (c *config) promptOrder() ([]string, error) {
 		promptOrder[i] = name
 	}
 
-	// accumulate and sort leftover properties
+	// accumulate and sort leftover the properties
 	leftover := []string{}
 	for name := range c.schema.Properties {
 		if slices.Contains(promptOrder, name) {
@@ -156,6 +156,7 @@ func (c *config) promptOrder() ([]string, error) {
 	}
 	slices.Sort(leftover)
 
+	// add leftover properties
 	promptOrder = append(promptOrder, leftover...)
 	return promptOrder, nil
 }
