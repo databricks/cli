@@ -10,8 +10,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/libs/flags"
-	"golang.org/x/exp/maps"
-	"golang.org/x/exp/slices"
+	"github.com/manifoldco/promptui"
 )
 
 // This is the interface for all io interactions with a user
@@ -106,56 +105,38 @@ func AskYesOrNo(ctx context.Context, question string) (bool, error) {
 	return false, nil
 }
 
-func AskChoice(ctx context.Context, question string, defaultVal string, choices []string) (string, error) {
+// TODO: allow enums without a default value specified.
+// TODO: we require enum validation for both config-file and any --parameters introduced.
+// TODO: add validation for default being in enum list.
+
+func AskSelect(ctx context.Context, question string, choices []string) (string, error) {
 	logger, ok := FromContext(ctx)
 	if !ok {
 		logger = Default()
 	}
+	return logger.AskSelect(question, choices)
+}
 
-	// Find index of the default value
-	defaultIndex := ""
-	for i, v := range choices {
-		if v == defaultVal {
-			defaultIndex = fmt.Sprint(i + 1)
-			break
-		}
+func (l *Logger) AskSelect(question string, choices []string) (string, error) {
+	if l.Mode == flags.ModeJson {
+		return "", fmt.Errorf("question prompts are not supported in json mode")
 	}
 
-	// If default value is not present, return error
-	if defaultIndex == "" {
-		return "", fmt.Errorf("failed to find default value %q among choices: %#v", defaultVal, choices)
+	prompt := promptui.Select{
+		Label:    question,
+		Items:    choices,
+		HideHelp: true,
+		Templates: &promptui.SelectTemplates{
+			Label:    "{{.}}: ",
+			Selected: fmt.Sprintf("%s: {{.}}", question),
+		},
 	}
 
-	indexToChoice := make(map[string]string, 0)
-	question += ":\n"
-	for index, choice := range choices {
-		// Map choices against a string representation of their indices.
-		// This helps resolve the choice corresponding to the index the user enters.
-		choiceIndex := fmt.Sprint(index + 1)
-		indexToChoice[choiceIndex] = choice
-
-		// Add this choice as a option in the prompt text.
-		question += fmt.Sprintf("%s. %s\n", choiceIndex, choice)
-
-	}
-
-	// Add text informing user of the list of valid options to choose from
-	question += fmt.Sprintf("Choose from %s", strings.Join(maps.Keys(indexToChoice), ", "))
-
-	// prompt the user.
-	ans, err := logger.Ask(question, defaultIndex)
+	_, ans, err := prompt.Run()
 	if err != nil {
 		return "", err
 	}
-
-	choice, ok := indexToChoice[ans]
-	if !ok {
-		expectedOptions := maps.Keys(indexToChoice)
-		slices.Sort(expectedOptions)
-		return "", fmt.Errorf("expected one of %s. Got: %s", strings.Join(expectedOptions, ", "), ans)
-	}
-
-	return choice, nil
+	return ans, nil
 }
 
 func (l *Logger) Ask(question string, defaultVal string) (string, error) {

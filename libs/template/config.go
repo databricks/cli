@@ -145,7 +145,7 @@ func (c *config) promptForValues() error {
 				}
 				enums = append(enums, v)
 			}
-			userInput, err = cmdio.AskChoice(c.ctx, property.Description, defaultVal, enums)
+			userInput, err = cmdio.AskSelect(c.ctx, property.Description, enums)
 			if err != nil {
 				return err
 			}
