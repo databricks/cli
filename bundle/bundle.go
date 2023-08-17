@@ -119,10 +119,10 @@ func (b *Bundle) WorkspaceClient() *databricks.WorkspaceClient {
 }
 
 // CacheDir returns directory to use for temporary files for this bundle.
-// Scoped to the bundle's environment.
+// Scoped to the bundle's target.
 func (b *Bundle) CacheDir(paths ...string) (string, error) {
-	if b.Config.Bundle.Environment == "" {
-		panic("environment not set")
+	if b.Config.Bundle.Target == "" {
+		panic("target not set")
 	}
 
 	cacheDirName, exists := os.LookupEnv("DATABRICKS_BUNDLE_TMP")
@@ -140,8 +140,8 @@ func (b *Bundle) CacheDir(paths ...string) (string, error) {
 	// Fixed components of the result path.
 	parts := []string{
 		cacheDirName,
-		// Scope with environment name.
-		b.Config.Bundle.Environment,
+		// Scope with target name.
+		b.Config.Bundle.Target,
 	}
 
 	// Append dynamic components of the result path.

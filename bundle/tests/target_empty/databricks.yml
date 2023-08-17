@@ -1,0 +1,5 @@
+bundle:
+  name: target_empty
+
+targets:
+  development:

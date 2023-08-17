@@ -1,5 +1,27 @@
 # Version changelog
 
+## 0.203.1
+
+CLI:
+ * Always resolve .databrickscfg file ([#659](https://github.com/databricks/cli/pull/659)).
+
+Bundles:
+ * Add internal tag for bundle fields to be skipped from schema ([#636](https://github.com/databricks/cli/pull/636)).
+ * Log the bundle root configuration file if applicable ([#657](https://github.com/databricks/cli/pull/657)).
+ * Execute paths without the .tmpl extension as templates ([#654](https://github.com/databricks/cli/pull/654)).
+ * Enable environment overrides for job clusters ([#658](https://github.com/databricks/cli/pull/658)).
+ * Merge artifacts and resources block with overrides enabled ([#660](https://github.com/databricks/cli/pull/660)).
+ * Locked terraform binary version to <= 1.5.5 ([#666](https://github.com/databricks/cli/pull/666)).
+ * Return better error messages for invalid JSON schema types in templates ([#661](https://github.com/databricks/cli/pull/661)).
+ * Use custom prompter for bundle template inputs ([#663](https://github.com/databricks/cli/pull/663)).
+ * Add map and pair helper functions for bundle templates ([#665](https://github.com/databricks/cli/pull/665)).
+ * Correct name for force acquire deploy flag ([#656](https://github.com/databricks/cli/pull/656)).
+ * Confirm that override with a zero value doesn't work ([#669](https://github.com/databricks/cli/pull/669)).
+
+Internal:
+ * Consolidate functions in libs/git ([#652](https://github.com/databricks/cli/pull/652)).
+ * Upgraded Go version to 1.21 ([#664](https://github.com/databricks/cli/pull/664)).
+
 ## 0.203.0
 
 CLI:

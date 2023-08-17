@@ -1,0 +1,14 @@
+bundle:
+  name: foo ${workspace.profile}
+
+workspace:
+  profile: bar
+
+targets:
+  development:
+    default: true
+
+resources:
+  jobs:
+    my_job:
+      name: "${bundle.name} | ${workspace.profile} | ${bundle.environment} | ${bundle.target}"

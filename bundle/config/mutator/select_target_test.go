@@ -11,13 +11,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestSelectEnvironment(t *testing.T) {
+func TestSelectTarget(t *testing.T) {
 	bundle := &bundle.Bundle{
 		Config: config.Root{
 			Workspace: config.Workspace{
 				Host: "foo",
 			},
-			Environments: map[string]*config.Environment{
+			Targets: map[string]*config.Target{
 				"default": {
 					Workspace: &config.Workspace{
 						Host: "bar",
@@ -26,19 +26,19 @@ func TestSelectEnvironment(t *testing.T) {
 			},
 		},
 	}
-	err := mutator.SelectEnvironment("default").Apply(context.Background(), bundle)
+	err := mutator.SelectTarget("default").Apply(context.Background(), bundle)
 	require.NoError(t, err)
 	assert.Equal(t, "bar", bundle.Config.Workspace.Host)
 }
 
-func TestSelectEnvironmentNotFound(t *testing.T) {
+func TestSelectTargetNotFound(t *testing.T) {
 	bundle := &bundle.Bundle{
 		Config: config.Root{
-			Environments: map[string]*config.Environment{
+			Targets: map[string]*config.Target{
 				"default": {},
 			},
 		},
 	}
-	err := mutator.SelectEnvironment("doesnt-exist").Apply(context.Background(), bundle)
-	require.Error(t, err, "no environments defined")
+	err := mutator.SelectTarget("doesnt-exist").Apply(context.Background(), bundle)
+	require.Error(t, err, "no targets defined")
 }

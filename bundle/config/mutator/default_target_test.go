@@ -11,25 +11,25 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestDefaultEnvironment(t *testing.T) {
+func TestDefaultTarget(t *testing.T) {
 	bundle := &bundle.Bundle{}
-	err := mutator.DefineDefaultEnvironment().Apply(context.Background(), bundle)
+	err := mutator.DefineDefaultTarget().Apply(context.Background(), bundle)
 	require.NoError(t, err)
-	env, ok := bundle.Config.Environments["default"]
+	env, ok := bundle.Config.Targets["default"]
 	assert.True(t, ok)
-	assert.Equal(t, &config.Environment{}, env)
+	assert.Equal(t, &config.Target{}, env)
 }
 
-func TestDefaultEnvironmentAlreadySpecified(t *testing.T) {
+func TestDefaultTargetAlreadySpecified(t *testing.T) {
 	bundle := &bundle.Bundle{
 		Config: config.Root{
-			Environments: map[string]*config.Environment{
+			Targets: map[string]*config.Target{
 				"development": {},
 			},
 		},
 	}
-	err := mutator.DefineDefaultEnvironment().Apply(context.Background(), bundle)
+	err := mutator.DefineDefaultTarget().Apply(context.Background(), bundle)
 	require.NoError(t, err)
-	_, ok := bundle.Config.Environments["default"]
+	_, ok := bundle.Config.Targets["default"]
 	assert.False(t, ok)
 }

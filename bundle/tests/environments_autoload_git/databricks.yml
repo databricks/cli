@@ -1,7 +1,7 @@
 bundle:
   name: autoload git config test
 
-targets:
+environments:
   development:
     default: true
 
