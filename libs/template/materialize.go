@@ -16,8 +16,8 @@ const schemaFileName = "databricks_template_schema.json"
 //	ctx: 			context containing a cmdio object. This is used to prompt the user
 //	configFilePath: file path containing user defined config values
 //	templateRoot: 	root of the template definition
-//	projectDir: 	root of directory where to initialize the project
-func Materialize(ctx context.Context, configFilePath, templateRoot, projectDir string) error {
+//	outputDir: 	root of directory where to initialize the template
+func Materialize(ctx context.Context, configFilePath, templateRoot, outputDir string) error {
 	templatePath := filepath.Join(templateRoot, templateDirName)
 	libraryPath := filepath.Join(templateRoot, libraryDirName)
 	schemaPath := filepath.Join(templateRoot, schemaFileName)
@@ -48,7 +48,7 @@ func Materialize(ctx context.Context, configFilePath, templateRoot, projectDir s
 	}
 
 	// Walk and render the template, since input configuration is complete
-	r, err := newRenderer(ctx, config.values, templatePath, libraryPath, projectDir)
+	r, err := newRenderer(ctx, config.values, templatePath, libraryPath, outputDir)
 	if err != nil {
 		return err
 	}
