@@ -182,7 +182,7 @@ func (m *processEnvironmentMode) Apply(ctx context.Context, b *bundle.Bundle) er
 	case "":
 		// No action
 	default:
-		return fmt.Errorf("unsupported value specified for 'mode': %s", b.Config.Bundle.Mode)
+		return fmt.Errorf("unsupported value '%s' specified for 'mode': must be either 'development' or 'production'", b.Config.Bundle.Mode)
 	}
 
 	return nil
