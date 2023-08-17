@@ -12,6 +12,9 @@ type GlobSet struct {
 }
 
 func NewGlobSet(root string, includes []string) *GlobSet {
+	for k := range includes {
+		includes[k] = filepath.Join(root, filepath.FromSlash(includes[k]))
+	}
 	return &GlobSet{root, includes}
 }
 
@@ -25,9 +28,6 @@ func (s *GlobSet) All() ([]File, error) {
 		}
 
 		for _, match := range matches {
-			if !filepath.IsAbs(match) {
-				match = filepath.Join(s.root, match)
-			}
 			matchRel, err := filepath.Rel(s.root, match)
 			if err != nil {
 				return files, err

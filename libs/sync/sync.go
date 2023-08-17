@@ -3,7 +3,6 @@ package sync
 import (
 	"context"
 	"fmt"
-	"path/filepath"
 	"slices"
 	"time"
 
@@ -14,10 +13,6 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 )
-
-// This directory is used to store and automaticaly sync internal bundle files, such as, f.e
-// notebook trampoline files for Python wheel and etc.
-const internalFolder = ".internal"
 
 type SyncOptions struct {
 	LocalPath  string
@@ -64,14 +59,7 @@ func New(ctx context.Context, opts SyncOptions) (*Sync, error) {
 		return nil, err
 	}
 
-	includes := []string{}
-	// We use SnapshotBasePath (which is equals to b.CacheDir) as a base path for internal folder to sync
-	includes = append(includes, filepath.Join(opts.SnapshotBasePath, internalFolder, "*.*"))
-	if opts.Include != nil {
-		includes = append(includes, opts.Include...)
-	}
-
-	includeFileSet := fileset.NewGlobSet(opts.LocalPath, includes)
+	includeFileSet := fileset.NewGlobSet(opts.LocalPath, opts.Include)
 	excludeFileSet := fileset.NewGlobSet(opts.LocalPath, opts.Exclude)
 
 	// Verify that the remote path we're about to synchronize to is valid and allowed.
@@ -170,6 +158,17 @@ func (s *Sync) RunOnce(ctx context.Context) error {
 	if err != nil {
 		log.Errorf(ctx, "cannot list include files: %s", err)
 		return err
+	}
+
+	// Avoiding duplicates with Git tracked and include files
+	for _, i := range include {
+		if slices.ContainsFunc(all, func(a fileset.File) bool {
+			return a.Absolute == i.Absolute
+		}) {
+			continue
+		}
+
+		all = append(all, i)
 	}
 
 	all = append(all, include...)

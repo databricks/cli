@@ -3,6 +3,7 @@ package fileset
 import (
 	"io/fs"
 	"os"
+	"path/filepath"
 	"slices"
 	"testing"
 
@@ -10,8 +11,9 @@ import (
 )
 
 func TestGlobFileset(t *testing.T) {
-	root, err := os.Getwd()
+	cwd, err := os.Getwd()
 	require.NoError(t, err)
+	root := filepath.Join(cwd, "..", "filer")
 
 	entries, err := os.ReadDir(root)
 	require.NoError(t, err)

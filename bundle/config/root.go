@@ -75,7 +75,7 @@ type Root struct {
 	// single default-initialized environment called "default".
 	Environments map[string]*Environment `json:"environments,omitempty"`
 
-	// Sync section specifies options for files syncronisation
+	// Sync section specifies options for files synchronization
 	Sync Sync `json:"sync"`
 }
 
