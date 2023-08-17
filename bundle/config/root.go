@@ -75,12 +75,12 @@ type Root struct {
 
 	// single default-initialized target called "default".
 	Targets map[string]*Target `json:"targets,omitempty"`
-  
+
 	// DEPRECATED. Left for backward compatibility with Targets
 	Environments map[string]*Target `json:"environments,omitempty"`
-  
-  // Sync section specifies options for files synchronization
-	Sync Sync `json:"sync"
+
+	// Sync section specifies options for files synchronization
+	Sync Sync `json:"sync"`
 }
 
 func Load(path string) (*Root, error) {
