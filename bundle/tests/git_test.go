@@ -17,7 +17,7 @@ func TestGitAutoLoad(t *testing.T) {
 }
 
 func TestGitManuallySetBranch(t *testing.T) {
-	b := loadEnvironment(t, "./autoload_git", "production")
+	b := loadTarget(t, "./autoload_git", "production")
 	assert.False(t, b.Config.Bundle.Git.Inferred)
 	assert.Equal(t, "main", b.Config.Bundle.Git.Branch)
 	assert.Contains(t, b.Config.Bundle.Git.OriginURL, "/cli")

@@ -6,7 +6,7 @@ resources:
         - notebook:
             path: ./dlt/nyc_taxi_loader
 
-targets:
+environments:
   development:
     mode: development
     resources:

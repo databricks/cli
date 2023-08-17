@@ -6,8 +6,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestOverrideJobClusterDev(t *testing.T) {
-	b := loadTarget(t, "./override_job_cluster", "development")
+func TestOverrideJobClusterDevWithEnvironment(t *testing.T) {
+	b := loadTarget(t, "./environments_override_job_cluster", "development")
 	assert.Equal(t, "job", b.Config.Resources.Jobs["foo"].Name)
 	assert.Len(t, b.Config.Resources.Jobs["foo"].JobClusters, 1)
 
@@ -17,8 +17,8 @@ func TestOverrideJobClusterDev(t *testing.T) {
 	assert.Equal(t, 1, c.NewCluster.NumWorkers)
 }
 
-func TestOverrideJobClusterStaging(t *testing.T) {
-	b := loadTarget(t, "./override_job_cluster", "staging")
+func TestOverrideJobClusterStagingWithEnvironment(t *testing.T) {
+	b := loadTarget(t, "./environments_override_job_cluster", "staging")
 	assert.Equal(t, "job", b.Config.Resources.Jobs["foo"].Name)
 	assert.Len(t, b.Config.Resources.Jobs["foo"].JobClusters, 1)
 

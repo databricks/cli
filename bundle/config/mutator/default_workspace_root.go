@@ -27,14 +27,14 @@ func (m *defineDefaultWorkspaceRoot) Apply(ctx context.Context, b *bundle.Bundle
 		return fmt.Errorf("unable to define default workspace root: bundle name not defined")
 	}
 
-	if b.Config.Bundle.Environment == "" {
-		return fmt.Errorf("unable to define default workspace root: bundle environment not selected")
+	if b.Config.Bundle.Target == "" {
+		return fmt.Errorf("unable to define default workspace root: bundle target not selected")
 	}
 
 	b.Config.Workspace.RootPath = fmt.Sprintf(
 		"~/.bundle/%s/%s",
 		b.Config.Bundle.Name,
-		b.Config.Bundle.Environment,
+		b.Config.Bundle.Target,
 	)
 	return nil
 }

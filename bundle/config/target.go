@@ -2,14 +2,14 @@ package config
 
 type Mode string
 
-// Environment defines overrides for a single environment.
+// Target defines overrides for a single target.
 // This structure is recursively merged into the root configuration.
-type Environment struct {
-	// Default marks that this environment must be used if one isn't specified
-	// by the user (through environment variable or command line argument).
+type Target struct {
+	// Default marks that this target must be used if one isn't specified
+	// by the user (through target variable or command line argument).
 	Default bool `json:"default,omitempty"`
 
-	// Determines the mode of the environment.
+	// Determines the mode of the target.
 	// For example, 'mode: development' can be used for deployments for
 	// development purposes.
 	Mode Mode `json:"mode,omitempty"`
@@ -27,7 +27,7 @@ type Environment struct {
 
 	// Override default values for defined variables
 	// Does not permit defining new variables or redefining existing ones
-	// in the scope of an environment
+	// in the scope of an target
 	Variables map[string]string `json:"variables,omitempty"`
 
 	Git Git `json:"git,omitempty"`
