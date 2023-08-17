@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/databricks/cli/libs/core"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/fileset"
 	"github.com/databricks/cli/libs/git"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/set"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 )
@@ -178,7 +178,7 @@ func (s *Sync) RunOnce(ctx context.Context) error {
 func getFileList(ctx context.Context, s *Sync) ([]fileset.File, error) {
 	// tradeoff: doing portable monitoring only due to macOS max descriptor manual ulimit setting requirement
 	// https://github.com/gorakhargosh/watchdog/blob/master/src/watchdog/observers/kqueue.py#L394-L418
-	all := core.NewSetF(func(f fileset.File) string {
+	all := set.NewSetF(func(f fileset.File) string {
 		return f.Absolute
 	})
 	gitFiles, err := s.fileSet.All()
