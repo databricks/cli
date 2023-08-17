@@ -36,7 +36,7 @@
         }
       }
     },
-    "environments": {
+    "targets": {
       "description": "",
       "additionalproperties": {
         "description": "",
@@ -281,7 +281,7 @@
                                     "description": "The first `first_on_demand` nodes of the cluster will be placed on on-demand instances.\nIf this value is greater than 0, the cluster driver node in particular will be placed on an\non-demand instance. If this value is greater than or equal to the current cluster size, all\nnodes will be placed on on-demand instances. If this value is less than the current cluster\nsize, `first_on_demand` nodes will be placed on on-demand instances and the remainder will\nbe placed on `availability` instances. Note that this value does not affect\ncluster size and cannot currently be mutated over the lifetime of a cluster."
                                   },
                                   "instance_profile_arn": {
-                                    "description": "Nodes for this cluster will only be placed on AWS instances with this instance profile. If\nommitted, nodes will be placed on instances without an IAM instance profile. The instance\nprofile must have previously been added to the Databricks environment by an account\nadministrator.\n\nThis feature may only be available to certain customer plans.\n\nIf this field is ommitted, we will pull in the default from the conf if it exists."
+                                    "description": "Nodes for this cluster will only be placed on AWS instances with this instance profile. If\nommitted, nodes will be placed on instances without an IAM instance profile. The instance\nprofile must have previously been added to the Databricks target by an account\nadministrator.\n\nThis feature may only be available to certain customer plans.\n\nIf this field is ommitted, we will pull in the default from the conf if it exists."
                                   },
                                   "spot_bid_price_percent": {
                                     "description": "The bid price for AWS spot instances, as a percentage of the corresponding instance type's\non-demand price.\nFor example, if this field is set to 50, and the cluster needs a new `r3.xlarge` spot\ninstance, then the bid price is half of the price of\non-demand `r3.xlarge` instances. Similarly, if this field is set to 200, the bid price is twice\nthe price of on-demand `r3.xlarge` instances. If not specified, the default value is 100.\nWhen spot instances are requested for this cluster, only spot instances whose bid price\npercentage matches this field will be considered.\nNote that, for safety, we enforce this field to be no more than 10000.\n\nThe default value and documentation here should be kept consistent with\nCommonConf.defaultSpotBidPricePercent and CommonConf.maxSpotBidPricePercent."
@@ -411,7 +411,7 @@
                                     "description": "boot disk size in GB"
                                   },
                                   "google_service_account": {
-                                    "description": "If provided, the cluster will impersonate the google service account when accessing\ngcloud services (like GCS). The google service account\nmust have previously been added to the Databricks environment by an account\nadministrator."
+                                    "description": "If provided, the cluster will impersonate the google service account when accessing\ngcloud services (like GCS). The google service account\nmust have previously been added to the Databricks target by an account\nadministrator."
                                   },
                                   "local_ssd_count": {
                                     "description": "If provided, each node (workers and driver) in the cluster will have this number of local SSDs attached. Each local SSD is 375GB in size. Refer to [GCP documentation](https://cloud.google.com/compute/docs/disks/local-ssd#choose_number_local_ssds) for the supported number of local SSDs for each instance type."
@@ -808,7 +808,7 @@
                                     "description": "The first `first_on_demand` nodes of the cluster will be placed on on-demand instances.\nIf this value is greater than 0, the cluster driver node in particular will be placed on an\non-demand instance. If this value is greater than or equal to the current cluster size, all\nnodes will be placed on on-demand instances. If this value is less than the current cluster\nsize, `first_on_demand` nodes will be placed on on-demand instances and the remainder will\nbe placed on `availability` instances. Note that this value does not affect\ncluster size and cannot currently be mutated over the lifetime of a cluster."
                                   },
                                   "instance_profile_arn": {
-                                    "description": "Nodes for this cluster will only be placed on AWS instances with this instance profile. If\nommitted, nodes will be placed on instances without an IAM instance profile. The instance\nprofile must have previously been added to the Databricks environment by an account\nadministrator.\n\nThis feature may only be available to certain customer plans.\n\nIf this field is ommitted, we will pull in the default from the conf if it exists."
+                                    "description": "Nodes for this cluster will only be placed on AWS instances with this instance profile. If\nommitted, nodes will be placed on instances without an IAM instance profile. The instance\nprofile must have previously been added to the Databricks target by an account\nadministrator.\n\nThis feature may only be available to certain customer plans.\n\nIf this field is ommitted, we will pull in the default from the conf if it exists."
                                   },
                                   "spot_bid_price_percent": {
                                     "description": "The bid price for AWS spot instances, as a percentage of the corresponding instance type's\non-demand price.\nFor example, if this field is set to 50, and the cluster needs a new `r3.xlarge` spot\ninstance, then the bid price is half of the price of\non-demand `r3.xlarge` instances. Similarly, if this field is set to 200, the bid price is twice\nthe price of on-demand `r3.xlarge` instances. If not specified, the default value is 100.\nWhen spot instances are requested for this cluster, only spot instances whose bid price\npercentage matches this field will be considered.\nNote that, for safety, we enforce this field to be no more than 10000.\n\nThe default value and documentation here should be kept consistent with\nCommonConf.defaultSpotBidPricePercent and CommonConf.maxSpotBidPricePercent."
@@ -938,7 +938,7 @@
                                     "description": "boot disk size in GB"
                                   },
                                   "google_service_account": {
-                                    "description": "If provided, the cluster will impersonate the google service account when accessing\ngcloud services (like GCS). The google service account\nmust have previously been added to the Databricks environment by an account\nadministrator."
+                                    "description": "If provided, the cluster will impersonate the google service account when accessing\ngcloud services (like GCS). The google service account\nmust have previously been added to the Databricks target by an account\nadministrator."
                                   },
                                   "local_ssd_count": {
                                     "description": "If provided, each node (workers and driver) in the cluster will have this number of local SSDs attached. Each local SSD is 375GB in size. Refer to [GCP documentation](https://cloud.google.com/compute/docs/disks/local-ssd#choose_number_local_ssds) for the supported number of local SSDs for each instance type."
@@ -1496,7 +1496,7 @@
                                 "description": "The first `first_on_demand` nodes of the cluster will be placed on on-demand instances.\nIf this value is greater than 0, the cluster driver node in particular will be placed on an\non-demand instance. If this value is greater than or equal to the current cluster size, all\nnodes will be placed on on-demand instances. If this value is less than the current cluster\nsize, `first_on_demand` nodes will be placed on on-demand instances and the remainder will\nbe placed on `availability` instances. Note that this value does not affect\ncluster size and cannot currently be mutated over the lifetime of a cluster."
                               },
                               "instance_profile_arn": {
-                                "description": "Nodes for this cluster will only be placed on AWS instances with this instance profile. If\nommitted, nodes will be placed on instances without an IAM instance profile. The instance\nprofile must have previously been added to the Databricks environment by an account\nadministrator.\n\nThis feature may only be available to certain customer plans.\n\nIf this field is ommitted, we will pull in the default from the conf if it exists."
+                                "description": "Nodes for this cluster will only be placed on AWS instances with this instance profile. If\nommitted, nodes will be placed on instances without an IAM instance profile. The instance\nprofile must have previously been added to the Databricks target by an account\nadministrator.\n\nThis feature may only be available to certain customer plans.\n\nIf this field is ommitted, we will pull in the default from the conf if it exists."
                               },
                               "spot_bid_price_percent": {
                                 "description": "The bid price for AWS spot instances, as a percentage of the corresponding instance type's\non-demand price.\nFor example, if this field is set to 50, and the cluster needs a new `r3.xlarge` spot\ninstance, then the bid price is half of the price of\non-demand `r3.xlarge` instances. Similarly, if this field is set to 200, the bid price is twice\nthe price of on-demand `r3.xlarge` instances. If not specified, the default value is 100.\nWhen spot instances are requested for this cluster, only spot instances whose bid price\npercentage matches this field will be considered.\nNote that, for safety, we enforce this field to be no more than 10000.\n\nThe default value and documentation here should be kept consistent with\nCommonConf.defaultSpotBidPricePercent and CommonConf.maxSpotBidPricePercent."
@@ -1592,7 +1592,7 @@
                                 "description": "boot disk size in GB"
                               },
                               "google_service_account": {
-                                "description": "If provided, the cluster will impersonate the google service account when accessing\ngcloud services (like GCS). The google service account\nmust have previously been added to the Databricks environment by an account\nadministrator."
+                                "description": "If provided, the cluster will impersonate the google service account when accessing\ngcloud services (like GCS). The google service account\nmust have previously been added to the Databricks target by an account\nadministrator."
                               },
                               "local_ssd_count": {
                                 "description": "If provided, each node (workers and driver) in the cluster will have this number of local SSDs attached. Each local SSD is 375GB in size. Refer to [GCP documentation](https://cloud.google.com/compute/docs/disks/local-ssd#choose_number_local_ssds) for the supported number of local SSDs for each instance type."
@@ -1827,7 +1827,7 @@
                 "description": "Connection profile to use. By default profiles are specified in ~/.databrickscfg."
               },
               "root_path": {
-                "description": "The base location for synchronizing files, artifacts and state. Defaults to `/Users/jane@doe.com/.bundle/${bundle.name}/${bundle.environment}`"
+                "description": "The base location for synchronizing files, artifacts and state. Defaults to `/Users/jane@doe.com/.bundle/${bundle.name}/${bundle.target}`"
               },
               "state_path": {
                 "description": "The remote path to synchronize bundle state to. This defaults to `${workspace.root}/state`"
@@ -2045,7 +2045,7 @@
                               "description": "The first `first_on_demand` nodes of the cluster will be placed on on-demand instances.\nIf this value is greater than 0, the cluster driver node in particular will be placed on an\non-demand instance. If this value is greater than or equal to the current cluster size, all\nnodes will be placed on on-demand instances. If this value is less than the current cluster\nsize, `first_on_demand` nodes will be placed on on-demand instances and the remainder will\nbe placed on `availability` instances. Note that this value does not affect\ncluster size and cannot currently be mutated over the lifetime of a cluster."
                             },
                             "instance_profile_arn": {
-                              "description": "Nodes for this cluster will only be placed on AWS instances with this instance profile. If\nommitted, nodes will be placed on instances without an IAM instance profile. The instance\nprofile must have previously been added to the Databricks environment by an account\nadministrator.\n\nThis feature may only be available to certain customer plans.\n\nIf this field is ommitted, we will pull in the default from the conf if it exists."
+                              "description": "Nodes for this cluster will only be placed on AWS instances with this instance profile. If\nommitted, nodes will be placed on instances without an IAM instance profile. The instance\nprofile must have previously been added to the Databricks target by an account\nadministrator.\n\nThis feature may only be available to certain customer plans.\n\nIf this field is ommitted, we will pull in the default from the conf if it exists."
                             },
                             "spot_bid_price_percent": {
                               "description": "The bid price for AWS spot instances, as a percentage of the corresponding instance type's\non-demand price.\nFor example, if this field is set to 50, and the cluster needs a new `r3.xlarge` spot\ninstance, then the bid price is half of the price of\non-demand `r3.xlarge` instances. Similarly, if this field is set to 200, the bid price is twice\nthe price of on-demand `r3.xlarge` instances. If not specified, the default value is 100.\nWhen spot instances are requested for this cluster, only spot instances whose bid price\npercentage matches this field will be considered.\nNote that, for safety, we enforce this field to be no more than 10000.\n\nThe default value and documentation here should be kept consistent with\nCommonConf.defaultSpotBidPricePercent and CommonConf.maxSpotBidPricePercent."
@@ -2175,7 +2175,7 @@
                               "description": "boot disk size in GB"
                             },
                             "google_service_account": {
-                              "description": "If provided, the cluster will impersonate the google service account when accessing\ngcloud services (like GCS). The google service account\nmust have previously been added to the Databricks environment by an account\nadministrator."
+                              "description": "If provided, the cluster will impersonate the google service account when accessing\ngcloud services (like GCS). The google service account\nmust have previously been added to the Databricks target by an account\nadministrator."
                             },
                             "local_ssd_count": {
                               "description": "If provided, each node (workers and driver) in the cluster will have this number of local SSDs attached. Each local SSD is 375GB in size. Refer to [GCP documentation](https://cloud.google.com/compute/docs/disks/local-ssd#choose_number_local_ssds) for the supported number of local SSDs for each instance type."
@@ -2572,7 +2572,7 @@
                               "description": "The first `first_on_demand` nodes of the cluster will be placed on on-demand instances.\nIf this value is greater than 0, the cluster driver node in particular will be placed on an\non-demand instance. If this value is greater than or equal to the current cluster size, all\nnodes will be placed on on-demand instances. If this value is less than the current cluster\nsize, `first_on_demand` nodes will be placed on on-demand instances and the remainder will\nbe placed on `availability` instances. Note that this value does not affect\ncluster size and cannot currently be mutated over the lifetime of a cluster."
                             },
                             "instance_profile_arn": {
-                              "description": "Nodes for this cluster will only be placed on AWS instances with this instance profile. If\nommitted, nodes will be placed on instances without an IAM instance profile. The instance\nprofile must have previously been added to the Databricks environment by an account\nadministrator.\n\nThis feature may only be available to certain customer plans.\n\nIf this field is ommitted, we will pull in the default from the conf if it exists."
+                              "description": "Nodes for this cluster will only be placed on AWS instances with this instance profile. If\nommitted, nodes will be placed on instances without an IAM instance profile. The instance\nprofile must have previously been added to the Databricks target by an account\nadministrator.\n\nThis feature may only be available to certain customer plans.\n\nIf this field is ommitted, we will pull in the default from the conf if it exists."
                             },
                             "spot_bid_price_percent": {
                               "description": "The bid price for AWS spot instances, as a percentage of the corresponding instance type's\non-demand price.\nFor example, if this field is set to 50, and the cluster needs a new `r3.xlarge` spot\ninstance, then the bid price is half of the price of\non-demand `r3.xlarge` instances. Similarly, if this field is set to 200, the bid price is twice\nthe price of on-demand `r3.xlarge` instances. If not specified, the default value is 100.\nWhen spot instances are requested for this cluster, only spot instances whose bid price\npercentage matches this field will be considered.\nNote that, for safety, we enforce this field to be no more than 10000.\n\nThe default value and documentation here should be kept consistent with\nCommonConf.defaultSpotBidPricePercent and CommonConf.maxSpotBidPricePercent."
@@ -2702,7 +2702,7 @@
                               "description": "boot disk size in GB"
                             },
                             "google_service_account": {
-                              "description": "If provided, the cluster will impersonate the google service account when accessing\ngcloud services (like GCS). The google service account\nmust have previously been added to the Databricks environment by an account\nadministrator."
+                              "description": "If provided, the cluster will impersonate the google service account when accessing\ngcloud services (like GCS). The google service account\nmust have previously been added to the Databricks target by an account\nadministrator."
                             },
                             "local_ssd_count": {
                               "description": "If provided, each node (workers and driver) in the cluster will have this number of local SSDs attached. Each local SSD is 375GB in size. Refer to [GCP documentation](https://cloud.google.com/compute/docs/disks/local-ssd#choose_number_local_ssds) for the supported number of local SSDs for each instance type."
@@ -3260,7 +3260,7 @@
                           "description": "The first `first_on_demand` nodes of the cluster will be placed on on-demand instances.\nIf this value is greater than 0, the cluster driver node in particular will be placed on an\non-demand instance. If this value is greater than or equal to the current cluster size, all\nnodes will be placed on on-demand instances. If this value is less than the current cluster\nsize, `first_on_demand` nodes will be placed on on-demand instances and the remainder will\nbe placed on `availability` instances. Note that this value does not affect\ncluster size and cannot currently be mutated over the lifetime of a cluster."
                         },
                         "instance_profile_arn": {
-                          "description": "Nodes for this cluster will only be placed on AWS instances with this instance profile. If\nommitted, nodes will be placed on instances without an IAM instance profile. The instance\nprofile must have previously been added to the Databricks environment by an account\nadministrator.\n\nThis feature may only be available to certain customer plans.\n\nIf this field is ommitted, we will pull in the default from the conf if it exists."
+                          "description": "Nodes for this cluster will only be placed on AWS instances with this instance profile. If\nommitted, nodes will be placed on instances without an IAM instance profile. The instance\nprofile must have previously been added to the Databricks target by an account\nadministrator.\n\nThis feature may only be available to certain customer plans.\n\nIf this field is ommitted, we will pull in the default from the conf if it exists."
                         },
                         "spot_bid_price_percent": {
                           "description": "The bid price for AWS spot instances, as a percentage of the corresponding instance type's\non-demand price.\nFor example, if this field is set to 50, and the cluster needs a new `r3.xlarge` spot\ninstance, then the bid price is half of the price of\non-demand `r3.xlarge` instances. Similarly, if this field is set to 200, the bid price is twice\nthe price of on-demand `r3.xlarge` instances. If not specified, the default value is 100.\nWhen spot instances are requested for this cluster, only spot instances whose bid price\npercentage matches this field will be considered.\nNote that, for safety, we enforce this field to be no more than 10000.\n\nThe default value and documentation here should be kept consistent with\nCommonConf.defaultSpotBidPricePercent and CommonConf.maxSpotBidPricePercent."
@@ -3356,7 +3356,7 @@
                           "description": "boot disk size in GB"
                         },
                         "google_service_account": {
-                          "description": "If provided, the cluster will impersonate the google service account when accessing\ngcloud services (like GCS). The google service account\nmust have previously been added to the Databricks environment by an account\nadministrator."
+                          "description": "If provided, the cluster will impersonate the google service account when accessing\ngcloud services (like GCS). The google service account\nmust have previously been added to the Databricks target by an account\nadministrator."
                         },
                         "local_ssd_count": {
                           "description": "If provided, each node (workers and driver) in the cluster will have this number of local SSDs attached. Each local SSD is 375GB in size. Refer to [GCP documentation](https://cloud.google.com/compute/docs/disks/local-ssd#choose_number_local_ssds) for the supported number of local SSDs for each instance type."
@@ -3591,7 +3591,7 @@
           "description": "Connection profile to use. By default profiles are specified in ~/.databrickscfg."
         },
         "root_path": {
-          "description": "The base location for synchronizing files, artifacts and state. Defaults to `/Users/jane@doe.com/.bundle/${bundle.name}/${bundle.environment}`"
+          "description": "The base location for synchronizing files, artifacts and state. Defaults to `/Users/jane@doe.com/.bundle/${bundle.name}/${bundle.target}`"
         },
         "state_path": {
           "description": "The remote path to synchronize bundle state to. This defaults to `${workspace.root}/state`"
