@@ -137,7 +137,7 @@ func targetCompletion(cmd *cobra.Command, args []string, toComplete string) ([]s
 
 func initTargetFlag(cmd *cobra.Command) {
 	// To operate in the context of a bundle, all commands must take an "target" parameter.
-	cmd.PersistentFlags().String("target", "", "bundle target to use (if applicable)")
+	cmd.PersistentFlags().String("target", "t", "bundle target to use (if applicable)")
 	cmd.RegisterFlagCompletionFunc("target", targetCompletion)
 }
 
