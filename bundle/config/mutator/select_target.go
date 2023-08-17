@@ -28,13 +28,13 @@ func (m *selectTarget) Apply(_ context.Context, b *bundle.Bundle) error {
 	}
 
 	// Get specified target
-	env, ok := b.Config.Targets[m.name]
+	target, ok := b.Config.Targets[m.name]
 	if !ok {
 		return fmt.Errorf("%s: no such target", m.name)
 	}
 
 	// Merge specified target into root configuration structure.
-	err := b.Config.MergeTargetOverrides(env)
+	err := b.Config.MergeTargetOverrides(target)
 	if err != nil {
 		return err
 	}

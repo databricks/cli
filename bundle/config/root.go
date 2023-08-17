@@ -152,7 +152,7 @@ func (r *Root) Load(path string) error {
 	}
 
 	if r.Environments != nil && r.Targets != nil {
-		return fmt.Errorf("both 'environments' and 'targets' are specified, only 'targets' should be used %s", path)
+		return fmt.Errorf("both 'environments' and 'targets' are specified, only 'targets' should be used: %s", path)
 	}
 
 	if r.Environments != nil {

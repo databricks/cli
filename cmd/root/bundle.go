@@ -11,6 +11,7 @@ import (
 )
 
 const envName = "DATABRICKS_BUNDLE_ENV"
+const targetName = "DATABRICKS_BUNDLE_TARGET"
 
 // getTarget returns the name of the target to operate in.
 func getTarget(cmd *cobra.Command) (value string) {
@@ -32,7 +33,14 @@ func getTarget(cmd *cobra.Command) (value string) {
 	}
 
 	// If it's not set, use the environment variable.
-	return os.Getenv(envName)
+	target := os.Getenv(targetName)
+	// If target env is not set with a new variable, try to check for old variable name
+	// TODO: remove when environments section is not supported anymore
+	if target == "" {
+		target = os.Getenv(envName)
+	}
+
+	return target
 }
 
 func getProfile(cmd *cobra.Command) (value string) {
