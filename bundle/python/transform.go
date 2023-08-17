@@ -53,35 +53,44 @@ func (m *transform) Name() string {
 func (m *transform) Apply(ctx context.Context, b *bundle.Bundle) error {
 	wheelTasks := libraries.FindAllWheelTasks(b)
 	for _, wheelTask := range wheelTasks {
-		taskDefinition := wheelTask.PythonWheelTask
-		libraries := wheelTask.Libraries
-
-		wheelTask.PythonWheelTask = nil
-		wheelTask.Libraries = nil
-
-		filename, err := generateNotebookWrapper(b, taskDefinition, libraries)
+		err := generateNotebookTrampoline(b, wheelTask)
 		if err != nil {
 			return err
-		}
-
-		internalDir, err := getInternalDir(b)
-		if err != nil {
-			return err
-		}
-
-		internalDirRel, err := filepath.Rel(b.Config.Path, internalDir)
-		if err != nil {
-			return err
-		}
-
-		parts := []string{b.Config.Workspace.FilesPath}
-		parts = append(parts, strings.Split(internalDirRel, string(os.PathSeparator))...)
-		parts = append(parts, filename)
-
-		wheelTask.NotebookTask = &jobs.NotebookTask{
-			NotebookPath: path.Join(parts...),
 		}
 	}
+	return nil
+}
+
+func generateNotebookTrampoline(b *bundle.Bundle, wheelTask *jobs.Task) error {
+	taskDefinition := wheelTask.PythonWheelTask
+	libraries := wheelTask.Libraries
+
+	wheelTask.PythonWheelTask = nil
+	wheelTask.Libraries = nil
+
+	filename, err := generateNotebookWrapper(b, taskDefinition, libraries)
+	if err != nil {
+		return err
+	}
+
+	internalDir, err := getInternalDir(b)
+	if err != nil {
+		return err
+	}
+
+	internalDirRel, err := filepath.Rel(b.Config.Path, internalDir)
+	if err != nil {
+		return err
+	}
+
+	parts := []string{b.Config.Workspace.FilesPath}
+	parts = append(parts, strings.Split(internalDirRel, string(os.PathSeparator))...)
+	parts = append(parts, filename)
+
+	wheelTask.NotebookTask = &jobs.NotebookTask{
+		NotebookPath: path.Join(parts...),
+	}
+
 	return nil
 }
 
