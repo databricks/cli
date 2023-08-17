@@ -186,7 +186,7 @@ func (b *Bundle) GetSyncIncludePatterns() ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	return append(b.Config.Sync.Include, filepath.Join(internalDirRel, "*.*")), nil
+	return append(b.Config.Sync.Include, filepath.ToSlash(filepath.Join(internalDirRel, "*.*"))), nil
 }
 
 func (b *Bundle) GitRepository() (*git.Repository, error) {

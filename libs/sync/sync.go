@@ -3,9 +3,9 @@ package sync
 import (
 	"context"
 	"fmt"
-	"slices"
 	"time"
 
+	"github.com/databricks/cli/libs/core"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/fileset"
 	"github.com/databricks/cli/libs/git"
@@ -144,50 +144,9 @@ func (s *Sync) notifyComplete(ctx context.Context, d diff) {
 }
 
 func (s *Sync) RunOnce(ctx context.Context) error {
-	// tradeoff: doing portable monitoring only due to macOS max descriptor manual ulimit setting requirement
-	// https://github.com/gorakhargosh/watchdog/blob/master/src/watchdog/observers/kqueue.py#L394-L418
-	all := make([]fileset.File, 0)
-	gitFiles, err := s.fileSet.All()
+	files, err := getFileList(ctx, s)
 	if err != nil {
-		log.Errorf(ctx, "cannot list files: %s", err)
 		return err
-	}
-	all = append(all, gitFiles...)
-
-	include, err := s.includeFileSet.All()
-	if err != nil {
-		log.Errorf(ctx, "cannot list include files: %s", err)
-		return err
-	}
-
-	// Avoiding duplicates with Git tracked and include files
-	for _, i := range include {
-		if slices.ContainsFunc(all, func(a fileset.File) bool {
-			return a.Absolute == i.Absolute
-		}) {
-			continue
-		}
-
-		all = append(all, i)
-	}
-
-	all = append(all, include...)
-
-	exclude, err := s.excludeFileSet.All()
-	if err != nil {
-		log.Errorf(ctx, "cannot list exclude files: %s", err)
-		return err
-	}
-
-	files := make([]fileset.File, 0)
-	for _, f := range all {
-		if slices.ContainsFunc(exclude, func(a fileset.File) bool {
-			return a.Absolute == f.Absolute
-		}) {
-			continue
-		}
-
-		files = append(files, f)
 	}
 
 	change, err := s.snapshot.diff(ctx, files)
@@ -214,6 +173,40 @@ func (s *Sync) RunOnce(ctx context.Context) error {
 
 	s.notifyComplete(ctx, change)
 	return nil
+}
+
+func getFileList(ctx context.Context, s *Sync) ([]fileset.File, error) {
+	// tradeoff: doing portable monitoring only due to macOS max descriptor manual ulimit setting requirement
+	// https://github.com/gorakhargosh/watchdog/blob/master/src/watchdog/observers/kqueue.py#L394-L418
+	all := core.NewSetF(func(f fileset.File) string {
+		return f.Absolute
+	})
+	gitFiles, err := s.fileSet.All()
+	if err != nil {
+		log.Errorf(ctx, "cannot list files: %s", err)
+		return nil, err
+	}
+	all.Add(gitFiles...)
+
+	include, err := s.includeFileSet.All()
+	if err != nil {
+		log.Errorf(ctx, "cannot list include files: %s", err)
+		return nil, err
+	}
+
+	all.Add(include...)
+
+	exclude, err := s.excludeFileSet.All()
+	if err != nil {
+		log.Errorf(ctx, "cannot list exclude files: %s", err)
+		return nil, err
+	}
+
+	for _, f := range exclude {
+		all.Remove(f)
+	}
+
+	return all.Iter(), nil
 }
 
 func (s *Sync) DestroySnapshot(ctx context.Context) error {
