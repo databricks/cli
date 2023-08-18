@@ -62,36 +62,54 @@ func TestGetFileSet(t *testing.T) {
 	err = fileSet.EnsureValidGitIgnoreExists()
 	require.NoError(t, err)
 
+	inc, err := fileset.NewGlobSet(dir, []string{})
+	require.NoError(t, err)
+
+	excl, err := fileset.NewGlobSet(dir, []string{})
+	require.NoError(t, err)
+
 	s := &Sync{
 		SyncOptions: &SyncOptions{},
 
 		fileSet:        fileSet,
-		includeFileSet: fileset.NewGlobSet(dir, []string{}),
-		excludeFileSet: fileset.NewGlobSet(dir, []string{}),
+		includeFileSet: inc,
+		excludeFileSet: excl,
 	}
 
 	fileList, err := getFileList(ctx, s)
 	require.NoError(t, err)
 	require.Equal(t, len(fileList), 7)
 
+	inc, err = fileset.NewGlobSet(dir, []string{})
+	require.NoError(t, err)
+
+	excl, err = fileset.NewGlobSet(dir, []string{"*.go"})
+	require.NoError(t, err)
+
 	s = &Sync{
 		SyncOptions: &SyncOptions{},
 
 		fileSet:        fileSet,
-		includeFileSet: fileset.NewGlobSet(dir, []string{}),
-		excludeFileSet: fileset.NewGlobSet(dir, []string{"*.go"}),
+		includeFileSet: inc,
+		excludeFileSet: excl,
 	}
 
 	fileList, err = getFileList(ctx, s)
 	require.NoError(t, err)
 	require.Equal(t, len(fileList), 1)
 
+	inc, err = fileset.NewGlobSet(dir, []string{".databricks/*.*"})
+	require.NoError(t, err)
+
+	excl, err = fileset.NewGlobSet(dir, []string{})
+	require.NoError(t, err)
+
 	s = &Sync{
 		SyncOptions: &SyncOptions{},
 
 		fileSet:        fileSet,
-		includeFileSet: fileset.NewGlobSet(dir, []string{".databricks/*.*"}),
-		excludeFileSet: fileset.NewGlobSet(dir, []string{}),
+		includeFileSet: inc,
+		excludeFileSet: excl,
 	}
 
 	fileList, err = getFileList(ctx, s)

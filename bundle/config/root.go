@@ -72,7 +72,6 @@ type Root struct {
 	// Targets can be used to differentiate settings and resources between
 	// bundle deployment targets (e.g. development, staging, production).
 	// If not specified, the code below initializes this field with a
-
 	// single default-initialized target called "default".
 	Targets map[string]*Target `json:"targets,omitempty"`
 

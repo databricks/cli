@@ -11,11 +11,15 @@ type GlobSet struct {
 	patterns []string
 }
 
-func NewGlobSet(root string, includes []string) *GlobSet {
-	for k := range includes {
-		includes[k] = filepath.Join(root, filepath.FromSlash(includes[k]))
+func NewGlobSet(root string, includes []string) (*GlobSet, error) {
+	absRoot, err := filepath.Abs(root)
+	if err != nil {
+		return nil, err
 	}
-	return &GlobSet{root, includes}
+	for k := range includes {
+		includes[k] = filepath.Join(absRoot, filepath.FromSlash(includes[k]))
+	}
+	return &GlobSet{absRoot, includes}, nil
 }
 
 // Return all files which matches defined glob patterns

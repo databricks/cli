@@ -59,8 +59,15 @@ func New(ctx context.Context, opts SyncOptions) (*Sync, error) {
 		return nil, err
 	}
 
-	includeFileSet := fileset.NewGlobSet(opts.LocalPath, opts.Include)
-	excludeFileSet := fileset.NewGlobSet(opts.LocalPath, opts.Exclude)
+	includeFileSet, err := fileset.NewGlobSet(opts.LocalPath, opts.Include)
+	if err != nil {
+		return nil, err
+	}
+
+	excludeFileSet, err := fileset.NewGlobSet(opts.LocalPath, opts.Exclude)
+	if err != nil {
+		return nil, err
+	}
 
 	// Verify that the remote path we're about to synchronize to is valid and allowed.
 	err = EnsureRemotePathIsUsable(ctx, opts.WorkspaceClient, opts.RemotePath, opts.CurrentUser)
