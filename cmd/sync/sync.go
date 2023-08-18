@@ -35,9 +35,16 @@ func (f *syncFlags) syncOptionsFromBundle(cmd *cobra.Command, args []string, b *
 		return nil, fmt.Errorf("cannot get bundle cache directory: %w", err)
 	}
 
+	includes, err := b.GetSyncIncludePatterns()
+	if err != nil {
+		return nil, fmt.Errorf("cannot get list of sync includes: %w", err)
+	}
+
 	opts := sync.SyncOptions{
 		LocalPath:    b.Config.Path,
 		RemotePath:   b.Config.Workspace.FilesPath,
+		Include:      includes,
+		Exclude:      b.Config.Sync.Exclude,
 		Full:         f.full,
 		PollInterval: f.interval,
 

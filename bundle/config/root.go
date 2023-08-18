@@ -77,6 +77,9 @@ type Root struct {
 
 	// DEPRECATED. Left for backward compatibility with Targets
 	Environments map[string]*Target `json:"environments,omitempty"`
+
+	// Sync section specifies options for files synchronization
+	Sync Sync `json:"sync"`
 }
 
 func Load(path string) (*Root, error) {

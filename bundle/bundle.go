@@ -24,6 +24,8 @@ import (
 	"github.com/hashicorp/terraform-exec/tfexec"
 )
 
+const internalFolder = ".internal"
+
 type Bundle struct {
 	Config config.Root
 
@@ -153,6 +155,38 @@ func (b *Bundle) CacheDir(paths ...string) (string, error) {
 	}
 
 	return dir, nil
+}
+
+// This directory is used to store and automaticaly sync internal bundle files, such as, f.e
+// notebook trampoline files for Python wheel and etc.
+func (b *Bundle) InternalDir() (string, error) {
+	cacheDir, err := b.CacheDir()
+	if err != nil {
+		return "", err
+	}
+
+	dir := filepath.Join(cacheDir, internalFolder)
+	err = os.MkdirAll(dir, 0700)
+	if err != nil {
+		return dir, err
+	}
+
+	return dir, nil
+}
+
+// GetSyncIncludePatterns returns a list of user defined includes
+// And also adds InternalDir folder to include list for sync command
+// so this folder is always synced
+func (b *Bundle) GetSyncIncludePatterns() ([]string, error) {
+	internalDir, err := b.InternalDir()
+	if err != nil {
+		return nil, err
+	}
+	internalDirRel, err := filepath.Rel(b.Config.Path, internalDir)
+	if err != nil {
+		return nil, err
+	}
+	return append(b.Config.Sync.Include, filepath.ToSlash(filepath.Join(internalDirRel, "*.*"))), nil
 }
 
 func (b *Bundle) GitRepository() (*git.Repository, error) {
