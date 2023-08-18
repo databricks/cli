@@ -43,7 +43,9 @@ func newInitCommand() *cobra.Command {
 
 	var configFile string
 	var outputDir string
+	var templateDir string
 	cmd.Flags().StringVar(&configFile, "config-file", "", "File containing input parameters for template initialization.")
+	cmd.Flags().StringVar(&templateDir, "template-dir", "", "Directory within repository that holds the template specification.")
 	cmd.Flags().StringVar(&outputDir, "output-dir", "", "Directory to write the initialized template to.")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
@@ -59,19 +61,18 @@ func newInitCommand() *cobra.Command {
 		// Download the template in a temporary directory
 		tmpDir := os.TempDir()
 		templateURL := templatePath
-		templateDir := filepath.Join(tmpDir, repoName(templateURL))
-		err := os.MkdirAll(templateDir, 0755)
+		repoDir := filepath.Join(tmpDir, repoName(templateURL))
+		err := os.MkdirAll(repoDir, 0755)
 		if err != nil {
 			return err
 		}
 		// TODO: Add automated test that the downloaded git repo is cleaned up.
-		err = git.Clone(ctx, templateURL, "", templateDir)
+		err = git.Clone(ctx, templateURL, "", repoDir)
 		if err != nil {
 			return err
 		}
 		defer os.RemoveAll(templateDir)
-
-		return template.Materialize(ctx, configFile, templateDir, outputDir)
+		return template.Materialize(ctx, configFile, filepath.Join(repoDir, templateDir), outputDir)
 	}
 
 	return cmd
