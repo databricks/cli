@@ -22,12 +22,14 @@ var paramsTestCases []testCase = []testCase{
 	{[]string{"a"}, `"python", "a"`},
 	{[]string{"a", "b"}, `"python", "a", "b"`},
 	{[]string{"123!@#$%^&*()-="}, `"python", "123!@#$%^&*()-="`},
+	{[]string{`{"a": 1}`}, `"python", "{\"a\": 1}"`},
 }
 
 var paramsTestCasesNamed []testCaseNamed = []testCaseNamed{
 	{NamedParams{}, `"python"`},
 	{NamedParams{"a": "1"}, `"python", "a=1"`},
 	{NamedParams{"a": "1", "b": "2"}, `"python", "a=1", "b=2"`},
+	{NamedParams{"data": `{"a": 1}`}, `"python", "data={\"a\": 1}"`},
 }
 
 func TestGenerateParameters(t *testing.T) {
