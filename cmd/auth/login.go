@@ -61,7 +61,7 @@ func newLoginCommand(persistentAuth *auth.PersistentAuth) *cobra.Command {
 		}
 
 		// If the chosen profile has a hostname and the user hasn't specified a host, infer the host from the profile.
-		_, profiles, err := databrickscfg.LoadProfiles(databrickscfg.DefaultPath, func(p databrickscfg.Profile) bool {
+		_, profiles, err := databrickscfg.LoadProfiles(func(p databrickscfg.Profile) bool {
 			return p.Name == profileName
 		})
 		if err != nil {

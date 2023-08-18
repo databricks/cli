@@ -3,9 +3,9 @@ package template
 import (
 	"fmt"
 	"reflect"
+	"slices"
 
 	"github.com/databricks/cli/libs/jsonschema"
-	"golang.org/x/exp/slices"
 )
 
 type validator func(v any) error
@@ -33,9 +33,7 @@ func validateBoolean(v any) error {
 }
 
 func validateNumber(v any) error {
-	if !slices.Contains([]reflect.Kind{reflect.Float32, reflect.Float64, reflect.Int,
-		reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Uint,
-		reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64},
+	if !slices.Contains([]reflect.Kind{reflect.Float32, reflect.Float64},
 		reflect.TypeOf(v).Kind()) {
 		return fmt.Errorf("expected type float, but value is %#v", v)
 	}

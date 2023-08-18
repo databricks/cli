@@ -9,6 +9,14 @@ import (
 	"github.com/databricks/cli/libs/jsonschema"
 )
 
+// Fields tagged "readonly" should not be emitted in the schema as they are
+// computed at runtime, and should not be assigned a value by the bundle author.
+const readonlyTag = "readonly"
+
+// Annotation for internal bundle fields that should not be exposed to customers.
+// Fields can be tagged as "internal" to remove them from the generated schema.
+const internalTag = "internal"
+
 // This function translates golang types into json schema. Here is the mapping
 // between json schema types and golang types
 //
@@ -197,7 +205,7 @@ func toSchema(golangType reflect.Type, docs *Docs, tracker *tracker) (*jsonschem
 		required := []string{}
 		for _, child := range children {
 			bundleTag := child.Tag.Get("bundle")
-			if bundleTag == "readonly" {
+			if bundleTag == readonlyTag || bundleTag == internalTag {
 				continue
 			}
 

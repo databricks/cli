@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"slices"
 	"strings"
 	"time"
 
@@ -12,7 +13,6 @@ import (
 	"github.com/databricks/cli/libs/flags"
 	"github.com/manifoldco/promptui"
 	"github.com/mattn/go-isatty"
-	"golang.org/x/exp/slices"
 )
 
 // cmdIO is the private instance, that is not supposed to be accessed
@@ -140,8 +140,8 @@ func (c *cmdIO) Select(names map[string]string, label string) (id string, err er
 	for k, v := range names {
 		items = append(items, tuple{k, v})
 	}
-	slices.SortFunc(items, func(a, b tuple) bool {
-		return a.Name < b.Name
+	slices.SortFunc(items, func(a, b tuple) int {
+		return strings.Compare(a.Name, b.Name)
 	})
 	idx, _, err := (&promptui.Select{
 		Label:             label,

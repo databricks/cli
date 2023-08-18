@@ -10,7 +10,7 @@ import (
 )
 
 func TestJobAndPipelineDevelopment(t *testing.T) {
-	b := loadEnvironment(t, "./job_and_pipeline", "development")
+	b := loadTarget(t, "./job_and_pipeline", "development")
 	assert.Len(t, b.Config.Resources.Jobs, 0)
 	assert.Len(t, b.Config.Resources.Pipelines, 1)
 
@@ -24,7 +24,7 @@ func TestJobAndPipelineDevelopment(t *testing.T) {
 }
 
 func TestJobAndPipelineStaging(t *testing.T) {
-	b := loadEnvironment(t, "./job_and_pipeline", "staging")
+	b := loadTarget(t, "./job_and_pipeline", "staging")
 	assert.Len(t, b.Config.Resources.Jobs, 0)
 	assert.Len(t, b.Config.Resources.Pipelines, 1)
 
@@ -37,7 +37,7 @@ func TestJobAndPipelineStaging(t *testing.T) {
 }
 
 func TestJobAndPipelineProduction(t *testing.T) {
-	b := loadEnvironment(t, "./job_and_pipeline", "production")
+	b := loadTarget(t, "./job_and_pipeline", "production")
 	assert.Len(t, b.Config.Resources.Jobs, 1)
 	assert.Len(t, b.Config.Resources.Pipelines, 1)
 

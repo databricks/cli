@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
@@ -133,5 +134,20 @@ func libPath(library *compute.Library) string {
 }
 
 func isLocalLibrary(library *compute.Library) bool {
-	return libPath(library) != ""
+	path := libPath(library)
+	if path == "" {
+		return false
+	}
+
+	return !isDbfsPath(path) && !isWorkspacePath(path)
+}
+
+func isDbfsPath(path string) bool {
+	return strings.HasPrefix(path, "dbfs:/")
+}
+
+func isWorkspacePath(path string) bool {
+	return strings.HasPrefix(path, "/Workspace/") ||
+		strings.HasPrefix(path, "/Users/") ||
+		strings.HasPrefix(path, "/Shared/")
 }

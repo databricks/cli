@@ -1,5 +1,11 @@
 package jsonschema
 
+import (
+	"encoding/json"
+	"fmt"
+	"os"
+)
+
 // defines schema for a json object
 type Schema struct {
 	// Type of the object
@@ -47,3 +53,34 @@ const (
 	ArrayType   Type = "array"
 	IntegerType Type = "integer"
 )
+
+func (schema *Schema) validate() error {
+	for _, v := range schema.Properties {
+		switch v.Type {
+		case NumberType, BooleanType, StringType, IntegerType:
+			continue
+		case "int", "int32", "int64":
+			return fmt.Errorf("type %s is not a recognized json schema type. Please use \"integer\" instead", v.Type)
+		case "float", "float32", "float64":
+			return fmt.Errorf("type %s is not a recognized json schema type. Please use \"number\" instead", v.Type)
+		case "bool":
+			return fmt.Errorf("type %s is not a recognized json schema type. Please use \"boolean\" instead", v.Type)
+		default:
+			return fmt.Errorf("type %s is not a recognized json schema type", v.Type)
+		}
+	}
+	return nil
+}
+
+func Load(path string) (*Schema, error) {
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	schema := &Schema{}
+	err = json.Unmarshal(b, schema)
+	if err != nil {
+		return nil, err
+	}
+	return schema, schema.validate()
+}

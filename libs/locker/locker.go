@@ -8,12 +8,12 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"slices"
 	"time"
 
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/google/uuid"
-	"golang.org/x/exp/slices"
 )
 
 type UnlockOption int
@@ -105,10 +105,10 @@ func (locker *Locker) assertLockHeld(ctx context.Context) error {
 		return err
 	}
 	if activeLockState.ID != locker.State.ID && !activeLockState.IsForced {
-		return fmt.Errorf("deploy lock acquired by %s at %v. Use --force to override", activeLockState.User, activeLockState.AcquisitionTime)
+		return fmt.Errorf("deploy lock acquired by %s at %v. Use --force-lock to override", activeLockState.User, activeLockState.AcquisitionTime)
 	}
 	if activeLockState.ID != locker.State.ID && activeLockState.IsForced {
-		return fmt.Errorf("deploy lock force acquired by %s at %v. Use --force to override", activeLockState.User, activeLockState.AcquisitionTime)
+		return fmt.Errorf("deploy lock force acquired by %s at %v. Use --force-lock to override", activeLockState.User, activeLockState.AcquisitionTime)
 	}
 	return nil
 }

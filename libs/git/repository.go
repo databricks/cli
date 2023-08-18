@@ -12,6 +12,8 @@ import (
 
 const gitIgnoreFileName = ".gitignore"
 
+var GitDirectoryName = ".git"
+
 // Repository represents a Git repository or a directory
 // that could later be initialized as Git repository.
 type Repository struct {
@@ -45,7 +47,7 @@ func (r *Repository) Root() string {
 
 func (r *Repository) CurrentBranch() (string, error) {
 	// load .git/HEAD
-	ref, err := LoadReferenceFile(filepath.Join(r.rootPath, ".git", "HEAD"))
+	ref, err := LoadReferenceFile(filepath.Join(r.rootPath, GitDirectoryName, "HEAD"))
 	if err != nil {
 		return "", err
 	}
@@ -62,7 +64,7 @@ func (r *Repository) CurrentBranch() (string, error) {
 
 func (r *Repository) LatestCommit() (string, error) {
 	// load .git/HEAD
-	ref, err := LoadReferenceFile(filepath.Join(r.rootPath, ".git", "HEAD"))
+	ref, err := LoadReferenceFile(filepath.Join(r.rootPath, GitDirectoryName, "HEAD"))
 	if err != nil {
 		return "", err
 	}
@@ -81,7 +83,7 @@ func (r *Repository) LatestCommit() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	branchHeadRef, err := LoadReferenceFile(filepath.Join(r.rootPath, ".git", branchHeadPath))
+	branchHeadRef, err := LoadReferenceFile(filepath.Join(r.rootPath, GitDirectoryName, branchHeadPath))
 	if err != nil {
 		return "", err
 	}
@@ -186,7 +188,7 @@ func NewRepository(path string) (*Repository, error) {
 	}
 
 	real := true
-	rootPath, err := folders.FindDirWithLeaf(path, ".git")
+	rootPath, err := folders.FindDirWithLeaf(path, GitDirectoryName)
 	if err != nil {
 		if !os.IsNotExist(err) {
 			return nil, err

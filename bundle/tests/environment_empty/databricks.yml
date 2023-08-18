@@ -1,5 +1,0 @@
-bundle:
-  name: environment_empty
-
-environments:
-  development:

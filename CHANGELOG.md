@@ -1,5 +1,65 @@
 # Version changelog
 
+## 0.203.1
+
+CLI:
+ * Always resolve .databrickscfg file ([#659](https://github.com/databricks/cli/pull/659)).
+
+Bundles:
+ * Add internal tag for bundle fields to be skipped from schema ([#636](https://github.com/databricks/cli/pull/636)).
+ * Log the bundle root configuration file if applicable ([#657](https://github.com/databricks/cli/pull/657)).
+ * Execute paths without the .tmpl extension as templates ([#654](https://github.com/databricks/cli/pull/654)).
+ * Enable environment overrides for job clusters ([#658](https://github.com/databricks/cli/pull/658)).
+ * Merge artifacts and resources block with overrides enabled ([#660](https://github.com/databricks/cli/pull/660)).
+ * Locked terraform binary version to <= 1.5.5 ([#666](https://github.com/databricks/cli/pull/666)).
+ * Return better error messages for invalid JSON schema types in templates ([#661](https://github.com/databricks/cli/pull/661)).
+ * Use custom prompter for bundle template inputs ([#663](https://github.com/databricks/cli/pull/663)).
+ * Add map and pair helper functions for bundle templates ([#665](https://github.com/databricks/cli/pull/665)).
+ * Correct name for force acquire deploy flag ([#656](https://github.com/databricks/cli/pull/656)).
+ * Confirm that override with a zero value doesn't work ([#669](https://github.com/databricks/cli/pull/669)).
+
+Internal:
+ * Consolidate functions in libs/git ([#652](https://github.com/databricks/cli/pull/652)).
+ * Upgraded Go version to 1.21 ([#664](https://github.com/databricks/cli/pull/664)).
+
+## 0.203.0
+
+CLI:
+ * Infer host from profile during `auth login` ([#629](https://github.com/databricks/cli/pull/629)).
+
+Bundles:
+ * Extend deployment mode support ([#577](https://github.com/databricks/cli/pull/577)).
+ * Add validation for Git settings in bundles ([#578](https://github.com/databricks/cli/pull/578)).
+ * Only treat files with .tmpl extension as templates ([#594](https://github.com/databricks/cli/pull/594)).
+ * Add JSON schema validation for input template parameters ([#598](https://github.com/databricks/cli/pull/598)).
+ * Add DATABRICKS_BUNDLE_INCLUDE_PATHS to specify include paths through env vars ([#591](https://github.com/databricks/cli/pull/591)).
+ * Initialise a empty default bundle if BUNDLE_ROOT and DATABRICKS_BUNDLE_INCLUDES env vars are present ([#604](https://github.com/databricks/cli/pull/604)).
+ * Regenerate bundle resource structs from latest Terraform provider ([#633](https://github.com/databricks/cli/pull/633)).
+ * Fixed processing jobs libraries with remote path ([#638](https://github.com/databricks/cli/pull/638)).
+ * Add unit test for file name execution during rendering ([#640](https://github.com/databricks/cli/pull/640)).
+ * Add bundle init command and support for prompting user for input values ([#631](https://github.com/databricks/cli/pull/631)).
+ * Fix bundle git branch validation ([#645](https://github.com/databricks/cli/pull/645)).
+
+Internal:
+ * Fix mkdir integration test on GCP ([#620](https://github.com/databricks/cli/pull/620)).
+ * Fix git clone integration test for non-existing repo ([#610](https://github.com/databricks/cli/pull/610)).
+ * Remove push to main trigger for build workflow ([#621](https://github.com/databricks/cli/pull/621)).
+ * Remove workflow to publish binaries to S3 ([#622](https://github.com/databricks/cli/pull/622)).
+ * Fix failing fs mkdir test on azure ([#627](https://github.com/databricks/cli/pull/627)).
+ * Print y/n options when displaying prompts using cmdio.Ask ([#650](https://github.com/databricks/cli/pull/650)).
+
+API Changes:
+ * Changed `databricks account metastore-assignments create` command to not return anything.
+ * Added `databricks account network-policy` command group.
+
+OpenAPI commit 7b57ba3a53f4de3d049b6a24391fe5474212daf8 (2023-07-28)
+
+Dependency updates:
+ * Bump OpenAPI specification & Go SDK Version ([#624](https://github.com/databricks/cli/pull/624)).
+ * Bump golang.org/x/term from 0.10.0 to 0.11.0 ([#643](https://github.com/databricks/cli/pull/643)).
+ * Bump golang.org/x/text from 0.11.0 to 0.12.0 ([#642](https://github.com/databricks/cli/pull/642)).
+ * Bump golang.org/x/oauth2 from 0.10.0 to 0.11.0 ([#641](https://github.com/databricks/cli/pull/641)).
+
 ## 0.202.0
 
 Breaking Change:

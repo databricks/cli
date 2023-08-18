@@ -40,10 +40,7 @@ func MustAccountClient(cmd *cobra.Command, args []string) error {
 		// 1. only admins will have account configured
 		// 2. 99% of admins will have access to just one account
 		// hence, we don't need to create a special "DEFAULT_ACCOUNT" profile yet
-		_, profiles, err := databrickscfg.LoadProfiles(
-			databrickscfg.DefaultPath,
-			databrickscfg.MatchAccountProfiles,
-		)
+		_, profiles, err := databrickscfg.LoadProfiles(databrickscfg.MatchAccountProfiles)
 		if err != nil {
 			return err
 		}
@@ -124,8 +121,11 @@ func transformLoadError(path string, err error) error {
 }
 
 func askForWorkspaceProfile() (string, error) {
-	path := databrickscfg.DefaultPath
-	file, profiles, err := databrickscfg.LoadProfiles(path, databrickscfg.MatchWorkspaceProfiles)
+	path, err := databrickscfg.GetPath()
+	if err != nil {
+		return "", fmt.Errorf("cannot determine Databricks config file path: %w", err)
+	}
+	file, profiles, err := databrickscfg.LoadProfiles(databrickscfg.MatchWorkspaceProfiles)
 	if err != nil {
 		return "", transformLoadError(path, err)
 	}
@@ -156,8 +156,11 @@ func askForWorkspaceProfile() (string, error) {
 }
 
 func askForAccountProfile() (string, error) {
-	path := databrickscfg.DefaultPath
-	file, profiles, err := databrickscfg.LoadProfiles(path, databrickscfg.MatchAccountProfiles)
+	path, err := databrickscfg.GetPath()
+	if err != nil {
+		return "", fmt.Errorf("cannot determine Databricks config file path: %w", err)
+	}
+	file, profiles, err := databrickscfg.LoadProfiles(databrickscfg.MatchAccountProfiles)
 	if err != nil {
 		return "", transformLoadError(path, err)
 	}

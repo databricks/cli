@@ -19,5 +19,6 @@ func New() *cobra.Command {
 	cmd.AddCommand(newSyncCommand())
 	cmd.AddCommand(newTestCommand())
 	cmd.AddCommand(newValidateCommand())
+	cmd.AddCommand(newInitCommand())
 	return cmd
 }

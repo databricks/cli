@@ -131,7 +131,7 @@ func newConfigureCommand() *cobra.Command {
 
 	// Include token flag for compatibility with the legacy CLI.
 	// It doesn't actually do anything because we always use PATs.
-	cmd.Flags().BoolP("token", "t", true, "Configure using Databricks Personal Access Token")
+	cmd.Flags().Bool("token", true, "Configure using Databricks Personal Access Token")
 	cmd.Flags().MarkHidden("token")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {

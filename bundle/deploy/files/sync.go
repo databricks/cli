@@ -14,9 +14,17 @@ func getSync(ctx context.Context, b *bundle.Bundle) (*sync.Sync, error) {
 		return nil, fmt.Errorf("cannot get bundle cache directory: %w", err)
 	}
 
+	includes, err := b.GetSyncIncludePatterns()
+	if err != nil {
+		return nil, fmt.Errorf("cannot get list of sync includes: %w", err)
+	}
+
 	opts := sync.SyncOptions{
-		LocalPath:   b.Config.Path,
-		RemotePath:  b.Config.Workspace.FilesPath,
+		LocalPath:  b.Config.Path,
+		RemotePath: b.Config.Workspace.FilesPath,
+		Include:    includes,
+		Exclude:    b.Config.Sync.Exclude,
+
 		Full:        false,
 		CurrentUser: b.Config.Workspace.CurrentUser.User,
 

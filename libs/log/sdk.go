@@ -6,8 +6,9 @@ import (
 	"runtime"
 	"time"
 
+	"log/slog"
+
 	sdk "github.com/databricks/databricks-sdk-go/logger"
-	"golang.org/x/exp/slog"
 )
 
 // slogAdapter makes an slog.Logger usable with the Databricks SDK.

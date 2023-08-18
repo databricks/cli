@@ -6,11 +6,12 @@ import (
 	"os"
 	"strings"
 
+	"log/slog"
+
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
 	"github.com/spf13/cobra"
-	"golang.org/x/exp/slog"
 )
 
 func New() *cobra.Command {
@@ -35,6 +36,7 @@ func New() *cobra.Command {
 	outputFlag := initOutputFlag(cmd)
 	initProfileFlag(cmd)
 	initEnvironmentFlag(cmd)
+	initTargetFlag(cmd)
 
 	cmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()

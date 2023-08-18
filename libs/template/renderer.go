@@ -8,13 +8,13 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"slices"
 	"strings"
 	"text/template"
 
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/logger"
-	"golang.org/x/exp/slices"
 )
 
 const templateExtension = ".tmpl"
@@ -124,19 +124,29 @@ func (r *renderer) computeFile(relPathTemplate string) (file, error) {
 	}
 	perm := info.Mode().Perm()
 
+	// Execute relative path template to get destination path for the file
+	relPath, err := r.executeTemplate(relPathTemplate)
+	if err != nil {
+		return nil, err
+	}
+
 	// If file name does not specify the `.tmpl` extension, then it is copied
 	// over as is, without treating it as a template
 	if !strings.HasSuffix(relPathTemplate, templateExtension) {
 		return &copyFile{
 			dstPath: &destinationPath{
 				root:    r.instanceRoot,
-				relPath: relPathTemplate,
+				relPath: relPath,
 			},
 			perm:     perm,
 			ctx:      r.ctx,
 			srcPath:  relPathTemplate,
 			srcFiler: r.templateFiler,
 		}, nil
+	} else {
+		// Trim the .tmpl suffix from file name, if specified in the template
+		// path
+		relPath = strings.TrimSuffix(relPath, templateExtension)
 	}
 
 	// read template file's content
@@ -158,13 +168,6 @@ func (r *renderer) computeFile(relPathTemplate string) (file, error) {
 	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to compute file content for %s. %w", relPathTemplate, err)
-	}
-
-	// Execute relative path template to get materialized path for the file
-	relPathTemplate = strings.TrimSuffix(relPathTemplate, templateExtension)
-	relPath, err := r.executeTemplate(relPathTemplate)
-	if err != nil {
-		return nil, err
 	}
 
 	return &inMemoryFile{
