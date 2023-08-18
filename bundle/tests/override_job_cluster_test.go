@@ -7,7 +7,7 @@ import (
 )
 
 func TestOverrideJobClusterDev(t *testing.T) {
-	b := loadEnvironment(t, "./override_job_cluster", "development")
+	b := loadTarget(t, "./override_job_cluster", "development")
 	assert.Equal(t, "job", b.Config.Resources.Jobs["foo"].Name)
 	assert.Len(t, b.Config.Resources.Jobs["foo"].JobClusters, 1)
 
@@ -18,7 +18,7 @@ func TestOverrideJobClusterDev(t *testing.T) {
 }
 
 func TestOverrideJobClusterStaging(t *testing.T) {
-	b := loadEnvironment(t, "./override_job_cluster", "staging")
+	b := loadTarget(t, "./override_job_cluster", "staging")
 	assert.Equal(t, "job", b.Config.Resources.Jobs["foo"].Name)
 	assert.Len(t, b.Config.Resources.Jobs["foo"].JobClusters, 1)
 

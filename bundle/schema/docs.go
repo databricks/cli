@@ -52,20 +52,20 @@ func BundleDocs(openapiSpecPath string) (*Docs, error) {
 		}
 		docs.Properties["resources"] = schemaToDocs(resourceSchema)
 	}
-	docs.refreshEnvironmentsDocs()
+	docs.refreshTargetsDocs()
 	return docs, nil
 }
 
-func (docs *Docs) refreshEnvironmentsDocs() error {
-	environmentsDocs, ok := docs.Properties["environments"]
-	if !ok || environmentsDocs.AdditionalProperties == nil ||
-		environmentsDocs.AdditionalProperties.Properties == nil {
-		return fmt.Errorf("invalid environments descriptions")
+func (docs *Docs) refreshTargetsDocs() error {
+	targetsDocs, ok := docs.Properties["targets"]
+	if !ok || targetsDocs.AdditionalProperties == nil ||
+		targetsDocs.AdditionalProperties.Properties == nil {
+		return fmt.Errorf("invalid targets descriptions")
 	}
-	environmentProperties := environmentsDocs.AdditionalProperties.Properties
+	targetProperties := targetsDocs.AdditionalProperties.Properties
 	propertiesToCopy := []string{"artifacts", "bundle", "resources", "workspace"}
 	for _, p := range propertiesToCopy {
-		environmentProperties[p] = docs.Properties[p]
+		targetProperties[p] = docs.Properties[p]
 	}
 	return nil
 }

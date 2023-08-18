@@ -13,16 +13,16 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/ml"
 )
 
-type processEnvironmentMode struct{}
+type processTargetMode struct{}
 
 const developmentConcurrentRuns = 4
 
-func ProcessEnvironmentMode() bundle.Mutator {
-	return &processEnvironmentMode{}
+func ProcessTargetMode() bundle.Mutator {
+	return &processTargetMode{}
 }
 
-func (m *processEnvironmentMode) Name() string {
-	return "ProcessEnvironmentMode"
+func (m *processTargetMode) Name() string {
+	return "ProcessTargetMode"
 }
 
 // Mark all resources as being for 'development' purposes, i.e.
@@ -110,14 +110,14 @@ func findIncorrectPath(b *bundle.Bundle, mode config.Mode) string {
 
 func validateProductionMode(ctx context.Context, b *bundle.Bundle, isPrincipalUsed bool) error {
 	if b.Config.Bundle.Git.Inferred {
-		env := b.Config.Bundle.Environment
-		return fmt.Errorf("environment with 'mode: production' must specify an explicit 'environments.%s.git' configuration", env)
+		env := b.Config.Bundle.Target
+		return fmt.Errorf("target with 'mode: production' must specify an explicit 'targets.%s.git' configuration", env)
 	}
 
 	r := b.Config.Resources
 	for i := range r.Pipelines {
 		if r.Pipelines[i].Development {
-			return fmt.Errorf("environment with 'mode: production' cannot specify a pipeline with 'development: true'")
+			return fmt.Errorf("target with 'mode: production' cannot specify a pipeline with 'development: true'")
 		}
 	}
 
@@ -125,7 +125,7 @@ func validateProductionMode(ctx context.Context, b *bundle.Bundle, isPrincipalUs
 		if path := findIncorrectPath(b, config.Production); path != "" {
 			message := "%s must not contain the current username when using 'mode: production'"
 			if path == "root_path" {
-				return fmt.Errorf(message+"\n  tip: set workspace.root_path to a shared path such as /Shared/.bundle/${bundle.name}/${bundle.environment}", path)
+				return fmt.Errorf(message+"\n  tip: set workspace.root_path to a shared path such as /Shared/.bundle/${bundle.name}/${bundle.target}", path)
 			} else {
 				return fmt.Errorf(message, path)
 			}
@@ -165,7 +165,7 @@ func isRunAsSet(r config.Resources) bool {
 	return true
 }
 
-func (m *processEnvironmentMode) Apply(ctx context.Context, b *bundle.Bundle) error {
+func (m *processTargetMode) Apply(ctx context.Context, b *bundle.Bundle) error {
 	switch b.Config.Bundle.Mode {
 	case config.Development:
 		err := validateDevelopmentMode(b)

@@ -69,11 +69,17 @@ type Root struct {
 	// to deploy in this bundle (e.g. jobs, pipelines, etc.).
 	Resources Resources `json:"resources,omitempty"`
 
-	// Environments can be used to differentiate settings and resources between
-	// bundle deployment environments (e.g. development, staging, production).
+	// Targets can be used to differentiate settings and resources between
+	// bundle deployment targets (e.g. development, staging, production).
 	// If not specified, the code below initializes this field with a
-	// single default-initialized environment called "default".
-	Environments map[string]*Environment `json:"environments,omitempty"`
+	// single default-initialized target called "default".
+	Targets map[string]*Target `json:"targets,omitempty"`
+
+	// DEPRECATED. Left for backward compatibility with Targets
+	Environments map[string]*Target `json:"environments,omitempty"`
+
+	// Sync section specifies options for files synchronization
+	Sync Sync `json:"sync"`
 }
 
 func Load(path string) (*Root, error) {
@@ -103,8 +109,8 @@ func Load(path string) (*Root, error) {
 // was loaded from in configuration leafs that require it.
 func (r *Root) SetConfigFilePath(path string) {
 	r.Resources.SetConfigFilePath(path)
-	if r.Environments != nil {
-		for _, env := range r.Environments {
+	if r.Targets != nil {
+		for _, env := range r.Targets {
 			if env == nil {
 				continue
 			}
@@ -148,6 +154,15 @@ func (r *Root) Load(path string) error {
 		return fmt.Errorf("failed to load %s: %w", path, err)
 	}
 
+	if r.Environments != nil && r.Targets != nil {
+		return fmt.Errorf("both 'environments' and 'targets' are specified, only 'targets' should be used: %s", path)
+	}
+
+	if r.Environments != nil {
+		//TODO: add a command line notice that this is a deprecated option.
+		r.Targets = r.Environments
+	}
+
 	r.Path = filepath.Dir(path)
 	r.SetConfigFilePath(path)
 
@@ -169,37 +184,37 @@ func (r *Root) Merge(other *Root) error {
 	return mergo.Merge(r, other, mergo.WithOverride)
 }
 
-func (r *Root) MergeEnvironment(env *Environment) error {
+func (r *Root) MergeTargetOverrides(target *Target) error {
 	var err error
 
-	// Environment may be nil if it's empty.
-	if env == nil {
+	// Target may be nil if it's empty.
+	if target == nil {
 		return nil
 	}
 
-	if env.Bundle != nil {
-		err = mergo.Merge(&r.Bundle, env.Bundle, mergo.WithOverride)
+	if target.Bundle != nil {
+		err = mergo.Merge(&r.Bundle, target.Bundle, mergo.WithOverride)
 		if err != nil {
 			return err
 		}
 	}
 
-	if env.Workspace != nil {
-		err = mergo.Merge(&r.Workspace, env.Workspace, mergo.WithOverride)
+	if target.Workspace != nil {
+		err = mergo.Merge(&r.Workspace, target.Workspace, mergo.WithOverride)
 		if err != nil {
 			return err
 		}
 	}
 
-	if env.Artifacts != nil {
-		err = mergo.Merge(&r.Artifacts, env.Artifacts, mergo.WithOverride, mergo.WithAppendSlice)
+	if target.Artifacts != nil {
+		err = mergo.Merge(&r.Artifacts, target.Artifacts, mergo.WithOverride, mergo.WithAppendSlice)
 		if err != nil {
 			return err
 		}
 	}
 
-	if env.Resources != nil {
-		err = mergo.Merge(&r.Resources, env.Resources, mergo.WithOverride, mergo.WithAppendSlice)
+	if target.Resources != nil {
+		err = mergo.Merge(&r.Resources, target.Resources, mergo.WithOverride, mergo.WithAppendSlice)
 		if err != nil {
 			return err
 		}
@@ -210,8 +225,8 @@ func (r *Root) MergeEnvironment(env *Environment) error {
 		}
 	}
 
-	if env.Variables != nil {
-		for k, v := range env.Variables {
+	if target.Variables != nil {
+		for k, v := range target.Variables {
 			variable, ok := r.Variables[k]
 			if !ok {
 				return fmt.Errorf("variable %s is not defined but is assigned a value", k)
@@ -222,24 +237,24 @@ func (r *Root) MergeEnvironment(env *Environment) error {
 		}
 	}
 
-	if env.Mode != "" {
-		r.Bundle.Mode = env.Mode
+	if target.Mode != "" {
+		r.Bundle.Mode = target.Mode
 	}
 
-	if env.ComputeID != "" {
-		r.Bundle.ComputeID = env.ComputeID
+	if target.ComputeID != "" {
+		r.Bundle.ComputeID = target.ComputeID
 	}
 
 	git := &r.Bundle.Git
-	if env.Git.Branch != "" {
-		git.Branch = env.Git.Branch
+	if target.Git.Branch != "" {
+		git.Branch = target.Git.Branch
 		git.Inferred = false
 	}
-	if env.Git.Commit != "" {
-		git.Commit = env.Git.Commit
+	if target.Git.Commit != "" {
+		git.Commit = target.Git.Commit
 	}
-	if env.Git.OriginURL != "" {
-		git.OriginURL = env.Git.OriginURL
+	if target.Git.OriginURL != "" {
+		git.OriginURL = target.Git.OriginURL
 	}
 
 	return nil

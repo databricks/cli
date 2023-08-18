@@ -36,7 +36,7 @@
         }
       }
     },
-    "environments": {
+    "targets": {
       "description": "",
       "additionalproperties": {
         "description": "",
@@ -1827,7 +1827,7 @@
                 "description": "Connection profile to use. By default profiles are specified in ~/.databrickscfg."
               },
               "root_path": {
-                "description": "The base location for synchronizing files, artifacts and state. Defaults to `/Users/jane@doe.com/.bundle/${bundle.name}/${bundle.environment}`"
+                "description": "The base location for synchronizing files, artifacts and state. Defaults to `/Users/jane@doe.com/.bundle/${bundle.name}/${bundle.target}`"
               },
               "state_path": {
                 "description": "The remote path to synchronize bundle state to. This defaults to `${workspace.root}/state`"
@@ -3591,7 +3591,7 @@
           "description": "Connection profile to use. By default profiles are specified in ~/.databrickscfg."
         },
         "root_path": {
-          "description": "The base location for synchronizing files, artifacts and state. Defaults to `/Users/jane@doe.com/.bundle/${bundle.name}/${bundle.environment}`"
+          "description": "The base location for synchronizing files, artifacts and state. Defaults to `/Users/jane@doe.com/.bundle/${bundle.name}/${bundle.target}`"
         },
         "state_path": {
           "description": "The remote path to synchronize bundle state to. This defaults to `${workspace.root}/state`"

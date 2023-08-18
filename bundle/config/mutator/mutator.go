@@ -7,11 +7,11 @@ import (
 func DefaultMutators() []bundle.Mutator {
 	return []bundle.Mutator{
 		ProcessRootIncludes(),
-		DefineDefaultEnvironment(),
+		DefineDefaultTarget(),
 		LoadGitDetails(),
 	}
 }
 
-func DefaultMutatorsForEnvironment(env string) []bundle.Mutator {
-	return append(DefaultMutators(), SelectEnvironment(env))
+func DefaultMutatorsForTarget(env string) []bundle.Mutator {
+	return append(DefaultMutators(), SelectTarget(env))
 }

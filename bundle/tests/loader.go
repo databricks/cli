@@ -18,9 +18,9 @@ func load(t *testing.T, path string) *bundle.Bundle {
 	return b
 }
 
-func loadEnvironment(t *testing.T, path, env string) *bundle.Bundle {
+func loadTarget(t *testing.T, path, env string) *bundle.Bundle {
 	b := load(t, path)
-	err := bundle.Apply(context.Background(), b, mutator.SelectEnvironment(env))
+	err := bundle.Apply(context.Background(), b, mutator.SelectTarget(env))
 	require.NoError(t, err)
 	return b
 }

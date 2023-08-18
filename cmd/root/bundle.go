@@ -11,11 +11,12 @@ import (
 )
 
 const envName = "DATABRICKS_BUNDLE_ENV"
+const targetName = "DATABRICKS_BUNDLE_TARGET"
 
-// getEnvironment returns the name of the environment to operate in.
-func getEnvironment(cmd *cobra.Command) (value string) {
+// getTarget returns the name of the target to operate in.
+func getTarget(cmd *cobra.Command) (value string) {
 	// The command line flag takes precedence.
-	flag := cmd.Flag("environment")
+	flag := cmd.Flag("target")
 	if flag != nil {
 		value = flag.Value.String()
 		if value != "" {
@@ -23,8 +24,23 @@ func getEnvironment(cmd *cobra.Command) (value string) {
 		}
 	}
 
+	oldFlag := cmd.Flag("environment")
+	if oldFlag != nil {
+		value = flag.Value.String()
+		if value != "" {
+			return
+		}
+	}
+
 	// If it's not set, use the environment variable.
-	return os.Getenv(envName)
+	target := os.Getenv(targetName)
+	// If target env is not set with a new variable, try to check for old variable name
+	// TODO: remove when environments section is not supported anymore
+	if target == "" {
+		target = os.Getenv(envName)
+	}
+
+	return target
 }
 
 func getProfile(cmd *cobra.Command) (value string) {
@@ -80,11 +96,11 @@ func configureBundle(cmd *cobra.Command, args []string, load func(ctx context.Co
 	}
 
 	var m bundle.Mutator
-	env := getEnvironment(cmd)
+	env := getTarget(cmd)
 	if env == "" {
-		m = mutator.SelectDefaultEnvironment()
+		m = mutator.SelectDefaultTarget()
 	} else {
-		m = mutator.SelectEnvironment(env)
+		m = mutator.SelectTarget(env)
 	}
 
 	ctx := cmd.Context()
@@ -108,19 +124,27 @@ func TryConfigureBundle(cmd *cobra.Command, args []string) error {
 	return configureBundle(cmd, args, bundle.TryLoad)
 }
 
-// environmentCompletion executes to autocomplete the argument to the environment flag.
-func environmentCompletion(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+// targetCompletion executes to autocomplete the argument to the target flag.
+func targetCompletion(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 	b, err := loadBundle(cmd, args, bundle.MustLoad)
 	if err != nil {
 		cobra.CompErrorln(err.Error())
 		return nil, cobra.ShellCompDirectiveError
 	}
 
-	return maps.Keys(b.Config.Environments), cobra.ShellCompDirectiveDefault
+	return maps.Keys(b.Config.Targets), cobra.ShellCompDirectiveDefault
 }
 
+func initTargetFlag(cmd *cobra.Command) {
+	// To operate in the context of a bundle, all commands must take an "target" parameter.
+	cmd.PersistentFlags().StringP("target", "t", "", "bundle target to use (if applicable)")
+	cmd.RegisterFlagCompletionFunc("target", targetCompletion)
+}
+
+// DEPRECATED flag
 func initEnvironmentFlag(cmd *cobra.Command) {
 	// To operate in the context of a bundle, all commands must take an "environment" parameter.
-	cmd.PersistentFlags().StringP("environment", "e", "", "bundle environment to use (if applicable)")
-	cmd.RegisterFlagCompletionFunc("environment", environmentCompletion)
+	cmd.PersistentFlags().StringP("environment", "e", "", "bundle target to use (if applicable)")
+	cmd.PersistentFlags().MarkDeprecated("environment", "use --target flag instead")
+	cmd.RegisterFlagCompletionFunc("environment", targetCompletion)
 }

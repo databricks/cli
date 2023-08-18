@@ -1,0 +1,20 @@
+bundle:
+  name: environment_overrides
+
+workspace:
+  host: https://acme.cloud.databricks.com/
+
+resources:
+  jobs:
+    job1:
+      name: "base job"
+
+targets:
+  development:
+    default: true
+
+  staging:
+    resources:
+      jobs:
+        job1:
+          name: "staging job"
