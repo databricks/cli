@@ -7,3 +7,6 @@ root.*
 
 # Directory pattern.
 ignoredirectory/
+
+# Ignore dotfiles
+.*
