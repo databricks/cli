@@ -13,7 +13,7 @@ resources:
           new_cluster:
             spark_version: 13.3.x-scala2.12
 
-environments:
+targets:
   development:
     resources:
       jobs:

@@ -36,6 +36,7 @@ func New() *cobra.Command {
 	outputFlag := initOutputFlag(cmd)
 	initProfileFlag(cmd)
 	initEnvironmentFlag(cmd)
+	initTargetFlag(cmd)
 
 	cmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
