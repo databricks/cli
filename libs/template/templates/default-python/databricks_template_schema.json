@@ -3,6 +3,7 @@
         "project_name": {
             "type": "string",
             "default": "my_project",
+            "pattern": "^[a-zA-Z0-9_]+$",
             "description": "Name of the directory"
         }
     }

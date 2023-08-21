@@ -1,0 +1,24 @@
+"""
+Setup script for {{.project_name}}.
+
+This script packages and distributes the associated wheel file(s).
+Source code is in ./src/. Run 'python setup.py sdist bdist_wheel' to build.
+"""
+from setuptools import setup, find_packages
+
+import sys
+sys.path.append('./src')
+
+import {{.project_name}}
+
+setup(
+    name="{{.project_name}}",
+    version={{.project_name}}.__version__,
+    url="https://databricks.com",
+    author="{{.user_name}}",
+    description="my test wheel",
+    packages=find_packages(where='./src'),
+    package_dir={'': 'src'},
+    entry_points={"group_1": "run={{.project_name}}.__main__:main"},
+    install_requires=["setuptools", "scikit-learn"],
+)

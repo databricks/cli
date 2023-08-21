@@ -1,0 +1,34 @@
+resources:
+  jobs:
+    {{.project_name}}-job:
+      name: {{.project_name}}-job
+      schedule:
+        quartz_cron_expression: "44 37 8 * * ?"
+        timezone_id: Europe/Amsterdam
+      job_clusters:
+        - job_cluster_key: job-cluster
+          new_cluster:
+            spark_version: 12.2.x-scala2.12
+            node_type_id: {{smallest_node_type}}
+            num_workers: 1
+      tasks:
+        - task_key: notebook-task
+          job_cluster_key: job-cluster
+          notebook_task:
+            notebook_path: ../src/notebook-sample.py
+        - task_key: python-wheel-task
+          depends_on:
+            - task_key: notebook-task
+          job_cluster_key: job-cluster
+          python_wheel_task:
+            package_name: "{{.project_name}}"
+            entry_point: "run"
+          libraries:
+          {{- /* TODO: this path is wrong, it should say ../dist/*.whl */ -}}}}
+          - whl: dist/*.whl
+      {{if is_service_principal}}
+      {{- else -}}
+      {{- /* TODO: remove once top-level run_as is implemented */ -}}
+      run_as:
+        user_name: {{user_name}}
+      {{- end -}}
