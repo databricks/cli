@@ -8,7 +8,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/databricks-sdk-go/service/iam"
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 )
@@ -138,19 +138,13 @@ func validateProductionMode(ctx context.Context, b *bundle.Bundle, isPrincipalUs
 	return nil
 }
 
-// Determines whether a service principal identity is used to run the CLI.
-func isServicePrincipalUsed(ctx context.Context, b *bundle.Bundle) (bool, error) {
-	ws := b.WorkspaceClient()
-
-	// Check if a principal with the current user's ID exists.
-	// We need to use the ListAll method since Get is only usable by admins.
-	matches, err := ws.ServicePrincipals.ListAll(ctx, iam.ListServicePrincipalsRequest{
-		Filter: "id eq " + b.Config.Workspace.CurrentUser.Id,
-	})
-	if err != nil {
-		return false, err
-	}
-	return len(matches) > 0, nil
+// Determines whether a given user id is a service principal.
+// This funciton uses a heuristic: if no user exists with this id, we assume
+// it's a service pricnipal. Unfortunately, he standard service pricnipal API is too
+// slow for our purposes.
+func IsServicePrincipal(ctx context.Context, ws *databricks.WorkspaceClient, userId string) bool {
+	_, err := ws.Users.GetById(ctx, userId)
+	return err != nil
 }
 
 // Determines whether run_as is explicitly set for all resources.
@@ -174,10 +168,7 @@ func (m *processTargetMode) Apply(ctx context.Context, b *bundle.Bundle) error {
 		}
 		return transformDevelopmentMode(b)
 	case config.Production:
-		isPrincipal, err := isServicePrincipalUsed(ctx, b)
-		if err != nil {
-			return err
-		}
+		isPrincipal := IsServicePrincipal(ctx, b.WorkspaceClient(), b.Config.Workspace.CurrentUser.Id)
 		return validateProductionMode(ctx, b, isPrincipal)
 	case "":
 		// No action

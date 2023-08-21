@@ -93,7 +93,7 @@ func Get() (*config.File, error) {
 func LoadProfiles(fn ProfileMatchFunction) (file string, profiles Profiles, err error) {
 	f, err := Get()
 	if err != nil {
-		return "", nil, fmt.Errorf("cannot load Databricks config file: %w", err)
+		return "", nil, fmt.Errorf("no configuration found at %w, please setup a profile first using 'databricks auth login'", err)
 	}
 
 	homedir, err := os.UserHomeDir()

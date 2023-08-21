@@ -2,9 +2,14 @@ package template
 
 import (
 	"context"
+	"os"
 	"strings"
 	"testing"
 
+	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/databricks-sdk-go"
+	workspaceConfig "github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -13,7 +18,8 @@ func TestTemplatePrintStringWithoutProcessing(t *testing.T) {
 	ctx := context.Background()
 	tmpDir := t.TempDir()
 
-	r, err := newRenderer(ctx, nil, "./testdata/print-without-processing/template", "./testdata/print-without-processing/library", tmpDir)
+	helpers := loadHelpers(ctx, nil)
+	r, err := newRenderer(ctx, nil, helpers, "./testdata/print-without-processing/template", "./testdata/print-without-processing/library", tmpDir)
 	require.NoError(t, err)
 
 	err = r.walk()
@@ -28,7 +34,8 @@ func TestTemplateRegexpCompileFunction(t *testing.T) {
 	ctx := context.Background()
 	tmpDir := t.TempDir()
 
-	r, err := newRenderer(ctx, nil, "./testdata/regexp-compile/template", "./testdata/regexp-compile/library", tmpDir)
+	helpers := loadHelpers(ctx, nil)
+	r, err := newRenderer(ctx, nil, helpers, "./testdata/regexp-compile/template", "./testdata/regexp-compile/library", tmpDir)
 	require.NoError(t, err)
 
 	err = r.walk()
@@ -44,7 +51,8 @@ func TestTemplateUrlFunction(t *testing.T) {
 	ctx := context.Background()
 	tmpDir := t.TempDir()
 
-	r, err := newRenderer(ctx, nil, "./testdata/urlparse-function/template", "./testdata/urlparse-function/library", tmpDir)
+	helpers := loadHelpers(ctx, nil)
+	r, err := newRenderer(ctx, nil, helpers, "./testdata/urlparse-function/template", "./testdata/urlparse-function/library", tmpDir)
 
 	require.NoError(t, err)
 
@@ -59,7 +67,8 @@ func TestTemplateMapPairFunction(t *testing.T) {
 	ctx := context.Background()
 	tmpDir := t.TempDir()
 
-	r, err := newRenderer(ctx, nil, "./testdata/map-pair/template", "./testdata/map-pair/library", tmpDir)
+	helpers := loadHelpers(ctx, nil)
+	r, err := newRenderer(ctx, nil, helpers, "./testdata/map-pair/template", "./testdata/map-pair/library", tmpDir)
 
 	require.NoError(t, err)
 
@@ -68,4 +77,45 @@ func TestTemplateMapPairFunction(t *testing.T) {
 
 	assert.Len(t, r.files, 1)
 	assert.Equal(t, "false 123 hello 12.3", string(r.files[0].(*inMemoryFile).content))
+}
+
+func TestWorkspaceHost(t *testing.T) {
+	ctx := context.Background()
+	tmpDir := t.TempDir()
+
+	w := &databricks.WorkspaceClient{
+		Config: &workspaceConfig.Config{
+			Host: "https://myhost.com",
+		},
+	}
+	helpers := loadHelpers(ctx, w)
+	r, err := newRenderer(ctx, nil, helpers, "./testdata/workspace-host/template", "./testdata/map-pair/library", tmpDir)
+
+	require.NoError(t, err)
+
+	err = r.walk()
+	assert.NoError(t, err)
+
+	assert.Len(t, r.files, 1)
+	assert.Equal(t, "https://myhost.com\ni3.xlarge\n", string(r.files[0].(*inMemoryFile).content))
+
+}
+
+func TestWorkspaceHostNotConfigured(t *testing.T) {
+	ctx := context.Background()
+	cmd := cmdio.NewIO(flags.OutputJSON, strings.NewReader(""), os.Stdout, os.Stderr, "template")
+	ctx = cmdio.InContext(ctx, cmd)
+	tmpDir := t.TempDir()
+
+	w := &databricks.WorkspaceClient{
+		Config: &workspaceConfig.Config{},
+	}
+	helpers := loadHelpers(ctx, w)
+	r, err := newRenderer(ctx, nil, helpers, "./testdata/workspace-host/template", "./testdata/map-pair/library", tmpDir)
+
+	assert.NoError(t, err)
+
+	err = r.walk()
+	require.ErrorContains(t, err, "cannot determine target workspace")
+
 }

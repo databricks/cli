@@ -1,12 +1,15 @@
 package bundle
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/git"
 	"github.com/databricks/cli/libs/template"
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/spf13/cobra"
 )
 
@@ -36,9 +39,9 @@ func repoName(url string) string {
 
 func newInitCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "init TEMPLATE_PATH",
+		Use:   "init [TEMPLATE_PATH]",
 		Short: "Initialize Template",
-		Args:  cobra.ExactArgs(1),
+		Args:  cobra.MaximumNArgs(1),
 	}
 
 	var configFile string
@@ -49,20 +52,42 @@ func newInitCommand() *cobra.Command {
 	cmd.Flags().StringVar(&outputDir, "output-dir", "", "Directory to write the initialized template to.")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		templatePath := args[0]
 		ctx := cmd.Context()
+		var templatePath string
+		if len(args) > 0 {
+			templatePath = args[0]
+		} else {
+			return errors.New("please specify a template")
+
+			/* TODO: propose to use default-python (once template is ready)
+			var err error
+			if !cmdio.IsOutTTY(ctx) || !cmdio.IsInTTY(ctx) {
+				return errors.New("please specify a template")
+			}
+			templatePath, err = cmdio.Ask(ctx, "Template to use", "default-python")
+			if err != nil {
+				return err
+			}
+			*/
+		}
+
+		profile := root.GetProfile(cmd)
+		w, err := databricks.NewWorkspaceClient(&databricks.Config{Profile: profile})
+		if err != nil {
+			return err
+		}
 
 		if !isRepoUrl(templatePath) {
 			// skip downloading the repo because input arg is not a URL. We assume
 			// it's a path on the local file system in that case
-			return template.Materialize(ctx, configFile, templatePath, outputDir)
+			return template.Materialize(ctx, w, configFile, templatePath, outputDir)
 		}
 
 		// Download the template in a temporary directory
 		tmpDir := os.TempDir()
 		templateURL := templatePath
 		repoDir := filepath.Join(tmpDir, repoName(templateURL))
-		err := os.MkdirAll(repoDir, 0755)
+		err = os.MkdirAll(repoDir, 0755)
 		if err != nil {
 			return err
 		}
@@ -72,7 +97,7 @@ func newInitCommand() *cobra.Command {
 			return err
 		}
 		defer os.RemoveAll(templateDir)
-		return template.Materialize(ctx, configFile, filepath.Join(repoDir, templateDir), outputDir)
+		return template.Materialize(ctx, w, configFile, filepath.Join(repoDir, templateDir), outputDir)
 	}
 
 	return cmd
