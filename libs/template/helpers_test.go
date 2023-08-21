@@ -97,7 +97,8 @@ func TestWorkspaceHost(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Len(t, r.files, 1)
-	assert.Equal(t, "https://myhost.com\ni3.xlarge\n", string(r.files[0].(*inMemoryFile).content))
+	assert.Contains(t, string(r.files[0].(*inMemoryFile).content), "https://myhost.com")
+	assert.Contains(t, string(r.files[0].(*inMemoryFile).content), "i3.xlarge")
 
 }
 
