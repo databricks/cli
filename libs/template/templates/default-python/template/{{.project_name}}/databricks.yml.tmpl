@@ -23,9 +23,6 @@ environments:
       root_path: /Shared/.bundle/prod/${bundle.name}
     mode: production
 
-    git:
-      branch: main
-
     {{- if is_service_principal -}}
     {{- else -}}
     {{- /* TODO: use the top-level run_as property once implemented
