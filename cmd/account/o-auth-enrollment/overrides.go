@@ -69,6 +69,9 @@ func enableOAuthForAccount(ctx context.Context, cfg *databricks.Config) error {
 		close(enableSpinner)
 		return nil
 	})
+	if err != nil {
+		return fmt.Errorf("wait for enrollment: %w", err)
+	}
 	// enable Databricks CLI, so that `databricks auth login` works
 	_, err = ac.PublishedAppIntegration.Create(ctx, oauth2.CreatePublishedAppIntegration{
 		AppId: "databricks-cli",
