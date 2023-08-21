@@ -140,7 +140,7 @@ func validateProductionMode(ctx context.Context, b *bundle.Bundle, isPrincipalUs
 }
 
 // Determines whether a given user id is a service principal.
-// This funciton uses a heuristic: if no user exists with this id, we assume
+// This function uses a heuristic: if no user exists with this id, we assume
 // it's a service principal. Unfortunately, the standard service principal API is too
 // slow for our purposes.
 func IsServicePrincipal(ctx context.Context, ws *databricks.WorkspaceClient, userId string) bool {
