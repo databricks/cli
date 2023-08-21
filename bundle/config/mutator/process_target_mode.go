@@ -8,6 +8,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
@@ -111,7 +112,7 @@ func findIncorrectPath(b *bundle.Bundle, mode config.Mode) string {
 func validateProductionMode(ctx context.Context, b *bundle.Bundle, isPrincipalUsed bool) error {
 	if b.Config.Bundle.Git.Inferred {
 		env := b.Config.Bundle.Target
-		return fmt.Errorf("target with 'mode: production' must specify an explicit 'targets.%s.git' configuration", env)
+		log.Warnf(ctx, "target with 'mode: production' should specify an explicit 'targets.%s.git' configuration", env)
 	}
 
 	r := b.Config.Resources
