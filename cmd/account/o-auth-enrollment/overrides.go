@@ -50,9 +50,12 @@ func enableOAuthForAccount(ctx context.Context, cfg *databricks.Config) error {
 	err = ac.OAuthEnrollment.Create(ctx, oauth2.CreateOAuthEnrollment{
 		EnableAllPublishedApps: true,
 	})
+	if err != nil {
+		return fmt.Errorf("enroll: %w", err)
+	}
 	enableSpinner := cmdio.Spinner(ctx)
 	// The actual enrollment take a few minutes
-	return retries.Wait(ctx, 10*time.Minute, func() *retries.Err {
+	err = retries.Wait(ctx, 10*time.Minute, func() *retries.Err {
 		status, err := ac.OAuthEnrollment.Get(ctx)
 		if err != nil {
 			return retries.Halt(err)
@@ -66,6 +69,14 @@ func enableOAuthForAccount(ctx context.Context, cfg *databricks.Config) error {
 		close(enableSpinner)
 		return nil
 	})
+	// enable Databricks CLI, so that `databricks auth login` works
+	_, err = ac.PublishedAppIntegration.Create(ctx, oauth2.CreatePublishedAppIntegration{
+		AppId: "databricks-cli",
+	})
+	if err != nil {
+		return fmt.Errorf("enabling databricks-cli: %w", err)
+	}
+	return nil
 }
 
 func newEnable() *cobra.Command {
