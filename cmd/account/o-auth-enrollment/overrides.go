@@ -44,14 +44,14 @@ func promptForBasicAccountConfig(ctx context.Context) (*databricks.Config, error
 func enableOAuthForAccount(ctx context.Context, cfg *databricks.Config) error {
 	ac, err := databricks.NewAccountClient(cfg)
 	if err != nil {
-		return fmt.Errorf("account client: %w", err)
+		return fmt.Errorf("failed to instantiate account client: %w", err)
 	}
 	// The enrollment is executed asynchronously, so the API returns HTTP 204 immediately
 	err = ac.OAuthEnrollment.Create(ctx, oauth2.CreateOAuthEnrollment{
 		EnableAllPublishedApps: true,
 	})
 	if err != nil {
-		return fmt.Errorf("enroll: %w", err)
+		return fmt.Errorf("failed to create oauth enrollment: %w", err)
 	}
 	enableSpinner := cmdio.Spinner(ctx)
 	// The actual enrollment take a few minutes
@@ -61,7 +61,7 @@ func enableOAuthForAccount(ctx context.Context, cfg *databricks.Config) error {
 			return retries.Halt(err)
 		}
 		if !status.IsEnabled {
-			msg := "OAuth is not yet enalbed"
+			msg := "Enabling OAuth..."
 			enableSpinner <- msg
 			return retries.Continues(msg)
 		}
@@ -77,7 +77,7 @@ func enableOAuthForAccount(ctx context.Context, cfg *databricks.Config) error {
 		AppId: "databricks-cli",
 	})
 	if err != nil {
-		return fmt.Errorf("enabling databricks-cli: %w", err)
+		return fmt.Errorf("failed to enable databricks CLI: %w", err)
 	}
 	return nil
 }
