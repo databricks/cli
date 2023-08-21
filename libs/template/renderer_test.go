@@ -31,8 +31,9 @@ func assertFilePermissions(t *testing.T, path string, perm fs.FileMode) {
 func TestRendererWithAssociatedTemplateInLibrary(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	helpers := loadHelpers(nil, nil)
-	r, err := newRenderer(context.Background(), nil, helpers, "./testdata/email/template", "./testdata/email/library", tmpDir)
+	ctx := context.Background()
+	helpers := loadHelpers(ctx, nil)
+	r, err := newRenderer(ctx, nil, helpers, "./testdata/email/template", "./testdata/email/library", tmpDir)
 	require.NoError(t, err)
 
 	err = r.walk()
