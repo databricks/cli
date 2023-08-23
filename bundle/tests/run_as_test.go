@@ -24,9 +24,12 @@ func TestRunAsDefault(t *testing.T) {
 	assert.Equal(t, "", jobs["job_three"].RunAs.UserName)
 
 	pipelines := b.Config.Resources.Pipelines
-	assert.NotNil(t, pipelines["nyc_taxi_pipeline"].Permissions)
-	assert.Equal(t, pipelines["nyc_taxi_pipeline"].Permissions[0].Level, "IS_OWNER")
-	assert.Equal(t, pipelines["nyc_taxi_pipeline"].Permissions[0].ServicePrincipalName, "my_service_principal")
+	assert.Len(t, pipelines["nyc_taxi_pipeline"].Permissions, 2)
+	assert.Equal(t, pipelines["nyc_taxi_pipeline"].Permissions[0].Level, "CAN_VIEW")
+	assert.Equal(t, pipelines["nyc_taxi_pipeline"].Permissions[0].UserName, "my_user_name")
+
+	assert.Equal(t, pipelines["nyc_taxi_pipeline"].Permissions[1].Level, "IS_OWNER")
+	assert.Equal(t, pipelines["nyc_taxi_pipeline"].Permissions[1].ServicePrincipalName, "my_service_principal")
 }
 
 func TestRunAsDevelopment(t *testing.T) {
@@ -48,7 +51,10 @@ func TestRunAsDevelopment(t *testing.T) {
 	assert.Equal(t, "", jobs["job_three"].RunAs.UserName)
 
 	pipelines := b.Config.Resources.Pipelines
-	assert.NotNil(t, pipelines["nyc_taxi_pipeline"].Permissions)
-	assert.Equal(t, pipelines["nyc_taxi_pipeline"].Permissions[0].Level, "IS_OWNER")
-	assert.Equal(t, pipelines["nyc_taxi_pipeline"].Permissions[0].UserName, "my_user_name")
+	assert.Len(t, pipelines["nyc_taxi_pipeline"].Permissions, 2)
+	assert.Equal(t, pipelines["nyc_taxi_pipeline"].Permissions[0].Level, "CAN_VIEW")
+	assert.Equal(t, pipelines["nyc_taxi_pipeline"].Permissions[0].ServicePrincipalName, "my_service_principal")
+
+	assert.Equal(t, pipelines["nyc_taxi_pipeline"].Permissions[1].Level, "IS_OWNER")
+	assert.Equal(t, pipelines["nyc_taxi_pipeline"].Permissions[1].UserName, "my_user_name")
 }

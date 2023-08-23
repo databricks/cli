@@ -243,7 +243,6 @@ func (r *Root) MergeTargetOverrides(target *Target) error {
 
 	if target.RunAs != nil {
 		r.RunAs = target.RunAs
-		fmt.Println("Merging run as")
 	}
 
 	if target.Mode != "" {

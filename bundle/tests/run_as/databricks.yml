@@ -13,6 +13,11 @@ targets:
 resources:
   pipelines:
     nyc_taxi_pipeline:
+      permissions:
+        - level: CAN_VIEW
+          service_principal_name: my_service_principal
+        - level: CAN_VIEW
+          user_name: my_user_name
       name: "nyc taxi loader"
       libraries:
         - notebook:
