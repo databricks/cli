@@ -1,0 +1,37 @@
+bundle:
+  name: "run_as"
+
+run_as:
+  service_principal_name: "my_service_principal"
+
+targets:
+  development:
+    mode: development
+    run_as:
+      user_name: "my_user_name"
+
+resources:
+  pipelines:
+    nyc_taxi_pipeline:
+      name: "nyc taxi loader"
+      libraries:
+        - notebook:
+            path: ./dlt/nyc_taxi_loader
+  jobs:
+    job_one:
+      name: Job One
+      tasks:
+        - task:
+            notebook_path: "./test.py"
+    job_two:
+      name: Job Two
+      tasks:
+        - task:
+            notebook_path: "./test.py"
+    job_three:
+      name: Job Three
+      run_as:
+        service_principal_name: "my_service_principal_for_job"
+      tasks:
+        - task:
+            notebook_path: "./test.py"
