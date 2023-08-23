@@ -8,8 +8,8 @@ import (
 	"regexp"
 	"text/template"
 
-	"github.com/databricks/cli/bundle/config/mutator"
-	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 )
 
@@ -26,8 +26,9 @@ type pair struct {
 	v any
 }
 
-func loadHelpers(ctx context.Context, w *databricks.WorkspaceClient) template.FuncMap {
+func loadHelpers(ctx context.Context) template.FuncMap {
 	var user *iam.User
+	w := root.WorkspaceClient(ctx)
 	return template.FuncMap{
 		"fail": func(format string, args ...any) (any, error) {
 			return nil, ErrFail{fmt.Sprintf(format, args...)}
@@ -99,7 +100,7 @@ func loadHelpers(ctx context.Context, w *databricks.WorkspaceClient) template.Fu
 					return false, err
 				}
 			}
-			return mutator.IsServicePrincipal(ctx, w, user.Id), nil
+			return auth.IsServicePrincipal(ctx, w, user.Id), nil
 		},
 	}
 }

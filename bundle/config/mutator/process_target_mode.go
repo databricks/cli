@@ -8,8 +8,8 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 )
@@ -139,15 +139,6 @@ func validateProductionMode(ctx context.Context, b *bundle.Bundle, isPrincipalUs
 	return nil
 }
 
-// Determines whether a given user id is a service principal.
-// This function uses a heuristic: if no user exists with this id, we assume
-// it's a service principal. Unfortunately, the standard service principal API is too
-// slow for our purposes.
-func IsServicePrincipal(ctx context.Context, ws *databricks.WorkspaceClient, userId string) bool {
-	_, err := ws.Users.GetById(ctx, userId)
-	return err != nil
-}
-
 // Determines whether run_as is explicitly set for all resources.
 // We do this in a best-effort fashion rather than check the top-level
 // 'run_as' field because the latter is not required to be set.
@@ -169,7 +160,7 @@ func (m *processTargetMode) Apply(ctx context.Context, b *bundle.Bundle) error {
 		}
 		return transformDevelopmentMode(b)
 	case config.Production:
-		isPrincipal := IsServicePrincipal(ctx, b.WorkspaceClient(), b.Config.Workspace.CurrentUser.Id)
+		isPrincipal := auth.IsServicePrincipal(ctx, b.WorkspaceClient(), b.Config.Workspace.CurrentUser.Id)
 		return validateProductionMode(ctx, b, isPrincipal)
 	case "":
 		// No action

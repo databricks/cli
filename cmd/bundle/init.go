@@ -9,7 +9,6 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/git"
 	"github.com/databricks/cli/libs/template"
-	"github.com/databricks/databricks-sdk-go"
 	"github.com/spf13/cobra"
 )
 
@@ -51,6 +50,7 @@ func newInitCommand() *cobra.Command {
 	cmd.Flags().StringVar(&templateDir, "template-dir", "", "Directory within repository that holds the template specification.")
 	cmd.Flags().StringVar(&outputDir, "output-dir", "", "Directory to write the initialized template to.")
 
+	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		var templatePath string
@@ -71,23 +71,17 @@ func newInitCommand() *cobra.Command {
 			*/
 		}
 
-		profile := root.GetProfile(cmd)
-		w, err := databricks.NewWorkspaceClient(&databricks.Config{Profile: profile})
-		if err != nil {
-			return err
-		}
-
 		if !isRepoUrl(templatePath) {
 			// skip downloading the repo because input arg is not a URL. We assume
 			// it's a path on the local file system in that case
-			return template.Materialize(ctx, w, configFile, templatePath, outputDir)
+			return template.Materialize(ctx, configFile, templatePath, outputDir)
 		}
 
 		// Download the template in a temporary directory
 		tmpDir := os.TempDir()
 		templateURL := templatePath
 		repoDir := filepath.Join(tmpDir, repoName(templateURL))
-		err = os.MkdirAll(repoDir, 0755)
+		err := os.MkdirAll(repoDir, 0755)
 		if err != nil {
 			return err
 		}
@@ -97,7 +91,7 @@ func newInitCommand() *cobra.Command {
 			return err
 		}
 		defer os.RemoveAll(templateDir)
-		return template.Materialize(ctx, w, configFile, filepath.Join(repoDir, templateDir), outputDir)
+		return template.Materialize(ctx, configFile, filepath.Join(repoDir, templateDir), outputDir)
 	}
 
 	return cmd
