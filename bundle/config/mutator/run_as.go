@@ -2,6 +2,7 @@ package mutator
 
 import (
 	"context"
+	"fmt"
 	"slices"
 
 	"github.com/databricks/cli/bundle"
@@ -27,6 +28,11 @@ func (m *setRunAs) Apply(_ context.Context, b *bundle.Bundle) error {
 	runAs := b.Config.RunAs
 	if runAs == nil {
 		return nil
+	}
+
+	me := b.Config.Workspace.CurrentUser.UserName
+	if (runAs.UserName == me || runAs.ServicePrincipalName == me) && len(b.Config.Resources.Pipelines) > 0 {
+		return fmt.Errorf("it's not allowed to define current user (%s) as identity in 'run_as' section if there are DLT pipelines defined", me)
 	}
 
 	for i := range b.Config.Resources.Jobs {

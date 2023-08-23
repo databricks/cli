@@ -9,19 +9,18 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func loadBundle(t *testing.T, path string, mutators []bundle.Mutator) *bundle.Bundle {
+func load(t *testing.T, path string) *bundle.Bundle {
 	ctx := context.Background()
 	b, err := bundle.Load(ctx, path)
 	require.NoError(t, err)
-	err = bundle.Apply(ctx, b, bundle.Seq(mutators...))
+	err = bundle.Apply(ctx, b, bundle.Seq(mutator.DefaultMutators()...))
 	require.NoError(t, err)
 	return b
 }
 
-func load(t *testing.T, path string) *bundle.Bundle {
-	return loadBundle(t, path, mutator.DefaultMutators())
-}
-
 func loadTarget(t *testing.T, path, env string) *bundle.Bundle {
-	return loadBundle(t, path, mutator.DefaultMutatorsForTarget(env))
+	b := load(t, path)
+	err := bundle.Apply(context.Background(), b, mutator.SelectTarget(env))
+	require.NoError(t, err)
+	return b
 }

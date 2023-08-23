@@ -1,13 +1,20 @@
 package config_tests
 
 import (
+	"context"
 	"testing"
 
+	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestRunAsDefault(t *testing.T) {
 	b := load(t, "./run_as")
+	ctx := context.Background()
+	err := bundle.Apply(ctx, b, bundle.Seq(mutator.PopulateCurrentUser(), mutator.SetRunAs()))
+	assert.NoError(t, err)
+
 	assert.Len(t, b.Config.Resources.Jobs, 3)
 	jobs := b.Config.Resources.Jobs
 
@@ -34,8 +41,11 @@ func TestRunAsDefault(t *testing.T) {
 
 func TestRunAsDevelopment(t *testing.T) {
 	b := loadTarget(t, "./run_as", "development")
-	assert.Len(t, b.Config.Resources.Jobs, 3)
+	ctx := context.Background()
+	err := bundle.Apply(ctx, b, bundle.Seq(mutator.PopulateCurrentUser(), mutator.SetRunAs()))
+	assert.NoError(t, err)
 
+	assert.Len(t, b.Config.Resources.Jobs, 3)
 	jobs := b.Config.Resources.Jobs
 
 	assert.NotNil(t, jobs["job_one"].RunAs)
