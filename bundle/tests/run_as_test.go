@@ -5,14 +5,21 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/mutator"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestRunAsDefault(t *testing.T) {
 	b := load(t, "./run_as")
+	b.Config.Workspace.CurrentUser = &config.User{
+		User: &iam.User{
+			UserName: "jane@doe.com",
+		},
+	}
 	ctx := context.Background()
-	err := bundle.Apply(ctx, b, bundle.Seq(mutator.PopulateCurrentUser(), mutator.SetRunAs()))
+	err := bundle.Apply(ctx, b, mutator.SetRunAs())
 	assert.NoError(t, err)
 
 	assert.Len(t, b.Config.Resources.Jobs, 3)
@@ -41,8 +48,13 @@ func TestRunAsDefault(t *testing.T) {
 
 func TestRunAsDevelopment(t *testing.T) {
 	b := loadTarget(t, "./run_as", "development")
+	b.Config.Workspace.CurrentUser = &config.User{
+		User: &iam.User{
+			UserName: "jane@doe.com",
+		},
+	}
 	ctx := context.Background()
-	err := bundle.Apply(ctx, b, bundle.Seq(mutator.PopulateCurrentUser(), mutator.SetRunAs()))
+	err := bundle.Apply(ctx, b, mutator.SetRunAs())
 	assert.NoError(t, err)
 
 	assert.Len(t, b.Config.Resources.Jobs, 3)
