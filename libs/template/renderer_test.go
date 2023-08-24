@@ -12,6 +12,7 @@ import (
 	"testing"
 	"text/template"
 
+	"github.com/databricks/cli/cmd/root"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -32,6 +33,7 @@ func TestRendererWithAssociatedTemplateInLibrary(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	ctx := context.Background()
+	ctx = root.SetWorkspaceClient(ctx, nil)
 	helpers := loadHelpers(ctx)
 	r, err := newRenderer(ctx, nil, helpers, "./testdata/email/template", "./testdata/email/library", tmpDir)
 	require.NoError(t, err)
@@ -204,6 +206,7 @@ func TestRendererPersistToDisk(t *testing.T) {
 
 func TestRendererWalk(t *testing.T) {
 	ctx := context.Background()
+	ctx = root.SetWorkspaceClient(ctx, nil)
 	tmpDir := t.TempDir()
 
 	helpers := loadHelpers(ctx)
@@ -244,6 +247,7 @@ func TestRendererWalk(t *testing.T) {
 
 func TestRendererFailFunction(t *testing.T) {
 	ctx := context.Background()
+	ctx = root.SetWorkspaceClient(ctx, nil)
 	tmpDir := t.TempDir()
 
 	helpers := loadHelpers(ctx)
@@ -256,6 +260,7 @@ func TestRendererFailFunction(t *testing.T) {
 
 func TestRendererSkipsDirsEagerly(t *testing.T) {
 	ctx := context.Background()
+	ctx = root.SetWorkspaceClient(ctx, nil)
 	tmpDir := t.TempDir()
 
 	helpers := loadHelpers(ctx)
@@ -272,6 +277,7 @@ func TestRendererSkipsDirsEagerly(t *testing.T) {
 
 func TestRendererSkipAllFilesInCurrentDirectory(t *testing.T) {
 	ctx := context.Background()
+	ctx = root.SetWorkspaceClient(ctx, nil)
 	tmpDir := t.TempDir()
 
 	helpers := loadHelpers(ctx)
@@ -294,6 +300,7 @@ func TestRendererSkipAllFilesInCurrentDirectory(t *testing.T) {
 
 func TestRendererSkipPatternsAreRelativeToFileDirectory(t *testing.T) {
 	ctx := context.Background()
+	ctx = root.SetWorkspaceClient(ctx, nil)
 	tmpDir := t.TempDir()
 
 	helpers := loadHelpers(ctx)
@@ -311,6 +318,7 @@ func TestRendererSkipPatternsAreRelativeToFileDirectory(t *testing.T) {
 
 func TestRendererSkip(t *testing.T) {
 	ctx := context.Background()
+	ctx = root.SetWorkspaceClient(ctx, nil)
 	tmpDir := t.TempDir()
 
 	helpers := loadHelpers(ctx)
@@ -343,6 +351,7 @@ func TestRendererReadsPermissionsBits(t *testing.T) {
 	}
 	tmpDir := t.TempDir()
 	ctx := context.Background()
+	ctx = root.SetWorkspaceClient(ctx, nil)
 
 	helpers := loadHelpers(ctx)
 	r, err := newRenderer(ctx, nil, helpers, "./testdata/executable-bit-read/template", "./testdata/executable-bit-read/library", tmpDir)
@@ -431,6 +440,7 @@ func TestRendererNoErrorOnConflictingFileIfSkipped(t *testing.T) {
 
 func TestRendererNonTemplatesAreCreatedAsCopyFiles(t *testing.T) {
 	ctx := context.Background()
+	ctx = root.SetWorkspaceClient(ctx, nil)
 	tmpDir := t.TempDir()
 
 	helpers := loadHelpers(ctx)
@@ -447,6 +457,7 @@ func TestRendererNonTemplatesAreCreatedAsCopyFiles(t *testing.T) {
 
 func TestRendererFileTreeRendering(t *testing.T) {
 	ctx := context.Background()
+	ctx = root.SetWorkspaceClient(ctx, nil)
 	tmpDir := t.TempDir()
 
 	helpers := loadHelpers(ctx)
@@ -473,6 +484,7 @@ func TestRendererFileTreeRendering(t *testing.T) {
 
 func TestRendererSubTemplateInPath(t *testing.T) {
 	ctx := context.Background()
+	ctx = root.SetWorkspaceClient(ctx, nil)
 	tmpDir := t.TempDir()
 
 	helpers := loadHelpers(ctx)
