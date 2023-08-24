@@ -28,5 +28,6 @@ __pycache__
 .terraform.lock.hcl
 
 .vscode/launch.json
+.vscode/tasks.json
 
 .databricks

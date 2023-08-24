@@ -7,8 +7,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-
-	"github.com/databricks/databricks-sdk-go"
 )
 
 const libraryDirName = "library"
@@ -26,7 +24,7 @@ var builtinTemplates embed.FS
 //	configFilePath: file path containing user defined config values
 //	templateRoot: 	root of the template definition
 //	outputDir: 	root of directory where to initialize the template
-func Materialize(ctx context.Context, w *databricks.WorkspaceClient, configFilePath, templateRoot, outputDir string) error {
+func Materialize(ctx context.Context, configFilePath, templateRoot, outputDir string) error {
 	// Use a temporary directory in case any builtin templates like default-python are used
 	tempDir, err := os.MkdirTemp("", "templates")
 	defer os.RemoveAll(tempDir)
@@ -41,7 +39,7 @@ func Materialize(ctx context.Context, w *databricks.WorkspaceClient, configFileP
 	templatePath := filepath.Join(templateRoot, templateDirName)
 	libraryPath := filepath.Join(templateRoot, libraryDirName)
 	schemaPath := filepath.Join(templateRoot, schemaFileName)
-	helpers := loadHelpers(ctx, w)
+	helpers := loadHelpers(ctx)
 
 	config, err := newConfig(ctx, schemaPath)
 	if err != nil {
@@ -82,9 +80,6 @@ func Materialize(ctx context.Context, w *databricks.WorkspaceClient, configFileP
 	if err != nil {
 		return err
 	}
-	if err != nil {
-		return err
-	}
 	println("✨ Successfully initialized template")
 	return nil
 }
@@ -92,32 +87,34 @@ func Materialize(ctx context.Context, w *databricks.WorkspaceClient, configFileP
 // If the given templateRoot matches
 func prepareBuiltinTemplates(templateRoot string, tempDir string) (string, error) {
 	_, err := fs.Stat(builtinTemplates, path.Join("templates", templateRoot))
-	if err == nil {
-		// We have a built-in template with the same name as templateRoot!
-		// Now we need to make a fully copy of the builtin templates to a real file system
-		// since template.Parse() doesn't support embed.FS.
-		err := fs.WalkDir(builtinTemplates, "templates", func(path string, entry fs.DirEntry, err error) error {
+	if err != nil {
+		// The given path doesn't appear to be using out built-in templates
+		return templateRoot, nil
+	}
+
+	// We have a built-in template with the same name as templateRoot!
+	// Now we need to make a fully copy of the builtin templates to a real file system
+	// since template.Parse() doesn't support embed.FS.
+	err = fs.WalkDir(builtinTemplates, "templates", func(path string, entry fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		targetPath := filepath.Join(tempDir, path)
+		if entry.IsDir() {
+			return os.Mkdir(targetPath, 0755)
+		} else {
+			content, err := fs.ReadFile(builtinTemplates, path)
 			if err != nil {
 				return err
 			}
-
-			targetPath := filepath.Join(tempDir, path)
-			if entry.IsDir() {
-				return os.Mkdir(targetPath, 0755)
-			} else {
-				content, err := fs.ReadFile(builtinTemplates, path)
-				if err != nil {
-					return err
-				}
-				return os.WriteFile(targetPath, content, 0644)
-			}
-		})
-
-		if err != nil {
-			return "", err
+			return os.WriteFile(targetPath, content, 0644)
 		}
+	})
 
-		return filepath.Join(tempDir, "templates", templateRoot), nil
+	if err != nil {
+		return "", err
 	}
-	return templateRoot, nil
+
+	return filepath.Join(tempDir, "templates", templateRoot), nil
 }

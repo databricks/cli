@@ -160,6 +160,11 @@ func (r *Repository) Ignore(relPath string) (bool, error) {
 		trailingSlash = "/"
 	}
 
+	// Never ignore the root path (an unnamed path)
+	if len(parts) == 1 && parts[0] == "." {
+		return false, nil
+	}
+
 	// Walk over path prefixes to check applicable gitignore files.
 	for i := range parts {
 		prefix := path.Clean(strings.Join(parts[:i], "/"))

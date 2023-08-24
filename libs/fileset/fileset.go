@@ -39,14 +39,14 @@ func (w *FileSet) Root() string {
 
 // Return all tracked files for Repo
 func (w *FileSet) All() ([]File, error) {
-	return w.RecursiveListFiles(w.root)
+	return w.recursiveListFiles()
 }
 
 // Recursively traverses dir in a depth first manner and returns a list of all files
 // that are being tracked in the FileSet (ie not being ignored for matching one of the
 // patterns in w.ignore)
-func (w *FileSet) RecursiveListFiles(dir string) (fileList []File, err error) {
-	err = filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
+func (w *FileSet) recursiveListFiles() (fileList []File, err error) {
+	err = filepath.WalkDir(w.root, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
