@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/git"
 	"github.com/databricks/cli/libs/template"
 	"github.com/databricks/databricks-sdk-go"
@@ -57,9 +58,6 @@ func newInitCommand() *cobra.Command {
 		if len(args) > 0 {
 			templatePath = args[0]
 		} else {
-			return errors.New("please specify a template")
-
-			/* TODO: propose to use default-python (once template is ready)
 			var err error
 			if !cmdio.IsOutTTY(ctx) || !cmdio.IsInTTY(ctx) {
 				return errors.New("please specify a template")
@@ -68,7 +66,6 @@ func newInitCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			*/
 		}
 
 		profile := root.GetProfile(cmd)

@@ -1,0 +1,36 @@
+# {{.project_name}}
+
+The '{{.project_name}}' project was generated using the default-python template.
+
+## Getting started
+
+1. Install the Databricks CLI from https://docs.databricks.com/en/dev-tools/cli/databricks-cli.html
+
+2. Authenticate to your Databricks workspace:
+    ```
+    $ databricks auth login
+    ```
+
+3. To deploy a development copy of this project, type:
+    ```
+    $ databricks bundle deploy --target development
+    ```
+    (note that "development" is the default target, so the `--target` parameter
+    is optional here)
+
+    This deploys everything that's defined for this project.
+    For example, the default template would deploy a job called
+    `[dev yourname] {{.project_name}}-job` to your workspace.
+    You can find that job by open your workpace and clicking on "Workflows."
+
+4. Similarly, to deploy a production copy, type:
+   ```
+   $ databricks bundle deploy --target production
+   ```
+
+4. Optionally, install developer tools such as the VS Code plugin from
+   https://docs.databricks.com/en/dev-tools.
+
+5. For documentation on the Databricks Asset Bundles format used
+   for this project, and for CI/CD configuration, see
+   https://docs.databricks.com/en/dev-tools/bundles.

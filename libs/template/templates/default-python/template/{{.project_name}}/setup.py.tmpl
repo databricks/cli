@@ -19,6 +19,6 @@ setup(
     description="my test wheel",
     packages=find_packages(where='./src'),
     package_dir={'': 'src'},
-    entry_points={"group_1": "run={{.project_name}}.__main__:main"},
-    install_requires=["setuptools", "scikit-learn"],
+    entry_points={"entry_points": "main={{.project_name}}.main:main"},
+    install_requires=["setuptools"],
 )

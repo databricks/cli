@@ -1,8 +1,8 @@
 bundle:
-  name: com.mycompany.{{.project_name}}
+  name: {{.project_name}}
 
 include:
-  - res/*.yml
+  - resources/*.yml
 
 artifacts:
     {{.project_name}}:
@@ -10,23 +10,20 @@ artifacts:
       path: "."
       build: "python3 setup.py bdist_wheel"
 
-environments:
-  dev:
+targets:
+  development:
     workspace:
       host: {{workspace_host}}
     mode: development
     default: true
 
-  prod:
+  production:
     workspace:
       host: {{workspace_host}}
       root_path: /Shared/.bundle/prod/${bundle.name}
     mode: production
-
-    {{- if is_service_principal -}}
+    {{if is_service_principal}}
     {{- else -}}
-    {{- /* TODO: use the top-level run_as property once implemented
     run_as:
       user_name: brackets user_name brackets
-    */ -}}
     {{- end -}}
