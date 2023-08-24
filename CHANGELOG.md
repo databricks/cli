@@ -1,5 +1,20 @@
 # Version changelog
 
+## 0.203.2
+
+CLI:
+ * Added `databricks account o-auth-enrollment enable` command ([#687](https://github.com/databricks/cli/pull/687)).
+
+Bundles:
+ * Do not try auto detect Python package if no Python wheel tasks defined ([#674](https://github.com/databricks/cli/pull/674)).
+ * Renamed `environments` to `targets` in bundle configuration ([#670](https://github.com/databricks/cli/pull/670)).
+ * Rename init project-dir flag to output-dir ([#676](https://github.com/databricks/cli/pull/676)).
+ * Added support for sync.include and sync.exclude sections ([#671](https://github.com/databricks/cli/pull/671)).
+ * Add template directory flag for bundle templates ([#675](https://github.com/databricks/cli/pull/675)).
+ * Never ignore root directory when enumerating files in a repository ([#683](https://github.com/databricks/cli/pull/683)).
+ * Improve 'mode' error message ([#681](https://github.com/databricks/cli/pull/681)).
+ * Added run_as section for bundle configuration ([#692](https://github.com/databricks/cli/pull/692)).
+
 ## 0.203.1
 
 CLI:
