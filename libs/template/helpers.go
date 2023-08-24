@@ -28,6 +28,7 @@ type pair struct {
 
 func loadHelpers(ctx context.Context) template.FuncMap {
 	var user *iam.User
+	var is_service_principal *bool
 	w := root.WorkspaceClient(ctx)
 	return template.FuncMap{
 		"fail": func(format string, args ...any) (any, error) {
@@ -93,6 +94,9 @@ func loadHelpers(ctx context.Context) template.FuncMap {
 			return result, nil
 		},
 		"is_service_principal": func() (bool, error) {
+			if is_service_principal != nil {
+				return *is_service_principal, nil
+			}
 			if user == nil {
 				var err error
 				user, err = w.CurrentUser.Me(ctx)
@@ -100,7 +104,9 @@ func loadHelpers(ctx context.Context) template.FuncMap {
 					return false, err
 				}
 			}
-			return auth.IsServicePrincipal(ctx, w, user.Id), nil
+			result := auth.IsServicePrincipal(ctx, w, user.Id)
+			is_service_principal = &result
+			return result, nil
 		},
 	}
 }
