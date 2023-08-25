@@ -16,6 +16,7 @@ func Initialize() bundle.Mutator {
 		"initialize",
 		[]bundle.Mutator{
 			mutator.PopulateCurrentUser(),
+			mutator.SetRunAs(),
 			mutator.DefineDefaultWorkspaceRoot(),
 			mutator.ExpandWorkspaceRoot(),
 			mutator.DefineDefaultWorkspacePaths(),
