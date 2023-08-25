@@ -104,7 +104,7 @@ func (r *renderer) executeTemplate(templateDefinition string) (string, error) {
 	// Parse the template text
 	tmpl, err = tmpl.Parse(templateDefinition)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("error in %s: %w", templateDefinition, err)
 	}
 
 	// Execute template and get result
