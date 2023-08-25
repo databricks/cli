@@ -26,9 +26,10 @@ type pair struct {
 	v any
 }
 
+var cachedUser *iam.User
+var cachedIsServicePrincipal *bool
+
 func loadHelpers(ctx context.Context) template.FuncMap {
-	var user *iam.User
-	var is_service_principal *bool
 	w := root.WorkspaceClient(ctx)
 	return template.FuncMap{
 		"fail": func(format string, args ...any) (any, error) {
@@ -80,32 +81,32 @@ func loadHelpers(ctx context.Context) template.FuncMap {
 			return w.Config.Host, nil
 		},
 		"user_name": func() (string, error) {
-			if user == nil {
+			if cachedUser == nil {
 				var err error
-				user, err = w.CurrentUser.Me(ctx)
+				cachedUser, err = w.CurrentUser.Me(ctx)
 				if err != nil {
 					return "", err
 				}
 			}
-			result := user.UserName
+			result := cachedUser.UserName
 			if result == "" {
-				result = user.Id
+				result = cachedUser.Id
 			}
 			return result, nil
 		},
 		"is_service_principal": func() (bool, error) {
-			if is_service_principal != nil {
-				return *is_service_principal, nil
+			if cachedIsServicePrincipal != nil {
+				return *cachedIsServicePrincipal, nil
 			}
-			if user == nil {
+			if cachedUser == nil {
 				var err error
-				user, err = w.CurrentUser.Me(ctx)
+				cachedUser, err = w.CurrentUser.Me(ctx)
 				if err != nil {
 					return false, err
 				}
 			}
-			result := auth.IsServicePrincipal(ctx, w, user.Id)
-			is_service_principal = &result
+			result := auth.IsServicePrincipal(ctx, w, cachedUser.Id)
+			cachedIsServicePrincipal = &result
 			return result, nil
 		},
 	}

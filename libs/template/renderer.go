@@ -9,6 +9,7 @@ import (
 	"path"
 	"path/filepath"
 	"slices"
+	"sort"
 	"strings"
 	"text/template"
 
@@ -214,17 +215,22 @@ func (r *renderer) walk() error {
 		// Add skip function, which accumulates skip patterns relative to current
 		// directory
 		r.baseTemplate.Funcs(template.FuncMap{
-			"skip": func(relPattern string) string {
+			"skip": func(relPattern string) (string, error) {
 				// patterns are specified relative to current directory of the file
 				// the {{skip}} function is called from.
-				pattern := path.Join(currentDirectory, relPattern)
+				pattern_raw := path.Join(currentDirectory, relPattern)
+				pattern, err := r.executeTemplate(pattern_raw)
+				if err != nil {
+					return "", err
+				}
+
 				if !slices.Contains(r.skipPatterns, pattern) {
 					logger.Infof(r.ctx, "adding skip pattern: %s", pattern)
 					r.skipPatterns = append(r.skipPatterns, pattern)
 				}
 				// return empty string will print nothing at function call site
 				// when executing the template
-				return ""
+				return "", nil
 			},
 		})
 
@@ -239,6 +245,10 @@ func (r *renderer) walk() error {
 		if err != nil {
 			return err
 		}
+		// Sort by name to ensure deterministic ordering
+		sort.Slice(entries, func(i, j int) bool {
+			return entries[i].Name() < entries[j].Name()
+		})
 		for _, entry := range entries {
 			if entry.IsDir() {
 				// Add to slice, for BFS traversal

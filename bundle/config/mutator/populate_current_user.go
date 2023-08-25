@@ -21,6 +21,10 @@ func (m *populateCurrentUser) Name() string {
 }
 
 func (m *populateCurrentUser) Apply(ctx context.Context, b *bundle.Bundle) error {
+	if b.Config.Workspace.CurrentUser != nil {
+		return nil
+	}
+
 	w := b.WorkspaceClient()
 	me, err := w.CurrentUser.Me(ctx)
 	if err != nil {

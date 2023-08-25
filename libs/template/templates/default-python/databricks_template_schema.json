@@ -4,6 +4,27 @@
             "type": "string",
             "default": "my_project",
             "description": "Unique name for this project"
+        },
+        "include_notebook": {
+            "todo": "use an enum here, see https://github.com/databricks/cli/pull/668",
+            "type": "string",
+            "default": "yes",
+            "pattern": "^(yes|no)$",
+            "description": "Include a stub (sample) notebook in 'my_project/src'"
+        },
+        "include_dlt": {
+            "todo": "use an enum here, see https://github.com/databricks/cli/pull/668",
+            "type": "string",
+            "default": "yes",
+            "pattern": "^(yes|no)$",
+            "description": "Include a stub (sample)  DLT pipeline in 'my_project/src'"
+        },
+        "include_python": {
+            "todo": "use an enum here, see https://github.com/databricks/cli/pull/668",
+            "type": "string",
+            "default": "yes",
+            "pattern": "^(yes|no)$",
+            "description": "Include a stub (sample) Python package 'my_project/src'"
         }
     }
 }
