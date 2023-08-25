@@ -1,0 +1,43 @@
+# The main job for {{.project_name}}
+resources:
+
+  jobs:
+    {{.project_name}}_job:
+      name: {{.project_name}}_job
+
+      schedule:
+        quartz_cron_expression: '44 37 8 * * ?'
+        timezone_id: Europe/Amsterdam
+
+      {{- if not is_service_principal}}
+      email_notifications:
+        on_failure:
+          - {{user_name}}
+      {{end -}}
+
+      tasks:
+        - task_key: notebook_task
+          job_cluster_key: job_cluster
+          notebook_task:
+            notebook_path: ../src/notebook.ipynb
+
+        - task_key: python_wheel_task
+          depends_on:
+            - task_key: notebook_task
+          job_cluster_key: job_cluster
+          python_wheel_task:
+            package_name: "{{.project_name}}"
+            entry_point: "main"
+          libraries:
+          {{- /* FIXME: this path is wrong, it should say ../dist/*.whl */}}
+          - whl: dist/*.whl
+
+      job_clusters:
+        - job_cluster_key: job_cluster
+          new_cluster:
+            {{- /* we should always use an LTS version in our templates */}}
+            spark_version: 13.3.x-scala2.12
+            node_type_id: {{smallest_node_type}}
+            autoscale:
+                min_workers: 1
+                max_workers: 4

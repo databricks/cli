@@ -1,3 +1,5 @@
+# This is a Databricks Asset Bundle definition for {{.project_name}}.
+# See https://docs.databricks.com/en/dev-tools/bundles for documentation.
 bundle:
   name: {{.project_name}}
 
@@ -5,25 +7,50 @@ include:
   - resources/*.yml
 
 artifacts:
-    {{.project_name}}:
-      type: whl
-      path: "."
-      build: "python3 setup.py bdist_wheel"
+  {{.project_name}}:
+    type: whl
+    path: "."
+    build: "python3 setup.py bdist_wheel"
 
 targets:
-  development:
-    workspace:
-      host: {{workspace_host}}
+  # The 'dev' target, used development purposes.
+  # Whenever a developer deploys using 'dev', they get their own copy.
+  dev:
+    # We use 'mode: development' to make everything deployed to this target gets a prefix
+    # like '[dev my_user_name]'. Setting this mode also disables any schedules and
+    # automatic triggers for jobs and enables the 'development' mode for DLT pipelines.
     mode: development
     default: true
+    workspace:
+      host: {{workspace_host}}
 
+  # Optionally, there could be a 'staging' target here.
+  # staging:
+  #  workspace:
+  #    host: {{workspace_host}}
+
+  # The 'prod' target, used for production deployment.
   production:
+    # For production deployments, we only have a single copy, so we override the
+    # workspace.root_path default of
+    # /Users/${workspace.current_user.userName}/.bundle/${bundle.environment}/${bundle.name}
+    # to a path that is not specific to the current user.
+    {{- /*
+    Explaining 'mode: production' isn't as pressing as explaining 'mode: development'.
+    As we already talked about the other mode above, users can just
+    look at documentation or ask the assistant about 'mode: production'.
+    #
+    # By making use of 'mode: production' we enable strict checks
+    # to make sure we have correctly configured this target.
+    */}}
+    mode: production
     workspace:
       host: {{workspace_host}}
       root_path: /Shared/.bundle/prod/${bundle.name}
-    mode: production
-    {{if is_service_principal}}
-    {{- else -}}
+    {{- if not is_service_principal}}
     run_as:
-      user_name: brackets user_name brackets
-    {{- end -}}
+      # This runs as {{user_name}} in production. Alternatively,
+      # a service principal could be used here using service_principal_name
+      # (see Databricks documentation).
+      user_name: {{user_name}}
+    {{end -}}
