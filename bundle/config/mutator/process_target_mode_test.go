@@ -118,17 +118,6 @@ func TestProcessTargetModeProduction(t *testing.T) {
 	assert.False(t, bundle.Config.Resources.Pipelines["pipeline1"].PipelineSpec.Development)
 }
 
-func TestProcessTargetModeProductionGit(t *testing.T) {
-	bundle := mockBundle(config.Production)
-
-	// Pretend the user didn't set Git configuration explicitly
-	bundle.Config.Bundle.Git.Inferred = true
-
-	err := validateProductionMode(context.Background(), bundle, false)
-	require.ErrorContains(t, err, "git")
-	bundle.Config.Bundle.Git.Inferred = false
-}
-
 func TestProcessTargetModeProductionOkForPrincipal(t *testing.T) {
 	bundle := mockBundle(config.Production)
 

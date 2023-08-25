@@ -1,10 +1,12 @@
 package bundle
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/git"
 	"github.com/databricks/cli/libs/template"
 	"github.com/spf13/cobra"
@@ -36,9 +38,9 @@ func repoName(url string) string {
 
 func newInitCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "init TEMPLATE_PATH",
+		Use:   "init [TEMPLATE_PATH]",
 		Short: "Initialize Template",
-		Args:  cobra.ExactArgs(1),
+		Args:  cobra.MaximumNArgs(1),
 	}
 
 	var configFile string
@@ -48,9 +50,26 @@ func newInitCommand() *cobra.Command {
 	cmd.Flags().StringVar(&templateDir, "template-dir", "", "Directory within repository that holds the template specification.")
 	cmd.Flags().StringVar(&outputDir, "output-dir", "", "Directory to write the initialized template to.")
 
+	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		templatePath := args[0]
 		ctx := cmd.Context()
+		var templatePath string
+		if len(args) > 0 {
+			templatePath = args[0]
+		} else {
+			return errors.New("please specify a template")
+
+			/* TODO: propose to use default-python (once template is ready)
+			var err error
+			if !cmdio.IsOutTTY(ctx) || !cmdio.IsInTTY(ctx) {
+				return errors.New("please specify a template")
+			}
+			templatePath, err = cmdio.Ask(ctx, "Template to use", "default-python")
+			if err != nil {
+				return err
+			}
+			*/
+		}
 
 		if !isRepoUrl(templatePath) {
 			// skip downloading the repo because input arg is not a URL. We assume
