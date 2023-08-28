@@ -17,7 +17,7 @@
             "type": "string",
             "default": "yes",
             "pattern": "^(yes|no)$",
-            "description": "Include a stub (sample)  DLT pipeline in 'my_project/src'"
+            "description": "Include a stub (sample) DLT pipeline in 'my_project/src'"
         },
         "include_python": {
             "todo": "use an enum here, see https://github.com/databricks/cli/pull/668",
