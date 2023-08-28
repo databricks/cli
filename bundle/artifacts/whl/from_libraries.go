@@ -21,7 +21,7 @@ func (m *fromLibraries) Name() string {
 }
 
 func (*fromLibraries) Apply(ctx context.Context, b *bundle.Bundle) error {
-	if b.Config.Artifacts != nil {
+	if len(b.Config.Artifacts) == 0 {
 		log.Debugf(ctx, "Skipping defining artifacts from libraries because artifacts section is explicitly defined")
 		return nil
 	}
@@ -40,6 +40,8 @@ func (*fromLibraries) Apply(ctx context.Context, b *bundle.Bundle) error {
 				if b.Config.Artifacts == nil {
 					b.Config.Artifacts = make(map[string]*config.Artifact)
 				}
+
+				log.Debugf(ctx, "Adding an artifact block for %s", match)
 				b.Config.Artifacts[name] = &config.Artifact{
 					Files: []config.ArtifactFile{
 						{Source: match},
