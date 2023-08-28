@@ -26,7 +26,7 @@ func getTarget(cmd *cobra.Command) (value string) {
 
 	oldFlag := cmd.Flag("environment")
 	if oldFlag != nil {
-		value = flag.Value.String()
+		value = oldFlag.Value.String()
 		if value != "" {
 			return
 		}
