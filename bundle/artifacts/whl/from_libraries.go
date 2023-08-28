@@ -21,7 +21,7 @@ func (m *fromLibraries) Name() string {
 }
 
 func (*fromLibraries) Apply(ctx context.Context, b *bundle.Bundle) error {
-	if len(b.Config.Artifacts) == 0 {
+	if len(b.Config.Artifacts) != 0 {
 		log.Debugf(ctx, "Skipping defining artifacts from libraries because artifacts section is explicitly defined")
 		return nil
 	}
