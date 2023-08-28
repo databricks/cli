@@ -93,7 +93,7 @@ func findArtifactsAndMarkForUpload(ctx context.Context, lib *compute.Library, b 
 	}
 
 	if len(matches) == 0 && isLocalLibrary(lib) {
-		return fmt.Errorf("file %s is referenced in libraries section but no such file found on local file system", libPath(lib))
+		return fmt.Errorf("file %s is referenced in libraries section but doesn't exist on the local file system", libPath(lib))
 	}
 
 	for _, match := range matches {
@@ -140,18 +140,34 @@ func isLocalLibrary(library *compute.Library) bool {
 		return false
 	}
 
-	url, err := url.Parse(path)
-	if err != nil {
+	if isExplicitFileScheme(path) {
 		return true
 	}
 
-	// If scheme exists in path and it's "file" than it's a local path
-	// If scheme exists but it's not in the format of "scheme://" it means it's a Windows full path
-	if url.Scheme != "" {
-		return url.Scheme == "file" || !strings.HasPrefix(path, url.Scheme+"://")
+	if isRemoteStorageScheme(path) {
+		return false
 	}
 
 	return !isWorkspacePath(path)
+}
+
+func isExplicitFileScheme(path string) bool {
+	return strings.HasPrefix(path, "file://")
+}
+
+func isRemoteStorageScheme(path string) bool {
+	url, err := url.Parse(path)
+	if err != nil {
+		return false
+	}
+
+	if url.Scheme == "" {
+		return false
+	}
+
+	// If the path starts with scheme:// format, it's a correct remote storage scheme
+	return strings.HasPrefix(path, url.Scheme+"://")
+
 }
 
 func isWorkspacePath(path string) bool {
