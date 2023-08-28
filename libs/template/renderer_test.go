@@ -36,11 +36,10 @@ func assertFilePermissions(t *testing.T, path string, perm fs.FileMode) {
 	assert.Equal(t, perm, info.Mode().Perm())
 }
 
-func assertBuiltinTemplateValid(t *testing.T, settings map[string]any, target string, isServicePrincipal bool, build bool) {
+func assertBuiltinTemplateValid(t *testing.T, settings map[string]any, target string, isServicePrincipal bool, build bool, tempDir string) {
 	ctx := context.Background()
 
-	tmpDir := t.TempDir() // Temporary directory for rendered output
-	templatePath, err := prepareBuiltinTemplates("default-python", tmpDir)
+	templatePath, err := prepareBuiltinTemplates("default-python", tempDir)
 	require.NoError(t, err)
 
 	w := &databricks.WorkspaceClient{
@@ -53,7 +52,7 @@ func assertBuiltinTemplateValid(t *testing.T, settings map[string]any, target st
 	ctx = root.SetWorkspaceClient(ctx, w)
 	helpers := loadHelpers(ctx)
 
-	renderer, err := newRenderer(ctx, settings, helpers, templatePath, "./testdata/template-in-path/library", tmpDir)
+	renderer, err := newRenderer(ctx, settings, helpers, templatePath, "./testdata/template-in-path/library", tempDir)
 	require.NoError(t, err)
 
 	// Evaluate template
@@ -61,7 +60,7 @@ func assertBuiltinTemplateValid(t *testing.T, settings map[string]any, target st
 	require.NoError(t, err)
 	err = renderer.persistToDisk()
 	require.NoError(t, err)
-	b, err := bundle.Load(ctx, filepath.Join(tmpDir, "template", "my_project"))
+	b, err := bundle.Load(ctx, filepath.Join(tempDir, "template", "my_project"))
 	require.NoError(t, err)
 
 	// Apply initialize / validation mutators
@@ -99,7 +98,8 @@ func TestBuiltinTemplateValid(t *testing.T) {
 						"include_dlt":      includeDlt,
 						"include_python":   includePython,
 					}
-					assertBuiltinTemplateValid(t, config, "dev", isServicePrincipal, build)
+					tempDir := t.TempDir()
+					assertBuiltinTemplateValid(t, config, "dev", isServicePrincipal, build, tempDir)
 				}
 			}
 		}
@@ -114,7 +114,15 @@ func TestBuiltinTemplateValid(t *testing.T) {
 	}
 	isServicePrincipal = false
 	build = true
-	assertBuiltinTemplateValid(t, config, "prod", isServicePrincipal, build)
+
+	// On Windows, we can't always remove the resulting temp dir since background
+	// processes might have it open, so we use 'defer' for a best-effort cleanup
+	tempDir, err := os.MkdirTemp("", "templates")
+	require.NoError(t, err)
+	defer os.RemoveAll(tempDir)
+
+	assertBuiltinTemplateValid(t, config, "prod", isServicePrincipal, build, tempDir)
+	defer os.RemoveAll(tempDir)
 }
 
 func TestRendererWithAssociatedTemplateInLibrary(t *testing.T) {
