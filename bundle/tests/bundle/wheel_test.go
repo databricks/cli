@@ -60,3 +60,29 @@ func TestBundlePythonWheelWithDBFSLib(t *testing.T) {
 	err = match.Apply(ctx, b)
 	require.NoError(t, err)
 }
+
+func TestBundlePythonWheelBuildNoBuildJustUpload(t *testing.T) {
+	ctx := context.Background()
+	b, err := bundle.Load(ctx, "./python_wheel_no_artifact_no_setup")
+	require.NoError(t, err)
+
+	m := phases.Build()
+	err = m.Apply(ctx, b)
+	require.NoError(t, err)
+
+	match := libraries.MatchWithArtifacts()
+	err = match.Apply(ctx, b)
+	require.ErrorContains(t, err, "./non-existing/*.whl")
+
+	require.NotZero(t, len(b.Config.Artifacts))
+
+	artifact := b.Config.Artifacts["my_test_code-0.0.1-py3-none-any.whl"]
+	require.NotNil(t, artifact)
+	require.Empty(t, artifact.BuildCommand)
+	require.Contains(t, artifact.Files[0].Source, filepath.Join(
+		b.Config.Path,
+		"package",
+		"my_test_code-0.0.1-py3-none-any.whl",
+	))
+	require.True(t, artifact.Files[0].NeedsUpload())
+}
