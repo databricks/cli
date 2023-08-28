@@ -40,7 +40,7 @@ func TestConvertJob(t *testing.T) {
 		},
 	}
 
-	out := BundleToTerraform(&config)
+	out, _ := BundleToTerraform(&config)
 	assert.Equal(t, "my job", out.Resource.Job["my_job"].Name)
 	assert.Len(t, out.Resource.Job["my_job"].JobCluster, 1)
 	assert.Equal(t, "https://github.com/foo/bar", out.Resource.Job["my_job"].GitSource.Url)
@@ -65,7 +65,7 @@ func TestConvertJobPermissions(t *testing.T) {
 		},
 	}
 
-	out := BundleToTerraform(&config)
+	out, _ := BundleToTerraform(&config)
 	assert.NotEmpty(t, out.Resource.Permissions["job_my_job"].JobId)
 	assert.Len(t, out.Resource.Permissions["job_my_job"].AccessControl, 1)
 
@@ -101,7 +101,7 @@ func TestConvertJobTaskLibraries(t *testing.T) {
 		},
 	}
 
-	out := BundleToTerraform(&config)
+	out, _ := BundleToTerraform(&config)
 	assert.Equal(t, "my job", out.Resource.Job["my_job"].Name)
 	require.Len(t, out.Resource.Job["my_job"].Task, 1)
 	require.Len(t, out.Resource.Job["my_job"].Task[0].Library, 1)
@@ -135,7 +135,7 @@ func TestConvertPipeline(t *testing.T) {
 		},
 	}
 
-	out := BundleToTerraform(&config)
+	out, _ := BundleToTerraform(&config)
 	assert.Equal(t, "my pipeline", out.Resource.Pipeline["my_pipeline"].Name)
 	assert.Len(t, out.Resource.Pipeline["my_pipeline"].Library, 2)
 	assert.Nil(t, out.Data)
@@ -159,7 +159,7 @@ func TestConvertPipelinePermissions(t *testing.T) {
 		},
 	}
 
-	out := BundleToTerraform(&config)
+	out, _ := BundleToTerraform(&config)
 	assert.NotEmpty(t, out.Resource.Permissions["pipeline_my_pipeline"].PipelineId)
 	assert.Len(t, out.Resource.Permissions["pipeline_my_pipeline"].AccessControl, 1)
 
@@ -194,7 +194,7 @@ func TestConvertModel(t *testing.T) {
 		},
 	}
 
-	out := BundleToTerraform(&config)
+	out, _ := BundleToTerraform(&config)
 	assert.Equal(t, "name", out.Resource.MlflowModel["my_model"].Name)
 	assert.Equal(t, "description", out.Resource.MlflowModel["my_model"].Description)
 	assert.Len(t, out.Resource.MlflowModel["my_model"].Tags, 2)
@@ -223,7 +223,7 @@ func TestConvertModelPermissions(t *testing.T) {
 		},
 	}
 
-	out := BundleToTerraform(&config)
+	out, _ := BundleToTerraform(&config)
 	assert.NotEmpty(t, out.Resource.Permissions["mlflow_model_my_model"].RegisteredModelId)
 	assert.Len(t, out.Resource.Permissions["mlflow_model_my_model"].AccessControl, 1)
 
@@ -247,7 +247,7 @@ func TestConvertExperiment(t *testing.T) {
 		},
 	}
 
-	out := BundleToTerraform(&config)
+	out, _ := BundleToTerraform(&config)
 	assert.Equal(t, "name", out.Resource.MlflowExperiment["my_experiment"].Name)
 	assert.Nil(t, out.Data)
 }
@@ -270,7 +270,7 @@ func TestConvertExperimentPermissions(t *testing.T) {
 		},
 	}
 
-	out := BundleToTerraform(&config)
+	out, _ := BundleToTerraform(&config)
 	assert.NotEmpty(t, out.Resource.Permissions["mlflow_experiment_my_experiment"].ExperimentId)
 	assert.Len(t, out.Resource.Permissions["mlflow_experiment_my_experiment"].AccessControl, 1)
 
