@@ -40,7 +40,7 @@
     "import dlt\n",
     "from pyspark.sql.functions import expr\n",
     "from pyspark.sql import SparkSession\n",
-    "spark = SparkSession.builder.getOrCreate()\n"
+    "spark = SparkSession.builder.getOrCreate()\n",
     "import sys\n",
     "try:\n",
     "  sys.path.append(spark.conf.get(\"bundle.sourcePath\"))\n",
