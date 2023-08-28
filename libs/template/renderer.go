@@ -218,8 +218,8 @@ func (r *renderer) walk() error {
 			"skip": func(relPattern string) (string, error) {
 				// patterns are specified relative to current directory of the file
 				// the {{skip}} function is called from.
-				pattern_raw := path.Join(currentDirectory, relPattern)
-				pattern, err := r.executeTemplate(pattern_raw)
+				patternRaw := path.Join(currentDirectory, relPattern)
+				pattern, err := r.executeTemplate(patternRaw)
 				if err != nil {
 					return "", err
 				}
