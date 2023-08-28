@@ -3,6 +3,7 @@ package libraries
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"path/filepath"
 	"strings"
 
@@ -92,13 +93,13 @@ func findArtifactsAndMarkForUpload(ctx context.Context, lib *compute.Library, b 
 	}
 
 	if len(matches) == 0 && isLocalLibrary(lib) {
-		return fmt.Errorf("no library found for %s", libPath(lib))
+		return fmt.Errorf("file %s is referenced in libraries section but no such file found on local file system", libPath(lib))
 	}
 
 	for _, match := range matches {
 		af, err := findArtifactFileByLocalPath(match, b)
 		if err != nil {
-			cmdio.LogString(ctx, fmt.Sprintf("%s. Skipping %s. In order to use the library upload it manually", err.Error(), match))
+			cmdio.LogString(ctx, fmt.Sprintf("%s. Skipping uploading. In order to use the define 'artifacts' section", err.Error()))
 		} else {
 			af.Libraries = append(af.Libraries, lib)
 		}
@@ -116,7 +117,7 @@ func findArtifactFileByLocalPath(path string, b *bundle.Bundle) (*config.Artifac
 		}
 	}
 
-	return nil, fmt.Errorf("artifact file is not found for path %s", path)
+	return nil, fmt.Errorf("artifact section is not defined for file at %s", path)
 }
 
 func libPath(library *compute.Library) string {
@@ -139,11 +140,18 @@ func isLocalLibrary(library *compute.Library) bool {
 		return false
 	}
 
-	return !isDbfsPath(path) && !isWorkspacePath(path)
-}
+	url, err := url.Parse(path)
+	if err != nil {
+		return true
+	}
 
-func isDbfsPath(path string) bool {
-	return strings.HasPrefix(path, "dbfs:/")
+	// If scheme exists in path and it's "file" than it's a local path
+	// If scheme exists but it's not in the format of "scheme://" it means it's a Windows full path
+	if url.Scheme != "" {
+		return url.Scheme == "file" || !strings.HasPrefix(path, url.Scheme+"://")
+	}
+
+	return !isWorkspacePath(path)
 }
 
 func isWorkspacePath(path string) bool {
