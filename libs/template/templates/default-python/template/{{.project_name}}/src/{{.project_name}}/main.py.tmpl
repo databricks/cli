@@ -2,7 +2,7 @@
 We use pyspark.sql rather than DatabricksSession.builder.getOrCreate()
 for compatibility with older runtimes. With a new runtime, it's
 equivalent to DatabricksSession.builder.getOrCreate().
-*/}}
+*/ -}}
 from pyspark.sql import SparkSession
 
 def get_taxis():
