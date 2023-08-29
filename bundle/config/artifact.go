@@ -8,8 +8,18 @@ import (
 	"path"
 	"strings"
 
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 )
+
+type Artifacts map[string]*Artifact
+
+func (artifacts Artifacts) SetConfigFilePath(path string) {
+	for k := range artifacts {
+		artifact := artifacts[k]
+		artifact.ConfigFilePath = path
+	}
+}
 
 type ArtifactType string
 
@@ -34,6 +44,8 @@ type Artifact struct {
 	// (Python wheel, Java jar and etc) itself
 	Files        []ArtifactFile `json:"files"`
 	BuildCommand string         `json:"build"`
+
+	resources.Paths
 }
 
 func (a *Artifact) Build(ctx context.Context) ([]byte, error) {

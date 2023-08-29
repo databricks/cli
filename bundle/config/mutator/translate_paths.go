@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
 	"path"
 	"path/filepath"
@@ -11,8 +12,6 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/notebook"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
-	"github.com/databricks/databricks-sdk-go/service/pipelines"
 )
 
 type ErrIsNotebook struct {
@@ -44,7 +43,9 @@ func (m *translatePaths) Name() string {
 	return "TranslatePaths"
 }
 
-// rewritePath converts a given relative path to a stable remote workspace path.
+type rewriteFunc func(b *bundle.Bundle, literal, localPath, remotePath string) (string, error)
+
+// rewritePath converts a given relative path from the loaded config to a new path based on the passed rewriting function
 //
 // It takes these arguments:
 //   - The argument `dir` is the directory relative to which the given relative path is.
@@ -57,10 +58,20 @@ func (m *translatePaths) rewritePath(
 	dir string,
 	b *bundle.Bundle,
 	p *string,
-	fn func(literal, localPath, remotePath string) (string, error),
+	fn rewriteFunc,
 ) error {
 	// We assume absolute paths point to a location in the workspace
 	if path.IsAbs(filepath.ToSlash(*p)) {
+		return nil
+	}
+
+	url, err := url.Parse(*p)
+	if err != nil {
+		return err
+	}
+
+	// If the file path has scheme, it's a full path and we don't need to transform it
+	if url.Scheme != "" {
 		return nil
 	}
 
@@ -84,7 +95,7 @@ func (m *translatePaths) rewritePath(
 	remotePath = path.Join(b.Config.Workspace.FilesPath, filepath.ToSlash(remotePath))
 
 	// Convert local path into workspace path via specified function.
-	interp, err := fn(*p, localPath, filepath.ToSlash(remotePath))
+	interp, err := fn(b, *p, localPath, filepath.ToSlash(remotePath))
 	if err != nil {
 		return err
 	}
@@ -94,7 +105,7 @@ func (m *translatePaths) rewritePath(
 	return nil
 }
 
-func (m *translatePaths) translateNotebookPath(literal, localPath, remotePath string) (string, error) {
+func (m *translatePaths) translateNotebookPath(b *bundle.Bundle, literal, localPath, remotePath string) (string, error) {
 	nb, _, err := notebook.Detect(localPath)
 	if os.IsNotExist(err) {
 		return "", fmt.Errorf("notebook %s not found", literal)
@@ -110,7 +121,7 @@ func (m *translatePaths) translateNotebookPath(literal, localPath, remotePath st
 	return strings.TrimSuffix(remotePath, filepath.Ext(localPath)), nil
 }
 
-func (m *translatePaths) translateFilePath(literal, localPath, remotePath string) (string, error) {
+func (m *translatePaths) translateFilePath(b *bundle.Bundle, literal, localPath, remotePath string) (string, error) {
 	nb, _, err := notebook.Detect(localPath)
 	if os.IsNotExist(err) {
 		return "", fmt.Errorf("file %s not found", literal)
@@ -124,91 +135,102 @@ func (m *translatePaths) translateFilePath(literal, localPath, remotePath string
 	return remotePath, nil
 }
 
-func (m *translatePaths) translateJobTask(dir string, b *bundle.Bundle, task *jobs.Task) error {
-	var err error
-
-	if task.NotebookTask != nil {
-		err = m.rewritePath(dir, b, &task.NotebookTask.NotebookPath, m.translateNotebookPath)
-		if target := (&ErrIsNotNotebook{}); errors.As(err, target) {
-			return fmt.Errorf(`expected a notebook for "tasks.notebook_task.notebook_path" but got a file: %w`, target)
-		}
-		if err != nil {
-			return err
-		}
-	}
-
-	if task.SparkPythonTask != nil {
-		err = m.rewritePath(dir, b, &task.SparkPythonTask.PythonFile, m.translateFilePath)
-		if target := (&ErrIsNotebook{}); errors.As(err, target) {
-			return fmt.Errorf(`expected a file for "tasks.spark_python_task.python_file" but got a notebook: %w`, target)
-		}
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
+func (m *translatePaths) translateToBundleRootRelativePath(b *bundle.Bundle, literal, localPath, remotePath string) (string, error) {
+	return filepath.Rel(b.Config.Path, localPath)
 }
 
-func (m *translatePaths) translatePipelineLibrary(dir string, b *bundle.Bundle, library *pipelines.PipelineLibrary) error {
-	var err error
+type transformer struct {
+	// A directory path relative to which `path` will be transformed
+	dir string
 
-	if library.Notebook != nil {
-		err = m.rewritePath(dir, b, &library.Notebook.Path, m.translateNotebookPath)
-		if target := (&ErrIsNotNotebook{}); errors.As(err, target) {
-			return fmt.Errorf(`expected a notebook for "libraries.notebook.path" but got a file: %w`, target)
-		}
-		if err != nil {
-			return err
+	// A path to transform
+	path *string
+
+	// Name of the config property where the path string is coming from
+	configPath string
+
+	// A function that performs the actual rewriting logic.
+	fn rewriteFunc
+}
+type transformerFactory func(*translatePaths, *bundle.Bundle) ([]*transformer, error)
+type selector struct {
+	// A path to transform
+	path *string
+
+	// Name of the config property where the path string is coming from
+	configPath string
+
+	// A function that performs the actual rewriting logic.
+	fn rewriteFunc
+}
+type selectorFunc func(resource interface{}, m *translatePaths) *selector
+
+// List of available transformer factories. All of them will be called to get the list of transformers to execute.
+var transformerFactories []transformerFactory = []transformerFactory{
+	getJobsTransformers,
+	getPipelineTransformers,
+	getArtifactsTransformers,
+}
+
+// List of selector functions which are used to identify if the resource passed
+// Should have it's path transformed.
+// If it needs to be transformed, selector returns a reference to string to be transformed
+// And a function to apply for this string
+var selectors []selectorFunc = []selectorFunc{
+	selectNotebookTask,
+	selectSparkTask,
+	selectLibraryNotebook,
+	selectLibraryFile,
+	selectArtifactPath,
+	selectWhlLibrary,
+	selectJarLibrary,
+}
+
+// Appends the first matched transfomer for the given resource if it matches any if selectors defined
+func addTransformerForResource(transformers []*transformer, m *translatePaths, resource interface{}, dir string) []*transformer {
+	for _, selector := range selectors {
+		s := selector(resource, m)
+		if s != nil {
+			transformers = append(transformers, &transformer{dir, s.path, s.configPath, s.fn})
+			break
 		}
 	}
 
-	if library.File != nil {
-		err = m.rewritePath(dir, b, &library.File.Path, m.translateFilePath)
-		if target := (&ErrIsNotebook{}); errors.As(err, target) {
-			return fmt.Errorf(`expected a file for "libraries.file.path" but got a notebook: %w`, target)
-		}
-		if err != nil {
-			return err
-		}
-	}
+	return transformers
+}
 
-	return nil
+// Returns a list of path transformers which are applied to specific configuration section based on
+// defined selectors
+func (m *translatePaths) getTransformers(b *bundle.Bundle) ([]*transformer, error) {
+	var transformers []*transformer = make([]*transformer, 0)
+	for _, get := range transformerFactories {
+		toAdd, err := get(m, b)
+		if err != nil {
+			return nil, err
+		}
+		transformers = append(transformers, toAdd...)
+	}
+	return transformers, nil
 }
 
 func (m *translatePaths) Apply(_ context.Context, b *bundle.Bundle) error {
 	m.seen = make(map[string]string)
 
-	for key, job := range b.Config.Resources.Jobs {
-		dir, err := job.ConfigFileDirectory()
-		if err != nil {
-			return fmt.Errorf("unable to determine directory for job %s: %w", key, err)
-		}
-
-		// Do not translate job task paths if using git source
-		if job.GitSource != nil {
-			continue
-		}
-
-		for i := 0; i < len(job.Tasks); i++ {
-			err := m.translateJobTask(dir, b, &job.Tasks[i])
-			if err != nil {
-				return err
-			}
-		}
+	transfomers, err := m.getTransformers(b)
+	if err != nil {
+		return err
 	}
 
-	for key, pipeline := range b.Config.Resources.Pipelines {
-		dir, err := pipeline.ConfigFileDirectory()
+	for _, transformer := range transfomers {
+		err := m.rewritePath(transformer.dir, b, transformer.path, transformer.fn)
 		if err != nil {
-			return fmt.Errorf("unable to determine directory for pipeline %s: %w", key, err)
-		}
-
-		for i := 0; i < len(pipeline.Libraries); i++ {
-			err := m.translatePipelineLibrary(dir, b, &pipeline.Libraries[i])
-			if err != nil {
-				return err
+			if target := (&ErrIsNotebook{}); errors.As(err, target) {
+				return fmt.Errorf(`expected a file for "%s" but got a notebook: %w`, transformer.configPath, target)
 			}
+			if target := (&ErrIsNotNotebook{}); errors.As(err, target) {
+				return fmt.Errorf(`expected a notebook for "%s" but got a file: %w`, transformer.configPath, target)
+			}
+			return err
 		}
 	}
 
