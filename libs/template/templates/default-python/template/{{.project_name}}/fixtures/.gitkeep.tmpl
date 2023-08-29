@@ -11,7 +11,14 @@ Below is an example of how to load fixtures as a data frame:
 
 ```
 import pandas as pd
+import os
 
-df = pd.read_csv("../fixtures/mycsv.csv")
+def get_relative_path(*relative_parts):
+    base_dir = os.path.dirname(dbutils.notebook.entry_point.getDbutils().notebook().getContext().notebookPath().get())
+    path = os.path.normpath(os.path.join(base_dir, *relative_parts))
+    return path if path.startswith("/Workspace") else os.path.join("/Workspace", path)
+
+csv_file = get_relative_path("..", "fixtures", "mycsv.csv")
+df = pd.read_csv(csv_file)
 display(df)
 ```
