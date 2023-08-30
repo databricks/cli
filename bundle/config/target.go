@@ -1,5 +1,7 @@
 package config
 
+import "github.com/databricks/databricks-sdk-go/service/jobs"
+
 type Mode string
 
 // Target defines overrides for a single target.
@@ -31,6 +33,8 @@ type Target struct {
 	Variables map[string]string `json:"variables,omitempty"`
 
 	Git Git `json:"git,omitempty"`
+
+	RunAs *jobs.JobRunAs `json:"run_as,omitempty"`
 }
 
 const (

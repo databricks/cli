@@ -8,7 +8,8 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/databricks-sdk-go/service/iam"
+	"github.com/databricks/cli/libs/auth"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 )
@@ -111,7 +112,7 @@ func findIncorrectPath(b *bundle.Bundle, mode config.Mode) string {
 func validateProductionMode(ctx context.Context, b *bundle.Bundle, isPrincipalUsed bool) error {
 	if b.Config.Bundle.Git.Inferred {
 		env := b.Config.Bundle.Target
-		return fmt.Errorf("target with 'mode: production' must specify an explicit 'targets.%s.git' configuration", env)
+		log.Warnf(ctx, "target with 'mode: production' should specify an explicit 'targets.%s.git' configuration", env)
 	}
 
 	r := b.Config.Resources
@@ -138,21 +139,6 @@ func validateProductionMode(ctx context.Context, b *bundle.Bundle, isPrincipalUs
 	return nil
 }
 
-// Determines whether a service principal identity is used to run the CLI.
-func isServicePrincipalUsed(ctx context.Context, b *bundle.Bundle) (bool, error) {
-	ws := b.WorkspaceClient()
-
-	// Check if a principal with the current user's ID exists.
-	// We need to use the ListAll method since Get is only usable by admins.
-	matches, err := ws.ServicePrincipals.ListAll(ctx, iam.ListServicePrincipalsRequest{
-		Filter: "id eq " + b.Config.Workspace.CurrentUser.Id,
-	})
-	if err != nil {
-		return false, err
-	}
-	return len(matches) > 0, nil
-}
-
 // Determines whether run_as is explicitly set for all resources.
 // We do this in a best-effort fashion rather than check the top-level
 // 'run_as' field because the latter is not required to be set.
@@ -174,15 +160,12 @@ func (m *processTargetMode) Apply(ctx context.Context, b *bundle.Bundle) error {
 		}
 		return transformDevelopmentMode(b)
 	case config.Production:
-		isPrincipal, err := isServicePrincipalUsed(ctx, b)
-		if err != nil {
-			return err
-		}
+		isPrincipal := auth.IsServicePrincipal(ctx, b.WorkspaceClient(), b.Config.Workspace.CurrentUser.Id)
 		return validateProductionMode(ctx, b, isPrincipal)
 	case "":
 		// No action
 	default:
-		return fmt.Errorf("unsupported value specified for 'mode': %s", b.Config.Bundle.Mode)
+		return fmt.Errorf("unsupported value '%s' specified for 'mode': must be either 'development' or 'production'", b.Config.Bundle.Mode)
 	}
 
 	return nil

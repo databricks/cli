@@ -26,7 +26,7 @@ func getTarget(cmd *cobra.Command) (value string) {
 
 	oldFlag := cmd.Flag("environment")
 	if oldFlag != nil {
-		value = flag.Value.String()
+		value = oldFlag.Value.String()
 		if value != "" {
 			return
 		}
@@ -43,7 +43,7 @@ func getTarget(cmd *cobra.Command) (value string) {
 	return target
 }
 
-func getProfile(cmd *cobra.Command) (value string) {
+func GetProfile(cmd *cobra.Command) (value string) {
 	// The command line flag takes precedence.
 	flag := cmd.Flag("profile")
 	if flag != nil {
@@ -70,7 +70,7 @@ func loadBundle(cmd *cobra.Command, args []string, load func(ctx context.Context
 		return nil, nil
 	}
 
-	profile := getProfile(cmd)
+	profile := GetProfile(cmd)
 	if profile != "" {
 		b.Config.Workspace.Profile = profile
 	}

@@ -5,7 +5,7 @@ package python
 import (
 	"context"
 	"os"
-	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/databricks/cli/libs/log"
@@ -13,8 +13,8 @@ import (
 
 func CleanupWheelFolder(dir string) {
 	// there or not there - we don't care
-	os.RemoveAll(path.Join(dir, "__pycache__"))
-	os.RemoveAll(path.Join(dir, "build"))
+	os.RemoveAll(filepath.Join(dir, "__pycache__"))
+	os.RemoveAll(filepath.Join(dir, "build"))
 	eggInfo := FindFilesWithSuffixInPath(dir, ".egg-info")
 	if len(eggInfo) == 0 {
 		return
@@ -42,7 +42,7 @@ func FindFilesWithSuffixInPath(dir, suffix string) []string {
 		if !strings.HasSuffix(child.Name(), suffix) {
 			continue
 		}
-		files = append(files, path.Join(dir, child.Name()))
+		files = append(files, filepath.Join(dir, child.Name()))
 	}
 	return files
 }

@@ -1,0 +1,9 @@
+{
+    "properties": {
+        "project_name": {
+            "type": "string",
+            "default": "my_project",
+            "description": "Name of the directory"
+        }
+    }
+}

@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle/config/variable"
+	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/ghodss/yaml"
 	"github.com/imdario/mergo"
 )
@@ -80,6 +81,9 @@ type Root struct {
 
 	// Sync section specifies options for files synchronization
 	Sync Sync `json:"sync"`
+
+	// RunAs section allows to define an execution identity for jobs and pipelines runs
+	RunAs *jobs.JobRunAs `json:"run_as,omitempty"`
 }
 
 func Load(path string) (*Root, error) {
@@ -235,6 +239,10 @@ func (r *Root) MergeTargetOverrides(target *Target) error {
 			defaultVal := v
 			variable.Default = &defaultVal
 		}
+	}
+
+	if target.RunAs != nil {
+		r.RunAs = target.RunAs
 	}
 
 	if target.Mode != "" {
