@@ -13,12 +13,8 @@ import (
 // slow for our purposes.
 func IsServicePrincipal(ctx context.Context, ws *databricks.WorkspaceClient, userId string) (bool, error) {
 	_, err := ws.Users.GetById(ctx, userId)
-	if err != nil {
-		if apiError, ok := err.(*apierr.APIError); ok {
-			if apiError.StatusCode == 404 {
-				return true, nil
-			}
-		}
+	if apierr.IsMissing(err) {
+		return true, nil
 	}
 	return false, err
 }
