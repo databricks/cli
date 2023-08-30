@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/hc-install/product"
 	"github.com/hashicorp/hc-install/releases"
 	"github.com/hashicorp/terraform-exec/tfexec"
@@ -19,7 +20,7 @@ func (s *Schema) writeTerraformBlock(_ context.Context) error {
 			"required_providers": map[string]interface{}{
 				"databricks": map[string]interface{}{
 					"source":  "databricks/databricks",
-					"version": ">= 1.0.0",
+					"version": ProviderVersion,
 				},
 			},
 		},
@@ -40,9 +41,10 @@ func (s *Schema) installTerraform(ctx context.Context) (path string, err error) 
 		return
 	}
 
-	installer := &releases.LatestVersion{
-		InstallDir: installDir,
+	installer := &releases.ExactVersion{
 		Product:    product.Terraform,
+		Version:    version.Must(version.NewVersion("1.5.5")),
+		InstallDir: installDir,
 	}
 
 	installer.SetLogger(log.Default())
