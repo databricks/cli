@@ -1,9 +1,13 @@
 package python
 
 import (
+	"context"
 	"strings"
 	"testing"
 
+	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/require"
 )
@@ -63,4 +67,35 @@ func TestGenerateBoth(t *testing.T) {
 	_, err := trampoline.generateParameters(task)
 	require.Error(t, err)
 	require.ErrorContains(t, err, "not allowed to pass both paramaters and named_parameters")
+}
+
+func TestNoPanicWithNoPythonWheelTasks(t *testing.T) {
+	tmpDir := t.TempDir()
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Path: tmpDir,
+			Bundle: config.Bundle{
+				Target: "development",
+			},
+			Resources: config.Resources{
+				Jobs: map[string]*resources.Job{
+					"test": {
+						Paths: resources.Paths{
+							ConfigFilePath: tmpDir,
+						},
+						JobSettings: &jobs.JobSettings{
+							Tasks: []jobs.Task{
+								{
+									TaskKey:      "notebook_task",
+									NotebookTask: &jobs.NotebookTask{}},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	trampoline := TransformWheelTask()
+	err := bundle.Apply(context.Background(), b, trampoline)
+	require.NoError(t, err)
 }

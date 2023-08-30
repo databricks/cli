@@ -69,6 +69,9 @@ func (t *pythonTrampoline) GetTasks(b *bundle.Bundle) []mutator.TaskWithJobKey {
 		tasks := r.Jobs[k].JobSettings.Tasks
 		for i := range tasks {
 			task := &tasks[i]
+			if task.PythonWheelTask == nil {
+				continue
+			}
 			result = append(result, mutator.TaskWithJobKey{
 				JobKey: k,
 				Task:   task,
