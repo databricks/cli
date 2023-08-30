@@ -1,6 +1,7 @@
 package python
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -98,4 +99,35 @@ func TestTransformFiltersWheelTasksOnly(t *testing.T) {
 	require.Equal(t, "job1", tasks[0].JobKey)
 	require.Equal(t, "key1", tasks[0].Task.TaskKey)
 	require.NotNil(t, tasks[0].Task.PythonWheelTask)
+}
+
+func TestNoPanicWithNoPythonWheelTasks(t *testing.T) {
+	tmpDir := t.TempDir()
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Path: tmpDir,
+			Bundle: config.Bundle{
+				Target: "development",
+			},
+			Resources: config.Resources{
+				Jobs: map[string]*resources.Job{
+					"test": {
+						Paths: resources.Paths{
+							ConfigFilePath: tmpDir,
+						},
+						JobSettings: &jobs.JobSettings{
+							Tasks: []jobs.Task{
+								{
+									TaskKey:      "notebook_task",
+									NotebookTask: &jobs.NotebookTask{}},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	trampoline := TransformWheelTask()
+	err := bundle.Apply(context.Background(), b, trampoline)
+	require.NoError(t, err)
 }
