@@ -29,8 +29,7 @@ resources:
             package_name: "{{.project_name}}"
             entry_point: "main"
           libraries:
-          {{- /* FIXME: this path is wrong, it should say ../dist/*.whl */}}
-          - whl: dist/*.whl
+            - whl: ../dist/*.whl
 
       job_clusters:
         - job_cluster_key: job_cluster
