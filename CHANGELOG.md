@@ -1,5 +1,22 @@
 # Version changelog
 
+## 0.203.3
+
+CLI:
+ * Fixed --environment flag ([#705](https://github.com/databricks/cli/pull/705)).
+
+Bundles:
+ * Support cluster overrides with cluster_key and compute_key ([#696](https://github.com/databricks/cli/pull/696)).
+ * Allow referencing local Python wheels without artifacts section defined ([#703](https://github.com/databricks/cli/pull/703)).
+ * Correctly identify local paths in libraries section ([#702](https://github.com/databricks/cli/pull/702)).
+ * Fixed path joining in FindFilesWithSuffixInPath ([#704](https://github.com/databricks/cli/pull/704)).
+ * Added transformation mutator for Python wheel task for them to work on DBR <13.1 ([#635](https://github.com/databricks/cli/pull/635)).
+
+Internal:
+ * Add a foundation for built-in templates ([#685](https://github.com/databricks/cli/pull/685)).
+
+
+
 ## 0.203.2
 
 CLI:
