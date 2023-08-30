@@ -16,9 +16,9 @@ type testCase struct {
 	Actual   []string
 	Expected string
 }
-type NamedParams map[string]string
+
 type testCaseNamed struct {
-	Actual   NamedParams
+	Actual   map[string]string
 	Expected string
 }
 
@@ -31,12 +31,12 @@ var paramsTestCases []testCase = []testCase{
 }
 
 var paramsTestCasesNamed []testCaseNamed = []testCaseNamed{
-	{NamedParams{}, `"python"`},
-	{NamedParams{"a": "1"}, `"python", "a=1"`},
-	{NamedParams{"a": "'1'"}, `"python", "a='1'"`},
-	{NamedParams{"a": `"1"`}, `"python", "a=\"1\""`},
-	{NamedParams{"a": "1", "b": "2"}, `"python", "a=1", "b=2"`},
-	{NamedParams{"data": `{"a": 1}`}, `"python", "data={\"a\": 1}"`},
+	{map[string]string{}, `"python"`},
+	{map[string]string{"a": "1"}, `"python", "a=1"`},
+	{map[string]string{"a": "'1'"}, `"python", "a='1'"`},
+	{map[string]string{"a": `"1"`}, `"python", "a=\"1\""`},
+	{map[string]string{"a": "1", "b": "2"}, `"python", "a=1", "b=2"`},
+	{map[string]string{"data": `{"a": 1}`}, `"python", "data={\"a\": 1}"`},
 }
 
 func TestGenerateParameters(t *testing.T) {
@@ -67,6 +67,38 @@ func TestGenerateBoth(t *testing.T) {
 	_, err := trampoline.generateParameters(task)
 	require.Error(t, err)
 	require.ErrorContains(t, err, "not allowed to pass both paramaters and named_parameters")
+}
+
+func TestTransformFiltersWheelTasksOnly(t *testing.T) {
+	trampoline := pythonTrampoline{}
+	bundle := &bundle.Bundle{
+		Config: config.Root{
+			Resources: config.Resources{
+				Jobs: map[string]*resources.Job{
+					"job1": {
+						JobSettings: &jobs.JobSettings{
+							Tasks: []jobs.Task{
+								{
+									TaskKey:         "key1",
+									PythonWheelTask: &jobs.PythonWheelTask{},
+								},
+								{
+									TaskKey:      "key2",
+									NotebookTask: &jobs.NotebookTask{},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	tasks := trampoline.GetTasks(bundle)
+	require.Len(t, tasks, 1)
+	require.Equal(t, "job1", tasks[0].JobKey)
+	require.Equal(t, "key1", tasks[0].Task.TaskKey)
+	require.NotNil(t, tasks[0].Task.PythonWheelTask)
 }
 
 func TestNoPanicWithNoPythonWheelTasks(t *testing.T) {
