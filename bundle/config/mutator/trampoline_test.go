@@ -14,16 +14,21 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func getTasks(b *bundle.Bundle) []*jobs.Task {
-	tasks := make([]*jobs.Task, 0)
+type functions struct{}
+
+func (f *functions) GetTasks(b *bundle.Bundle) []TaskWithJobKey {
+	tasks := make([]TaskWithJobKey, 0)
 	for k := range b.Config.Resources.Jobs["test"].Tasks {
-		tasks = append(tasks, &b.Config.Resources.Jobs["test"].Tasks[k])
+		tasks = append(tasks, TaskWithJobKey{
+			JobKey: "test",
+			Task:   &b.Config.Resources.Jobs["test"].Tasks[k],
+		})
 	}
 
 	return tasks
 }
 
-func templateData(task *jobs.Task) (map[string]any, error) {
+func (f *functions) GetTemplateData(task *jobs.Task) (map[string]any, error) {
 	if task.PythonWheelTask == nil {
 		return nil, fmt.Errorf("PythonWheelTask cannot be nil")
 	}
@@ -33,8 +38,9 @@ func templateData(task *jobs.Task) (map[string]any, error) {
 	return data, nil
 }
 
-func cleanUp(task *jobs.Task) {
+func (f *functions) CleanUp(task *jobs.Task) error {
 	task.PythonWheelTask = nil
+	return nil
 }
 
 func TestGenerateTrampoline(t *testing.T) {
@@ -71,13 +77,14 @@ func TestGenerateTrampoline(t *testing.T) {
 	}
 	ctx := context.Background()
 
-	trampoline := NewTrampoline("test_trampoline", getTasks, templateData, cleanUp, "Hello from {{.MyName}}")
+	funcs := functions{}
+	trampoline := NewTrampoline("test_trampoline", &funcs, "Hello from {{.MyName}}")
 	err := bundle.Apply(ctx, b, trampoline)
 	require.NoError(t, err)
 
 	dir, err := b.InternalDir()
 	require.NoError(t, err)
-	filename := filepath.Join(dir, "notebook_to_trampoline.py")
+	filename := filepath.Join(dir, "notebook_test_to_trampoline.py")
 
 	bytes, err := os.ReadFile(filename)
 	require.NoError(t, err)
@@ -85,6 +92,6 @@ func TestGenerateTrampoline(t *testing.T) {
 	require.Equal(t, "Hello from Trampoline", string(bytes))
 
 	task := b.Config.Resources.Jobs["test"].Tasks[0]
-	require.Equal(t, task.NotebookTask.NotebookPath, ".databricks/bundle/development/.internal/notebook_to_trampoline")
+	require.Equal(t, task.NotebookTask.NotebookPath, ".databricks/bundle/development/.internal/notebook_test_to_trampoline")
 	require.Nil(t, task.PythonWheelTask)
 }

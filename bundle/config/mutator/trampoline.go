@@ -12,26 +12,28 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
-type fnTemplateData func(task *jobs.Task) (map[string]any, error)
-type fnCleanUp func(task *jobs.Task)
-type fnTasks func(b *bundle.Bundle) []*jobs.Task
+type TaskWithJobKey struct {
+	Task   *jobs.Task
+	JobKey string
+}
 
+type TrampolineFunctions interface {
+	GetTemplateData(task *jobs.Task) (map[string]any, error)
+	GetTasks(b *bundle.Bundle) []TaskWithJobKey
+	CleanUp(task *jobs.Task) error
+}
 type trampoline struct {
-	name         string
-	getTasks     fnTasks
-	templateData fnTemplateData
-	cleanUp      fnCleanUp
-	template     string
+	name      string
+	functions TrampolineFunctions
+	template  string
 }
 
 func NewTrampoline(
 	name string,
-	tasks fnTasks,
-	templateData fnTemplateData,
-	cleanUp fnCleanUp,
+	functions TrampolineFunctions,
 	template string,
 ) *trampoline {
-	return &trampoline{name, tasks, templateData, cleanUp, template}
+	return &trampoline{name, functions, template}
 }
 
 func (m *trampoline) Name() string {
@@ -39,7 +41,7 @@ func (m *trampoline) Name() string {
 }
 
 func (m *trampoline) Apply(ctx context.Context, b *bundle.Bundle) error {
-	tasks := m.getTasks(b)
+	tasks := m.functions.GetTasks(b)
 	for _, task := range tasks {
 		err := m.generateNotebookWrapper(b, task)
 		if err != nil {
@@ -49,13 +51,13 @@ func (m *trampoline) Apply(ctx context.Context, b *bundle.Bundle) error {
 	return nil
 }
 
-func (m *trampoline) generateNotebookWrapper(b *bundle.Bundle, task *jobs.Task) error {
+func (m *trampoline) generateNotebookWrapper(b *bundle.Bundle, task TaskWithJobKey) error {
 	internalDir, err := b.InternalDir()
 	if err != nil {
 		return err
 	}
 
-	notebookName := fmt.Sprintf("notebook_%s", task.TaskKey)
+	notebookName := fmt.Sprintf("notebook_%s_%s", task.JobKey, task.Task.TaskKey)
 	localNotebookPath := filepath.Join(internalDir, notebookName+".py")
 
 	err = os.MkdirAll(filepath.Dir(localNotebookPath), 0755)
@@ -69,7 +71,7 @@ func (m *trampoline) generateNotebookWrapper(b *bundle.Bundle, task *jobs.Task) 
 	}
 	defer f.Close()
 
-	data, err := m.templateData(task)
+	data, err := m.functions.GetTemplateData(task.Task)
 	if err != nil {
 		return err
 	}
@@ -84,10 +86,13 @@ func (m *trampoline) generateNotebookWrapper(b *bundle.Bundle, task *jobs.Task) 
 		return err
 	}
 
-	m.cleanUp(task)
+	err = m.functions.CleanUp(task.Task)
+	if err != nil {
+		return err
+	}
 	remotePath := path.Join(b.Config.Workspace.FilesPath, filepath.ToSlash(internalDirRel), notebookName)
 
-	task.NotebookTask = &jobs.NotebookTask{
+	task.Task.NotebookTask = &jobs.NotebookTask{
 		NotebookPath: remotePath,
 	}
 

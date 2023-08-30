@@ -7,7 +7,6 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/mutator"
-	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
@@ -38,19 +37,38 @@ dbutils.notebook.exit(s)
 func TransformWheelTask() bundle.Mutator {
 	return mutator.NewTrampoline(
 		"python_wheel",
-		getTasks,
-		generateTemplateData,
-		cleanUpTask,
+		&pythonTrampoline{},
 		NOTEBOOK_TEMPLATE,
 	)
 }
 
-func getTasks(b *bundle.Bundle) []*jobs.Task {
-	return libraries.FindAllWheelTasks(b)
+type pythonTrampoline struct{}
+
+func (t *pythonTrampoline) CleanUp(task *jobs.Task) error {
+	task.PythonWheelTask = nil
+	task.Libraries = nil
+
+	return nil
 }
 
-func generateTemplateData(task *jobs.Task) (map[string]any, error) {
-	params, err := generateParameters(task.PythonWheelTask)
+func (t *pythonTrampoline) GetTasks(b *bundle.Bundle) []mutator.TaskWithJobKey {
+	r := b.Config.Resources
+	result := make([]mutator.TaskWithJobKey, 0)
+	for k := range b.Config.Resources.Jobs {
+		tasks := r.Jobs[k].JobSettings.Tasks
+		for i := range tasks {
+			task := &tasks[i]
+			result = append(result, mutator.TaskWithJobKey{
+				JobKey: k,
+				Task:   task,
+			})
+		}
+	}
+	return result
+}
+
+func (t *pythonTrampoline) GetTemplateData(task *jobs.Task) (map[string]any, error) {
+	params, err := t.generateParameters(task.PythonWheelTask)
 	if err != nil {
 		return nil, err
 	}
@@ -64,7 +82,7 @@ func generateTemplateData(task *jobs.Task) (map[string]any, error) {
 	return data, nil
 }
 
-func generateParameters(task *jobs.PythonWheelTask) (string, error) {
+func (t *pythonTrampoline) generateParameters(task *jobs.PythonWheelTask) (string, error) {
 	if task.Parameters != nil && task.NamedParameters != nil {
 		return "", fmt.Errorf("not allowed to pass both paramaters and named_parameters")
 	}
@@ -77,9 +95,4 @@ func generateParameters(task *jobs.PythonWheelTask) (string, error) {
 		params[i] = strconv.Quote(params[i])
 	}
 	return strings.Join(params, ", "), nil
-}
-
-func cleanUpTask(task *jobs.Task) {
-	task.PythonWheelTask = nil
-	task.Libraries = nil
 }
