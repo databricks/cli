@@ -7,46 +7,54 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 )
 
-func getPipelineTransformers(m *translatePaths, b *bundle.Bundle) ([]*transformer, error) {
-	var transformers []*transformer = make([]*transformer, 0)
+var pipelineTransformers []transformFunc = []transformFunc{
+	transformLibraryNotebook,
+	transformLibraryFile,
+}
 
+func applyPipelineTransformers(m *translatePaths, b *bundle.Bundle) error {
 	for key, pipeline := range b.Config.Resources.Pipelines {
 		dir, err := pipeline.ConfigFileDirectory()
 		if err != nil {
-			return nil, fmt.Errorf("unable to determine directory for pipeline %s: %w", key, err)
+			return fmt.Errorf("unable to determine directory for pipeline %s: %w", key, err)
 		}
 
 		for i := 0; i < len(pipeline.Libraries); i++ {
 			library := &pipeline.Libraries[i]
-			transformers = addTransformerForResource(transformers, m, library, dir)
+			err := applyTransformers(pipelineTransformers, m, b, library, dir)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
-	return transformers, nil
+	return nil
 }
 
-func selectLibraryNotebook(resource interface{}, m *translatePaths) *selector {
+func transformLibraryNotebook(resource any, dir string) *transformer {
 	library, ok := resource.(*pipelines.PipelineLibrary)
 	if !ok || library.Notebook == nil {
 		return nil
 	}
 
-	return &selector{
+	return &transformer{
+		dir,
 		&library.Notebook.Path,
 		"libraries.notebook.path",
-		m.translateNotebookPath,
+		translateNotebookPath,
 	}
 }
 
-func selectLibraryFile(resource interface{}, m *translatePaths) *selector {
+func transformLibraryFile(resource any, dir string) *transformer {
 	library, ok := resource.(*pipelines.PipelineLibrary)
 	if !ok || library.File == nil {
 		return nil
 	}
 
-	return &selector{
+	return &transformer{
+		dir,
 		&library.File.Path,
 		"libraries.file.path",
-		m.translateFilePath,
+		translateFilePath,
 	}
 }

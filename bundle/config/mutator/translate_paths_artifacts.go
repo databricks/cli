@@ -7,30 +7,36 @@ import (
 	"github.com/databricks/cli/bundle/config"
 )
 
-func selectArtifactPath(resource interface{}, m *translatePaths) *selector {
+func transformArtifactPath(resource any, dir string) *transformer {
 	artifact, ok := resource.(*config.Artifact)
 	if !ok {
 		return nil
 	}
 
-	return &selector{
+	return &transformer{
+		dir,
 		&artifact.Path,
 		"artifacts.path",
-		m.translateToBundleRootRelativePath,
+		translateNoOp,
 	}
 }
 
-func getArtifactsTransformers(m *translatePaths, b *bundle.Bundle) ([]*transformer, error) {
-	var transformers []*transformer = make([]*transformer, 0)
+var artifactTransformers []transformFunc = []transformFunc{
+	transformArtifactPath,
+}
 
+func applyArtifactTransformers(m *translatePaths, b *bundle.Bundle) error {
 	for key, artifact := range b.Config.Artifacts {
 		dir, err := artifact.ConfigFileDirectory()
 		if err != nil {
-			return nil, fmt.Errorf("unable to determine directory for artifact %s: %w", key, err)
+			return fmt.Errorf("unable to determine directory for artifact %s: %w", key, err)
 		}
 
-		transformers = addTransformerForResource(transformers, m, artifact, dir)
+		err = applyTransformers(artifactTransformers, m, b, artifact, dir)
+		if err != nil {
+			return err
+		}
 	}
 
-	return transformers, nil
+	return nil
 }

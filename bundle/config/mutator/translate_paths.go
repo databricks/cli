@@ -43,7 +43,7 @@ func (m *translatePaths) Name() string {
 	return "TranslatePaths"
 }
 
-type rewriteFunc func(b *bundle.Bundle, literal, localPath, remotePath string) (string, error)
+type rewriteFunc func(literal, localFullPath, localRelPath, remotePath string) (string, error)
 
 // rewritePath converts a given relative path from the loaded config to a new path based on the passed rewriting function
 //
@@ -83,19 +83,19 @@ func (m *translatePaths) rewritePath(
 	}
 
 	// Remote path must be relative to the bundle root.
-	remotePath, err := filepath.Rel(b.Config.Path, localPath)
+	localRelPath, err := filepath.Rel(b.Config.Path, localPath)
 	if err != nil {
 		return err
 	}
-	if strings.HasPrefix(remotePath, "..") {
+	if strings.HasPrefix(localRelPath, "..") {
 		return fmt.Errorf("path %s is not contained in bundle root path", localPath)
 	}
 
 	// Prefix remote path with its remote root path.
-	remotePath = path.Join(b.Config.Workspace.FilesPath, filepath.ToSlash(remotePath))
+	remotePath := path.Join(b.Config.Workspace.FilesPath, filepath.ToSlash(localRelPath))
 
 	// Convert local path into workspace path via specified function.
-	interp, err := fn(b, *p, localPath, filepath.ToSlash(remotePath))
+	interp, err := fn(*p, localPath, localRelPath, filepath.ToSlash(remotePath))
 	if err != nil {
 		return err
 	}
@@ -105,123 +105,67 @@ func (m *translatePaths) rewritePath(
 	return nil
 }
 
-func (m *translatePaths) translateNotebookPath(b *bundle.Bundle, literal, localPath, remotePath string) (string, error) {
-	nb, _, err := notebook.Detect(localPath)
+func translateNotebookPath(literal, localFullPath, localRelPath, remotePath string) (string, error) {
+	nb, _, err := notebook.Detect(localFullPath)
 	if os.IsNotExist(err) {
 		return "", fmt.Errorf("notebook %s not found", literal)
 	}
 	if err != nil {
-		return "", fmt.Errorf("unable to determine if %s is a notebook: %w", localPath, err)
+		return "", fmt.Errorf("unable to determine if %s is a notebook: %w", localFullPath, err)
 	}
 	if !nb {
-		return "", ErrIsNotNotebook{localPath}
+		return "", ErrIsNotNotebook{localFullPath}
 	}
 
 	// Upon import, notebooks are stripped of their extension.
-	return strings.TrimSuffix(remotePath, filepath.Ext(localPath)), nil
+	return strings.TrimSuffix(remotePath, filepath.Ext(localFullPath)), nil
 }
 
-func (m *translatePaths) translateFilePath(b *bundle.Bundle, literal, localPath, remotePath string) (string, error) {
-	nb, _, err := notebook.Detect(localPath)
+func translateFilePath(literal, localFullPath, localRelPath, remotePath string) (string, error) {
+	nb, _, err := notebook.Detect(localFullPath)
 	if os.IsNotExist(err) {
 		return "", fmt.Errorf("file %s not found", literal)
 	}
 	if err != nil {
-		return "", fmt.Errorf("unable to determine if %s is not a notebook: %w", localPath, err)
+		return "", fmt.Errorf("unable to determine if %s is not a notebook: %w", localFullPath, err)
 	}
 	if nb {
-		return "", ErrIsNotebook{localPath}
+		return "", ErrIsNotebook{localFullPath}
 	}
 	return remotePath, nil
 }
 
-func (m *translatePaths) translateToBundleRootRelativePath(b *bundle.Bundle, literal, localPath, remotePath string) (string, error) {
-	return filepath.Rel(b.Config.Path, localPath)
+func translateNoOp(literal, localPath, localFullPath, remotePath string) (string, error) {
+	return localFullPath, nil
 }
 
 type transformer struct {
 	// A directory path relative to which `path` will be transformed
 	dir string
-
 	// A path to transform
 	path *string
-
 	// Name of the config property where the path string is coming from
 	configPath string
-
 	// A function that performs the actual rewriting logic.
 	fn rewriteFunc
 }
-type transformerFactory func(*translatePaths, *bundle.Bundle) ([]*transformer, error)
-type selector struct {
-	// A path to transform
-	path *string
 
-	// Name of the config property where the path string is coming from
-	configPath string
+type transformFunc func(resource any, dir string) *transformer
 
-	// A function that performs the actual rewriting logic.
-	fn rewriteFunc
-}
-type selectorFunc func(resource interface{}, m *translatePaths) *selector
-
-// List of available transformer factories. All of them will be called to get the list of transformers to execute.
-var transformerFactories []transformerFactory = []transformerFactory{
-	getJobsTransformers,
-	getPipelineTransformers,
-	getArtifactsTransformers,
+var transformers []func(*translatePaths, *bundle.Bundle) error = []func(*translatePaths, *bundle.Bundle) error{
+	applyJobsTransformers,
+	applyPipelineTransformers,
+	applyArtifactTransformers,
 }
 
-// List of selector functions which are used to identify if the resource passed
-// Should have it's path transformed.
-// If it needs to be transformed, selector returns a reference to string to be transformed
-// And a function to apply for this string
-var selectors []selectorFunc = []selectorFunc{
-	selectNotebookTask,
-	selectSparkTask,
-	selectLibraryNotebook,
-	selectLibraryFile,
-	selectArtifactPath,
-	selectWhlLibrary,
-	selectJarLibrary,
-}
-
-// Appends the first matched transfomer for the given resource if it matches any if selectors defined
-func addTransformerForResource(transformers []*transformer, m *translatePaths, resource interface{}, dir string) []*transformer {
-	for _, selector := range selectors {
-		s := selector(resource, m)
-		if s != nil {
-			transformers = append(transformers, &transformer{dir, s.path, s.configPath, s.fn})
-			break
+// Apply all matches transformers for the given resource
+func applyTransformers(funcs []transformFunc, m *translatePaths, b *bundle.Bundle, resource any, dir string) error {
+	for _, transformFn := range funcs {
+		transformer := transformFn(resource, dir)
+		if transformer == nil {
+			continue
 		}
-	}
 
-	return transformers
-}
-
-// Returns a list of path transformers which are applied to specific configuration section based on
-// defined selectors
-func (m *translatePaths) getTransformers(b *bundle.Bundle) ([]*transformer, error) {
-	var transformers []*transformer = make([]*transformer, 0)
-	for _, get := range transformerFactories {
-		toAdd, err := get(m, b)
-		if err != nil {
-			return nil, err
-		}
-		transformers = append(transformers, toAdd...)
-	}
-	return transformers, nil
-}
-
-func (m *translatePaths) Apply(_ context.Context, b *bundle.Bundle) error {
-	m.seen = make(map[string]string)
-
-	transfomers, err := m.getTransformers(b)
-	if err != nil {
-		return err
-	}
-
-	for _, transformer := range transfomers {
 		err := m.rewritePath(transformer.dir, b, transformer.path, transformer.fn)
 		if err != nil {
 			if target := (&ErrIsNotebook{}); errors.As(err, target) {
@@ -230,6 +174,19 @@ func (m *translatePaths) Apply(_ context.Context, b *bundle.Bundle) error {
 			if target := (&ErrIsNotNotebook{}); errors.As(err, target) {
 				return fmt.Errorf(`expected a notebook for "%s" but got a file: %w`, transformer.configPath, target)
 			}
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (m *translatePaths) Apply(_ context.Context, b *bundle.Bundle) error {
+	m.seen = make(map[string]string)
+
+	for _, apply := range transformers {
+		err := apply(m, b)
+		if err != nil {
 			return err
 		}
 	}
