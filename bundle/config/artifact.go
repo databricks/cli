@@ -15,8 +15,7 @@ import (
 type Artifacts map[string]*Artifact
 
 func (artifacts Artifacts) SetConfigFilePath(path string) {
-	for k := range artifacts {
-		artifact := artifacts[k]
+	for _, artifact := range artifacts {
 		artifact.ConfigFilePath = path
 	}
 }
