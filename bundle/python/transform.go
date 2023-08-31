@@ -7,7 +7,6 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/mutator"
-	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
@@ -17,17 +16,28 @@ const NOTEBOOK_TEMPLATE = `# Databricks notebook source
 %pip install --force-reinstall {{.Whl}}
 {{end}}
 
+try:
+	from importlib import metadata
+except ImportError: # for Python<3.8
+	import subprocess
+	import sys
+
+	subprocess.check_call([sys.executable, "-m", "pip", "install", "importlib-metadata"])
+	import importlib_metadata as metadata
+
 from contextlib import redirect_stdout
 import io
 import sys
 sys.argv = [{{.Params}}]
 
-import pkg_resources
-_func = pkg_resources.load_entry_point("{{.Task.PackageName}}", "console_scripts", "{{.Task.EntryPoint}}")
+entry = [ep for ep in metadata.distribution("{{.Task.PackageName}}").entry_points if ep.name == "{{.Task.EntryPoint}}"]
 
 f = io.StringIO()
 with redirect_stdout(f):
-	_func()
+	if entry:
+		entry[0].load()()
+	else:
+		raise ImportError("Entry point '{{.Task.EntryPoint}}' not found")
 s = f.getvalue()
 dbutils.notebook.exit(s)
 `
@@ -38,19 +48,44 @@ dbutils.notebook.exit(s)
 func TransformWheelTask() bundle.Mutator {
 	return mutator.NewTrampoline(
 		"python_wheel",
-		getTasks,
-		generateTemplateData,
-		cleanUpTask,
+		&pythonTrampoline{},
 		NOTEBOOK_TEMPLATE,
 	)
 }
 
-func getTasks(b *bundle.Bundle) []*jobs.Task {
-	return libraries.FindAllWheelTasks(b)
+type pythonTrampoline struct{}
+
+func (t *pythonTrampoline) CleanUp(task *jobs.Task) error {
+	task.PythonWheelTask = nil
+	task.Libraries = nil
+
+	return nil
 }
 
-func generateTemplateData(task *jobs.Task) (map[string]any, error) {
-	params, err := generateParameters(task.PythonWheelTask)
+func (t *pythonTrampoline) GetTasks(b *bundle.Bundle) []mutator.TaskWithJobKey {
+	r := b.Config.Resources
+	result := make([]mutator.TaskWithJobKey, 0)
+	for k := range b.Config.Resources.Jobs {
+		tasks := r.Jobs[k].JobSettings.Tasks
+		for i := range tasks {
+			task := &tasks[i]
+
+			// Keep only Python wheel tasks
+			if task.PythonWheelTask == nil {
+				continue
+			}
+
+			result = append(result, mutator.TaskWithJobKey{
+				JobKey: k,
+				Task:   task,
+			})
+		}
+	}
+	return result
+}
+
+func (t *pythonTrampoline) GetTemplateData(task *jobs.Task) (map[string]any, error) {
+	params, err := t.generateParameters(task.PythonWheelTask)
 	if err != nil {
 		return nil, err
 	}
@@ -64,7 +99,7 @@ func generateTemplateData(task *jobs.Task) (map[string]any, error) {
 	return data, nil
 }
 
-func generateParameters(task *jobs.PythonWheelTask) (string, error) {
+func (t *pythonTrampoline) generateParameters(task *jobs.PythonWheelTask) (string, error) {
 	if task.Parameters != nil && task.NamedParameters != nil {
 		return "", fmt.Errorf("not allowed to pass both paramaters and named_parameters")
 	}
@@ -77,9 +112,4 @@ func generateParameters(task *jobs.PythonWheelTask) (string, error) {
 		params[i] = strconv.Quote(params[i])
 	}
 	return strings.Join(params, ", "), nil
-}
-
-func cleanUpTask(task *jobs.Task) {
-	task.PythonWheelTask = nil
-	task.Libraries = nil
 }

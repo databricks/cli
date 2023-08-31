@@ -160,7 +160,10 @@ func (m *processTargetMode) Apply(ctx context.Context, b *bundle.Bundle) error {
 		}
 		return transformDevelopmentMode(b)
 	case config.Production:
-		isPrincipal := auth.IsServicePrincipal(ctx, b.WorkspaceClient(), b.Config.Workspace.CurrentUser.Id)
+		isPrincipal, err := auth.IsServicePrincipal(ctx, b.WorkspaceClient(), b.Config.Workspace.CurrentUser.Id)
+		if err != nil {
+			return err
+		}
 		return validateProductionMode(ctx, b, isPrincipal)
 	case "":
 		// No action

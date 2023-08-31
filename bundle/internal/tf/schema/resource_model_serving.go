@@ -4,6 +4,7 @@ package schema
 
 type ResourceModelServingConfigServedModels struct {
 	EnvironmentVars    map[string]string `json:"environment_vars,omitempty"`
+	InstanceProfileArn string            `json:"instance_profile_arn,omitempty"`
 	ModelName          string            `json:"model_name"`
 	ModelVersion       string            `json:"model_version"`
 	Name               string            `json:"name,omitempty"`

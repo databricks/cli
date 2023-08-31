@@ -124,6 +124,7 @@ type ResourceJobJobClusterNewClusterGcpAttributes struct {
 	Availability            string `json:"availability,omitempty"`
 	BootDiskSize            int    `json:"boot_disk_size,omitempty"`
 	GoogleServiceAccount    string `json:"google_service_account,omitempty"`
+	LocalSsdCount           int    `json:"local_ssd_count,omitempty"`
 	UsePreemptibleExecutors bool   `json:"use_preemptible_executors,omitempty"`
 	ZoneId                  string `json:"zone_id,omitempty"`
 }
@@ -305,6 +306,7 @@ type ResourceJobNewClusterGcpAttributes struct {
 	Availability            string `json:"availability,omitempty"`
 	BootDiskSize            int    `json:"boot_disk_size,omitempty"`
 	GoogleServiceAccount    string `json:"google_service_account,omitempty"`
+	LocalSsdCount           int    `json:"local_ssd_count,omitempty"`
 	UsePreemptibleExecutors bool   `json:"use_preemptible_executors,omitempty"`
 	ZoneId                  string `json:"zone_id,omitempty"`
 }
@@ -401,6 +403,11 @@ type ResourceJobNotificationSettings struct {
 	NoAlertForSkippedRuns  bool `json:"no_alert_for_skipped_runs,omitempty"`
 }
 
+type ResourceJobParameter struct {
+	Default string `json:"default,omitempty"`
+	Name    string `json:"name,omitempty"`
+}
+
 type ResourceJobPipelineTask struct {
 	FullRefresh bool   `json:"full_refresh,omitempty"`
 	PipelineId  string `json:"pipeline_id"`
@@ -419,6 +426,11 @@ type ResourceJobQueue struct {
 type ResourceJobRunAs struct {
 	ServicePrincipalName string `json:"service_principal_name,omitempty"`
 	UserName             string `json:"user_name,omitempty"`
+}
+
+type ResourceJobRunJobTask struct {
+	JobId         string            `json:"job_id"`
+	JobParameters map[string]string `json:"job_parameters,omitempty"`
 }
 
 type ResourceJobSchedule struct {
@@ -573,6 +585,7 @@ type ResourceJobTaskNewClusterGcpAttributes struct {
 	Availability            string `json:"availability,omitempty"`
 	BootDiskSize            int    `json:"boot_disk_size,omitempty"`
 	GoogleServiceAccount    string `json:"google_service_account,omitempty"`
+	LocalSsdCount           int    `json:"local_ssd_count,omitempty"`
 	UsePreemptibleExecutors bool   `json:"use_preemptible_executors,omitempty"`
 	ZoneId                  string `json:"zone_id,omitempty"`
 }
@@ -682,6 +695,11 @@ type ResourceJobTaskPythonWheelTask struct {
 	Parameters      []string          `json:"parameters,omitempty"`
 }
 
+type ResourceJobTaskRunJobTask struct {
+	JobId         string            `json:"job_id"`
+	JobParameters map[string]string `json:"job_parameters,omitempty"`
+}
+
 type ResourceJobTaskSparkJarTask struct {
 	JarUri        string   `json:"jar_uri,omitempty"`
 	MainClassName string   `json:"main_class_name,omitempty"`
@@ -760,6 +778,7 @@ type ResourceJobTask struct {
 	NotificationSettings   *ResourceJobTaskNotificationSettings `json:"notification_settings,omitempty"`
 	PipelineTask           *ResourceJobTaskPipelineTask         `json:"pipeline_task,omitempty"`
 	PythonWheelTask        *ResourceJobTaskPythonWheelTask      `json:"python_wheel_task,omitempty"`
+	RunJobTask             *ResourceJobTaskRunJobTask           `json:"run_job_task,omitempty"`
 	SparkJarTask           *ResourceJobTaskSparkJarTask         `json:"spark_jar_task,omitempty"`
 	SparkPythonTask        *ResourceJobTaskSparkPythonTask      `json:"spark_python_task,omitempty"`
 	SparkSubmitTask        *ResourceJobTaskSparkSubmitTask      `json:"spark_submit_task,omitempty"`
@@ -825,10 +844,12 @@ type ResourceJob struct {
 	NewCluster             *ResourceJobNewCluster           `json:"new_cluster,omitempty"`
 	NotebookTask           *ResourceJobNotebookTask         `json:"notebook_task,omitempty"`
 	NotificationSettings   *ResourceJobNotificationSettings `json:"notification_settings,omitempty"`
+	Parameter              []ResourceJobParameter           `json:"parameter,omitempty"`
 	PipelineTask           *ResourceJobPipelineTask         `json:"pipeline_task,omitempty"`
 	PythonWheelTask        *ResourceJobPythonWheelTask      `json:"python_wheel_task,omitempty"`
 	Queue                  *ResourceJobQueue                `json:"queue,omitempty"`
 	RunAs                  *ResourceJobRunAs                `json:"run_as,omitempty"`
+	RunJobTask             *ResourceJobRunJobTask           `json:"run_job_task,omitempty"`
 	Schedule               *ResourceJobSchedule             `json:"schedule,omitempty"`
 	SparkJarTask           *ResourceJobSparkJarTask         `json:"spark_jar_task,omitempty"`
 	SparkPythonTask        *ResourceJobSparkPythonTask      `json:"spark_python_task,omitempty"`
