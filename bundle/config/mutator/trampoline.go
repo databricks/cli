@@ -18,22 +18,43 @@ type TaskWithJobKey struct {
 }
 
 type TrampolineFunctions interface {
-	GetTemplateData(task *jobs.Task) (map[string]any, error)
+	GetTemplateData(b *bundle.Bundle, task *jobs.Task) (map[string]any, error)
 	GetTasks(b *bundle.Bundle) []TaskWithJobKey
 	CleanUp(task *jobs.Task) error
 }
 type trampoline struct {
 	name      string
 	functions TrampolineFunctions
-	template  string
+	template  func(*jobs.Task) (string, error)
 }
 
 func NewTrampoline(
 	name string,
 	functions TrampolineFunctions,
-	template string,
+	template func(*jobs.Task) (string, error),
 ) *trampoline {
 	return &trampoline{name, functions, template}
+}
+
+// Shorthand for generating template function for templates
+// that are same irrespective of the task.
+func StaticTrampolineTemplate(template string) func(*jobs.Task) (string, error) {
+	return func(*jobs.Task) (string, error) { return template, nil }
+}
+
+func GetTasksWithJobKeyBy(b *bundle.Bundle, filter func(*jobs.Task) bool) []TaskWithJobKey {
+	tasks := make([]TaskWithJobKey, 0)
+	for k := range b.Config.Resources.Jobs {
+		for _, t := range b.Config.Resources.Jobs[k].Tasks {
+			if filter(&t) {
+				tasks = append(tasks, TaskWithJobKey{
+					JobKey: k,
+					Task:   &t,
+				})
+			}
+		}
+	}
+	return tasks
 }
 
 func (m *trampoline) Name() string {
@@ -57,7 +78,7 @@ func (m *trampoline) generateNotebookWrapper(b *bundle.Bundle, task TaskWithJobK
 		return err
 	}
 
-	notebookName := fmt.Sprintf("notebook_%s_%s", task.JobKey, task.Task.TaskKey)
+	notebookName := fmt.Sprintf("notebook_%s_%s_%s", m.name, task.JobKey, task.Task.TaskKey)
 	localNotebookPath := filepath.Join(internalDir, notebookName+".py")
 
 	err = os.MkdirAll(filepath.Dir(localNotebookPath), 0755)
@@ -71,12 +92,16 @@ func (m *trampoline) generateNotebookWrapper(b *bundle.Bundle, task TaskWithJobK
 	}
 	defer f.Close()
 
-	data, err := m.functions.GetTemplateData(task.Task)
+	data, err := m.functions.GetTemplateData(b, task.Task)
 	if err != nil {
 		return err
 	}
 
-	t, err := template.New(notebookName).Parse(m.template)
+	templateString, err := m.template(task.Task)
+	if err != nil {
+		return err
+	}
+	t, err := template.New(notebookName).Parse(templateString)
 	if err != nil {
 		return err
 	}

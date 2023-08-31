@@ -22,6 +22,7 @@ func Deploy() bundle.Mutator {
 				artifacts.CleanUp(),
 				artifacts.UploadAll(),
 				python.TransformWheelTask(),
+				python.TransforNotebookTask(),
 				files.Upload(),
 				terraform.Interpolate(),
 				terraform.Write(),
