@@ -8,7 +8,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/bundle/config/paths"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 )
 
@@ -44,7 +44,7 @@ type Artifact struct {
 	Files        []ArtifactFile `json:"files"`
 	BuildCommand string         `json:"build"`
 
-	resources.Paths
+	paths.Paths
 }
 
 func (a *Artifact) Build(ctx context.Context) ([]byte, error) {

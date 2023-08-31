@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/mutator"
+	"github.com/databricks/cli/bundle/config/paths"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -44,7 +45,7 @@ func TestTranslatePathsSkippedWithGitSource(t *testing.T) {
 				Jobs: map[string]*resources.Job{
 					"job": {
 
-						Paths: resources.Paths{
+						Paths: paths.Paths{
 							ConfigFilePath: filepath.Join(dir, "resource.yml"),
 						},
 						JobSettings: &jobs.JobSettings{
@@ -115,7 +116,7 @@ func TestTranslatePaths(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job": {
-						Paths: resources.Paths{
+						Paths: paths.Paths{
 							ConfigFilePath: filepath.Join(dir, "resource.yml"),
 						},
 						JobSettings: &jobs.JobSettings{
@@ -170,7 +171,7 @@ func TestTranslatePaths(t *testing.T) {
 				},
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline": {
-						Paths: resources.Paths{
+						Paths: paths.Paths{
 							ConfigFilePath: filepath.Join(dir, "resource.yml"),
 						},
 						PipelineSpec: &pipelines.PipelineSpec{
@@ -284,7 +285,7 @@ func TestTranslatePathsInSubdirectories(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job": {
-						Paths: resources.Paths{
+						Paths: paths.Paths{
 							ConfigFilePath: filepath.Join(dir, "job/resource.yml"),
 						},
 						JobSettings: &jobs.JobSettings{
@@ -308,7 +309,7 @@ func TestTranslatePathsInSubdirectories(t *testing.T) {
 				},
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline": {
-						Paths: resources.Paths{
+						Paths: paths.Paths{
 							ConfigFilePath: filepath.Join(dir, "pipeline/resource.yml"),
 						},
 
@@ -360,7 +361,7 @@ func TestTranslatePathsOutsideBundleRoot(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job": {
-						Paths: resources.Paths{
+						Paths: paths.Paths{
 							ConfigFilePath: filepath.Join(dir, "../resource.yml"),
 						},
 						JobSettings: &jobs.JobSettings{
@@ -391,7 +392,7 @@ func TestJobNotebookDoesNotExistError(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job": {
-						Paths: resources.Paths{
+						Paths: paths.Paths{
 							ConfigFilePath: filepath.Join(dir, "fake.yml"),
 						},
 						JobSettings: &jobs.JobSettings{
@@ -422,7 +423,7 @@ func TestJobFileDoesNotExistError(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job": {
-						Paths: resources.Paths{
+						Paths: paths.Paths{
 							ConfigFilePath: filepath.Join(dir, "fake.yml"),
 						},
 						JobSettings: &jobs.JobSettings{
@@ -453,7 +454,7 @@ func TestPipelineNotebookDoesNotExistError(t *testing.T) {
 			Resources: config.Resources{
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline": {
-						Paths: resources.Paths{
+						Paths: paths.Paths{
 							ConfigFilePath: filepath.Join(dir, "fake.yml"),
 						},
 						PipelineSpec: &pipelines.PipelineSpec{
@@ -484,7 +485,7 @@ func TestPipelineFileDoesNotExistError(t *testing.T) {
 			Resources: config.Resources{
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline": {
-						Paths: resources.Paths{
+						Paths: paths.Paths{
 							ConfigFilePath: filepath.Join(dir, "fake.yml"),
 						},
 						PipelineSpec: &pipelines.PipelineSpec{
@@ -519,7 +520,7 @@ func TestJobSparkPythonTaskWithNotebookSourceError(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job": {
-						Paths: resources.Paths{
+						Paths: paths.Paths{
 							ConfigFilePath: filepath.Join(dir, "resource.yml"),
 						},
 						JobSettings: &jobs.JobSettings{
@@ -554,7 +555,7 @@ func TestJobNotebookTaskWithFileSourceError(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"job": {
-						Paths: resources.Paths{
+						Paths: paths.Paths{
 							ConfigFilePath: filepath.Join(dir, "resource.yml"),
 						},
 						JobSettings: &jobs.JobSettings{
@@ -589,7 +590,7 @@ func TestPipelineNotebookLibraryWithFileSourceError(t *testing.T) {
 			Resources: config.Resources{
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline": {
-						Paths: resources.Paths{
+						Paths: paths.Paths{
 							ConfigFilePath: filepath.Join(dir, "resource.yml"),
 						},
 						PipelineSpec: &pipelines.PipelineSpec{
@@ -624,7 +625,7 @@ func TestPipelineFileLibraryWithNotebookSourceError(t *testing.T) {
 			Resources: config.Resources{
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline": {
-						Paths: resources.Paths{
+						Paths: paths.Paths{
 							ConfigFilePath: filepath.Join(dir, "resource.yml"),
 						},
 						PipelineSpec: &pipelines.PipelineSpec{
