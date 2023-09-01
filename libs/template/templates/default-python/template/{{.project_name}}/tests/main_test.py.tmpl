@@ -2,4 +2,4 @@ from {{.project_name}} import main
 
 def test_main():
     taxis = main.get_taxis()
-    assert len(taxis) == 5
+    assert taxis.count() == 5

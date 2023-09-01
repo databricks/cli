@@ -13,7 +13,7 @@ Below is an example of how to load fixtures as a data frame:
 import pandas as pd
 import os
 
-def get_relative_path(*relative_parts):
+def get_absolute_path(*relative_parts):
     if 'dbutils' in globals():
         base_dir = os.path.dirname(dbutils.notebook.entry_point.getDbutils().notebook().getContext().notebookPath().get()) # type: ignore
         path = os.path.normpath(os.path.join(base_dir, *relative_parts))
@@ -21,7 +21,7 @@ def get_relative_path(*relative_parts):
     else:
         return os.path.join(*relative_parts)
 
-csv_file = get_relative_path("..", "fixtures", "mycsv.csv")
+csv_file = get_absolute_path("..", "fixtures", "mycsv.csv")
 df = pd.read_csv(csv_file)
 display(df)
 ```

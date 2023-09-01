@@ -26,8 +26,8 @@ resources:
             - task_key: notebook_task
           job_cluster_key: job_cluster
           python_wheel_task:
-            package_name: "{{.project_name}}"
-            entry_point: "main"
+            package_name: {{.project_name}}
+            entry_point: main
           libraries:
             - whl: ../dist/*.whl
 
