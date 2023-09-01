@@ -47,6 +47,7 @@ type ResourcePipelineClusterClusterLogConf struct {
 type ResourcePipelineClusterGcpAttributes struct {
 	Availability         string `json:"availability,omitempty"`
 	GoogleServiceAccount string `json:"google_service_account,omitempty"`
+	LocalSsdCount        int    `json:"local_ssd_count,omitempty"`
 	ZoneId               string `json:"zone_id,omitempty"`
 }
 
