@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/cmd/root"
-	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/git"
 	"github.com/databricks/cli/libs/template"
 	"github.com/spf13/cobra"
@@ -58,6 +57,9 @@ func newInitCommand() *cobra.Command {
 		if len(args) > 0 {
 			templatePath = args[0]
 		} else {
+			return errors.New("please specify a template")
+
+			/* TODO: propose to use default-python (once #708 is merged)
 			var err error
 			if !cmdio.IsOutTTY(ctx) || !cmdio.IsInTTY(ctx) {
 				return errors.New("please specify a template")
@@ -66,6 +68,7 @@ func newInitCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			*/
 		}
 
 		if !isRepoUrl(templatePath) {
