@@ -205,6 +205,35 @@ func Prompt(ctx context.Context) *promptui.Prompt {
 	}
 }
 
+func (c *cmdIO) simplePrompt(label string) *promptui.Prompt {
+	return &promptui.Prompt{
+		Label:  label,
+		Stdin:  io.NopCloser(c.in),
+		Stdout: nopWriteCloser{c.out},
+	}
+}
+
+func (c *cmdIO) SimplePrompt(label string) (value string, err error) {
+	return c.simplePrompt(label).Run()
+}
+
+func SimplePrompt(ctx context.Context, label string) (value string, err error) {
+	c := fromContext(ctx)
+	return c.SimplePrompt(label)
+}
+
+func (c *cmdIO) DefaultPrompt(label, defaultValue string) (value string, err error) {
+	prompt := c.simplePrompt(label)
+	prompt.Default = defaultValue
+	prompt.AllowEdit = true
+	return prompt.Run()
+}
+
+func DefaultPrompt(ctx context.Context, label, defaultValue string) (value string, err error) {
+	c := fromContext(ctx)
+	return c.DefaultPrompt(label, defaultValue)
+}
+
 func (c *cmdIO) Spinner(ctx context.Context) chan string {
 	var sp *spinner.Spinner
 	if c.interactive {

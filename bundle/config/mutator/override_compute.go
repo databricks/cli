@@ -23,10 +23,10 @@ func (m *overrideCompute) Name() string {
 func overrideJobCompute(j *resources.Job, compute string) {
 	for i := range j.Tasks {
 		task := &j.Tasks[i]
-		if task.NewCluster != nil {
+		if task.NewCluster != nil || task.ExistingClusterId != "" || task.ComputeKey != "" || task.JobClusterKey != "" {
 			task.NewCluster = nil
-			task.ExistingClusterId = compute
-		} else if task.ExistingClusterId != "" {
+			task.JobClusterKey = ""
+			task.ComputeKey = ""
 			task.ExistingClusterId = compute
 		}
 	}
@@ -35,7 +35,7 @@ func overrideJobCompute(j *resources.Job, compute string) {
 func (m *overrideCompute) Apply(ctx context.Context, b *bundle.Bundle) error {
 	if b.Config.Bundle.Mode != config.Development {
 		if b.Config.Bundle.ComputeID != "" {
-			return fmt.Errorf("cannot override compute for an environment that does not use 'mode: development'")
+			return fmt.Errorf("cannot override compute for an target that does not use 'mode: development'")
 		}
 		return nil
 	}

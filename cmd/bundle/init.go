@@ -1,10 +1,12 @@
 package bundle
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/git"
 	"github.com/databricks/cli/libs/template"
 	"github.com/spf13/cobra"
@@ -36,43 +38,60 @@ func repoName(url string) string {
 
 func newInitCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "init TEMPLATE_PATH",
+		Use:   "init [TEMPLATE_PATH]",
 		Short: "Initialize Template",
-		Args:  cobra.ExactArgs(1),
+		Args:  cobra.MaximumNArgs(1),
 	}
 
 	var configFile string
-	var projectDir string
+	var outputDir string
+	var templateDir string
 	cmd.Flags().StringVar(&configFile, "config-file", "", "File containing input parameters for template initialization.")
-	cmd.Flags().StringVar(&projectDir, "project-dir", "", "The project will be initialized in this directory.")
-	cmd.MarkFlagRequired("project-dir")
+	cmd.Flags().StringVar(&templateDir, "template-dir", "", "Directory within repository that holds the template specification.")
+	cmd.Flags().StringVar(&outputDir, "output-dir", "", "Directory to write the initialized template to.")
 
+	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		templatePath := args[0]
 		ctx := cmd.Context()
+		var templatePath string
+		if len(args) > 0 {
+			templatePath = args[0]
+		} else {
+			return errors.New("please specify a template")
+
+			/* TODO: propose to use default-python (once template is ready)
+			var err error
+			if !cmdio.IsOutTTY(ctx) || !cmdio.IsInTTY(ctx) {
+				return errors.New("please specify a template")
+			}
+			templatePath, err = cmdio.Ask(ctx, "Template to use", "default-python")
+			if err != nil {
+				return err
+			}
+			*/
+		}
 
 		if !isRepoUrl(templatePath) {
 			// skip downloading the repo because input arg is not a URL. We assume
 			// it's a path on the local file system in that case
-			return template.Materialize(ctx, configFile, templatePath, projectDir)
+			return template.Materialize(ctx, configFile, templatePath, outputDir)
 		}
 
 		// Download the template in a temporary directory
 		tmpDir := os.TempDir()
 		templateURL := templatePath
-		templateDir := filepath.Join(tmpDir, repoName(templateURL))
-		err := os.MkdirAll(templateDir, 0755)
+		repoDir := filepath.Join(tmpDir, repoName(templateURL))
+		err := os.MkdirAll(repoDir, 0755)
 		if err != nil {
 			return err
 		}
 		// TODO: Add automated test that the downloaded git repo is cleaned up.
-		err = git.Clone(ctx, templateURL, "", templateDir)
+		err = git.Clone(ctx, templateURL, "", repoDir)
 		if err != nil {
 			return err
 		}
 		defer os.RemoveAll(templateDir)
-
-		return template.Materialize(ctx, configFile, templateDir, projectDir)
+		return template.Materialize(ctx, configFile, filepath.Join(repoDir, templateDir), outputDir)
 	}
 
 	return cmd

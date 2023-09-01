@@ -7,7 +7,7 @@ import (
 )
 
 func ConfigureBundleWithVariables(cmd *cobra.Command, args []string) error {
-	// Load bundle config and apply environment
+	// Load bundle config and apply target
 	err := root.MustConfigureBundle(cmd, args)
 	if err != nil {
 		return err

@@ -128,3 +128,41 @@ func TestBundleConfigureWithProfileFlagAndEnvVariable(t *testing.T) {
 		b.WorkspaceClient()
 	})
 }
+
+func TestTargetFlagFull(t *testing.T) {
+	cmd := emptyCommand(t)
+	initTargetFlag(cmd)
+	cmd.SetArgs([]string{"version", "--target", "development"})
+
+	ctx := context.Background()
+	err := cmd.ExecuteContext(ctx)
+	assert.NoError(t, err)
+
+	assert.Equal(t, getTarget(cmd), "development")
+}
+
+func TestTargetFlagShort(t *testing.T) {
+	cmd := emptyCommand(t)
+	initTargetFlag(cmd)
+	cmd.SetArgs([]string{"version", "-t", "production"})
+
+	ctx := context.Background()
+	err := cmd.ExecuteContext(ctx)
+	assert.NoError(t, err)
+
+	assert.Equal(t, getTarget(cmd), "production")
+}
+
+// TODO: remove when environment flag is fully deprecated
+func TestTargetEnvironmentFlag(t *testing.T) {
+	cmd := emptyCommand(t)
+	initTargetFlag(cmd)
+	initEnvironmentFlag(cmd)
+	cmd.SetArgs([]string{"version", "--environment", "development"})
+
+	ctx := context.Background()
+	err := cmd.ExecuteContext(ctx)
+	assert.NoError(t, err)
+
+	assert.Equal(t, getTarget(cmd), "development")
+}

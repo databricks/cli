@@ -47,7 +47,11 @@ func (m *infer) Apply(ctx context.Context, b *bundle.Bundle) error {
 		return fmt.Errorf("artifact doesn't exist: %s", m.name)
 	}
 
-	if artifact.BuildCommand != "" {
+	// only try to infer command if it's not already defined
+	// and there is no explicitly files defined which means
+	// that the package is built outside of bundle cycles
+	// manually by customer
+	if artifact.BuildCommand != "" || len(artifact.Files) > 0 {
 		return nil
 	}
 

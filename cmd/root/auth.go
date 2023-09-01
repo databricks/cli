@@ -113,6 +113,10 @@ TRY_AUTH: // or try picking a config profile dynamically
 	return nil
 }
 
+func SetWorkspaceClient(ctx context.Context, w *databricks.WorkspaceClient) context.Context {
+	return context.WithValue(ctx, &workspaceClient, w)
+}
+
 func transformLoadError(path string, err error) error {
 	if os.IsNotExist(err) {
 		return fmt.Errorf("no configuration file found at %s; please create one first", path)

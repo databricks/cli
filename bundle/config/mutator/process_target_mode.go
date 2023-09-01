@@ -8,21 +8,22 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/databricks-sdk-go/service/iam"
+	"github.com/databricks/cli/libs/auth"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 )
 
-type processEnvironmentMode struct{}
+type processTargetMode struct{}
 
 const developmentConcurrentRuns = 4
 
-func ProcessEnvironmentMode() bundle.Mutator {
-	return &processEnvironmentMode{}
+func ProcessTargetMode() bundle.Mutator {
+	return &processTargetMode{}
 }
 
-func (m *processEnvironmentMode) Name() string {
-	return "ProcessEnvironmentMode"
+func (m *processTargetMode) Name() string {
+	return "ProcessTargetMode"
 }
 
 // Mark all resources as being for 'development' purposes, i.e.
@@ -110,14 +111,14 @@ func findIncorrectPath(b *bundle.Bundle, mode config.Mode) string {
 
 func validateProductionMode(ctx context.Context, b *bundle.Bundle, isPrincipalUsed bool) error {
 	if b.Config.Bundle.Git.Inferred {
-		env := b.Config.Bundle.Environment
-		return fmt.Errorf("environment with 'mode: production' must specify an explicit 'environments.%s.git' configuration", env)
+		env := b.Config.Bundle.Target
+		log.Warnf(ctx, "target with 'mode: production' should specify an explicit 'targets.%s.git' configuration", env)
 	}
 
 	r := b.Config.Resources
 	for i := range r.Pipelines {
 		if r.Pipelines[i].Development {
-			return fmt.Errorf("environment with 'mode: production' cannot specify a pipeline with 'development: true'")
+			return fmt.Errorf("target with 'mode: production' cannot specify a pipeline with 'development: true'")
 		}
 	}
 
@@ -125,7 +126,7 @@ func validateProductionMode(ctx context.Context, b *bundle.Bundle, isPrincipalUs
 		if path := findIncorrectPath(b, config.Production); path != "" {
 			message := "%s must not contain the current username when using 'mode: production'"
 			if path == "root_path" {
-				return fmt.Errorf(message+"\n  tip: set workspace.root_path to a shared path such as /Shared/.bundle/${bundle.name}/${bundle.environment}", path)
+				return fmt.Errorf(message+"\n  tip: set workspace.root_path to a shared path such as /Shared/.bundle/${bundle.name}/${bundle.target}", path)
 			} else {
 				return fmt.Errorf(message, path)
 			}
@@ -136,21 +137,6 @@ func validateProductionMode(ctx context.Context, b *bundle.Bundle, isPrincipalUs
 		}
 	}
 	return nil
-}
-
-// Determines whether a service principal identity is used to run the CLI.
-func isServicePrincipalUsed(ctx context.Context, b *bundle.Bundle) (bool, error) {
-	ws := b.WorkspaceClient()
-
-	// Check if a principal with the current user's ID exists.
-	// We need to use the ListAll method since Get is only usable by admins.
-	matches, err := ws.ServicePrincipals.ListAll(ctx, iam.ListServicePrincipalsRequest{
-		Filter: "id eq " + b.Config.Workspace.CurrentUser.Id,
-	})
-	if err != nil {
-		return false, err
-	}
-	return len(matches) > 0, nil
 }
 
 // Determines whether run_as is explicitly set for all resources.
@@ -165,7 +151,7 @@ func isRunAsSet(r config.Resources) bool {
 	return true
 }
 
-func (m *processEnvironmentMode) Apply(ctx context.Context, b *bundle.Bundle) error {
+func (m *processTargetMode) Apply(ctx context.Context, b *bundle.Bundle) error {
 	switch b.Config.Bundle.Mode {
 	case config.Development:
 		err := validateDevelopmentMode(b)
@@ -174,7 +160,7 @@ func (m *processEnvironmentMode) Apply(ctx context.Context, b *bundle.Bundle) er
 		}
 		return transformDevelopmentMode(b)
 	case config.Production:
-		isPrincipal, err := isServicePrincipalUsed(ctx, b)
+		isPrincipal, err := auth.IsServicePrincipal(ctx, b.WorkspaceClient(), b.Config.Workspace.CurrentUser.Id)
 		if err != nil {
 			return err
 		}
@@ -182,7 +168,7 @@ func (m *processEnvironmentMode) Apply(ctx context.Context, b *bundle.Bundle) er
 	case "":
 		// No action
 	default:
-		return fmt.Errorf("unsupported value specified for 'mode': %s", b.Config.Bundle.Mode)
+		return fmt.Errorf("unsupported value '%s' specified for 'mode': must be either 'development' or 'production'", b.Config.Bundle.Mode)
 	}
 
 	return nil

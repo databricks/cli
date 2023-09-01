@@ -22,7 +22,7 @@ func (j *Job) MergeJobClusters() error {
 	keys := make(map[string]*jobs.JobCluster)
 	output := make([]jobs.JobCluster, 0, len(j.JobClusters))
 
-	// Environment overrides are always appended, so we can iterate in natural order to
+	// Target overrides are always appended, so we can iterate in natural order to
 	// first find the base definition, and merge instances we encounter later.
 	for i := range j.JobClusters {
 		key := j.JobClusters[i].JobClusterKey

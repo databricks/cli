@@ -28,5 +28,6 @@ func (m *autodetect) Apply(ctx context.Context, b *bundle.Bundle) error {
 
 	return bundle.Apply(ctx, b, bundle.Seq(
 		whl.DetectPackage(),
+		whl.DefineArtifactsFromLibraries(),
 	))
 }
