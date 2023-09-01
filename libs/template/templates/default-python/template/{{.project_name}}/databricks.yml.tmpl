@@ -35,7 +35,7 @@ targets:
   prod:
     # For production deployments, we only have a single copy, so we override the
     # workspace.root_path default of
-    # /Users/${workspace.current_user.userName}/.bundle/${bundle.environment}/${bundle.name}
+    # /Users/${workspace.current_user.userName}/.bundle/${bundle.target}/${bundle.name}
     # to a path that is not specific to the current user.
     {{- /*
     Explaining 'mode: production' isn't as pressing as explaining 'mode: development'.
