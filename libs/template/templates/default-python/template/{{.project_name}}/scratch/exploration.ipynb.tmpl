@@ -17,11 +17,13 @@
    },
    "outputs": [],
    "source": [
-    "import sys\n",
-    "sys.path.append('../src')\n",
-    "from project import main\n",
+   {{- if (eq .include_python "yes") }}
+    "from {{.project_name}} import main\n",
     "\n",
-    "main.taxis.show(10)"
+    "main.get_taxis().show(10)"
+   {{else}}
+    "spark.range(10)"
+   {{end -}}
    ]
   }
  ],
