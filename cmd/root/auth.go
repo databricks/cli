@@ -93,7 +93,6 @@ TRY_AUTH: // or try picking a config profile dynamically
 	if err != nil {
 		return err
 	}
-
 	err = w.Config.Authenticate(emptyHttpRequest(ctx))
 	if cmdio.IsInteractive(ctx) && errors.Is(err, config.ErrCannotConfigureAuth) {
 		profile, err := askForWorkspaceProfile()
@@ -192,6 +191,17 @@ func askForAccountProfile() (string, error) {
 	return profiles[i].Name, nil
 }
 
+// To verify that a client is configured correctly, we pass an empty HTTP request
+// to a client's `config.Authenticate` function. Note: this functionality
+// should be supported by the SDK itself.
+func emptyHttpRequest(ctx context.Context) *http.Request {
+	req, err := http.NewRequestWithContext(ctx, "", "", nil)
+	if err != nil {
+		panic(err)
+	}
+	return req
+}
+
 func WorkspaceClient(ctx context.Context) *databricks.WorkspaceClient {
 	w, ok := ctx.Value(&workspaceClient).(*databricks.WorkspaceClient)
 	if !ok {
@@ -206,15 +216,4 @@ func AccountClient(ctx context.Context) *databricks.AccountClient {
 		panic("cannot get *databricks.AccountClient. Please report it as a bug")
 	}
 	return a
-}
-
-// To verify that a client is configured correctly, we pass an empty HTTP request
-// to a client's `config.Authenticate` function. Note: this functionality
-// should be supported by the SDK itself.
-func emptyHttpRequest(ctx context.Context) *http.Request {
-	req, err := http.NewRequestWithContext(ctx, "", "", nil)
-	if err != nil {
-		panic(err)
-	}
-	return req
 }
