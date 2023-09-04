@@ -135,8 +135,8 @@ func translateFilePath(literal, localFullPath, localRelPath, remotePath string) 
 	return remotePath, nil
 }
 
-func translateNoOp(literal, localPath, localFullPath, remotePath string) (string, error) {
-	return localFullPath, nil
+func translateNoOp(literal, localFullPath, localRelPath, remotePath string) (string, error) {
+	return localRelPath, nil
 }
 
 type transformer struct {
