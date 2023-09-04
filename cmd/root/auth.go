@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
 
 	"github.com/databricks/cli/bundle"
@@ -11,7 +12,6 @@ import (
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
-	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
 )
@@ -19,7 +19,6 @@ import (
 // Placeholders to use as unique keys in context.Context.
 var workspaceClient int
 var accountClient int
-var currentUser int
 
 func initProfileFlag(cmd *cobra.Command) {
 	cmd.PersistentFlags().StringP("profile", "p", "", "~/.databrickscfg profile")
@@ -94,8 +93,15 @@ TRY_AUTH: // or try picking a config profile dynamically
 	if err != nil {
 		return err
 	}
-	// get current user identity also to verify validity of configuration
-	me, err := w.CurrentUser.Me(ctx)
+
+	// Verify that the client is configured correctly by authenticating a dummy request.
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://localhost/doesntmatter", nil)
+	if err != nil {
+		// This can only fail if the context is nil, which would be a bug.
+		panic(err)
+	}
+
+	err = w.Config.Authenticate(req)
 	if cmdio.IsInteractive(ctx) && errors.Is(err, config.ErrCannotConfigureAuth) {
 		profile, err := askForWorkspaceProfile()
 		if err != nil {
@@ -107,7 +113,6 @@ TRY_AUTH: // or try picking a config profile dynamically
 	if err != nil {
 		return err
 	}
-	ctx = context.WithValue(ctx, &currentUser, me)
 	ctx = context.WithValue(ctx, &workspaceClient, w)
 	cmd.SetContext(ctx)
 	return nil
@@ -208,12 +213,4 @@ func AccountClient(ctx context.Context) *databricks.AccountClient {
 		panic("cannot get *databricks.AccountClient. Please report it as a bug")
 	}
 	return a
-}
-
-func Me(ctx context.Context) *iam.User {
-	me, ok := ctx.Value(&currentUser).(*iam.User)
-	if !ok {
-		panic("cannot get current user. Please report it as a bug")
-	}
-	return me
 }
