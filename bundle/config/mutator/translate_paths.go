@@ -152,12 +152,6 @@ type transformer struct {
 
 type transformFunc func(resource any, dir string) *transformer
 
-var transformers []func(*translatePaths, *bundle.Bundle) error = []func(*translatePaths, *bundle.Bundle) error{
-	applyJobsTransformers,
-	applyPipelineTransformers,
-	applyArtifactTransformers,
-}
-
 // Apply all matches transformers for the given resource
 func (m *translatePaths) applyTransformers(funcs []transformFunc, b *bundle.Bundle, resource any, dir string) error {
 	for _, transformFn := range funcs {
@@ -184,8 +178,12 @@ func (m *translatePaths) applyTransformers(funcs []transformFunc, b *bundle.Bund
 func (m *translatePaths) Apply(_ context.Context, b *bundle.Bundle) error {
 	m.seen = make(map[string]string)
 
-	for _, apply := range transformers {
-		err := apply(m, b)
+	for _, fn := range []func(*translatePaths, *bundle.Bundle) error{
+		applyJobsTransformers,
+		applyPipelineTransformers,
+		applyArtifactTransformers,
+	} {
+		err := fn(m, b)
 		if err != nil {
 			return err
 		}
