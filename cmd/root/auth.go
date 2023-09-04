@@ -25,6 +25,23 @@ func initProfileFlag(cmd *cobra.Command) {
 	cmd.RegisterFlagCompletionFunc("profile", databrickscfg.ProfileCompletion)
 }
 
+// Helper function to create an account client or prompt once if the given configuration is not valid.
+func accountClientOrPrompt(ctx context.Context, cfg *config.Config, retry bool) (*databricks.AccountClient, error) {
+	a, err := databricks.NewAccountClient((*databricks.Config)(cfg))
+
+	// Try picking a profile dynamically if the current configuration is not valid.
+	if retry && errors.Is(err, databricks.ErrNotAccountClient) && cmdio.IsInteractive(ctx) {
+		profile, err := askForAccountProfile()
+		if err != nil {
+			return nil, err
+		}
+		cfg = &config.Config{Profile: profile}
+		return accountClientOrPrompt(ctx, cfg, false)
+	}
+
+	return a, err
+}
+
 func MustAccountClient(cmd *cobra.Command, args []string) error {
 	cfg := &config.Config{}
 
@@ -48,22 +65,36 @@ func MustAccountClient(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-TRY_AUTH: // or try picking a config profile dynamically
-	a, err := databricks.NewAccountClient((*databricks.Config)(cfg))
-	if cmdio.IsInteractive(cmd.Context()) && errors.Is(err, databricks.ErrNotAccountClient) {
-		profile, err := askForAccountProfile()
-		if err != nil {
-			return err
-		}
-		cfg = &config.Config{Profile: profile}
-		goto TRY_AUTH
-	}
+	a, err := accountClientOrPrompt(cmd.Context(), cfg, true)
 	if err != nil {
-		return err
+		return nil
 	}
 
 	cmd.SetContext(context.WithValue(cmd.Context(), &accountClient, a))
 	return nil
+}
+
+// Helper function to create a workspace client or prompt once if the given configuration is not valid.
+func workspaceClientOrPrompt(ctx context.Context, cfg *config.Config, retry bool) (*databricks.WorkspaceClient, error) {
+	w, err := databricks.NewWorkspaceClient((*databricks.Config)(cfg))
+	if err != nil {
+		return nil, err
+	}
+
+	// err = w.Config.Authenticate(emptyHttpRequest(ctx))
+	// if cmdio.IsInteractive(ctx) && errors.Is(err, config.ErrCannotConfigureAuth) {
+
+	// Try picking a profile dynamically if the current configuration is not valid.
+	if retry && errors.Is(err, databricks.ErrNotWorkspaceClient) && cmdio.IsInteractive(ctx) {
+		profile, err := askForWorkspaceProfile()
+		if err != nil {
+			return nil, err
+		}
+		cfg = &config.Config{Profile: profile}
+		return workspaceClientOrPrompt(ctx, cfg, false)
+	}
+
+	return w, err
 }
 
 func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
@@ -87,24 +118,12 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 		cfg = currentBundle.WorkspaceClient().Config
 	}
 
-TRY_AUTH: // or try picking a config profile dynamically
+	w, err := workspaceClientOrPrompt(cmd.Context(), cfg, true)
+	if err != nil {
+		return err
+	}
+
 	ctx := cmd.Context()
-	w, err := databricks.NewWorkspaceClient((*databricks.Config)(cfg))
-	if err != nil {
-		return err
-	}
-	err = w.Config.Authenticate(emptyHttpRequest(ctx))
-	if cmdio.IsInteractive(ctx) && errors.Is(err, config.ErrCannotConfigureAuth) {
-		profile, err := askForWorkspaceProfile()
-		if err != nil {
-			return err
-		}
-		cfg = &config.Config{Profile: profile}
-		goto TRY_AUTH
-	}
-	if err != nil {
-		return err
-	}
 	ctx = context.WithValue(ctx, &workspaceClient, w)
 	cmd.SetContext(ctx)
 	return nil
