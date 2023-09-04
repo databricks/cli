@@ -64,7 +64,7 @@ type Root struct {
 	Workspace Workspace `json:"workspace,omitempty"`
 
 	// Artifacts contains a description of all code artifacts in this bundle.
-	Artifacts map[string]*Artifact `json:"artifacts,omitempty"`
+	Artifacts Artifacts `json:"artifacts,omitempty"`
 
 	// Resources contains a description of all Databricks resources
 	// to deploy in this bundle (e.g. jobs, pipelines, etc.).
@@ -113,6 +113,10 @@ func Load(path string) (*Root, error) {
 // was loaded from in configuration leafs that require it.
 func (r *Root) SetConfigFilePath(path string) {
 	r.Resources.SetConfigFilePath(path)
+	if r.Artifacts != nil {
+		r.Artifacts.SetConfigFilePath(path)
+	}
+
 	if r.Targets != nil {
 		for _, env := range r.Targets {
 			if env == nil {
@@ -120,6 +124,9 @@ func (r *Root) SetConfigFilePath(path string) {
 			}
 			if env.Resources != nil {
 				env.Resources.SetConfigFilePath(path)
+			}
+			if env.Artifacts != nil {
+				env.Artifacts.SetConfigFilePath(path)
 			}
 		}
 	}
@@ -175,11 +182,17 @@ func (r *Root) Load(path string) error {
 }
 
 func (r *Root) Merge(other *Root) error {
+	err := r.Sync.Merge(r, other)
+	if err != nil {
+		return err
+	}
+	other.Sync = Sync{}
+
 	// TODO: when hooking into merge semantics, disallow setting path on the target instance.
 	other.Path = ""
 
 	// Check for safe merge, protecting against duplicate resource identifiers
-	err := r.Resources.VerifySafeMerge(&other.Resources)
+	err = r.Resources.VerifySafeMerge(&other.Resources)
 	if err != nil {
 		return err
 	}

@@ -23,7 +23,7 @@ type Target struct {
 
 	Workspace *Workspace `json:"workspace,omitempty"`
 
-	Artifacts map[string]*Artifact `json:"artifacts,omitempty"`
+	Artifacts Artifacts `json:"artifacts,omitempty"`
 
 	Resources *Resources `json:"resources,omitempty"`
 
