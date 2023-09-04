@@ -179,7 +179,7 @@ func (m *translatePaths) Apply(_ context.Context, b *bundle.Bundle) error {
 	m.seen = make(map[string]string)
 
 	for _, fn := range []func(*translatePaths, *bundle.Bundle) error{
-		applyJobsTransformers,
+		applyJobTransformers,
 		applyPipelineTransformers,
 		applyArtifactTransformers,
 	} {

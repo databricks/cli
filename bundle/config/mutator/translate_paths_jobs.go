@@ -71,7 +71,7 @@ var jobTransformers []transformFunc = []transformFunc{
 	transformJarLibrary,
 }
 
-func applyJobsTransformers(m *translatePaths, b *bundle.Bundle) error {
+func applyJobTransformers(m *translatePaths, b *bundle.Bundle) error {
 	for key, job := range b.Config.Resources.Jobs {
 		dir, err := job.ConfigFileDirectory()
 		if err != nil {
