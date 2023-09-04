@@ -85,13 +85,13 @@ func applyJobsTransformers(m *translatePaths, b *bundle.Bundle) error {
 
 		for i := 0; i < len(job.Tasks); i++ {
 			task := &job.Tasks[i]
-			err := applyTransformers(jobTransformers, m, b, task, dir)
+			err := m.applyTransformers(jobTransformers, b, task, dir)
 			if err != nil {
 				return err
 			}
 			for j := 0; j < len(task.Libraries); j++ {
 				library := &task.Libraries[j]
-				err := applyTransformers(jobTransformers, m, b, library, dir)
+				err := m.applyTransformers(jobTransformers, b, library, dir)
 				if err != nil {
 					return err
 				}

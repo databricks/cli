@@ -32,7 +32,7 @@ func applyArtifactTransformers(m *translatePaths, b *bundle.Bundle) error {
 			return fmt.Errorf("unable to determine directory for artifact %s: %w", key, err)
 		}
 
-		err = applyTransformers(artifactTransformers, m, b, artifact, dir)
+		err = m.applyTransformers(artifactTransformers, b, artifact, dir)
 		if err != nil {
 			return err
 		}

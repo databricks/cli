@@ -159,7 +159,7 @@ var transformers []func(*translatePaths, *bundle.Bundle) error = []func(*transla
 }
 
 // Apply all matches transformers for the given resource
-func applyTransformers(funcs []transformFunc, m *translatePaths, b *bundle.Bundle, resource any, dir string) error {
+func (m *translatePaths) applyTransformers(funcs []transformFunc, b *bundle.Bundle, resource any, dir string) error {
 	for _, transformFn := range funcs {
 		transformer := transformFn(resource, dir)
 		if transformer == nil {

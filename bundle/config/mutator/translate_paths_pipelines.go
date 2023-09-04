@@ -21,7 +21,7 @@ func applyPipelineTransformers(m *translatePaths, b *bundle.Bundle) error {
 
 		for i := 0; i < len(pipeline.Libraries); i++ {
 			library := &pipeline.Libraries[i]
-			err := applyTransformers(pipelineTransformers, m, b, library, dir)
+			err := m.applyTransformers(pipelineTransformers, b, library, dir)
 			if err != nil {
 				return err
 			}
