@@ -21,11 +21,11 @@ func transformArtifactPath(resource any, dir string) *transformer {
 	}
 }
 
-var artifactTransformers []transformFunc = []transformFunc{
-	transformArtifactPath,
-}
-
 func applyArtifactTransformers(m *translatePaths, b *bundle.Bundle) error {
+	artifactTransformers := []transformFunc{
+		transformArtifactPath,
+	}
+
 	for key, artifact := range b.Config.Artifacts {
 		dir, err := artifact.ConfigFileDirectory()
 		if err != nil {

@@ -64,14 +64,14 @@ func transformJarLibrary(resource any, dir string) *transformer {
 	}
 }
 
-var jobTransformers []transformFunc = []transformFunc{
-	transformNotebookTask,
-	transformSparkTask,
-	transformWhlLibrary,
-	transformJarLibrary,
-}
-
 func applyJobTransformers(m *translatePaths, b *bundle.Bundle) error {
+	jobTransformers := []transformFunc{
+		transformNotebookTask,
+		transformSparkTask,
+		transformWhlLibrary,
+		transformJarLibrary,
+	}
+
 	for key, job := range b.Config.Resources.Jobs {
 		dir, err := job.ConfigFileDirectory()
 		if err != nil {
