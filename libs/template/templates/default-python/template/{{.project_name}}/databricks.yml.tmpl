@@ -6,18 +6,6 @@ bundle:
 include:
   - resources/*.yml
 
-{{- if (eq .include_python "yes") }}
-
-artifacts:
-  {{.project_name}}:
-    type: whl
-    path: "."
-    build: "python3 setup.py bdist_wheel"
-
-{{else}}
-
-{{end -}}
-
 targets:
   # The 'dev' target, used development purposes.
   # Whenever a developer deploys using 'dev', they get their own copy.
