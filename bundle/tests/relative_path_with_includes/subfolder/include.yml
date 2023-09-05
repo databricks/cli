@@ -1,0 +1,20 @@
+sync:
+  include:
+    - ./folder_c/*.*
+  exclude:
+    - ./folder_d/*.*
+
+artifacts:
+  test_b:
+    type: whl
+    path: ./artifact_b
+
+
+resources:
+  jobs:
+    job_b:
+      name: "job_b"
+      tasks:
+        - task_key: "task_a"
+          libraries:
+            - whl: ./dist/job_b.whl
