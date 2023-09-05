@@ -10,7 +10,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
-{{ $excludes := list "command-execution" "statement-execution" "dbfs" "dbsql-permissions" "account-access-control-proxy" }}
+{{ $excludes :=
+	list
+		"command-execution"
+		"statement-execution"
+		"dbfs"
+		"dbsql-permissions"
+		"account-access-control-proxy"
+		"files"
+}}
 
 {{if not (in $excludes .KebabName) }}
 	{{template "service" .}}

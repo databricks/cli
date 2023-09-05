@@ -212,6 +212,131 @@ func init() {
 	})
 }
 
+// start get-permission-levels command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getPermissionLevelsOverrides []func(
+	*cobra.Command,
+	*workspace.GetWorkspaceObjectPermissionLevelsRequest,
+)
+
+func newGetPermissionLevels() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getPermissionLevelsReq workspace.GetWorkspaceObjectPermissionLevelsRequest
+
+	// TODO: short flags
+
+	cmd.Use = "get-permission-levels WORKSPACE_OBJECT_TYPE WORKSPACE_OBJECT_ID"
+	cmd.Short = `Get workspace object permission levels.`
+	cmd.Long = `Get workspace object permission levels.
+  
+  Gets the permission levels that a user can have on an object.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(2)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		getPermissionLevelsReq.WorkspaceObjectType = args[0]
+		getPermissionLevelsReq.WorkspaceObjectId = args[1]
+
+		response, err := w.Workspace.GetPermissionLevels(ctx, getPermissionLevelsReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getPermissionLevelsOverrides {
+		fn(cmd, &getPermissionLevelsReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newGetPermissionLevels())
+	})
+}
+
+// start get-permissions command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getPermissionsOverrides []func(
+	*cobra.Command,
+	*workspace.GetWorkspaceObjectPermissionsRequest,
+)
+
+func newGetPermissions() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getPermissionsReq workspace.GetWorkspaceObjectPermissionsRequest
+
+	// TODO: short flags
+
+	cmd.Use = "get-permissions WORKSPACE_OBJECT_TYPE WORKSPACE_OBJECT_ID"
+	cmd.Short = `Get workspace object permissions.`
+	cmd.Long = `Get workspace object permissions.
+  
+  Gets the permissions of a workspace object. Workspace objects can inherit
+  permissions from their parent objects or root object.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(2)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		getPermissionsReq.WorkspaceObjectType = args[0]
+		getPermissionsReq.WorkspaceObjectId = args[1]
+
+		response, err := w.Workspace.GetPermissions(ctx, getPermissionsReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getPermissionsOverrides {
+		fn(cmd, &getPermissionsReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newGetPermissions())
+	})
+}
+
 // start get-status command
 
 // Slice with functions to override default command behavior.
@@ -504,6 +629,152 @@ func newMkdirs() *cobra.Command {
 func init() {
 	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
 		cmd.AddCommand(newMkdirs())
+	})
+}
+
+// start set-permissions command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var setPermissionsOverrides []func(
+	*cobra.Command,
+	*workspace.WorkspaceObjectPermissionsRequest,
+)
+
+func newSetPermissions() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var setPermissionsReq workspace.WorkspaceObjectPermissionsRequest
+	var setPermissionsJson flags.JsonFlag
+
+	// TODO: short flags
+	cmd.Flags().Var(&setPermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	// TODO: array: access_control_list
+
+	cmd.Use = "set-permissions WORKSPACE_OBJECT_TYPE WORKSPACE_OBJECT_ID"
+	cmd.Short = `Set workspace object permissions.`
+	cmd.Long = `Set workspace object permissions.
+  
+  Sets permissions on a workspace object. Workspace objects can inherit
+  permissions from their parent objects or root object.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(2)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			err = setPermissionsJson.Unmarshal(&setPermissionsReq)
+			if err != nil {
+				return err
+			}
+		}
+		setPermissionsReq.WorkspaceObjectType = args[0]
+		setPermissionsReq.WorkspaceObjectId = args[1]
+
+		response, err := w.Workspace.SetPermissions(ctx, setPermissionsReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range setPermissionsOverrides {
+		fn(cmd, &setPermissionsReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newSetPermissions())
+	})
+}
+
+// start update-permissions command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updatePermissionsOverrides []func(
+	*cobra.Command,
+	*workspace.WorkspaceObjectPermissionsRequest,
+)
+
+func newUpdatePermissions() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updatePermissionsReq workspace.WorkspaceObjectPermissionsRequest
+	var updatePermissionsJson flags.JsonFlag
+
+	// TODO: short flags
+	cmd.Flags().Var(&updatePermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	// TODO: array: access_control_list
+
+	cmd.Use = "update-permissions WORKSPACE_OBJECT_TYPE WORKSPACE_OBJECT_ID"
+	cmd.Short = `Update workspace object permissions.`
+	cmd.Long = `Update workspace object permissions.
+  
+  Updates the permissions on a workspace object. Workspace objects can inherit
+  permissions from their parent objects or root object.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(2)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			err = updatePermissionsJson.Unmarshal(&updatePermissionsReq)
+			if err != nil {
+				return err
+			}
+		}
+		updatePermissionsReq.WorkspaceObjectType = args[0]
+		updatePermissionsReq.WorkspaceObjectId = args[1]
+
+		response, err := w.Workspace.UpdatePermissions(ctx, updatePermissionsReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updatePermissionsOverrides {
+		fn(cmd, &updatePermissionsReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newUpdatePermissions())
 	})
 }
 

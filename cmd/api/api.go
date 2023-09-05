@@ -60,7 +60,7 @@ func makeCommand(method string) *cobra.Command {
 			}
 
 			var response any
-			err = api.Do(cmd.Context(), method, path, request, &response)
+			err = api.Do(cmd.Context(), method, path, nil, request, &response)
 			if err != nil {
 				return err
 			}
