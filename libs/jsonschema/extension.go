@@ -10,5 +10,5 @@ type Extension struct {
 	// Order defines the order of a field with respect to other fields.
 	// If not defined, the field is ordered alphabetically after all fields
 	// that do have an order defined.
-	Order int `json:"order,omitempty"`
+	Order *int `json:"order,omitempty"`
 }

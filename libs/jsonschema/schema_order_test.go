@@ -7,42 +7,43 @@ import (
 )
 
 func TestOrderedProperties(t *testing.T) {
+	newInt := func(i int) *int {
+		return &i
+	}
+
 	s := Schema{
 		Properties: map[string]*Schema{
 			"bbb": {
 				Type: StringType,
-				// Implied order: 0
 			},
 			"ccc": {
 				Type: StringType,
-				// Implied order: 0
 			},
 			"ddd": {
 				Type: StringType,
-				// Implied order: 0
 			},
 			"zzz1": {
 				Type: StringType,
 				Extension: Extension{
-					Order: -1,
+					Order: newInt(-1),
 				},
 			},
 			"zzz2": {
 				Type: StringType,
 				Extension: Extension{
-					Order: -2,
+					Order: newInt(-2),
 				},
 			},
 			"aaa1": {
 				Type: StringType,
 				Extension: Extension{
-					Order: 1,
+					Order: newInt(1),
 				},
 			},
 			"aaa2": {
 				Type: StringType,
 				Extension: Extension{
-					Order: 2,
+					Order: newInt(2),
 				},
 			},
 		},
@@ -55,5 +56,5 @@ func TestOrderedProperties(t *testing.T) {
 		names[i] = property.Name
 	}
 
-	assert.Equal(t, []string{"zzz2", "zzz1", "bbb", "ccc", "ddd", "aaa1", "aaa2"}, names)
+	assert.Equal(t, []string{"zzz2", "zzz1", "aaa1", "aaa2", "bbb", "ccc", "ddd"}, names)
 }
