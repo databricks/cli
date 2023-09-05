@@ -646,6 +646,153 @@ func init() {
 	})
 }
 
+// start get-permission-levels command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getPermissionLevelsOverrides []func(
+	*cobra.Command,
+	*jobs.GetJobPermissionLevelsRequest,
+)
+
+func newGetPermissionLevels() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getPermissionLevelsReq jobs.GetJobPermissionLevelsRequest
+
+	// TODO: short flags
+
+	cmd.Use = "get-permission-levels JOB_ID"
+	cmd.Short = `Get job permission levels.`
+	cmd.Long = `Get job permission levels.
+  
+  Gets the permission levels that a user can have on an object.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No JOB_ID argument specified. Loading names for Jobs drop-down."
+			names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "The job for which to get or manage permissions")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the job for which to get or manage permissions")
+		}
+		getPermissionLevelsReq.JobId = args[0]
+
+		response, err := w.Jobs.GetPermissionLevels(ctx, getPermissionLevelsReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getPermissionLevelsOverrides {
+		fn(cmd, &getPermissionLevelsReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newGetPermissionLevels())
+	})
+}
+
+// start get-permissions command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getPermissionsOverrides []func(
+	*cobra.Command,
+	*jobs.GetJobPermissionsRequest,
+)
+
+func newGetPermissions() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getPermissionsReq jobs.GetJobPermissionsRequest
+
+	// TODO: short flags
+
+	cmd.Use = "get-permissions JOB_ID"
+	cmd.Short = `Get job permissions.`
+	cmd.Long = `Get job permissions.
+  
+  Gets the permissions of a job. Jobs can inherit permissions from their root
+  object.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No JOB_ID argument specified. Loading names for Jobs drop-down."
+			names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "The job for which to get or manage permissions")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the job for which to get or manage permissions")
+		}
+		getPermissionsReq.JobId = args[0]
+
+		response, err := w.Jobs.GetPermissions(ctx, getPermissionsReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getPermissionsOverrides {
+		fn(cmd, &getPermissionsReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newGetPermissions())
+	})
+}
+
 // start get-run command
 
 // Slice with functions to override default command behavior.
@@ -1285,6 +1432,90 @@ func init() {
 	})
 }
 
+// start set-permissions command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var setPermissionsOverrides []func(
+	*cobra.Command,
+	*jobs.JobPermissionsRequest,
+)
+
+func newSetPermissions() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var setPermissionsReq jobs.JobPermissionsRequest
+	var setPermissionsJson flags.JsonFlag
+
+	// TODO: short flags
+	cmd.Flags().Var(&setPermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	// TODO: array: access_control_list
+
+	cmd.Use = "set-permissions JOB_ID"
+	cmd.Short = `Set job permissions.`
+	cmd.Long = `Set job permissions.
+  
+  Sets permissions on a job. Jobs can inherit permissions from their root
+  object.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			err = setPermissionsJson.Unmarshal(&setPermissionsReq)
+			if err != nil {
+				return err
+			}
+		}
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No JOB_ID argument specified. Loading names for Jobs drop-down."
+			names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "The job for which to get or manage permissions")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the job for which to get or manage permissions")
+		}
+		setPermissionsReq.JobId = args[0]
+
+		response, err := w.Jobs.SetPermissions(ctx, setPermissionsReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range setPermissionsOverrides {
+		fn(cmd, &setPermissionsReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newSetPermissions())
+	})
+}
+
 // start submit command
 
 // Slice with functions to override default command behavior.
@@ -1481,6 +1712,90 @@ func newUpdate() *cobra.Command {
 func init() {
 	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
 		cmd.AddCommand(newUpdate())
+	})
+}
+
+// start update-permissions command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updatePermissionsOverrides []func(
+	*cobra.Command,
+	*jobs.JobPermissionsRequest,
+)
+
+func newUpdatePermissions() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updatePermissionsReq jobs.JobPermissionsRequest
+	var updatePermissionsJson flags.JsonFlag
+
+	// TODO: short flags
+	cmd.Flags().Var(&updatePermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	// TODO: array: access_control_list
+
+	cmd.Use = "update-permissions JOB_ID"
+	cmd.Short = `Update job permissions.`
+	cmd.Long = `Update job permissions.
+  
+  Updates the permissions on a job. Jobs can inherit permissions from their root
+  object.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			err = updatePermissionsJson.Unmarshal(&updatePermissionsReq)
+			if err != nil {
+				return err
+			}
+		}
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No JOB_ID argument specified. Loading names for Jobs drop-down."
+			names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "The job for which to get or manage permissions")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the job for which to get or manage permissions")
+		}
+		updatePermissionsReq.JobId = args[0]
+
+		response, err := w.Jobs.UpdatePermissions(ctx, updatePermissionsReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updatePermissionsOverrides {
+		fn(cmd, &updatePermissionsReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newUpdatePermissions())
 	})
 }
 

@@ -115,7 +115,7 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 		return err
 	}
 
-	err = w.apiClient.Do(ctx, http.MethodPost, urlPath, body, nil)
+	err = w.apiClient.Do(ctx, http.MethodPost, urlPath, nil, body, nil)
 
 	// Return early on success.
 	if err == nil {

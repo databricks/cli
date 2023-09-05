@@ -374,6 +374,129 @@ func init() {
 	})
 }
 
+// start get-permission-levels command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getPermissionLevelsOverrides []func(
+	*cobra.Command,
+	*serving.GetServingEndpointPermissionLevelsRequest,
+)
+
+func newGetPermissionLevels() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getPermissionLevelsReq serving.GetServingEndpointPermissionLevelsRequest
+
+	// TODO: short flags
+
+	cmd.Use = "get-permission-levels SERVING_ENDPOINT_ID"
+	cmd.Short = `Get serving endpoint permission levels.`
+	cmd.Long = `Get serving endpoint permission levels.
+  
+  Gets the permission levels that a user can have on an object.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		getPermissionLevelsReq.ServingEndpointId = args[0]
+
+		response, err := w.ServingEndpoints.GetPermissionLevels(ctx, getPermissionLevelsReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getPermissionLevelsOverrides {
+		fn(cmd, &getPermissionLevelsReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newGetPermissionLevels())
+	})
+}
+
+// start get-permissions command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getPermissionsOverrides []func(
+	*cobra.Command,
+	*serving.GetServingEndpointPermissionsRequest,
+)
+
+func newGetPermissions() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getPermissionsReq serving.GetServingEndpointPermissionsRequest
+
+	// TODO: short flags
+
+	cmd.Use = "get-permissions SERVING_ENDPOINT_ID"
+	cmd.Short = `Get serving endpoint permissions.`
+	cmd.Long = `Get serving endpoint permissions.
+  
+  Gets the permissions of a serving endpoint. Serving endpoints can inherit
+  permissions from their root object.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		getPermissionsReq.ServingEndpointId = args[0]
+
+		response, err := w.ServingEndpoints.GetPermissions(ctx, getPermissionsReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getPermissionsOverrides {
+		fn(cmd, &getPermissionsReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newGetPermissions())
+	})
+}
+
 // start list command
 
 // Slice with functions to override default command behavior.
@@ -542,6 +665,78 @@ func init() {
 	})
 }
 
+// start set-permissions command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var setPermissionsOverrides []func(
+	*cobra.Command,
+	*serving.ServingEndpointPermissionsRequest,
+)
+
+func newSetPermissions() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var setPermissionsReq serving.ServingEndpointPermissionsRequest
+	var setPermissionsJson flags.JsonFlag
+
+	// TODO: short flags
+	cmd.Flags().Var(&setPermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	// TODO: array: access_control_list
+
+	cmd.Use = "set-permissions SERVING_ENDPOINT_ID"
+	cmd.Short = `Set serving endpoint permissions.`
+	cmd.Long = `Set serving endpoint permissions.
+  
+  Sets permissions on a serving endpoint. Serving endpoints can inherit
+  permissions from their root object.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			err = setPermissionsJson.Unmarshal(&setPermissionsReq)
+			if err != nil {
+				return err
+			}
+		}
+		setPermissionsReq.ServingEndpointId = args[0]
+
+		response, err := w.ServingEndpoints.SetPermissions(ctx, setPermissionsReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range setPermissionsOverrides {
+		fn(cmd, &setPermissionsReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newSetPermissions())
+	})
+}
+
 // start update-config command
 
 // Slice with functions to override default command behavior.
@@ -627,6 +822,78 @@ func newUpdateConfig() *cobra.Command {
 func init() {
 	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
 		cmd.AddCommand(newUpdateConfig())
+	})
+}
+
+// start update-permissions command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updatePermissionsOverrides []func(
+	*cobra.Command,
+	*serving.ServingEndpointPermissionsRequest,
+)
+
+func newUpdatePermissions() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updatePermissionsReq serving.ServingEndpointPermissionsRequest
+	var updatePermissionsJson flags.JsonFlag
+
+	// TODO: short flags
+	cmd.Flags().Var(&updatePermissionsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	// TODO: array: access_control_list
+
+	cmd.Use = "update-permissions SERVING_ENDPOINT_ID"
+	cmd.Short = `Update serving endpoint permissions.`
+	cmd.Long = `Update serving endpoint permissions.
+  
+  Updates the permissions on a serving endpoint. Serving endpoints can inherit
+  permissions from their root object.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			err = updatePermissionsJson.Unmarshal(&updatePermissionsReq)
+			if err != nil {
+				return err
+			}
+		}
+		updatePermissionsReq.ServingEndpointId = args[0]
+
+		response, err := w.ServingEndpoints.UpdatePermissions(ctx, updatePermissionsReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updatePermissionsOverrides {
+		fn(cmd, &updatePermissionsReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newUpdatePermissions())
 	})
 }
 
