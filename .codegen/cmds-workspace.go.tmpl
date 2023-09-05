@@ -2,7 +2,15 @@
 
 package workspace
 
-{{ $excludes := list "command-execution" "statement-execution" "dbfs" "dbsql-permissions" "account-access-control-proxy" }}
+{{ $excludes :=
+	list
+		"command-execution"
+		"statement-execution"
+		"dbfs"
+		"dbsql-permissions"
+		"account-access-control-proxy"
+		"files"
+}}
 
 import (
 	"github.com/databricks/cli/cmd/root"

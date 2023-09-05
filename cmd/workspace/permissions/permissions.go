@@ -19,7 +19,52 @@ func New() *cobra.Command {
 		Use:   "permissions",
 		Short: `Permissions API are used to create read, write, edit, update and manage access for various users on different objects and endpoints.`,
 		Long: `Permissions API are used to create read, write, edit, update and manage access
-  for various users on different objects and endpoints.`,
+  for various users on different objects and endpoints.
+  
+  * **[Cluster permissions](:service:clusters)** — Manage which users can
+  manage, restart, or attach to clusters.
+  
+  * **[Cluster policy permissions](:service:clusterpolicies)** — Manage which
+  users can use cluster policies.
+  
+  * **[Delta Live Tables pipeline permissions](:service:pipelines)** — Manage
+  which users can view, manage, run, cancel, or own a Delta Live Tables
+  pipeline.
+  
+  * **[Job permissions](:service:jobs)** — Manage which users can view,
+  manage, trigger, cancel, or own a job.
+  
+  * **[MLflow experiment permissions](:service:experiments)** — Manage which
+  users can read, edit, or manage MLflow experiments.
+  
+  * **[MLflow registered model permissions](:service:modelregistry)** — Manage
+  which users can read, edit, or manage MLflow registered models.
+  
+  * **[Password permissions](:service:users)** — Manage which users can use
+  password login when SSO is enabled.
+  
+  * **[Instance Pool permissions](:service:instancepools)** — Manage which
+  users can manage or attach to pools.
+  
+  * **[Repo permissions](repos)** — Manage which users can read, run, edit, or
+  manage a repo.
+  
+  * **[Serving endpoint permissions](:service:servingendpoints)** — Manage
+  which users can view, query, or manage a serving endpoint.
+  
+  * **[SQL warehouse permissions](:service:warehouses)** — Manage which users
+  can use or manage SQL warehouses.
+  
+  * **[Token permissions](:service:tokenmanagement)** — Manage which users can
+  create or use tokens.
+  
+  * **[Workspace object permissions](:service:workspace)** — Manage which
+  users can read, run, edit, or manage directories, files, and notebooks.
+  
+  For the mapping of the required permissions for specific actions or abilities
+  and other important information, see [Access Control].
+  
+  [Access Control]: https://docs.databricks.com/security/auth-authz/access-control/index.html`,
 		GroupID: "iam",
 		Annotations: map[string]string{
 			"package": "iam",
@@ -54,8 +99,8 @@ func newGet() *cobra.Command {
 	cmd.Short = `Get object permissions.`
 	cmd.Long = `Get object permissions.
   
-  Gets the permission of an object. Objects can inherit permissions from their
-  parent objects or root objects.`
+  Gets the permissions of an object. Objects can inherit permissions from their
+  parent objects or root object.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -114,8 +159,8 @@ func newGetPermissionLevels() *cobra.Command {
 	// TODO: short flags
 
 	cmd.Use = "get-permission-levels REQUEST_OBJECT_TYPE REQUEST_OBJECT_ID"
-	cmd.Short = `Get permission levels.`
-	cmd.Long = `Get permission levels.
+	cmd.Short = `Get object permission levels.`
+	cmd.Long = `Get object permission levels.
   
   Gets the permission levels that a user can have on an object.`
 
@@ -180,11 +225,11 @@ func newSet() *cobra.Command {
 	// TODO: array: access_control_list
 
 	cmd.Use = "set REQUEST_OBJECT_TYPE REQUEST_OBJECT_ID"
-	cmd.Short = `Set permissions.`
-	cmd.Long = `Set permissions.
+	cmd.Short = `Set object permissions.`
+	cmd.Long = `Set object permissions.
   
-  Sets permissions on object. Objects can inherit permissions from their parent
-  objects and root objects.`
+  Sets permissions on an object. Objects can inherit permissions from their
+  parent objects or root object.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -207,11 +252,11 @@ func newSet() *cobra.Command {
 		setReq.RequestObjectType = args[0]
 		setReq.RequestObjectId = args[1]
 
-		err = w.Permissions.Set(ctx, setReq)
+		response, err := w.Permissions.Set(ctx, setReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -253,10 +298,11 @@ func newUpdate() *cobra.Command {
 	// TODO: array: access_control_list
 
 	cmd.Use = "update REQUEST_OBJECT_TYPE REQUEST_OBJECT_ID"
-	cmd.Short = `Update permission.`
-	cmd.Long = `Update permission.
+	cmd.Short = `Update object permissions.`
+	cmd.Long = `Update object permissions.
   
-  Updates the permissions on an object.`
+  Updates the permissions on an object. Objects can inherit permissions from
+  their parent objects or root object.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -279,11 +325,11 @@ func newUpdate() *cobra.Command {
 		updateReq.RequestObjectType = args[0]
 		updateReq.RequestObjectId = args[1]
 
-		err = w.Permissions.Update(ctx, updateReq)
+		response, err := w.Permissions.Update(ctx, updateReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.

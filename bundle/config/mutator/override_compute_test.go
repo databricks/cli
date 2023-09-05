@@ -2,7 +2,6 @@ package mutator_test
 
 import (
 	"context"
-	"os"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -16,7 +15,7 @@ import (
 )
 
 func TestOverrideDevelopment(t *testing.T) {
-	os.Setenv("DATABRICKS_CLUSTER_ID", "")
+	t.Setenv("DATABRICKS_CLUSTER_ID", "")
 	bundle := &bundle.Bundle{
 		Config: config.Root{
 			Bundle: config.Bundle{
@@ -62,7 +61,7 @@ func TestOverrideDevelopment(t *testing.T) {
 }
 
 func TestOverrideDevelopmentEnv(t *testing.T) {
-	os.Setenv("DATABRICKS_CLUSTER_ID", "newClusterId")
+	t.Setenv("DATABRICKS_CLUSTER_ID", "newClusterId")
 	bundle := &bundle.Bundle{
 		Config: config.Root{
 			Resources: config.Resources{
@@ -90,7 +89,7 @@ func TestOverrideDevelopmentEnv(t *testing.T) {
 }
 
 func TestOverridePipelineTask(t *testing.T) {
-	os.Setenv("DATABRICKS_CLUSTER_ID", "newClusterId")
+	t.Setenv("DATABRICKS_CLUSTER_ID", "newClusterId")
 	bundle := &bundle.Bundle{
 		Config: config.Root{
 			Resources: config.Resources{
@@ -144,7 +143,7 @@ func TestOverrideProduction(t *testing.T) {
 }
 
 func TestOverrideProductionEnv(t *testing.T) {
-	os.Setenv("DATABRICKS_CLUSTER_ID", "newClusterId")
+	t.Setenv("DATABRICKS_CLUSTER_ID", "newClusterId")
 	bundle := &bundle.Bundle{
 		Config: config.Root{
 			Resources: config.Resources{

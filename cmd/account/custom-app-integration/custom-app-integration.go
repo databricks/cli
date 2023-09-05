@@ -60,6 +60,7 @@ func newCreate() *cobra.Command {
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().BoolVar(&createReq.Confidential, "confidential", createReq.Confidential, `indicates if an oauth client-secret should be generated.`)
+	// TODO: array: scopes
 	// TODO: complex arg: token_access_policy
 
 	cmd.Use = "create"

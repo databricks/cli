@@ -9,6 +9,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/paths"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/require"
@@ -64,7 +65,7 @@ func TestGenerateTrampoline(t *testing.T) {
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"test": {
-						Paths: resources.Paths{
+						Paths: paths.Paths{
 							ConfigFilePath: tmpDir,
 						},
 						JobSettings: &jobs.JobSettings{

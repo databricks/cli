@@ -5,6 +5,14 @@ on:
     types: [opened, synchronize]
   merge_group:
     types: [checks_requested]
+  push:
+    # Always run on push to main. The build cache can only be reused
+    # if it was saved by a run from the repository's default branch.
+    # The run result will be identical to that from the merge queue
+    # because the commit is identical, yet we need to perform it to
+    # seed the build cache.
+    branches:
+      - main
 
 jobs:
   tests:
@@ -20,7 +28,7 @@ jobs:
 
     steps:
       - name: Checkout repository and submodules
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Unshallow
         run: git fetch --prune --unshallow
@@ -50,7 +58,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Go
         uses: actions/setup-go@v4

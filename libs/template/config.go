@@ -120,7 +120,10 @@ func (c *config) assignDefaultValues() error {
 
 // Prompts user for values for properties that do not have a value set yet
 func (c *config) promptForValues() error {
-	for name, property := range c.schema.Properties {
+	for _, p := range c.schema.OrderedProperties() {
+		name := p.Name
+		property := p.Schema
+
 		// Config already has a value assigned
 		if _, ok := c.values[name]; ok {
 			continue

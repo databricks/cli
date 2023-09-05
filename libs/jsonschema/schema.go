@@ -44,6 +44,9 @@ type Schema struct {
 	// If specified this is the list of valid values for the object. Values
 	// here should be consistent with the type defined in the schema.
 	Enum []any `json:"enum,omitempty"`
+
+	// Extension embeds our custom JSON schema extensions.
+	Extension
 }
 
 type Type string
