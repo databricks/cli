@@ -6,49 +6,33 @@ import (
 	"fmt"
 	"os"
 
+	"slices"
+
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/jsonschema"
-	"slices"
 )
 
-type Metadata struct {
-	// A ordered subset of names of input parameters defined in the template schema.
-	// Properties in this array will be prompted for first. Any properties not in this
-	// array will be prompted for in lexicographical order otherwise.
-	PromptOrder []string `json:"prompt_order"`
-}
-
 type config struct {
-	ctx      context.Context
-	values   map[string]any
-	schema   *jsonschema.Schema
-	metadata *Metadata
+	ctx    context.Context
+	values map[string]any
+	schema *jsonschema.Schema
 }
 
-func newConfig(ctx context.Context, schemaPath string, metadataPath string) (*config, error) {
+func newConfig(ctx context.Context, schemaPath string) (*config, error) {
 	// Read config schema
 	schema, err := jsonschema.Load(schemaPath)
 	if err != nil {
 		return nil, err
 	}
-
-	// Read metadata
-	metadata := &Metadata{}
-	metadataBytes, err := os.ReadFile(metadataPath)
-	if err != nil {
-		return nil, err
-	}
-	err = json.Unmarshal(metadataBytes, metadata)
-	if err != nil {
+	if err := validateSchema(schema); err != nil {
 		return nil, err
 	}
 
 	// Return config
 	return &config{
-		ctx:      ctx,
-		schema:   schema,
-		values:   make(map[string]any, 0),
-		metadata: metadata,
+		ctx:    ctx,
+		schema: schema,
+		values: make(map[string]any, 0),
 	}, nil
 }
 
