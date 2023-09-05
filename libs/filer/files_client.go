@@ -104,11 +104,8 @@ func (w *FilesClient) Write(ctx context.Context, name string, reader io.Reader, 
 
 	overwrite := slices.Contains(mode, OverwriteIfExists)
 	urlPath = fmt.Sprintf("%s?overwrite=%t", urlPath, overwrite)
-	err = w.apiClient.Do(ctx, http.MethodPut, urlPath, nil, reader, nil,
-		func(r *http.Request) error {
-			r.Header.Set("Content-Type", "application/octet-stream")
-			return nil
-		})
+	headers := map[string]string{"Content-Type": "application/octet-stream"}
+	err = w.apiClient.Do(ctx, http.MethodPut, urlPath, headers, reader, nil)
 
 	// Return early on success.
 	if err == nil {
@@ -210,11 +207,7 @@ func (w *FilesClient) Stat(ctx context.Context, name string) (fs.FileInfo, error
 		return nil, err
 	}
 
-	err = w.apiClient.Do(ctx, http.MethodHead, urlPath, nil, nil, nil,
-		func(r *http.Request) error {
-			r.Header.Del("Content-Type")
-			return nil
-		})
+	err = w.apiClient.Do(ctx, http.MethodHead, urlPath, nil, nil, nil)
 
 	// If the HEAD requests succeeds, the file exists.
 	if err == nil {
