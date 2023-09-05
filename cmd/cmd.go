@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"strings"
+
 	"github.com/databricks/cli/cmd/account"
 	"github.com/databricks/cli/cmd/api"
 	"github.com/databricks/cli/cmd/auth"
@@ -14,6 +16,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const (
+	mainGroup        = "main"
+	permissionsGroup = "permissions"
+)
+
 func New() *cobra.Command {
 	cli := root.New()
 
@@ -22,6 +29,31 @@ func New() *cobra.Command {
 
 	// Add workspace subcommands.
 	for _, cmd := range workspace.All() {
+		// Built-in groups for the workspace commands.
+		groups := []cobra.Group{
+			{
+				ID:    mainGroup,
+				Title: "Available Commands",
+			},
+			{
+				ID:    permissionsGroup,
+				Title: "Permission Commands",
+			},
+		}
+		for i := range groups {
+			cmd.AddGroup(&groups[i])
+		}
+
+		// Order the permissions subcommands after the main commands.
+		for _, sub := range cmd.Commands() {
+			switch {
+			case strings.HasSuffix(sub.Name(), "-permissions"), strings.HasSuffix(sub.Name(), "-permission-levels"):
+				sub.GroupID = permissionsGroup
+			default:
+				sub.GroupID = mainGroup
+			}
+		}
+
 		cli.AddCommand(cmd)
 	}
 
