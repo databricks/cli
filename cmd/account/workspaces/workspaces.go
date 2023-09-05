@@ -70,7 +70,10 @@ func newCreate() *cobra.Command {
 	cmd.Flags().StringVar(&createReq.Cloud, "cloud", createReq.Cloud, `The cloud provider which the workspace uses.`)
 	// TODO: complex arg: cloud_resource_container
 	cmd.Flags().StringVar(&createReq.CredentialsId, "credentials-id", createReq.CredentialsId, `ID of the workspace's credential configuration object.`)
+	// TODO: map via StringToStringVar: custom_tags
 	cmd.Flags().StringVar(&createReq.DeploymentName, "deployment-name", createReq.DeploymentName, `The deployment name defines part of the subdomain for the workspace.`)
+	// TODO: complex arg: gcp_managed_network_config
+	// TODO: complex arg: gke_config
 	cmd.Flags().StringVar(&createReq.Location, "location", createReq.Location, `The Google Cloud region of the workspace data plane in your Google account.`)
 	cmd.Flags().StringVar(&createReq.ManagedServicesCustomerManagedKeyId, "managed-services-customer-managed-key-id", createReq.ManagedServicesCustomerManagedKeyId, `The ID of the workspace's managed services encryption key configuration object.`)
 	cmd.Flags().StringVar(&createReq.NetworkId, "network-id", createReq.NetworkId, ``)
@@ -391,6 +394,7 @@ func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var updateReq provisioning.UpdateWorkspaceRequest
+	var updateJson flags.JsonFlag
 
 	var updateSkipWait bool
 	var updateTimeout time.Duration
@@ -398,9 +402,11 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().BoolVar(&updateSkipWait, "no-wait", updateSkipWait, `do not wait to reach RUNNING state`)
 	cmd.Flags().DurationVar(&updateTimeout, "timeout", 20*time.Minute, `maximum amount of time to reach RUNNING state`)
 	// TODO: short flags
+	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateReq.AwsRegion, "aws-region", updateReq.AwsRegion, `The AWS region of the workspace's data plane (for example, us-west-2).`)
 	cmd.Flags().StringVar(&updateReq.CredentialsId, "credentials-id", updateReq.CredentialsId, `ID of the workspace's credential configuration object.`)
+	// TODO: map via StringToStringVar: custom_tags
 	cmd.Flags().StringVar(&updateReq.ManagedServicesCustomerManagedKeyId, "managed-services-customer-managed-key-id", updateReq.ManagedServicesCustomerManagedKeyId, `The ID of the workspace's managed services encryption key configuration object.`)
 	cmd.Flags().StringVar(&updateReq.NetworkId, "network-id", updateReq.NetworkId, `The ID of the workspace's network configuration object.`)
 	cmd.Flags().StringVar(&updateReq.StorageConfigurationId, "storage-configuration-id", updateReq.StorageConfigurationId, `The ID of the workspace's storage configuration object.`)
@@ -435,7 +441,8 @@ func newUpdate() *cobra.Command {
   support. You can add or update the private access settings ID to upgrade a
   workspace to add support for front-end, back-end, or both types of
   connectivity. You cannot remove (downgrade) any existing front-end or back-end
-  PrivateLink support on a workspace.
+  PrivateLink support on a workspace. - Custom tags. Given you provide an empty
+  custom tags, the update would not be applied.
   
   After calling the PATCH operation to update the workspace configuration,
   make repeated GET requests with the workspace ID and check the workspace
@@ -473,7 +480,8 @@ func newUpdate() *cobra.Command {
   PrivateLink support. You can add or update the private access settings ID to
   upgrade a workspace to add support for front-end, back-end, or both types of
   connectivity. You cannot remove (downgrade) any existing front-end or back-end
-  PrivateLink support on a workspace.
+  PrivateLink support on a workspace. - Custom tags. Given you provide an empty
+  custom tags, the update would not be applied.
   
   **Important**: To update a running workspace, your workspace must have no
   running compute resources that run in your workspace's VPC in the Classic data
@@ -529,6 +537,12 @@ func newUpdate() *cobra.Command {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
 
+		if cmd.Flags().Changed("json") {
+			err = updateJson.Unmarshal(&updateReq)
+			if err != nil {
+				return err
+			}
+		}
 		if len(args) == 0 {
 			promptSpinner := cmdio.Spinner(ctx)
 			promptSpinner <- "No WORKSPACE_ID argument specified. Loading names for Workspaces drop-down."

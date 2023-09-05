@@ -1,6 +1,7 @@
 package resources
 
 import (
+	"github.com/databricks/cli/bundle/config/paths"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/imdario/mergo"
 )
@@ -9,7 +10,7 @@ type Job struct {
 	ID          string       `json:"id,omitempty" bundle:"readonly"`
 	Permissions []Permission `json:"permissions,omitempty"`
 
-	Paths
+	paths.Paths
 
 	*jobs.JobSettings
 }

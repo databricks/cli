@@ -16,6 +16,8 @@ const NOTEBOOK_TEMPLATE = `# Databricks notebook source
 %pip install --force-reinstall {{.Whl}}
 {{end}}
 
+dbutils.library.restartPython()
+
 try:
 	from importlib import metadata
 except ImportError: # for Python<3.8
