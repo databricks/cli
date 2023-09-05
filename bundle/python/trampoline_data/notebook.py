@@ -8,11 +8,11 @@ def databricks_preamble():
     src_file_dir = None
     project_root_dir = None
 
-    src_file = {{.SourceFile}}
+    src_file = "{{.SourceFile}}"
     src_file_dir = os.path.dirname(src_file)
     os.chdir(src_file_dir)
 
-    project_root_dir = {{.ProjectRoot}}
+    project_root_dir = "{{.ProjectRoot}}"
     sys.path.insert(0, project_root_dir)
 
     def parse_databricks_magic_lines(lines: List[str]):

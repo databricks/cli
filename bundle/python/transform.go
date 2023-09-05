@@ -49,7 +49,6 @@ func TransformWheelTask() bundle.Mutator {
 	return mutator.NewTrampoline(
 		"python_wheel",
 		&pythonTrampoline{},
-		mutator.StaticTrampolineTemplate(NOTEBOOK_TEMPLATE),
 	)
 }
 
@@ -60,6 +59,10 @@ func (t *pythonTrampoline) CleanUp(task *jobs.Task) error {
 	task.Libraries = nil
 
 	return nil
+}
+
+func (t *pythonTrampoline) GetTemplate(b *bundle.Bundle, task *jobs.Task) (string, error) {
+	return NOTEBOOK_TEMPLATE, nil
 }
 
 func (t *pythonTrampoline) GetTasks(b *bundle.Bundle) []mutator.TaskWithJobKey {

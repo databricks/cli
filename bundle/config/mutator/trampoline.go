@@ -3,6 +3,7 @@ package mutator
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"path"
 	"path/filepath"
@@ -20,26 +21,19 @@ type TaskWithJobKey struct {
 type TrampolineFunctions interface {
 	GetTemplateData(b *bundle.Bundle, task *jobs.Task) (map[string]any, error)
 	GetTasks(b *bundle.Bundle) []TaskWithJobKey
+	GetTemplate(b *bundle.Bundle, task *jobs.Task) (string, error)
 	CleanUp(task *jobs.Task) error
 }
 type trampoline struct {
 	name      string
 	functions TrampolineFunctions
-	template  func(*jobs.Task) (string, error)
 }
 
 func NewTrampoline(
 	name string,
 	functions TrampolineFunctions,
-	template func(*jobs.Task) (string, error),
 ) *trampoline {
-	return &trampoline{name, functions, template}
-}
-
-// Shorthand for generating template function for templates
-// that are same irrespective of the task.
-func StaticTrampolineTemplate(template string) func(*jobs.Task) (string, error) {
-	return func(*jobs.Task) (string, error) { return template, nil }
+	return &trampoline{name, functions}
 }
 
 func GetTasksWithJobKeyBy(b *bundle.Bundle, filter func(*jobs.Task) bool) []TaskWithJobKey {
@@ -64,6 +58,7 @@ func (m *trampoline) Name() string {
 func (m *trampoline) Apply(ctx context.Context, b *bundle.Bundle) error {
 	tasks := m.functions.GetTasks(b)
 	for _, task := range tasks {
+		log.Default().Printf("%s, %s task", task.Task.TaskKey, task.Task.NotebookTask.NotebookPath)
 		err := m.generateNotebookWrapper(b, task)
 		if err != nil {
 			return err
@@ -97,7 +92,7 @@ func (m *trampoline) generateNotebookWrapper(b *bundle.Bundle, task TaskWithJobK
 		return err
 	}
 
-	templateString, err := m.template(task.Task)
+	templateString, err := m.functions.GetTemplate(b, task.Task)
 	if err != nil {
 		return err
 	}

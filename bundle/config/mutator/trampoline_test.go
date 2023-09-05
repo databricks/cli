@@ -14,7 +14,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type functions struct{}
+type functions struct {
+}
 
 func (f *functions) GetTasks(b *bundle.Bundle) []TaskWithJobKey {
 	tasks := make([]TaskWithJobKey, 0)
@@ -41,6 +42,10 @@ func (f *functions) GetTemplateData(_ *bundle.Bundle, task *jobs.Task) (map[stri
 func (f *functions) CleanUp(task *jobs.Task) error {
 	task.PythonWheelTask = nil
 	return nil
+}
+
+func (f *functions) GetTemplate(b *bundle.Bundle, task *jobs.Task) (string, error) {
+	return "Hello from {{.MyName}}", nil
 }
 
 func TestGenerateTrampoline(t *testing.T) {
@@ -78,7 +83,7 @@ func TestGenerateTrampoline(t *testing.T) {
 	ctx := context.Background()
 
 	funcs := functions{}
-	trampoline := NewTrampoline("test_trampoline", &funcs, StaticTrampolineTemplate("Hello from {{.MyName}}"))
+	trampoline := NewTrampoline("test_trampoline", &funcs)
 	err := bundle.Apply(ctx, b, trampoline)
 	require.NoError(t, err)
 
