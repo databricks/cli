@@ -55,6 +55,38 @@ func (MockWorkspaceService) Mkdirs(ctx context.Context, request workspace.Mkdirs
 	return nil
 }
 
+// GetPermissionLevels implements workspace.WorkspaceService.
+func (MockWorkspaceService) GetPermissionLevels(
+	ctx context.Context,
+	request workspace.GetWorkspaceObjectPermissionLevelsRequest,
+) (*workspace.GetWorkspaceObjectPermissionLevelsResponse, error) {
+	panic("unimplemented")
+}
+
+// GetPermissions implements workspace.WorkspaceService.
+func (MockWorkspaceService) GetPermissions(
+	ctx context.Context,
+	request workspace.GetWorkspaceObjectPermissionsRequest,
+) (*workspace.WorkspaceObjectPermissions, error) {
+	panic("unimplemented")
+}
+
+// SetPermissions implements workspace.WorkspaceService.
+func (MockWorkspaceService) SetPermissions(
+	ctx context.Context,
+	request workspace.WorkspaceObjectPermissionsRequest,
+) (*workspace.WorkspaceObjectPermissions, error) {
+	panic("unimplemented")
+}
+
+// UpdatePermissions implements workspace.WorkspaceService.
+func (MockWorkspaceService) UpdatePermissions(
+	ctx context.Context,
+	request workspace.WorkspaceObjectPermissionsRequest,
+) (*workspace.WorkspaceObjectPermissions, error) {
+	panic("unimplemented")
+}
+
 func TestUploadArtifactFileToCorrectRemotePath(t *testing.T) {
 	dir := t.TempDir()
 	whlPath := filepath.Join(dir, "dist", "test.whl")

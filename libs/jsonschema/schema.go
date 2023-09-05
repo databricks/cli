@@ -40,6 +40,9 @@ type Schema struct {
 
 	// Default value for the property / object
 	Default any `json:"default,omitempty"`
+
+	// Extension embeds our custom JSON schema extensions.
+	Extension
 }
 
 type Type string
