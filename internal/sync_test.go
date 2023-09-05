@@ -159,7 +159,7 @@ func (a *syncTest) remoteFileContent(ctx context.Context, relativePath string, e
 
 	var res []byte
 	a.c.Eventually(func() bool {
-		err = apiClient.Do(ctx, http.MethodGet, urlPath, nil, &res)
+		err = apiClient.Do(ctx, http.MethodGet, urlPath, nil, nil, &res)
 		require.NoError(a.t, err)
 		actualContent := string(res)
 		return actualContent == expectedContent

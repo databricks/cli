@@ -16,7 +16,6 @@ import (
 	data_sources "github.com/databricks/cli/cmd/workspace/data-sources"
 	experiments "github.com/databricks/cli/cmd/workspace/experiments"
 	external_locations "github.com/databricks/cli/cmd/workspace/external-locations"
-	files "github.com/databricks/cli/cmd/workspace/files"
 	functions "github.com/databricks/cli/cmd/workspace/functions"
 	git_credentials "github.com/databricks/cli/cmd/workspace/git-credentials"
 	global_init_scripts "github.com/databricks/cli/cmd/workspace/global-init-scripts"
@@ -77,7 +76,6 @@ func All() []*cobra.Command {
 	out = append(out, data_sources.New())
 	out = append(out, experiments.New())
 	out = append(out, external_locations.New())
-	out = append(out, files.New())
 	out = append(out, functions.New())
 	out = append(out, git_credentials.New())
 	out = append(out, global_init_scripts.New())
