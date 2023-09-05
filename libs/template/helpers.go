@@ -104,10 +104,7 @@ func loadHelpers(ctx context.Context) template.FuncMap {
 					return false, err
 				}
 			}
-			result, err := auth.IsServicePrincipal(ctx, w, user.Id)
-			if err != nil {
-				return false, err
-			}
+			result := auth.IsServicePrincipal(user.Id)
 			is_service_principal = &result
 			return result, nil
 		},
