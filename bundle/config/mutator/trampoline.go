@@ -39,11 +39,12 @@ func NewTrampoline(
 func GetTasksWithJobKeyBy(b *bundle.Bundle, filter func(*jobs.Task) bool) []TaskWithJobKey {
 	tasks := make([]TaskWithJobKey, 0)
 	for k := range b.Config.Resources.Jobs {
-		for _, t := range b.Config.Resources.Jobs[k].Tasks {
-			if filter(&t) {
+		for i := range b.Config.Resources.Jobs[k].Tasks {
+			t := &b.Config.Resources.Jobs[k].Tasks[i]
+			if filter(t) {
 				tasks = append(tasks, TaskWithJobKey{
 					JobKey: k,
-					Task:   &t,
+					Task:   t,
 				})
 			}
 		}
