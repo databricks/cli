@@ -3,7 +3,7 @@ import runpy
 import sys
 import os
 
-python_file = {{.PythonFile}}
+python_file = {{.SourceFile}}
 project_root = {{.ProjectRoot}}
 #remove databricks args from argv
 sys.argv = sys.argv[1:]

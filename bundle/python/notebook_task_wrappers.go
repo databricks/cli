@@ -89,11 +89,14 @@ func (n *notebookTrampoline) GetTemplate(b *bundle.Bundle, task *jobs.Task) (str
 
 	lines := strings.Split(s, "\n")
 	if strings.HasPrefix(lines[0], "# Databricks notebook source") {
-		return getDbnbTemplate(strings.Join(lines[1:], "\n"))
+		return getDbnbTemplate(strings.Join(lines, "\n"))
 	}
 
-	//TODO return getPyTemplate(s), nil
-	return s, nil
+	return getPyTemplate(s), nil
+}
+
+func getPyTemplate(s string) string {
+	return pyTrampolineData
 }
 
 func getDbnbTemplate(s string) (string, error) {
