@@ -59,7 +59,7 @@ func newInitCommand() *cobra.Command {
 		} else {
 			return errors.New("please specify a template")
 
-			/* TODO: propose to use default-python (once template is ready)
+			/* TODO: propose to use default-python (once #708 is merged)
 			var err error
 			if !cmdio.IsOutTTY(ctx) || !cmdio.IsInTTY(ctx) {
 				return errors.New("please specify a template")
