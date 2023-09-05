@@ -5,6 +5,14 @@ on:
     types: [opened, synchronize]
   merge_group:
     types: [checks_requested]
+  push:
+    # Always run on push to main. The build cache can only be reused
+    # if it was saved by a run from the repository's default branch.
+    # The run result will be identical to that from the merge queue
+    # because the commit is identical, yet we need to perform it to
+    # seed the build cache.
+    branches:
+      - main
 
 jobs:
   tests:
