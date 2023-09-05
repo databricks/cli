@@ -1,0 +1,12 @@
+# The main pipeline for default_python
+resources:
+  pipelines:
+    default_python_pipeline:
+      name: "default_python_pipeline"
+      target: "default_python_${bundle.environment}"
+      libraries:
+        - notebook:
+            path: ../src/dlt_pipeline.ipynb
+
+      configuration:
+        "bundle.sourcePath": "/Workspace/${workspace.file_path}/src"
