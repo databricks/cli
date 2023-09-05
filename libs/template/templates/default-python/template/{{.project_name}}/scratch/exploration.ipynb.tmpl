@@ -18,6 +18,8 @@
    "outputs": [],
    "source": [
    {{- if (eq .include_python "yes") }}
+    "import sys\n",
+    "sys.path.append('../src')\n",
     "from {{.project_name}} import main\n",
     "\n",
     "main.get_taxis().show(10)"
