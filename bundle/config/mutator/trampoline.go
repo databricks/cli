@@ -3,7 +3,6 @@ package mutator
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"path"
 	"path/filepath"
@@ -59,7 +58,6 @@ func (m *trampoline) Name() string {
 func (m *trampoline) Apply(ctx context.Context, b *bundle.Bundle) error {
 	tasks := m.functions.GetTasks(b)
 	for _, task := range tasks {
-		log.Default().Printf("%s, %s task", task.Task.TaskKey, task.Task.NotebookTask.NotebookPath)
 		err := m.generateNotebookWrapper(b, task)
 		if err != nil {
 			return err

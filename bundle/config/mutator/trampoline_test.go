@@ -90,7 +90,7 @@ func TestGenerateTrampoline(t *testing.T) {
 
 	dir, err := b.InternalDir()
 	require.NoError(t, err)
-	filename := filepath.Join(dir, "notebook_test_to_trampoline.py")
+	filename := filepath.Join(dir, "notebook_test_trampoline_test_to_trampoline.py")
 
 	bytes, err := os.ReadFile(filename)
 	require.NoError(t, err)
@@ -98,6 +98,6 @@ func TestGenerateTrampoline(t *testing.T) {
 	require.Equal(t, "Hello from Trampoline", string(bytes))
 
 	task := b.Config.Resources.Jobs["test"].Tasks[0]
-	require.Equal(t, task.NotebookTask.NotebookPath, ".databricks/bundle/development/.internal/notebook_test_to_trampoline")
+	require.Equal(t, task.NotebookTask.NotebookPath, ".databricks/bundle/development/.internal/notebook_test_trampoline_test_to_trampoline")
 	require.Nil(t, task.PythonWheelTask)
 }
