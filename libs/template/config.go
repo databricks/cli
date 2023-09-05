@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"os"
 
-	"slices"
-
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/jsonschema"
 )
@@ -117,47 +115,16 @@ func (c *config) assignDefaultValues() error {
 	return nil
 }
 
-func (c *config) promptOrder() ([]string, error) {
-	// First add properties in the order that is explicitly defined in the metadata
-	promptOrder := make([]string, len(c.metadata.PromptOrder))
-	for i, name := range c.metadata.PromptOrder {
-		if _, ok := c.schema.Properties[name]; !ok {
-			return nil, fmt.Errorf("property not defined in schema but is defined in prompt_order: %s", name)
-		}
-		if slices.Contains(promptOrder, name) {
-			return nil, fmt.Errorf("property defined more than once in prompt_order: %s", name)
-		}
-		promptOrder[i] = name
-	}
-
-	// accumulate and sort leftover the properties
-	leftover := []string{}
-	for name := range c.schema.Properties {
-		if slices.Contains(promptOrder, name) {
-			continue
-		}
-		leftover = append(leftover, name)
-	}
-	slices.Sort(leftover)
-
-	// add leftover properties
-	promptOrder = append(promptOrder, leftover...)
-	return promptOrder, nil
-}
-
 // Prompts user for values for properties that do not have a value set yet
 func (c *config) promptForValues() error {
-	promptOrder, err := c.promptOrder()
-	if err != nil {
-		return err
-	}
+	for _, p := range c.schema.OrderedProperties() {
+		name := p.Name
+		property := p.Schema
 
-	for _, name := range promptOrder {
 		// Config already has a value assigned
 		if _, ok := c.values[name]; ok {
 			continue
 		}
-		property := c.schema.Properties[name]
 
 		// Compute default value to display by converting it to a string
 		var defaultVal string
