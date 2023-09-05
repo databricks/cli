@@ -7,6 +7,8 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+
+	"github.com/databricks/cli/libs/cmdio"
 )
 
 const libraryDirName = "library"
@@ -80,7 +82,7 @@ func Materialize(ctx context.Context, configFilePath, templateRoot, outputDir st
 	if err != nil {
 		return err
 	}
-	println("✨ Successfully initialized template")
+	cmdio.LogString(ctx, "✨ Successfully initialized template")
 	return nil
 }
 

@@ -1,5 +1,23 @@
 # Version changelog
 
+## 0.203.3
+
+Bundles:
+ * Support cluster overrides with cluster_key and compute_key ([#696](https://github.com/databricks/cli/pull/696)).
+ * Allow referencing local Python wheels without artifacts section defined ([#703](https://github.com/databricks/cli/pull/703)).
+ * Fixed --environment flag ([#705](https://github.com/databricks/cli/pull/705)).
+ * Correctly identify local paths in libraries section ([#702](https://github.com/databricks/cli/pull/702)).
+ * Fixed path joining in FindFilesWithSuffixInPath ([#704](https://github.com/databricks/cli/pull/704)).
+ *  Added transformation mutator for Python wheel task for them to work on DBR <13.1 ([#635](https://github.com/databricks/cli/pull/635)).
+
+Internal:
+ * Add a foundation for built-in templates ([#685](https://github.com/databricks/cli/pull/685)).
+ * Test transform when no Python wheel tasks defined ([#714](https://github.com/databricks/cli/pull/714)).
+ * Pin Terraform binary version to 1.5.5 ([#715](https://github.com/databricks/cli/pull/715)).
+ * Cleanup after "Add a foundation for built-in templates" ([#707](https://github.com/databricks/cli/pull/707)).
+ * Filter down to Python wheel tasks only for trampoline ([#712](https://github.com/databricks/cli/pull/712)).
+ * Update Terraform provider schema structs from 1.23.0 ([#713](https://github.com/databricks/cli/pull/713)).
+
 ## 0.203.2
 
 CLI:

@@ -124,6 +124,7 @@ type DataSourceJobJobSettingsSettingsJobClusterNewClusterGcpAttributes struct {
 	Availability            string `json:"availability,omitempty"`
 	BootDiskSize            int    `json:"boot_disk_size,omitempty"`
 	GoogleServiceAccount    string `json:"google_service_account,omitempty"`
+	LocalSsdCount           int    `json:"local_ssd_count,omitempty"`
 	UsePreemptibleExecutors bool   `json:"use_preemptible_executors,omitempty"`
 	ZoneId                  string `json:"zone_id,omitempty"`
 }
@@ -305,6 +306,7 @@ type DataSourceJobJobSettingsSettingsNewClusterGcpAttributes struct {
 	Availability            string `json:"availability,omitempty"`
 	BootDiskSize            int    `json:"boot_disk_size,omitempty"`
 	GoogleServiceAccount    string `json:"google_service_account,omitempty"`
+	LocalSsdCount           int    `json:"local_ssd_count,omitempty"`
 	UsePreemptibleExecutors bool   `json:"use_preemptible_executors,omitempty"`
 	ZoneId                  string `json:"zone_id,omitempty"`
 }
@@ -401,6 +403,11 @@ type DataSourceJobJobSettingsSettingsNotificationSettings struct {
 	NoAlertForSkippedRuns  bool `json:"no_alert_for_skipped_runs,omitempty"`
 }
 
+type DataSourceJobJobSettingsSettingsParameter struct {
+	Default string `json:"default,omitempty"`
+	Name    string `json:"name,omitempty"`
+}
+
 type DataSourceJobJobSettingsSettingsPipelineTask struct {
 	FullRefresh bool   `json:"full_refresh,omitempty"`
 	PipelineId  string `json:"pipeline_id"`
@@ -419,6 +426,11 @@ type DataSourceJobJobSettingsSettingsQueue struct {
 type DataSourceJobJobSettingsSettingsRunAs struct {
 	ServicePrincipalName string `json:"service_principal_name,omitempty"`
 	UserName             string `json:"user_name,omitempty"`
+}
+
+type DataSourceJobJobSettingsSettingsRunJobTask struct {
+	JobId         string            `json:"job_id"`
+	JobParameters map[string]string `json:"job_parameters,omitempty"`
 }
 
 type DataSourceJobJobSettingsSettingsSchedule struct {
@@ -573,6 +585,7 @@ type DataSourceJobJobSettingsSettingsTaskNewClusterGcpAttributes struct {
 	Availability            string `json:"availability,omitempty"`
 	BootDiskSize            int    `json:"boot_disk_size,omitempty"`
 	GoogleServiceAccount    string `json:"google_service_account,omitempty"`
+	LocalSsdCount           int    `json:"local_ssd_count,omitempty"`
 	UsePreemptibleExecutors bool   `json:"use_preemptible_executors,omitempty"`
 	ZoneId                  string `json:"zone_id,omitempty"`
 }
@@ -682,6 +695,11 @@ type DataSourceJobJobSettingsSettingsTaskPythonWheelTask struct {
 	Parameters      []string          `json:"parameters,omitempty"`
 }
 
+type DataSourceJobJobSettingsSettingsTaskRunJobTask struct {
+	JobId         string            `json:"job_id"`
+	JobParameters map[string]string `json:"job_parameters,omitempty"`
+}
+
 type DataSourceJobJobSettingsSettingsTaskSparkJarTask struct {
 	JarUri        string   `json:"jar_uri,omitempty"`
 	MainClassName string   `json:"main_class_name,omitempty"`
@@ -760,6 +778,7 @@ type DataSourceJobJobSettingsSettingsTask struct {
 	NotificationSettings   *DataSourceJobJobSettingsSettingsTaskNotificationSettings `json:"notification_settings,omitempty"`
 	PipelineTask           *DataSourceJobJobSettingsSettingsTaskPipelineTask         `json:"pipeline_task,omitempty"`
 	PythonWheelTask        *DataSourceJobJobSettingsSettingsTaskPythonWheelTask      `json:"python_wheel_task,omitempty"`
+	RunJobTask             *DataSourceJobJobSettingsSettingsTaskRunJobTask           `json:"run_job_task,omitempty"`
 	SparkJarTask           *DataSourceJobJobSettingsSettingsTaskSparkJarTask         `json:"spark_jar_task,omitempty"`
 	SparkPythonTask        *DataSourceJobJobSettingsSettingsTaskSparkPythonTask      `json:"spark_python_task,omitempty"`
 	SparkSubmitTask        *DataSourceJobJobSettingsSettingsTaskSparkSubmitTask      `json:"spark_submit_task,omitempty"`
@@ -821,10 +840,12 @@ type DataSourceJobJobSettingsSettings struct {
 	NewCluster             *DataSourceJobJobSettingsSettingsNewCluster           `json:"new_cluster,omitempty"`
 	NotebookTask           *DataSourceJobJobSettingsSettingsNotebookTask         `json:"notebook_task,omitempty"`
 	NotificationSettings   *DataSourceJobJobSettingsSettingsNotificationSettings `json:"notification_settings,omitempty"`
+	Parameter              []DataSourceJobJobSettingsSettingsParameter           `json:"parameter,omitempty"`
 	PipelineTask           *DataSourceJobJobSettingsSettingsPipelineTask         `json:"pipeline_task,omitempty"`
 	PythonWheelTask        *DataSourceJobJobSettingsSettingsPythonWheelTask      `json:"python_wheel_task,omitempty"`
 	Queue                  *DataSourceJobJobSettingsSettingsQueue                `json:"queue,omitempty"`
 	RunAs                  *DataSourceJobJobSettingsSettingsRunAs                `json:"run_as,omitempty"`
+	RunJobTask             *DataSourceJobJobSettingsSettingsRunJobTask           `json:"run_job_task,omitempty"`
 	Schedule               *DataSourceJobJobSettingsSettingsSchedule             `json:"schedule,omitempty"`
 	SparkJarTask           *DataSourceJobJobSettingsSettingsSparkJarTask         `json:"spark_jar_task,omitempty"`
 	SparkPythonTask        *DataSourceJobJobSettingsSettingsSparkPythonTask      `json:"spark_python_task,omitempty"`
