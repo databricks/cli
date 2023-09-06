@@ -78,6 +78,14 @@ func inheritEnvVars(env map[string]string) error {
 		env["HOME"] = home
 	}
 
+	// Include $PATH in set of environment variables to pass along.
+	// This is necessary to ensure that our Terraform provider can use the
+	// same auxiliary programs (e.g. `az`, or `gcloud`) as the CLI.
+	path, ok := os.LookupEnv("PATH")
+	if ok {
+		env["PATH"] = path
+	}
+
 	// Include $TF_CLI_CONFIG_FILE to override terraform provider in development.
 	configFile, ok := os.LookupEnv("TF_CLI_CONFIG_FILE")
 	if ok {

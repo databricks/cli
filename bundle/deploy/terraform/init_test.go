@@ -277,6 +277,7 @@ func TestInheritEnvVars(t *testing.T) {
 	env := map[string]string{}
 
 	t.Setenv("HOME", "/home/testuser")
+	t.Setenv("PATH", "/foo:/bar")
 	t.Setenv("TF_CLI_CONFIG_FILE", "/tmp/config.tfrc")
 
 	err := inheritEnvVars(env)
@@ -285,6 +286,7 @@ func TestInheritEnvVars(t *testing.T) {
 
 	require.Equal(t, map[string]string{
 		"HOME":               "/home/testuser",
+		"PATH":               "/foo:/bar",
 		"TF_CLI_CONFIG_FILE": "/tmp/config.tfrc",
 	}, env)
 }
