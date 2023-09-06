@@ -10,7 +10,7 @@ func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "version",
 		Args:  cobra.NoArgs,
-		Short: "Retrieve information about the current version of CLI",
+		Short: "Retrieve information about the current version of this CLI",
 		Annotations: map[string]string{
 			"template": "Databricks CLI v{{.Version}}\n",
 		},
