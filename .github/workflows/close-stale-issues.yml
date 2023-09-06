@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Stale issue job
     steps:
-      - uses: actions/stale@v5
+      - uses: actions/stale@v8
         with:
           issue-types: issues
           stale-issue-message: This issue has not received a response in a while. If you want to keep this issue open, please leave a comment below and auto-close will be canceled.
