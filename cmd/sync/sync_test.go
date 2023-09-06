@@ -54,3 +54,9 @@ func TestSyncOptionsFromArgs(t *testing.T) {
 	assert.Equal(t, "/local", opts.LocalPath)
 	assert.Equal(t, "/remote", opts.RemotePath)
 }
+
+func TestSyncOptonsReturnsErrorFromArgs(t *testing.T) {
+	f := syncFlags{}
+	_, err := f.syncOptions(New(), []string{"/local"})
+	require.ErrorIs(t, err, flag.ErrHelp)
+}

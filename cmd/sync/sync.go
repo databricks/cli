@@ -70,20 +70,31 @@ func (f *syncFlags) syncOptionsFromArgs(cmd *cobra.Command, args []string) (*syn
 }
 
 func (f *syncFlags) syncOptions(cmd *cobra.Command, args []string) (*sync.SyncOptions, error) {
-	err := root.TryConfigureBundle(cmd, args)
+	// Try to get options from args first. If that fails, try to get them from bundle.
+	// If both fail, return the error from args (assuming users are trying to use the args
+	// version unless they explicitly use the bundle sync).
+	opts, argsErr := f.syncOptionsFromArgs(cmd, args)
+	if argsErr == nil {
+		return opts, nil
+	}
+	err := root.MustConfigureBundle(cmd, args)
 	if err != nil {
-		return f.syncOptionsFromArgs(cmd, args)
+		return nil, argsErr
 	}
 	b := bundle.GetOrNil(cmd.Context())
 	if b != nil {
 		// Run initialize phase to make sure paths are set.
 		err = bundle.Apply(cmd.Context(), b, phases.Initialize())
 		if err != nil {
-			return nil, err
+			return nil, argsErr
 		}
-		return f.syncOptionsFromBundle(cmd, args, b)
+		opts, err = f.syncOptionsFromBundle(cmd, args, b)
+		if err != nil {
+			return nil, argsErr
+		}
+		return opts, nil
 	}
-	return f.syncOptionsFromArgs(cmd, args)
+	return nil, argsErr
 }
 
 func New() *cobra.Command {
