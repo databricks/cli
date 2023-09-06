@@ -37,6 +37,10 @@ type Bundle struct {
 	// Stores an initialized copy of this bundle's Terraform wrapper.
 	Terraform *tfexec.Terraform
 
+	// Indicates that the Terraform definition based on this bundle is empty,
+	// i.e. that it would deploy no resources.
+	TerraformHasNoResources bool
+
 	// Stores the locker responsible for acquiring/releasing a deployment lock.
 	Locker *locker.Locker
 
