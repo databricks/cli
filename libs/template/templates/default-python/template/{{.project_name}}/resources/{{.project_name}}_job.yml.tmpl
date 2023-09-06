@@ -32,7 +32,7 @@ resources:
             - task_key: notebook_task
           {{- end}}
           pipeline_task:
-            {{- /* FIXME: this should pipeline_id: ./{{project_name}}_pipeline.yml */}}
+            {{- /* TODO: we should find a way that doesn't use magics for the below, like ./{{project_name}}_pipeline.yml */}}
             pipeline_id: ${resources.pipelines.{{.project_name}}_pipeline.id}
         {{end -}}
         {{- if (eq .include_python "yes") }}
