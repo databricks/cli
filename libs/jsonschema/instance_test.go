@@ -83,3 +83,28 @@ func TestValidateInstanceTypes(t *testing.T) {
 	err = schema.ValidateInstance(invalidInstance)
 	assert.EqualError(t, err, "incorrect type for property int_val: expected type integer, but value is \"abc\"")
 }
+
+func TestValidateInstanceRequired(t *testing.T) {
+	schema, err := Load("./testdata/instance-validate/test-schema-some-fields-required.json")
+	require.NoError(t, err)
+
+	validInstance := map[string]any{
+		"int_val":   1,
+		"float_val": 1.0,
+		"bool_val":  false,
+	}
+	err = schema.validateRequired(validInstance)
+	assert.NoError(t, err)
+	err = schema.ValidateInstance(validInstance)
+	assert.NoError(t, err)
+
+	invalidInstance := map[string]any{
+		"string_val": "abc",
+		"float_val":  1.0,
+		"bool_val":   false,
+	}
+	err = schema.validateRequired(invalidInstance)
+	assert.EqualError(t, err, "no value provided for required property int_val")
+	err = schema.ValidateInstance(invalidInstance)
+	assert.EqualError(t, err, "no value provided for required property int_val")
+}

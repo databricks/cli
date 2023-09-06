@@ -42,6 +42,9 @@ func (s *Schema) ValidateInstance(instance map[string]any) error {
 	if err := s.validateAdditionalProperties(instance); err != nil {
 		return err
 	}
+	if err := s.validateRequired(instance); err != nil {
+		return err
+	}
 	return s.validateTypes(instance)
 }
 
@@ -55,6 +58,17 @@ func (s *Schema) validateAdditionalProperties(instance map[string]any) error {
 		_, ok := s.Properties[k]
 		if !ok {
 			return fmt.Errorf("property %s is not defined in the schema", k)
+		}
+	}
+	return nil
+}
+
+// This function validates that all require properties in the schema have values
+// in the instance.
+func (s *Schema) validateRequired(instance map[string]any) error {
+	for _, name := range s.Required {
+		if _, ok := instance[name]; !ok {
+			return fmt.Errorf("no value provided for required property %s", name)
 		}
 	}
 	return nil
