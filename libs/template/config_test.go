@@ -1,7 +1,6 @@
 package template
 
 import (
-	"encoding/json"
 	"testing"
 
 	"github.com/databricks/cli/libs/jsonschema"
@@ -10,28 +9,9 @@ import (
 )
 
 func testSchema(t *testing.T) *jsonschema.Schema {
-	schemaJson := `{
-		"properties": {
-			"int_val": {
-				"type": "integer",
-				"default": 123
-			},
-			"float_val": {
-				"type": "number"
-			},
-			"bool_val": {
-				"type": "boolean"
-			},
-			"string_val": {
-				"type": "string",
-				"default": "abc"
-			}
-		}
-	}`
-	var jsonSchema jsonschema.Schema
-	err := json.Unmarshal([]byte(schemaJson), &jsonSchema)
+	s, err := jsonschema.Load("./testdata/config-test-schema/test-schema.json")
 	require.NoError(t, err)
-	return &jsonSchema
+	return s
 }
 
 func TestTemplateConfigAssignValuesFromFile(t *testing.T) {

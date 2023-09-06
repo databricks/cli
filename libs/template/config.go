@@ -70,26 +70,11 @@ func (c *config) assignDefaultValues() error {
 		if _, ok := c.values[name]; ok {
 			continue
 		}
-
 		// No default value defined for the property
 		if property.Default == nil {
 			continue
 		}
-
-		// Assign default value if property is not an integer
-		if property.Type != jsonschema.IntegerType {
-			c.values[name] = property.Default
-			continue
-		}
-
-		// Cast default value to int before assigning to an integer configuration.
-		// Required because untyped field Default will read all numbers as floats
-		// during unmarshalling
-		v, err := toInteger(property.Default)
-		if err != nil {
-			return fmt.Errorf("failed to cast default value %v of property %s to an integer: %w", property.Default, name, err)
-		}
-		c.values[name] = v
+		c.values[name] = property.Default
 	}
 	return nil
 }
