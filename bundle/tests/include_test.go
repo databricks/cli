@@ -14,9 +14,10 @@ import (
 )
 
 func TestIncludeInvalid(t *testing.T) {
-	b, err := bundle.Load("./include_invalid")
+	ctx := context.Background()
+	b, err := bundle.Load(ctx, "./include_invalid")
 	require.NoError(t, err)
-	err = bundle.Apply(context.Background(), b, bundle.Seq(mutator.DefaultMutators()...))
+	err = bundle.Apply(ctx, b, bundle.Seq(mutator.DefaultMutators()...))
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "notexists.yml defined in 'include' section does not match any files")
 }

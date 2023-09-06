@@ -31,7 +31,7 @@ func TestInitEnvironmentVariables(t *testing.T) {
 		Config: config.Root{
 			Path: t.TempDir(),
 			Bundle: config.Bundle{
-				Environment: "whatever",
+				Target: "whatever",
 				Terraform: &config.Terraform{
 					ExecPath: "terraform",
 				},
@@ -58,7 +58,7 @@ func TestSetTempDirEnvVarsForUnixWithTmpDirSet(t *testing.T) {
 		Config: config.Root{
 			Path: t.TempDir(),
 			Bundle: config.Bundle{
-				Environment: "whatever",
+				Target: "whatever",
 			},
 		},
 	}
@@ -86,7 +86,7 @@ func TestSetTempDirEnvVarsForUnixWithTmpDirNotSet(t *testing.T) {
 		Config: config.Root{
 			Path: t.TempDir(),
 			Bundle: config.Bundle{
-				Environment: "whatever",
+				Target: "whatever",
 			},
 		},
 	}
@@ -112,7 +112,7 @@ func TestSetTempDirEnvVarsForWindowWithAllTmpDirEnvVarsSet(t *testing.T) {
 		Config: config.Root{
 			Path: t.TempDir(),
 			Bundle: config.Bundle{
-				Environment: "whatever",
+				Target: "whatever",
 			},
 		},
 	}
@@ -142,7 +142,7 @@ func TestSetTempDirEnvVarsForWindowWithUserProfileAndTempSet(t *testing.T) {
 		Config: config.Root{
 			Path: t.TempDir(),
 			Bundle: config.Bundle{
-				Environment: "whatever",
+				Target: "whatever",
 			},
 		},
 	}
@@ -172,7 +172,7 @@ func TestSetTempDirEnvVarsForWindowWithUserProfileSet(t *testing.T) {
 		Config: config.Root{
 			Path: t.TempDir(),
 			Bundle: config.Bundle{
-				Environment: "whatever",
+				Target: "whatever",
 			},
 		},
 	}
@@ -202,7 +202,7 @@ func TestSetTempDirEnvVarsForWindowsWithoutAnyTempDirEnvVarsSet(t *testing.T) {
 		Config: config.Root{
 			Path: t.TempDir(),
 			Bundle: config.Bundle{
-				Environment: "whatever",
+				Target: "whatever",
 			},
 		},
 	}
@@ -230,7 +230,7 @@ func TestSetProxyEnvVars(t *testing.T) {
 		Config: config.Root{
 			Path: t.TempDir(),
 			Bundle: config.Bundle{
-				Environment: "whatever",
+				Target: "whatever",
 			},
 		},
 	}
@@ -277,6 +277,7 @@ func TestInheritEnvVars(t *testing.T) {
 	env := map[string]string{}
 
 	t.Setenv("HOME", "/home/testuser")
+	t.Setenv("PATH", "/foo:/bar")
 	t.Setenv("TF_CLI_CONFIG_FILE", "/tmp/config.tfrc")
 
 	err := inheritEnvVars(env)
@@ -285,6 +286,7 @@ func TestInheritEnvVars(t *testing.T) {
 
 	require.Equal(t, map[string]string{
 		"HOME":               "/home/testuser",
+		"PATH":               "/foo:/bar",
 		"TF_CLI_CONFIG_FILE": "/tmp/config.tfrc",
 	}, env)
 }

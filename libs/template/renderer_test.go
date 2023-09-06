@@ -12,6 +12,14 @@ import (
 	"testing"
 	"text/template"
 
+	"github.com/databricks/cli/bundle"
+	bundleConfig "github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/mutator"
+	"github.com/databricks/cli/bundle/phases"
+	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/databricks-sdk-go"
+	workspaceConfig "github.com/databricks/databricks-sdk-go/config"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -28,10 +36,102 @@ func assertFilePermissions(t *testing.T, path string, perm fs.FileMode) {
 	assert.Equal(t, perm, info.Mode().Perm())
 }
 
+func assertBuiltinTemplateValid(t *testing.T, settings map[string]any, target string, isServicePrincipal bool, build bool, tempDir string) {
+	ctx := context.Background()
+
+	templatePath, err := prepareBuiltinTemplates("default-python", tempDir)
+	require.NoError(t, err)
+
+	w := &databricks.WorkspaceClient{
+		Config: &workspaceConfig.Config{Host: "https://myhost.com"},
+	}
+
+	// Prepare helpers
+	cachedUser = &iam.User{UserName: "user@domain.com"}
+	cachedIsServicePrincipal = &isServicePrincipal
+	ctx = root.SetWorkspaceClient(ctx, w)
+	helpers := loadHelpers(ctx)
+
+	renderer, err := newRenderer(ctx, settings, helpers, templatePath, "./testdata/template-in-path/library", tempDir)
+	require.NoError(t, err)
+
+	// Evaluate template
+	err = renderer.walk()
+	require.NoError(t, err)
+	err = renderer.persistToDisk()
+	require.NoError(t, err)
+	b, err := bundle.Load(ctx, filepath.Join(tempDir, "template", "my_project"))
+	require.NoError(t, err)
+
+	// Apply initialize / validation mutators
+	b.Config.Workspace.CurrentUser = &bundleConfig.User{User: cachedUser}
+	b.WorkspaceClient()
+	b.Config.Bundle.Terraform = &bundleConfig.Terraform{
+		ExecPath: "sh",
+	}
+	err = bundle.Apply(ctx, b, bundle.Seq(
+		bundle.Seq(mutator.DefaultMutators()...),
+		mutator.SelectTarget(target),
+		phases.Initialize(),
+	))
+	require.NoError(t, err)
+
+	// Apply build mutator
+	if build {
+		err = bundle.Apply(ctx, b, phases.Build())
+		require.NoError(t, err)
+	}
+}
+
+func TestBuiltinTemplateValid(t *testing.T) {
+	// Test option combinations
+	options := []string{"yes", "no"}
+	isServicePrincipal := false
+	build := false
+	for _, includeNotebook := range options {
+		for _, includeDlt := range options {
+			for _, includePython := range options {
+				for _, isServicePrincipal := range []bool{true, false} {
+					config := map[string]any{
+						"project_name":     "my_project",
+						"include_notebook": includeNotebook,
+						"include_dlt":      includeDlt,
+						"include_python":   includePython,
+					}
+					tempDir := t.TempDir()
+					assertBuiltinTemplateValid(t, config, "dev", isServicePrincipal, build, tempDir)
+				}
+			}
+		}
+	}
+
+	// Test prod mode + build
+	config := map[string]any{
+		"project_name":     "my_project",
+		"include_notebook": "yes",
+		"include_dlt":      "yes",
+		"include_python":   "yes",
+	}
+	isServicePrincipal = false
+	build = true
+
+	// On Windows, we can't always remove the resulting temp dir since background
+	// processes might have it open, so we use 'defer' for a best-effort cleanup
+	tempDir, err := os.MkdirTemp("", "templates")
+	require.NoError(t, err)
+	defer os.RemoveAll(tempDir)
+
+	assertBuiltinTemplateValid(t, config, "prod", isServicePrincipal, build, tempDir)
+	defer os.RemoveAll(tempDir)
+}
+
 func TestRendererWithAssociatedTemplateInLibrary(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	r, err := newRenderer(context.Background(), nil, "./testdata/email/template", "./testdata/email/library", tmpDir)
+	ctx := context.Background()
+	ctx = root.SetWorkspaceClient(ctx, nil)
+	helpers := loadHelpers(ctx)
+	r, err := newRenderer(ctx, nil, helpers, "./testdata/email/template", "./testdata/email/library", tmpDir)
 	require.NoError(t, err)
 
 	err = r.walk()
@@ -202,9 +302,11 @@ func TestRendererPersistToDisk(t *testing.T) {
 
 func TestRendererWalk(t *testing.T) {
 	ctx := context.Background()
+	ctx = root.SetWorkspaceClient(ctx, nil)
 	tmpDir := t.TempDir()
 
-	r, err := newRenderer(ctx, nil, "./testdata/walk/template", "./testdata/walk/library", tmpDir)
+	helpers := loadHelpers(ctx)
+	r, err := newRenderer(ctx, nil, helpers, "./testdata/walk/template", "./testdata/walk/library", tmpDir)
 	require.NoError(t, err)
 
 	err = r.walk()
@@ -241,9 +343,11 @@ func TestRendererWalk(t *testing.T) {
 
 func TestRendererFailFunction(t *testing.T) {
 	ctx := context.Background()
+	ctx = root.SetWorkspaceClient(ctx, nil)
 	tmpDir := t.TempDir()
 
-	r, err := newRenderer(ctx, nil, "./testdata/fail/template", "./testdata/fail/library", tmpDir)
+	helpers := loadHelpers(ctx)
+	r, err := newRenderer(ctx, nil, helpers, "./testdata/fail/template", "./testdata/fail/library", tmpDir)
 	require.NoError(t, err)
 
 	err = r.walk()
@@ -252,9 +356,11 @@ func TestRendererFailFunction(t *testing.T) {
 
 func TestRendererSkipsDirsEagerly(t *testing.T) {
 	ctx := context.Background()
+	ctx = root.SetWorkspaceClient(ctx, nil)
 	tmpDir := t.TempDir()
 
-	r, err := newRenderer(ctx, nil, "./testdata/skip-dir-eagerly/template", "./testdata/skip-dir-eagerly/library", tmpDir)
+	helpers := loadHelpers(ctx)
+	r, err := newRenderer(ctx, nil, helpers, "./testdata/skip-dir-eagerly/template", "./testdata/skip-dir-eagerly/library", tmpDir)
 	require.NoError(t, err)
 
 	err = r.walk()
@@ -267,9 +373,11 @@ func TestRendererSkipsDirsEagerly(t *testing.T) {
 
 func TestRendererSkipAllFilesInCurrentDirectory(t *testing.T) {
 	ctx := context.Background()
+	ctx = root.SetWorkspaceClient(ctx, nil)
 	tmpDir := t.TempDir()
 
-	r, err := newRenderer(ctx, nil, "./testdata/skip-all-files-in-cwd/template", "./testdata/skip-all-files-in-cwd/library", tmpDir)
+	helpers := loadHelpers(ctx)
+	r, err := newRenderer(ctx, nil, helpers, "./testdata/skip-all-files-in-cwd/template", "./testdata/skip-all-files-in-cwd/library", tmpDir)
 	require.NoError(t, err)
 
 	err = r.walk()
@@ -288,9 +396,11 @@ func TestRendererSkipAllFilesInCurrentDirectory(t *testing.T) {
 
 func TestRendererSkipPatternsAreRelativeToFileDirectory(t *testing.T) {
 	ctx := context.Background()
+	ctx = root.SetWorkspaceClient(ctx, nil)
 	tmpDir := t.TempDir()
 
-	r, err := newRenderer(ctx, nil, "./testdata/skip-is-relative/template", "./testdata/skip-is-relative/library", tmpDir)
+	helpers := loadHelpers(ctx)
+	r, err := newRenderer(ctx, nil, helpers, "./testdata/skip-is-relative/template", "./testdata/skip-is-relative/library", tmpDir)
 	require.NoError(t, err)
 
 	err = r.walk()
@@ -304,9 +414,11 @@ func TestRendererSkipPatternsAreRelativeToFileDirectory(t *testing.T) {
 
 func TestRendererSkip(t *testing.T) {
 	ctx := context.Background()
+	ctx = root.SetWorkspaceClient(ctx, nil)
 	tmpDir := t.TempDir()
 
-	r, err := newRenderer(ctx, nil, "./testdata/skip/template", "./testdata/skip/library", tmpDir)
+	helpers := loadHelpers(ctx)
+	r, err := newRenderer(ctx, nil, helpers, "./testdata/skip/template", "./testdata/skip/library", tmpDir)
 	require.NoError(t, err)
 
 	err = r.walk()
@@ -335,8 +447,10 @@ func TestRendererReadsPermissionsBits(t *testing.T) {
 	}
 	tmpDir := t.TempDir()
 	ctx := context.Background()
+	ctx = root.SetWorkspaceClient(ctx, nil)
 
-	r, err := newRenderer(ctx, nil, "./testdata/executable-bit-read/template", "./testdata/executable-bit-read/library", tmpDir)
+	helpers := loadHelpers(ctx)
+	r, err := newRenderer(ctx, nil, helpers, "./testdata/executable-bit-read/template", "./testdata/executable-bit-read/library", tmpDir)
 	require.NoError(t, err)
 
 	err = r.walk()
@@ -422,9 +536,11 @@ func TestRendererNoErrorOnConflictingFileIfSkipped(t *testing.T) {
 
 func TestRendererNonTemplatesAreCreatedAsCopyFiles(t *testing.T) {
 	ctx := context.Background()
+	ctx = root.SetWorkspaceClient(ctx, nil)
 	tmpDir := t.TempDir()
 
-	r, err := newRenderer(ctx, nil, "./testdata/copy-file-walk/template", "./testdata/copy-file-walk/library", tmpDir)
+	helpers := loadHelpers(ctx)
+	r, err := newRenderer(ctx, nil, helpers, "./testdata/copy-file-walk/template", "./testdata/copy-file-walk/library", tmpDir)
 	require.NoError(t, err)
 
 	err = r.walk()
@@ -437,12 +553,14 @@ func TestRendererNonTemplatesAreCreatedAsCopyFiles(t *testing.T) {
 
 func TestRendererFileTreeRendering(t *testing.T) {
 	ctx := context.Background()
+	ctx = root.SetWorkspaceClient(ctx, nil)
 	tmpDir := t.TempDir()
 
+	helpers := loadHelpers(ctx)
 	r, err := newRenderer(ctx, map[string]any{
 		"dir_name":  "my_directory",
 		"file_name": "my_file",
-	}, "./testdata/file-tree-rendering/template", "./testdata/file-tree-rendering/library", tmpDir)
+	}, helpers, "./testdata/file-tree-rendering/template", "./testdata/file-tree-rendering/library", tmpDir)
 	require.NoError(t, err)
 
 	err = r.walk()
@@ -458,4 +576,20 @@ func TestRendererFileTreeRendering(t *testing.T) {
 	// Assert files and directories are correctly materialized.
 	assert.DirExists(t, filepath.Join(tmpDir, "my_directory"))
 	assert.FileExists(t, filepath.Join(tmpDir, "my_directory", "my_file"))
+}
+
+func TestRendererSubTemplateInPath(t *testing.T) {
+	ctx := context.Background()
+	ctx = root.SetWorkspaceClient(ctx, nil)
+	tmpDir := t.TempDir()
+
+	helpers := loadHelpers(ctx)
+	r, err := newRenderer(ctx, nil, helpers, "./testdata/template-in-path/template", "./testdata/template-in-path/library", tmpDir)
+	require.NoError(t, err)
+
+	err = r.walk()
+	require.NoError(t, err)
+
+	assert.Equal(t, filepath.Join(tmpDir, "my_directory", "my_file"), r.files[0].DstPath().absPath())
+	assert.Equal(t, "my_directory/my_file", r.files[0].DstPath().relPath)
 }

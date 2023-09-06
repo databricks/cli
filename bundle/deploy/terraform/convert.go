@@ -49,12 +49,14 @@ func convPermission(ac resources.Permission) schema.ResourcePermissionsAccessCon
 //
 // NOTE: THIS IS CURRENTLY A HACK. WE NEED A BETTER WAY TO
 // CONVERT TO/FROM TERRAFORM COMPATIBLE FORMAT.
-func BundleToTerraform(config *config.Root) *schema.Root {
+func BundleToTerraform(config *config.Root) (*schema.Root, bool) {
 	tfroot := schema.NewRoot()
 	tfroot.Provider = schema.NewProviders()
 	tfroot.Resource = schema.NewResources()
+	noResources := true
 
 	for k, src := range config.Resources.Jobs {
+		noResources = false
 		var dst schema.ResourceJob
 		conv(src, &dst)
 
@@ -100,6 +102,7 @@ func BundleToTerraform(config *config.Root) *schema.Root {
 	}
 
 	for k, src := range config.Resources.Pipelines {
+		noResources = false
 		var dst schema.ResourcePipeline
 		conv(src, &dst)
 
@@ -127,6 +130,7 @@ func BundleToTerraform(config *config.Root) *schema.Root {
 	}
 
 	for k, src := range config.Resources.Models {
+		noResources = false
 		var dst schema.ResourceMlflowModel
 		conv(src, &dst)
 		tfroot.Resource.MlflowModel[k] = &dst
@@ -139,6 +143,7 @@ func BundleToTerraform(config *config.Root) *schema.Root {
 	}
 
 	for k, src := range config.Resources.Experiments {
+		noResources = false
 		var dst schema.ResourceMlflowExperiment
 		conv(src, &dst)
 		tfroot.Resource.MlflowExperiment[k] = &dst
@@ -150,7 +155,7 @@ func BundleToTerraform(config *config.Root) *schema.Root {
 		}
 	}
 
-	return tfroot
+	return tfroot, noResources
 }
 
 func TerraformToBundle(state *tfjson.State, config *config.Root) error {

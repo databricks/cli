@@ -1,6 +1,7 @@
 package bundle
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"testing"
@@ -108,7 +109,7 @@ func TestLoadYamlWhenIncludesEnvPresent(t *testing.T) {
 	chdir(t, filepath.Join(".", "tests", "basic"))
 	t.Setenv(ExtraIncludePathsKey, "test")
 
-	bundle, err := MustLoad()
+	bundle, err := MustLoad(context.Background())
 	assert.NoError(t, err)
 	assert.Equal(t, "basic", bundle.Config.Bundle.Name)
 
@@ -123,7 +124,7 @@ func TestLoadDefautlBundleWhenNoYamlAndRootAndIncludesEnvPresent(t *testing.T) {
 	t.Setenv(envBundleRoot, dir)
 	t.Setenv(ExtraIncludePathsKey, "test")
 
-	bundle, err := MustLoad()
+	bundle, err := MustLoad(context.Background())
 	assert.NoError(t, err)
 	assert.Equal(t, dir, bundle.Config.Path)
 }
@@ -133,7 +134,7 @@ func TestErrorIfNoYamlNoRootEnvAndIncludesEnvPresent(t *testing.T) {
 	chdir(t, dir)
 	t.Setenv(ExtraIncludePathsKey, "test")
 
-	_, err := MustLoad()
+	_, err := MustLoad(context.Background())
 	assert.Error(t, err)
 }
 
@@ -142,6 +143,6 @@ func TestErrorIfNoYamlNoIncludesEnvAndRootEnvPresent(t *testing.T) {
 	chdir(t, dir)
 	t.Setenv(envBundleRoot, dir)
 
-	_, err := MustLoad()
+	_, err := MustLoad(context.Background())
 	assert.Error(t, err)
 }

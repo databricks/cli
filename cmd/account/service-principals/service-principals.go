@@ -367,7 +367,7 @@ func newPatch() *cobra.Command {
 	cmd.Flags().Var(&patchJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: Operations
-	// TODO: array: schema
+	// TODO: array: schemas
 
 	cmd.Use = "patch ID"
 	cmd.Short = `Update service principal details.`

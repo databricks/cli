@@ -1,0 +1,36 @@
+bundle:
+  name: environment_overrides
+
+workspace:
+  host: https://acme.cloud.databricks.com/
+
+resources:
+  jobs:
+    job1:
+      name: "base job"
+
+  pipelines:
+    boolean1:
+      photon: true
+
+    boolean2:
+      photon: false
+
+environments:
+  development:
+    default: true
+
+  staging:
+    resources:
+      jobs:
+        job1:
+          name: "staging job"
+
+      pipelines:
+        boolean1:
+          # Note: setting a property to a zero value (in Go) does not have effect.
+          # See the corresponding test for details.
+          photon: false
+
+        boolean2:
+          photon: true

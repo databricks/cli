@@ -32,9 +32,6 @@ func New() *cobra.Command {
 		Annotations: map[string]string{
 			"package": "catalog",
 		},
-
-		// This service is being previewed; hide from help output.
-		Hidden: true,
 	}
 
 	// Apply optional overrides to this command.
@@ -66,7 +63,7 @@ func newCreate() *cobra.Command {
 	cmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `The comment attached to the volume.`)
 	cmd.Flags().StringVar(&createReq.StorageLocation, "storage-location", createReq.StorageLocation, `The storage location on the cloud.`)
 
-	cmd.Use = "create CATALOG_NAME NAME SCHEMA_NAME VOLUME_TYPE"
+	cmd.Use = "create CATALOG_NAME SCHEMA_NAME NAME VOLUME_TYPE"
 	cmd.Short = `Create a Volume.`
 	cmd.Long = `Create a Volume.
   
@@ -111,8 +108,8 @@ func newCreate() *cobra.Command {
 			}
 		} else {
 			createReq.CatalogName = args[0]
-			createReq.Name = args[1]
-			createReq.SchemaName = args[2]
+			createReq.SchemaName = args[1]
+			createReq.Name = args[2]
 			_, err = fmt.Sscan(args[3], &createReq.VolumeType)
 			if err != nil {
 				return fmt.Errorf("invalid VOLUME_TYPE: %s", args[3])
@@ -252,6 +249,9 @@ func newList() *cobra.Command {
   and the **USE_SCHEMA** privilege on the parent schema.
   
   There is no guarantee of a specific ordering of the elements in the array.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 

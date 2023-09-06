@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"path"
 	"regexp"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -19,7 +20,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
-	"golang.org/x/exp/slices"
 )
 
 // Type that implements fs.DirEntry for WSFS.
@@ -115,7 +115,7 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 		return err
 	}
 
-	err = w.apiClient.Do(ctx, http.MethodPost, urlPath, body, nil)
+	err = w.apiClient.Do(ctx, http.MethodPost, urlPath, nil, body, nil)
 
 	// Return early on success.
 	if err == nil {

@@ -18,7 +18,7 @@ type Variable struct {
 	// resolved in the following priority order (from highest to lowest)
 	//
 	// 1. Command line flag. For example: `--var="foo=bar"`
-	// 2. Environment variable. eg: BUNDLE_VAR_foo=bar
+	// 2. Target variable. eg: BUNDLE_VAR_foo=bar
 	// 3. Default value as defined in the applicable environments block
 	// 4. Default value defined in variable definition
 	// 5. Throw error, since if no default value is defined, then the variable
