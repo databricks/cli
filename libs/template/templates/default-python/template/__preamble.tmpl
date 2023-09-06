@@ -1,0 +1,38 @@
+# Preamble
+
+This file only template directives; it is skipped for the actual output.
+
+{{skip "__preamble"}}
+
+{{ $value := .project_name }}
+{{with (regexp "^[A-Za-z0-9_]*$")}}
+  {{if not (.MatchString $value)}}
+    {{fail "Invalid project_name: %s. Must consist of letter and underscores only." $value}}
+  {{end}}
+{{end}}
+
+{{$notDLT := not (eq .include_dlt "yes")}}
+{{$notNotebook := not (eq .include_notebook "yes")}}
+{{$notPython := not (eq .include_python "yes")}}
+
+{{if $notPython}}
+  {{skip "{{.project_name}}/src/{{.project_name}}"}}
+  {{skip "{{.project_name}}/tests/test_main.py"}}
+  {{skip "{{.project_name}}/setup.py"}}
+  {{skip "{{.project_name}}/pytest.ini"}}
+{{end}}
+
+{{if $notDLT}}
+  {{skip "{{.project_name}}/src/dlt_pipeline.ipynb"}}
+  {{skip "{{.project_name}}/resources/{{.project_name}}_pipeline.yml"}}
+{{end}}
+
+{{if $notNotebook}}
+  {{skip "{{.project_name}}/src/notebook.iypnb"}}
+{{end}}
+
+{{if (and $notDLT $notNotebook $notPython)}}
+  {{skip "{{.project_name}}/resources/{{.project_name}}_job.yml"}}
+{{else}}
+  {{skip "{{.project_name}}/resources/.gitkeep"}}
+{{end}}

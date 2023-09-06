@@ -1,5 +1,106 @@
 # Version changelog
 
+## 0.204.0
+
+This release includes permission related commands for a subset of workspace
+services where they apply. These complement the `permissions` command and
+do not require specification of the object type to work with, as that is
+implied by the command they are nested under.
+
+CLI:
+ * Group permission related commands ([#730](https://github.com/databricks/cli/pull/730)).
+
+Bundles:
+ * Fixed artifact file uploading on Windows and wheel execution on DBR 13.3 ([#722](https://github.com/databricks/cli/pull/722)).
+ * Make resource and artifact paths in bundle config relative to config folder ([#708](https://github.com/databricks/cli/pull/708)).
+ * Add support for ordering of input prompts ([#662](https://github.com/databricks/cli/pull/662)).
+ * Fix IsServicePrincipal() only working for workspace admins ([#732](https://github.com/databricks/cli/pull/732)).
+ * databricks bundle init template v1 ([#686](https://github.com/databricks/cli/pull/686)).
+ * databricks bundle init template v2: optional stubs, DLT support ([#700](https://github.com/databricks/cli/pull/700)).
+ * Show 'databricks bundle init' template in CLI prompt ([#725](https://github.com/databricks/cli/pull/725)).
+ * Include  in set of environment variables to pass along. ([#736](https://github.com/databricks/cli/pull/736)).
+
+Internal:
+ * Update Go SDK to v0.19.0 ([#729](https://github.com/databricks/cli/pull/729)).
+ * Replace API call to test configuration with dummy authenticate call ([#728](https://github.com/databricks/cli/pull/728)).
+
+API Changes:
+ * Changed `databricks account storage-credentials create` command to return .
+ * Changed `databricks account storage-credentials get` command to return .
+ * Changed `databricks account storage-credentials list` command to return .
+ * Changed `databricks account storage-credentials update` command to return .
+ * Changed `databricks connections create` command with new required argument order.
+ * Changed `databricks connections update` command with new required argument order.
+ * Changed `databricks volumes create` command with new required argument order.
+ * Added `databricks artifact-allowlists` command group.
+ * Added `databricks model-versions` command group.
+ * Added `databricks registered-models` command group.
+ * Added `databricks cluster-policies get-permission-levels` command.
+ * Added `databricks cluster-policies get-permissions` command.
+ * Added `databricks cluster-policies set-permissions` command.
+ * Added `databricks cluster-policies update-permissions` command.
+ * Added `databricks clusters get-permission-levels` command.
+ * Added `databricks clusters get-permissions` command.
+ * Added `databricks clusters set-permissions` command.
+ * Added `databricks clusters update-permissions` command.
+ * Added `databricks instance-pools get-permission-levels` command.
+ * Added `databricks instance-pools get-permissions` command.
+ * Added `databricks instance-pools set-permissions` command.
+ * Added `databricks instance-pools update-permissions` command.
+ * Added `databricks files` command group.
+ * Changed `databricks permissions set` command to start returning .
+ * Changed `databricks permissions update` command to start returning .
+ * Added `databricks users get-permission-levels` command.
+ * Added `databricks users get-permissions` command.
+ * Added `databricks users set-permissions` command.
+ * Added `databricks users update-permissions` command.
+ * Added `databricks jobs get-permission-levels` command.
+ * Added `databricks jobs get-permissions` command.
+ * Added `databricks jobs set-permissions` command.
+ * Added `databricks jobs update-permissions` command.
+ * Changed `databricks experiments get-by-name` command to return .
+ * Changed `databricks experiments get-experiment` command to return .
+ * Added `databricks experiments delete-runs` command.
+ * Added `databricks experiments get-permission-levels` command.
+ * Added `databricks experiments get-permissions` command.
+ * Added `databricks experiments restore-runs` command.
+ * Added `databricks experiments set-permissions` command.
+ * Added `databricks experiments update-permissions` command.
+ * Added `databricks model-registry get-permission-levels` command.
+ * Added `databricks model-registry get-permissions` command.
+ * Added `databricks model-registry set-permissions` command.
+ * Added `databricks model-registry update-permissions` command.
+ * Added `databricks pipelines get-permission-levels` command.
+ * Added `databricks pipelines get-permissions` command.
+ * Added `databricks pipelines set-permissions` command.
+ * Added `databricks pipelines update-permissions` command.
+ * Added `databricks serving-endpoints get-permission-levels` command.
+ * Added `databricks serving-endpoints get-permissions` command.
+ * Added `databricks serving-endpoints set-permissions` command.
+ * Added `databricks serving-endpoints update-permissions` command.
+ * Added `databricks token-management get-permission-levels` command.
+ * Added `databricks token-management get-permissions` command.
+ * Added `databricks token-management set-permissions` command.
+ * Added `databricks token-management update-permissions` command.
+ * Changed `databricks dashboards create` command with new required argument order.
+ * Added `databricks warehouses get-permission-levels` command.
+ * Added `databricks warehouses get-permissions` command.
+ * Added `databricks warehouses set-permissions` command.
+ * Added `databricks warehouses update-permissions` command.
+ * Added `databricks dashboard-widgets` command group.
+ * Added `databricks query-visualizations` command group.
+ * Added `databricks repos get-permission-levels` command.
+ * Added `databricks repos get-permissions` command.
+ * Added `databricks repos set-permissions` command.
+ * Added `databricks repos update-permissions` command.
+ * Added `databricks secrets get-secret` command.
+ * Added `databricks workspace get-permission-levels` command.
+ * Added `databricks workspace get-permissions` command.
+ * Added `databricks workspace set-permissions` command.
+ * Added `databricks workspace update-permissions` command.
+
+OpenAPI commit 09a7fa63d9ae243e5407941f200960ca14d48b07 (2023-09-04)
+
 ## 0.203.3
 
 Bundles:
