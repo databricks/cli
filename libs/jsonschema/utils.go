@@ -2,6 +2,9 @@ package jsonschema
 
 import "fmt"
 
+// TODO: this code is copied from libs/template/utils.go. Remove it from
+// the template package once validation is moved to the json schema package
+
 // function to check whether a float value represents an integer
 func isIntegerValue(v float64) bool {
 	return v == float64(int64(v))
