@@ -2,9 +2,7 @@ package template
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"os"
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/jsonschema"
@@ -26,6 +24,9 @@ func newConfig(ctx context.Context, schemaPath string) (*config, error) {
 		return nil, err
 	}
 
+	// Do not allow template input variables that are not defined in the schema.
+	schema.AdditionalProperties = false
+
 	// Return config
 	return &config{
 		ctx:    ctx,
@@ -45,32 +46,10 @@ func validateSchema(schema *jsonschema.Schema) error {
 
 // Reads json file at path and assigns values from the file
 func (c *config) assignValuesFromFile(path string) error {
-	// Read the config file
-	configFromFile := make(map[string]any, 0)
-	b, err := os.ReadFile(path)
+	// Load the config file.
+	configFromFile, err := c.schema.LoadInstance(path)
 	if err != nil {
-		return err
-	}
-	err = json.Unmarshal(b, &configFromFile)
-	if err != nil {
-		return err
-	}
-
-	// Cast any integer properties, from float to integer. Required because
-	// the json unmarshaller treats all json numbers as floating point
-	for name, floatVal := range configFromFile {
-		property, ok := c.schema.Properties[name]
-		if !ok {
-			return fmt.Errorf("%s is not defined as an input parameter for the template", name)
-		}
-		if property.Type != jsonschema.IntegerType {
-			continue
-		}
-		v, err := toInteger(floatVal)
-		if err != nil {
-			return fmt.Errorf("failed to cast value %v of property %s from file %s to an integer: %w", floatVal, name, path, err)
-		}
-		configFromFile[name] = v
+		return fmt.Errorf("failed to load config from file %s. %w", path, err)
 	}
 
 	// Write configs from the file to the input map, not overwriting any existing

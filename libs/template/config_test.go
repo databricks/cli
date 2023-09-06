@@ -49,16 +49,6 @@ func TestTemplateConfigAssignValuesFromFile(t *testing.T) {
 	assert.Equal(t, "hello", c.values["string_val"])
 }
 
-func TestTemplateConfigAssignValuesFromFileForUnknownField(t *testing.T) {
-	c := config{
-		schema: testSchema(t),
-		values: make(map[string]any),
-	}
-
-	err := c.assignValuesFromFile("./testdata/config-assign-from-file-unknown-property/config.json")
-	assert.EqualError(t, err, "unknown_prop is not defined as an input parameter for the template")
-}
-
 func TestTemplateConfigAssignValuesFromFileForInvalidIntegerValue(t *testing.T) {
 	c := config{
 		schema: testSchema(t),
@@ -66,7 +56,7 @@ func TestTemplateConfigAssignValuesFromFileForInvalidIntegerValue(t *testing.T) 
 	}
 
 	err := c.assignValuesFromFile("./testdata/config-assign-from-file-invalid-int/config.json")
-	assert.EqualError(t, err, "failed to cast value abc of property int_val from file ./testdata/config-assign-from-file-invalid-int/config.json to an integer: cannot convert \"abc\" to an integer")
+	assert.EqualError(t, err, "failed to load config from file ./testdata/config-assign-from-file-invalid-int/config.json. failed to parse property int_val: cannot convert \"abc\" to an integer")
 }
 
 func TestTemplateConfigAssignValuesFromFileDoesNotOverwriteExistingConfigs(t *testing.T) {
