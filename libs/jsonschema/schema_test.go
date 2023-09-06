@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestJsonSchemaValidate(t *testing.T) {
+func TestSchemaValidateTypeNames(t *testing.T) {
 	var err error
 	toSchema := func(s string) *Schema {
 		return &Schema{
@@ -41,4 +41,41 @@ func TestJsonSchemaValidate(t *testing.T) {
 
 	err = toSchema("foobar").validate()
 	assert.EqualError(t, err, "type foobar is not a recognized json schema type")
+}
+
+func TestSchemaLoadIntegers(t *testing.T) {
+	schema, err := Load("./testdata/schema-load-int/schema-valid.json")
+	assert.NoError(t, err)
+	assert.Equal(t, int64(1), schema.Properties["abc"].Default)
+}
+
+func TestSchemaLoadIntegersWithInvalidDefault(t *testing.T) {
+	_, err := Load("./testdata/schema-load-int/schema-invalid-default.json")
+	assert.EqualError(t, err, "failed to parse default value for property abc: expected integer value, got: 1.1")
+}
+
+func TestSchemaValidateDefaultType(t *testing.T) {
+	invalidSchema := &Schema{
+		Properties: map[string]*Schema{
+			"foo": {
+				Type:    "number",
+				Default: "abc",
+			},
+		},
+	}
+
+	err := invalidSchema.validate()
+	assert.EqualError(t, err, "type validation for default value of property foo failed: expected type float, but value is \"abc\"")
+
+	validSchema := &Schema{
+		Properties: map[string]*Schema{
+			"foo": {
+				Type:    "boolean",
+				Default: true,
+			},
+		},
+	}
+
+	err = validSchema.validate()
+	assert.NoError(t, err)
 }

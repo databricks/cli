@@ -58,6 +58,7 @@ const (
 )
 
 func (schema *Schema) validate() error {
+	// Validate property types are all valid JSON schema types.
 	for _, v := range schema.Properties {
 		switch v.Type {
 		case NumberType, BooleanType, StringType, IntegerType:
@@ -72,6 +73,17 @@ func (schema *Schema) validate() error {
 			return fmt.Errorf("type %s is not a recognized json schema type", v.Type)
 		}
 	}
+
+	// Validate default property values are consistent with types.
+	for name, property := range schema.Properties {
+		if property.Default == nil {
+			continue
+		}
+		if err := validateType(property.Default, property.Type); err != nil {
+			return fmt.Errorf("type validation for default value of property %s failed: %w", name, err)
+		}
+	}
+
 	return nil
 }
 
@@ -85,5 +97,21 @@ func Load(path string) (*Schema, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// Convert the top properties default values and enum values to integers.
+	// This is require because the default JSON unmarshaler parses untyped numbers
+	// as floats.
+	for name, property := range schema.Properties {
+		if property.Type != IntegerType {
+			continue
+		}
+		if property.Default != nil {
+			property.Default, err = toInteger(property.Default)
+			if err != nil {
+				return nil, fmt.Errorf("failed to parse default value for property %s: %w", name, err)
+			}
+		}
+	}
+
 	return schema, schema.validate()
 }

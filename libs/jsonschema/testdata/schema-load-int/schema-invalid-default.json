@@ -1,0 +1,9 @@
+{
+    "type": "object",
+    "properties": {
+        "abc": {
+            "type": "integer",
+            "default": 1.1
+        }
+    }
+}
