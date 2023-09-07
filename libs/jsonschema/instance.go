@@ -51,6 +51,7 @@ func (s *Schema) ValidateInstance(instance map[string]any) error {
 // If additional properties is set to false, this function validates instance only
 // contains properties defined in the schema.
 func (s *Schema) validateAdditionalProperties(instance map[string]any) error {
+	// Note: AdditionalProperties has the type any.
 	if s.AdditionalProperties != false {
 		return nil
 	}
