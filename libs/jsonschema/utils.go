@@ -1,11 +1,9 @@
-package template
+package jsonschema
 
 import (
 	"errors"
 	"fmt"
 	"strconv"
-
-	"github.com/databricks/cli/libs/jsonschema"
 )
 
 // function to check whether a float value represents an integer
@@ -40,41 +38,41 @@ func toInteger(v any) (int64, error) {
 	}
 }
 
-func toString(v any, T jsonschema.Type) (string, error) {
+func ToString(v any, T Type) (string, error) {
 	switch T {
-	case jsonschema.BooleanType:
+	case BooleanType:
 		boolVal, ok := v.(bool)
 		if !ok {
 			return "", fmt.Errorf("expected bool, got: %#v", v)
 		}
 		return strconv.FormatBool(boolVal), nil
-	case jsonschema.StringType:
+	case StringType:
 		strVal, ok := v.(string)
 		if !ok {
 			return "", fmt.Errorf("expected string, got: %#v", v)
 		}
 		return strVal, nil
-	case jsonschema.NumberType:
+	case NumberType:
 		floatVal, ok := v.(float64)
 		if !ok {
 			return "", fmt.Errorf("expected float, got: %#v", v)
 		}
 		return strconv.FormatFloat(floatVal, 'f', -1, 64), nil
-	case jsonschema.IntegerType:
+	case IntegerType:
 		intVal, err := toInteger(v)
 		if err != nil {
 			return "", err
 		}
 		return strconv.FormatInt(intVal, 10), nil
-	case jsonschema.ArrayType, jsonschema.ObjectType:
+	case ArrayType, ObjectType:
 		return "", fmt.Errorf("cannot format object of type %s as a string. Value of object: %#v", T, v)
 	default:
 		return "", fmt.Errorf("unknown json schema type: %q", T)
 	}
 }
 
-func fromString(s string, T jsonschema.Type) (any, error) {
-	if T == jsonschema.StringType {
+func FromString(s string, T Type) (any, error) {
+	if T == StringType {
 		return s, nil
 	}
 
@@ -83,13 +81,13 @@ func fromString(s string, T jsonschema.Type) (any, error) {
 	var err error
 
 	switch T {
-	case jsonschema.BooleanType:
+	case BooleanType:
 		v, err = strconv.ParseBool(s)
-	case jsonschema.NumberType:
+	case NumberType:
 		v, err = strconv.ParseFloat(s, 32)
-	case jsonschema.IntegerType:
+	case IntegerType:
 		v, err = strconv.ParseInt(s, 10, 64)
-	case jsonschema.ArrayType, jsonschema.ObjectType:
+	case ArrayType, ObjectType:
 		return "", fmt.Errorf("cannot parse string as object of type %s. Value of string: %q", T, s)
 	default:
 		return "", fmt.Errorf("unknown json schema type: %q", T)

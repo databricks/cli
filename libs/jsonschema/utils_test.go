@@ -1,10 +1,9 @@
-package template
+package jsonschema
 
 import (
 	"math"
 	"testing"
 
-	"github.com/databricks/cli/libs/jsonschema"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -50,72 +49,72 @@ func TestTemplateToInteger(t *testing.T) {
 }
 
 func TestTemplateToString(t *testing.T) {
-	s, err := toString(true, jsonschema.BooleanType)
+	s, err := ToString(true, BooleanType)
 	assert.NoError(t, err)
 	assert.Equal(t, "true", s)
 
-	s, err = toString("abc", jsonschema.StringType)
+	s, err = ToString("abc", StringType)
 	assert.NoError(t, err)
 	assert.Equal(t, "abc", s)
 
-	s, err = toString(1.1, jsonschema.NumberType)
+	s, err = ToString(1.1, NumberType)
 	assert.NoError(t, err)
 	assert.Equal(t, "1.1", s)
 
-	s, err = toString(2, jsonschema.IntegerType)
+	s, err = ToString(2, IntegerType)
 	assert.NoError(t, err)
 	assert.Equal(t, "2", s)
 
-	_, err = toString([]string{}, jsonschema.ArrayType)
+	_, err = ToString([]string{}, ArrayType)
 	assert.EqualError(t, err, "cannot format object of type array as a string. Value of object: []string{}")
 
-	_, err = toString("true", jsonschema.BooleanType)
+	_, err = ToString("true", BooleanType)
 	assert.EqualError(t, err, "expected bool, got: \"true\"")
 
-	_, err = toString(123, jsonschema.StringType)
+	_, err = ToString(123, StringType)
 	assert.EqualError(t, err, "expected string, got: 123")
 
-	_, err = toString(false, jsonschema.NumberType)
+	_, err = ToString(false, NumberType)
 	assert.EqualError(t, err, "expected float, got: false")
 
-	_, err = toString("abc", jsonschema.IntegerType)
+	_, err = ToString("abc", IntegerType)
 	assert.EqualError(t, err, "cannot convert \"abc\" to an integer")
 
-	_, err = toString("abc", "foobar")
+	_, err = ToString("abc", "foobar")
 	assert.EqualError(t, err, "unknown json schema type: \"foobar\"")
 }
 
 func TestTemplateFromString(t *testing.T) {
-	v, err := fromString("true", jsonschema.BooleanType)
+	v, err := FromString("true", BooleanType)
 	assert.NoError(t, err)
 	assert.Equal(t, true, v)
 
-	v, err = fromString("abc", jsonschema.StringType)
+	v, err = FromString("abc", StringType)
 	assert.NoError(t, err)
 	assert.Equal(t, "abc", v)
 
-	v, err = fromString("1.1", jsonschema.NumberType)
+	v, err = FromString("1.1", NumberType)
 	assert.NoError(t, err)
 	// Floating point conversions are not perfect
 	assert.True(t, (v.(float64)-1.1) < 0.000001)
 
-	v, err = fromString("12345", jsonschema.IntegerType)
+	v, err = FromString("12345", IntegerType)
 	assert.NoError(t, err)
 	assert.Equal(t, int64(12345), v)
 
-	v, err = fromString("123", jsonschema.NumberType)
+	v, err = FromString("123", NumberType)
 	assert.NoError(t, err)
 	assert.Equal(t, float64(123), v)
 
-	_, err = fromString("qrt", jsonschema.ArrayType)
+	_, err = FromString("qrt", ArrayType)
 	assert.EqualError(t, err, "cannot parse string as object of type array. Value of string: \"qrt\"")
 
-	_, err = fromString("abc", jsonschema.IntegerType)
+	_, err = FromString("abc", IntegerType)
 	assert.EqualError(t, err, "could not parse \"abc\" as a integer: strconv.ParseInt: parsing \"abc\": invalid syntax")
 
-	_, err = fromString("1.0", jsonschema.IntegerType)
+	_, err = FromString("1.0", IntegerType)
 	assert.EqualError(t, err, "could not parse \"1.0\" as a integer: strconv.ParseInt: parsing \"1.0\": invalid syntax")
 
-	_, err = fromString("1.0", "foobar")
+	_, err = FromString("1.0", "foobar")
 	assert.EqualError(t, err, "unknown json schema type: \"foobar\"")
 }
