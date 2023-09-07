@@ -12,6 +12,10 @@
         "node_type_id": {
             "type": "string",
             "description": "Node type id for job cluster"
+        },
+        "unique_id": {
+            "type": "string",
+            "description": "Unique ID for job name"
         }
     }
 }
