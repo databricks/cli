@@ -14,6 +14,7 @@ import (
 	"sync"
 
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/folders"
 	"github.com/databricks/cli/libs/git"
 	"github.com/databricks/cli/libs/locker"
@@ -49,9 +50,11 @@ type Bundle struct {
 	// if true, we skip approval checks for deploy, destroy resources and delete
 	// files
 	AutoApprove bool
-}
 
-const ExtraIncludePathsKey string = "DATABRICKS_BUNDLE_INCLUDES"
+	// baseCacheDirName holds the base directory to use for temporary data.
+	// It is populated upon bundle creation.
+	baseCacheDirName string
+}
 
 func Load(ctx context.Context, path string) (*Bundle, error) {
 	bundle := &Bundle{}
@@ -61,9 +64,9 @@ func Load(ctx context.Context, path string) (*Bundle, error) {
 	}
 	configFile, err := config.FileNames.FindInPath(path)
 	if err != nil {
-		_, hasIncludePathEnv := os.LookupEnv(ExtraIncludePathsKey)
-		_, hasBundleRootEnv := os.LookupEnv(envBundleRoot)
-		if hasIncludePathEnv && hasBundleRootEnv && stat.IsDir() {
+		_, hasRootEnv := env.Root(ctx)
+		_, hasIncludesEnv := env.Includes(ctx)
+		if hasRootEnv && hasIncludesEnv && stat.IsDir() {
 			log.Debugf(ctx, "No bundle configuration; using bundle root: %s", path)
 			bundle.Config = config.Root{
 				Path: path,
@@ -80,13 +83,14 @@ func Load(ctx context.Context, path string) (*Bundle, error) {
 	if err != nil {
 		return nil, err
 	}
+	bundle.configureBaseCacheDirName(ctx)
 	return bundle, nil
 }
 
 // MustLoad returns a bundle configuration.
 // It returns an error if a bundle was not found or could not be loaded.
 func MustLoad(ctx context.Context) (*Bundle, error) {
-	root, err := mustGetRoot()
+	root, err := mustGetRoot(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +102,7 @@ func MustLoad(ctx context.Context) (*Bundle, error) {
 // It returns an error if a bundle was found but could not be loaded.
 // It returns a `nil` bundle if a bundle was not found.
 func TryLoad(ctx context.Context) (*Bundle, error) {
-	root, err := tryGetRoot()
+	root, err := tryGetRoot(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -129,21 +133,9 @@ func (b *Bundle) CacheDir(paths ...string) (string, error) {
 		panic("target not set")
 	}
 
-	cacheDirName, exists := os.LookupEnv("DATABRICKS_BUNDLE_TMP")
-
-	if !exists || cacheDirName == "" {
-		cacheDirName = filepath.Join(
-			// Anchor at bundle root directory.
-			b.Config.Path,
-			// Static cache directory.
-			".databricks",
-			"bundle",
-		)
-	}
-
 	// Fixed components of the result path.
 	parts := []string{
-		cacheDirName,
+		b.baseCacheDirName,
 		// Scope with target name.
 		b.Config.Bundle.Target,
 	}
@@ -159,6 +151,22 @@ func (b *Bundle) CacheDir(paths ...string) (string, error) {
 	}
 
 	return dir, nil
+}
+
+// configureBaseCacheDirName configures the base directory to use for temporary data.
+// This happens once upon bundle creation. Also see the [Load] function.
+func (b *Bundle) configureBaseCacheDirName(ctx context.Context) {
+	cacheDirName, exists := env.TempDir(ctx)
+	if !exists || cacheDirName == "" {
+		cacheDirName = filepath.Join(
+			// Anchor at bundle root directory.
+			b.Config.Path,
+			// Static cache directory.
+			".databricks",
+			"bundle",
+		)
+	}
+	b.baseCacheDirName = cacheDirName
 }
 
 // This directory is used to store and automaticaly sync internal bundle files, such as, f.e

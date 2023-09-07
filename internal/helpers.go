@@ -116,7 +116,7 @@ func (t *cobraTestRunner) RunBackground() {
 	var stdoutW, stderrW io.WriteCloser
 	stdoutR, stdoutW = io.Pipe()
 	stderrR, stderrW = io.Pipe()
-	root := cmd.New()
+	root := cmd.New(context.Background())
 	root.SetOut(stdoutW)
 	root.SetErr(stderrW)
 	root.SetArgs(t.args)

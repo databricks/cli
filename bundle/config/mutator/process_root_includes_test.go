@@ -2,16 +2,17 @@ package mutator_test
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"path"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/mutator"
+	"github.com/databricks/cli/bundle/env"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -129,10 +130,7 @@ func TestProcessRootIncludesExtrasFromEnvVar(t *testing.T) {
 	rootPath := t.TempDir()
 	testYamlName := "extra_include_path.yml"
 	touch(t, rootPath, testYamlName)
-	os.Setenv(bundle.ExtraIncludePathsKey, path.Join(rootPath, testYamlName))
-	t.Cleanup(func() {
-		os.Unsetenv(bundle.ExtraIncludePathsKey)
-	})
+	t.Setenv(env.IncludesVariable, path.Join(rootPath, testYamlName))
 
 	bundle := &bundle.Bundle{
 		Config: config.Root{
@@ -149,7 +147,13 @@ func TestProcessRootIncludesDedupExtrasFromEnvVar(t *testing.T) {
 	rootPath := t.TempDir()
 	testYamlName := "extra_include_path.yml"
 	touch(t, rootPath, testYamlName)
-	t.Setenv(bundle.ExtraIncludePathsKey, fmt.Sprintf("%s%s%s", path.Join(rootPath, testYamlName), string(os.PathListSeparator), path.Join(rootPath, testYamlName)))
+	t.Setenv(env.IncludesVariable, strings.Join(
+		[]string{
+			path.Join(rootPath, testYamlName),
+			path.Join(rootPath, testYamlName),
+		},
+		string(os.PathListSeparator),
+	))
 
 	bundle := &bundle.Bundle{
 		Config: config.Root{

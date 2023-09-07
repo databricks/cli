@@ -21,7 +21,7 @@ func TestSetVariableFromProcessEnvVar(t *testing.T) {
 	// set value for variable as an environment variable
 	t.Setenv("BUNDLE_VAR_foo", "process-env")
 
-	err := setVariable(&variable, "foo")
+	err := setVariable(context.Background(), &variable, "foo")
 	require.NoError(t, err)
 	assert.Equal(t, *variable.Value, "process-env")
 }
@@ -33,7 +33,7 @@ func TestSetVariableUsingDefaultValue(t *testing.T) {
 		Default:     &defaultVal,
 	}
 
-	err := setVariable(&variable, "foo")
+	err := setVariable(context.Background(), &variable, "foo")
 	require.NoError(t, err)
 	assert.Equal(t, *variable.Value, "default")
 }
@@ -49,7 +49,7 @@ func TestSetVariableWhenAlreadyAValueIsAssigned(t *testing.T) {
 
 	// since a value is already assigned to the variable, it would not be overridden
 	// by the default value
-	err := setVariable(&variable, "foo")
+	err := setVariable(context.Background(), &variable, "foo")
 	require.NoError(t, err)
 	assert.Equal(t, *variable.Value, "assigned-value")
 }
@@ -68,7 +68,7 @@ func TestSetVariableEnvVarValueDoesNotOverridePresetValue(t *testing.T) {
 
 	// since a value is already assigned to the variable, it would not be overridden
 	// by the value from environment
-	err := setVariable(&variable, "foo")
+	err := setVariable(context.Background(), &variable, "foo")
 	require.NoError(t, err)
 	assert.Equal(t, *variable.Value, "assigned-value")
 }
@@ -79,7 +79,7 @@ func TestSetVariablesErrorsIfAValueCouldNotBeResolved(t *testing.T) {
 	}
 
 	// fails because we could not resolve a value for the variable
-	err := setVariable(&variable, "foo")
+	err := setVariable(context.Background(), &variable, "foo")
 	assert.ErrorContains(t, err, "no value assigned to required variable foo. Assignment can be done through the \"--var\" flag or by setting the BUNDLE_VAR_foo environment variable")
 }
 

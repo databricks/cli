@@ -3,11 +3,11 @@ package mutator
 import (
 	"context"
 	"fmt"
-	"os"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/libs/env"
 )
 
 type overrideCompute struct{}
@@ -39,8 +39,8 @@ func (m *overrideCompute) Apply(ctx context.Context, b *bundle.Bundle) error {
 		}
 		return nil
 	}
-	if os.Getenv("DATABRICKS_CLUSTER_ID") != "" {
-		b.Config.Bundle.ComputeID = os.Getenv("DATABRICKS_CLUSTER_ID")
+	if v := env.Get(ctx, "DATABRICKS_CLUSTER_ID"); v != "" {
+		b.Config.Bundle.ComputeID = v
 	}
 
 	if b.Config.Bundle.ComputeID == "" {

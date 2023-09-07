@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"strings"
 
 	"github.com/databricks/cli/cmd/account"
@@ -21,8 +22,8 @@ const (
 	permissionsGroup = "permissions"
 )
 
-func New() *cobra.Command {
-	cli := root.New()
+func New(ctx context.Context) *cobra.Command {
+	cli := root.New(ctx)
 
 	// Add account subcommand.
 	cli.AddCommand(account.New())
