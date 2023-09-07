@@ -26,11 +26,7 @@ type syncFlags struct {
 	output   flags.Output
 }
 
-func (f *syncFlags) syncOptionsFromBundle(cmd *cobra.Command, args []string, b *bundle.Bundle) (*sync.SyncOptions, error) {
-	if len(args) > 0 {
-		return nil, fmt.Errorf("SRC and DST are not configurable in the context of a bundle")
-	}
-
+func (f *syncFlags) syncOptionsFromBundle(cmd *cobra.Command, b *bundle.Bundle) (*sync.SyncOptions, error) {
 	cacheDir, err := b.CacheDir()
 	if err != nil {
 		return nil, fmt.Errorf("cannot get bundle cache directory: %w", err)
@@ -69,7 +65,7 @@ func (f *syncFlags) syncOptionsFromArgs(cmd *cobra.Command, args []string) (*syn
 	return &opts, nil
 }
 
-func (f *syncFlags) syncOptions(cmd *cobra.Command, args []string) (*sync.SyncOptions, error) {
+func (f *syncFlags) syncOptions(cmd *cobra.Command, args []string, requiredMutators bundle.Mutator) (*sync.SyncOptions, error) {
 	// Try to get options from args first. If that fails, try to get them from bundle.
 	// If both fail, return the error from args (assuming users are trying to use the args
 	// version unless they explicitly use the bundle sync).
@@ -83,12 +79,12 @@ func (f *syncFlags) syncOptions(cmd *cobra.Command, args []string) (*sync.SyncOp
 	}
 	b := bundle.GetOrNil(cmd.Context())
 	if b != nil {
-		// Run initialize phase to make sure paths are set.
-		err = bundle.Apply(cmd.Context(), b, phases.Initialize())
+		// Apply the required mutators to make sure paths are set.
+		err = bundle.Apply(cmd.Context(), b, requiredMutators)
 		if err != nil {
 			return nil, argsErr
 		}
-		opts, err = f.syncOptionsFromBundle(cmd, args, b)
+		opts, err = f.syncOptionsFromBundle(cmd, b)
 		if err != nil {
 			return nil, argsErr
 		}
@@ -117,7 +113,7 @@ func New() *cobra.Command {
 		// Until then, this could interfere with extension usage where a `databricks.yml` file is present.
 		// See https://github.com/databricks/cli/pull/207.
 		//
-		opts, err := f.syncOptions(cmd, args)
+		opts, err := f.syncOptions(cmd, args, phases.Initialize())
 
 		if err != nil {
 			return err

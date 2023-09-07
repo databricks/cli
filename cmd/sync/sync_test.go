@@ -1,7 +1,9 @@
 package sync
 
 import (
+	"context"
 	"flag"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -28,7 +30,7 @@ func TestSyncOptionsFromBundle(t *testing.T) {
 	}
 
 	f := syncFlags{}
-	opts, err := f.syncOptionsFromBundle(New(), []string{}, b)
+	opts, err := f.syncOptionsFromBundle(New(), b)
 	require.NoError(t, err)
 	assert.Equal(t, tempDir, opts.LocalPath)
 	assert.Equal(t, "/Users/jane@doe.com/path", opts.RemotePath)
@@ -57,6 +59,36 @@ func TestSyncOptionsFromArgs(t *testing.T) {
 
 func TestSyncOptonsReturnsErrorFromArgs(t *testing.T) {
 	f := syncFlags{}
-	_, err := f.syncOptions(New(), []string{"/local"})
+	_, err := f.syncOptions(New(), []string{"/local"}, bundle.Seq())
 	require.ErrorIs(t, err, flag.ErrHelp)
+}
+
+func TestSyncOptionsReturnsFromBundle(t *testing.T) {
+	tempDir := t.TempDir()
+	file, err := os.Create(filepath.Join(tempDir, "bundle.yaml"))
+	t.Cleanup(func() {
+		err := file.Close()
+		assert.NoError(t, err)
+	})
+
+	assert.NoError(t, err)
+	data := `
+bundle:
+  name: test
+workspace:
+  file_path: /Users/jane@doe.com/path
+`
+	_, err = file.WriteString(data)
+	assert.NoError(t, err)
+
+	t.Setenv("BUNDLE_ROOT", tempDir)
+
+	cmd := New()
+	cmd.SetContext(context.Background())
+
+	f := syncFlags{}
+	opts, err := f.syncOptions(cmd, []string{"/local"}, bundle.Seq())
+	assert.NoError(t, err)
+	assert.Equal(t, opts.RemotePath, "/Users/jane@doe.com/path")
+	assert.Equal(t, opts.LocalPath, tempDir)
 }
