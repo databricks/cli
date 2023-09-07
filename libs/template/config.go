@@ -50,7 +50,7 @@ func (c *config) assignValuesFromFile(path string) error {
 	// Load the config file.
 	configFromFile, err := c.schema.LoadInstance(path)
 	if err != nil {
-		return fmt.Errorf("failed to load config from file %s. %w", path, err)
+		return fmt.Errorf("failed to load config from file %s: %w", path, err)
 	}
 
 	// Write configs from the file to the input map, not overwriting any existing

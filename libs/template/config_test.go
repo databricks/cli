@@ -31,7 +31,7 @@ func TestTemplateConfigAssignValuesFromFileForInvalidIntegerValue(t *testing.T) 
 	c := testConfig(t)
 
 	err := c.assignValuesFromFile("./testdata/config-assign-from-file-invalid-int/config.json")
-	assert.EqualError(t, err, "failed to load config from file ./testdata/config-assign-from-file-invalid-int/config.json. failed to parse property int_val: cannot convert \"abc\" to an integer")
+	assert.EqualError(t, err, "failed to load config from file ./testdata/config-assign-from-file-invalid-int/config.json: failed to parse property int_val: cannot convert \"abc\" to an integer")
 }
 
 func TestTemplateConfigAssignValuesFromFileDoesNotOverwriteExistingConfigs(t *testing.T) {

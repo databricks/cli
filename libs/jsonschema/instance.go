@@ -6,10 +6,10 @@ import (
 	"os"
 )
 
-// Load a JSON document, also validating it against the JSON schema. Instance here
+// Load a JSON document and validate it against the JSON schema. Instance here
 // refers to a JSON document. see: https://json-schema.org/draft/2020-12/json-schema-core.html#name-instance
 func (s *Schema) LoadInstance(path string) (map[string]any, error) {
-	instance := make(map[string]any, 0)
+	instance := make(map[string]any)
 	b, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
