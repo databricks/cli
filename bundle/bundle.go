@@ -50,10 +50,6 @@ type Bundle struct {
 	// if true, we skip approval checks for deploy, destroy resources and delete
 	// files
 	AutoApprove bool
-
-	// baseCacheDirName holds the base directory to use for temporary data.
-	// It is populated upon bundle creation.
-	baseCacheDirName string
 }
 
 func Load(ctx context.Context, path string) (*Bundle, error) {
@@ -83,7 +79,6 @@ func Load(ctx context.Context, path string) (*Bundle, error) {
 	if err != nil {
 		return nil, err
 	}
-	bundle.configureBaseCacheDirName(ctx)
 	return bundle, nil
 }
 
@@ -128,14 +123,25 @@ func (b *Bundle) WorkspaceClient() *databricks.WorkspaceClient {
 
 // CacheDir returns directory to use for temporary files for this bundle.
 // Scoped to the bundle's target.
-func (b *Bundle) CacheDir(paths ...string) (string, error) {
+func (b *Bundle) CacheDir(ctx context.Context, paths ...string) (string, error) {
 	if b.Config.Bundle.Target == "" {
 		panic("target not set")
 	}
 
+	cacheDirName, exists := env.TempDir(ctx)
+	if !exists || cacheDirName == "" {
+		cacheDirName = filepath.Join(
+			// Anchor at bundle root directory.
+			b.Config.Path,
+			// Static cache directory.
+			".databricks",
+			"bundle",
+		)
+	}
+
 	// Fixed components of the result path.
 	parts := []string{
-		b.baseCacheDirName,
+		cacheDirName,
 		// Scope with target name.
 		b.Config.Bundle.Target,
 	}
@@ -153,26 +159,10 @@ func (b *Bundle) CacheDir(paths ...string) (string, error) {
 	return dir, nil
 }
 
-// configureBaseCacheDirName configures the base directory to use for temporary data.
-// This happens once upon bundle creation. Also see the [Load] function.
-func (b *Bundle) configureBaseCacheDirName(ctx context.Context) {
-	cacheDirName, exists := env.TempDir(ctx)
-	if !exists || cacheDirName == "" {
-		cacheDirName = filepath.Join(
-			// Anchor at bundle root directory.
-			b.Config.Path,
-			// Static cache directory.
-			".databricks",
-			"bundle",
-		)
-	}
-	b.baseCacheDirName = cacheDirName
-}
-
 // This directory is used to store and automaticaly sync internal bundle files, such as, f.e
 // notebook trampoline files for Python wheel and etc.
-func (b *Bundle) InternalDir() (string, error) {
-	cacheDir, err := b.CacheDir()
+func (b *Bundle) InternalDir(ctx context.Context) (string, error) {
+	cacheDir, err := b.CacheDir(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -189,8 +179,8 @@ func (b *Bundle) InternalDir() (string, error) {
 // GetSyncIncludePatterns returns a list of user defined includes
 // And also adds InternalDir folder to include list for sync command
 // so this folder is always synced
-func (b *Bundle) GetSyncIncludePatterns() ([]string, error) {
-	internalDir, err := b.InternalDir()
+func (b *Bundle) GetSyncIncludePatterns(ctx context.Context) ([]string, error) {
+	internalDir, err := b.InternalDir(ctx)
 	if err != nil {
 		return nil, err
 	}

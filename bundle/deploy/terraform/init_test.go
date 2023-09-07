@@ -218,7 +218,7 @@ func TestSetTempDirEnvVarsForWindowsWithoutAnyTempDirEnvVarsSet(t *testing.T) {
 	require.NoError(t, err)
 
 	// assert TMP is set to b.CacheDir("tmp")
-	tmpDir, err := b.CacheDir("tmp")
+	tmpDir, err := b.CacheDir(context.Background(), "tmp")
 	require.NoError(t, err)
 	assert.Equal(t, map[string]string{
 		"TMP": tmpDir,

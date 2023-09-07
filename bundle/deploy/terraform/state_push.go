@@ -22,7 +22,7 @@ func (l *statePush) Apply(ctx context.Context, b *bundle.Bundle) error {
 		return err
 	}
 
-	dir, err := Dir(b)
+	dir, err := Dir(ctx, b)
 	if err != nil {
 		return err
 	}

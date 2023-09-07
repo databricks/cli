@@ -16,7 +16,7 @@ func (w *write) Name() string {
 }
 
 func (w *write) Apply(ctx context.Context, b *bundle.Bundle) error {
-	dir, err := Dir(b)
+	dir, err := Dir(ctx, b)
 	if err != nil {
 		return err
 	}

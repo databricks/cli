@@ -83,7 +83,7 @@ func TestGenerateTrampoline(t *testing.T) {
 	err := bundle.Apply(ctx, b, trampoline)
 	require.NoError(t, err)
 
-	dir, err := b.InternalDir()
+	dir, err := b.InternalDir(ctx)
 	require.NoError(t, err)
 	filename := filepath.Join(dir, "notebook_test_to_trampoline.py")
 

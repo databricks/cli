@@ -24,12 +24,13 @@ func TestLoadExists(t *testing.T) {
 }
 
 func TestBundleCacheDir(t *testing.T) {
+	ctx := context.Background()
 	projectDir := t.TempDir()
 	f1, err := os.Create(filepath.Join(projectDir, "databricks.yml"))
 	require.NoError(t, err)
 	f1.Close()
 
-	bundle, err := Load(context.Background(), projectDir)
+	bundle, err := Load(ctx, projectDir)
 	require.NoError(t, err)
 
 	// Artificially set target.
@@ -39,7 +40,7 @@ func TestBundleCacheDir(t *testing.T) {
 	// unset env variable in case it's set
 	t.Setenv("DATABRICKS_BUNDLE_TMP", "")
 
-	cacheDir, err := bundle.CacheDir()
+	cacheDir, err := bundle.CacheDir(ctx)
 
 	// format is <CWD>/.databricks/bundle/<target>
 	assert.NoError(t, err)
@@ -47,13 +48,14 @@ func TestBundleCacheDir(t *testing.T) {
 }
 
 func TestBundleCacheDirOverride(t *testing.T) {
+	ctx := context.Background()
 	projectDir := t.TempDir()
 	bundleTmpDir := t.TempDir()
 	f1, err := os.Create(filepath.Join(projectDir, "databricks.yml"))
 	require.NoError(t, err)
 	f1.Close()
 
-	bundle, err := Load(context.Background(), projectDir)
+	bundle, err := Load(ctx, projectDir)
 	require.NoError(t, err)
 
 	// Artificially set target.
@@ -63,7 +65,7 @@ func TestBundleCacheDirOverride(t *testing.T) {
 	// now we expect to use 'bundleTmpDir' instead of CWD/.databricks/bundle
 	t.Setenv("DATABRICKS_BUNDLE_TMP", bundleTmpDir)
 
-	cacheDir, err := bundle.CacheDir()
+	cacheDir, err := bundle.CacheDir(ctx)
 
 	// format is <DATABRICKS_BUNDLE_TMP>/<target>
 	assert.NoError(t, err)

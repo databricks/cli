@@ -16,6 +16,9 @@ func copyMap(m map[string]string) map[string]string {
 }
 
 func getMap(ctx context.Context) map[string]string {
+	if ctx == nil {
+		return nil
+	}
 	m, ok := ctx.Value(&envContextKey).(map[string]string)
 	if !ok {
 		return nil

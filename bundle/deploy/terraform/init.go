@@ -38,7 +38,7 @@ func (m *initialize) findExecPath(ctx context.Context, b *bundle.Bundle, tf *con
 		return tf.ExecPath, nil
 	}
 
-	binDir, err := b.CacheDir("bin")
+	binDir, err := b.CacheDir(context.Background(), "bin")
 	if err != nil {
 		return "", err
 	}
@@ -114,7 +114,7 @@ func setTempDirEnvVars(ctx context.Context, environ map[string]string, b *bundle
 		} else if v, ok := env.Lookup(ctx, "USERPROFILE"); ok {
 			environ["USERPROFILE"] = v
 		} else {
-			tmpDir, err := b.CacheDir("tmp")
+			tmpDir, err := b.CacheDir(ctx, "tmp")
 			if err != nil {
 				return err
 			}
@@ -156,7 +156,7 @@ func (m *initialize) Apply(ctx context.Context, b *bundle.Bundle) error {
 		return err
 	}
 
-	workingDir, err := Dir(b)
+	workingDir, err := Dir(ctx, b)
 	if err != nil {
 		return err
 	}
