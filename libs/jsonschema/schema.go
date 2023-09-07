@@ -62,8 +62,6 @@ const (
 	IntegerType Type = "integer"
 )
 
-// TODO: add additional properties validator and require validator.
-
 func (schema *Schema) validate() error {
 	// Validate property types are all valid JSON schema types.
 	for _, v := range schema.Properties {

@@ -159,8 +159,7 @@ func TestTemplateEnumValidation(t *testing.T) {
 			"abc": 5,
 		},
 	}
-	assert.EqualError(t, c.validateEnumValues(), "expect value of property \"abc\" to be one of 1, 2, 3, 4. Found: 5")
-	assert.EqualError(t, c.validate(), "expect value of property \"abc\" to be one of 1, 2, 3, 4. Found: 5")
+	assert.EqualError(t, c.validate(), "validation for template input parameters failed. expected value of property abc to be one of [1 2 3 4]. Found: 5")
 
 	c = &config{
 		schema: &schema,
@@ -168,6 +167,5 @@ func TestTemplateEnumValidation(t *testing.T) {
 			"abc": 4,
 		},
 	}
-	assert.NoError(t, c.validateEnumValues())
 	assert.NoError(t, c.validate())
 }

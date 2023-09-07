@@ -3,8 +3,6 @@ package template
 import (
 	"context"
 	"fmt"
-	"slices"
-	"strings"
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/jsonschema"
@@ -148,28 +146,6 @@ func (c *config) validate() error {
 	c.schema.Required = maps.Keys(c.schema.Properties)
 	if err := c.schema.ValidateInstance(c.values); err != nil {
 		return fmt.Errorf("validation for template input parameters failed. %w", err)
-	}
-	return nil
-}
-
-// TODO: OLD: Needs to be moved over to the json schema package.
-func (c *config) validateEnumValues() error {
-	for k, schema := range c.schema.Properties {
-		if schema.Enum == nil {
-			// skip if property is not enum
-			continue
-		}
-		if !slices.Contains(schema.Enum, c.values[k]) {
-			enums, err := jsonschema.ToStringSlice(schema.Enum, schema.Type)
-			if err != nil {
-				return err
-			}
-			valueString, err := jsonschema.ToString(c.values[k], schema.Type)
-			if err != nil {
-				return err
-			}
-			return fmt.Errorf("expect value of property %q to be one of %s. Found: %s", k, strings.Join(enums, ", "), valueString)
-		}
 	}
 	return nil
 }
