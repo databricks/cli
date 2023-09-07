@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
@@ -59,6 +60,7 @@ func (m *initialize) findExecPath(ctx context.Context, b *bundle.Bundle, tf *con
 		Product:    product.Terraform,
 		Version:    version.Must(version.NewVersion("1.5.5")),
 		InstallDir: binDir,
+		Timeout:    1 * time.Minute,
 	}
 	execPath, err = installer.Install(ctx)
 	if err != nil {
