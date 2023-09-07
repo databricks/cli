@@ -129,9 +129,13 @@ func Load(path string) (*Schema, error) {
 		return nil, err
 	}
 
-	// Convert the top properties default values and enum values to integers.
-	// This is require because the default JSON unmarshaler parses untyped numbers
-	// as floats.
+	// Convert the default values of top-level properties to integers.
+	// This is required because the default JSON unmarshaler parses numbers
+	// as floats when the Golang field it's being loaded to is untyped.
+	//
+	// NOTE: properties can be recursively defined in a schema, but the current
+	// use-cases only uses the first layer of properties so we skip converting
+	// any recursive properties.
 	for name, property := range schema.Properties {
 		if property.Type != IntegerType {
 			continue

@@ -29,6 +29,16 @@ func TestConvertJob(t *testing.T) {
 				GitProvider: jobs.GitProviderGitHub,
 				GitUrl:      "https://github.com/foo/bar",
 			},
+			Parameters: []jobs.JobParameterDefinition{
+				{
+					Name:    "param1",
+					Default: "default1",
+				},
+				{
+					Name:    "param2",
+					Default: "default2",
+				},
+			},
 		},
 	}
 
@@ -44,6 +54,9 @@ func TestConvertJob(t *testing.T) {
 	assert.Equal(t, "my job", out.Resource.Job["my_job"].Name)
 	assert.Len(t, out.Resource.Job["my_job"].JobCluster, 1)
 	assert.Equal(t, "https://github.com/foo/bar", out.Resource.Job["my_job"].GitSource.Url)
+	assert.Len(t, out.Resource.Job["my_job"].Parameter, 2)
+	assert.Equal(t, "param1", out.Resource.Job["my_job"].Parameter[0].Name)
+	assert.Equal(t, "param2", out.Resource.Job["my_job"].Parameter[1].Name)
 	assert.Nil(t, out.Data)
 }
 

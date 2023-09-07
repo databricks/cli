@@ -58,6 +58,8 @@ type cobraTestRunner struct {
 	stdout bytes.Buffer
 	stderr bytes.Buffer
 
+	ctx context.Context
+
 	// Line-by-line output.
 	// Background goroutines populate these channels by reading from stdout/stderr pipes.
 	stdoutLines <-chan string
@@ -128,7 +130,7 @@ func (t *cobraTestRunner) RunBackground() {
 	t.registerFlagCleanup(root)
 
 	errch := make(chan error)
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.ctx)
 
 	// Tee stdout/stderr to buffers.
 	stdoutR = io.TeeReader(stdoutR, &t.stdout)
@@ -234,6 +236,15 @@ func (c *cobraTestRunner) Eventually(condition func() bool, waitFor time.Duratio
 func NewCobraTestRunner(t *testing.T, args ...string) *cobraTestRunner {
 	return &cobraTestRunner{
 		T:    t,
+		ctx:  context.Background(),
+		args: args,
+	}
+}
+
+func NewCobraTestRunnerWithContext(t *testing.T, ctx context.Context, args ...string) *cobraTestRunner {
+	return &cobraTestRunner{
+		T:    t,
+		ctx:  ctx,
 		args: args,
 	}
 }

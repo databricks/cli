@@ -28,7 +28,7 @@ This file only template directives; it is skipped for the actual output.
 {{end}}
 
 {{if $notNotebook}}
-  {{skip "{{.project_name}}/src/notebook.iypnb"}}
+  {{skip "{{.project_name}}/src/notebook.ipynb"}}
 {{end}}
 
 {{if (and $notDLT $notNotebook $notPython)}}

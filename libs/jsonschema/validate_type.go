@@ -6,9 +6,6 @@ import (
 	"slices"
 )
 
-// TODO: this code is copied from libs/template/validators.go. Remove it from
-// the template package once validation is moved to the json schema package
-
 type validateTypeFunc func(v any) error
 
 func validateType(v any, fieldType Type) error {
