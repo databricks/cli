@@ -95,7 +95,7 @@ func (c *config) promptForValues() error {
 		var defaultVal string
 		var err error
 		if property.Default != nil {
-			defaultVal, err = toString(property.Default, property.Type)
+			defaultVal, err = jsonschema.ToString(property.Default, property.Type)
 			if err != nil {
 				return err
 			}
@@ -108,7 +108,7 @@ func (c *config) promptForValues() error {
 		}
 
 		// Convert user input string back to a value
-		c.values[name], err = fromString(userInput, property.Type)
+		c.values[name], err = jsonschema.FromString(userInput, property.Type)
 		if err != nil {
 			return err
 		}
