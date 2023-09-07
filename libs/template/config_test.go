@@ -1,6 +1,7 @@
 package template
 
 import (
+	"context"
 	"testing"
 
 	"github.com/databricks/cli/libs/jsonschema"
@@ -8,17 +9,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func testSchema(t *testing.T) *jsonschema.Schema {
-	s, err := jsonschema.Load("./testdata/config-test-schema/test-schema.json")
+func testConfig(t *testing.T) *config {
+	c, err := newConfig(context.Background(), "./testdata/config-test-schema/test-schema.json")
 	require.NoError(t, err)
-	return s
+	return c
 }
 
 func TestTemplateConfigAssignValuesFromFile(t *testing.T) {
-	c := config{
-		schema: testSchema(t),
-		values: make(map[string]any),
-	}
+	c := testConfig(t)
 
 	err := c.assignValuesFromFile("./testdata/config-assign-from-file/config.json")
 	assert.NoError(t, err)
@@ -30,21 +28,16 @@ func TestTemplateConfigAssignValuesFromFile(t *testing.T) {
 }
 
 func TestTemplateConfigAssignValuesFromFileForInvalidIntegerValue(t *testing.T) {
-	c := config{
-		schema: testSchema(t),
-		values: make(map[string]any),
-	}
+	c := testConfig(t)
 
 	err := c.assignValuesFromFile("./testdata/config-assign-from-file-invalid-int/config.json")
 	assert.EqualError(t, err, "failed to load config from file ./testdata/config-assign-from-file-invalid-int/config.json. failed to parse property int_val: cannot convert \"abc\" to an integer")
 }
 
 func TestTemplateConfigAssignValuesFromFileDoesNotOverwriteExistingConfigs(t *testing.T) {
-	c := config{
-		schema: testSchema(t),
-		values: map[string]any{
-			"string_val": "this-is-not-overwritten",
-		},
+	c := testConfig(t)
+	c.values = map[string]any{
+		"string_val": "this-is-not-overwritten",
 	}
 
 	err := c.assignValuesFromFile("./testdata/config-assign-from-file/config.json")
@@ -57,10 +50,7 @@ func TestTemplateConfigAssignValuesFromFileDoesNotOverwriteExistingConfigs(t *te
 }
 
 func TestTemplateConfigAssignDefaultValues(t *testing.T) {
-	c := config{
-		schema: testSchema(t),
-		values: make(map[string]any),
-	}
+	c := testConfig(t)
 
 	err := c.assignDefaultValues()
 	assert.NoError(t, err)
@@ -71,65 +61,55 @@ func TestTemplateConfigAssignDefaultValues(t *testing.T) {
 }
 
 func TestTemplateConfigValidateValuesDefined(t *testing.T) {
-	c := config{
-		schema: testSchema(t),
-		values: map[string]any{
-			"int_val":   1,
-			"float_val": 1.0,
-			"bool_val":  false,
-		},
+	c := testConfig(t)
+	c.values = map[string]any{
+		"int_val":   1,
+		"float_val": 1.0,
+		"bool_val":  false,
 	}
 
-	err := c.validateValuesDefined()
-	assert.EqualError(t, err, "no value has been assigned to input parameter string_val")
+	err := c.validate()
+	assert.EqualError(t, err, "validation for template input parameters failed. no value provided for required property string_val")
 }
 
 func TestTemplateConfigValidateTypeForValidConfig(t *testing.T) {
-	c := &config{
-		schema: testSchema(t),
-		values: map[string]any{
-			"int_val":    1,
-			"float_val":  1.1,
-			"bool_val":   true,
-			"string_val": "abcd",
-		},
+	c := testConfig(t)
+	c.values = map[string]any{
+		"int_val":    1,
+		"float_val":  1.1,
+		"bool_val":   true,
+		"string_val": "abcd",
 	}
 
-	err := c.validateValuesType()
-	assert.NoError(t, err)
-
-	err = c.validate()
+	err := c.validate()
 	assert.NoError(t, err)
 }
 
 func TestTemplateConfigValidateTypeForUnknownField(t *testing.T) {
-	c := &config{
-		schema: testSchema(t),
-		values: map[string]any{
-			"unknown_prop": 1,
-		},
+	c := testConfig(t)
+	c.values = map[string]any{
+		"unknown_prop": 1,
+		"int_val":      1,
+		"float_val":    1.1,
+		"bool_val":     true,
+		"string_val":   "abcd",
 	}
 
-	err := c.validateValuesType()
-	assert.EqualError(t, err, "unknown_prop is not defined as an input parameter for the template")
+	err := c.validate()
+	assert.EqualError(t, err, "validation for template input parameters failed. property unknown_prop is not defined in the schema")
 }
 
 func TestTemplateConfigValidateTypeForInvalidType(t *testing.T) {
-	c := &config{
-		schema: testSchema(t),
-		values: map[string]any{
-			"int_val":    "this-should-be-an-int",
-			"float_val":  1.1,
-			"bool_val":   true,
-			"string_val": "abcd",
-		},
+	c := testConfig(t)
+	c.values = map[string]any{
+		"int_val":    "this-should-be-an-int",
+		"float_val":  1.1,
+		"bool_val":   true,
+		"string_val": "abcd",
 	}
 
-	err := c.validateValuesType()
-	assert.EqualError(t, err, `incorrect type for int_val. expected type integer, but value is "this-should-be-an-int"`)
-
-	err = c.validate()
-	assert.EqualError(t, err, `incorrect type for int_val. expected type integer, but value is "this-should-be-an-int"`)
+	err := c.validate()
+	assert.EqualError(t, err, "validation for template input parameters failed. incorrect type for property int_val: expected type integer, but value is \"this-should-be-an-int\"")
 }
 
 func TestTemplateValidateSchema(t *testing.T) {

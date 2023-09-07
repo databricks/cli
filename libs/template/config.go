@@ -6,6 +6,7 @@ import (
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/jsonschema"
+	"golang.org/x/exp/maps"
 )
 
 type config struct {
@@ -127,42 +128,10 @@ func (c *config) promptOrAssignDefaultValues() error {
 // Validates the configuration. If passes, the configuration is ready to be used
 // to initialize the template.
 func (c *config) validate() error {
-	validateFns := []func() error{
-		c.validateValuesDefined,
-		c.validateValuesType,
-	}
-
-	for _, fn := range validateFns {
-		err := fn()
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-// Validates all input properties have a user defined value assigned to them
-func (c *config) validateValuesDefined() error {
-	for k := range c.schema.Properties {
-		if _, ok := c.values[k]; ok {
-			continue
-		}
-		return fmt.Errorf("no value has been assigned to input parameter %s", k)
-	}
-	return nil
-}
-
-// Validates the types of all input properties values match their types defined in the schema
-func (c *config) validateValuesType() error {
-	for k, v := range c.values {
-		fieldInfo, ok := c.schema.Properties[k]
-		if !ok {
-			return fmt.Errorf("%s is not defined as an input parameter for the template", k)
-		}
-		err := validateType(v, fieldInfo.Type)
-		if err != nil {
-			return fmt.Errorf("incorrect type for %s. %w", k, err)
-		}
+	// All properties in the JSON schema should have a value defined.
+	c.schema.Required = maps.Keys(c.schema.Properties)
+	if err := c.schema.ValidateInstance(c.values); err != nil {
+		return fmt.Errorf("validation for template input parameters failed. %w", err)
 	}
 	return nil
 }
