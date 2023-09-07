@@ -42,8 +42,7 @@ type Schema struct {
 	// Default value for the property / object
 	Default any `json:"default,omitempty"`
 
-	// If specified this is the list of valid values for the object. Values
-	// here should be consistent with the type defined in the schema.
+	// List of valid values for a JSON instance for this schema.
 	Enum []any `json:"enum,omitempty"`
 
 	// Extension embeds our custom JSON schema extensions.
