@@ -98,7 +98,7 @@ func Load(path string) (*Schema, error) {
 		return nil, err
 	}
 
-	// Convert the top properties default values and enum values to integers.
+	// Convert the top properties default values to integers.
 	// This is require because the default JSON unmarshaler parses untyped numbers
 	// as floats.
 	for name, property := range schema.Properties {
