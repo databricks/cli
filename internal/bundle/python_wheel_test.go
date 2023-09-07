@@ -26,14 +26,14 @@ func TestAccPythonWheelTaskDeployAndRun(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	b, err := deployBundle(bundleRoot)
+	err = deployBundle(t, bundleRoot)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		destroyBundle(b)
+		destroyBundle(t, bundleRoot)
 	})
 
-	out, err := runResource(bundleRoot, "some_other_job")
+	out, err := runResource(t, bundleRoot, "some_other_job")
 	require.NoError(t, err)
 	require.Contains(t, out, "Hello from my func")
 	require.Contains(t, out, "Got arguments:")
