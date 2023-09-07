@@ -18,13 +18,11 @@ type config struct {
 
 func newConfig(ctx context.Context, schemaPath string) (*config, error) {
 	// Read config schema
-	schemaBytes, err := os.ReadFile(schemaPath)
+	schema, err := jsonschema.Load(schemaPath)
 	if err != nil {
 		return nil, err
 	}
-	schema := &jsonschema.Schema{}
-	err = json.Unmarshal(schemaBytes, schema)
-	if err != nil {
+	if err := validateSchema(schema); err != nil {
 		return nil, err
 	}
 
@@ -34,6 +32,15 @@ func newConfig(ctx context.Context, schemaPath string) (*config, error) {
 		schema: schema,
 		values: make(map[string]any, 0),
 	}, nil
+}
+
+func validateSchema(schema *jsonschema.Schema) error {
+	for _, v := range schema.Properties {
+		if v.Type == jsonschema.ArrayType || v.Type == jsonschema.ObjectType {
+			return fmt.Errorf("property type %s is not supported by bundle templates", v.Type)
+		}
+	}
+	return nil
 }
 
 // Reads json file at path and assigns values from the file
@@ -110,28 +117,27 @@ func (c *config) assignDefaultValues() error {
 
 // Prompts user for values for properties that do not have a value set yet
 func (c *config) promptForValues() error {
-	for name, property := range c.schema.Properties {
+	for _, p := range c.schema.OrderedProperties() {
+		name := p.Name
+		property := p.Schema
+
 		// Config already has a value assigned
 		if _, ok := c.values[name]; ok {
 			continue
 		}
 
-		// Initialize Prompt dialog
-		var err error
-		prompt := cmdio.Prompt(c.ctx)
-		prompt.Label = property.Description
-		prompt.AllowEdit = true
-
 		// Compute default value to display by converting it to a string
+		var defaultVal string
+		var err error
 		if property.Default != nil {
-			prompt.Default, err = toString(property.Default, property.Type)
+			defaultVal, err = toString(property.Default, property.Type)
 			if err != nil {
 				return err
 			}
 		}
 
 		// Get user input by running the prompt
-		userInput, err := prompt.Run()
+		userInput, err := cmdio.Ask(c.ctx, property.Description, defaultVal)
 		if err != nil {
 			return err
 		}

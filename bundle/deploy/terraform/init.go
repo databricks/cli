@@ -55,10 +55,10 @@ func (m *initialize) findExecPath(ctx context.Context, b *bundle.Bundle, tf *con
 	}
 
 	// Download Terraform to private bin directory.
-	installer := &releases.LatestVersion{
-		Product:     product.Terraform,
-		Constraints: version.MustConstraints(version.NewConstraint("<2.0")),
-		InstallDir:  binDir,
+	installer := &releases.ExactVersion{
+		Product:    product.Terraform,
+		Version:    version.Must(version.NewVersion("1.5.5")),
+		InstallDir: binDir,
 	}
 	execPath, err = installer.Install(ctx)
 	if err != nil {
@@ -76,6 +76,14 @@ func inheritEnvVars(env map[string]string) error {
 	home, ok := os.LookupEnv("HOME")
 	if ok {
 		env["HOME"] = home
+	}
+
+	// Include $PATH in set of environment variables to pass along.
+	// This is necessary to ensure that our Terraform provider can use the
+	// same auxiliary programs (e.g. `az`, or `gcloud`) as the CLI.
+	path, ok := os.LookupEnv("PATH")
+	if ok {
+		env["PATH"] = path
 	}
 
 	// Include $TF_CLI_CONFIG_FILE to override terraform provider in development.

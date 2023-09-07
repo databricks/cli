@@ -21,7 +21,8 @@ func (w *write) Apply(ctx context.Context, b *bundle.Bundle) error {
 		return err
 	}
 
-	root := BundleToTerraform(&b.Config)
+	root, noResources := BundleToTerraform(&b.Config)
+	b.TerraformHasNoResources = noResources
 	f, err := os.Create(filepath.Join(dir, "bundle.tf.json"))
 	if err != nil {
 		return err

@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"slices"
+
 	"github.com/databricks/cli/bundle"
 	"golang.org/x/exp/maps"
-	"golang.org/x/exp/slices"
 )
 
 // all is an internal proxy for producing a list of mutators for all artifacts.

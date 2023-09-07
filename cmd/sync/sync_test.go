@@ -20,7 +20,7 @@ func TestSyncOptionsFromBundle(t *testing.T) {
 			Path: tempDir,
 
 			Bundle: config.Bundle{
-				Environment: "default",
+				Target: "default",
 			},
 
 			Workspace: config.Workspace{

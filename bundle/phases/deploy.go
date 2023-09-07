@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/bundle/deploy/lock"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/libraries"
+	"github.com/databricks/cli/bundle/python"
 )
 
 // The deploy phase deploys artifacts and resources.
@@ -17,10 +18,11 @@ func Deploy() bundle.Mutator {
 		bundle.Defer(
 			bundle.Seq(
 				mutator.ValidateGitDetails(),
-				files.Upload(),
 				libraries.MatchWithArtifacts(),
 				artifacts.CleanUp(),
 				artifacts.UploadAll(),
+				python.TransformWheelTask(),
+				files.Upload(),
 				terraform.Interpolate(),
 				terraform.Write(),
 				terraform.StatePull(),

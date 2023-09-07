@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	"github.com/databricks/cli/libs/flags"
 )
@@ -74,31 +75,64 @@ func LogError(ctx context.Context, err error) {
 	})
 }
 
-func Ask(ctx context.Context, question string) (bool, error) {
+func Ask(ctx context.Context, question, defaultVal string) (string, error) {
 	logger, ok := FromContext(ctx)
 	if !ok {
 		logger = Default()
 	}
-	return logger.Ask(question)
+	return logger.Ask(question, defaultVal)
 }
 
-func (l *Logger) Ask(question string) (bool, error) {
-	if l.Mode == flags.ModeJson {
-		return false, fmt.Errorf("question prompts are not supported in json mode")
+func AskYesOrNo(ctx context.Context, question string) (bool, error) {
+	logger, ok := FromContext(ctx)
+	if !ok {
+		logger = Default()
 	}
 
-	l.Writer.Write([]byte(question))
-	ans, err := l.Reader.ReadString('\n')
+	// Add acceptable answers to the question prompt.
+	question += ` [y/n]`
 
+	// Ask the question
+	ans, err := logger.Ask(question, "")
 	if err != nil {
 		return false, err
 	}
 
-	if ans == "y\n" {
+	if ans == "y" {
 		return true, nil
-	} else {
-		return false, nil
 	}
+	return false, nil
+}
+
+func (l *Logger) Ask(question string, defaultVal string) (string, error) {
+	if l.Mode == flags.ModeJson {
+		return "", fmt.Errorf("question prompts are not supported in json mode")
+	}
+
+	// Add default value to question prompt.
+	if defaultVal != "" {
+		question += fmt.Sprintf(` [%s]`, defaultVal)
+	}
+	question += `: `
+
+	// print prompt
+	_, err := l.Writer.Write([]byte(question))
+	if err != nil {
+		return "", err
+	}
+
+	// read user input. Trim new line characters
+	ans, err := l.Reader.ReadString('\n')
+	if err != nil {
+		return "", err
+	}
+	ans = strings.Trim(ans, "\n\r")
+
+	// Return default value if user just presses enter
+	if ans == "" {
+		return defaultVal, nil
+	}
+	return ans, nil
 }
 
 func (l *Logger) writeJson(event Event) {

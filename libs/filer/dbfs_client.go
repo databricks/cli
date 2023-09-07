@@ -7,6 +7,7 @@ import (
 	"io/fs"
 	"net/http"
 	"path"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -14,7 +15,6 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/files"
-	"golang.org/x/exp/slices"
 )
 
 // Type that implements fs.DirEntry for DBFS.
