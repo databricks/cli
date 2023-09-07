@@ -118,3 +118,13 @@ func TestTemplateFromString(t *testing.T) {
 	_, err = FromString("1.0", "foobar")
 	assert.EqualError(t, err, "unknown json schema type: \"foobar\"")
 }
+
+func TestTemplateToStringSlice(t *testing.T) {
+	s, err := ToStringSlice([]any{"a", "b", "c"}, StringType)
+	assert.NoError(t, err)
+	assert.Equal(t, []string{"a", "b", "c"}, s)
+
+	s, err = ToStringSlice([]any{1.1, 2.2, 3.3}, NumberType)
+	assert.NoError(t, err)
+	assert.Equal(t, []string{"1.1", "2.2", "3.3"}, s)
+}
