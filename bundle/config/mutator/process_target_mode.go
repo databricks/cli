@@ -77,6 +77,12 @@ func transformDevelopmentMode(b *bundle.Bundle) error {
 		r.Experiments[i].Tags = append(r.Experiments[i].Tags, ml.ExperimentTag{Key: "dev", Value: b.Config.Workspace.CurrentUser.DisplayName})
 	}
 
+	for i := range r.ModelServingEndpoints {
+		prefix = "dev_" + b.Config.Workspace.CurrentUser.ShortName + "_"
+		r.ModelServingEndpoints[i].Name = prefix + r.ModelServingEndpoints[i].Name
+		// (model serving doesn't yet support tags)
+	}
+
 	return nil
 }
 

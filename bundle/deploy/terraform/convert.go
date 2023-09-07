@@ -161,6 +161,19 @@ func BundleToTerraform(config *config.Root) (*schema.Root, bool) {
 		}
 	}
 
+	for k, src := range config.Resources.ModelServingEndpoints {
+		noResources = false
+		var dst schema.ResourceModelServing
+		conv(src, &dst)
+		tfroot.Resource.ModelServing[k] = &dst
+
+		// Configure permissions for this resource.
+		if rp := convPermissions(src.Permissions); rp != nil {
+			rp.ServingEndpointId = fmt.Sprintf("${databricks_model_serving.%s.serving_endpoint_id}", k)
+			tfroot.Resource.Permissions["model_serving_"+k] = rp
+		}
+	}
+
 	return tfroot, noResources
 }
 
@@ -196,6 +209,12 @@ func TerraformToBundle(state *tfjson.State, config *config.Root) error {
 			cur := config.Resources.Experiments[resource.Name]
 			conv(tmp, &cur)
 			config.Resources.Experiments[resource.Name] = cur
+		case "databricks_model_serving":
+			var tmp schema.ResourceModelServing
+			conv(resource.AttributeValues, &tmp)
+			cur := config.Resources.ModelServingEndpoints[resource.Name]
+			conv(tmp, &cur)
+			config.Resources.ModelServingEndpoints[resource.Name] = cur
 		case "databricks_permissions":
 			// Ignore; no need to pull these back into the configuration.
 		default:

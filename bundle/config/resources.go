@@ -11,8 +11,9 @@ type Resources struct {
 	Jobs      map[string]*resources.Job      `json:"jobs,omitempty"`
 	Pipelines map[string]*resources.Pipeline `json:"pipelines,omitempty"`
 
-	Models      map[string]*resources.MlflowModel      `json:"models,omitempty"`
-	Experiments map[string]*resources.MlflowExperiment `json:"experiments,omitempty"`
+	Models                map[string]*resources.MlflowModel          `json:"models,omitempty"`
+	Experiments           map[string]*resources.MlflowExperiment     `json:"experiments,omitempty"`
+	ModelServingEndpoints map[string]*resources.ModelServingEndpoint `json:"model_serving_endpoints,omitempty"`
 }
 
 type UniqueResourceIdTracker struct {
@@ -93,6 +94,19 @@ func (r *Resources) VerifyUniqueResourceIdentifiers() (*UniqueResourceIdTracker,
 		tracker.Type[k] = "mlflow_experiment"
 		tracker.ConfigPath[k] = r.Experiments[k].ConfigFilePath
 	}
+	for k := range r.ModelServingEndpoints {
+		if _, ok := tracker.Type[k]; ok {
+			return tracker, fmt.Errorf("multiple resources named %s (%s at %s, %s at %s)",
+				k,
+				tracker.Type[k],
+				tracker.ConfigPath[k],
+				"model_serving_endpoint",
+				r.ModelServingEndpoints[k].ConfigFilePath,
+			)
+		}
+		tracker.Type[k] = "model_serving_endpoint"
+		tracker.ConfigPath[k] = r.ModelServingEndpoints[k].ConfigFilePath
+	}
 	return tracker, nil
 }
 
@@ -110,6 +124,9 @@ func (r *Resources) SetConfigFilePath(path string) {
 		e.ConfigFilePath = path
 	}
 	for _, e := range r.Experiments {
+		e.ConfigFilePath = path
+	}
+	for _, e := range r.ModelServingEndpoints {
 		e.ConfigFilePath = path
 	}
 }
