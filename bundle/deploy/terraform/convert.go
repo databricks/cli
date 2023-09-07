@@ -90,6 +90,12 @@ func BundleToTerraform(config *config.Root) (*schema.Root, bool) {
 					Tag:      git.GitTag,
 				}
 			}
+
+			for _, v := range src.Parameters {
+				var t schema.ResourceJobParameter
+				conv(v, &t)
+				dst.Parameter = append(dst.Parameter, t)
+			}
 		}
 
 		tfroot.Resource.Job[k] = &dst
