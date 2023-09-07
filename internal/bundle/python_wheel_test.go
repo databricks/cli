@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/internal"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
 
@@ -22,6 +23,7 @@ func TestAccPythonWheelTaskDeployAndRun(t *testing.T) {
 
 	bundleRoot, err := initTestTemplate(t, "python_wheel_task", map[string]any{
 		"node_type_id":  nodeTypeId,
+		"unique_id":     uuid.New().String(),
 		"spark_version": "13.2.x-snapshot-scala2.12",
 	})
 	require.NoError(t, err)
