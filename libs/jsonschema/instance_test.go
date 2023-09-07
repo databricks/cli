@@ -108,3 +108,22 @@ func TestValidateInstanceRequired(t *testing.T) {
 	err = schema.ValidateInstance(invalidInstance)
 	assert.EqualError(t, err, "no value provided for required property int_val")
 }
+
+func TestLoadInstance(t *testing.T) {
+	schema, err := Load("./testdata/instance-validate/test-schema.json")
+	require.NoError(t, err)
+
+	// Expect the instance to be loaded successfully.
+	instance, err := schema.LoadInstance("./testdata/instance-load/valid-instance.json")
+	assert.NoError(t, err)
+	assert.Equal(t, map[string]any{
+		"bool_val":   false,
+		"int_val":    int64(1),
+		"string_val": "abc",
+		"float_val":  2.0,
+	}, instance)
+
+	// Expect instance validation against the schema to fail.
+	_, err = schema.LoadInstance("./testdata/instance-load/invalid-type-instance.json")
+	assert.EqualError(t, err, "incorrect type for property string_val: expected type string, but value is 123")
+}
