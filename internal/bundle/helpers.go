@@ -1,58 +1,22 @@
 package bundle
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
-	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
-	"github.com/databricks/cli/cmd"
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/internal"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/template"
 )
 
-func copyBuiltInTemplate(templateName string, dst string) (string, error) {
-	filename := filepath.Join("bundles", templateName)
-	_, err := os.Stat(filename)
-	if err != nil {
-		return "", err
-	}
-
-	err = filepath.WalkDir("bundles", func(path string, entry fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-
-		targetPath := filepath.Join(dst, path)
-		if entry.IsDir() {
-			return os.Mkdir(targetPath, 0755)
-		} else {
-			content, err := os.ReadFile(path)
-			if err != nil {
-				return err
-			}
-			return os.WriteFile(targetPath, content, 0644)
-		}
-	})
-
-	if err != nil {
-		return "", err
-	}
-
-	return filepath.Join(dst, "bundles", templateName), nil
-}
-
 func initTestTemplate(t *testing.T, templateName string, config map[string]any) (string, error) {
-	templateRoot, err := copyBuiltInTemplate(templateName, t.TempDir())
-	if err != nil {
-		return "", err
-	}
+	templateRoot := filepath.Join("bundles", templateName)
 
 	bundleRoot := t.TempDir()
 	configFilePath, err := writeConfigFile(t, config)
@@ -83,33 +47,24 @@ func writeConfigFile(t *testing.T, config map[string]any) (string, error) {
 }
 
 func deployBundle(t *testing.T, path string) error {
-	ctx := context.Background()
 	t.Setenv("BUNDLE_ROOT", path)
-
-	deploy := cmd.New()
-	deploy.SetArgs([]string{"bundle", "deploy", "--force-lock"})
-
-	return deploy.ExecuteContext(ctx)
+	c := internal.NewCobraTestRunner(t, "bundle", "deploy", "--force-lock")
+	_, _, err := c.Run()
+	return err
 }
 
 func runResource(t *testing.T, path string, key string) (string, error) {
 	ctx := context.Background()
 	ctx = cmdio.NewContext(ctx, cmdio.Default())
 
-	run := cmd.New()
-	run.SetArgs([]string{"bundle", "run", key})
-	buffer := new(bytes.Buffer)
-	run.SetOut(buffer)
-
-	return buffer.String(), run.ExecuteContext(ctx)
+	c := internal.NewCobraTestRunnerWithContext(t, ctx, "bundle", "run", key)
+	stdout, _, err := c.Run()
+	return stdout.String(), err
 }
 
 func destroyBundle(t *testing.T, path string) error {
-	ctx := context.Background()
 	t.Setenv("BUNDLE_ROOT", path)
-
-	deploy := cmd.New()
-	deploy.SetArgs([]string{"bundle", "destroy", "--auto-approve"})
-
-	return deploy.ExecuteContext(ctx)
+	c := internal.NewCobraTestRunner(t, "bundle", "destroy", "--auto-approve")
+	_, _, err := c.Run()
+	return err
 }
