@@ -15,6 +15,7 @@ var testCases map[string]bool = map[string]bool{
 	"/Users/path/to/package":     false,
 	"file://path/to/package":     true,
 	"C:\\path\\to\\package":      true,
+	"dbfs://path/to/package":     false,
 	"dbfs:/path/to/package":      false,
 	"s3://path/to/package":       false,
 	"abfss://path/to/package":    false,
