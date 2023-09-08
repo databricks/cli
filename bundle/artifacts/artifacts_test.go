@@ -105,6 +105,7 @@ func TestUploadArtifactFileToCorrectRemotePath(t *testing.T) {
 
 	b.WorkspaceClient().Workspace.WithImpl(MockWorkspaceService{})
 	artifact := &config.Artifact{
+		Type: "whl",
 		Files: []config.ArtifactFile{
 			{
 				Source: whlPath,
@@ -118,4 +119,5 @@ func TestUploadArtifactFileToCorrectRemotePath(t *testing.T) {
 	err := uploadArtifact(context.Background(), artifact, b)
 	require.NoError(t, err)
 	require.Regexp(t, regexp.MustCompile("/Users/test@databricks.com/whatever/.internal/[a-z0-9]+/test.whl"), artifact.Files[0].RemotePath)
+	require.Regexp(t, regexp.MustCompile("/Workspace/Users/test@databricks.com/whatever/.internal/[a-z0-9]+/test.whl"), artifact.Files[0].Libraries[0].Whl)
 }

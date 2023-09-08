@@ -73,8 +73,11 @@ func (t *pythonTrampoline) GetTasks(b *bundle.Bundle) []mutator.TaskWithJobKey {
 		for i := range tasks {
 			task := &tasks[i]
 
-			// Keep only Python wheel tasks with local libraries referenced
-			if task.PythonWheelTask == nil || !libraries.IsTaskWithLocalLibraries(task) {
+			// Keep only Python wheel tasks with workspace libraries referenced.
+			// At this point of moment we don't have local paths in Libraries sections anymore
+			// Local paths have been replaced with the remote when the artifacts where uploaded
+			// in artifacts.UploadAll mutator.
+			if task.PythonWheelTask == nil || !needsTrampoline(task) {
 				continue
 			}
 
@@ -85,6 +88,10 @@ func (t *pythonTrampoline) GetTasks(b *bundle.Bundle) []mutator.TaskWithJobKey {
 		}
 	}
 	return result
+}
+
+func needsTrampoline(task *jobs.Task) bool {
+	return libraries.IsTaskWithWorkspaceLibraries(task)
 }
 
 func (t *pythonTrampoline) GetTemplateData(task *jobs.Task) (map[string]any, error) {

@@ -84,7 +84,7 @@ func TestTransformFiltersWheelTasksOnly(t *testing.T) {
 									TaskKey:         "key1",
 									PythonWheelTask: &jobs.PythonWheelTask{},
 									Libraries: []compute.Library{
-										{Whl: "./dist/test.whl"},
+										{Whl: "/Workspace/Users/test@test.com/bundle/dist/test.whl"},
 									},
 								},
 								{

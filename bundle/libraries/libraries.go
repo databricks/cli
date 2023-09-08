@@ -78,6 +78,17 @@ func IsTaskWithLocalLibraries(task *jobs.Task) bool {
 	return false
 }
 
+func IsTaskWithWorkspaceLibraries(task *jobs.Task) bool {
+	for _, l := range task.Libraries {
+		path := libPath(&l)
+		if isWorkspacePath(path) {
+			return true
+		}
+	}
+
+	return false
+}
+
 func isMissingRequiredLibraries(task *jobs.Task) bool {
 	if task.Libraries != nil {
 		return false
