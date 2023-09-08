@@ -30,6 +30,8 @@ func FindFilesWithSuffixInPath(dir, suffix string) []string {
 		log.Debugf(context.Background(), "open dir %s: %s", dir, err)
 		return nil
 	}
+	defer f.Close()
+
 	entries, err := f.ReadDir(0)
 	if err != nil {
 		log.Debugf(context.Background(), "read dir %s: %s", dir, err)
