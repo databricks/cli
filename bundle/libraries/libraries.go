@@ -165,8 +165,8 @@ func isRemoteStorageScheme(path string) bool {
 		return false
 	}
 
-	// If the path starts with scheme:// format, it's a correct remote storage scheme
-	return strings.HasPrefix(path, url.Scheme+"://")
+	// If the path starts with scheme:/ format, it's a correct remote storage scheme
+	return strings.HasPrefix(path, url.Scheme+":/")
 
 }
 

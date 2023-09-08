@@ -162,7 +162,7 @@ func TestTranslatePaths(t *testing.T) {
 										MainClassName: "HelloWorldRemote",
 									},
 									Libraries: []compute.Library{
-										{Jar: "dbfs:///bundle/dist/task_remote.jar"},
+										{Jar: "dbfs:/bundle/dist/task_remote.jar"},
 									},
 								},
 							},
@@ -243,7 +243,7 @@ func TestTranslatePaths(t *testing.T) {
 	)
 	assert.Equal(
 		t,
-		"dbfs:///bundle/dist/task_remote.jar",
+		"dbfs:/bundle/dist/task_remote.jar",
 		bundle.Config.Resources.Jobs["job"].Tasks[6].Libraries[0].Jar,
 	)
 

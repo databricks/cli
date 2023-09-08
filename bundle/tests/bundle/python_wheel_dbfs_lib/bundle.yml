@@ -12,4 +12,4 @@ resources:
             package_name: "my_test_code"
             entry_point: "run"
           libraries:
-          - whl: dbfs://path/to/dist/mywheel.whl
+          - whl: dbfs:/path/to/dist/mywheel.whl
