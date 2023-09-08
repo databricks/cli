@@ -26,7 +26,7 @@ func (*fromLibraries) Apply(ctx context.Context, b *bundle.Bundle) error {
 		return nil
 	}
 
-	tasks := libraries.FindAllWheelTasks(b)
+	tasks := libraries.FindAllLocalWheelTasks(b)
 	for _, task := range tasks {
 		for _, lib := range task.Libraries {
 			matches, err := filepath.Glob(filepath.Join(b.Config.Path, lib.Whl))

@@ -56,16 +56,26 @@ func findAllTasks(b *bundle.Bundle) []*jobs.Task {
 	return result
 }
 
-func FindAllWheelTasks(b *bundle.Bundle) []*jobs.Task {
+func FindAllLocalWheelTasks(b *bundle.Bundle) []*jobs.Task {
 	tasks := findAllTasks(b)
 	wheelTasks := make([]*jobs.Task, 0)
 	for _, task := range tasks {
-		if task.PythonWheelTask != nil {
+		if task.PythonWheelTask != nil && IsTaskWithLocalLibraries(task) {
 			wheelTasks = append(wheelTasks, task)
 		}
 	}
 
 	return wheelTasks
+}
+
+func IsTaskWithLocalLibraries(task *jobs.Task) bool {
+	for _, l := range task.Libraries {
+		if isLocalLibrary(&l) {
+			return true
+		}
+	}
+
+	return false
 }
 
 func isMissingRequiredLibraries(task *jobs.Task) bool {

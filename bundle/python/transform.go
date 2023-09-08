@@ -7,6 +7,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/mutator"
+	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
@@ -72,8 +73,8 @@ func (t *pythonTrampoline) GetTasks(b *bundle.Bundle) []mutator.TaskWithJobKey {
 		for i := range tasks {
 			task := &tasks[i]
 
-			// Keep only Python wheel tasks
-			if task.PythonWheelTask == nil {
+			// Keep only Python wheel tasks with local libraries referenced
+			if task.PythonWheelTask == nil || !libraries.IsTaskWithLocalLibraries(task) {
 				continue
 			}
 
