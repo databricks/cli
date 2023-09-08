@@ -1,4 +1,4 @@
-package utils
+package libraries
 
 import (
 	"fmt"
@@ -26,6 +26,6 @@ func TestIsLocalLbrary(t *testing.T) {
 		lib := compute.Library{
 			Whl: p,
 		}
-		require.Equal(t, result, IsLocalLibrary(&lib), fmt.Sprintf("isLocalLibrary must return %t for path %s ", result, p))
+		require.Equal(t, result, isLocalLibrary(&lib), fmt.Sprintf("isLocalLibrary must return %t for path %s ", result, p))
 	}
 }
