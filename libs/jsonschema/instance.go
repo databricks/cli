@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"slices"
 )
 
 // Load a JSON document and validate it against the JSON schema. Instance here
@@ -39,13 +40,18 @@ func (s *Schema) LoadInstance(path string) (map[string]any, error) {
 }
 
 func (s *Schema) ValidateInstance(instance map[string]any) error {
-	if err := s.validateAdditionalProperties(instance); err != nil {
-		return err
+	for _, fn := range []func(map[string]any) error{
+		s.validateAdditionalProperties,
+		s.validateEnum,
+		s.validateRequired,
+		s.validateTypes,
+	} {
+		err := fn(instance)
+		if err != nil {
+			return err
+		}
 	}
-	if err := s.validateRequired(instance); err != nil {
-		return err
-	}
-	return s.validateTypes(instance)
+	return nil
 }
 
 // If additional properties is set to false, this function validates instance only
@@ -85,6 +91,22 @@ func (s *Schema) validateTypes(instance map[string]any) error {
 		err := validateType(v, fieldInfo.Type)
 		if err != nil {
 			return fmt.Errorf("incorrect type for property %s: %w", k, err)
+		}
+	}
+	return nil
+}
+
+func (s *Schema) validateEnum(instance map[string]any) error {
+	for k, v := range instance {
+		fieldInfo, ok := s.Properties[k]
+		if !ok {
+			continue
+		}
+		if fieldInfo.Enum == nil {
+			continue
+		}
+		if !slices.Contains(fieldInfo.Enum, v) {
+			return fmt.Errorf("expected value of property %s to be one of %v. Found: %v", k, fieldInfo.Enum, v)
 		}
 	}
 	return nil

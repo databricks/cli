@@ -102,9 +102,23 @@ func (c *config) promptForValues() error {
 		}
 
 		// Get user input by running the prompt
-		userInput, err := cmdio.Ask(c.ctx, property.Description, defaultVal)
-		if err != nil {
-			return err
+		var userInput string
+		if property.Enum != nil {
+			// convert list of enums to string slice
+			enums, err := jsonschema.ToStringSlice(property.Enum, property.Type)
+			if err != nil {
+				return err
+			}
+			userInput, err = cmdio.AskSelect(c.ctx, property.Description, enums)
+			if err != nil {
+				return err
+			}
+		} else {
+			userInput, err = cmdio.Ask(c.ctx, property.Description, defaultVal)
+			if err != nil {
+				return err
+			}
+
 		}
 
 		// Convert user input string back to a value

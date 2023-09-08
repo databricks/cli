@@ -1,0 +1,12 @@
+{
+    "properties": {
+        "foo": {
+            "type": "string",
+            "enum": ["a", "b", "c"]
+        },
+        "bar": {
+            "type": "integer",
+            "enum": [2,4,6]
+        }
+    }
+}

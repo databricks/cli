@@ -127,3 +127,29 @@ func TestLoadInstance(t *testing.T) {
 	_, err = schema.LoadInstance("./testdata/instance-load/invalid-type-instance.json")
 	assert.EqualError(t, err, "incorrect type for property string_val: expected type string, but value is 123")
 }
+
+func TestValidateInstanceEnum(t *testing.T) {
+	schema, err := Load("./testdata/instance-validate/test-schema-enum.json")
+	require.NoError(t, err)
+
+	validInstance := map[string]any{
+		"foo": "b",
+		"bar": int64(6),
+	}
+	assert.NoError(t, schema.validateEnum(validInstance))
+	assert.NoError(t, schema.ValidateInstance(validInstance))
+
+	invalidStringInstance := map[string]any{
+		"foo": "d",
+		"bar": int64(2),
+	}
+	assert.EqualError(t, schema.validateEnum(invalidStringInstance), "expected value of property foo to be one of [a b c]. Found: d")
+	assert.EqualError(t, schema.ValidateInstance(invalidStringInstance), "expected value of property foo to be one of [a b c]. Found: d")
+
+	invalidIntInstance := map[string]any{
+		"foo": "a",
+		"bar": int64(1),
+	}
+	assert.EqualError(t, schema.validateEnum(invalidIntInstance), "expected value of property bar to be one of [2 4 6]. Found: 1")
+	assert.EqualError(t, schema.ValidateInstance(invalidIntInstance), "expected value of property bar to be one of [2 4 6]. Found: 1")
+}

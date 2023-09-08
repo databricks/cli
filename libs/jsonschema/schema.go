@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"slices"
 )
 
 // defines schema for a json object
@@ -40,6 +41,9 @@ type Schema struct {
 
 	// Default value for the property / object
 	Default any `json:"default,omitempty"`
+
+	// List of valid values for a JSON instance for this schema.
+	Enum []any `json:"enum,omitempty"`
 
 	// Extension embeds our custom JSON schema extensions.
 	Extension
@@ -84,6 +88,30 @@ func (schema *Schema) validate() error {
 		}
 	}
 
+	// Validate enum field values for properties are consistent with types.
+	for name, property := range schema.Properties {
+		if property.Enum == nil {
+			continue
+		}
+		for i, enum := range property.Enum {
+			err := validateType(enum, property.Type)
+			if err != nil {
+				return fmt.Errorf("type validation for enum at index %v failed for property %s: %w", i, name, err)
+			}
+		}
+	}
+
+	// Validate default value is contained in the list of enums if both are defined.
+	for name, property := range schema.Properties {
+		if property.Default == nil || property.Enum == nil {
+			continue
+		}
+		// We expect the default value to be consistent with the list of enum
+		// values.
+		if !slices.Contains(property.Enum, property.Default) {
+			return fmt.Errorf("list of enum values for property %s does not contain default value %v: %v", name, property.Default, property.Enum)
+		}
+	}
 	return nil
 }
 
@@ -113,6 +141,12 @@ func Load(path string) (*Schema, error) {
 			property.Default, err = toInteger(property.Default)
 			if err != nil {
 				return nil, fmt.Errorf("failed to parse default value for property %s: %w", name, err)
+			}
+		}
+		for i, enum := range property.Enum {
+			property.Enum[i], err = toInteger(enum)
+			if err != nil {
+				return nil, fmt.Errorf("failed to parse enum value %v at index %v for property %s: %w", enum, i, name, err)
 			}
 		}
 	}
