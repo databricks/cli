@@ -32,6 +32,7 @@ func (l *statePush) Apply(ctx context.Context, b *bundle.Bundle) error {
 	if err != nil {
 		return err
 	}
+	defer local.Close()
 
 	// Upload state file from local cache directory to filer.
 	log.Infof(ctx, "Writing local state file to remote state directory")
