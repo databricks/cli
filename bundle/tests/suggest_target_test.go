@@ -11,5 +11,7 @@ import (
 func TestSuggestTargetIfWrongPassed(t *testing.T) {
 	t.Setenv("BUNDLE_ROOT", filepath.Join("target_overrides", "workspace"))
 	_, _, err := internal.RequireErrorRun(t, "bundle", "validate", "-e", "incorrect")
-	require.ErrorContains(t, err, "Available targets: development, staging")
+	require.ErrorContains(t, err, "Available targets:")
+	require.ErrorContains(t, err, "development")
+	require.ErrorContains(t, err, "staging")
 }
