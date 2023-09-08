@@ -7,7 +7,7 @@ workspace:
 resources:
   jobs:
     some_other_job:
-      name: "[${bundle.target}] Test Wheel Job"
+      name: "[${bundle.target}] Test Wheel Job {{.unique_id}}"
       tasks:
         - task_key: TestTask
           new_cluster:
