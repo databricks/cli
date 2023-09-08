@@ -3,8 +3,10 @@ package mutator
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"golang.org/x/exp/maps"
 )
 
 type selectTarget struct {
@@ -30,7 +32,7 @@ func (m *selectTarget) Apply(_ context.Context, b *bundle.Bundle) error {
 	// Get specified target
 	target, ok := b.Config.Targets[m.name]
 	if !ok {
-		return fmt.Errorf("%s: no such target", m.name)
+		return fmt.Errorf("%s: no such target. Available targets: %s", m.name, strings.Join(maps.Keys(b.Config.Targets), ", "))
 	}
 
 	// Merge specified target into root configuration structure.
