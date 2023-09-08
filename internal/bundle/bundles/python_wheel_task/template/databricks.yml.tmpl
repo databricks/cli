@@ -1,10 +1,13 @@
 bundle:
   name: wheel-task
 
+workspace:
+  root_path: "~/.bundle/{{.unique_id}}"
+
 resources:
   jobs:
     some_other_job:
-      name: "[${bundle.target}] Test Wheel Job {{.unique_id}}"
+      name: "[${bundle.target}] Test Wheel Job"
       tasks:
         - task_key: TestTask
           new_cluster:
