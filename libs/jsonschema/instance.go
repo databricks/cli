@@ -40,14 +40,12 @@ func (s *Schema) LoadInstance(path string) (map[string]any, error) {
 }
 
 func (s *Schema) ValidateInstance(instance map[string]any) error {
-	validationFuncs := []func(map[string]any) error{
+	for _, fn := range []func(map[string]any) error{
 		s.validateAdditionalProperties,
 		s.validateEnum,
 		s.validateRequired,
 		s.validateTypes,
-	}
-
-	for _, fn := range validationFuncs {
+	} {
 		err := fn(instance)
 		if err != nil {
 			return err
