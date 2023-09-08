@@ -56,7 +56,7 @@ func findAllTasks(b *bundle.Bundle) []*jobs.Task {
 	return result
 }
 
-func FindAllLocalWheelTasks(b *bundle.Bundle) []*jobs.Task {
+func FindAllWheelTasksWithLocalLibraries(b *bundle.Bundle) []*jobs.Task {
 	tasks := findAllTasks(b)
 	wheelTasks := make([]*jobs.Task, 0)
 	for _, task := range tasks {

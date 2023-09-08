@@ -27,7 +27,7 @@ func (m *detectPkg) Name() string {
 }
 
 func (m *detectPkg) Apply(ctx context.Context, b *bundle.Bundle) error {
-	wheelTasks := libraries.FindAllLocalWheelTasks(b)
+	wheelTasks := libraries.FindAllWheelTasksWithLocalLibraries(b)
 	if len(wheelTasks) == 0 {
 		log.Infof(ctx, "No local wheel tasks in databricks.yml config, skipping auto detect")
 		return nil
