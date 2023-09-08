@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle/config/paths"
+	"github.com/databricks/cli/bundle/libraries/utils"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 )
 
@@ -78,10 +79,7 @@ func (a *Artifact) NormalisePaths() {
 		remotePath := path.Join(wsfsBase, f.RemotePath)
 		for i := range f.Libraries {
 			lib := f.Libraries[i]
-			switch a.Type {
-			case ArtifactPythonWheel:
-				lib.Whl = remotePath
-			}
+			utils.ReplacePath(lib, remotePath)
 		}
 
 	}
