@@ -92,7 +92,7 @@ func findArtifactsAndMarkForUpload(ctx context.Context, lib *compute.Library, b 
 	}
 
 	if len(matches) == 0 && utils.IsLocalLibrary(lib) {
-		return fmt.Errorf("file %s is referenced in libraries section but doesn't exist on the local file system", utils.LibPath(lib))
+		return fmt.Errorf("file %s is referenced in libraries section but doesn't exist on the local file system", *utils.LibPath(lib))
 	}
 
 	for _, match := range matches {
