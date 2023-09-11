@@ -74,16 +74,15 @@ func newInitCommand() *cobra.Command {
 			return template.Materialize(ctx, configFile, templatePath, outputDir)
 		}
 
-		// Download the template in a temporary directory
-		templateURL := templatePath
-		// Create a temporary with the name of the repository.  The '*' character
-		// is replaced by a random string in the generated temporary directory.
-		repoDir, err := os.MkdirTemp("", repoName(templateURL)+"-*")
+		// Create a temporary directory with the name of the repository.  The '*'
+		// character is replaced by a random string in the generated temporary directory.
+		repoDir, err := os.MkdirTemp("", repoName(templatePath)+"-*")
 		if err != nil {
 			return err
 		}
 		// TODO: Add automated test that the downloaded git repo is cleaned up.
-		err = git.Clone(ctx, templateURL, "", repoDir)
+		// Clone the repository in the temporary directory
+		err = git.Clone(ctx, templatePath, "", repoDir)
 		if err != nil {
 			return err
 		}
