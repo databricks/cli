@@ -14,7 +14,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func New() *cobra.Command {
+func New(ctx context.Context) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "databricks",
 		Short:   "Databricks CLI",
@@ -29,6 +29,10 @@ func New() *cobra.Command {
 		// Silence error printing by cobra. Errors are printed through cmdio.
 		SilenceErrors: true,
 	}
+
+	// Pass the context along through the command during initialization.
+	// It will be overwritten when the command is executed.
+	cmd.SetContext(ctx)
 
 	// Initialize flags
 	logFlags := initLogFlags(cmd)

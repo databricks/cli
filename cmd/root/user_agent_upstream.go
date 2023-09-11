@@ -2,8 +2,8 @@ package root
 
 import (
 	"context"
-	"os"
 
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go/useragent"
 )
 
@@ -16,7 +16,7 @@ const upstreamKey = "upstream"
 const upstreamVersionKey = "upstream-version"
 
 func withUpstreamInUserAgent(ctx context.Context) context.Context {
-	value := os.Getenv(upstreamEnvVar)
+	value := env.Get(ctx, upstreamEnvVar)
 	if value == "" {
 		return ctx
 	}
@@ -24,7 +24,7 @@ func withUpstreamInUserAgent(ctx context.Context) context.Context {
 	ctx = useragent.InContext(ctx, upstreamKey, value)
 
 	// Include upstream version as well, if set.
-	value = os.Getenv(upstreamVersionEnvVar)
+	value = env.Get(ctx, upstreamVersionEnvVar)
 	if value == "" {
 		return ctx
 	}

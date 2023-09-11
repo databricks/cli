@@ -9,12 +9,12 @@ import (
 )
 
 func getSync(ctx context.Context, b *bundle.Bundle) (*sync.Sync, error) {
-	cacheDir, err := b.CacheDir()
+	cacheDir, err := b.CacheDir(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get bundle cache directory: %w", err)
 	}
 
-	includes, err := b.GetSyncIncludePatterns()
+	includes, err := b.GetSyncIncludePatterns(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get list of sync includes: %w", err)
 	}

@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
-	"os"
 
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/log"
 	"github.com/fatih/color"
@@ -126,13 +126,13 @@ func initLogFlags(cmd *cobra.Command) *logFlags {
 
 	// Configure defaults from environment, if applicable.
 	// If the provided value is invalid it is ignored.
-	if v, ok := os.LookupEnv(envLogFile); ok {
+	if v, ok := env.Lookup(cmd.Context(), envLogFile); ok {
 		f.file.Set(v)
 	}
-	if v, ok := os.LookupEnv(envLogLevel); ok {
+	if v, ok := env.Lookup(cmd.Context(), envLogLevel); ok {
 		f.level.Set(v)
 	}
-	if v, ok := os.LookupEnv(envLogFormat); ok {
+	if v, ok := env.Lookup(cmd.Context(), envLogFormat); ok {
 		f.output.Set(v)
 	}
 

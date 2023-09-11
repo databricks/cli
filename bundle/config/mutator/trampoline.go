@@ -43,7 +43,7 @@ func (m *trampoline) Name() string {
 func (m *trampoline) Apply(ctx context.Context, b *bundle.Bundle) error {
 	tasks := m.functions.GetTasks(b)
 	for _, task := range tasks {
-		err := m.generateNotebookWrapper(b, task)
+		err := m.generateNotebookWrapper(ctx, b, task)
 		if err != nil {
 			return err
 		}
@@ -51,8 +51,8 @@ func (m *trampoline) Apply(ctx context.Context, b *bundle.Bundle) error {
 	return nil
 }
 
-func (m *trampoline) generateNotebookWrapper(b *bundle.Bundle, task TaskWithJobKey) error {
-	internalDir, err := b.InternalDir()
+func (m *trampoline) generateNotebookWrapper(ctx context.Context, b *bundle.Bundle, task TaskWithJobKey) error {
+	internalDir, err := b.InternalDir(ctx)
 	if err != nil {
 		return err
 	}

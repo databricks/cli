@@ -2,16 +2,14 @@ package root
 
 import (
 	"context"
-	"os"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/mutator"
+	"github.com/databricks/cli/bundle/env"
+	envlib "github.com/databricks/cli/libs/env"
 	"github.com/spf13/cobra"
 	"golang.org/x/exp/maps"
 )
-
-const envName = "DATABRICKS_BUNDLE_ENV"
-const targetName = "DATABRICKS_BUNDLE_TARGET"
 
 // getTarget returns the name of the target to operate in.
 func getTarget(cmd *cobra.Command) (value string) {
@@ -33,13 +31,7 @@ func getTarget(cmd *cobra.Command) (value string) {
 	}
 
 	// If it's not set, use the environment variable.
-	target := os.Getenv(targetName)
-	// If target env is not set with a new variable, try to check for old variable name
-	// TODO: remove when environments section is not supported anymore
-	if target == "" {
-		target = os.Getenv(envName)
-	}
-
+	target, _ := env.Target(cmd.Context())
 	return target
 }
 
@@ -54,7 +46,7 @@ func getProfile(cmd *cobra.Command) (value string) {
 	}
 
 	// If it's not set, use the environment variable.
-	return os.Getenv("DATABRICKS_CONFIG_PROFILE")
+	return envlib.Get(cmd.Context(), "DATABRICKS_CONFIG_PROFILE")
 }
 
 // loadBundle loads the bundle configuration and applies default mutators.
