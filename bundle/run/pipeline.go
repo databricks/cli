@@ -137,7 +137,10 @@ type pipelineRunner struct {
 }
 
 func (r *pipelineRunner) Name() string {
-	return r.pipeline.Name
+	if r.pipeline == nil || r.pipeline.PipelineSpec == nil {
+		return ""
+	}
+	return r.pipeline.PipelineSpec.Name
 }
 
 func (r *pipelineRunner) Run(ctx context.Context, opts *Options) (output.RunOutput, error) {

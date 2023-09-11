@@ -96,7 +96,10 @@ type jobRunner struct {
 }
 
 func (r *jobRunner) Name() string {
-	return r.job.Name
+	if r.job == nil || r.job.JobSettings == nil {
+		return ""
+	}
+	return r.job.JobSettings.Name
 }
 
 func isFailed(task jobs.RunTask) bool {
