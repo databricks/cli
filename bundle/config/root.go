@@ -52,7 +52,7 @@ type Root struct {
 
 	// Bundle contains details about this bundle, such as its name,
 	// version of the spec (TODO), default cluster, default warehouse, etc.
-	Bundle Bundle `json:"bundle"`
+	Bundle Bundle `json:"bundle,omitempty"`
 
 	// Include specifies a list of patterns of file names to load and
 	// merge into the this configuration. Only includes defined in the root
@@ -80,7 +80,7 @@ type Root struct {
 	Environments map[string]*Target `json:"environments,omitempty"`
 
 	// Sync section specifies options for files synchronization
-	Sync Sync `json:"sync"`
+	Sync Sync `json:"sync,omitempty"`
 
 	// RunAs section allows to define an execution identity for jobs and pipelines runs
 	RunAs *jobs.JobRunAs `json:"run_as,omitempty"`
