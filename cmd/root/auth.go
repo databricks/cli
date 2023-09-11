@@ -59,8 +59,7 @@ func accountClientOrPrompt(ctx context.Context, cfg *config.Config, allowPrompt 
 	if err != nil {
 		return nil, err
 	}
-	cfg = &config.Config{Profile: profile}
-	a, err = databricks.NewAccountClient((*databricks.Config)(cfg))
+	a, err = databricks.NewAccountClient(&databricks.Config{Profile: profile})
 	if err == nil {
 		err = a.Config.Authenticate(emptyHttpRequest(ctx))
 		if err != nil {
@@ -128,8 +127,7 @@ func workspaceClientOrPrompt(ctx context.Context, cfg *config.Config, allowPromp
 	if err != nil {
 		return nil, err
 	}
-	cfg = &config.Config{Profile: profile}
-	w, err = databricks.NewWorkspaceClient((*databricks.Config)(cfg))
+	w, err = databricks.NewWorkspaceClient(&databricks.Config{Profile: profile})
 	if err == nil {
 		err = w.Config.Authenticate(emptyHttpRequest(ctx))
 		if err != nil {
