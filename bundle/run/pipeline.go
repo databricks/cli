@@ -136,6 +136,10 @@ type pipelineRunner struct {
 	pipeline *resources.Pipeline
 }
 
+func (r *pipelineRunner) Name() string {
+	return r.pipeline.Name
+}
+
 func (r *pipelineRunner) Run(ctx context.Context, opts *Options) (output.RunOutput, error) {
 	var pipelineID = r.pipeline.ID
 
