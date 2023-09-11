@@ -35,31 +35,39 @@ func profileFlagValue(cmd *cobra.Command) (string, bool) {
 }
 
 // Helper function to create an account client or prompt once if the given configuration is not valid.
-func accountClientOrPrompt(ctx context.Context, cfg *config.Config, retry bool) (*databricks.AccountClient, error) {
+func accountClientOrPrompt(ctx context.Context, cfg *config.Config, allowPrompt bool) (*databricks.AccountClient, error) {
 	a, err := databricks.NewAccountClient((*databricks.Config)(cfg))
 	if err == nil {
 		err = a.Config.Authenticate(emptyHttpRequest(ctx))
 	}
 
 	prompt := false
-	if err != nil && retry && cmdio.IsInteractive(ctx) {
+	if allowPrompt && err != nil && cmdio.IsInteractive(ctx) {
 		// Prompt to select a profile if the current configuration is not an account client.
 		prompt = prompt || errors.Is(err, databricks.ErrNotAccountClient)
 		// Prompt to select a profile if the current configuration doesn't resolve to a credential provider.
 		prompt = prompt || errors.Is(err, config.ErrCannotConfigureAuth)
 	}
 
+	if !prompt {
+		// If we are not prompting, we can return early.
+		return a, err
+	}
+
 	// Try picking a profile dynamically if the current configuration is not valid.
-	if prompt {
-		profile, err := askForAccountProfile(ctx)
+	profile, err := askForAccountProfile(ctx)
+	if err != nil {
+		return nil, err
+	}
+	cfg = &config.Config{Profile: profile}
+	a, err = databricks.NewAccountClient((*databricks.Config)(cfg))
+	if err == nil {
+		err = a.Config.Authenticate(emptyHttpRequest(ctx))
 		if err != nil {
 			return nil, err
 		}
-		cfg = &config.Config{Profile: profile}
-		return accountClientOrPrompt(ctx, cfg, false)
 	}
-
-	return a, err
+	return a, nil
 }
 
 func MustAccountClient(cmd *cobra.Command, args []string) error {
@@ -96,31 +104,39 @@ func MustAccountClient(cmd *cobra.Command, args []string) error {
 }
 
 // Helper function to create a workspace client or prompt once if the given configuration is not valid.
-func workspaceClientOrPrompt(ctx context.Context, cfg *config.Config, retry bool) (*databricks.WorkspaceClient, error) {
+func workspaceClientOrPrompt(ctx context.Context, cfg *config.Config, allowPrompt bool) (*databricks.WorkspaceClient, error) {
 	w, err := databricks.NewWorkspaceClient((*databricks.Config)(cfg))
 	if err == nil {
 		err = w.Config.Authenticate(emptyHttpRequest(ctx))
 	}
 
 	prompt := false
-	if err != nil && retry && cmdio.IsInteractive(ctx) {
+	if allowPrompt && err != nil && cmdio.IsInteractive(ctx) {
 		// Prompt to select a profile if the current configuration is not a workspace client.
 		prompt = prompt || errors.Is(err, databricks.ErrNotWorkspaceClient)
 		// Prompt to select a profile if the current configuration doesn't resolve to a credential provider.
 		prompt = prompt || errors.Is(err, config.ErrCannotConfigureAuth)
 	}
 
+	if !prompt {
+		// If we are not prompting, we can return early.
+		return w, err
+	}
+
 	// Try picking a profile dynamically if the current configuration is not valid.
-	if prompt {
-		profile, err := askForWorkspaceProfile(ctx)
+	profile, err := askForWorkspaceProfile(ctx)
+	if err != nil {
+		return nil, err
+	}
+	cfg = &config.Config{Profile: profile}
+	w, err = databricks.NewWorkspaceClient((*databricks.Config)(cfg))
+	if err == nil {
+		err = w.Config.Authenticate(emptyHttpRequest(ctx))
 		if err != nil {
 			return nil, err
 		}
-		cfg = &config.Config{Profile: profile}
-		return workspaceClientOrPrompt(ctx, cfg, false)
 	}
-
-	return w, err
+	return w, nil
 }
 
 func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
