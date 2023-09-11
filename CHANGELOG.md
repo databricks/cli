@@ -1,5 +1,25 @@
 # Version changelog
 
+## 0.204.1
+
+Bundles:
+ * Fix conversion of job parameters ([#744](https://github.com/databricks/cli/pull/744)).
+ * Add schema and config validation to jsonschema package ([#740](https://github.com/databricks/cli/pull/740)).
+ * Support Model Serving Endpoints in bundles ([#682](https://github.com/databricks/cli/pull/682)).
+ * Do not include empty output in job run output ([#749](https://github.com/databricks/cli/pull/749)).
+ * Fixed marking libraries from DBFS as remote ([#750](https://github.com/databricks/cli/pull/750)).
+ * Process only Python wheel tasks which have local libraries used ([#751](https://github.com/databricks/cli/pull/751)).
+ * Add enum support for bundle templates ([#668](https://github.com/databricks/cli/pull/668)).
+ * Apply Python wheel trampoline if workspace library is used ([#755](https://github.com/databricks/cli/pull/755)).
+ * List available targets when incorrect target passed ([#756](https://github.com/databricks/cli/pull/756)).
+ * Make bundle and sync fields optional ([#757](https://github.com/databricks/cli/pull/757)).
+ * Consolidate environment variable interaction ([#747](https://github.com/databricks/cli/pull/747)).
+
+Internal:
+ * Update Go SDK to v0.19.1 ([#759](https://github.com/databricks/cli/pull/759)).
+
+
+
 ## 0.204.0
 
 This release includes permission related commands for a subset of workspace
