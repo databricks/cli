@@ -2,11 +2,11 @@
 resources:
   pipelines:
     {{.project_name}}_pipeline:
-      name: "{{.project_name}}_pipeline"
-      target: "{{.project_name}}_${bundle.environment}"
+      name: {{.project_name}}_pipeline
+      target: {{.project_name}}_${bundle.environment}
       libraries:
         - notebook:
             path: ../src/dlt_pipeline.ipynb
 
       configuration:
-        "bundle.sourcePath": "/Workspace/${workspace.file_path}/src"
+        bundle.sourcePath: /Workspace/${workspace.file_path}/src
