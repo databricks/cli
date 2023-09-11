@@ -17,7 +17,7 @@ This file only template directives; it is skipped for the actual output.
 
 {{if $notPython}}
   {{skip "{{.project_name}}/src/{{.project_name}}"}}
-  {{skip "{{.project_name}}/tests/test_main.py"}}
+  {{skip "{{.project_name}}/tests/main_test.py"}}
   {{skip "{{.project_name}}/setup.py"}}
   {{skip "{{.project_name}}/pytest.ini"}}
 {{end}}
