@@ -75,10 +75,10 @@ func newInitCommand() *cobra.Command {
 		}
 
 		// Download the template in a temporary directory
-		tmpDir := os.TempDir()
 		templateURL := templatePath
-		repoDir := filepath.Join(tmpDir, repoName(templateURL))
-		err := os.MkdirAll(repoDir, 0755)
+		// Create a temporary with the name of the repository.  The '*' character
+		// is replaced by a random string in the generated temporary directory.
+		repoDir, err := os.MkdirTemp("", repoName(templateURL)+"-*")
 		if err != nil {
 			return err
 		}
@@ -87,9 +87,9 @@ func newInitCommand() *cobra.Command {
 		if err != nil {
 			return err
 		}
-		defer os.RemoveAll(templateDir)
+		// Clean up downloaded repository once the template is materialized.
+		defer os.RemoveAll(repoDir)
 		return template.Materialize(ctx, configFile, filepath.Join(repoDir, templateDir), outputDir)
 	}
-
 	return cmd
 }
