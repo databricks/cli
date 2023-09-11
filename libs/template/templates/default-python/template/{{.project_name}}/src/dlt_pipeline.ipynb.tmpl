@@ -14,7 +14,7 @@
    "source": [
     "# DLT pipeline\n",
     "\n",
-    "This Delta Live Tables (DLT) definition is executed using a pipeline defined in resources/{{.my_project}}_pipeline.yml."
+    "This Delta Live Tables (DLT) definition is executed using a pipeline defined in resources/{{.project_name}}_pipeline.yml."
    ]
   },
   {
@@ -27,28 +27,18 @@
      "nuid": "9198e987-5606-403d-9f6d-8f14e6a4017f",
      "showTitle": false,
      "title": ""
-    },
-    "jupyter": {
-     {{- /* Collapse this cell by default. Just boring imports here! */}}
-     "source_hidden": true
     }
    },
    "outputs": [],
    "source": [
    {{- if (eq .include_python "yes") }}
-    "# Import DLT and make sure 'my_project' is on the Python path\n",
+    "# Import DLT and src/{{.project_name}}\n",
     "import dlt\n",
-    "from pyspark.sql.functions import expr\n",
-    "from pyspark.sql import SparkSession\n",
-    "spark = SparkSession.builder.getOrCreate()\n",
     "import sys\n",
-    "try:\n",
-    "  sys.path.append(spark.conf.get(\"bundle.sourcePath\"))\n",
-    "except:\n",
-    "  pass\n",
-    "from my_project import main"
+    "sys.path.append(spark.conf.get(\"bundle.sourcePath\", \".\"))\n",
+    "from pyspark.sql.functions import expr\n",
+    "from {{.project_name}} import main"
    {{else}}
-    "# Import DLT\n",
     "import dlt\n",
     "from pyspark.sql.functions import expr\n",
     "from pyspark.sql import SparkSession\n",
