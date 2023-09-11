@@ -184,7 +184,7 @@ func (a *accumulator) Resolve(path string, seenPaths []string, fns ...LookupFunc
 	// fetch the string node to resolve
 	field, ok := a.strings[path]
 	if !ok {
-		return fmt.Errorf("no value found for interpolation query: ${%s}", path)
+		return fmt.Errorf("no value found for interpolation reference: ${%s}", path)
 	}
 
 	// return early if the string field has no variables to interpolate

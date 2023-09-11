@@ -247,5 +247,5 @@ func TestInterpolationInvalidVariableReference(t *testing.T) {
 	}
 
 	err := expand(&config)
-	assert.ErrorContains(t, err, "no value found for interpolation query: ${vars.foo}")
+	assert.ErrorContains(t, err, "no value found for interpolation reference: ${vars.foo}")
 }
