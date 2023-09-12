@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"os/exec"
-	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
@@ -37,26 +36,14 @@ func executeHook(ctx context.Context, b *bundle.Bundle, hook config.ScriptHook) 
 	if command == "" {
 		return nil, nil
 	}
-	commands := strings.Split(strings.ReplaceAll(string(command), "\r\n", "\n"), "\n")
 
-	out := make([][]byte, 0)
-	for _, command := range commands {
-		if command == "" {
-			continue
-		}
-
-		subcommands := strings.Split(command, " && ")
-		for _, subcommand := range subcommands {
-			buildParts := strings.Split(subcommand, " ")
-			cmd := exec.CommandContext(ctx, buildParts[0], buildParts[1:]...)
-			res, err := cmd.CombinedOutput()
-			if err != nil {
-				return res, err
-			}
-			out = append(out, res)
-		}
+	interpreter, err := findInterpreter()
+	if err != nil {
+		return nil, err
 	}
-	return bytes.Join(out, []byte{}), nil
+
+	cmd := exec.CommandContext(ctx, interpreter, "-c", string(command))
+	return cmd.CombinedOutput()
 }
 
 func getCommmand(b *bundle.Bundle, hook config.ScriptHook) config.Command {
@@ -65,4 +52,9 @@ func getCommmand(b *bundle.Bundle, hook config.ScriptHook) config.Command {
 	}
 
 	return b.Config.Experimental.Scripts[hook]
+}
+
+func findInterpreter() (string, error) {
+	// At the moment we just return 'sh' on all platforms and use it to execute scripts
+	return "sh", nil
 }
