@@ -45,6 +45,11 @@ type Schema struct {
 	// List of valid values for a JSON instance for this schema.
 	Enum []any `json:"enum,omitempty"`
 
+	// A pattern is a regular expression the object will be validated against.
+	// Can only be used with type "string". The regex syntax supported is available
+	// here: https://github.com/google/re2/wiki/Syntax
+	Pattern string `json:"pattern,omitempty"`
+
 	// Extension embeds our custom JSON schema extensions.
 	Extension
 }
@@ -112,6 +117,14 @@ func (schema *Schema) validate() error {
 			return fmt.Errorf("list of enum values for property %s does not contain default value %v: %v", name, property.Default, property.Enum)
 		}
 	}
+
+	// Validated usage of "pattern" is consistent.
+	for name, property := range schema.Properties {
+		if property.Pattern != "" && property.Type != StringType {
+			return fmt.Errorf("property %s has a non empty regex pattern %s specified. Patterns are only supported for ")
+		}
+	}
+
 	return nil
 }
 
