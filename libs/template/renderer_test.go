@@ -193,11 +193,7 @@ func TestRendererExecuteTemplateWithUnknownProperty(t *testing.T) {
 	templateText := `{{.does_not_exist}}`
 
 	r := renderer{
-		config: map[string]any{
-			"Material": "wool",
-			"count":    1,
-			"Animal":   "sheep",
-		},
+		config:       map[string]any{},
 		baseTemplate: template.New("base"),
 	}
 
