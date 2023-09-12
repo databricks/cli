@@ -65,7 +65,7 @@ func TestSyncOptonsReturnsErrorFromArgs(t *testing.T) {
 
 func TestSyncOptionsReturnsFromBundle(t *testing.T) {
 	tempDir := t.TempDir()
-	file, err := os.Create(filepath.Join(tempDir, "bundle.yaml"))
+	file, err := os.Create(filepath.Join(tempDir, "databricks.yml"))
 	t.Cleanup(func() {
 		err := file.Close()
 		assert.NoError(t, err)
