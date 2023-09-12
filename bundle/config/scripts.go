@@ -5,6 +5,7 @@ type ScriptHook string
 
 const (
 	ScriptPreInit    ScriptHook = "preinit"
+	ScriptPostInit   ScriptHook = "postinit"
 	ScriptPreBuild   ScriptHook = "prebuild"
 	ScriptPostBuild  ScriptHook = "postbuild"
 	ScriptPreDeploy  ScriptHook = "predeploy"

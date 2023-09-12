@@ -13,9 +13,9 @@ func Build() bundle.Mutator {
 	return newPhase(
 		"build",
 		[]bundle.Mutator{
+			scripts.Execute(config.ScriptPreBuild),
 			artifacts.DetectPackages(),
 			artifacts.InferMissingProperties(),
-			scripts.Execute(config.ScriptPreBuild),
 			artifacts.BuildAll(),
 			scripts.Execute(config.ScriptPostBuild),
 			interpolation.Interpolate(
