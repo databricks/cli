@@ -2,6 +2,7 @@ package testutil
 
 import (
 	"os"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -30,4 +31,7 @@ func CleanupEnvironment(t *testing.T) {
 	// because of isolation; the environment is scoped to the process.
 	t.Setenv("PATH", path)
 	t.Setenv("HOME", pwd)
+	if runtime.GOOS == "windows" {
+		t.Setenv("USERPROFILE", pwd)
+	}
 }

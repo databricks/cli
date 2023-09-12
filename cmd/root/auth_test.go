@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/stretchr/testify/assert"
@@ -65,6 +66,8 @@ func expectReturns(t *testing.T, fn promptFn, config *config.Config) {
 }
 
 func TestAccountClientOrPrompt(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+
 	dir := t.TempDir()
 	configFile := filepath.Join(dir, ".databrickscfg")
 	err := os.WriteFile(
@@ -127,6 +130,8 @@ func TestAccountClientOrPrompt(t *testing.T) {
 }
 
 func TestWorkspaceClientOrPrompt(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+
 	dir := t.TempDir()
 	configFile := filepath.Join(dir, ".databrickscfg")
 	err := os.WriteFile(
