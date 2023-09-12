@@ -33,9 +33,9 @@ func (l *statePush) Apply(ctx context.Context, b *bundle.Bundle) error {
 	local, err := os.Open(filepath.Join(dir, TerraformStateFileName))
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) && b.TerraformHasNoResources {
-			// A terraform state file is not created for bundle deployments with
-			// no resources defined. We skip the error for local state file
-			// not found in that case.
+			// A terraform state file is not created for new bundle deployments
+			// with no resources defined. We ignore that a local terraform state
+			// file is absent if the bundle config has no resources defined.
 			return nil
 		}
 		return err
