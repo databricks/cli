@@ -4,14 +4,14 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"os"
+	"log/slog"
 
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/log"
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
-	"golang.org/x/exp/slog"
 )
 
 const (
@@ -52,11 +52,12 @@ func (l *friendlyHandler) coloredLevel(rec slog.Record) string {
 func (l *friendlyHandler) Handle(ctx context.Context, rec slog.Record) error {
 	t := fmt.Sprintf("%02d:%02d", rec.Time.Hour(), rec.Time.Minute())
 	attrs := ""
-	rec.Attrs(func(a slog.Attr) {
+	rec.Attrs(func(a slog.Attr) bool {
 		attrs += fmt.Sprintf(" %s%s%s",
 			color.CyanString(a.Key),
 			color.CyanString("="),
 			color.YellowString(a.Value.String()))
+		return true
 	})
 	msg := fmt.Sprintf("%s %s %s%s\n",
 		color.MagentaString(t),
@@ -76,16 +77,16 @@ type logFlags struct {
 func (f *logFlags) makeLogHandler(opts slog.HandlerOptions) (slog.Handler, error) {
 	switch f.output {
 	case flags.OutputJSON:
-		return opts.NewJSONHandler(f.file.Writer()), nil
+		return slog.NewJSONHandler(f.file.Writer(), &opts), nil
 	case flags.OutputText:
 		w := f.file.Writer()
 		if cmdio.IsTTY(w) {
 			return &friendlyHandler{
-				Handler: opts.NewTextHandler(w),
+				Handler: slog.NewTextHandler(w, &opts),
 				w:       w,
 			}, nil
 		}
-		return opts.NewTextHandler(w), nil
+		return slog.NewTextHandler(w, &opts), nil
 
 	default:
 		return nil, fmt.Errorf("invalid log output mode: %s", f.output)
@@ -125,13 +126,13 @@ func initLogFlags(cmd *cobra.Command) *logFlags {
 
 	// Configure defaults from environment, if applicable.
 	// If the provided value is invalid it is ignored.
-	if v, ok := os.LookupEnv(envLogFile); ok {
+	if v, ok := env.Lookup(cmd.Context(), envLogFile); ok {
 		f.file.Set(v)
 	}
-	if v, ok := os.LookupEnv(envLogLevel); ok {
+	if v, ok := env.Lookup(cmd.Context(), envLogLevel); ok {
 		f.level.Set(v)
 	}
-	if v, ok := os.LookupEnv(envLogFormat); ok {
+	if v, ok := env.Lookup(cmd.Context(), envLogFormat); ok {
 		f.output.Set(v)
 	}
 

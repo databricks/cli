@@ -3,7 +3,9 @@ package libraries
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"path/filepath"
+	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
@@ -24,24 +26,67 @@ func (a *match) Name() string {
 }
 
 func (a *match) Apply(ctx context.Context, b *bundle.Bundle) error {
-	r := b.Config.Resources
-	for k := range b.Config.Resources.Jobs {
-		tasks := r.Jobs[k].JobSettings.Tasks
-		for i := range tasks {
-			task := &tasks[i]
-			if isMissingRequiredLibraries(task) {
-				return fmt.Errorf("task '%s' is missing required libraries. Please include your package code in task libraries block", task.TaskKey)
-			}
-			for j := range task.Libraries {
-				lib := &task.Libraries[j]
-				err := findArtifactsAndMarkForUpload(ctx, lib, b)
-				if err != nil {
-					return err
-				}
+	tasks := findAllTasks(b)
+	for _, task := range tasks {
+		if isMissingRequiredLibraries(task) {
+			return fmt.Errorf("task '%s' is missing required libraries. Please include your package code in task libraries block", task.TaskKey)
+		}
+		for j := range task.Libraries {
+			lib := &task.Libraries[j]
+			err := findArtifactsAndMarkForUpload(ctx, lib, b)
+			if err != nil {
+				return err
 			}
 		}
 	}
 	return nil
+}
+
+func findAllTasks(b *bundle.Bundle) []*jobs.Task {
+	r := b.Config.Resources
+	result := make([]*jobs.Task, 0)
+	for k := range b.Config.Resources.Jobs {
+		tasks := r.Jobs[k].JobSettings.Tasks
+		for i := range tasks {
+			task := &tasks[i]
+			result = append(result, task)
+		}
+	}
+
+	return result
+}
+
+func FindAllWheelTasksWithLocalLibraries(b *bundle.Bundle) []*jobs.Task {
+	tasks := findAllTasks(b)
+	wheelTasks := make([]*jobs.Task, 0)
+	for _, task := range tasks {
+		if task.PythonWheelTask != nil && IsTaskWithLocalLibraries(task) {
+			wheelTasks = append(wheelTasks, task)
+		}
+	}
+
+	return wheelTasks
+}
+
+func IsTaskWithLocalLibraries(task *jobs.Task) bool {
+	for _, l := range task.Libraries {
+		if isLocalLibrary(&l) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func IsTaskWithWorkspaceLibraries(task *jobs.Task) bool {
+	for _, l := range task.Libraries {
+		path := libPath(&l)
+		if isWorkspacePath(path) {
+			return true
+		}
+	}
+
+	return false
 }
 
 func isMissingRequiredLibraries(task *jobs.Task) bool {
@@ -69,13 +114,13 @@ func findArtifactsAndMarkForUpload(ctx context.Context, lib *compute.Library, b 
 	}
 
 	if len(matches) == 0 && isLocalLibrary(lib) {
-		return fmt.Errorf("no library found for %s", libPath(lib))
+		return fmt.Errorf("file %s is referenced in libraries section but doesn't exist on the local file system", libPath(lib))
 	}
 
 	for _, match := range matches {
 		af, err := findArtifactFileByLocalPath(match, b)
 		if err != nil {
-			cmdio.LogString(ctx, fmt.Sprintf("%s. Skipping %s. In order to use the library upload it manually", err.Error(), match))
+			cmdio.LogString(ctx, fmt.Sprintf("%s. Skipping uploading. In order to use the define 'artifacts' section", err.Error()))
 		} else {
 			af.Libraries = append(af.Libraries, lib)
 		}
@@ -93,7 +138,7 @@ func findArtifactFileByLocalPath(path string, b *bundle.Bundle) (*config.Artifac
 		}
 	}
 
-	return nil, fmt.Errorf("artifact file is not found for path %s", path)
+	return nil, fmt.Errorf("artifact section is not defined for file at %s", path)
 }
 
 func libPath(library *compute.Library) string {
@@ -111,5 +156,43 @@ func libPath(library *compute.Library) string {
 }
 
 func isLocalLibrary(library *compute.Library) bool {
-	return libPath(library) != ""
+	path := libPath(library)
+	if path == "" {
+		return false
+	}
+
+	if isExplicitFileScheme(path) {
+		return true
+	}
+
+	if isRemoteStorageScheme(path) {
+		return false
+	}
+
+	return !isWorkspacePath(path)
+}
+
+func isExplicitFileScheme(path string) bool {
+	return strings.HasPrefix(path, "file://")
+}
+
+func isRemoteStorageScheme(path string) bool {
+	url, err := url.Parse(path)
+	if err != nil {
+		return false
+	}
+
+	if url.Scheme == "" {
+		return false
+	}
+
+	// If the path starts with scheme:/ format, it's a correct remote storage scheme
+	return strings.HasPrefix(path, url.Scheme+":/")
+
+}
+
+func isWorkspacePath(path string) bool {
+	return strings.HasPrefix(path, "/Workspace/") ||
+		strings.HasPrefix(path, "/Users/") ||
+		strings.HasPrefix(path, "/Shared/")
 }

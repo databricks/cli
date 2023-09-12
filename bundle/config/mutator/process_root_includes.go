@@ -5,18 +5,17 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
-	"golang.org/x/exp/slices"
+	"github.com/databricks/cli/bundle/env"
 )
 
-const ExtraIncludePathsKey string = "DATABRICKS_BUNDLE_INCLUDES"
-
 // Get extra include paths from environment variable
-func GetExtraIncludePaths() []string {
-	value, exists := os.LookupEnv(ExtraIncludePathsKey)
+func getExtraIncludePaths(ctx context.Context) []string {
+	value, exists := env.Includes(ctx)
 	if !exists {
 		return nil
 	}
@@ -50,7 +49,7 @@ func (m *processRootIncludes) Apply(ctx context.Context, b *bundle.Bundle) error
 	var files []string
 
 	// Converts extra include paths from environment variable to relative paths
-	for _, extraIncludePath := range GetExtraIncludePaths() {
+	for _, extraIncludePath := range getExtraIncludePaths(ctx) {
 		if filepath.IsAbs(extraIncludePath) {
 			rel, err := filepath.Rel(b.Config.Path, extraIncludePath)
 			if err != nil {

@@ -21,6 +21,9 @@ type Runner interface {
 	// This is used for showing the user hints w.r.t. disambiguation.
 	Key() string
 
+	// Name returns the resource's name, if defined.
+	Name() string
+
 	// Run the underlying worklow.
 	Run(ctx context.Context, opts *Options) (output.RunOutput, error)
 }

@@ -8,6 +8,7 @@ import (
 	"strings"
 	"text/template"
 
+	schemapkg "github.com/databricks/cli/bundle/internal/tf/codegen/schema"
 	tfjson "github.com/hashicorp/terraform-json"
 )
 
@@ -30,6 +31,23 @@ func (c *collection) Generate(path string) error {
 	defer f.Close()
 
 	return tmpl.Execute(f, c)
+}
+
+type root struct {
+	OutputFile      string
+	ProviderVersion string
+}
+
+func (r *root) Generate(path string) error {
+	tmpl := template.Must(template.ParseFiles(fmt.Sprintf("./templates/%s.tmpl", r.OutputFile)))
+	f, err := os.Create(filepath.Join(path, r.OutputFile))
+	if err != nil {
+		return err
+	}
+
+	defer f.Close()
+
+	return tmpl.Execute(f, r)
 }
 
 func Run(ctx context.Context, schema *tfjson.ProviderSchema, path string) error {
@@ -100,6 +118,18 @@ func Run(ctx context.Context, schema *tfjson.ProviderSchema, path string) error 
 			Blocks:     dataSources,
 		}
 		err := cr.Generate(path)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Generate root.go
+	{
+		r := &root{
+			OutputFile:      "root.go",
+			ProviderVersion: schemapkg.ProviderVersion,
+		}
+		err := r.Generate(path)
 		if err != nil {
 			return err
 		}

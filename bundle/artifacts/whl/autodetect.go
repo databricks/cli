@@ -10,7 +10,9 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/log"
 )
 
 type detectPkg struct {
@@ -25,6 +27,11 @@ func (m *detectPkg) Name() string {
 }
 
 func (m *detectPkg) Apply(ctx context.Context, b *bundle.Bundle) error {
+	wheelTasks := libraries.FindAllWheelTasksWithLocalLibraries(b)
+	if len(wheelTasks) == 0 {
+		log.Infof(ctx, "No local wheel tasks in databricks.yml config, skipping auto detect")
+		return nil
+	}
 	cmdio.LogString(ctx, "artifacts.whl.AutoDetect: Detecting Python wheel project...")
 
 	// checking if there is setup.py in the bundle root

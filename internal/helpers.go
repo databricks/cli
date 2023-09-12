@@ -37,7 +37,6 @@ func GetEnvOrSkipTest(t *testing.T, name string) string {
 
 // RandomName gives random name with optional prefix. e.g. qa.RandomName("tf-")
 func RandomName(prefix ...string) string {
-	rand.Seed(time.Now().UnixNano())
 	randLen := 12
 	b := make([]byte, randLen)
 	for i := range b {
@@ -58,6 +57,8 @@ type cobraTestRunner struct {
 	args   []string
 	stdout bytes.Buffer
 	stderr bytes.Buffer
+
+	ctx context.Context
 
 	// Line-by-line output.
 	// Background goroutines populate these channels by reading from stdout/stderr pipes.
@@ -117,7 +118,7 @@ func (t *cobraTestRunner) RunBackground() {
 	var stdoutW, stderrW io.WriteCloser
 	stdoutR, stdoutW = io.Pipe()
 	stderrR, stderrW = io.Pipe()
-	root := cmd.New()
+	root := cmd.New(context.Background())
 	root.SetOut(stdoutW)
 	root.SetErr(stderrW)
 	root.SetArgs(t.args)
@@ -129,7 +130,7 @@ func (t *cobraTestRunner) RunBackground() {
 	t.registerFlagCleanup(root)
 
 	errch := make(chan error)
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.ctx)
 
 	// Tee stdout/stderr to buffers.
 	stdoutR = io.TeeReader(stdoutR, &t.stdout)
@@ -235,6 +236,15 @@ func (c *cobraTestRunner) Eventually(condition func() bool, waitFor time.Duratio
 func NewCobraTestRunner(t *testing.T, args ...string) *cobraTestRunner {
 	return &cobraTestRunner{
 		T:    t,
+		ctx:  context.Background(),
+		args: args,
+	}
+}
+
+func NewCobraTestRunnerWithContext(t *testing.T, ctx context.Context, args ...string) *cobraTestRunner {
+	return &cobraTestRunner{
+		T:    t,
+		ctx:  ctx,
 		args: args,
 	}
 }

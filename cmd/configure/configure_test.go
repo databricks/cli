@@ -54,7 +54,7 @@ func TestDefaultConfigureNoInteractive(t *testing.T) {
 	})
 	os.Stdin = inp
 
-	cmd := cmd.New()
+	cmd := cmd.New(ctx)
 	cmd.SetArgs([]string{"configure", "--token", "--host", "https://host"})
 
 	err := cmd.ExecuteContext(ctx)
@@ -87,7 +87,7 @@ func TestConfigFileFromEnvNoInteractive(t *testing.T) {
 	t.Cleanup(func() { os.Stdin = oldStdin })
 	os.Stdin = inp
 
-	cmd := cmd.New()
+	cmd := cmd.New(ctx)
 	cmd.SetArgs([]string{"configure", "--token", "--host", "https://host"})
 
 	err := cmd.ExecuteContext(ctx)
@@ -116,7 +116,7 @@ func TestCustomProfileConfigureNoInteractive(t *testing.T) {
 	t.Cleanup(func() { os.Stdin = oldStdin })
 	os.Stdin = inp
 
-	cmd := cmd.New()
+	cmd := cmd.New(ctx)
 	cmd.SetArgs([]string{"configure", "--token", "--host", "https://host", "--profile", "CUSTOM"})
 
 	err := cmd.ExecuteContext(ctx)

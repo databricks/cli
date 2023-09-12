@@ -12,7 +12,7 @@ bundle:
 workspace:
   profile: ${var.a} ${var.b}
 
-environments:
+targets:
   env-with-single-variable-override:
     variables:
       b: dev-b

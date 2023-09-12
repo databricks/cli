@@ -8,13 +8,14 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"slices"
+	"sort"
 	"strings"
 	"text/template"
 
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/logger"
-	"golang.org/x/exp/slices"
 )
 
 const templateExtension = ".tmpl"
@@ -57,9 +58,9 @@ type renderer struct {
 	instanceRoot string
 }
 
-func newRenderer(ctx context.Context, config map[string]any, templateRoot, libraryRoot, instanceRoot string) (*renderer, error) {
+func newRenderer(ctx context.Context, config map[string]any, helpers template.FuncMap, templateRoot, libraryRoot, instanceRoot string) (*renderer, error) {
 	// Initialize new template, with helper functions loaded
-	tmpl := template.New("").Funcs(helperFuncs)
+	tmpl := template.New("").Funcs(helpers)
 
 	// Load user defined associated templates from the library root
 	libraryGlob := filepath.Join(libraryRoot, "*")
@@ -104,7 +105,7 @@ func (r *renderer) executeTemplate(templateDefinition string) (string, error) {
 	// Parse the template text
 	tmpl, err = tmpl.Parse(templateDefinition)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("error in %s: %w", templateDefinition, err)
 	}
 
 	// Execute template and get result
@@ -124,19 +125,29 @@ func (r *renderer) computeFile(relPathTemplate string) (file, error) {
 	}
 	perm := info.Mode().Perm()
 
+	// Execute relative path template to get destination path for the file
+	relPath, err := r.executeTemplate(relPathTemplate)
+	if err != nil {
+		return nil, err
+	}
+
 	// If file name does not specify the `.tmpl` extension, then it is copied
 	// over as is, without treating it as a template
 	if !strings.HasSuffix(relPathTemplate, templateExtension) {
 		return &copyFile{
 			dstPath: &destinationPath{
 				root:    r.instanceRoot,
-				relPath: relPathTemplate,
+				relPath: relPath,
 			},
 			perm:     perm,
 			ctx:      r.ctx,
 			srcPath:  relPathTemplate,
 			srcFiler: r.templateFiler,
 		}, nil
+	} else {
+		// Trim the .tmpl suffix from file name, if specified in the template
+		// path
+		relPath = strings.TrimSuffix(relPath, templateExtension)
 	}
 
 	// read template file's content
@@ -158,13 +169,6 @@ func (r *renderer) computeFile(relPathTemplate string) (file, error) {
 	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to compute file content for %s. %w", relPathTemplate, err)
-	}
-
-	// Execute relative path template to get materialized path for the file
-	relPathTemplate = strings.TrimSuffix(relPathTemplate, templateExtension)
-	relPath, err := r.executeTemplate(relPathTemplate)
-	if err != nil {
-		return nil, err
 	}
 
 	return &inMemoryFile{
@@ -211,17 +215,22 @@ func (r *renderer) walk() error {
 		// Add skip function, which accumulates skip patterns relative to current
 		// directory
 		r.baseTemplate.Funcs(template.FuncMap{
-			"skip": func(relPattern string) string {
+			"skip": func(relPattern string) (string, error) {
 				// patterns are specified relative to current directory of the file
 				// the {{skip}} function is called from.
-				pattern := path.Join(currentDirectory, relPattern)
+				patternRaw := path.Join(currentDirectory, relPattern)
+				pattern, err := r.executeTemplate(patternRaw)
+				if err != nil {
+					return "", err
+				}
+
 				if !slices.Contains(r.skipPatterns, pattern) {
 					logger.Infof(r.ctx, "adding skip pattern: %s", pattern)
 					r.skipPatterns = append(r.skipPatterns, pattern)
 				}
 				// return empty string will print nothing at function call site
 				// when executing the template
-				return ""
+				return "", nil
 			},
 		})
 
@@ -236,6 +245,10 @@ func (r *renderer) walk() error {
 		if err != nil {
 			return err
 		}
+		// Sort by name to ensure deterministic ordering
+		sort.Slice(entries, func(i, j int) bool {
+			return entries[i].Name() < entries[j].Name()
+		})
 		for _, entry := range entries {
 			if entry.IsDir() {
 				// Add to slice, for BFS traversal

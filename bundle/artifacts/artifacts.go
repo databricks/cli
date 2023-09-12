@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"path/filepath"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/artifacts/whl"
@@ -107,7 +108,7 @@ func uploadArtifact(ctx context.Context, a *config.Artifact, b *bundle.Bundle) e
 	for i := range a.Files {
 		f := &a.Files[i]
 		if f.NeedsUpload() {
-			filename := path.Base(f.Source)
+			filename := filepath.Base(f.Source)
 			cmdio.LogString(ctx, fmt.Sprintf("artifacts.Upload(%s): Uploading...", filename))
 			remotePath, err := uploadArtifactFile(ctx, f.Source, b)
 			if err != nil {
@@ -136,7 +137,7 @@ func uploadArtifactFile(ctx context.Context, file string, b *bundle.Bundle) (str
 	}
 
 	fileHash := sha256.Sum256(raw)
-	remotePath := path.Join(uploadPath, fmt.Sprintf("%x", fileHash), path.Base(file))
+	remotePath := path.Join(uploadPath, fmt.Sprintf("%x", fileHash), filepath.Base(file))
 	// Make sure target directory exists.
 	err = b.WorkspaceClient().Workspace.MkdirsByPath(ctx, path.Dir(remotePath))
 	if err != nil {

@@ -1,0 +1,10 @@
+{
+    "type": "object",
+    "properties": {
+        "abc": {
+            "type": "integer",
+            "default": 1,
+            "enum": [1,2.4,3]
+        }
+    }
+}

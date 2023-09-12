@@ -427,6 +427,79 @@ func init() {
 	})
 }
 
+// start get-secret command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getSecretOverrides []func(
+	*cobra.Command,
+	*workspace.GetSecretRequest,
+)
+
+func newGetSecret() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getSecretReq workspace.GetSecretRequest
+
+	// TODO: short flags
+
+	cmd.Use = "get-secret SCOPE KEY"
+	cmd.Short = `Get a secret.`
+	cmd.Long = `Get a secret.
+  
+  Gets the bytes representation of a secret value for the specified scope and
+  key.
+  
+  Users need the READ permission to make this call.
+  
+  Note that the secret value returned is in bytes. The interpretation of the
+  bytes is determined by the caller in DBUtils and the type the data is decoded
+  into.
+  
+  Throws PERMISSION_DENIED if the user does not have permission to make this
+  API call. Throws RESOURCE_DOES_NOT_EXIST if no such secret or secret scope
+  exists.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(2)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		getSecretReq.Scope = args[0]
+		getSecretReq.Key = args[1]
+
+		response, err := w.Secrets.GetSecret(ctx, getSecretReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getSecretOverrides {
+		fn(cmd, &getSecretReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newGetSecret())
+	})
+}
+
 // start list-acls command
 
 // Slice with functions to override default command behavior.

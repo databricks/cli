@@ -8,8 +8,17 @@ import (
 	"path"
 	"strings"
 
+	"github.com/databricks/cli/bundle/config/paths"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 )
+
+type Artifacts map[string]*Artifact
+
+func (artifacts Artifacts) SetConfigFilePath(path string) {
+	for _, artifact := range artifacts {
+		artifact.ConfigFilePath = path
+	}
+}
 
 type ArtifactType string
 
@@ -34,6 +43,8 @@ type Artifact struct {
 	// (Python wheel, Java jar and etc) itself
 	Files        []ArtifactFile `json:"files"`
 	BuildCommand string         `json:"build"`
+
+	paths.Paths
 }
 
 func (a *Artifact) Build(ctx context.Context) ([]byte, error) {
@@ -67,9 +78,13 @@ func (a *Artifact) NormalisePaths() {
 		remotePath := path.Join(wsfsBase, f.RemotePath)
 		for i := range f.Libraries {
 			lib := f.Libraries[i]
-			switch a.Type {
-			case ArtifactPythonWheel:
+			if lib.Whl != "" {
 				lib.Whl = remotePath
+				continue
+			}
+			if lib.Jar != "" {
+				lib.Jar = remotePath
+				continue
 			}
 		}
 
