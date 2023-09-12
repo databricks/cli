@@ -98,6 +98,12 @@ func newRenderer(ctx context.Context, config map[string]any, helpers template.Fu
 func (r *renderer) executeTemplate(templateDefinition string) (string, error) {
 	// Create copy of base template so as to not overwrite it
 	tmpl, err := r.baseTemplate.Clone()
+
+	// The template execution will error instead of printing <no value> on unknown
+	// map keys if the "missingkey=error" option is set.
+	// We do this here instead of doing this once for r.baseTemplate because
+	// the Template.Clone() method does not clone options.
+	tmpl = tmpl.Option("missingkey=error")
 	if err != nil {
 		return "", err
 	}

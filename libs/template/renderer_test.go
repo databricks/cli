@@ -189,6 +189,22 @@ My email is {{template "email"}}
 	assert.Contains(t, statement, `My email is hrithik.roshan@databricks.com`)
 }
 
+func TestRendererExecuteTemplateWithUnknownProperty(t *testing.T) {
+	templateText := `{{.does_not_exist}}`
+
+	r := renderer{
+		config: map[string]any{
+			"Material": "wool",
+			"count":    1,
+			"Animal":   "sheep",
+		},
+		baseTemplate: template.New("base"),
+	}
+
+	_, err := r.executeTemplate(templateText)
+	assert.ErrorContains(t, err, "map has no entry for key \"does_not_exist\"")
+}
+
 func TestRendererIsSkipped(t *testing.T) {
 
 	skipPatterns := []string{"a*", "*yz", "def", "a/b/*"}
