@@ -1,6 +1,7 @@
 package scripts
 
 import (
+	"bufio"
 	"context"
 	"strings"
 	"testing"
@@ -20,8 +21,12 @@ func TestExecutesHook(t *testing.T) {
 			},
 		},
 	}
-	out, err := executeHook(context.Background(), b, config.ScriptPreBuild)
+	_, out, err := executeHook(context.Background(), b, config.ScriptPreBuild)
+	require.NoError(t, err)
+
+	reader := bufio.NewReader(out)
+	line, err := reader.ReadString('\n')
 
 	require.NoError(t, err)
-	require.Equal(t, "Hello", strings.TrimSpace(string(out)))
+	require.Equal(t, "Hello", strings.TrimSpace(line))
 }

@@ -1,14 +1,17 @@
 package scripts
 
 import (
-	"bytes"
+	"bufio"
 	"context"
 	"fmt"
+	"io"
 	"os/exec"
+	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/log"
 )
 
 func Execute(hook config.ScriptHook) bundle.Mutator {
@@ -26,24 +29,52 @@ func (m *script) Name() string {
 }
 
 func (m *script) Apply(ctx context.Context, b *bundle.Bundle) error {
-	out, err := executeHook(ctx, b, m.scriptHook)
-	cmdio.LogString(ctx, bytes.NewBuffer(out).String())
-	return err
+	cmd, out, err := executeHook(ctx, b, m.scriptHook)
+	if err != nil {
+		return err
+	}
+	if cmd == nil {
+		log.Debugf(ctx, "No script defined for %s, skipping", m.scriptHook)
+		return nil
+	}
+
+	cmdio.LogString(ctx, fmt.Sprintf("Executing '%s' script", m.scriptHook))
+
+	reader := bufio.NewReader(out)
+	line, err := reader.ReadString('\n')
+	for err == nil {
+		cmdio.LogString(ctx, strings.TrimSpace(line))
+		line, err = reader.ReadString('\n')
+	}
+
+	return cmd.Wait()
 }
 
-func executeHook(ctx context.Context, b *bundle.Bundle, hook config.ScriptHook) ([]byte, error) {
+func executeHook(ctx context.Context, b *bundle.Bundle, hook config.ScriptHook) (*exec.Cmd, io.Reader, error) {
 	command := getCommmand(b, hook)
 	if command == "" {
-		return nil, nil
+		return nil, nil, nil
 	}
 
 	interpreter, err := findInterpreter()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	cmd := exec.CommandContext(ctx, interpreter, "-c", string(command))
-	return cmd.CombinedOutput()
+	cmd.Dir = b.Config.Path
+
+	outPipe, err := cmd.StdoutPipe()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	errPipe, err := cmd.StderrPipe()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return cmd, io.MultiReader(outPipe, errPipe), cmd.Start()
 }
 
 func getCommmand(b *bundle.Bundle, hook config.ScriptHook) config.Command {

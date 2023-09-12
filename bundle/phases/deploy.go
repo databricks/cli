@@ -9,7 +9,7 @@ import (
 	"github.com/databricks/cli/bundle/deploy/lock"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/libraries"
-  "github.com/databricks/cli/bundle/python"
+	"github.com/databricks/cli/bundle/python"
 	"github.com/databricks/cli/bundle/scripts"
 )
 
