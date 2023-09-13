@@ -2,6 +2,7 @@ package resources
 
 import (
 	"github.com/databricks/cli/bundle/config/paths"
+	marshal "github.com/databricks/databricks-sdk-go/json"
 	"github.com/databricks/databricks-sdk-go/service/serving"
 )
 
@@ -21,4 +22,14 @@ type ModelServingEndpoint struct {
 	// This is a resource agnostic implementation of permissions for ACLs.
 	// Implementation could be different based on the resource type.
 	Permissions []Permission `json:"permissions,omitempty"`
+}
+
+func (s *ModelServingEndpoint) UnmarshalJSON(b []byte) error {
+	type C ModelServingEndpoint
+	return marshal.Unmarshal(b, (*C)(s))
+}
+
+func (s ModelServingEndpoint) MarshalJSON() ([]byte, error) {
+	type C ModelServingEndpoint
+	return marshal.Marshal((C)(s))
 }

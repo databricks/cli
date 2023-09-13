@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle/config/paths"
+	marshal "github.com/databricks/databricks-sdk-go/json"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/imdario/mergo"
 )
@@ -17,6 +18,7 @@ type Pipeline struct {
 	*pipelines.PipelineSpec
 }
 
+<<<<<<< HEAD
 // MergeClusters merges cluster definitions with same label.
 // The clusters field is a slice, and as such, overrides are appended to it.
 // We can identify a cluster by its label, however, so we can use this label
@@ -62,4 +64,14 @@ func (p *Pipeline) MergeClusters() error {
 	// Overwrite resulting slice.
 	p.Clusters = output
 	return nil
+=======
+func (s *Pipeline) UnmarshalJSON(b []byte) error {
+	type C Pipeline
+	return marshal.Unmarshal(b, (*C)(s))
+}
+
+func (s Pipeline) MarshalJSON() ([]byte, error) {
+	type C Pipeline
+	return marshal.Marshal((C)(s))
+>>>>>>> ed1d479 ([DO NOT MERGE] Use custom marshaller)
 }
