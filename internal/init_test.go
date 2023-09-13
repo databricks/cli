@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestBundleInitErrorOnUnknownFields(t *testing.T) {
+func TestAccBundleInitErrorOnUnknownFields(t *testing.T) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	tmpDir := t.TempDir()
