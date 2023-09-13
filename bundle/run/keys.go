@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/bundle"
+	"golang.org/x/exp/maps"
 )
 
 // RunnerLookup maps identifiers to a list of workloads that match that identifier.
@@ -32,18 +33,20 @@ func ResourceKeys(b *bundle.Bundle) (keyOnly RunnerLookup, keyWithType RunnerLoo
 	return
 }
 
-// ResourceCompletions returns a list of keys that unambiguously reference resources in the bundle.
-func ResourceCompletions(b *bundle.Bundle) []string {
-	seen := make(map[string]bool)
-	comps := []string{}
+// ResourceCompletionMap returns a map of resource keys to their respective names.
+func ResourceCompletionMap(b *bundle.Bundle) map[string]string {
+	out := make(map[string]string)
 	keyOnly, keyWithType := ResourceKeys(b)
+
+	// Keep track of resources we have seen by their fully qualified key.
+	seen := make(map[string]bool)
 
 	// First add resources that can be identified by key alone.
 	for k, v := range keyOnly {
 		// Invariant: len(v) >= 1. See [ResourceKeys].
 		if len(v) == 1 {
 			seen[v[0].Key()] = true
-			comps = append(comps, k)
+			out[k] = v[0].Name()
 		}
 	}
 
@@ -54,8 +57,13 @@ func ResourceCompletions(b *bundle.Bundle) []string {
 		if ok {
 			continue
 		}
-		comps = append(comps, k)
+		out[k] = v[0].Name()
 	}
 
-	return comps
+	return out
+}
+
+// ResourceCompletions returns a list of keys that unambiguously reference resources in the bundle.
+func ResourceCompletions(b *bundle.Bundle) []string {
+	return maps.Keys(ResourceCompletionMap(b))
 }

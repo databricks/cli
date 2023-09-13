@@ -205,6 +205,13 @@ func Prompt(ctx context.Context) *promptui.Prompt {
 	}
 }
 
+func RunSelect(ctx context.Context, prompt *promptui.Select) (int, string, error) {
+	c := fromContext(ctx)
+	prompt.Stdin = io.NopCloser(c.in)
+	prompt.Stdout = nopWriteCloser{c.err}
+	return prompt.Run()
+}
+
 func (c *cmdIO) simplePrompt(label string) *promptui.Prompt {
 	return &promptui.Prompt{
 		Label:  label,
