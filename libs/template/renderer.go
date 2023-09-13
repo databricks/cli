@@ -119,8 +119,8 @@ func (r *renderer) executeTemplate(templateDefinition string) (string, error) {
 	result := strings.Builder{}
 	err = tmpl.Execute(&result, r.config)
 	if err != nil {
-		// Parse and return a more readable error for missing values from input
-		// config that the template uses.
+		// Parse and return a more readable error for missing values that are used
+		// by the template definition but are not provided in the passed config.
 		if strings.Contains(err.Error(), "map has no entry for key") {
 			captureRegex := regexp.MustCompile(`map has no entry for key "(.*)"`)
 			matches := captureRegex.FindStringSubmatch(err.Error())
