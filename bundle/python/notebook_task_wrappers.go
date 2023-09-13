@@ -99,23 +99,32 @@ func getDbnbTemplate(s string) (string, error) {
 `, notebookTrampolineData, s), nil
 }
 
+type IpynbData struct {
+	Cells []IpynbCell `json:"cells"`
+}
+
+type IpynbCell struct {
+	CellType string   `json:"cell_type"`
+	Source   []string `json:"source"`
+}
+
 func getIpynbTemplate(s string) (string, error) {
-	var data map[string]any
+	var data IpynbData
 	err := json.Unmarshal([]byte(s), &data)
 	if err != nil {
 		return "", err
 	}
 
-	if data["cells"] == nil {
-		data["cells"] = []any{}
+	if data.Cells == nil {
+		data.Cells = []IpynbCell{}
 	}
 
-	data["cells"] = append([]any{
-		map[string]any{
-			"cell_type": "code",
-			"source":    []string{notebookTrampolineData},
+	data.Cells = append([]IpynbCell{
+		{
+			CellType: "code",
+			Source:   []string{"# Databricks notebook source"},
 		},
-	}, data["cells"].([]any)...)
+	}, data.Cells...)
 
 	bytes, err := json.Marshal(data)
 	if err != nil {
