@@ -11,4 +11,8 @@ type Extension struct {
 	// If not defined, the field is ordered alphabetically after all fields
 	// that do have an order defined.
 	Order *int `json:"order,omitempty"`
+
+	// PatternMatchFailMessage is a user defined message that is displayed to the
+	// user if a JSON schema pattern match fails.
+	PatternMatchFailMessage string `json:"pattern_match_fail_message,omitempty"`
 }

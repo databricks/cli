@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"regexp"
 	"slices"
 )
 
@@ -120,20 +119,7 @@ func (s *Schema) validatePattern(instance map[string]any) error {
 		if !ok {
 			continue
 		}
-		if fieldInfo.Pattern == "" {
-			continue
-		}
-		r, err := regexp.Compile(fieldInfo.Pattern)
-		if err != nil {
-			return err
-		}
-		stringVal, ok := v.(string)
-		if !ok {
-			return fmt.Errorf("expected property %s to have a string value. Current value: %#v", k, v)
-		}
-		if !r.MatchString(stringVal) {
-			return fmt.Errorf("value %q of property %s does not match regex pattern %q", stringVal, k, fieldInfo.Pattern)
-		}
+		return ValidatePatternMatch(k, v, fieldInfo)
 	}
 	return nil
 }
