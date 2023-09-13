@@ -2,8 +2,6 @@ package terraform
 
 import (
 	"context"
-	"errors"
-	"io/fs"
 	"os"
 	"path/filepath"
 
@@ -32,12 +30,6 @@ func (l *statePush) Apply(ctx context.Context, b *bundle.Bundle) error {
 	// Expect the state file to live under dir.
 	local, err := os.Open(filepath.Join(dir, TerraformStateFileName))
 	if err != nil {
-		if errors.Is(err, fs.ErrNotExist) && b.TerraformHasNoResources {
-			// A terraform state file is not created for new bundle deployments
-			// with no resources defined. We ignore that a local terraform state
-			// file is absent if the bundle config has no resources defined.
-			return nil
-		}
 		return err
 	}
 	defer local.Close()

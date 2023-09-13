@@ -49,7 +49,7 @@ func convPermission(ac resources.Permission) schema.ResourcePermissionsAccessCon
 //
 // NOTE: THIS IS CURRENTLY A HACK. WE NEED A BETTER WAY TO
 // CONVERT TO/FROM TERRAFORM COMPATIBLE FORMAT.
-func BundleToTerraform(config *config.Root) (*schema.Root, bool) {
+func BundleToTerraform(config *config.Root) *schema.Root {
 	tfroot := schema.NewRoot()
 	tfroot.Provider = schema.NewProviders()
 	tfroot.Resource = schema.NewResources()
@@ -174,7 +174,13 @@ func BundleToTerraform(config *config.Root) (*schema.Root, bool) {
 		}
 	}
 
-	return tfroot, noResources
+	// We explicitly set "resource" to nil to omit it from a JSON encoding.
+	// This is required because the terraform CLI required >= 1 resources defined
+	// if the "resource" property is used in a .tf.json file.
+	if noResources {
+		tfroot.Resource = nil
+	}
+	return tfroot
 }
 
 func TerraformToBundle(state *tfjson.State, config *config.Root) error {
