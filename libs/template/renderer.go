@@ -127,7 +127,7 @@ func (r *renderer) executeTemplate(templateDefinition string) (string, error) {
 			if len(matches) != 2 {
 				return "", err
 			}
-			return "", fmt.Errorf("unknown input parameter %q used. All inputs for the template should be defined in %s", matches[1], schemaFileName)
+			return "", fmt.Errorf("variable %q not defined", matches[1])
 		}
 		return "", err
 	}

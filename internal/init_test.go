@@ -11,5 +11,5 @@ func TestBundleInitErrorOnUnknownFields(t *testing.T) {
 
 	tmpDir := t.TempDir()
 	_, _, err := RequireErrorRun(t, "bundle", "init", "./testdata/init/field-does-not-exist", "--output-dir", tmpDir)
-	assert.EqualError(t, err, `failed to compute file content for bar.tmpl. template: :2:2: executing "" at <.does_not_exist>: map has no entry for key "does_not_exist"`)
+	assert.EqualError(t, err, "failed to compute file content for bar.tmpl. variable \"does_not_exist\" not defined")
 }
