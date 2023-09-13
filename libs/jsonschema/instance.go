@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"regexp"
 	"slices"
 )
 
@@ -45,6 +46,7 @@ func (s *Schema) ValidateInstance(instance map[string]any) error {
 		s.validateEnum,
 		s.validateRequired,
 		s.validateTypes,
+		s.validatePattern,
 	} {
 		err := fn(instance)
 		if err != nil {
@@ -107,6 +109,30 @@ func (s *Schema) validateEnum(instance map[string]any) error {
 		}
 		if !slices.Contains(fieldInfo.Enum, v) {
 			return fmt.Errorf("expected value of property %s to be one of %v. Found: %v", k, fieldInfo.Enum, v)
+		}
+	}
+	return nil
+}
+
+func (s *Schema) validatePattern(instance map[string]any) error {
+	for k, v := range instance {
+		fieldInfo, ok := s.Properties[k]
+		if !ok {
+			continue
+		}
+		if fieldInfo.Pattern == "" {
+			continue
+		}
+		r, err := regexp.Compile(fieldInfo.Pattern)
+		if err != nil {
+			return err
+		}
+		stringVal, ok := v.(string)
+		if !ok {
+			return fmt.Errorf("expected property %s to have a string value. Current value: %#v", k, v)
+		}
+		if !r.MatchString(stringVal) {
+			return fmt.Errorf("value %q of property %s does not match regex pattern %q", stringVal, k, fieldInfo.Pattern)
 		}
 	}
 	return nil
