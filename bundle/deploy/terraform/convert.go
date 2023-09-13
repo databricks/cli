@@ -175,7 +175,7 @@ func BundleToTerraform(config *config.Root) *schema.Root {
 	}
 
 	// We explicitly set "resource" to nil to omit it from a JSON encoding.
-	// This is required because the terraform CLI required >= 1 resources defined
+	// This is required because the terraform CLI requires >= 1 resources defined
 	// if the "resource" property is used in a .tf.json file.
 	if noResources {
 		tfroot.Resource = nil
