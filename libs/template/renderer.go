@@ -99,15 +99,15 @@ func newRenderer(ctx context.Context, config map[string]any, helpers template.Fu
 func (r *renderer) executeTemplate(templateDefinition string) (string, error) {
 	// Create copy of base template so as to not overwrite it
 	tmpl, err := r.baseTemplate.Clone()
+	if err != nil {
+		return "", err
+	}
 
 	// The template execution will error instead of printing <no value> on unknown
 	// map keys if the "missingkey=error" option is set.
 	// We do this here instead of doing this once for r.baseTemplate because
 	// the Template.Clone() method does not clone options.
 	tmpl = tmpl.Option("missingkey=error")
-	if err != nil {
-		return "", err
-	}
 
 	// Parse the template text
 	tmpl, err = tmpl.Parse(templateDefinition)
@@ -121,9 +121,10 @@ func (r *renderer) executeTemplate(templateDefinition string) (string, error) {
 	if err != nil {
 		// Parse and return a more readable error for missing values that are used
 		// by the template definition but are not provided in the passed config.
-		if strings.Contains(err.Error(), "map has no entry for key") {
+		target := &template.ExecError{}
+		if errors.As(err, target) {
 			captureRegex := regexp.MustCompile(`map has no entry for key "(.*)"`)
-			matches := captureRegex.FindStringSubmatch(err.Error())
+			matches := captureRegex.FindStringSubmatch(target.Err.Error())
 			if len(matches) != 2 {
 				return "", err
 			}
