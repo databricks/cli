@@ -9,17 +9,13 @@ import (
 	"text/template"
 
 	"github.com/databricks/cli/bundle"
+	jobs_utils "github.com/databricks/cli/libs/jobs"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
-type TaskWithJobKey struct {
-	Task   *jobs.Task
-	JobKey string
-}
-
 type TrampolineFunctions interface {
 	GetTemplateData(b *bundle.Bundle, task *jobs.Task) (map[string]any, error)
-	GetTasks(b *bundle.Bundle) []TaskWithJobKey
+	GetTasks(b *bundle.Bundle) []jobs_utils.TaskWithJobKey
 	GetTemplate(b *bundle.Bundle, task *jobs.Task) (string, error)
 	CleanUp(task *jobs.Task) error
 }
@@ -33,22 +29,6 @@ func NewTrampoline(
 	functions TrampolineFunctions,
 ) *trampoline {
 	return &trampoline{name, functions}
-}
-
-func GetTasksWithJobKeyBy(b *bundle.Bundle, filter func(*jobs.Task) bool) []TaskWithJobKey {
-	tasks := make([]TaskWithJobKey, 0)
-	for k := range b.Config.Resources.Jobs {
-		for i := range b.Config.Resources.Jobs[k].Tasks {
-			t := &b.Config.Resources.Jobs[k].Tasks[i]
-			if filter(t) {
-				tasks = append(tasks, TaskWithJobKey{
-					JobKey: k,
-					Task:   t,
-				})
-			}
-		}
-	}
-	return tasks
 }
 
 func (m *trampoline) Name() string {
@@ -66,7 +46,7 @@ func (m *trampoline) Apply(ctx context.Context, b *bundle.Bundle) error {
 	return nil
 }
 
-func (m *trampoline) generateNotebookWrapper(b *bundle.Bundle, task TaskWithJobKey) error {
+func (m *trampoline) generateNotebookWrapper(b *bundle.Bundle, task jobs_utils.TaskWithJobKey) error {
 	internalDir, err := b.InternalDir()
 	if err != nil {
 		return err

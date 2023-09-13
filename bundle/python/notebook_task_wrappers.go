@@ -10,6 +10,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/mutator"
+	jobs_utils "github.com/databricks/cli/libs/jobs"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
@@ -44,20 +45,21 @@ func localNotebookPath(b *bundle.Bundle, task *jobs.Task) (string, error) {
 	if err == nil {
 		return fmt.Sprintf("%s.py", localPath), nil
 	}
+
 	return "", fmt.Errorf("notebook %s not found", localPath)
 }
 
-func (n *notebookTrampoline) GetTasks(b *bundle.Bundle) []mutator.TaskWithJobKey {
-	return mutator.GetTasksWithJobKeyBy(b, func(task *jobs.Task) bool {
+func (n *notebookTrampoline) GetTasks(b *bundle.Bundle) []jobs_utils.TaskWithJobKey {
+	return jobs_utils.GetTasksWithJobKeyBy(b, func(task *jobs.Task) bool {
 		if task.NotebookTask == nil ||
 			task.NotebookTask.Source == jobs.SourceGit {
 			return false
 		}
-		localPath, err := localNotebookPath(b, task)
-		if err != nil {
-			return false
-		}
-		return strings.HasSuffix(localPath, ".ipynb") || strings.HasSuffix(localPath, ".py")
+		_, err := localNotebookPath(b, task)
+		// We assume if the notebook is not available locally in the bundle
+		// then the user has it somewhere in the workspace. For these
+		// out of bundle notebooks we do not want to write a trampoline.
+		return err == nil
 	})
 }
 
@@ -66,13 +68,6 @@ func (n *notebookTrampoline) CleanUp(task *jobs.Task) error {
 }
 
 func (n *notebookTrampoline) GetTemplate(b *bundle.Bundle, task *jobs.Task) (string, error) {
-	if task.NotebookTask == nil {
-		return "", fmt.Errorf("nil notebook path")
-	}
-
-	if task.NotebookTask.Source == jobs.SourceGit {
-		return "", fmt.Errorf("source must be workspace %s", task.NotebookTask.Source)
-	}
 	localPath, err := localNotebookPath(b, task)
 	if err != nil {
 		return "", err
@@ -89,14 +84,10 @@ func (n *notebookTrampoline) GetTemplate(b *bundle.Bundle, task *jobs.Task) (str
 
 	lines := strings.Split(s, "\n")
 	if strings.HasPrefix(lines[0], "# Databricks notebook source") {
-		return getDbnbTemplate(strings.Join(lines, "\n"))
+		return getDbnbTemplate(s)
 	}
 
-	return getPyTemplate(s), nil
-}
-
-func getPyTemplate(s string) string {
-	return pyTrampolineData
+	return pyTrampolineData, nil
 }
 
 func getDbnbTemplate(s string) (string, error) {
