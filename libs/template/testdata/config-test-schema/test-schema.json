@@ -1,0 +1,18 @@
+{
+    "properties": {
+        "int_val": {
+            "type": "integer",
+            "default": 123
+        },
+        "float_val": {
+            "type": "number"
+        },
+        "bool_val": {
+            "type": "boolean"
+        },
+        "string_val": {
+            "type": "string",
+            "default": "abc"
+        }
+    }
+}

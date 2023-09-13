@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/libs/flags"
+	"github.com/manifoldco/promptui"
 )
 
 // This is the interface for all io interactions with a user
@@ -102,6 +103,36 @@ func AskYesOrNo(ctx context.Context, question string) (bool, error) {
 		return true, nil
 	}
 	return false, nil
+}
+
+func AskSelect(ctx context.Context, question string, choices []string) (string, error) {
+	logger, ok := FromContext(ctx)
+	if !ok {
+		logger = Default()
+	}
+	return logger.AskSelect(question, choices)
+}
+
+func (l *Logger) AskSelect(question string, choices []string) (string, error) {
+	if l.Mode == flags.ModeJson {
+		return "", fmt.Errorf("question prompts are not supported in json mode")
+	}
+
+	prompt := promptui.Select{
+		Label:    question,
+		Items:    choices,
+		HideHelp: true,
+		Templates: &promptui.SelectTemplates{
+			Label:    "{{.}}: ",
+			Selected: fmt.Sprintf("%s: {{.}}", question),
+		},
+	}
+
+	_, ans, err := prompt.Run()
+	if err != nil {
+		return "", err
+	}
+	return ans, nil
 }
 
 func (l *Logger) Ask(question string, defaultVal string) (string, error) {

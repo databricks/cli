@@ -12,7 +12,14 @@ import (
 	"testing"
 	"text/template"
 
+	"github.com/databricks/cli/bundle"
+	bundleConfig "github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/mutator"
+	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/databricks-sdk-go"
+	workspaceConfig "github.com/databricks/databricks-sdk-go/config"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -27,6 +34,95 @@ func assertFilePermissions(t *testing.T, path string, perm fs.FileMode) {
 	info, err := os.Stat(path)
 	require.NoError(t, err)
 	assert.Equal(t, perm, info.Mode().Perm())
+}
+
+func assertBuiltinTemplateValid(t *testing.T, settings map[string]any, target string, isServicePrincipal bool, build bool, tempDir string) {
+	ctx := context.Background()
+
+	templatePath, err := prepareBuiltinTemplates("default-python", tempDir)
+	require.NoError(t, err)
+
+	w := &databricks.WorkspaceClient{
+		Config: &workspaceConfig.Config{Host: "https://myhost.com"},
+	}
+
+	// Prepare helpers
+	cachedUser = &iam.User{UserName: "user@domain.com"}
+	cachedIsServicePrincipal = &isServicePrincipal
+	ctx = root.SetWorkspaceClient(ctx, w)
+	helpers := loadHelpers(ctx)
+
+	renderer, err := newRenderer(ctx, settings, helpers, templatePath, "./testdata/template-in-path/library", tempDir)
+	require.NoError(t, err)
+
+	// Evaluate template
+	err = renderer.walk()
+	require.NoError(t, err)
+	err = renderer.persistToDisk()
+	require.NoError(t, err)
+	b, err := bundle.Load(ctx, filepath.Join(tempDir, "template", "my_project"))
+	require.NoError(t, err)
+
+	// Apply initialize / validation mutators
+	b.Config.Workspace.CurrentUser = &bundleConfig.User{User: cachedUser}
+	b.WorkspaceClient()
+	b.Config.Bundle.Terraform = &bundleConfig.Terraform{
+		ExecPath: "sh",
+	}
+	err = bundle.Apply(ctx, b, bundle.Seq(
+		bundle.Seq(mutator.DefaultMutators()...),
+		mutator.SelectTarget(target),
+		phases.Initialize(),
+	))
+	require.NoError(t, err)
+
+	// Apply build mutator
+	if build {
+		err = bundle.Apply(ctx, b, phases.Build())
+		require.NoError(t, err)
+	}
+}
+
+func TestBuiltinTemplateValid(t *testing.T) {
+	// Test option combinations
+	options := []string{"yes", "no"}
+	isServicePrincipal := false
+	build := false
+	for _, includeNotebook := range options {
+		for _, includeDlt := range options {
+			for _, includePython := range options {
+				for _, isServicePrincipal := range []bool{true, false} {
+					config := map[string]any{
+						"project_name":     "my_project",
+						"include_notebook": includeNotebook,
+						"include_dlt":      includeDlt,
+						"include_python":   includePython,
+					}
+					tempDir := t.TempDir()
+					assertBuiltinTemplateValid(t, config, "dev", isServicePrincipal, build, tempDir)
+				}
+			}
+		}
+	}
+
+	// Test prod mode + build
+	config := map[string]any{
+		"project_name":     "my_project",
+		"include_notebook": "yes",
+		"include_dlt":      "yes",
+		"include_python":   "yes",
+	}
+	isServicePrincipal = false
+	build = true
+
+	// On Windows, we can't always remove the resulting temp dir since background
+	// processes might have it open, so we use 'defer' for a best-effort cleanup
+	tempDir, err := os.MkdirTemp("", "templates")
+	require.NoError(t, err)
+	defer os.RemoveAll(tempDir)
+
+	assertBuiltinTemplateValid(t, config, "prod", isServicePrincipal, build, tempDir)
+	defer os.RemoveAll(tempDir)
 }
 
 func TestRendererWithAssociatedTemplateInLibrary(t *testing.T) {

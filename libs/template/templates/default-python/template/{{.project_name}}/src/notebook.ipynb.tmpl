@@ -14,7 +14,7 @@
    "source": [
     "# Default notebook\n",
     "\n",
-    "This default notebook is executed using Databricks Workflows as defined in resources/{{.my_project}}_job.yml."
+    "This default notebook is executed using Databricks Workflows as defined in resources/{{.project_name}}_job.yml."
    ]
   },
   {
@@ -34,9 +34,13 @@
    },
    "outputs": [],
    "source": [
+   {{- if (eq .include_python "yes") }}
     "from {{.project_name}} import main\n",
     "\n",
-    "main.get_taxis().show(10)\n"
+    "main.get_taxis().show(10)"
+   {{else}}
+    "spark.range(10)"
+   {{end -}}
    ]
   }
  ],

@@ -25,13 +25,57 @@ func initProfileFlag(cmd *cobra.Command) {
 	cmd.RegisterFlagCompletionFunc("profile", databrickscfg.ProfileCompletion)
 }
 
+func profileFlagValue(cmd *cobra.Command) (string, bool) {
+	profileFlag := cmd.Flag("profile")
+	if profileFlag == nil {
+		return "", false
+	}
+	value := profileFlag.Value.String()
+	return value, value != ""
+}
+
+// Helper function to create an account client or prompt once if the given configuration is not valid.
+func accountClientOrPrompt(ctx context.Context, cfg *config.Config, allowPrompt bool) (*databricks.AccountClient, error) {
+	a, err := databricks.NewAccountClient((*databricks.Config)(cfg))
+	if err == nil {
+		err = a.Config.Authenticate(emptyHttpRequest(ctx))
+	}
+
+	prompt := false
+	if allowPrompt && err != nil && cmdio.IsInteractive(ctx) {
+		// Prompt to select a profile if the current configuration is not an account client.
+		prompt = prompt || errors.Is(err, databricks.ErrNotAccountClient)
+		// Prompt to select a profile if the current configuration doesn't resolve to a credential provider.
+		prompt = prompt || errors.Is(err, config.ErrCannotConfigureAuth)
+	}
+
+	if !prompt {
+		// If we are not prompting, we can return early.
+		return a, err
+	}
+
+	// Try picking a profile dynamically if the current configuration is not valid.
+	profile, err := askForAccountProfile(ctx)
+	if err != nil {
+		return nil, err
+	}
+	a, err = databricks.NewAccountClient(&databricks.Config{Profile: profile})
+	if err == nil {
+		err = a.Config.Authenticate(emptyHttpRequest(ctx))
+		if err != nil {
+			return nil, err
+		}
+	}
+	return a, nil
+}
+
 func MustAccountClient(cmd *cobra.Command, args []string) error {
 	cfg := &config.Config{}
 
-	// command-line flag can specify the profile in use
-	profileFlag := cmd.Flag("profile")
-	if profileFlag != nil {
-		cfg.Profile = profileFlag.Value.String()
+	// The command-line profile flag takes precedence over DATABRICKS_CONFIG_PROFILE.
+	profile, hasProfileFlag := profileFlagValue(cmd)
+	if hasProfileFlag {
+		cfg.Profile = profile
 	}
 
 	if cfg.Profile == "" {
@@ -48,16 +92,8 @@ func MustAccountClient(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-TRY_AUTH: // or try picking a config profile dynamically
-	a, err := databricks.NewAccountClient((*databricks.Config)(cfg))
-	if cmdio.IsInteractive(cmd.Context()) && errors.Is(err, databricks.ErrNotAccountClient) {
-		profile, err := askForAccountProfile()
-		if err != nil {
-			return err
-		}
-		cfg = &config.Config{Profile: profile}
-		goto TRY_AUTH
-	}
+	allowPrompt := !hasProfileFlag
+	a, err := accountClientOrPrompt(cmd.Context(), cfg, allowPrompt)
 	if err != nil {
 		return err
 	}
@@ -66,13 +102,48 @@ TRY_AUTH: // or try picking a config profile dynamically
 	return nil
 }
 
+// Helper function to create a workspace client or prompt once if the given configuration is not valid.
+func workspaceClientOrPrompt(ctx context.Context, cfg *config.Config, allowPrompt bool) (*databricks.WorkspaceClient, error) {
+	w, err := databricks.NewWorkspaceClient((*databricks.Config)(cfg))
+	if err == nil {
+		err = w.Config.Authenticate(emptyHttpRequest(ctx))
+	}
+
+	prompt := false
+	if allowPrompt && err != nil && cmdio.IsInteractive(ctx) {
+		// Prompt to select a profile if the current configuration is not a workspace client.
+		prompt = prompt || errors.Is(err, databricks.ErrNotWorkspaceClient)
+		// Prompt to select a profile if the current configuration doesn't resolve to a credential provider.
+		prompt = prompt || errors.Is(err, config.ErrCannotConfigureAuth)
+	}
+
+	if !prompt {
+		// If we are not prompting, we can return early.
+		return w, err
+	}
+
+	// Try picking a profile dynamically if the current configuration is not valid.
+	profile, err := askForWorkspaceProfile(ctx)
+	if err != nil {
+		return nil, err
+	}
+	w, err = databricks.NewWorkspaceClient(&databricks.Config{Profile: profile})
+	if err == nil {
+		err = w.Config.Authenticate(emptyHttpRequest(ctx))
+		if err != nil {
+			return nil, err
+		}
+	}
+	return w, nil
+}
+
 func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 	cfg := &config.Config{}
 
-	// command-line flag takes precedence over environment variable
-	profileFlag := cmd.Flag("profile")
-	if profileFlag != nil {
-		cfg.Profile = profileFlag.Value.String()
+	// The command-line profile flag takes precedence over DATABRICKS_CONFIG_PROFILE.
+	profile, hasProfileFlag := profileFlagValue(cmd)
+	if hasProfileFlag {
+		cfg.Profile = profile
 	}
 
 	// try configuring a bundle
@@ -87,24 +158,13 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 		cfg = currentBundle.WorkspaceClient().Config
 	}
 
-TRY_AUTH: // or try picking a config profile dynamically
+	allowPrompt := !hasProfileFlag
+	w, err := workspaceClientOrPrompt(cmd.Context(), cfg, allowPrompt)
+	if err != nil {
+		return err
+	}
+
 	ctx := cmd.Context()
-	w, err := databricks.NewWorkspaceClient((*databricks.Config)(cfg))
-	if err != nil {
-		return err
-	}
-	err = w.Config.Authenticate(emptyHttpRequest(ctx))
-	if cmdio.IsInteractive(ctx) && errors.Is(err, config.ErrCannotConfigureAuth) {
-		profile, err := askForWorkspaceProfile()
-		if err != nil {
-			return err
-		}
-		cfg = &config.Config{Profile: profile}
-		goto TRY_AUTH
-	}
-	if err != nil {
-		return err
-	}
 	ctx = context.WithValue(ctx, &workspaceClient, w)
 	cmd.SetContext(ctx)
 	return nil
@@ -121,7 +181,7 @@ func transformLoadError(path string, err error) error {
 	return err
 }
 
-func askForWorkspaceProfile() (string, error) {
+func askForWorkspaceProfile(ctx context.Context) (string, error) {
 	path, err := databrickscfg.GetPath()
 	if err != nil {
 		return "", fmt.Errorf("cannot determine Databricks config file path: %w", err)
@@ -136,7 +196,7 @@ func askForWorkspaceProfile() (string, error) {
 	case 1:
 		return profiles[0].Name, nil
 	}
-	i, _, err := (&promptui.Select{
+	i, _, err := cmdio.RunSelect(ctx, &promptui.Select{
 		Label:             fmt.Sprintf("Workspace profiles defined in %s", file),
 		Items:             profiles,
 		Searcher:          profiles.SearchCaseInsensitive,
@@ -147,16 +207,14 @@ func askForWorkspaceProfile() (string, error) {
 			Inactive: `{{.Name}}`,
 			Selected: `{{ "Using workspace profile" | faint }}: {{ .Name | bold }}`,
 		},
-		Stdin:  os.Stdin,
-		Stdout: os.Stderr,
-	}).Run()
+	})
 	if err != nil {
 		return "", err
 	}
 	return profiles[i].Name, nil
 }
 
-func askForAccountProfile() (string, error) {
+func askForAccountProfile(ctx context.Context) (string, error) {
 	path, err := databrickscfg.GetPath()
 	if err != nil {
 		return "", fmt.Errorf("cannot determine Databricks config file path: %w", err)
@@ -171,7 +229,7 @@ func askForAccountProfile() (string, error) {
 	case 1:
 		return profiles[0].Name, nil
 	}
-	i, _, err := (&promptui.Select{
+	i, _, err := cmdio.RunSelect(ctx, &promptui.Select{
 		Label:             fmt.Sprintf("Account profiles defined in %s", file),
 		Items:             profiles,
 		Searcher:          profiles.SearchCaseInsensitive,
@@ -182,9 +240,7 @@ func askForAccountProfile() (string, error) {
 			Inactive: `{{.Name}}`,
 			Selected: `{{ "Using account profile" | faint }}: {{ .Name | bold }}`,
 		},
-		Stdin:  os.Stdin,
-		Stdout: os.Stderr,
-	}).Run()
+	})
 	if err != nil {
 		return "", err
 	}

@@ -14,6 +14,7 @@ import (
 	"sync"
 
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/folders"
 	"github.com/databricks/cli/libs/git"
 	"github.com/databricks/cli/libs/locker"
@@ -37,6 +38,10 @@ type Bundle struct {
 	// Stores an initialized copy of this bundle's Terraform wrapper.
 	Terraform *tfexec.Terraform
 
+	// Indicates that the Terraform definition based on this bundle is empty,
+	// i.e. that it would deploy no resources.
+	TerraformHasNoResources bool
+
 	// Stores the locker responsible for acquiring/releasing a deployment lock.
 	Locker *locker.Locker
 
@@ -47,8 +52,6 @@ type Bundle struct {
 	AutoApprove bool
 }
 
-const ExtraIncludePathsKey string = "DATABRICKS_BUNDLE_INCLUDES"
-
 func Load(ctx context.Context, path string) (*Bundle, error) {
 	bundle := &Bundle{}
 	stat, err := os.Stat(path)
@@ -57,9 +60,9 @@ func Load(ctx context.Context, path string) (*Bundle, error) {
 	}
 	configFile, err := config.FileNames.FindInPath(path)
 	if err != nil {
-		_, hasIncludePathEnv := os.LookupEnv(ExtraIncludePathsKey)
-		_, hasBundleRootEnv := os.LookupEnv(envBundleRoot)
-		if hasIncludePathEnv && hasBundleRootEnv && stat.IsDir() {
+		_, hasRootEnv := env.Root(ctx)
+		_, hasIncludesEnv := env.Includes(ctx)
+		if hasRootEnv && hasIncludesEnv && stat.IsDir() {
 			log.Debugf(ctx, "No bundle configuration; using bundle root: %s", path)
 			bundle.Config = config.Root{
 				Path: path,
@@ -82,7 +85,7 @@ func Load(ctx context.Context, path string) (*Bundle, error) {
 // MustLoad returns a bundle configuration.
 // It returns an error if a bundle was not found or could not be loaded.
 func MustLoad(ctx context.Context) (*Bundle, error) {
-	root, err := mustGetRoot()
+	root, err := mustGetRoot(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +97,7 @@ func MustLoad(ctx context.Context) (*Bundle, error) {
 // It returns an error if a bundle was found but could not be loaded.
 // It returns a `nil` bundle if a bundle was not found.
 func TryLoad(ctx context.Context) (*Bundle, error) {
-	root, err := tryGetRoot()
+	root, err := tryGetRoot(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -120,13 +123,12 @@ func (b *Bundle) WorkspaceClient() *databricks.WorkspaceClient {
 
 // CacheDir returns directory to use for temporary files for this bundle.
 // Scoped to the bundle's target.
-func (b *Bundle) CacheDir(paths ...string) (string, error) {
+func (b *Bundle) CacheDir(ctx context.Context, paths ...string) (string, error) {
 	if b.Config.Bundle.Target == "" {
 		panic("target not set")
 	}
 
-	cacheDirName, exists := os.LookupEnv("DATABRICKS_BUNDLE_TMP")
-
+	cacheDirName, exists := env.TempDir(ctx)
 	if !exists || cacheDirName == "" {
 		cacheDirName = filepath.Join(
 			// Anchor at bundle root directory.
@@ -159,8 +161,8 @@ func (b *Bundle) CacheDir(paths ...string) (string, error) {
 
 // This directory is used to store and automaticaly sync internal bundle files, such as, f.e
 // notebook trampoline files for Python wheel and etc.
-func (b *Bundle) InternalDir() (string, error) {
-	cacheDir, err := b.CacheDir()
+func (b *Bundle) InternalDir(ctx context.Context) (string, error) {
+	cacheDir, err := b.CacheDir(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -177,8 +179,8 @@ func (b *Bundle) InternalDir() (string, error) {
 // GetSyncIncludePatterns returns a list of user defined includes
 // And also adds InternalDir folder to include list for sync command
 // so this folder is always synced
-func (b *Bundle) GetSyncIncludePatterns() ([]string, error) {
-	internalDir, err := b.InternalDir()
+func (b *Bundle) GetSyncIncludePatterns(ctx context.Context) ([]string, error) {
+	internalDir, err := b.InternalDir(ctx)
 	if err != nil {
 		return nil, err
 	}

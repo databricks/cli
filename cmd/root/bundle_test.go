@@ -9,6 +9,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/internal/testutil"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 )
@@ -56,6 +57,8 @@ func setup(t *testing.T, cmd *cobra.Command, host string) *bundle.Bundle {
 }
 
 func TestBundleConfigureDefault(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+
 	cmd := emptyCommand(t)
 	b := setup(t, cmd, "https://x.com")
 	assert.NotPanics(t, func() {
@@ -64,6 +67,8 @@ func TestBundleConfigureDefault(t *testing.T) {
 }
 
 func TestBundleConfigureWithMultipleMatches(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+
 	cmd := emptyCommand(t)
 	b := setup(t, cmd, "https://a.com")
 	assert.Panics(t, func() {
@@ -72,6 +77,8 @@ func TestBundleConfigureWithMultipleMatches(t *testing.T) {
 }
 
 func TestBundleConfigureWithNonExistentProfileFlag(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+
 	cmd := emptyCommand(t)
 	cmd.Flag("profile").Value.Set("NOEXIST")
 
@@ -82,6 +89,8 @@ func TestBundleConfigureWithNonExistentProfileFlag(t *testing.T) {
 }
 
 func TestBundleConfigureWithMismatchedProfile(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+
 	cmd := emptyCommand(t)
 	cmd.Flag("profile").Value.Set("PROFILE-1")
 
@@ -92,6 +101,8 @@ func TestBundleConfigureWithMismatchedProfile(t *testing.T) {
 }
 
 func TestBundleConfigureWithCorrectProfile(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+
 	cmd := emptyCommand(t)
 	cmd.Flag("profile").Value.Set("PROFILE-1")
 
@@ -102,10 +113,8 @@ func TestBundleConfigureWithCorrectProfile(t *testing.T) {
 }
 
 func TestBundleConfigureWithMismatchedProfileEnvVariable(t *testing.T) {
+	testutil.CleanupEnvironment(t)
 	t.Setenv("DATABRICKS_CONFIG_PROFILE", "PROFILE-1")
-	t.Cleanup(func() {
-		t.Setenv("DATABRICKS_CONFIG_PROFILE", "")
-	})
 
 	cmd := emptyCommand(t)
 	b := setup(t, cmd, "https://x.com")
@@ -115,10 +124,8 @@ func TestBundleConfigureWithMismatchedProfileEnvVariable(t *testing.T) {
 }
 
 func TestBundleConfigureWithProfileFlagAndEnvVariable(t *testing.T) {
+	testutil.CleanupEnvironment(t)
 	t.Setenv("DATABRICKS_CONFIG_PROFILE", "NOEXIST")
-	t.Cleanup(func() {
-		t.Setenv("DATABRICKS_CONFIG_PROFILE", "")
-	})
 
 	cmd := emptyCommand(t)
 	cmd.Flag("profile").Value.Set("PROFILE-1")

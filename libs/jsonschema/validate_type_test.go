@@ -1,9 +1,8 @@
-package template
+package jsonschema
 
 import (
 	"testing"
 
-	"github.com/databricks/cli/libs/jsonschema"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -77,53 +76,53 @@ func TestValidatorInt(t *testing.T) {
 
 func TestTemplateValidateType(t *testing.T) {
 	// assert validation passing
-	err := validateType(int(0), jsonschema.IntegerType)
+	err := validateType(int(0), IntegerType)
 	assert.NoError(t, err)
-	err = validateType(int32(1), jsonschema.IntegerType)
+	err = validateType(int32(1), IntegerType)
 	assert.NoError(t, err)
-	err = validateType(int64(1), jsonschema.IntegerType)
-	assert.NoError(t, err)
-
-	err = validateType(float32(1.1), jsonschema.NumberType)
-	assert.NoError(t, err)
-	err = validateType(float64(1.2), jsonschema.NumberType)
+	err = validateType(int64(1), IntegerType)
 	assert.NoError(t, err)
 
-	err = validateType(false, jsonschema.BooleanType)
+	err = validateType(float32(1.1), NumberType)
+	assert.NoError(t, err)
+	err = validateType(float64(1.2), NumberType)
 	assert.NoError(t, err)
 
-	err = validateType("abc", jsonschema.StringType)
+	err = validateType(false, BooleanType)
+	assert.NoError(t, err)
+
+	err = validateType("abc", StringType)
 	assert.NoError(t, err)
 
 	// assert validation failing for integers
-	err = validateType(float64(1.2), jsonschema.IntegerType)
+	err = validateType(float64(1.2), IntegerType)
 	assert.ErrorContains(t, err, "expected type integer, but value is 1.2")
-	err = validateType(true, jsonschema.IntegerType)
+	err = validateType(true, IntegerType)
 	assert.ErrorContains(t, err, "expected type integer, but value is true")
-	err = validateType("abc", jsonschema.IntegerType)
+	err = validateType("abc", IntegerType)
 	assert.ErrorContains(t, err, "expected type integer, but value is \"abc\"")
 
 	// assert validation failing for floats
-	err = validateType(true, jsonschema.NumberType)
+	err = validateType(true, NumberType)
 	assert.ErrorContains(t, err, "expected type float, but value is true")
-	err = validateType("abc", jsonschema.NumberType)
+	err = validateType("abc", NumberType)
 	assert.ErrorContains(t, err, "expected type float, but value is \"abc\"")
-	err = validateType(int(1), jsonschema.NumberType)
+	err = validateType(int(1), NumberType)
 	assert.ErrorContains(t, err, "expected type float, but value is 1")
 
 	// assert validation failing for boolean
-	err = validateType(int(1), jsonschema.BooleanType)
+	err = validateType(int(1), BooleanType)
 	assert.ErrorContains(t, err, "expected type boolean, but value is 1")
-	err = validateType(float64(1), jsonschema.BooleanType)
+	err = validateType(float64(1), BooleanType)
 	assert.ErrorContains(t, err, "expected type boolean, but value is 1")
-	err = validateType("abc", jsonschema.BooleanType)
+	err = validateType("abc", BooleanType)
 	assert.ErrorContains(t, err, "expected type boolean, but value is \"abc\"")
 
 	// assert validation failing for string
-	err = validateType(int(1), jsonschema.StringType)
+	err = validateType(int(1), StringType)
 	assert.ErrorContains(t, err, "expected type string, but value is 1")
-	err = validateType(float64(1), jsonschema.StringType)
+	err = validateType(float64(1), StringType)
 	assert.ErrorContains(t, err, "expected type string, but value is 1")
-	err = validateType(false, jsonschema.StringType)
+	err = validateType(false, StringType)
 	assert.ErrorContains(t, err, "expected type string, but value is false")
 }

@@ -7,10 +7,10 @@ include:
   - resources/*.yml
 
 targets:
-  # The 'dev' target, used development purposes.
+  # The 'dev' target, used for development purposes.
   # Whenever a developer deploys using 'dev', they get their own copy.
   dev:
-    # We use 'mode: development' to make everything deployed to this target gets a prefix
+    # We use 'mode: development' to make sure everything deployed to this target gets a prefix
     # like '[dev my_user_name]'. Setting this mode also disables any schedules and
     # automatic triggers for jobs and enables the 'development' mode for Delta Live Tables pipelines.
     mode: development

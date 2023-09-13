@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/databricks/cli/bundle/env"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -23,12 +24,13 @@ func TestLoadExists(t *testing.T) {
 }
 
 func TestBundleCacheDir(t *testing.T) {
+	ctx := context.Background()
 	projectDir := t.TempDir()
 	f1, err := os.Create(filepath.Join(projectDir, "databricks.yml"))
 	require.NoError(t, err)
 	f1.Close()
 
-	bundle, err := Load(context.Background(), projectDir)
+	bundle, err := Load(ctx, projectDir)
 	require.NoError(t, err)
 
 	// Artificially set target.
@@ -38,7 +40,7 @@ func TestBundleCacheDir(t *testing.T) {
 	// unset env variable in case it's set
 	t.Setenv("DATABRICKS_BUNDLE_TMP", "")
 
-	cacheDir, err := bundle.CacheDir()
+	cacheDir, err := bundle.CacheDir(ctx)
 
 	// format is <CWD>/.databricks/bundle/<target>
 	assert.NoError(t, err)
@@ -46,13 +48,14 @@ func TestBundleCacheDir(t *testing.T) {
 }
 
 func TestBundleCacheDirOverride(t *testing.T) {
+	ctx := context.Background()
 	projectDir := t.TempDir()
 	bundleTmpDir := t.TempDir()
 	f1, err := os.Create(filepath.Join(projectDir, "databricks.yml"))
 	require.NoError(t, err)
 	f1.Close()
 
-	bundle, err := Load(context.Background(), projectDir)
+	bundle, err := Load(ctx, projectDir)
 	require.NoError(t, err)
 
 	// Artificially set target.
@@ -62,7 +65,7 @@ func TestBundleCacheDirOverride(t *testing.T) {
 	// now we expect to use 'bundleTmpDir' instead of CWD/.databricks/bundle
 	t.Setenv("DATABRICKS_BUNDLE_TMP", bundleTmpDir)
 
-	cacheDir, err := bundle.CacheDir()
+	cacheDir, err := bundle.CacheDir(ctx)
 
 	// format is <DATABRICKS_BUNDLE_TMP>/<target>
 	assert.NoError(t, err)
@@ -70,14 +73,14 @@ func TestBundleCacheDirOverride(t *testing.T) {
 }
 
 func TestBundleMustLoadSuccess(t *testing.T) {
-	t.Setenv(envBundleRoot, "./tests/basic")
+	t.Setenv(env.RootVariable, "./tests/basic")
 	b, err := MustLoad(context.Background())
 	require.NoError(t, err)
 	assert.Equal(t, "tests/basic", filepath.ToSlash(b.Config.Path))
 }
 
 func TestBundleMustLoadFailureWithEnv(t *testing.T) {
-	t.Setenv(envBundleRoot, "./tests/doesntexist")
+	t.Setenv(env.RootVariable, "./tests/doesntexist")
 	_, err := MustLoad(context.Background())
 	require.Error(t, err, "not a directory")
 }
@@ -89,14 +92,14 @@ func TestBundleMustLoadFailureIfNotFound(t *testing.T) {
 }
 
 func TestBundleTryLoadSuccess(t *testing.T) {
-	t.Setenv(envBundleRoot, "./tests/basic")
+	t.Setenv(env.RootVariable, "./tests/basic")
 	b, err := TryLoad(context.Background())
 	require.NoError(t, err)
 	assert.Equal(t, "tests/basic", filepath.ToSlash(b.Config.Path))
 }
 
 func TestBundleTryLoadFailureWithEnv(t *testing.T) {
-	t.Setenv(envBundleRoot, "./tests/doesntexist")
+	t.Setenv(env.RootVariable, "./tests/doesntexist")
 	_, err := TryLoad(context.Background())
 	require.Error(t, err, "not a directory")
 }

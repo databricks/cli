@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/paths"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/require"
 )
@@ -82,10 +83,20 @@ func TestTransformFiltersWheelTasksOnly(t *testing.T) {
 								{
 									TaskKey:         "key1",
 									PythonWheelTask: &jobs.PythonWheelTask{},
+									Libraries: []compute.Library{
+										{Whl: "/Workspace/Users/test@test.com/bundle/dist/test.whl"},
+									},
 								},
 								{
 									TaskKey:      "key2",
 									NotebookTask: &jobs.NotebookTask{},
+								},
+								{
+									TaskKey:         "key3",
+									PythonWheelTask: &jobs.PythonWheelTask{},
+									Libraries: []compute.Library{
+										{Whl: "dbfs:/FileStore/dist/test.whl"},
+									},
 								},
 							},
 						},

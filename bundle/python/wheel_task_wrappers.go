@@ -7,6 +7,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/mutator"
+	"github.com/databricks/cli/bundle/libraries"
 	jobs_utils "github.com/databricks/cli/libs/jobs"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
@@ -70,10 +71,13 @@ func (t *pythonTrampoline) GetTemplate(b *bundle.Bundle, task *jobs.Task) (strin
 
 func (t *pythonTrampoline) GetTasks(b *bundle.Bundle) []jobs_utils.TaskWithJobKey {
 	return jobs_utils.GetTasksWithJobKeyBy(b, func(task *jobs.Task) bool {
-		return task.PythonWheelTask != nil
+		return task.PythonWheelTask != nil && needsTrampoline(task)
 	})
 }
 
+func needsTrampoline(task *jobs.Task) bool {
+	return libraries.IsTaskWithWorkspaceLibraries(task)
+}
 func (t *pythonTrampoline) GetTemplateData(_ *bundle.Bundle, task *jobs.Task) (map[string]any, error) {
 	params, err := t.generateParameters(task.PythonWheelTask)
 	if err != nil {

@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
@@ -51,7 +52,7 @@ func initProgressLoggerFlag(cmd *cobra.Command, logFlags *logFlags) *progressLog
 
 	// Configure defaults from environment, if applicable.
 	// If the provided value is invalid it is ignored.
-	if v, ok := os.LookupEnv(envProgressFormat); ok {
+	if v, ok := env.Lookup(cmd.Context(), envProgressFormat); ok {
 		f.Set(v)
 	}
 

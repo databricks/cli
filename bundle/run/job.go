@@ -95,6 +95,13 @@ type jobRunner struct {
 	job    *resources.Job
 }
 
+func (r *jobRunner) Name() string {
+	if r.job == nil || r.job.JobSettings == nil {
+		return ""
+	}
+	return r.job.JobSettings.Name
+}
+
 func isFailed(task jobs.RunTask) bool {
 	return task.State.LifeCycleState == jobs.RunLifeCycleStateInternalError ||
 		(task.State.LifeCycleState == jobs.RunLifeCycleStateTerminated &&

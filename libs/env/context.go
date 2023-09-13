@@ -1,0 +1,63 @@
+package env
+
+import (
+	"context"
+	"os"
+)
+
+var envContextKey int
+
+func copyMap(m map[string]string) map[string]string {
+	out := make(map[string]string, len(m))
+	for k, v := range m {
+		out[k] = v
+	}
+	return out
+}
+
+func getMap(ctx context.Context) map[string]string {
+	if ctx == nil {
+		return nil
+	}
+	m, ok := ctx.Value(&envContextKey).(map[string]string)
+	if !ok {
+		return nil
+	}
+	return m
+}
+
+func setMap(ctx context.Context, m map[string]string) context.Context {
+	return context.WithValue(ctx, &envContextKey, m)
+}
+
+// Lookup key in the context or the the environment.
+// Context has precedence.
+func Lookup(ctx context.Context, key string) (string, bool) {
+	m := getMap(ctx)
+
+	// Return if the key is set in the context.
+	v, ok := m[key]
+	if ok {
+		return v, true
+	}
+
+	// Fall back to the environment.
+	return os.LookupEnv(key)
+}
+
+// Get key from the context or the environment.
+// Context has precedence.
+func Get(ctx context.Context, key string) string {
+	v, _ := Lookup(ctx, key)
+	return v
+}
+
+// Set key on the context.
+//
+// Note: this does NOT mutate the processes' actual environment variables.
+// It is only visible to other code that uses this package.
+func Set(ctx context.Context, key, value string) context.Context {
+	m := copyMap(getMap(ctx))
+	m[key] = value
+	return setMap(ctx, m)
+}

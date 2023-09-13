@@ -16,12 +16,13 @@ func (w *write) Name() string {
 }
 
 func (w *write) Apply(ctx context.Context, b *bundle.Bundle) error {
-	dir, err := Dir(b)
+	dir, err := Dir(ctx, b)
 	if err != nil {
 		return err
 	}
 
-	root := BundleToTerraform(&b.Config)
+	root, noResources := BundleToTerraform(&b.Config)
+	b.TerraformHasNoResources = noResources
 	f, err := os.Create(filepath.Join(dir, "bundle.tf.json"))
 	if err != nil {
 		return err

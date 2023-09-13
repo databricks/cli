@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/paths"
 	"github.com/databricks/cli/bundle/config/resources"
+	jobs_utils "github.com/databricks/cli/libs/jobs"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/require"
 )
@@ -18,10 +19,10 @@ import (
 type functions struct {
 }
 
-func (f *functions) GetTasks(b *bundle.Bundle) []TaskWithJobKey {
-	tasks := make([]TaskWithJobKey, 0)
+func (f *functions) GetTasks(b *bundle.Bundle) []jobs_utils.TaskWithJobKey {
+	tasks := make([]jobs_utils.TaskWithJobKey, 0)
 	for k := range b.Config.Resources.Jobs["test"].Tasks {
-		tasks = append(tasks, TaskWithJobKey{
+		tasks = append(tasks, jobs_utils.TaskWithJobKey{
 			JobKey: "test",
 			Task:   &b.Config.Resources.Jobs["test"].Tasks[k],
 		})
@@ -88,7 +89,7 @@ func TestGenerateTrampoline(t *testing.T) {
 	err := bundle.Apply(ctx, b, trampoline)
 	require.NoError(t, err)
 
-	dir, err := b.InternalDir()
+	dir, err := b.InternalDir(ctx)
 	require.NoError(t, err)
 	filename := filepath.Join(dir, "notebook_test_trampoline_test_to_trampoline.py")
 

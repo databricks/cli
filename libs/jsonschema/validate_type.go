@@ -1,17 +1,15 @@
-package template
+package jsonschema
 
 import (
 	"fmt"
 	"reflect"
 	"slices"
-
-	"github.com/databricks/cli/libs/jsonschema"
 )
 
-type validator func(v any) error
+type validateTypeFunc func(v any) error
 
-func validateType(v any, fieldType jsonschema.Type) error {
-	validateFunc, ok := validators[fieldType]
+func validateType(v any, fieldType Type) error {
+	validateFunc, ok := validateTypeFuncs[fieldType]
 	if !ok {
 		return nil
 	}
@@ -50,9 +48,9 @@ func validateInteger(v any) error {
 	return nil
 }
 
-var validators map[jsonschema.Type]validator = map[jsonschema.Type]validator{
-	jsonschema.StringType:  validateString,
-	jsonschema.BooleanType: validateBoolean,
-	jsonschema.IntegerType: validateInteger,
-	jsonschema.NumberType:  validateNumber,
+var validateTypeFuncs map[Type]validateTypeFunc = map[Type]validateTypeFunc{
+	StringType:  validateString,
+	BooleanType: validateBoolean,
+	IntegerType: validateInteger,
+	NumberType:  validateNumber,
 }

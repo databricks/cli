@@ -56,16 +56,37 @@ func findAllTasks(b *bundle.Bundle) []*jobs.Task {
 	return result
 }
 
-func FindAllWheelTasks(b *bundle.Bundle) []*jobs.Task {
+func FindAllWheelTasksWithLocalLibraries(b *bundle.Bundle) []*jobs.Task {
 	tasks := findAllTasks(b)
 	wheelTasks := make([]*jobs.Task, 0)
 	for _, task := range tasks {
-		if task.PythonWheelTask != nil {
+		if task.PythonWheelTask != nil && IsTaskWithLocalLibraries(task) {
 			wheelTasks = append(wheelTasks, task)
 		}
 	}
 
 	return wheelTasks
+}
+
+func IsTaskWithLocalLibraries(task *jobs.Task) bool {
+	for _, l := range task.Libraries {
+		if isLocalLibrary(&l) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func IsTaskWithWorkspaceLibraries(task *jobs.Task) bool {
+	for _, l := range task.Libraries {
+		path := libPath(&l)
+		if isWorkspacePath(path) {
+			return true
+		}
+	}
+
+	return false
 }
 
 func isMissingRequiredLibraries(task *jobs.Task) bool {
@@ -165,8 +186,8 @@ func isRemoteStorageScheme(path string) bool {
 		return false
 	}
 
-	// If the path starts with scheme:// format, it's a correct remote storage scheme
-	return strings.HasPrefix(path, url.Scheme+"://")
+	// If the path starts with scheme:/ format, it's a correct remote storage scheme
+	return strings.HasPrefix(path, url.Scheme+":/")
 
 }
 
