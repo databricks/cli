@@ -198,7 +198,7 @@ func TestRendererExecuteTemplateWithUnknownProperty(t *testing.T) {
 	}
 
 	_, err := r.executeTemplate(templateText)
-	assert.ErrorContains(t, err, "map has no entry for key \"does_not_exist\"")
+	assert.ErrorContains(t, err, `unknown input parameter \"does_not_exist\" used. All inputs for the template should be defined in databricks_template_schema.json`)
 }
 
 func TestRendererIsSkipped(t *testing.T) {

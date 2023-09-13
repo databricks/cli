@@ -8,6 +8,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"sort"
 	"strings"
@@ -118,6 +119,16 @@ func (r *renderer) executeTemplate(templateDefinition string) (string, error) {
 	result := strings.Builder{}
 	err = tmpl.Execute(&result, r.config)
 	if err != nil {
+		// Parse and return a more readable error for missing values from input
+		// config that the template uses.
+		if strings.Contains(err.Error(), "map has no entry for key") {
+			captureRegex := regexp.MustCompile(`map has no entry for key "(.*)"`)
+			matches := captureRegex.FindStringSubmatch(err.Error())
+			if len(matches) != 2 {
+				return "", err
+			}
+			return "", fmt.Errorf("unknown input parameter %q used. All inputs for the template should be defined in %s", matches[1], schemaFileName)
+		}
 		return "", err
 	}
 	return result.String(), nil
