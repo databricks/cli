@@ -166,7 +166,7 @@ func TestSchemaValidateIncorrectRegex(t *testing.T) {
 	s := &Schema{
 		Properties: map[string]*Schema{
 			"foo": {
-				Type:    "string",
+				Type: "string",
 				// invalid regex, missing the closing brace
 				Pattern: "(abc",
 			},
