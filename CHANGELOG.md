@@ -1,5 +1,21 @@
 # Version changelog
 
+## 0.205.0
+
+This release marks the public preview phase of Databricks Asset Bundles.
+
+For more information, please refer to our online documentation at
+https://docs.databricks.com/en/dev-tools/bundles/.
+
+CLI:
+ * Prompt once for a client profile ([#727](https://github.com/databricks/cli/pull/727)).
+
+Bundles:
+ * Use clearer error message when no interpolation value is found. ([#764](https://github.com/databricks/cli/pull/764)).
+ * Use interactive prompt to select resource to run if not specified ([#762](https://github.com/databricks/cli/pull/762)).
+ * Add documentation link bundle command group description ([#770](https://github.com/databricks/cli/pull/770)).
+
+
 ## 0.204.1
 
 Bundles:
