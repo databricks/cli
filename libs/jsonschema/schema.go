@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"regexp"
 	"slices"
 )
 
@@ -118,10 +119,34 @@ func (schema *Schema) validate() error {
 		}
 	}
 
-	// Validated usage of "pattern" is consistent.
+	// Validate usage of "pattern" is consistent.
 	for name, property := range schema.Properties {
-		if property.Pattern != "" && property.Type != StringType {
-			return fmt.Errorf("property %s has a non empty regex pattern %s specified. Patterns are only supported for ")
+		pattern := property.Pattern
+		if pattern == "" {
+			continue
+		}
+
+		// validate property type is string
+		if property.Type != StringType {
+			return fmt.Errorf("property %q has a non-empty regex pattern %q specified. Patterns are only supported for string properties", name, pattern)
+		}
+
+		// validate regex pattern syntax
+		r, err := regexp.Compile(pattern)
+		if err != nil {
+			return fmt.Errorf("invalid regex pattern %q provided for property %q: %w", pattern, name, err)
+		}
+
+		// validate default value against the pattern
+		if property.Default != nil && !r.MatchString(property.Default.(string)) {
+			return fmt.Errorf("default value %q for property %q does not match specified regex pattern: %q", property.Default, name, pattern)
+		}
+
+		// validate enum values against the pattern
+		for i, enum := range property.Enum {
+			if !r.MatchString(enum.(string)) {
+				return fmt.Errorf("enum value %q at index %v for property %q does not match specified regex pattern: %q", enum, i, name, pattern)
+			}
 		}
 	}
 

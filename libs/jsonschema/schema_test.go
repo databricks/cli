@@ -139,3 +139,86 @@ func TestSchemaValidateErrorWhenDefaultValueIsNotInEnums(t *testing.T) {
 	err = validSchema.validate()
 	assert.NoError(t, err)
 }
+
+func TestSchemaValidatePatternType(t *testing.T) {
+	s := &Schema{
+		Properties: map[string]*Schema{
+			"foo": {
+				Type:    "number",
+				Pattern: "abc",
+			},
+		},
+	}
+	assert.EqualError(t, s.validate(), "property \"foo\" has a non-empty regex pattern \"abc\" specified. Patterns are only supported for string properties")
+
+	s = &Schema{
+		Properties: map[string]*Schema{
+			"foo": {
+				Type:    "string",
+				Pattern: "abc",
+			},
+		},
+	}
+	assert.NoError(t, s.validate())
+}
+
+func TestSchemaValidateIncorrectRegex(t *testing.T) {
+	s := &Schema{
+		Properties: map[string]*Schema{
+			"foo": {
+				Type:    "string",
+				// invalid regex, missing the closing brace
+				Pattern: "(abc",
+			},
+		},
+	}
+	assert.EqualError(t, s.validate(), "invalid regex pattern \"(abc\" provided for property \"foo\": error parsing regexp: missing closing ): `(abc`")
+}
+
+func TestSchemaValidatePatternDefault(t *testing.T) {
+	s := &Schema{
+		Properties: map[string]*Schema{
+			"foo": {
+				Type:    "string",
+				Pattern: "abc",
+				Default: "def",
+			},
+		},
+	}
+	assert.EqualError(t, s.validate(), "default value \"def\" for property \"foo\" does not match specified regex pattern: \"abc\"")
+
+	s = &Schema{
+		Properties: map[string]*Schema{
+			"foo": {
+				Type:    "string",
+				Pattern: "a.*d",
+				Default: "axyzd",
+			},
+		},
+	}
+	assert.NoError(t, s.validate())
+}
+
+func TestSchemaValidatePatternEnum(t *testing.T) {
+	s := &Schema{
+		Properties: map[string]*Schema{
+			"foo": {
+				Type:    "string",
+				Pattern: "a.*c",
+				Enum:    []any{"abc", "def", "abbc"},
+			},
+		},
+	}
+	assert.EqualError(t, s.validate(), "enum value \"def\" at index 1 for property \"foo\" does not match specified regex pattern: \"a.*c\"")
+
+	s = &Schema{
+		Properties: map[string]*Schema{
+			"foo": {
+				Type:    "string",
+				Pattern: "a.*d",
+				Enum:    []any{"abd", "axybgd", "abbd"},
+			},
+		},
+	}
+	assert.NoError(t, s.validate())
+}
