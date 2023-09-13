@@ -136,7 +136,7 @@ func ValidatePatternMatch(name string, value any, propertySchema *Schema) error 
 
 	// If custom user error message is defined, return error with the custom message
 	msg := propertySchema.PatternMatchFailMessage
-	if propertySchema.PatternMatchFailMessage == "" {
+	if msg == "" {
 		msg = fmt.Sprintf("Expected to match regex pattern: %s", propertySchema.Pattern)
 	}
 	return fmt.Errorf("invalid value for %s: %s. %s", name, value, msg)
