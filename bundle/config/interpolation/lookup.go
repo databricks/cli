@@ -3,9 +3,8 @@ package interpolation
 import (
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
-
-	"golang.org/x/exp/slices"
 )
 
 // LookupFunction returns the value to rewrite a path expression to.

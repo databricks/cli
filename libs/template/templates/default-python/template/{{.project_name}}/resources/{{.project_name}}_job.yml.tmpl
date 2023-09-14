@@ -1,0 +1,64 @@
+# The main job for {{.project_name}}
+resources:
+  jobs:
+    {{.project_name}}_job:
+      name: {{.project_name}}_job
+
+      schedule:
+        quartz_cron_expression: '44 37 8 * * ?'
+        timezone_id: Europe/Amsterdam
+
+      {{- if not is_service_principal}}
+
+      email_notifications:
+        on_failure:
+          - {{user_name}}
+
+      {{else}}
+
+      {{end -}}
+
+      tasks:
+        {{- if eq .include_notebook "yes" }}
+        - task_key: notebook_task
+          job_cluster_key: job_cluster
+          notebook_task:
+            notebook_path: ../src/notebook.ipynb
+        {{end -}}
+        {{- if (eq .include_dlt "yes") }}
+        - task_key: refresh_pipeline
+          {{- if (eq .include_notebook "yes" )}}
+          depends_on:
+            - task_key: notebook_task
+          {{- end}}
+          pipeline_task:
+            {{- /* TODO: we should find a way that doesn't use magics for the below, like ./{{project_name}}_pipeline.yml */}}
+            pipeline_id: ${resources.pipelines.{{.project_name}}_pipeline.id}
+        {{end -}}
+        {{- if (eq .include_python "yes") }}
+        - task_key: main_task
+          {{- if (eq .include_dlt "yes") }}
+          depends_on:
+            - task_key: refresh_pipeline
+          {{- else if (eq .include_notebook "yes" )}}
+          depends_on:
+            - task_key: notebook_task
+          {{end}}
+          job_cluster_key: job_cluster
+          python_wheel_task:
+            package_name: {{.project_name}}
+            entry_point: main
+          libraries:
+            - whl: ../dist/*.whl
+
+      {{else}}
+      {{end -}}
+      job_clusters:
+        - job_cluster_key: job_cluster
+          new_cluster:
+            {{- /* we should always use an LTS version in our templates */}}
+            spark_version: 13.3.x-scala2.12
+            node_type_id: {{smallest_node_type}}
+            autoscale:
+                min_workers: 1
+                max_workers: 4

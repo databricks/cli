@@ -1,0 +1,25 @@
+bundle:
+  name: sync_include
+
+include:
+  - "*/*.yml"
+
+sync:
+  include:
+    - ./folder_a/*.*
+  exclude:
+    - ./folder_b/*.*
+
+artifacts:
+  test_a:
+    type: whl
+    path: ./artifact_a
+
+resources:
+  jobs:
+    job_a:
+      name: "job_a"
+      tasks:
+        - task_key: "task_a"
+          libraries:
+            - whl: ./dist/job_a.whl

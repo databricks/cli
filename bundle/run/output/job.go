@@ -60,7 +60,7 @@ func GetJobOutput(ctx context.Context, w *databricks.WorkspaceClient, runId int6
 		return nil, err
 	}
 	result := &JobOutput{
-		TaskOutputs: make([]TaskOutput, len(jobRun.Tasks)),
+		TaskOutputs: make([]TaskOutput, 0),
 	}
 	for _, task := range jobRun.Tasks {
 		jobRunOutput, err := w.Jobs.GetRunOutput(ctx, jobs.GetRunOutputRequest{
@@ -69,7 +69,11 @@ func GetJobOutput(ctx context.Context, w *databricks.WorkspaceClient, runId int6
 		if err != nil {
 			return nil, err
 		}
-		task := TaskOutput{TaskKey: task.TaskKey, Output: toRunOutput(jobRunOutput), EndTime: task.EndTime}
+		out := toRunOutput(jobRunOutput)
+		if out == nil {
+			continue
+		}
+		task := TaskOutput{TaskKey: task.TaskKey, Output: out, EndTime: task.EndTime}
 		result.TaskOutputs = append(result.TaskOutputs, task)
 	}
 	return result, nil

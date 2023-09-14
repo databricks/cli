@@ -6,7 +6,7 @@ import (
 	"runtime"
 	"time"
 
-	"golang.org/x/exp/slog"
+	"log/slog"
 )
 
 // GetLogger returns either the logger configured on the context,

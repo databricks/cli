@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"slices"
 	"strings"
 	"time"
 
@@ -12,7 +13,6 @@ import (
 	"github.com/databricks/cli/libs/flags"
 	"github.com/manifoldco/promptui"
 	"github.com/mattn/go-isatty"
-	"golang.org/x/exp/slices"
 )
 
 // cmdIO is the private instance, that is not supposed to be accessed
@@ -140,8 +140,8 @@ func (c *cmdIO) Select(names map[string]string, label string) (id string, err er
 	for k, v := range names {
 		items = append(items, tuple{k, v})
 	}
-	slices.SortFunc(items, func(a, b tuple) bool {
-		return a.Name < b.Name
+	slices.SortFunc(items, func(a, b tuple) int {
+		return strings.Compare(a.Name, b.Name)
 	})
 	idx, _, err := (&promptui.Select{
 		Label:             label,
@@ -203,6 +203,42 @@ func Prompt(ctx context.Context) *promptui.Prompt {
 		Stdin:  io.NopCloser(c.in),
 		Stdout: nopWriteCloser{c.out},
 	}
+}
+
+func RunSelect(ctx context.Context, prompt *promptui.Select) (int, string, error) {
+	c := fromContext(ctx)
+	prompt.Stdin = io.NopCloser(c.in)
+	prompt.Stdout = nopWriteCloser{c.err}
+	return prompt.Run()
+}
+
+func (c *cmdIO) simplePrompt(label string) *promptui.Prompt {
+	return &promptui.Prompt{
+		Label:  label,
+		Stdin:  io.NopCloser(c.in),
+		Stdout: nopWriteCloser{c.out},
+	}
+}
+
+func (c *cmdIO) SimplePrompt(label string) (value string, err error) {
+	return c.simplePrompt(label).Run()
+}
+
+func SimplePrompt(ctx context.Context, label string) (value string, err error) {
+	c := fromContext(ctx)
+	return c.SimplePrompt(label)
+}
+
+func (c *cmdIO) DefaultPrompt(label, defaultValue string) (value string, err error) {
+	prompt := c.simplePrompt(label)
+	prompt.Default = defaultValue
+	prompt.AllowEdit = true
+	return prompt.Run()
+}
+
+func DefaultPrompt(ctx context.Context, label, defaultValue string) (value string, err error) {
+	c := fromContext(ctx)
+	return c.DefaultPrompt(label, defaultValue)
 }
 
 func (c *cmdIO) Spinner(ctx context.Context) chan string {

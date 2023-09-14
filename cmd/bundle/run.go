@@ -9,23 +9,31 @@ import (
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/run"
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/spf13/cobra"
 )
 
-var runOptions run.Options
-var noWait bool
+func newRunCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "run [flags] KEY",
+		Short: "Run a resource (e.g. a job or a pipeline)",
 
-var runCmd = &cobra.Command{
-	Use:   "run [flags] KEY",
-	Short: "Run a workload (e.g. a job or a pipeline)",
+		Args:    cobra.MaximumNArgs(1),
+		PreRunE: ConfigureBundleWithVariables,
+	}
 
-	Args:    cobra.ExactArgs(1),
-	PreRunE: ConfigureBundleWithVariables,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		b := bundle.Get(cmd.Context())
+	var runOptions run.Options
+	runOptions.Define(cmd.Flags())
 
-		err := bundle.Apply(cmd.Context(), b, bundle.Seq(
+	var noWait bool
+	cmd.Flags().BoolVar(&noWait, "no-wait", false, "Don't wait for the run to complete.")
+
+	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+		ctx := cmd.Context()
+		b := bundle.Get(ctx)
+
+		err := bundle.Apply(ctx, b, bundle.Seq(
 			phases.Initialize(),
 			terraform.Interpolate(),
 			terraform.Write(),
@@ -36,18 +44,36 @@ var runCmd = &cobra.Command{
 			return err
 		}
 
+		// If no arguments are specified, prompt the user to select something to run.
+		if len(args) == 0 && cmdio.IsInteractive(ctx) {
+			// Invert completions from KEY -> NAME, to NAME -> KEY.
+			inv := make(map[string]string)
+			for k, v := range run.ResourceCompletionMap(b) {
+				inv[v] = k
+			}
+			id, err := cmdio.Select(ctx, inv, "Resource to run")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+
+		if len(args) != 1 {
+			return fmt.Errorf("expected a KEY of the resource to run")
+		}
+
 		runner, err := run.Find(b, args[0])
 		if err != nil {
 			return err
 		}
 
 		runOptions.NoWait = noWait
-		output, err := runner.Run(cmd.Context(), &runOptions)
+		output, err := runner.Run(ctx, &runOptions)
 		if err != nil {
 			return err
 		}
 		if output != nil {
-			switch root.OutputType() {
+			switch root.OutputType(cmd) {
 			case flags.OutputText:
 				resultString, err := output.String()
 				if err != nil {
@@ -61,13 +87,13 @@ var runCmd = &cobra.Command{
 				}
 				cmd.OutOrStdout().Write(b)
 			default:
-				return fmt.Errorf("unknown output type %s", root.OutputType())
+				return fmt.Errorf("unknown output type %s", root.OutputType(cmd))
 			}
 		}
 		return nil
-	},
+	}
 
-	ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	cmd.ValidArgsFunction = func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		if len(args) > 0 {
 			return nil, cobra.ShellCompDirectiveNoFileComp
 		}
@@ -86,11 +112,7 @@ var runCmd = &cobra.Command{
 		}
 
 		return run.ResourceCompletions(b), cobra.ShellCompDirectiveNoFileComp
-	},
-}
+	}
 
-func init() {
-	runOptions.Define(runCmd.Flags())
-	rootCmd.AddCommand(runCmd)
-	runCmd.Flags().BoolVar(&noWait, "no-wait", false, "Don't wait for the run to complete.")
+	return cmd
 }

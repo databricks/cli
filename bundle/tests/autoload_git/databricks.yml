@@ -1,0 +1,11 @@
+bundle:
+  name: autoload git config test
+
+targets:
+  development:
+    default: true
+
+  production:
+    # production can only be deployed from the 'main' branch
+    git:
+      branch: main

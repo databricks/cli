@@ -31,7 +31,7 @@ func TestInitEnvironmentVariables(t *testing.T) {
 		Config: config.Root{
 			Path: t.TempDir(),
 			Bundle: config.Bundle{
-				Environment: "whatever",
+				Target: "whatever",
 				Terraform: &config.Terraform{
 					ExecPath: "terraform",
 				},
@@ -58,7 +58,7 @@ func TestSetTempDirEnvVarsForUnixWithTmpDirSet(t *testing.T) {
 		Config: config.Root{
 			Path: t.TempDir(),
 			Bundle: config.Bundle{
-				Environment: "whatever",
+				Target: "whatever",
 			},
 		},
 	}
@@ -68,7 +68,7 @@ func TestSetTempDirEnvVarsForUnixWithTmpDirSet(t *testing.T) {
 
 	// compute env
 	env := make(map[string]string, 0)
-	err := setTempDirEnvVars(env, b)
+	err := setTempDirEnvVars(context.Background(), env, b)
 	require.NoError(t, err)
 
 	// Assert that we pass through TMPDIR.
@@ -86,7 +86,7 @@ func TestSetTempDirEnvVarsForUnixWithTmpDirNotSet(t *testing.T) {
 		Config: config.Root{
 			Path: t.TempDir(),
 			Bundle: config.Bundle{
-				Environment: "whatever",
+				Target: "whatever",
 			},
 		},
 	}
@@ -96,7 +96,7 @@ func TestSetTempDirEnvVarsForUnixWithTmpDirNotSet(t *testing.T) {
 
 	// compute env
 	env := make(map[string]string, 0)
-	err := setTempDirEnvVars(env, b)
+	err := setTempDirEnvVars(context.Background(), env, b)
 	require.NoError(t, err)
 
 	// Assert that we don't pass through TMPDIR.
@@ -112,7 +112,7 @@ func TestSetTempDirEnvVarsForWindowWithAllTmpDirEnvVarsSet(t *testing.T) {
 		Config: config.Root{
 			Path: t.TempDir(),
 			Bundle: config.Bundle{
-				Environment: "whatever",
+				Target: "whatever",
 			},
 		},
 	}
@@ -124,7 +124,7 @@ func TestSetTempDirEnvVarsForWindowWithAllTmpDirEnvVarsSet(t *testing.T) {
 
 	// compute env
 	env := make(map[string]string, 0)
-	err := setTempDirEnvVars(env, b)
+	err := setTempDirEnvVars(context.Background(), env, b)
 	require.NoError(t, err)
 
 	// assert that we pass through the highest priority env var value
@@ -142,7 +142,7 @@ func TestSetTempDirEnvVarsForWindowWithUserProfileAndTempSet(t *testing.T) {
 		Config: config.Root{
 			Path: t.TempDir(),
 			Bundle: config.Bundle{
-				Environment: "whatever",
+				Target: "whatever",
 			},
 		},
 	}
@@ -154,7 +154,7 @@ func TestSetTempDirEnvVarsForWindowWithUserProfileAndTempSet(t *testing.T) {
 
 	// compute env
 	env := make(map[string]string, 0)
-	err := setTempDirEnvVars(env, b)
+	err := setTempDirEnvVars(context.Background(), env, b)
 	require.NoError(t, err)
 
 	// assert that we pass through the highest priority env var value
@@ -172,7 +172,7 @@ func TestSetTempDirEnvVarsForWindowWithUserProfileSet(t *testing.T) {
 		Config: config.Root{
 			Path: t.TempDir(),
 			Bundle: config.Bundle{
-				Environment: "whatever",
+				Target: "whatever",
 			},
 		},
 	}
@@ -184,7 +184,7 @@ func TestSetTempDirEnvVarsForWindowWithUserProfileSet(t *testing.T) {
 
 	// compute env
 	env := make(map[string]string, 0)
-	err := setTempDirEnvVars(env, b)
+	err := setTempDirEnvVars(context.Background(), env, b)
 	require.NoError(t, err)
 
 	// assert that we pass through the user profile
@@ -202,7 +202,7 @@ func TestSetTempDirEnvVarsForWindowsWithoutAnyTempDirEnvVarsSet(t *testing.T) {
 		Config: config.Root{
 			Path: t.TempDir(),
 			Bundle: config.Bundle{
-				Environment: "whatever",
+				Target: "whatever",
 			},
 		},
 	}
@@ -214,11 +214,11 @@ func TestSetTempDirEnvVarsForWindowsWithoutAnyTempDirEnvVarsSet(t *testing.T) {
 
 	// compute env
 	env := make(map[string]string, 0)
-	err := setTempDirEnvVars(env, b)
+	err := setTempDirEnvVars(context.Background(), env, b)
 	require.NoError(t, err)
 
 	// assert TMP is set to b.CacheDir("tmp")
-	tmpDir, err := b.CacheDir("tmp")
+	tmpDir, err := b.CacheDir(context.Background(), "tmp")
 	require.NoError(t, err)
 	assert.Equal(t, map[string]string{
 		"TMP": tmpDir,
@@ -230,7 +230,7 @@ func TestSetProxyEnvVars(t *testing.T) {
 		Config: config.Root{
 			Path: t.TempDir(),
 			Bundle: config.Bundle{
-				Environment: "whatever",
+				Target: "whatever",
 			},
 		},
 	}
@@ -248,7 +248,7 @@ func TestSetProxyEnvVars(t *testing.T) {
 	// No proxy env vars set.
 	clearEnv()
 	env := make(map[string]string, 0)
-	err := setProxyEnvVars(env, b)
+	err := setProxyEnvVars(context.Background(), env, b)
 	require.NoError(t, err)
 	assert.Len(t, env, 0)
 
@@ -258,7 +258,7 @@ func TestSetProxyEnvVars(t *testing.T) {
 	t.Setenv("https_proxy", "foo")
 	t.Setenv("no_proxy", "foo")
 	env = make(map[string]string, 0)
-	err = setProxyEnvVars(env, b)
+	err = setProxyEnvVars(context.Background(), env, b)
 	require.NoError(t, err)
 	assert.ElementsMatch(t, []string{"HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY"}, maps.Keys(env))
 
@@ -268,7 +268,7 @@ func TestSetProxyEnvVars(t *testing.T) {
 	t.Setenv("HTTPS_PROXY", "foo")
 	t.Setenv("NO_PROXY", "foo")
 	env = make(map[string]string, 0)
-	err = setProxyEnvVars(env, b)
+	err = setProxyEnvVars(context.Background(), env, b)
 	require.NoError(t, err)
 	assert.ElementsMatch(t, []string{"HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY"}, maps.Keys(env))
 }
@@ -277,14 +277,16 @@ func TestInheritEnvVars(t *testing.T) {
 	env := map[string]string{}
 
 	t.Setenv("HOME", "/home/testuser")
+	t.Setenv("PATH", "/foo:/bar")
 	t.Setenv("TF_CLI_CONFIG_FILE", "/tmp/config.tfrc")
 
-	err := inheritEnvVars(env)
+	err := inheritEnvVars(context.Background(), env)
 
 	require.NoError(t, err)
 
 	require.Equal(t, map[string]string{
 		"HOME":               "/home/testuser",
+		"PATH":               "/foo:/bar",
 		"TF_CLI_CONFIG_FILE": "/tmp/config.tfrc",
 	}, env)
 }

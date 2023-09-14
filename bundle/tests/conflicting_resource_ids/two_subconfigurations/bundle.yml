@@ -1,5 +1,0 @@
-bundle:
-  name: test
-
-workspace:
-  profile: test

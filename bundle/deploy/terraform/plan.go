@@ -84,7 +84,7 @@ func (p *plan) Apply(ctx context.Context, b *bundle.Bundle) error {
 	}
 
 	// Persist computed plan
-	tfDir, err := Dir(b)
+	tfDir, err := Dir(ctx, b)
 	if err != nil {
 		return err
 	}

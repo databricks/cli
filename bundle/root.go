@@ -1,21 +1,21 @@
 package bundle
 
 import (
+	"context"
 	"fmt"
 	"os"
 
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/folders"
 )
 
-const envBundleRoot = "BUNDLE_ROOT"
-
-// getRootEnv returns the value of the `BUNDLE_ROOT` environment variable
+// getRootEnv returns the value of the bundle root environment variable
 // if it set and is a directory. If the environment variable is set but
 // is not a directory, it returns an error. If the environment variable is
 // not set, it returns an empty string.
-func getRootEnv() (string, error) {
-	path, ok := os.LookupEnv(envBundleRoot)
+func getRootEnv(ctx context.Context) (string, error) {
+	path, ok := env.Root(ctx)
 	if !ok {
 		return "", nil
 	}
@@ -24,7 +24,7 @@ func getRootEnv() (string, error) {
 		err = fmt.Errorf("not a directory")
 	}
 	if err != nil {
-		return "", fmt.Errorf(`invalid bundle root %s="%s": %w`, envBundleRoot, path, err)
+		return "", fmt.Errorf(`invalid bundle root %s="%s": %w`, env.RootVariable, path, err)
 	}
 	return path, nil
 }
@@ -36,16 +36,20 @@ func getRootWithTraversal() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	path, err := folders.FindDirWithLeaf(wd, config.FileName)
-	if err != nil {
-		return "", fmt.Errorf(`unable to locate bundle root: %s not found`, config.FileName)
+
+	for _, file := range config.FileNames {
+		path, err := folders.FindDirWithLeaf(wd, file)
+		if err == nil {
+			return path, nil
+		}
 	}
-	return path, nil
+
+	return "", fmt.Errorf(`unable to locate bundle root: %s not found`, config.FileNames[0])
 }
 
 // mustGetRoot returns a bundle root or an error if one cannot be found.
-func mustGetRoot() (string, error) {
-	path, err := getRootEnv()
+func mustGetRoot(ctx context.Context) (string, error) {
+	path, err := getRootEnv(ctx)
 	if path != "" || err != nil {
 		return path, err
 	}
@@ -53,9 +57,9 @@ func mustGetRoot() (string, error) {
 }
 
 // tryGetRoot returns a bundle root or an empty string if one cannot be found.
-func tryGetRoot() (string, error) {
+func tryGetRoot(ctx context.Context) (string, error) {
 	// Note: an invalid value in the environment variable is still an error.
-	path, err := getRootEnv()
+	path, err := getRootEnv(ctx)
 	if path != "" || err != nil {
 		return path, err
 	}

@@ -21,8 +21,13 @@ type Workspace struct {
 	//
 
 	// Generic attributes.
-	Host    string `json:"host,omitempty"`
-	Profile string `json:"profile,omitempty"`
+	Host               string `json:"host,omitempty"`
+	Profile            string `json:"profile,omitempty"`
+	AuthType           string `json:"auth_type,omitempty"`
+	MetadataServiceURL string `json:"metadata_service_url,omitempty" bundle:"internal"`
+
+	// OAuth specific attributes.
+	ClientID string `json:"client_id,omitempty"`
 
 	// Google specific attributes.
 	GoogleServiceAccount string `json:"google_service_account,omitempty"`
@@ -37,10 +42,10 @@ type Workspace struct {
 
 	// CurrentUser holds the current user.
 	// This is set after configuration initialization.
-	CurrentUser *iam.User `json:"current_user,omitempty" bundle:"readonly"`
+	CurrentUser *User `json:"current_user,omitempty" bundle:"readonly"`
 
 	// Remote workspace base path for deployment state, for artifacts, as synchronization target.
-	// This defaults to "~/.bundle/${bundle.name}/${bundle.environment}" where "~" expands to
+	// This defaults to "~/.bundle/${bundle.name}/${bundle.target}" where "~" expands to
 	// the current user's home directory in the workspace (e.g. `/Users/jane@doe.com`).
 	RootPath string `json:"root_path,omitempty"`
 
@@ -57,11 +62,23 @@ type Workspace struct {
 	StatePath string `json:"state_path,omitempty"`
 }
 
+type User struct {
+	// A short name for the user, based on the user's UserName.
+	ShortName string `json:"short_name,omitempty" bundle:"readonly"`
+
+	*iam.User
+}
+
 func (w *Workspace) Client() (*databricks.WorkspaceClient, error) {
 	cfg := databricks.Config{
 		// Generic
-		Host:    w.Host,
-		Profile: w.Profile,
+		Host:               w.Host,
+		Profile:            w.Profile,
+		AuthType:           w.AuthType,
+		MetadataServiceURL: w.MetadataServiceURL,
+
+		// OAuth
+		ClientID: w.ClientID,
 
 		// Google
 		GoogleServiceAccount: w.GoogleServiceAccount,

@@ -10,7 +10,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
-{{ $excludes := list "command-execution" "statement-execution" "dbfs" "dbsql-permissions" "account-access-control-proxy" }}
+{{ $excludes :=
+	list
+		"command-execution"
+		"statement-execution"
+		"dbfs"
+		"dbsql-permissions"
+		"account-access-control-proxy"
+		"files"
+}}
 
 {{if not (in $excludes .KebabName) }}
 	{{template "service" .}}
@@ -19,20 +27,34 @@ import (
 {{end}}
 
 {{define "service"}}
-var Cmd = &cobra.Command{
-	Use:   "{{(.TrimPrefix "account").KebabName}}",
-	{{- if .Description }}
-	Short: `{{.Summary | without "`"}}`,
-	Long: `{{.Comment  "  " 80 | without "`"}}`,
-	{{- end }}
-	Annotations: map[string]string{
-		"package": "{{ .Package.Name }}",
-	},
-	{{- if .IsPrivatePreview }}
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var cmdOverrides []func(*cobra.Command)
 
-	// This service is being previewed; hide from help output.
-	Hidden: true,
-	{{- end }}
+func New() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "{{(.TrimPrefix "account").KebabName}}",
+		{{- if .Description }}
+		Short: `{{.Summary | without "`"}}`,
+		Long: `{{.Comment  "  " 80 | without "`"}}`,
+		{{- end }}
+		GroupID: "{{ .Package.Name }}",
+		Annotations: map[string]string{
+			"package": "{{ .Package.Name }}",
+		},
+		{{- if .IsPrivatePreview }}
+
+		// This service is being previewed; hide from help output.
+		Hidden: true,
+		{{- end }}
+	}
+
+	// Apply optional overrides to this command.
+	for _, fn := range cmdOverrides {
+		fn(cmd)
+	}
+
+	return cmd
 }
 
 {{- $serviceName := .KebabName -}}
@@ -44,26 +66,39 @@ var Cmd = &cobra.Command{
 {{end}}
 // start {{.KebabName}} command
 
-{{- $useJsonForAllFields := or .IsJsonOnly (and .Request (or (not .Request.IsAllRequiredFieldsPrimitive) .Request.HasRequiredNonBodyField))  -}}
-{{- $needJsonFlag := or $useJsonForAllFields (and .Request (not .Request.IsOnlyPrimitiveFields)) -}}
-{{- if .Request}}
-var {{.CamelName}}Req {{.Service.Package.Name}}.{{.Request.PascalName}}
-{{- if $needJsonFlag}}
-var {{.CamelName}}Json flags.JsonFlag
-{{- end}}
-{{end}}
-{{if .Wait}}var {{.CamelName}}SkipWait bool
-var {{.CamelName}}Timeout time.Duration{{end}}
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var {{.CamelName}}Overrides []func(
+	*cobra.Command,
+	{{- if .Request }}
+	*{{.Service.Package.Name}}.{{.Request.PascalName}},
+	{{- end }}
+)
 
-func init() {
-    Cmd.AddCommand({{.CamelName}}Cmd)
+func new{{.PascalName}}() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	{{- $useJsonForAllFields := or .IsJsonOnly (and .Request (or (not .Request.IsAllRequiredFieldsPrimitive) .Request.HasRequiredNonBodyField))  -}}
+	{{- $needJsonFlag := or $useJsonForAllFields (and .Request (not .Request.IsOnlyPrimitiveFields)) -}}
+
+	{{- if .Request}}
+
+	var {{.CamelName}}Req {{.Service.Package.Name}}.{{.Request.PascalName}}
+	{{- if $needJsonFlag}}
+	var {{.CamelName}}Json flags.JsonFlag
+	{{- end}}
+	{{- end}}
+
+	{{if .Wait}}var {{.CamelName}}SkipWait bool
+	var {{.CamelName}}Timeout time.Duration{{end}}
+
 	{{if .Wait}}
-	{{.CamelName}}Cmd.Flags().BoolVar(&{{.CamelName}}SkipWait, "no-wait", {{.CamelName}}SkipWait, `do not wait to reach {{range $i, $e := .Wait.Success}}{{if $i}} or {{end}}{{.Content}}{{end}} state`)
-	{{.CamelName}}Cmd.Flags().DurationVar(&{{.CamelName}}Timeout, "timeout", {{.Wait.Timeout}}*time.Minute, `maximum amount of time to reach {{range $i, $e := .Wait.Success}}{{if $i}} or {{end}}{{.Content}}{{end}} state`)
+	cmd.Flags().BoolVar(&{{.CamelName}}SkipWait, "no-wait", {{.CamelName}}SkipWait, `do not wait to reach {{range $i, $e := .Wait.Success}}{{if $i}} or {{end}}{{.Content}}{{end}} state`)
+	cmd.Flags().DurationVar(&{{.CamelName}}Timeout, "timeout", {{.Wait.Timeout}}*time.Minute, `maximum amount of time to reach {{range $i, $e := .Wait.Success}}{{if $i}} or {{end}}{{.Content}}{{end}} state`)
 	{{end -}}
     {{if .Request}}// TODO: short flags
 	{{- if $needJsonFlag}}
-	{{.CamelName}}Cmd.Flags().Var(&{{.CamelName}}Json, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&{{.CamelName}}Json, "json", `either inline JSON string or @path/to/file.json with request body`)
 	{{- end}}
     {{$method := .}}
 	{{ if not .IsJsonOnly }}
@@ -74,38 +109,39 @@ func init() {
 			{{else if .Entity.ArrayValue }}// TODO: array: {{.Name}}
 			{{else if .Entity.MapValue }}// TODO: map via StringToStringVar: {{.Name}}
 			{{else if .Entity.IsEmpty }}// TODO: output-only field
-			{{else if .Entity.Enum }}{{$method.CamelName}}Cmd.Flags().Var(&{{$method.CamelName}}Req.{{.PascalName}}, "{{.KebabName}}", `{{.Summary | without "`"}}`)
-			{{else}}{{$method.CamelName}}Cmd.Flags().{{template "arg-type" .Entity}}(&{{$method.CamelName}}Req.{{.PascalName}}, "{{.KebabName}}", {{$method.CamelName}}Req.{{.PascalName}}, `{{.Summary | without "`"}}`)
+			{{else if .Entity.Enum }}cmd.Flags().Var(&{{$method.CamelName}}Req.{{.PascalName}}, "{{.KebabName}}", `{{.Summary | without "`"}}`)
+			{{else}}cmd.Flags().{{template "arg-type" .Entity}}(&{{$method.CamelName}}Req.{{.PascalName}}, "{{.KebabName}}", {{$method.CamelName}}Req.{{.PascalName}}, `{{.Summary | without "`"}}`)
 			{{end}}
 		{{- end -}}
 	{{- end}}
 	{{- end}}
 	{{end}}
-}
-{{- $excludeFromPrompts := list "workspace get-status" -}}
-{{- $fullCommandName := (print $serviceName " " .KebabName) -}}
-{{- $noPrompt := or .IsCrudCreate (in $excludeFromPrompts $fullCommandName) }}
 
-{{ $hasPosArgs := and .Request (or .Request.IsAllRequiredFieldsPrimitive (eq .PascalName "RunNow")) -}}
-{{- $hasSinglePosArg := and $hasPosArgs (eq 1 (len .Request.RequiredFields)) -}}
-{{- $serviceHasNamedIdMap := and (and .Service.List .Service.List.NamedIdMap) (not (eq .PascalName "List")) -}}
-{{- $hasIdPrompt := and (not $noPrompt) (and $hasSinglePosArg $serviceHasNamedIdMap) -}}
-{{- $wait := and .Wait (and (not .IsCrudRead) (not (eq .SnakeName "get_run"))) -}}
-{{- $hasRequiredArgs := and (not $hasIdPrompt) $hasPosArgs -}}
-var {{.CamelName}}Cmd = &cobra.Command{
-	Use: "{{.KebabName}}{{if $hasPosArgs}}{{range .Request.RequiredFields}} {{.ConstantName}}{{end}}{{end}}",
+	{{- $excludeFromPrompts := list "workspace get-status" -}}
+	{{- $fullCommandName := (print $serviceName " " .KebabName) -}}
+	{{- $noPrompt := or .IsCrudCreate (in $excludeFromPrompts $fullCommandName) }}
+
+	{{- $hasPosArgs := and .Request (or .Request.IsAllRequiredFieldsPrimitive (eq .PascalName "RunNow")) -}}
+	{{- $hasSinglePosArg := and $hasPosArgs (eq 1 (len .Request.RequiredFields)) -}}
+	{{- $serviceHasNamedIdMap := and (and .Service.List .Service.List.NamedIdMap) (not (eq .PascalName "List")) -}}
+	{{- $hasIdPrompt := and (not $noPrompt) (and $hasSinglePosArg $serviceHasNamedIdMap) -}}
+	{{- $wait := and .Wait (and (not .IsCrudRead) (not (eq .SnakeName "get_run"))) -}}
+	{{- $hasRequiredArgs := and (not $hasIdPrompt) $hasPosArgs -}}
+
+	cmd.Use = "{{.KebabName}}{{if $hasPosArgs}}{{range .Request.RequiredFields}} {{.ConstantName}}{{end}}{{end}}"
 	{{- if .Description }}
-	Short: `{{.Summary | without "`"}}`,
-	Long: `{{.Comment  "  " 80 | without "`"}}`,
+	cmd.Short = `{{.Summary | without "`"}}`
+	cmd.Long = `{{.Comment  "  " 80 | without "`"}}`
 	{{- end }}
 	{{- if .IsPrivatePreview }}
 
 	// This command is being previewed; hide from help output.
-	Hidden: true,
+	cmd.Hidden = true
 	{{- end }}
 
-	Annotations: map[string]string{},{{if $hasRequiredArgs }}
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+	{{if $hasRequiredArgs }}
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs({{len .Request.RequiredFields}})
 		{{- if $useJsonForAllFields }}
 		if cmd.Flags().Changed("json") {
@@ -113,9 +149,10 @@ var {{.CamelName}}Cmd = &cobra.Command{
 		}
 		{{- end }}
 		return check(cmd, args)
-	},{{end}}
-	PreRunE: root.Must{{if .Service.IsAccounts}}Account{{else}}Workspace{{end}}Client,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+	{{end}}
+	cmd.PreRunE = root.Must{{if .Service.IsAccounts}}Account{{else}}Workspace{{end}}Client
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		{{if .Service.IsAccounts}}a := root.AccountClient(ctx){{else}}w := root.WorkspaceClient(ctx){{end}}
 		{{- if .Request }}
@@ -204,10 +241,24 @@ var {{.CamelName}}Cmd = &cobra.Command{
 		{{- else -}}
 		{{template "method-call" .}}
 		{{end -}}
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range {{.CamelName}}Overrides {
+		fn(cmd{{if .Request}}, &{{.CamelName}}Req{{end}})
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(new{{.PascalName}}())
+	})
 }
 {{end}}
 // end service {{.Name}}{{end}}

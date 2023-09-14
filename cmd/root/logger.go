@@ -4,13 +4,14 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"os"
+	"log/slog"
 
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/log"
 	"github.com/fatih/color"
-	"golang.org/x/exp/slog"
+	"github.com/spf13/cobra"
 )
 
 const (
@@ -51,11 +52,12 @@ func (l *friendlyHandler) coloredLevel(rec slog.Record) string {
 func (l *friendlyHandler) Handle(ctx context.Context, rec slog.Record) error {
 	t := fmt.Sprintf("%02d:%02d", rec.Time.Hour(), rec.Time.Minute())
 	attrs := ""
-	rec.Attrs(func(a slog.Attr) {
+	rec.Attrs(func(a slog.Attr) bool {
 		attrs += fmt.Sprintf(" %s%s%s",
 			color.CyanString(a.Key),
 			color.CyanString("="),
 			color.YellowString(a.Value.String()))
+		return true
 	})
 	msg := fmt.Sprintf("%s %s %s%s\n",
 		color.MagentaString(t),
@@ -66,28 +68,34 @@ func (l *friendlyHandler) Handle(ctx context.Context, rec slog.Record) error {
 	return err
 }
 
-func makeLogHandler(opts slog.HandlerOptions) (slog.Handler, error) {
-	switch logOutput {
+type logFlags struct {
+	file   flags.LogFileFlag
+	level  flags.LogLevelFlag
+	output flags.Output
+}
+
+func (f *logFlags) makeLogHandler(opts slog.HandlerOptions) (slog.Handler, error) {
+	switch f.output {
 	case flags.OutputJSON:
-		return opts.NewJSONHandler(logFile.Writer()), nil
+		return slog.NewJSONHandler(f.file.Writer(), &opts), nil
 	case flags.OutputText:
-		w := logFile.Writer()
+		w := f.file.Writer()
 		if cmdio.IsTTY(w) {
 			return &friendlyHandler{
-				Handler: opts.NewTextHandler(w),
+				Handler: slog.NewTextHandler(w, &opts),
 				w:       w,
 			}, nil
 		}
-		return opts.NewTextHandler(w), nil
+		return slog.NewTextHandler(w, &opts), nil
 
 	default:
-		return nil, fmt.Errorf("invalid log output mode: %s", logOutput)
+		return nil, fmt.Errorf("invalid log output mode: %s", f.output)
 	}
 }
 
-func initializeLogger(ctx context.Context) (context.Context, error) {
+func (f *logFlags) initializeContext(ctx context.Context) (context.Context, error) {
 	opts := slog.HandlerOptions{}
-	opts.Level = logLevel.Level()
+	opts.Level = f.level.Level()
 	opts.AddSource = true
 	opts.ReplaceAttr = log.ReplaceAttrFunctions{
 		log.ReplaceLevelAttr,
@@ -95,12 +103,12 @@ func initializeLogger(ctx context.Context) (context.Context, error) {
 	}.ReplaceAttr
 
 	// Open the underlying log file if the user configured an actual file to log to.
-	err := logFile.Open()
+	err := f.file.Open()
 	if err != nil {
 		return nil, err
 	}
 
-	handler, err := makeLogHandler(opts)
+	handler, err := f.makeLogHandler(opts)
 	if err != nil {
 		return nil, err
 	}
@@ -109,27 +117,30 @@ func initializeLogger(ctx context.Context) (context.Context, error) {
 	return log.NewContext(ctx, slog.Default()), nil
 }
 
-var logFile = flags.NewLogFileFlag()
-var logLevel = flags.NewLogLevelFlag()
-var logOutput = flags.OutputText
+func initLogFlags(cmd *cobra.Command) *logFlags {
+	f := logFlags{
+		file:   flags.NewLogFileFlag(),
+		level:  flags.NewLogLevelFlag(),
+		output: flags.OutputText,
+	}
 
-func init() {
 	// Configure defaults from environment, if applicable.
 	// If the provided value is invalid it is ignored.
-	if v, ok := os.LookupEnv(envLogFile); ok {
-		logFile.Set(v)
+	if v, ok := env.Lookup(cmd.Context(), envLogFile); ok {
+		f.file.Set(v)
 	}
-	if v, ok := os.LookupEnv(envLogLevel); ok {
-		logLevel.Set(v)
+	if v, ok := env.Lookup(cmd.Context(), envLogLevel); ok {
+		f.level.Set(v)
 	}
-	if v, ok := os.LookupEnv(envLogFormat); ok {
-		logOutput.Set(v)
+	if v, ok := env.Lookup(cmd.Context(), envLogFormat); ok {
+		f.output.Set(v)
 	}
 
-	RootCmd.PersistentFlags().Var(&logFile, "log-file", "file to write logs to")
-	RootCmd.PersistentFlags().Var(&logLevel, "log-level", "log level")
-	RootCmd.PersistentFlags().Var(&logOutput, "log-format", "log output format (text or json)")
-	RootCmd.RegisterFlagCompletionFunc("log-file", logFile.Complete)
-	RootCmd.RegisterFlagCompletionFunc("log-level", logLevel.Complete)
-	RootCmd.RegisterFlagCompletionFunc("log-format", logOutput.Complete)
+	cmd.PersistentFlags().Var(&f.file, "log-file", "file to write logs to")
+	cmd.PersistentFlags().Var(&f.level, "log-level", "log level")
+	cmd.PersistentFlags().Var(&f.output, "log-format", "log output format (text or json)")
+	cmd.RegisterFlagCompletionFunc("log-file", f.file.Complete)
+	cmd.RegisterFlagCompletionFunc("log-level", f.level.Complete)
+	cmd.RegisterFlagCompletionFunc("log-format", f.output.Complete)
+	return &f
 }

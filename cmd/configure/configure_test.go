@@ -1,4 +1,4 @@
-package configure
+package configure_test
 
 import (
 	"context"
@@ -7,15 +7,16 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/cmd"
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/ini.v1"
 )
 
 func assertKeyValueInSection(t *testing.T, section *ini.Section, keyName, expectedValue string) {
 	key, err := section.GetKey(keyName)
-	assert.NoError(t, err)
-	assert.Equal(t, key.Value(), expectedValue)
+	if assert.NoError(t, err) {
+		assert.Equal(t, expectedValue, key.Value())
+	}
 }
 
 func setup(t *testing.T) string {
@@ -26,6 +27,7 @@ func setup(t *testing.T) string {
 	}
 	t.Setenv(homeEnvVar, tempHomeDir)
 	t.Setenv("DATABRICKS_CONFIG_FILE", "")
+	t.Setenv("DATABRICKS_TOKEN", "")
 	return tempHomeDir
 }
 
@@ -52,9 +54,10 @@ func TestDefaultConfigureNoInteractive(t *testing.T) {
 	})
 	os.Stdin = inp
 
-	root.RootCmd.SetArgs([]string{"configure", "--token", "--host", "https://host"})
+	cmd := cmd.New(ctx)
+	cmd.SetArgs([]string{"configure", "--token", "--host", "https://host"})
 
-	err := root.RootCmd.ExecuteContext(ctx)
+	err := cmd.ExecuteContext(ctx)
 	assert.NoError(t, err)
 
 	cfgPath := filepath.Join(tempHomeDir, ".databrickscfg")
@@ -84,9 +87,10 @@ func TestConfigFileFromEnvNoInteractive(t *testing.T) {
 	t.Cleanup(func() { os.Stdin = oldStdin })
 	os.Stdin = inp
 
-	root.RootCmd.SetArgs([]string{"configure", "--token", "--host", "https://host"})
+	cmd := cmd.New(ctx)
+	cmd.SetArgs([]string{"configure", "--token", "--host", "https://host"})
 
-	err := root.RootCmd.ExecuteContext(ctx)
+	err := cmd.ExecuteContext(ctx)
 	assert.NoError(t, err)
 
 	_, err = os.Stat(cfgPath)
@@ -112,9 +116,10 @@ func TestCustomProfileConfigureNoInteractive(t *testing.T) {
 	t.Cleanup(func() { os.Stdin = oldStdin })
 	os.Stdin = inp
 
-	root.RootCmd.SetArgs([]string{"configure", "--token", "--host", "https://host", "--profile", "CUSTOM"})
+	cmd := cmd.New(ctx)
+	cmd.SetArgs([]string{"configure", "--token", "--host", "https://host", "--profile", "CUSTOM"})
 
-	err := root.RootCmd.ExecuteContext(ctx)
+	err := cmd.ExecuteContext(ctx)
 	assert.NoError(t, err)
 
 	_, err = os.Stat(cfgPath)

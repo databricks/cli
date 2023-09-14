@@ -5,31 +5,15 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"path/filepath"
-	"strings"
 	"sync"
 
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
 	"gopkg.in/ini.v1"
 )
-
-func getDatabricksCfg() (*ini.File, error) {
-	configFile := os.Getenv("DATABRICKS_CONFIG_FILE")
-	if configFile == "" {
-		configFile = "~/.databrickscfg"
-	}
-	if strings.HasPrefix(configFile, "~") {
-		homedir, err := os.UserHomeDir()
-		if err != nil {
-			return nil, fmt.Errorf("cannot find homedir: %w", err)
-		}
-		configFile = filepath.Join(homedir, configFile[1:])
-	}
-	return ini.Load(configFile)
-}
 
 type profileMetadata struct {
 	Name      string `json:"name"`
@@ -44,7 +28,7 @@ func (c *profileMetadata) IsEmpty() bool {
 	return c.Host == "" && c.AccountID == ""
 }
 
-func (c *profileMetadata) Load(ctx context.Context) {
+func (c *profileMetadata) Load(ctx context.Context, skipValidate bool) {
 	// TODO: disable config loaders other than configfile
 	cfg := &config.Config{Profile: c.Name}
 	_ = cfg.EnsureResolved()
@@ -94,21 +78,29 @@ func (c *profileMetadata) Load(ctx context.Context) {
 	c.Host = cfg.Host
 }
 
-var profilesCmd = &cobra.Command{
-	Use:   "profiles",
-	Short: "Lists profiles from ~/.databrickscfg",
-	Annotations: map[string]string{
-		"template": cmdio.Heredoc(`
-		{{header "Name"}}	{{header "Host"}}	{{header "Valid"}}
-		{{range .Profiles}}{{.Name | green}}	{{.Host|cyan}}	{{bool .Valid}}
-		{{end}}`),
-	},
-	RunE: func(cmd *cobra.Command, args []string) error {
+func newProfilesCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "profiles",
+		Short: "Lists profiles from ~/.databrickscfg",
+		Annotations: map[string]string{
+			"template": cmdio.Heredoc(`
+			{{header "Name"}}	{{header "Host"}}	{{header "Valid"}}
+			{{range .Profiles}}{{.Name | green}}	{{.Host|cyan}}	{{bool .Valid}}
+			{{end}}`),
+		},
+	}
+
+	var skipValidate bool
+	cmd.Flags().BoolVar(&skipValidate, "skip-validate", false, "Whether to skip validating the profiles")
+
+	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		var profiles []*profileMetadata
-		iniFile, err := getDatabricksCfg()
+		iniFile, err := databrickscfg.Get()
 		if os.IsNotExist(err) {
 			// return empty list for non-configured machines
-			iniFile = ini.Empty()
+			iniFile = &config.File{
+				File: &ini.File{},
+			}
 		} else if err != nil {
 			return fmt.Errorf("cannot parse config file: %w", err)
 		}
@@ -126,7 +118,7 @@ var profilesCmd = &cobra.Command{
 			wg.Add(1)
 			go func() {
 				// load more information about profile
-				profile.Load(cmd.Context())
+				profile.Load(cmd.Context(), skipValidate)
 				wg.Done()
 			}()
 			profiles = append(profiles, profile)
@@ -135,12 +127,7 @@ var profilesCmd = &cobra.Command{
 		return cmdio.Render(cmd.Context(), struct {
 			Profiles []*profileMetadata `json:"profiles"`
 		}{profiles})
-	},
-}
+	}
 
-var skipValidate bool
-
-func init() {
-	authCmd.AddCommand(profilesCmd)
-	profilesCmd.Flags().BoolVar(&skipValidate, "skip-validate", false, "Whether to skip validating the profiles")
+	return cmd
 }

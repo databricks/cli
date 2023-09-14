@@ -5,17 +5,18 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/databricks/cli/libs/jsonschema"
 	"github.com/databricks/databricks-sdk-go/openapi"
 )
 
 type OpenapiReader struct {
 	OpenapiSpec *openapi.Specification
-	Memo        map[string]*Schema
+	Memo        map[string]*jsonschema.Schema
 }
 
 const SchemaPathPrefix = "#/components/schemas/"
 
-func (reader *OpenapiReader) readOpenapiSchema(path string) (*Schema, error) {
+func (reader *OpenapiReader) readOpenapiSchema(path string) (*jsonschema.Schema, error) {
 	schemaKey := strings.TrimPrefix(path, SchemaPathPrefix)
 
 	// return early if we already have a computed schema
@@ -35,7 +36,7 @@ func (reader *OpenapiReader) readOpenapiSchema(path string) (*Schema, error) {
 	if err != nil {
 		return nil, err
 	}
-	jsonSchema := &Schema{}
+	jsonSchema := &jsonschema.Schema{}
 	err = json.Unmarshal(bytes, jsonSchema)
 	if err != nil {
 		return nil, err
@@ -50,7 +51,7 @@ func (reader *OpenapiReader) readOpenapiSchema(path string) (*Schema, error) {
 		if err != nil {
 			return nil, err
 		}
-		additionalProperties := &Schema{}
+		additionalProperties := &jsonschema.Schema{}
 		err = json.Unmarshal(b, additionalProperties)
 		if err != nil {
 			return nil, err
@@ -65,7 +66,7 @@ func (reader *OpenapiReader) readOpenapiSchema(path string) (*Schema, error) {
 }
 
 // safe againt loops in refs
-func (reader *OpenapiReader) safeResolveRefs(root *Schema, tracker *tracker) (*Schema, error) {
+func (reader *OpenapiReader) safeResolveRefs(root *jsonschema.Schema, tracker *tracker) (*jsonschema.Schema, error) {
 	if root.Reference == nil {
 		return reader.traverseSchema(root, tracker)
 	}
@@ -100,9 +101,9 @@ func (reader *OpenapiReader) safeResolveRefs(root *Schema, tracker *tracker) (*S
 	return root, err
 }
 
-func (reader *OpenapiReader) traverseSchema(root *Schema, tracker *tracker) (*Schema, error) {
+func (reader *OpenapiReader) traverseSchema(root *jsonschema.Schema, tracker *tracker) (*jsonschema.Schema, error) {
 	// case primitive (or invalid)
-	if root.Type != Object && root.Type != Array {
+	if root.Type != jsonschema.ObjectType && root.Type != jsonschema.ArrayType {
 		return root, nil
 	}
 	// only root references are resolved
@@ -128,9 +129,9 @@ func (reader *OpenapiReader) traverseSchema(root *Schema, tracker *tracker) (*Sc
 		root.Items = itemsSchema
 	}
 	// case map
-	additionionalProperties, ok := root.AdditionalProperties.(*Schema)
-	if ok && additionionalProperties != nil {
-		valueSchema, err := reader.safeResolveRefs(additionionalProperties, tracker)
+	additionalProperties, ok := root.AdditionalProperties.(*jsonschema.Schema)
+	if ok && additionalProperties != nil {
+		valueSchema, err := reader.safeResolveRefs(additionalProperties, tracker)
 		if err != nil {
 			return nil, err
 		}
@@ -139,7 +140,7 @@ func (reader *OpenapiReader) traverseSchema(root *Schema, tracker *tracker) (*Sc
 	return root, nil
 }
 
-func (reader *OpenapiReader) readResolvedSchema(path string) (*Schema, error) {
+func (reader *OpenapiReader) readResolvedSchema(path string) (*jsonschema.Schema, error) {
 	root, err := reader.readOpenapiSchema(path)
 	if err != nil {
 		return nil, err
@@ -209,6 +210,19 @@ func (reader *OpenapiReader) modelsDocs() (*Docs, error) {
 	return modelsDocs, nil
 }
 
+func (reader *OpenapiReader) modelServingEndpointsDocs() (*Docs, error) {
+	modelServingEndpointsSpecSchema, err := reader.readResolvedSchema(SchemaPathPrefix + "serving.CreateServingEndpoint")
+	if err != nil {
+		return nil, err
+	}
+	modelServingEndpointsDocs := schemaToDocs(modelServingEndpointsSpecSchema)
+	modelServingEndpointsAllDocs := &Docs{
+		Description:          "List of Model Serving Endpoints",
+		AdditionalProperties: modelServingEndpointsDocs,
+	}
+	return modelServingEndpointsAllDocs, nil
+}
+
 func (reader *OpenapiReader) ResourcesDocs() (*Docs, error) {
 	jobsDocs, err := reader.jobsDocs()
 	if err != nil {
@@ -226,14 +240,19 @@ func (reader *OpenapiReader) ResourcesDocs() (*Docs, error) {
 	if err != nil {
 		return nil, err
 	}
+	modelServingEndpointsDocs, err := reader.modelServingEndpointsDocs()
+	if err != nil {
+		return nil, err
+	}
 
 	return &Docs{
 		Description: "Collection of Databricks resources to deploy.",
 		Properties: map[string]*Docs{
-			"jobs":        jobsDocs,
-			"pipelines":   pipelinesDocs,
-			"experiments": experimentsDocs,
-			"models":      modelsDocs,
+			"jobs":                    jobsDocs,
+			"pipelines":               pipelinesDocs,
+			"experiments":             experimentsDocs,
+			"models":                  modelsDocs,
+			"model_serving_endpoints": modelServingEndpointsDocs,
 		},
 	}, nil
 }

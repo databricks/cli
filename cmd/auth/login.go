@@ -14,10 +14,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var loginTimeout time.Duration
-var configureCluster bool
-
-func configureHost(ctx context.Context, args []string, argIndex int) error {
+func configureHost(ctx context.Context, persistentAuth *auth.PersistentAuth, args []string, argIndex int) error {
 	if len(args) > argIndex {
 		persistentAuth.Host = args[argIndex]
 		return nil
@@ -31,13 +28,51 @@ func configureHost(ctx context.Context, args []string, argIndex int) error {
 	return nil
 }
 
-var loginCmd = &cobra.Command{
-	Use:   "login [HOST]",
-	Short: "Authenticate this machine",
-	RunE: func(cmd *cobra.Command, args []string) error {
+func newLoginCommand(persistentAuth *auth.PersistentAuth) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "login [HOST]",
+		Short: "Authenticate this machine",
+	}
+
+	var loginTimeout time.Duration
+	var configureCluster bool
+	cmd.Flags().DurationVar(&loginTimeout, "timeout", auth.DefaultTimeout,
+		"Timeout for completing login challenge in the browser")
+	cmd.Flags().BoolVar(&configureCluster, "configure-cluster", false,
+		"Prompts to configure cluster")
+
+	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
+
+		var profileName string
+		profileFlag := cmd.Flag("profile")
+		if profileFlag != nil && profileFlag.Value.String() != "" {
+			profileName = profileFlag.Value.String()
+		} else {
+			prompt := cmdio.Prompt(ctx)
+			prompt.Label = "Databricks Profile Name"
+			prompt.Default = persistentAuth.ProfileName()
+			prompt.AllowEdit = true
+			profile, err := prompt.Run()
+			if err != nil {
+				return err
+			}
+			profileName = profile
+		}
+
+		// If the chosen profile has a hostname and the user hasn't specified a host, infer the host from the profile.
+		_, profiles, err := databrickscfg.LoadProfiles(func(p databrickscfg.Profile) bool {
+			return p.Name == profileName
+		})
+		if err != nil {
+			return err
+		}
 		if persistentAuth.Host == "" {
-			configureHost(ctx, args, 0)
+			if len(profiles) > 0 && profiles[0].Host != "" {
+				persistentAuth.Host = profiles[0].Host
+			} else {
+				configureHost(ctx, persistentAuth, args, 0)
+			}
 		}
 		defer persistentAuth.Close()
 
@@ -59,22 +94,7 @@ var loginCmd = &cobra.Command{
 		ctx, cancel := context.WithTimeout(ctx, loginTimeout)
 		defer cancel()
 
-		var profileName string
-		profileFlag := cmd.Flag("profile")
-		if profileFlag != nil && profileFlag.Value.String() != "" {
-			profileName = profileFlag.Value.String()
-		} else {
-			prompt := cmdio.Prompt(ctx)
-			prompt.Label = "Databricks Profile Name"
-			prompt.Default = persistentAuth.ProfileName()
-			prompt.AllowEdit = true
-			profile, err := prompt.Run()
-			if err != nil {
-				return err
-			}
-			profileName = profile
-		}
-		err := persistentAuth.Challenge(ctx)
+		err = persistentAuth.Challenge(ctx)
 		if err != nil {
 			return err
 		}
@@ -108,14 +128,7 @@ var loginCmd = &cobra.Command{
 
 		cmdio.LogString(ctx, fmt.Sprintf("Profile %s was successfully saved", profileName))
 		return nil
-	},
-}
+	}
 
-func init() {
-	authCmd.AddCommand(loginCmd)
-	loginCmd.Flags().DurationVar(&loginTimeout, "timeout", auth.DefaultTimeout,
-		"Timeout for completing login challenge in the browser")
-
-	loginCmd.Flags().BoolVar(&configureCluster, "configure-cluster", false,
-		"Prompts to configure cluster")
+	return cmd
 }

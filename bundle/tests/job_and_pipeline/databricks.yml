@@ -1,0 +1,44 @@
+resources:
+  pipelines:
+    nyc_taxi_pipeline:
+      name: "nyc taxi loader"
+      libraries:
+        - notebook:
+            path: ./dlt/nyc_taxi_loader
+
+targets:
+  development:
+    mode: development
+    resources:
+      pipelines:
+        nyc_taxi_pipeline:
+          target: nyc_taxi_development
+          development: true
+
+  staging:
+    resources:
+      pipelines:
+        nyc_taxi_pipeline:
+          target: nyc_taxi_staging
+          development: false
+
+  production:
+    mode: production
+    resources:
+      pipelines:
+        nyc_taxi_pipeline:
+          target: nyc_taxi_production
+          development: false
+          photon: true
+
+      jobs:
+        pipeline_schedule:
+          name: Daily refresh of production pipeline
+
+          schedule:
+            quartz_cron_expression: 6 6 11 * * ?
+            timezone_id: UTC
+
+          tasks:
+            - pipeline_task:
+                pipeline_id: "to be interpolated"

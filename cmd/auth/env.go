@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
 	"gopkg.in/ini.v1"
@@ -28,7 +29,7 @@ func canonicalHost(host string) (string, error) {
 
 var ErrNoMatchingProfiles = errors.New("no matching profiles found")
 
-func resolveSection(cfg *config.Config, iniFile *ini.File) (*ini.Section, error) {
+func resolveSection(cfg *config.Config, iniFile *config.File) (*ini.Section, error) {
 	var candidates []*ini.Section
 	configuredHost, err := canonicalHost(cfg.Host)
 	if err != nil {
@@ -68,7 +69,7 @@ func resolveSection(cfg *config.Config, iniFile *ini.File) (*ini.Section, error)
 }
 
 func loadFromDatabricksCfg(cfg *config.Config) error {
-	iniFile, err := getDatabricksCfg()
+	iniFile, err := databrickscfg.Get()
 	if errors.Is(err, fs.ErrNotExist) {
 		// it's fine not to have ~/.databrickscfg
 		return nil
@@ -89,10 +90,18 @@ func loadFromDatabricksCfg(cfg *config.Config) error {
 	return nil
 }
 
-var envCmd = &cobra.Command{
-	Use:   "env",
-	Short: "Get env",
-	RunE: func(cmd *cobra.Command, args []string) error {
+func newEnvCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "env",
+		Short: "Get env",
+	}
+
+	var host string
+	var profile string
+	cmd.Flags().StringVar(&host, "host", host, "Hostname to get auth env for")
+	cmd.Flags().StringVar(&profile, "profile", profile, "Profile to get auth env for")
+
+	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		cfg := &config.Config{
 			Host:    host,
 			Profile: profile,
@@ -130,14 +139,7 @@ var envCmd = &cobra.Command{
 		}
 		cmd.OutOrStdout().Write(raw)
 		return nil
-	},
-}
+	}
 
-var host string
-var profile string
-
-func init() {
-	authCmd.AddCommand(envCmd)
-	envCmd.Flags().StringVar(&host, "host", host, "Hostname to get auth env for")
-	envCmd.Flags().StringVar(&profile, "profile", profile, "Profile to get auth env for")
+	return cmd
 }

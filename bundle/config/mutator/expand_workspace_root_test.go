@@ -16,8 +16,10 @@ func TestExpandWorkspaceRoot(t *testing.T) {
 	bundle := &bundle.Bundle{
 		Config: config.Root{
 			Workspace: config.Workspace{
-				CurrentUser: &iam.User{
-					UserName: "jane@doe.com",
+				CurrentUser: &config.User{
+					User: &iam.User{
+						UserName: "jane@doe.com",
+					},
 				},
 				RootPath: "~/foo",
 			},
@@ -32,8 +34,10 @@ func TestExpandWorkspaceRootDoesNothing(t *testing.T) {
 	bundle := &bundle.Bundle{
 		Config: config.Root{
 			Workspace: config.Workspace{
-				CurrentUser: &iam.User{
-					UserName: "jane@doe.com",
+				CurrentUser: &config.User{
+					User: &iam.User{
+						UserName: "jane@doe.com",
+					},
 				},
 				RootPath: "/Users/charly@doe.com/foo",
 			},
@@ -48,8 +52,10 @@ func TestExpandWorkspaceRootWithoutRoot(t *testing.T) {
 	bundle := &bundle.Bundle{
 		Config: config.Root{
 			Workspace: config.Workspace{
-				CurrentUser: &iam.User{
-					UserName: "jane@doe.com",
+				CurrentUser: &config.User{
+					User: &iam.User{
+						UserName: "jane@doe.com",
+					},
 				},
 			},
 		},

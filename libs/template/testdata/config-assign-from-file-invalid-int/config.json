@@ -1,0 +1,6 @@
+{
+    "int_val":    "abc",
+    "float_val":  2,
+    "bool_val":   true,
+    "string_val": "hello"
+}

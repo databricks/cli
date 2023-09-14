@@ -1,0 +1,38 @@
+resources:
+  model_serving_endpoints:
+    my_model_serving_endpoint:
+      name: "my-endpoint"
+      config:
+        served_models:
+          - model_name: "model-name"
+            model_version: "1"
+            workload_size: "Small"
+            scale_to_zero_enabled: true
+        traffic_config:
+          routes:
+            - served_model_name: "model-name-1"
+              traffic_percentage: 100
+      permissions:
+        - level: CAN_QUERY
+          group_name: users
+
+targets:
+  development:
+    mode: development
+    resources:
+      model_serving_endpoints:
+        my_model_serving_endpoint:
+          name: "my-dev-endpoint"
+
+  staging:
+    resources:
+      model_serving_endpoints:
+        my_model_serving_endpoint:
+          name: "my-staging-endpoint"
+
+  production:
+    mode: production
+    resources:
+      model_serving_endpoints:
+        my_model_serving_endpoint:
+          name: "my-prod-endpoint"

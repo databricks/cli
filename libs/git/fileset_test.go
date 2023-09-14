@@ -10,18 +10,23 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestFileSetRecursiveListFiles(t *testing.T) {
-	fileSet, err := NewFileSet("./testdata")
+func testFileSetAll(t *testing.T, path string) {
+	fileSet, err := NewFileSet(path)
 	require.NoError(t, err)
-	files, err := fileSet.RecursiveListFiles("./testdata")
+	files, err := fileSet.All()
 	require.NoError(t, err)
-	require.Len(t, files, 6)
-	assert.Equal(t, filepath.Join(".gitignore"), files[0].Relative)
-	assert.Equal(t, filepath.Join("a", ".gitignore"), files[1].Relative)
-	assert.Equal(t, filepath.Join("a", "b", ".gitignore"), files[2].Relative)
-	assert.Equal(t, filepath.Join("a", "b", "world.txt"), files[3].Relative)
-	assert.Equal(t, filepath.Join("a", "hello.txt"), files[4].Relative)
-	assert.Equal(t, filepath.Join("databricks.yml"), files[5].Relative)
+	require.Len(t, files, 3)
+	assert.Equal(t, filepath.Join("a", "b", "world.txt"), files[0].Relative)
+	assert.Equal(t, filepath.Join("a", "hello.txt"), files[1].Relative)
+	assert.Equal(t, filepath.Join("databricks.yml"), files[2].Relative)
+}
+
+func TestFileSetListAllInRepo(t *testing.T) {
+	testFileSetAll(t, "./testdata")
+}
+
+func TestFileSetListAllInTempDir(t *testing.T) {
+	testFileSetAll(t, copyTestdata(t, "./testdata"))
 }
 
 func TestFileSetNonCleanRoot(t *testing.T) {
@@ -32,10 +37,10 @@ func TestFileSetNonCleanRoot(t *testing.T) {
 	require.NoError(t, err)
 	files, err := fileSet.All()
 	require.NoError(t, err)
-	assert.Len(t, files, 6)
+	assert.Len(t, files, 3)
 }
 
-func TestFilesetAddsCacheDirToGitIgnore(t *testing.T) {
+func TestFileSetAddsCacheDirToGitIgnore(t *testing.T) {
 	projectDir := t.TempDir()
 	fileSet, err := NewFileSet(projectDir)
 	require.NoError(t, err)
@@ -48,7 +53,7 @@ func TestFilesetAddsCacheDirToGitIgnore(t *testing.T) {
 	assert.Contains(t, string(fileBytes), ".databricks")
 }
 
-func TestFilesetDoesNotCacheDirToGitIgnoreIfAlreadyPresent(t *testing.T) {
+func TestFileSetDoesNotCacheDirToGitIgnoreIfAlreadyPresent(t *testing.T) {
 	projectDir := t.TempDir()
 	gitIgnorePath := filepath.Join(projectDir, ".gitignore")
 

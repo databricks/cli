@@ -32,19 +32,22 @@ func TestLoadProfilesReturnsHomedirAsTilde(t *testing.T) {
 	} else {
 		t.Setenv("HOME", "./testdata")
 	}
-	file, _, err := LoadProfiles("./testdata/databrickscfg", func(p Profile) bool { return true })
+	t.Setenv("DATABRICKS_CONFIG_FILE", "./testdata/databrickscfg")
+	file, _, err := LoadProfiles(func(p Profile) bool { return true })
 	require.NoError(t, err)
 	assert.Equal(t, "~/databrickscfg", file)
 }
 
 func TestLoadProfilesMatchWorkspace(t *testing.T) {
-	_, profiles, err := LoadProfiles("./testdata/databrickscfg", MatchWorkspaceProfiles)
+	t.Setenv("DATABRICKS_CONFIG_FILE", "./testdata/databrickscfg")
+	_, profiles, err := LoadProfiles(MatchWorkspaceProfiles)
 	require.NoError(t, err)
 	assert.Equal(t, []string{"DEFAULT", "query", "foo1", "foo2"}, profiles.Names())
 }
 
 func TestLoadProfilesMatchAccount(t *testing.T) {
-	_, profiles, err := LoadProfiles("./testdata/databrickscfg", MatchAccountProfiles)
+	t.Setenv("DATABRICKS_CONFIG_FILE", "./testdata/databrickscfg")
+	_, profiles, err := LoadProfiles(MatchAccountProfiles)
 	require.NoError(t, err)
 	assert.Equal(t, []string{"acc"}, profiles.Names())
 }

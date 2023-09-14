@@ -12,51 +12,72 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var Cmd = &cobra.Command{
-	Use:   "functions",
-	Short: `Functions implement User-Defined Functions (UDFs) in Unity Catalog.`,
-	Long: `Functions implement User-Defined Functions (UDFs) in Unity Catalog.
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var cmdOverrides []func(*cobra.Command)
+
+func New() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "functions",
+		Short: `Functions implement User-Defined Functions (UDFs) in Unity Catalog.`,
+		Long: `Functions implement User-Defined Functions (UDFs) in Unity Catalog.
   
   The function implementation can be any SQL expression or Query, and it can be
   invoked wherever a table reference is allowed in a query. In Unity Catalog, a
   function resides at the same level as a table, so it can be referenced with
   the form __catalog_name__.__schema_name__.__function_name__.`,
-	Annotations: map[string]string{
-		"package": "catalog",
-	},
+		GroupID: "catalog",
+		Annotations: map[string]string{
+			"package": "catalog",
+		},
+	}
+
+	// Apply optional overrides to this command.
+	for _, fn := range cmdOverrides {
+		fn(cmd)
+	}
+
+	return cmd
 }
 
 // start create command
-var createReq catalog.CreateFunction
-var createJson flags.JsonFlag
 
-func init() {
-	Cmd.AddCommand(createCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var createOverrides []func(
+	*cobra.Command,
+	*catalog.CreateFunction,
+)
+
+func newCreate() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var createReq catalog.CreateFunction
+	var createJson flags.JsonFlag
+
 	// TODO: short flags
-	createCmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	createCmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `User-provided free-form text description.`)
-	createCmd.Flags().StringVar(&createReq.ExternalLanguage, "external-language", createReq.ExternalLanguage, `External function language.`)
-	createCmd.Flags().StringVar(&createReq.ExternalName, "external-name", createReq.ExternalName, `External function name.`)
+	cmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `User-provided free-form text description.`)
+	cmd.Flags().StringVar(&createReq.ExternalLanguage, "external-language", createReq.ExternalLanguage, `External function language.`)
+	cmd.Flags().StringVar(&createReq.ExternalName, "external-name", createReq.ExternalName, `External function name.`)
 	// TODO: map via StringToStringVar: properties
-	createCmd.Flags().StringVar(&createReq.SqlPath, "sql-path", createReq.SqlPath, `List of schemes whose objects can be referenced without qualification.`)
+	cmd.Flags().StringVar(&createReq.SqlPath, "sql-path", createReq.SqlPath, `List of schemes whose objects can be referenced without qualification.`)
 
-}
-
-var createCmd = &cobra.Command{
-	Use:   "create",
-	Short: `Create a function.`,
-	Long: `Create a function.
+	cmd.Use = "create"
+	cmd.Short = `Create a function.`
+	cmd.Long = `Create a function.
   
   Creates a new function
   
   The user must have the following permissions in order for the function to be
   created: - **USE_CATALOG** on the function's parent catalog - **USE_SCHEMA**
-  and **CREATE_FUNCTION** on the function's parent schema`,
+  and **CREATE_FUNCTION** on the function's parent schema`
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -74,38 +95,59 @@ var createCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range createOverrides {
+		fn(cmd, &createReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newCreate())
+	})
 }
 
 // start delete command
-var deleteReq catalog.DeleteFunctionRequest
 
-func init() {
-	Cmd.AddCommand(deleteCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var deleteOverrides []func(
+	*cobra.Command,
+	*catalog.DeleteFunctionRequest,
+)
+
+func newDelete() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var deleteReq catalog.DeleteFunctionRequest
+
 	// TODO: short flags
 
-	deleteCmd.Flags().BoolVar(&deleteReq.Force, "force", deleteReq.Force, `Force deletion even if the function is notempty.`)
+	cmd.Flags().BoolVar(&deleteReq.Force, "force", deleteReq.Force, `Force deletion even if the function is notempty.`)
 
-}
-
-var deleteCmd = &cobra.Command{
-	Use:   "delete NAME",
-	Short: `Delete a function.`,
-	Long: `Delete a function.
+	cmd.Use = "delete NAME"
+	cmd.Short = `Delete a function.`
+	cmd.Long = `Delete a function.
   
   Deletes the function that matches the supplied name. For the deletion to
   succeed, the user must satisfy one of the following conditions: - Is the owner
   of the function's parent catalog - Is the owner of the function's parent
   schema and have the **USE_CATALOG** privilege on its parent catalog - Is the
   owner of the function itself and have both the **USE_CATALOG** privilege on
-  its parent catalog and the **USE_SCHEMA** privilege on its parent schema`,
+  its parent catalog and the **USE_SCHEMA** privilege on its parent schema`
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -133,25 +175,45 @@ var deleteCmd = &cobra.Command{
 			return err
 		}
 		return nil
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range deleteOverrides {
+		fn(cmd, &deleteReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newDelete())
+	})
 }
 
 // start get command
-var getReq catalog.GetFunctionRequest
 
-func init() {
-	Cmd.AddCommand(getCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getOverrides []func(
+	*cobra.Command,
+	*catalog.GetFunctionRequest,
+)
+
+func newGet() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getReq catalog.GetFunctionRequest
+
 	// TODO: short flags
 
-}
-
-var getCmd = &cobra.Command{
-	Use:   "get NAME",
-	Short: `Get a function.`,
-	Long: `Get a function.
+	cmd.Use = "get NAME"
+	cmd.Short = `Get a function.`
+	cmd.Long = `Get a function.
   
   Gets a function from within a parent catalog and schema. For the fetch to
   succeed, the user must satisfy one of the following requirements: - Is a
@@ -159,11 +221,12 @@ var getCmd = &cobra.Command{
   **USE_CATALOG** privilege on the function's parent catalog and be the owner of
   the function - Have the **USE_CATALOG** privilege on the function's parent
   catalog, the **USE_SCHEMA** privilege on the function's parent schema, and the
-  **EXECUTE** privilege on the function itself`,
+  **EXECUTE** privilege on the function itself`
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -191,25 +254,45 @@ var getCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getOverrides {
+		fn(cmd, &getReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newGet())
+	})
 }
 
 // start list command
-var listReq catalog.ListFunctionsRequest
 
-func init() {
-	Cmd.AddCommand(listCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listOverrides []func(
+	*cobra.Command,
+	*catalog.ListFunctionsRequest,
+)
+
+func newList() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var listReq catalog.ListFunctionsRequest
+
 	// TODO: short flags
 
-}
-
-var listCmd = &cobra.Command{
-	Use:   "list CATALOG_NAME SCHEMA_NAME",
-	Short: `List functions.`,
-	Long: `List functions.
+	cmd.Use = "list CATALOG_NAME SCHEMA_NAME"
+	cmd.Short = `List functions.`
+	cmd.Long = `List functions.
   
   List functions within the specified parent catalog and schema. If the user is
   a metastore admin, all functions are returned in the output list. Otherwise,
@@ -217,15 +300,17 @@ var listCmd = &cobra.Command{
   **USE_SCHEMA** privilege on the schema, and the output list contains only
   functions for which either the user has the **EXECUTE** privilege or the user
   is the owner. There is no guarantee of a specific ordering of the elements in
-  the array.`,
+  the array.`
 
-	Annotations: map[string]string{},
-	Args: func(cmd *cobra.Command, args []string) error {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
 		return check(cmd, args)
-	},
-	PreRunE: root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -237,27 +322,47 @@ var listCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listOverrides {
+		fn(cmd, &listReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newList())
+	})
 }
 
 // start update command
-var updateReq catalog.UpdateFunction
 
-func init() {
-	Cmd.AddCommand(updateCmd)
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updateOverrides []func(
+	*cobra.Command,
+	*catalog.UpdateFunction,
+)
+
+func newUpdate() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updateReq catalog.UpdateFunction
+
 	// TODO: short flags
 
-	updateCmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of current owner of function.`)
+	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of current owner of function.`)
 
-}
-
-var updateCmd = &cobra.Command{
-	Use:   "update NAME",
-	Short: `Update a function.`,
-	Long: `Update a function.
+	cmd.Use = "update NAME"
+	cmd.Short = `Update a function.`
+	cmd.Long = `Update a function.
   
   Updates the function that matches the supplied name. Only the owner of the
   function can be updated. If the user is not a metastore admin, the user must
@@ -266,11 +371,12 @@ var updateCmd = &cobra.Command{
   function's parent schema and has the **USE_CATALOG** privilege on its parent
   catalog - Is the owner of the function itself and has the **USE_CATALOG**
   privilege on its parent catalog as well as the **USE_SCHEMA** privilege on the
-  function's parent schema.`,
+  function's parent schema.`
 
-	Annotations: map[string]string{},
-	PreRunE:     root.MustWorkspaceClient,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
@@ -298,10 +404,24 @@ var updateCmd = &cobra.Command{
 			return err
 		}
 		return cmdio.Render(ctx, response)
-	},
+	}
+
 	// Disable completions since they are not applicable.
 	// Can be overridden by manual implementation in `override.go`.
-	ValidArgsFunction: cobra.NoFileCompletions,
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updateOverrides {
+		fn(cmd, &updateReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newUpdate())
+	})
 }
 
 // end service Functions

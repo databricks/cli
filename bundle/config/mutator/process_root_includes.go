@@ -3,13 +3,24 @@ package mutator
 import (
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
-	"golang.org/x/exp/slices"
+	"github.com/databricks/cli/bundle/env"
 )
+
+// Get extra include paths from environment variable
+func getExtraIncludePaths(ctx context.Context) []string {
+	value, exists := env.Includes(ctx)
+	if !exists {
+		return nil
+	}
+	return strings.Split(value, string(os.PathListSeparator))
+}
 
 type processRootIncludes struct{}
 
@@ -27,13 +38,27 @@ func (m *processRootIncludes) Apply(ctx context.Context, b *bundle.Bundle) error
 	var out []bundle.Mutator
 
 	// Map with files we've already seen to avoid loading them twice.
-	var seen = map[string]bool{
-		config.FileName: true,
+	var seen = map[string]bool{}
+
+	for _, file := range config.FileNames {
+		seen[file] = true
 	}
 
 	// Maintain list of files in order of files being loaded.
 	// This is stored in the bundle configuration for observability.
 	var files []string
+
+	// Converts extra include paths from environment variable to relative paths
+	for _, extraIncludePath := range getExtraIncludePaths(ctx) {
+		if filepath.IsAbs(extraIncludePath) {
+			rel, err := filepath.Rel(b.Config.Path, extraIncludePath)
+			if err != nil {
+				return fmt.Errorf("unable to include file '%s': %w", extraIncludePath, err)
+			}
+			extraIncludePath = rel
+		}
+		b.Config.Include = append(b.Config.Include, extraIncludePath)
+	}
 
 	// For each glob, find all files to load.
 	// Ordering of the list of globs is maintained in the output.

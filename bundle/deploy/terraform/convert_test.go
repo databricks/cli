@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
+	"github.com/databricks/databricks-sdk-go/service/serving"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -26,8 +27,18 @@ func TestConvertJob(t *testing.T) {
 				},
 			},
 			GitSource: &jobs.GitSource{
-				GitProvider: jobs.GitProviderGithub,
+				GitProvider: jobs.GitProviderGitHub,
 				GitUrl:      "https://github.com/foo/bar",
+			},
+			Parameters: []jobs.JobParameterDefinition{
+				{
+					Name:    "param1",
+					Default: "default1",
+				},
+				{
+					Name:    "param2",
+					Default: "default2",
+				},
 			},
 		},
 	}
@@ -44,6 +55,9 @@ func TestConvertJob(t *testing.T) {
 	assert.Equal(t, "my job", out.Resource.Job["my_job"].Name)
 	assert.Len(t, out.Resource.Job["my_job"].JobCluster, 1)
 	assert.Equal(t, "https://github.com/foo/bar", out.Resource.Job["my_job"].GitSource.Url)
+	assert.Len(t, out.Resource.Job["my_job"].Parameter, 2)
+	assert.Equal(t, "param1", out.Resource.Job["my_job"].Parameter[0].Name)
+	assert.Equal(t, "param2", out.Resource.Job["my_job"].Parameter[1].Name)
 	assert.Nil(t, out.Data)
 }
 
@@ -277,5 +291,78 @@ func TestConvertExperimentPermissions(t *testing.T) {
 	p := out.Resource.Permissions["mlflow_experiment_my_experiment"].AccessControl[0]
 	assert.Equal(t, "jane@doe.com", p.UserName)
 	assert.Equal(t, "CAN_READ", p.PermissionLevel)
+
+}
+
+func TestConvertModelServing(t *testing.T) {
+	var src = resources.ModelServingEndpoint{
+		CreateServingEndpoint: &serving.CreateServingEndpoint{
+			Name: "name",
+			Config: serving.EndpointCoreConfigInput{
+				ServedModels: []serving.ServedModelInput{
+					{
+						ModelName:          "model_name",
+						ModelVersion:       "1",
+						ScaleToZeroEnabled: true,
+						WorkloadSize:       "Small",
+					},
+				},
+				TrafficConfig: &serving.TrafficConfig{
+					Routes: []serving.Route{
+						{
+							ServedModelName:   "model_name-1",
+							TrafficPercentage: 100,
+						},
+					},
+				},
+			},
+		},
+	}
+
+	var config = config.Root{
+		Resources: config.Resources{
+			ModelServingEndpoints: map[string]*resources.ModelServingEndpoint{
+				"my_model_serving_endpoint": &src,
+			},
+		},
+	}
+
+	out := BundleToTerraform(&config)
+	resource := out.Resource.ModelServing["my_model_serving_endpoint"]
+	assert.Equal(t, "name", resource.Name)
+	assert.Equal(t, "model_name", resource.Config.ServedModels[0].ModelName)
+	assert.Equal(t, "1", resource.Config.ServedModels[0].ModelVersion)
+	assert.Equal(t, true, resource.Config.ServedModels[0].ScaleToZeroEnabled)
+	assert.Equal(t, "Small", resource.Config.ServedModels[0].WorkloadSize)
+	assert.Equal(t, "model_name-1", resource.Config.TrafficConfig.Routes[0].ServedModelName)
+	assert.Equal(t, 100, resource.Config.TrafficConfig.Routes[0].TrafficPercentage)
+	assert.Nil(t, out.Data)
+}
+
+func TestConvertModelServingPermissions(t *testing.T) {
+	var src = resources.ModelServingEndpoint{
+		Permissions: []resources.Permission{
+			{
+				Level:    "CAN_VIEW",
+				UserName: "jane@doe.com",
+			},
+		},
+	}
+
+	var config = config.Root{
+		Resources: config.Resources{
+			ModelServingEndpoints: map[string]*resources.ModelServingEndpoint{
+				"my_model_serving_endpoint": &src,
+			},
+		},
+	}
+
+	out := BundleToTerraform(&config)
+	assert.NotEmpty(t, out.Resource.Permissions["model_serving_my_model_serving_endpoint"].ServingEndpointId)
+	assert.Len(t, out.Resource.Permissions["model_serving_my_model_serving_endpoint"].AccessControl, 1)
+
+	p := out.Resource.Permissions["model_serving_my_model_serving_endpoint"].AccessControl[0]
+	assert.Equal(t, "jane@doe.com", p.UserName)
+	assert.Equal(t, "CAN_VIEW", p.PermissionLevel)
 
 }

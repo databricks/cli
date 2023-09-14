@@ -68,7 +68,14 @@ func testViewAtRoot(t *testing.T, tv testView) {
 	assert.True(t, tv.Ignore("root/foo"))
 	assert.True(t, tv.Ignore("root_double"))
 	assert.False(t, tv.Ignore("newfile"))
+	assert.True(t, tv.Ignore(".gitignore"))
+	assert.False(t, tv.Ignore("newfile.py"))
 	assert.True(t, tv.Ignore("ignoredirectory/"))
+
+	// Never ignore the root directory.
+	// This is the only path that may be checked as `.`,
+	// and would match the `.*` ignore pattern if specified.
+	assert.False(t, tv.Ignore("."))
 
 	// Nested .gitignores should not affect root.
 	assert.False(t, tv.Ignore("a.sh"))

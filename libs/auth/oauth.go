@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"crypto/rand"
 	"crypto/sha256"
 	_ "embed"
 	"encoding/base64"
@@ -9,7 +10,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"math/rand"
 	"net"
 	"net/http"
 	"strings"
@@ -255,7 +255,6 @@ func (a *PersistentAuth) stateAndPKCE() (string, *authhandler.PKCEParams) {
 }
 
 func (a *PersistentAuth) randomString(size int) string {
-	rand.Seed(time.Now().UnixNano())
 	raw := make([]byte, size)
 	_, _ = rand.Read(raw)
 	return base64.RawURLEncoding.EncodeToString(raw)

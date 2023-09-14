@@ -1,4 +1,0 @@
-resources:
-  jobs:
-    this_job_isnt_defined:
-      id: 1

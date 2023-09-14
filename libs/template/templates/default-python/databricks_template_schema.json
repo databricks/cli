@@ -1,0 +1,31 @@
+{
+    "properties": {
+        "project_name": {
+            "type": "string",
+            "default": "my_project",
+            "description": "Unique name for this project",
+            "order": 1
+        },
+        "include_notebook": {
+            "type": "string",
+            "default": "yes",
+            "enum": ["yes", "no"],
+            "description": "Include a stub (sample) notebook in 'my_project/src'",
+            "order": 2
+        },
+        "include_dlt": {
+            "type": "string",
+            "default": "yes",
+            "enum": ["yes", "no"],
+            "description": "Include a stub (sample) DLT pipeline in 'my_project/src'",
+            "order": 3
+        },
+        "include_python": {
+            "type": "string",
+            "default": "yes",
+            "enum": ["yes", "no"],
+            "description": "Include a stub (sample) Python package 'my_project/src'",
+            "order": 4
+        }
+    }
+}

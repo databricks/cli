@@ -1,0 +1,40 @@
+# Version changelog
+
+## {{.Version}}
+
+CLI:
+{{- range .Changes}}
+ * {{.}}.
+{{- end}}
+
+Bundles:
+ * **FILL THIS IN MANUALLY BY MOVING RELEVANT ITEMS FROM ABOVE LIST**
+
+Internal:
+ * **FILL THIS IN MANUALLY BY MOVING RELEVANT ITEMS FROM ABOVE LIST**
+
+{{ if .ApiChanges -}}
+API Changes:
+{{- range .ApiChanges}}{{if or (eq .X "method") (eq .X "service")}}
+ * {{.Action}} {{template "what" .}}{{if .Extra}} {{.Extra}}{{with .Other}} {{template "what" .}}{{end}}{{end}}.
+{{- end}}{{- end}}
+
+OpenAPI commit {{.Sha}} ({{.Changed}})
+{{- end }}
+
+{{- if .DependencyUpdates }}
+Dependency updates:
+{{- range .DependencyUpdates}}
+ * {{.}}.
+{{- end -}}
+{{end}}
+
+## {{.PrevVersion}}
+
+{{- define "what" -}}
+    {{if eq .X "service" -}}
+        `databricks {{if .Service.IsAccounts}}account {{end -}}{{(.Service.TrimPrefix "account").KebabName}}` command group
+    {{- else if eq .X "method" -}}
+        `databricks {{if .Method.Service.IsAccounts}}account {{end -}}{{(.Method.Service.TrimPrefix "account").KebabName}} {{.Method.KebabName}}` command
+    {{- end}}
+{{- end -}}

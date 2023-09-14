@@ -7,16 +7,19 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/spf13/cobra"
 )
 
-func init() {
+func listOverride(listCmd *cobra.Command, listReq *workspace.ListReposRequest) {
 	listCmd.Annotations["template"] = cmdio.Heredoc(`
 	{{range .}}{{green "%d" .Id}}	{{.Path}}	{{.Branch|blue}}	{{.Url|cyan}}
 	{{end}}`)
+}
 
+func createOverride(createCmd *cobra.Command, createReq *workspace.CreateRepo) {
 	createCmd.Use = "create URL [PROVIDER]"
 	createCmd.Args = func(cmd *cobra.Command, args []string) error {
 		// If the provider argument is not specified, we try to detect it from the URL.
@@ -26,11 +29,13 @@ func init() {
 		}
 		return check(cmd, args)
 	}
+
+	createJson := createCmd.Flag("json").Value.(*flags.JsonFlag)
 	createCmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 		if cmd.Flags().Changed("json") {
-			err = createJson.Unmarshal(&createReq)
+			err = createJson.Unmarshal(createReq)
 			if err != nil {
 				return err
 			}
@@ -46,13 +51,15 @@ func init() {
 				}
 			}
 		}
-		response, err := w.Repos.Create(ctx, createReq)
+		response, err := w.Repos.Create(ctx, *createReq)
 		if err != nil {
 			return err
 		}
 		return cmdio.Render(ctx, response)
 	}
+}
 
+func deleteOverride(deleteCmd *cobra.Command, deleteReq *workspace.DeleteRepoRequest) {
 	deleteCmd.Use = "delete REPO_ID_OR_PATH"
 	deleteCmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -62,13 +69,15 @@ func init() {
 		if err != nil {
 			return err
 		}
-		err = w.Repos.Delete(ctx, deleteReq)
+		err = w.Repos.Delete(ctx, *deleteReq)
 		if err != nil {
 			return err
 		}
 		return nil
 	}
+}
 
+func getOverride(getCmd *cobra.Command, getReq *workspace.GetRepoRequest) {
 	getCmd.Use = "get REPO_ID_OR_PATH"
 	getCmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
@@ -78,14 +87,18 @@ func init() {
 			return err
 		}
 
-		response, err := w.Repos.Get(ctx, getReq)
+		response, err := w.Repos.Get(ctx, *getReq)
 		if err != nil {
 			return err
 		}
 		return cmdio.Render(ctx, response)
 	}
+}
 
+func updateOverride(updateCmd *cobra.Command, updateReq *workspace.UpdateRepo) {
 	updateCmd.Use = "update REPO_ID_OR_PATH"
+
+	updateJson := updateCmd.Flag("json").Value.(*flags.JsonFlag)
 	updateCmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
@@ -101,7 +114,7 @@ func init() {
 			}
 		}
 
-		err = w.Repos.Update(ctx, updateReq)
+		err = w.Repos.Update(ctx, *updateReq)
 		if err != nil {
 			return err
 		}
@@ -146,4 +159,12 @@ func repoArgumentToRepoID(ctx context.Context, w *databricks.WorkspaceClient, ar
 		return 0, fmt.Errorf("object at path %q is not a repo", arg)
 	}
 	return oi.ObjectId, nil
+}
+
+func init() {
+	listOverrides = append(listOverrides, listOverride)
+	createOverrides = append(createOverrides, createOverride)
+	deleteOverrides = append(deleteOverrides, deleteOverride)
+	getOverrides = append(getOverrides, getOverride)
+	updateOverrides = append(updateOverrides, updateOverride)
 }

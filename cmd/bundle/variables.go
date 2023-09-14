@@ -7,8 +7,13 @@ import (
 )
 
 func ConfigureBundleWithVariables(cmd *cobra.Command, args []string) error {
-	// Load bundle config and apply environment
+	// Load bundle config and apply target
 	err := root.MustConfigureBundle(cmd, args)
+	if err != nil {
+		return err
+	}
+
+	variables, err := cmd.Flags().GetStringSlice("var")
 	if err != nil {
 		return err
 	}
@@ -18,6 +23,6 @@ func ConfigureBundleWithVariables(cmd *cobra.Command, args []string) error {
 	return b.Config.InitializeVariables(variables)
 }
 
-func AddVariableFlag(cmd *cobra.Command) {
-	cmd.PersistentFlags().StringSliceVar(&variables, "var", []string{}, `set values for variables defined in bundle config. Example: --var="foo=bar"`)
+func initVariableFlag(cmd *cobra.Command) {
+	cmd.PersistentFlags().StringSlice("var", []string{}, `set values for variables defined in bundle config. Example: --var="foo=bar"`)
 }

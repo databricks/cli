@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestFsCatForDbfs(t *testing.T) {
+func TestAccFsCatForDbfs(t *testing.T) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	ctx := context.Background()
@@ -33,21 +33,21 @@ func TestFsCatForDbfs(t *testing.T) {
 	assert.Equal(t, "abc", stdout.String())
 }
 
-func TestFsCatForDbfsOnNonExistentFile(t *testing.T) {
+func TestAccFsCatForDbfsOnNonExistentFile(t *testing.T) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	_, _, err := RequireErrorRun(t, "fs", "cat", "dbfs:/non-existent-file")
 	assert.ErrorIs(t, err, fs.ErrNotExist)
 }
 
-func TestFsCatForDbfsInvalidScheme(t *testing.T) {
+func TestAccFsCatForDbfsInvalidScheme(t *testing.T) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	_, _, err := RequireErrorRun(t, "fs", "cat", "dab:/non-existent-file")
-	assert.ErrorContains(t, err, "expected dbfs path (with the dbfs:/ prefix): dab:/non-existent-file")
+	assert.ErrorContains(t, err, "invalid scheme: dab")
 }
 
-func TestFsCatDoesNotSupportOutputModeJson(t *testing.T) {
+func TestAccFsCatDoesNotSupportOutputModeJson(t *testing.T) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	ctx := context.Background()

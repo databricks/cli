@@ -43,7 +43,7 @@ func (w *destroy) Apply(ctx context.Context, b *bundle.Bundle) error {
 	// Ask for confirmation, if needed
 	if !b.Plan.ConfirmApply {
 		red := color.New(color.FgRed).SprintFunc()
-		b.Plan.ConfirmApply, err = cmdio.Ask(ctx, fmt.Sprintf("This will permanently %s resources! Proceed? [y/n]: ", red("destroy")))
+		b.Plan.ConfirmApply, err = cmdio.AskYesOrNo(ctx, fmt.Sprintf("\nThis will permanently %s resources! Proceed?", red("destroy")))
 		if err != nil {
 			return err
 		}

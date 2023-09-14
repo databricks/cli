@@ -17,21 +17,36 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func syncOptionsFromBundle(cmd *cobra.Command, args []string, b *bundle.Bundle) (*sync.SyncOptions, error) {
+type syncFlags struct {
+	// project files polling interval
+	interval time.Duration
+	full     bool
+	watch    bool
+	output   flags.Output
+}
+
+func (f *syncFlags) syncOptionsFromBundle(cmd *cobra.Command, args []string, b *bundle.Bundle) (*sync.SyncOptions, error) {
 	if len(args) > 0 {
 		return nil, fmt.Errorf("SRC and DST are not configurable in the context of a bundle")
 	}
 
-	cacheDir, err := b.CacheDir()
+	cacheDir, err := b.CacheDir(cmd.Context())
 	if err != nil {
 		return nil, fmt.Errorf("cannot get bundle cache directory: %w", err)
+	}
+
+	includes, err := b.GetSyncIncludePatterns(cmd.Context())
+	if err != nil {
+		return nil, fmt.Errorf("cannot get list of sync includes: %w", err)
 	}
 
 	opts := sync.SyncOptions{
 		LocalPath:    b.Config.Path,
 		RemotePath:   b.Config.Workspace.FilesPath,
-		Full:         full,
-		PollInterval: interval,
+		Include:      includes,
+		Exclude:      b.Config.Sync.Exclude,
+		Full:         f.full,
+		PollInterval: f.interval,
 
 		SnapshotBasePath: cacheDir,
 		WorkspaceClient:  b.WorkspaceClient(),
@@ -39,7 +54,7 @@ func syncOptionsFromBundle(cmd *cobra.Command, args []string, b *bundle.Bundle) 
 	return &opts, nil
 }
 
-func syncOptionsFromArgs(cmd *cobra.Command, args []string) (*sync.SyncOptions, error) {
+func (f *syncFlags) syncOptionsFromArgs(cmd *cobra.Command, args []string) (*sync.SyncOptions, error) {
 	if len(args) != 2 {
 		return nil, flag.ErrHelp
 	}
@@ -47,8 +62,8 @@ func syncOptionsFromArgs(cmd *cobra.Command, args []string) (*sync.SyncOptions, 
 	opts := sync.SyncOptions{
 		LocalPath:    args[0],
 		RemotePath:   args[1],
-		Full:         full,
-		PollInterval: interval,
+		Full:         f.full,
+		PollInterval: f.interval,
 
 		// We keep existing behavior for VS Code extension where if there is
 		// no bundle defined, we store the snapshots in `.databricks`.
@@ -60,19 +75,28 @@ func syncOptionsFromArgs(cmd *cobra.Command, args []string) (*sync.SyncOptions, 
 	return &opts, nil
 }
 
-var syncCmd = &cobra.Command{
-	Use:   "sync [flags] SRC DST",
-	Short: "Synchronize a local directory to a workspace directory",
-	Args:  cobra.MaximumNArgs(2),
+func New() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "sync [flags] SRC DST",
+		Short: "Synchronize a local directory to a workspace directory",
+		Args:  cobra.MaximumNArgs(2),
+	}
 
-	// PreRunE: root.TryConfigureBundle,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	f := syncFlags{
+		output: flags.OutputText,
+	}
+	cmd.Flags().DurationVar(&f.interval, "interval", 1*time.Second, "file system polling interval (for --watch)")
+	cmd.Flags().BoolVar(&f.full, "full", false, "perform full synchronization (default is incremental)")
+	cmd.Flags().BoolVar(&f.watch, "watch", false, "watch local file system for changes")
+	cmd.Flags().Var(&f.output, "output", "type of output format")
+
+	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		var opts *sync.SyncOptions
 		var err error
 
 		//
 		// To be uncommented and used once our VS Code extension is bundle aware.
-		// Until then, this could interfere with extension usage where a `bundle.yml` file is present.
+		// Until then, this could interfere with extension usage where a `databricks.yml` file is present.
 		// See https://github.com/databricks/cli/pull/207.
 		//
 		// b := bundle.GetOrNil(cmd.Context())
@@ -84,7 +108,7 @@ var syncCmd = &cobra.Command{
 		// 	}
 		// 	opts, err = syncOptionsFromBundle(cmd, args, b)
 		// } else {
-		opts, err = syncOptionsFromArgs(cmd, args)
+		opts, err = f.syncOptionsFromArgs(cmd, args)
 		// }
 		if err != nil {
 			return err
@@ -97,7 +121,7 @@ var syncCmd = &cobra.Command{
 		}
 
 		var outputFunc func(context.Context, <-chan sync.Event, io.Writer)
-		switch output {
+		switch f.output {
 		case flags.OutputText:
 			outputFunc = textOutput
 		case flags.OutputJSON:
@@ -113,7 +137,7 @@ var syncCmd = &cobra.Command{
 			}()
 		}
 
-		if watch {
+		if f.watch {
 			err = s.RunContinuous(ctx)
 		} else {
 			err = s.RunOnce(ctx)
@@ -122,9 +146,9 @@ var syncCmd = &cobra.Command{
 		s.Close()
 		wg.Wait()
 		return err
-	},
+	}
 
-	ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	cmd.ValidArgsFunction = func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		err := root.TryConfigureBundle(cmd, args)
 		if err != nil {
 			return nil, cobra.ShellCompDirectiveError
@@ -149,19 +173,7 @@ var syncCmd = &cobra.Command{
 		default:
 			return nil, cobra.ShellCompDirectiveNoFileComp
 		}
-	},
-}
+	}
 
-// project files polling interval
-var interval time.Duration
-var full bool
-var watch bool
-var output flags.Output = flags.OutputText
-
-func init() {
-	root.RootCmd.AddCommand(syncCmd)
-	syncCmd.Flags().DurationVar(&interval, "interval", 1*time.Second, "file system polling interval (for --watch)")
-	syncCmd.Flags().BoolVar(&full, "full", false, "perform full synchronization (default is incremental)")
-	syncCmd.Flags().BoolVar(&watch, "watch", false, "watch local file system for changes")
-	syncCmd.Flags().Var(&output, "output", "type of output format")
+	return cmd
 }
