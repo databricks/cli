@@ -73,7 +73,7 @@ func Clone(ctx context.Context, url, reference, targetPath string) error {
 	if err != nil && strings.Contains(cmdErr.String(), "dumb http transport does not support shallow capabilities") {
 		retryCmd := exec.CommandContext(ctx, "git", opts.args(false)...)
 		var retryCmdErr bytes.Buffer
-		cmd.Stderr = &retryCmdErr
+		retryCmd.Stderr = &retryCmdErr
 		retryErr := retryCmd.Run()
 		if retryErr != nil {
 			return fmt.Errorf("git clone failed: %w. %s", retryErr, retryCmdErr.String())
