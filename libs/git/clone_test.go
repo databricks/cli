@@ -14,21 +14,24 @@ func TestGitCloneArgs(t *testing.T) {
 		Reference:     "",
 		RepositoryUrl: "abc",
 		TargetPath:    "/def",
-	}.args(true))
+		Shallow:       true,
+	}.args())
 
 	// case: A branch is specified.
 	assert.Equal(t, []string{"clone", "abc", "/def", "--no-tags", "--branch", "my-branch", "--depth=1"}, cloneOptions{
 		Reference:     "my-branch",
 		RepositoryUrl: "abc",
 		TargetPath:    "/def",
-	}.args(true))
+		Shallow:       true,
+	}.args())
 
 	// case: deep cloning
 	assert.Equal(t, []string{"clone", "abc", "/def", "--no-tags"}, cloneOptions{
 		Reference:     "",
 		RepositoryUrl: "abc",
 		TargetPath:    "/def",
-	}.args(false))
+		Shallow:       false,
+	}.args())
 }
 
 func TestGitCloneWithGitNotFound(t *testing.T) {
