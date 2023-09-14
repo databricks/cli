@@ -128,7 +128,10 @@ func (r *renderer) executeTemplate(templateDefinition string) (string, error) {
 			if len(matches) != 2 {
 				return "", err
 			}
-			return "", fmt.Errorf("variable %q not defined", matches[1])
+			return "", template.ExecError{
+				Name: target.Name,
+				Err:  fmt.Errorf("variable %q not defined", matches[1]),
+			}
 		}
 		return "", err
 	}
