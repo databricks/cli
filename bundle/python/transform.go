@@ -2,6 +2,7 @@ package python
 
 import (
 	"fmt"
+	"path"
 	"strconv"
 	"strings"
 
@@ -31,9 +32,11 @@ except ImportError: # for Python<3.8
 from contextlib import redirect_stdout
 import io
 import sys
+import os
 sys.argv = [{{.Params}}]
 
 entry = [ep for ep in metadata.distribution("{{.Task.PackageName}}").entry_points if ep.name == "{{.Task.EntryPoint}}"]
+os.chdir("{{.WorkingDir}}")
 
 f = io.StringIO()
 with redirect_stdout(f):
@@ -94,16 +97,17 @@ func needsTrampoline(task *jobs.Task) bool {
 	return libraries.IsTaskWithWorkspaceLibraries(task)
 }
 
-func (t *pythonTrampoline) GetTemplateData(task *jobs.Task) (map[string]any, error) {
+func (t *pythonTrampoline) GetTemplateData(b *bundle.Bundle, task *jobs.Task) (map[string]any, error) {
 	params, err := t.generateParameters(task.PythonWheelTask)
 	if err != nil {
 		return nil, err
 	}
 
 	data := map[string]any{
-		"Libraries": task.Libraries,
-		"Params":    params,
-		"Task":      task.PythonWheelTask,
+		"Libraries":  task.Libraries,
+		"Params":     params,
+		"Task":       task.PythonWheelTask,
+		"WorkingDir": path.Join("/Workspace", b.Config.Workspace.FilesPath),
 	}
 
 	return data, nil

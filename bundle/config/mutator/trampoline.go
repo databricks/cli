@@ -18,7 +18,7 @@ type TaskWithJobKey struct {
 }
 
 type TrampolineFunctions interface {
-	GetTemplateData(task *jobs.Task) (map[string]any, error)
+	GetTemplateData(b *bundle.Bundle, task *jobs.Task) (map[string]any, error)
 	GetTasks(b *bundle.Bundle) []TaskWithJobKey
 	CleanUp(task *jobs.Task) error
 }
@@ -71,7 +71,7 @@ func (m *trampoline) generateNotebookWrapper(ctx context.Context, b *bundle.Bund
 	}
 	defer f.Close()
 
-	data, err := m.functions.GetTemplateData(task.Task)
+	data, err := m.functions.GetTemplateData(b, task.Task)
 	if err != nil {
 		return err
 	}

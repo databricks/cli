@@ -29,7 +29,7 @@ func (f *functions) GetTasks(b *bundle.Bundle) []TaskWithJobKey {
 	return tasks
 }
 
-func (f *functions) GetTemplateData(task *jobs.Task) (map[string]any, error) {
+func (f *functions) GetTemplateData(_ *bundle.Bundle, task *jobs.Task) (map[string]any, error) {
 	if task.PythonWheelTask == nil {
 		return nil, fmt.Errorf("PythonWheelTask cannot be nil")
 	}

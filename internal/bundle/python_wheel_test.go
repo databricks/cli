@@ -1,6 +1,8 @@
 package bundle
 
 import (
+	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/databricks/cli/internal"
@@ -21,9 +23,10 @@ func TestAccPythonWheelTaskDeployAndRun(t *testing.T) {
 		nodeTypeId = "Standard_DS4_v2"
 	}
 
+	id := uuid.New().String()
 	bundleRoot, err := initTestTemplate(t, "python_wheel_task", map[string]any{
 		"node_type_id":  nodeTypeId,
-		"unique_id":     uuid.New().String(),
+		"unique_id":     id,
 		"spark_version": "13.2.x-snapshot-scala2.12",
 	})
 	require.NoError(t, err)
@@ -40,4 +43,5 @@ func TestAccPythonWheelTaskDeployAndRun(t *testing.T) {
 	require.Contains(t, out, "Hello from my func")
 	require.Contains(t, out, "Got arguments:")
 	require.Contains(t, out, "['python', 'one', 'two']")
+	require.Regexp(t, regexp.MustCompile(fmt.Sprintf("Directory changed successfully /Workspace/Users/.*/.bundle/%s/files", id)), out)
 }
