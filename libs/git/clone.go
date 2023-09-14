@@ -27,10 +27,13 @@ type cloneOptions struct {
 	TargetPath string
 }
 
-func (opts cloneOptions) args() []string {
-	args := []string{"clone", opts.RepositoryUrl, opts.TargetPath, "--depth=1", "--no-tags"}
+func (opts cloneOptions) args(shallow bool) []string {
+	args := []string{"clone", opts.RepositoryUrl, opts.TargetPath, "--no-tags"}
 	if opts.Reference != "" {
 		args = append(args, "--branch", opts.Reference)
+	}
+	if shallow {
+		args = append(args, "--depth=1")
 	}
 	return args
 }
@@ -50,7 +53,7 @@ func Clone(ctx context.Context, url, reference, targetPath string) error {
 		TargetPath:    targetPath,
 	}
 
-	cmd := exec.CommandContext(ctx, "git", opts.args()...)
+	cmd := exec.CommandContext(ctx, "git", opts.args(true)...)
 	var cmdErr bytes.Buffer
 	cmd.Stderr = &cmdErr
 
@@ -65,6 +68,19 @@ func Clone(ctx context.Context, url, reference, targetPath string) error {
 
 	// wait for git clone to complete
 	err = cmd.Wait()
+	// Git repos hosted via HTTP do not support shallow cloning. We try with
+	// a deep clone this time
+	if err != nil && strings.Contains(cmdErr.String(), "dumb http transport does not support shallow capabilities") {
+		retryCmd := exec.CommandContext(ctx, "git", opts.args(false)...)
+		var retryCmdErr bytes.Buffer
+		cmd.Stderr = &retryCmdErr
+		retryErr := retryCmd.Run()
+		if retryErr != nil {
+			return fmt.Errorf("git clone failed: %w. %s", retryErr, retryCmdErr.String())
+		} else {
+			return nil
+		}
+	}
 	if err != nil {
 		return fmt.Errorf("git clone failed: %w. %s", err, cmdErr.String())
 	}
