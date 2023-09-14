@@ -2,7 +2,7 @@ package resources
 
 import (
 	"github.com/databricks/cli/bundle/config/paths"
-	marshal "github.com/databricks/databricks-sdk-go/json"
+	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/serving"
 )
 
@@ -25,11 +25,9 @@ type ModelServingEndpoint struct {
 }
 
 func (s *ModelServingEndpoint) UnmarshalJSON(b []byte) error {
-	type C ModelServingEndpoint
-	return marshal.Unmarshal(b, (*C)(s))
+	return marshal.Unmarshal(b, s)
 }
 
 func (s ModelServingEndpoint) MarshalJSON() ([]byte, error) {
-	type C ModelServingEndpoint
-	return marshal.Marshal((C)(s))
+	return marshal.Marshal(s)
 }

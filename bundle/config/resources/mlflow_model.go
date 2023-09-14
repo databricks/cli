@@ -2,7 +2,7 @@ package resources
 
 import (
 	"github.com/databricks/cli/bundle/config/paths"
-	marshal "github.com/databricks/databricks-sdk-go/json"
+	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 )
 
@@ -15,11 +15,9 @@ type MlflowModel struct {
 }
 
 func (s *MlflowModel) UnmarshalJSON(b []byte) error {
-	type C MlflowModel
-	return marshal.Unmarshal(b, (*C)(s))
+	return marshal.Unmarshal(b, s)
 }
 
 func (s MlflowModel) MarshalJSON() ([]byte, error) {
-	type C MlflowModel
-	return marshal.Marshal((C)(s))
+	return marshal.Marshal(s)
 }

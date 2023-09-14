@@ -7,7 +7,7 @@ import (
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
-	marshal "github.com/databricks/databricks-sdk-go/json"
+	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 )
 
@@ -71,13 +71,11 @@ type User struct {
 }
 
 func (s *User) UnmarshalJSON(b []byte) error {
-	type C User
-	return marshal.Unmarshal(b, (*C)(s))
+	return marshal.Unmarshal(b, s)
 }
 
 func (s User) MarshalJSON() ([]byte, error) {
-	type C User
-	return marshal.Marshal((C)(s))
+	return marshal.Marshal(s)
 }
 
 func (w *Workspace) Client() (*databricks.WorkspaceClient, error) {

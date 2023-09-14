@@ -2,7 +2,7 @@ package resources
 
 import (
 	"github.com/databricks/cli/bundle/config/paths"
-	marshal "github.com/databricks/databricks-sdk-go/json"
+	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/imdario/mergo"
 )
@@ -17,13 +17,11 @@ type Job struct {
 }
 
 func (s *Job) UnmarshalJSON(b []byte) error {
-	type C Job
-	return marshal.Unmarshal(b, (*C)(s))
+	return marshal.Unmarshal(b, s)
 }
 
 func (s Job) MarshalJSON() ([]byte, error) {
-	type C Job
-	return marshal.Marshal((C)(s))
+	return marshal.Marshal(s)
 }
 
 // MergeJobClusters merges job clusters with the same key.
