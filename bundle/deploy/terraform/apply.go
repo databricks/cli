@@ -16,12 +16,6 @@ func (w *apply) Name() string {
 }
 
 func (w *apply) Apply(ctx context.Context, b *bundle.Bundle) error {
-	// Return early if plan is empty
-	if b.Plan.IsEmpty {
-		cmdio.LogString(ctx, "Terraform plan is empty. Skipping apply.")
-		return nil
-	}
-
 	// Error if terraform is not initialized
 	tf := b.Terraform
 	if tf == nil {
@@ -30,29 +24,41 @@ func (w *apply) Apply(ctx context.Context, b *bundle.Bundle) error {
 
 	// Error if plan is missing
 	if b.Plan.Path == "" {
-		return fmt.Errorf("no plan found")
+		return fmt.Errorf("no path specified for computed plan")
 	}
 
-	// Read and log plan file
-	plan, err := tf.ShowPlanFile(ctx, b.Plan.Path)
-	if err != nil {
-		return err
-	}
-	err = logPlan(ctx, plan)
-	if err != nil {
-		return err
+	// Print the plan if it's not empty
+	if !b.Plan.IsEmpty {
+		// parse the computed terraform plan
+		plan, err := tf.ShowPlanFile(ctx, b.Plan.Path)
+		if err != nil {
+			return err
+		}
+
+		// print a high level summary of the terraform plan
+		err = printPlanSummary(ctx, plan)
+		if err != nil {
+			return err
+		}
 	}
 
-	// We do not block for confirmation checks at deploy
-	cmdio.LogString(ctx, "Starting deployment")
+	if !b.Plan.IsEmpty {
+		// We do not block for confirmation checks at deploy
+		cmdio.LogString(ctx, "Deploying resources")
+	}
 
-	// Apply terraform according to the plan
-	err = tf.Apply(ctx, tfexec.DirOrPlan(b.Plan.Path))
+	// Apply terraform plan. Note: we apply even if a plan is empty to generate
+	// an empty state file that downstream state file upload mutator relies on.
+	err := tf.Apply(ctx, tfexec.DirOrPlan(b.Plan.Path))
 	if err != nil {
 		return fmt.Errorf("terraform apply: %w", err)
 	}
 
-	cmdio.LogString(ctx, "Resource deployment completed!")
+	if b.Plan.IsEmpty {
+		cmdio.LogString(ctx, "No changes to deploy")
+	} else {
+		cmdio.LogString(ctx, "Deployment complete")
+	}
 	return nil
 }
 

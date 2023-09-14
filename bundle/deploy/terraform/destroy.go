@@ -35,7 +35,7 @@ func (w *destroy) Apply(ctx context.Context, b *bundle.Bundle) error {
 	}
 
 	// print the resources that will be destroyed
-	err = logPlan(ctx, plan)
+	err = printPlanSummary(ctx, plan)
 	if err != nil {
 		return err
 	}
@@ -43,7 +43,7 @@ func (w *destroy) Apply(ctx context.Context, b *bundle.Bundle) error {
 	// Ask for confirmation, if needed
 	if !b.Plan.ConfirmApply {
 		red := color.New(color.FgRed).SprintFunc()
-		b.Plan.ConfirmApply, err = cmdio.AskYesOrNo(ctx, fmt.Sprintf("\nThis will permanently %s resources! Proceed?", red("destroy")))
+		b.Plan.ConfirmApply, err = cmdio.AskYesOrNo(ctx, fmt.Sprintf("This will permanently %s resources! Proceed?", red("destroy")))
 		if err != nil {
 			return err
 		}
@@ -58,7 +58,7 @@ func (w *destroy) Apply(ctx context.Context, b *bundle.Bundle) error {
 		return fmt.Errorf("no plan found")
 	}
 
-	cmdio.LogString(ctx, "Starting to destroy resources")
+	cmdio.LogString(ctx, "Destroying resources")
 
 	// Apply terraform according to the computed destroy plan
 	err = tf.Apply(ctx, tfexec.DirOrPlan(b.Plan.Path))
@@ -66,7 +66,7 @@ func (w *destroy) Apply(ctx context.Context, b *bundle.Bundle) error {
 		return fmt.Errorf("terraform destroy: %w", err)
 	}
 
-	cmdio.LogString(ctx, "Successfully destroyed resources!")
+	cmdio.LogString(ctx, "Destruction complete")
 	return nil
 }
 

@@ -22,12 +22,11 @@ func (m *delete) Apply(ctx context.Context, b *bundle.Bundle) error {
 		return nil
 	}
 
-	cmdio.LogString(ctx, "Starting deletion of remote bundle files")
-	cmdio.LogString(ctx, fmt.Sprintf("Bundle remote directory is %s", b.Config.Workspace.RootPath))
+	cmdio.LogString(ctx, fmt.Sprintf("Deleting remote bundle directory %s", b.Config.Workspace.RootPath))
 
 	red := color.New(color.FgRed).SprintFunc()
 	if !b.AutoApprove {
-		proceed, err := cmdio.AskYesOrNo(ctx, fmt.Sprintf("\n%s and all files in it will be %s Proceed?", b.Config.Workspace.RootPath, red("deleted permanently!")))
+		proceed, err := cmdio.AskYesOrNo(ctx, fmt.Sprintf("\n%s and any files in it will be permanently %s. Proceed?", b.Config.Workspace.RootPath, red("deleted")))
 		if err != nil {
 			return err
 		}
@@ -44,6 +43,8 @@ func (m *delete) Apply(ctx context.Context, b *bundle.Bundle) error {
 		return err
 	}
 
+	cmdio.LogString(ctx, "Deleted remote bundle directory")
+
 	// Clean up sync snapshot file
 	sync, err := getSync(ctx, b)
 	if err != nil {
@@ -54,8 +55,7 @@ func (m *delete) Apply(ctx context.Context, b *bundle.Bundle) error {
 		return err
 	}
 
-	cmdio.LogString(ctx, fmt.Sprintf("Deleted snapshot file at %s", sync.SnapshotPath()))
-	cmdio.LogString(ctx, "Successfully deleted files!")
+	cmdio.LogString(ctx, fmt.Sprintf("Deleted local snapshot file at %s", sync.SnapshotPath()))
 	return nil
 }
 

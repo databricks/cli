@@ -12,8 +12,10 @@ import (
 	tfjson "github.com/hashicorp/terraform-json"
 )
 
-func logPlan(ctx context.Context, plan *tfjson.Plan) error {
-	cmdio.LogString(ctx, "Plan:")
+// printPlanSummary prints a high level summary of the terraform plan that will
+// be applied during bundle deploy / destroy.
+func printPlanSummary(ctx context.Context, plan *tfjson.Plan) error {
+	cmdio.LogString(ctx, "\nPlan:")
 	for _, change := range plan.ResourceChanges {
 		tfActions := change.Change.Actions
 		if tfActions.Read() || tfActions.NoOp() {
@@ -76,7 +78,12 @@ func (p *plan) Apply(ctx context.Context, b *bundle.Bundle) error {
 		return fmt.Errorf("terraform not initialized")
 	}
 
-	cmdio.LogString(ctx, "Starting plan computation")
+	if p.goal == PlanDeploy {
+		cmdio.LogString(ctx, "Planning deployment")
+	}
+	if p.goal == PlanDestroy {
+		cmdio.LogString(ctx, "Planning destruction")
+	}
 
 	err := tf.Init(ctx, tfexec.Upgrade(true))
 	if err != nil {
@@ -103,7 +110,7 @@ func (p *plan) Apply(ctx context.Context, b *bundle.Bundle) error {
 		IsEmpty:      !notEmpty,
 	}
 
-	cmdio.LogString(ctx, fmt.Sprintf("Planning complete and persisted at %s\n", planPath))
+	cmdio.LogString(ctx, "Planning complete")
 	return nil
 }
 
