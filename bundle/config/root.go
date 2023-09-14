@@ -84,6 +84,8 @@ type Root struct {
 
 	// RunAs section allows to define an execution identity for jobs and pipelines runs
 	RunAs *jobs.JobRunAs `json:"run_as,omitempty"`
+
+	Experimental *Experimental `json:"experimental,omitempty"`
 }
 
 func Load(path string) (*Root, error) {

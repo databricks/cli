@@ -2,10 +2,12 @@ package phases
 
 import (
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/interpolation"
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/config/variable"
 	"github.com/databricks/cli/bundle/deploy/terraform"
+	"github.com/databricks/cli/bundle/scripts"
 )
 
 // The initialize phase fills in defaults and connects to the workspace.
@@ -30,6 +32,7 @@ func Initialize() bundle.Mutator {
 			mutator.ProcessTargetMode(),
 			mutator.TranslatePaths(),
 			terraform.Initialize(),
+			scripts.Execute(config.ScriptPostInit),
 		},
 	)
 }
