@@ -19,7 +19,7 @@ func (w *destroy) Name() string {
 func (w *destroy) Apply(ctx context.Context, b *bundle.Bundle) error {
 	// return early if plan is empty
 	if b.Plan.IsEmpty {
-		cmdio.LogString(ctx, "No resources to destroy in plan. Skipping destroy!")
+		cmdio.LogString(ctx, "No resources to destroy")
 		return nil
 	}
 
