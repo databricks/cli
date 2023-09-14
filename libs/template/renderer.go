@@ -8,6 +8,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"sort"
 	"strings"
@@ -102,6 +103,12 @@ func (r *renderer) executeTemplate(templateDefinition string) (string, error) {
 		return "", err
 	}
 
+	// The template execution will error instead of printing <no value> on unknown
+	// map keys if the "missingkey=error" option is set.
+	// We do this here instead of doing this once for r.baseTemplate because
+	// the Template.Clone() method does not clone options.
+	tmpl = tmpl.Option("missingkey=error")
+
 	// Parse the template text
 	tmpl, err = tmpl.Parse(templateDefinition)
 	if err != nil {
@@ -112,6 +119,20 @@ func (r *renderer) executeTemplate(templateDefinition string) (string, error) {
 	result := strings.Builder{}
 	err = tmpl.Execute(&result, r.config)
 	if err != nil {
+		// Parse and return a more readable error for missing values that are used
+		// by the template definition but are not provided in the passed config.
+		target := &template.ExecError{}
+		if errors.As(err, target) {
+			captureRegex := regexp.MustCompile(`map has no entry for key "(.*)"`)
+			matches := captureRegex.FindStringSubmatch(target.Err.Error())
+			if len(matches) != 2 {
+				return "", err
+			}
+			return "", template.ExecError{
+				Name: target.Name,
+				Err:  fmt.Errorf("variable %q not defined", matches[1]),
+			}
+		}
 		return "", err
 	}
 	return result.String(), nil
