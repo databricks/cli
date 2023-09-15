@@ -242,6 +242,11 @@ func (r *Root) MergeTargetOverrides(target *Target) error {
 		if err != nil {
 			return err
 		}
+
+		err = r.Resources.MergeJobTasks()
+		if err != nil {
+			return err
+		}
 	}
 
 	if target.Variables != nil {
