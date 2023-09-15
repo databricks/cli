@@ -84,7 +84,7 @@ func Clone(ctx context.Context, url, reference, targetPath string) error {
 	// a deep clone this time
 	if err != nil && strings.Contains(err.Error(), "dumb http transport does not support shallow capabilities") {
 		opts.Shallow = false
-		err = opts.clone(ctx)
+		return opts.clone(ctx)
 	}
 	return err
 }
