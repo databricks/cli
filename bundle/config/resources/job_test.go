@@ -92,13 +92,13 @@ func TestJobMergeJobTasks(t *testing.T) {
 	assert.Equal(t, "foo", j.Tasks[0].TaskKey)
 	assert.Equal(t, "bar", j.Tasks[1].TaskKey)
 
-	// This job task was merged with a subsequent one.
+	// This task was merged with a subsequent one.
 	task0 := j.Tasks[0].NewCluster
 	assert.Equal(t, "13.3.x-scala2.12", task0.SparkVersion)
 	assert.Equal(t, "i3.2xlarge", task0.NodeTypeId)
 	assert.Equal(t, 4, task0.NumWorkers)
 
-	// This job task was left untouched.
+	// This task was left untouched.
 	task1 := j.Tasks[1].NewCluster
 	assert.Equal(t, "10.4.x-scala2.12", task1.SparkVersion)
 }

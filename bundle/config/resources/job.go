@@ -48,9 +48,9 @@ func (j *Job) MergeJobClusters() error {
 	return nil
 }
 
-// MergeJobTasks merges job tasks with the same key.
-// The job tasks field is a slice, and as such, overrides are appended to it.
-// We can identify a job task by its task key, however, so we can use this key
+// MergeJobTasks merges tasks with the same key.
+// The tasks field is a slice, and as such, overrides are appended to it.
+// We can identify a task by its task key, however, so we can use this key
 // to figure out which definitions are actually overrides and merge them.
 func (j *Job) MergeJobTasks() error {
 	keys := make(map[string]*jobs.Task)
@@ -61,7 +61,7 @@ func (j *Job) MergeJobTasks() error {
 	for i := range j.Tasks {
 		key := j.Tasks[i].TaskKey
 
-		// Register job task with key if not yet seen before.
+		// Register the task with key if not yet seen before.
 		ref, ok := keys[key]
 		if !ok {
 			tasks = append(tasks, j.Tasks[i])

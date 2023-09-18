@@ -142,7 +142,7 @@ func (r *Resources) MergeJobClusters() error {
 	return nil
 }
 
-// MergeJobTasks iterates over all jobs and merges their job tasks.
+// MergeJobTasks iterates over all jobs and merges their tasks.
 // This is called after applying the target overrides.
 func (r *Resources) MergeJobTasks() error {
 	for _, job := range r.Jobs {
