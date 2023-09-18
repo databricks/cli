@@ -56,7 +56,7 @@ func TestJobMergeJobClusters(t *testing.T) {
 	assert.Equal(t, "10.4.x-scala2.12", jc1.SparkVersion)
 }
 
-func TestJobMergeJobTasks(t *testing.T) {
+func TestJobMergeTasks(t *testing.T) {
 	j := &Job{
 		JobSettings: &jobs.JobSettings{
 			Tasks: []jobs.Task{
@@ -85,7 +85,7 @@ func TestJobMergeJobTasks(t *testing.T) {
 		},
 	}
 
-	err := j.MergeJobTasks()
+	err := j.MergeTasks()
 	require.NoError(t, err)
 
 	assert.Len(t, j.Tasks, 2)

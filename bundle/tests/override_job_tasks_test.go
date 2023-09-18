@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestOverrideJobTasksDev(t *testing.T) {
+func TestOverrideTasksDev(t *testing.T) {
 	b := loadTarget(t, "./override_job_tasks", "development")
 	assert.Equal(t, "job", b.Config.Resources.Jobs["foo"].Name)
 	assert.Len(t, b.Config.Resources.Jobs["foo"].Tasks, 2)
@@ -22,7 +22,7 @@ func TestOverrideJobTasksDev(t *testing.T) {
 	assert.Equal(t, tasks[1].SparkPythonTask.PythonFile, "./test2.py")
 }
 
-func TestOverrideJobTasksStaging(t *testing.T) {
+func TestOverrideTasksStaging(t *testing.T) {
 	b := loadTarget(t, "./override_job_tasks", "staging")
 	assert.Equal(t, "job", b.Config.Resources.Jobs["foo"].Name)
 	assert.Len(t, b.Config.Resources.Jobs["foo"].Tasks, 2)
