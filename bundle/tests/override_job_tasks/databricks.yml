@@ -20,7 +20,7 @@ resources:
           spark_python_task:
             python_file: ./test2.py
 
-environments:
+targets:
   development:
     resources:
       jobs:
