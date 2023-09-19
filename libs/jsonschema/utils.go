@@ -139,5 +139,5 @@ func ValidatePatternMatch(name string, value any, propertySchema *Schema) error 
 	if msg == "" {
 		msg = fmt.Sprintf("Expected to match regex pattern: %s", propertySchema.Pattern)
 	}
-	return fmt.Errorf("invalid value for %s: %s. %s", name, value, msg)
+	return fmt.Errorf("invalid value for %s: %q. %s", name, value, msg)
 }

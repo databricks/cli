@@ -167,8 +167,8 @@ func TestValidateInstancePattern(t *testing.T) {
 	invalidInstanceValue := map[string]any{
 		"foo": "xyz",
 	}
-	assert.EqualError(t, schema.validatePattern(invalidInstanceValue), "invalid value for foo: xyz. Expected to match regex pattern: a.*c")
-	assert.EqualError(t, schema.ValidateInstance(invalidInstanceValue), "invalid value for foo: xyz. Expected to match regex pattern: a.*c")
+	assert.EqualError(t, schema.validatePattern(invalidInstanceValue), "invalid value for foo: \"xyz\". Expected to match regex pattern: a.*c")
+	assert.EqualError(t, schema.ValidateInstance(invalidInstanceValue), "invalid value for foo: \"xyz\". Expected to match regex pattern: a.*c")
 
 	invalidInstanceType := map[string]any{
 		"foo": 1,
@@ -190,6 +190,6 @@ func TestValidateInstancePatternWithCustomMessage(t *testing.T) {
 	invalidInstanceValue := map[string]any{
 		"foo": "xyz",
 	}
-	assert.EqualError(t, schema.validatePattern(invalidInstanceValue), "invalid value for foo: xyz. Please enter a string starting with 'a' and ending with 'c'")
-	assert.EqualError(t, schema.ValidateInstance(invalidInstanceValue), "invalid value for foo: xyz. Please enter a string starting with 'a' and ending with 'c'")
+	assert.EqualError(t, schema.validatePattern(invalidInstanceValue), "invalid value for foo: \"xyz\". Please enter a string starting with 'a' and ending with 'c'")
+	assert.EqualError(t, schema.ValidateInstance(invalidInstanceValue), "invalid value for foo: \"xyz\". Please enter a string starting with 'a' and ending with 'c'")
 }
