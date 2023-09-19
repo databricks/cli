@@ -43,8 +43,6 @@ func newSyncFiles(ctx context.Context, localFiles []fileset.File) (*SyncFiles, e
 		}
 	}
 
-	// TODO: add validation that no two files have the same remote name.
-
 	// Compute the new files state for the snapshot
 	for _, f := range localFiles {
 		sf.LastModifiedTimes[f.Relative] = f.Modified()
@@ -52,6 +50,11 @@ func newSyncFiles(ctx context.Context, localFiles []fileset.File) (*SyncFiles, e
 		if err != nil {
 			return nil, err
 		}
+
+		if existingLocalName, ok := sf.RemoteToLocalNames[remoteName]; ok {
+			return nil, fmt.Errorf("both %s and %s point to the same remote file location %s. Please remove one of them from your local project", existingLocalName, f.Relative, remoteName)
+		}
+
 		sf.LocalToRemoteNames[f.Relative] = remoteName
 		sf.RemoteToLocalNames[remoteName] = f.Relative
 	}

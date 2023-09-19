@@ -161,7 +161,6 @@ func loadOrNewSnapshot(ctx context.Context, opts *SyncOptions) (*Snapshot, error
 }
 
 func (s *Snapshot) diff(ctx context.Context, all []fileset.File) (change diff, err error) {
-
 	afterSyncFiles, err := newSyncFiles(ctx, all)
 	if err != nil {
 		return diff{}, err
@@ -172,6 +171,10 @@ func (s *Snapshot) diff(ctx context.Context, all []fileset.File) (change diff, e
 		return diff{}, err
 	}
 
+	// compute sync diff.
 	d := computeDiff(afterSyncFiles, beforeSyncFiles)
+
+	// Set sync files to the new computed value.
+	s.SyncFiles = afterSyncFiles
 	return *d, nil
 }
