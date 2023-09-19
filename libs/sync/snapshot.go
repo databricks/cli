@@ -48,7 +48,7 @@ type Snapshot struct {
 	// Path in workspace for project repo
 	RemotePath string `json:"remote_path"`
 
-	*SyncFiles
+	*FilesState
 }
 
 const syncSnapshotDirName = "sync-snapshots"
@@ -87,7 +87,7 @@ func newSnapshot(ctx context.Context, opts *SyncOptions) (*Snapshot, error) {
 		Version:    LatestSnapshotVersion,
 		Host:       opts.Host,
 		RemotePath: opts.RemotePath,
-		SyncFiles: &SyncFiles{
+		FilesState: &FilesState{
 			LastModifiedTimes:  make(map[string]time.Time),
 			LocalToRemoteNames: make(map[string]string),
 			RemoteToLocalNames: make(map[string]string),
@@ -160,21 +160,26 @@ func loadOrNewSnapshot(ctx context.Context, opts *SyncOptions) (*Snapshot, error
 	return snapshot, nil
 }
 
+// TODO: resolve disparity with pointers vs structs here.
+// TODO: Consolidate structs in the sync library a bit more.
+
 func (s *Snapshot) diff(ctx context.Context, all []fileset.File) (change diff, err error) {
-	afterSyncFiles, err := newSyncFiles(ctx, all)
+	targetState, err := toFilesState(ctx, all)
 	if err != nil {
-		return diff{}, err
+
+		return diff{}, fmt.Errorf("error while computing new sync state: %w", err)
 	}
 
-	beforeSyncFiles := s.SyncFiles
-	if err := beforeSyncFiles.validate(); err != nil {
-		return diff{}, err
+	currentState := s.FilesState
+	if err := currentState.validate(); err != nil {
+		return diff{}, fmt.Errorf("error parsing existing sync state: %w", err)
 	}
 
-	// compute sync diff.
-	d := computeDiff(afterSyncFiles, beforeSyncFiles)
+	// Compute change operations to get from current state to new target state.
+	d := computeDiff(targetState, currentState)
 
-	// Set sync files to the new computed value.
-	s.SyncFiles = afterSyncFiles
+	// Update state to new value. This is not persisted to the file system before
+	// the changes are actually applied successfully.
+	s.FilesState = targetState
 	return *d, nil
 }
