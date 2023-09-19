@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"crypto/md5"
@@ -14,8 +13,6 @@ import (
 
 	"github.com/databricks/cli/libs/fileset"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/cli/libs/notebook"
-	"golang.org/x/exp/maps"
 )
 
 // Bump it up every time a potentially breaking change is made to the snapshot schema
@@ -51,19 +48,7 @@ type Snapshot struct {
 	// Path in workspace for project repo
 	RemotePath string `json:"remote_path"`
 
-	// Map of all files present in the remote repo with the:
-	// key: relative file path from project root
-	// value: last time the remote instance of this file was updated
-	LastUpdatedTimes map[string]time.Time `json:"last_modified_times"`
-
-	// This map maps local file names to their remote names
-	// eg. notebook named "foo.py" locally would be stored as "foo", thus this
-	// map will contain an entry "foo.py" -> "foo"
-	LocalToRemoteNames map[string]string `json:"local_to_remote_names"`
-
-	// Inverse of localToRemoteNames. Together the form a bijective mapping (ie
-	// there is a 1:1 unique mapping between local and remote name)
-	RemoteToLocalNames map[string]string `json:"remote_to_local_names"`
+	*SyncFiles
 }
 
 const syncSnapshotDirName = "sync-snapshots"
@@ -99,12 +84,14 @@ func newSnapshot(ctx context.Context, opts *SyncOptions) (*Snapshot, error) {
 		SnapshotPath: path,
 		New:          true,
 
-		Version:            LatestSnapshotVersion,
-		Host:               opts.Host,
-		RemotePath:         opts.RemotePath,
-		LastUpdatedTimes:   make(map[string]time.Time),
-		LocalToRemoteNames: make(map[string]string),
-		RemoteToLocalNames: make(map[string]string),
+		Version:    LatestSnapshotVersion,
+		Host:       opts.Host,
+		RemotePath: opts.RemotePath,
+		SyncFiles: &SyncFiles{
+			LastModifiedTimes:  make(map[string]time.Time),
+			LocalToRemoteNames: make(map[string]string),
+			RemoteToLocalNames: make(map[string]string),
+		},
 	}, nil
 }
 
@@ -174,108 +161,17 @@ func loadOrNewSnapshot(ctx context.Context, opts *SyncOptions) (*Snapshot, error
 }
 
 func (s *Snapshot) diff(ctx context.Context, all []fileset.File) (change diff, err error) {
-	lastModifiedTimes := s.LastUpdatedTimes
-	remoteToLocalNames := s.RemoteToLocalNames
-	localToRemoteNames := s.LocalToRemoteNames
 
-	// set of files currently present in the local file system and tracked by git
-	localFileSet := map[string]struct{}{}
-	for _, f := range all {
-		localFileSet[f.Relative] = struct{}{}
+	afterSyncFiles, err := newSyncFiles(ctx, all)
+	if err != nil {
+		return diff{}, err
 	}
 
-	// Capture both previous and current set of files.
-	previousFiles := maps.Keys(lastModifiedTimes)
-	currentFiles := maps.Keys(localFileSet)
-
-	// Build directory sets to figure out which directories to create and which to remove.
-	previousDirectories := MakeDirSet(previousFiles)
-	currentDirectories := MakeDirSet(currentFiles)
-
-	// Create new directories; remove stale directories.
-	change.mkdir = currentDirectories.Remove(previousDirectories).Slice()
-	change.rmdir = previousDirectories.Remove(currentDirectories).Slice()
-
-	for _, f := range all {
-		// get current modified timestamp
-		modified := f.Modified()
-		lastSeenModified, seen := lastModifiedTimes[f.Relative]
-
-		if !seen || modified.After(lastSeenModified) {
-			lastModifiedTimes[f.Relative] = modified
-
-			// get file metadata about whether it's a notebook
-			isNotebook, _, err := notebook.Detect(f.Absolute)
-			if err != nil {
-				// Ignore this file if we're unable to determine the notebook type.
-				// Trying to upload such a file to the workspace would fail anyway.
-				log.Warnf(ctx, err.Error())
-				continue
-			}
-
-			// change separators to '/' for file paths in remote store
-			unixFileName := filepath.ToSlash(f.Relative)
-
-			// put file in databricks workspace
-			change.put = append(change.put, unixFileName)
-
-			// Strip extension for notebooks.
-			remoteName := unixFileName
-			if isNotebook {
-				ext := filepath.Ext(remoteName)
-				remoteName = strings.TrimSuffix(remoteName, ext)
-			}
-
-			// If the remote handle of a file changes, we want to delete the old
-			// remote version of that file to avoid duplicates.
-			// This can happen if a python notebook is converted to a python
-			// script or vice versa
-			oldRemoteName, ok := localToRemoteNames[f.Relative]
-			if ok && oldRemoteName != remoteName {
-				change.delete = append(change.delete, oldRemoteName)
-				delete(remoteToLocalNames, oldRemoteName)
-			}
-
-			// We cannot allow two local files in the project to point to the same
-			// remote path
-			prevLocalName, ok := remoteToLocalNames[remoteName]
-			_, prevLocalFileExists := localFileSet[prevLocalName]
-			if ok && prevLocalName != f.Relative && prevLocalFileExists {
-				return change, fmt.Errorf("both %s and %s point to the same remote file location %s. Please remove one of them from your local project", prevLocalName, f.Relative, remoteName)
-			}
-			localToRemoteNames[f.Relative] = remoteName
-			remoteToLocalNames[remoteName] = f.Relative
-		}
-	}
-	// figure out files in the snapshot.lastModifiedTimes, but not on local
-	// filesystem. These will be deleted
-	for localName := range lastModifiedTimes {
-		_, exists := localFileSet[localName]
-		if exists {
-			continue
-		}
-
-		// TODO: https://databricks.atlassian.net/browse/DECO-429
-		// Add error wrapper giving instructions like this for all errors here :)
-		remoteName, ok := localToRemoteNames[localName]
-		if !ok {
-			return change, fmt.Errorf("missing remote path for local path: %s. Please try syncing again after deleting .databricks/sync-snapshots dir from your project root", localName)
-		}
-
-		// add them to a delete batch
-		change.delete = append(change.delete, remoteName)
+	beforeSyncFiles := s.SyncFiles
+	if err := beforeSyncFiles.validate(); err != nil {
+		return diff{}, err
 	}
 
-	// and remove them from the snapshot
-	for _, remoteName := range change.delete {
-		// we do note assert that remoteName exists in remoteToLocalNames since it
-		// will be missing for files with remote name changed
-		localName := remoteToLocalNames[remoteName]
-
-		delete(lastModifiedTimes, localName)
-		delete(remoteToLocalNames, remoteName)
-		delete(localToRemoteNames, localName)
-	}
-
-	return
+	d := computeDiff(afterSyncFiles, beforeSyncFiles)
+	return *d, nil
 }

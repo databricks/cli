@@ -2,6 +2,8 @@ package sync
 
 import (
 	"path"
+
+	"golang.org/x/exp/maps"
 )
 
 type diff struct {
@@ -13,6 +15,67 @@ type diff struct {
 
 func (d diff) IsEmpty() bool {
 	return len(d.put) == 0 && len(d.delete) == 0
+}
+
+// TODO: mark directories that are to be removed.
+
+// TODO: add logging everywhere for debuggility / tracing.
+func computeDiff(after *SyncFiles, before *SyncFiles) *diff {
+	d := &diff{
+		delete: make([]string, 0),
+		rmdir:  make([]string, 0),
+		mkdir:  make([]string, 0),
+		put:    make([]string, 0),
+	}
+	d.accountForRemovedFiles(after, before)
+	d.accountForChangedRemoteNames(after, before)
+	d.accountForNewFiles(after, before)
+	d.accountForUpdatedFiles(after, before)
+	return d
+}
+
+func (d *diff) accountForRemovedFiles(after *SyncFiles, before *SyncFiles) {
+	for localName, remoteName := range before.LocalToRemoteNames {
+		if _, ok := after.LocalToRemoteNames[localName]; !ok {
+			d.delete = append(d.delete, remoteName)
+		}
+	}
+
+	beforeDirs := MakeDirSet(maps.Keys(before.LocalToRemoteNames))
+	afterDirs := MakeDirSet(maps.Keys(after.LocalToRemoteNames))
+	d.rmdir = append(d.rmdir, beforeDirs.Remove(afterDirs).Slice()...)
+}
+
+func (d *diff) accountForChangedRemoteNames(after *SyncFiles, before *SyncFiles) {
+	for localName, beforeRemoteName := range before.LocalToRemoteNames {
+		afterRemoteName, ok := after.LocalToRemoteNames[localName]
+		if !ok || afterRemoteName == beforeRemoteName {
+			continue
+		}
+		d.delete = append(d.delete, beforeRemoteName)
+	}
+}
+
+func (d *diff) accountForNewFiles(after *SyncFiles, before *SyncFiles) {
+	for localName, _ := range after.LastModifiedTimes {
+		if _, ok := before.LastModifiedTimes[localName]; !ok {
+			d.put = append(d.put, localName)
+		}
+	}
+
+	beforeDirs := MakeDirSet(maps.Keys(before.LocalToRemoteNames))
+	afterDirs := MakeDirSet(maps.Keys(after.LocalToRemoteNames))
+	d.mkdir = append(d.mkdir, afterDirs.Remove(beforeDirs).Slice()...)
+}
+
+func (d *diff) accountForUpdatedFiles(after *SyncFiles, before *SyncFiles) {
+	for localName, modTime := range after.LastModifiedTimes {
+		prevModTime, ok := before.LastModifiedTimes[localName]
+		if !ok || !modTime.After(prevModTime) {
+			continue
+		}
+		d.put = append(d.put, localName)
+	}
 }
 
 // groupedMkdir returns a slice of slices of paths to create.
