@@ -48,7 +48,7 @@ func (d *operators) caseFilesRemoved(after *FilesState, before *FilesState) {
 	d.rmdir = append(d.rmdir, beforeDirs.Remove(afterDirs).Slice()...)
 }
 
-// Add operators for local files that have had their remote targets change. For
+// Cleanup previous remote files for files that had their remote targets change. For
 // example this is possible if you convert a normal python script to a notebook.
 func (d *operators) caseRemoteNameChanged(after *FilesState, before *FilesState) {
 	for localName, beforeRemoteName := range before.LocalToRemoteNames {
