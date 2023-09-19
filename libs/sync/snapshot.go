@@ -163,20 +163,20 @@ func loadOrNewSnapshot(ctx context.Context, opts *SyncOptions) (*Snapshot, error
 // TODO: resolve disparity with pointers vs structs here.
 // TODO: Consolidate structs in the sync library a bit more.
 
-func (s *Snapshot) diff(ctx context.Context, all []fileset.File) (change diff, err error) {
+func (s *Snapshot) diff(ctx context.Context, all []fileset.File) (change operators, err error) {
 	targetState, err := toFilesState(ctx, all)
 	if err != nil {
 
-		return diff{}, fmt.Errorf("error while computing new sync state: %w", err)
+		return operators{}, fmt.Errorf("error while computing new sync state: %w", err)
 	}
 
 	currentState := s.FilesState
 	if err := currentState.validate(); err != nil {
-		return diff{}, fmt.Errorf("error parsing existing sync state: %w", err)
+		return operators{}, fmt.Errorf("error parsing existing sync state: %w", err)
 	}
 
 	// Compute change operations to get from current state to new target state.
-	d := computeDiff(targetState, currentState)
+	d := computeOperators(targetState, currentState)
 
 	// Update state to new value. This is not persisted to the file system before
 	// the changes are actually applied successfully.

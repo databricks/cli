@@ -6,35 +6,33 @@ import (
 	"golang.org/x/exp/maps"
 )
 
-type diff struct {
+type operators struct {
 	delete []string
 	rmdir  []string
 	mkdir  []string
 	put    []string
 }
 
-func (d diff) IsEmpty() bool {
+func (d operators) IsEmpty() bool {
 	return len(d.put) == 0 && len(d.delete) == 0
 }
 
-// TODO: mark directories that are to be removed.
-
 // TODO: add logging everywhere for debuggility / tracing.
-func computeDiff(after *FilesState, before *FilesState) *diff {
-	d := &diff{
+func computeOperators(after *FilesState, before *FilesState) *operators {
+	d := &operators{
 		delete: make([]string, 0),
 		rmdir:  make([]string, 0),
 		mkdir:  make([]string, 0),
 		put:    make([]string, 0),
 	}
-	d.accountForRemovedFiles(after, before)
-	d.accountForChangedRemoteNames(after, before)
-	d.accountForNewFiles(after, before)
-	d.accountForUpdatedFiles(after, before)
+	d.caseFilesDeleted(after, before)
+	d.caseRemoteNameChanged(after, before)
+	d.caseFilesCreated(after, before)
+	d.caseFilesUpdated(after, before)
 	return d
 }
 
-func (d *diff) accountForRemovedFiles(after *FilesState, before *FilesState) {
+func (d *operators) caseFilesDeleted(after *FilesState, before *FilesState) {
 	for localName, remoteName := range before.LocalToRemoteNames {
 		if _, ok := after.LocalToRemoteNames[localName]; !ok {
 			d.delete = append(d.delete, remoteName)
@@ -46,7 +44,7 @@ func (d *diff) accountForRemovedFiles(after *FilesState, before *FilesState) {
 	d.rmdir = append(d.rmdir, beforeDirs.Remove(afterDirs).Slice()...)
 }
 
-func (d *diff) accountForChangedRemoteNames(after *FilesState, before *FilesState) {
+func (d *operators) caseRemoteNameChanged(after *FilesState, before *FilesState) {
 	for localName, beforeRemoteName := range before.LocalToRemoteNames {
 		afterRemoteName, ok := after.LocalToRemoteNames[localName]
 		if !ok || afterRemoteName == beforeRemoteName {
@@ -56,8 +54,8 @@ func (d *diff) accountForChangedRemoteNames(after *FilesState, before *FilesStat
 	}
 }
 
-func (d *diff) accountForNewFiles(after *FilesState, before *FilesState) {
-	for localName, _ := range after.LastModifiedTimes {
+func (d *operators) caseFilesCreated(after *FilesState, before *FilesState) {
+	for localName := range after.LastModifiedTimes {
 		if _, ok := before.LastModifiedTimes[localName]; !ok {
 			d.put = append(d.put, localName)
 		}
@@ -68,7 +66,7 @@ func (d *diff) accountForNewFiles(after *FilesState, before *FilesState) {
 	d.mkdir = append(d.mkdir, afterDirs.Remove(beforeDirs).Slice()...)
 }
 
-func (d *diff) accountForUpdatedFiles(after *FilesState, before *FilesState) {
+func (d *operators) caseFilesUpdated(after *FilesState, before *FilesState) {
 	for localName, modTime := range after.LastModifiedTimes {
 		prevModTime, ok := before.LastModifiedTimes[localName]
 		if !ok || !modTime.After(prevModTime) {
@@ -82,7 +80,7 @@ func (d *diff) accountForUpdatedFiles(after *FilesState, before *FilesState) {
 // Because the underlying mkdir calls create intermediate directories,
 // we can group them together to reduce the total number of calls.
 // This returns a slice of a slice for parity with [groupedRmdir].
-func (d diff) groupedMkdir() [][]string {
+func (d operators) groupedMkdir() [][]string {
 	// Compute the set of prefixes of all paths to create.
 	prefixes := make(map[string]bool)
 	for _, name := range d.mkdir {
@@ -110,7 +108,7 @@ func (d diff) groupedMkdir() [][]string {
 // deleted in parallel, as long as it is processed in order.
 // The first entry will contain leaf directories, the second entry
 // will contain intermediate directories, and so on.
-func (d diff) groupedRmdir() [][]string {
+func (d operators) groupedRmdir() [][]string {
 	// Compute the number of times each directory is a prefix of another directory.
 	prefixes := make(map[string]int)
 	for _, dir := range d.rmdir {

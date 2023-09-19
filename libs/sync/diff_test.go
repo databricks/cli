@@ -7,7 +7,7 @@ import (
 )
 
 func TestDiffGroupedMkdir(t *testing.T) {
-	d := diff{
+	d := operators{
 		mkdir: []string{
 			"foo",
 			"foo/bar",
@@ -31,7 +31,7 @@ func TestDiffGroupedMkdir(t *testing.T) {
 }
 
 func TestDiffGroupedRmdir(t *testing.T) {
-	d := diff{
+	d := operators{
 		rmdir: []string{
 			"a/b/c/d/e/f",
 			"a/b/c/d/e",
@@ -55,7 +55,7 @@ func TestDiffGroupedRmdir(t *testing.T) {
 }
 
 func TestDiffGroupedRmdirWithLeafsOnly(t *testing.T) {
-	d := diff{
+	d := operators{
 		rmdir: []string{
 			"foo/bar/baz1",
 			"foo/bar1",

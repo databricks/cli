@@ -129,7 +129,7 @@ func (s *Sync) Close() {
 	s.notifier = nil
 }
 
-func (s *Sync) notifyStart(ctx context.Context, d diff) {
+func (s *Sync) notifyStart(ctx context.Context, d operators) {
 	// If this is not the initial iteration we can ignore no-ops.
 	if s.seq > 0 && d.IsEmpty() {
 		return
@@ -141,7 +141,7 @@ func (s *Sync) notifyProgress(ctx context.Context, action EventAction, path stri
 	s.notifier.Notify(ctx, newEventProgress(s.seq, action, path, progress))
 }
 
-func (s *Sync) notifyComplete(ctx context.Context, d diff) {
+func (s *Sync) notifyComplete(ctx context.Context, d operators) {
 	// If this is not the initial iteration we can ignore no-ops.
 	if s.seq > 0 && d.IsEmpty() {
 		return
