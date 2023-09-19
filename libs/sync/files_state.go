@@ -65,8 +65,6 @@ func toFilesState(ctx context.Context, localFiles []fileset.File) (*FilesState, 
 	return fs, nil
 }
 
-// TODO: Check embedded go struts are not encoded in the JSON output.
-
 // Consistency checks for the sync files state representation. These are invariants
 // that downstream code for computing changes to apply to WSFS depends on.
 //
