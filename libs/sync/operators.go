@@ -22,7 +22,7 @@ func (d operators) IsEmpty() bool {
 
 // Compute operations required to make files in WSFS reflect current local files.
 // Takes into account changes since the last sync iteration.
-func computeOperators(target *FilesState, current *FilesState) *operators {
+func computeOperators(target *FilesState, current *FilesState) operators {
 	d := &operators{
 		delete: make([]string, 0),
 		rmdir:  make([]string, 0),
@@ -33,7 +33,7 @@ func computeOperators(target *FilesState, current *FilesState) *operators {
 	d.caseRemoteNameChanged(target, current)
 	d.caseFilesAdded(target, current)
 	d.caseFilesUpdated(target, current)
-	return d
+	return *d
 }
 
 // Add operators for tracked files that no longer exist.
