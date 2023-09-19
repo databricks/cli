@@ -42,6 +42,7 @@ func (d *operators) caseFilesRemoved(after *FilesState, before *FilesState) {
 		}
 	}
 
+	// Remove directories that would no longer contain any files.
 	beforeDirs := MakeDirSet(maps.Keys(before.LocalToRemoteNames))
 	afterDirs := MakeDirSet(maps.Keys(after.LocalToRemoteNames))
 	d.rmdir = append(d.rmdir, beforeDirs.Remove(afterDirs).Slice()...)
@@ -67,6 +68,7 @@ func (d *operators) caseFilesAdded(after *FilesState, before *FilesState) {
 		}
 	}
 
+	// Add directories required for these new files.
 	beforeDirs := MakeDirSet(maps.Keys(before.LocalToRemoteNames))
 	afterDirs := MakeDirSet(maps.Keys(after.LocalToRemoteNames))
 	d.mkdir = append(d.mkdir, afterDirs.Remove(beforeDirs).Slice()...)
