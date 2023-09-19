@@ -153,7 +153,7 @@ func TestValidatePropertyPatternMatch(t *testing.T) {
 		Type:    "string",
 		Pattern: "(a*.d)",
 		Extension: Extension{
-			PatternMatchFailMessage: "my custom msg",
+			PatternMatchFailureMessage: "my custom msg",
 		},
 	})
 	assert.EqualError(t, err, "invalid value for bar: axyze. my custom msg")

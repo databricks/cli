@@ -3,7 +3,7 @@
         "foo": {
             "type": "string",
             "pattern": "a.*c",
-            "pattern_match_fail_message": "Please enter a string starting with 'a' and ending with 'c'"
+            "pattern_match_failure_message": "Please enter a string starting with 'a' and ending with 'c'"
         }
     }
 }
