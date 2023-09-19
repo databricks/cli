@@ -8,8 +8,6 @@ import (
 	"github.com/databricks/cli/libs/fileset"
 )
 
-// TODO: Add error and debug logging everywhere to help bug reports.
-
 // FilesState keeps track of files on the local filesystem and their corresponding
 // entries in WSFS.
 type FilesState struct {

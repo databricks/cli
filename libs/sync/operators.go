@@ -18,8 +18,6 @@ func (d operators) IsEmpty() bool {
 	return len(d.put) == 0 && len(d.delete) == 0
 }
 
-// TODO: add logging everywhere for debuggility / tracing.
-
 // Compute operations required to make files in WSFS reflect current local files.
 // Takes into account changes since the last sync iteration.
 func computeOperators(target *FilesState, current *FilesState) operators {
