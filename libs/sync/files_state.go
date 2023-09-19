@@ -58,11 +58,7 @@ func toFilesState(ctx context.Context, localFiles []fileset.File) (*FilesState, 
 		fs.LocalToRemoteNames[f.Relative] = remoteName
 		fs.RemoteToLocalNames[remoteName] = f.Relative
 	}
-
-	if err := fs.validate(); err != nil {
-		return nil, err
-	}
-	return fs, nil
+	return fs, fs.validate()
 }
 
 // Consistency checks for the sync files state representation. These are invariants
