@@ -2,6 +2,7 @@ package sync
 
 import (
 	"path"
+	"path/filepath"
 
 	"golang.org/x/exp/maps"
 )
@@ -64,7 +65,7 @@ func (d *operators) caseRemoteNameChanged(after *FilesState, before *FilesState)
 func (d *operators) caseFilesAdded(after *FilesState, before *FilesState) {
 	for localName := range after.LastModifiedTimes {
 		if _, ok := before.LastModifiedTimes[localName]; !ok {
-			d.put = append(d.put, localName)
+			d.put = append(d.put, filepath.ToSlash(localName))
 		}
 	}
 
@@ -81,7 +82,7 @@ func (d *operators) caseFilesUpdated(after *FilesState, before *FilesState) {
 		if !ok || !modTime.After(prevModTime) {
 			continue
 		}
-		d.put = append(d.put, localName)
+		d.put = append(d.put, filepath.ToSlash(localName))
 	}
 }
 
