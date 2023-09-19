@@ -48,7 +48,7 @@ func toFilesState(ctx context.Context, localFiles []fileset.File) (*FilesState, 
 	// Compute the new state.
 	for _, f := range localFiles {
 		fs.LastModifiedTimes[f.Relative] = f.Modified()
-		remoteName, err := f.RemotePath()
+		remoteName, err := f.WsfsPath()
 		if err != nil {
 			return nil, err
 		}

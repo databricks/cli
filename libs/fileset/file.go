@@ -23,7 +23,7 @@ func (f File) Modified() (ts time.Time) {
 	return info.ModTime()
 }
 
-func (f File) RemotePath() (string, error) {
+func (f File) WsfsPath() (string, error) {
 	workspacePath := filepath.ToSlash(f.Relative)
 	isNotebook, _, err := notebook.Detect(f.Absolute)
 	if err != nil {
