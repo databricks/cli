@@ -16,10 +16,6 @@ func (w *apply) Name() string {
 }
 
 func (w *apply) Apply(ctx context.Context, b *bundle.Bundle) error {
-	if b.TerraformHasNoResources {
-		cmdio.LogString(ctx, "Note: there are no resources to deploy for this bundle")
-		return nil
-	}
 	tf := b.Terraform
 	if tf == nil {
 		return fmt.Errorf("terraform not initialized")

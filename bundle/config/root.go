@@ -84,6 +84,8 @@ type Root struct {
 
 	// RunAs section allows to define an execution identity for jobs and pipelines runs
 	RunAs *jobs.JobRunAs `json:"run_as,omitempty"`
+
+	Experimental *Experimental `json:"experimental,omitempty"`
 }
 
 func Load(path string) (*Root, error) {
@@ -237,6 +239,11 @@ func (r *Root) MergeTargetOverrides(target *Target) error {
 		}
 
 		err = r.Resources.MergeJobClusters()
+		if err != nil {
+			return err
+		}
+
+		err = r.Resources.MergeTasks()
 		if err != nil {
 			return err
 		}
