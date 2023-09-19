@@ -163,7 +163,7 @@ func loadOrNewSnapshot(ctx context.Context, opts *SyncOptions) (*Snapshot, error
 // TODO: resolve disparity with pointers vs structs here.
 // TODO: Consolidate structs in the sync library a bit more.
 
-func (s *Snapshot) diff(ctx context.Context, all []fileset.File) (change operators, err error) {
+func (s *Snapshot) operators(ctx context.Context, all []fileset.File) (operators, error) {
 	targetState, err := toFilesState(ctx, all)
 	if err != nil {
 

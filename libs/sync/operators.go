@@ -6,6 +6,7 @@ import (
 	"golang.org/x/exp/maps"
 )
 
+// List of operations to apply to synchronize local file systems changes to WSFS.
 type operators struct {
 	delete []string
 	rmdir  []string
@@ -18,21 +19,25 @@ func (d operators) IsEmpty() bool {
 }
 
 // TODO: add logging everywhere for debuggility / tracing.
-func computeOperators(after *FilesState, before *FilesState) *operators {
+
+// Compute operations required to make files in WSFS reflect current local files.
+// Takes into account changes since the last sync iteration.
+func computeOperators(target *FilesState, current *FilesState) *operators {
 	d := &operators{
 		delete: make([]string, 0),
 		rmdir:  make([]string, 0),
 		mkdir:  make([]string, 0),
 		put:    make([]string, 0),
 	}
-	d.caseFilesDeleted(after, before)
-	d.caseRemoteNameChanged(after, before)
-	d.caseFilesCreated(after, before)
-	d.caseFilesUpdated(after, before)
+	d.caseFilesRemoved(target, current)
+	d.caseRemoteNameChanged(target, current)
+	d.caseFilesAdded(target, current)
+	d.caseFilesUpdated(target, current)
 	return d
 }
 
-func (d *operators) caseFilesDeleted(after *FilesState, before *FilesState) {
+// Add operators for tracked files that no longer exist.
+func (d *operators) caseFilesRemoved(after *FilesState, before *FilesState) {
 	for localName, remoteName := range before.LocalToRemoteNames {
 		if _, ok := after.LocalToRemoteNames[localName]; !ok {
 			d.delete = append(d.delete, remoteName)
@@ -44,6 +49,8 @@ func (d *operators) caseFilesDeleted(after *FilesState, before *FilesState) {
 	d.rmdir = append(d.rmdir, beforeDirs.Remove(afterDirs).Slice()...)
 }
 
+// Add operators for local files that have had their remote targets change. For
+// example this is possible if you convert a normal python script to a notebook.
 func (d *operators) caseRemoteNameChanged(after *FilesState, before *FilesState) {
 	for localName, beforeRemoteName := range before.LocalToRemoteNames {
 		afterRemoteName, ok := after.LocalToRemoteNames[localName]
@@ -54,7 +61,8 @@ func (d *operators) caseRemoteNameChanged(after *FilesState, before *FilesState)
 	}
 }
 
-func (d *operators) caseFilesCreated(after *FilesState, before *FilesState) {
+// Add operators for files that were not being tracked before.
+func (d *operators) caseFilesAdded(after *FilesState, before *FilesState) {
 	for localName := range after.LastModifiedTimes {
 		if _, ok := before.LastModifiedTimes[localName]; !ok {
 			d.put = append(d.put, localName)
@@ -66,6 +74,7 @@ func (d *operators) caseFilesCreated(after *FilesState, before *FilesState) {
 	d.mkdir = append(d.mkdir, afterDirs.Remove(beforeDirs).Slice()...)
 }
 
+// Add operators for files which had their contents updated.
 func (d *operators) caseFilesUpdated(after *FilesState, before *FilesState) {
 	for localName, modTime := range after.LastModifiedTimes {
 		prevModTime, ok := before.LastModifiedTimes[localName]
