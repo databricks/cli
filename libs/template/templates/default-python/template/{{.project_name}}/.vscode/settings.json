@@ -9,6 +9,8 @@
     "python.testing.unittestEnabled": false,
     "python.testing.pytestEnabled": true,
     "files.exclude": {
-        "**/*.egg-info": true
+        "**/*.egg-info": true,
+        "**/__pycache__": true,
+        ".pytest_cache": true,
     },
 }

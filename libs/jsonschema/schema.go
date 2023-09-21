@@ -20,6 +20,8 @@ type Schema struct {
 	// The values are the schema for the type of the field
 	Properties map[string]*Schema `json:"properties,omitempty"`
 
+	SuccessMessage string `json:"successMessage,omitempty"`
+
 	// The schema for all values of an array
 	Items *Schema `json:"items,omitempty"`
 

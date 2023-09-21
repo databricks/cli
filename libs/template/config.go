@@ -65,7 +65,7 @@ func (c *config) assignValuesFromFile(path string) error {
 }
 
 // Assigns default values from schema to input config map
-func (c *config) assignDefaultValues() error {
+func (c *config) assignDefaultValues(r *renderer) error {
 	for name, property := range c.schema.Properties {
 		// Config already has a value assigned
 		if _, ok := c.values[name]; ok {
@@ -75,13 +75,21 @@ func (c *config) assignDefaultValues() error {
 		if property.Default == nil {
 			continue
 		}
+		defaultVal, err := jsonschema.ToString(property.Default, property.Type)
+		if err != nil {
+			return err
+		}
+		defaultVal, err = r.executeTemplate(defaultVal)
+		if err != nil {
+			return err
+		}
 		c.values[name] = property.Default
 	}
 	return nil
 }
 
 // Prompts user for values for properties that do not have a value set yet
-func (c *config) promptForValues() error {
+func (c *config) promptForValues(r *renderer) error {
 	for _, p := range c.schema.OrderedProperties() {
 		name := p.Name
 		property := p.Schema
@@ -99,6 +107,15 @@ func (c *config) promptForValues() error {
 			if err != nil {
 				return err
 			}
+			defaultVal, err = r.executeTemplate(defaultVal)
+			if err != nil {
+				return err
+			}
+		}
+
+		description, err := r.executeTemplate(property.Description)
+		if err != nil {
+			return err
 		}
 
 		// Get user input by running the prompt
@@ -109,12 +126,12 @@ func (c *config) promptForValues() error {
 			if err != nil {
 				return err
 			}
-			userInput, err = cmdio.AskSelect(c.ctx, property.Description, enums)
+			userInput, err = cmdio.AskSelect(c.ctx, description, enums)
 			if err != nil {
 				return err
 			}
 		} else {
-			userInput, err = cmdio.Ask(c.ctx, property.Description, defaultVal)
+			userInput, err = cmdio.Ask(c.ctx, description, defaultVal)
 			if err != nil {
 				return err
 			}
@@ -132,11 +149,11 @@ func (c *config) promptForValues() error {
 
 // Prompt user for any missing config values. Assign default values if
 // terminal is not TTY
-func (c *config) promptOrAssignDefaultValues() error {
+func (c *config) promptOrAssignDefaultValues(r *renderer) error {
 	if cmdio.IsOutTTY(c.ctx) && cmdio.IsInTTY(c.ctx) {
-		return c.promptForValues()
+		return c.promptForValues(r)
 	}
-	return c.assignDefaultValues()
+	return c.assignDefaultValues(r)
 }
 
 // Validates the configuration. If passes, the configuration is ready to be used

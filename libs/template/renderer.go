@@ -311,7 +311,7 @@ func (r *renderer) persistToDisk() error {
 		path := file.DstPath().absPath()
 		_, err := os.Stat(path)
 		if err == nil {
-			return fmt.Errorf("failed to persist to disk, conflict with existing file: %s", path)
+			return fmt.Errorf("failed initialize template, one or more files already exist: %s", path)
 		}
 		if err != nil && !os.IsNotExist(err) {
 			return fmt.Errorf("error while verifying file %s does not already exist: %w", path, err)
