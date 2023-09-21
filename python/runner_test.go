@@ -50,6 +50,11 @@ func TestDetectVirtualEnvFalse(t *testing.T) {
 	assert.Equal(t, "", venvDir)
 }
 
+func TestGetFirstMatch(t *testing.T) {
+	matches := "C:\\hostedtoolcache\\windows\\Python\\3.9.13\\x64\\python3.exe\r\nC:\\ProgramData\\Chocolatey\\bin\\python3.exe"
+	assert.Equal(t, getFirstMatch(matches), "C:\\hostedtoolcache\\windows\\Python\\3.9.13\\x64\\python3.exe")
+}
+
 func TestMakeDetectableVenv(t *testing.T) {
 	t.Skip("Skipping test until fixing Python installation on GitHub Windows environment")
 
