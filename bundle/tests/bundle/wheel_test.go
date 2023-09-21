@@ -30,6 +30,8 @@ func TestBundlePythonWheelBuild(t *testing.T) {
 }
 
 func TestBundlePythonWheelBuildAutoDetect(t *testing.T) {
+	t.Skip("Skipping test until fixing Python installation on GitHub Windows environment")
+
 	ctx := context.Background()
 	b, err := bundle.Load(ctx, "./python_wheel_no_artifact")
 	require.NoError(t, err)
