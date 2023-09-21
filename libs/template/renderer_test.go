@@ -84,8 +84,6 @@ func assertBuiltinTemplateValid(t *testing.T, settings map[string]any, target st
 }
 
 func TestBuiltinTemplateValid(t *testing.T) {
-	t.Skip("Skipping test until fixing Python installation on GitHub Windows environment")
-
 	// Test option combinations
 	options := []string{"yes", "no"}
 	isServicePrincipal := false

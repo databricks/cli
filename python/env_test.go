@@ -32,8 +32,6 @@ func TestFreeze(t *testing.T) {
 }
 
 func TestPyInlineX(t *testing.T) {
-	t.Skip("Skipping test until fixing Python installation on GitHub Windows environment")
-
 	defer chdirAndBack("testdata/simple-python-wheel")()
 	dist, err := ReadDistribution(context.Background())
 	assert.NoError(t, err)

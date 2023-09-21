@@ -24,8 +24,6 @@ func TestExecAndPassError(t *testing.T) {
 }
 
 func TestDetectPython(t *testing.T) {
-	t.Skip("Skipping test until fixing Python installation on GitHub Windows environment")
-
 	pyExec = ""
 	py, err := DetectExecutable(context.Background())
 	assert.NoError(t, err)
@@ -33,8 +31,6 @@ func TestDetectPython(t *testing.T) {
 }
 
 func TestDetectPythonCache(t *testing.T) {
-	t.Skip("Skipping test until fixing Python installation on GitHub Windows environment")
-
 	pyExec = "abc"
 	py, err := DetectExecutable(context.Background())
 	assert.NoError(t, err)
@@ -43,8 +39,6 @@ func TestDetectPythonCache(t *testing.T) {
 }
 
 func TestDetectVirtualEnvFalse(t *testing.T) {
-	t.Skip("Skipping test until fixing Python installation on GitHub Windows environment")
-
 	venvDir, err := detectVirtualEnv()
 	assert.NoError(t, err)
 	assert.Equal(t, "", venvDir)
@@ -56,8 +50,6 @@ func TestGetFirstMatch(t *testing.T) {
 }
 
 func TestMakeDetectableVenv(t *testing.T) {
-	t.Skip("Skipping test until fixing Python installation on GitHub Windows environment")
-
 	var temp string
 	defer testTempdir(t, &temp)()
 
@@ -84,23 +76,17 @@ func testTempdir(t *testing.T, dir *string) func() {
 }
 
 func TestPyError(t *testing.T) {
-	t.Skip("Skipping test until fixing Python installation on GitHub Windows environment")
-
 	_, err := Py(context.Background(), "__non_existing__.py")
 	assert.Contains(t, err.Error(), "can't open file")
 }
 
 func TestPyInline(t *testing.T) {
-	t.Skip("Skipping test until fixing Python installation on GitHub Windows environment")
-
 	hello, err := PyInline(context.Background(), "print('Hello, world!')")
 	assert.NoError(t, err)
 	assert.Equal(t, "Hello, world!", hello)
 }
 
 func TestPyInlineStderr(t *testing.T) {
-	t.Skip("Skipping test until fixing Python installation on GitHub Windows environment")
-
 	DetectExecutable(context.Background())
 	inline := "import sys; sys.stderr.write('___msg___'); sys.exit(1)"
 	_, err := PyInline(context.Background(), inline)
