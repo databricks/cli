@@ -82,7 +82,7 @@ func DetectExecutable(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	pyExec = trimmedS(out)
+	pyExec = getFirstMatch(string(out))
 	return pyExec, nil
 }
 
@@ -90,6 +90,11 @@ func execAndPassErr(ctx context.Context, name string, args ...string) ([]byte, e
 	// TODO: move out to a separate package, once we have Maven integration
 	out, err := exec.CommandContext(ctx, name, args...).Output()
 	return out, nicerErr(err)
+}
+
+func getFirstMatch(out string) string {
+	res := strings.Split(out, "\n")
+	return strings.Trim(res[0], "\n\r")
 }
 
 func nicerErr(err error) error {
