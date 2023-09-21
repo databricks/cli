@@ -30,7 +30,7 @@ func (p *Pipeline) MergeClusters() error {
 
 	// Normalize cluster labels.
 	// If empty, this defaults to "default".
-	// Matching is case insensitive, so labels are lowercased.
+	// To make matching case insensitive, labels are lowercased.
 	for i := range p.Clusters {
 		label := p.Clusters[i].Label
 		if label == "" {
