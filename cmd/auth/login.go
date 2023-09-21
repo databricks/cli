@@ -48,7 +48,7 @@ func newLoginCommand(persistentAuth *auth.PersistentAuth) *cobra.Command {
 		profileFlag := cmd.Flag("profile")
 		if profileFlag != nil && profileFlag.Value.String() != "" {
 			profileName = profileFlag.Value.String()
-		} else {
+		} else if cmdio.IsInTTY(ctx) {
 			prompt := cmdio.Prompt(ctx)
 			prompt.Label = "Databricks Profile Name"
 			prompt.Default = persistentAuth.ProfileName()
@@ -120,13 +120,16 @@ func newLoginCommand(persistentAuth *auth.PersistentAuth) *cobra.Command {
 			cfg.ClusterID = clusterId
 		}
 
-		cfg.Profile = profileName
-		err = databrickscfg.SaveToProfile(ctx, &cfg)
-		if err != nil {
-			return err
+		if profileName != "" {
+			cfg.Profile = profileName
+			err = databrickscfg.SaveToProfile(ctx, &cfg)
+			if err != nil {
+				return err
+			}
+
+			cmdio.LogString(ctx, fmt.Sprintf("Profile %s was successfully saved", profileName))
 		}
 
-		cmdio.LogString(ctx, fmt.Sprintf("Profile %s was successfully saved", profileName))
 		return nil
 	}
 
