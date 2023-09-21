@@ -1,5 +1,14 @@
 # Version changelog
 
+## 0.205.2
+
+CLI:
+ * Prompt for profile only in interactive mode ([#788](https://github.com/databricks/cli/pull/788)).
+
+Internal:
+ * Added setup Python action ([#789](https://github.com/databricks/cli/pull/789)).
+
+
 ## 0.205.1
 
 Bundles:
