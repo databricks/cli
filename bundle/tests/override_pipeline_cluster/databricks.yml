@@ -1,0 +1,33 @@
+bundle:
+  name: override_pipeline_cluster
+
+workspace:
+  host: https://acme.cloud.databricks.com/
+
+resources:
+  pipelines:
+    foo:
+      name: job
+      clusters:
+        - label: default
+          spark_conf:
+            foo: bar
+
+targets:
+  development:
+    resources:
+      pipelines:
+        foo:
+          clusters:
+            - label: default
+              node_type_id: i3.xlarge
+              num_workers: 1
+
+  staging:
+    resources:
+      pipelines:
+        foo:
+          clusters:
+            - label: default
+              node_type_id: i3.2xlarge
+              num_workers: 4
