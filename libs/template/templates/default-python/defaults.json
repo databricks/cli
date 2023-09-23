@@ -1,0 +1,6 @@
+{
+    "project_name":     "my_project",
+    "include_notebook": "yes",
+    "include_dlt":      "yes",
+    "include_python":   "yes"
+}
