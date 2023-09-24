@@ -20,6 +20,10 @@ type Schema struct {
 	// The values are the schema for the type of the field
 	Properties map[string]*Schema `json:"properties,omitempty"`
 
+	// The message to print after the template is successfully initalized
+	// In line with our ymls, we use snake_case here.
+	SuccessMessage string `json:"success_message,omitempty"`
+
 	// The schema for all values of an array
 	Items *Schema `json:"items,omitempty"`
 
