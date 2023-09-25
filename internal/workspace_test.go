@@ -239,3 +239,25 @@ func TestAccImportDirWithOverwriteFlag(t *testing.T) {
 	assertFilerFileContents(t, ctx, workspaceFiler, "file-a", "hello, world")
 	assertFilerFileContents(t, ctx, workspaceFiler, "pyNotebook", "# Databricks notebook source\nprint(\"python\")")
 }
+
+func TestAccExport(t *testing.T) {
+	ctx, f, sourceDir := setupWorkspaceImportExportTest(t)
+
+	var err error
+
+	// Export vanilla file
+	err = f.Write(ctx, "file-a", strings.NewReader("abc"))
+	require.NoError(t, err)
+	stdout, _ := RequireSuccessfulRun(t, "workspace", "export", filepath.Join(sourceDir, "file-a"))
+	b, err := io.ReadAll(&stdout)
+	require.NoError(t, err)
+	assert.Equal(t, "abc", string(b))
+
+	// Export python notebook
+	err = f.Write(ctx, "pyNotebook.py", strings.NewReader("# Databricks notebook source"))
+	require.NoError(t, err)
+	stdout, _ = RequireSuccessfulRun(t, "workspace", "export", filepath.Join(sourceDir, "pyNotebook"))
+	b, err = io.ReadAll(&stdout)
+	require.NoError(t, err)
+	assert.Equal(t, "# Databricks notebook source\n", string(b))
+}
