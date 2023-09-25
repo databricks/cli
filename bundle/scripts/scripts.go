@@ -61,6 +61,7 @@ func executeHook(ctx context.Context, b *bundle.Bundle, hook config.ScriptHook) 
 		return nil, nil, err
 	}
 
+	// TODO: switch to process.Background(...)
 	cmd := exec.CommandContext(ctx, interpreter, "-c", string(command))
 	cmd.Dir = b.Config.Path
 

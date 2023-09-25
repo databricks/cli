@@ -20,7 +20,7 @@ func TestExecAndPassError(t *testing.T) {
 	}
 
 	_, err := execAndPassErr(context.Background(), "which", "__non_existing__")
-	assert.EqualError(t, err, "exit status 1")
+	assert.EqualError(t, err, "which __non_existing__:  exit status 1")
 }
 
 func TestDetectPython(t *testing.T) {
