@@ -260,4 +260,11 @@ func TestAccExport(t *testing.T) {
 	b, err = io.ReadAll(&stdout)
 	require.NoError(t, err)
 	assert.Equal(t, "# Databricks notebook source\n", string(b))
+
+	// Export python notebook as jupyter
+	stdout, _ = RequireSuccessfulRun(t, "workspace", "export", filepath.Join(sourceDir, "pyNotebook"), "--format", "JUPYTER")
+	b, err = io.ReadAll(&stdout)
+	require.NoError(t, err)
+	assert.Contains(t, string(b), `"cells":`, "jupyter notebooks contain the cells field")
+	assert.Contains(t, string(b), `"metadata":`, "jupyter notebooks contain the metadata field")
 }
