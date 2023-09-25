@@ -6,11 +6,12 @@ from {{.project_name}} import main
 # check that you have configured Databricks Connect correctly.
 # See https://docs.databricks.com/dev-tools/databricks-connect.html.
 {{/*
-  HACK: as of 2023-09, the standard SparkSession builder doesn't support
-  Databricks Connect unless it is used from the IDE or the workspace.
-  The reason we're using the standard builder throughout this template is that
-  it works for older Databricks Runtime versions as well. By re-assigning the
-  builder property, we make the SparkSession.builder works locally as well.
+  The below works around a problematic error message from Databricks Connect.
+  The standard SparkSession is supported in all configurations (workspace, IDE,
+  all runtime versions, CLI). But on the CLI it currently gives a confusing
+  error message if SPARK_REMOTE is not set. We can't directly use
+  DatabricksSession.builder in main.py, so we're re-assigning it here so
+  everything works out of the box, even for CLI users who don't set SPARK_REMOTE.
 */}}
 SparkSession.builder = DatabricksSession.builder
 SparkSession.builder.getOrCreate()
