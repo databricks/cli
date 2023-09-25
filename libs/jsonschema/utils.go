@@ -3,6 +3,7 @@ package jsonschema
 import (
 	"errors"
 	"fmt"
+	"regexp"
 	"strconv"
 )
 
@@ -110,4 +111,33 @@ func FromString(s string, T Type) (any, error) {
 		return nil, fmt.Errorf("could not parse %q as a %s: %w", s, T, err)
 	}
 	return v, err
+}
+
+func ValidatePatternMatch(name string, value any, propertySchema *Schema) error {
+	if propertySchema.Pattern == "" {
+		// Return early if no pattern is specified
+		return nil
+	}
+
+	// Expect type of value to be a string
+	stringValue, ok := value.(string)
+	if !ok {
+		return fmt.Errorf("invalid value for %s: %v. Expected a value of type string", name, value)
+	}
+
+	match, err := regexp.MatchString(propertySchema.Pattern, stringValue)
+	if err != nil {
+		return err
+	}
+	if match {
+		// successful match
+		return nil
+	}
+
+	// If custom user error message is defined, return error with the custom message
+	msg := propertySchema.PatternMatchFailureMessage
+	if msg == "" {
+		msg = fmt.Sprintf("Expected to match regex pattern: %s", propertySchema.Pattern)
+	}
+	return fmt.Errorf("invalid value for %s: %q. %s", name, value, msg)
 }
