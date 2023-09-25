@@ -1,5 +1,30 @@
 # Version changelog
 
+## 0.205.2
+
+CLI:
+ * Prompt for profile only in interactive mode ([#788](https://github.com/databricks/cli/pull/788)).
+
+Internal:
+ * Added setup Python action ([#789](https://github.com/databricks/cli/pull/789)).
+
+
+## 0.205.1
+
+Bundles:
+ * Use enums for default python template ([#765](https://github.com/databricks/cli/pull/765)).
+ * Make bundle deploy work if no resources are defined ([#767](https://github.com/databricks/cli/pull/767)).
+ * Added support for experimental scripts section ([#632](https://github.com/databricks/cli/pull/632)).
+ * Error when unknown keys are encounters during template execution ([#766](https://github.com/databricks/cli/pull/766)).
+ * Fall back to full Git clone if shallow clone is not supported ([#775](https://github.com/databricks/cli/pull/775)).
+ * Enable environment overrides for job tasks ([#779](https://github.com/databricks/cli/pull/779)).
+ * Increase timeout waiting for job run to 1 day ([#786](https://github.com/databricks/cli/pull/786)).
+
+Internal:
+ * Update Go SDK to v0.19.3 (unreleased) ([#778](https://github.com/databricks/cli/pull/778)).
+
+
+
 ## 0.205.0
 
 This release marks the public preview phase of Databricks Asset Bundles.

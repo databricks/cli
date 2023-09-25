@@ -9,6 +9,7 @@ import (
 )
 
 func TestFreeze(t *testing.T) {
+	t.Skip("Skipping test until fixing Python installation on GitHub Windows environment")
 
 	// remove this once equivalent tests for windows have been set up
 	// or this test has been fixed for windows
