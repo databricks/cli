@@ -2,6 +2,8 @@ package config
 
 type Experimental struct {
 	Scripts map[ScriptHook]Command `json:"scripts,omitempty"`
+
+	PythonWheelWrapper bool `json:"python_wheel_wrapper,omitempty"`
 }
 
 type Command string
