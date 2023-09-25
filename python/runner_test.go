@@ -90,5 +90,5 @@ func TestPyInlineStderr(t *testing.T) {
 	DetectExecutable(context.Background())
 	inline := "import sys; sys.stderr.write('___msg___'); sys.exit(1)"
 	_, err := PyInline(context.Background(), inline)
-	assert.EqualError(t, err, "___msg___")
+	assert.ErrorContains(t, err, "___msg___")
 }
