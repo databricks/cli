@@ -2,6 +2,7 @@ package python
 
 import (
 	"context"
+	"path"
 	"path/filepath"
 	"testing"
 
@@ -107,7 +108,7 @@ func TestTransformWithExperimentalSettingSetToTrue(t *testing.T) {
 	internalDirRel, err := filepath.Rel(b.Config.Path, dir)
 	require.NoError(t, err)
 
-	require.Equal(t, filepath.Join(internalDirRel, "notebook_job1_key1"), task.NotebookTask.NotebookPath)
+	require.Equal(t, path.Join(filepath.ToSlash(internalDirRel), "notebook_job1_key1"), task.NotebookTask.NotebookPath)
 
 	require.Empty(t, task.Libraries)
 }
