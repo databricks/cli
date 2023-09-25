@@ -75,15 +75,19 @@ func (c *config) assignDefaultValues(r *renderer) error {
 		if property.Default == nil {
 			continue
 		}
-		defaultValRaw, err := jsonschema.ToString(property.Default, property.Type)
+		defaultVal, err := jsonschema.ToString(property.Default, property.Type)
 		if err != nil {
 			return err
 		}
-		defaultVal, err := r.executeTemplate(defaultValRaw)
+		defaultVal, err = r.executeTemplate(defaultVal)
 		if err != nil {
 			return err
 		}
-		c.values[name] = defaultVal
+		defaultValTyped, err := jsonschema.FromString(defaultVal, property.Type)
+		if err != nil {
+			return err
+		}
+		c.values[name] = defaultValTyped
 	}
 	return nil
 }

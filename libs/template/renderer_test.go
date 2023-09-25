@@ -513,7 +513,7 @@ func TestRendererErrorOnConflictingFile(t *testing.T) {
 		},
 	}
 	err = r.persistToDisk()
-	assert.EqualError(t, err, fmt.Sprintf("failed to persist to disk, conflict with existing file: %s", filepath.Join(tmpDir, "a")))
+	assert.EqualError(t, err, fmt.Sprintf("failed initialize template, one or more files already exist: %s", filepath.Join(tmpDir, "a")))
 }
 
 func TestRendererNoErrorOnConflictingFileIfSkipped(t *testing.T) {

@@ -53,11 +53,17 @@ func TestTemplateConfigAssignValuesFromFileDoesNotOverwriteExistingConfigs(t *te
 func TestTemplateConfigAssignDefaultValues(t *testing.T) {
 	c := testConfig(t)
 
-	err := c.assignDefaultValues(&renderer{})
+	ctx := context.Background()
+	ctx = root.SetWorkspaceClient(ctx, nil)
+	helpers := loadHelpers(ctx)
+	r, err := newRenderer(ctx, nil, helpers, "./testdata/template-in-path/template", "./testdata/template-in-path/library", t.TempDir())
+	require.NoError(t, err)
+
+	err = c.assignDefaultValues(r)
 	assert.NoError(t, err)
 
 	assert.Len(t, c.values, 2)
-	assert.Equal(t, "abc", c.values["string_val"])
+	assert.Equal(t, "my_file", c.values["string_val"])
 	assert.Equal(t, int64(123), c.values["int_val"])
 }
 
