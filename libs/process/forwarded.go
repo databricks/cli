@@ -23,6 +23,7 @@ func Forwarded(ctx context.Context, args []string, src io.Reader, dst io.Writer,
 	defer writer.Close()
 	cmd.Stdout = writer
 	cmd.Stderr = writer
+	cmd.Stdin = src
 
 	// apply common options
 	for _, o := range opts {
@@ -32,19 +33,7 @@ func Forwarded(ctx context.Context, args []string, src io.Reader, dst io.Writer,
 		}
 	}
 
-	// pipe standard input to the child process, so that we can allow terminal UX
-	// see the PoC at https://github.com/databricks/cli/pull/637
-	stdin, err := cmd.StdinPipe()
-	if err != nil {
-		return err
-	}
-	go io.CopyBuffer(stdin, src, make([]byte, 128))
-
-	// This is the place where terminal detection methods in the child processes might break,
-	// but we'll fix that once there's such a problem.
-	defer stdin.Close()
-
-	err = cmd.Start()
+	err := cmd.Start()
 	if err != nil {
 		return err
 	}

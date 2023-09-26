@@ -48,6 +48,5 @@ func Background(ctx context.Context, args []string, opts ...execOption) (string,
 			Stderr:  stderr.String(),
 		}
 	}
-	// trim leading/trailing whitespace from the output
-	return strings.TrimSpace(stdout.String()), nil
+	return stdout.String(), nil
 }
