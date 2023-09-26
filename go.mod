@@ -9,10 +9,10 @@ require (
 	github.com/ghodss/yaml v1.0.0 // MIT + NOTICE
 	github.com/google/uuid v1.3.0 // BSD-3-Clause
 	github.com/hashicorp/go-version v1.6.0 // MPL 2.0
-	github.com/hashicorp/hc-install v0.5.2 // MPL 2.0
+	github.com/hashicorp/hc-install v0.6.0 // MPL 2.0
 	github.com/hashicorp/terraform-exec v0.18.1 // MPL 2.0
 	github.com/hashicorp/terraform-json v0.17.1 // MPL 2.0
-	github.com/imdario/mergo v0.3.13 // BSD-3-Clause
+	github.com/imdario/mergo v0.3.15 // BSD-3-Clause
 	github.com/manifoldco/promptui v0.9.0 // BSD-3-Clause
 	github.com/mattn/go-isatty v0.0.19 // MIT
 	github.com/nwidger/jsoncolor v0.3.2 // MIT
@@ -34,7 +34,7 @@ require (
 require (
 	cloud.google.com/go/compute v1.23.0 // indirect
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
-	github.com/ProtonMail/go-crypto v0.0.0-20230217124315-7d5c6f04bbb8 // indirect
+	github.com/ProtonMail/go-crypto v0.0.0-20230717121422-5aa5874ade95 // indirect
 	github.com/apparentlymart/go-textseg/v13 v13.0.0 // indirect
 	github.com/chzyer/readline v0.0.0-20180603132655-2972be24d48e // indirect
 	github.com/cloudflare/circl v1.3.3 // indirect
