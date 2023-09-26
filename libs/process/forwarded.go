@@ -16,6 +16,8 @@ func Forwarded(ctx context.Context, args []string, src io.Reader, dst io.Writer,
 
 	// make sure to sync on writing to stdout
 	reader, writer := io.Pipe()
+
+	// empirical tests showed buffered copies being more responsive
 	go io.CopyBuffer(dst, reader, make([]byte, 128))
 	defer reader.Close()
 	defer writer.Close()
@@ -24,7 +26,7 @@ func Forwarded(ctx context.Context, args []string, src io.Reader, dst io.Writer,
 
 	// apply common options
 	for _, o := range opts {
-		err := o(cmd)
+		err := o(ctx, cmd)
 		if err != nil {
 			return err
 		}
@@ -37,6 +39,9 @@ func Forwarded(ctx context.Context, args []string, src io.Reader, dst io.Writer,
 		return err
 	}
 	go io.CopyBuffer(stdin, src, make([]byte, 128))
+
+	// This is the place where terminal detection methods in the child processes might break,
+	// but we'll fix that once there's such a problem.
 	defer stdin.Close()
 
 	err = cmd.Start()

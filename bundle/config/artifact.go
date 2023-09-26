@@ -56,11 +56,14 @@ func (a *Artifact) Build(ctx context.Context) ([]byte, error) {
 	commands := strings.Split(a.BuildCommand, " && ")
 	for _, command := range commands {
 		buildParts := strings.Split(command, " ")
-		res, err := process.Background(ctx, buildParts, process.WithDir(a.Path))
+		var buf bytes.Buffer
+		_, err := process.Background(ctx, buildParts,
+			process.WithCombinedOutput(&buf),
+			process.WithDir(a.Path))
 		if err != nil {
-			return nil, err
+			return buf.Bytes(), err
 		}
-		out = append(out, []byte(res))
+		out = append(out, buf.Bytes())
 	}
 	return bytes.Join(out, []byte{}), nil
 }

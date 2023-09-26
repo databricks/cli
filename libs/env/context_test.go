@@ -38,4 +38,11 @@ func TestContext(t *testing.T) {
 	assert.Equal(t, "qux", Get(ctx2, "FOO"))
 	assert.Equal(t, "baz", Get(ctx1, "FOO"))
 	assert.Equal(t, "bar", Get(ctx0, "FOO"))
+
+	ctx3 := Set(ctx2, "BAR", "x=y")
+
+	all := All(ctx3)
+	assert.NotNil(t, all)
+	assert.Equal(t, "qux", all["FOO"])
+	assert.Equal(t, "x=y", all["BAR"])
 }

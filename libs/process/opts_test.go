@@ -2,9 +2,13 @@ package process
 
 import (
 	"context"
+	"os/exec"
 	"runtime"
+	"sort"
 	"testing"
 
+	"github.com/databricks/cli/internal/testutil"
+	"github.com/databricks/cli/libs/env"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -21,4 +25,25 @@ func TestWithEnvs(t *testing.T) {
 	}))
 	assert.NoError(t, err)
 	assert.Equal(t, "foo delirium", res)
+}
+
+func TestWorksWithLibsEnv(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+	ctx := context.Background()
+	ctx2 := env.Set(ctx, "AAA", "BBB")
+
+	cmd := &exec.Cmd{}
+	err := WithEnvs(map[string]string{
+		"CCC": "DDD",
+		"EEE": "FFF",
+	})(ctx2, cmd)
+	assert.NoError(t, err)
+
+	vars := cmd.Environ()
+	sort.Strings(vars)
+
+	assert.Len(t, vars, 5)
+	assert.Equal(t, "AAA=BBB", vars[0])
+	assert.Equal(t, "CCC=DDD", vars[1])
+	assert.Equal(t, "EEE=FFF", vars[2])
 }

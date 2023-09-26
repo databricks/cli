@@ -35,13 +35,13 @@ func Background(ctx context.Context, args []string, opts ...execOption) (string,
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 	for _, o := range opts {
-		err := o(cmd)
+		err := o(ctx, cmd)
 		if err != nil {
 			return "", err
 		}
 	}
 	if err := cmd.Run(); err != nil {
-		return "", &ProcessError{
+		return stdout.String(), &ProcessError{
 			Err:     err,
 			Command: commandStr,
 			Stdout:  stdout.String(),
