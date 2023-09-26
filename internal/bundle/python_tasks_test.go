@@ -63,6 +63,10 @@ type testOpts struct {
 }
 
 func TestAccRunPythonTaskWorkspace(t *testing.T) {
+	// TODO: remove RUN_PYTHON_TASKS_TEST when ready to be executed as part of nightly
+	internal.GetEnvOrSkipTest(t, "RUN_PYTHON_TASKS_TEST")
+	internal.GetEnvOrSkipTest(t, "CLOUD_ENV")
+
 	unsupportedSparkVersionsForWheel := []string{
 		"11.3.x-scala2.12",
 		"12.2.x-scala2.12",
@@ -80,6 +84,10 @@ func TestAccRunPythonTaskWorkspace(t *testing.T) {
 }
 
 func TestAccRunPythonTaskDBFS(t *testing.T) {
+	// TODO: remove RUN_PYTHON_TASKS_TEST when ready to be executed as part of nightly
+	internal.GetEnvOrSkipTest(t, "RUN_PYTHON_TASKS_TEST")
+	internal.GetEnvOrSkipTest(t, "CLOUD_ENV")
+
 	runPythonTasks(t, prepareDBFSFiles(t), testOpts{
 		name:                    "Python tasks from DBFS",
 		includeNotebookTasks:    false,
@@ -89,6 +97,10 @@ func TestAccRunPythonTaskDBFS(t *testing.T) {
 }
 
 func TestAccRunPythonTaskRepo(t *testing.T) {
+	// TODO: remove RUN_PYTHON_TASKS_TEST when ready to be executed as part of nightly
+	internal.GetEnvOrSkipTest(t, "RUN_PYTHON_TASKS_TEST")
+	internal.GetEnvOrSkipTest(t, "CLOUD_ENV")
+
 	runPythonTasks(t, prepareRepoFiles(t), testOpts{
 		name:                    "Python tasks from Repo",
 		includeNotebookTasks:    true,
@@ -98,8 +110,6 @@ func TestAccRunPythonTaskRepo(t *testing.T) {
 }
 
 func runPythonTasks(t *testing.T, tw *testFiles, opts testOpts) {
-	// TODO: remove RUN_PYTHON_TASKS_TEST when ready to be executed as part of nightly
-	internal.GetEnvOrSkipTest(t, "RUN_PYTHON_TASKS_TEST")
 	env := internal.GetEnvOrSkipTest(t, "CLOUD_ENV")
 	t.Log(env)
 
