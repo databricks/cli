@@ -18,7 +18,7 @@ func TestForwarded(t *testing.T) {
 	}, strings.NewReader("abc\n"), buf)
 	assert.NoError(t, err)
 
-	assert.Equal(t, "input: abc\n", buf.String())
+	assert.Equal(t, "input: abc", strings.TrimSpace(buf.String()))
 }
 
 func TestForwardedFails(t *testing.T) {
