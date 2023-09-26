@@ -59,8 +59,8 @@ func WithStdoutPipe(dst *io.ReadCloser) execOption {
 
 func WithCombinedOutput(buf *bytes.Buffer) execOption {
 	return func(_ context.Context, c *exec.Cmd) error {
-		c.Stdout = io.MultiWriter(c.Stdout, buf)
-		c.Stderr = io.MultiWriter(c.Stderr, buf)
+		c.Stdout = io.MultiWriter(buf, c.Stdout)
+		c.Stderr = io.MultiWriter(buf, c.Stderr)
 		return nil
 	}
 }
