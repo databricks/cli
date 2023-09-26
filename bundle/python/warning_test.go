@@ -179,17 +179,21 @@ func TestNoIncompatibleWheelTasks(t *testing.T) {
 	require.False(t, hasIncompatibleWheelTasks(context.Background(), b))
 }
 
-func TestParseSparkVersion(t *testing.T) {
-	testCases := map[string]float64{
-		"10.4.x-aarch64-photon-scala2.12": 10.4,
-		"10.4.x-scala2.12":                10.4,
-		"13.0.x-scala2.12":                13.0,
-		"5.0.x-rc-gpu-ml-scala2.11":       5.0,
+func TestSparkVersionLowerThanExpected(t *testing.T) {
+	testCases := map[string]bool{
+		"13.1.x-scala2.12":                false,
+		"13.2.x-scala2.12":                false,
+		"13.3.x-scala2.12":                false,
+		"14.0.x-scala2.12":                false,
+		"14.1.x-scala2.12":                false,
+		"10.4.x-aarch64-photon-scala2.12": true,
+		"10.4.x-scala2.12":                true,
+		"13.0.x-scala2.12":                true,
+		"5.0.x-rc-gpu-ml-scala2.11":       true,
 	}
 
 	for k, v := range testCases {
-		version, err := extractVersion(k)
-		require.NoError(t, err)
-		require.Equal(t, v, version)
+		result := lowerThanExpectedVersion(context.Background(), k)
+		require.Equal(t, v, result, k)
 	}
 }
