@@ -20,7 +20,7 @@ func TestExecAndPassError(t *testing.T) {
 	}
 
 	_, err := execAndPassErr(context.Background(), "which", "__non_existing__")
-	assert.EqualError(t, err, "which __non_existing__:  exit status 1")
+	assert.EqualError(t, err, "which __non_existing__: exit status 1")
 }
 
 func TestDetectPython(t *testing.T) {
@@ -77,7 +77,7 @@ func testTempdir(t *testing.T, dir *string) func() {
 
 func TestPyError(t *testing.T) {
 	_, err := Py(context.Background(), "__non_existing__.py")
-	assert.Contains(t, err.Error(), "can't open file")
+	assert.Contains(t, err.Error(), "exit status 2")
 }
 
 func TestPyInline(t *testing.T) {

@@ -75,7 +75,7 @@ func All(ctx context.Context) map[string]string {
 		m[split[0]] = split[1]
 	}
 	// override existing environment variables with the ones we set
-	for k, v := range copyMap(getMap(ctx)) {
+	for k, v := range getMap(ctx) {
 		m[k] = v
 	}
 	return m

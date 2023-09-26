@@ -21,7 +21,7 @@ func TestBackground(t *testing.T) {
 	ctx := context.Background()
 	res, err := Background(ctx, []string{"echo", "1"}, WithDir("/"))
 	assert.NoError(t, err)
-	assert.Equal(t, "1", res)
+	assert.Equal(t, "1\n", res)
 }
 
 func TestBackgroundOnlyStdoutGetsoutOnSuccess(t *testing.T) {
@@ -35,28 +35,37 @@ func TestBackgroundOnlyStdoutGetsoutOnSuccess(t *testing.T) {
 
 func TestBackgroundCombinedOutput(t *testing.T) {
 	ctx := context.Background()
-	var buf bytes.Buffer
+	buf := bytes.Buffer{}
 	res, err := Background(ctx, []string{
-		"python3", "-c", "import sys; sys.stderr.write('1'); sys.stdout.write('2')",
+		"python3", "-c", "import sys, time; " +
+			`sys.stderr.write("1\n"); sys.stderr.flush(); ` +
+			"time.sleep(0.001); " +
+			"print('2', flush=True); sys.stdout.flush(); " +
+			"time.sleep(0.001)",
 	}, WithCombinedOutput(&buf))
 	assert.NoError(t, err)
-	assert.Equal(t, "2", res)
-	assert.Equal(t, "12", buf.String())
+	assert.Equal(t, "2\n", res)
+	assert.Equal(t, "1\n2\n", buf.String())
 }
 
 func TestBackgroundCombinedOutputFailure(t *testing.T) {
 	ctx := context.Background()
-	var buf bytes.Buffer
+	buf := bytes.Buffer{}
 	res, err := Background(ctx, []string{
-		"python3", "-c", "import sys; sys.stderr.write('1'); sys.stdout.write('2'); sys.exit(42)",
+		"python3", "-c", "import sys, time; " +
+			`sys.stderr.write("1\n"); sys.stderr.flush(); ` +
+			"time.sleep(0.001); " +
+			"print('2', flush=True); sys.stdout.flush(); " +
+			"time.sleep(0.001); " +
+			"sys.exit(42)",
 	}, WithCombinedOutput(&buf))
 	var processErr *ProcessError
 	if assert.ErrorAs(t, err, &processErr) {
-		assert.Equal(t, "1", processErr.Stderr)
-		assert.Equal(t, "2", processErr.Stdout)
+		assert.Equal(t, "1\n", processErr.Stderr)
+		assert.Equal(t, "2\n", processErr.Stdout)
 	}
-	assert.Equal(t, "2", res)
-	assert.Equal(t, "12", buf.String())
+	assert.Equal(t, "2\n", res)
+	assert.Equal(t, "1\n2\n", buf.String())
 }
 
 func TestBackgroundNoStdin(t *testing.T) {

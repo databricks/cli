@@ -15,7 +15,7 @@ func TestForwarded(t *testing.T) {
 	var buf bytes.Buffer
 	err := Forwarded(ctx, []string{
 		"python3", "-c", "print(input('input: '))",
-	}, strings.NewReader("abc\n"), &buf)
+	}, strings.NewReader("abc\n"), &buf, &buf)
 	assert.NoError(t, err)
 
 	assert.Equal(t, "input: abc", strings.TrimSpace(buf.String()))
@@ -26,7 +26,7 @@ func TestForwardedFails(t *testing.T) {
 	var buf bytes.Buffer
 	err := Forwarded(ctx, []string{
 		"_non_existent_",
-	}, strings.NewReader("abc\n"), &buf)
+	}, strings.NewReader("abc\n"), &buf, &buf)
 	assert.NotNil(t, err)
 }
 
@@ -35,7 +35,7 @@ func TestForwardedFailsOnStdinPipe(t *testing.T) {
 	var buf bytes.Buffer
 	err := Forwarded(ctx, []string{
 		"_non_existent_",
-	}, strings.NewReader("abc\n"), &buf, func(_ context.Context, c *exec.Cmd) error {
+	}, strings.NewReader("abc\n"), &buf, &buf, func(_ context.Context, c *exec.Cmd) error {
 		c.Stdin = strings.NewReader("x")
 		return nil
 	})

@@ -6,21 +6,12 @@ import (
 	"fmt"
 	"io"
 	"os/exec"
-
-	"github.com/databricks/cli/libs/env"
 )
 
 type execOption func(context.Context, *exec.Cmd) error
 
 func WithEnv(key, value string) execOption {
 	return func(ctx context.Context, c *exec.Cmd) error {
-		// we pull the env through lib/env such that we can run
-		// parallel tests with anything using libs/process.
-		if c.Env == nil {
-			for k, v := range env.All(ctx) {
-				c.Env = append(c.Env, fmt.Sprintf("%s=%s", k, v))
-			}
-		}
 		v := fmt.Sprintf("%s=%s", key, value)
 		c.Env = append(c.Env, v)
 		return nil

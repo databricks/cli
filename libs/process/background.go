@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 )
 
@@ -22,18 +23,24 @@ func (perr *ProcessError) Unwrap() error {
 }
 
 func (perr *ProcessError) Error() string {
-	return fmt.Sprintf("%s: %s %s", perr.Command, perr.Stderr, perr.Err)
+	return fmt.Sprintf("%s: %s", perr.Command, perr.Err)
 }
 
 func Background(ctx context.Context, args []string, opts ...execOption) (string, error) {
 	commandStr := strings.Join(args, " ")
 	log.Debugf(ctx, "running: %s", commandStr)
 	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
-	var stdout, stderr bytes.Buffer
+	stdout := bytes.Buffer{}
+	stderr := bytes.Buffer{}
 	// For background processes, there's no standard input
 	cmd.Stdin = nil
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
+	// we pull the env through lib/env such that we can run
+	// parallel tests with anything using libs/process.
+	for k, v := range env.All(ctx) {
+		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", k, v))
+	}
 	for _, o := range opts {
 		err := o(ctx, cmd)
 		if err != nil {

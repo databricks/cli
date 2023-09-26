@@ -2,28 +2,29 @@ package process
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"os/exec"
 	"strings"
 
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 )
 
-func Forwarded(ctx context.Context, args []string, src io.Reader, dst io.Writer, opts ...execOption) error {
+func Forwarded(ctx context.Context, args []string, src io.Reader, outWriter, errWriter io.Writer, opts ...execOption) error {
 	commandStr := strings.Join(args, " ")
 	log.Debugf(ctx, "starting: %s", commandStr)
 	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
 
-	// make sure to sync on writing to stdout
-	reader, writer := io.Pipe()
-
 	// empirical tests showed buffered copies being more responsive
-	go io.CopyBuffer(dst, reader, make([]byte, 128))
-	defer reader.Close()
-	defer writer.Close()
-	cmd.Stdout = writer
-	cmd.Stderr = writer
+	cmd.Stdout = outWriter
+	cmd.Stderr = errWriter
 	cmd.Stdin = src
+	// we pull the env through lib/env such that we can run
+	// parallel tests with anything using libs/process.
+	for k, v := range env.All(ctx) {
+		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", k, v))
+	}
 
 	// apply common options
 	for _, o := range opts {
