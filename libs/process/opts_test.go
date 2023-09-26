@@ -9,7 +9,7 @@ import (
 )
 
 func TestWithEnvs(t *testing.T) {
-	if runtime.GOOS != "windows" {
+	if runtime.GOOS == "windows" {
 		// Skipping test on windows for now because of the following error:
 		// /bin/sh -c echo $FOO $BAR:  exec: "/bin/sh": file does not exist
 		t.SkipNow()
