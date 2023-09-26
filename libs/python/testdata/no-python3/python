@@ -1,0 +1,6 @@
+#!/bin/sh
+
+# this is an emulation of Windows App Store stub
+>&2 echo "Python was not found; run without arguments to install from the Microsoft Store, ..."
+
+echo "Python"
