@@ -2,9 +2,12 @@ package sync
 
 import (
 	"fmt"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/databricks/cli/libs/fileset"
+	"github.com/databricks/cli/libs/notebook"
 )
 
 // SnapshotState keeps track of files on the local filesystem and their corresponding
@@ -44,12 +47,21 @@ func NewSnapshotState(localFiles []fileset.File) (*SnapshotState, error) {
 
 	// Compute the new state.
 	for _, f := range localFiles {
-		fs.LastModifiedTimes[f.Relative] = f.Modified()
-		remoteName, err := f.WsfsPath()
+		// Compute the remote name the file will have in WSFS
+		remoteName := filepath.ToSlash(f.Relative)
+		isNotebook, _, err := notebook.Detect(f.Absolute)
 		if err != nil {
-			return nil, err
+			// Ignore this file if we're unable to determine the notebook type.
+			// Trying to upload such a file to the workspace would fail anyway.
+			return nil, nil
+		}
+		if isNotebook {
+			ext := filepath.Ext(remoteName)
+			remoteName = strings.TrimSuffix(remoteName, ext)
 		}
 
+		// Add the file to snapshot state
+		fs.LastModifiedTimes[f.Relative] = f.Modified()
 		if existingLocalName, ok := fs.RemoteToLocalNames[remoteName]; ok {
 			return nil, fmt.Errorf("both %s and %s point to the same remote file location %s. Please remove one of them from your local project", existingLocalName, f.Relative, remoteName)
 		}

@@ -2,11 +2,7 @@ package fileset
 
 import (
 	"io/fs"
-	"path/filepath"
-	"strings"
 	"time"
-
-	"github.com/databricks/cli/libs/notebook"
 )
 
 type File struct {
@@ -21,17 +17,4 @@ func (f File) Modified() (ts time.Time) {
 		return ts
 	}
 	return info.ModTime()
-}
-
-func (f File) WsfsPath() (string, error) {
-	workspacePath := filepath.ToSlash(f.Relative)
-	isNotebook, _, err := notebook.Detect(f.Absolute)
-	if err != nil {
-		return "", err
-	}
-	if isNotebook {
-		ext := filepath.Ext(workspacePath)
-		workspacePath = strings.TrimSuffix(workspacePath, ext)
-	}
-	return workspacePath, nil
 }
