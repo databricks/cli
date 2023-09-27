@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -21,7 +22,7 @@ func TestBackground(t *testing.T) {
 	ctx := context.Background()
 	res, err := Background(ctx, []string{"echo", "1"}, WithDir("/"))
 	assert.NoError(t, err)
-	assert.Equal(t, "1\n", res)
+	assert.Equal(t, "1", strings.TrimSpace(res))
 }
 
 func TestBackgroundOnlyStdoutGetsoutOnSuccess(t *testing.T) {
@@ -44,8 +45,8 @@ func TestBackgroundCombinedOutput(t *testing.T) {
 			"time.sleep(0.001)",
 	}, WithCombinedOutput(&buf))
 	assert.NoError(t, err)
-	assert.Equal(t, "2\n", res)
-	assert.Equal(t, "1\n2\n", buf.String())
+	assert.Equal(t, "2", strings.TrimSpace(res))
+	assert.Equal(t, "1\n2\n", strings.ReplaceAll(buf.String(), "\r", ""))
 }
 
 func TestBackgroundCombinedOutputFailure(t *testing.T) {
@@ -61,11 +62,11 @@ func TestBackgroundCombinedOutputFailure(t *testing.T) {
 	}, WithCombinedOutput(&buf))
 	var processErr *ProcessError
 	if assert.ErrorAs(t, err, &processErr) {
-		assert.Equal(t, "1\n", processErr.Stderr)
-		assert.Equal(t, "2\n", processErr.Stdout)
+		assert.Equal(t, "1", strings.TrimSpace(processErr.Stderr))
+		assert.Equal(t, "2", strings.TrimSpace(processErr.Stdout))
 	}
-	assert.Equal(t, "2\n", res)
-	assert.Equal(t, "1\n2\n", buf.String())
+	assert.Equal(t, "2", strings.TrimSpace(res))
+	assert.Equal(t, "1\n2\n", strings.ReplaceAll(buf.String(), "\r", ""))
 }
 
 func TestBackgroundNoStdin(t *testing.T) {

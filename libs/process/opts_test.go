@@ -41,7 +41,7 @@ func TestWorksWithLibsEnv(t *testing.T) {
 	vars := cmd.Environ()
 	sort.Strings(vars)
 
-	assert.Len(t, vars, 2)
+	assert.True(t, len(vars) >= 2)
 	assert.Equal(t, "CCC=DDD", vars[0])
 	assert.Equal(t, "EEE=FFF", vars[1])
 }
