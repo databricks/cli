@@ -153,3 +153,43 @@ func TestValidateInstanceEnum(t *testing.T) {
 	assert.EqualError(t, schema.validateEnum(invalidIntInstance), "expected value of property bar to be one of [2 4 6]. Found: 1")
 	assert.EqualError(t, schema.ValidateInstance(invalidIntInstance), "expected value of property bar to be one of [2 4 6]. Found: 1")
 }
+
+func TestValidateInstancePattern(t *testing.T) {
+	schema, err := Load("./testdata/instance-validate/test-schema-pattern.json")
+	require.NoError(t, err)
+
+	validInstance := map[string]any{
+		"foo": "axyzc",
+	}
+	assert.NoError(t, schema.validatePattern(validInstance))
+	assert.NoError(t, schema.ValidateInstance(validInstance))
+
+	invalidInstanceValue := map[string]any{
+		"foo": "xyz",
+	}
+	assert.EqualError(t, schema.validatePattern(invalidInstanceValue), "invalid value for foo: \"xyz\". Expected to match regex pattern: a.*c")
+	assert.EqualError(t, schema.ValidateInstance(invalidInstanceValue), "invalid value for foo: \"xyz\". Expected to match regex pattern: a.*c")
+
+	invalidInstanceType := map[string]any{
+		"foo": 1,
+	}
+	assert.EqualError(t, schema.validatePattern(invalidInstanceType), "invalid value for foo: 1. Expected a value of type string")
+	assert.EqualError(t, schema.ValidateInstance(invalidInstanceType), "incorrect type for property foo: expected type string, but value is 1")
+}
+
+func TestValidateInstancePatternWithCustomMessage(t *testing.T) {
+	schema, err := Load("./testdata/instance-validate/test-schema-pattern-with-custom-message.json")
+	require.NoError(t, err)
+
+	validInstance := map[string]any{
+		"foo": "axyzc",
+	}
+	assert.NoError(t, schema.validatePattern(validInstance))
+	assert.NoError(t, schema.ValidateInstance(validInstance))
+
+	invalidInstanceValue := map[string]any{
+		"foo": "xyz",
+	}
+	assert.EqualError(t, schema.validatePattern(invalidInstanceValue), "invalid value for foo: \"xyz\". Please enter a string starting with 'a' and ending with 'c'")
+	assert.EqualError(t, schema.ValidateInstance(invalidInstanceValue), "invalid value for foo: \"xyz\". Please enter a string starting with 'a' and ending with 'c'")
+}

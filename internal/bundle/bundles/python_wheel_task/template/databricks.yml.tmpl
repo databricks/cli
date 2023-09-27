@@ -4,6 +4,11 @@ bundle:
 workspace:
   root_path: "~/.bundle/{{.unique_id}}"
 
+{{if .python_wheel_wrapper}}
+experimental:
+  python_wheel_wrapper: true
+{{end}}
+
 resources:
   jobs:
     some_other_job:
@@ -14,6 +19,7 @@ resources:
             num_workers: 1
             spark_version: "{{.spark_version}}"
             node_type_id: "{{.node_type_id}}"
+            data_security_mode: USER_ISOLATION
           python_wheel_task:
             package_name: my_test_code
             entry_point: run
