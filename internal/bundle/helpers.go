@@ -221,7 +221,7 @@ func temporaryRepo(t *testing.T, w *databricks.WorkspaceClient) string {
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		t.Logf("Removing DVFS folder:%s", repoPath)
+		t.Logf("Removing repo: %s", repoPath)
 		err := w.Repos.Delete(ctx, workspace.DeleteRepoRequest{
 			RepoId: repoInfo.Id,
 		})
