@@ -1,4 +1,4 @@
-package bundle
+package python
 
 import (
 	"bytes"
@@ -62,6 +62,17 @@ type testOpts struct {
 	wheelSparkVersions      []string
 }
 
+var sparkVersions = []string{
+	"11.3.x-scala2.12",
+	"12.2.x-scala2.12",
+	"13.0.x-scala2.12",
+	"13.1.x-scala2.12",
+	"13.2.x-scala2.12",
+	"13.3.x-scala2.12",
+	"14.0.x-scala2.12",
+	"14.1.x-scala2.12",
+}
+
 func TestAccRunPythonTaskWorkspace(t *testing.T) {
 	// TODO: remove RUN_PYTHON_TASKS_TEST when ready to be executed as part of nightly
 	internal.GetEnvOrSkipTest(t, "RUN_PYTHON_TASKS_TEST")
@@ -115,14 +126,14 @@ func runPythonTasks(t *testing.T, tw *testFiles, opts testOpts) {
 
 	w := tw.w
 
-	nodeTypeId := getNodeTypeId(env)
+	nodeTypeId := internal.GetNodeTypeId(env)
 	tasks := make([]jobs.SubmitTask, 0)
 	if opts.includeNotebookTasks {
-		tasks = append(tasks, generateNotebookTasks(tw.pyNotebookPath, nodeTypeId)...)
+		tasks = append(tasks, internal.GenerateNotebookTasks(tw.pyNotebookPath, sparkVersions, nodeTypeId)...)
 	}
 
 	if opts.includeSparkPythonTasks {
-		tasks = append(tasks, generateSparkPythonTasks(tw.sparkPythonPath, nodeTypeId)...)
+		tasks = append(tasks, internal.GenerateSparkPythonTasks(tw.sparkPythonPath, sparkVersions, nodeTypeId)...)
 	}
 
 	if opts.includeWheelTasks {
@@ -130,7 +141,7 @@ func runPythonTasks(t *testing.T, tw *testFiles, opts testOpts) {
 		if len(opts.wheelSparkVersions) > 0 {
 			versions = opts.wheelSparkVersions
 		}
-		tasks = append(tasks, generateWheelTasks(tw.wheelPath, nodeTypeId, versions)...)
+		tasks = append(tasks, internal.GenerateWheelTasks(tw.wheelPath, versions, nodeTypeId)...)
 	}
 
 	ctx := context.Background()
@@ -171,7 +182,7 @@ func prepareWorkspaceFiles(t *testing.T) *testFiles {
 	w, err := databricks.NewWorkspaceClient()
 	require.NoError(t, err)
 
-	baseDir := temporaryWorkspaceDir(t, w)
+	baseDir := internal.TemporaryWorkspaceDir(t, w)
 	pyNotebookPath := path.Join(baseDir, "test.py")
 
 	err = w.Workspace.Import(ctx, workspace.Import{
@@ -217,7 +228,7 @@ func prepareDBFSFiles(t *testing.T) *testFiles {
 	w, err := databricks.NewWorkspaceClient()
 	require.NoError(t, err)
 
-	baseDir := temporaryDbfsDir(t, w)
+	baseDir := internal.TemporaryDbfsDir(t, w)
 	f, err := filer.NewDbfsClient(w, baseDir)
 	require.NoError(t, err)
 
@@ -245,7 +256,7 @@ func prepareRepoFiles(t *testing.T) *testFiles {
 	w, err := databricks.NewWorkspaceClient()
 	require.NoError(t, err)
 
-	repo := temporaryRepo(t, w)
+	repo := internal.TemporaryRepo(t, w)
 	return &testFiles{
 		w:               w,
 		pyNotebookPath:  path.Join(repo, "test"),

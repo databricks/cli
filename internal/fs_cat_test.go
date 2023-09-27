@@ -20,7 +20,7 @@ func TestAccFsCatForDbfs(t *testing.T) {
 	w, err := databricks.NewWorkspaceClient()
 	require.NoError(t, err)
 
-	tmpDir := temporaryDbfsDir(t, w)
+	tmpDir := TemporaryDbfsDir(t, w)
 
 	f, err := filer.NewDbfsClient(w, tmpDir)
 	require.NoError(t, err)
@@ -54,7 +54,7 @@ func TestAccFsCatDoesNotSupportOutputModeJson(t *testing.T) {
 	w, err := databricks.NewWorkspaceClient()
 	require.NoError(t, err)
 
-	tmpDir := temporaryDbfsDir(t, w)
+	tmpDir := TemporaryDbfsDir(t, w)
 
 	f, err := filer.NewDbfsClient(w, tmpDir)
 	require.NoError(t, err)

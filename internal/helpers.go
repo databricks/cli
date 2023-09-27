@@ -17,6 +17,12 @@ import (
 
 	"github.com/databricks/cli/cmd"
 	_ "github.com/databricks/cli/cmd/version"
+	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/databricks-sdk-go/service/compute"
+	"github.com/databricks/databricks-sdk-go/service/files"
+	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/require"
@@ -271,4 +277,159 @@ func writeFile(t *testing.T, name string, body string) string {
 	require.NoError(t, err)
 	f.Close()
 	return f.Name()
+}
+
+func GenerateNotebookTasks(notebookPath string, versions []string, nodeTypeId string) []jobs.SubmitTask {
+	tasks := make([]jobs.SubmitTask, 0)
+	for i := 0; i < len(versions); i++ {
+		task := jobs.SubmitTask{
+			TaskKey: fmt.Sprintf("notebook_%s", strings.ReplaceAll(versions[i], ".", "_")),
+			NotebookTask: &jobs.NotebookTask{
+				NotebookPath: notebookPath,
+			},
+			NewCluster: &compute.ClusterSpec{
+				SparkVersion:     versions[i],
+				NumWorkers:       1,
+				NodeTypeId:       nodeTypeId,
+				DataSecurityMode: compute.DataSecurityModeUserIsolation,
+			},
+		}
+		tasks = append(tasks, task)
+	}
+
+	return tasks
+}
+
+func GenerateSparkPythonTasks(notebookPath string, versions []string, nodeTypeId string) []jobs.SubmitTask {
+	tasks := make([]jobs.SubmitTask, 0)
+	for i := 0; i < len(versions); i++ {
+		task := jobs.SubmitTask{
+			TaskKey: fmt.Sprintf("spark_%s", strings.ReplaceAll(versions[i], ".", "_")),
+			SparkPythonTask: &jobs.SparkPythonTask{
+				PythonFile: notebookPath,
+			},
+			NewCluster: &compute.ClusterSpec{
+				SparkVersion:     versions[i],
+				NumWorkers:       1,
+				NodeTypeId:       nodeTypeId,
+				DataSecurityMode: compute.DataSecurityModeUserIsolation,
+			},
+		}
+		tasks = append(tasks, task)
+	}
+
+	return tasks
+}
+
+func GenerateWheelTasks(wheelPath string, versions []string, nodeTypeId string) []jobs.SubmitTask {
+	tasks := make([]jobs.SubmitTask, 0)
+	for i := 0; i < len(versions); i++ {
+		task := jobs.SubmitTask{
+			TaskKey: fmt.Sprintf("whl_%s", strings.ReplaceAll(versions[i], ".", "_")),
+			PythonWheelTask: &jobs.PythonWheelTask{
+				PackageName: "my_test_code",
+				EntryPoint:  "run",
+			},
+			NewCluster: &compute.ClusterSpec{
+				SparkVersion:     versions[i],
+				NumWorkers:       1,
+				NodeTypeId:       nodeTypeId,
+				DataSecurityMode: compute.DataSecurityModeUserIsolation,
+			},
+			Libraries: []compute.Library{
+				{Whl: wheelPath},
+			},
+		}
+		tasks = append(tasks, task)
+	}
+
+	return tasks
+}
+
+func TemporaryWorkspaceDir(t *testing.T, w *databricks.WorkspaceClient) string {
+	ctx := context.Background()
+	me, err := w.CurrentUser.Me(ctx)
+	require.NoError(t, err)
+
+	basePath := fmt.Sprintf("/Users/%s/%s", me.UserName, RandomName("integration-test-wsfs-"))
+
+	t.Logf("Creating %s", basePath)
+	err = w.Workspace.MkdirsByPath(ctx, basePath)
+	require.NoError(t, err)
+
+	// Remove test directory on test completion.
+	t.Cleanup(func() {
+		t.Logf("Removing %s", basePath)
+		err := w.Workspace.Delete(ctx, workspace.Delete{
+			Path:      basePath,
+			Recursive: true,
+		})
+		if err == nil || apierr.IsMissing(err) {
+			return
+		}
+		t.Logf("Unable to remove temporary workspace directory %s: %#v", basePath, err)
+	})
+
+	return basePath
+}
+
+func TemporaryDbfsDir(t *testing.T, w *databricks.WorkspaceClient) string {
+	ctx := context.Background()
+	path := fmt.Sprintf("/tmp/%s", RandomName("integration-test-dbfs-"))
+
+	t.Logf("Creating DBFS folder:%s", path)
+	err := w.Dbfs.MkdirsByPath(ctx, path)
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		t.Logf("Removing DBFS folder:%s", path)
+		err := w.Dbfs.Delete(ctx, files.Delete{
+			Path:      path,
+			Recursive: true,
+		})
+		if err == nil || apierr.IsMissing(err) {
+			return
+		}
+		t.Logf("unable to remove temporary dbfs directory %s: %#v", path, err)
+	})
+
+	return path
+}
+
+func TemporaryRepo(t *testing.T, w *databricks.WorkspaceClient) string {
+	ctx := context.Background()
+	me, err := w.CurrentUser.Me(ctx)
+	require.NoError(t, err)
+
+	repoPath := fmt.Sprintf("/Repos/%s/%s", me.UserName, RandomName("integration-test-repo-"))
+
+	t.Logf("Creating repo:%s", repoPath)
+	repoInfo, err := w.Repos.Create(ctx, workspace.CreateRepo{
+		Url:      "https://github.com/andrewnester/python-info",
+		Provider: "github",
+		Path:     repoPath,
+	})
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		t.Logf("Removing repo: %s", repoPath)
+		err := w.Repos.Delete(ctx, workspace.DeleteRepoRequest{
+			RepoId: repoInfo.Id,
+		})
+		if err == nil || apierr.IsMissing(err) {
+			return
+		}
+		t.Logf("unable to remove repo %s: %#v", repoPath, err)
+	})
+
+	return repoPath
+}
+
+func GetNodeTypeId(env string) string {
+	if env == "gcp" {
+		return "n1-standard-4"
+	} else if env == "aws" {
+		return "i3.xlarge"
+	}
+	return "Standard_DS4_v2"
 }
