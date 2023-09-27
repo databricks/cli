@@ -156,7 +156,7 @@ func (s *Sync) RunOnce(ctx context.Context) error {
 		return err
 	}
 
-	operators, err := s.snapshot.operators(ctx, files)
+	operators, err := s.snapshot.diff(ctx, files)
 	if err != nil {
 		return err
 	}
@@ -167,7 +167,7 @@ func (s *Sync) RunOnce(ctx context.Context) error {
 		return nil
 	}
 
-	err = s.applyOperators(ctx, operators)
+	err = s.applyDiff(ctx, operators)
 	if err != nil {
 		return err
 	}

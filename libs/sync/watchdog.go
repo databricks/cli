@@ -102,7 +102,7 @@ func groupRunParallel(ctx context.Context, paths []string, fn func(context.Conte
 	return group.Wait()
 }
 
-func (s *Sync) applyOperators(ctx context.Context, d diff) error {
+func (s *Sync) applyDiff(ctx context.Context, d diff) error {
 	var err error
 
 	// Delete files in parallel.
