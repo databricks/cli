@@ -54,10 +54,9 @@ func (d *diff) addRemovedFiles(after *SnapshotState, before *SnapshotState) {
 func (d *diff) addFilesWithRemoteNameChanged(after *SnapshotState, before *SnapshotState) {
 	for localName, beforeRemoteName := range before.LocalToRemoteNames {
 		afterRemoteName, ok := after.LocalToRemoteNames[localName]
-		if !ok || afterRemoteName == beforeRemoteName {
-			continue
+		if ok && afterRemoteName != beforeRemoteName {
+			d.delete = append(d.delete, beforeRemoteName)
 		}
-		d.delete = append(d.delete, beforeRemoteName)
 	}
 }
 
@@ -79,10 +78,9 @@ func (d *diff) addNewFiles(after *SnapshotState, before *SnapshotState) {
 func (d *diff) addUpdatedFiles(after *SnapshotState, before *SnapshotState) {
 	for localName, modTime := range after.LastModifiedTimes {
 		prevModTime, ok := before.LastModifiedTimes[localName]
-		if !ok || !modTime.After(prevModTime) {
-			continue
+		if ok && modTime.After(prevModTime) {
+			d.put = append(d.put, filepath.ToSlash(localName))
 		}
-		d.put = append(d.put, filepath.ToSlash(localName))
 	}
 }
 
