@@ -32,7 +32,7 @@ func TestDiff(t *testing.T) {
 	fileSet, err := git.NewFileSet(projectDir)
 	require.NoError(t, err)
 	state := Snapshot{
-		FilesState: &FilesState{
+		SnapshotState: &SnapshotState{
 			LastModifiedTimes:  make(map[string]time.Time),
 			LocalToRemoteNames: make(map[string]string),
 			RemoteToLocalNames: make(map[string]string),
@@ -96,7 +96,7 @@ func TestSymlinkDiff(t *testing.T) {
 	fileSet, err := git.NewFileSet(projectDir)
 	require.NoError(t, err)
 	state := Snapshot{
-		FilesState: &FilesState{
+		SnapshotState: &SnapshotState{
 			LastModifiedTimes:  make(map[string]time.Time),
 			LocalToRemoteNames: make(map[string]string),
 			RemoteToLocalNames: make(map[string]string),
@@ -127,7 +127,7 @@ func TestFolderDiff(t *testing.T) {
 	fileSet, err := git.NewFileSet(projectDir)
 	require.NoError(t, err)
 	state := Snapshot{
-		FilesState: &FilesState{
+		SnapshotState: &SnapshotState{
 			LastModifiedTimes:  make(map[string]time.Time),
 			LocalToRemoteNames: make(map[string]string),
 			RemoteToLocalNames: make(map[string]string),
@@ -172,7 +172,7 @@ func TestPythonNotebookDiff(t *testing.T) {
 	fileSet, err := git.NewFileSet(projectDir)
 	require.NoError(t, err)
 	state := Snapshot{
-		FilesState: &FilesState{
+		SnapshotState: &SnapshotState{
 			LastModifiedTimes:  make(map[string]time.Time),
 			LocalToRemoteNames: make(map[string]string),
 			RemoteToLocalNames: make(map[string]string),
@@ -247,7 +247,7 @@ func TestErrorWhenIdenticalRemoteName(t *testing.T) {
 	fileSet, err := git.NewFileSet(projectDir)
 	require.NoError(t, err)
 	state := Snapshot{
-		FilesState: &FilesState{
+		SnapshotState: &SnapshotState{
 			LastModifiedTimes:  make(map[string]time.Time),
 			LocalToRemoteNames: make(map[string]string),
 			RemoteToLocalNames: make(map[string]string),
@@ -284,7 +284,7 @@ func TestNoErrorRenameWithIdenticalRemoteName(t *testing.T) {
 	fileSet, err := git.NewFileSet(projectDir)
 	require.NoError(t, err)
 	state := Snapshot{
-		FilesState: &FilesState{
+		SnapshotState: &SnapshotState{
 			LastModifiedTimes:  make(map[string]time.Time),
 			LocalToRemoteNames: make(map[string]string),
 			RemoteToLocalNames: make(map[string]string),

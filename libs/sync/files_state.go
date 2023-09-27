@@ -8,9 +8,9 @@ import (
 	"github.com/databricks/cli/libs/fileset"
 )
 
-// FilesState keeps track of files on the local filesystem and their corresponding
+// SnapshotState keeps track of files on the local filesystem and their corresponding
 // entries in WSFS.
-type FilesState struct {
+type SnapshotState struct {
 	// Map of local file names to their last recorded modified time. Files found
 	// to have a newer mtime have their content synced to their remote version.
 	LastModifiedTimes map[string]time.Time `json:"last_modified_times"`
@@ -25,9 +25,9 @@ type FilesState struct {
 	RemoteToLocalNames map[string]string `json:"remote_to_local_names"`
 }
 
-// Convert an array of files on the local file system to a FilesState representation.
-func toFilesState(ctx context.Context, localFiles []fileset.File) (*FilesState, error) {
-	fs := &FilesState{
+// Convert an array of files on the local file system to a SnapshotState representation.
+func toSnapshotState(ctx context.Context, localFiles []fileset.File) (*SnapshotState, error) {
+	fs := &SnapshotState{
 		LastModifiedTimes:  make(map[string]time.Time),
 		LocalToRemoteNames: make(map[string]string),
 		RemoteToLocalNames: make(map[string]string),
@@ -69,7 +69,7 @@ func toFilesState(ctx context.Context, localFiles []fileset.File) (*FilesState, 
 //     and vice versa.
 //  2. LocalToRemoteNames and RemoteToLocalNames together form a 1:1 mapping of
 //     local <-> remote file names.
-func (fs *FilesState) validate() error {
+func (fs *SnapshotState) validate() error {
 	// Validate invariant (1)
 	for localName := range fs.LastModifiedTimes {
 		if _, ok := fs.LocalToRemoteNames[localName]; !ok {

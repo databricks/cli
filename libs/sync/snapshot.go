@@ -48,7 +48,7 @@ type Snapshot struct {
 	// Path in workspace for project repo
 	RemotePath string `json:"remote_path"`
 
-	*FilesState
+	*SnapshotState
 }
 
 const syncSnapshotDirName = "sync-snapshots"
@@ -87,7 +87,7 @@ func newSnapshot(ctx context.Context, opts *SyncOptions) (*Snapshot, error) {
 		Version:    LatestSnapshotVersion,
 		Host:       opts.Host,
 		RemotePath: opts.RemotePath,
-		FilesState: &FilesState{
+		SnapshotState: &SnapshotState{
 			LastModifiedTimes:  make(map[string]time.Time),
 			LocalToRemoteNames: make(map[string]string),
 			RemoteToLocalNames: make(map[string]string),
@@ -161,12 +161,12 @@ func loadOrNewSnapshot(ctx context.Context, opts *SyncOptions) (*Snapshot, error
 }
 
 func (s *Snapshot) operators(ctx context.Context, all []fileset.File) (diff, error) {
-	targetState, err := toFilesState(ctx, all)
+	targetState, err := toSnapshotState(ctx, all)
 	if err != nil {
 		return diff{}, fmt.Errorf("error while computing new sync state: %w", err)
 	}
 
-	currentState := s.FilesState
+	currentState := s.SnapshotState
 	if err := currentState.validate(); err != nil {
 		return diff{}, fmt.Errorf("error parsing existing sync state: %w", err)
 	}
@@ -176,6 +176,6 @@ func (s *Snapshot) operators(ctx context.Context, all []fileset.File) (diff, err
 
 	// Update state to new value. This is not persisted to the file system before
 	// the operators are applied successfully.
-	s.FilesState = targetState
+	s.SnapshotState = targetState
 	return operators, nil
 }
