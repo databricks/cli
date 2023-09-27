@@ -1,7 +1,6 @@
 package sync
 
 import (
-	"context"
 	"fmt"
 	"time"
 
@@ -26,7 +25,7 @@ type SnapshotState struct {
 }
 
 // Convert an array of files on the local file system to a SnapshotState representation.
-func toSnapshotState(ctx context.Context, localFiles []fileset.File) (*SnapshotState, error) {
+func NewSnapshotState(localFiles []fileset.File) (*SnapshotState, error) {
 	fs := &SnapshotState{
 		LastModifiedTimes:  make(map[string]time.Time),
 		LocalToRemoteNames: make(map[string]string),

@@ -161,7 +161,7 @@ func loadOrNewSnapshot(ctx context.Context, opts *SyncOptions) (*Snapshot, error
 }
 
 func (s *Snapshot) operators(ctx context.Context, all []fileset.File) (diff, error) {
-	targetState, err := toSnapshotState(ctx, all)
+	targetState, err := NewSnapshotState(ctx, all)
 	if err != nil {
 		return diff{}, fmt.Errorf("error while computing new sync state: %w", err)
 	}
