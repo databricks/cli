@@ -28,15 +28,15 @@ func computeDiff(target *SnapshotState, current *SnapshotState) diff {
 		mkdir:  make([]string, 0),
 		put:    make([]string, 0),
 	}
-	d.caseFilesRemoved(target, current)
-	d.caseRemoteNameChanged(target, current)
-	d.caseFilesAdded(target, current)
-	d.caseFilesUpdated(target, current)
+	d.addRemovedFiles(target, current)
+	d.addFilesWithRemoteNameChanged(target, current)
+	d.addNewFiles(target, current)
+	d.addUpdatedFiles(target, current)
 	return *d
 }
 
 // Add operators for tracked files that no longer exist.
-func (d *diff) caseFilesRemoved(after *SnapshotState, before *SnapshotState) {
+func (d *diff) addRemovedFiles(after *SnapshotState, before *SnapshotState) {
 	for localName, remoteName := range before.LocalToRemoteNames {
 		if _, ok := after.LocalToRemoteNames[localName]; !ok {
 			d.delete = append(d.delete, remoteName)
@@ -51,7 +51,7 @@ func (d *diff) caseFilesRemoved(after *SnapshotState, before *SnapshotState) {
 
 // Cleanup previous remote files for files that had their remote targets change. For
 // example this is possible if you convert a normal python script to a notebook.
-func (d *diff) caseRemoteNameChanged(after *SnapshotState, before *SnapshotState) {
+func (d *diff) addFilesWithRemoteNameChanged(after *SnapshotState, before *SnapshotState) {
 	for localName, beforeRemoteName := range before.LocalToRemoteNames {
 		afterRemoteName, ok := after.LocalToRemoteNames[localName]
 		if !ok || afterRemoteName == beforeRemoteName {
@@ -62,7 +62,7 @@ func (d *diff) caseRemoteNameChanged(after *SnapshotState, before *SnapshotState
 }
 
 // Add operators for files that were not being tracked before.
-func (d *diff) caseFilesAdded(after *SnapshotState, before *SnapshotState) {
+func (d *diff) addNewFiles(after *SnapshotState, before *SnapshotState) {
 	for localName := range after.LastModifiedTimes {
 		if _, ok := before.LastModifiedTimes[localName]; !ok {
 			d.put = append(d.put, filepath.ToSlash(localName))
@@ -76,7 +76,7 @@ func (d *diff) caseFilesAdded(after *SnapshotState, before *SnapshotState) {
 }
 
 // Add operators for files which had their contents updated.
-func (d *diff) caseFilesUpdated(after *SnapshotState, before *SnapshotState) {
+func (d *diff) addUpdatedFiles(after *SnapshotState, before *SnapshotState) {
 	for localName, modTime := range after.LastModifiedTimes {
 		prevModTime, ok := before.LastModifiedTimes[localName]
 		if !ok || !modTime.After(prevModTime) {
