@@ -8,21 +8,21 @@ import (
 )
 
 // List of operations to apply to synchronize local file systems changes to WSFS.
-type operators struct {
+type diff struct {
 	delete []string
 	rmdir  []string
 	mkdir  []string
 	put    []string
 }
 
-func (d operators) IsEmpty() bool {
+func (d diff) IsEmpty() bool {
 	return len(d.put) == 0 && len(d.delete) == 0
 }
 
 // Compute operations required to make files in WSFS reflect current local files.
 // Takes into account changes since the last sync iteration.
-func computeOperators(target *FilesState, current *FilesState) operators {
-	d := &operators{
+func computeDiff(target *FilesState, current *FilesState) diff {
+	d := &diff{
 		delete: make([]string, 0),
 		rmdir:  make([]string, 0),
 		mkdir:  make([]string, 0),
@@ -36,7 +36,7 @@ func computeOperators(target *FilesState, current *FilesState) operators {
 }
 
 // Add operators for tracked files that no longer exist.
-func (d *operators) caseFilesRemoved(after *FilesState, before *FilesState) {
+func (d *diff) caseFilesRemoved(after *FilesState, before *FilesState) {
 	for localName, remoteName := range before.LocalToRemoteNames {
 		if _, ok := after.LocalToRemoteNames[localName]; !ok {
 			d.delete = append(d.delete, remoteName)
@@ -51,7 +51,7 @@ func (d *operators) caseFilesRemoved(after *FilesState, before *FilesState) {
 
 // Cleanup previous remote files for files that had their remote targets change. For
 // example this is possible if you convert a normal python script to a notebook.
-func (d *operators) caseRemoteNameChanged(after *FilesState, before *FilesState) {
+func (d *diff) caseRemoteNameChanged(after *FilesState, before *FilesState) {
 	for localName, beforeRemoteName := range before.LocalToRemoteNames {
 		afterRemoteName, ok := after.LocalToRemoteNames[localName]
 		if !ok || afterRemoteName == beforeRemoteName {
@@ -62,7 +62,7 @@ func (d *operators) caseRemoteNameChanged(after *FilesState, before *FilesState)
 }
 
 // Add operators for files that were not being tracked before.
-func (d *operators) caseFilesAdded(after *FilesState, before *FilesState) {
+func (d *diff) caseFilesAdded(after *FilesState, before *FilesState) {
 	for localName := range after.LastModifiedTimes {
 		if _, ok := before.LastModifiedTimes[localName]; !ok {
 			d.put = append(d.put, filepath.ToSlash(localName))
@@ -76,7 +76,7 @@ func (d *operators) caseFilesAdded(after *FilesState, before *FilesState) {
 }
 
 // Add operators for files which had their contents updated.
-func (d *operators) caseFilesUpdated(after *FilesState, before *FilesState) {
+func (d *diff) caseFilesUpdated(after *FilesState, before *FilesState) {
 	for localName, modTime := range after.LastModifiedTimes {
 		prevModTime, ok := before.LastModifiedTimes[localName]
 		if !ok || !modTime.After(prevModTime) {
@@ -90,7 +90,7 @@ func (d *operators) caseFilesUpdated(after *FilesState, before *FilesState) {
 // Because the underlying mkdir calls create intermediate directories,
 // we can group them together to reduce the total number of calls.
 // This returns a slice of a slice for parity with [groupedRmdir].
-func (d operators) groupedMkdir() [][]string {
+func (d diff) groupedMkdir() [][]string {
 	// Compute the set of prefixes of all paths to create.
 	prefixes := make(map[string]bool)
 	for _, name := range d.mkdir {
@@ -118,7 +118,7 @@ func (d operators) groupedMkdir() [][]string {
 // deleted in parallel, as long as it is processed in order.
 // The first entry will contain leaf directories, the second entry
 // will contain intermediate directories, and so on.
-func (d operators) groupedRmdir() [][]string {
+func (d diff) groupedRmdir() [][]string {
 	// Compute the number of times each directory is a prefix of another directory.
 	prefixes := make(map[string]int)
 	for _, dir := range d.rmdir {

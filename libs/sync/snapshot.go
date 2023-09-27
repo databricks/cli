@@ -160,19 +160,19 @@ func loadOrNewSnapshot(ctx context.Context, opts *SyncOptions) (*Snapshot, error
 	return snapshot, nil
 }
 
-func (s *Snapshot) operators(ctx context.Context, all []fileset.File) (operators, error) {
+func (s *Snapshot) operators(ctx context.Context, all []fileset.File) (diff, error) {
 	targetState, err := toFilesState(ctx, all)
 	if err != nil {
-		return operators{}, fmt.Errorf("error while computing new sync state: %w", err)
+		return diff{}, fmt.Errorf("error while computing new sync state: %w", err)
 	}
 
 	currentState := s.FilesState
 	if err := currentState.validate(); err != nil {
-		return operators{}, fmt.Errorf("error parsing existing sync state: %w", err)
+		return diff{}, fmt.Errorf("error parsing existing sync state: %w", err)
 	}
 
 	// Compute change operations to get from current state to new target state.
-	operators := computeOperators(targetState, currentState)
+	operators := computeDiff(targetState, currentState)
 
 	// Update state to new value. This is not persisted to the file system before
 	// the operators are applied successfully.
