@@ -39,7 +39,9 @@ func transformDevelopmentMode(b *bundle.Bundle) error {
 		if r.Jobs[i].Tags == nil {
 			r.Jobs[i].Tags = make(map[string]string)
 		}
-		r.Jobs[i].Tags["dev"] = b.Config.Workspace.CurrentUser.DisplayName
+		// Note: tag values in jobs must match the following pattern:
+		// ^(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])?$
+		r.Jobs[i].Tags["dev"] = b.Config.Workspace.CurrentUser.ShortName
 		if r.Jobs[i].MaxConcurrentRuns == 0 {
 			r.Jobs[i].MaxConcurrentRuns = developmentConcurrentRuns
 		}
@@ -74,7 +76,7 @@ func transformDevelopmentMode(b *bundle.Bundle) error {
 		} else {
 			r.Experiments[i].Name = dir + "/" + prefix + base
 		}
-		r.Experiments[i].Tags = append(r.Experiments[i].Tags, ml.ExperimentTag{Key: "dev", Value: b.Config.Workspace.CurrentUser.DisplayName})
+		r.Experiments[i].Tags = append(r.Experiments[i].Tags, ml.ExperimentTag{Key: "dev", Value: b.Config.Workspace.CurrentUser.ShortName})
 	}
 
 	for i := range r.ModelServingEndpoints {
