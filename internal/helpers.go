@@ -405,7 +405,7 @@ func TemporaryRepo(t *testing.T, w *databricks.WorkspaceClient) string {
 
 	t.Logf("Creating repo:%s", repoPath)
 	repoInfo, err := w.Repos.Create(ctx, workspace.CreateRepo{
-		Url:      "https://github.com/andrewnester/python-info",
+		Url:      "https://github.com/databricks/cli",
 		Provider: "github",
 		Path:     repoPath,
 	})

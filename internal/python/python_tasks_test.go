@@ -257,10 +257,11 @@ func prepareRepoFiles(t *testing.T) *testFiles {
 	require.NoError(t, err)
 
 	repo := internal.TemporaryRepo(t, w)
+	packagePath := "internal/python/testdata"
 	return &testFiles{
 		w:               w,
-		pyNotebookPath:  path.Join(repo, "test"),
-		sparkPythonPath: path.Join(repo, "spark.py"),
-		wheelPath:       path.Join(repo, "my_test_code-0.0.1-py3-none-any.whl"),
+		pyNotebookPath:  path.Join(repo, packagePath, "test"),
+		sparkPythonPath: path.Join(repo, packagePath, "spark.py"),
+		wheelPath:       path.Join(repo, packagePath, "my_test_code-0.0.1-py3-none-any.whl"),
 	}
 }
