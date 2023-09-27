@@ -8,6 +8,8 @@ import (
 	"os/exec"
 	"runtime"
 	"strings"
+
+	"github.com/databricks/cli/libs/process"
 )
 
 func PyInline(ctx context.Context, inlinePy string) (string, error) {
@@ -88,8 +90,8 @@ func DetectExecutable(ctx context.Context) (string, error) {
 
 func execAndPassErr(ctx context.Context, name string, args ...string) ([]byte, error) {
 	// TODO: move out to a separate package, once we have Maven integration
-	out, err := exec.CommandContext(ctx, name, args...).Output()
-	return out, nicerErr(err)
+	out, err := process.Background(ctx, append([]string{name}, args...))
+	return []byte(out), nicerErr(err)
 }
 
 func getFirstMatch(out string) string {
