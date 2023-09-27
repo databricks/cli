@@ -68,14 +68,29 @@ func TestProcessTargetModeDevelopment(t *testing.T) {
 	m := ProcessTargetMode()
 	err := m.Apply(context.Background(), bundle)
 	require.NoError(t, err)
+
+	// Job 1
 	assert.Equal(t, "[dev lennart] job1", bundle.Config.Resources.Jobs["job1"].Name)
+	assert.Equal(t, bundle.Config.Resources.Jobs["job1"].Tags["dev"], "lennart")
+
+	// Pipeline 1
 	assert.Equal(t, "[dev lennart] pipeline1", bundle.Config.Resources.Pipelines["pipeline1"].Name)
+	assert.True(t, bundle.Config.Resources.Pipelines["pipeline1"].PipelineSpec.Development)
+
+	// Experiment 1
 	assert.Equal(t, "/Users/lennart.kats@databricks.com/[dev lennart] experiment1", bundle.Config.Resources.Experiments["experiment1"].Name)
+	assert.Contains(t, bundle.Config.Resources.Experiments["experiment1"].Experiment.Tags, ml.ExperimentTag{Key: "dev", Value: "lennart"})
+
+	// Experiment 2
 	assert.Equal(t, "[dev lennart] experiment2", bundle.Config.Resources.Experiments["experiment2"].Name)
+	assert.Contains(t, bundle.Config.Resources.Experiments["experiment2"].Experiment.Tags, ml.ExperimentTag{Key: "dev", Value: "lennart"})
+
+	// Model 1
 	assert.Equal(t, "[dev lennart] model1", bundle.Config.Resources.Models["model1"].Name)
+
+	// Model serving endpoint 1
 	assert.Equal(t, "dev_lennart_servingendpoint1", bundle.Config.Resources.ModelServingEndpoints["servingendpoint1"].Name)
 	assert.Equal(t, "dev", bundle.Config.Resources.Experiments["experiment1"].Experiment.Tags[0].Key)
-	assert.True(t, bundle.Config.Resources.Pipelines["pipeline1"].PipelineSpec.Development)
 }
 
 func TestProcessTargetModeDefault(t *testing.T) {
