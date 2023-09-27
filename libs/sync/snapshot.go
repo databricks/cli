@@ -171,11 +171,11 @@ func (s *Snapshot) diff(ctx context.Context, all []fileset.File) (diff, error) {
 		return diff{}, fmt.Errorf("error parsing existing sync state: %w", err)
 	}
 
-	// Compute change operations to get from current state to new target state.
-	operators := computeDiff(targetState, currentState)
+	// Compute diff to apply to get from current state to new target state.
+	diff := computeDiff(targetState, currentState)
 
 	// Update state to new value. This is not persisted to the file system before
-	// the operators are applied successfully.
+	// the diff is applied successfully.
 	s.SnapshotState = targetState
-	return operators, nil
+	return diff, nil
 }

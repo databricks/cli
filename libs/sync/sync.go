@@ -156,18 +156,18 @@ func (s *Sync) RunOnce(ctx context.Context) error {
 		return err
 	}
 
-	operators, err := s.snapshot.diff(ctx, files)
+	change, err := s.snapshot.diff(ctx, files)
 	if err != nil {
 		return err
 	}
 
-	s.notifyStart(ctx, operators)
-	if operators.IsEmpty() {
-		s.notifyComplete(ctx, operators)
+	s.notifyStart(ctx, change)
+	if change.IsEmpty() {
+		s.notifyComplete(ctx, change)
 		return nil
 	}
 
-	err = s.applyDiff(ctx, operators)
+	err = s.applyDiff(ctx, change)
 	if err != nil {
 		return err
 	}
@@ -178,7 +178,7 @@ func (s *Sync) RunOnce(ctx context.Context) error {
 		return err
 	}
 
-	s.notifyComplete(ctx, operators)
+	s.notifyComplete(ctx, change)
 	return nil
 }
 
