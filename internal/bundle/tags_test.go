@@ -79,6 +79,14 @@ func TestAccTagKeyAWS(t *testing.T) {
 		require.Contains(t, msg, `The key must match the regular expression ^[\d \w\+\-=\.:\/@]*$.`)
 	})
 
+	t.Run("unicode", func(t *testing.T) {
+		t.Parallel()
+		err := testTagKey(t, "🍎")
+		require.Error(t, err)
+		msg := strings.ReplaceAll(err.Error(), "\n", " ")
+		require.Contains(t, msg, ` contains non-latin1 characters.`)
+	})
+
 	t.Run("empty", func(t *testing.T) {
 		t.Parallel()
 		err := testTagKey(t, "")
@@ -110,6 +118,14 @@ func TestAccTagKeyAzure(t *testing.T) {
 		require.Contains(t, msg, `The key must match the regular expression ^[^<>\*&%;\\\/\+\?]*$.`)
 	})
 
+	t.Run("unicode", func(t *testing.T) {
+		t.Parallel()
+		err := testTagKey(t, "🍎")
+		require.Error(t, err)
+		msg := strings.ReplaceAll(err.Error(), "\n", " ")
+		require.Contains(t, msg, ` contains non-latin1 characters.`)
+	})
+
 	t.Run("empty", func(t *testing.T) {
 		t.Parallel()
 		err := testTagKey(t, "")
@@ -138,6 +154,14 @@ func TestAccTagKeyGCP(t *testing.T) {
 		require.Error(t, err)
 		msg := strings.ReplaceAll(err.Error(), "\n", " ")
 		require.Contains(t, msg, `The key must match the regular expression ^([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9]$.`)
+	})
+
+	t.Run("unicode", func(t *testing.T) {
+		t.Parallel()
+		err := testTagKey(t, "🍎")
+		require.Error(t, err)
+		msg := strings.ReplaceAll(err.Error(), "\n", " ")
+		require.Contains(t, msg, ` contains non-latin1 characters.`)
 	})
 
 	t.Run("empty", func(t *testing.T) {
