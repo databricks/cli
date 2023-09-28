@@ -44,9 +44,13 @@ func (m *populateCurrentUser) Apply(ctx context.Context, b *bundle.Bundle) error
 func getShortUserName(emailAddress string) string {
 	r := []rune(strings.Split(emailAddress, "@")[0])
 	for i := 0; i < len(r); i++ {
-		if !unicode.IsLetter(r[i]) {
-			r[i] = '_'
+		if unicode.IsLetter(r[i]) {
+			continue
 		}
+		if unicode.IsDigit(r[i]) {
+			continue
+		}
+		r[i] = '_'
 	}
 	return string(r)
 }
