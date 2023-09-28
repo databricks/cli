@@ -32,16 +32,18 @@ func (m *processTargetMode) Name() string {
 func transformDevelopmentMode(b *bundle.Bundle) error {
 	r := b.Config.Resources
 
-	prefix := "[dev " + b.Config.Workspace.CurrentUser.ShortName + "] "
+	shortName := b.Config.Workspace.CurrentUser.ShortName
+	prefix := "[dev " + shortName + "] "
+
+	// Generate a normalized version of the short name that can be used as a tag value.
+	tagValue := b.Tagging.NormalizeValue(shortName)
 
 	for i := range r.Jobs {
 		r.Jobs[i].Name = prefix + r.Jobs[i].Name
 		if r.Jobs[i].Tags == nil {
 			r.Jobs[i].Tags = make(map[string]string)
 		}
-		// Note: tag values in jobs must match the following pattern:
-		// ^(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])?$
-		r.Jobs[i].Tags["dev"] = b.Config.Workspace.CurrentUser.ShortName
+		r.Jobs[i].Tags["dev"] = tagValue
 		if r.Jobs[i].MaxConcurrentRuns == 0 {
 			r.Jobs[i].MaxConcurrentRuns = developmentConcurrentRuns
 		}
@@ -76,7 +78,7 @@ func transformDevelopmentMode(b *bundle.Bundle) error {
 		} else {
 			r.Experiments[i].Name = dir + "/" + prefix + base
 		}
-		r.Experiments[i].Tags = append(r.Experiments[i].Tags, ml.ExperimentTag{Key: "dev", Value: b.Config.Workspace.CurrentUser.ShortName})
+		r.Experiments[i].Tags = append(r.Experiments[i].Tags, ml.ExperimentTag{Key: "dev", Value: tagValue})
 	}
 
 	for i := range r.ModelServingEndpoints {
