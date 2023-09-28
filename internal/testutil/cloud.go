@@ -2,8 +2,6 @@ package testutil
 
 import (
 	"testing"
-
-	"github.com/databricks/cli/internal"
 )
 
 type Cloud int
@@ -35,7 +33,7 @@ func (c Cloud) String() string {
 }
 
 func GetCloud(t *testing.T) Cloud {
-	env := internal.GetEnvOrSkipTest(t, "CLOUD_ENV")
+	env := GetEnvOrSkipTest(t, "CLOUD_ENV")
 	switch env {
 	case "aws":
 		return AWS
