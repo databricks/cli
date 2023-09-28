@@ -67,32 +67,59 @@ func testTagValue(t *testing.T, value string) error {
 	})
 }
 
+type tagTestCase struct {
+	name  string
+	value string
+	fn    func(t *testing.T, value string) error
+	err   string
+}
+
+func runTagTestCases(t *testing.T, cases []tagTestCase) {
+	for i := range cases {
+		tc := cases[i]
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			err := tc.fn(t, tc.value)
+			if tc.err == "" {
+				require.NoError(t, err)
+			} else {
+				require.Error(t, err)
+				msg := strings.ReplaceAll(err.Error(), "\n", " ")
+				require.Contains(t, msg, tc.err)
+			}
+		})
+	}
+}
+
 func TestAccTagKeyAWS(t *testing.T) {
 	testutil.Require(t, testutil.AWS)
 	t.Parallel()
 
-	t.Run("invalid", func(t *testing.T) {
-		t.Parallel()
-		err := testTagKey(t, "café")
-		require.Error(t, err)
-		msg := strings.ReplaceAll(err.Error(), "\n", " ")
-		require.Contains(t, msg, `The key must match the regular expression ^[\d \w\+\-=\.:\/@]*$.`)
-	})
-
-	t.Run("unicode", func(t *testing.T) {
-		t.Parallel()
-		err := testTagKey(t, "🍎")
-		require.Error(t, err)
-		msg := strings.ReplaceAll(err.Error(), "\n", " ")
-		require.Contains(t, msg, ` contains non-latin1 characters.`)
-	})
-
-	t.Run("empty", func(t *testing.T) {
-		t.Parallel()
-		err := testTagKey(t, "")
-		require.Error(t, err)
-		msg := strings.ReplaceAll(err.Error(), "\n", " ")
-		require.Contains(t, msg, ` the minimal length is 1, and the maximum length is 127.`)
+	runTagTestCases(t, []tagTestCase{
+		{
+			name:  "invalid",
+			value: "café",
+			fn:    testTagKey,
+			err:   ` The key must match the regular expression ^[\d \w\+\-=\.:\/@]*$.`,
+		},
+		{
+			name:  "unicode",
+			value: "🍎",
+			fn:    testTagKey,
+			err:   ` contains non-latin1 characters.`,
+		},
+		{
+			name:  "empty",
+			value: "",
+			fn:    testTagKey,
+			err:   ` the minimal length is 1, and the maximum length is 127.`,
+		},
+		{
+			name:  "valid",
+			value: "cafe",
+			fn:    testTagKey,
+			err:   ``,
+		},
 	})
 }
 
@@ -100,38 +127,57 @@ func TestAccTagValueAWS(t *testing.T) {
 	testutil.Require(t, testutil.AWS)
 	t.Parallel()
 
-	err := testTagValue(t, "café")
-	require.Error(t, err)
-	msg := strings.ReplaceAll(err.Error(), "\n", " ")
-	require.Contains(t, msg, `The value must match the regular expression ^[\d \w\+\-=\.:/@]*$.`)
+	runTagTestCases(t, []tagTestCase{
+		{
+			name:  "invalid",
+			value: "café",
+			fn:    testTagValue,
+			err:   ` The value must match the regular expression ^[\d \w\+\-=\.:/@]*$.`,
+		},
+		{
+			name:  "unicode",
+			value: "🍎",
+			fn:    testTagValue,
+			err:   ` contains non-latin1 characters.`,
+		},
+		{
+			name:  "valid",
+			value: "cafe",
+			fn:    testTagValue,
+			err:   ``,
+		},
+	})
 }
 
 func TestAccTagKeyAzure(t *testing.T) {
 	testutil.Require(t, testutil.Azure)
 	t.Parallel()
 
-	t.Run("invalid", func(t *testing.T) {
-		t.Parallel()
-		err := testTagKey(t, "café?")
-		require.Error(t, err)
-		msg := strings.ReplaceAll(err.Error(), "\n", " ")
-		require.Contains(t, msg, `The key must match the regular expression ^[^<>\*&%;\\\/\+\?]*$.`)
-	})
-
-	t.Run("unicode", func(t *testing.T) {
-		t.Parallel()
-		err := testTagKey(t, "🍎")
-		require.Error(t, err)
-		msg := strings.ReplaceAll(err.Error(), "\n", " ")
-		require.Contains(t, msg, ` contains non-latin1 characters.`)
-	})
-
-	t.Run("empty", func(t *testing.T) {
-		t.Parallel()
-		err := testTagKey(t, "")
-		require.Error(t, err)
-		msg := strings.ReplaceAll(err.Error(), "\n", " ")
-		require.Contains(t, msg, ` the minimal length is 1, and the maximum length is 512.`)
+	runTagTestCases(t, []tagTestCase{
+		{
+			name:  "invalid",
+			value: "café?",
+			fn:    testTagKey,
+			err:   ` The key must match the regular expression ^[^<>\*&%;\\\/\+\?]*$.`,
+		},
+		{
+			name:  "unicode",
+			value: "🍎",
+			fn:    testTagKey,
+			err:   ` contains non-latin1 characters.`,
+		},
+		{
+			name:  "empty",
+			value: "",
+			fn:    testTagKey,
+			err:   ` the minimal length is 1, and the maximum length is 512.`,
+		},
+		{
+			name:  "valid",
+			value: "cafe",
+			fn:    testTagKey,
+			err:   ``,
+		},
 	})
 }
 
@@ -139,37 +185,51 @@ func TestAccTagValueAzure(t *testing.T) {
 	testutil.Require(t, testutil.Azure)
 	t.Parallel()
 
-	// Azure puts no constraings on tag values.
-	err := testTagValue(t, "café?")
-	require.NoError(t, err)
+	runTagTestCases(t, []tagTestCase{
+		{
+			name:  "unicode",
+			value: "🍎",
+			fn:    testTagValue,
+			err:   ` contains non-latin1 characters.`,
+		},
+		{
+			name:  "valid",
+			value: "cafe",
+			fn:    testTagValue,
+			err:   ``,
+		},
+	})
 }
 
 func TestAccTagKeyGCP(t *testing.T) {
 	testutil.Require(t, testutil.GCP)
 	t.Parallel()
 
-	t.Run("invalid", func(t *testing.T) {
-		t.Parallel()
-		err := testTagKey(t, "café?")
-		require.Error(t, err)
-		msg := strings.ReplaceAll(err.Error(), "\n", " ")
-		require.Contains(t, msg, `The key must match the regular expression ^([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9]$.`)
-	})
-
-	t.Run("unicode", func(t *testing.T) {
-		t.Parallel()
-		err := testTagKey(t, "🍎")
-		require.Error(t, err)
-		msg := strings.ReplaceAll(err.Error(), "\n", " ")
-		require.Contains(t, msg, ` contains non-latin1 characters.`)
-	})
-
-	t.Run("empty", func(t *testing.T) {
-		t.Parallel()
-		err := testTagKey(t, "")
-		require.Error(t, err)
-		msg := strings.ReplaceAll(err.Error(), "\n", " ")
-		require.Contains(t, msg, ` the minimal length is 1, and the maximum length is 63.`)
+	runTagTestCases(t, []tagTestCase{
+		{
+			name:  "invalid",
+			value: "café?",
+			fn:    testTagKey,
+			err:   ` The key must match the regular expression ^([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9]$.`,
+		},
+		{
+			name:  "unicode",
+			value: "🍎",
+			fn:    testTagKey,
+			err:   ` contains non-latin1 characters.`,
+		},
+		{
+			name:  "empty",
+			value: "",
+			fn:    testTagKey,
+			err:   ` the minimal length is 1, and the maximum length is 63.`,
+		},
+		{
+			name:  "valid",
+			value: "cafe",
+			fn:    testTagKey,
+			err:   ``,
+		},
 	})
 }
 
@@ -177,8 +237,24 @@ func TestAccTagValueGCP(t *testing.T) {
 	testutil.Require(t, testutil.GCP)
 	t.Parallel()
 
-	err := testTagValue(t, "café?")
-	require.Error(t, err)
-	msg := strings.ReplaceAll(err.Error(), "\n", " ")
-	require.Contains(t, msg, `The value must match the regular expression ^(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])?$.`)
+	runTagTestCases(t, []tagTestCase{
+		{
+			name:  "invalid",
+			value: "café",
+			fn:    testTagValue,
+			err:   ` The value must match the regular expression ^(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])?$.`,
+		},
+		{
+			name:  "unicode",
+			value: "🍎",
+			fn:    testTagValue,
+			err:   ` contains non-latin1 characters.`,
+		},
+		{
+			name:  "valid",
+			value: "cafe",
+			fn:    testTagValue,
+			err:   ``,
+		},
+	})
 }
