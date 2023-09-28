@@ -1,11 +1,10 @@
-package bundle
+package internal
 
 import (
 	"context"
 	"strings"
 	"testing"
 
-	"github.com/databricks/cli/internal"
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/compute"
@@ -29,7 +28,7 @@ func testTags(t *testing.T, tags map[string]string) error {
 
 	ctx := context.Background()
 	resp, err := w.Jobs.Create(ctx, jobs.CreateJob{
-		Name: internal.RandomName("test-tags-"),
+		Name: RandomName("test-tags-"),
 		Tasks: []jobs.Task{
 			{
 				TaskKey: "test",
