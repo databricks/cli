@@ -2,11 +2,13 @@ package python
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/libraries"
-	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/databricks-sdk-go"
 	"golang.org/x/mod/semver"
 )
 
@@ -19,7 +21,7 @@ func WrapperWarning() bundle.Mutator {
 
 func (m *wrapperWarning) Apply(ctx context.Context, b *bundle.Bundle) error {
 	if hasIncompatibleWheelTasks(ctx, b) {
-		cmdio.LogString(ctx, "Python wheel tasks with local libraries require compute with DBR 13.1+. Please change your cluster configuration or set experimental 'python_wheel_wrapper' setting to 'true'")
+		return fmt.Errorf("python wheel tasks with local libraries require compute with DBR 13.1+. Please change your cluster configuration or set experimental 'python_wheel_wrapper' setting to 'true'")
 	}
 	return nil
 }
@@ -44,6 +46,20 @@ func hasIncompatibleWheelTasks(ctx context.Context, b *bundle.Bundle) bool {
 				}
 			}
 		}
+
+		if task.ExistingClusterId != "" {
+			version, err := getSparkVersionForCluster(ctx, b.WorkspaceClient(), task.ExistingClusterId)
+
+			// If there's error getting spark version for cluster, do not mark it as incompatible
+			if err != nil {
+				log.Warnf(ctx, "unable to get spark version for cluster %s, err: %s", task.ExistingClusterId, err.Error())
+				return false
+			}
+
+			if lowerThanExpectedVersion(ctx, version) {
+				return true
+			}
+		}
 	}
 
 	return false
@@ -62,4 +78,13 @@ func lowerThanExpectedVersion(ctx context.Context, sparkVersion string) bool {
 // Name implements bundle.Mutator.
 func (m *wrapperWarning) Name() string {
 	return "PythonWrapperWarning"
+}
+
+func getSparkVersionForCluster(ctx context.Context, w *databricks.WorkspaceClient, clusterId string) (string, error) {
+	details, err := w.Clusters.GetByClusterId(ctx, clusterId)
+	if err != nil {
+		return "", err
+	}
+
+	return details.SparkVersion, nil
 }
