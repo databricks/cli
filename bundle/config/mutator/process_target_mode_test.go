@@ -99,6 +99,48 @@ func TestProcessTargetModeDevelopment(t *testing.T) {
 	assert.Equal(t, "dev", bundle.Config.Resources.Experiments["experiment1"].Experiment.Tags[0].Key)
 }
 
+func TestProcessTargetModeDevelopmentTagNormalizationForAws(t *testing.T) {
+	bundle := mockBundle(config.Development)
+	bundle.Tagging = tags.ForCloud(&sdkconfig.Config{
+		Host: "https://dbc-XXXXXXXX-YYYY.cloud.databricks.com/",
+	})
+
+	bundle.Config.Workspace.CurrentUser.ShortName = "Héllö wörld?!"
+	err := ProcessTargetMode().Apply(context.Background(), bundle)
+	require.NoError(t, err)
+
+	// Assert that tag normalization took place.
+	assert.Equal(t, "Hello world__", bundle.Config.Resources.Jobs["job1"].Tags["dev"])
+}
+
+func TestProcessTargetModeDevelopmentTagNormalizationForAzure(t *testing.T) {
+	bundle := mockBundle(config.Development)
+	bundle.Tagging = tags.ForCloud(&sdkconfig.Config{
+		Host: "https://adb-xxx.y.azuredatabricks.net/",
+	})
+
+	bundle.Config.Workspace.CurrentUser.ShortName = "Héllö wörld?!"
+	err := ProcessTargetMode().Apply(context.Background(), bundle)
+	require.NoError(t, err)
+
+	// Assert that tag normalization took place (Azure allows more characters than AWS).
+	assert.Equal(t, "Héllö wörld?!", bundle.Config.Resources.Jobs["job1"].Tags["dev"])
+}
+
+func TestProcessTargetModeDevelopmentTagNormalizationForGcp(t *testing.T) {
+	bundle := mockBundle(config.Development)
+	bundle.Tagging = tags.ForCloud(&sdkconfig.Config{
+		Host: "https://123.4.gcp.databricks.com/",
+	})
+
+	bundle.Config.Workspace.CurrentUser.ShortName = "Héllö wörld?!"
+	err := ProcessTargetMode().Apply(context.Background(), bundle)
+	require.NoError(t, err)
+
+	// Assert that tag normalization took place.
+	assert.Equal(t, "Hello_world", bundle.Config.Resources.Jobs["job1"].Tags["dev"])
+}
+
 func TestProcessTargetModeDefault(t *testing.T) {
 	bundle := mockBundle("")
 
