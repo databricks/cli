@@ -7,6 +7,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/libraries"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"golang.org/x/mod/semver"
 )
@@ -51,6 +52,7 @@ func hasIncompatibleWheelTasks(ctx context.Context, b *bundle.Bundle) bool {
 
 			// If there's error getting spark version for cluster, do not mark it as incompatible
 			if err != nil {
+				log.Warnf(ctx, "unable to get spark version for cluster %s, err: %s", task.ExistingClusterId, err.Error())
 				return false
 			}
 
