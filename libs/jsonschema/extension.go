@@ -11,4 +11,8 @@ type Extension struct {
 	// If not defined, the field is ordered alphabetically after all fields
 	// that do have an order defined.
 	Order *int `json:"order,omitempty"`
+
+	// The message to print after the template is successfully initalized
+	// In line with our ymls, we use snake_case here.
+	SuccessMessage string `json:"success_message,omitempty"`
 }

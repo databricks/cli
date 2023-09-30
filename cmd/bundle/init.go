@@ -40,8 +40,8 @@ func repoName(url string) string {
 func newInitCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "init [TEMPLATE_PATH]",
-		Short: "Initialize a new bundle from a template",
-		Long: `Initialize a new bundle from a template.
+		Short: "Initialize using a bundle template",
+		Long: `Initialize using a bundle template.
 
 TEMPLATE_PATH optionally specifies which template to use. It can be one of the following:
 - 'default-python' for the default Python template
