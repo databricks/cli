@@ -142,6 +142,11 @@ func (c *config) promptForValues(r *renderer) error {
 
 		}
 
+		// Validate the property matches any specified regex pattern.
+		if err := jsonschema.ValidatePatternMatch(name, userInput, property); err != nil {
+			return err
+		}
+
 		// Convert user input string back to a value
 		c.values[name], err = jsonschema.FromString(userInput, property.Type)
 		if err != nil {

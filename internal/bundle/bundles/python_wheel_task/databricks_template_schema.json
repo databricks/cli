@@ -16,6 +16,10 @@
         "unique_id": {
             "type": "string",
             "description": "Unique ID for job name"
+        },
+        "python_wheel_wrapper": {
+            "type": "boolean",
+            "description": "Whether or not to enable python wheel wrapper"
         }
     }
 }

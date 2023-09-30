@@ -49,10 +49,16 @@ dbutils.notebook.exit(s)
 // which installs uploaded wheels using %pip and then calling corresponding
 // entry point.
 func TransformWheelTask() bundle.Mutator {
-	return mutator.NewTrampoline(
-		"python_wheel",
-		&pythonTrampoline{},
-		NOTEBOOK_TEMPLATE,
+	return mutator.If(
+		func(b *bundle.Bundle) bool {
+			return b.Config.Experimental != nil && b.Config.Experimental.PythonWheelWrapper
+		},
+		mutator.NewTrampoline(
+			"python_wheel",
+			&pythonTrampoline{},
+			NOTEBOOK_TEMPLATE,
+		),
+		mutator.NoOp(),
 	)
 }
 
@@ -113,7 +119,7 @@ func (t *pythonTrampoline) generateParameters(task *jobs.PythonWheelTask) (strin
 	if task.Parameters != nil && task.NamedParameters != nil {
 		return "", fmt.Errorf("not allowed to pass both paramaters and named_parameters")
 	}
-	params := append([]string{"python"}, task.Parameters...)
+	params := append([]string{task.PackageName}, task.Parameters...)
 	for k, v := range task.NamedParameters {
 		params = append(params, fmt.Sprintf("%s=%s", k, v))
 	}

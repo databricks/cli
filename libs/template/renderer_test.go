@@ -41,6 +41,7 @@ func assertBuiltinTemplateValid(t *testing.T, settings map[string]any, target st
 
 	templatePath, err := prepareBuiltinTemplates("default-python", tempDir)
 	require.NoError(t, err)
+	libraryPath := filepath.Join(templatePath, "library")
 
 	w := &databricks.WorkspaceClient{
 		Config: &workspaceConfig.Config{Host: "https://myhost.com"},
@@ -52,7 +53,7 @@ func assertBuiltinTemplateValid(t *testing.T, settings map[string]any, target st
 	ctx = root.SetWorkspaceClient(ctx, w)
 	helpers := loadHelpers(ctx)
 
-	renderer, err := newRenderer(ctx, settings, helpers, templatePath, "./testdata/template-in-path/library", tempDir)
+	renderer, err := newRenderer(ctx, settings, helpers, templatePath, libraryPath, tempDir)
 	require.NoError(t, err)
 
 	// Evaluate template

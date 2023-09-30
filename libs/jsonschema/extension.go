@@ -15,4 +15,8 @@ type Extension struct {
 	// The message to print after the template is successfully initalized
 	// In line with our ymls, we use snake_case here.
 	SuccessMessage string `json:"success_message,omitempty"`
+
+	// PatternMatchFailureMessage is a user defined message that is displayed to the
+	// user if a JSON schema pattern match fails.
+	PatternMatchFailureMessage string `json:"pattern_match_failure_message,omitempty"`
 }

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"regexp"
 	"slices"
 )
 
@@ -44,6 +45,11 @@ type Schema struct {
 
 	// List of valid values for a JSON instance for this schema.
 	Enum []any `json:"enum,omitempty"`
+
+	// A pattern is a regular expression the object will be validated against.
+	// Can only be used with type "string". The regex syntax supported is available
+	// here: https://github.com/google/re2/wiki/Syntax
+	Pattern string `json:"pattern,omitempty"`
 
 	// Extension embeds our custom JSON schema extensions.
 	Extension
@@ -112,6 +118,38 @@ func (schema *Schema) validate() error {
 			return fmt.Errorf("list of enum values for property %s does not contain default value %v: %v", name, property.Default, property.Enum)
 		}
 	}
+
+	// Validate usage of "pattern" is consistent.
+	for name, property := range schema.Properties {
+		pattern := property.Pattern
+		if pattern == "" {
+			continue
+		}
+
+		// validate property type is string
+		if property.Type != StringType {
+			return fmt.Errorf("property %q has a non-empty regex pattern %q specified. Patterns are only supported for string properties", name, pattern)
+		}
+
+		// validate regex pattern syntax
+		r, err := regexp.Compile(pattern)
+		if err != nil {
+			return fmt.Errorf("invalid regex pattern %q provided for property %q: %w", pattern, name, err)
+		}
+
+		// validate default value against the pattern
+		if property.Default != nil && !r.MatchString(property.Default.(string)) {
+			return fmt.Errorf("default value %q for property %q does not match specified regex pattern: %q", property.Default, name, pattern)
+		}
+
+		// validate enum values against the pattern
+		for i, enum := range property.Enum {
+			if !r.MatchString(enum.(string)) {
+				return fmt.Errorf("enum value %q at index %v for property %q does not match specified regex pattern: %q", enum, i, name, pattern)
+			}
+		}
+	}
+
 	return nil
 }
 

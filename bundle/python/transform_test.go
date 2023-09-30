@@ -25,26 +25,26 @@ type testCaseNamed struct {
 }
 
 var paramsTestCases []testCase = []testCase{
-	{[]string{}, `"python"`},
-	{[]string{"a"}, `"python", "a"`},
-	{[]string{"a", "b"}, `"python", "a", "b"`},
-	{[]string{"123!@#$%^&*()-="}, `"python", "123!@#$%^&*()-="`},
-	{[]string{`{"a": 1}`}, `"python", "{\"a\": 1}"`},
+	{[]string{}, `"my_test_code"`},
+	{[]string{"a"}, `"my_test_code", "a"`},
+	{[]string{"a", "b"}, `"my_test_code", "a", "b"`},
+	{[]string{"123!@#$%^&*()-="}, `"my_test_code", "123!@#$%^&*()-="`},
+	{[]string{`{"a": 1}`}, `"my_test_code", "{\"a\": 1}"`},
 }
 
 var paramsTestCasesNamed []testCaseNamed = []testCaseNamed{
-	{map[string]string{}, `"python"`},
-	{map[string]string{"a": "1"}, `"python", "a=1"`},
-	{map[string]string{"a": "'1'"}, `"python", "a='1'"`},
-	{map[string]string{"a": `"1"`}, `"python", "a=\"1\""`},
-	{map[string]string{"a": "1", "b": "2"}, `"python", "a=1", "b=2"`},
-	{map[string]string{"data": `{"a": 1}`}, `"python", "data={\"a\": 1}"`},
+	{map[string]string{}, `"my_test_code"`},
+	{map[string]string{"a": "1"}, `"my_test_code", "a=1"`},
+	{map[string]string{"a": "'1'"}, `"my_test_code", "a='1'"`},
+	{map[string]string{"a": `"1"`}, `"my_test_code", "a=\"1\""`},
+	{map[string]string{"a": "1", "b": "2"}, `"my_test_code", "a=1", "b=2"`},
+	{map[string]string{"data": `{"a": 1}`}, `"my_test_code", "data={\"a\": 1}"`},
 }
 
 func TestGenerateParameters(t *testing.T) {
 	trampoline := pythonTrampoline{}
 	for _, c := range paramsTestCases {
-		task := &jobs.PythonWheelTask{Parameters: c.Actual}
+		task := &jobs.PythonWheelTask{PackageName: "my_test_code", Parameters: c.Actual}
 		result, err := trampoline.generateParameters(task)
 		require.NoError(t, err)
 		require.Equal(t, c.Expected, result)
@@ -54,7 +54,7 @@ func TestGenerateParameters(t *testing.T) {
 func TestGenerateNamedParameters(t *testing.T) {
 	trampoline := pythonTrampoline{}
 	for _, c := range paramsTestCasesNamed {
-		task := &jobs.PythonWheelTask{NamedParameters: c.Actual}
+		task := &jobs.PythonWheelTask{PackageName: "my_test_code", NamedParameters: c.Actual}
 		result, err := trampoline.generateParameters(task)
 		require.NoError(t, err)
 
