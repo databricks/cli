@@ -5,8 +5,8 @@
             "default": "my_project",
             "description": "Unique name for this project",
             "order": 1,
-            "pattern": "^[A-Za-z0-9_]*$",
-            "pattern_match_failure_message": "Must consist of letter and underscores only."
+            "pattern": "^[A-Za-z0-9_]+$",
+            "pattern_match_failure_message": "Name must consist of letters, numbers, and underscores."
         },
         "include_notebook": {
             "type": "string",

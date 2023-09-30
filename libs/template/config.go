@@ -139,17 +139,16 @@ func (c *config) promptForValues(r *renderer) error {
 			if err != nil {
 				return err
 			}
-
-		}
-
-		// Validate the property matches any specified regex pattern.
-		if err := jsonschema.ValidatePatternMatch(name, userInput, property); err != nil {
-			return err
 		}
 
 		// Convert user input string back to a value
 		c.values[name], err = jsonschema.FromString(userInput, property.Type)
 		if err != nil {
+			return err
+		}
+
+		// Validate the partial config based on this update
+		if err := c.schema.ValidateInstance(c.values); err != nil {
 			return err
 		}
 	}
@@ -168,7 +167,7 @@ func (c *config) promptOrAssignDefaultValues(r *renderer) error {
 // Validates the configuration. If passes, the configuration is ready to be used
 // to initialize the template.
 func (c *config) validate() error {
-	// All properties in the JSON schema should have a value defined.
+	// For final validation, all properties in the JSON schema should have a value defined.
 	c.schema.Required = maps.Keys(c.schema.Properties)
 	if err := c.schema.ValidateInstance(c.values); err != nil {
 		return fmt.Errorf("validation for template input parameters failed. %w", err)
