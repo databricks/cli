@@ -1,0 +1,44 @@
+bundle:
+  name: override_job_tasks
+
+workspace:
+  host: https://acme.cloud.databricks.com/
+
+resources:
+  jobs:
+    foo:
+      name: job
+      tasks:
+        - task_key: key1
+          new_cluster:
+            spark_version: 13.3.x-scala2.12
+          spark_python_task:
+            python_file: ./test1.py
+        - task_key: key2
+          new_cluster:
+            spark_version: 13.3.x-scala2.12
+          spark_python_task:
+            python_file: ./test2.py
+
+targets:
+  development:
+    resources:
+      jobs:
+        foo:
+          tasks:
+            - task_key: key1
+              new_cluster:
+                node_type_id: i3.xlarge
+                num_workers: 1
+
+  staging:
+    resources:
+      jobs:
+        foo:
+          tasks:
+            - task_key: key2
+              new_cluster:
+                node_type_id: i3.2xlarge
+                num_workers: 4
+              spark_python_task:
+                python_file: ./test3.py

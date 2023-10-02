@@ -20,7 +20,7 @@ func TestExecAndPassError(t *testing.T) {
 	}
 
 	_, err := execAndPassErr(context.Background(), "which", "__non_existing__")
-	assert.EqualError(t, err, "exit status 1")
+	assert.EqualError(t, err, "which __non_existing__: exit status 1")
 }
 
 func TestDetectPython(t *testing.T) {
@@ -42,6 +42,11 @@ func TestDetectVirtualEnvFalse(t *testing.T) {
 	venvDir, err := detectVirtualEnv()
 	assert.NoError(t, err)
 	assert.Equal(t, "", venvDir)
+}
+
+func TestGetFirstMatch(t *testing.T) {
+	matches := "C:\\hostedtoolcache\\windows\\Python\\3.9.13\\x64\\python3.exe\r\nC:\\ProgramData\\Chocolatey\\bin\\python3.exe"
+	assert.Equal(t, getFirstMatch(matches), "C:\\hostedtoolcache\\windows\\Python\\3.9.13\\x64\\python3.exe")
 }
 
 func TestMakeDetectableVenv(t *testing.T) {
@@ -72,7 +77,7 @@ func testTempdir(t *testing.T, dir *string) func() {
 
 func TestPyError(t *testing.T) {
 	_, err := Py(context.Background(), "__non_existing__.py")
-	assert.Contains(t, err.Error(), "can't open file")
+	assert.Contains(t, err.Error(), "exit status 2")
 }
 
 func TestPyInline(t *testing.T) {
@@ -85,5 +90,5 @@ func TestPyInlineStderr(t *testing.T) {
 	DetectExecutable(context.Background())
 	inline := "import sys; sys.stderr.write('___msg___'); sys.exit(1)"
 	_, err := PyInline(context.Background(), inline)
-	assert.EqualError(t, err, "___msg___")
+	assert.ErrorContains(t, err, "___msg___")
 }

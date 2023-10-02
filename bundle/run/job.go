@@ -86,7 +86,7 @@ func (o *JobOptions) toPayload(jobID int64) (*jobs.RunNow, error) {
 }
 
 // Default timeout for waiting for a job run to complete.
-var jobRunTimeout time.Duration = 2 * time.Hour
+var jobRunTimeout time.Duration = 24 * time.Hour
 
 type jobRunner struct {
 	key

@@ -4,13 +4,6 @@ This file only template directives; it is skipped for the actual output.
 
 {{skip "__preamble"}}
 
-{{ $value := .project_name }}
-{{with (regexp "^[A-Za-z0-9_]*$")}}
-  {{if not (.MatchString $value)}}
-    {{fail "Invalid project_name: %s. Must consist of letter and underscores only." $value}}
-  {{end}}
-{{end}}
-
 {{$notDLT := not (eq .include_dlt "yes")}}
 {{$notNotebook := not (eq .include_notebook "yes")}}
 {{$notPython := not (eq .include_python "yes")}}

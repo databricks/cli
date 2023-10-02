@@ -1,13 +1,14 @@
 package git
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"os/exec"
 	"regexp"
 	"strings"
+
+	"github.com/databricks/cli/libs/process"
 )
 
 // source: https://stackoverflow.com/questions/59081778/rules-for-special-characters-in-github-repository-name
@@ -42,23 +43,17 @@ func (opts cloneOptions) args() []string {
 }
 
 func (opts cloneOptions) clone(ctx context.Context) error {
-	cmd := exec.CommandContext(ctx, "git", opts.args()...)
-	var cmdErr bytes.Buffer
-	cmd.Stderr = &cmdErr
-
-	// start git clone
-	err := cmd.Start()
+	// start and wait for git clone to complete
+	_, err := process.Background(ctx, append([]string{"git"}, opts.args()...))
 	if errors.Is(err, exec.ErrNotFound) {
 		return fmt.Errorf("please install git CLI to clone a repository: %w", err)
 	}
+	var processErr *process.ProcessError
+	if errors.As(err, &processErr) {
+		return fmt.Errorf("git clone failed: %w. %s", err, processErr.Stderr)
+	}
 	if err != nil {
 		return fmt.Errorf("git clone failed: %w", err)
-	}
-
-	// wait for git clone to complete
-	err = cmd.Wait()
-	if err != nil {
-		return fmt.Errorf("git clone failed: %w. %s", err, cmdErr.String())
 	}
 	return nil
 }

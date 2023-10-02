@@ -131,11 +131,21 @@ func (r *Resources) SetConfigFilePath(path string) {
 	}
 }
 
-// MergeJobClusters iterates over all jobs and merges their job clusters.
-// This is called after applying the target overrides.
-func (r *Resources) MergeJobClusters() error {
+// Merge iterates over all resources and merges chunks of the
+// resource configuration that can be merged. For example, for
+// jobs, this merges job cluster definitions and tasks that
+// use the same `job_cluster_key`, or `task_key`, respectively.
+func (r *Resources) Merge() error {
 	for _, job := range r.Jobs {
 		if err := job.MergeJobClusters(); err != nil {
+			return err
+		}
+		if err := job.MergeTasks(); err != nil {
+			return err
+		}
+	}
+	for _, pipeline := range r.Pipelines {
+		if err := pipeline.MergeClusters(); err != nil {
 			return err
 		}
 	}

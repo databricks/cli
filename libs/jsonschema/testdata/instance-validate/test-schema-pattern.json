@@ -1,0 +1,8 @@
+{
+    "properties": {
+        "foo": {
+            "type": "string",
+            "pattern": "a.*c"
+        }
+    }
+}
