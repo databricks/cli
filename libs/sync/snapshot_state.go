@@ -99,14 +99,14 @@ func (fs *SnapshotState) validate() error {
 			return fmt.Errorf("invalid sync state representation. Remote file %s is missing the corresponding local file", remoteName)
 		}
 		if fs.RemoteToLocalNames[remoteName] != localName {
-			return fmt.Errorf("invalid sync state representation. Inconsistent values found. Local file %s points to %s. Remote file %s points to %s", localName, remoteName, remoteName, fs.RemoteToLocalNames[localName])
+			return fmt.Errorf("invalid sync state representation. Inconsistent values found. Local file %s points to %s. Remote file %s points to %s", localName, remoteName, remoteName, fs.RemoteToLocalNames[remoteName])
 		}
 	}
 	for remoteName, localName := range fs.RemoteToLocalNames {
 		if _, ok := fs.LocalToRemoteNames[localName]; !ok {
 			return fmt.Errorf("invalid sync state representation. local file %s is missing the corresponding remote file", localName)
 		}
-		if fs.RemoteToLocalNames[remoteName] != localName {
+		if fs.LocalToRemoteNames[localName] != remoteName {
 			return fmt.Errorf("invalid sync state representation. Inconsistent values found. Remote file %s points to %s. Local file %s points to %s", remoteName, localName, localName, fs.LocalToRemoteNames[localName])
 		}
 	}
