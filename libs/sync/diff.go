@@ -21,17 +21,17 @@ func (d diff) IsEmpty() bool {
 
 // Compute operations required to make files in WSFS reflect current local files.
 // Takes into account changes since the last sync iteration.
-func computeDiff(target *SnapshotState, current *SnapshotState) diff {
+func computeDiff(after *SnapshotState, before *SnapshotState) diff {
 	d := &diff{
 		delete: make([]string, 0),
 		rmdir:  make([]string, 0),
 		mkdir:  make([]string, 0),
 		put:    make([]string, 0),
 	}
-	d.addRemovedFiles(target, current)
-	d.addFilesWithRemoteNameChanged(target, current)
-	d.addNewFiles(target, current)
-	d.addUpdatedFiles(target, current)
+	d.addRemovedFiles(after, before)
+	d.addFilesWithRemoteNameChanged(after, before)
+	d.addNewFiles(after, before)
+	d.addUpdatedFiles(after, before)
 	return *d
 }
 
@@ -46,7 +46,7 @@ func (d *diff) addRemovedFiles(after *SnapshotState, before *SnapshotState) {
 	// Remove directories that would no longer contain any files.
 	beforeDirs := MakeDirSet(maps.Keys(before.LocalToRemoteNames))
 	afterDirs := MakeDirSet(maps.Keys(after.LocalToRemoteNames))
-	d.rmdir = append(d.rmdir, beforeDirs.Remove(afterDirs).Slice()...)
+	d.rmdir = beforeDirs.Remove(afterDirs).Slice()
 }
 
 // Cleanup previous remote files for files that had their remote targets change. For
@@ -71,7 +71,7 @@ func (d *diff) addNewFiles(after *SnapshotState, before *SnapshotState) {
 	// Add directories required for these new files.
 	beforeDirs := MakeDirSet(maps.Keys(before.LocalToRemoteNames))
 	afterDirs := MakeDirSet(maps.Keys(after.LocalToRemoteNames))
-	d.mkdir = append(d.mkdir, afterDirs.Remove(beforeDirs).Slice()...)
+	d.mkdir = afterDirs.Remove(beforeDirs).Slice()
 }
 
 // Add operators for files which had their contents updated.
