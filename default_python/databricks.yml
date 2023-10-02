@@ -39,5 +39,4 @@ targets:
       # This runs as username@company.com in production. Alternatively,
       # a service principal could be used here using service_principal_name
       # (see Databricks documentation).
-      user_name: lennart.kats@databricks.com
-    
+      user_name: user@company.com
