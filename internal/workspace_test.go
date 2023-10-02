@@ -247,6 +247,39 @@ func TestAccImportDirWithOverwriteFlag(t *testing.T) {
 	assertFilerFileContents(t, ctx, workspaceFiler, "pyNotebook", "# Databricks notebook source\nprint(\"python\")")
 }
 
+func TestAccImportFileUsingContentFormatSource(t *testing.T) {
+	ctx, workspaceFiler, targetDir := setupWorkspaceImportExportTest(t)
+
+	//  Content = `print(1)`. Uploaded as a notebook by default
+	RequireSuccessfulRun(t, "workspace", "import", filepath.Join(targetDir, "pyScript"), "--content", "cHJpbnQoMSk=", "--language=PYTHON")
+	assertFilerFileContents(t, ctx, workspaceFiler, "pyScript", "print(1)")
+	assertWorkspaceFileType(t, ctx, workspaceFiler, "pyScript", workspace.ObjectTypeNotebook)
+
+	// Import with content = `# Databricks notebook source\nprint(1)`. Uploaded as a notebook with the content just being print(1)
+	RequireSuccessfulRun(t, "workspace", "import", filepath.Join(targetDir, "pyNb"), "--content", "IyBEYXRhYnJpY2tzIG5vdGVib29rIHNvdXJjZQpwcmludCgxKQ==", "--language=PYTHON")
+	assertFilerFileContents(t, ctx, workspaceFiler, "pyNb", "print(1)")
+	assertWorkspaceFileType(t, ctx, workspaceFiler, "pyNb", workspace.ObjectTypeNotebook)
+}
+
+func TestAccImportFileUsingContentFormatAuto(t *testing.T) {
+	ctx, workspaceFiler, targetDir := setupWorkspaceImportExportTest(t)
+
+	//  Content = `# Databricks notebook source\nprint(1)`. Upload as file if path has no extension.
+	RequireSuccessfulRun(t, "workspace", "import", filepath.Join(targetDir, "py-nb-as-file"), "--content", "IyBEYXRhYnJpY2tzIG5vdGVib29rIHNvdXJjZQpwcmludCgxKQ==", "--format=AUTO")
+	assertFilerFileContents(t, ctx, workspaceFiler, "py-nb-as-file", "# Databricks notebook source\nprint(1)")
+	assertWorkspaceFileType(t, ctx, workspaceFiler, "py-nb-as-file", workspace.ObjectTypeFile)
+
+	// Content = `# Databricks notebook source\nprint(1)`. Upload as notebook if path has py extension
+	RequireSuccessfulRun(t, "workspace", "import", filepath.Join(targetDir, "py-nb-as-notebook.py"), "--content", "IyBEYXRhYnJpY2tzIG5vdGVib29rIHNvdXJjZQpwcmludCgxKQ==", "--format=AUTO")
+	assertFilerFileContents(t, ctx, workspaceFiler, "py-nb-as-notebook", "# Databricks notebook source\nprint(1)")
+	assertWorkspaceFileType(t, ctx, workspaceFiler, "py-nb-as-notebook", workspace.ObjectTypeNotebook)
+
+	// Content = `print(1)`. Upload as file if content is not notebook (even if path has .py extension)
+	RequireSuccessfulRun(t, "workspace", "import", filepath.Join(targetDir, "not-a-notebook.py"), "--content", "cHJpbnQoMSk=", "--format=AUTO")
+	assertFilerFileContents(t, ctx, workspaceFiler, "not-a-notebook.py", "print(1)")
+	assertWorkspaceFileType(t, ctx, workspaceFiler, "not-a-notebook.py", workspace.ObjectTypeFile)
+}
+
 func TestAccImportFileFormatSource(t *testing.T) {
 	ctx, workspaceFiler, targetDir := setupWorkspaceImportExportTest(t)
 	RequireSuccessfulRun(t, "workspace", "import", filepath.Join(targetDir, "pyNotebook"), "--file", "./testdata/import_dir/pyNotebook.py", "--language=PYTHON")

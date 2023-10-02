@@ -27,6 +27,20 @@ func exportOverride(exportCmd *cobra.Command, exportReq *workspace.ExportRequest
 	exportCmd.Annotations["template"] = `{{.Content | b64_decode}}`
 }
 
+// Give better errors / hints for common errors.
+func wrapImportAPIErrors(err error, importReq *workspace.Import) error {
+	apiErr := &apierr.APIError{}
+	if !errors.As(err, &apiErr) {
+		return err
+	}
+	isFormatSource := importReq.Format == workspace.ImportFormatSource || importReq.Format == ""
+	if isFormatSource && apiErr.StatusCode == http.StatusBadRequest &&
+		strings.Contains(apiErr.Message, "The zip file may not be valid or may be an unsupported version.") {
+		return fmt.Errorf("%w Hint: Objects imported using format=SOURCE are assumed to be zip encoded by default. Please specify a language using the --language flag if you are trying to import a notebook instead", err)
+	}
+	return err
+}
+
 func importOverride(importCmd *cobra.Command, importReq *workspace.Import) {
 	var filePath string
 	importCmd.Use = "import TARGET_PATH"
@@ -43,14 +57,7 @@ func importOverride(importCmd *cobra.Command, importReq *workspace.Import) {
 			importReq.Content = base64.StdEncoding.EncodeToString(b)
 		}
 		err := originalRunE(cmd, args)
-		target := &apierr.APIError{}
-		if errors.As(err, &target) &&
-			(importReq.Format == workspace.ImportFormatSource || importReq.Format == "") &&
-			target.StatusCode == http.StatusBadRequest &&
-			strings.Contains(target.Message, "The zip file may not be valid or may be an unsupported version.") {
-			return fmt.Errorf("%w Hint: Objects imported using source format are assumed to be zip encoded by default. Please specify a language using the --language flag if you are trying to import a notebook instead", err)
-		}
-		return err
+		return wrapImportAPIErrors(err, importReq)
 	}
 
 }
