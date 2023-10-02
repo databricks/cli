@@ -27,7 +27,7 @@ func exportOverride(exportCmd *cobra.Command, exportReq *workspace.ExportRequest
 	exportCmd.Annotations["template"] = `{{.Content | b64_decode}}`
 }
 
-// Give better errors / hints for common errors.
+// Give better errors / hints for common API errors.
 func wrapImportAPIErrors(err error, importReq *workspace.Import) error {
 	apiErr := &apierr.APIError{}
 	if !errors.As(err, &apiErr) {
@@ -36,7 +36,7 @@ func wrapImportAPIErrors(err error, importReq *workspace.Import) error {
 	isFormatSource := importReq.Format == workspace.ImportFormatSource || importReq.Format == ""
 	if isFormatSource && apiErr.StatusCode == http.StatusBadRequest &&
 		strings.Contains(apiErr.Message, "The zip file may not be valid or may be an unsupported version.") {
-		return fmt.Errorf("%w Hint: Objects imported using format=SOURCE are assumed to be zip encoded by default. Please specify a language using the --language flag if you are trying to import a notebook instead", err)
+		return fmt.Errorf("%w Hint: Objects imported using format=SOURCE are expected to zip encoded notebook(s) by default. Please specify a language using the --language flag if you are trying to import an uncompressed notebook", err)
 	}
 	return err
 }
