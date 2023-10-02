@@ -14,7 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func assertKeysOfMap(t *testing.T, m map[string]time.Time, expectedKeys []string) {
+func assertKeysOfMap[T any](t *testing.T, m map[string]T, expectedKeys []string) {
 	keys := make([]string, len(m))
 	i := 0
 	for k := range m {

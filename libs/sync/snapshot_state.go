@@ -51,10 +51,9 @@ func NewSnapshotState(localFiles []fileset.File) (*SnapshotState, error) {
 		remoteName := filepath.ToSlash(f.Relative)
 		isNotebook, _, err := notebook.Detect(f.Absolute)
 		if err != nil {
-			// TODO: Add test that notebook ignore works as expected.
 			// Ignore this file if we're unable to determine the notebook type.
 			// Trying to upload such a file to the workspace would fail anyway.
-			return nil, nil
+			continue
 		}
 		if isNotebook {
 			ext := filepath.Ext(remoteName)
