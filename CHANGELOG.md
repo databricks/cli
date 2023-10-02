@@ -1,5 +1,31 @@
 # Version changelog
 
+## 0.206.0
+
+Bundles:
+ * Enable target overrides for pipeline clusters ([#792](https://github.com/databricks/cli/pull/792)).
+ * Add support for regex patterns in template schema ([#768](https://github.com/databricks/cli/pull/768)).
+ * Make the default `databricks bundle init` template more self-explanatory ([#796](https://github.com/databricks/cli/pull/796)).
+ * Make a notebook wrapper for Python wheel tasks optional ([#797](https://github.com/databricks/cli/pull/797)).
+ * Added a warning when Python wheel wrapper needs to be used ([#807](https://github.com/databricks/cli/pull/807)).
+
+Internal:
+ * Added `process.Background()` and `process.Forwarded()` ([#804](https://github.com/databricks/cli/pull/804)).
+
+Dependency updates:
+ * Bump golang.org/x/term from 0.11.0 to 0.12.0 ([#798](https://github.com/databricks/cli/pull/798)).
+ * Bump github.com/hashicorp/terraform-exec from 0.18.1 to 0.19.0 ([#801](https://github.com/databricks/cli/pull/801)).
+ * Bump golang.org/x/oauth2 from 0.11.0 to 0.12.0 ([#802](https://github.com/databricks/cli/pull/802)).
+
+## 0.205.2
+
+CLI:
+ * Prompt for profile only in interactive mode ([#788](https://github.com/databricks/cli/pull/788)).
+
+Internal:
+ * Added setup Python action ([#789](https://github.com/databricks/cli/pull/789)).
+
+
 ## 0.205.1
 
 Bundles:

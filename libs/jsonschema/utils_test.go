@@ -128,3 +128,40 @@ func TestTemplateToStringSlice(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, []string{"1.1", "2.2", "3.3"}, s)
 }
+
+func TestValidatePropertyPatternMatch(t *testing.T) {
+	var err error
+
+	// Expect no error if no pattern is specified.
+	err = ValidatePatternMatch("foo", 1, &Schema{Type: "integer"})
+	assert.NoError(t, err)
+
+	// Expect error because value is not a string.
+	err = ValidatePatternMatch("bar", 1, &Schema{Type: "integer", Pattern: "abc"})
+	assert.EqualError(t, err, "invalid value for bar: 1. Expected a value of type string")
+
+	// Expect error because the pattern is invalid.
+	err = ValidatePatternMatch("bar", "xyz", &Schema{Type: "string", Pattern: "(abc"})
+	assert.EqualError(t, err, "error parsing regexp: missing closing ): `(abc`")
+
+	// Expect no error because the pattern matches.
+	err = ValidatePatternMatch("bar", "axyzd", &Schema{Type: "string", Pattern: "(a*.d)"})
+	assert.NoError(t, err)
+
+	// Expect custom error message on match fail
+	err = ValidatePatternMatch("bar", "axyze", &Schema{
+		Type:    "string",
+		Pattern: "(a*.d)",
+		Extension: Extension{
+			PatternMatchFailureMessage: "my custom msg",
+		},
+	})
+	assert.EqualError(t, err, "invalid value for bar: \"axyze\". my custom msg")
+
+	// Expect generic message on match fail
+	err = ValidatePatternMatch("bar", "axyze", &Schema{
+		Type:    "string",
+		Pattern: "(a*.d)",
+	})
+	assert.EqualError(t, err, "invalid value for bar: \"axyze\". Expected to match regex pattern: (a*.d)")
+}

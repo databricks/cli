@@ -3,6 +3,7 @@ package env
 import (
 	"context"
 	"os"
+	"strings"
 )
 
 var envContextKey int
@@ -60,4 +61,22 @@ func Set(ctx context.Context, key, value string) context.Context {
 	m := copyMap(getMap(ctx))
 	m[key] = value
 	return setMap(ctx, m)
+}
+
+// All returns environment variables that are defined in both os.Environ
+// and this package. `env.Set(ctx, x, y)` will override x from os.Environ.
+func All(ctx context.Context) map[string]string {
+	m := map[string]string{}
+	for _, line := range os.Environ() {
+		split := strings.SplitN(line, "=", 2)
+		if len(split) != 2 {
+			continue
+		}
+		m[split[0]] = split[1]
+	}
+	// override existing environment variables with the ones we set
+	for k, v := range getMap(ctx) {
+		m[k] = v
+	}
+	return m
 }
