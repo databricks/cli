@@ -238,12 +238,7 @@ func (r *Root) MergeTargetOverrides(target *Target) error {
 			return err
 		}
 
-		err = r.Resources.MergeJobClusters()
-		if err != nil {
-			return err
-		}
-
-		err = r.Resources.MergeTasks()
+		err = r.Resources.Merge()
 		if err != nil {
 			return err
 		}

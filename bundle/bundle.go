@@ -19,6 +19,7 @@ import (
 	"github.com/databricks/cli/libs/git"
 	"github.com/databricks/cli/libs/locker"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/tags"
 	"github.com/databricks/cli/libs/terraform"
 	"github.com/databricks/databricks-sdk-go"
 	sdkconfig "github.com/databricks/databricks-sdk-go/config"
@@ -46,6 +47,10 @@ type Bundle struct {
 	// if true, we skip approval checks for deploy, destroy resources and delete
 	// files
 	AutoApprove bool
+
+	// Tagging is used to normalize tag keys and values.
+	// The implementation depends on the cloud being targeted.
+	Tagging tags.Cloud
 }
 
 func Load(ctx context.Context, path string) (*Bundle, error) {

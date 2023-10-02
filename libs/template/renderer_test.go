@@ -17,6 +17,7 @@ import (
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/tags"
 	"github.com/databricks/databricks-sdk-go"
 	workspaceConfig "github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/service/iam"
@@ -41,6 +42,7 @@ func assertBuiltinTemplateValid(t *testing.T, settings map[string]any, target st
 
 	templatePath, err := prepareBuiltinTemplates("default-python", tempDir)
 	require.NoError(t, err)
+	libraryPath := filepath.Join(templatePath, "library")
 
 	w := &databricks.WorkspaceClient{
 		Config: &workspaceConfig.Config{Host: "https://myhost.com"},
@@ -52,7 +54,7 @@ func assertBuiltinTemplateValid(t *testing.T, settings map[string]any, target st
 	ctx = root.SetWorkspaceClient(ctx, w)
 	helpers := loadHelpers(ctx)
 
-	renderer, err := newRenderer(ctx, settings, helpers, templatePath, "./testdata/template-in-path/library", tempDir)
+	renderer, err := newRenderer(ctx, settings, helpers, templatePath, libraryPath, tempDir)
 	require.NoError(t, err)
 
 	// Evaluate template
@@ -65,6 +67,7 @@ func assertBuiltinTemplateValid(t *testing.T, settings map[string]any, target st
 
 	// Apply initialize / validation mutators
 	b.Config.Workspace.CurrentUser = &bundleConfig.User{User: cachedUser}
+	b.Tagging = tags.ForCloud(w.Config)
 	b.WorkspaceClient()
 	b.Config.Bundle.Terraform = &bundleConfig.Terraform{
 		ExecPath: "sh",
