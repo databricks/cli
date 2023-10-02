@@ -1,8 +1,9 @@
 """
-Setup script for default_python.
+setup.py configuration script describing how to build and package this project.
 
-This script packages and distributes the associated wheel file(s).
-Source code is in ./src/. Run 'python setup.py sdist bdist_wheel' to build.
+This file is primarily used by the setuptools library and typically should not
+be executed directly. See README.md for how to deploy, test, and run
+the default_python project.
 """
 from setuptools import setup, find_packages
 
@@ -15,10 +16,19 @@ setup(
     name="default_python",
     version=default_python.__version__,
     url="https://databricks.com",
-    author="<no value>",
-    description="my test wheel",
+    author="user@company.com",
+    description="wheel file based on default_python/src",
     packages=find_packages(where='./src'),
     package_dir={'': 'src'},
-    entry_points={"entry_points": "main=default_python.main:main"},
-    install_requires=["setuptools"],
+    entry_points={
+        "packages": [
+            "main=default_python.main:main"
+        ]
+    },
+    install_requires=[
+        # Dependencies in case the output wheel file is used as a library dependency.
+        # For defining dependencies, when this package is used in Databricks, see:
+        # https://docs.databricks.com/dev-tools/bundles/library-dependencies.html
+        "setuptools"
+    ],
 )
