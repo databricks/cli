@@ -7,6 +7,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/libs/tags"
 )
 
 type populateCurrentUser struct{}
@@ -35,6 +36,10 @@ func (m *populateCurrentUser) Apply(ctx context.Context, b *bundle.Bundle) error
 		ShortName: getShortUserName(me.UserName),
 		User:      me,
 	}
+
+	// Configure tagging object now that we know we have a valid client.
+	b.Tagging = tags.ForCloud(w.Config)
+
 	return nil
 }
 
