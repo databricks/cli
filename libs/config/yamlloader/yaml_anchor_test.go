@@ -12,6 +12,10 @@ func TestYAMLAnchor01(t *testing.T) {
 	self := loadYAML(t, file)
 	assert.NotEqual(t, config.NilValue, self)
 
+	assert.True(t, self.Get("defaults").IsAnchor())
+	assert.False(t, self.Get("shirt1").IsAnchor())
+	assert.False(t, self.Get("shirt2").IsAnchor())
+
 	pattern := self.Get("shirt1").Get("pattern")
 	assert.Equal(t, "striped", pattern.AsAny())
 	assert.Equal(t, config.Location{File: file, Line: 8, Column: 12}, pattern.Location())

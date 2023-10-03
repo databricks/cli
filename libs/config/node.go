@@ -104,3 +104,7 @@ func (v Value) MarkAnchor() Value {
 		anchor: true,
 	}
 }
+
+func (v Value) IsAnchor() bool {
+	return v.anchor
+}
