@@ -1,0 +1,5 @@
+#!/bin/sh
+
+# this is an emulation of Windows App Store stub
+
+echo "Python"
