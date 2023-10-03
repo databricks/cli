@@ -16,7 +16,7 @@ var NilValue = Value{
 	l: Location{},
 }
 
-func New(v any, loc Location) Value {
+func NewValue(v any, loc Location) Value {
 	return Value{
 		v: v,
 		l: loc,

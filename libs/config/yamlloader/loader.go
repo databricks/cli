@@ -86,7 +86,7 @@ func (d *loader) loadSequence(node *yaml.Node, loc config.Location) (config.Valu
 		acc[i] = v
 	}
 
-	return config.New(acc, loc), nil
+	return config.NewValue(acc, loc), nil
 }
 
 func (d *loader) loadMapping(node *yaml.Node, loc config.Location) (config.Value, error) {
@@ -122,7 +122,7 @@ func (d *loader) loadMapping(node *yaml.Node, loc config.Location) (config.Value
 	}
 
 	if merge == nil {
-		return config.New(acc, loc), nil
+		return config.NewValue(acc, loc), nil
 	}
 
 	// Build location for the merge node.
@@ -168,20 +168,20 @@ func (d *loader) loadMapping(node *yaml.Node, loc config.Location) (config.Value
 		}
 	}
 
-	return config.New(out, loc), nil
+	return config.NewValue(out, loc), nil
 }
 
 func (d *loader) loadScalar(node *yaml.Node, loc config.Location) (config.Value, error) {
 	st := node.ShortTag()
 	switch st {
 	case "!!str":
-		return config.New(node.Value, loc), nil
+		return config.NewValue(node.Value, loc), nil
 	case "!!bool":
 		switch strings.ToLower(node.Value) {
 		case "true":
-			return config.New(true, loc), nil
+			return config.NewValue(true, loc), nil
 		case "false":
-			return config.New(false, loc), nil
+			return config.NewValue(false, loc), nil
 		default:
 			return config.NilValue, errorf(loc, "invalid bool value: %v", node.Value)
 		}
@@ -192,17 +192,17 @@ func (d *loader) loadScalar(node *yaml.Node, loc config.Location) (config.Value,
 		}
 		// Use regular int type instead of int64 if possible.
 		if i64 >= math.MinInt32 && i64 <= math.MaxInt32 {
-			return config.New(int(i64), loc), nil
+			return config.NewValue(int(i64), loc), nil
 		}
-		return config.New(i64, loc), nil
+		return config.NewValue(i64, loc), nil
 	case "!!float":
 		f64, err := strconv.ParseFloat(node.Value, 64)
 		if err != nil {
 			return config.NilValue, errorf(loc, "invalid float value: %v", node.Value)
 		}
-		return config.New(f64, loc), nil
+		return config.NewValue(f64, loc), nil
 	case "!!null":
-		return config.New(nil, loc), nil
+		return config.NewValue(nil, loc), nil
 	case "!!timestamp":
 		// Try a couple of layouts
 		for _, layout := range []string{
@@ -213,7 +213,7 @@ func (d *loader) loadScalar(node *yaml.Node, loc config.Location) (config.Value,
 		} {
 			t, terr := time.Parse(layout, node.Value)
 			if terr == nil {
-				return config.New(t, loc), nil
+				return config.NewValue(t, loc), nil
 			}
 		}
 		return config.NilValue, errorf(loc, "invalid timestamp value: %v", node.Value)
