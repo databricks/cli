@@ -10,6 +10,7 @@ import (
 	cluster_policies "github.com/databricks/cli/cmd/workspace/cluster-policies"
 	clusters "github.com/databricks/cli/cmd/workspace/clusters"
 	connections "github.com/databricks/cli/cmd/workspace/connections"
+	credentials_manager "github.com/databricks/cli/cmd/workspace/credentials-manager"
 	current_user "github.com/databricks/cli/cmd/workspace/current-user"
 	dashboard_widgets "github.com/databricks/cli/cmd/workspace/dashboard-widgets"
 	dashboards "github.com/databricks/cli/cmd/workspace/dashboards"
@@ -44,6 +45,7 @@ import (
 	secrets "github.com/databricks/cli/cmd/workspace/secrets"
 	service_principals "github.com/databricks/cli/cmd/workspace/service-principals"
 	serving_endpoints "github.com/databricks/cli/cmd/workspace/serving-endpoints"
+	settings "github.com/databricks/cli/cmd/workspace/settings"
 	shares "github.com/databricks/cli/cmd/workspace/shares"
 	storage_credentials "github.com/databricks/cli/cmd/workspace/storage-credentials"
 	system_schemas "github.com/databricks/cli/cmd/workspace/system-schemas"
@@ -70,6 +72,7 @@ func All() []*cobra.Command {
 	out = append(out, cluster_policies.New())
 	out = append(out, clusters.New())
 	out = append(out, connections.New())
+	out = append(out, credentials_manager.New())
 	out = append(out, current_user.New())
 	out = append(out, dashboard_widgets.New())
 	out = append(out, dashboards.New())
@@ -104,6 +107,7 @@ func All() []*cobra.Command {
 	out = append(out, secrets.New())
 	out = append(out, service_principals.New())
 	out = append(out, serving_endpoints.New())
+	out = append(out, settings.New())
 	out = append(out, shares.New())
 	out = append(out, storage_credentials.New())
 	out = append(out, system_schemas.New())

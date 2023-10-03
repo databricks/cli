@@ -23,7 +23,7 @@ func TestAccFsLsForDbfs(t *testing.T) {
 	w, err := databricks.NewWorkspaceClient()
 	require.NoError(t, err)
 
-	tmpDir := temporaryDbfsDir(t, w)
+	tmpDir := TemporaryDbfsDir(t, w)
 
 	f, err := filer.NewDbfsClient(w, tmpDir)
 	require.NoError(t, err)
@@ -58,7 +58,7 @@ func TestAccFsLsForDbfsWithAbsolutePaths(t *testing.T) {
 	w, err := databricks.NewWorkspaceClient()
 	require.NoError(t, err)
 
-	tmpDir := temporaryDbfsDir(t, w)
+	tmpDir := TemporaryDbfsDir(t, w)
 
 	f, err := filer.NewDbfsClient(w, tmpDir)
 	require.NoError(t, err)
@@ -94,7 +94,7 @@ func TestAccFsLsForDbfsOnFile(t *testing.T) {
 	w, err := databricks.NewWorkspaceClient()
 	require.NoError(t, err)
 
-	tmpDir := temporaryDbfsDir(t, w)
+	tmpDir := TemporaryDbfsDir(t, w)
 
 	f, err := filer.NewDbfsClient(w, tmpDir)
 	require.NoError(t, err)
@@ -114,7 +114,7 @@ func TestAccFsLsForDbfsOnEmptyDir(t *testing.T) {
 	w, err := databricks.NewWorkspaceClient()
 	require.NoError(t, err)
 
-	tmpDir := temporaryDbfsDir(t, w)
+	tmpDir := TemporaryDbfsDir(t, w)
 
 	stdout, stderr := RequireSuccessfulRun(t, "fs", "ls", "dbfs:"+tmpDir, "--output=json")
 	assert.Equal(t, "", stderr.String())

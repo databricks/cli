@@ -75,7 +75,7 @@ func setupSyncTest(t *testing.T, args ...string) *syncTest {
 
 	w := databricks.Must(databricks.NewWorkspaceClient())
 	localRoot := t.TempDir()
-	remoteRoot := temporaryWorkspaceDir(t, w)
+	remoteRoot := TemporaryWorkspaceDir(t, w)
 	f, err := filer.NewWorkspaceFilesClient(w, remoteRoot)
 	require.NoError(t, err)
 

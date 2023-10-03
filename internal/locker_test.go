@@ -169,7 +169,7 @@ func setupLockerTest(ctx context.Context, t *testing.T) (*lockpkg.Locker, filer.
 	require.NoError(t, err)
 
 	// create temp wsfs dir
-	tmpDir := temporaryWorkspaceDir(t, w)
+	tmpDir := TemporaryWorkspaceDir(t, w)
 	f, err := filer.NewWorkspaceFilesClient(w, tmpDir)
 	require.NoError(t, err)
 

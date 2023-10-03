@@ -4,10 +4,10 @@ go 1.21
 
 require (
 	github.com/briandowns/spinner v1.23.0 // Apache 2.0
-	github.com/databricks/databricks-sdk-go v0.19.3-0.20230914130855-dacb7f4fc878 // Apache 2.0
+	github.com/databricks/databricks-sdk-go v0.22.0 // Apache 2.0
 	github.com/fatih/color v1.15.0 // MIT
 	github.com/ghodss/yaml v1.0.0 // MIT + NOTICE
-	github.com/google/uuid v1.3.0 // BSD-3-Clause
+	github.com/google/uuid v1.3.1 // BSD-3-Clause
 	github.com/hashicorp/go-version v1.6.0 // MPL 2.0
 	github.com/hashicorp/hc-install v0.6.0 // MPL 2.0
 	github.com/hashicorp/terraform-exec v0.19.0 // MPL 2.0
@@ -42,8 +42,8 @@ require (
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
-	github.com/google/s2a-go v0.1.5 // indirect
-	github.com/googleapis/enterprise-certificate-proxy v0.2.5 // indirect
+	github.com/google/s2a-go v0.1.7 // indirect
+	github.com/googleapis/enterprise-certificate-proxy v0.3.1 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
@@ -54,10 +54,10 @@ require (
 	golang.org/x/net v0.15.0 // indirect
 	golang.org/x/sys v0.12.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
-	google.golang.org/api v0.138.0 // indirect
-	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20230807174057-1744710a1577 // indirect
-	google.golang.org/grpc v1.57.0 // indirect
+	google.golang.org/api v0.143.0 // indirect
+	google.golang.org/appengine v1.6.8 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20231002182017-d307bd883b97 // indirect
+	google.golang.org/grpc v1.58.2 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect

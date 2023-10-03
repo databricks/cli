@@ -457,7 +457,7 @@ func newCreateWebhook() *cobra.Command {
 	// TODO: complex arg: http_url_spec
 	// TODO: complex arg: job_spec
 	cmd.Flags().StringVar(&createWebhookReq.ModelName, "model-name", createWebhookReq.ModelName, `Name of the model whose events would trigger this webhook.`)
-	cmd.Flags().Var(&createWebhookReq.Status, "status", `This describes an enum.`)
+	cmd.Flags().Var(&createWebhookReq.Status, "status", `Enable or disable triggering the webhook, or put the webhook into test mode.`)
 
 	cmd.Use = "create-webhook"
 	cmd.Short = `Create a webhook.`
@@ -2581,7 +2581,7 @@ func newUpdateWebhook() *cobra.Command {
 	// TODO: array: events
 	// TODO: complex arg: http_url_spec
 	// TODO: complex arg: job_spec
-	cmd.Flags().Var(&updateWebhookReq.Status, "status", `This describes an enum.`)
+	cmd.Flags().Var(&updateWebhookReq.Status, "status", `Enable or disable triggering the webhook, or put the webhook into test mode.`)
 
 	cmd.Use = "update-webhook ID"
 	cmd.Short = `Update a webhook.`
