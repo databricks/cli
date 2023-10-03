@@ -31,7 +31,7 @@ func Initialize() bundle.Mutator {
 			),
 			mutator.OverrideCompute(),
 			mutator.ProcessTargetMode(),
-			mutator.ExpandGlobPaths(),
+			mutator.ExpandPipelineGlobPaths(),
 			mutator.TranslatePaths(),
 			python.WrapperWarning(),
 			terraform.Initialize(),

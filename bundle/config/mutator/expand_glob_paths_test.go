@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/paths"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/stretchr/testify/require"
 )
@@ -59,6 +60,16 @@ func TestExpandGlobPathsInPipelines(t *testing.T) {
 										Path: "./**/*.py",
 									},
 								},
+								{
+									Maven: &compute.MavenLibrary{
+										Coordinates: "org.jsoup:jsoup:1.7.2",
+									},
+								},
+								{
+									Notebook: &pipelines.NotebookLibrary{
+										Path: "./test1.ipynb",
+									},
+								},
 							},
 						},
 					},
@@ -67,17 +78,25 @@ func TestExpandGlobPathsInPipelines(t *testing.T) {
 		},
 	}
 
-	m := ExpandGlobPaths()
+	m := ExpandPipelineGlobPaths()
 	err := bundle.Apply(context.Background(), b, m)
 	require.NoError(t, err)
 
 	libraries := b.Config.Resources.Pipelines["pipeline"].Libraries
-	require.Len(t, libraries, 5)
+	require.Len(t, libraries, 7)
+
+	// Making sure glob patterns are expanded correctly
 	require.True(t, containsNotebook(libraries, filepath.Join("test", "test2.ipynb")))
 	require.True(t, containsNotebook(libraries, filepath.Join("test", "test3.ipynb")))
-	require.True(t, containsJar(libraries, "test1.jar"))
 	require.True(t, containsFile(libraries, filepath.Join("test", "test2.py")))
 	require.True(t, containsFile(libraries, filepath.Join("test", "test3.py")))
+
+	// Making sure exact file references work as well
+	require.True(t, containsNotebook(libraries, "test1.ipynb"))
+
+	// Making sure other libraries are not replaced
+	require.True(t, containsJar(libraries, "./*.jar"))
+	require.True(t, containsMaven(libraries, "org.jsoup:jsoup:1.7.2"))
 }
 
 func containsNotebook(libraries []pipelines.PipelineLibrary, path string) bool {
@@ -93,6 +112,16 @@ func containsNotebook(libraries []pipelines.PipelineLibrary, path string) bool {
 func containsJar(libraries []pipelines.PipelineLibrary, path string) bool {
 	for _, l := range libraries {
 		if l.Jar == path {
+			return true
+		}
+	}
+
+	return false
+}
+
+func containsMaven(libraries []pipelines.PipelineLibrary, coordinates string) bool {
+	for _, l := range libraries {
+		if l.Maven != nil && l.Maven.Coordinates == coordinates {
 			return true
 		}
 	}

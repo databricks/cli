@@ -9,13 +9,13 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 )
 
-type expandGlobPaths struct{}
+type expandPipelineGlobPaths struct{}
 
-func ExpandGlobPaths() bundle.Mutator {
-	return &expandGlobPaths{}
+func ExpandPipelineGlobPaths() bundle.Mutator {
+	return &expandPipelineGlobPaths{}
 }
 
-func (m *expandGlobPaths) Apply(_ context.Context, b *bundle.Bundle) error {
+func (m *expandPipelineGlobPaths) Apply(_ context.Context, b *bundle.Bundle) error {
 	for key, pipeline := range b.Config.Resources.Pipelines {
 		expandedLibraries := make([]pipelines.PipelineLibrary, 0)
 		for i := 0; i < len(pipeline.Libraries); i++ {
@@ -25,7 +25,11 @@ func (m *expandGlobPaths) Apply(_ context.Context, b *bundle.Bundle) error {
 			}
 
 			library := &pipeline.Libraries[i]
-			path := getLibraryPath(library)
+			path := getGlobPatternToExpand(library)
+			if path == "" {
+				expandedLibraries = append(expandedLibraries, *library)
+				continue
+			}
 
 			matches, err := filepath.Glob(filepath.Join(dir, path))
 			if err != nil {
@@ -46,13 +50,9 @@ func (m *expandGlobPaths) Apply(_ context.Context, b *bundle.Bundle) error {
 	return nil
 }
 
-func getLibraryPath(library *pipelines.PipelineLibrary) string {
+func getGlobPatternToExpand(library *pipelines.PipelineLibrary) string {
 	if library.File != nil {
 		return library.File.Path
-	}
-
-	if library.Jar != "" {
-		return library.Jar
 	}
 
 	if library.Notebook != nil {
@@ -63,26 +63,25 @@ func getLibraryPath(library *pipelines.PipelineLibrary) string {
 }
 
 func cloneWithPath(library *pipelines.PipelineLibrary, path string) pipelines.PipelineLibrary {
-	newLib := pipelines.PipelineLibrary{}
 	if library.File != nil {
-		newLib.File = &pipelines.FileLibrary{
-			Path: path,
+		return pipelines.PipelineLibrary{
+			File: &pipelines.FileLibrary{
+				Path: path,
+			},
 		}
-	}
-
-	if library.Jar != "" {
-		newLib.Jar = path
 	}
 
 	if library.Notebook != nil {
-		newLib.Notebook = &pipelines.NotebookLibrary{
-			Path: path,
+		return pipelines.PipelineLibrary{
+			Notebook: &pipelines.NotebookLibrary{
+				Path: path,
+			},
 		}
 	}
 
-	return newLib
+	return pipelines.PipelineLibrary{}
 }
 
-func (*expandGlobPaths) Name() string {
+func (*expandPipelineGlobPaths) Name() string {
 	return "ExpandGlobPaths"
 }
