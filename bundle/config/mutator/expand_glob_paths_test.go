@@ -73,11 +73,11 @@ func TestExpandGlobPathsInPipelines(t *testing.T) {
 
 	libraries := b.Config.Resources.Pipelines["pipeline"].Libraries
 	require.Len(t, libraries, 5)
-	require.True(t, containsNotebook(libraries, "test/test2.ipynb"))
-	require.True(t, containsNotebook(libraries, "test/test3.ipynb"))
+	require.True(t, containsNotebook(libraries, filepath.Join("test", "test2.ipynb")))
+	require.True(t, containsNotebook(libraries, filepath.Join("test", "test3.ipynb")))
 	require.True(t, containsJar(libraries, "test1.jar"))
-	require.True(t, containsFile(libraries, "test/test2.py"))
-	require.True(t, containsFile(libraries, "test/test3.py"))
+	require.True(t, containsFile(libraries, filepath.Join("test", "test2.py")))
+	require.True(t, containsFile(libraries, filepath.Join("test", "test3.py")))
 }
 
 func containsNotebook(libraries []pipelines.PipelineLibrary, path string) bool {
