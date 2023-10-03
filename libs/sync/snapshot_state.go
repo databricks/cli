@@ -69,7 +69,7 @@ func NewSnapshotState(localFiles []fileset.File) (*SnapshotState, error) {
 		fs.LocalToRemoteNames[f.Relative] = remoteName
 		fs.RemoteToLocalNames[remoteName] = f.Relative
 	}
-	return fs, fs.validate()
+	return fs, nil
 }
 
 // Consistency checks for the sync files state representation. These are invariants

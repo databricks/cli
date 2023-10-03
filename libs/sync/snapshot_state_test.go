@@ -28,6 +28,7 @@ func TestSnapshotState(t *testing.T) {
 	assertKeysOfMap(t, s.LastModifiedTimes, []string{"valid-nb.ipynb", "my-nb.py", "my-script.py"})
 	assertKeysOfMap(t, s.LocalToRemoteNames, []string{"valid-nb.ipynb", "my-nb.py", "my-script.py"})
 	assertKeysOfMap(t, s.RemoteToLocalNames, []string{"valid-nb", "my-nb", "my-script.py"})
+	assert.NoError(t, s.validate())
 }
 
 func TestSnapshotStateValidationErrors(t *testing.T) {
