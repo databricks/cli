@@ -11,11 +11,10 @@ type Value struct {
 	anchor bool
 }
 
-var NilValue = Value{
-	v: nil,
-	l: Location{},
-}
+// NilValue is equal to the zero-value of Value.
+var NilValue = Value{}
 
+// NewValue constructs a new Value with the given value and location.
 func NewValue(v any, loc Location) Value {
 	return Value{
 		v: v,
