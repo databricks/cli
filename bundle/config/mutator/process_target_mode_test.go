@@ -9,6 +9,8 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/libs/tags"
+	sdkconfig "github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
@@ -59,6 +61,10 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 				},
 			},
 		},
+		// Use AWS implementation for testing.
+		Tagging: tags.ForCloud(&sdkconfig.Config{
+			Host: "https://company.cloud.databricks.com",
+		}),
 	}
 }
 
@@ -68,14 +74,71 @@ func TestProcessTargetModeDevelopment(t *testing.T) {
 	m := ProcessTargetMode()
 	err := m.Apply(context.Background(), bundle)
 	require.NoError(t, err)
+
+	// Job 1
 	assert.Equal(t, "[dev lennart] job1", bundle.Config.Resources.Jobs["job1"].Name)
+	assert.Equal(t, bundle.Config.Resources.Jobs["job1"].Tags["dev"], "lennart")
+
+	// Pipeline 1
 	assert.Equal(t, "[dev lennart] pipeline1", bundle.Config.Resources.Pipelines["pipeline1"].Name)
+	assert.True(t, bundle.Config.Resources.Pipelines["pipeline1"].PipelineSpec.Development)
+
+	// Experiment 1
 	assert.Equal(t, "/Users/lennart.kats@databricks.com/[dev lennart] experiment1", bundle.Config.Resources.Experiments["experiment1"].Name)
+	assert.Contains(t, bundle.Config.Resources.Experiments["experiment1"].Experiment.Tags, ml.ExperimentTag{Key: "dev", Value: "lennart"})
+
+	// Experiment 2
 	assert.Equal(t, "[dev lennart] experiment2", bundle.Config.Resources.Experiments["experiment2"].Name)
+	assert.Contains(t, bundle.Config.Resources.Experiments["experiment2"].Experiment.Tags, ml.ExperimentTag{Key: "dev", Value: "lennart"})
+
+	// Model 1
 	assert.Equal(t, "[dev lennart] model1", bundle.Config.Resources.Models["model1"].Name)
+
+	// Model serving endpoint 1
 	assert.Equal(t, "dev_lennart_servingendpoint1", bundle.Config.Resources.ModelServingEndpoints["servingendpoint1"].Name)
 	assert.Equal(t, "dev", bundle.Config.Resources.Experiments["experiment1"].Experiment.Tags[0].Key)
-	assert.True(t, bundle.Config.Resources.Pipelines["pipeline1"].PipelineSpec.Development)
+}
+
+func TestProcessTargetModeDevelopmentTagNormalizationForAws(t *testing.T) {
+	bundle := mockBundle(config.Development)
+	bundle.Tagging = tags.ForCloud(&sdkconfig.Config{
+		Host: "https://dbc-XXXXXXXX-YYYY.cloud.databricks.com/",
+	})
+
+	bundle.Config.Workspace.CurrentUser.ShortName = "Héllö wörld?!"
+	err := ProcessTargetMode().Apply(context.Background(), bundle)
+	require.NoError(t, err)
+
+	// Assert that tag normalization took place.
+	assert.Equal(t, "Hello world__", bundle.Config.Resources.Jobs["job1"].Tags["dev"])
+}
+
+func TestProcessTargetModeDevelopmentTagNormalizationForAzure(t *testing.T) {
+	bundle := mockBundle(config.Development)
+	bundle.Tagging = tags.ForCloud(&sdkconfig.Config{
+		Host: "https://adb-xxx.y.azuredatabricks.net/",
+	})
+
+	bundle.Config.Workspace.CurrentUser.ShortName = "Héllö wörld?!"
+	err := ProcessTargetMode().Apply(context.Background(), bundle)
+	require.NoError(t, err)
+
+	// Assert that tag normalization took place (Azure allows more characters than AWS).
+	assert.Equal(t, "Héllö wörld?!", bundle.Config.Resources.Jobs["job1"].Tags["dev"])
+}
+
+func TestProcessTargetModeDevelopmentTagNormalizationForGcp(t *testing.T) {
+	bundle := mockBundle(config.Development)
+	bundle.Tagging = tags.ForCloud(&sdkconfig.Config{
+		Host: "https://123.4.gcp.databricks.com/",
+	})
+
+	bundle.Config.Workspace.CurrentUser.ShortName = "Héllö wörld?!"
+	err := ProcessTargetMode().Apply(context.Background(), bundle)
+	require.NoError(t, err)
+
+	// Assert that tag normalization took place.
+	assert.Equal(t, "Hello_world", bundle.Config.Resources.Jobs["job1"].Tags["dev"])
 }
 
 func TestProcessTargetModeDefault(t *testing.T) {

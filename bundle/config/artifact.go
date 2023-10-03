@@ -4,11 +4,11 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"os/exec"
 	"path"
 	"strings"
 
 	"github.com/databricks/cli/bundle/config/paths"
+	"github.com/databricks/cli/libs/process"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 )
 
@@ -56,13 +56,14 @@ func (a *Artifact) Build(ctx context.Context) ([]byte, error) {
 	commands := strings.Split(a.BuildCommand, " && ")
 	for _, command := range commands {
 		buildParts := strings.Split(command, " ")
-		cmd := exec.CommandContext(ctx, buildParts[0], buildParts[1:]...)
-		cmd.Dir = a.Path
-		res, err := cmd.CombinedOutput()
+		var buf bytes.Buffer
+		_, err := process.Background(ctx, buildParts,
+			process.WithCombinedOutput(&buf),
+			process.WithDir(a.Path))
 		if err != nil {
-			return res, err
+			return buf.Bytes(), err
 		}
-		out = append(out, res)
+		out = append(out, buf.Bytes())
 	}
 	return bytes.Join(out, []byte{}), nil
 }

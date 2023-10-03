@@ -1,0 +1,4 @@
+#!/bin/sh
+
+echo "Must not get executed!"
+exit 1
