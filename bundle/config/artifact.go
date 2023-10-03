@@ -37,12 +37,12 @@ type Artifact struct {
 
 	// The local path to the directory with a root of artifact,
 	// for example, where setup.py is for Python projects
-	Path string `json:"path"`
+	Path string `json:"path,omitempty"`
 
 	// The relative or absolute path to the built artifact files
 	// (Python wheel, Java jar and etc) itself
-	Files        []ArtifactFile `json:"files"`
-	BuildCommand string         `json:"build"`
+	Files        []ArtifactFile `json:"files,omitempty"`
+	BuildCommand string         `json:"build,omitempty"`
 
 	paths.Paths
 }

@@ -2,8 +2,12 @@ package sync
 
 import (
 	"path"
+	"path/filepath"
+
+	"golang.org/x/exp/maps"
 )
 
+// List of operations to apply to synchronize local file systems changes to WSFS.
 type diff struct {
 	delete []string
 	rmdir  []string
@@ -13,6 +17,71 @@ type diff struct {
 
 func (d diff) IsEmpty() bool {
 	return len(d.put) == 0 && len(d.delete) == 0
+}
+
+// Compute operations required to make files in WSFS reflect current local files.
+// Takes into account changes since the last sync iteration.
+func computeDiff(after *SnapshotState, before *SnapshotState) diff {
+	d := &diff{
+		delete: make([]string, 0),
+		rmdir:  make([]string, 0),
+		mkdir:  make([]string, 0),
+		put:    make([]string, 0),
+	}
+	d.addRemovedFiles(after, before)
+	d.addFilesWithRemoteNameChanged(after, before)
+	d.addNewFiles(after, before)
+	d.addUpdatedFiles(after, before)
+	return *d
+}
+
+// Add operators for tracked files that no longer exist.
+func (d *diff) addRemovedFiles(after *SnapshotState, before *SnapshotState) {
+	for localName, remoteName := range before.LocalToRemoteNames {
+		if _, ok := after.LocalToRemoteNames[localName]; !ok {
+			d.delete = append(d.delete, remoteName)
+		}
+	}
+
+	// Remove directories that would no longer contain any files.
+	beforeDirs := MakeDirSet(maps.Keys(before.LocalToRemoteNames))
+	afterDirs := MakeDirSet(maps.Keys(after.LocalToRemoteNames))
+	d.rmdir = beforeDirs.Remove(afterDirs).Slice()
+}
+
+// Cleanup previous remote files for files that had their remote targets change. For
+// example this is possible if you convert a normal python script to a notebook.
+func (d *diff) addFilesWithRemoteNameChanged(after *SnapshotState, before *SnapshotState) {
+	for localName, beforeRemoteName := range before.LocalToRemoteNames {
+		afterRemoteName, ok := after.LocalToRemoteNames[localName]
+		if ok && afterRemoteName != beforeRemoteName {
+			d.delete = append(d.delete, beforeRemoteName)
+		}
+	}
+}
+
+// Add operators for files that were not being tracked before.
+func (d *diff) addNewFiles(after *SnapshotState, before *SnapshotState) {
+	for localName := range after.LastModifiedTimes {
+		if _, ok := before.LastModifiedTimes[localName]; !ok {
+			d.put = append(d.put, filepath.ToSlash(localName))
+		}
+	}
+
+	// Add directories required for these new files.
+	beforeDirs := MakeDirSet(maps.Keys(before.LocalToRemoteNames))
+	afterDirs := MakeDirSet(maps.Keys(after.LocalToRemoteNames))
+	d.mkdir = afterDirs.Remove(beforeDirs).Slice()
+}
+
+// Add operators for files which had their contents updated.
+func (d *diff) addUpdatedFiles(after *SnapshotState, before *SnapshotState) {
+	for localName, modTime := range after.LastModifiedTimes {
+		prevModTime, ok := before.LastModifiedTimes[localName]
+		if ok && modTime.After(prevModTime) {
+			d.put = append(d.put, filepath.ToSlash(localName))
+		}
+	}
 }
 
 // groupedMkdir returns a slice of slices of paths to create.
