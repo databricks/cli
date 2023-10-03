@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/python"
+	"github.com/databricks/cli/libs/python"
 )
 
 type infer struct {

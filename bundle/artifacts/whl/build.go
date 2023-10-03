@@ -9,7 +9,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/python"
+	"github.com/databricks/cli/libs/python"
 )
 
 type build struct {
