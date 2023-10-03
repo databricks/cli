@@ -90,6 +90,7 @@ func New() *cobra.Command {
 	cmd.Flags().BoolVar(&f.watch, "watch", false, "watch local file system for changes")
 	cmd.Flags().Var(&f.output, "output", "type of output format")
 
+	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		var opts *sync.SyncOptions
 		var err error
