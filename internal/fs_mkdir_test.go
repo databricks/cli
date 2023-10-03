@@ -20,7 +20,7 @@ func TestAccFsMkdirCreatesDirectory(t *testing.T) {
 	w, err := databricks.NewWorkspaceClient()
 	require.NoError(t, err)
 
-	tmpDir := temporaryDbfsDir(t, w)
+	tmpDir := TemporaryDbfsDir(t, w)
 
 	f, err := filer.NewDbfsClient(w, tmpDir)
 	require.NoError(t, err)
@@ -44,7 +44,7 @@ func TestAccFsMkdirCreatesMultipleDirectories(t *testing.T) {
 	w, err := databricks.NewWorkspaceClient()
 	require.NoError(t, err)
 
-	tmpDir := temporaryDbfsDir(t, w)
+	tmpDir := TemporaryDbfsDir(t, w)
 
 	f, err := filer.NewDbfsClient(w, tmpDir)
 	require.NoError(t, err)
@@ -80,7 +80,7 @@ func TestAccFsMkdirWhenDirectoryAlreadyExists(t *testing.T) {
 	w, err := databricks.NewWorkspaceClient()
 	require.NoError(t, err)
 
-	tmpDir := temporaryDbfsDir(t, w)
+	tmpDir := TemporaryDbfsDir(t, w)
 
 	// create directory "a"
 	f, err := filer.NewDbfsClient(w, tmpDir)
@@ -101,7 +101,7 @@ func TestAccFsMkdirWhenFileExistsAtPath(t *testing.T) {
 	w, err := databricks.NewWorkspaceClient()
 	require.NoError(t, err)
 
-	tmpDir := temporaryDbfsDir(t, w)
+	tmpDir := TemporaryDbfsDir(t, w)
 
 	// create file hello
 	f, err := filer.NewDbfsClient(w, tmpDir)

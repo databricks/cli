@@ -1,7 +1,5 @@
 package python
 
-// TODO: move this package into the libs
-
 import (
 	"context"
 	"os"

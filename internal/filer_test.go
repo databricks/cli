@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"io/fs"
 	"net/http"
@@ -15,8 +14,6 @@ import (
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
-	"github.com/databricks/databricks-sdk-go/service/files"
-	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -209,41 +206,12 @@ func runFilerReadDirTest(t *testing.T, ctx context.Context, f filer.Filer) {
 	assert.False(t, entries[0].IsDir())
 }
 
-func temporaryWorkspaceDir(t *testing.T, w *databricks.WorkspaceClient) string {
-	ctx := context.Background()
-	me, err := w.CurrentUser.Me(ctx)
-	require.NoError(t, err)
-
-	path := fmt.Sprintf("/Users/%s/%s", me.UserName, RandomName("integration-test-wsfs-"))
-
-	// Ensure directory exists, but doesn't exist YET!
-	// Otherwise we could inadvertently remove a directory that already exists on cleanup.
-	t.Logf("mkdir %s", path)
-	err = w.Workspace.MkdirsByPath(ctx, path)
-	require.NoError(t, err)
-
-	// Remove test directory on test completion.
-	t.Cleanup(func() {
-		t.Logf("rm -rf %s", path)
-		err := w.Workspace.Delete(ctx, workspace.Delete{
-			Path:      path,
-			Recursive: true,
-		})
-		if err == nil || apierr.IsMissing(err) {
-			return
-		}
-		t.Logf("unable to remove temporary workspace directory %s: %#v", path, err)
-	})
-
-	return path
-}
-
 func setupWorkspaceFilesTest(t *testing.T) (context.Context, filer.Filer) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	ctx := context.Background()
 	w := databricks.Must(databricks.NewWorkspaceClient())
-	tmpdir := temporaryWorkspaceDir(t, w)
+	tmpdir := TemporaryWorkspaceDir(t, w)
 	f, err := filer.NewWorkspaceFilesClient(w, tmpdir)
 	require.NoError(t, err)
 
@@ -267,37 +235,12 @@ func TestAccFilerWorkspaceFilesReadDir(t *testing.T) {
 	runFilerReadDirTest(t, ctx, f)
 }
 
-func temporaryDbfsDir(t *testing.T, w *databricks.WorkspaceClient) string {
-	ctx := context.Background()
-	path := fmt.Sprintf("/tmp/%s", RandomName("integration-test-dbfs-"))
-
-	// This call fails if the path already exists.
-	t.Logf("mkdir dbfs:%s", path)
-	err := w.Dbfs.MkdirsByPath(ctx, path)
-	require.NoError(t, err)
-
-	// Remove test directory on test completion.
-	t.Cleanup(func() {
-		t.Logf("rm -rf dbfs:%s", path)
-		err := w.Dbfs.Delete(ctx, files.Delete{
-			Path:      path,
-			Recursive: true,
-		})
-		if err == nil || apierr.IsMissing(err) {
-			return
-		}
-		t.Logf("unable to remove temporary dbfs directory %s: %#v", path, err)
-	})
-
-	return path
-}
-
 func setupFilerDbfsTest(t *testing.T) (context.Context, filer.Filer) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	ctx := context.Background()
 	w := databricks.Must(databricks.NewWorkspaceClient())
-	tmpdir := temporaryDbfsDir(t, w)
+	tmpdir := TemporaryDbfsDir(t, w)
 	f, err := filer.NewDbfsClient(w, tmpdir)
 	require.NoError(t, err)
 	return ctx, f

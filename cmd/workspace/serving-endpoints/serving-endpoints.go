@@ -134,6 +134,8 @@ func newCreate() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	// TODO: array: tags
+
 	cmd.Use = "create"
 	cmd.Short = `Create a new serving endpoint.`
 	cmd.Long = `Create a new serving endpoint.`
@@ -606,21 +608,101 @@ func init() {
 	})
 }
 
+// start patch command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var patchOverrides []func(
+	*cobra.Command,
+	*serving.PatchServingEndpointTags,
+)
+
+func newPatch() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var patchReq serving.PatchServingEndpointTags
+	var patchJson flags.JsonFlag
+
+	// TODO: short flags
+	cmd.Flags().Var(&patchJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	// TODO: array: add_tags
+	// TODO: array: delete_tags
+
+	cmd.Use = "patch NAME"
+	cmd.Short = `Patch the tags of a serving endpoint.`
+	cmd.Long = `Patch the tags of a serving endpoint.
+  
+  Used to batch add and delete tags from a serving endpoint with a single API
+  call.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			err = patchJson.Unmarshal(&patchReq)
+			if err != nil {
+				return err
+			}
+		}
+		patchReq.Name = args[0]
+
+		response, err := w.ServingEndpoints.Patch(ctx, patchReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range patchOverrides {
+		fn(cmd, &patchReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newPatch())
+	})
+}
+
 // start query command
 
 // Slice with functions to override default command behavior.
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var queryOverrides []func(
 	*cobra.Command,
-	*serving.QueryRequest,
+	*serving.QueryEndpointInput,
 )
 
 func newQuery() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var queryReq serving.QueryRequest
+	var queryReq serving.QueryEndpointInput
+	var queryJson flags.JsonFlag
 
 	// TODO: short flags
+	cmd.Flags().Var(&queryJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	// TODO: array: dataframe_records
+	// TODO: complex arg: dataframe_split
+	// TODO: any: inputs
+	// TODO: array: instances
 
 	cmd.Use = "query NAME"
 	cmd.Short = `Query a serving endpoint with provided model input.`
@@ -638,6 +720,12 @@ func newQuery() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
+		if cmd.Flags().Changed("json") {
+			err = queryJson.Unmarshal(&queryReq)
+			if err != nil {
+				return err
+			}
+		}
 		queryReq.Name = args[0]
 
 		response, err := w.ServingEndpoints.Query(ctx, queryReq)

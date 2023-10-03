@@ -1,0 +1,5 @@
+#!/bin/sh
+
+# pythonw is a gui app for launching gui/no-ui-at-all scripts,
+# when no console window is opened on Windows
+echo "Python 2.7.18"

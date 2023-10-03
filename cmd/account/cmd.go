@@ -19,6 +19,7 @@ import (
 	account_network_policy "github.com/databricks/cli/cmd/account/network-policy"
 	networks "github.com/databricks/cli/cmd/account/networks"
 	o_auth_enrollment "github.com/databricks/cli/cmd/account/o-auth-enrollment"
+	o_auth_published_apps "github.com/databricks/cli/cmd/account/o-auth-published-apps"
 	private_access "github.com/databricks/cli/cmd/account/private-access"
 	published_app_integration "github.com/databricks/cli/cmd/account/published-app-integration"
 	service_principal_secrets "github.com/databricks/cli/cmd/account/service-principal-secrets"
@@ -52,6 +53,7 @@ func New() *cobra.Command {
 	cmd.AddCommand(account_network_policy.New())
 	cmd.AddCommand(networks.New())
 	cmd.AddCommand(o_auth_enrollment.New())
+	cmd.AddCommand(o_auth_published_apps.New())
 	cmd.AddCommand(private_access.New())
 	cmd.AddCommand(published_app_integration.New())
 	cmd.AddCommand(service_principal_secrets.New())

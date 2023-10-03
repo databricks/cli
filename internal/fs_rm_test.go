@@ -20,7 +20,7 @@ func TestAccFsRmForFile(t *testing.T) {
 	w, err := databricks.NewWorkspaceClient()
 	require.NoError(t, err)
 
-	tmpDir := temporaryDbfsDir(t, w)
+	tmpDir := TemporaryDbfsDir(t, w)
 
 	f, err := filer.NewDbfsClient(w, tmpDir)
 	require.NoError(t, err)
@@ -52,7 +52,7 @@ func TestAccFsRmForEmptyDirectory(t *testing.T) {
 	w, err := databricks.NewWorkspaceClient()
 	require.NoError(t, err)
 
-	tmpDir := temporaryDbfsDir(t, w)
+	tmpDir := TemporaryDbfsDir(t, w)
 
 	f, err := filer.NewDbfsClient(w, tmpDir)
 	require.NoError(t, err)
@@ -84,7 +84,7 @@ func TestAccFsRmForNonEmptyDirectory(t *testing.T) {
 	w, err := databricks.NewWorkspaceClient()
 	require.NoError(t, err)
 
-	tmpDir := temporaryDbfsDir(t, w)
+	tmpDir := TemporaryDbfsDir(t, w)
 
 	f, err := filer.NewDbfsClient(w, tmpDir)
 	require.NoError(t, err)
@@ -120,7 +120,7 @@ func TestAccFsRmForNonEmptyDirectoryWithRecursiveFlag(t *testing.T) {
 	w, err := databricks.NewWorkspaceClient()
 	require.NoError(t, err)
 
-	tmpDir := temporaryDbfsDir(t, w)
+	tmpDir := TemporaryDbfsDir(t, w)
 
 	f, err := filer.NewDbfsClient(w, tmpDir)
 	require.NoError(t, err)

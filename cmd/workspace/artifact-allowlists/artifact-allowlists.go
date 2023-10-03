@@ -58,7 +58,7 @@ func newGet() *cobra.Command {
 	cmd.Long = `Get an artifact allowlist.
   
   Get the artifact allowlist of a certain artifact type. The caller must be a
-  metastore admin.`
+  metastore admin or have the **MANAGE ALLOWLIST** privilege on the metastore.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -126,7 +126,7 @@ func newUpdate() *cobra.Command {
   
   Set the artifact allowlist of a certain artifact type. The whole artifact
   allowlist is replaced with the new allowlist. The caller must be a metastore
-  admin.`
+  admin or have the **MANAGE ALLOWLIST** privilege on the metastore.`
 
 	cmd.Annotations = make(map[string]string)
 
