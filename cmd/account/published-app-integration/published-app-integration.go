@@ -17,14 +17,10 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "published-app-integration",
-		Short: `These APIs enable administrators to manage published oauth app integrations, which is required for adding/using Published OAuth App Integration like Tableau Cloud for Databricks in AWS cloud.`,
+		Short: `These APIs enable administrators to manage published oauth app integrations, which is required for adding/using Published OAuth App Integration like Tableau Desktop for Databricks in AWS cloud.`,
 		Long: `These APIs enable administrators to manage published oauth app integrations,
   which is required for adding/using Published OAuth App Integration like
-  Tableau Cloud for Databricks in AWS cloud.
-  
-  **Note:** You can only add/use the OAuth published application integrations
-  when OAuth enrollment status is enabled. For more details see
-  :method:OAuthEnrollment/create`,
+  Tableau Desktop for Databricks in AWS cloud.`,
 		GroupID: "oauth2",
 		Annotations: map[string]string{
 			"package": "oauth2",

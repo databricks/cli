@@ -169,7 +169,7 @@ func newCreate() *cobra.Command {
 	cmd.Flags().StringVar(&createReq.ClusterName, "cluster-name", createReq.ClusterName, `Cluster name requested by the user.`)
 	cmd.Flags().Var(&createReq.ClusterSource, "cluster-source", `Determines whether the cluster was created by a user through the UI, created by the Databricks Jobs Scheduler, or through an API request.`)
 	// TODO: map via StringToStringVar: custom_tags
-	cmd.Flags().Var(&createReq.DataSecurityMode, "data-security-mode", `This describes an enum.`)
+	cmd.Flags().Var(&createReq.DataSecurityMode, "data-security-mode", `Data security mode decides what data governance model to use when accessing data from a cluster.`)
 	// TODO: complex arg: docker_image
 	cmd.Flags().StringVar(&createReq.DriverInstancePoolId, "driver-instance-pool-id", createReq.DriverInstancePoolId, `The optional ID of the instance pool for the driver of the cluster belongs.`)
 	cmd.Flags().StringVar(&createReq.DriverNodeTypeId, "driver-node-type-id", createReq.DriverNodeTypeId, `The node type of the Spark driver.`)
@@ -396,7 +396,7 @@ func newEdit() *cobra.Command {
 	cmd.Flags().StringVar(&editReq.ClusterName, "cluster-name", editReq.ClusterName, `Cluster name requested by the user.`)
 	cmd.Flags().Var(&editReq.ClusterSource, "cluster-source", `Determines whether the cluster was created by a user through the UI, created by the Databricks Jobs Scheduler, or through an API request.`)
 	// TODO: map via StringToStringVar: custom_tags
-	cmd.Flags().Var(&editReq.DataSecurityMode, "data-security-mode", `This describes an enum.`)
+	cmd.Flags().Var(&editReq.DataSecurityMode, "data-security-mode", `Data security mode decides what data governance model to use when accessing data from a cluster.`)
 	// TODO: complex arg: docker_image
 	cmd.Flags().StringVar(&editReq.DriverInstancePoolId, "driver-instance-pool-id", editReq.DriverInstancePoolId, `The optional ID of the instance pool for the driver of the cluster belongs.`)
 	cmd.Flags().StringVar(&editReq.DriverNodeTypeId, "driver-node-type-id", editReq.DriverNodeTypeId, `The node type of the Spark driver.`)
