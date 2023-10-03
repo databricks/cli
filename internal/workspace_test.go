@@ -45,7 +45,7 @@ func TestWorkpaceExportPrintsContents(t *testing.T) {
 
 	ctx := context.Background()
 	w := databricks.Must(databricks.NewWorkspaceClient())
-	tmpdir := temporaryWorkspaceDir(t, w)
+	tmpdir := TemporaryWorkspaceDir(t, w)
 	f, err := filer.NewWorkspaceFilesClient(w, tmpdir)
 	require.NoError(t, err)
 
@@ -65,7 +65,7 @@ func setupWorkspaceImportExportTest(t *testing.T) (context.Context, filer.Filer,
 
 	ctx := context.Background()
 	w := databricks.Must(databricks.NewWorkspaceClient())
-	tmpdir := temporaryWorkspaceDir(t, w)
+	tmpdir := TemporaryWorkspaceDir(t, w)
 	f, err := filer.NewWorkspaceFilesClient(w, tmpdir)
 	require.NoError(t, err)
 
