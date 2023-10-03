@@ -61,7 +61,7 @@ func TestWorkpaceExportPrintsContents(t *testing.T) {
 }
 
 func setupWorkspaceImportExportTest(t *testing.T) (context.Context, filer.Filer, string) {
-	// t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	ctx := context.Background()
 	w := databricks.Must(databricks.NewWorkspaceClient())
