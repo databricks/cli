@@ -1,0 +1,4 @@
+#!/bin/sh
+
+>&2 echo "This version of Python does not exist"
+exit 1
