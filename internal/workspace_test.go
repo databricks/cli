@@ -61,7 +61,7 @@ func TestWorkpaceExportPrintsContents(t *testing.T) {
 }
 
 func setupWorkspaceImportExportTest(t *testing.T) (context.Context, filer.Filer, string) {
-	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+	// t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	ctx := context.Background()
 	w := databricks.Must(databricks.NewWorkspaceClient())
@@ -267,4 +267,38 @@ func TestAccExport(t *testing.T) {
 	require.NoError(t, err)
 	assert.Contains(t, string(b), `"cells":`, "jupyter notebooks contain the cells field")
 	assert.Contains(t, string(b), `"metadata":`, "jupyter notebooks contain the metadata field")
+}
+
+func TestAccExportWithFileFlag(t *testing.T) {
+	ctx, f, sourceDir := setupWorkspaceImportExportTest(t)
+	localTmpDir := t.TempDir()
+
+	var err error
+
+	// Export vanilla file
+	err = f.Write(ctx, "file-a", strings.NewReader("abc"))
+	require.NoError(t, err)
+	stdout, _ := RequireSuccessfulRun(t, "workspace", "export", filepath.Join(sourceDir, "file-a"), "--file", filepath.Join(localTmpDir, "file.txt"))
+	b, err := io.ReadAll(&stdout)
+	require.NoError(t, err)
+	// Expect nothing to be printed to stdout
+	assert.Equal(t, "", string(b))
+	assertLocalFileContents(t, filepath.Join(localTmpDir, "file.txt"), "abc")
+
+	// Export python notebook
+	err = f.Write(ctx, "pyNotebook.py", strings.NewReader("# Databricks notebook source"))
+	require.NoError(t, err)
+	stdout, _ = RequireSuccessfulRun(t, "workspace", "export", filepath.Join(sourceDir, "pyNotebook"), "--file", filepath.Join(localTmpDir, "pyNb.py"))
+	b, err = io.ReadAll(&stdout)
+	require.NoError(t, err)
+	assert.Equal(t, "", string(b))
+	assertLocalFileContents(t, filepath.Join(localTmpDir, "pyNb.py"), "# Databricks notebook source\n")
+
+	// Export python notebook as jupyter
+	stdout, _ = RequireSuccessfulRun(t, "workspace", "export", filepath.Join(sourceDir, "pyNotebook"), "--format", "JUPYTER", "--file", filepath.Join(localTmpDir, "jupyterNb.ipynb"))
+	b, err = io.ReadAll(&stdout)
+	require.NoError(t, err)
+	assert.Equal(t, "", string(b))
+	assertLocalFileContents(t, filepath.Join(localTmpDir, "jupyterNb.ipynb"), `"cells":`)
+	assertLocalFileContents(t, filepath.Join(localTmpDir, "jupyterNb.ipynb"), `"metadata":`)
 }
