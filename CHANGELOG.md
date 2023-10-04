@@ -1,5 +1,40 @@
 # Version changelog
 
+## 0.207.0
+
+CLI:
+ * Refactor change computation for sync ([#785](https://github.com/databricks/cli/pull/785)).
+
+Bundles:
+ * Allow digits in the generated short name ([#820](https://github.com/databricks/cli/pull/820)).
+ * Emit an error when incompatible all purpose cluster used with Python wheel tasks ([#823](https://github.com/databricks/cli/pull/823)).
+ * Use normalized short name for tag value in development mode ([#821](https://github.com/databricks/cli/pull/821)).
+ * Added `python.DetectInterpreters` and other utils ([#805](https://github.com/databricks/cli/pull/805)).
+ * Mark artifacts properties as optional ([#834](https://github.com/databricks/cli/pull/834)).
+ * Added support for glob patterns in pipeline libraries section ([#833](https://github.com/databricks/cli/pull/833)).
+
+Internal:
+ * Run tests to verify backend tag validation behavior ([#814](https://github.com/databricks/cli/pull/814)).
+ * Library to validate and normalize cloud specific tags ([#819](https://github.com/databricks/cli/pull/819)).
+ * Added test to submit and run various Python tasks on multiple DBR versions ([#806](https://github.com/databricks/cli/pull/806)).
+ * Create a release PR in setup-cli repo on tag push ([#827](https://github.com/databricks/cli/pull/827)).
+
+API Changes:
+ * Changed `databricks account metastore-assignments list` command to return .
+ * Changed `databricks jobs cancel-all-runs` command with new required argument order.
+ * Added `databricks account o-auth-published-apps` command group.
+ * Changed `databricks serving-endpoints query` command . New request type is .
+ * Added `databricks serving-endpoints patch` command.
+ * Added `databricks credentials-manager` command group.
+ * Added `databricks settings` command group.
+ * Changed `databricks clean-rooms list` command to require request of .
+ * Changed `databricks statement-execution execute-statement` command with new required argument order.
+
+OpenAPI commit bcbf6e851e3d82fd910940910dd31c10c059746c (2023-10-02)
+Dependency updates:
+ * Bump github.com/google/uuid from 1.3.0 to 1.3.1 ([#825](https://github.com/databricks/cli/pull/825)).
+ * Updated Go SDK to 0.22.0 ([#831](https://github.com/databricks/cli/pull/831)).
+
 ## 0.206.0
 
 Bundles:
