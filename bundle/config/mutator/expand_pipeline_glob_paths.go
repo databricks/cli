@@ -18,12 +18,13 @@ func ExpandPipelineGlobPaths() bundle.Mutator {
 
 func (m *expandPipelineGlobPaths) Apply(_ context.Context, b *bundle.Bundle) error {
 	for key, pipeline := range b.Config.Resources.Pipelines {
+		dir, err := pipeline.ConfigFileDirectory()
+		if err != nil {
+			return fmt.Errorf("unable to determine directory for pipeline %s: %w", key, err)
+		}
+
 		expandedLibraries := make([]pipelines.PipelineLibrary, 0)
 		for i := 0; i < len(pipeline.Libraries); i++ {
-			dir, err := pipeline.ConfigFileDirectory()
-			if err != nil {
-				return fmt.Errorf("unable to determine directory for pipeline %s: %w", key, err)
-			}
 
 			library := &pipeline.Libraries[i]
 			path := getGlobPatternToExpand(library)
