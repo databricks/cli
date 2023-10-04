@@ -1,9 +1,8 @@
-// Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
-
 package workspace
 
 import (
 	alerts "github.com/databricks/cli/cmd/workspace/alerts"
+	apps "github.com/databricks/cli/cmd/workspace/apps"
 	artifact_allowlists "github.com/databricks/cli/cmd/workspace/artifact-allowlists"
 	catalogs "github.com/databricks/cli/cmd/workspace/catalogs"
 	clean_rooms "github.com/databricks/cli/cmd/workspace/clean-rooms"
@@ -66,6 +65,7 @@ func All() []*cobra.Command {
 	var out []*cobra.Command
 
 	out = append(out, alerts.New())
+	out = append(out, apps.New())
 	out = append(out, artifact_allowlists.New())
 	out = append(out, catalogs.New())
 	out = append(out, clean_rooms.New())

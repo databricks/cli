@@ -33,6 +33,10 @@ func Groups() []cobra.Group {
 			Title: "Real-time Serving",
 		},
 		{
+			ID:    "apps",
+			Title: "Lakehouse Apps",
+		},
+		{
 			ID:    "iam",
 			Title: "Identity and Access Management",
 		},
