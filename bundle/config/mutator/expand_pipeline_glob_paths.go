@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 )
 
@@ -26,7 +27,7 @@ func (m *expandPipelineGlobPaths) Apply(_ context.Context, b *bundle.Bundle) err
 
 			library := &pipeline.Libraries[i]
 			path := getGlobPatternToExpand(library)
-			if path == "" {
+			if path == "" || !libraries.IsLocalPath(path) {
 				expandedLibraries = append(expandedLibraries, *library)
 				continue
 			}
@@ -83,5 +84,5 @@ func cloneWithPath(library *pipelines.PipelineLibrary, path string) pipelines.Pi
 }
 
 func (*expandPipelineGlobPaths) Name() string {
-	return "ExpandGlobPaths"
+	return "ExpandPipelineGlobPaths"
 }
