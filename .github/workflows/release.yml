@@ -32,12 +32,13 @@ jobs:
 
       - name: Set VERSION variable from tag
         run: |
-          echo "VERSION=${{ github.ref_name }}" >> $GITHUB_ENV
+          VERSION=${{ github.ref_name }}
           echo "VERSION=${VERSION:1}" >> $GITHUB_ENV
 
       - name: Update setup-cli
         uses: actions/github-script@v6
         with:
+          github-token: ${{ secrets.DECO_GITHUB_TOKEN }}
           script: |
             await github.rest.actions.createWorkflowDispatch({
               owner: 'databricks',
@@ -45,6 +46,6 @@ jobs:
               workflow_id: 'release-pr.yml',
               ref: 'main',
               inputs: {
-                version: ${VERSION},
+                version: "${{ env.VERSION }}",
               }
             });
