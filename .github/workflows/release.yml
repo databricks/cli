@@ -30,6 +30,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  create-release-prs:
+    needs: goreleaser
+    runs-on: ubuntu-latest
+    steps:
       - name: Set VERSION variable from tag
         run: |
           VERSION=${{ github.ref_name }}
