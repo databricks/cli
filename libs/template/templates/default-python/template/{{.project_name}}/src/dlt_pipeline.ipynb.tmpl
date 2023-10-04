@@ -35,7 +35,6 @@
     "# Import DLT and src/{{.project_name}}\n",
     "import dlt\n",
     "import sys\n",
-    "sys.path.append(spark.conf.get(\"bundle.sourcePath\", \".\"))\n",
     "from pyspark.sql.functions import expr\n",
     "from {{.project_name}} import main"
    {{else}}
