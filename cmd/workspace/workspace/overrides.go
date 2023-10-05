@@ -8,6 +8,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
@@ -25,6 +26,33 @@ func listOverride(listCmd *cobra.Command, listReq *workspace.ListWorkspaceReques
 func exportOverride(exportCmd *cobra.Command, exportReq *workspace.ExportRequest) {
 	// The export command prints the contents of the file to stdout by default.
 	exportCmd.Annotations["template"] = `{{.Content | b64_decode}}`
+	exportCmd.Use = "export SOURCE_PATH"
+
+	var filePath string
+	exportCmd.Flags().StringVar(&filePath, "file", "", `Path on the local file system to save exported file at.`)
+
+	exportCmd.RunE = func(cmd *cobra.Command, args []string) error {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the absolute path of the object or directory")
+		}
+		exportReq.Path = args[0]
+
+		response, err := w.Workspace.Export(ctx, *exportReq)
+		if err != nil {
+			return err
+		}
+		// Render file content to stdout if no file path is specified.
+		if filePath == "" {
+			return cmdio.Render(ctx, response)
+		}
+		b, err := base64.StdEncoding.DecodeString(response.Content)
+		if err != nil {
+			return err
+		}
+		return os.WriteFile(filePath, b, 0755)
+	}
 }
 
 // Give better errors / hints for common API errors.
