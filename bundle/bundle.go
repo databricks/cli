@@ -14,6 +14,7 @@ import (
 	"sync"
 
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/deploy"
 	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/folders"
 	"github.com/databricks/cli/libs/git"
@@ -30,6 +31,8 @@ const internalFolder = ".internal"
 
 type Bundle struct {
 	Config config.Root
+
+	Metadata deploy.Metadata
 
 	// Store a pointer to the workspace client.
 	// It can be initialized on demand after loading the configuration.
