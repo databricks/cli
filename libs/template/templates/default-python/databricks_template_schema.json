@@ -26,7 +26,7 @@
             "type": "string",
             "default": "yes",
             "enum": ["yes", "no"],
-            "description": "Include a stub (sample) Python package 'my_project/src'",
+            "description": "Include a stub (sample) Python package in '{{.project_name}}/src'",
             "order": 4
         }
     }

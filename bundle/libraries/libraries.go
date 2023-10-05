@@ -161,6 +161,10 @@ func isLocalLibrary(library *compute.Library) bool {
 		return false
 	}
 
+	return IsLocalPath(path)
+}
+
+func IsLocalPath(path string) bool {
 	if isExplicitFileScheme(path) {
 		return true
 	}
