@@ -2,17 +2,13 @@ package workspace
 
 import (
 	"encoding/base64"
-	"fmt"
-	"os"
-
 	"errors"
-
+	"fmt"
 	"net/http"
-
+	"os"
 	"strings"
 
 	"github.com/databricks/cli/cmd/root"
-
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
