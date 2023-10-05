@@ -36,7 +36,7 @@ func wrapImportAPIErrors(err error, importReq *workspace.Import) error {
 	isFormatSource := importReq.Format == workspace.ImportFormatSource || importReq.Format == ""
 	if isFormatSource && apiErr.StatusCode == http.StatusBadRequest &&
 		strings.Contains(apiErr.Message, "The zip file may not be valid or may be an unsupported version.") {
-		return fmt.Errorf("%w Hint: Objects imported using format=SOURCE are expected to zip encoded databricks source notebook(s) by default. Please specify a language using the --language flag if you are trying to import a single uncompressed notebook", err)
+		return fmt.Errorf("%w Hint: Objects imported using format=SOURCE are expected to be zip encoded databricks source notebook(s) by default. Please specify a language using the --language flag if you are trying to import a single uncompressed notebook", err)
 	}
 	return err
 }
