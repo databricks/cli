@@ -15,7 +15,7 @@ import (
 func TestExpandWorkspaceRoot(t *testing.T) {
 	bundle := &bundle.Bundle{
 		Config: config.Root{
-			Workspace: config.Workspace{
+			Workspace: &config.Workspace{
 				CurrentUser: &config.User{
 					User: &iam.User{
 						UserName: "jane@doe.com",
@@ -33,7 +33,7 @@ func TestExpandWorkspaceRoot(t *testing.T) {
 func TestExpandWorkspaceRootDoesNothing(t *testing.T) {
 	bundle := &bundle.Bundle{
 		Config: config.Root{
-			Workspace: config.Workspace{
+			Workspace: &config.Workspace{
 				CurrentUser: &config.User{
 					User: &iam.User{
 						UserName: "jane@doe.com",
@@ -51,7 +51,7 @@ func TestExpandWorkspaceRootDoesNothing(t *testing.T) {
 func TestExpandWorkspaceRootWithoutRoot(t *testing.T) {
 	bundle := &bundle.Bundle{
 		Config: config.Root{
-			Workspace: config.Workspace{
+			Workspace: &config.Workspace{
 				CurrentUser: &config.User{
 					User: &iam.User{
 						UserName: "jane@doe.com",
@@ -67,7 +67,7 @@ func TestExpandWorkspaceRootWithoutRoot(t *testing.T) {
 func TestExpandWorkspaceRootWithoutCurrentUser(t *testing.T) {
 	bundle := &bundle.Bundle{
 		Config: config.Root{
-			Workspace: config.Workspace{
+			Workspace: &config.Workspace{
 				RootPath: "~/foo",
 			},
 		},

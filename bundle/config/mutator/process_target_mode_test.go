@@ -30,7 +30,7 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 					Branch:    "main",
 				},
 			},
-			Workspace: config.Workspace{
+			Workspace: &config.Workspace{
 				CurrentUser: &config.User{
 					ShortName: "lennart",
 					User: &iam.User{

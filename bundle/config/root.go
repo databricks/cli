@@ -61,7 +61,7 @@ type Root struct {
 
 	// Workspace contains details about the workspace to connect to
 	// and paths in the workspace tree to use for this bundle.
-	Workspace Workspace `json:"workspace,omitempty"`
+	Workspace *Workspace `json:"workspace,omitempty"`
 
 	// Artifacts contains a description of all code artifacts in this bundle.
 	Artifacts Artifacts `json:"artifacts,omitempty"`
@@ -80,7 +80,7 @@ type Root struct {
 	Environments map[string]*Target `json:"environments,omitempty"`
 
 	// Sync section specifies options for files synchronization
-	Sync Sync `json:"sync,omitempty"`
+	Sync *Sync `json:"sync,omitempty"`
 
 	// RunAs section allows to define an execution identity for jobs and pipelines runs
 	RunAs *jobs.JobRunAs `json:"run_as,omitempty"`
@@ -188,7 +188,7 @@ func (r *Root) Merge(other *Root) error {
 	if err != nil {
 		return err
 	}
-	other.Sync = Sync{}
+	other.Sync = &Sync{}
 
 	// TODO: when hooking into merge semantics, disallow setting path on the target instance.
 	other.Path = ""
@@ -219,7 +219,7 @@ func (r *Root) MergeTargetOverrides(target *Target) error {
 	}
 
 	if target.Workspace != nil {
-		err = mergo.Merge(&r.Workspace, target.Workspace, mergo.WithOverride)
+		err = mergo.Merge(r.Workspace, target.Workspace, mergo.WithOverride)
 		if err != nil {
 			return err
 		}

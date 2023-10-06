@@ -26,7 +26,7 @@ type Bundle struct {
 	Terraform *Terraform `json:"terraform,omitempty" bundle:"readonly"`
 
 	// Lock configures locking behavior on deployment.
-	Lock Lock `json:"lock,omitempty" bundle:"readonly"`
+	Lock *Lock `json:"lock,omitempty" bundle:"readonly"`
 
 	// Force-override Git branch validation.
 	Force bool `json:"force,omitempty" bundle:"readonly"`

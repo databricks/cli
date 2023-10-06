@@ -14,7 +14,7 @@ import (
 func TestDefineDefaultWorkspacePaths(t *testing.T) {
 	bundle := &bundle.Bundle{
 		Config: config.Root{
-			Workspace: config.Workspace{
+			Workspace: &config.Workspace{
 				RootPath: "/",
 			},
 		},
@@ -29,7 +29,7 @@ func TestDefineDefaultWorkspacePaths(t *testing.T) {
 func TestDefineDefaultWorkspacePathsAlreadySet(t *testing.T) {
 	bundle := &bundle.Bundle{
 		Config: config.Root{
-			Workspace: config.Workspace{
+			Workspace: &config.Workspace{
 				RootPath:      "/",
 				FilesPath:     "/foo/bar",
 				ArtifactsPath: "/foo/bar",

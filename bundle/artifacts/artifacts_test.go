@@ -97,7 +97,7 @@ func TestUploadArtifactFileToCorrectRemotePath(t *testing.T) {
 			Bundle: config.Bundle{
 				Target: "whatever",
 			},
-			Workspace: config.Workspace{
+			Workspace: &config.Workspace{
 				ArtifactsPath: "/Users/test@databricks.com/whatever",
 			},
 		},

@@ -12,8 +12,6 @@ var MetadataTag = "metadata"
 // more information about a particular bundle deployment.
 //
 // Post deploy, the metadata file can be found at ${workspace.state_path}/deploy-metadata.json
-//
-// Add the `bundle:"metadata"` tag to any fields to include them in the metadata.
 type Metadata struct {
 	Version int `json:"version"`
 

@@ -38,14 +38,14 @@ func TestRootLoad(t *testing.T) {
 func TestRootMergeStruct(t *testing.T) {
 	root := &Root{
 		Path: "path",
-		Workspace: Workspace{
+		Workspace: &Workspace{
 			Host:    "foo",
 			Profile: "profile",
 		},
 	}
 	other := &Root{
 		Path: "path",
-		Workspace: Workspace{
+		Workspace: &Workspace{
 			Host: "bar",
 		},
 	}
