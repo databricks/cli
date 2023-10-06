@@ -5,7 +5,7 @@ type Terraform struct {
 }
 
 type Bundle struct {
-	Name string `json:"name"`
+	Name string `json:"name,omitempty"`
 
 	// TODO
 	// Default cluster to run commands on (Python, Scala).
@@ -26,10 +26,10 @@ type Bundle struct {
 	Terraform *Terraform `json:"terraform,omitempty" bundle:"readonly"`
 
 	// Lock configures locking behavior on deployment.
-	Lock Lock `json:"lock" bundle:"readonly"`
+	Lock Lock `json:"lock,omitempty" bundle:"readonly"`
 
 	// Force-override Git branch validation.
-	Force bool `json:"force" bundle:"readonly"`
+	Force bool `json:"force,omitempty" bundle:"readonly"`
 
 	// Contains Git information like current commit, current branch and
 	// origin url. Automatically loaded by reading .git directory if not specified

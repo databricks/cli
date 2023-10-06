@@ -8,7 +8,7 @@ import (
 type Paths struct {
 	// ConfigFilePath holds the path to the configuration file that
 	// described the resource that this type is embedded in.
-	ConfigFilePath string `json:"-" bundle:"readonly"`
+	ConfigFilePath string `json:"config_file_path,omitempty" bundle:"readonly"`
 }
 
 func (p *Paths) ConfigFileDirectory() (string, error) {
