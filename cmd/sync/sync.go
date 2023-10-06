@@ -150,10 +150,15 @@ func New() *cobra.Command {
 	}
 
 	cmd.ValidArgsFunction = func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		ctx := cmd.Context()
+		cmd.SetContext(root.NoPrompt(ctx))
+
 		err := root.MustWorkspaceClient(cmd, args)
 		if err != nil {
 			return nil, cobra.ShellCompDirectiveError
 		}
+
+		cmd.SetContext(ctx)
 
 		// No completion in the context of a bundle.
 		// Source and destination paths are taken from bundle configuration.

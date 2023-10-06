@@ -92,7 +92,8 @@ func MustAccountClient(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	allowPrompt := !hasProfileFlag
+	noPrompt, ok := cmd.Context().Value(noPromptKey).(bool)
+	allowPrompt := !hasProfileFlag && (!ok || !noPrompt)
 	a, err := accountClientOrPrompt(cmd.Context(), cfg, allowPrompt)
 	if err != nil {
 		return err
@@ -100,6 +101,14 @@ func MustAccountClient(cmd *cobra.Command, args []string) error {
 
 	cmd.SetContext(context.WithValue(cmd.Context(), &accountClient, a))
 	return nil
+}
+
+type noPrompt int
+
+var noPromptKey noPrompt
+
+func NoPrompt(ctx context.Context) context.Context {
+	return context.WithValue(ctx, noPromptKey, true)
 }
 
 // Helper function to create a workspace client or prompt once if the given configuration is not valid.
