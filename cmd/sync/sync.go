@@ -150,7 +150,7 @@ func New() *cobra.Command {
 	}
 
 	cmd.ValidArgsFunction = func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		err := root.TryConfigureBundle(cmd, args)
+		err := root.MustWorkspaceClient(cmd, args)
 		if err != nil {
 			return nil, cobra.ShellCompDirectiveError
 		}
@@ -166,10 +166,7 @@ func New() *cobra.Command {
 		case 0:
 			return nil, cobra.ShellCompDirectiveFilterDirs
 		case 1:
-			wsc, err := databricks.NewWorkspaceClient()
-			if err != nil {
-				return nil, cobra.ShellCompDirectiveError
-			}
+			wsc := root.WorkspaceClient(cmd.Context())
 			return completeRemotePath(cmd.Context(), wsc, toComplete)
 		default:
 			return nil, cobra.ShellCompDirectiveNoFileComp
