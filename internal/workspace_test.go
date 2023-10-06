@@ -369,7 +369,8 @@ func TestAccImportFileFormatAuto(t *testing.T) {
 
 	// Upload as file if path has no extension
 	RequireSuccessfulRun(t, "workspace", "import", filepath.Join(targetDir, "py-nb-as-file"), "--file", "./testdata/import_dir/pyNotebook.py", "--format=AUTO")
-	assertFilerFileContents(t, ctx, workspaceFiler, "py-nb-as-file", "# Databricks notebook source\nprint(\"python\")")
+	assertFilerFileContents(t, ctx, workspaceFiler, "py-nb-as-file", "# Databricks notebook source")
+	assertFilerFileContents(t, ctx, workspaceFiler, "py-nb-as-file", "print(\"python\")")
 	assertWorkspaceFileType(t, ctx, workspaceFiler, "py-nb-as-file", workspace.ObjectTypeFile)
 
 	// Upload as notebook if path has extension
@@ -379,6 +380,6 @@ func TestAccImportFileFormatAuto(t *testing.T) {
 
 	// Upload as file if content is not notebook (even if path has .py extension)
 	RequireSuccessfulRun(t, "workspace", "import", filepath.Join(targetDir, "not-a-notebook.py"), "--file", "./testdata/import_dir/file-a", "--format=AUTO")
-	assertFilerFileContents(t, ctx, workspaceFiler, "not-a-notebook.py", "hello, world\n")
+	assertFilerFileContents(t, ctx, workspaceFiler, "not-a-notebook.py", "hello, world")
 	assertWorkspaceFileType(t, ctx, workspaceFiler, "not-a-notebook.py", workspace.ObjectTypeFile)
 }
