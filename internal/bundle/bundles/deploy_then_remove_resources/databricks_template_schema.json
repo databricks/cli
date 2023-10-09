@@ -2,7 +2,7 @@
     "properties": {
         "unique_id": {
             "type": "string",
-            "description": "Unique ID for job name"
+            "description": "Unique ID for pipeline name"
         }
     }
 }

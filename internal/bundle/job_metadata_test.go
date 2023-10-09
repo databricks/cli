@@ -1,0 +1,118 @@
+package bundle
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"io"
+	"testing"
+
+	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/paths"
+	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/bundle/deploy"
+	"github.com/databricks/cli/internal"
+	"github.com/databricks/cli/libs/filer"
+	"github.com/databricks/databricks-sdk-go"
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestAccJobsMetadataFile(t *testing.T) {
+	env := internal.GetEnvOrSkipTest(t, "CLOUD_ENV")
+	t.Log(env)
+
+	w, err := databricks.NewWorkspaceClient()
+	require.NoError(t, err)
+
+	var nodeTypeId string
+	if env == "gcp" {
+		nodeTypeId = "n1-standard-4"
+	} else if env == "aws" {
+		nodeTypeId = "i3.xlarge"
+	} else {
+		nodeTypeId = "Standard_DS4_v2"
+	}
+
+	uniqueId := uuid.New().String()
+	bundleRoot, err := initTestTemplate(t, "job_metadata", map[string]any{
+		"unique_id":     uniqueId,
+		"node_type_id":  nodeTypeId,
+		"spark_version": "13.2.x-snapshot-scala2.12",
+	})
+	require.NoError(t, err)
+
+	// deploy bundle
+	err = deployBundle(t, bundleRoot)
+	require.NoError(t, err)
+
+	// Cleanup the deployed bundle
+	t.Cleanup(func() {
+		err = destroyBundle(t, bundleRoot)
+		require.NoError(t, err)
+	})
+
+	// assert job 1 is created
+	jobName := "test-job-metadata-1-" + uniqueId
+	job, err := w.Jobs.GetBySettingsName(context.Background(), jobName)
+	require.NoError(t, err)
+	assert.Equal(t, job.Settings.Name, jobName)
+
+	// assert job 2 is created
+	jobName = "test-job-metadata-2-" + uniqueId
+	job, err = w.Jobs.GetBySettingsName(context.Background(), jobName)
+	require.NoError(t, err)
+	assert.Equal(t, job.Settings.Name, jobName)
+
+	// Compute root path for the bundle deployment
+	me, err := w.CurrentUser.Me(context.Background())
+	require.NoError(t, err)
+	root := fmt.Sprintf("/Users/%s/.bundle/%s", me.UserName, uniqueId)
+	f, err := filer.NewWorkspaceFilesClient(w, root)
+	require.NoError(t, err)
+
+	// Read metadata object from the workspace
+	r, err := f.Read(context.Background(), "state/deploy-metadata.json")
+	require.NoError(t, err)
+	b, err := io.ReadAll(r)
+	require.NoError(t, err)
+	actualMetadata := deploy.Metadata{}
+	err = json.Unmarshal(b, &actualMetadata)
+	require.NoError(t, err)
+
+	// expected value for the metadata
+	expectedMetadata := deploy.Metadata{
+		Version: deploy.LatestMetadataVersion,
+		Config: config.Root{
+			Workspace: config.Workspace{
+				RootPath: root,
+			},
+			Resources: config.Resources{
+				Jobs: map[string]*resources.Job{
+					"foo": {
+						Paths: paths.Paths{
+							ConfigFilePath: "databricks.yml",
+						},
+					},
+					"bar": {
+						Paths: paths.Paths{
+							ConfigFilePath: "a/b/resources.yml",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	// Print expected and actual metadata for debugging
+	actual, err := json.MarshalIndent(actualMetadata, "		", "	")
+	assert.NoError(t, err)
+	t.Log("[DEBUG] actual: ", string(actual))
+	expected, err := json.MarshalIndent(expectedMetadata, "		", "	")
+	assert.NoError(t, err)
+	t.Log("[DEBUG] expected: ", string(expected))
+
+	// Assert metadata matches what we expected.
+	assert.Equal(t, expectedMetadata, actualMetadata)
+}
