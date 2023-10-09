@@ -78,12 +78,12 @@ func TestComputeMetadataMutator(t *testing.T) {
 				Jobs: map[string]*resources.Job{
 					"my-job-1": {
 						Paths: paths.Paths{
-							LocalConfigFilePath: "a/b/c",
+							ConfigFilePath: "a/b/c",
 						},
 					},
 					"my-job-2": {
 						Paths: paths.Paths{
-							LocalConfigFilePath: "d/e/f",
+							ConfigFilePath: "d/e/f",
 						},
 					},
 				},
