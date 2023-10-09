@@ -80,6 +80,11 @@ func TestExpandGlobPathsInPipelines(t *testing.T) {
 										Path: "dbfs:/me@company.com/test.ipynb",
 									},
 								},
+								{
+									Notebook: &pipelines.NotebookLibrary{
+										Path: "/Repos/somerepo/test.ipynb",
+									},
+								},
 							},
 						},
 					},
@@ -93,7 +98,7 @@ func TestExpandGlobPathsInPipelines(t *testing.T) {
 	require.NoError(t, err)
 
 	libraries := b.Config.Resources.Pipelines["pipeline"].Libraries
-	require.Len(t, libraries, 9)
+	require.Len(t, libraries, 10)
 
 	// Making sure glob patterns are expanded correctly
 	require.True(t, containsNotebook(libraries, filepath.Join("test", "test2.ipynb")))
@@ -107,6 +112,7 @@ func TestExpandGlobPathsInPipelines(t *testing.T) {
 	// Making sure absolute pass to remote FS file references work as well
 	require.True(t, containsNotebook(libraries, "/Workspace/Users/me@company.com/test.ipynb"))
 	require.True(t, containsNotebook(libraries, "dbfs:/me@company.com/test.ipynb"))
+	require.True(t, containsNotebook(libraries, "/Repos/somerepo/test.ipynb"))
 
 	// Making sure other libraries are not replaced
 	require.True(t, containsJar(libraries, "./*.jar"))
