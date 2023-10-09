@@ -8,7 +8,7 @@ fmt:
 
 lint: vendor
 	@echo "✓ Linting source code with https://staticcheck.io/ ..."
-	@staticcheck ./...
+	@go run honnef.co/go/tools/cmd/staticcheck@v0.4.0 ./...
 
 test: lint
 	@echo "✓ Running tests ..."

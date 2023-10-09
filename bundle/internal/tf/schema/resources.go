@@ -52,6 +52,7 @@ type Resources struct {
 	Pipeline                 map[string]*ResourcePipeline                 `json:"databricks_pipeline,omitempty"`
 	Provider                 map[string]*ResourceProvider                 `json:"databricks_provider,omitempty"`
 	Recipient                map[string]*ResourceRecipient                `json:"databricks_recipient,omitempty"`
+	RegisteredModel          map[string]*ResourceRegisteredModel          `json:"databricks_registered_model,omitempty"`
 	Repo                     map[string]*ResourceRepo                     `json:"databricks_repo,omitempty"`
 	Schema                   map[string]*ResourceSchema                   `json:"databricks_schema,omitempty"`
 	Secret                   map[string]*ResourceSecret                   `json:"databricks_secret,omitempty"`
@@ -132,6 +133,7 @@ func NewResources() *Resources {
 		Pipeline:                 make(map[string]*ResourcePipeline),
 		Provider:                 make(map[string]*ResourceProvider),
 		Recipient:                make(map[string]*ResourceRecipient),
+		RegisteredModel:          make(map[string]*ResourceRegisteredModel),
 		Repo:                     make(map[string]*ResourceRepo),
 		Schema:                   make(map[string]*ResourceSchema),
 		Secret:                   make(map[string]*ResourceSecret),

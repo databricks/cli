@@ -223,6 +223,19 @@ func (reader *OpenapiReader) modelServingEndpointsDocs() (*Docs, error) {
 	return modelServingEndpointsAllDocs, nil
 }
 
+func (reader *OpenapiReader) registeredModelDocs() (*Docs, error) {
+	registeredModelsSpecSchema, err := reader.readResolvedSchema(SchemaPathPrefix + "catalog.CreateRegisteredModelRequest")
+	if err != nil {
+		return nil, err
+	}
+	registeredModelsDocs := schemaToDocs(registeredModelsSpecSchema)
+	registeredModelsAllDocs := &Docs{
+		Description:          "List of Registered Models",
+		AdditionalProperties: registeredModelsDocs,
+	}
+	return registeredModelsAllDocs, nil
+}
+
 func (reader *OpenapiReader) ResourcesDocs() (*Docs, error) {
 	jobsDocs, err := reader.jobsDocs()
 	if err != nil {
@@ -244,6 +257,10 @@ func (reader *OpenapiReader) ResourcesDocs() (*Docs, error) {
 	if err != nil {
 		return nil, err
 	}
+	registeredModelsDocs, err := reader.registeredModelDocs()
+	if err != nil {
+		return nil, err
+	}
 
 	return &Docs{
 		Description: "Collection of Databricks resources to deploy.",
@@ -253,6 +270,7 @@ func (reader *OpenapiReader) ResourcesDocs() (*Docs, error) {
 			"experiments":             experimentsDocs,
 			"models":                  modelsDocs,
 			"model_serving_endpoints": modelServingEndpointsDocs,
+			"registered_models":       registeredModelsDocs,
 		},
 	}, nil
 }
