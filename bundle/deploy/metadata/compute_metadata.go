@@ -39,5 +39,8 @@ func (m *computeMetadata) Apply(_ context.Context, b *bundle.Bundle) error {
 		}
 	}
 	b.Metadata.Config.Resources.Jobs = jobsMetadata
+
+	// Set root path of the bundle in metadata
+	b.Metadata.Config.Workspace.RootPath = b.Config.Workspace.RootPath
 	return nil
 }

@@ -18,7 +18,7 @@ func TestProcessInclude(t *testing.T) {
 	bundle := &bundle.Bundle{
 		Config: config.Root{
 			Path: t.TempDir(),
-			Workspace: &config.Workspace{
+			Workspace: config.Workspace{
 				Host: "foo",
 			},
 		},

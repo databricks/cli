@@ -38,7 +38,7 @@ func TestTranslatePathsSkippedWithGitSource(t *testing.T) {
 	bundle := &bundle.Bundle{
 		Config: config.Root{
 			Path: dir,
-			Workspace: &config.Workspace{
+			Workspace: config.Workspace{
 				FilesPath: "/bundle",
 			},
 			Resources: config.Resources{
@@ -110,7 +110,7 @@ func TestTranslatePaths(t *testing.T) {
 	bundle := &bundle.Bundle{
 		Config: config.Root{
 			Path: dir,
-			Workspace: &config.Workspace{
+			Workspace: config.Workspace{
 				FilesPath: "/bundle",
 			},
 			Resources: config.Resources{
@@ -279,7 +279,7 @@ func TestTranslatePathsInSubdirectories(t *testing.T) {
 	bundle := &bundle.Bundle{
 		Config: config.Root{
 			Path: dir,
-			Workspace: &config.Workspace{
+			Workspace: config.Workspace{
 				FilesPath: "/bundle",
 			},
 			Resources: config.Resources{
@@ -355,7 +355,7 @@ func TestTranslatePathsOutsideBundleRoot(t *testing.T) {
 	bundle := &bundle.Bundle{
 		Config: config.Root{
 			Path: dir,
-			Workspace: &config.Workspace{
+			Workspace: config.Workspace{
 				FilesPath: "/bundle",
 			},
 			Resources: config.Resources{
@@ -514,7 +514,7 @@ func TestJobSparkPythonTaskWithNotebookSourceError(t *testing.T) {
 	bundle := &bundle.Bundle{
 		Config: config.Root{
 			Path: dir,
-			Workspace: &config.Workspace{
+			Workspace: config.Workspace{
 				FilesPath: "/bundle",
 			},
 			Resources: config.Resources{
@@ -549,7 +549,7 @@ func TestJobNotebookTaskWithFileSourceError(t *testing.T) {
 	bundle := &bundle.Bundle{
 		Config: config.Root{
 			Path: dir,
-			Workspace: &config.Workspace{
+			Workspace: config.Workspace{
 				FilesPath: "/bundle",
 			},
 			Resources: config.Resources{
@@ -584,7 +584,7 @@ func TestPipelineNotebookLibraryWithFileSourceError(t *testing.T) {
 	bundle := &bundle.Bundle{
 		Config: config.Root{
 			Path: dir,
-			Workspace: &config.Workspace{
+			Workspace: config.Workspace{
 				FilesPath: "/bundle",
 			},
 			Resources: config.Resources{
@@ -619,7 +619,7 @@ func TestPipelineFileLibraryWithNotebookSourceError(t *testing.T) {
 	bundle := &bundle.Bundle{
 		Config: config.Root{
 			Path: dir,
-			Workspace: &config.Workspace{
+			Workspace: config.Workspace{
 				FilesPath: "/bundle",
 			},
 			Resources: config.Resources{

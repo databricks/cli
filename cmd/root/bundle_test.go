@@ -46,7 +46,7 @@ func setup(t *testing.T, cmd *cobra.Command, host string) *bundle.Bundle {
 				Bundle: config.Bundle{
 					Name: "test",
 				},
-				Workspace: &config.Workspace{
+				Workspace: config.Workspace{
 					Host: host,
 				},
 			},

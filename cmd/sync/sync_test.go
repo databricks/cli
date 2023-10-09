@@ -21,7 +21,7 @@ func TestSyncOptionsFromBundle(t *testing.T) {
 				Target: "default",
 			},
 
-			Workspace: &config.Workspace{
+			Workspace: config.Workspace{
 				FilesPath: "/Users/jane@doe.com/path",
 			},
 		},

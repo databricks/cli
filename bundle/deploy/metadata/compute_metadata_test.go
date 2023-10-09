@@ -18,6 +18,10 @@ import (
 func TestComputeMetadataMutator(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
+			Workspace: config.Workspace{
+				RootPath:      "/Users/shreyas.goenka@databricks.com",
+				ArtifactsPath: "/Users/shreyas.goenka@databricks.com/artifacts",
+			},
 			Bundle: config.Bundle{
 				Name:   "my-bundle",
 				Target: "development",
@@ -60,6 +64,9 @@ func TestComputeMetadataMutator(t *testing.T) {
 	expectedMetadata := deploy.Metadata{
 		Version: deploy.LatestMetadataVersion,
 		Config: config.Root{
+			Workspace: config.Workspace{
+				RootPath: "/Users/shreyas.goenka@databricks.com",
+			},
 			Bundle: config.Bundle{
 				Git: config.Git{
 					Branch:    "my-branch",
