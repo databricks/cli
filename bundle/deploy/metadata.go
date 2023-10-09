@@ -6,12 +6,11 @@ var LatestMetadataVersion = 1
 
 var MetadataTag = "metadata"
 
-// TODO: refine these comments
-// Metadata is a select list of fields from the bundle config that is written
-// to the WSFS on bundle deploy. Databricks services can read this file to gather
-// more information about a particular bundle deployment.
+// Metadata about the bundle deployment. This is the interface Databricks services
+// rely on to integrate with bundles when they need additional information about
+// a bundle deployment.
 //
-// Post deploy, the metadata file can be found at ${workspace.state_path}/deploy-metadata.json
+// After deploy, a file containing the metadata can be found at the workspace file system.
 type Metadata struct {
 	Version int `json:"version"`
 
