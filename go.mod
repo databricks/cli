@@ -23,7 +23,7 @@ require (
 	github.com/stretchr/testify v1.8.4 // MIT
 	github.com/whilp/git-urls v1.0.0 // MIT
 	golang.org/x/exp v0.0.0-20230310171629-522b1b587ee0
-	golang.org/x/mod v0.12.0
+	golang.org/x/mod v0.13.0
 	golang.org/x/oauth2 v0.12.0
 	golang.org/x/sync v0.3.0
 	golang.org/x/term v0.12.0
