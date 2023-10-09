@@ -219,7 +219,7 @@ func (r *Root) MergeTargetOverrides(target *Target) error {
 	}
 
 	if target.Workspace != nil {
-		err = mergo.Merge(r.Workspace, target.Workspace, mergo.WithOverride)
+		err = mergo.Merge(&r.Workspace, target.Workspace, mergo.WithOverride)
 		if err != nil {
 			return err
 		}
