@@ -35,7 +35,7 @@ func (m *compute) Apply(_ context.Context, b *bundle.Bundle) error {
 	// Set Job paths in metadata
 	jobsMetadata := make(map[string]*resources.Job)
 	for name, job := range b.Config.Resources.Jobs {
-		relativePath, err := filepath.Rel(b.Config.Path, job.ConfigFilePath)
+		relativePath, err := filepath.Rel(b.Config.Path, job.LocalConfigFilePath)
 		if err != nil {
 			return fmt.Errorf("failed to compute relative path for job %s: %w", name, err)
 		}

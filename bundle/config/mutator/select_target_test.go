@@ -19,7 +19,7 @@ func TestSelectTarget(t *testing.T) {
 			},
 			Targets: map[string]*config.Target{
 				"default": {
-					Workspace: config.Workspace{
+					Workspace: &config.Workspace{
 						Host: "bar",
 					},
 				},

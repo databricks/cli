@@ -6,14 +6,18 @@ import (
 )
 
 type Paths struct {
-	// ConfigFilePath holds the path to the configuration file that
-	// described the resource that this type is embedded in.
+	// Absolute path on the local file system to the configuration file that holds
+	// the definition of this resource.
+	LocalConfigFilePath string `json:"-" bundle:"readonly"`
+
+	// Relative path from the bundle root to the configuration file that holds
+	// the definition of this resource.
 	ConfigFilePath string `json:"config_file_path,omitempty" bundle:"readonly"`
 }
 
 func (p *Paths) ConfigFileDirectory() (string, error) {
-	if p.ConfigFilePath == "" {
+	if p.LocalConfigFilePath == "" {
 		return "", fmt.Errorf("config file path not configured")
 	}
-	return filepath.Dir(p.ConfigFilePath), nil
+	return filepath.Dir(p.LocalConfigFilePath), nil
 }
