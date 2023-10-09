@@ -158,8 +158,6 @@ func New() *cobra.Command {
 			return nil, cobra.ShellCompDirectiveError
 		}
 
-		cmd.SetContext(ctx)
-
 		// No completion in the context of a bundle.
 		// Source and destination paths are taken from bundle configuration.
 		b := bundle.GetOrNil(cmd.Context())
