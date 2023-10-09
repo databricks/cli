@@ -10,7 +10,7 @@ import (
 
 var testCases map[string]bool = map[string]bool{
 	"./some/local/path":          true,
-	"/some/full/path":            true,
+	"/some/full/path":            false,
 	"/Workspace/path/to/package": false,
 	"/Users/path/to/package":     false,
 	"file://path/to/package":     true,

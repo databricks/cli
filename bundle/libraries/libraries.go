@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -173,6 +174,10 @@ func IsLocalPath(path string) bool {
 		return false
 	}
 
+	if isAbsoluteRemotePath(path) {
+		return false
+	}
+
 	return !isWorkspacePath(path) && !isReposPath(path)
 }
 
@@ -203,4 +208,9 @@ func isWorkspacePath(path string) bool {
 
 func isReposPath(path string) bool {
 	return strings.HasPrefix(path, "/Repos/")
+}
+
+func isAbsoluteRemotePath(p string) bool {
+	// If path for library starts with /, it's a remote absolute path
+	return path.IsAbs(p)
 }
