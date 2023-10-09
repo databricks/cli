@@ -17,7 +17,7 @@ func NewGlobSet(root string, includes []string) (*GlobSet, error) {
 	}
 
 	for k := range includes {
-		includes[k] = filepath.Clean(includes[k])
+		includes[k] = filepath.Clean(filepath.FromSlash(includes[k]))
 	}
 
 	fs := &FileSet{
