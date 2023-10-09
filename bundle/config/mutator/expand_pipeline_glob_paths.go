@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/libraries"
@@ -28,7 +29,7 @@ func (m *expandPipelineGlobPaths) Apply(_ context.Context, b *bundle.Bundle) err
 
 			library := &pipeline.Libraries[i]
 			path := getGlobPatternToExpand(library)
-			if path == "" || !libraries.IsLocalPath(path) {
+			if path == "" || isAbsoluteOrRemotePath(path) {
 				expandedLibraries = append(expandedLibraries, *library)
 				continue
 			}
@@ -50,6 +51,11 @@ func (m *expandPipelineGlobPaths) Apply(_ context.Context, b *bundle.Bundle) err
 	}
 
 	return nil
+}
+
+func isAbsoluteOrRemotePath(path string) bool {
+	// If path for library starts with /, it's a remote absolute path
+	return strings.HasPrefix(path, "/") || !libraries.IsLocalPath(path)
 }
 
 func getGlobPatternToExpand(library *pipelines.PipelineLibrary) string {

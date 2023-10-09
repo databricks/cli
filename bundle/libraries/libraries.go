@@ -173,7 +173,7 @@ func IsLocalPath(path string) bool {
 		return false
 	}
 
-	return !isWorkspacePath(path)
+	return !isWorkspacePath(path) && !isReposPath(path)
 }
 
 func isExplicitFileScheme(path string) bool {
@@ -199,4 +199,8 @@ func isWorkspacePath(path string) bool {
 	return strings.HasPrefix(path, "/Workspace/") ||
 		strings.HasPrefix(path, "/Users/") ||
 		strings.HasPrefix(path, "/Shared/")
+}
+
+func isReposPath(path string) bool {
+	return strings.HasPrefix(path, "/Repos/")
 }
