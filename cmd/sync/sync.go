@@ -90,6 +90,7 @@ func New() *cobra.Command {
 	cmd.Flags().BoolVar(&f.watch, "watch", false, "watch local file system for changes")
 	cmd.Flags().Var(&f.output, "output", "type of output format")
 
+	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		var opts *sync.SyncOptions
 		var err error
@@ -149,7 +150,10 @@ func New() *cobra.Command {
 	}
 
 	cmd.ValidArgsFunction = func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		err := root.TryConfigureBundle(cmd, args)
+		ctx := cmd.Context()
+		cmd.SetContext(root.NoPrompt(ctx))
+
+		err := root.MustWorkspaceClient(cmd, args)
 		if err != nil {
 			return nil, cobra.ShellCompDirectiveError
 		}
@@ -165,10 +169,7 @@ func New() *cobra.Command {
 		case 0:
 			return nil, cobra.ShellCompDirectiveFilterDirs
 		case 1:
-			wsc, err := databricks.NewWorkspaceClient()
-			if err != nil {
-				return nil, cobra.ShellCompDirectiveError
-			}
+			wsc := root.WorkspaceClient(cmd.Context())
 			return completeRemotePath(cmd.Context(), wsc, toComplete)
 		default:
 			return nil, cobra.ShellCompDirectiveNoFileComp
