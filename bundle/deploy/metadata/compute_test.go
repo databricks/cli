@@ -91,7 +91,7 @@ func TestComputeMetadataMutator(t *testing.T) {
 		},
 	}
 
-	err := ComputeMetadata().Apply(context.Background(), b)
+	err := Compute().Apply(context.Background(), b)
 	require.NoError(t, err)
 
 	// Print expected and actual metadata for debugging

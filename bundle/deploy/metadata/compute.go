@@ -2,6 +2,9 @@ package metadata
 
 import (
 	"context"
+	"fmt"
+	"path"
+	"path/filepath"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
@@ -10,17 +13,17 @@ import (
 	"github.com/databricks/cli/bundle/deploy"
 )
 
-type computeMetadata struct{}
+type compute struct{}
 
-func ComputeMetadata() bundle.Mutator {
-	return &computeMetadata{}
+func Compute() bundle.Mutator {
+	return &compute{}
 }
 
-func (m *computeMetadata) Name() string {
-	return "ComputeMetadata"
+func (m *compute) Name() string {
+	return "metadata.Compute"
 }
 
-func (m *computeMetadata) Apply(_ context.Context, b *bundle.Bundle) error {
+func (m *compute) Apply(_ context.Context, b *bundle.Bundle) error {
 	b.Metadata = deploy.Metadata{
 		Version: deploy.LatestMetadataVersion,
 		Config:  config.Root{},
@@ -32,9 +35,15 @@ func (m *computeMetadata) Apply(_ context.Context, b *bundle.Bundle) error {
 	// Set Job paths in metadata
 	jobsMetadata := make(map[string]*resources.Job)
 	for name, job := range b.Config.Resources.Jobs {
+		relativePath, err := filepath.Rel(b.Config.Path, job.ConfigFilePath)
+		if err != nil {
+			return fmt.Errorf("failed to compute relative path for job %s: %w", name, err)
+		}
+		relativePath = filepath.ToSlash(relativePath)
+
 		jobsMetadata[name] = &resources.Job{
 			Paths: paths.Paths{
-				ConfigFilePath: job.ConfigFilePath,
+				ConfigFilePath: path.Clean(relativePath),
 			},
 		}
 	}
