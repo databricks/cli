@@ -43,7 +43,7 @@ func TestExpandGlobPathsInPipelines(t *testing.T) {
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline": {
 						Paths: paths.Paths{
-							ConfigFilePath: filepath.Join(dir, "resource.yml"),
+							LocalConfigFilePath: filepath.Join(dir, "resource.yml"),
 						},
 						PipelineSpec: &pipelines.PipelineSpec{
 							Libraries: []pipelines.PipelineLibrary{
