@@ -51,17 +51,13 @@ func convGrants(acl []resources.Grant) *schema.ResourceGrants {
 
 	resource := schema.ResourceGrants{}
 	for _, ac := range acl {
-		resource.Grant = append(resource.Grant, convGrant(ac))
+		resource.Grant = append(resource.Grant, schema.ResourceGrantsGrant{
+			Privileges: ac.Privileges,
+			Principal:  ac.Principal,
+		})
 	}
 
 	return &resource
-}
-
-func convGrant(ac resources.Grant) schema.ResourceGrantsGrant {
-	return schema.ResourceGrantsGrant{
-		Privileges: ac.Privileges,
-		Principal:  ac.Principal,
-	}
 }
 
 // BundleToTerraform converts resources in a bundle configuration

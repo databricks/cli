@@ -15,8 +15,8 @@ type RegisteredModel struct {
 	// as a reference in other resources. This value is returned by terraform.
 	ID string
 
-	// Local path where the bundle is defined. All bundle resources include
-	// this for interpolation purposes.
+	// Path to config file where the resource is defined. All bundle resources
+	// include this for interpolation purposes.
 	paths.Paths
 
 	// This represents the input args for terraform, and will get converted

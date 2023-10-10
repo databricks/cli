@@ -187,12 +187,6 @@ func TestProcessTargetModeProduction(t *testing.T) {
 	bundle.Config.Resources.Experiments["experiment2"].Permissions = permissions
 	bundle.Config.Resources.Models["model1"].Permissions = permissions
 	bundle.Config.Resources.ModelServingEndpoints["servingendpoint1"].Permissions = permissions
-	bundle.Config.Resources.RegisteredModels["registeredmodel1"].Grants = []resources.Grant{
-		{
-			Privileges: []string{"ALL_PRIVILEGES"},
-			Principal:  "user@company.com",
-		},
-	}
 
 	err = validateProductionMode(context.Background(), bundle, false)
 	require.NoError(t, err)

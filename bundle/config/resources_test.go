@@ -95,3 +95,33 @@ func TestVerifySafeMergeForSameResourceType(t *testing.T) {
 	err := r.VerifySafeMerge(&other)
 	assert.ErrorContains(t, err, "multiple resources named foo (job at foo.yml, job at foo2.yml)")
 }
+
+func TestVerifySafeMergeForRegisteredModels(t *testing.T) {
+	r := Resources{
+		Jobs: map[string]*resources.Job{
+			"foo": {
+				Paths: paths.Paths{
+					ConfigFilePath: "foo.yml",
+				},
+			},
+		},
+		RegisteredModels: map[string]*resources.RegisteredModel{
+			"bar": {
+				Paths: paths.Paths{
+					ConfigFilePath: "bar.yml",
+				},
+			},
+		},
+	}
+	other := Resources{
+		RegisteredModels: map[string]*resources.RegisteredModel{
+			"bar": {
+				Paths: paths.Paths{
+					ConfigFilePath: "bar2.yml",
+				},
+			},
+		},
+	}
+	err := r.VerifySafeMerge(&other)
+	assert.ErrorContains(t, err, "multiple resources named bar (registered_model at bar.yml, registered_model at bar2.yml)")
+}

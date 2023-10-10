@@ -14,8 +14,8 @@ type ModelServingEndpoint struct {
 	// as a reference in other resources. This value is returned by terraform.
 	ID string
 
-	// Local path where the bundle is defined. All bundle resources include
-	// this for interpolation purposes.
+	// Path to config file where the resource is defined. All bundle resources
+	// include this for interpolation purposes.
 	paths.Paths
 
 	// This is a resource agnostic implementation of permissions for ACLs.
