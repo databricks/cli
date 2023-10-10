@@ -13,21 +13,21 @@ func TestVerifyUniqueResourceIdentifiers(t *testing.T) {
 		Jobs: map[string]*resources.Job{
 			"foo": {
 				Paths: paths.Paths{
-					LocalConfigFilePath: "foo.yml",
+					ConfigFilePath: "foo.yml",
 				},
 			},
 		},
 		Models: map[string]*resources.MlflowModel{
 			"bar": {
 				Paths: paths.Paths{
-					LocalConfigFilePath: "bar.yml",
+					ConfigFilePath: "bar.yml",
 				},
 			},
 		},
 		Experiments: map[string]*resources.MlflowExperiment{
 			"foo": {
 				Paths: paths.Paths{
-					LocalConfigFilePath: "foo2.yml",
+					ConfigFilePath: "foo2.yml",
 				},
 			},
 		},
@@ -41,14 +41,14 @@ func TestVerifySafeMerge(t *testing.T) {
 		Jobs: map[string]*resources.Job{
 			"foo": {
 				Paths: paths.Paths{
-					LocalConfigFilePath: "foo.yml",
+					ConfigFilePath: "foo.yml",
 				},
 			},
 		},
 		Models: map[string]*resources.MlflowModel{
 			"bar": {
 				Paths: paths.Paths{
-					LocalConfigFilePath: "bar.yml",
+					ConfigFilePath: "bar.yml",
 				},
 			},
 		},
@@ -57,7 +57,7 @@ func TestVerifySafeMerge(t *testing.T) {
 		Pipelines: map[string]*resources.Pipeline{
 			"foo": {
 				Paths: paths.Paths{
-					LocalConfigFilePath: "foo2.yml",
+					ConfigFilePath: "foo2.yml",
 				},
 			},
 		},
@@ -71,14 +71,14 @@ func TestVerifySafeMergeForSameResourceType(t *testing.T) {
 		Jobs: map[string]*resources.Job{
 			"foo": {
 				Paths: paths.Paths{
-					LocalConfigFilePath: "foo.yml",
+					ConfigFilePath: "foo.yml",
 				},
 			},
 		},
 		Models: map[string]*resources.MlflowModel{
 			"bar": {
 				Paths: paths.Paths{
-					LocalConfigFilePath: "bar.yml",
+					ConfigFilePath: "bar.yml",
 				},
 			},
 		},
@@ -87,7 +87,7 @@ func TestVerifySafeMergeForSameResourceType(t *testing.T) {
 		Jobs: map[string]*resources.Job{
 			"foo": {
 				Paths: paths.Paths{
-					LocalConfigFilePath: "foo2.yml",
+					ConfigFilePath: "foo2.yml",
 				},
 			},
 		},

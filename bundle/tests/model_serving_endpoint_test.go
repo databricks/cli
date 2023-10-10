@@ -10,7 +10,7 @@ import (
 )
 
 func assertExpected(t *testing.T, p *resources.ModelServingEndpoint) {
-	assert.Equal(t, "model_serving_endpoint/databricks.yml", filepath.ToSlash(p.LocalConfigFilePath))
+	assert.Equal(t, "model_serving_endpoint/databricks.yml", filepath.ToSlash(p.ConfigFilePath))
 	assert.Equal(t, "model-name", p.Config.ServedModels[0].ModelName)
 	assert.Equal(t, "1", p.Config.ServedModels[0].ModelVersion)
 	assert.Equal(t, "model-name-1", p.Config.TrafficConfig.Routes[0].ServedModelName)

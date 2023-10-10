@@ -35,7 +35,7 @@ func TestComputeMetadataMutator(t *testing.T) {
 				Jobs: map[string]*resources.Job{
 					"my-job-1": {
 						Paths: paths.Paths{
-							LocalConfigFilePath: "a/b/c",
+							ConfigFilePath: "a/b/c",
 						},
 						JobSettings: &jobs.JobSettings{
 							Name: "My Job One",
@@ -43,7 +43,7 @@ func TestComputeMetadataMutator(t *testing.T) {
 					},
 					"my-job-2": {
 						Paths: paths.Paths{
-							LocalConfigFilePath: "d/e/f",
+							ConfigFilePath: "d/e/f",
 						},
 						JobSettings: &jobs.JobSettings{
 							Name: "My Job Two",
@@ -53,7 +53,7 @@ func TestComputeMetadataMutator(t *testing.T) {
 				Pipelines: map[string]*resources.Pipeline{
 					"my-pipeline": {
 						Paths: paths.Paths{
-							LocalConfigFilePath: "abc",
+							ConfigFilePath: "abc",
 						},
 					},
 				},
@@ -78,12 +78,12 @@ func TestComputeMetadataMutator(t *testing.T) {
 				Jobs: map[string]*resources.Job{
 					"my-job-1": {
 						Paths: paths.Paths{
-							ConfigFilePath: "a/b/c",
+							RelativePath: "a/b/c",
 						},
 					},
 					"my-job-2": {
 						Paths: paths.Paths{
-							ConfigFilePath: "d/e/f",
+							RelativePath: "d/e/f",
 						},
 					},
 				},

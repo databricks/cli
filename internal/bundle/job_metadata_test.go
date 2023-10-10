@@ -92,12 +92,12 @@ func TestAccJobsMetadataFile(t *testing.T) {
 				Jobs: map[string]*resources.Job{
 					"foo": {
 						Paths: paths.Paths{
-							ConfigFilePath: "databricks.yml",
+							RelativePath: "databricks.yml",
 						},
 					},
 					"bar": {
 						Paths: paths.Paths{
-							ConfigFilePath: "a/b/resources.yml",
+							RelativePath: "a/b/resources.yml",
 						},
 					},
 				},

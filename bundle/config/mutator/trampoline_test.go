@@ -66,7 +66,7 @@ func TestGenerateTrampoline(t *testing.T) {
 				Jobs: map[string]*resources.Job{
 					"test": {
 						Paths: paths.Paths{
-							LocalConfigFilePath: tmpDir,
+							ConfigFilePath: tmpDir,
 						},
 						JobSettings: &jobs.JobSettings{
 							Tasks: tasks,

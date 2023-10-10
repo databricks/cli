@@ -53,7 +53,7 @@ func (r *Resources) VerifyUniqueResourceIdentifiers() (*UniqueResourceIdTracker,
 	}
 	for k := range r.Jobs {
 		tracker.Type[k] = "job"
-		tracker.ConfigPath[k] = r.Jobs[k].LocalConfigFilePath
+		tracker.ConfigPath[k] = r.Jobs[k].ConfigFilePath
 	}
 	for k := range r.Pipelines {
 		if _, ok := tracker.Type[k]; ok {
@@ -62,11 +62,11 @@ func (r *Resources) VerifyUniqueResourceIdentifiers() (*UniqueResourceIdTracker,
 				tracker.Type[k],
 				tracker.ConfigPath[k],
 				"pipeline",
-				r.Pipelines[k].LocalConfigFilePath,
+				r.Pipelines[k].ConfigFilePath,
 			)
 		}
 		tracker.Type[k] = "pipeline"
-		tracker.ConfigPath[k] = r.Pipelines[k].LocalConfigFilePath
+		tracker.ConfigPath[k] = r.Pipelines[k].ConfigFilePath
 	}
 	for k := range r.Models {
 		if _, ok := tracker.Type[k]; ok {
@@ -75,11 +75,11 @@ func (r *Resources) VerifyUniqueResourceIdentifiers() (*UniqueResourceIdTracker,
 				tracker.Type[k],
 				tracker.ConfigPath[k],
 				"mlflow_model",
-				r.Models[k].LocalConfigFilePath,
+				r.Models[k].ConfigFilePath,
 			)
 		}
 		tracker.Type[k] = "mlflow_model"
-		tracker.ConfigPath[k] = r.Models[k].LocalConfigFilePath
+		tracker.ConfigPath[k] = r.Models[k].ConfigFilePath
 	}
 	for k := range r.Experiments {
 		if _, ok := tracker.Type[k]; ok {
@@ -88,11 +88,11 @@ func (r *Resources) VerifyUniqueResourceIdentifiers() (*UniqueResourceIdTracker,
 				tracker.Type[k],
 				tracker.ConfigPath[k],
 				"mlflow_experiment",
-				r.Experiments[k].LocalConfigFilePath,
+				r.Experiments[k].ConfigFilePath,
 			)
 		}
 		tracker.Type[k] = "mlflow_experiment"
-		tracker.ConfigPath[k] = r.Experiments[k].LocalConfigFilePath
+		tracker.ConfigPath[k] = r.Experiments[k].ConfigFilePath
 	}
 	for k := range r.ModelServingEndpoints {
 		if _, ok := tracker.Type[k]; ok {
@@ -101,11 +101,11 @@ func (r *Resources) VerifyUniqueResourceIdentifiers() (*UniqueResourceIdTracker,
 				tracker.Type[k],
 				tracker.ConfigPath[k],
 				"model_serving_endpoint",
-				r.ModelServingEndpoints[k].LocalConfigFilePath,
+				r.ModelServingEndpoints[k].ConfigFilePath,
 			)
 		}
 		tracker.Type[k] = "model_serving_endpoint"
-		tracker.ConfigPath[k] = r.ModelServingEndpoints[k].LocalConfigFilePath
+		tracker.ConfigPath[k] = r.ModelServingEndpoints[k].ConfigFilePath
 	}
 	return tracker, nil
 }
@@ -115,19 +115,19 @@ func (r *Resources) VerifyUniqueResourceIdentifiers() (*UniqueResourceIdTracker,
 // of the configuration file they were defined in.
 func (r *Resources) SetConfigFilePath(path string) {
 	for _, e := range r.Jobs {
-		e.LocalConfigFilePath = path
+		e.ConfigFilePath = path
 	}
 	for _, e := range r.Pipelines {
-		e.LocalConfigFilePath = path
+		e.ConfigFilePath = path
 	}
 	for _, e := range r.Models {
-		e.LocalConfigFilePath = path
+		e.ConfigFilePath = path
 	}
 	for _, e := range r.Experiments {
-		e.LocalConfigFilePath = path
+		e.ConfigFilePath = path
 	}
 	for _, e := range r.ModelServingEndpoints {
-		e.LocalConfigFilePath = path
+		e.ConfigFilePath = path
 	}
 }
 
