@@ -36,7 +36,7 @@ type Target struct {
 
 	RunAs *jobs.JobRunAs `json:"run_as,omitempty"`
 
-	Sync Sync `json:"sync,omitempty"`
+	Sync *Sync `json:"sync,omitempty"`
 }
 
 const (
