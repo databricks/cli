@@ -37,8 +37,8 @@ type Sync struct {
 	*SyncOptions
 
 	fileSet        *git.FileSet
-	includeFileSet *fileset.GlobSet
-	excludeFileSet *fileset.GlobSet
+	includeFileSet *fileset.FileSet
+	excludeFileSet *fileset.FileSet
 
 	snapshot *Snapshot
 	filer    filer.Filer
