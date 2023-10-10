@@ -280,5 +280,12 @@ func (r *Root) MergeTargetOverrides(target *Target) error {
 		git.OriginURL = target.Git.OriginURL
 	}
 
+	if target.Sync.Include != nil || target.Sync.Exclude != nil {
+		err = mergo.Merge(&r.Sync, target.Sync, mergo.WithAppendSlice)
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
