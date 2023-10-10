@@ -60,19 +60,9 @@ func newLoginCommand(persistentAuth *auth.PersistentAuth) *cobra.Command {
 			profileName = profile
 		}
 
-		// If the chosen profile has a hostname and the user hasn't specified a host, infer the host from the profile.
-		_, profiles, err := databrickscfg.LoadProfiles(func(p databrickscfg.Profile) bool {
-			return p.Name == profileName
-		})
+		err := setHost(ctx, profileName, persistentAuth, args)
 		if err != nil {
 			return err
-		}
-		if persistentAuth.Host == "" {
-			if len(profiles) > 0 && profiles[0].Host != "" {
-				persistentAuth.Host = profiles[0].Host
-			} else {
-				configureHost(ctx, persistentAuth, args, 0)
-			}
 		}
 		defer persistentAuth.Close()
 
@@ -134,4 +124,22 @@ func newLoginCommand(persistentAuth *auth.PersistentAuth) *cobra.Command {
 	}
 
 	return cmd
+}
+
+func setHost(ctx context.Context, profileName string, persistentAuth *auth.PersistentAuth, args []string) error {
+	// If the chosen profile has a hostname and the user hasn't specified a host, infer the host from the profile.
+	_, profiles, err := databrickscfg.LoadProfiles(func(p databrickscfg.Profile) bool {
+		return p.Name == profileName
+	})
+	if err != nil {
+		return err
+	}
+	if persistentAuth.Host == "" {
+		if len(profiles) > 0 && profiles[0].Host != "" {
+			persistentAuth.Host = profiles[0].Host
+		} else {
+			configureHost(ctx, persistentAuth, args, 0)
+		}
+	}
+	return nil
 }

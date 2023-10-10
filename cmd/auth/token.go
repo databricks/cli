@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/databricks/cli/libs/auth"
-	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/spf13/cobra"
 )
 
@@ -28,21 +27,11 @@ func newTokenCommand(persistentAuth *auth.PersistentAuth) *cobra.Command {
 		if profileFlag != nil {
 			profileName = profileFlag.Value.String()
 		}
-		// If the chosen profile has a hostname and the user hasn't specified a host, infer the host from the profile.
-		_, profiles, err := databrickscfg.LoadProfiles(func(p databrickscfg.Profile) bool {
-			return p.Name == profileName
-		})
+
+		err := setHost(ctx, profileName, persistentAuth, args)
 		if err != nil {
 			return err
 		}
-		if persistentAuth.Host == "" {
-			if len(profiles) > 0 && profiles[0].Host != "" {
-				persistentAuth.Host = profiles[0].Host
-			} else {
-				configureHost(ctx, persistentAuth, args, 0)
-			}
-		}
-
 		defer persistentAuth.Close()
 
 		ctx, cancel := context.WithTimeout(ctx, tokenTimeout)
