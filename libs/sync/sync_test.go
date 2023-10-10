@@ -48,8 +48,25 @@ func setupFiles(t *testing.T) string {
 	err = createFile(dbDir, "e.go")
 	require.NoError(t, err)
 
-	return dir
+	testDir := filepath.Join(dir, "test")
+	err = os.Mkdir(testDir, 0755)
+	require.NoError(t, err)
 
+	sub1 := filepath.Join(testDir, "sub1")
+	err = os.Mkdir(sub1, 0755)
+	require.NoError(t, err)
+
+	err = createFile(sub1, "f.go")
+	require.NoError(t, err)
+
+	sub2 := filepath.Join(sub1, "sub2")
+	err = os.Mkdir(sub2, 0755)
+	require.NoError(t, err)
+
+	err = createFile(sub2, "g.go")
+	require.NoError(t, err)
+
+	return dir
 }
 
 func TestGetFileSet(t *testing.T) {
@@ -78,7 +95,7 @@ func TestGetFileSet(t *testing.T) {
 
 	fileList, err := getFileList(ctx, s)
 	require.NoError(t, err)
-	require.Equal(t, len(fileList), 7)
+	require.Equal(t, len(fileList), 9)
 
 	inc, err = fileset.NewGlobSet(dir, []string{})
 	require.NoError(t, err)
@@ -98,7 +115,7 @@ func TestGetFileSet(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, len(fileList), 1)
 
-	inc, err = fileset.NewGlobSet(dir, []string{".databricks/*.*"})
+	inc, err = fileset.NewGlobSet(dir, []string{".databricks/*"})
 	require.NoError(t, err)
 
 	excl, err = fileset.NewGlobSet(dir, []string{})
@@ -114,6 +131,34 @@ func TestGetFileSet(t *testing.T) {
 
 	fileList, err = getFileList(ctx, s)
 	require.NoError(t, err)
-	require.Equal(t, len(fileList), 8)
+	require.Equal(t, len(fileList), 10)
+}
 
+func TestRecursiveExclude(t *testing.T) {
+	ctx := context.Background()
+
+	dir := setupFiles(t)
+	fileSet, err := git.NewFileSet(dir)
+	require.NoError(t, err)
+
+	err = fileSet.EnsureValidGitIgnoreExists()
+	require.NoError(t, err)
+
+	inc, err := fileset.NewGlobSet(dir, []string{})
+	require.NoError(t, err)
+
+	excl, err := fileset.NewGlobSet(dir, []string{"test/**"})
+	require.NoError(t, err)
+
+	s := &Sync{
+		SyncOptions: &SyncOptions{},
+
+		fileSet:        fileSet,
+		includeFileSet: inc,
+		excludeFileSet: excl,
+	}
+
+	fileList, err := getFileList(ctx, s)
+	require.NoError(t, err)
+	require.Equal(t, len(fileList), 7)
 }

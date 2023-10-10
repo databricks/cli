@@ -35,6 +35,8 @@ type Target struct {
 	Git Git `json:"git,omitempty"`
 
 	RunAs *jobs.JobRunAs `json:"run_as,omitempty"`
+
+	Sync *Sync `json:"sync,omitempty"`
 }
 
 const (
