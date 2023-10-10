@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -61,5 +62,98 @@ func TestGlobFilesetWithRelativeRoot(t *testing.T) {
 	require.Equal(t, len(files), len(entries))
 	for _, f := range files {
 		require.True(t, filepath.IsAbs(f.Absolute))
+	}
+}
+
+func TestGlobFilesetRecursively(t *testing.T) {
+	cwd, err := os.Getwd()
+	require.NoError(t, err)
+	root := filepath.Join(cwd, "..", "git")
+
+	entries := make([]string, 0)
+	err = filepath.Walk(filepath.Join(root, "testdata"), func(path string, info fs.FileInfo, err error) error {
+		if !info.IsDir() {
+			entries = append(entries, path)
+		}
+		return nil
+	})
+	require.NoError(t, err)
+
+	g, err := NewGlobSet(root, []string{
+		"testdata/*",
+	})
+	require.NoError(t, err)
+
+	files, err := g.All()
+	require.NoError(t, err)
+
+	require.Equal(t, len(files), len(entries))
+	for _, f := range files {
+		exists := slices.ContainsFunc(entries, func(path string) bool {
+			return path == f.Absolute
+		})
+		require.True(t, exists)
+	}
+}
+
+func TestGlobFilesetDir(t *testing.T) {
+	cwd, err := os.Getwd()
+	require.NoError(t, err)
+	root := filepath.Join(cwd, "..", "git")
+
+	entries := make([]string, 0)
+	err = filepath.Walk(filepath.Join(root, "testdata", "a"), func(path string, info fs.FileInfo, err error) error {
+		if !info.IsDir() {
+			entries = append(entries, path)
+		}
+		return nil
+	})
+	require.NoError(t, err)
+
+	g, err := NewGlobSet(root, []string{
+		"testdata/a",
+	})
+	require.NoError(t, err)
+
+	files, err := g.All()
+	require.NoError(t, err)
+
+	require.Equal(t, len(files), len(entries))
+	for _, f := range files {
+		exists := slices.ContainsFunc(entries, func(path string) bool {
+			return path == f.Absolute
+		})
+		require.True(t, exists)
+	}
+}
+
+func TestGlobFilesetDoubleQuotesWithFilePatterns(t *testing.T) {
+	cwd, err := os.Getwd()
+	require.NoError(t, err)
+	root := filepath.Join(cwd, "..", "git")
+
+	entries := make([]string, 0)
+	err = filepath.Walk(filepath.Join(root, "testdata"), func(path string, info fs.FileInfo, err error) error {
+		if strings.HasSuffix(path, ".txt") {
+			entries = append(entries, path)
+		}
+		return nil
+	})
+	require.NoError(t, err)
+
+	g, err := NewGlobSet(root, []string{
+		"testdata/**/*.txt",
+	})
+	require.NoError(t, err)
+
+	files, err := g.All()
+	require.NoError(t, err)
+
+	require.Equal(t, len(files), len(entries))
+	for _, f := range files {
+		exists := slices.ContainsFunc(entries, func(path string) bool {
+			return path == f.Absolute
+		})
+		require.True(t, exists)
 	}
 }
