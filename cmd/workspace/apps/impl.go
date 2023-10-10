@@ -37,7 +37,7 @@ func (a *appsImpl) Get(ctx context.Context, request *GetAppRequest) (*GetRespons
 	var getResponse GetResponse
 	var path string
 	if request.Name == "" {
-		path = fmt.Print("/api/2.0/preview/apps/instances")
+		path = "/api/2.0/preview/apps/instances"
 	} else {
 		path = fmt.Sprintf("/api/2.0/preview/apps/instances/%s", request.Name)
 	}
