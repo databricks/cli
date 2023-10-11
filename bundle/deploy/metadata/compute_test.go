@@ -21,14 +21,16 @@ func TestComputeMetadataMutator(t *testing.T) {
 			Workspace: config.Workspace{
 				RootPath:      "/Users/shreyas.goenka@databricks.com",
 				ArtifactsPath: "/Users/shreyas.goenka@databricks.com/artifacts",
+				FilesPath:     "/Users/shreyas.goenka@databricks.com/files",
 			},
 			Bundle: config.Bundle{
 				Name:   "my-bundle",
 				Target: "development",
 				Git: config.Git{
-					Branch:    "my-branch",
-					OriginURL: "www.host.com",
-					Commit:    "abcd",
+					Branch:     "my-branch",
+					OriginURL:  "www.host.com",
+					Commit:     "abcd",
+					BundleRoot: "a/b/c/d",
 				},
 			},
 			Resources: config.Resources{
@@ -37,6 +39,7 @@ func TestComputeMetadataMutator(t *testing.T) {
 						Paths: paths.Paths{
 							ConfigFilePath: "a/b/c",
 						},
+						ID: "1111",
 						JobSettings: &jobs.JobSettings{
 							Name: "My Job One",
 						},
@@ -45,6 +48,7 @@ func TestComputeMetadataMutator(t *testing.T) {
 						Paths: paths.Paths{
 							ConfigFilePath: "d/e/f",
 						},
+						ID: "2222",
 						JobSettings: &jobs.JobSettings{
 							Name: "My Job Two",
 						},
@@ -69,9 +73,10 @@ func TestComputeMetadataMutator(t *testing.T) {
 			},
 			Bundle: config.Bundle{
 				Git: config.Git{
-					Branch:    "my-branch",
-					OriginURL: "www.host.com",
-					Commit:    "abcd",
+					Branch:     "my-branch",
+					OriginURL:  "www.host.com",
+					Commit:     "abcd",
+					BundleRoot: "a/b/c/d",
 				},
 			},
 			Resources: config.Resources{
@@ -80,11 +85,13 @@ func TestComputeMetadataMutator(t *testing.T) {
 						Paths: paths.Paths{
 							RelativePath: "a/b/c",
 						},
+						ID: "1111",
 					},
 					"my-job-2": {
 						Paths: paths.Paths{
 							RelativePath: "d/e/f",
 						},
+						ID: "2222",
 					},
 				},
 			},

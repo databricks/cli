@@ -2,6 +2,7 @@ package mutator
 
 import (
 	"context"
+	"path/filepath"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/git"
@@ -52,5 +53,12 @@ func (m *loadGitDetails) Apply(ctx context.Context, b *bundle.Bundle) error {
 		remoteUrl := repo.OriginUrl()
 		b.Config.Bundle.Git.OriginURL = remoteUrl
 	}
+
+	// Compute relative path of the bundle root from the Git repo root.
+	relBundlePath, err := filepath.Rel(repo.Root(), b.Config.Path)
+	if err != nil {
+		return err
+	}
+	b.Config.Bundle.Git.BundleRoot = filepath.ToSlash(relBundlePath)
 	return nil
 }

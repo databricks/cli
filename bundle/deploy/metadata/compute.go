@@ -32,16 +32,20 @@ func (m *compute) Apply(_ context.Context, b *bundle.Bundle) error {
 	// Set git details in metadata
 	b.Metadata.Config.Bundle.Git = b.Config.Bundle.Git
 
-	// Set Job paths in metadata
+	// Set job config paths in metadata
 	jobsMetadata := make(map[string]*resources.Job)
 	for name, job := range b.Config.Resources.Jobs {
+		// Compute config file path the job is defined in, relative to the bundle
+		// root
 		relativePath, err := filepath.Rel(b.Config.Path, job.ConfigFilePath)
 		if err != nil {
 			return fmt.Errorf("failed to compute relative path for job %s: %w", name, err)
 		}
 		relativePath = filepath.ToSlash(relativePath)
 
+		// Metadata for the job
 		jobsMetadata[name] = &resources.Job{
+			ID: job.ID,
 			Paths: paths.Paths{
 				RelativePath: path.Clean(relativePath),
 			},
@@ -49,7 +53,7 @@ func (m *compute) Apply(_ context.Context, b *bundle.Bundle) error {
 	}
 	b.Metadata.Config.Resources.Jobs = jobsMetadata
 
-	// Set root path of the bundle in metadata
-	b.Metadata.Config.Workspace.RootPath = b.Config.Workspace.RootPath
+	// Set file upload destination of the bundle in metadata
+	b.Metadata.Config.Workspace.FilesPath = b.Config.Workspace.FilesPath
 	return nil
 }

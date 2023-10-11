@@ -6,7 +6,6 @@ import (
 	"github.com/databricks/cli/bundle/config/interpolation"
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/config/variable"
-	"github.com/databricks/cli/bundle/deploy/metadata"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/python"
 	"github.com/databricks/cli/bundle/scripts"
@@ -36,7 +35,6 @@ func Initialize() bundle.Mutator {
 			mutator.TranslatePaths(),
 			python.WrapperWarning(),
 			terraform.Initialize(),
-			metadata.Compute(),
 			scripts.Execute(config.ScriptPostInit),
 		},
 	)

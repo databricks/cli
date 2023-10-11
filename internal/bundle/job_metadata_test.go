@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"path"
+	"strconv"
 	"testing"
 
 	"github.com/databricks/cli/bundle/config"
@@ -55,15 +57,15 @@ func TestAccJobsMetadataFile(t *testing.T) {
 
 	// assert job 1 is created
 	jobName := "test-job-metadata-1-" + uniqueId
-	job, err := w.Jobs.GetBySettingsName(context.Background(), jobName)
+	job1, err := w.Jobs.GetBySettingsName(context.Background(), jobName)
 	require.NoError(t, err)
-	assert.Equal(t, job.Settings.Name, jobName)
+	assert.Equal(t, job1.Settings.Name, jobName)
 
 	// assert job 2 is created
 	jobName = "test-job-metadata-2-" + uniqueId
-	job, err = w.Jobs.GetBySettingsName(context.Background(), jobName)
+	job2, err := w.Jobs.GetBySettingsName(context.Background(), jobName)
 	require.NoError(t, err)
-	assert.Equal(t, job.Settings.Name, jobName)
+	assert.Equal(t, job2.Settings.Name, jobName)
 
 	// Compute root path for the bundle deployment
 	me, err := w.CurrentUser.Me(context.Background())
@@ -85,17 +87,24 @@ func TestAccJobsMetadataFile(t *testing.T) {
 	expectedMetadata := deploy.Metadata{
 		Version: deploy.LatestMetadataVersion,
 		Config: config.Root{
+			Bundle: config.Bundle{
+				Git: config.Git{
+					BundleRoot: ".",
+				},
+			},
 			Workspace: config.Workspace{
-				RootPath: root,
+				FilesPath: path.Join(root, "files"),
 			},
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
 					"foo": {
+						ID: strconv.FormatInt(job1.JobId, 10),
 						Paths: paths.Paths{
 							RelativePath: "databricks.yml",
 						},
 					},
 					"bar": {
+						ID: strconv.FormatInt(job2.JobId, 10),
 						Paths: paths.Paths{
 							RelativePath: "a/b/resources.yml",
 						},
