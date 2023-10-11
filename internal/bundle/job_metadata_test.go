@@ -28,15 +28,7 @@ func TestAccJobsMetadataFile(t *testing.T) {
 	w, err := databricks.NewWorkspaceClient()
 	require.NoError(t, err)
 
-	var nodeTypeId string
-	if env == "gcp" {
-		nodeTypeId = "n1-standard-4"
-	} else if env == "aws" {
-		nodeTypeId = "i3.xlarge"
-	} else {
-		nodeTypeId = "Standard_DS4_v2"
-	}
-
+	nodeTypeId := internal.GetNodeTypeId(env)
 	uniqueId := uuid.New().String()
 	bundleRoot, err := initTestTemplate(t, "job_metadata", map[string]any{
 		"unique_id":     uniqueId,
