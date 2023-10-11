@@ -55,7 +55,11 @@ func (m *loadGitDetails) Apply(ctx context.Context, b *bundle.Bundle) error {
 	}
 
 	// Compute relative path of the bundle root from the Git repo root.
-	relBundlePath, err := filepath.Rel(repo.Root(), b.Config.Path)
+	absBundlePath, err := filepath.Abs(b.Config.Path)
+	if err != nil {
+		return err
+	}
+	relBundlePath, err := filepath.Rel(repo.Root(), absBundlePath)
 	if err != nil {
 		return err
 	}

@@ -69,7 +69,7 @@ func TestComputeMetadataMutator(t *testing.T) {
 		Version: deploy.LatestMetadataVersion,
 		Config: config.Root{
 			Workspace: config.Workspace{
-				RootPath: "/Users/shreyas.goenka@databricks.com",
+				FilesPath: "/Users/shreyas.goenka@databricks.com/files",
 			},
 			Bundle: config.Bundle{
 				Git: config.Git{
