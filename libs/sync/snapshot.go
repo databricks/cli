@@ -168,7 +168,7 @@ func (s *Snapshot) diff(ctx context.Context, all []fileset.File) (diff, error) {
 
 	currentState := s.SnapshotState
 	if err := currentState.validate(); err != nil {
-		return diff{}, fmt.Errorf("error parsing existing sync state: %w", err)
+		return diff{}, fmt.Errorf("error parsing existing sync state. Please delete your existing sync snapshot file (%s) and retry: %w", s.SnapshotPath, err)
 	}
 
 	// Compute diff to apply to get from current state to new target state.
