@@ -128,7 +128,7 @@ func newDelete() *cobra.Command {
 
 	cmd.Flags().BoolVar(&deleteReq.Force, "force", deleteReq.Force, `Force deletion even if the Storage Credential is not empty.`)
 
-	cmd.Use = "delete METASTORE_ID NAME"
+	cmd.Use = "delete METASTORE_ID STORAGE_CREDENTIAL_NAME"
 	cmd.Short = `Delete a storage credential.`
 	cmd.Long = `Delete a storage credential.
   
@@ -148,7 +148,7 @@ func newDelete() *cobra.Command {
 		a := root.AccountClient(ctx)
 
 		deleteReq.MetastoreId = args[0]
-		deleteReq.Name = args[1]
+		deleteReq.StorageCredentialName = args[1]
 
 		err = a.StorageCredentials.Delete(ctx, deleteReq)
 		if err != nil {
@@ -191,7 +191,7 @@ func newGet() *cobra.Command {
 
 	// TODO: short flags
 
-	cmd.Use = "get METASTORE_ID NAME"
+	cmd.Use = "get METASTORE_ID STORAGE_CREDENTIAL_NAME"
 	cmd.Short = `Gets the named storage credential.`
 	cmd.Long = `Gets the named storage credential.
   
@@ -212,7 +212,7 @@ func newGet() *cobra.Command {
 		a := root.AccountClient(ctx)
 
 		getReq.MetastoreId = args[0]
-		getReq.Name = args[1]
+		getReq.StorageCredentialName = args[1]
 
 		response, err := a.StorageCredentials.Get(ctx, getReq)
 		if err != nil {
@@ -321,7 +321,7 @@ func newUpdate() *cobra.Command {
 
 	// TODO: complex arg: credential_info
 
-	cmd.Use = "update METASTORE_ID NAME"
+	cmd.Use = "update METASTORE_ID STORAGE_CREDENTIAL_NAME"
 	cmd.Short = `Updates a storage credential.`
 	cmd.Long = `Updates a storage credential.
   
@@ -348,7 +348,7 @@ func newUpdate() *cobra.Command {
 			}
 		}
 		updateReq.MetastoreId = args[0]
-		updateReq.Name = args[1]
+		updateReq.StorageCredentialName = args[1]
 
 		response, err := a.StorageCredentials.Update(ctx, updateReq)
 		if err != nil {

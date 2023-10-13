@@ -1256,11 +1256,11 @@ func newReset() *cobra.Command {
 	cmd.Flags().Var(&resetJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "reset"
-	cmd.Short = `Overwrites all settings for a job.`
-	cmd.Long = `Overwrites all settings for a job.
+	cmd.Short = `Overwrite all settings for a job.`
+	cmd.Long = `Overwrite all settings for a job.
   
-  Overwrites all the settings for a specific job. Use the Update endpoint to
-  update job settings partially.`
+  Overwrite all settings for the given job. Use the Update endpoint to update
+  job settings partially.`
 
 	cmd.Annotations = make(map[string]string)
 
