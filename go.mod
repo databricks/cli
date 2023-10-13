@@ -6,7 +6,7 @@ replace github.com/databricks/databricks-sdk-go => github.com/databricks/databri
 
 require (
 	github.com/briandowns/spinner v1.23.0 // Apache 2.0
-	github.com/databricks/databricks-sdk-go v0.22.0 // Apache 2.0
+	github.com/databricks/databricks-sdk-go v0.23.0 // Apache 2.0
 	github.com/fatih/color v1.15.0 // MIT
 	github.com/ghodss/yaml v1.0.0 // MIT + NOTICE
 	github.com/google/uuid v1.3.1 // BSD-3-Clause
@@ -56,7 +56,7 @@ require (
 	golang.org/x/net v0.17.0 // indirect
 	golang.org/x/sys v0.13.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
-	google.golang.org/api v0.143.0 // indirect
+	google.golang.org/api v0.146.0 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20231002182017-d307bd883b97 // indirect
 	google.golang.org/grpc v1.58.2 // indirect
