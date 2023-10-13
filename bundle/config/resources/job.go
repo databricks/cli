@@ -32,7 +32,7 @@ func (j *Job) MergeJobClusters() error {
 		ref, ok := keys[key]
 		if !ok {
 			output = append(output, j.JobClusters[i])
-			keys[key] = &j.JobClusters[i]
+			keys[key] = &output[len(output)-1]
 			continue
 		}
 
@@ -65,7 +65,7 @@ func (j *Job) MergeTasks() error {
 		ref, ok := keys[key]
 		if !ok {
 			tasks = append(tasks, j.Tasks[i])
-			keys[key] = &j.Tasks[i]
+			keys[key] = &tasks[len(tasks)-1]
 			continue
 		}
 
