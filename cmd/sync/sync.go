@@ -13,7 +13,6 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/sync"
-	"github.com/databricks/databricks-sdk-go"
 	"github.com/spf13/cobra"
 )
 
@@ -70,7 +69,7 @@ func (f *syncFlags) syncOptionsFromArgs(cmd *cobra.Command, args []string) (*syn
 		// The sync code will automatically create this directory if it doesn't
 		// exist and add it to the `.gitignore` file in the root.
 		SnapshotBasePath: filepath.Join(args[0], ".databricks"),
-		WorkspaceClient:  databricks.Must(databricks.NewWorkspaceClient()),
+		WorkspaceClient:  root.WorkspaceClient(cmd.Context()),
 	}
 	return &opts, nil
 }
