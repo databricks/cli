@@ -87,12 +87,6 @@ func transformDevelopmentMode(b *bundle.Bundle) error {
 		// (model serving doesn't yet support tags)
 	}
 
-	for i := range r.RegisteredModels {
-		prefix = "dev_" + b.Config.Workspace.CurrentUser.ShortName + "_"
-		r.RegisteredModels[i].Name = prefix + r.RegisteredModels[i].Name
-		// (registered models in Unity Catalog don't yet support tags)
-	}
-
 	return nil
 }
 

@@ -6,7 +6,7 @@ import (
 )
 
 type RegisteredModel struct {
-	// This is a resource agnostic implementation of grants for ACLs.
+	// This is a resource agnostic implementation of grants.
 	// Implementation could be different based on the resource type.
 	Grants []Grant `json:"grants,omitempty"`
 

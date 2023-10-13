@@ -11,7 +11,6 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/tags"
 	sdkconfig "github.com/databricks/databricks-sdk-go/config"
-	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
@@ -60,9 +59,6 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 				ModelServingEndpoints: map[string]*resources.ModelServingEndpoint{
 					"servingendpoint1": {CreateServingEndpoint: &serving.CreateServingEndpoint{Name: "servingendpoint1"}},
 				},
-				RegisteredModels: map[string]*resources.RegisteredModel{
-					"registeredmodel1": {CreateRegisteredModelRequest: &catalog.CreateRegisteredModelRequest{Name: "registeredmodel1", Comment: "comment", CatalogName: "catalog", SchemaName: "schema"}},
-				},
 			},
 		},
 		// Use AWS implementation for testing.
@@ -101,9 +97,6 @@ func TestProcessTargetModeDevelopment(t *testing.T) {
 
 	// Model serving endpoint 1
 	assert.Equal(t, "dev_lennart_servingendpoint1", bundle.Config.Resources.ModelServingEndpoints["servingendpoint1"].Name)
-
-	// Registered Model 1
-	assert.Equal(t, "dev_lennart_registeredmodel1", bundle.Config.Resources.RegisteredModels["registeredmodel1"].Name)
 }
 
 func TestProcessTargetModeDevelopmentTagNormalizationForAws(t *testing.T) {
@@ -158,7 +151,6 @@ func TestProcessTargetModeDefault(t *testing.T) {
 	assert.Equal(t, "pipeline1", bundle.Config.Resources.Pipelines["pipeline1"].Name)
 	assert.False(t, bundle.Config.Resources.Pipelines["pipeline1"].PipelineSpec.Development)
 	assert.Equal(t, "servingendpoint1", bundle.Config.Resources.ModelServingEndpoints["servingendpoint1"].Name)
-	assert.Equal(t, "registeredmodel1", bundle.Config.Resources.RegisteredModels["registeredmodel1"].Name)
 }
 
 func TestProcessTargetModeProduction(t *testing.T) {
@@ -195,7 +187,6 @@ func TestProcessTargetModeProduction(t *testing.T) {
 	assert.Equal(t, "pipeline1", bundle.Config.Resources.Pipelines["pipeline1"].Name)
 	assert.False(t, bundle.Config.Resources.Pipelines["pipeline1"].PipelineSpec.Development)
 	assert.Equal(t, "servingendpoint1", bundle.Config.Resources.ModelServingEndpoints["servingendpoint1"].Name)
-	assert.Equal(t, "registeredmodel1", bundle.Config.Resources.RegisteredModels["registeredmodel1"].Name)
 }
 
 func TestProcessTargetModeProductionOkForPrincipal(t *testing.T) {
