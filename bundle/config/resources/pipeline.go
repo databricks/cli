@@ -18,6 +18,14 @@ type Pipeline struct {
 	*pipelines.PipelineSpec
 }
 
+func (s *Pipeline) UnmarshalJSON(b []byte) error {
+	return marshal.Unmarshal(b, s)
+}
+
+func (s Pipeline) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(s)
+}
+
 // MergeClusters merges cluster definitions with same label.
 // The clusters field is a slice, and as such, overrides are appended to it.
 // We can identify a cluster by its label, however, so we can use this label
@@ -63,12 +71,4 @@ func (p *Pipeline) MergeClusters() error {
 	// Overwrite resulting slice.
 	p.Clusters = output
 	return nil
-}
-
-func (s *Pipeline) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, s)
-}
-
-func (s Pipeline) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(s)
 }

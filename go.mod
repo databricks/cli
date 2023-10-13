@@ -2,8 +2,6 @@ module github.com/databricks/cli
 
 go 1.21
 
-replace github.com/databricks/databricks-sdk-go => github.com/databricks/databricks-sdk-go v0.19.2-0.20230914113857-3aa4e5b801a8
-
 require (
 	github.com/briandowns/spinner v1.23.0 // Apache 2.0
 	github.com/databricks/databricks-sdk-go v0.23.0 // Apache 2.0
