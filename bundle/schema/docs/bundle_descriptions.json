@@ -1322,6 +1322,14 @@
                           }
                         }
                       }
+                    },
+                    "queue": {
+                      "description": "The queue settings of the job.",
+                      "properties": {
+                        "enabled": {
+                          "description": "If true, enable queueing for the job"
+                        }
+                      }
                     }
                   }
                 }
