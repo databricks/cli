@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle/config/paths"
+	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/imdario/mergo"
 )
@@ -15,6 +16,14 @@ type Pipeline struct {
 	paths.Paths
 
 	*pipelines.PipelineSpec
+}
+
+func (s *Pipeline) UnmarshalJSON(b []byte) error {
+	return marshal.Unmarshal(b, s)
+}
+
+func (s Pipeline) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(s)
 }
 
 // MergeClusters merges cluster definitions with same label.
