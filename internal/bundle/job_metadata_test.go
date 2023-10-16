@@ -16,6 +16,7 @@ import (
 	"github.com/databricks/cli/internal"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -94,12 +95,14 @@ func TestAccJobsMetadataFile(t *testing.T) {
 						Paths: paths.Paths{
 							RelativePath: "databricks.yml",
 						},
+						JobSettings: &jobs.JobSettings{},
 					},
 					"bar": {
 						ID: strconv.FormatInt(job2.JobId, 10),
 						Paths: paths.Paths{
 							RelativePath: "a/b/resources.yml",
 						},
+						JobSettings: &jobs.JobSettings{},
 					},
 				},
 			},
