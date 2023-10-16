@@ -8,6 +8,8 @@ type ResourceMetastoreDataAccessAwsIamRole struct {
 
 type ResourceMetastoreDataAccessAzureManagedIdentity struct {
 	AccessConnectorId string `json:"access_connector_id"`
+	CredentialId      string `json:"credential_id,omitempty"`
+	ManagedIdentityId string `json:"managed_identity_id,omitempty"`
 }
 
 type ResourceMetastoreDataAccessAzureServicePrincipal struct {
@@ -17,7 +19,8 @@ type ResourceMetastoreDataAccessAzureServicePrincipal struct {
 }
 
 type ResourceMetastoreDataAccessDatabricksGcpServiceAccount struct {
-	Email string `json:"email,omitempty"`
+	CredentialId string `json:"credential_id,omitempty"`
+	Email        string `json:"email,omitempty"`
 }
 
 type ResourceMetastoreDataAccessGcpServiceAccountKey struct {
@@ -27,11 +30,14 @@ type ResourceMetastoreDataAccessGcpServiceAccountKey struct {
 }
 
 type ResourceMetastoreDataAccess struct {
-	ConfigurationType           string                                                  `json:"configuration_type,omitempty"`
+	Comment                     string                                                  `json:"comment,omitempty"`
+	ForceDestroy                bool                                                    `json:"force_destroy,omitempty"`
 	Id                          string                                                  `json:"id,omitempty"`
 	IsDefault                   bool                                                    `json:"is_default,omitempty"`
 	MetastoreId                 string                                                  `json:"metastore_id"`
 	Name                        string                                                  `json:"name"`
+	Owner                       string                                                  `json:"owner,omitempty"`
+	ReadOnly                    bool                                                    `json:"read_only,omitempty"`
 	AwsIamRole                  *ResourceMetastoreDataAccessAwsIamRole                  `json:"aws_iam_role,omitempty"`
 	AzureManagedIdentity        *ResourceMetastoreDataAccessAzureManagedIdentity        `json:"azure_managed_identity,omitempty"`
 	AzureServicePrincipal       *ResourceMetastoreDataAccessAzureServicePrincipal       `json:"azure_service_principal,omitempty"`

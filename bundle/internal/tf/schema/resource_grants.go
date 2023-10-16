@@ -10,10 +10,12 @@ type ResourceGrantsGrant struct {
 type ResourceGrants struct {
 	Catalog           string                `json:"catalog,omitempty"`
 	ExternalLocation  string                `json:"external_location,omitempty"`
+	ForeignConnection string                `json:"foreign_connection,omitempty"`
 	Function          string                `json:"function,omitempty"`
 	Id                string                `json:"id,omitempty"`
 	MaterializedView  string                `json:"materialized_view,omitempty"`
 	Metastore         string                `json:"metastore,omitempty"`
+	Model             string                `json:"model,omitempty"`
 	Schema            string                `json:"schema,omitempty"`
 	Share             string                `json:"share,omitempty"`
 	StorageCredential string                `json:"storage_credential,omitempty"`
