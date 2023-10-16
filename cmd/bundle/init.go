@@ -18,7 +18,7 @@ var gitUrlPrefixes = []string{
 	"git@",
 }
 
-var aliasedTemplates = map[string]string {
+var aliasedTemplates = map[string]string{
 	"mlops-stack": "https://github.com/databricks/mlops-stack",
 }
 
