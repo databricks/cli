@@ -919,10 +919,11 @@ func newStartUpdate() *cobra.Command {
 	// TODO: array: refresh_selection
 
 	cmd.Use = "start-update PIPELINE_ID"
-	cmd.Short = `Queue a pipeline update.`
-	cmd.Long = `Queue a pipeline update.
+	cmd.Short = `Start a pipeline.`
+	cmd.Long = `Start a pipeline.
   
-  Starts or queues a pipeline update.`
+  Starts a new update for the pipeline. If there is already an active update for
+  the pipeline, the request will fail and the active update will remain running.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -1006,7 +1007,8 @@ func newStop() *cobra.Command {
 	cmd.Short = `Stop a pipeline.`
 	cmd.Long = `Stop a pipeline.
   
-  Stops a pipeline.`
+  Stops the pipeline by canceling the active update. If there is no active
+  update for the pipeline, this request is a no-op.`
 
 	cmd.Annotations = make(map[string]string)
 

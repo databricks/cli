@@ -1,0 +1,35 @@
+{
+    "name": "create-job-without-workers",
+    "job_clusters": [{
+        "job_cluster_key": "create-job-without-workers-cluster",
+        "new_cluster": {
+            "num_workers": 0,
+            "spark_version": "10.4.x-scala2.12",
+            "node_type_id": "Standard_DS3_v2"
+        }
+    }],
+    "tasks": [{
+        "job_cluster_key":  "create-job-without-workers-cluster",
+        "task_key": "create-job-without-workers-cluster1",
+        "libraries": [
+            {
+                "jar": "dbfs:/max/jars/exampleJarTask.jar"
+            }
+        ],
+        "spark_jar_task": {
+            "main_class_name":  "com.databricks.quickstart.exampleTask"
+        }
+    },
+    {
+        "job_cluster_key":  "create-job-without-workers-cluster",
+        "task_key": "create-job-without-workers-cluster2",
+        "libraries": [
+            {
+                "jar": "dbfs:/max/jars/exampleJarTask.jar"
+            }
+        ],
+        "spark_jar_task": {
+            "main_class_name":  "com.databricks.quickstart.exampleTask"
+        }
+    }]
+}

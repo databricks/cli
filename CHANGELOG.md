@@ -1,5 +1,32 @@
 # Version changelog
 
+## 0.207.1
+
+CLI:
+ * Improve `workspace import` command by allowing references to local files for content ([#793](https://github.com/databricks/cli/pull/793)).
+ * Add `--file` flag to workspace export command ([#794](https://github.com/databricks/cli/pull/794)).
+ * Ensure profile flag is respected for sync command ([#837](https://github.com/databricks/cli/pull/837)).
+ * Add hint to delete sync snapshot if parsing fails ([#853](https://github.com/databricks/cli/pull/853)).
+ * Use profile information when getting a token using the CLI ([#855](https://github.com/databricks/cli/pull/855)).
+
+Bundles:
+ * Minor template tweaks ([#832](https://github.com/databricks/cli/pull/832)).
+ * Fixed using repo files as pipeline libraries ([#847](https://github.com/databricks/cli/pull/847)).
+ * Support .gitignore syntax in sync section and make sure it works recursively ([#854](https://github.com/databricks/cli/pull/854)).
+ * Allow target overrides for sync section ([#856](https://github.com/databricks/cli/pull/856)).
+
+Internal:
+ * Fix import export integration tests on windows ([#842](https://github.com/databricks/cli/pull/842)).
+ * Fix workspace import test ([#844](https://github.com/databricks/cli/pull/844)).
+ * Automatically create a release PR in homebrew-tap repo ([#841](https://github.com/databricks/cli/pull/841)).
+
+
+Dependency updates:
+ * Bump golang.org/x/term from 0.12.0 to 0.13.0 ([#852](https://github.com/databricks/cli/pull/852)).
+ * Bump golang.org/x/mod from 0.12.0 to 0.13.0 ([#851](https://github.com/databricks/cli/pull/851)).
+ * Bump golang.org/x/sync from 0.3.0 to 0.4.0 ([#849](https://github.com/databricks/cli/pull/849)).
+ * Bump golang.org/x/oauth2 from 0.12.0 to 0.13.0 ([#850](https://github.com/databricks/cli/pull/850)).
+
 ## 0.207.0
 
 CLI:

@@ -7,6 +7,7 @@ import (
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
+	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 )
 
@@ -67,6 +68,14 @@ type User struct {
 	ShortName string `json:"short_name,omitempty" bundle:"readonly"`
 
 	*iam.User
+}
+
+func (s *User) UnmarshalJSON(b []byte) error {
+	return marshal.Unmarshal(b, s)
+}
+
+func (s User) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(s)
 }
 
 func (w *Workspace) Client() (*databricks.WorkspaceClient, error) {
