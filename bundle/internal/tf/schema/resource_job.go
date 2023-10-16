@@ -155,6 +155,10 @@ type ResourceJobJobClusterNewClusterInitScriptsS3 struct {
 	Region           string `json:"region,omitempty"`
 }
 
+type ResourceJobJobClusterNewClusterInitScriptsVolumes struct {
+	Destination string `json:"destination,omitempty"`
+}
+
 type ResourceJobJobClusterNewClusterInitScriptsWorkspace struct {
 	Destination string `json:"destination,omitempty"`
 }
@@ -165,6 +169,7 @@ type ResourceJobJobClusterNewClusterInitScripts struct {
 	File      *ResourceJobJobClusterNewClusterInitScriptsFile      `json:"file,omitempty"`
 	Gcs       *ResourceJobJobClusterNewClusterInitScriptsGcs       `json:"gcs,omitempty"`
 	S3        *ResourceJobJobClusterNewClusterInitScriptsS3        `json:"s3,omitempty"`
+	Volumes   *ResourceJobJobClusterNewClusterInitScriptsVolumes   `json:"volumes,omitempty"`
 	Workspace *ResourceJobJobClusterNewClusterInitScriptsWorkspace `json:"workspace,omitempty"`
 }
 
@@ -337,6 +342,10 @@ type ResourceJobNewClusterInitScriptsS3 struct {
 	Region           string `json:"region,omitempty"`
 }
 
+type ResourceJobNewClusterInitScriptsVolumes struct {
+	Destination string `json:"destination,omitempty"`
+}
+
 type ResourceJobNewClusterInitScriptsWorkspace struct {
 	Destination string `json:"destination,omitempty"`
 }
@@ -347,6 +356,7 @@ type ResourceJobNewClusterInitScripts struct {
 	File      *ResourceJobNewClusterInitScriptsFile      `json:"file,omitempty"`
 	Gcs       *ResourceJobNewClusterInitScriptsGcs       `json:"gcs,omitempty"`
 	S3        *ResourceJobNewClusterInitScriptsS3        `json:"s3,omitempty"`
+	Volumes   *ResourceJobNewClusterInitScriptsVolumes   `json:"volumes,omitempty"`
 	Workspace *ResourceJobNewClusterInitScriptsWorkspace `json:"workspace,omitempty"`
 }
 
@@ -421,6 +431,7 @@ type ResourceJobPythonWheelTask struct {
 }
 
 type ResourceJobQueue struct {
+	Enabled bool `json:"enabled"`
 }
 
 type ResourceJobRunAs struct {
@@ -429,7 +440,7 @@ type ResourceJobRunAs struct {
 }
 
 type ResourceJobRunJobTask struct {
-	JobId         string            `json:"job_id"`
+	JobId         int               `json:"job_id"`
 	JobParameters map[string]string `json:"job_parameters,omitempty"`
 }
 
@@ -616,6 +627,10 @@ type ResourceJobTaskNewClusterInitScriptsS3 struct {
 	Region           string `json:"region,omitempty"`
 }
 
+type ResourceJobTaskNewClusterInitScriptsVolumes struct {
+	Destination string `json:"destination,omitempty"`
+}
+
 type ResourceJobTaskNewClusterInitScriptsWorkspace struct {
 	Destination string `json:"destination,omitempty"`
 }
@@ -626,6 +641,7 @@ type ResourceJobTaskNewClusterInitScripts struct {
 	File      *ResourceJobTaskNewClusterInitScriptsFile      `json:"file,omitempty"`
 	Gcs       *ResourceJobTaskNewClusterInitScriptsGcs       `json:"gcs,omitempty"`
 	S3        *ResourceJobTaskNewClusterInitScriptsS3        `json:"s3,omitempty"`
+	Volumes   *ResourceJobTaskNewClusterInitScriptsVolumes   `json:"volumes,omitempty"`
 	Workspace *ResourceJobTaskNewClusterInitScriptsWorkspace `json:"workspace,omitempty"`
 }
 
@@ -696,7 +712,7 @@ type ResourceJobTaskPythonWheelTask struct {
 }
 
 type ResourceJobTaskRunJobTask struct {
-	JobId         string            `json:"job_id"`
+	JobId         int               `json:"job_id"`
 	JobParameters map[string]string `json:"job_parameters,omitempty"`
 }
 
