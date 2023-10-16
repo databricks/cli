@@ -81,7 +81,7 @@ func TestAccJobsMetadataFile(t *testing.T) {
 		Config: config.Root{
 			Bundle: config.Bundle{
 				Git: config.Git{
-					BundleRoot: ".",
+					BundleRootPath: ".",
 				},
 			},
 			Workspace: config.Workspace{

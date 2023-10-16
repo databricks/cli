@@ -26,10 +26,10 @@ func TestComputeMetadataMutator(t *testing.T) {
 				Name:   "my-bundle",
 				Target: "development",
 				Git: config.Git{
-					Branch:     "my-branch",
-					OriginURL:  "www.host.com",
-					Commit:     "abcd",
-					BundleRoot: "a/b/c/d",
+					Branch:         "my-branch",
+					OriginURL:      "www.host.com",
+					Commit:         "abcd",
+					BundleRootPath: "a/b/c/d",
 				},
 			},
 			Resources: config.Resources{
@@ -72,10 +72,10 @@ func TestComputeMetadataMutator(t *testing.T) {
 			},
 			Bundle: config.Bundle{
 				Git: config.Git{
-					Branch:     "my-branch",
-					OriginURL:  "www.host.com",
-					Commit:     "abcd",
-					BundleRoot: "a/b/c/d",
+					Branch:         "my-branch",
+					OriginURL:      "www.host.com",
+					Commit:         "abcd",
+					BundleRootPath: "a/b/c/d",
 				},
 			},
 			Resources: config.Resources{

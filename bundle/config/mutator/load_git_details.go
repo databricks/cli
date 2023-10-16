@@ -64,6 +64,6 @@ func (m *loadGitDetails) Apply(ctx context.Context, b *bundle.Bundle) error {
 	if err != nil {
 		return err
 	}
-	b.Config.Bundle.Git.BundleRoot = filepath.ToSlash(relBundlePath)
+	b.Config.Bundle.Git.BundleRootPath = filepath.ToSlash(relBundlePath)
 	return nil
 }
