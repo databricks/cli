@@ -2,6 +2,7 @@ package resources
 
 import (
 	"github.com/databricks/cli/bundle/config/paths"
+	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
 
@@ -22,4 +23,12 @@ type RegisteredModel struct {
 	// This represents the input args for terraform, and will get converted
 	// to a HCL representation for CRUD
 	*catalog.CreateRegisteredModelRequest
+}
+
+func (s *RegisteredModel) UnmarshalJSON(b []byte) error {
+	return marshal.Unmarshal(b, s)
+}
+
+func (s RegisteredModel) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(s)
 }
