@@ -72,7 +72,7 @@ func newInitCommand() *cobra.Command {
 			}
 		}
 
-		// Expand templatePath if it's an alias for a first party template
+		// Expand templatePath if it's an alias for a known template
 		if _, ok := aliasedTemplates[templatePath]; ok {
 			templatePath = aliasedTemplates[templatePath]
 		}
