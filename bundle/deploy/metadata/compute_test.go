@@ -2,7 +2,6 @@ package metadata
 
 import (
 	"context"
-	"encoding/json"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -66,7 +65,7 @@ func TestComputeMetadataMutator(t *testing.T) {
 	}
 
 	expectedMetadata := deploy.Metadata{
-		Version: deploy.LatestMetadataVersion,
+		Version: deploy.MetadataVersion,
 		Config: config.Root{
 			Workspace: config.Workspace{
 				FilesPath: "/Users/shreyas.goenka@databricks.com/files",

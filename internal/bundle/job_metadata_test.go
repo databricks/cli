@@ -77,7 +77,7 @@ func TestAccJobsMetadataFile(t *testing.T) {
 
 	// expected value for the metadata
 	expectedMetadata := deploy.Metadata{
-		Version: deploy.LatestMetadataVersion,
+		Version: deploy.MetadataVersion,
 		Config: config.Root{
 			Bundle: config.Bundle{
 				Git: config.Git{

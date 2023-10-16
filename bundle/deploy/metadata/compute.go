@@ -25,7 +25,7 @@ func (m *compute) Name() string {
 
 func (m *compute) Apply(_ context.Context, b *bundle.Bundle) error {
 	b.Metadata = deploy.Metadata{
-		Version: deploy.LatestMetadataVersion,
+		Version: deploy.MetadataVersion,
 		Config:  config.Root{},
 	}
 

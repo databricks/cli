@@ -2,7 +2,7 @@ package deploy
 
 import "github.com/databricks/cli/bundle/config"
 
-var LatestMetadataVersion = 1
+var MetadataVersion = 1
 
 // Metadata about the bundle deployment. This is the interface Databricks services
 // rely on to integrate with bundles when they need additional information about
