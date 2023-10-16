@@ -31,3 +31,4 @@ vendor:
 	@go mod vendor
 
 .PHONY: build vendor coverage test lint fmt
+
