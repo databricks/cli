@@ -106,14 +106,6 @@ func TestAccJobsMetadataFile(t *testing.T) {
 		},
 	}
 
-	// Print expected and actual metadata for debugging
-	actual, err := json.MarshalIndent(actualMetadata, "		", "	")
-	assert.NoError(t, err)
-	t.Log("[DEBUG] actual: ", string(actual))
-	expected, err := json.MarshalIndent(expectedMetadata, "		", "	")
-	assert.NoError(t, err)
-	t.Log("[DEBUG] expected: ", string(expected))
-
 	// Assert metadata matches what we expected.
 	assert.Equal(t, expectedMetadata, actualMetadata)
 }

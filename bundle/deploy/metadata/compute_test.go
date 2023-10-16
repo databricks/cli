@@ -101,13 +101,5 @@ func TestComputeMetadataMutator(t *testing.T) {
 	err := Compute().Apply(context.Background(), b)
 	require.NoError(t, err)
 
-	// Print expected and actual metadata for debugging
-	actual, err := json.MarshalIndent(b.Metadata, "		", "	")
-	assert.NoError(t, err)
-	t.Log("[DEBUG] actual: ", string(actual))
-	expected, err := json.MarshalIndent(expectedMetadata, "		", "	")
-	assert.NoError(t, err)
-	t.Log("[DEBUG] expected: ", string(expected))
-
 	assert.Equal(t, expectedMetadata, b.Metadata)
 }
