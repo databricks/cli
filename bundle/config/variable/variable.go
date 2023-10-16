@@ -44,3 +44,7 @@ func (v *Variable) Set(val string) error {
 	v.Value = &val
 	return nil
 }
+
+func (v *Variable) Replace(val string) {
+	v.Value = &val
+}

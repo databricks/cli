@@ -24,6 +24,7 @@ func Initialize() bundle.Mutator {
 			mutator.ExpandWorkspaceRoot(),
 			mutator.DefineDefaultWorkspacePaths(),
 			mutator.SetVariables(),
+			mutator.ResolveResourceReferences(),
 			interpolation.Interpolate(
 				interpolation.IncludeLookupsInPath("bundle"),
 				interpolation.IncludeLookupsInPath("workspace"),

@@ -1,3 +1,4 @@
+bundle/resolvers/resolvers.go linguist-generated=true
 cmd/account/access-control/access-control.go linguist-generated=true
 cmd/account/billable-usage/billable-usage.go linguist-generated=true
 cmd/account/budgets/budgets.go linguist-generated=true

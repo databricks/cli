@@ -1,0 +1,37 @@
+// Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+
+package resolvers
+
+import (
+	"context"
+    "fmt"
+	"github.com/databricks/cli/bundle"
+)
+
+type ResolverFunc func(ctx context.Context, b *bundle.Bundle, name string) (string, error)
+
+func Resolvers() map[string](ResolverFunc) {
+    resolvers := make(map[string](ResolverFunc), 0)
+    {{range .Services -}}
+    {{- if not .IsAccounts -}}
+    {{- if and .List .List.GetByName }}
+    resolvers["{{.KebabName}}"] = func(ctx context.Context, b *bundle.Bundle, name string) (string, error) {
+        w := b.WorkspaceClient()
+        entity, err := w.{{.PascalName}}.GetBy{{range .List.NamedIdMap.NamePath}}{{.PascalName}}{{end}}(ctx, name)
+        if err != nil {
+            return "", err
+        }
+
+        return fmt.Sprint(entity{{ template "field-path" .List.NamedIdMap.IdPath }}), nil
+    }
+    {{- end -}}
+    {{- end -}}
+    {{- end}}
+
+    return resolvers
+}
+
+
+{{- define "field-path" -}}
+	{{- range .}}.{{.PascalName}}{{end}}
+{{- end -}}
