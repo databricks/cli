@@ -1,5 +1,36 @@
 # Version changelog
 
+## 0.208.0
+
+Note: this release includes a fix for the issue where zero values (for example
+`num_workers: 0`) were not included in the request body.
+
+CLI:
+ * Use already instantiated WorkspaceClient in sync command ([#867](https://github.com/databricks/cli/pull/867)).
+
+Bundles:
+ * Support Unity Catalog Registered Models in bundles ([#846](https://github.com/databricks/cli/pull/846)).
+ * Fixed merging task libraries from targets ([#868](https://github.com/databricks/cli/pull/868)).
+ * Add alias for mlops-stack template URL ([#869](https://github.com/databricks/cli/pull/869)).
+
+API Changes:
+ * Changed `databricks account billable-usage download` command to start returning output.
+ * Changed `databricks account storage-credentials delete` command with new required argument order.
+ * Changed `databricks account storage-credentials get` command with new required argument order.
+ * Changed `databricks account storage-credentials update` command with new required argument order.
+ * Added `databricks workspace-bindings get-bindings` command.
+ * Added `databricks workspace-bindings update-bindings` command.
+ * Removed `databricks account network-policy` command group.
+ * Changed `databricks ip-access-lists list` command to return output.
+
+OpenAPI commit 493a76554afd3afdd15dc858773d01643f80352a (2023-10-12)
+
+Dependency updates:
+ * Update Go SDK to 0.23.0 and use custom marshaller ([#772](https://github.com/databricks/cli/pull/772)).
+ * Bump Terraform provider to v1.28.0 ([#871](https://github.com/databricks/cli/pull/871)).
+ * Bump golang.org/x/net from 0.16.0 to 0.17.0 ([#863](https://github.com/databricks/cli/pull/863)).
+ * Bump github.com/hashicorp/hc-install from 0.6.0 to 0.6.1 ([#870](https://github.com/databricks/cli/pull/870)).
+
 ## 0.207.1
 
 CLI:
