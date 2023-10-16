@@ -59,6 +59,7 @@ func (m *loadGitDetails) Apply(ctx context.Context, b *bundle.Bundle) error {
 	if err != nil {
 		return err
 	}
+	// repo.Root() returns the absolute path of the repo
 	relBundlePath, err := filepath.Rel(repo.Root(), absBundlePath)
 	if err != nil {
 		return err
