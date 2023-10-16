@@ -8,7 +8,8 @@ var MetadataVersion = 1
 // rely on to integrate with bundles when they need additional information about
 // a bundle deployment.
 //
-// After deploy, a file containing the metadata can be found at the workspace file system.
+// After deploy, a file containing the metadata (metadata.json) can be found
+// in the WSFS location containing the bundle state.
 type Metadata struct {
 	Version int `json:"version"`
 

@@ -32,6 +32,12 @@ const internalFolder = ".internal"
 type Bundle struct {
 	Config config.Root
 
+	// Metadata about the bundle deployment. This is the interface Databricks services
+	// rely on to integrate with bundles when they need additional information about
+	// a bundle deployment.
+	//
+	// After deploy, a file containing the metadata (metadata.json) can be found
+	// in the WSFS location containing the bundle state.
 	Metadata deploy.Metadata
 
 	// Store a pointer to the workspace client.
