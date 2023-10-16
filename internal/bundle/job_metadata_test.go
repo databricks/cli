@@ -67,7 +67,7 @@ func TestAccJobsMetadataFile(t *testing.T) {
 	require.NoError(t, err)
 
 	// Read metadata object from the workspace
-	r, err := f.Read(context.Background(), "state/deploy-metadata.json")
+	r, err := f.Read(context.Background(), "state/metadata.json")
 	require.NoError(t, err)
 	b, err := io.ReadAll(r)
 	require.NoError(t, err)

@@ -9,7 +9,7 @@ import (
 	"github.com/databricks/cli/libs/filer"
 )
 
-var MetadataFileName = "deploy-metadata.json"
+var MetadataFileName = "metadata.json"
 
 type upload struct{}
 
