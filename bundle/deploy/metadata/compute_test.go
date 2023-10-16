@@ -8,7 +8,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/paths"
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/bundle/deploy"
+	"github.com/databricks/cli/bundle/deployment"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -64,8 +64,8 @@ func TestComputeMetadataMutator(t *testing.T) {
 		},
 	}
 
-	expectedMetadata := deploy.Metadata{
-		Version: deploy.MetadataVersion,
+	expectedMetadata := deployment.Metadata{
+		Version: deployment.MetadataVersion,
 		Config: config.Root{
 			Workspace: config.Workspace{
 				FilesPath: "/Users/shreyas.goenka@databricks.com/files",

@@ -12,7 +12,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/paths"
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/bundle/deploy"
+	"github.com/databricks/cli/bundle/deployment"
 	"github.com/databricks/cli/internal"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/databricks-sdk-go"
@@ -71,13 +71,13 @@ func TestAccJobsMetadataFile(t *testing.T) {
 	require.NoError(t, err)
 	b, err := io.ReadAll(r)
 	require.NoError(t, err)
-	actualMetadata := deploy.Metadata{}
+	actualMetadata := deployment.Metadata{}
 	err = json.Unmarshal(b, &actualMetadata)
 	require.NoError(t, err)
 
 	// expected value for the metadata
-	expectedMetadata := deploy.Metadata{
-		Version: deploy.MetadataVersion,
+	expectedMetadata := deployment.Metadata{
+		Version: deployment.MetadataVersion,
 		Config: config.Root{
 			Bundle: config.Bundle{
 				Git: config.Git{

@@ -10,7 +10,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/paths"
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/bundle/deploy"
+	"github.com/databricks/cli/bundle/deployment"
 )
 
 type compute struct{}
@@ -24,8 +24,8 @@ func (m *compute) Name() string {
 }
 
 func (m *compute) Apply(_ context.Context, b *bundle.Bundle) error {
-	b.Metadata = deploy.Metadata{
-		Version: deploy.MetadataVersion,
+	b.Metadata = deployment.Metadata{
+		Version: deployment.MetadataVersion,
 		Config:  config.Root{},
 	}
 

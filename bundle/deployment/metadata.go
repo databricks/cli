@@ -1,4 +1,4 @@
-package deploy
+package deployment
 
 import "github.com/databricks/cli/bundle/config"
 
