@@ -268,9 +268,14 @@ func init() {
 		if err != nil {
 			return err
 		}
-        {{if .Response -}}
-		return cmdio.Render(ctx, response)
-		{{- else -}}
+		{{ if .Response -}}
+			{{- if .IsResponseByteStream -}}
+			defer response.{{.ResponseBodyField.PascalName}}.Close()
+			return cmdio.RenderReader(ctx, response.{{.ResponseBodyField.PascalName}})
+			{{- else -}}
+			return cmdio.Render(ctx, response)
+			{{- end -}}
+		{{ else -}}
 		return nil
 		{{- end -}}
 {{- end -}}
