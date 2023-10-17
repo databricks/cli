@@ -1,9 +1,9 @@
 package artifacts
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"os"
@@ -14,7 +14,7 @@ import (
 	"github.com/databricks/cli/bundle/artifacts/whl"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/databricks-sdk-go/service/workspace"
+	"github.com/databricks/cli/libs/filer"
 )
 
 type mutatorFactory = func(name string) bundle.Mutator
@@ -83,7 +83,7 @@ func BasicUpload(name string) bundle.Mutator {
 }
 
 func (m *basicUpload) Name() string {
-	return fmt.Sprintf("artifacts.Build(%s)", m.name)
+	return fmt.Sprintf("artifacts.Upload(%s)", m.name)
 }
 
 func (m *basicUpload) Apply(ctx context.Context, b *bundle.Bundle) error {
@@ -96,7 +96,17 @@ func (m *basicUpload) Apply(ctx context.Context, b *bundle.Bundle) error {
 		return fmt.Errorf("artifact source is not configured: %s", m.name)
 	}
 
-	err := uploadArtifact(ctx, artifact, b)
+	uploadPath, err := getUploadBasePath(b)
+	if err != nil {
+		return err
+	}
+
+	client, err := filer.NewWorkspaceFilesClient(b.WorkspaceClient(), uploadPath)
+	if err != nil {
+		return err
+	}
+
+	err = uploadArtifact(ctx, artifact, uploadPath, client)
 	if err != nil {
 		return fmt.Errorf("artifacts.Upload(%s): %w", m.name, err)
 	}
@@ -104,13 +114,14 @@ func (m *basicUpload) Apply(ctx context.Context, b *bundle.Bundle) error {
 	return nil
 }
 
-func uploadArtifact(ctx context.Context, a *config.Artifact, b *bundle.Bundle) error {
+func uploadArtifact(ctx context.Context, a *config.Artifact, uploadPath string, client filer.Filer) error {
 	for i := range a.Files {
 		f := &a.Files[i]
 		if f.NeedsUpload() {
 			filename := filepath.Base(f.Source)
 			cmdio.LogString(ctx, fmt.Sprintf("artifacts.Upload(%s): Uploading...", filename))
-			remotePath, err := uploadArtifactFile(ctx, f.Source, b)
+
+			remotePath, err := uploadArtifactFile(ctx, f.Source, uploadPath, client)
 			if err != nil {
 				return err
 			}
@@ -125,32 +136,17 @@ func uploadArtifact(ctx context.Context, a *config.Artifact, b *bundle.Bundle) e
 }
 
 // Function to upload artifact file to Workspace
-func uploadArtifactFile(ctx context.Context, file string, b *bundle.Bundle) (string, error) {
+func uploadArtifactFile(ctx context.Context, file string, uploadPath string, client filer.Filer) (string, error) {
 	raw, err := os.ReadFile(file)
 	if err != nil {
 		return "", fmt.Errorf("unable to read %s: %w", file, errors.Unwrap(err))
 	}
 
-	uploadPath, err := getUploadBasePath(b)
-	if err != nil {
-		return "", err
-	}
-
 	fileHash := sha256.Sum256(raw)
-	remotePath := path.Join(uploadPath, fmt.Sprintf("%x", fileHash), filepath.Base(file))
-	// Make sure target directory exists.
-	err = b.WorkspaceClient().Workspace.MkdirsByPath(ctx, path.Dir(remotePath))
-	if err != nil {
-		return "", fmt.Errorf("unable to create directory for %s: %w", remotePath, err)
-	}
+	relPath := path.Join(fmt.Sprintf("%x", fileHash), filepath.Base(file))
+	remotePath := path.Join(uploadPath, relPath)
 
-	// Import to workspace.
-	err = b.WorkspaceClient().Workspace.Import(ctx, workspace.Import{
-		Path:      remotePath,
-		Overwrite: true,
-		Format:    workspace.ImportFormatAuto,
-		Content:   base64.StdEncoding.EncodeToString(raw),
-	})
+	err = client.Write(ctx, relPath, bytes.NewReader(raw), filer.OverwriteIfExists, filer.CreateParentDirectories)
 	if err != nil {
 		return "", fmt.Errorf("unable to import %s: %w", remotePath, err)
 	}
