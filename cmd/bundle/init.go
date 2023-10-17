@@ -18,6 +18,10 @@ var gitUrlPrefixes = []string{
 	"git@",
 }
 
+var aliasedTemplates = map[string]string{
+	"mlops-stack": "https://github.com/databricks/mlops-stack",
+}
+
 func isRepoUrl(url string) bool {
 	result := false
 	for _, prefix := range gitUrlPrefixes {
@@ -66,6 +70,11 @@ func newInitCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
+		}
+
+		// Expand templatePath if it's an alias for a known template
+		if _, ok := aliasedTemplates[templatePath]; ok {
+			templatePath = aliasedTemplates[templatePath]
 		}
 
 		if !isRepoUrl(templatePath) {

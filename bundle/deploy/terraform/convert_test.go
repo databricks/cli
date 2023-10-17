@@ -5,6 +5,7 @@ import (
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
@@ -364,5 +365,60 @@ func TestConvertModelServingPermissions(t *testing.T) {
 	p := out.Resource.Permissions["model_serving_my_model_serving_endpoint"].AccessControl[0]
 	assert.Equal(t, "jane@doe.com", p.UserName)
 	assert.Equal(t, "CAN_VIEW", p.PermissionLevel)
+
+}
+
+func TestConvertRegisteredModel(t *testing.T) {
+	var src = resources.RegisteredModel{
+		CreateRegisteredModelRequest: &catalog.CreateRegisteredModelRequest{
+			Name:        "name",
+			CatalogName: "catalog",
+			SchemaName:  "schema",
+			Comment:     "comment",
+		},
+	}
+
+	var config = config.Root{
+		Resources: config.Resources{
+			RegisteredModels: map[string]*resources.RegisteredModel{
+				"my_registered_model": &src,
+			},
+		},
+	}
+
+	out := BundleToTerraform(&config)
+	resource := out.Resource.RegisteredModel["my_registered_model"]
+	assert.Equal(t, "name", resource.Name)
+	assert.Equal(t, "catalog", resource.CatalogName)
+	assert.Equal(t, "schema", resource.SchemaName)
+	assert.Equal(t, "comment", resource.Comment)
+	assert.Nil(t, out.Data)
+}
+
+func TestConvertRegisteredModelGrants(t *testing.T) {
+	var src = resources.RegisteredModel{
+		Grants: []resources.Grant{
+			{
+				Privileges: []string{"EXECUTE"},
+				Principal:  "jane@doe.com",
+			},
+		},
+	}
+
+	var config = config.Root{
+		Resources: config.Resources{
+			RegisteredModels: map[string]*resources.RegisteredModel{
+				"my_registered_model": &src,
+			},
+		},
+	}
+
+	out := BundleToTerraform(&config)
+	assert.NotEmpty(t, out.Resource.Grants["registered_model_my_registered_model"].Function)
+	assert.Len(t, out.Resource.Grants["registered_model_my_registered_model"].Grant, 1)
+
+	p := out.Resource.Grants["registered_model_my_registered_model"].Grant[0]
+	assert.Equal(t, "jane@doe.com", p.Principal)
+	assert.Equal(t, "EXECUTE", p.Privileges[0])
 
 }

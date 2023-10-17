@@ -14,6 +14,7 @@ type Resources struct {
 	Models                map[string]*resources.MlflowModel          `json:"models,omitempty"`
 	Experiments           map[string]*resources.MlflowExperiment     `json:"experiments,omitempty"`
 	ModelServingEndpoints map[string]*resources.ModelServingEndpoint `json:"model_serving_endpoints,omitempty"`
+	RegisteredModels      map[string]*resources.RegisteredModel      `json:"registered_models,omitempty"`
 }
 
 type UniqueResourceIdTracker struct {
@@ -107,6 +108,19 @@ func (r *Resources) VerifyUniqueResourceIdentifiers() (*UniqueResourceIdTracker,
 		tracker.Type[k] = "model_serving_endpoint"
 		tracker.ConfigPath[k] = r.ModelServingEndpoints[k].ConfigFilePath
 	}
+	for k := range r.RegisteredModels {
+		if _, ok := tracker.Type[k]; ok {
+			return tracker, fmt.Errorf("multiple resources named %s (%s at %s, %s at %s)",
+				k,
+				tracker.Type[k],
+				tracker.ConfigPath[k],
+				"registered_model",
+				r.RegisteredModels[k].ConfigFilePath,
+			)
+		}
+		tracker.Type[k] = "registered_model"
+		tracker.ConfigPath[k] = r.RegisteredModels[k].ConfigFilePath
+	}
 	return tracker, nil
 }
 
@@ -127,6 +141,9 @@ func (r *Resources) SetConfigFilePath(path string) {
 		e.ConfigFilePath = path
 	}
 	for _, e := range r.ModelServingEndpoints {
+		e.ConfigFilePath = path
+	}
+	for _, e := range r.RegisteredModels {
 		e.ConfigFilePath = path
 	}
 }
