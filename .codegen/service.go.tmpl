@@ -78,7 +78,7 @@ var {{.CamelName}}Overrides []func(
 func new{{.PascalName}}() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	{{- $useJsonForAllFields := or .IsJsonOnly (and .Request (or (not .Request.IsAllRequiredFieldsPrimitive) .Request.HasRequiredNonBodyField))  -}}
+	{{- $useJsonForAllFields := or .IsJsonOnly (and .Request (or (not .Request.IsAllRequiredFieldsPrimitive) (not .Request.HasRequiredNonBodyField)))  -}}
 	{{- $needJsonFlag := or $useJsonForAllFields (and .Request (not .Request.IsOnlyPrimitiveFields)) -}}
 
 	{{- if .Request}}

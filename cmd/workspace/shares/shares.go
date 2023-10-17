@@ -398,9 +398,6 @@ func newUpdate() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	}
 
@@ -414,9 +411,8 @@ func newUpdate() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
-			updateReq.Name = args[0]
 		}
+		updateReq.Name = args[0]
 
 		response, err := w.Shares.Update(ctx, updateReq)
 		if err != nil {
