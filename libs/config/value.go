@@ -1,6 +1,9 @@
 package config
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
 type Value struct {
 	v any
@@ -16,6 +19,14 @@ type Value struct {
 // NilValue is equal to the zero-value of Value.
 var NilValue = Value{
 	k: KindNil,
+}
+
+// V constructs a new Value with the given value.
+func V(v any) Value {
+	return Value{
+		v: v,
+		k: kindOf(v),
+	}
 }
 
 // NewValue constructs a new Value with the given value and location.
@@ -115,4 +126,48 @@ func (v Value) MarkAnchor() Value {
 
 func (v Value) IsAnchor() bool {
 	return v.anchor
+}
+
+func (v Value) MustMap() map[string]Value {
+	return v.v.(map[string]Value)
+}
+
+func (v Value) MustSequence() []Value {
+	return v.v.([]Value)
+}
+
+func (v Value) MustString() string {
+	return v.v.(string)
+}
+
+func (v Value) MustBool() bool {
+	return v.v.(bool)
+}
+
+func (v Value) MustInt() int64 {
+	switch vv := v.v.(type) {
+	case int:
+		return int64(vv)
+	case int32:
+		return int64(vv)
+	case int64:
+		return int64(vv)
+	default:
+		panic("not an int")
+	}
+}
+
+func (v Value) MustFloat() float64 {
+	switch vv := v.v.(type) {
+	case float32:
+		return float64(vv)
+	case float64:
+		return float64(vv)
+	default:
+		panic("not a float")
+	}
+}
+
+func (v Value) MustTime() time.Time {
+	return v.v.(time.Time)
 }
