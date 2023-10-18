@@ -146,6 +146,11 @@ func uploadArtifactFile(ctx context.Context, file string, uploadPath string, cli
 	relPath := path.Join(fmt.Sprintf("%x", fileHash), filepath.Base(file))
 	remotePath := path.Join(uploadPath, relPath)
 
+	err = client.Mkdir(ctx, path.Dir(relPath))
+	if err != nil {
+		return "", fmt.Errorf("unable to import %s: %w", remotePath, err)
+	}
+
 	err = client.Write(ctx, relPath, bytes.NewReader(raw), filer.OverwriteIfExists, filer.CreateParentDirectories)
 	if err != nil {
 		return "", fmt.Errorf("unable to import %s: %w", remotePath, err)

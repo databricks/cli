@@ -1,4 +1,4 @@
-package internal
+package bundle
 
 import (
 	"context"
@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/artifacts"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/internal"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/stretchr/testify/require"
@@ -25,7 +26,7 @@ func touchEmptyFile(t *testing.T, path string) {
 }
 
 func TestAccUploadArtifactFileToCorrectRemotePath(t *testing.T) {
-	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
+	t.Log(internal.GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	dir := t.TempDir()
 	whlPath := filepath.Join(dir, "dist", "test.whl")
@@ -44,7 +45,7 @@ func TestAccUploadArtifactFileToCorrectRemotePath(t *testing.T) {
 	}
 
 	w := databricks.Must(databricks.NewWorkspaceClient())
-	wsDir := TemporaryWorkspaceDir(t, w)
+	wsDir := internal.TemporaryWorkspaceDir(t, w)
 
 	b := &bundle.Bundle{
 		Config: config.Root{
