@@ -222,3 +222,42 @@ func TestSchemaValidatePatternEnum(t *testing.T) {
 	}
 	assert.NoError(t, s.validate())
 }
+
+func TestValidateSchemaMinimumCliVersionPrefixCheck(t *testing.T) {
+	s := &Schema{
+		Extension: Extension{
+			MinDatabricksCliVersion: "1.0.5",
+		},
+	}
+	err := s.validateSchemaMinimumCliVersion("v2.0.1")()
+	assert.ErrorContains(t, err, `minimum CLI version "1.0.5" must start with a 'v'`)
+
+	s.MinDatabricksCliVersion = "v1.0.5"
+	err = s.validateSchemaMinimumCliVersion("v2.0.1")()
+	assert.NoError(t, err)
+}
+
+func TestValidateSchemaMinimumCliVersion(t *testing.T) {
+	s := &Schema{
+		Extension: Extension{
+			MinDatabricksCliVersion: "v1.0.5",
+		},
+	}
+	err := s.validateSchemaMinimumCliVersion("v2.0.1")()
+	assert.NoError(t, err)
+
+	err = s.validateSchemaMinimumCliVersion("v1.0.5")()
+	assert.NoError(t, err)
+
+	err = s.validateSchemaMinimumCliVersion("v1.0.6")()
+	assert.NoError(t, err)
+
+	err = s.validateSchemaMinimumCliVersion("v1.0.4")()
+	assert.ErrorContains(t, err, `minimum CLI version "v1.0.5" is greater than current CLI version "v1.0.4". Please upgrade your current Databricks CLI`)
+
+	err = s.validateSchemaMinimumCliVersion("v0.0.1")()
+	assert.ErrorContains(t, err, "minimum CLI version \"v1.0.5\" is greater than current CLI version \"v0.0.1\". Please upgrade your current Databricks CLI")
+
+	err = s.validateSchemaMinimumCliVersion("v0.0.0-dev")()
+	assert.NoError(t, err)
+}
