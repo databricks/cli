@@ -19,7 +19,8 @@ var gitUrlPrefixes = []string{
 }
 
 var aliasedTemplates = map[string]string{
-	"mlops-stack": "https://github.com/databricks/mlops-stack",
+	"mlops-stack":  "https://github.com/databricks/mlops-stacks",
+	"mlops-stacks": "https://github.com/databricks/mlops-stacks",
 }
 
 func isRepoUrl(url string) bool {
