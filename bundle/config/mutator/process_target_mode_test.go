@@ -45,7 +45,23 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 			},
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
-					"job1": {JobSettings: &jobs.JobSettings{Name: "job1"}},
+					"job1": {
+						JobSettings: &jobs.JobSettings{
+							Name: "job1",
+							Schedule: &jobs.CronSchedule{
+								QuartzCronExpression: "* * * * *",
+							},
+						},
+					},
+					"job2": {
+						JobSettings: &jobs.JobSettings{
+							Name: "job2",
+							Schedule: &jobs.CronSchedule{
+								QuartzCronExpression: "* * * * *",
+								PauseStatus:          jobs.PauseStatusUnpaused,
+							},
+						},
+					},
 				},
 				Pipelines: map[string]*resources.Pipeline{
 					"pipeline1": {PipelineSpec: &pipelines.PipelineSpec{Name: "pipeline1"}},
@@ -82,6 +98,12 @@ func TestProcessTargetModeDevelopment(t *testing.T) {
 	// Job 1
 	assert.Equal(t, "[dev lennart] job1", bundle.Config.Resources.Jobs["job1"].Name)
 	assert.Equal(t, bundle.Config.Resources.Jobs["job1"].Tags["dev"], "lennart")
+	assert.Equal(t, bundle.Config.Resources.Jobs["job1"].Schedule.PauseStatus, jobs.PauseStatusPaused)
+
+	// Job 2
+	assert.Equal(t, "[dev lennart] job2", bundle.Config.Resources.Jobs["job2"].Name)
+	assert.Equal(t, bundle.Config.Resources.Jobs["job2"].Tags["dev"], "lennart")
+	assert.Equal(t, bundle.Config.Resources.Jobs["job2"].Schedule.PauseStatus, jobs.PauseStatusUnpaused)
 
 	// Pipeline 1
 	assert.Equal(t, "[dev lennart] pipeline1", bundle.Config.Resources.Pipelines["pipeline1"].Name)

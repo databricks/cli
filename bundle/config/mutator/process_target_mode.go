@@ -47,13 +47,13 @@ func transformDevelopmentMode(b *bundle.Bundle) error {
 		if r.Jobs[i].MaxConcurrentRuns == 0 {
 			r.Jobs[i].MaxConcurrentRuns = developmentConcurrentRuns
 		}
-		if r.Jobs[i].Schedule != nil {
+		if r.Jobs[i].Schedule != nil && r.Jobs[i].Schedule.PauseStatus != jobs.PauseStatusUnpaused {
 			r.Jobs[i].Schedule.PauseStatus = jobs.PauseStatusPaused
 		}
-		if r.Jobs[i].Continuous != nil {
+		if r.Jobs[i].Continuous != nil && r.Jobs[i].Schedule.PauseStatus != jobs.PauseStatusUnpaused {
 			r.Jobs[i].Continuous.PauseStatus = jobs.PauseStatusPaused
 		}
-		if r.Jobs[i].Trigger != nil {
+		if r.Jobs[i].Trigger != nil && r.Jobs[i].Schedule.PauseStatus != jobs.PauseStatusUnpaused {
 			r.Jobs[i].Trigger.PauseStatus = jobs.PauseStatusPaused
 		}
 	}
