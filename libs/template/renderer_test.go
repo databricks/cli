@@ -17,6 +17,7 @@ import (
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/tags"
 	"github.com/databricks/databricks-sdk-go"
 	workspaceConfig "github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/service/iam"
@@ -66,6 +67,7 @@ func assertBuiltinTemplateValid(t *testing.T, settings map[string]any, target st
 
 	// Apply initialize / validation mutators
 	b.Config.Workspace.CurrentUser = &bundleConfig.User{User: cachedUser}
+	b.Tagging = tags.ForCloud(w.Config)
 	b.WorkspaceClient()
 	b.Config.Bundle.Terraform = &bundleConfig.Terraform{
 		ExecPath: "sh",

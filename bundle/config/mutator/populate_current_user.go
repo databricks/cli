@@ -7,6 +7,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/libs/tags"
 )
 
 type populateCurrentUser struct{}
@@ -35,18 +36,24 @@ func (m *populateCurrentUser) Apply(ctx context.Context, b *bundle.Bundle) error
 		ShortName: getShortUserName(me.UserName),
 		User:      me,
 	}
+
+	// Configure tagging object now that we know we have a valid client.
+	b.Tagging = tags.ForCloud(w.Config)
+
 	return nil
+}
+
+func replaceNonAlphanumeric(r rune) rune {
+	if unicode.IsLetter(r) || unicode.IsDigit(r) {
+		return r
+	}
+	return '_'
 }
 
 // Get a short-form username, based on the user's primary email address.
 // We leave the full range of unicode letters in tact, but remove all "special" characters,
 // including dots, which are not supported in e.g. experiment names.
 func getShortUserName(emailAddress string) string {
-	r := []rune(strings.Split(emailAddress, "@")[0])
-	for i := 0; i < len(r); i++ {
-		if !unicode.IsLetter(r[i]) {
-			r[i] = '_'
-		}
-	}
-	return string(r)
+	local, _, _ := strings.Cut(emailAddress, "@")
+	return strings.Map(replaceNonAlphanumeric, local)
 }

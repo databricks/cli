@@ -41,6 +41,7 @@ func newInitCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "init [TEMPLATE_PATH]",
 		Short: "Initialize using a bundle template",
+		Args:  cobra.MaximumNArgs(1),
 		Long: `Initialize using a bundle template.
 
 TEMPLATE_PATH optionally specifies which template to use. It can be one of the following:

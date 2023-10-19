@@ -13,7 +13,6 @@ type Extension struct {
 	Order *int `json:"order,omitempty"`
 
 	// The message to print after the template is successfully initalized
-	// In line with our ymls, we use snake_case here.
 	SuccessMessage string `json:"success_message,omitempty"`
 
 	// PatternMatchFailureMessage is a user defined message that is displayed to the
