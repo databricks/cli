@@ -2,6 +2,7 @@ package sync
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -70,4 +71,116 @@ func TestDiffGroupedRmdirWithLeafsOnly(t *testing.T) {
 	out := d.groupedRmdir()
 	assert.Len(t, out, 1)
 	assert.ElementsMatch(t, d.rmdir, out[0])
+}
+
+func TestDiffComputationForRemovedFiles(t *testing.T) {
+	before := &SnapshotState{
+		LocalToRemoteNames: map[string]string{
+			"foo/a/b/c.py": "foo/a/b/c",
+		},
+		RemoteToLocalNames: map[string]string{
+			"foo/a/b/c": "foo/a/b/c.py",
+		},
+	}
+	after := &SnapshotState{}
+
+	expected := diff{
+		delete: []string{"foo/a/b/c"},
+		rmdir:  []string{"foo", "foo/a", "foo/a/b"},
+		mkdir:  []string{},
+		put:    []string{},
+	}
+	assert.Equal(t, expected, computeDiff(after, before))
+}
+
+func TestDiffComputationWhenRemoteNameIsChanged(t *testing.T) {
+	tick := time.Now()
+	before := &SnapshotState{
+		LocalToRemoteNames: map[string]string{
+			"foo/a/b/c.py": "foo/a/b/c",
+		},
+		RemoteToLocalNames: map[string]string{
+			"foo/a/b/c": "foo/a/b/c.py",
+		},
+		LastModifiedTimes: map[string]time.Time{
+			"foo/a/b/c.py": tick,
+		},
+	}
+	tick = tick.Add(time.Second)
+	after := &SnapshotState{
+		LocalToRemoteNames: map[string]string{
+			"foo/a/b/c.py": "foo/a/b/c.py",
+		},
+		RemoteToLocalNames: map[string]string{
+			"foo/a/b/c.py": "foo/a/b/c.py",
+		},
+		LastModifiedTimes: map[string]time.Time{
+			"foo/a/b/c.py": tick,
+		},
+	}
+
+	expected := diff{
+		delete: []string{"foo/a/b/c"},
+		rmdir:  []string{},
+		mkdir:  []string{},
+		put:    []string{"foo/a/b/c.py"},
+	}
+	assert.Equal(t, expected, computeDiff(after, before))
+}
+
+func TestDiffComputationForNewFiles(t *testing.T) {
+	after := &SnapshotState{
+		LocalToRemoteNames: map[string]string{
+			"foo/a/b/c.py": "foo/a/b/c",
+		},
+		RemoteToLocalNames: map[string]string{
+			"foo/a/b/c": "foo/a/b/c.py",
+		},
+		LastModifiedTimes: map[string]time.Time{
+			"foo/a/b/c.py": time.Now(),
+		},
+	}
+
+	expected := diff{
+		delete: []string{},
+		rmdir:  []string{},
+		mkdir:  []string{"foo", "foo/a", "foo/a/b"},
+		put:    []string{"foo/a/b/c.py"},
+	}
+	assert.Equal(t, expected, computeDiff(after, &SnapshotState{}))
+}
+
+func TestDiffComputationForUpdatedFiles(t *testing.T) {
+	tick := time.Now()
+	before := &SnapshotState{
+		LocalToRemoteNames: map[string]string{
+			"foo/a/b/c": "foo/a/b/c",
+		},
+		RemoteToLocalNames: map[string]string{
+			"foo/a/b/c": "foo/a/b/c",
+		},
+		LastModifiedTimes: map[string]time.Time{
+			"foo/a/b/c": tick,
+		},
+	}
+	tick = tick.Add(time.Second)
+	after := &SnapshotState{
+		LocalToRemoteNames: map[string]string{
+			"foo/a/b/c": "foo/a/b/c",
+		},
+		RemoteToLocalNames: map[string]string{
+			"foo/a/b/c": "foo/a/b/c",
+		},
+		LastModifiedTimes: map[string]time.Time{
+			"foo/a/b/c": tick,
+		},
+	}
+
+	expected := diff{
+		delete: []string{},
+		rmdir:  []string{},
+		mkdir:  []string{},
+		put:    []string{"foo/a/b/c"},
+	}
+	assert.Equal(t, expected, computeDiff(after, before))
 }

@@ -1,5 +1,98 @@
 # Version changelog
 
+## 0.208.0
+
+Note: this release includes a fix for the issue where zero values (for example
+`num_workers: 0`) were not included in the request body.
+
+CLI:
+ * Use already instantiated WorkspaceClient in sync command ([#867](https://github.com/databricks/cli/pull/867)).
+
+Bundles:
+ * Support Unity Catalog Registered Models in bundles ([#846](https://github.com/databricks/cli/pull/846)).
+ * Fixed merging task libraries from targets ([#868](https://github.com/databricks/cli/pull/868)).
+ * Add alias for mlops-stack template URL ([#869](https://github.com/databricks/cli/pull/869)).
+
+API Changes:
+ * Changed `databricks account billable-usage download` command to start returning output.
+ * Changed `databricks account storage-credentials delete` command with new required argument order.
+ * Changed `databricks account storage-credentials get` command with new required argument order.
+ * Changed `databricks account storage-credentials update` command with new required argument order.
+ * Added `databricks workspace-bindings get-bindings` command.
+ * Added `databricks workspace-bindings update-bindings` command.
+ * Removed `databricks account network-policy` command group.
+ * Changed `databricks ip-access-lists list` command to return output.
+
+OpenAPI commit 493a76554afd3afdd15dc858773d01643f80352a (2023-10-12)
+
+Dependency updates:
+ * Update Go SDK to 0.23.0 and use custom marshaller ([#772](https://github.com/databricks/cli/pull/772)).
+ * Bump Terraform provider to v1.28.0 ([#871](https://github.com/databricks/cli/pull/871)).
+ * Bump golang.org/x/net from 0.16.0 to 0.17.0 ([#863](https://github.com/databricks/cli/pull/863)).
+ * Bump github.com/hashicorp/hc-install from 0.6.0 to 0.6.1 ([#870](https://github.com/databricks/cli/pull/870)).
+
+## 0.207.1
+
+CLI:
+ * Improve `workspace import` command by allowing references to local files for content ([#793](https://github.com/databricks/cli/pull/793)).
+ * Add `--file` flag to workspace export command ([#794](https://github.com/databricks/cli/pull/794)).
+ * Ensure profile flag is respected for sync command ([#837](https://github.com/databricks/cli/pull/837)).
+ * Add hint to delete sync snapshot if parsing fails ([#853](https://github.com/databricks/cli/pull/853)).
+ * Use profile information when getting a token using the CLI ([#855](https://github.com/databricks/cli/pull/855)).
+
+Bundles:
+ * Minor template tweaks ([#832](https://github.com/databricks/cli/pull/832)).
+ * Fixed using repo files as pipeline libraries ([#847](https://github.com/databricks/cli/pull/847)).
+ * Support .gitignore syntax in sync section and make sure it works recursively ([#854](https://github.com/databricks/cli/pull/854)).
+ * Allow target overrides for sync section ([#856](https://github.com/databricks/cli/pull/856)).
+
+Internal:
+ * Fix import export integration tests on windows ([#842](https://github.com/databricks/cli/pull/842)).
+ * Fix workspace import test ([#844](https://github.com/databricks/cli/pull/844)).
+ * Automatically create a release PR in homebrew-tap repo ([#841](https://github.com/databricks/cli/pull/841)).
+
+
+Dependency updates:
+ * Bump golang.org/x/term from 0.12.0 to 0.13.0 ([#852](https://github.com/databricks/cli/pull/852)).
+ * Bump golang.org/x/mod from 0.12.0 to 0.13.0 ([#851](https://github.com/databricks/cli/pull/851)).
+ * Bump golang.org/x/sync from 0.3.0 to 0.4.0 ([#849](https://github.com/databricks/cli/pull/849)).
+ * Bump golang.org/x/oauth2 from 0.12.0 to 0.13.0 ([#850](https://github.com/databricks/cli/pull/850)).
+
+## 0.207.0
+
+CLI:
+ * Refactor change computation for sync ([#785](https://github.com/databricks/cli/pull/785)).
+
+Bundles:
+ * Allow digits in the generated short name ([#820](https://github.com/databricks/cli/pull/820)).
+ * Emit an error when incompatible all purpose cluster used with Python wheel tasks ([#823](https://github.com/databricks/cli/pull/823)).
+ * Use normalized short name for tag value in development mode ([#821](https://github.com/databricks/cli/pull/821)).
+ * Added `python.DetectInterpreters` and other utils ([#805](https://github.com/databricks/cli/pull/805)).
+ * Mark artifacts properties as optional ([#834](https://github.com/databricks/cli/pull/834)).
+ * Added support for glob patterns in pipeline libraries section ([#833](https://github.com/databricks/cli/pull/833)).
+
+Internal:
+ * Run tests to verify backend tag validation behavior ([#814](https://github.com/databricks/cli/pull/814)).
+ * Library to validate and normalize cloud specific tags ([#819](https://github.com/databricks/cli/pull/819)).
+ * Added test to submit and run various Python tasks on multiple DBR versions ([#806](https://github.com/databricks/cli/pull/806)).
+ * Create a release PR in setup-cli repo on tag push ([#827](https://github.com/databricks/cli/pull/827)).
+
+API Changes:
+ * Changed `databricks account metastore-assignments list` command to return .
+ * Changed `databricks jobs cancel-all-runs` command with new required argument order.
+ * Added `databricks account o-auth-published-apps` command group.
+ * Changed `databricks serving-endpoints query` command . New request type is .
+ * Added `databricks serving-endpoints patch` command.
+ * Added `databricks credentials-manager` command group.
+ * Added `databricks settings` command group.
+ * Changed `databricks clean-rooms list` command to require request of .
+ * Changed `databricks statement-execution execute-statement` command with new required argument order.
+
+OpenAPI commit bcbf6e851e3d82fd910940910dd31c10c059746c (2023-10-02)
+Dependency updates:
+ * Bump github.com/google/uuid from 1.3.0 to 1.3.1 ([#825](https://github.com/databricks/cli/pull/825)).
+ * Updated Go SDK to 0.22.0 ([#831](https://github.com/databricks/cli/pull/831)).
+
 ## 0.206.0
 
 Bundles:

@@ -22,11 +22,7 @@ func New() *cobra.Command {
 		Short: `These APIs enable administrators to manage custom oauth app integrations, which is required for adding/using Custom OAuth App Integration like Tableau Cloud for Databricks in AWS cloud.`,
 		Long: `These APIs enable administrators to manage custom oauth app integrations,
   which is required for adding/using Custom OAuth App Integration like Tableau
-  Cloud for Databricks in AWS cloud.
-  
-  **Note:** You can only add/use the OAuth custom application integrations when
-  OAuth enrollment status is enabled. For more details see
-  :method:OAuthEnrollment/create`,
+  Cloud for Databricks in AWS cloud.`,
 		GroupID: "oauth2",
 		Annotations: map[string]string{
 			"package": "oauth2",

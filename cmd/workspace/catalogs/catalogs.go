@@ -322,7 +322,6 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `User-provided free-form text description.`)
 	cmd.Flags().Var(&updateReq.IsolationMode, "isolation-mode", `Whether the current securable is accessible from all workspaces or a specific set of workspaces.`)
 	cmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `Name of catalog.`)
-	// TODO: map via StringToStringVar: options
 	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of current owner of catalog.`)
 	// TODO: map via StringToStringVar: properties
 

@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"time"
 
 	"github.com/databricks/cli/libs/auth"
@@ -21,8 +22,20 @@ func newTokenCommand(persistentAuth *auth.PersistentAuth) *cobra.Command {
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		if persistentAuth.Host == "" {
-			configureHost(ctx, persistentAuth, args, 0)
+
+		var profileName string
+		profileFlag := cmd.Flag("profile")
+		if profileFlag != nil {
+			profileName = profileFlag.Value.String()
+			// If a profile is provided we read the host from the .databrickscfg file
+			if profileName != "" && len(args) > 0 {
+				return errors.New("providing both a profile and a host parameters is not supported")
+			}
+		}
+
+		err := setHost(ctx, profileName, persistentAuth, args)
+		if err != nil {
+			return err
 		}
 		defer persistentAuth.Close()
 

@@ -1,12 +1,14 @@
 package sync
 
 import (
+	"context"
 	"flag"
 	"path/filepath"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/cmd/root"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -49,7 +51,9 @@ func TestSyncOptionsFromArgsRequiredTwoArgs(t *testing.T) {
 
 func TestSyncOptionsFromArgs(t *testing.T) {
 	f := syncFlags{}
-	opts, err := f.syncOptionsFromArgs(New(), []string{"/local", "/remote"})
+	cmd := New()
+	cmd.SetContext(root.SetWorkspaceClient(context.Background(), nil))
+	opts, err := f.syncOptionsFromArgs(cmd, []string{"/local", "/remote"})
 	require.NoError(t, err)
 	assert.Equal(t, "/local", opts.LocalPath)
 	assert.Equal(t, "/remote", opts.RemotePath)

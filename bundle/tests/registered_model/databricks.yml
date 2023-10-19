@@ -1,0 +1,32 @@
+resources:
+  registered_models:
+    my_registered_model:
+      name: "my-model"
+      comment: "comment"
+      catalog_name: "main"
+      schema_name: "default"
+      grants:
+        - privileges:
+            - EXECUTE
+          principal: "account users"
+
+targets:
+  development:
+    mode: development
+    resources:
+      registered_models:
+        my_registered_model:
+          name: "my-dev-model"
+
+  staging:
+    resources:
+      registered_models:
+        my_registered_model:
+          name: "my-staging-model"
+
+  production:
+    mode: production
+    resources:
+      registered_models:
+        my_registered_model:
+          name: "my-prod-model"

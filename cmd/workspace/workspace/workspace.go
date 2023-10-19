@@ -428,8 +428,10 @@ func newImport() *cobra.Command {
   
   Imports a workspace object (for example, a notebook or file) or the contents
   of an entire directory. If path already exists and overwrite is set to
-  false, this call returns an error RESOURCE_ALREADY_EXISTS. One can only
-  use DBC format to import a directory.`
+  false, this call returns an error RESOURCE_ALREADY_EXISTS. To import a
+  directory, you can use either the DBC format or the SOURCE format with the
+  language field unset. To import a single file as SOURCE, you must set the
+  language field.`
 
 	cmd.Annotations = make(map[string]string)
 

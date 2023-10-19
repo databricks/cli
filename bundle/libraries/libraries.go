@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -161,6 +162,10 @@ func isLocalLibrary(library *compute.Library) bool {
 		return false
 	}
 
+	return IsLocalPath(path)
+}
+
+func IsLocalPath(path string) bool {
 	if isExplicitFileScheme(path) {
 		return true
 	}
@@ -169,7 +174,7 @@ func isLocalLibrary(library *compute.Library) bool {
 		return false
 	}
 
-	return !isWorkspacePath(path)
+	return !isAbsoluteRemotePath(path)
 }
 
 func isExplicitFileScheme(path string) bool {
@@ -195,4 +200,9 @@ func isWorkspacePath(path string) bool {
 	return strings.HasPrefix(path, "/Workspace/") ||
 		strings.HasPrefix(path, "/Users/") ||
 		strings.HasPrefix(path, "/Shared/")
+}
+
+func isAbsoluteRemotePath(p string) bool {
+	// If path for library starts with /, it's a remote absolute path
+	return path.IsAbs(p)
 }

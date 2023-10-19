@@ -9,6 +9,8 @@ on:
 
 jobs:
   goreleaser:
+    outputs:
+      artifacts: ${{ steps.releaser.outputs.artifacts }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository and submodules
@@ -23,9 +25,71 @@ jobs:
           go-version: 1.21.0
 
       - name: Run GoReleaser
+        id: releaser
         uses: goreleaser/goreleaser-action@v4
         with:
           version: latest
           args: release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  create-setup-cli-release-pr:
+    needs: goreleaser
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set VERSION variable from tag
+        run: |
+          VERSION=${{ github.ref_name }}
+          echo "VERSION=${VERSION:1}" >> $GITHUB_ENV
+
+      - name: Update setup-cli
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.DECO_GITHUB_TOKEN }}
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: 'databricks',
+              repo: 'setup-cli',
+              workflow_id: 'release-pr.yml',
+              ref: 'main',
+              inputs: {
+                version: "${{ env.VERSION }}",
+              }
+            });
+
+  create-homebrew-tap-release-pr:
+    needs: goreleaser
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set VERSION variable from tag
+        run: |
+          VERSION=${{ github.ref_name }}
+          echo "VERSION=${VERSION:1}" >> $GITHUB_ENV
+
+      - name: Update homebrew-tap
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.DECO_GITHUB_TOKEN }}
+          script: |
+            let artifacts = JSON.parse('${{ needs.goreleaser.outputs.artifacts }}')
+            artifacts = artifacts.filter(a => a.type == "Archive")
+            artifacts = new Map(
+              artifacts.map(a => [
+                a.goos + "_" + a.goarch,
+                a.extra.Checksum.replace("sha256:", "")
+              ])
+            )
+
+            await github.rest.actions.createWorkflowDispatch({
+              owner: 'databricks',
+              repo: 'homebrew-tap',
+              workflow_id: 'release-pr.yml',
+              ref: 'main',
+              inputs: {
+                version: "${{ env.VERSION }}",
+                darwin_amd64_sha: artifacts.get('darwin_amd64'),
+                darwin_arm64_sha: artifacts.get('darwin_arm64'),
+                linux_amd64_sha: artifacts.get('linux_amd64'),
+                linux_arm64_sha: artifacts.get('linux_arm64')
+              }
+            });

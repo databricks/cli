@@ -18,6 +18,11 @@ var gitUrlPrefixes = []string{
 	"git@",
 }
 
+var aliasedTemplates = map[string]string{
+	"mlops-stack":  "https://github.com/databricks/mlops-stacks",
+	"mlops-stacks": "https://github.com/databricks/mlops-stacks",
+}
+
 func isRepoUrl(url string) bool {
 	result := false
 	for _, prefix := range gitUrlPrefixes {
@@ -75,6 +80,11 @@ See https://docs.databricks.com//dev-tools/bundles/templates.html for more infor
 			if err != nil {
 				return err
 			}
+		}
+
+		// Expand templatePath if it's an alias for a known template
+		if _, ok := aliasedTemplates[templatePath]; ok {
+			templatePath = aliasedTemplates[templatePath]
 		}
 
 		if !isRepoUrl(templatePath) {

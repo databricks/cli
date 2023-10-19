@@ -4,6 +4,7 @@ package billable_usage
 
 import (
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go/service/billing"
 	"github.com/spf13/cobra"
 )
@@ -80,11 +81,12 @@ func newDownload() *cobra.Command {
 		downloadReq.StartMonth = args[0]
 		downloadReq.EndMonth = args[1]
 
-		err = a.BillableUsage.Download(ctx, downloadReq)
+		response, err := a.BillableUsage.Download(ctx, downloadReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		defer response.Contents.Close()
+		return cmdio.RenderReader(ctx, response.Contents)
 	}
 
 	// Disable completions since they are not applicable.

@@ -71,7 +71,10 @@ func newCancelAllRuns() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&cancelAllRunsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Use = "cancel-all-runs JOB_ID"
+	cmd.Flags().BoolVar(&cancelAllRunsReq.AllQueuedRuns, "all-queued-runs", cancelAllRunsReq.AllQueuedRuns, `Optional boolean parameter to cancel all queued runs.`)
+	cmd.Flags().Int64Var(&cancelAllRunsReq.JobId, "job-id", cancelAllRunsReq.JobId, `The canonical identifier of the job to cancel all runs of.`)
+
+	cmd.Use = "cancel-all-runs"
 	cmd.Short = `Cancel all runs of a job.`
 	cmd.Long = `Cancel all runs of a job.
   
@@ -79,6 +82,14 @@ func newCancelAllRuns() *cobra.Command {
   doesn't prevent new runs from being started.`
 
 	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(0)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
+		return check(cmd, args)
+	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -91,27 +102,6 @@ func newCancelAllRuns() *cobra.Command {
 				return err
 			}
 		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No JOB_ID argument specified. Loading names for Jobs drop-down."
-				names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "The canonical identifier of the job to cancel all runs of")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have the canonical identifier of the job to cancel all runs of")
-			}
-			_, err = fmt.Sscan(args[0], &cancelAllRunsReq.JobId)
-			if err != nil {
-				return fmt.Errorf("invalid JOB_ID: %s", args[0])
-			}
 		}
 
 		err = w.Jobs.CancelAllRuns(ctx, cancelAllRunsReq)
@@ -163,11 +153,11 @@ func newCancelRun() *cobra.Command {
 	cmd.Flags().Var(&cancelRunJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "cancel-run RUN_ID"
-	cmd.Short = `Cancel a job run.`
-	cmd.Long = `Cancel a job run.
+	cmd.Short = `Cancel a run.`
+	cmd.Long = `Cancel a run.
   
-  Cancels a job run. The run is canceled asynchronously, so it may still be
-  running when this request completes.`
+  Cancels a job run or a task run. The run is canceled asynchronously, so it may
+  still be running when this request completes.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -1147,6 +1137,7 @@ func newRepairRun() *cobra.Command {
 
 	// TODO: array: dbt_commands
 	// TODO: array: jar_params
+	// TODO: map via StringToStringVar: job_parameters
 	cmd.Flags().Int64Var(&repairRunReq.LatestRepairId, "latest-repair-id", repairRunReq.LatestRepairId, `The ID of the latest repair.`)
 	// TODO: map via StringToStringVar: notebook_params
 	// TODO: complex arg: pipeline_params
@@ -1265,11 +1256,11 @@ func newReset() *cobra.Command {
 	cmd.Flags().Var(&resetJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "reset"
-	cmd.Short = `Overwrites all settings for a job.`
-	cmd.Long = `Overwrites all settings for a job.
+	cmd.Short = `Overwrite all settings for a job.`
+	cmd.Long = `Overwrite all settings for a job.
   
-  Overwrites all the settings for a specific job. Use the Update endpoint to
-  update job settings partially.`
+  Overwrite all settings for the given job. Use the Update endpoint to update
+  job settings partially.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -1338,11 +1329,12 @@ func newRunNow() *cobra.Command {
 	// TODO: array: dbt_commands
 	cmd.Flags().StringVar(&runNowReq.IdempotencyToken, "idempotency-token", runNowReq.IdempotencyToken, `An optional token to guarantee the idempotency of job run requests.`)
 	// TODO: array: jar_params
-	// TODO: array: job_parameters
+	// TODO: map via StringToStringVar: job_parameters
 	// TODO: map via StringToStringVar: notebook_params
 	// TODO: complex arg: pipeline_params
 	// TODO: map via StringToStringVar: python_named_params
 	// TODO: array: python_params
+	// TODO: complex arg: queue
 	// TODO: array: spark_submit_params
 	// TODO: map via StringToStringVar: sql_params
 
@@ -1545,6 +1537,7 @@ func newSubmit() *cobra.Command {
 	// TODO: complex arg: health
 	cmd.Flags().StringVar(&submitReq.IdempotencyToken, "idempotency-token", submitReq.IdempotencyToken, `An optional token that can be used to guarantee the idempotency of job run requests.`)
 	// TODO: complex arg: notification_settings
+	// TODO: complex arg: queue
 	cmd.Flags().StringVar(&submitReq.RunName, "run-name", submitReq.RunName, `An optional name for the run.`)
 	// TODO: array: tasks
 	cmd.Flags().IntVar(&submitReq.TimeoutSeconds, "timeout-seconds", submitReq.TimeoutSeconds, `An optional timeout applied to each run of this job.`)

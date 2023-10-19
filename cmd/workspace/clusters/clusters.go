@@ -160,7 +160,7 @@ func newCreate() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().BoolVar(&createReq.ApplyPolicyDefaultValues, "apply-policy-default-values", createReq.ApplyPolicyDefaultValues, `Note: This field won't be true for webapp requests.`)
+	cmd.Flags().BoolVar(&createReq.ApplyPolicyDefaultValues, "apply-policy-default-values", createReq.ApplyPolicyDefaultValues, ``)
 	// TODO: complex arg: autoscale
 	cmd.Flags().IntVar(&createReq.AutoterminationMinutes, "autotermination-minutes", createReq.AutoterminationMinutes, `Automatically terminates the cluster after it is inactive for this time in minutes.`)
 	// TODO: complex arg: aws_attributes
@@ -169,7 +169,7 @@ func newCreate() *cobra.Command {
 	cmd.Flags().StringVar(&createReq.ClusterName, "cluster-name", createReq.ClusterName, `Cluster name requested by the user.`)
 	cmd.Flags().Var(&createReq.ClusterSource, "cluster-source", `Determines whether the cluster was created by a user through the UI, created by the Databricks Jobs Scheduler, or through an API request.`)
 	// TODO: map via StringToStringVar: custom_tags
-	cmd.Flags().Var(&createReq.DataSecurityMode, "data-security-mode", `This describes an enum.`)
+	cmd.Flags().Var(&createReq.DataSecurityMode, "data-security-mode", `Data security mode decides what data governance model to use when accessing data from a cluster.`)
 	// TODO: complex arg: docker_image
 	cmd.Flags().StringVar(&createReq.DriverInstancePoolId, "driver-instance-pool-id", createReq.DriverInstancePoolId, `The optional ID of the instance pool for the driver of the cluster belongs.`)
 	cmd.Flags().StringVar(&createReq.DriverNodeTypeId, "driver-node-type-id", createReq.DriverNodeTypeId, `The node type of the Spark driver.`)
@@ -387,7 +387,7 @@ func newEdit() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&editJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().BoolVar(&editReq.ApplyPolicyDefaultValues, "apply-policy-default-values", editReq.ApplyPolicyDefaultValues, `Note: This field won't be true for webapp requests.`)
+	cmd.Flags().BoolVar(&editReq.ApplyPolicyDefaultValues, "apply-policy-default-values", editReq.ApplyPolicyDefaultValues, ``)
 	// TODO: complex arg: autoscale
 	cmd.Flags().IntVar(&editReq.AutoterminationMinutes, "autotermination-minutes", editReq.AutoterminationMinutes, `Automatically terminates the cluster after it is inactive for this time in minutes.`)
 	// TODO: complex arg: aws_attributes
@@ -396,7 +396,7 @@ func newEdit() *cobra.Command {
 	cmd.Flags().StringVar(&editReq.ClusterName, "cluster-name", editReq.ClusterName, `Cluster name requested by the user.`)
 	cmd.Flags().Var(&editReq.ClusterSource, "cluster-source", `Determines whether the cluster was created by a user through the UI, created by the Databricks Jobs Scheduler, or through an API request.`)
 	// TODO: map via StringToStringVar: custom_tags
-	cmd.Flags().Var(&editReq.DataSecurityMode, "data-security-mode", `This describes an enum.`)
+	cmd.Flags().Var(&editReq.DataSecurityMode, "data-security-mode", `Data security mode decides what data governance model to use when accessing data from a cluster.`)
 	// TODO: complex arg: docker_image
 	cmd.Flags().StringVar(&editReq.DriverInstancePoolId, "driver-instance-pool-id", editReq.DriverInstancePoolId, `The optional ID of the instance pool for the driver of the cluster belongs.`)
 	cmd.Flags().StringVar(&editReq.DriverNodeTypeId, "driver-node-type-id", editReq.DriverNodeTypeId, `The node type of the Spark driver.`)

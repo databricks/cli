@@ -26,7 +26,6 @@
             "type": "string",
             "default": "yes",
             "enum": ["yes", "no"],
-            "comment": "If the selected they don't want a notebook we provide an extra hint that the stub Python package can be used to author their DLT pipeline",
             "description": "Include a stub (sample) Python package in '{{.project_name}}{{path_separator}}src'",
             "order": 4
         }
