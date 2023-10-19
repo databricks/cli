@@ -186,7 +186,6 @@ func TestAssignDefaultValuesWithTemplatedDefaults(t *testing.T) {
 	require.NoError(t, err)
 
 	err = c.assignDefaultValues(r)
-	require.NoError(t, err)
 	assert.NoError(t, err)
 	assert.Equal(t, "my_file", c.values["string_val"])
 }
