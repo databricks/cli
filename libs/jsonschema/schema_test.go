@@ -223,14 +223,14 @@ func TestSchemaValidatePatternEnum(t *testing.T) {
 	assert.NoError(t, s.validate())
 }
 
-func TestValidateSchemaMinimumCliVersionPrefixCheck(t *testing.T) {
+func TestValidateSchemaMinimumCliVersionWithInvalidSemver(t *testing.T) {
 	s := &Schema{
 		Extension: Extension{
 			MinDatabricksCliVersion: "1.0.5",
 		},
 	}
 	err := s.validateSchemaMinimumCliVersion("v2.0.1")()
-	assert.ErrorContains(t, err, `minimum CLI version "1.0.5" must start with a 'v'`)
+	assert.ErrorContains(t, err, "invalid minimum CLI version \"1.0.5\" specified. Please specify the version in the format v0.0.0")
 
 	s.MinDatabricksCliVersion = "v1.0.5"
 	err = s.validateSchemaMinimumCliVersion("v2.0.1")()

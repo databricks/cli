@@ -6,7 +6,6 @@ import (
 	"os"
 	"regexp"
 	"slices"
-	"strings"
 
 	"github.com/databricks/cli/internal/build"
 	"golang.org/x/mod/semver"
@@ -180,14 +179,9 @@ func (schema *Schema) validateSchemaMinimumCliVersion(currentVersion string) fun
 			return nil
 		}
 
-		// Confirm that MinDatabricksCliVersion starts with a 'v'.
-		if !strings.HasPrefix(schema.MinDatabricksCliVersion, "v") {
-			return fmt.Errorf("minimum CLI version %q must start with a 'v'", schema.MinDatabricksCliVersion)
-		}
-
 		// Confirm that MinDatabricksCliVersion is a valid semver.
 		if !semver.IsValid(schema.MinDatabricksCliVersion) {
-			return fmt.Errorf("invalid minimum CLI version %q specified", schema.MinDatabricksCliVersion)
+			return fmt.Errorf("invalid minimum CLI version %q specified. Please specify the version in the format v0.0.0", schema.MinDatabricksCliVersion)
 		}
 
 		// Confirm that MinDatabricksCliVersion is less than or equal to the current version.
