@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/jsonschema"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -52,11 +53,17 @@ func TestTemplateConfigAssignValuesFromFileDoesNotOverwriteExistingConfigs(t *te
 func TestTemplateConfigAssignDefaultValues(t *testing.T) {
 	c := testConfig(t)
 
-	err := c.assignDefaultValues()
+	ctx := context.Background()
+	ctx = root.SetWorkspaceClient(ctx, nil)
+	helpers := loadHelpers(ctx)
+	r, err := newRenderer(ctx, nil, helpers, "./testdata/template-in-path/template", "./testdata/template-in-path/library", t.TempDir())
+	require.NoError(t, err)
+
+	err = c.assignDefaultValues(r)
 	assert.NoError(t, err)
 
 	assert.Len(t, c.values, 2)
-	assert.Equal(t, "abc", c.values["string_val"])
+	assert.Equal(t, "my_file", c.values["string_val"])
 	assert.Equal(t, int64(123), c.values["int_val"])
 }
 
@@ -168,4 +175,17 @@ func TestTemplateEnumValidation(t *testing.T) {
 		},
 	}
 	assert.NoError(t, c.validate())
+}
+
+func TestAssignDefaultValuesWithTemplatedDefaults(t *testing.T) {
+	c := testConfig(t)
+	ctx := context.Background()
+	ctx = root.SetWorkspaceClient(ctx, nil)
+	helpers := loadHelpers(ctx)
+	r, err := newRenderer(ctx, nil, helpers, "./testdata/templated-defaults/template", "./testdata/templated-defaults/library", t.TempDir())
+	require.NoError(t, err)
+
+	err = c.assignDefaultValues(r)
+	assert.NoError(t, err)
+	assert.Equal(t, "my_file", c.values["string_val"])
 }
