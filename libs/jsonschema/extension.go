@@ -18,4 +18,9 @@ type Extension struct {
 	// PatternMatchFailureMessage is a user defined message that is displayed to the
 	// user if a JSON schema pattern match fails.
 	PatternMatchFailureMessage string `json:"pattern_match_failure_message,omitempty"`
+
+	// Set the minimum semver version of this CLI to validate when loading this schema.
+	// If the CLI version is less than this value, then validation for this
+	// schema will fail.
+	MinDatabricksCliVersion string `json:"min_databricks_cli_version,omitempty"`
 }
