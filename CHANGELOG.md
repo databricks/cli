@@ -4,15 +4,11 @@
 
 CLI:
  * Fix rendering of streaming response ([#876](https://github.com/databricks/cli/pull/876)).
+
+Bundles:
  * Rename MLOps Stack to MLOps Stacks ([#881](https://github.com/databricks/cli/pull/881)).
  * Support Python wheels larger than 10MB ([#879](https://github.com/databricks/cli/pull/879)).
  * Improve the output of the `databricks bundle init` command ([#795](https://github.com/databricks/cli/pull/795)).
-
-Bundles:
- * **FILL THIS IN MANUALLY BY MOVING RELEVANT ITEMS FROM ABOVE LIST**
-
-Internal:
- * **FILL THIS IN MANUALLY BY MOVING RELEVANT ITEMS FROM ABOVE LIST**
 
 
 
