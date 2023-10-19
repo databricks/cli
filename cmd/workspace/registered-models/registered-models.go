@@ -477,10 +477,8 @@ func newSetAlias() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var setAliasReq catalog.SetRegisteredModelAliasRequest
-	var setAliasJson flags.JsonFlag
 
 	// TODO: short flags
-	cmd.Flags().Var(&setAliasJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "set-alias FULL_NAME ALIAS VERSION_NUM"
 	cmd.Short = `Set a Registered Model Alias.`
@@ -497,9 +495,6 @@ func newSetAlias() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(3)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	}
 
@@ -508,18 +503,11 @@ func newSetAlias() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		if cmd.Flags().Changed("json") {
-			err = setAliasJson.Unmarshal(&setAliasReq)
-			if err != nil {
-				return err
-			}
-		} else {
-			setAliasReq.FullName = args[0]
-			setAliasReq.Alias = args[1]
-			_, err = fmt.Sscan(args[2], &setAliasReq.VersionNum)
-			if err != nil {
-				return fmt.Errorf("invalid VERSION_NUM: %s", args[2])
-			}
+		setAliasReq.FullName = args[0]
+		setAliasReq.Alias = args[1]
+		_, err = fmt.Sscan(args[2], &setAliasReq.VersionNum)
+		if err != nil {
+			return fmt.Errorf("invalid VERSION_NUM: %s", args[2])
 		}
 
 		response, err := w.RegisteredModels.SetAlias(ctx, setAliasReq)
