@@ -14,3 +14,11 @@ func TestSkipPrompt(t *testing.T) {
 	ctx = SkipPrompt(ctx)
 	assert.True(t, shouldSkipPrompt(ctx))
 }
+
+func TestSkipLoadBundle(t *testing.T) {
+	ctx := context.Background()
+	assert.False(t, shouldSkipLoadBundle(ctx))
+
+	ctx = SkipLoadBundle(ctx)
+	assert.True(t, shouldSkipLoadBundle(ctx))
+}
