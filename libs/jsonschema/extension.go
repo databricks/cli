@@ -12,6 +12,9 @@ type Extension struct {
 	// that do have an order defined.
 	Order *int `json:"order,omitempty"`
 
+	// The message to print after the template is successfully initalized
+	SuccessMessage string `json:"success_message,omitempty"`
+
 	// PatternMatchFailureMessage is a user defined message that is displayed to the
 	// user if a JSON schema pattern match fails.
 	PatternMatchFailureMessage string `json:"pattern_match_failure_message,omitempty"`

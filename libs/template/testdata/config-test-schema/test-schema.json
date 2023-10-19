@@ -12,7 +12,7 @@
         },
         "string_val": {
             "type": "string",
-            "default": "abc"
+            "default": "{{template \"file_name\"}}"
         }
     }
 }
