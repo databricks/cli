@@ -64,6 +64,6 @@ func TestAccUploadArtifactFileToCorrectRemotePath(t *testing.T) {
 
 	err := bundle.Apply(context.Background(), b, artifacts.BasicUpload("test"))
 	require.NoError(t, err)
-	require.Regexp(t, regexp.MustCompile(path.Join(wsDir, ".internal/[a-z0-9]+/test.whl")), artifact.Files[0].RemotePath)
-	require.Regexp(t, regexp.MustCompile(path.Join("/Workspace", wsDir, ".internal/[a-z0-9]+/test.whl")), artifact.Files[0].Libraries[0].Whl)
+	require.Regexp(t, regexp.MustCompile(path.Join(regexp.QuoteMeta(wsDir), `.internal/[a-z0-9]+/test\.whl`)), artifact.Files[0].RemotePath)
+	require.Regexp(t, regexp.MustCompile(path.Join("/Workspace", regexp.QuoteMeta(wsDir), `.internal/[a-z0-9]+/test\.whl`)), artifact.Files[0].Libraries[0].Whl)
 }
