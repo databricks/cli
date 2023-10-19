@@ -146,16 +146,15 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 		cfg.Profile = profile
 	}
 
-	// try configuring a bundle
-	err := TryConfigureBundle(cmd, args)
-	if err != nil {
-		return err
-	}
-
-	// and load the config from there
-	currentBundle := bundle.GetOrNil(cmd.Context())
-	if currentBundle != nil {
-		cfg = currentBundle.WorkspaceClient().Config
+	// Try to load a bundle configuration if we're allowed to by the caller (see `./auth_options.go`).
+	if !shouldSkipLoadBundle(cmd.Context()) {
+		err := TryConfigureBundle(cmd, args)
+		if err != nil {
+			return err
+		}
+		if b := bundle.GetOrNil(cmd.Context()); b != nil {
+			cfg = b.WorkspaceClient().Config
+		}
 	}
 
 	allowPrompt := !hasProfileFlag && !shouldSkipPrompt(cmd.Context())
