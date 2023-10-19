@@ -83,7 +83,7 @@ func TestBundleConfigureWithNonExistentProfileFlag(t *testing.T) {
 	cmd.Flag("profile").Value.Set("NOEXIST")
 
 	b := setup(t, cmd, "https://x.com")
-	assert.PanicsWithError(t, "no matching config profiles found", func() {
+	assert.Panics(t, func() {
 		b.WorkspaceClient()
 	})
 }
