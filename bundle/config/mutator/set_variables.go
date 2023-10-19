@@ -46,6 +46,12 @@ func setVariable(ctx context.Context, v *variable.Variable, name string) error {
 		return nil
 	}
 
+	// case: Defined a variable for named lookup for a resource
+	// It will be resolved later in ResolveResourceReferences mutator
+	if v.Lookup != "" {
+		return nil
+	}
+
 	// We should have had a value to set for the variable at this point.
 	// TODO: use cmdio to request values for unassigned variables if current
 	// terminal is a tty. Tracked in https://github.com/databricks/cli/issues/379

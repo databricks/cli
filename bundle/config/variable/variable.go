@@ -24,6 +24,12 @@ type Variable struct {
 	// 5. Throw error, since if no default value is defined, then the variable
 	//    is required
 	Value *string `json:"value,omitempty" bundle:"readonly"`
+
+	// A string value that represents a reference to the remote resource by name
+	// Format: "<resource>:<name>"
+	// The value of this field will be used to lookup the resource by name
+	// And assign the value of the variable to ID of the resource found.
+	Lookup string `json:"lookup,omitempty"`
 }
 
 // True if the variable has been assigned a default value. Variables without a
@@ -43,8 +49,4 @@ func (v *Variable) Set(val string) error {
 	}
 	v.Value = &val
 	return nil
-}
-
-func (v *Variable) Replace(val string) {
-	v.Value = &val
 }

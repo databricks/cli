@@ -125,7 +125,7 @@ func TestResolveClusterReference(t *testing.T) {
 		Config: config.Root{
 			Variables: map[string]*variable.Variable{
 				"my-cluster-id": {
-					Value: &clusterRef,
+					Lookup: clusterRef,
 				},
 				"some-variable": {
 					Value: &justString,
@@ -148,7 +148,7 @@ func TestResolveNonExistentClusterReference(t *testing.T) {
 		Config: config.Root{
 			Variables: map[string]*variable.Variable{
 				"my-cluster-id": {
-					Value: &clusterRef,
+					Lookup: clusterRef,
 				},
 				"some-variable": {
 					Value: &justString,
@@ -169,7 +169,7 @@ func TestResolveNonExistentResourceType(t *testing.T) {
 		Config: config.Root{
 			Variables: map[string]*variable.Variable{
 				"my-cluster-id": {
-					Value: &clusterRef,
+					Lookup: clusterRef,
 				},
 			},
 		},
@@ -179,4 +179,24 @@ func TestResolveNonExistentResourceType(t *testing.T) {
 
 	err := bundle.Apply(context.Background(), b, ResolveResourceReferences())
 	require.ErrorContains(t, err, "unable to resolve resource reference donotexist:Random, no resovler for donotexist")
+}
+
+func TestNoLookupIfVariableIsSet(t *testing.T) {
+	clusterRef := "donotexist:Random"
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Variables: map[string]*variable.Variable{
+				"my-cluster-id": {
+					Lookup: clusterRef,
+				},
+			},
+		},
+	}
+
+	b.WorkspaceClient().Clusters.WithImpl(MockClusterService{})
+	b.Config.Variables["my-cluster-id"].Set("random value")
+
+	err := bundle.Apply(context.Background(), b, ResolveResourceReferences())
+	require.NoError(t, err)
+	require.Equal(t, "random value", *b.Config.Variables["my-cluster-id"].Value)
 }
