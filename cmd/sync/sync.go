@@ -149,8 +149,7 @@ func New() *cobra.Command {
 	}
 
 	cmd.ValidArgsFunction = func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		ctx := cmd.Context()
-		cmd.SetContext(root.NoPrompt(ctx))
+		cmd.SetContext(root.SkipPrompt(cmd.Context()))
 
 		err := root.MustWorkspaceClient(cmd, args)
 		if err != nil {

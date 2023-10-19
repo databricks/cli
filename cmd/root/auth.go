@@ -92,8 +92,7 @@ func MustAccountClient(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	noPrompt, ok := cmd.Context().Value(noPromptKey).(bool)
-	allowPrompt := !hasProfileFlag && (!ok || !noPrompt)
+	allowPrompt := !hasProfileFlag && !shouldSkipPrompt(cmd.Context())
 	a, err := accountClientOrPrompt(cmd.Context(), cfg, allowPrompt)
 	if err != nil {
 		return err
@@ -101,21 +100,6 @@ func MustAccountClient(cmd *cobra.Command, args []string) error {
 
 	cmd.SetContext(context.WithValue(cmd.Context(), &accountClient, a))
 	return nil
-}
-
-type noPrompt int
-
-var noPromptKey noPrompt
-
-// NoPrompt allows to skip prompt for profile configuration in MustWorkspaceClient.
-//
-// When calling MustWorkspaceClient we want to be able to customise if to show prompt or not.
-// Since we can't change function interface, in the code we only have an access to `cmd“ object.
-// Command struct does not have any state flag which indicates that it's being called in completion mode and
-// thus the Context object seems to be the only viable option for us to configure prompt behaviour based on
-// the context it's executed from.
-func NoPrompt(ctx context.Context) context.Context {
-	return context.WithValue(ctx, noPromptKey, true)
 }
 
 // Helper function to create a workspace client or prompt once if the given configuration is not valid.
@@ -174,7 +158,7 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 		cfg = currentBundle.WorkspaceClient().Config
 	}
 
-	allowPrompt := !hasProfileFlag
+	allowPrompt := !hasProfileFlag && !shouldSkipPrompt(cmd.Context())
 	w, err := workspaceClientOrPrompt(cmd.Context(), cfg, allowPrompt)
 	if err != nil {
 		return err
