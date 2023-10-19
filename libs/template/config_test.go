@@ -182,7 +182,7 @@ func TestAssignDefaultValuesWithTemplatedDefaults(t *testing.T) {
 	ctx := context.Background()
 	ctx = root.SetWorkspaceClient(ctx, nil)
 	helpers := loadHelpers(ctx)
-	r, err := newRenderer(ctx, nil, helpers, "./testdata/template-in-path/template", "./testdata/template-in-path/library", t.TempDir())
+	r, err := newRenderer(ctx, nil, helpers, "./testdata/templated-defaults/template", "./testdata/templated-defaults/library", t.TempDir())
 	require.NoError(t, err)
 
 	err = c.assignDefaultValues(r)
