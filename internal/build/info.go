@@ -33,7 +33,7 @@ var info Info
 
 var once sync.Once
 
-var DefaultSemver = "0.0.0-dev"
+const DefaultSemver = "0.0.0-dev"
 
 // getDefaultBuildVersion uses build information stored by Go itself
 // to synthesize a build version if one wasn't set.
