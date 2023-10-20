@@ -2,6 +2,7 @@ package config
 
 import (
 	"context"
+	"io/fs"
 	"path/filepath"
 	"runtime"
 	"testing"
@@ -82,7 +83,7 @@ func TestWorkspaceVerifyProfileForHost(t *testing.T) {
 	t.Run("no config file", func(t *testing.T) {
 		setupWorkspaceTest(t)
 		_, err := w.Client()
-		assert.ErrorContains(t, err, "/.databrickscfg: no such file or directory")
+		assert.ErrorIs(t, err, fs.ErrNotExist)
 	})
 
 	t.Run("default config file with match", func(t *testing.T) {
