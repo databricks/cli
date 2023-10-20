@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"gopkg.in/ini.v1"
 )
@@ -130,17 +129,17 @@ func SaveToProfile(ctx context.Context, cfg *config.Config) error {
 	return configFile.SaveTo(configFile.Path())
 }
 
-func ValidateConfigAndProfileHost(cfg *databricks.Config, profile string) error {
+func ValidateConfigAndProfileHost(cfg *config.Config, profile string) error {
 	configFile, err := config.LoadFile(cfg.ConfigFile)
 	if err != nil {
 		return fmt.Errorf("cannot parse config file: %w", err)
 	}
+
 	// Normalized version of the configured host.
 	host := normalizeHost(cfg.Host)
 	match, err := findMatchingProfile(configFile, func(s *ini.Section) bool {
 		return profile == s.Name()
 	})
-
 	if err != nil {
 		return err
 	}

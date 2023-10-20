@@ -103,6 +103,7 @@ func (l profileFromHostLoader) Configure(cfg *config.Config) error {
 		return fmt.Errorf("%s %s profile: %w", configFile.Path(), match.Name(), err)
 	}
 
+	cfg.Profile = match.Name()
 	return nil
 }
 

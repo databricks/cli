@@ -59,7 +59,7 @@ func TestLoaderErrorsOnInvalidFile(t *testing.T) {
 	assert.ErrorContains(t, err, "unclosed section: ")
 }
 
-func TestLoaderSkipssNoMatchingHost(t *testing.T) {
+func TestLoaderSkipsNoMatchingHost(t *testing.T) {
 	cfg := config.Config{
 		Loaders: []config.Loader{
 			ResolveProfileFromHost,
@@ -71,20 +71,6 @@ func TestLoaderSkipssNoMatchingHost(t *testing.T) {
 	err := cfg.EnsureResolved()
 	assert.NoError(t, err)
 	assert.Empty(t, cfg.Token)
-}
-
-func TestLoaderConfiguresMatchingHost(t *testing.T) {
-	cfg := config.Config{
-		Loaders: []config.Loader{
-			ResolveProfileFromHost,
-		},
-		ConfigFile: "testdata/databrickscfg",
-		Host:       "https://default/?foo=bar",
-	}
-
-	err := cfg.EnsureResolved()
-	assert.NoError(t, err)
-	assert.Equal(t, "default", cfg.Token)
 }
 
 func TestLoaderMatchingHost(t *testing.T) {
@@ -99,6 +85,7 @@ func TestLoaderMatchingHost(t *testing.T) {
 	err := cfg.EnsureResolved()
 	assert.NoError(t, err)
 	assert.Equal(t, "default", cfg.Token)
+	assert.Equal(t, "DEFAULT", cfg.Profile)
 }
 
 func TestLoaderMatchingHostWithQuery(t *testing.T) {
@@ -113,6 +100,7 @@ func TestLoaderMatchingHostWithQuery(t *testing.T) {
 	err := cfg.EnsureResolved()
 	assert.NoError(t, err)
 	assert.Equal(t, "query", cfg.Token)
+	assert.Equal(t, "query", cfg.Profile)
 }
 
 func TestLoaderErrorsOnMultipleMatches(t *testing.T) {

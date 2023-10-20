@@ -79,7 +79,7 @@ func (s User) MarshalJSON() ([]byte, error) {
 }
 
 func (w *Workspace) Client() (*databricks.WorkspaceClient, error) {
-	cfg := databricks.Config{
+	cfg := config.Config{
 		// Generic
 		Host:               w.Host,
 		Profile:            w.Profile,
@@ -114,14 +114,23 @@ func (w *Workspace) Client() (*databricks.WorkspaceClient, error) {
 		}
 	}
 
-	if w.Profile != "" && w.Host != "" {
+	// Resolve the configuration. This is done by [databricks.NewWorkspaceClient] as well, but here
+	// we need to verify that a profile, if loaded, matches the host configured in the bundle.
+	err := cfg.EnsureResolved()
+	if err != nil {
+		return nil, err
+	}
+
+	// Now that the configuration is resolved, we can verify that the host in the bundle configuration
+	// is identical to the host associated with the selected profile.
+	if w.Host != "" && w.Profile != "" {
 		err := databrickscfg.ValidateConfigAndProfileHost(&cfg, w.Profile)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	return databricks.NewWorkspaceClient(&cfg)
+	return databricks.NewWorkspaceClient((*databricks.Config)(&cfg))
 }
 
 func init() {
