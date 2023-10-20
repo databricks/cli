@@ -31,6 +31,8 @@ require (
 	gopkg.in/ini.v1 v1.67.0 // Apache 2.0
 )
 
+require gopkg.in/yaml.v3 v3.0.1
+
 require (
 	cloud.google.com/go/compute v1.23.0 // indirect
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
@@ -60,5 +62,4 @@ require (
 	google.golang.org/grpc v1.58.2 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
