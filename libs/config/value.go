@@ -64,6 +64,7 @@ func (v Value) AsAny() any {
 	case nil:
 		return nil
 	default:
+		// Panic because we only want to deal with known types.
 		panic("not handled")
 	}
 }

@@ -107,6 +107,9 @@ func (d *loader) loadMapping(node *yaml.Node, loc config.Location) (config.Value
 		case "!!str":
 			// OK
 		case "!!merge":
+			if merge != nil {
+				panic("merge node already set")
+			}
 			merge = val
 			continue
 		default:
@@ -129,24 +132,23 @@ func (d *loader) loadMapping(node *yaml.Node, loc config.Location) (config.Value
 	var mloc = d.location(merge)
 	var merr = errorf(mloc, "map merge requires map or sequence of maps as the value")
 
+	// Flatten the merge node into a slice of nodes.
+	// It can be either a single node or a sequence of nodes.
+	var mnodes []*yaml.Node
+	switch merge.Kind {
+	case yaml.SequenceNode:
+		mnodes = merge.Content
+	case yaml.AliasNode:
+		mnodes = []*yaml.Node{merge}
+	default:
+		return config.NilValue, merr
+	}
+
 	// Build a sequence of values to merge.
 	// The entries that we already accumulated have precedence.
 	var seq []map[string]config.Value
-	switch merge.Kind {
-	case yaml.SequenceNode:
-		for _, n := range merge.Content {
-			v, err := d.load(n)
-			if err != nil {
-				return config.NilValue, err
-			}
-			m, ok := v.AsMap()
-			if !ok {
-				return config.NilValue, merr
-			}
-			seq = append(seq, m)
-		}
-	case yaml.AliasNode:
-		v, err := d.load(merge)
+	for _, n := range mnodes {
+		v, err := d.load(n)
 		if err != nil {
 			return config.NilValue, err
 		}
@@ -155,8 +157,6 @@ func (d *loader) loadMapping(node *yaml.Node, loc config.Location) (config.Value
 			return config.NilValue, merr
 		}
 		seq = append(seq, m)
-	default:
-		return config.NilValue, merr
 	}
 
 	// Append the accumulated entries to the sequence.
