@@ -20,10 +20,18 @@ func WrapperWarning() bundle.Mutator {
 }
 
 func (m *wrapperWarning) Apply(ctx context.Context, b *bundle.Bundle) error {
+	if isPythonWheelWrapperOn(b) {
+		return nil
+	}
+
 	if hasIncompatibleWheelTasks(ctx, b) {
 		return fmt.Errorf("python wheel tasks with local libraries require compute with DBR 13.1+. Please change your cluster configuration or set experimental 'python_wheel_wrapper' setting to 'true'")
 	}
 	return nil
+}
+
+func isPythonWheelWrapperOn(b *bundle.Bundle) bool {
+	return b.Config.Experimental != nil && b.Config.Experimental.PythonWheelWrapper
 }
 
 func hasIncompatibleWheelTasks(ctx context.Context, b *bundle.Bundle) bool {
