@@ -41,54 +41,9 @@ func Resolvers() map[string](ResolverFunc) {
 
 		return fmt.Sprint(entity.ClusterId), nil
 	}
-	resolvers["connections"] = func(ctx context.Context, b *bundle.Bundle, name string) (string, error) {
-		w := b.WorkspaceClient()
-		entity, err := w.Connections.GetByName(ctx, name)
-		if err != nil {
-			return "", err
-		}
-
-		return fmt.Sprint(entity.FullName), nil
-	}
 	resolvers["dashboards"] = func(ctx context.Context, b *bundle.Bundle, name string) (string, error) {
 		w := b.WorkspaceClient()
 		entity, err := w.Dashboards.GetByName(ctx, name)
-		if err != nil {
-			return "", err
-		}
-
-		return fmt.Sprint(entity.Id), nil
-	}
-	resolvers["data-sources"] = func(ctx context.Context, b *bundle.Bundle, name string) (string, error) {
-		w := b.WorkspaceClient()
-		entity, err := w.DataSources.GetByName(ctx, name)
-		if err != nil {
-			return "", err
-		}
-
-		return fmt.Sprint(entity.Id), nil
-	}
-	resolvers["git-credentials"] = func(ctx context.Context, b *bundle.Bundle, name string) (string, error) {
-		w := b.WorkspaceClient()
-		entity, err := w.GitCredentials.GetByGitProvider(ctx, name)
-		if err != nil {
-			return "", err
-		}
-
-		return fmt.Sprint(entity.CredentialId), nil
-	}
-	resolvers["global-init-scripts"] = func(ctx context.Context, b *bundle.Bundle, name string) (string, error) {
-		w := b.WorkspaceClient()
-		entity, err := w.GlobalInitScripts.GetByName(ctx, name)
-		if err != nil {
-			return "", err
-		}
-
-		return fmt.Sprint(entity.ScriptId), nil
-	}
-	resolvers["groups"] = func(ctx context.Context, b *bundle.Bundle, name string) (string, error) {
-		w := b.WorkspaceClient()
-		entity, err := w.Groups.GetByDisplayName(ctx, name)
 		if err != nil {
 			return "", err
 		}
@@ -103,15 +58,6 @@ func Resolvers() map[string](ResolverFunc) {
 		}
 
 		return fmt.Sprint(entity.InstancePoolId), nil
-	}
-	resolvers["ip-access-lists"] = func(ctx context.Context, b *bundle.Bundle, name string) (string, error) {
-		w := b.WorkspaceClient()
-		entity, err := w.IpAccessLists.GetByLabel(ctx, name)
-		if err != nil {
-			return "", err
-		}
-
-		return fmt.Sprint(entity.ListId), nil
 	}
 	resolvers["jobs"] = func(ctx context.Context, b *bundle.Bundle, name string) (string, error) {
 		w := b.WorkspaceClient()
@@ -149,87 +95,6 @@ func Resolvers() map[string](ResolverFunc) {
 
 		return fmt.Sprint(entity.Id), nil
 	}
-	resolvers["registered-models"] = func(ctx context.Context, b *bundle.Bundle, name string) (string, error) {
-		w := b.WorkspaceClient()
-		entity, err := w.RegisteredModels.GetByName(ctx, name)
-		if err != nil {
-			return "", err
-		}
-
-		return fmt.Sprint(entity.FullName), nil
-	}
-	resolvers["repos"] = func(ctx context.Context, b *bundle.Bundle, name string) (string, error) {
-		w := b.WorkspaceClient()
-		entity, err := w.Repos.GetByPath(ctx, name)
-		if err != nil {
-			return "", err
-		}
-
-		return fmt.Sprint(entity.Id), nil
-	}
-	resolvers["schemas"] = func(ctx context.Context, b *bundle.Bundle, name string) (string, error) {
-		w := b.WorkspaceClient()
-		entity, err := w.Schemas.GetByName(ctx, name)
-		if err != nil {
-			return "", err
-		}
-
-		return fmt.Sprint(entity.FullName), nil
-	}
-	resolvers["service-principals"] = func(ctx context.Context, b *bundle.Bundle, name string) (string, error) {
-		w := b.WorkspaceClient()
-		entity, err := w.ServicePrincipals.GetByDisplayName(ctx, name)
-		if err != nil {
-			return "", err
-		}
-
-		return fmt.Sprint(entity.Id), nil
-	}
-	resolvers["tables"] = func(ctx context.Context, b *bundle.Bundle, name string) (string, error) {
-		w := b.WorkspaceClient()
-		entity, err := w.Tables.GetByName(ctx, name)
-		if err != nil {
-			return "", err
-		}
-
-		return fmt.Sprint(entity.TableId), nil
-	}
-	resolvers["token-management"] = func(ctx context.Context, b *bundle.Bundle, name string) (string, error) {
-		w := b.WorkspaceClient()
-		entity, err := w.TokenManagement.GetByComment(ctx, name)
-		if err != nil {
-			return "", err
-		}
-
-		return fmt.Sprint(entity.TokenId), nil
-	}
-	resolvers["tokens"] = func(ctx context.Context, b *bundle.Bundle, name string) (string, error) {
-		w := b.WorkspaceClient()
-		entity, err := w.Tokens.GetByComment(ctx, name)
-		if err != nil {
-			return "", err
-		}
-
-		return fmt.Sprint(entity.TokenId), nil
-	}
-	resolvers["users"] = func(ctx context.Context, b *bundle.Bundle, name string) (string, error) {
-		w := b.WorkspaceClient()
-		entity, err := w.Users.GetByUserName(ctx, name)
-		if err != nil {
-			return "", err
-		}
-
-		return fmt.Sprint(entity.Id), nil
-	}
-	resolvers["volumes"] = func(ctx context.Context, b *bundle.Bundle, name string) (string, error) {
-		w := b.WorkspaceClient()
-		entity, err := w.Volumes.GetByName(ctx, name)
-		if err != nil {
-			return "", err
-		}
-
-		return fmt.Sprint(entity.VolumeId), nil
-	}
 	resolvers["warehouses"] = func(ctx context.Context, b *bundle.Bundle, name string) (string, error) {
 		w := b.WorkspaceClient()
 		entity, err := w.Warehouses.GetByName(ctx, name)
@@ -238,15 +103,6 @@ func Resolvers() map[string](ResolverFunc) {
 		}
 
 		return fmt.Sprint(entity.Id), nil
-	}
-	resolvers["workspace"] = func(ctx context.Context, b *bundle.Bundle, name string) (string, error) {
-		w := b.WorkspaceClient()
-		entity, err := w.Workspace.GetByPath(ctx, name)
-		if err != nil {
-			return "", err
-		}
-
-		return fmt.Sprint(entity.ObjectId), nil
 	}
 
 	return resolvers

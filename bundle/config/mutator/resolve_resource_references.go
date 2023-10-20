@@ -8,12 +8,13 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/resolvers"
 	"github.com/databricks/cli/libs/log"
+	"golang.org/x/sync/errgroup"
 )
 
-var separator string = ":"
+const separator string = ":"
 
 type resolveResourceReferences struct {
-	resolvers map[string](resolvers.ResolverFunc)
+	resolvers map[string]resolvers.ResolverFunc
 }
 
 func ResolveResourceReferences() bundle.Mutator {
@@ -23,7 +24,10 @@ func ResolveResourceReferences() bundle.Mutator {
 }
 
 func (m *resolveResourceReferences) Apply(ctx context.Context, b *bundle.Bundle) error {
-	for k, v := range b.Config.Variables {
+	errs, errCtx := errgroup.WithContext(ctx)
+
+	for k := range b.Config.Variables {
+		v := b.Config.Variables[k]
 		if v.Lookup == "" {
 			continue
 		}
@@ -34,26 +38,28 @@ func (m *resolveResourceReferences) Apply(ctx context.Context, b *bundle.Bundle)
 		}
 
 		lookup := v.Lookup
-		parts := strings.Split(lookup, separator)
-		if len(parts) != 2 {
+		resource, name, ok := strings.Cut(lookup, separator)
+		if !ok {
 			return fmt.Errorf("incorrect lookup specified %s", lookup)
 		}
 
-		resource, name := parts[0], parts[1]
 		resolver, ok := m.resolvers[resource]
 		if !ok {
-			return fmt.Errorf("unable to resolve resource reference %s, no resovler for %s", lookup, resource)
+			return fmt.Errorf("unable to resolve resource reference %s, no resolvers for %s", lookup, resource)
 		}
 
-		id, err := resolver(ctx, b, name)
-		if err != nil {
-			return fmt.Errorf("failed to resolve resource reference %s, err: %w", lookup, err)
-		}
+		errs.Go(func() error {
+			id, err := resolver(errCtx, b, name)
+			if err != nil {
+				return fmt.Errorf("failed to resolve %s reference %s, err: %w", resource, lookup, err)
+			}
 
-		v.Set(id)
+			v.Set(id)
+			return nil
+		})
 	}
 
-	return nil
+	return errs.Wait()
 }
 
 func (*resolveResourceReferences) Name() string {

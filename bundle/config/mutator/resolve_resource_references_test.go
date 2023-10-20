@@ -119,13 +119,17 @@ func (MockClusterService) UpdatePermissions(ctx context.Context, request compute
 }
 
 func TestResolveClusterReference(t *testing.T) {
-	clusterRef := "clusters:Some Custom Cluster"
+	clusterRef1 := "clusters:Some Custom Cluster"
+	clusterRef2 := "clusters:Some Other Name"
 	justString := "random string"
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Variables: map[string]*variable.Variable{
-				"my-cluster-id": {
-					Lookup: clusterRef,
+				"my-cluster-id-1": {
+					Lookup: clusterRef1,
+				},
+				"my-cluster-id-2": {
+					Lookup: clusterRef2,
 				},
 				"some-variable": {
 					Value: &justString,
@@ -138,7 +142,8 @@ func TestResolveClusterReference(t *testing.T) {
 
 	err := bundle.Apply(context.Background(), b, ResolveResourceReferences())
 	require.NoError(t, err)
-	require.Equal(t, "1234-5678-abcd", *b.Config.Variables["my-cluster-id"].Value)
+	require.Equal(t, "1234-5678-abcd", *b.Config.Variables["my-cluster-id-1"].Value)
+	require.Equal(t, "9876-5432-xywz", *b.Config.Variables["my-cluster-id-2"].Value)
 }
 
 func TestResolveNonExistentClusterReference(t *testing.T) {
@@ -160,7 +165,7 @@ func TestResolveNonExistentClusterReference(t *testing.T) {
 	b.WorkspaceClient().Clusters.WithImpl(MockClusterService{})
 
 	err := bundle.Apply(context.Background(), b, ResolveResourceReferences())
-	require.ErrorContains(t, err, "failed to resolve resource reference clusters:Random, err: ClusterDetails named 'Random' does not exist")
+	require.ErrorContains(t, err, "failed to resolve clusters reference clusters:Random, err: ClusterDetails named 'Random' does not exist")
 }
 
 func TestResolveNonExistentResourceType(t *testing.T) {
@@ -178,7 +183,7 @@ func TestResolveNonExistentResourceType(t *testing.T) {
 	b.WorkspaceClient().Clusters.WithImpl(MockClusterService{})
 
 	err := bundle.Apply(context.Background(), b, ResolveResourceReferences())
-	require.ErrorContains(t, err, "unable to resolve resource reference donotexist:Random, no resovler for donotexist")
+	require.ErrorContains(t, err, "unable to resolve resource reference donotexist:Random, no resolvers for donotexist")
 }
 
 func TestNoLookupIfVariableIsSet(t *testing.T) {

@@ -2,6 +2,21 @@
 
 package resolvers
 
+{{ $allowlist :=
+	list
+		"alerts"
+        "clusters"
+        "cluster-policies"
+        "clusters"
+        "dashboards"
+        "instance-pools"
+        "jobs"
+        "metastores"
+        "pipelines"
+        "queries"
+        "warehouses"
+}}
+
 import (
 	"context"
     "fmt"
@@ -13,6 +28,7 @@ type ResolverFunc func(ctx context.Context, b *bundle.Bundle, name string) (stri
 func Resolvers() map[string](ResolverFunc) {
     resolvers := make(map[string](ResolverFunc), 0)
     {{range .Services -}}
+    {{- if in $allowlist .KebabName -}}
     {{- if not .IsAccounts -}}
     {{- if and .List .List.GetByName }}
     resolvers["{{.KebabName}}"] = func(ctx context.Context, b *bundle.Bundle, name string) (string, error) {
@@ -24,6 +40,7 @@ func Resolvers() map[string](ResolverFunc) {
 
         return fmt.Sprint(entity{{ template "field-path" .List.NamedIdMap.IdPath }}), nil
     }
+    {{- end -}}
     {{- end -}}
     {{- end -}}
     {{- end}}
