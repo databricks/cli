@@ -132,9 +132,6 @@ func SaveToProfile(ctx context.Context, cfg *config.Config) error {
 func ValidateConfigAndProfileHost(cfg *config.Config, profile string) error {
 	configFile, err := config.LoadFile(cfg.ConfigFile)
 	if err != nil {
-		if os.IsNotExist(err) {
-			return nil
-		}
 		return fmt.Errorf("cannot parse config file: %w", err)
 	}
 

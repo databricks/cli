@@ -82,7 +82,7 @@ func TestWorkspaceVerifyProfileForHost(t *testing.T) {
 	t.Run("no config file", func(t *testing.T) {
 		setupWorkspaceTest(t)
 		_, err := w.Client()
-		assert.NoError(t, err)
+		assert.ErrorContains(t, err, "/.databrickscfg: no such file or directory")
 	})
 
 	t.Run("default config file with match", func(t *testing.T) {
