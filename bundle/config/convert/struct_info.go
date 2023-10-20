@@ -42,12 +42,12 @@ func buildStructInfo(typ reflect.Type) structInfo {
 	}
 
 	// Queue holds the indexes of the structs to visit.
-	// It starts out empty to visit the struct in the type argument.
+	// It is initialized with a single empty slice to visit the top level struct.
 	var queue [][]int = [][]int{{}}
 	for i := 0; i < len(queue); i++ {
 		prefix := queue[i]
 
-		// Traverse embedded anonymous types
+		// Traverse embedded anonymous types (if prefix is non-empty).
 		styp := typ
 		if len(prefix) > 0 {
 			styp = styp.FieldByIndex(prefix).Type
@@ -73,7 +73,8 @@ func buildStructInfo(typ reflect.Type) structInfo {
 				continue
 			}
 
-			// Top level fields always take precedence
+			// Top level fields always take precedence.
+			// Therefore, if it is already set, we ignore it.
 			if _, ok := out.Fields[name]; ok {
 				continue
 			}
