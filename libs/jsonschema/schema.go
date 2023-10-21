@@ -6,6 +6,9 @@ import (
 	"os"
 	"regexp"
 	"slices"
+
+	"github.com/databricks/cli/internal/build"
+	"golang.org/x/mod/semver"
 )
 
 // defines schema for a json object
@@ -67,8 +70,8 @@ const (
 	IntegerType Type = "integer"
 )
 
-func (schema *Schema) validate() error {
-	// Validate property types are all valid JSON schema types.
+// Validate property types are all valid JSON schema types.
+func (schema *Schema) validateSchemaPropertyTypes() error {
 	for _, v := range schema.Properties {
 		switch v.Type {
 		case NumberType, BooleanType, StringType, IntegerType:
@@ -83,8 +86,11 @@ func (schema *Schema) validate() error {
 			return fmt.Errorf("type %s is not a recognized json schema type", v.Type)
 		}
 	}
+	return nil
+}
 
-	// Validate default property values are consistent with types.
+// Validate default property values are consistent with types.
+func (schema *Schema) validateSchemaDefaultValueTypes() error {
 	for name, property := range schema.Properties {
 		if property.Default == nil {
 			continue
@@ -93,8 +99,11 @@ func (schema *Schema) validate() error {
 			return fmt.Errorf("type validation for default value of property %s failed: %w", name, err)
 		}
 	}
+	return nil
+}
 
-	// Validate enum field values for properties are consistent with types.
+// Validate enum field values for properties are consistent with types.
+func (schema *Schema) validateSchemaEnumValueTypes() error {
 	for name, property := range schema.Properties {
 		if property.Enum == nil {
 			continue
@@ -106,8 +115,11 @@ func (schema *Schema) validate() error {
 			}
 		}
 	}
+	return nil
+}
 
-	// Validate default value is contained in the list of enums if both are defined.
+// Validate default value is contained in the list of enums if both are defined.
+func (schema *Schema) validateSchemaDefaultValueIsInEnums() error {
 	for name, property := range schema.Properties {
 		if property.Default == nil || property.Enum == nil {
 			continue
@@ -118,8 +130,11 @@ func (schema *Schema) validate() error {
 			return fmt.Errorf("list of enum values for property %s does not contain default value %v: %v", name, property.Default, property.Enum)
 		}
 	}
+	return nil
+}
 
-	// Validate usage of "pattern" is consistent.
+// Validate usage of "pattern" is consistent.
+func (schema *Schema) validateSchemaPattern() error {
 	for name, property := range schema.Properties {
 		pattern := property.Pattern
 		if pattern == "" {
@@ -150,6 +165,47 @@ func (schema *Schema) validate() error {
 		}
 	}
 
+	return nil
+}
+
+func (schema *Schema) validateSchemaMinimumCliVersion(currentVersion string) func() error {
+	return func() error {
+		if schema.MinDatabricksCliVersion == "" {
+			return nil
+		}
+
+		// Ignore this validation rule for local builds.
+		if semver.Compare("v"+build.DefaultSemver, currentVersion) == 0 {
+			return nil
+		}
+
+		// Confirm that MinDatabricksCliVersion is a valid semver.
+		if !semver.IsValid(schema.MinDatabricksCliVersion) {
+			return fmt.Errorf("invalid minimum CLI version %q specified. Please specify the version in the format v0.0.0", schema.MinDatabricksCliVersion)
+		}
+
+		// Confirm that MinDatabricksCliVersion is less than or equal to the current version.
+		if semver.Compare(schema.MinDatabricksCliVersion, currentVersion) > 0 {
+			return fmt.Errorf("minimum CLI version %q is greater than current CLI version %q. Please upgrade your current Databricks CLI", schema.MinDatabricksCliVersion, currentVersion)
+		}
+		return nil
+	}
+}
+
+func (schema *Schema) validate() error {
+	for _, fn := range []func() error{
+		schema.validateSchemaPropertyTypes,
+		schema.validateSchemaDefaultValueTypes,
+		schema.validateSchemaEnumValueTypes,
+		schema.validateSchemaDefaultValueIsInEnums,
+		schema.validateSchemaPattern,
+		schema.validateSchemaMinimumCliVersion("v" + build.GetInfo().Version),
+	} {
+		err := fn()
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 

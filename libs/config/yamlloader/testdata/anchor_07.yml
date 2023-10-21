@@ -1,0 +1,10 @@
+# 7. Number Anchors
+defaultAge: &age 25
+
+person1:
+  name: Alice
+  age: *age
+
+person2:
+  name: Bob
+  age: *age
