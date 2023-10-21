@@ -390,6 +390,8 @@ func TestSparkVersionLowerThanExpected(t *testing.T) {
 		"13.3.x-scala2.12":                false,
 		"14.0.x-scala2.12":                false,
 		"14.1.x-scala2.12":                false,
+		"13.x-snapshot-scala-2.12":        false,
+		"13.x-rc-scala-2.12":              false,
 		"10.4.x-aarch64-photon-scala2.12": true,
 		"10.4.x-scala2.12":                true,
 		"13.0.x-scala2.12":                true,
