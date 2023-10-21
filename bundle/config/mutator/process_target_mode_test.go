@@ -204,6 +204,7 @@ func TestProcessTargetModeProduction(t *testing.T) {
 	}
 	bundle.Config.Resources.Jobs["job1"].Permissions = permissions
 	bundle.Config.Resources.Jobs["job1"].RunAs = &jobs.JobRunAs{UserName: "user@company.com"}
+	bundle.Config.Resources.Jobs["job2"].RunAs = &jobs.JobRunAs{UserName: "user@company.com"}
 	bundle.Config.Resources.Pipelines["pipeline1"].Permissions = permissions
 	bundle.Config.Resources.Experiments["experiment1"].Permissions = permissions
 	bundle.Config.Resources.Experiments["experiment2"].Permissions = permissions
