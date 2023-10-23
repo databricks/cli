@@ -1,4 +1,5 @@
 {
+    "welcome_message": "\nWelcome to the sample Databricks Asset Bundle template! Please enter the following information to initialize your sample DAB.\n",
     "properties": {
         "project_name": {
             "type": "string",
