@@ -12,6 +12,9 @@ func LoadYAML(path string, r io.Reader) (config.Value, error) {
 	dec := yaml.NewDecoder(r)
 	err := dec.Decode(&node)
 	if err != nil {
+		if err == io.EOF {
+			return config.NilValue, nil
+		}
 		return config.NilValue, err
 	}
 
