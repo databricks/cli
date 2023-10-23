@@ -54,7 +54,7 @@ TEMPLATE_PATH optionally specifies which template to use. It can be one of the f
 - a local file system path with a template directory
 - a Git repository URL, e.g. https://github.com/my/repository
 
-See https://docs.databricks.com//dev-tools/bundles/templates.html for more information on templates.`,
+See https://docs.databricks.com/en/dev-tools/bundles/templates.html for more information on templates.`,
 	}
 
 	var configFile string
