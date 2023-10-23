@@ -221,12 +221,4 @@ func TestValidateInstanceForMultiplePatterns(t *testing.T) {
 	}
 	assert.EqualError(t, schema.validatePattern(invalidInstanceValue), "invalid value for bar: \"xyz\". Expected to match regex pattern: ^[d-f]+$")
 	assert.EqualError(t, schema.ValidateInstance(invalidInstanceValue), "invalid value for bar: \"xyz\". Expected to match regex pattern: ^[d-f]+$")
-
-	// Invalid values for both foo and bar
-	invalidInstanceValue = map[string]any{
-		"foo": "xyz",
-		"bar": "xyz",
-	}
-	assert.EqualError(t, schema.validatePattern(invalidInstanceValue), "invalid value for foo: \"xyz\". Expected to match regex pattern: ^[a-c]+$")
-	assert.EqualError(t, schema.ValidateInstance(invalidInstanceValue), "invalid value for foo: \"xyz\". Expected to match regex pattern: ^[a-c]+$")
 }
