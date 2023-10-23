@@ -18,7 +18,7 @@ func (m *infer) Apply(ctx context.Context, b *bundle.Bundle) error {
 	if err != nil {
 		return err
 	}
-	artifact.BuildCommand = fmt.Sprintf("%s setup.py bdist_wheel", py)
+	artifact.BuildCommand = fmt.Sprintf("%s -m pip install setuptools wheel && %s setup.py bdist_wheel", py, py)
 
 	return nil
 }
