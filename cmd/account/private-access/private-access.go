@@ -81,9 +81,6 @@ func newCreate() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	}
 
@@ -97,10 +94,9 @@ func newCreate() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
-			createReq.PrivateAccessSettingsName = args[0]
-			createReq.Region = args[1]
 		}
+		createReq.PrivateAccessSettingsName = args[0]
+		createReq.Region = args[1]
 
 		response, err := a.PrivateAccess.Create(ctx, createReq)
 		if err != nil {

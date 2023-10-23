@@ -78,12 +78,12 @@ var {{.CamelName}}Overrides []func(
 func new{{.PascalName}}() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	{{- $needJsonFlag := or .CanSetRequiredFieldsFromJson (and .Request (not .Request.IsOnlyPrimitiveFields)) -}}
+	{{- $hasRequiredRequestBodyFields := and .Request (gt 0 (len .Request.RequiredRequestBodyFields))  -}}
 
 	{{- if .Request}}
 
 	var {{.CamelName}}Req {{.Service.Package.Name}}.{{.Request.PascalName}}
-	{{- if $needJsonFlag}}
+	{{- if .CanUseJson}}
 	var {{.CamelName}}Json flags.JsonFlag
 	{{- end}}
 	{{- end}}
@@ -96,7 +96,7 @@ func new{{.PascalName}}() *cobra.Command {
 	cmd.Flags().DurationVar(&{{.CamelName}}Timeout, "timeout", {{.Wait.Timeout}}*time.Minute, `maximum amount of time to reach {{range $i, $e := .Wait.Success}}{{if $i}} or {{end}}{{.Content}}{{end}} state`)
 	{{end -}}
     {{if .Request}}// TODO: short flags
-	{{- if $needJsonFlag}}
+	{{- if .CanUseJson}}
 	cmd.Flags().Var(&{{.CamelName}}Json, "json", `either inline JSON string or @path/to/file.json with request body`)
 	{{- end}}
     {{$method := .}}
@@ -142,9 +142,9 @@ func new{{.PascalName}}() *cobra.Command {
 	{{if $hasRequiredArgs }}
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs({{len .Request.RequiredFields}})
-		{{- if .CanSetRequiredFieldsFromJson }}
+		{{- if and .CanUseJson $hasRequiredRequestBodyFields }}
 		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
+			check = cobra.ExactArgs({{len .Request.RequiredPathFields}})
 		}
 		{{- end }}
 		return check(cmd, args)
@@ -155,14 +155,16 @@ func new{{.PascalName}}() *cobra.Command {
 		ctx := cmd.Context()
 		{{if .Service.IsAccounts}}a := root.AccountClient(ctx){{else}}w := root.WorkspaceClient(ctx){{end}}
 		{{- if .Request }}
-			{{ if $needJsonFlag }}
+			{{ if .CanUseJson }}
 			if cmd.Flags().Changed("json") {
 					err = {{.CamelName}}Json.Unmarshal(&{{.CamelName}}Req)
 					if err != nil {
 						return err
 					}
-			}{{end}}{{if .CanSetRequiredFieldsFromJson }} else {
-			{{- end }}
+			}{{end}}{{ if .MustUseJson }}else {
+				return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+			}{{- end}}
+			{{- if (not .MustUseJson) }}
 			{{- if $hasIdPrompt}}
 				if len(args) == 0 {
 					promptSpinner := cmdio.Spinner(ctx)
@@ -182,22 +184,18 @@ func new{{.PascalName}}() *cobra.Command {
 					return fmt.Errorf("expected to have {{range .Request.RequiredFields}}{{.Summary | trimSuffix "." | lower}}{{end}}")
 				}
 			{{- end -}}
+
 			{{$method := .}}
-			{{- if and .Request.IsAllRequiredFieldsPrimitive (not .IsJsonOnly) -}}
-				{{- range $arg, $field := .Request.RequiredFields}}
-					{{if not $field.Entity.IsString -}}
-					_, err = fmt.Sscan(args[{{$arg}}], &{{$method.CamelName}}Req.{{$field.PascalName}})
-					if err != nil {
-						return fmt.Errorf("invalid {{$field.ConstantName}}: %s", args[{{$arg}}])
-					}{{else -}}
-					{{$method.CamelName}}Req.{{$field.PascalName}} = args[{{$arg}}]
-					{{- end -}}{{end}}
-			{{- else -}}
-				return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+			{{- range $arg, $field := .Request.RequiredFields}}
+				{{if not $field.Entity.IsString -}}
+				_, err = fmt.Sscan(args[{{$arg}}], &{{$method.CamelName}}Req.{{$field.PascalName}})
+				if err != nil {
+					return fmt.Errorf("invalid {{$field.ConstantName}}: %s", args[{{$arg}}])
+				}{{else -}}
+				{{$method.CamelName}}Req.{{$field.PascalName}} = args[{{$arg}}]
+				{{- end -}}
 			{{- end -}}
-			{{if .CanSetRequiredFieldsFromJson }}
-			}
-			{{end }}
+			{{- end}}
 		{{end}}
 		{{if $wait -}}
 		wait, err := {{if .Service.IsAccounts}}a{{else}}w{{end}}.{{.Service.PascalName}}.{{.PascalName}}(ctx{{if .Request}}, {{.CamelName}}Req{{end}})

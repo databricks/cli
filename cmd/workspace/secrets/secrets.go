@@ -80,9 +80,6 @@ func newCreateScope() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	}
 
@@ -96,9 +93,8 @@ func newCreateScope() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
-			createScopeReq.Scope = args[0]
 		}
+		createScopeReq.Scope = args[0]
 
 		err = w.Secrets.CreateScope(ctx, createScopeReq)
 		if err != nil {
@@ -138,10 +134,8 @@ func newDeleteAcl() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var deleteAclReq workspace.DeleteAcl
-	var deleteAclJson flags.JsonFlag
 
 	// TODO: short flags
-	cmd.Flags().Var(&deleteAclJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "delete-acl SCOPE PRINCIPAL"
 	cmd.Short = `Delete an ACL.`
@@ -158,9 +152,6 @@ func newDeleteAcl() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	}
 
@@ -169,15 +160,8 @@ func newDeleteAcl() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		if cmd.Flags().Changed("json") {
-			err = deleteAclJson.Unmarshal(&deleteAclReq)
-			if err != nil {
-				return err
-			}
-		} else {
-			deleteAclReq.Scope = args[0]
-			deleteAclReq.Principal = args[1]
-		}
+		deleteAclReq.Scope = args[0]
+		deleteAclReq.Principal = args[1]
 
 		err = w.Secrets.DeleteAcl(ctx, deleteAclReq)
 		if err != nil {
@@ -217,10 +201,8 @@ func newDeleteScope() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var deleteScopeReq workspace.DeleteScope
-	var deleteScopeJson flags.JsonFlag
 
 	// TODO: short flags
-	cmd.Flags().Var(&deleteScopeJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "delete-scope SCOPE"
 	cmd.Short = `Delete a secret scope.`
@@ -236,9 +218,6 @@ func newDeleteScope() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	}
 
@@ -247,14 +226,7 @@ func newDeleteScope() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		if cmd.Flags().Changed("json") {
-			err = deleteScopeJson.Unmarshal(&deleteScopeReq)
-			if err != nil {
-				return err
-			}
-		} else {
-			deleteScopeReq.Scope = args[0]
-		}
+		deleteScopeReq.Scope = args[0]
 
 		err = w.Secrets.DeleteScope(ctx, deleteScopeReq)
 		if err != nil {
@@ -294,10 +266,8 @@ func newDeleteSecret() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var deleteSecretReq workspace.DeleteSecret
-	var deleteSecretJson flags.JsonFlag
 
 	// TODO: short flags
-	cmd.Flags().Var(&deleteSecretJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "delete-secret SCOPE KEY"
 	cmd.Short = `Delete a secret.`
@@ -314,9 +284,6 @@ func newDeleteSecret() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	}
 
@@ -325,15 +292,8 @@ func newDeleteSecret() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		if cmd.Flags().Changed("json") {
-			err = deleteSecretJson.Unmarshal(&deleteSecretReq)
-			if err != nil {
-				return err
-			}
-		} else {
-			deleteSecretReq.Scope = args[0]
-			deleteSecretReq.Key = args[1]
-		}
+		deleteSecretReq.Scope = args[0]
+		deleteSecretReq.Key = args[1]
 
 		err = w.Secrets.DeleteSecret(ctx, deleteSecretReq)
 		if err != nil {
@@ -698,10 +658,8 @@ func newPutAcl() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var putAclReq workspace.PutAcl
-	var putAclJson flags.JsonFlag
 
 	// TODO: short flags
-	cmd.Flags().Var(&putAclJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "put-acl SCOPE PRINCIPAL PERMISSION"
 	cmd.Short = `Create/update an ACL.`
@@ -738,9 +696,6 @@ func newPutAcl() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(3)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	}
 
@@ -749,18 +704,11 @@ func newPutAcl() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		if cmd.Flags().Changed("json") {
-			err = putAclJson.Unmarshal(&putAclReq)
-			if err != nil {
-				return err
-			}
-		} else {
-			putAclReq.Scope = args[0]
-			putAclReq.Principal = args[1]
-			_, err = fmt.Sscan(args[2], &putAclReq.Permission)
-			if err != nil {
-				return fmt.Errorf("invalid PERMISSION: %s", args[2])
-			}
+		putAclReq.Scope = args[0]
+		putAclReq.Principal = args[1]
+		_, err = fmt.Sscan(args[2], &putAclReq.Permission)
+		if err != nil {
+			return fmt.Errorf("invalid PERMISSION: %s", args[2])
 		}
 
 		err = w.Secrets.PutAcl(ctx, putAclReq)

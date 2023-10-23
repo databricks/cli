@@ -7,7 +7,6 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/spf13/cobra"
 )
@@ -128,10 +127,8 @@ func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var createReq catalog.CreateMetastore
-	var createJson flags.JsonFlag
 
 	// TODO: short flags
-	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createReq.Region, "region", createReq.Region, `Cloud region which the metastore serves (e.g., us-west-2, westus).`)
 
@@ -145,9 +142,6 @@ func newCreate() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	}
 
@@ -156,15 +150,8 @@ func newCreate() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		if cmd.Flags().Changed("json") {
-			err = createJson.Unmarshal(&createReq)
-			if err != nil {
-				return err
-			}
-		} else {
-			createReq.Name = args[0]
-			createReq.StorageRoot = args[1]
-		}
+		createReq.Name = args[0]
+		createReq.StorageRoot = args[1]
 
 		response, err := w.Metastores.Create(ctx, createReq)
 		if err != nil {
@@ -327,10 +314,8 @@ func newEnableOptimization() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var enableOptimizationReq catalog.UpdatePredictiveOptimization
-	var enableOptimizationJson flags.JsonFlag
 
 	// TODO: short flags
-	cmd.Flags().Var(&enableOptimizationJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "enable-optimization METASTORE_ID ENABLE"
 	cmd.Short = `Toggle predictive optimization on the metastore.`
@@ -345,9 +330,6 @@ func newEnableOptimization() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	}
 
@@ -356,17 +338,10 @@ func newEnableOptimization() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		if cmd.Flags().Changed("json") {
-			err = enableOptimizationJson.Unmarshal(&enableOptimizationReq)
-			if err != nil {
-				return err
-			}
-		} else {
-			enableOptimizationReq.MetastoreId = args[0]
-			_, err = fmt.Sscan(args[1], &enableOptimizationReq.Enable)
-			if err != nil {
-				return fmt.Errorf("invalid ENABLE: %s", args[1])
-			}
+		enableOptimizationReq.MetastoreId = args[0]
+		_, err = fmt.Sscan(args[1], &enableOptimizationReq.Enable)
+		if err != nil {
+			return fmt.Errorf("invalid ENABLE: %s", args[1])
 		}
 
 		response, err := w.Metastores.EnableOptimization(ctx, enableOptimizationReq)

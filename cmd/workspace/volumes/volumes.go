@@ -7,7 +7,6 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/spf13/cobra"
 )
@@ -55,10 +54,8 @@ func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var createReq catalog.CreateVolumeRequestContent
-	var createJson flags.JsonFlag
 
 	// TODO: short flags
-	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `The comment attached to the volume.`)
 	cmd.Flags().StringVar(&createReq.StorageLocation, "storage-location", createReq.StorageLocation, `The storage location on the cloud.`)
@@ -90,9 +87,6 @@ func newCreate() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(4)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	}
 
@@ -101,19 +95,12 @@ func newCreate() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		if cmd.Flags().Changed("json") {
-			err = createJson.Unmarshal(&createReq)
-			if err != nil {
-				return err
-			}
-		} else {
-			createReq.CatalogName = args[0]
-			createReq.SchemaName = args[1]
-			createReq.Name = args[2]
-			_, err = fmt.Sscan(args[3], &createReq.VolumeType)
-			if err != nil {
-				return fmt.Errorf("invalid VOLUME_TYPE: %s", args[3])
-			}
+		createReq.CatalogName = args[0]
+		createReq.SchemaName = args[1]
+		createReq.Name = args[2]
+		_, err = fmt.Sscan(args[3], &createReq.VolumeType)
+		if err != nil {
+			return fmt.Errorf("invalid VOLUME_TYPE: %s", args[3])
 		}
 
 		response, err := w.Volumes.Create(ctx, createReq)

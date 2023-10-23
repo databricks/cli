@@ -5,7 +5,6 @@ package instance_profiles
 import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/spf13/cobra"
 )
@@ -51,10 +50,8 @@ func newAdd() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var addReq compute.AddInstanceProfile
-	var addJson flags.JsonFlag
 
 	// TODO: short flags
-	cmd.Flags().Var(&addJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&addReq.IamRoleArn, "iam-role-arn", addReq.IamRoleArn, `The AWS IAM role ARN of the role associated with the instance profile.`)
 	cmd.Flags().BoolVar(&addReq.IsMetaInstanceProfile, "is-meta-instance-profile", addReq.IsMetaInstanceProfile, `Boolean flag indicating whether the instance profile should only be used in credential passthrough scenarios.`)
@@ -71,9 +68,6 @@ func newAdd() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	}
 
@@ -82,14 +76,7 @@ func newAdd() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		if cmd.Flags().Changed("json") {
-			err = addJson.Unmarshal(&addReq)
-			if err != nil {
-				return err
-			}
-		} else {
-			addReq.InstanceProfileArn = args[0]
-		}
+		addReq.InstanceProfileArn = args[0]
 
 		err = w.InstanceProfiles.Add(ctx, addReq)
 		if err != nil {
@@ -129,10 +116,8 @@ func newEdit() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var editReq compute.InstanceProfile
-	var editJson flags.JsonFlag
 
 	// TODO: short flags
-	cmd.Flags().Var(&editJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&editReq.IamRoleArn, "iam-role-arn", editReq.IamRoleArn, `The AWS IAM role ARN of the role associated with the instance profile.`)
 	cmd.Flags().BoolVar(&editReq.IsMetaInstanceProfile, "is-meta-instance-profile", editReq.IsMetaInstanceProfile, `Boolean flag indicating whether the instance profile should only be used in credential passthrough scenarios.`)
@@ -161,9 +146,6 @@ func newEdit() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	}
 
@@ -172,14 +154,7 @@ func newEdit() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		if cmd.Flags().Changed("json") {
-			err = editJson.Unmarshal(&editReq)
-			if err != nil {
-				return err
-			}
-		} else {
-			editReq.InstanceProfileArn = args[0]
-		}
+		editReq.InstanceProfileArn = args[0]
 
 		err = w.InstanceProfiles.Edit(ctx, editReq)
 		if err != nil {
@@ -269,10 +244,8 @@ func newRemove() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var removeReq compute.RemoveInstanceProfile
-	var removeJson flags.JsonFlag
 
 	// TODO: short flags
-	cmd.Flags().Var(&removeJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "remove INSTANCE_PROFILE_ARN"
 	cmd.Short = `Remove the instance profile.`
@@ -287,9 +260,6 @@ func newRemove() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	}
 
@@ -298,14 +268,7 @@ func newRemove() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		if cmd.Flags().Changed("json") {
-			err = removeJson.Unmarshal(&removeReq)
-			if err != nil {
-				return err
-			}
-		} else {
-			removeReq.InstanceProfileArn = args[0]
-		}
+		removeReq.InstanceProfileArn = args[0]
 
 		err = w.InstanceProfiles.Remove(ctx, removeReq)
 		if err != nil {

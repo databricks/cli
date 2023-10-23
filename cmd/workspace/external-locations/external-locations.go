@@ -81,9 +81,6 @@ func newCreate() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(3)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	}
 
@@ -97,11 +94,10 @@ func newCreate() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
-			createReq.Name = args[0]
-			createReq.Url = args[1]
-			createReq.CredentialName = args[2]
 		}
+		createReq.Name = args[0]
+		createReq.Url = args[1]
+		createReq.CredentialName = args[2]
 
 		response, err := w.ExternalLocations.Create(ctx, createReq)
 		if err != nil {

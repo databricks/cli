@@ -79,9 +79,6 @@ func newCreate() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	}
 
@@ -95,9 +92,8 @@ func newCreate() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
-			createReq.VpcEndpointName = args[0]
 		}
+		createReq.VpcEndpointName = args[0]
 
 		response, err := a.VpcEndpoints.Create(ctx, createReq)
 		if err != nil {

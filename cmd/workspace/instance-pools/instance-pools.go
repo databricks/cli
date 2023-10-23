@@ -92,9 +92,6 @@ func newCreate() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	}
 
@@ -108,10 +105,9 @@ func newCreate() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
-			createReq.InstancePoolName = args[0]
-			createReq.NodeTypeId = args[1]
 		}
+		createReq.InstancePoolName = args[0]
+		createReq.NodeTypeId = args[1]
 
 		response, err := w.InstancePools.Create(ctx, createReq)
 		if err != nil {
@@ -151,10 +147,8 @@ func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var deleteReq compute.DeleteInstancePool
-	var deleteJson flags.JsonFlag
 
 	// TODO: short flags
-	cmd.Flags().Var(&deleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "delete INSTANCE_POOL_ID"
 	cmd.Short = `Delete an instance pool.`
@@ -170,31 +164,24 @@ func newDelete() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		if cmd.Flags().Changed("json") {
-			err = deleteJson.Unmarshal(&deleteReq)
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No INSTANCE_POOL_ID argument specified. Loading names for Instance Pools drop-down."
+			names, err := w.InstancePools.InstancePoolAndStatsInstancePoolNameToInstancePoolIdMap(ctx)
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Instance Pools drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "The instance pool to be terminated")
 			if err != nil {
 				return err
 			}
-		} else {
-			if len(args) == 0 {
-				promptSpinner := cmdio.Spinner(ctx)
-				promptSpinner <- "No INSTANCE_POOL_ID argument specified. Loading names for Instance Pools drop-down."
-				names, err := w.InstancePools.InstancePoolAndStatsInstancePoolNameToInstancePoolIdMap(ctx)
-				close(promptSpinner)
-				if err != nil {
-					return fmt.Errorf("failed to load names for Instance Pools drop-down. Please manually specify required arguments. Original error: %w", err)
-				}
-				id, err := cmdio.Select(ctx, names, "The instance pool to be terminated")
-				if err != nil {
-					return err
-				}
-				args = append(args, id)
-			}
-			if len(args) != 1 {
-				return fmt.Errorf("expected to have the instance pool to be terminated")
-			}
-			deleteReq.InstancePoolId = args[0]
+			args = append(args, id)
 		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have the instance pool to be terminated")
+		}
+		deleteReq.InstancePoolId = args[0]
 
 		err = w.InstancePools.Delete(ctx, deleteReq)
 		if err != nil {
@@ -254,9 +241,6 @@ func newEdit() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(3)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	}
 
@@ -270,11 +254,10 @@ func newEdit() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
-			editReq.InstancePoolId = args[0]
-			editReq.InstancePoolName = args[1]
-			editReq.NodeTypeId = args[2]
 		}
+		editReq.InstancePoolId = args[0]
+		editReq.InstancePoolName = args[1]
+		editReq.NodeTypeId = args[2]
 
 		err = w.InstancePools.Edit(ctx, editReq)
 		if err != nil {
