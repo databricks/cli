@@ -76,6 +76,19 @@ func LogError(ctx context.Context, err error) {
 	})
 }
 
+// LogRaw logs a raw string without any formatting / Newline to the output stream.
+func LogRaw(ctx context.Context, raw string) error {
+	logger, ok := FromContext(ctx)
+	if !ok {
+		logger = Default()
+	}
+	if logger.Mode != flags.ModeAppend {
+		return fmt.Errorf("logging raw strings is only supported in append mode. Failed to log: %q", raw)
+	}
+	logger.Writer.Write([]byte(raw))
+	return nil
+}
+
 func Ask(ctx context.Context, question, defaultVal string) (string, error) {
 	logger, ok := FromContext(ctx)
 	if !ok {
@@ -116,6 +129,11 @@ func AskSelect(ctx context.Context, question string, choices []string) (string, 
 func (l *Logger) AskSelect(question string, choices []string) (string, error) {
 	if l.Mode == flags.ModeJson {
 		return "", fmt.Errorf("question prompts are not supported in json mode")
+	}
+
+	// promptui.Select only supports single line prompts
+	if strings.ContainsAny(question, "\r\n") {
+		return "", fmt.Errorf("prompt %q should not contain either \\r or \\n", question)
 	}
 
 	prompt := promptui.Select{

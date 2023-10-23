@@ -151,6 +151,18 @@ func (c *config) promptForValues(r *renderer) error {
 		if err := c.schema.ValidateInstance(c.values); err != nil {
 			return err
 		}
+
+		// Execute and print post prompt success message
+		if property.PostPromptSuccessMessage != "" {
+			postPromptSuccessMessage, err := r.executeTemplate(property.PostPromptSuccessMessage)
+			if err != nil {
+				return err
+			}
+			err = cmdio.LogRaw(c.ctx, postPromptSuccessMessage)
+			if err != nil {
+				return err
+			}
+		}
 	}
 	return nil
 }

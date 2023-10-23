@@ -23,4 +23,8 @@ type Extension struct {
 	// If the CLI version is less than this value, then validation for this
 	// schema will fail.
 	MinDatabricksCliVersion string `json:"min_databricks_cli_version,omitempty"`
+
+	// Message displayed after a user enters a value for a prompt and validation
+	// on this value passes.
+	PostPromptSuccessMessage string `json:"post_prompt_success_message,omitempty"`
 }
