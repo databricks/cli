@@ -39,3 +39,26 @@ func kindOf(v any) Kind {
 		panic("not handled")
 	}
 }
+
+func (k Kind) String() string {
+	switch k {
+	case KindMap:
+		return "map"
+	case KindSequence:
+		return "sequence"
+	case KindNil:
+		return "nil"
+	case KindString:
+		return "string"
+	case KindBool:
+		return "bool"
+	case KindInt:
+		return "int"
+	case KindFloat:
+		return "float"
+	case KindTime:
+		return "time"
+	default:
+		return "invalid"
+	}
+}

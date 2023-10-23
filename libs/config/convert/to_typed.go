@@ -3,6 +3,7 @@ package convert
 import (
 	"fmt"
 	"reflect"
+	"strconv"
 
 	"github.com/databricks/cli/libs/config"
 )
@@ -77,7 +78,10 @@ func toTypedStruct(dst reflect.Value, src config.Value) error {
 
 		return nil
 	default:
-		return fmt.Errorf("todo")
+		return TypeError{
+			value: src,
+			msg:   fmt.Sprintf("expected a map, found a %s", src.Kind()),
+		}
 	}
 }
 
@@ -99,7 +103,10 @@ func toTypedMap(dst reflect.Value, src config.Value) error {
 		}
 		return nil
 	default:
-		return fmt.Errorf("todo")
+		return TypeError{
+			value: src,
+			msg:   fmt.Sprintf("expected a map, found a %s", src.Kind()),
+		}
 	}
 }
 
@@ -118,7 +125,10 @@ func toTypedSlice(dst reflect.Value, src config.Value) error {
 		}
 		return nil
 	default:
-		return fmt.Errorf("todo")
+		return TypeError{
+			value: src,
+			msg:   fmt.Sprintf("expected a sequence, found a %s", src.Kind()),
+		}
 	}
 }
 
@@ -127,8 +137,20 @@ func toTypedString(dst reflect.Value, src config.Value) error {
 	case config.KindString:
 		dst.SetString(src.MustString())
 		return nil
+	case config.KindBool:
+		dst.SetString(strconv.FormatBool(src.MustBool()))
+		return nil
+	case config.KindInt:
+		dst.SetString(strconv.FormatInt(src.MustInt(), 10))
+		return nil
+	case config.KindFloat:
+		dst.SetString(strconv.FormatFloat(src.MustFloat(), 'f', -1, 64))
+		return nil
 	default:
-		return fmt.Errorf("todo")
+		return TypeError{
+			value: src,
+			msg:   fmt.Sprintf("expected a string, found a %s", src.Kind()),
+		}
 	}
 }
 
@@ -147,9 +169,11 @@ func toTypedBool(dst reflect.Value, src config.Value) error {
 			dst.SetBool(false)
 			return nil
 		}
-		return fmt.Errorf("todo: work with variables")
-	default:
-		return fmt.Errorf("todo")
+	}
+
+	return TypeError{
+		value: src,
+		msg:   fmt.Sprintf("expected a boolean, found a %s", src.Kind()),
 	}
 }
 
@@ -159,9 +183,15 @@ func toTypedInt(dst reflect.Value, src config.Value) error {
 		dst.SetInt(src.MustInt())
 		return nil
 	case config.KindString:
-		return fmt.Errorf("todo: work with variables")
-	default:
-		return fmt.Errorf("todo")
+		if i64, err := strconv.ParseInt(src.MustString(), 10, 64); err == nil {
+			dst.SetInt(i64)
+			return nil
+		}
+	}
+
+	return TypeError{
+		value: src,
+		msg:   fmt.Sprintf("expected an int, found a %s", src.Kind()),
 	}
 }
 
@@ -171,8 +201,14 @@ func toTypedFloat(dst reflect.Value, src config.Value) error {
 		dst.SetFloat(src.MustFloat())
 		return nil
 	case config.KindString:
-		return fmt.Errorf("todo: work with variables")
-	default:
-		return fmt.Errorf("todo")
+		if f64, err := strconv.ParseFloat(src.MustString(), 64); err == nil {
+			dst.SetFloat(f64)
+			return nil
+		}
+	}
+
+	return TypeError{
+		value: src,
+		msg:   fmt.Sprintf("expected a float, found a %s", src.Kind()),
 	}
 }

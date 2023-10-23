@@ -211,6 +211,27 @@ func TestToTypedStringOverwrite(t *testing.T) {
 	assert.Equal(t, "foo", out)
 }
 
+func TestToTypedStringFromBool(t *testing.T) {
+	var out string
+	err := ToTyped(&out, config.V(true))
+	require.NoError(t, err)
+	assert.Equal(t, "true", out)
+}
+
+func TestToTypedStringFromInt(t *testing.T) {
+	var out string
+	err := ToTyped(&out, config.V(123))
+	require.NoError(t, err)
+	assert.Equal(t, "123", out)
+}
+
+func TestToTypedStringFromFloat(t *testing.T) {
+	var out string
+	err := ToTyped(&out, config.V(1.2))
+	require.NoError(t, err)
+	assert.Equal(t, "1.2", out)
+}
+
 func TestToTypedBool(t *testing.T) {
 	var out bool
 	err := ToTyped(&out, config.V(true))
@@ -289,10 +310,17 @@ func TestToTypedInt64Overwrite(t *testing.T) {
 	assert.Equal(t, int64(1234), out64)
 }
 
-func TestToTypedIntFromString(t *testing.T) {
+func TestToTypedIntFromStringError(t *testing.T) {
 	var out int
 	err := ToTyped(&out, config.V("abc"))
 	require.Error(t, err)
+}
+
+func TestToTypedIntFromStringInt(t *testing.T) {
+	var out int
+	err := ToTyped(&out, config.V("123"))
+	require.NoError(t, err)
+	assert.Equal(t, int(123), out)
 }
 
 func TestToTypedFloat32(t *testing.T) {
@@ -323,14 +351,28 @@ func TestToTypedFloat64Overwrite(t *testing.T) {
 	assert.Equal(t, float64(2.0), out)
 }
 
-func TestToTypedFloat32FromString(t *testing.T) {
+func TestToTypedFloat32FromStringError(t *testing.T) {
 	var out float32
 	err := ToTyped(&out, config.V("abc"))
 	require.Error(t, err)
 }
 
-func TestToTypedFloat64FromString(t *testing.T) {
+func TestToTypedFloat64FromStringError(t *testing.T) {
 	var out float64
 	err := ToTyped(&out, config.V("abc"))
 	require.Error(t, err)
+}
+
+func TestToTypedFloat32FromString(t *testing.T) {
+	var out float32
+	err := ToTyped(&out, config.V("1.2"))
+	require.NoError(t, err)
+	assert.Equal(t, float32(1.2), out)
+}
+
+func TestToTypedFloat64FromString(t *testing.T) {
+	var out float64
+	err := ToTyped(&out, config.V("1.2"))
+	require.NoError(t, err)
+	assert.Equal(t, float64(1.2), out)
 }
