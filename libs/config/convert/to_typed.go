@@ -39,9 +39,9 @@ func ToTyped(dst any, src config.Value) error {
 		return toTypedInt(dstv, src)
 	case reflect.Float32, reflect.Float64:
 		return toTypedFloat(dstv, src)
-	default:
-		return fmt.Errorf("unsupported type: %s", dstv.Kind())
 	}
+
+	return fmt.Errorf("unsupported type: %s", dstv.Kind())
 }
 
 func toTypedStruct(dst reflect.Value, src config.Value) error {
@@ -77,11 +77,11 @@ func toTypedStruct(dst reflect.Value, src config.Value) error {
 		}
 
 		return nil
-	default:
-		return TypeError{
-			value: src,
-			msg:   fmt.Sprintf("expected a map, found a %s", src.Kind()),
-		}
+	}
+
+	return TypeError{
+		value: src,
+		msg:   fmt.Sprintf("expected a map, found a %s", src.Kind()),
 	}
 }
 
@@ -102,11 +102,11 @@ func toTypedMap(dst reflect.Value, src config.Value) error {
 			dst.SetMapIndex(kv, vv.Elem())
 		}
 		return nil
-	default:
-		return TypeError{
-			value: src,
-			msg:   fmt.Sprintf("expected a map, found a %s", src.Kind()),
-		}
+	}
+
+	return TypeError{
+		value: src,
+		msg:   fmt.Sprintf("expected a map, found a %s", src.Kind()),
 	}
 }
 
@@ -124,11 +124,11 @@ func toTypedSlice(dst reflect.Value, src config.Value) error {
 			}
 		}
 		return nil
-	default:
-		return TypeError{
-			value: src,
-			msg:   fmt.Sprintf("expected a sequence, found a %s", src.Kind()),
-		}
+	}
+
+	return TypeError{
+		value: src,
+		msg:   fmt.Sprintf("expected a sequence, found a %s", src.Kind()),
 	}
 }
 
@@ -146,11 +146,11 @@ func toTypedString(dst reflect.Value, src config.Value) error {
 	case config.KindFloat:
 		dst.SetString(strconv.FormatFloat(src.MustFloat(), 'f', -1, 64))
 		return nil
-	default:
-		return TypeError{
-			value: src,
-			msg:   fmt.Sprintf("expected a string, found a %s", src.Kind()),
-		}
+	}
+
+	return TypeError{
+		value: src,
+		msg:   fmt.Sprintf("expected a string, found a %s", src.Kind()),
 	}
 }
 
