@@ -1,5 +1,24 @@
 # Version changelog
 
+## 0.208.2
+
+CLI:
+ * Never load authentication configuration from bundle for sync command ([#889](https://github.com/databricks/cli/pull/889)).
+ * Fixed requiring positional arguments for API URL parameters ([#878](https://github.com/databricks/cli/pull/878)).
+
+Bundles:
+ * Add support for validating CLI version when loading a jsonschema object ([#883](https://github.com/databricks/cli/pull/883)).
+ * Do not emit wheel wrapper error when python_wheel_wrapper setting is true ([#894](https://github.com/databricks/cli/pull/894)).
+ * Resolve configuration before performing verification ([#890](https://github.com/databricks/cli/pull/890)).
+ * Fix wheel task not working with with 13.x clusters ([#898](https://github.com/databricks/cli/pull/898)).
+
+Internal:
+ * Skip prompt on completion hook ([#888](https://github.com/databricks/cli/pull/888)).
+ * New YAML loader to support configuration location ([#828](https://github.com/databricks/cli/pull/828)).
+
+Dependency updates:
+ * Bump github.com/mattn/go-isatty from 0.0.19 to 0.0.20 ([#896](https://github.com/databricks/cli/pull/896)).
+
 ## 0.208.1
 
 CLI:
