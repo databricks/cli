@@ -82,8 +82,8 @@ func LogRaw(ctx context.Context, raw string) error {
 	if !ok {
 		logger = Default()
 	}
-	if logger.Mode != flags.ModeAppend {
-		return fmt.Errorf("logging raw strings is only supported in append mode. Failed to log: %q", raw)
+	if logger.Mode == flags.ModeJson {
+		return fmt.Errorf("logging raw strings is not supported in JSON mode. Failed to log: %q", raw)
 	}
 	logger.Writer.Write([]byte(raw))
 	return nil

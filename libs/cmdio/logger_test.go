@@ -27,13 +27,5 @@ func TestLogRawErrorForJsonMode(t *testing.T) {
 	ctx := NewContext(context.Background(), l)
 
 	err := LogRaw(ctx, "hello world")
-	assert.EqualError(t, err, "logging raw strings is only supported in append mode. Failed to log: \"hello world\"")
-}
-
-func TestLogRawErrorForInplaceMode(t *testing.T) {
-	l := NewLogger(flags.ModeInplace)
-	ctx := NewContext(context.Background(), l)
-
-	err := LogRaw(ctx, "hello world")
-	assert.EqualError(t, err, "logging raw strings is only supported in append mode. Failed to log: \"hello world\"")
+	assert.EqualError(t, err, "logging raw strings is not supported in JSON mode. Failed to log: \"hello world\"")
 }
