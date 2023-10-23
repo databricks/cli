@@ -79,6 +79,9 @@ func lowerThanExpectedVersion(ctx context.Context, sparkVersion string) bool {
 		return false
 	}
 
+	if parts[1][0] == 'x' { // treat versions like 13.x as the very latest minor (13.99)
+		parts[1] = "99"
+	}
 	v := "v" + parts[0] + "." + parts[1]
 	return semver.Compare(v, "v13.1") < 0
 }
