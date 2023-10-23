@@ -77,6 +77,9 @@ func toTypedStruct(dst reflect.Value, src config.Value) error {
 		}
 
 		return nil
+	case config.KindNil:
+		dst.SetZero()
+		return nil
 	}
 
 	return TypeError{
@@ -102,6 +105,9 @@ func toTypedMap(dst reflect.Value, src config.Value) error {
 			dst.SetMapIndex(kv, vv.Elem())
 		}
 		return nil
+	case config.KindNil:
+		dst.SetZero()
+		return nil
 	}
 
 	return TypeError{
@@ -123,6 +129,9 @@ func toTypedSlice(dst reflect.Value, src config.Value) error {
 				return err
 			}
 		}
+		return nil
+	case config.KindNil:
+		dst.SetZero()
 		return nil
 	}
 

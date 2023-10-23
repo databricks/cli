@@ -111,6 +111,28 @@ func TestToTypedStructAnonymousByPointer(t *testing.T) {
 	assert.Equal(t, "baz", out.Foo.Bar.Bar)
 }
 
+func TestToTypedStructNil(t *testing.T) {
+	type Tmp struct {
+		Foo string `json:"foo"`
+	}
+
+	var out = Tmp{}
+	err := ToTyped(&out, config.NilValue)
+	require.NoError(t, err)
+	assert.Equal(t, Tmp{}, out)
+}
+
+func TestToTypedStructNilOverwrite(t *testing.T) {
+	type Tmp struct {
+		Foo string `json:"foo"`
+	}
+
+	var out = Tmp{"bar"}
+	err := ToTyped(&out, config.NilValue)
+	require.NoError(t, err)
+	assert.Equal(t, Tmp{}, out)
+}
+
 func TestToTypedMap(t *testing.T) {
 	var out = map[string]string{}
 
@@ -150,6 +172,22 @@ func TestToTypedMapWithPointerElement(t *testing.T) {
 	require.NoError(t, err)
 	assert.Len(t, out, 1)
 	assert.Equal(t, "value", *out["key"])
+}
+
+func TestToTypedMapNil(t *testing.T) {
+	var out = map[string]string{}
+	err := ToTyped(&out, config.NilValue)
+	require.NoError(t, err)
+	assert.Nil(t, out)
+}
+
+func TestToTypedMapNilOverwrite(t *testing.T) {
+	var out = map[string]string{
+		"foo": "bar",
+	}
+	err := ToTyped(&out, config.NilValue)
+	require.NoError(t, err)
+	assert.Nil(t, out)
 }
 
 func TestToTypedSlice(t *testing.T) {
@@ -195,6 +233,20 @@ func TestToTypedSliceWithPointerElement(t *testing.T) {
 	assert.Len(t, out, 2)
 	assert.Equal(t, "foo", *out[0])
 	assert.Equal(t, "bar", *out[1])
+}
+
+func TestToTypedSliceNil(t *testing.T) {
+	var out []string
+	err := ToTyped(&out, config.NilValue)
+	require.NoError(t, err)
+	assert.Nil(t, out)
+}
+
+func TestToTypedSliceNilOverwrite(t *testing.T) {
+	var out = []string{"foo"}
+	err := ToTyped(&out, config.NilValue)
+	require.NoError(t, err)
+	assert.Nil(t, out)
 }
 
 func TestToTypedString(t *testing.T) {
