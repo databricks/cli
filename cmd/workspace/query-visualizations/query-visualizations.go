@@ -180,16 +180,11 @@ func newUpdate() *cobra.Command {
 	// TODO: short flags
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Use = "update ID"
+	cmd.Use = "update"
 	cmd.Short = `Edit existing visualization.`
 	cmd.Long = `Edit existing visualization.`
 
 	cmd.Annotations = make(map[string]string)
-
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(1)
-		return check(cmd, args)
-	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {

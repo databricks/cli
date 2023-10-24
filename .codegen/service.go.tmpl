@@ -118,12 +118,12 @@ func new{{.PascalName}}() *cobra.Command {
 	{{- $fullCommandName := (print $serviceName " " .KebabName) -}}
 	{{- $noPrompt := or .IsCrudCreate (in $excludeFromPrompts $fullCommandName) }}
 
-	{{- $hasPosArgs := and .Request (or .Request.IsAllRequiredFieldsPrimitive (eq .PascalName "RunNow")) -}}
+	{{- $hasPosArgs := and (not .MustUseJson) (and .Request (or .Request.IsAllRequiredFieldsPrimitive (eq .PascalName "RunNow"))) -}}
 	{{- $hasSinglePosArg := and $hasPosArgs (eq 1 (len .Request.RequiredFields)) -}}
 	{{- $serviceHasNamedIdMap := and (and .Service.List .Service.List.NamedIdMap) (not (eq .PascalName "List")) -}}
 	{{- $hasIdPrompt := and (not $noPrompt) (and $hasSinglePosArg $serviceHasNamedIdMap) -}}
 	{{- $wait := and .Wait (and (not .IsCrudRead) (not (eq .SnakeName "get_run"))) -}}
-	{{- $hasRequiredArgs := and (not $hasIdPrompt) $hasPosArgs -}}
+	{{- $hasRequiredArgs :=  and (not $hasIdPrompt) $hasPosArgs -}}
 	{{- $hasSingleRequiredRequestBodyFieldWithPrompt := and (and $hasIdPrompt .Request) (eq 1 (len .Request.RequiredRequestBodyFields))  -}}
 
 
