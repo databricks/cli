@@ -175,25 +175,26 @@ func newDelete() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		}
-		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No POLICY_ID argument specified. Loading names for Cluster Policies drop-down."
-			names, err := w.ClusterPolicies.PolicyNameToPolicyIdMap(ctx, compute.ListClusterPoliciesRequest{})
-			close(promptSpinner)
-			if err != nil {
-				return fmt.Errorf("failed to load names for Cluster Policies drop-down. Please manually specify required arguments. Original error: %w", err)
+		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No POLICY_ID argument specified. Loading names for Cluster Policies drop-down."
+				names, err := w.ClusterPolicies.PolicyNameToPolicyIdMap(ctx, compute.ListClusterPoliciesRequest{})
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Cluster Policies drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "The ID of the policy to delete")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			id, err := cmdio.Select(ctx, names, "The ID of the policy to delete")
-			if err != nil {
-				return err
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have the id of the policy to delete")
 			}
-			args = append(args, id)
+			deleteReq.PolicyId = args[0]
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have the id of the policy to delete")
-		}
-		deleteReq.PolicyId = args[0]
 
 		err = w.ClusterPolicies.Delete(ctx, deleteReq)
 		if err != nil {

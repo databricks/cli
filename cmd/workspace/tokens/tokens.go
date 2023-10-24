@@ -149,25 +149,26 @@ func newDelete() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		}
-		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No TOKEN_ID argument specified. Loading names for Tokens drop-down."
-			names, err := w.Tokens.TokenInfoCommentToTokenIdMap(ctx)
-			close(promptSpinner)
-			if err != nil {
-				return fmt.Errorf("failed to load names for Tokens drop-down. Please manually specify required arguments. Original error: %w", err)
+		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No TOKEN_ID argument specified. Loading names for Tokens drop-down."
+				names, err := w.Tokens.TokenInfoCommentToTokenIdMap(ctx)
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Tokens drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "The ID of the token to be revoked")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			id, err := cmdio.Select(ctx, names, "The ID of the token to be revoked")
-			if err != nil {
-				return err
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have the id of the token to be revoked")
 			}
-			args = append(args, id)
+			deleteReq.TokenId = args[0]
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have the id of the token to be revoked")
-		}
-		deleteReq.TokenId = args[0]
 
 		err = w.Tokens.Delete(ctx, deleteReq)
 		if err != nil {

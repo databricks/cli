@@ -84,25 +84,26 @@ func newDelete() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		}
-		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No PATH argument specified. Loading names for Workspace drop-down."
-			names, err := w.Workspace.ObjectInfoPathToObjectIdMap(ctx, workspace.ListWorkspaceRequest{})
-			close(promptSpinner)
-			if err != nil {
-				return fmt.Errorf("failed to load names for Workspace drop-down. Please manually specify required arguments. Original error: %w", err)
+		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No PATH argument specified. Loading names for Workspace drop-down."
+				names, err := w.Workspace.ObjectInfoPathToObjectIdMap(ctx, workspace.ListWorkspaceRequest{})
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Workspace drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "The absolute path of the notebook or directory")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			id, err := cmdio.Select(ctx, names, "The absolute path of the notebook or directory")
-			if err != nil {
-				return err
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have the absolute path of the notebook or directory")
 			}
-			args = append(args, id)
+			deleteReq.Path = args[0]
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have the absolute path of the notebook or directory")
-		}
-		deleteReq.Path = args[0]
 
 		err = w.Workspace.Delete(ctx, deleteReq)
 		if err != nil {
@@ -588,25 +589,26 @@ func newMkdirs() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		}
-		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No PATH argument specified. Loading names for Workspace drop-down."
-			names, err := w.Workspace.ObjectInfoPathToObjectIdMap(ctx, workspace.ListWorkspaceRequest{})
-			close(promptSpinner)
-			if err != nil {
-				return fmt.Errorf("failed to load names for Workspace drop-down. Please manually specify required arguments. Original error: %w", err)
+		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No PATH argument specified. Loading names for Workspace drop-down."
+				names, err := w.Workspace.ObjectInfoPathToObjectIdMap(ctx, workspace.ListWorkspaceRequest{})
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Workspace drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "The absolute path of the directory")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			id, err := cmdio.Select(ctx, names, "The absolute path of the directory")
-			if err != nil {
-				return err
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have the absolute path of the directory")
 			}
-			args = append(args, id)
+			mkdirsReq.Path = args[0]
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have the absolute path of the directory")
-		}
-		mkdirsReq.Path = args[0]
 
 		err = w.Workspace.Mkdirs(ctx, mkdirsReq)
 		if err != nil {

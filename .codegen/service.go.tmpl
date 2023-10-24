@@ -78,8 +78,6 @@ var {{.CamelName}}Overrides []func(
 func new{{.PascalName}}() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	{{- $hasRequiredRequestBodyFields := and .Request .Request.HasRequiredRequestBodyFields  -}}
-
 	{{- if .Request}}
 
 	var {{.CamelName}}Req {{.Service.Package.Name}}.{{.Request.PascalName}}
@@ -126,6 +124,8 @@ func new{{.PascalName}}() *cobra.Command {
 	{{- $hasIdPrompt := and (not $noPrompt) (and $hasSinglePosArg $serviceHasNamedIdMap) -}}
 	{{- $wait := and .Wait (and (not .IsCrudRead) (not (eq .SnakeName "get_run"))) -}}
 	{{- $hasRequiredArgs := and (not $hasIdPrompt) $hasPosArgs -}}
+	{{- $hasSingleRequiredRequestBodyFieldWithPrompt := and (and $hasIdPrompt .Request) (eq 1 (len .Request.RequiredRequestBodyFields))  -}}
+
 
 	cmd.Use = "{{.KebabName}}{{if $hasPosArgs}}{{range .Request.RequiredFields}} {{.ConstantName}}{{end}}{{end}}"
 	{{- if .Description }}
@@ -142,7 +142,7 @@ func new{{.PascalName}}() *cobra.Command {
 	{{if $hasRequiredArgs }}
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs({{len .Request.RequiredFields}})
-		{{- if and .CanUseJson $hasRequiredRequestBodyFields }}
+		{{- if and .CanUseJson .Request.HasRequiredRequestBodyFields }}
 		if cmd.Flags().Changed("json") {
 			check = cobra.ExactArgs({{len .Request.RequiredPathFields}})
 		}
@@ -165,6 +165,8 @@ func new{{.PascalName}}() *cobra.Command {
 				return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 			}{{- end}}
 			{{- if (not .MustUseJson) }}
+			{{- if and .CanUseJson $hasSingleRequiredRequestBodyFieldWithPrompt }} else {
+			{{- end}}
 			{{- if $hasIdPrompt}}
 				if len(args) == 0 {
 					promptSpinner := cmdio.Spinner(ctx)
@@ -187,7 +189,7 @@ func new{{.PascalName}}() *cobra.Command {
 
 			{{$method := .}}
 			{{- range $arg, $field := .Request.RequiredFields}}
-				{{- $optionalIfJsonIsUsed := and (not $hasIdPrompt) (and $field.IsJson $method.CanUseJson) }}
+				{{- $optionalIfJsonIsUsed := and (not $hasIdPrompt) (and $field.IsRequestBodyField $method.CanUseJson) }}
 				{{- if $optionalIfJsonIsUsed  }}
 				if !cmd.Flags().Changed("json") {
 				{{- end }}
@@ -202,8 +204,12 @@ func new{{.PascalName}}() *cobra.Command {
 				}
 				{{- end }}
 			{{- end -}}
+
+			{{- if and .CanUseJson $hasSingleRequiredRequestBodyFieldWithPrompt }}
+			}
 			{{- end}}
 
+			{{- end}}
 		{{end}}
 		{{if $wait -}}
 		wait, err := {{if .Service.IsAccounts}}a{{else}}w{{end}}.{{.Service.PascalName}}.{{.PascalName}}(ctx{{if .Request}}, {{.CamelName}}Req{{end}})

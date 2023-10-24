@@ -178,25 +178,26 @@ func newDelete() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		}
-		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No INSTANCE_POOL_ID argument specified. Loading names for Instance Pools drop-down."
-			names, err := w.InstancePools.InstancePoolAndStatsInstancePoolNameToInstancePoolIdMap(ctx)
-			close(promptSpinner)
-			if err != nil {
-				return fmt.Errorf("failed to load names for Instance Pools drop-down. Please manually specify required arguments. Original error: %w", err)
+		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No INSTANCE_POOL_ID argument specified. Loading names for Instance Pools drop-down."
+				names, err := w.InstancePools.InstancePoolAndStatsInstancePoolNameToInstancePoolIdMap(ctx)
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Instance Pools drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "The instance pool to be terminated")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			id, err := cmdio.Select(ctx, names, "The instance pool to be terminated")
-			if err != nil {
-				return err
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have the instance pool to be terminated")
 			}
-			args = append(args, id)
+			deleteReq.InstancePoolId = args[0]
 		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have the instance pool to be terminated")
-		}
-		deleteReq.InstancePoolId = args[0]
 
 		err = w.InstancePools.Delete(ctx, deleteReq)
 		if err != nil {

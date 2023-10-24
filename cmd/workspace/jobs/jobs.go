@@ -167,27 +167,28 @@ func newCancelRun() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		}
-		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No RUN_ID argument specified. Loading names for Jobs drop-down."
-			names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
-			close(promptSpinner)
-			if err != nil {
-				return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
+		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No RUN_ID argument specified. Loading names for Jobs drop-down."
+				names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "This field is required")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			id, err := cmdio.Select(ctx, names, "This field is required")
-			if err != nil {
-				return err
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have this field is required")
 			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have this field is required")
-		}
-		_, err = fmt.Sscan(args[0], &cancelRunReq.RunId)
-		if err != nil {
-			return fmt.Errorf("invalid RUN_ID: %s", args[0])
+			_, err = fmt.Sscan(args[0], &cancelRunReq.RunId)
+			if err != nil {
+				return fmt.Errorf("invalid RUN_ID: %s", args[0])
+			}
 		}
 
 		wait, err := w.Jobs.CancelRun(ctx, cancelRunReq)
@@ -340,27 +341,28 @@ func newDelete() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		}
-		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No JOB_ID argument specified. Loading names for Jobs drop-down."
-			names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
-			close(promptSpinner)
-			if err != nil {
-				return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
+		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No JOB_ID argument specified. Loading names for Jobs drop-down."
+				names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "The canonical identifier of the job to delete")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			id, err := cmdio.Select(ctx, names, "The canonical identifier of the job to delete")
-			if err != nil {
-				return err
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have the canonical identifier of the job to delete")
 			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have the canonical identifier of the job to delete")
-		}
-		_, err = fmt.Sscan(args[0], &deleteReq.JobId)
-		if err != nil {
-			return fmt.Errorf("invalid JOB_ID: %s", args[0])
+			_, err = fmt.Sscan(args[0], &deleteReq.JobId)
+			if err != nil {
+				return fmt.Errorf("invalid JOB_ID: %s", args[0])
+			}
 		}
 
 		err = w.Jobs.Delete(ctx, deleteReq)
@@ -424,27 +426,28 @@ func newDeleteRun() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		}
-		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No RUN_ID argument specified. Loading names for Jobs drop-down."
-			names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
-			close(promptSpinner)
-			if err != nil {
-				return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
+		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No RUN_ID argument specified. Loading names for Jobs drop-down."
+				names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "The canonical identifier of the run for which to retrieve the metadata")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			id, err := cmdio.Select(ctx, names, "The canonical identifier of the run for which to retrieve the metadata")
-			if err != nil {
-				return err
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have the canonical identifier of the run for which to retrieve the metadata")
 			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have the canonical identifier of the run for which to retrieve the metadata")
-		}
-		_, err = fmt.Sscan(args[0], &deleteRunReq.RunId)
-		if err != nil {
-			return fmt.Errorf("invalid RUN_ID: %s", args[0])
+			_, err = fmt.Sscan(args[0], &deleteRunReq.RunId)
+			if err != nil {
+				return fmt.Errorf("invalid RUN_ID: %s", args[0])
+			}
 		}
 
 		err = w.Jobs.DeleteRun(ctx, deleteRunReq)
@@ -1133,27 +1136,28 @@ func newRepairRun() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		}
-		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No RUN_ID argument specified. Loading names for Jobs drop-down."
-			names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
-			close(promptSpinner)
-			if err != nil {
-				return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
+		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No RUN_ID argument specified. Loading names for Jobs drop-down."
+				names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "The job run ID of the run to repair")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			id, err := cmdio.Select(ctx, names, "The job run ID of the run to repair")
-			if err != nil {
-				return err
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have the job run id of the run to repair")
 			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have the job run id of the run to repair")
-		}
-		_, err = fmt.Sscan(args[0], &repairRunReq.RunId)
-		if err != nil {
-			return fmt.Errorf("invalid RUN_ID: %s", args[0])
+			_, err = fmt.Sscan(args[0], &repairRunReq.RunId)
+			if err != nil {
+				return fmt.Errorf("invalid RUN_ID: %s", args[0])
+			}
 		}
 
 		wait, err := w.Jobs.RepairRun(ctx, repairRunReq)
@@ -1319,27 +1323,28 @@ func newRunNow() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		}
-		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No JOB_ID argument specified. Loading names for Jobs drop-down."
-			names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
-			close(promptSpinner)
-			if err != nil {
-				return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
+		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No JOB_ID argument specified. Loading names for Jobs drop-down."
+				names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "The ID of the job to be executed")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			id, err := cmdio.Select(ctx, names, "The ID of the job to be executed")
-			if err != nil {
-				return err
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have the id of the job to be executed")
 			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have the id of the job to be executed")
-		}
-		_, err = fmt.Sscan(args[0], &runNowReq.JobId)
-		if err != nil {
-			return fmt.Errorf("invalid JOB_ID: %s", args[0])
+			_, err = fmt.Sscan(args[0], &runNowReq.JobId)
+			if err != nil {
+				return fmt.Errorf("invalid JOB_ID: %s", args[0])
+			}
 		}
 
 		wait, err := w.Jobs.RunNow(ctx, runNowReq)
@@ -1617,27 +1622,28 @@ func newUpdate() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		}
-		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No JOB_ID argument specified. Loading names for Jobs drop-down."
-			names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
-			close(promptSpinner)
-			if err != nil {
-				return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
+		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No JOB_ID argument specified. Loading names for Jobs drop-down."
+				names, err := w.Jobs.BaseJobSettingsNameToJobIdMap(ctx, jobs.ListJobsRequest{})
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Jobs drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "The canonical identifier of the job to update")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
 			}
-			id, err := cmdio.Select(ctx, names, "The canonical identifier of the job to update")
-			if err != nil {
-				return err
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have the canonical identifier of the job to update")
 			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have the canonical identifier of the job to update")
-		}
-		_, err = fmt.Sscan(args[0], &updateReq.JobId)
-		if err != nil {
-			return fmt.Errorf("invalid JOB_ID: %s", args[0])
+			_, err = fmt.Sscan(args[0], &updateReq.JobId)
+			if err != nil {
+				return fmt.Errorf("invalid JOB_ID: %s", args[0])
+			}
 		}
 
 		err = w.Jobs.Update(ctx, updateReq)
