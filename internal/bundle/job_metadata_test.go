@@ -10,13 +10,10 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/bundle/config/paths"
-	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/bundle/deployment"
+	"github.com/databricks/cli/bundle/metadata"
 	"github.com/databricks/cli/internal"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -72,37 +69,31 @@ func TestAccJobsMetadataFile(t *testing.T) {
 	require.NoError(t, err)
 	b, err := io.ReadAll(r)
 	require.NoError(t, err)
-	actualMetadata := deployment.Metadata{}
+	actualMetadata := metadata.Metadata{}
 	err = json.Unmarshal(b, &actualMetadata)
 	require.NoError(t, err)
 
 	// expected value for the metadata
-	expectedMetadata := deployment.Metadata{
-		Version: deployment.MetadataVersion,
-		Config: config.Root{
-			Bundle: config.Bundle{
+	expectedMetadata := metadata.Metadata{
+		Version: metadata.Version,
+		Config: metadata.Config{
+			Bundle: metadata.Bundle{
 				Git: config.Git{
 					BundleRootPath: ".",
 				},
 			},
-			Workspace: config.Workspace{
+			Workspace: metadata.Workspace{
 				FilesPath: path.Join(root, "files"),
 			},
-			Resources: config.Resources{
-				Jobs: map[string]*resources.Job{
+			Resources: metadata.Resources{
+				Jobs: map[string]*metadata.Job{
 					"foo": {
-						ID: strconv.FormatInt(job1.JobId, 10),
-						Paths: paths.Paths{
-							RelativePath: "databricks.yml",
-						},
-						JobSettings: &jobs.JobSettings{},
+						ID:           strconv.FormatInt(job1.JobId, 10),
+						RelativePath: "databricks.yml",
 					},
 					"bar": {
-						ID: strconv.FormatInt(job2.JobId, 10),
-						Paths: paths.Paths{
-							RelativePath: "a/b/resources.yml",
-						},
-						JobSettings: &jobs.JobSettings{},
+						ID:           strconv.FormatInt(job2.JobId, 10),
+						RelativePath: "a/b/resources.yml",
 					},
 				},
 			},

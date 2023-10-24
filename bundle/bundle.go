@@ -14,8 +14,8 @@ import (
 	"sync"
 
 	"github.com/databricks/cli/bundle/config"
-	"github.com/databricks/cli/bundle/deployment"
 	"github.com/databricks/cli/bundle/env"
+	"github.com/databricks/cli/bundle/metadata"
 	"github.com/databricks/cli/folders"
 	"github.com/databricks/cli/libs/git"
 	"github.com/databricks/cli/libs/locker"
@@ -38,7 +38,7 @@ type Bundle struct {
 	//
 	// After deploy, a file containing the metadata (metadata.json) can be found
 	// in the WSFS location containing the bundle state.
-	Metadata deployment.Metadata
+	Metadata metadata.Metadata
 
 	// Store a pointer to the workspace client.
 	// It can be initialized on demand after loading the configuration.
