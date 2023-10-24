@@ -85,9 +85,6 @@ func newCancelAllRuns() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	}
 
@@ -101,7 +98,6 @@ func newCancelAllRuns() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
 		}
 
 		err = w.Jobs.CancelAllRuns(ctx, cancelAllRunsReq)
@@ -264,14 +260,6 @@ func newCreate() *cobra.Command {
   Create a new job.`
 
 	cmd.Annotations = make(map[string]string)
-
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(0)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
-		return check(cmd, args)
-	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
@@ -964,10 +952,8 @@ func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listReq jobs.ListJobsRequest
-	var listJson flags.JsonFlag
 
 	// TODO: short flags
-	cmd.Flags().Var(&listJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().BoolVar(&listReq.ExpandTasks, "expand-tasks", listReq.ExpandTasks, `Whether to include task and cluster details in the response.`)
 	cmd.Flags().IntVar(&listReq.Limit, "limit", listReq.Limit, `The number of jobs to return.`)
@@ -985,9 +971,6 @@ func newList() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	}
 
@@ -995,14 +978,6 @@ func newList() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-
-		if cmd.Flags().Changed("json") {
-			err = listJson.Unmarshal(&listReq)
-			if err != nil {
-				return err
-			}
-		} else {
-		}
 
 		response, err := w.Jobs.ListAll(ctx, listReq)
 		if err != nil {
@@ -1042,10 +1017,8 @@ func newListRuns() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listRunsReq jobs.ListRunsRequest
-	var listRunsJson flags.JsonFlag
 
 	// TODO: short flags
-	cmd.Flags().Var(&listRunsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().BoolVar(&listRunsReq.ActiveOnly, "active-only", listRunsReq.ActiveOnly, `If active_only is true, only active runs are included in the results; otherwise, lists both active and completed runs.`)
 	cmd.Flags().BoolVar(&listRunsReq.CompletedOnly, "completed-only", listRunsReq.CompletedOnly, `If completed_only is true, only completed runs are included in the results; otherwise, lists both active and completed runs.`)
@@ -1068,9 +1041,6 @@ func newListRuns() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	}
 
@@ -1078,14 +1048,6 @@ func newListRuns() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-
-		if cmd.Flags().Changed("json") {
-			err = listRunsJson.Unmarshal(&listRunsReq)
-			if err != nil {
-				return err
-			}
-		} else {
-		}
 
 		response, err := w.Jobs.ListRunsAll(ctx, listRunsReq)
 		if err != nil {
@@ -1556,9 +1518,6 @@ func newSubmit() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	}
 
@@ -1572,7 +1531,6 @@ func newSubmit() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
 		}
 
 		wait, err := w.Jobs.Submit(ctx, submitReq)

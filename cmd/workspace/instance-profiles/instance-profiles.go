@@ -87,7 +87,8 @@ func newAdd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
+		}
+		if !cmd.Flags().Changed("json") {
 			addReq.InstanceProfileArn = args[0]
 		}
 
@@ -177,7 +178,8 @@ func newEdit() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
+		}
+		if !cmd.Flags().Changed("json") {
 			editReq.InstanceProfileArn = args[0]
 		}
 
@@ -303,7 +305,8 @@ func newRemove() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
+		}
+		if !cmd.Flags().Changed("json") {
 			removeReq.InstanceProfileArn = args[0]
 		}
 
