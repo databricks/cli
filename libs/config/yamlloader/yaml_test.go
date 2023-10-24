@@ -28,3 +28,8 @@ func loadYAML(t *testing.T, path string) config.Value {
 	assert.EqualValues(t, ref, self.AsAny())
 	return self
 }
+
+func TestYAMLEmpty(t *testing.T) {
+	self := loadYAML(t, "testdata/empty.yml")
+	assert.Equal(t, config.NilValue, self)
+}
