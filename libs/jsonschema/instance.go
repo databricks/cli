@@ -122,7 +122,10 @@ func (s *Schema) validatePattern(instance map[string]any) error {
 		if !ok {
 			continue
 		}
-		return ValidatePatternMatch(k, v, fieldInfo)
+		err := ValidatePatternMatch(k, v, fieldInfo)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
