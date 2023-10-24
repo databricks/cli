@@ -33,6 +33,8 @@ var info Info
 
 var once sync.Once
 
+const DefaultSemver = "0.0.0-dev"
+
 // getDefaultBuildVersion uses build information stored by Go itself
 // to synthesize a build version if one wasn't set.
 // This is necessary if the binary was not built through goreleaser.
@@ -47,7 +49,7 @@ func getDefaultBuildVersion() string {
 		m[s.Key] = s.Value
 	}
 
-	out := "0.0.0-dev"
+	out := DefaultSemver
 
 	// Append revision as build metadata.
 	if v, ok := m["vcs.revision"]; ok {

@@ -1,0 +1,12 @@
+# 1. Basic Anchor and Alias
+defaults: &DEFAULTS
+  color: red
+  size: large
+
+shirt1:
+  <<: *DEFAULTS
+  pattern: striped
+
+shirt2:
+  <<: *DEFAULTS
+  pattern: plain

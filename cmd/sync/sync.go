@@ -89,7 +89,13 @@ func New() *cobra.Command {
 	cmd.Flags().BoolVar(&f.watch, "watch", false, "watch local file system for changes")
 	cmd.Flags().Var(&f.output, "output", "type of output format")
 
-	cmd.PreRunE = root.MustWorkspaceClient
+	// Wrapper for [root.MustWorkspaceClient] that disables loading authentication configuration from a bundle.
+	mustWorkspaceClient := func(cmd *cobra.Command, args []string) error {
+		cmd.SetContext(root.SkipLoadBundle(cmd.Context()))
+		return root.MustWorkspaceClient(cmd, args)
+	}
+
+	cmd.PreRunE = mustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		var opts *sync.SyncOptions
 		var err error
@@ -149,10 +155,9 @@ func New() *cobra.Command {
 	}
 
 	cmd.ValidArgsFunction = func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		ctx := cmd.Context()
-		cmd.SetContext(root.NoPrompt(ctx))
+		cmd.SetContext(root.SkipPrompt(cmd.Context()))
 
-		err := root.MustWorkspaceClient(cmd, args)
+		err := mustWorkspaceClient(cmd, args)
 		if err != nil {
 			return nil, cobra.ShellCompDirectiveError
 		}

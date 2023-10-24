@@ -14,7 +14,7 @@ require (
 	github.com/hashicorp/terraform-json v0.17.1 // MPL 2.0
 	github.com/imdario/mergo v0.3.15 // BSD-3-Clause
 	github.com/manifoldco/promptui v0.9.0 // BSD-3-Clause
-	github.com/mattn/go-isatty v0.0.19 // MIT
+	github.com/mattn/go-isatty v0.0.20 // MIT
 	github.com/nwidger/jsoncolor v0.3.2 // MIT
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8 // BSD-2-Clause
 	github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06 // MIT
@@ -30,6 +30,8 @@ require (
 	golang.org/x/text v0.13.0
 	gopkg.in/ini.v1 v1.67.0 // Apache 2.0
 )
+
+require gopkg.in/yaml.v3 v3.0.1
 
 require (
 	cloud.google.com/go/compute v1.23.0 // indirect
@@ -60,5 +62,4 @@ require (
 	google.golang.org/grpc v1.58.2 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
