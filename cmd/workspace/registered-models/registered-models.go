@@ -7,6 +7,7 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/spf13/cobra"
 )
@@ -75,8 +76,10 @@ func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var createReq catalog.CreateRegisteredModelRequest
+	var createJson flags.JsonFlag
 
 	// TODO: short flags
+	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `The comment attached to the registered model.`)
 	cmd.Flags().StringVar(&createReq.StorageLocation, "storage-location", createReq.StorageLocation, `The storage location on the cloud under which model version data files are stored.`)
@@ -102,6 +105,9 @@ func newCreate() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(3)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
 		return check(cmd, args)
 	}
 
@@ -110,9 +116,21 @@ func newCreate() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		createReq.CatalogName = args[0]
-		createReq.SchemaName = args[1]
-		createReq.Name = args[2]
+		if cmd.Flags().Changed("json") {
+			err = createJson.Unmarshal(&createReq)
+			if err != nil {
+				return err
+			}
+		}
+		if !cmd.Flags().Changed("json") {
+			createReq.CatalogName = args[0]
+		}
+		if !cmd.Flags().Changed("json") {
+			createReq.SchemaName = args[1]
+		}
+		if !cmd.Flags().Changed("json") {
+			createReq.Name = args[2]
+		}
 
 		response, err := w.RegisteredModels.Create(ctx, createReq)
 		if err != nil {
@@ -451,8 +469,10 @@ func newSetAlias() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var setAliasReq catalog.SetRegisteredModelAliasRequest
+	var setAliasJson flags.JsonFlag
 
 	// TODO: short flags
+	cmd.Flags().Var(&setAliasJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "set-alias FULL_NAME ALIAS VERSION_NUM"
 	cmd.Short = `Set a Registered Model Alias.`
@@ -469,6 +489,9 @@ func newSetAlias() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(3)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(2)
+		}
 		return check(cmd, args)
 	}
 
@@ -477,11 +500,23 @@ func newSetAlias() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		setAliasReq.FullName = args[0]
-		setAliasReq.Alias = args[1]
-		_, err = fmt.Sscan(args[2], &setAliasReq.VersionNum)
-		if err != nil {
-			return fmt.Errorf("invalid VERSION_NUM: %s", args[2])
+		if cmd.Flags().Changed("json") {
+			err = setAliasJson.Unmarshal(&setAliasReq)
+			if err != nil {
+				return err
+			}
+		}
+		if !cmd.Flags().Changed("json") {
+			setAliasReq.FullName = args[0]
+		}
+		if !cmd.Flags().Changed("json") {
+			setAliasReq.Alias = args[1]
+		}
+		if !cmd.Flags().Changed("json") {
+			_, err = fmt.Sscan(args[2], &setAliasReq.VersionNum)
+			if err != nil {
+				return fmt.Errorf("invalid VERSION_NUM: %s", args[2])
+			}
 		}
 
 		response, err := w.RegisteredModels.SetAlias(ctx, setAliasReq)
@@ -522,8 +557,10 @@ func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var updateReq catalog.UpdateRegisteredModelRequest
+	var updateJson flags.JsonFlag
 
 	// TODO: short flags
+	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `The comment attached to the registered model.`)
 	cmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `The name of the registered model.`)
@@ -550,6 +587,12 @@ func newUpdate() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
+		if cmd.Flags().Changed("json") {
+			err = updateJson.Unmarshal(&updateReq)
+			if err != nil {
+				return err
+			}
+		}
 		if len(args) == 0 {
 			promptSpinner := cmdio.Spinner(ctx)
 			promptSpinner <- "No FULL_NAME argument specified. Loading names for Registered Models drop-down."

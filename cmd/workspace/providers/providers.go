@@ -7,6 +7,7 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/sharing"
 	"github.com/spf13/cobra"
 )
@@ -49,8 +50,10 @@ func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var createReq sharing.CreateProvider
+	var createJson flags.JsonFlag
 
 	// TODO: short flags
+	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `Description about the provider.`)
 	cmd.Flags().StringVar(&createReq.RecipientProfileStr, "recipient-profile-str", createReq.RecipientProfileStr, `This field is required when the __authentication_type__ is **TOKEN** or not provided.`)
@@ -66,6 +69,9 @@ func newCreate() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
 		return check(cmd, args)
 	}
 
@@ -74,10 +80,20 @@ func newCreate() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		createReq.Name = args[0]
-		_, err = fmt.Sscan(args[1], &createReq.AuthenticationType)
-		if err != nil {
-			return fmt.Errorf("invalid AUTHENTICATION_TYPE: %s", args[1])
+		if cmd.Flags().Changed("json") {
+			err = createJson.Unmarshal(&createReq)
+			if err != nil {
+				return err
+			}
+		}
+		if !cmd.Flags().Changed("json") {
+			createReq.Name = args[0]
+		}
+		if !cmd.Flags().Changed("json") {
+			_, err = fmt.Sscan(args[1], &createReq.AuthenticationType)
+			if err != nil {
+				return fmt.Errorf("invalid AUTHENTICATION_TYPE: %s", args[1])
+			}
 		}
 
 		response, err := w.Providers.Create(ctx, createReq)
@@ -406,8 +422,10 @@ func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var updateReq sharing.UpdateProvider
+	var updateJson flags.JsonFlag
 
 	// TODO: short flags
+	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `Description about the provider.`)
 	cmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `The name of the Provider.`)
@@ -430,6 +448,12 @@ func newUpdate() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
+		if cmd.Flags().Changed("json") {
+			err = updateJson.Unmarshal(&updateReq)
+			if err != nil {
+				return err
+			}
+		}
 		if len(args) == 0 {
 			promptSpinner := cmdio.Spinner(ctx)
 			promptSpinner <- "No NAME argument specified. Loading names for Providers drop-down."

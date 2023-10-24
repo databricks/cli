@@ -78,7 +78,7 @@ var {{.CamelName}}Overrides []func(
 func new{{.PascalName}}() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	{{- $hasRequiredRequestBodyFields := and .Request (gt 0 (len .Request.RequiredRequestBodyFields))  -}}
+	{{- $hasRequiredRequestBodyFields := and .Request .Request.HasRequiredRequestBodyFields  -}}
 
 	{{- if .Request}}
 
@@ -187,6 +187,10 @@ func new{{.PascalName}}() *cobra.Command {
 
 			{{$method := .}}
 			{{- range $arg, $field := .Request.RequiredFields}}
+				{{- $optionalIfJsonIsUsed := and (not $hasIdPrompt) (and $field.IsJson $method.CanUseJson) }}
+				{{- if $optionalIfJsonIsUsed  }}
+				if !cmd.Flags().Changed("json") {
+				{{- end }}
 				{{if not $field.Entity.IsString -}}
 				_, err = fmt.Sscan(args[{{$arg}}], &{{$method.CamelName}}Req.{{$field.PascalName}})
 				if err != nil {
@@ -194,8 +198,12 @@ func new{{.PascalName}}() *cobra.Command {
 				}{{else -}}
 				{{$method.CamelName}}Req.{{$field.PascalName}} = args[{{$arg}}]
 				{{- end -}}
+				{{- if $optionalIfJsonIsUsed  }}
+				}
+				{{- end }}
 			{{- end -}}
 			{{- end}}
+
 		{{end}}
 		{{if $wait -}}
 		wait, err := {{if .Service.IsAccounts}}a{{else}}w{{end}}.{{.Service.PascalName}}.{{.PascalName}}(ctx{{if .Request}}, {{.CamelName}}Req{{end}})

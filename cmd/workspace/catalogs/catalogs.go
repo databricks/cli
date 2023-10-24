@@ -77,6 +77,9 @@ func newCreate() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
 		return check(cmd, args)
 	}
 
@@ -91,7 +94,9 @@ func newCreate() *cobra.Command {
 				return err
 			}
 		}
-		createReq.Name = args[0]
+		if !cmd.Flags().Changed("json") {
+			createReq.Name = args[0]
+		}
 
 		response, err := w.Catalogs.Create(ctx, createReq)
 		if err != nil {
@@ -333,6 +338,9 @@ func newUpdate() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(1)
+		}
 		return check(cmd, args)
 	}
 
@@ -347,7 +355,9 @@ func newUpdate() *cobra.Command {
 				return err
 			}
 		}
-		updateReq.Name = args[0]
+		if !cmd.Flags().Changed("json") {
+			updateReq.Name = args[0]
+		}
 
 		response, err := w.Catalogs.Update(ctx, updateReq)
 		if err != nil {

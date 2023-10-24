@@ -100,6 +100,9 @@ func newCreate() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
 		return check(cmd, args)
 	}
 
@@ -114,7 +117,9 @@ func newCreate() *cobra.Command {
 				return err
 			}
 		}
-		createReq.WorkspaceName = args[0]
+		if !cmd.Flags().Changed("json") {
+			createReq.WorkspaceName = args[0]
+		}
 
 		wait, err := a.Workspaces.Create(ctx, createReq)
 		if err != nil {

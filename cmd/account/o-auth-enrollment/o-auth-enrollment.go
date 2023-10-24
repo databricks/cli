@@ -5,6 +5,7 @@ package o_auth_enrollment
 import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/oauth2"
 	"github.com/spf13/cobra"
 )
@@ -49,8 +50,10 @@ func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var createReq oauth2.CreateOAuthEnrollment
+	var createJson flags.JsonFlag
 
 	// TODO: short flags
+	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().BoolVar(&createReq.EnableAllPublishedApps, "enable-all-published-apps", createReq.EnableAllPublishedApps, `If true, enable OAuth for all the published applications in the account.`)
 
@@ -79,6 +82,13 @@ func newCreate() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			err = createJson.Unmarshal(&createReq)
+			if err != nil {
+				return err
+			}
+		}
 
 		err = a.OAuthEnrollment.Create(ctx, createReq)
 		if err != nil {

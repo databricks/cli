@@ -50,8 +50,10 @@ func newCreateOboToken() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var createOboTokenReq settings.CreateOboTokenRequest
+	var createOboTokenJson flags.JsonFlag
 
 	// TODO: short flags
+	cmd.Flags().Var(&createOboTokenJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createOboTokenReq.Comment, "comment", createOboTokenReq.Comment, `Comment that describes the purpose of the token.`)
 
@@ -65,6 +67,9 @@ func newCreateOboToken() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
 		return check(cmd, args)
 	}
 
@@ -73,10 +78,20 @@ func newCreateOboToken() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		createOboTokenReq.ApplicationId = args[0]
-		_, err = fmt.Sscan(args[1], &createOboTokenReq.LifetimeSeconds)
-		if err != nil {
-			return fmt.Errorf("invalid LIFETIME_SECONDS: %s", args[1])
+		if cmd.Flags().Changed("json") {
+			err = createOboTokenJson.Unmarshal(&createOboTokenReq)
+			if err != nil {
+				return err
+			}
+		}
+		if !cmd.Flags().Changed("json") {
+			createOboTokenReq.ApplicationId = args[0]
+		}
+		if !cmd.Flags().Changed("json") {
+			_, err = fmt.Sscan(args[1], &createOboTokenReq.LifetimeSeconds)
+			if err != nil {
+				return fmt.Errorf("invalid LIFETIME_SECONDS: %s", args[1])
+			}
 		}
 
 		response, err := w.TokenManagement.CreateOboToken(ctx, createOboTokenReq)

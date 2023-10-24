@@ -52,8 +52,10 @@ func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var deleteReq workspace.Delete
+	var deleteJson flags.JsonFlag
 
 	// TODO: short flags
+	cmd.Flags().Var(&deleteJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().BoolVar(&deleteReq.Recursive, "recursive", deleteReq.Recursive, `The flag that specifies whether to delete the object recursively.`)
 
@@ -77,6 +79,12 @@ func newDelete() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
+		if cmd.Flags().Changed("json") {
+			err = deleteJson.Unmarshal(&deleteReq)
+			if err != nil {
+				return err
+			}
+		}
 		if len(args) == 0 {
 			promptSpinner := cmdio.Spinner(ctx)
 			promptSpinner <- "No PATH argument specified. Loading names for Workspace drop-down."
@@ -403,8 +411,10 @@ func newImport() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var importReq workspace.Import
+	var importJson flags.JsonFlag
 
 	// TODO: short flags
+	cmd.Flags().Var(&importJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&importReq.Content, "content", importReq.Content, `The base64-encoded content.`)
 	cmd.Flags().Var(&importReq.Format, "format", `This specifies the format of the file to be imported.`)
@@ -426,6 +436,9 @@ func newImport() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
 		return check(cmd, args)
 	}
 
@@ -434,7 +447,15 @@ func newImport() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		importReq.Path = args[0]
+		if cmd.Flags().Changed("json") {
+			err = importJson.Unmarshal(&importReq)
+			if err != nil {
+				return err
+			}
+		}
+		if !cmd.Flags().Changed("json") {
+			importReq.Path = args[0]
+		}
 
 		err = w.Workspace.Import(ctx, importReq)
 		if err != nil {
@@ -539,8 +560,10 @@ func newMkdirs() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var mkdirsReq workspace.Mkdirs
+	var mkdirsJson flags.JsonFlag
 
 	// TODO: short flags
+	cmd.Flags().Var(&mkdirsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Use = "mkdirs PATH"
 	cmd.Short = `Create a directory.`
@@ -560,6 +583,12 @@ func newMkdirs() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
+		if cmd.Flags().Changed("json") {
+			err = mkdirsJson.Unmarshal(&mkdirsReq)
+			if err != nil {
+				return err
+			}
+		}
 		if len(args) == 0 {
 			promptSpinner := cmdio.Spinner(ctx)
 			promptSpinner <- "No PATH argument specified. Loading names for Workspace drop-down."

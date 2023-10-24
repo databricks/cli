@@ -491,10 +491,8 @@ func newListPipelineEvents() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listPipelineEventsReq pipelines.ListPipelineEventsRequest
-	var listPipelineEventsJson flags.JsonFlag
 
 	// TODO: short flags
-	cmd.Flags().Var(&listPipelineEventsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&listPipelineEventsReq.Filter, "filter", listPipelineEventsReq.Filter, `Criteria to select a subset of results, expressed using a SQL-like syntax.`)
 	cmd.Flags().IntVar(&listPipelineEventsReq.MaxResults, "max-results", listPipelineEventsReq.MaxResults, `Max number of entries to return in a single page.`)
@@ -514,12 +512,6 @@ func newListPipelineEvents() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		if cmd.Flags().Changed("json") {
-			err = listPipelineEventsJson.Unmarshal(&listPipelineEventsReq)
-			if err != nil {
-				return err
-			}
-		}
 		if len(args) == 0 {
 			promptSpinner := cmdio.Spinner(ctx)
 			promptSpinner <- "No PIPELINE_ID argument specified. Loading names for Pipelines drop-down."
@@ -577,10 +569,8 @@ func newListPipelines() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listPipelinesReq pipelines.ListPipelinesRequest
-	var listPipelinesJson flags.JsonFlag
 
 	// TODO: short flags
-	cmd.Flags().Var(&listPipelinesJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&listPipelinesReq.Filter, "filter", listPipelinesReq.Filter, `Select a subset of results based on the specified criteria.`)
 	cmd.Flags().IntVar(&listPipelinesReq.MaxResults, "max-results", listPipelinesReq.MaxResults, `The maximum number of entries to return in a single page.`)
@@ -604,13 +594,6 @@ func newListPipelines() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-
-		if cmd.Flags().Changed("json") {
-			err = listPipelinesJson.Unmarshal(&listPipelinesReq)
-			if err != nil {
-				return err
-			}
-		}
 
 		response, err := w.Pipelines.ListPipelinesAll(ctx, listPipelinesReq)
 		if err != nil {

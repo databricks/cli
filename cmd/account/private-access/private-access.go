@@ -81,6 +81,9 @@ func newCreate() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
 		return check(cmd, args)
 	}
 
@@ -95,8 +98,12 @@ func newCreate() *cobra.Command {
 				return err
 			}
 		}
-		createReq.PrivateAccessSettingsName = args[0]
-		createReq.Region = args[1]
+		if !cmd.Flags().Changed("json") {
+			createReq.PrivateAccessSettingsName = args[0]
+		}
+		if !cmd.Flags().Changed("json") {
+			createReq.Region = args[1]
+		}
 
 		response, err := a.PrivateAccess.Create(ctx, createReq)
 		if err != nil {
@@ -354,7 +361,7 @@ func newReplace() *cobra.Command {
 	cmd.Flags().Var(&replaceReq.PrivateAccessLevel, "private-access-level", `The private access level controls which VPC endpoints can connect to the UI or API of any workspace that attaches this private access settings object.`)
 	cmd.Flags().BoolVar(&replaceReq.PublicAccessEnabled, "public-access-enabled", replaceReq.PublicAccessEnabled, `Determines if the workspace can be accessed over public internet.`)
 
-	cmd.Use = "replace PRIVATE_ACCESS_SETTINGS_NAME REGION PRIVATE_ACCESS_SETTINGS_ID"
+	cmd.Use = "replace PRIVATE_ACCESS_SETTINGS_ID PRIVATE_ACCESS_SETTINGS_NAME REGION"
 	cmd.Short = `Replace private access settings.`
 	cmd.Long = `Replace private access settings.
   
@@ -384,6 +391,9 @@ func newReplace() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(3)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(1)
+		}
 		return check(cmd, args)
 	}
 
@@ -398,9 +408,13 @@ func newReplace() *cobra.Command {
 				return err
 			}
 		}
-		replaceReq.PrivateAccessSettingsName = args[0]
-		replaceReq.Region = args[1]
-		replaceReq.PrivateAccessSettingsId = args[2]
+		replaceReq.PrivateAccessSettingsId = args[0]
+		if !cmd.Flags().Changed("json") {
+			replaceReq.PrivateAccessSettingsName = args[1]
+		}
+		if !cmd.Flags().Changed("json") {
+			replaceReq.Region = args[2]
+		}
 
 		err = a.PrivateAccess.Replace(ctx, replaceReq)
 		if err != nil {

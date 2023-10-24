@@ -7,6 +7,7 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/spf13/cobra"
 )
@@ -52,8 +53,10 @@ func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var createReq workspace.CreateCredentials
+	var createJson flags.JsonFlag
 
 	// TODO: short flags
+	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createReq.GitUsername, "git-username", createReq.GitUsername, `Git username.`)
 	cmd.Flags().StringVar(&createReq.PersonalAccessToken, "personal-access-token", createReq.PersonalAccessToken, `The personal access token used to authenticate to the corresponding Git provider.`)
@@ -71,6 +74,9 @@ func newCreate() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(1)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(0)
+		}
 		return check(cmd, args)
 	}
 
@@ -79,7 +85,15 @@ func newCreate() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		createReq.GitProvider = args[0]
+		if cmd.Flags().Changed("json") {
+			err = createJson.Unmarshal(&createReq)
+			if err != nil {
+				return err
+			}
+		}
+		if !cmd.Flags().Changed("json") {
+			createReq.GitProvider = args[0]
+		}
 
 		response, err := w.GitCredentials.Create(ctx, createReq)
 		if err != nil {
@@ -320,8 +334,10 @@ func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var updateReq workspace.UpdateCredentials
+	var updateJson flags.JsonFlag
 
 	// TODO: short flags
+	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateReq.GitProvider, "git-provider", updateReq.GitProvider, `Git provider.`)
 	cmd.Flags().StringVar(&updateReq.GitUsername, "git-username", updateReq.GitUsername, `Git username.`)
@@ -340,6 +356,12 @@ func newUpdate() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
+		if cmd.Flags().Changed("json") {
+			err = updateJson.Unmarshal(&updateReq)
+			if err != nil {
+				return err
+			}
+		}
 		if len(args) == 0 {
 			promptSpinner := cmdio.Spinner(ctx)
 			promptSpinner <- "No CREDENTIAL_ID argument specified. Loading names for Git Credentials drop-down."
