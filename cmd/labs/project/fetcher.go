@@ -1,0 +1,145 @@
+package project
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+
+	"github.com/databricks/cli/cmd/labs/github"
+	"github.com/databricks/cli/libs/log"
+	"github.com/fatih/color"
+	"github.com/spf13/cobra"
+)
+
+type installable interface {
+	Install(ctx context.Context) error
+}
+
+type devInstallation struct {
+	*Project
+	*cobra.Command
+}
+
+func (d *devInstallation) Install(ctx context.Context) error {
+	if d.Installer == nil {
+		return nil
+	}
+	_, err := d.Installer.validLogin(d.Command)
+	if errors.Is(err, ErrNoLoginConfig) {
+		cfg := d.Installer.envAwareConfig(ctx)
+		lc := &loginConfig{Entrypoint: d.Installer.Entrypoint}
+		_, err = lc.askWorkspace(ctx, cfg)
+		if err != nil {
+			return fmt.Errorf("ask for workspace: %w", err)
+		}
+		err = lc.askAccountProfile(ctx, cfg)
+		if err != nil {
+			return fmt.Errorf("ask for account: %w", err)
+		}
+		err = lc.EnsureFoldersExist(ctx)
+		if err != nil {
+			return fmt.Errorf("folders: %w", err)
+		}
+		err = lc.save(ctx)
+		if err != nil {
+			return fmt.Errorf("save: %w", err)
+		}
+	}
+	return d.Installer.runHook(d.Command)
+}
+
+func NewInstaller(cmd *cobra.Command, name string) (installable, error) {
+	if name == "." {
+		wd, err := os.Getwd()
+		if err != nil {
+			return nil, fmt.Errorf("working directory: %w", err)
+		}
+		prj, err := Load(cmd.Context(), filepath.Join(wd, "labs.yml"))
+		if err != nil {
+			return nil, fmt.Errorf("load: %w", err)
+		}
+		cmd.PrintErrln(color.YellowString("Installing %s in development mode from %s", prj.Name, wd))
+		return &devInstallation{
+			Project: prj,
+			Command: cmd,
+		}, nil
+	}
+	name, version, ok := strings.Cut(name, "@")
+	if !ok {
+		version = "latest"
+	}
+	f := &fetcher{name}
+	version, err := f.checkReleasedVersions(cmd, version)
+	if err != nil {
+		return nil, fmt.Errorf("version: %w", err)
+	}
+	prj, err := f.loadRemoteProjectDefinition(cmd, version)
+	if err != nil {
+		return nil, fmt.Errorf("remote: %w", err)
+	}
+	return &installer{
+		Project: prj,
+		version: version,
+		cmd:     cmd,
+	}, nil
+}
+
+func NewUpgrader(cmd *cobra.Command, name string) (*installer, error) {
+	f := &fetcher{name}
+	version, err := f.checkReleasedVersions(cmd, "latest")
+	if err != nil {
+		return nil, fmt.Errorf("version: %w", err)
+	}
+	prj, err := f.loadRemoteProjectDefinition(cmd, version)
+	if err != nil {
+		return nil, fmt.Errorf("remote: %w", err)
+	}
+	prj.folder = PathInLabs(cmd.Context(), name)
+	return &installer{
+		Project: prj,
+		version: version,
+		cmd:     cmd,
+	}, nil
+}
+
+type fetcher struct {
+	name string
+}
+
+func (f *fetcher) checkReleasedVersions(cmd *cobra.Command, version string) (string, error) {
+	ctx := cmd.Context()
+	cacheDir := PathInLabs(ctx, f.name, "cache")
+	err := os.MkdirAll(cacheDir, ownerRWXworldRX)
+	if err != nil {
+		return "", fmt.Errorf("make cache dir: %w", err)
+	}
+	// `databricks labs isntall X` doesn't know which exact version to fetch, so first
+	// we fetch all versions and then pick the latest one dynamically.
+	versions, err := github.NewReleaseCache("databrickslabs", f.name, cacheDir).Load(ctx)
+	if err != nil {
+		return "", fmt.Errorf("versions: %w", err)
+	}
+	for _, v := range versions {
+		if v.Version == version {
+			return version, nil
+		}
+	}
+	if version == "latest" && len(versions) > 0 {
+		log.Debugf(ctx, "Latest %s version is: %s", f.name, versions[0].Version)
+		return versions[0].Version, nil
+	}
+	cmd.PrintErrln(color.YellowString("[WARNING] Installing unreleased version: %s", version))
+	return version, nil
+}
+
+func (i *fetcher) loadRemoteProjectDefinition(cmd *cobra.Command, version string) (*Project, error) {
+	ctx := cmd.Context()
+	raw, err := github.ReadFileFromRef(ctx, "databrickslabs", i.name, version, "labs.yml")
+	if err != nil {
+		return nil, fmt.Errorf("read labs.yml from GitHub: %w", err)
+	}
+	return readFromBytes(ctx, raw)
+}
