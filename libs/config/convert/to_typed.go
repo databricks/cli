@@ -51,7 +51,8 @@ func toTypedStruct(dst reflect.Value, src config.Value) error {
 		for k, v := range src.MustMap() {
 			index, ok := info.Fields[k]
 			if !ok {
-				// unknown field
+				// Ignore unknown fields.
+				// A warning will be printed later. See PR #904.
 				continue
 			}
 
