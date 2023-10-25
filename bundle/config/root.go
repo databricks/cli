@@ -58,27 +58,33 @@ type Root struct {
 	Experimental *Experimental `json:"experimental,omitempty"`
 }
 
+// Load loads the bundle configuration file at the specified path.
 func Load(path string) (*Root, error) {
-	var r Root
-
-	stat, err := os.Stat(path)
+	raw, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
 
-	// If we were given a directory, assume this is the bundle root.
-	if stat.IsDir() {
-		path, err = FileNames.FindInPath(path)
-		if err != nil {
-			return nil, err
-		}
+	var r Root
+	err = yaml.Unmarshal(raw, &r)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load %s: %w", path, err)
 	}
 
-	if err := r.Load(path); err != nil {
-		return nil, err
+	if r.Environments != nil && r.Targets != nil {
+		return nil, fmt.Errorf("both 'environments' and 'targets' are specified, only 'targets' should be used: %s", path)
 	}
 
-	return &r, nil
+	if r.Environments != nil {
+		//TODO: add a command line notice that this is a deprecated option.
+		r.Targets = r.Environments
+	}
+
+	r.Path = filepath.Dir(path)
+	r.SetConfigFilePath(path)
+
+	_, err = r.Resources.VerifyUniqueResourceIdentifiers()
+	return &r, err
 }
 
 // SetConfigFilePath configures the path that its configuration
@@ -125,32 +131,6 @@ func (r *Root) InitializeVariables(vars []string) error {
 		}
 	}
 	return nil
-}
-
-func (r *Root) Load(path string) error {
-	raw, err := os.ReadFile(path)
-	if err != nil {
-		return err
-	}
-	err = yaml.Unmarshal(raw, r)
-	if err != nil {
-		return fmt.Errorf("failed to load %s: %w", path, err)
-	}
-
-	if r.Environments != nil && r.Targets != nil {
-		return fmt.Errorf("both 'environments' and 'targets' are specified, only 'targets' should be used: %s", path)
-	}
-
-	if r.Environments != nil {
-		//TODO: add a command line notice that this is a deprecated option.
-		r.Targets = r.Environments
-	}
-
-	r.Path = filepath.Dir(path)
-	r.SetConfigFilePath(path)
-
-	_, err = r.Resources.VerifyUniqueResourceIdentifiers()
-	return err
 }
 
 func (r *Root) Merge(other *Root) error {
