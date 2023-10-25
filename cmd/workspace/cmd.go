@@ -3,7 +3,10 @@
 package workspace
 
 import (
+	"github.com/databricks/cli/cmd/root"
+
 	alerts "github.com/databricks/cli/cmd/workspace/alerts"
+	apps "github.com/databricks/cli/cmd/workspace/apps"
 	artifact_allowlists "github.com/databricks/cli/cmd/workspace/artifact-allowlists"
 	catalogs "github.com/databricks/cli/cmd/workspace/catalogs"
 	clean_rooms "github.com/databricks/cli/cmd/workspace/clean-rooms"
@@ -59,13 +62,13 @@ import (
 	workspace "github.com/databricks/cli/cmd/workspace/workspace"
 	workspace_bindings "github.com/databricks/cli/cmd/workspace/workspace-bindings"
 	workspace_conf "github.com/databricks/cli/cmd/workspace/workspace-conf"
-	"github.com/spf13/cobra"
 )
 
 func All() []*cobra.Command {
 	var out []*cobra.Command
 
 	out = append(out, alerts.New())
+	out = append(out, apps.New())
 	out = append(out, artifact_allowlists.New())
 	out = append(out, catalogs.New())
 	out = append(out, clean_rooms.New())
