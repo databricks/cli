@@ -40,7 +40,7 @@ func (m *resolveResourceReferences) Apply(ctx context.Context, b *bundle.Bundle)
 		lookup := v.Lookup
 		resource, name, ok := strings.Cut(lookup, separator)
 		if !ok {
-			return fmt.Errorf("incorrect lookup specified %s", lookup)
+			return fmt.Errorf("unexpected format for lookup: %s. Expected lookup string to be of the form <resource_type>:<name>", lookup)
 		}
 
 		resolver, ok := m.resolvers[resource]
