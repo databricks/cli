@@ -72,6 +72,7 @@ func newCreate() *cobra.Command {
 	cmd.Flags().StringVar(&createReq.Id, "id", createReq.Id, `Databricks user ID.`)
 	// TODO: complex arg: name
 	// TODO: array: roles
+	// TODO: array: schemas
 	cmd.Flags().StringVar(&createReq.UserName, "user-name", createReq.UserName, `Email address of the Databricks user.`)
 
 	cmd.Use = "create"
@@ -214,6 +215,14 @@ func newGet() *cobra.Command {
 	var getReq iam.GetAccountUserRequest
 
 	// TODO: short flags
+
+	cmd.Flags().StringVar(&getReq.Attributes, "attributes", getReq.Attributes, `Comma-separated list of attributes to return in response.`)
+	cmd.Flags().IntVar(&getReq.Count, "count", getReq.Count, `Desired number of results per page.`)
+	cmd.Flags().StringVar(&getReq.ExcludedAttributes, "excluded-attributes", getReq.ExcludedAttributes, `Comma-separated list of attributes to exclude in response.`)
+	cmd.Flags().StringVar(&getReq.Filter, "filter", getReq.Filter, `Query by which the results have to be filtered.`)
+	cmd.Flags().StringVar(&getReq.SortBy, "sort-by", getReq.SortBy, `Attribute to sort the results.`)
+	cmd.Flags().Var(&getReq.SortOrder, "sort-order", `The order to sort the results.`)
+	cmd.Flags().IntVar(&getReq.StartIndex, "start-index", getReq.StartIndex, `Specifies the index of the first result.`)
 
 	cmd.Use = "get ID"
 	cmd.Short = `Get user details.`
@@ -451,6 +460,7 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().StringVar(&updateReq.Id, "id", updateReq.Id, `Databricks user ID.`)
 	// TODO: complex arg: name
 	// TODO: array: roles
+	// TODO: array: schemas
 	cmd.Flags().StringVar(&updateReq.UserName, "user-name", updateReq.UserName, `Email address of the Databricks user.`)
 
 	cmd.Use = "update ID"

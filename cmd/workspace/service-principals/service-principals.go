@@ -66,6 +66,7 @@ func newCreate() *cobra.Command {
 	// TODO: array: groups
 	cmd.Flags().StringVar(&createReq.Id, "id", createReq.Id, `Databricks service principal ID.`)
 	// TODO: array: roles
+	// TODO: array: schemas
 
 	cmd.Use = "create"
 	cmd.Short = `Create a service principal.`
@@ -442,6 +443,7 @@ func newUpdate() *cobra.Command {
 	// TODO: array: groups
 	cmd.Flags().StringVar(&updateReq.Id, "id", updateReq.Id, `Databricks service principal ID.`)
 	// TODO: array: roles
+	// TODO: array: schemas
 
 	cmd.Use = "update ID"
 	cmd.Short = `Replace service principal.`
