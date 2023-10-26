@@ -32,6 +32,5 @@ type ResourceShare struct {
 	CreatedBy string                `json:"created_by,omitempty"`
 	Id        string                `json:"id,omitempty"`
 	Name      string                `json:"name"`
-	Owner     string                `json:"owner,omitempty"`
 	Object    []ResourceShareObject `json:"object,omitempty"`
 }

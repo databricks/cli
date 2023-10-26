@@ -3,8 +3,8 @@
 package schema
 
 type ResourceMlflowModelTags struct {
-	Key   string `json:"key,omitempty"`
-	Value string `json:"value,omitempty"`
+	Key   string `json:"key"`
+	Value string `json:"value"`
 }
 
 type ResourceMlflowModel struct {

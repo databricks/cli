@@ -6,7 +6,7 @@ type ResourceSqlTableColumn struct {
 	Comment  string `json:"comment,omitempty"`
 	Name     string `json:"name"`
 	Nullable bool   `json:"nullable,omitempty"`
-	Type     string `json:"type,omitempty"`
+	Type     string `json:"type"`
 }
 
 type ResourceSqlTable struct {

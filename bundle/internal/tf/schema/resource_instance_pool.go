@@ -26,7 +26,6 @@ type ResourceInstancePoolDiskSpec struct {
 
 type ResourceInstancePoolGcpAttributes struct {
 	GcpAvailability string `json:"gcp_availability,omitempty"`
-	LocalSsdCount   int    `json:"local_ssd_count,omitempty"`
 }
 
 type ResourceInstancePoolInstancePoolFleetAttributesFleetOnDemandOption struct {

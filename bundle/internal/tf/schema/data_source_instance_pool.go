@@ -26,7 +26,6 @@ type DataSourceInstancePoolPoolInfoDiskSpec struct {
 
 type DataSourceInstancePoolPoolInfoGcpAttributes struct {
 	GcpAvailability string `json:"gcp_availability,omitempty"`
-	LocalSsdCount   int    `json:"local_ssd_count,omitempty"`
 }
 
 type DataSourceInstancePoolPoolInfoInstancePoolFleetAttributesFleetOnDemandOption struct {
