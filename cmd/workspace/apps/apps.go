@@ -1,6 +1,6 @@
 // Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
 
-package query_visualizations
+package apps
 
 import (
 	"fmt"
@@ -8,7 +8,7 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
-	"github.com/databricks/databricks-sdk-go/service/sql"
+	"github.com/databricks/databricks-sdk-go/service/serving"
 	"github.com/spf13/cobra"
 )
 
@@ -18,14 +18,14 @@ var cmdOverrides []func(*cobra.Command)
 
 func New() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "query-visualizations",
-		Short: `This is an evolving API that facilitates the addition and removal of vizualisations from existing queries within the Databricks Workspace.`,
-		Long: `This is an evolving API that facilitates the addition and removal of
-  vizualisations from existing queries within the Databricks Workspace. Data
-  structures may change over time.`,
-		GroupID: "sql",
+		Use:   "apps",
+		Short: `Lakehouse Apps run directly on a customer’s Databricks instance, integrate with their data, use and extend Databricks services, and enable users to interact through single sign-on.`,
+		Long: `Lakehouse Apps run directly on a customer’s Databricks instance, integrate
+  with their data, use and extend Databricks services, and enable users to
+  interact through single sign-on.`,
+		GroupID: "serving",
 		Annotations: map[string]string{
-			"package": "sql",
+			"package": "serving",
 		},
 
 		// This service is being previewed; hide from help output.
@@ -46,21 +46,25 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createOverrides []func(
 	*cobra.Command,
-	*sql.CreateQueryVisualizationRequest,
+	*serving.DeployAppRequest,
 )
 
 func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var createReq sql.CreateQueryVisualizationRequest
+	var createReq serving.DeployAppRequest
 	var createJson flags.JsonFlag
 
 	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	// TODO: output-only field
+
 	cmd.Use = "create"
-	cmd.Short = `Add visualization to a query.`
-	cmd.Long = `Add visualization to a query.`
+	cmd.Short = `Create and deploy an application.`
+	cmd.Long = `Create and deploy an application.
+  
+  Creates and deploys an application.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -78,7 +82,7 @@ func newCreate() *cobra.Command {
 			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
 		}
 
-		response, err := w.QueryVisualizations.Create(ctx, createReq)
+		response, err := w.Apps.Create(ctx, createReq)
 		if err != nil {
 			return err
 		}
@@ -109,19 +113,21 @@ func init() {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var deleteOverrides []func(
 	*cobra.Command,
-	*sql.DeleteQueryVisualizationRequest,
+	*serving.DeleteAppRequest,
 )
 
 func newDelete() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var deleteReq sql.DeleteQueryVisualizationRequest
+	var deleteReq serving.DeleteAppRequest
 
 	// TODO: short flags
 
-	cmd.Use = "delete ID"
-	cmd.Short = `Remove visualization.`
-	cmd.Long = `Remove visualization.`
+	cmd.Use = "delete NAME"
+	cmd.Short = `Delete an application.`
+	cmd.Long = `Delete an application.
+  
+  Delete an application definition`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -135,9 +141,9 @@ func newDelete() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		deleteReq.Id = args[0]
+		deleteReq.Name = args[0]
 
-		err = w.QueryVisualizations.Delete(ctx, deleteReq)
+		err = w.Apps.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
@@ -162,49 +168,47 @@ func init() {
 	})
 }
 
-// start update command
+// start get command
 
 // Slice with functions to override default command behavior.
 // Functions can be added from the `init()` function in manually curated files in this directory.
-var updateOverrides []func(
+var getOverrides []func(
 	*cobra.Command,
-	*sql.Visualization,
+	*serving.GetAppRequest,
 )
 
-func newUpdate() *cobra.Command {
+func newGet() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var updateReq sql.Visualization
-	var updateJson flags.JsonFlag
+	var getReq serving.GetAppRequest
 
 	// TODO: short flags
-	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Use = "update"
-	cmd.Short = `Edit existing visualization.`
-	cmd.Long = `Edit existing visualization.`
+	cmd.Use = "get NAME"
+	cmd.Short = `Get definition for an application.`
+	cmd.Long = `Get definition for an application.
+  
+  Get an application definition`
 
 	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		return check(cmd, args)
+	}
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		if cmd.Flags().Changed("json") {
-			err = updateJson.Unmarshal(&updateReq)
-			if err != nil {
-				return err
-			}
-		} else {
-			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
-		}
+		getReq.Name = args[0]
 
-		response, err := w.QueryVisualizations.Update(ctx, updateReq)
+		err = w.Apps.Get(ctx, getReq)
 		if err != nil {
 			return err
 		}
-		return cmdio.Render(ctx, response)
+		return nil
 	}
 
 	// Disable completions since they are not applicable.
@@ -212,8 +216,8 @@ func newUpdate() *cobra.Command {
 	cmd.ValidArgsFunction = cobra.NoFileCompletions
 
 	// Apply optional overrides to this command.
-	for _, fn := range updateOverrides {
-		fn(cmd, &updateReq)
+	for _, fn := range getOverrides {
+		fn(cmd, &getReq)
 	}
 
 	return cmd
@@ -221,8 +225,8 @@ func newUpdate() *cobra.Command {
 
 func init() {
 	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newUpdate())
+		cmd.AddCommand(newGet())
 	})
 }
 
-// end service QueryVisualizations
+// end service Apps

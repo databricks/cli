@@ -1,0 +1,12 @@
+{
+    "properties": {
+        "foo": {
+            "type": "string",
+            "pattern": "^[a-c]+$"
+        },
+        "bar": {
+            "type": "string",
+            "pattern": "^[d-f]+$"
+        }
+    }
+}

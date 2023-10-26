@@ -176,7 +176,7 @@ func (m *processTargetMode) Apply(ctx context.Context, b *bundle.Bundle) error {
 		}
 		return transformDevelopmentMode(b)
 	case config.Production:
-		isPrincipal := auth.IsServicePrincipal(b.Config.Workspace.CurrentUser.Id)
+		isPrincipal := auth.IsServicePrincipal(b.Config.Workspace.CurrentUser.UserName)
 		return validateProductionMode(ctx, b, isPrincipal)
 	case "":
 		// No action

@@ -96,7 +96,8 @@ func newCreateScope() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
+		}
+		if !cmd.Flags().Changed("json") {
 			createScopeReq.Scope = args[0]
 		}
 
@@ -174,8 +175,11 @@ func newDeleteAcl() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
+		}
+		if !cmd.Flags().Changed("json") {
 			deleteAclReq.Scope = args[0]
+		}
+		if !cmd.Flags().Changed("json") {
 			deleteAclReq.Principal = args[1]
 		}
 
@@ -252,7 +256,8 @@ func newDeleteScope() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
+		}
+		if !cmd.Flags().Changed("json") {
 			deleteScopeReq.Scope = args[0]
 		}
 
@@ -330,8 +335,11 @@ func newDeleteSecret() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
+		}
+		if !cmd.Flags().Changed("json") {
 			deleteSecretReq.Scope = args[0]
+		}
+		if !cmd.Flags().Changed("json") {
 			deleteSecretReq.Key = args[1]
 		}
 
@@ -754,9 +762,14 @@ func newPutAcl() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
+		}
+		if !cmd.Flags().Changed("json") {
 			putAclReq.Scope = args[0]
+		}
+		if !cmd.Flags().Changed("json") {
 			putAclReq.Principal = args[1]
+		}
+		if !cmd.Flags().Changed("json") {
 			_, err = fmt.Sscan(args[2], &putAclReq.Permission)
 			if err != nil {
 				return fmt.Errorf("invalid PERMISSION: %s", args[2])

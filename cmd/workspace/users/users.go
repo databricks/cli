@@ -72,6 +72,7 @@ func newCreate() *cobra.Command {
 	cmd.Flags().StringVar(&createReq.Id, "id", createReq.Id, `Databricks user ID.`)
 	// TODO: complex arg: name
 	// TODO: array: roles
+	// TODO: array: schemas
 	cmd.Flags().StringVar(&createReq.UserName, "user-name", createReq.UserName, `Email address of the Databricks user.`)
 
 	cmd.Use = "create"
@@ -85,9 +86,6 @@ func newCreate() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	}
 
@@ -101,7 +99,6 @@ func newCreate() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
 		}
 
 		response, err := w.Users.Create(ctx, createReq)
@@ -218,6 +215,14 @@ func newGet() *cobra.Command {
 	var getReq iam.GetUserRequest
 
 	// TODO: short flags
+
+	cmd.Flags().StringVar(&getReq.Attributes, "attributes", getReq.Attributes, `Comma-separated list of attributes to return in response.`)
+	cmd.Flags().IntVar(&getReq.Count, "count", getReq.Count, `Desired number of results per page.`)
+	cmd.Flags().StringVar(&getReq.ExcludedAttributes, "excluded-attributes", getReq.ExcludedAttributes, `Comma-separated list of attributes to exclude in response.`)
+	cmd.Flags().StringVar(&getReq.Filter, "filter", getReq.Filter, `Query by which the results have to be filtered.`)
+	cmd.Flags().StringVar(&getReq.SortBy, "sort-by", getReq.SortBy, `Attribute to sort the results.`)
+	cmd.Flags().Var(&getReq.SortOrder, "sort-order", `The order to sort the results.`)
+	cmd.Flags().IntVar(&getReq.StartIndex, "start-index", getReq.StartIndex, `Specifies the index of the first result.`)
 
 	cmd.Use = "get ID"
 	cmd.Short = `Get user details.`
@@ -386,10 +391,8 @@ func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listReq iam.ListUsersRequest
-	var listJson flags.JsonFlag
 
 	// TODO: short flags
-	cmd.Flags().Var(&listJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&listReq.Attributes, "attributes", listReq.Attributes, `Comma-separated list of attributes to return in response.`)
 	cmd.Flags().IntVar(&listReq.Count, "count", listReq.Count, `Desired number of results per page.`)
@@ -409,9 +412,6 @@ func newList() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	}
 
@@ -419,14 +419,6 @@ func newList() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-
-		if cmd.Flags().Changed("json") {
-			err = listJson.Unmarshal(&listReq)
-			if err != nil {
-				return err
-			}
-		} else {
-		}
 
 		response, err := w.Users.ListAll(ctx, listReq)
 		if err != nil {
@@ -569,9 +561,6 @@ func newSetPermissions() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	}
 
@@ -585,7 +574,6 @@ func newSetPermissions() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
 		}
 
 		response, err := w.Users.SetPermissions(ctx, setPermissionsReq)
@@ -640,6 +628,7 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().StringVar(&updateReq.Id, "id", updateReq.Id, `Databricks user ID.`)
 	// TODO: complex arg: name
 	// TODO: array: roles
+	// TODO: array: schemas
 	cmd.Flags().StringVar(&updateReq.UserName, "user-name", updateReq.UserName, `Email address of the Databricks user.`)
 
 	cmd.Use = "update ID"
@@ -736,9 +725,6 @@ func newUpdatePermissions() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	}
 
@@ -752,7 +738,6 @@ func newUpdatePermissions() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
 		}
 
 		response, err := w.Users.UpdatePermissions(ctx, updatePermissionsReq)

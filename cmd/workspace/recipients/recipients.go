@@ -70,7 +70,7 @@ func newCreate() *cobra.Command {
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `Description about the recipient.`)
-	// TODO: any: data_recipient_global_metastore_id
+	cmd.Flags().StringVar(&createReq.DataRecipientGlobalMetastoreId, "data-recipient-global-metastore-id", createReq.DataRecipientGlobalMetastoreId, `The global Unity Catalog metastore id provided by the data recipient.`)
 	// TODO: complex arg: ip_access_list
 	cmd.Flags().StringVar(&createReq.Owner, "owner", createReq.Owner, `Username of the recipient owner.`)
 	// TODO: complex arg: properties_kvpairs
@@ -104,8 +104,11 @@ func newCreate() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
+		}
+		if !cmd.Flags().Changed("json") {
 			createReq.Name = args[0]
+		}
+		if !cmd.Flags().Changed("json") {
 			_, err = fmt.Sscan(args[1], &createReq.AuthenticationType)
 			if err != nil {
 				return fmt.Errorf("invalid AUTHENTICATION_TYPE: %s", args[1])
@@ -299,10 +302,8 @@ func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listReq sharing.ListRecipientsRequest
-	var listJson flags.JsonFlag
 
 	// TODO: short flags
-	cmd.Flags().Var(&listJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&listReq.DataRecipientGlobalMetastoreId, "data-recipient-global-metastore-id", listReq.DataRecipientGlobalMetastoreId, `If not provided, all recipients will be returned.`)
 
@@ -319,9 +320,6 @@ func newList() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	}
 
@@ -329,14 +327,6 @@ func newList() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-
-		if cmd.Flags().Changed("json") {
-			err = listJson.Unmarshal(&listReq)
-			if err != nil {
-				return err
-			}
-		} else {
-		}
 
 		response, err := w.Recipients.ListAll(ctx, listReq)
 		if err != nil {
@@ -376,10 +366,12 @@ func newRotateToken() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var rotateTokenReq sharing.RotateRecipientToken
+	var rotateTokenJson flags.JsonFlag
 
 	// TODO: short flags
+	cmd.Flags().Var(&rotateTokenJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Use = "rotate-token EXISTING_TOKEN_EXPIRE_IN_SECONDS NAME"
+	cmd.Use = "rotate-token NAME EXISTING_TOKEN_EXPIRE_IN_SECONDS"
 	cmd.Short = `Rotate a token.`
 	cmd.Long = `Rotate a token.
   
@@ -390,6 +382,9 @@ func newRotateToken() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(1)
+		}
 		return check(cmd, args)
 	}
 
@@ -398,11 +393,19 @@ func newRotateToken() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		_, err = fmt.Sscan(args[0], &rotateTokenReq.ExistingTokenExpireInSeconds)
-		if err != nil {
-			return fmt.Errorf("invalid EXISTING_TOKEN_EXPIRE_IN_SECONDS: %s", args[0])
+		if cmd.Flags().Changed("json") {
+			err = rotateTokenJson.Unmarshal(&rotateTokenReq)
+			if err != nil {
+				return err
+			}
 		}
-		rotateTokenReq.Name = args[1]
+		rotateTokenReq.Name = args[0]
+		if !cmd.Flags().Changed("json") {
+			_, err = fmt.Sscan(args[1], &rotateTokenReq.ExistingTokenExpireInSeconds)
+			if err != nil {
+				return fmt.Errorf("invalid EXISTING_TOKEN_EXPIRE_IN_SECONDS: %s", args[1])
+			}
+		}
 
 		response, err := w.Recipients.RotateToken(ctx, rotateTokenReq)
 		if err != nil {

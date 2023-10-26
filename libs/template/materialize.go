@@ -48,6 +48,12 @@ func Materialize(ctx context.Context, configFilePath, templateRoot, outputDir st
 		return err
 	}
 
+	// Print welcome message
+	welcome := config.schema.WelcomeMessage
+	if welcome != "" {
+		cmdio.LogString(ctx, welcome)
+	}
+
 	// Read and assign config values from file
 	if configFilePath != "" {
 		err = config.assignValuesFromFile(configFilePath)

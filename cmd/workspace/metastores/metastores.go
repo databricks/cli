@@ -60,10 +60,12 @@ func newAssign() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var assignReq catalog.CreateMetastoreAssignment
+	var assignJson flags.JsonFlag
 
 	// TODO: short flags
+	cmd.Flags().Var(&assignJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Use = "assign METASTORE_ID DEFAULT_CATALOG_NAME WORKSPACE_ID"
+	cmd.Use = "assign WORKSPACE_ID METASTORE_ID DEFAULT_CATALOG_NAME"
 	cmd.Short = `Create an assignment.`
 	cmd.Long = `Create an assignment.
   
@@ -75,6 +77,9 @@ func newAssign() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(3)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(1)
+		}
 		return check(cmd, args)
 	}
 
@@ -83,11 +88,21 @@ func newAssign() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		assignReq.MetastoreId = args[0]
-		assignReq.DefaultCatalogName = args[1]
-		_, err = fmt.Sscan(args[2], &assignReq.WorkspaceId)
+		if cmd.Flags().Changed("json") {
+			err = assignJson.Unmarshal(&assignReq)
+			if err != nil {
+				return err
+			}
+		}
+		_, err = fmt.Sscan(args[0], &assignReq.WorkspaceId)
 		if err != nil {
-			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[2])
+			return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
+		}
+		if !cmd.Flags().Changed("json") {
+			assignReq.MetastoreId = args[1]
+		}
+		if !cmd.Flags().Changed("json") {
+			assignReq.DefaultCatalogName = args[2]
 		}
 
 		err = w.Metastores.Assign(ctx, assignReq)
@@ -161,8 +176,11 @@ func newCreate() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
+		}
+		if !cmd.Flags().Changed("json") {
 			createReq.Name = args[0]
+		}
+		if !cmd.Flags().Changed("json") {
 			createReq.StorageRoot = args[1]
 		}
 
@@ -361,8 +379,11 @@ func newEnableOptimization() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
+		}
+		if !cmd.Flags().Changed("json") {
 			enableOptimizationReq.MetastoreId = args[0]
+		}
+		if !cmd.Flags().Changed("json") {
 			_, err = fmt.Sscan(args[1], &enableOptimizationReq.Enable)
 			if err != nil {
 				return fmt.Errorf("invalid ENABLE: %s", args[1])
@@ -645,8 +666,10 @@ func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var updateReq catalog.UpdateMetastore
+	var updateJson flags.JsonFlag
 
 	// TODO: short flags
+	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateReq.DeltaSharingOrganizationName, "delta-sharing-organization-name", updateReq.DeltaSharingOrganizationName, `The organization name of a Delta Sharing entity, to be used in Databricks-to-Databricks Delta Sharing as the official name.`)
 	cmd.Flags().Int64Var(&updateReq.DeltaSharingRecipientTokenLifetimeInSeconds, "delta-sharing-recipient-token-lifetime-in-seconds", updateReq.DeltaSharingRecipientTokenLifetimeInSeconds, `The lifetime of delta sharing recipient token in seconds.`)
@@ -670,6 +693,12 @@ func newUpdate() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
+		if cmd.Flags().Changed("json") {
+			err = updateJson.Unmarshal(&updateReq)
+			if err != nil {
+				return err
+			}
+		}
 		if len(args) == 0 {
 			promptSpinner := cmdio.Spinner(ctx)
 			promptSpinner <- "No ID argument specified. Loading names for Metastores drop-down."
@@ -727,8 +756,10 @@ func newUpdateAssignment() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var updateAssignmentReq catalog.UpdateMetastoreAssignment
+	var updateAssignmentJson flags.JsonFlag
 
 	// TODO: short flags
+	cmd.Flags().Var(&updateAssignmentJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateAssignmentReq.DefaultCatalogName, "default-catalog-name", updateAssignmentReq.DefaultCatalogName, `The name of the default catalog for the metastore.`)
 	cmd.Flags().StringVar(&updateAssignmentReq.MetastoreId, "metastore-id", updateAssignmentReq.MetastoreId, `The unique ID of the metastore.`)
@@ -749,6 +780,12 @@ func newUpdateAssignment() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
+		if cmd.Flags().Changed("json") {
+			err = updateAssignmentJson.Unmarshal(&updateAssignmentReq)
+			if err != nil {
+				return err
+			}
+		}
 		if len(args) == 0 {
 			promptSpinner := cmdio.Spinner(ctx)
 			promptSpinner <- "No WORKSPACE_ID argument specified. Loading names for Metastores drop-down."

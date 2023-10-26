@@ -1,6 +1,6 @@
 // Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
 
-package settings
+package network_policy
 
 import (
 	"github.com/databricks/cli/cmd/root"
@@ -16,12 +16,11 @@ var cmdOverrides []func(*cobra.Command)
 
 func New() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "settings",
-		Short: `The Personal Compute enablement setting lets you control which users can use the Personal Compute default policy to create compute resources.`,
-		Long: `The Personal Compute enablement setting lets you control which users can use
-  the Personal Compute default policy to create compute resources. By default
-  all users in all workspaces have access (ON), but you can change the setting
-  to instead let individual workspaces configure access control (DELEGATE).
+		Use:   "network-policy",
+		Short: `Network policy is a set of rules that defines what can be accessed from your Databricks network.`,
+		Long: `Network policy is a set of rules that defines what can be accessed from your
+  Databricks network. E.g.: You can choose to block your SQL UDF to access
+  internet from your Databricks serverless clusters.
   
   There is only one instance of this setting per account. Since this setting has
   a default value, this setting is present on all accounts even though it's
@@ -44,27 +43,27 @@ func New() *cobra.Command {
 	return cmd
 }
 
-// start delete-personal-compute-setting command
+// start delete-account-network-policy command
 
 // Slice with functions to override default command behavior.
 // Functions can be added from the `init()` function in manually curated files in this directory.
-var deletePersonalComputeSettingOverrides []func(
+var deleteAccountNetworkPolicyOverrides []func(
 	*cobra.Command,
-	*settings.DeletePersonalComputeSettingRequest,
+	*settings.DeleteAccountNetworkPolicyRequest,
 )
 
-func newDeletePersonalComputeSetting() *cobra.Command {
+func newDeleteAccountNetworkPolicy() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var deletePersonalComputeSettingReq settings.DeletePersonalComputeSettingRequest
+	var deleteAccountNetworkPolicyReq settings.DeleteAccountNetworkPolicyRequest
 
 	// TODO: short flags
 
-	cmd.Use = "delete-personal-compute-setting ETAG"
-	cmd.Short = `Delete Personal Compute setting.`
-	cmd.Long = `Delete Personal Compute setting.
+	cmd.Use = "delete-account-network-policy ETAG"
+	cmd.Short = `Delete Account Network Policy.`
+	cmd.Long = `Delete Account Network Policy.
   
-  Reverts back the Personal Compute setting value to default (ON)`
+  Reverts back all the account network policies back to default.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -78,9 +77,9 @@ func newDeletePersonalComputeSetting() *cobra.Command {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
 
-		deletePersonalComputeSettingReq.Etag = args[0]
+		deleteAccountNetworkPolicyReq.Etag = args[0]
 
-		response, err := a.Settings.DeletePersonalComputeSetting(ctx, deletePersonalComputeSettingReq)
+		response, err := a.NetworkPolicy.DeleteAccountNetworkPolicy(ctx, deleteAccountNetworkPolicyReq)
 		if err != nil {
 			return err
 		}
@@ -92,8 +91,8 @@ func newDeletePersonalComputeSetting() *cobra.Command {
 	cmd.ValidArgsFunction = cobra.NoFileCompletions
 
 	// Apply optional overrides to this command.
-	for _, fn := range deletePersonalComputeSettingOverrides {
-		fn(cmd, &deletePersonalComputeSettingReq)
+	for _, fn := range deleteAccountNetworkPolicyOverrides {
+		fn(cmd, &deleteAccountNetworkPolicyReq)
 	}
 
 	return cmd
@@ -101,31 +100,31 @@ func newDeletePersonalComputeSetting() *cobra.Command {
 
 func init() {
 	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newDeletePersonalComputeSetting())
+		cmd.AddCommand(newDeleteAccountNetworkPolicy())
 	})
 }
 
-// start read-personal-compute-setting command
+// start read-account-network-policy command
 
 // Slice with functions to override default command behavior.
 // Functions can be added from the `init()` function in manually curated files in this directory.
-var readPersonalComputeSettingOverrides []func(
+var readAccountNetworkPolicyOverrides []func(
 	*cobra.Command,
-	*settings.ReadPersonalComputeSettingRequest,
+	*settings.ReadAccountNetworkPolicyRequest,
 )
 
-func newReadPersonalComputeSetting() *cobra.Command {
+func newReadAccountNetworkPolicy() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var readPersonalComputeSettingReq settings.ReadPersonalComputeSettingRequest
+	var readAccountNetworkPolicyReq settings.ReadAccountNetworkPolicyRequest
 
 	// TODO: short flags
 
-	cmd.Use = "read-personal-compute-setting ETAG"
-	cmd.Short = `Get Personal Compute setting.`
-	cmd.Long = `Get Personal Compute setting.
+	cmd.Use = "read-account-network-policy ETAG"
+	cmd.Short = `Get Account Network Policy.`
+	cmd.Long = `Get Account Network Policy.
   
-  Gets the value of the Personal Compute setting.`
+  Gets the value of Account level Network Policy.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -139,9 +138,9 @@ func newReadPersonalComputeSetting() *cobra.Command {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
 
-		readPersonalComputeSettingReq.Etag = args[0]
+		readAccountNetworkPolicyReq.Etag = args[0]
 
-		response, err := a.Settings.ReadPersonalComputeSetting(ctx, readPersonalComputeSettingReq)
+		response, err := a.NetworkPolicy.ReadAccountNetworkPolicy(ctx, readAccountNetworkPolicyReq)
 		if err != nil {
 			return err
 		}
@@ -153,8 +152,8 @@ func newReadPersonalComputeSetting() *cobra.Command {
 	cmd.ValidArgsFunction = cobra.NoFileCompletions
 
 	// Apply optional overrides to this command.
-	for _, fn := range readPersonalComputeSettingOverrides {
-		fn(cmd, &readPersonalComputeSettingReq)
+	for _, fn := range readAccountNetworkPolicyOverrides {
+		fn(cmd, &readAccountNetworkPolicyReq)
 	}
 
 	return cmd
@@ -162,36 +161,36 @@ func newReadPersonalComputeSetting() *cobra.Command {
 
 func init() {
 	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newReadPersonalComputeSetting())
+		cmd.AddCommand(newReadAccountNetworkPolicy())
 	})
 }
 
-// start update-personal-compute-setting command
+// start update-account-network-policy command
 
 // Slice with functions to override default command behavior.
 // Functions can be added from the `init()` function in manually curated files in this directory.
-var updatePersonalComputeSettingOverrides []func(
+var updateAccountNetworkPolicyOverrides []func(
 	*cobra.Command,
-	*settings.UpdatePersonalComputeSettingRequest,
+	*settings.UpdateAccountNetworkPolicyRequest,
 )
 
-func newUpdatePersonalComputeSetting() *cobra.Command {
+func newUpdateAccountNetworkPolicy() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var updatePersonalComputeSettingReq settings.UpdatePersonalComputeSettingRequest
-	var updatePersonalComputeSettingJson flags.JsonFlag
+	var updateAccountNetworkPolicyReq settings.UpdateAccountNetworkPolicyRequest
+	var updateAccountNetworkPolicyJson flags.JsonFlag
 
 	// TODO: short flags
-	cmd.Flags().Var(&updatePersonalComputeSettingJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+	cmd.Flags().Var(&updateAccountNetworkPolicyJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().BoolVar(&updatePersonalComputeSettingReq.AllowMissing, "allow-missing", updatePersonalComputeSettingReq.AllowMissing, `This should always be set to true for Settings RPCs.`)
+	cmd.Flags().BoolVar(&updateAccountNetworkPolicyReq.AllowMissing, "allow-missing", updateAccountNetworkPolicyReq.AllowMissing, `This should always be set to true for Settings RPCs.`)
 	// TODO: complex arg: setting
 
-	cmd.Use = "update-personal-compute-setting"
-	cmd.Short = `Update Personal Compute setting.`
-	cmd.Long = `Update Personal Compute setting.
+	cmd.Use = "update-account-network-policy"
+	cmd.Short = `Update Account Network Policy.`
+	cmd.Long = `Update Account Network Policy.
   
-  Updates the value of the Personal Compute setting.`
+  Updates the policy content of Account level Network Policy.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -206,13 +205,13 @@ func newUpdatePersonalComputeSetting() *cobra.Command {
 		a := root.AccountClient(ctx)
 
 		if cmd.Flags().Changed("json") {
-			err = updatePersonalComputeSettingJson.Unmarshal(&updatePersonalComputeSettingReq)
+			err = updateAccountNetworkPolicyJson.Unmarshal(&updateAccountNetworkPolicyReq)
 			if err != nil {
 				return err
 			}
 		}
 
-		response, err := a.Settings.UpdatePersonalComputeSetting(ctx, updatePersonalComputeSettingReq)
+		response, err := a.NetworkPolicy.UpdateAccountNetworkPolicy(ctx, updateAccountNetworkPolicyReq)
 		if err != nil {
 			return err
 		}
@@ -224,8 +223,8 @@ func newUpdatePersonalComputeSetting() *cobra.Command {
 	cmd.ValidArgsFunction = cobra.NoFileCompletions
 
 	// Apply optional overrides to this command.
-	for _, fn := range updatePersonalComputeSettingOverrides {
-		fn(cmd, &updatePersonalComputeSettingReq)
+	for _, fn := range updateAccountNetworkPolicyOverrides {
+		fn(cmd, &updateAccountNetworkPolicyReq)
 	}
 
 	return cmd
@@ -233,8 +232,8 @@ func newUpdatePersonalComputeSetting() *cobra.Command {
 
 func init() {
 	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newUpdatePersonalComputeSetting())
+		cmd.AddCommand(newUpdateAccountNetworkPolicy())
 	})
 }
 
-// end service AccountSettings
+// end service AccountNetworkPolicy

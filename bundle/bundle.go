@@ -85,10 +85,11 @@ func Load(ctx context.Context, path string) (*Bundle, error) {
 		return nil, err
 	}
 	log.Debugf(ctx, "Loading bundle configuration from: %s", configFile)
-	err = bundle.Config.Load(configFile)
+	root, err := config.Load(configFile)
 	if err != nil {
 		return nil, err
 	}
+	bundle.Config = *root
 	return bundle, nil
 }
 

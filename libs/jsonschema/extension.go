@@ -12,6 +12,9 @@ type Extension struct {
 	// that do have an order defined.
 	Order *int `json:"order,omitempty"`
 
+	// Welcome message to print before prompting the user for input
+	WelcomeMessage string `json:"welcome_message,omitempty"`
+
 	// The message to print after the template is successfully initalized
 	SuccessMessage string `json:"success_message,omitempty"`
 

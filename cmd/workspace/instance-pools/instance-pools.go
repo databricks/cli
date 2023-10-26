@@ -108,8 +108,11 @@ func newCreate() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
+		}
+		if !cmd.Flags().Changed("json") {
 			createReq.InstancePoolName = args[0]
+		}
+		if !cmd.Flags().Changed("json") {
 			createReq.NodeTypeId = args[1]
 		}
 
@@ -270,9 +273,14 @@ func newEdit() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
+		}
+		if !cmd.Flags().Changed("json") {
 			editReq.InstancePoolId = args[0]
+		}
+		if !cmd.Flags().Changed("json") {
 			editReq.InstancePoolName = args[1]
+		}
+		if !cmd.Flags().Changed("json") {
 			editReq.NodeTypeId = args[2]
 		}
 
