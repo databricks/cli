@@ -3,8 +3,6 @@
 package workspace
 
 import (
-	"github.com/databricks/cli/cmd/root"
-
 	alerts "github.com/databricks/cli/cmd/workspace/alerts"
 	apps "github.com/databricks/cli/cmd/workspace/apps"
 	artifact_allowlists "github.com/databricks/cli/cmd/workspace/artifact-allowlists"
@@ -62,6 +60,7 @@ import (
 	workspace "github.com/databricks/cli/cmd/workspace/workspace"
 	workspace_bindings "github.com/databricks/cli/cmd/workspace/workspace-bindings"
 	workspace_conf "github.com/databricks/cli/cmd/workspace/workspace-conf"
+	"github.com/spf13/cobra"
 )
 
 func All() []*cobra.Command {
