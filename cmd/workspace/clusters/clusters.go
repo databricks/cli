@@ -107,8 +107,11 @@ func newChangeOwner() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
+		}
+		if !cmd.Flags().Changed("json") {
 			changeOwnerReq.ClusterId = args[0]
+		}
+		if !cmd.Flags().Changed("json") {
 			changeOwnerReq.OwnerUsername = args[1]
 		}
 
@@ -221,7 +224,8 @@ func newCreate() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
+		}
+		if !cmd.Flags().Changed("json") {
 			createReq.SparkVersion = args[0]
 		}
 
@@ -452,8 +456,11 @@ func newEdit() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
+		}
+		if !cmd.Flags().Changed("json") {
 			editReq.ClusterId = args[0]
+		}
+		if !cmd.Flags().Changed("json") {
 			editReq.SparkVersion = args[1]
 		}
 
@@ -824,10 +831,8 @@ func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listReq compute.ListClustersRequest
-	var listJson flags.JsonFlag
 
 	// TODO: short flags
-	cmd.Flags().Var(&listJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&listReq.CanUseClient, "can-use-client", listReq.CanUseClient, `Filter clusters based on what type of client it can be used for.`)
 
@@ -849,9 +854,6 @@ func newList() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	}
 
@@ -859,14 +861,6 @@ func newList() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-
-		if cmd.Flags().Changed("json") {
-			err = listJson.Unmarshal(&listReq)
-			if err != nil {
-				return err
-			}
-		} else {
-		}
 
 		response, err := w.Clusters.ListAll(ctx, listReq)
 		if err != nil {

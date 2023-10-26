@@ -193,3 +193,32 @@ func TestValidateInstancePatternWithCustomMessage(t *testing.T) {
 	assert.EqualError(t, schema.validatePattern(invalidInstanceValue), "invalid value for foo: \"xyz\". Please enter a string starting with 'a' and ending with 'c'")
 	assert.EqualError(t, schema.ValidateInstance(invalidInstanceValue), "invalid value for foo: \"xyz\". Please enter a string starting with 'a' and ending with 'c'")
 }
+
+func TestValidateInstanceForMultiplePatterns(t *testing.T) {
+	schema, err := Load("./testdata/instance-validate/multiple-patterns-schema.json")
+	require.NoError(t, err)
+
+	// Valid values for both foo and bar
+	validInstance := map[string]any{
+		"foo": "abcc",
+		"bar": "deff",
+	}
+	assert.NoError(t, schema.validatePattern(validInstance))
+	assert.NoError(t, schema.ValidateInstance(validInstance))
+
+	// Valid value for bar, invalid value for foo
+	invalidInstanceValue := map[string]any{
+		"foo": "xyz",
+		"bar": "deff",
+	}
+	assert.EqualError(t, schema.validatePattern(invalidInstanceValue), "invalid value for foo: \"xyz\". Expected to match regex pattern: ^[a-c]+$")
+	assert.EqualError(t, schema.ValidateInstance(invalidInstanceValue), "invalid value for foo: \"xyz\". Expected to match regex pattern: ^[a-c]+$")
+
+	// Valid value for foo, invalid value for bar
+	invalidInstanceValue = map[string]any{
+		"foo": "abcc",
+		"bar": "xyz",
+	}
+	assert.EqualError(t, schema.validatePattern(invalidInstanceValue), "invalid value for bar: \"xyz\". Expected to match regex pattern: ^[d-f]+$")
+	assert.EqualError(t, schema.ValidateInstance(invalidInstanceValue), "invalid value for bar: \"xyz\". Expected to match regex pattern: ^[d-f]+$")
+}

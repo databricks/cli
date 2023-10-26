@@ -19,7 +19,8 @@ var gitUrlPrefixes = []string{
 }
 
 var aliasedTemplates = map[string]string{
-	"mlops-stack": "https://github.com/databricks/mlops-stack",
+	"mlops-stack":  "https://github.com/databricks/mlops-stacks",
+	"mlops-stacks": "https://github.com/databricks/mlops-stacks",
 }
 
 func isRepoUrl(url string) bool {
@@ -44,20 +45,29 @@ func repoName(url string) string {
 func newInitCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "init [TEMPLATE_PATH]",
-		Short: "Initialize Template",
+		Short: "Initialize using a bundle template",
 		Args:  cobra.MaximumNArgs(1),
+		Long: `Initialize using a bundle template.
+
+TEMPLATE_PATH optionally specifies which template to use. It can be one of the following:
+- 'default-python' for the default Python template
+- a local file system path with a template directory
+- a Git repository URL, e.g. https://github.com/my/repository
+
+See https://docs.databricks.com/en/dev-tools/bundles/templates.html for more information on templates.`,
 	}
 
 	var configFile string
 	var outputDir string
 	var templateDir string
 	cmd.Flags().StringVar(&configFile, "config-file", "", "File containing input parameters for template initialization.")
-	cmd.Flags().StringVar(&templateDir, "template-dir", "", "Directory within repository that holds the template specification.")
+	cmd.Flags().StringVar(&templateDir, "template-dir", "", "Directory path within a Git repository containing the template.")
 	cmd.Flags().StringVar(&outputDir, "output-dir", "", "Directory to write the initialized template to.")
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
+
 		var templatePath string
 		if len(args) > 0 {
 			templatePath = args[0]
@@ -78,6 +88,9 @@ func newInitCommand() *cobra.Command {
 		}
 
 		if !isRepoUrl(templatePath) {
+			if templateDir != "" {
+				return errors.New("--template-dir can only be used with a Git repository URL")
+			}
 			// skip downloading the repo because input arg is not a URL. We assume
 			// it's a path on the local file system in that case
 			return template.Materialize(ctx, configFile, templatePath, outputDir)

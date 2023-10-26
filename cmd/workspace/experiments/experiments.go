@@ -95,7 +95,8 @@ func newCreateExperiment() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
+		}
+		if !cmd.Flags().Changed("json") {
 			createExperimentReq.Name = args[0]
 		}
 
@@ -160,9 +161,6 @@ func newCreateRun() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	}
 
@@ -176,7 +174,6 @@ func newCreateRun() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
 		}
 
 		response, err := w.Experiments.CreateRun(ctx, createRunReq)
@@ -250,7 +247,8 @@ func newDeleteExperiment() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
+		}
+		if !cmd.Flags().Changed("json") {
 			deleteExperimentReq.ExperimentId = args[0]
 		}
 
@@ -323,7 +321,8 @@ func newDeleteRun() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
+		}
+		if !cmd.Flags().Changed("json") {
 			deleteRunReq.RunId = args[0]
 		}
 
@@ -399,8 +398,11 @@ func newDeleteRuns() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
+		}
+		if !cmd.Flags().Changed("json") {
 			deleteRunsReq.ExperimentId = args[0]
+		}
+		if !cmd.Flags().Changed("json") {
 			_, err = fmt.Sscan(args[1], &deleteRunsReq.MaxTimestampMillis)
 			if err != nil {
 				return fmt.Errorf("invalid MAX_TIMESTAMP_MILLIS: %s", args[1])
@@ -477,8 +479,11 @@ func newDeleteTag() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
+		}
+		if !cmd.Flags().Changed("json") {
 			deleteTagReq.RunId = args[0]
+		}
+		if !cmd.Flags().Changed("json") {
 			deleteTagReq.Key = args[1]
 		}
 
@@ -907,10 +912,8 @@ func newListArtifacts() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listArtifactsReq ml.ListArtifactsRequest
-	var listArtifactsJson flags.JsonFlag
 
 	// TODO: short flags
-	cmd.Flags().Var(&listArtifactsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&listArtifactsReq.PageToken, "page-token", listArtifactsReq.PageToken, `Token indicating the page of artifact results to fetch.`)
 	cmd.Flags().StringVar(&listArtifactsReq.Path, "path", listArtifactsReq.Path, `Filter artifacts matching this path (a relative path from the root artifact directory).`)
@@ -928,9 +931,6 @@ func newListArtifacts() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	}
 
@@ -938,14 +938,6 @@ func newListArtifacts() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-
-		if cmd.Flags().Changed("json") {
-			err = listArtifactsJson.Unmarshal(&listArtifactsReq)
-			if err != nil {
-				return err
-			}
-		} else {
-		}
 
 		response, err := w.Experiments.ListArtifactsAll(ctx, listArtifactsReq)
 		if err != nil {
@@ -985,10 +977,8 @@ func newListExperiments() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listExperimentsReq ml.ListExperimentsRequest
-	var listExperimentsJson flags.JsonFlag
 
 	// TODO: short flags
-	cmd.Flags().Var(&listExperimentsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().IntVar(&listExperimentsReq.MaxResults, "max-results", listExperimentsReq.MaxResults, `Maximum number of experiments desired.`)
 	cmd.Flags().StringVar(&listExperimentsReq.PageToken, "page-token", listExperimentsReq.PageToken, `Token indicating the page of experiments to fetch.`)
@@ -1004,9 +994,6 @@ func newListExperiments() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	}
 
@@ -1014,14 +1001,6 @@ func newListExperiments() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
-
-		if cmd.Flags().Changed("json") {
-			err = listExperimentsJson.Unmarshal(&listExperimentsReq)
-			if err != nil {
-				return err
-			}
-		} else {
-		}
 
 		response, err := w.Experiments.ListExperimentsAll(ctx, listExperimentsReq)
 		if err != nil {
@@ -1117,9 +1096,6 @@ func newLogBatch() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	}
 
@@ -1133,7 +1109,6 @@ func newLogBatch() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
 		}
 
 		err = w.Experiments.LogBatch(ctx, logBatchReq)
@@ -1193,9 +1168,6 @@ func newLogInputs() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	}
 
@@ -1209,7 +1181,6 @@ func newLogInputs() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
 		}
 
 		err = w.Experiments.LogInputs(ctx, logInputsReq)
@@ -1287,12 +1258,17 @@ func newLogMetric() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
+		}
+		if !cmd.Flags().Changed("json") {
 			logMetricReq.Key = args[0]
+		}
+		if !cmd.Flags().Changed("json") {
 			_, err = fmt.Sscan(args[1], &logMetricReq.Value)
 			if err != nil {
 				return fmt.Errorf("invalid VALUE: %s", args[1])
 			}
+		}
+		if !cmd.Flags().Changed("json") {
 			_, err = fmt.Sscan(args[2], &logMetricReq.Timestamp)
 			if err != nil {
 				return fmt.Errorf("invalid TIMESTAMP: %s", args[2])
@@ -1356,9 +1332,6 @@ func newLogModel() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	}
 
@@ -1372,7 +1345,6 @@ func newLogModel() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
 		}
 
 		err = w.Experiments.LogModel(ctx, logModelReq)
@@ -1450,8 +1422,11 @@ func newLogParam() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
+		}
+		if !cmd.Flags().Changed("json") {
 			logParamReq.Key = args[0]
+		}
+		if !cmd.Flags().Changed("json") {
 			logParamReq.Value = args[1]
 		}
 
@@ -1529,7 +1504,8 @@ func newRestoreExperiment() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
+		}
+		if !cmd.Flags().Changed("json") {
 			restoreExperimentReq.ExperimentId = args[0]
 		}
 
@@ -1602,7 +1578,8 @@ func newRestoreRun() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
+		}
+		if !cmd.Flags().Changed("json") {
 			restoreRunReq.RunId = args[0]
 		}
 
@@ -1678,8 +1655,11 @@ func newRestoreRuns() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
+		}
+		if !cmd.Flags().Changed("json") {
 			restoreRunsReq.ExperimentId = args[0]
+		}
+		if !cmd.Flags().Changed("json") {
 			_, err = fmt.Sscan(args[1], &restoreRunsReq.MinTimestampMillis)
 			if err != nil {
 				return fmt.Errorf("invalid MIN_TIMESTAMP_MILLIS: %s", args[1])
@@ -1745,9 +1725,6 @@ func newSearchExperiments() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	}
 
@@ -1761,7 +1738,6 @@ func newSearchExperiments() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
 		}
 
 		response, err := w.Experiments.SearchExperimentsAll(ctx, searchExperimentsReq)
@@ -1826,9 +1802,6 @@ func newSearchRuns() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	}
 
@@ -1842,7 +1815,6 @@ func newSearchRuns() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
 		}
 
 		response, err := w.Experiments.SearchRunsAll(ctx, searchRunsReq)
@@ -1914,9 +1886,14 @@ func newSetExperimentTag() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
+		}
+		if !cmd.Flags().Changed("json") {
 			setExperimentTagReq.ExperimentId = args[0]
+		}
+		if !cmd.Flags().Changed("json") {
 			setExperimentTagReq.Key = args[1]
+		}
+		if !cmd.Flags().Changed("json") {
 			setExperimentTagReq.Value = args[2]
 		}
 
@@ -2065,8 +2042,11 @@ func newSetTag() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
+		}
+		if !cmd.Flags().Changed("json") {
 			setTagReq.Key = args[0]
+		}
+		if !cmd.Flags().Changed("json") {
 			setTagReq.Value = args[1]
 		}
 
@@ -2141,7 +2121,8 @@ func newUpdateExperiment() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
+		}
+		if !cmd.Flags().Changed("json") {
 			updateExperimentReq.ExperimentId = args[0]
 		}
 
@@ -2275,9 +2256,6 @@ func newUpdateRun() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	}
 
@@ -2291,7 +2269,6 @@ func newUpdateRun() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
 		}
 
 		response, err := w.Experiments.UpdateRun(ctx, updateRunReq)

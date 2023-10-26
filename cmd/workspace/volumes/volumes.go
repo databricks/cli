@@ -106,10 +106,17 @@ func newCreate() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
+		}
+		if !cmd.Flags().Changed("json") {
 			createReq.CatalogName = args[0]
+		}
+		if !cmd.Flags().Changed("json") {
 			createReq.SchemaName = args[1]
+		}
+		if !cmd.Flags().Changed("json") {
 			createReq.Name = args[2]
+		}
+		if !cmd.Flags().Changed("json") {
 			_, err = fmt.Sscan(args[3], &createReq.VolumeType)
 			if err != nil {
 				return fmt.Errorf("invalid VOLUME_TYPE: %s", args[3])
@@ -384,8 +391,10 @@ func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var updateReq catalog.UpdateVolumeRequestContent
+	var updateJson flags.JsonFlag
 
 	// TODO: short flags
+	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `The comment attached to the volume.`)
 	cmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `The name of the volume.`)
@@ -411,6 +420,12 @@ func newUpdate() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
+		if cmd.Flags().Changed("json") {
+			err = updateJson.Unmarshal(&updateReq)
+			if err != nil {
+				return err
+			}
+		}
 		if len(args) == 0 {
 			promptSpinner := cmdio.Spinner(ctx)
 			promptSpinner <- "No FULL_NAME_ARG argument specified. Loading names for Volumes drop-down."

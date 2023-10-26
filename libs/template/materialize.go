@@ -48,6 +48,12 @@ func Materialize(ctx context.Context, configFilePath, templateRoot, outputDir st
 		return err
 	}
 
+	// Print welcome message
+	welcome := config.schema.WelcomeMessage
+	if welcome != "" {
+		cmdio.LogString(ctx, welcome)
+	}
+
 	// Read and assign config values from file
 	if configFilePath != "" {
 		err = config.assignValuesFromFile(configFilePath)
@@ -56,23 +62,23 @@ func Materialize(ctx context.Context, configFilePath, templateRoot, outputDir st
 		}
 	}
 
-	// Prompt user for any missing config values. Assign default values if
-	// terminal is not TTY
-	err = config.promptOrAssignDefaultValues()
+	r, err := newRenderer(ctx, config.values, helpers, templatePath, libraryPath, outputDir)
 	if err != nil {
 		return err
 	}
 
+	// Prompt user for any missing config values. Assign default values if
+	// terminal is not TTY
+	err = config.promptOrAssignDefaultValues(r)
+	if err != nil {
+		return err
+	}
 	err = config.validate()
 	if err != nil {
 		return err
 	}
 
 	// Walk and render the template, since input configuration is complete
-	r, err := newRenderer(ctx, config.values, helpers, templatePath, libraryPath, outputDir)
-	if err != nil {
-		return err
-	}
 	err = r.walk()
 	if err != nil {
 		return err
@@ -82,7 +88,17 @@ func Materialize(ctx context.Context, configFilePath, templateRoot, outputDir st
 	if err != nil {
 		return err
 	}
-	cmdio.LogString(ctx, "✨ Successfully initialized template")
+
+	success := config.schema.SuccessMessage
+	if success == "" {
+		cmdio.LogString(ctx, "✨ Successfully initialized template")
+	} else {
+		success, err = r.executeTemplate(success)
+		if err != nil {
+			return err
+		}
+		cmdio.LogString(ctx, success)
+	}
 	return nil
 }
 

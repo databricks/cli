@@ -90,8 +90,11 @@ func newCreate() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
+		}
+		if !cmd.Flags().Changed("json") {
 			createReq.Name = args[0]
+		}
+		if !cmd.Flags().Changed("json") {
 			createReq.Script = args[1]
 		}
 
@@ -330,13 +333,15 @@ func newUpdate() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var updateReq compute.GlobalInitScriptUpdateRequest
+	var updateJson flags.JsonFlag
 
 	// TODO: short flags
+	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().BoolVar(&updateReq.Enabled, "enabled", updateReq.Enabled, `Specifies whether the script is enabled.`)
 	cmd.Flags().IntVar(&updateReq.Position, "position", updateReq.Position, `The position of a script, where 0 represents the first script to run, 1 is the second script to run, in ascending order.`)
 
-	cmd.Use = "update NAME SCRIPT SCRIPT_ID"
+	cmd.Use = "update SCRIPT_ID NAME SCRIPT"
 	cmd.Short = `Update init script.`
 	cmd.Long = `Update init script.
   
@@ -347,6 +352,9 @@ func newUpdate() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(3)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(1)
+		}
 		return check(cmd, args)
 	}
 
@@ -355,9 +363,19 @@ func newUpdate() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		updateReq.Name = args[0]
-		updateReq.Script = args[1]
-		updateReq.ScriptId = args[2]
+		if cmd.Flags().Changed("json") {
+			err = updateJson.Unmarshal(&updateReq)
+			if err != nil {
+				return err
+			}
+		}
+		updateReq.ScriptId = args[0]
+		if !cmd.Flags().Changed("json") {
+			updateReq.Name = args[1]
+		}
+		if !cmd.Flags().Changed("json") {
+			updateReq.Script = args[2]
+		}
 
 		err = w.GlobalInitScripts.Update(ctx, updateReq)
 		if err != nil {

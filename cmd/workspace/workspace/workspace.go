@@ -453,7 +453,8 @@ func newImport() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
+		}
+		if !cmd.Flags().Changed("json") {
 			importReq.Path = args[0]
 		}
 

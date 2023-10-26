@@ -147,9 +147,6 @@ func newCreate() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	}
 
@@ -163,7 +160,6 @@ func newCreate() *cobra.Command {
 			if err != nil {
 				return err
 			}
-		} else {
 		}
 
 		response, err := a.LogDelivery.Create(ctx, createReq)
@@ -278,10 +274,8 @@ func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var listReq billing.ListLogDeliveryRequest
-	var listJson flags.JsonFlag
 
 	// TODO: short flags
-	cmd.Flags().Var(&listJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&listReq.CredentialsId, "credentials-id", listReq.CredentialsId, `Filter by credential configuration ID.`)
 	cmd.Flags().Var(&listReq.Status, "status", `Filter by status ENABLED or DISABLED.`)
@@ -298,9 +292,6 @@ func newList() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(0)
-		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
-		}
 		return check(cmd, args)
 	}
 
@@ -308,14 +299,6 @@ func newList() *cobra.Command {
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
-
-		if cmd.Flags().Changed("json") {
-			err = listJson.Unmarshal(&listReq)
-			if err != nil {
-				return err
-			}
-		} else {
-		}
 
 		response, err := a.LogDelivery.ListAll(ctx, listReq)
 		if err != nil {
@@ -355,10 +338,12 @@ func newPatchStatus() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	var patchStatusReq billing.UpdateLogDeliveryConfigurationStatusRequest
+	var patchStatusJson flags.JsonFlag
 
 	// TODO: short flags
+	cmd.Flags().Var(&patchStatusJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Use = "patch-status STATUS LOG_DELIVERY_CONFIGURATION_ID"
+	cmd.Use = "patch-status LOG_DELIVERY_CONFIGURATION_ID STATUS"
 	cmd.Short = `Enable or disable log delivery configuration.`
 	cmd.Long = `Enable or disable log delivery configuration.
   
@@ -372,6 +357,9 @@ func newPatchStatus() *cobra.Command {
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
 		check := cobra.ExactArgs(2)
+		if cmd.Flags().Changed("json") {
+			check = cobra.ExactArgs(1)
+		}
 		return check(cmd, args)
 	}
 
@@ -380,11 +368,19 @@ func newPatchStatus() *cobra.Command {
 		ctx := cmd.Context()
 		a := root.AccountClient(ctx)
 
-		_, err = fmt.Sscan(args[0], &patchStatusReq.Status)
-		if err != nil {
-			return fmt.Errorf("invalid STATUS: %s", args[0])
+		if cmd.Flags().Changed("json") {
+			err = patchStatusJson.Unmarshal(&patchStatusReq)
+			if err != nil {
+				return err
+			}
 		}
-		patchStatusReq.LogDeliveryConfigurationId = args[1]
+		patchStatusReq.LogDeliveryConfigurationId = args[0]
+		if !cmd.Flags().Changed("json") {
+			_, err = fmt.Sscan(args[1], &patchStatusReq.Status)
+			if err != nil {
+				return fmt.Errorf("invalid STATUS: %s", args[1])
+			}
+		}
 
 		err = a.LogDelivery.PatchStatus(ctx, patchStatusReq)
 		if err != nil {
