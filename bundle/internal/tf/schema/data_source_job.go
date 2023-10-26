@@ -24,6 +24,11 @@ type DataSourceJobJobSettingsSettingsDbtTask struct {
 	WarehouseId       string   `json:"warehouse_id,omitempty"`
 }
 
+type DataSourceJobJobSettingsSettingsDeployment struct {
+	Kind             string `json:"kind"`
+	MetadataFilePath string `json:"metadata_file_path,omitempty"`
+}
+
 type DataSourceJobJobSettingsSettingsEmailNotifications struct {
 	AlertOnLastAttempt                 bool     `json:"alert_on_last_attempt,omitempty"`
 	NoAlertForSkippedRuns              bool     `json:"no_alert_for_skipped_runs,omitempty"`
@@ -124,6 +129,7 @@ type DataSourceJobJobSettingsSettingsJobClusterNewClusterGcpAttributes struct {
 	Availability            string `json:"availability,omitempty"`
 	BootDiskSize            int    `json:"boot_disk_size,omitempty"`
 	GoogleServiceAccount    string `json:"google_service_account,omitempty"`
+	LocalSsdCount           int    `json:"local_ssd_count,omitempty"`
 	UsePreemptibleExecutors bool   `json:"use_preemptible_executors,omitempty"`
 	ZoneId                  string `json:"zone_id,omitempty"`
 }
@@ -154,6 +160,10 @@ type DataSourceJobJobSettingsSettingsJobClusterNewClusterInitScriptsS3 struct {
 	Region           string `json:"region,omitempty"`
 }
 
+type DataSourceJobJobSettingsSettingsJobClusterNewClusterInitScriptsVolumes struct {
+	Destination string `json:"destination,omitempty"`
+}
+
 type DataSourceJobJobSettingsSettingsJobClusterNewClusterInitScriptsWorkspace struct {
 	Destination string `json:"destination,omitempty"`
 }
@@ -164,6 +174,7 @@ type DataSourceJobJobSettingsSettingsJobClusterNewClusterInitScripts struct {
 	File      *DataSourceJobJobSettingsSettingsJobClusterNewClusterInitScriptsFile      `json:"file,omitempty"`
 	Gcs       *DataSourceJobJobSettingsSettingsJobClusterNewClusterInitScriptsGcs       `json:"gcs,omitempty"`
 	S3        *DataSourceJobJobSettingsSettingsJobClusterNewClusterInitScriptsS3        `json:"s3,omitempty"`
+	Volumes   *DataSourceJobJobSettingsSettingsJobClusterNewClusterInitScriptsVolumes   `json:"volumes,omitempty"`
 	Workspace *DataSourceJobJobSettingsSettingsJobClusterNewClusterInitScriptsWorkspace `json:"workspace,omitempty"`
 }
 
@@ -305,6 +316,7 @@ type DataSourceJobJobSettingsSettingsNewClusterGcpAttributes struct {
 	Availability            string `json:"availability,omitempty"`
 	BootDiskSize            int    `json:"boot_disk_size,omitempty"`
 	GoogleServiceAccount    string `json:"google_service_account,omitempty"`
+	LocalSsdCount           int    `json:"local_ssd_count,omitempty"`
 	UsePreemptibleExecutors bool   `json:"use_preemptible_executors,omitempty"`
 	ZoneId                  string `json:"zone_id,omitempty"`
 }
@@ -335,6 +347,10 @@ type DataSourceJobJobSettingsSettingsNewClusterInitScriptsS3 struct {
 	Region           string `json:"region,omitempty"`
 }
 
+type DataSourceJobJobSettingsSettingsNewClusterInitScriptsVolumes struct {
+	Destination string `json:"destination,omitempty"`
+}
+
 type DataSourceJobJobSettingsSettingsNewClusterInitScriptsWorkspace struct {
 	Destination string `json:"destination,omitempty"`
 }
@@ -345,6 +361,7 @@ type DataSourceJobJobSettingsSettingsNewClusterInitScripts struct {
 	File      *DataSourceJobJobSettingsSettingsNewClusterInitScriptsFile      `json:"file,omitempty"`
 	Gcs       *DataSourceJobJobSettingsSettingsNewClusterInitScriptsGcs       `json:"gcs,omitempty"`
 	S3        *DataSourceJobJobSettingsSettingsNewClusterInitScriptsS3        `json:"s3,omitempty"`
+	Volumes   *DataSourceJobJobSettingsSettingsNewClusterInitScriptsVolumes   `json:"volumes,omitempty"`
 	Workspace *DataSourceJobJobSettingsSettingsNewClusterInitScriptsWorkspace `json:"workspace,omitempty"`
 }
 
@@ -401,6 +418,11 @@ type DataSourceJobJobSettingsSettingsNotificationSettings struct {
 	NoAlertForSkippedRuns  bool `json:"no_alert_for_skipped_runs,omitempty"`
 }
 
+type DataSourceJobJobSettingsSettingsParameter struct {
+	Default string `json:"default,omitempty"`
+	Name    string `json:"name,omitempty"`
+}
+
 type DataSourceJobJobSettingsSettingsPipelineTask struct {
 	FullRefresh bool   `json:"full_refresh,omitempty"`
 	PipelineId  string `json:"pipeline_id"`
@@ -414,11 +436,17 @@ type DataSourceJobJobSettingsSettingsPythonWheelTask struct {
 }
 
 type DataSourceJobJobSettingsSettingsQueue struct {
+	Enabled bool `json:"enabled"`
 }
 
 type DataSourceJobJobSettingsSettingsRunAs struct {
 	ServicePrincipalName string `json:"service_principal_name,omitempty"`
 	UserName             string `json:"user_name,omitempty"`
+}
+
+type DataSourceJobJobSettingsSettingsRunJobTask struct {
+	JobId         int               `json:"job_id"`
+	JobParameters map[string]string `json:"job_parameters,omitempty"`
 }
 
 type DataSourceJobJobSettingsSettingsSchedule struct {
@@ -573,6 +601,7 @@ type DataSourceJobJobSettingsSettingsTaskNewClusterGcpAttributes struct {
 	Availability            string `json:"availability,omitempty"`
 	BootDiskSize            int    `json:"boot_disk_size,omitempty"`
 	GoogleServiceAccount    string `json:"google_service_account,omitempty"`
+	LocalSsdCount           int    `json:"local_ssd_count,omitempty"`
 	UsePreemptibleExecutors bool   `json:"use_preemptible_executors,omitempty"`
 	ZoneId                  string `json:"zone_id,omitempty"`
 }
@@ -603,6 +632,10 @@ type DataSourceJobJobSettingsSettingsTaskNewClusterInitScriptsS3 struct {
 	Region           string `json:"region,omitempty"`
 }
 
+type DataSourceJobJobSettingsSettingsTaskNewClusterInitScriptsVolumes struct {
+	Destination string `json:"destination,omitempty"`
+}
+
 type DataSourceJobJobSettingsSettingsTaskNewClusterInitScriptsWorkspace struct {
 	Destination string `json:"destination,omitempty"`
 }
@@ -613,6 +646,7 @@ type DataSourceJobJobSettingsSettingsTaskNewClusterInitScripts struct {
 	File      *DataSourceJobJobSettingsSettingsTaskNewClusterInitScriptsFile      `json:"file,omitempty"`
 	Gcs       *DataSourceJobJobSettingsSettingsTaskNewClusterInitScriptsGcs       `json:"gcs,omitempty"`
 	S3        *DataSourceJobJobSettingsSettingsTaskNewClusterInitScriptsS3        `json:"s3,omitempty"`
+	Volumes   *DataSourceJobJobSettingsSettingsTaskNewClusterInitScriptsVolumes   `json:"volumes,omitempty"`
 	Workspace *DataSourceJobJobSettingsSettingsTaskNewClusterInitScriptsWorkspace `json:"workspace,omitempty"`
 }
 
@@ -680,6 +714,11 @@ type DataSourceJobJobSettingsSettingsTaskPythonWheelTask struct {
 	NamedParameters map[string]string `json:"named_parameters,omitempty"`
 	PackageName     string            `json:"package_name,omitempty"`
 	Parameters      []string          `json:"parameters,omitempty"`
+}
+
+type DataSourceJobJobSettingsSettingsTaskRunJobTask struct {
+	JobId         int               `json:"job_id"`
+	JobParameters map[string]string `json:"job_parameters,omitempty"`
 }
 
 type DataSourceJobJobSettingsSettingsTaskSparkJarTask struct {
@@ -760,6 +799,7 @@ type DataSourceJobJobSettingsSettingsTask struct {
 	NotificationSettings   *DataSourceJobJobSettingsSettingsTaskNotificationSettings `json:"notification_settings,omitempty"`
 	PipelineTask           *DataSourceJobJobSettingsSettingsTaskPipelineTask         `json:"pipeline_task,omitempty"`
 	PythonWheelTask        *DataSourceJobJobSettingsSettingsTaskPythonWheelTask      `json:"python_wheel_task,omitempty"`
+	RunJobTask             *DataSourceJobJobSettingsSettingsTaskRunJobTask           `json:"run_job_task,omitempty"`
 	SparkJarTask           *DataSourceJobJobSettingsSettingsTaskSparkJarTask         `json:"spark_jar_task,omitempty"`
 	SparkPythonTask        *DataSourceJobJobSettingsSettingsTaskSparkPythonTask      `json:"spark_python_task,omitempty"`
 	SparkSubmitTask        *DataSourceJobJobSettingsSettingsTaskSparkSubmitTask      `json:"spark_submit_task,omitempty"`
@@ -813,6 +853,7 @@ type DataSourceJobJobSettingsSettings struct {
 	Compute                []DataSourceJobJobSettingsSettingsCompute             `json:"compute,omitempty"`
 	Continuous             *DataSourceJobJobSettingsSettingsContinuous           `json:"continuous,omitempty"`
 	DbtTask                *DataSourceJobJobSettingsSettingsDbtTask              `json:"dbt_task,omitempty"`
+	Deployment             *DataSourceJobJobSettingsSettingsDeployment           `json:"deployment,omitempty"`
 	EmailNotifications     *DataSourceJobJobSettingsSettingsEmailNotifications   `json:"email_notifications,omitempty"`
 	GitSource              *DataSourceJobJobSettingsSettingsGitSource            `json:"git_source,omitempty"`
 	Health                 *DataSourceJobJobSettingsSettingsHealth               `json:"health,omitempty"`
@@ -821,10 +862,12 @@ type DataSourceJobJobSettingsSettings struct {
 	NewCluster             *DataSourceJobJobSettingsSettingsNewCluster           `json:"new_cluster,omitempty"`
 	NotebookTask           *DataSourceJobJobSettingsSettingsNotebookTask         `json:"notebook_task,omitempty"`
 	NotificationSettings   *DataSourceJobJobSettingsSettingsNotificationSettings `json:"notification_settings,omitempty"`
+	Parameter              []DataSourceJobJobSettingsSettingsParameter           `json:"parameter,omitempty"`
 	PipelineTask           *DataSourceJobJobSettingsSettingsPipelineTask         `json:"pipeline_task,omitempty"`
 	PythonWheelTask        *DataSourceJobJobSettingsSettingsPythonWheelTask      `json:"python_wheel_task,omitempty"`
 	Queue                  *DataSourceJobJobSettingsSettingsQueue                `json:"queue,omitempty"`
 	RunAs                  *DataSourceJobJobSettingsSettingsRunAs                `json:"run_as,omitempty"`
+	RunJobTask             *DataSourceJobJobSettingsSettingsRunJobTask           `json:"run_job_task,omitempty"`
 	Schedule               *DataSourceJobJobSettingsSettingsSchedule             `json:"schedule,omitempty"`
 	SparkJarTask           *DataSourceJobJobSettingsSettingsSparkJarTask         `json:"spark_jar_task,omitempty"`
 	SparkPythonTask        *DataSourceJobJobSettingsSettingsSparkPythonTask      `json:"spark_python_task,omitempty"`

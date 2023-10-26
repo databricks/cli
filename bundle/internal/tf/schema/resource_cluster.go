@@ -68,6 +68,7 @@ type ResourceClusterGcpAttributes struct {
 	Availability            string `json:"availability,omitempty"`
 	BootDiskSize            int    `json:"boot_disk_size,omitempty"`
 	GoogleServiceAccount    string `json:"google_service_account,omitempty"`
+	LocalSsdCount           int    `json:"local_ssd_count,omitempty"`
 	UsePreemptibleExecutors bool   `json:"use_preemptible_executors,omitempty"`
 	ZoneId                  string `json:"zone_id,omitempty"`
 }
@@ -98,6 +99,10 @@ type ResourceClusterInitScriptsS3 struct {
 	Region           string `json:"region,omitempty"`
 }
 
+type ResourceClusterInitScriptsVolumes struct {
+	Destination string `json:"destination,omitempty"`
+}
+
 type ResourceClusterInitScriptsWorkspace struct {
 	Destination string `json:"destination,omitempty"`
 }
@@ -108,6 +113,7 @@ type ResourceClusterInitScripts struct {
 	File      *ResourceClusterInitScriptsFile      `json:"file,omitempty"`
 	Gcs       *ResourceClusterInitScriptsGcs       `json:"gcs,omitempty"`
 	S3        *ResourceClusterInitScriptsS3        `json:"s3,omitempty"`
+	Volumes   *ResourceClusterInitScriptsVolumes   `json:"volumes,omitempty"`
 	Workspace *ResourceClusterInitScriptsWorkspace `json:"workspace,omitempty"`
 }
 

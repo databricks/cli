@@ -8,6 +8,8 @@ type ResourceStorageCredentialAwsIamRole struct {
 
 type ResourceStorageCredentialAzureManagedIdentity struct {
 	AccessConnectorId string `json:"access_connector_id"`
+	CredentialId      string `json:"credential_id,omitempty"`
+	ManagedIdentityId string `json:"managed_identity_id,omitempty"`
 }
 
 type ResourceStorageCredentialAzureServicePrincipal struct {
@@ -17,7 +19,8 @@ type ResourceStorageCredentialAzureServicePrincipal struct {
 }
 
 type ResourceStorageCredentialDatabricksGcpServiceAccount struct {
-	Email string `json:"email,omitempty"`
+	CredentialId string `json:"credential_id,omitempty"`
+	Email        string `json:"email,omitempty"`
 }
 
 type ResourceStorageCredentialGcpServiceAccountKey struct {
@@ -28,6 +31,7 @@ type ResourceStorageCredentialGcpServiceAccountKey struct {
 
 type ResourceStorageCredential struct {
 	Comment                     string                                                `json:"comment,omitempty"`
+	ForceDestroy                bool                                                  `json:"force_destroy,omitempty"`
 	Id                          string                                                `json:"id,omitempty"`
 	MetastoreId                 string                                                `json:"metastore_id,omitempty"`
 	Name                        string                                                `json:"name"`
