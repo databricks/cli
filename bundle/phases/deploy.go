@@ -32,10 +32,12 @@ func Deploy() bundle.Mutator {
 				terraform.StatePull(),
 				bundle.Defer(
 					terraform.Apply(),
-					terraform.StatePush(),
-					terraform.Load(),
-					metadata.Compute(),
-					metadata.Upload(),
+					bundle.Seq(
+						terraform.StatePush(),
+						terraform.Load(),
+						metadata.Compute(),
+						metadata.Upload(),
+					),
 				),
 			),
 			lock.Release(lock.GoalDeploy),
