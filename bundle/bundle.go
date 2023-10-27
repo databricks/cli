@@ -15,6 +15,7 @@ import (
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/env"
+	"github.com/databricks/cli/bundle/metadata"
 	"github.com/databricks/cli/folders"
 	"github.com/databricks/cli/libs/git"
 	"github.com/databricks/cli/libs/locker"
@@ -30,6 +31,14 @@ const internalFolder = ".internal"
 
 type Bundle struct {
 	Config config.Root
+
+	// Metadata about the bundle deployment. This is the interface Databricks services
+	// rely on to integrate with bundles when they need additional information about
+	// a bundle deployment.
+	//
+	// After deploy, a file containing the metadata (metadata.json) can be found
+	// in the WSFS location containing the bundle state.
+	Metadata metadata.Metadata
 
 	// Store a pointer to the workspace client.
 	// It can be initialized on demand after loading the configuration.

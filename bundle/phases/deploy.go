@@ -7,6 +7,7 @@ import (
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/deploy/files"
 	"github.com/databricks/cli/bundle/deploy/lock"
+	"github.com/databricks/cli/bundle/deploy/metadata"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/bundle/python"
@@ -31,7 +32,12 @@ func Deploy() bundle.Mutator {
 				terraform.StatePull(),
 				bundle.Defer(
 					terraform.Apply(),
-					terraform.StatePush(),
+					bundle.Seq(
+						terraform.StatePush(),
+						terraform.Load(),
+						metadata.Compute(),
+						metadata.Upload(),
+					),
 				),
 			),
 			lock.Release(lock.GoalDeploy),

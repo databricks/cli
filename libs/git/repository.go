@@ -40,7 +40,7 @@ type Repository struct {
 	config *config
 }
 
-// Root returns the repository root.
+// Root returns the absolute path to the repository root.
 func (r *Repository) Root() string {
 	return r.rootPath
 }
