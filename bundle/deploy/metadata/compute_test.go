@@ -81,7 +81,6 @@ func TestComputeMetadataMutator(t *testing.T) {
 			Resources: metadata.Resources{
 				Jobs: map[string]*metadata.Job{
 					"my-job-1": {
-
 						RelativePath: "a/b/c",
 						ID:           "1111",
 					},

@@ -3,7 +3,6 @@ package metadata
 import (
 	"context"
 	"fmt"
-	"path"
 	"path/filepath"
 
 	"github.com/databricks/cli/bundle"
@@ -38,12 +37,10 @@ func (m *compute) Apply(_ context.Context, b *bundle.Bundle) error {
 		if err != nil {
 			return fmt.Errorf("failed to compute relative path for job %s: %w", name, err)
 		}
-		relativePath = filepath.ToSlash(relativePath)
-
 		// Metadata for the job
 		jobsMetadata[name] = &metadata.Job{
 			ID:           job.ID,
-			RelativePath: path.Clean(relativePath),
+			RelativePath: filepath.ToSlash(relativePath),
 		}
 	}
 	b.Metadata.Config.Resources.Jobs = jobsMetadata

@@ -4,7 +4,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 )
 
-var Version = 1
+const Version = 1
 
 type Bundle struct {
 	Git config.Git `json:"git,omitempty"`
@@ -19,7 +19,7 @@ type Job struct {
 
 	// Relative path from the bundle root to the configuration file that holds
 	// the definition of this resource.
-	RelativePath string `json:"relative_path,omitempty" bundle:"readonly"`
+	RelativePath string `json:"relative_path,omitempty"`
 }
 
 type Resources struct {
