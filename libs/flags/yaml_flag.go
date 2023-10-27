@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"sigs.k8s.io/yaml"
+	"github.com/ghodss/yaml"
 )
 
 type YamlFlag struct {
@@ -17,8 +17,12 @@ func (y *YamlFlag) String() string {
 
 // TODO: Command.MarkFlagFilename()
 func (y *YamlFlag) Set(v string) error {
-	// Load request from file
-	buf, err := os.ReadFile(v)
+	// Load request from file if it starts with '@' (like curl).
+	if v[0] != '@' {
+		y.raw = []byte(v)
+		return nil
+	}
+	buf, err := os.ReadFile(v[1:])
 	if err != nil {
 		return fmt.Errorf("read %s: %w", v, err)
 	}
