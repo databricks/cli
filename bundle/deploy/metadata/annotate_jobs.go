@@ -15,7 +15,7 @@ func AnnotateJobs() bundle.Mutator {
 }
 
 func (m *annotateJobs) Name() string {
-	return "metadata.SetInJobs"
+	return "metadata.AnnotateJobs"
 }
 
 func (m *annotateJobs) Apply(_ context.Context, b *bundle.Bundle) error {
