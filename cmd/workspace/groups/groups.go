@@ -67,6 +67,7 @@ func newCreate() *cobra.Command {
 	// TODO: array: members
 	// TODO: complex arg: meta
 	// TODO: array: roles
+	// TODO: array: schemas
 
 	cmd.Use = "create"
 	cmd.Short = `Create a new group.`
@@ -442,6 +443,7 @@ func newUpdate() *cobra.Command {
 	// TODO: array: members
 	// TODO: complex arg: meta
 	// TODO: array: roles
+	// TODO: array: schemas
 
 	cmd.Use = "update ID"
 	cmd.Short = `Replace a group.`

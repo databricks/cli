@@ -24,6 +24,11 @@ type ResourceJobDbtTask struct {
 	WarehouseId       string   `json:"warehouse_id,omitempty"`
 }
 
+type ResourceJobDeployment struct {
+	Kind             string `json:"kind"`
+	MetadataFilePath string `json:"metadata_file_path,omitempty"`
+}
+
 type ResourceJobEmailNotifications struct {
 	AlertOnLastAttempt                 bool     `json:"alert_on_last_attempt,omitempty"`
 	NoAlertForSkippedRuns              bool     `json:"no_alert_for_skipped_runs,omitempty"`
@@ -852,6 +857,7 @@ type ResourceJob struct {
 	Compute                []ResourceJobCompute             `json:"compute,omitempty"`
 	Continuous             *ResourceJobContinuous           `json:"continuous,omitempty"`
 	DbtTask                *ResourceJobDbtTask              `json:"dbt_task,omitempty"`
+	Deployment             *ResourceJobDeployment           `json:"deployment,omitempty"`
 	EmailNotifications     *ResourceJobEmailNotifications   `json:"email_notifications,omitempty"`
 	GitSource              *ResourceJobGitSource            `json:"git_source,omitempty"`
 	Health                 *ResourceJobHealth               `json:"health,omitempty"`

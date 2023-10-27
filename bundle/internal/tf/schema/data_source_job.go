@@ -24,6 +24,11 @@ type DataSourceJobJobSettingsSettingsDbtTask struct {
 	WarehouseId       string   `json:"warehouse_id,omitempty"`
 }
 
+type DataSourceJobJobSettingsSettingsDeployment struct {
+	Kind             string `json:"kind"`
+	MetadataFilePath string `json:"metadata_file_path,omitempty"`
+}
+
 type DataSourceJobJobSettingsSettingsEmailNotifications struct {
 	AlertOnLastAttempt                 bool     `json:"alert_on_last_attempt,omitempty"`
 	NoAlertForSkippedRuns              bool     `json:"no_alert_for_skipped_runs,omitempty"`
@@ -848,6 +853,7 @@ type DataSourceJobJobSettingsSettings struct {
 	Compute                []DataSourceJobJobSettingsSettingsCompute             `json:"compute,omitempty"`
 	Continuous             *DataSourceJobJobSettingsSettingsContinuous           `json:"continuous,omitempty"`
 	DbtTask                *DataSourceJobJobSettingsSettingsDbtTask              `json:"dbt_task,omitempty"`
+	Deployment             *DataSourceJobJobSettingsSettingsDeployment           `json:"deployment,omitempty"`
 	EmailNotifications     *DataSourceJobJobSettingsSettingsEmailNotifications   `json:"email_notifications,omitempty"`
 	GitSource              *DataSourceJobJobSettingsSettingsGitSource            `json:"git_source,omitempty"`
 	Health                 *DataSourceJobJobSettingsSettingsHealth               `json:"health,omitempty"`
