@@ -13,6 +13,7 @@ import (
 func createOverride(cmd *cobra.Command, deployReq *serving.DeployAppRequest) {
 	var manifestYaml flags.YamlFlag
 	var resourcesYaml flags.YamlFlag
+	createJson := cmd.Flag("json").Value.(*flags.JsonFlag)
 
 	// TODO: short flags
 	cmd.Flags().Var(&manifestYaml, "manifest", `either inline YAML string or @path/to/manifest.yaml`)
@@ -41,7 +42,7 @@ func createOverride(cmd *cobra.Command, deployReq *serving.DeployAppRequest) {
 				}
 			}
 		} else {
-			return fmt.Errorf("please provide command input in YAML format by specifying the --manifest flag")
+			return fmt.Errorf("please provide command input in YAML format by specifying the --manifest flag or provide a json payload using the --json flag")
 		}
 		response, err := w.Apps.Create(ctx, *deployReq)
 		if err != nil {
