@@ -8,7 +8,7 @@ import (
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/paths"
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/bundle/deployment"
+	"github.com/databricks/cli/bundle/metadata"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -64,13 +64,13 @@ func TestComputeMetadataMutator(t *testing.T) {
 		},
 	}
 
-	expectedMetadata := deployment.Metadata{
-		Version: deployment.MetadataVersion,
-		Config: config.Root{
-			Workspace: config.Workspace{
+	expectedMetadata := metadata.Metadata{
+		Version: metadata.Version,
+		Config: metadata.Config{
+			Workspace: metadata.Workspace{
 				FilesPath: "/Users/shreyas.goenka@databricks.com/files",
 			},
-			Bundle: config.Bundle{
+			Bundle: metadata.Bundle{
 				Git: config.Git{
 					Branch:         "my-branch",
 					OriginURL:      "www.host.com",
@@ -78,19 +78,15 @@ func TestComputeMetadataMutator(t *testing.T) {
 					BundleRootPath: "a/b/c/d",
 				},
 			},
-			Resources: config.Resources{
-				Jobs: map[string]*resources.Job{
+			Resources: metadata.Resources{
+				Jobs: map[string]*metadata.Job{
 					"my-job-1": {
-						Paths: paths.Paths{
-							RelativePath: "a/b/c",
-						},
-						ID: "1111",
+						RelativePath: "a/b/c",
+						ID:           "1111",
 					},
 					"my-job-2": {
-						Paths: paths.Paths{
-							RelativePath: "d/e/f",
-						},
-						ID: "2222",
+						RelativePath: "d/e/f",
+						ID:           "2222",
 					},
 				},
 			},
