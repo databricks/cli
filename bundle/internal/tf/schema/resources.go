@@ -4,6 +4,7 @@ package schema
 
 type Resources struct {
 	AccessControlRuleSet     map[string]*ResourceAccessControlRuleSet     `json:"databricks_access_control_rule_set,omitempty"`
+	ArtifactAllowlist        map[string]*ResourceArtifactAllowlist        `json:"databricks_artifact_allowlist,omitempty"`
 	AwsS3Mount               map[string]*ResourceAwsS3Mount               `json:"databricks_aws_s3_mount,omitempty"`
 	AzureAdlsGen1Mount       map[string]*ResourceAzureAdlsGen1Mount       `json:"databricks_azure_adls_gen1_mount,omitempty"`
 	AzureAdlsGen2Mount       map[string]*ResourceAzureAdlsGen2Mount       `json:"databricks_azure_adls_gen2_mount,omitempty"`
@@ -87,6 +88,7 @@ type Resources struct {
 func NewResources() *Resources {
 	return &Resources{
 		AccessControlRuleSet:     make(map[string]*ResourceAccessControlRuleSet),
+		ArtifactAllowlist:        make(map[string]*ResourceArtifactAllowlist),
 		AwsS3Mount:               make(map[string]*ResourceAwsS3Mount),
 		AzureAdlsGen1Mount:       make(map[string]*ResourceAzureAdlsGen1Mount),
 		AzureAdlsGen2Mount:       make(map[string]*ResourceAzureAdlsGen2Mount),
