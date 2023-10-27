@@ -1,6 +1,6 @@
 ---
 name: DABs Issue
-about: Use this to identify an issue with Databricks Asset Bundles.
+about: Use this to report an issue with Databricks Asset Bundles.
 labels: DABs
 title: ''
 ---

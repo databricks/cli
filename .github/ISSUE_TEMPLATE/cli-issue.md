@@ -1,7 +1,7 @@
 ---
 name: CLI Issue
-about: Use this to identify a issue with the CLI.
-title: "Issue with `databricks xxx` command"
+about: Use this to report an issue with the CLI.
+title: ''
 labels: CLI
 ---
 
