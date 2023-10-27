@@ -26,6 +26,7 @@ func TestAnnotateJobsMutator(t *testing.T) {
 					},
 					"my-job-2": {
 						JobSettings: &jobs.JobSettings{
+							Name: "My Job Two",
 						},
 					},
 				},
