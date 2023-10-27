@@ -6,7 +6,7 @@ title: ''
 ---
 
 ### Describe the issue
-<!-- A clear and concise description of what the issue is. Please include the version of the CLI (run: databricks --version) -->
+<!-- A clear and concise description of what the issue is -->
 
 ### Configuration
 <!-- Please provide a minimal reproducible configuration for the issue -->
@@ -23,7 +23,10 @@ title: ''
 ### Actual Behavior
 <!-- Clear and concise description of what actually happened -->
 
-### Is it a regression?
+### OS and CLI version
+<!-- Please provide the version of the CLI (eg: v0.1.2) and the operating system (eg: windows). You can run databricks --version to get the version of your Databricks CLI -->
+
+### Is this a regression?
 <!-- Did this work in a previous version of the CLI? If so, which versions did you try? -->
 
 ### Debug Logs
