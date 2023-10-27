@@ -1,5 +1,5 @@
 ---
-name: CLI Issue
+name: Bug report for the CLI
 about: Use this to report an issue with the CLI.
 title: ''
 labels: CLI
