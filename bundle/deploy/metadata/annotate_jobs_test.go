@@ -37,12 +37,16 @@ func TestAnnotateJobsMutator(t *testing.T) {
 	err := AnnotateJobs().Apply(context.Background(), b)
 	assert.NoError(t, err)
 
-	assert.Equal(t, b.Config.Resources.Jobs["my-job-1"].JobSettings.Deployment, &jobs.JobDeployment{
-		Kind:             jobs.JobDeploymentKindBundle,
-		MetadataFilePath: "/a/b/c/metadata.json",
-	})
-	assert.Equal(t, b.Config.Resources.Jobs["my-job-2"].JobSettings.Deployment, &jobs.JobDeployment{
-		Kind:             jobs.JobDeploymentKindBundle,
-		MetadataFilePath: "/a/b/c/metadata.json",
-	})
+	assert.Equal(t,
+		&jobs.JobDeployment{
+			Kind:             jobs.JobDeploymentKindBundle,
+			MetadataFilePath: "/a/b/c/metadata.json",
+		},
+		b.Config.Resources.Jobs["my-job-1"].JobSettings.Deployment)
+	assert.Equal(t,
+		&jobs.JobDeployment{
+			Kind:             jobs.JobDeploymentKindBundle,
+			MetadataFilePath: "/a/b/c/metadata.json",
+		},
+		b.Config.Resources.Jobs["my-job-2"].JobSettings.Deployment)
 }
