@@ -1,0 +1,62 @@
+# Deployment target specific values
+targets:
+  dev:
+    resources:
+      registered_models:
+        model:
+          comment: Registered model in Unity Catalog for the "mlops_stacks" ML Project for ${bundle.target} deployment target.
+
+  test:
+    resources:
+      registered_models:
+        model:
+          comment: Registered model in Unity Catalog for the "mlops_stacks" ML Project for ${bundle.target} deployment target.
+
+  staging:
+    resources:
+      registered_models:
+        model:
+          comment: Registered model in Unity Catalog for the "mlops_stacks" ML Project for ${bundle.target} deployment target.
+
+  prod:
+    resources:
+      registered_models:
+        model:
+          comment: |
+            Registered model in Unity Catalog for the "mlops_stacks" ML Project. See the corresponding [Git repo]($#{var.git_repo_url}) for details on the project.
+            
+            Links:
+              * [Recurring model training job](https://adb-xxxx.xx.azuredatabricks.net#job/${resources.jobs.model_training_job.id}): trains fresh model versions using the latest ML code.
+              * [Recurring batch inference job](https://adb-xxxx.xx.azuredatabricks.net#job/${resources.jobs.batch_inference_job.id}): applies the latest ${bundle.target} model version for batch inference.
+      
+
+# Allow users to read the experiment 
+permissions: &permissions
+  permissions:
+    - level: CAN_READ
+      group_name: users
+
+# Allow users to execute models in Unity Catalog
+grants: &grants
+  grants:
+    - privileges:
+        - EXECUTE
+      principal: account users
+
+# Defines model and experiments
+resources:
+  registered_models:
+      model:
+        name: ${var.model_name}
+        catalog_name: ${bundle.target}
+        schema_name: my-mlops-project     
+        <<: *grants
+        depends_on:
+          - resources.jobs.model_training_job.id
+          - resources.jobs.batch_inference_job.id
+
+  experiments:
+    experiment:
+      name: ${var.experiment_name}
+      <<: *permissions
+      description: MLflow Experiment used to track runs for mlops_stacks project.
