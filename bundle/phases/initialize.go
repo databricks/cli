@@ -35,7 +35,7 @@ func Initialize() bundle.Mutator {
 			mutator.ExpandPipelineGlobPaths(),
 			mutator.TranslatePaths(),
 			python.WrapperWarning(),
-			permissions.ApplyTopLevelPermissions(),
+			permissions.ApplyBundlePermissions(),
 			terraform.Initialize(),
 			scripts.Execute(config.ScriptPostInit),
 		},

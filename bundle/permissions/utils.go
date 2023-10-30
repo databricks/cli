@@ -4,21 +4,20 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
 )
 
 func convert(
 	ctx context.Context,
-	topLevelPermissions []resources.Permission,
+	bundlePermissions []resources.Permission,
 	resourcePermissions []resources.Permission,
 	resourceName string,
 	lm map[string]string,
 ) []resources.Permission {
 	permissions := make([]resources.Permission, 0)
-	for _, p := range topLevelPermissions {
+	for _, p := range bundlePermissions {
 		level, ok := lm[p.Level]
-		// If there is no top level permission level defined in the map, it means
+		// If there is no bundle permission level defined in the map, it means
 		// it's not applicable for the resource, therefore skipping
 		if !ok {
 			continue
@@ -74,13 +73,9 @@ func notifyForPermissionOverlap(
 	resourcePermissions []resources.Permission,
 	resourceName string,
 ) bool {
-	isOverlap, diagnostics := isPermissionOverlap(permission, resourcePermissions, resourceName)
-	// If there is permission overlap, show a warning to the user
-	if isOverlap {
-		for _, d := range diagnostics {
-			cmdio.LogString(ctx, d.Summary)
-		}
-	}
+	isOverlap, _ := isPermissionOverlap(permission, resourcePermissions, resourceName)
+	// TODO: When we start to collect all diagnostics at the top level and visualize jointly,
+	// use diagnostics returned from isPermissionOverlap to display warnings
 
 	return isOverlap
 }

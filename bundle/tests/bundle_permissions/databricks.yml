@@ -1,0 +1,16 @@
+bundle:
+  name: bundle_permissions
+
+permissions:
+  - level: CAN_RUN
+    user_name: test@company.com
+
+targets:
+  development:
+    permissions:
+      - level: CAN_MANAGE
+        group_name: devs
+      - level: CAN_VIEW
+        service_principal_name: 1234-abcd
+      - level: CAN_RUN
+        user_name: bot@company.com

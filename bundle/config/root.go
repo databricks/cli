@@ -242,5 +242,12 @@ func (r *Root) MergeTargetOverrides(target *Target) error {
 		}
 	}
 
+	if target.Permissions != nil {
+		err = mergo.Merge(&r.Permissions, target.Permissions, mergo.WithAppendSlice)
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }

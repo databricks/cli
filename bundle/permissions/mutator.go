@@ -7,13 +7,14 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
 const CAN_MANAGE = "CAN_MANAGE"
 const CAN_VIEW = "CAN_VIEW"
 const CAN_RUN = "CAN_RUN"
 
-var allowedLevels = []string{"CAN_MANAGE", "CAN_VIEW", "CAN_RUN"}
+var allowedLevels = []string{CAN_MANAGE, CAN_VIEW, CAN_RUN}
 var levelsMap = map[string](map[string]string){
 	"jobs": {
 		CAN_MANAGE: "CAN_MANAGE",
@@ -40,28 +41,33 @@ var levelsMap = map[string](map[string]string){
 	},
 }
 
-type topLevelPermissions struct{}
+type bundlePermissions struct{}
 
-func ApplyTopLevelPermissions() bundle.Mutator {
-	return &topLevelPermissions{}
+func ApplyBundlePermissions() bundle.Mutator {
+	return &bundlePermissions{}
 }
 
-func (m *topLevelPermissions) Apply(ctx context.Context, b *bundle.Bundle) error {
-	err := m.validate(b)
+func (m *bundlePermissions) Apply(ctx context.Context, b *bundle.Bundle) error {
+	err := validate(b)
 	if err != nil {
 		return err
 	}
 
-	m.applyForJobs(ctx, b)
-	m.applyForPipelines(ctx, b)
-	m.applyForMLModels(ctx, b)
-	m.applyForMLExperiments(ctx, b)
-	m.applyForModelServiceEndpoints(ctx, b)
+	err = giveWriteAccessForWorkspaceRoot(ctx, b)
+	if err != nil {
+		return err
+	}
+
+	applyForJobs(ctx, b)
+	applyForPipelines(ctx, b)
+	applyForMlModels(ctx, b)
+	applyForMlExperiments(ctx, b)
+	applyForModelServiceEndpoints(ctx, b)
 
 	return nil
 }
 
-func (m *topLevelPermissions) validate(b *bundle.Bundle) error {
+func validate(b *bundle.Bundle) error {
 	for _, p := range b.Config.Permissions {
 		if !slices.Contains(allowedLevels, p.Level) {
 			return fmt.Errorf("invalid permission level: %s, allowed values: [%s]", p.Level, strings.Join(allowedLevels, ", "))
@@ -71,7 +77,41 @@ func (m *topLevelPermissions) validate(b *bundle.Bundle) error {
 	return nil
 }
 
-func (m *topLevelPermissions) applyForJobs(ctx context.Context, b *bundle.Bundle) {
+func giveWriteAccessForWorkspaceRoot(ctx context.Context, b *bundle.Bundle) error {
+	permissions := make([]workspace.WorkspaceObjectAccessControlRequest, 0)
+
+	for _, p := range b.Config.Permissions {
+		if p.Level != CAN_MANAGE {
+			continue
+		}
+
+		permissions = append(permissions, workspace.WorkspaceObjectAccessControlRequest{
+			GroupName:            p.GroupName,
+			UserName:             p.UserName,
+			ServicePrincipalName: p.ServicePrincipalName,
+			PermissionLevel:      "CAN_MANAGE",
+		})
+	}
+
+	if len(permissions) == 0 {
+		return nil
+	}
+
+	w := b.WorkspaceClient().Workspace
+	obj, err := w.GetByPath(ctx, b.Config.Workspace.RootPath)
+	if err != nil {
+		return err
+	}
+
+	_, err = w.UpdatePermissions(ctx, workspace.WorkspaceObjectPermissionsRequest{
+		WorkspaceObjectId:   fmt.Sprint(obj.ObjectId),
+		WorkspaceObjectType: string(obj.ObjectType),
+		AccessControlList:   permissions,
+	})
+	return err
+}
+
+func applyForJobs(ctx context.Context, b *bundle.Bundle) {
 	for _, job := range b.Config.Resources.Jobs {
 		job.Permissions = append(job.Permissions, convert(
 			ctx,
@@ -83,7 +123,7 @@ func (m *topLevelPermissions) applyForJobs(ctx context.Context, b *bundle.Bundle
 	}
 }
 
-func (m *topLevelPermissions) applyForPipelines(ctx context.Context, b *bundle.Bundle) {
+func applyForPipelines(ctx context.Context, b *bundle.Bundle) {
 	for _, pipeline := range b.Config.Resources.Pipelines {
 		pipeline.Permissions = append(pipeline.Permissions, convert(
 			ctx,
@@ -95,7 +135,7 @@ func (m *topLevelPermissions) applyForPipelines(ctx context.Context, b *bundle.B
 	}
 }
 
-func (m *topLevelPermissions) applyForMLExperiments(ctx context.Context, b *bundle.Bundle) {
+func applyForMlExperiments(ctx context.Context, b *bundle.Bundle) {
 	for _, experiment := range b.Config.Resources.Experiments {
 		experiment.Permissions = append(experiment.Permissions, convert(
 			ctx,
@@ -107,7 +147,7 @@ func (m *topLevelPermissions) applyForMLExperiments(ctx context.Context, b *bund
 	}
 }
 
-func (m *topLevelPermissions) applyForMLModels(ctx context.Context, b *bundle.Bundle) {
+func applyForMlModels(ctx context.Context, b *bundle.Bundle) {
 	for _, model := range b.Config.Resources.Models {
 		model.Permissions = append(model.Permissions, convert(
 			ctx,
@@ -119,7 +159,7 @@ func (m *topLevelPermissions) applyForMLModels(ctx context.Context, b *bundle.Bu
 	}
 }
 
-func (m *topLevelPermissions) applyForModelServiceEndpoints(ctx context.Context, b *bundle.Bundle) {
+func applyForModelServiceEndpoints(ctx context.Context, b *bundle.Bundle) {
 	for _, model := range b.Config.Resources.ModelServingEndpoints {
 		model.Permissions = append(model.Permissions, convert(
 			ctx,
@@ -131,6 +171,6 @@ func (m *topLevelPermissions) applyForModelServiceEndpoints(ctx context.Context,
 	}
 }
 
-func (m *topLevelPermissions) Name() string {
-	return "ApplyTopLevelPermissions"
+func (m *bundlePermissions) Name() string {
+	return "ApplyBundlePermissions"
 }
