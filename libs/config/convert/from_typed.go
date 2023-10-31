@@ -34,7 +34,7 @@ func FromTyped(src any, ref config.Value) (config.Value, error) {
 	case reflect.Int, reflect.Int32, reflect.Int64:
 		return fromTypedInt(srcv, ref)
 	case reflect.Float32, reflect.Float64:
-		// return fromTypedFloat(srcv, dst)
+		return fromTypedFloat(srcv, ref)
 	}
 
 	return config.NilValue, fmt.Errorf("unsupported type: %s", srcv.Kind())
@@ -207,7 +207,26 @@ func fromTypedInt(src reflect.Value, ref config.Value) (config.Value, error) {
 		}
 		return config.V(value), nil
 	case config.KindNil:
-		return config.V(src.Bool()), nil
+		return config.V(src.Int()), nil
+	}
+
+	return config.Value{}, fmt.Errorf("unhandled type: %s", ref.Kind())
+}
+
+func fromTypedFloat(src reflect.Value, ref config.Value) (config.Value, error) {
+	if src.IsZero() {
+		return config.NilValue, nil
+	}
+
+	switch ref.Kind() {
+	case config.KindFloat:
+		value := src.Float()
+		if value == ref.MustFloat() {
+			return ref, nil
+		}
+		return config.V(value), nil
+	case config.KindNil:
+		return config.V(src.Float()), nil
 	}
 
 	return config.Value{}, fmt.Errorf("unhandled type: %s", ref.Kind())

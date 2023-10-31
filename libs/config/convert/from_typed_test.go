@@ -191,7 +191,7 @@ func TestFromTypedStringEmpty(t *testing.T) {
 }
 
 func TestFromTypedStringNonEmpty(t *testing.T) {
-	var src = "new"
+	var src string = "new"
 	var ref = config.NilValue
 	nv, err := FromTyped(src, ref)
 	require.NoError(t, err)
@@ -199,7 +199,7 @@ func TestFromTypedStringNonEmpty(t *testing.T) {
 }
 
 func TestFromTypedStringNonEmptyOverwrite(t *testing.T) {
-	var src = "new"
+	var src string = "new"
 	var ref = config.V("old")
 	nv, err := FromTyped(src, ref)
 	require.NoError(t, err)
@@ -207,11 +207,18 @@ func TestFromTypedStringNonEmptyOverwrite(t *testing.T) {
 }
 
 func TestFromTypedStringRetainsLocationsIfUnchanged(t *testing.T) {
-	var src = "foo"
+	var src string = "foo"
 	var ref = config.NewValue("foo", config.Location{File: "foo"})
 	nv, err := FromTyped(src, ref)
 	require.NoError(t, err)
 	assert.Equal(t, config.NewValue("foo", config.Location{File: "foo"}), nv)
+}
+
+func TestFromTypedStringTypeError(t *testing.T) {
+	var src string = "foo"
+	var ref = config.V(1234)
+	_, err := FromTyped(src, ref)
+	require.Error(t, err)
 }
 
 func TestFromTypedBoolEmpty(t *testing.T) {
@@ -239,9 +246,94 @@ func TestFromTypedBoolNonEmptyOverwrite(t *testing.T) {
 }
 
 func TestFromTypedBoolRetainsLocationsIfUnchanged(t *testing.T) {
-	var src = true
+	var src bool = true
 	var ref = config.NewValue(true, config.Location{File: "foo"})
 	nv, err := FromTyped(src, ref)
 	require.NoError(t, err)
 	assert.Equal(t, config.NewValue(true, config.Location{File: "foo"}), nv)
+}
+
+func TestFromTypedBoolTypeError(t *testing.T) {
+	var src bool = true
+	var ref = config.V("string")
+	_, err := FromTyped(src, ref)
+	require.Error(t, err)
+}
+
+func TestFromTypedIntEmpty(t *testing.T) {
+	var src int
+	var ref = config.V(true)
+	nv, err := FromTyped(src, ref)
+	require.NoError(t, err)
+	assert.Equal(t, config.NilValue, nv)
+}
+
+func TestFromTypedIntNonEmpty(t *testing.T) {
+	var src int = 1234
+	var ref = config.NilValue
+	nv, err := FromTyped(src, ref)
+	require.NoError(t, err)
+	assert.Equal(t, config.V(int64(1234)), nv)
+}
+
+func TestFromTypedIntNonEmptyOverwrite(t *testing.T) {
+	var src int = 1234
+	var ref = config.V(1233)
+	nv, err := FromTyped(src, ref)
+	require.NoError(t, err)
+	assert.Equal(t, config.V(int64(1234)), nv)
+}
+
+func TestFromTypedIntRetainsLocationsIfUnchanged(t *testing.T) {
+	var src int = 1234
+	var ref = config.NewValue(1234, config.Location{File: "foo"})
+	nv, err := FromTyped(src, ref)
+	require.NoError(t, err)
+	assert.Equal(t, config.NewValue(1234, config.Location{File: "foo"}), nv)
+}
+
+func TestFromTypedIntTypeError(t *testing.T) {
+	var src int = 1234
+	var ref = config.V("string")
+	_, err := FromTyped(src, ref)
+	require.Error(t, err)
+}
+
+func TestFromTypedFloatEmpty(t *testing.T) {
+	var src float64
+	var ref = config.V(1.23)
+	nv, err := FromTyped(src, ref)
+	require.NoError(t, err)
+	assert.Equal(t, config.NilValue, nv)
+}
+
+func TestFromTypedFloatNonEmpty(t *testing.T) {
+	var src float64 = 1.23
+	var ref = config.NilValue
+	nv, err := FromTyped(src, ref)
+	require.NoError(t, err)
+	assert.Equal(t, config.V(1.23), nv)
+}
+
+func TestFromTypedFloatNonEmptyOverwrite(t *testing.T) {
+	var src float64 = 1.23
+	var ref = config.V(1.24)
+	nv, err := FromTyped(src, ref)
+	require.NoError(t, err)
+	assert.Equal(t, config.V(1.23), nv)
+}
+
+func TestFromTypedFloatRetainsLocationsIfUnchanged(t *testing.T) {
+	var src float64 = 1.23
+	var ref = config.NewValue(1.23, config.Location{File: "foo"})
+	nv, err := FromTyped(src, ref)
+	require.NoError(t, err)
+	assert.Equal(t, config.NewValue(1.23, config.Location{File: "foo"}), nv)
+}
+
+func TestFromTypedFloatTypeError(t *testing.T) {
+	var src float64 = 1.23
+	var ref = config.V("string")
+	_, err := FromTyped(src, ref)
+	require.Error(t, err)
 }
