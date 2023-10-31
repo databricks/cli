@@ -58,6 +58,22 @@ type Schema struct {
 	Extension
 }
 
+// Default value of a JSON Schema, represented as a string.
+func (s *Schema) DefaultString() (string, error) {
+	return toString(s.Default, s.Type)
+}
+
+// Allowed enum values of a JSON Schema, represented as a slice of strings.
+func (s *Schema) EnumStringSlice() ([]string, error) {
+	return toStringSlice(s.Enum, s.Type)
+}
+
+// Parses a string as a Go value. The type of the value is determined by the
+// type defined in the JSON Schema.
+func (s *Schema) ParseString(v string) (any, error) {
+	return fromString(v, s.Type)
+}
+
 type Type string
 
 const (
