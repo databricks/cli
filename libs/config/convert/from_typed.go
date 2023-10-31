@@ -41,11 +41,11 @@ func FromTyped(src any, ref config.Value) (config.Value, error) {
 }
 
 func fromTypedStruct(src reflect.Value, ref config.Value) (config.Value, error) {
+	// Check that the reference value is compatible or nil.
 	switch ref.Kind() {
 	case config.KindMap, config.KindNil:
-		// Nothing to do.
 	default:
-		panic("type error")
+		return config.Value{}, fmt.Errorf("unhandled type: %s", ref.Kind())
 	}
 
 	out := make(map[string]config.Value)
@@ -68,33 +68,14 @@ func fromTypedStruct(src reflect.Value, ref config.Value) (config.Value, error) 
 	}
 
 	return config.NewValue(out, ref.Location()), nil
-
-	// what are my options
-	// totyped / fromtyped at every mutator boundary
-	// pro's -- minimal changes to existing mutators
-	// con's -- doesn't hold for all mutators, so we need different interface ANYWAY
-	// (e.g. get/set config.Value instances)
-	// cons -- lossy (cannot do all to/from conversions, lose location, lose variables)
-
-	// explicit mutator interface
-	// pro's -- very clear what's happening
-	// cons -- all code + tests need to be changed
-	//
-
-	// need an incremental approach
-	// thus, we run totyped + fromtyped at mutator boundary
-	// can eventually move this into the mutators themselves?
-	// can treat the typed structure as read-only, perhaps?
-	// can generate wrapper type that exposes a Get + GetValue at every node
-
 }
 
 func fromTypedMap(src reflect.Value, ref config.Value) (config.Value, error) {
+	// Check that the reference value is compatible or nil.
 	switch ref.Kind() {
 	case config.KindMap, config.KindNil:
-		// Nothing to do.
 	default:
-		panic("type error")
+		return config.Value{}, fmt.Errorf("unhandled type: %s", ref.Kind())
 	}
 
 	out := make(map[string]config.Value)
@@ -123,11 +104,11 @@ func fromTypedMap(src reflect.Value, ref config.Value) (config.Value, error) {
 }
 
 func fromTypedSlice(src reflect.Value, ref config.Value) (config.Value, error) {
+	// Check that the reference value is compatible or nil.
 	switch ref.Kind() {
 	case config.KindSequence, config.KindNil:
-		// Nothing to do.
 	default:
-		panic("type error")
+		return config.Value{}, fmt.Errorf("unhandled type: %s", ref.Kind())
 	}
 
 	out := make([]config.Value, src.Len())
