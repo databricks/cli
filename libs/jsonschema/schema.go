@@ -58,12 +58,12 @@ type Schema struct {
 	Extension
 }
 
-// Default value of a JSON Schema, represented as a string.
+// Default value defined in a JSON Schema, represented as a string.
 func (s *Schema) DefaultString() (string, error) {
 	return toString(s.Default, s.Type)
 }
 
-// Allowed enum values of a JSON Schema, represented as a slice of strings.
+// Allowed enum values defined in a JSON Schema, represented as a slice of strings.
 func (s *Schema) EnumStringSlice() ([]string, error) {
 	return toStringSlice(s.Enum, s.Type)
 }
