@@ -68,8 +68,8 @@ func (s *Schema) EnumStringSlice() ([]string, error) {
 	return toStringSlice(s.Enum, s.Type)
 }
 
-// Parses a string as a Go value. The type of the value is determined by the
-// type defined in the JSON Schema.
+// Parses a string as a Go primitive value. The type of the value is determined
+// by the type defined in the JSON Schema.
 func (s *Schema) ParseString(v string) (any, error) {
 	return fromString(v, s.Type)
 }
