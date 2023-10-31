@@ -3,13 +3,20 @@ package terraform
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/hashicorp/terraform-exec/tfexec"
 	tfjson "github.com/hashicorp/terraform-json"
 )
 
-type load struct{}
+type loadMode int
+
+const NoErrorOnEmptyState loadMode = 0
+
+type load struct {
+	modes []loadMode
+}
 
 func (l *load) Name() string {
 	return "terraform.Load"
@@ -29,6 +36,11 @@ func (l *load) Apply(ctx context.Context, b *bundle.Bundle) error {
 	state, err := b.Terraform.Show(ctx)
 	if err != nil {
 		return err
+	}
+
+	// If state is empty, return early.
+	if state.Values == nil && slices.Contains(l.modes, NoErrorOnEmptyState) {
+		return nil
 	}
 
 	err = ValidateState(state)
@@ -57,6 +69,6 @@ func ValidateState(state *tfjson.State) error {
 	return nil
 }
 
-func Load() bundle.Mutator {
-	return &load{}
+func Load(modes ...loadMode) bundle.Mutator {
+	return &load{modes: modes}
 }

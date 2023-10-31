@@ -34,7 +34,7 @@ func Deploy() bundle.Mutator {
 					terraform.Apply(),
 					bundle.Seq(
 						terraform.StatePush(),
-						terraform.Load(),
+						terraform.Load(terraform.NoErrorOnEmptyState),
 						metadata.Compute(),
 						metadata.Upload(),
 					),
