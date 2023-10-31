@@ -20,7 +20,11 @@ func Apply(ctx context.Context, b *Bundle, m Mutator) error {
 	ctx = log.NewContext(ctx, log.GetLogger(ctx).With("mutator", m.Name()))
 
 	log.Debugf(ctx, "Apply")
+
+	b.Config.MarkBoundary()
+
 	err := m.Apply(ctx, b)
+
 	if err != nil {
 		log.Errorf(ctx, "Error: %s", err)
 		return err

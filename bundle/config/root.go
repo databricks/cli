@@ -1,18 +1,26 @@
 package config
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/databricks/cli/bundle/config/variable"
+	"github.com/databricks/cli/libs/config"
+	"github.com/databricks/cli/libs/config/convert"
+	"github.com/databricks/cli/libs/config/yamlloader"
+	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
-	"github.com/ghodss/yaml"
 	"github.com/imdario/mergo"
 )
 
 type Root struct {
+	value        config.Value
+	diags        diag.Diagnostics
+	needsToTyped bool
+
 	// Path contains the directory path to the root of the bundle.
 	// It is set when loading `databricks.yml`.
 	Path string `json:"-" bundle:"readonly"`
@@ -66,30 +74,70 @@ func Load(path string) (*Root, error) {
 	}
 
 	var r Root
-	err = yaml.Unmarshal(raw, &r)
+	v, err := yamlloader.LoadYAML(path, bytes.NewBuffer(raw))
 	if err != nil {
 		return nil, fmt.Errorf("failed to load %s: %w", path, err)
 	}
 
-	if r.Environments != nil && r.Targets != nil {
-		return nil, fmt.Errorf("both 'environments' and 'targets' are specified, only 'targets' should be used: %s", path)
+	// Normalize dynamic configuration tree according to configuration type.
+	v, diags := convert.Normalize(r, v)
+	if diags != nil {
+		r.diags = diags
 	}
 
-	if r.Environments != nil {
-		//TODO: add a command line notice that this is a deprecated option.
-		r.Targets = r.Environments
-	}
+	// Store dynamic configuration for later reference (e.g. location information on all nodes).
+	r.value = v
+	r.needsToTyped = true
+
+	// // Convert normalized configuration tree to typed configuration.
+	// err = convert.ToTyped(&r, v)
+	// if err != nil {
+	// 	return nil, fmt.Errorf("failed to load %s: %w", path, err)
+	// }
+
+	// if r.Environments != nil && r.Targets != nil {
+	// 	return nil, fmt.Errorf("both 'environments' and 'targets' are specified, only 'targets' should be used: %s", path)
+	// }
+
+	// if r.Environments != nil {
+	// 	//TODO: add a command line notice that this is a deprecated option.
+	// 	r.Targets = r.Environments
+	// }
 
 	r.Path = filepath.Dir(path)
-	r.SetConfigFilePath(path)
+	// r.SetConfigFilePath(path)
 
-	_, err = r.Resources.VerifyUniqueResourceIdentifiers()
+	// _, err = r.Resources.VerifyUniqueResourceIdentifiers()
 	return &r, err
+}
+
+func (r *Root) MarkBoundary() {
+	if r.needsToTyped {
+		// Convert normalized configuration tree to typed configuration.
+		err := convert.ToTyped(r, r.value)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	nv, err := convert.FromTyped(r, r.value)
+	if err != nil {
+		panic(err)
+	}
+
+	r.value = nv
+	r.needsToTyped = false
+}
+
+func (r *Root) Diagnostics() diag.Diagnostics {
+	return r.diags
 }
 
 // SetConfigFilePath configures the path that its configuration
 // was loaded from in configuration leafs that require it.
 func (r *Root) SetConfigFilePath(path string) {
+	panic("nope")
+
 	r.Resources.SetConfigFilePath(path)
 	if r.Artifacts != nil {
 		r.Artifacts.SetConfigFilePath(path)
@@ -114,6 +162,8 @@ func (r *Root) SetConfigFilePath(path string) {
 // Input has to be a string of the form `foo=bar`. In this case the variable with
 // name `foo` is assigned the value `bar`
 func (r *Root) InitializeVariables(vars []string) error {
+	panic("nope")
+
 	for _, variable := range vars {
 		parsedVariable := strings.SplitN(variable, "=", 2)
 		if len(parsedVariable) != 2 {
@@ -134,6 +184,18 @@ func (r *Root) InitializeVariables(vars []string) error {
 }
 
 func (r *Root) Merge(other *Root) error {
+	panic("nope")
+
+	// Merge dynamic configuration values.
+	// v, err := merge.Merge(r.value, other.value)
+	// if err != nil {
+	// 	return err
+	// }
+	// r.value = v
+
+	// Merge diagnostics.
+	r.diags = append(r.diags, other.diags...)
+
 	err := r.Sync.Merge(r, other)
 	if err != nil {
 		return err
@@ -153,89 +215,89 @@ func (r *Root) Merge(other *Root) error {
 	return mergo.Merge(r, other, mergo.WithOverride)
 }
 
-func (r *Root) MergeTargetOverrides(target *Target) error {
+func (r *Root) MergeTargetOverrides(name string) error {
 	var err error
 
-	// Target may be nil if it's empty.
-	if target == nil {
+	target := r.value.Get("targets").Get(name)
+	if target == config.NilValue {
 		return nil
 	}
 
-	if target.Bundle != nil {
-		err = mergo.Merge(&r.Bundle, target.Bundle, mergo.WithOverride)
-		if err != nil {
-			return err
-		}
-	}
+	// if target.Bundle != nil {
+	// 	err = mergo.Merge(&r.Bundle, target.Bundle, mergo.WithOverride)
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// }
 
-	if target.Workspace != nil {
-		err = mergo.Merge(&r.Workspace, target.Workspace, mergo.WithOverride)
-		if err != nil {
-			return err
-		}
-	}
+	// if target.Workspace != nil {
+	// 	err = mergo.Merge(&r.Workspace, target.Workspace, mergo.WithOverride)
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// }
 
-	if target.Artifacts != nil {
-		err = mergo.Merge(&r.Artifacts, target.Artifacts, mergo.WithOverride, mergo.WithAppendSlice)
-		if err != nil {
-			return err
-		}
-	}
+	// if target.Artifacts != nil {
+	// 	err = mergo.Merge(&r.Artifacts, target.Artifacts, mergo.WithOverride, mergo.WithAppendSlice)
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// }
 
-	if target.Resources != nil {
-		err = mergo.Merge(&r.Resources, target.Resources, mergo.WithOverride, mergo.WithAppendSlice)
-		if err != nil {
-			return err
-		}
+	// if target.Resources != nil {
+	// 	err = mergo.Merge(&r.Resources, target.Resources, mergo.WithOverride, mergo.WithAppendSlice)
+	// 	if err != nil {
+	// 		return err
+	// 	}
 
-		err = r.Resources.Merge()
-		if err != nil {
-			return err
-		}
-	}
+	// 	err = r.Resources.Merge()
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// }
 
-	if target.Variables != nil {
-		for k, v := range target.Variables {
-			variable, ok := r.Variables[k]
-			if !ok {
-				return fmt.Errorf("variable %s is not defined but is assigned a value", k)
-			}
-			// we only allow overrides of the default value for a variable
-			defaultVal := v
-			variable.Default = &defaultVal
-		}
-	}
+	// if target.Variables != nil {
+	// 	for k, v := range target.Variables {
+	// 		variable, ok := r.Variables[k]
+	// 		if !ok {
+	// 			return fmt.Errorf("variable %s is not defined but is assigned a value", k)
+	// 		}
+	// 		// we only allow overrides of the default value for a variable
+	// 		defaultVal := v
+	// 		variable.Default = &defaultVal
+	// 	}
+	// }
 
-	if target.RunAs != nil {
-		r.RunAs = target.RunAs
-	}
+	// if target.RunAs != nil {
+	// 	r.RunAs = target.RunAs
+	// }
 
-	if target.Mode != "" {
-		r.Bundle.Mode = target.Mode
-	}
+	// if target.Mode != "" {
+	// 	r.Bundle.Mode = target.Mode
+	// }
 
-	if target.ComputeID != "" {
-		r.Bundle.ComputeID = target.ComputeID
-	}
+	// if target.ComputeID != "" {
+	// 	r.Bundle.ComputeID = target.ComputeID
+	// }
 
-	git := &r.Bundle.Git
-	if target.Git.Branch != "" {
-		git.Branch = target.Git.Branch
-		git.Inferred = false
-	}
-	if target.Git.Commit != "" {
-		git.Commit = target.Git.Commit
-	}
-	if target.Git.OriginURL != "" {
-		git.OriginURL = target.Git.OriginURL
-	}
+	// git := &r.Bundle.Git
+	// if target.Git.Branch != "" {
+	// 	git.Branch = target.Git.Branch
+	// 	git.Inferred = false
+	// }
+	// if target.Git.Commit != "" {
+	// 	git.Commit = target.Git.Commit
+	// }
+	// if target.Git.OriginURL != "" {
+	// 	git.OriginURL = target.Git.OriginURL
+	// }
 
-	if target.Sync != nil {
-		err = mergo.Merge(&r.Sync, target.Sync, mergo.WithAppendSlice)
-		if err != nil {
-			return err
-		}
-	}
+	// if target.Sync != nil {
+	// 	err = mergo.Merge(&r.Sync, target.Sync, mergo.WithAppendSlice)
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// }
 
 	return nil
 }
