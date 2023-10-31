@@ -5,17 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"os/exec"
-	"regexp"
 	"strings"
 
 	"github.com/databricks/cli/libs/process"
 )
-
-// source: https://stackoverflow.com/questions/59081778/rules-for-special-characters-in-github-repository-name
-var githubRepoRegex = regexp.MustCompile(`^[\w-\.]+$`)
-
-const githubUrl = "https://github.com"
-const databricksOrg = "databricks"
 
 type cloneOptions struct {
 	// Branch or tag to clone
@@ -59,17 +52,9 @@ func (opts cloneOptions) clone(ctx context.Context) error {
 }
 
 func Clone(ctx context.Context, url, reference, targetPath string) error {
-	// We assume only the repository name has been if input does not contain any
-	// `/` characters and the url is only made up of alphanumeric characters and
-	// ".", "_" and "-". This repository is resolved again databricks github account.
-	fullUrl := url
-	if githubRepoRegex.MatchString(url) {
-		fullUrl = strings.Join([]string{githubUrl, databricksOrg, url}, "/")
-	}
-
 	opts := cloneOptions{
 		Reference:     reference,
-		RepositoryUrl: fullUrl,
+		RepositoryUrl: url,
 		TargetPath:    targetPath,
 		Shallow:       true,
 	}
