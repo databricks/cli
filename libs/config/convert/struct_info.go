@@ -85,3 +85,29 @@ func buildStructInfo(typ reflect.Type) structInfo {
 
 	return out
 }
+
+func (s *structInfo) FieldValues(v reflect.Value) map[string]reflect.Value {
+	var out = make(map[string]reflect.Value)
+
+	for k, index := range s.Fields {
+		fv := v
+
+		// Locate value in struct (it could be an embedded type).
+		for i, x := range index {
+			if i > 0 {
+				if fv.Kind() == reflect.Pointer && fv.Type().Elem().Kind() == reflect.Struct {
+					if fv.IsNil() {
+						fv = reflect.Value{}
+						break
+					}
+					fv = fv.Elem()
+				}
+			}
+			fv = fv.Field(x)
+		}
+
+		out[k] = fv
+	}
+
+	return out
+}
