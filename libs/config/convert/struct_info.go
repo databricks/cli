@@ -106,7 +106,9 @@ func (s *structInfo) FieldValues(v reflect.Value) map[string]reflect.Value {
 			fv = fv.Field(x)
 		}
 
-		out[k] = fv
+		if fv.IsValid() {
+			out[k] = fv
+		}
 	}
 
 	return out
