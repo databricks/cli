@@ -21,7 +21,8 @@ func Apply(ctx context.Context, b *Bundle, m Mutator) error {
 
 	log.Debugf(ctx, "Apply")
 
-	b.Config.MarkBoundary()
+	b.Config.MarkMutatorEntry()
+	defer b.Config.MarkMutatorExit()
 
 	err := m.Apply(ctx, b)
 

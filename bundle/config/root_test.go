@@ -154,8 +154,12 @@ func TestInitializeVariablesUndefinedVariables(t *testing.T) {
 func TestRootMergeTargetOverridesWithMode(t *testing.T) {
 	root := &Root{
 		Bundle: Bundle{},
+		Targets: map[string]*Target{
+			"development": {
+				Mode: Development,
+			},
+		},
 	}
-	env := &Target{Mode: Development}
-	require.NoError(t, root.MergeTargetOverrides(env))
+	require.NoError(t, root.MergeTargetOverrides("development"))
 	assert.Equal(t, Development, root.Bundle.Mode)
 }

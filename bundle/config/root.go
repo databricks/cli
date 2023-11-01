@@ -10,16 +10,17 @@ import (
 	"github.com/databricks/cli/bundle/config/variable"
 	"github.com/databricks/cli/libs/config"
 	"github.com/databricks/cli/libs/config/convert"
+	"github.com/databricks/cli/libs/config/merge"
 	"github.com/databricks/cli/libs/config/yamlloader"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
-	"github.com/imdario/mergo"
 )
 
 type Root struct {
-	value        config.Value
-	diags        diag.Diagnostics
-	needsToTyped bool
+	value config.Value
+	diags diag.Diagnostics
+
+	depth int
 
 	// Path contains the directory path to the root of the bundle.
 	// It is set when loading `databricks.yml`.
@@ -81,19 +82,17 @@ func Load(path string) (*Root, error) {
 
 	// Normalize dynamic configuration tree according to configuration type.
 	v, diags := convert.Normalize(r, v)
-	if diags != nil {
-		r.diags = diags
+
+	// Convert normalized configuration tree to typed configuration.
+	err = convert.ToTyped(&r, v)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load %s: %w", path, err)
 	}
+
+	r.diags = diags
 
 	// Store dynamic configuration for later reference (e.g. location information on all nodes).
 	r.value = v
-	r.needsToTyped = true
-
-	// // Convert normalized configuration tree to typed configuration.
-	// err = convert.ToTyped(&r, v)
-	// if err != nil {
-	// 	return nil, fmt.Errorf("failed to load %s: %w", path, err)
-	// }
 
 	// if r.Environments != nil && r.Targets != nil {
 	// 	return nil, fmt.Errorf("both 'environments' and 'targets' are specified, only 'targets' should be used: %s", path)
@@ -111,22 +110,53 @@ func Load(path string) (*Root, error) {
 	return &r, err
 }
 
-func (r *Root) MarkBoundary() {
-	if r.needsToTyped {
+func (r *Root) MarkMutatorEntry() {
+	r.depth++
+
+	// Many test cases initialize a config as a Go struct literal.
+	// The zero-initialized value for [wasLoaded] will be false,
+	// and indicates we need to populate [r.value].
+	if !r.value.IsValid() {
+		nv, err := convert.FromTyped(r, config.NilValue)
+		if err != nil {
+			panic(err)
+		}
+
+		r.value = nv
+	}
+
+	// If we are entering a mutator at depth 1, we need to convert
+	// the dynamic configuration tree to typed configuration.
+	if r.depth == 1 {
+		// Always run ToTyped upon entering a mutator.
 		// Convert normalized configuration tree to typed configuration.
 		err := convert.ToTyped(r, r.value)
 		if err != nil {
 			panic(err)
 		}
-	}
+	} else {
+		nv, err := convert.FromTyped(r, config.NilValue)
+		if err != nil {
+			panic(err)
+		}
 
-	nv, err := convert.FromTyped(r, r.value)
-	if err != nil {
-		panic(err)
+		r.value = nv
 	}
+}
 
-	r.value = nv
-	r.needsToTyped = false
+func (r *Root) MarkMutatorExit() {
+	r.depth--
+
+	// If we are exiting a mutator at depth 0, we need to convert
+	// the typed configuration to a dynamic configuration tree.
+	if r.depth == 0 {
+		nv, err := convert.FromTyped(r, config.NilValue)
+		if err != nil {
+			panic(err)
+		}
+
+		r.value = nv
+	}
 }
 
 func (r *Root) Diagnostics() diag.Diagnostics {
@@ -184,38 +214,45 @@ func (r *Root) InitializeVariables(vars []string) error {
 }
 
 func (r *Root) Merge(other *Root) error {
-	panic("nope")
+	// // Merge diagnostics.
+	// r.diags = append(r.diags, other.diags...)
 
-	// Merge dynamic configuration values.
-	// v, err := merge.Merge(r.value, other.value)
+	// err := r.Sync.Merge(r, other)
 	// if err != nil {
 	// 	return err
 	// }
-	// r.value = v
+	// other.Sync = Sync{}
 
-	// Merge diagnostics.
-	r.diags = append(r.diags, other.diags...)
+	// // TODO: when hooking into merge semantics, disallow setting path on the target instance.
+	// other.Path = ""
 
-	err := r.Sync.Merge(r, other)
+	// Check for safe merge, protecting against duplicate resource identifiers
+	err := r.Resources.VerifySafeMerge(&other.Resources)
 	if err != nil {
 		return err
 	}
-	other.Sync = Sync{}
 
-	// TODO: when hooking into merge semantics, disallow setting path on the target instance.
-	other.Path = ""
-
-	// Check for safe merge, protecting against duplicate resource identifiers
-	err = r.Resources.VerifySafeMerge(&other.Resources)
+	// Merge dynamic configuration values.
+	nv, err := merge.Merge(r.value, other.value)
 	if err != nil {
 		return err
+	}
+
+	r.value = nv
+
+	// Convert normalized configuration tree to typed configuration.
+	err = convert.ToTyped(r, r.value)
+	if err != nil {
+		panic(err)
 	}
 
 	// TODO: define and test semantics for merging.
-	return mergo.Merge(r, other, mergo.WithOverride)
+	// return mergo.Merge(r, other, mergo.WithOverride)
+	return nil
 }
 
 func (r *Root) MergeTargetOverrides(name string) error {
+	var tmp config.Value
 	var err error
 
 	target := r.value.Get("targets").Get(name)
@@ -223,32 +260,41 @@ func (r *Root) MergeTargetOverrides(name string) error {
 		return nil
 	}
 
-	// if target.Bundle != nil {
-	// 	err = mergo.Merge(&r.Bundle, target.Bundle, mergo.WithOverride)
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	// }
+	mergeField := func(name string) error {
+		tmp, err = merge.Merge(r.value.Get(name), target.Get(name))
+		if err != nil {
+			return err
+		}
 
-	// if target.Workspace != nil {
-	// 	err = mergo.Merge(&r.Workspace, target.Workspace, mergo.WithOverride)
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	// }
+		r.value.MustMap()[name] = tmp
+		return nil
+	}
 
-	// if target.Artifacts != nil {
-	// 	err = mergo.Merge(&r.Artifacts, target.Artifacts, mergo.WithOverride, mergo.WithAppendSlice)
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	// }
+	if err = mergeField("bundle"); err != nil {
+		return err
+	}
 
-	// if target.Resources != nil {
-	// 	err = mergo.Merge(&r.Resources, target.Resources, mergo.WithOverride, mergo.WithAppendSlice)
-	// 	if err != nil {
-	// 		return err
-	// 	}
+	if err = mergeField("workspace"); err != nil {
+		return err
+	}
+
+	if err = mergeField("artifacts"); err != nil {
+		return err
+	}
+
+	if err = mergeField("resources"); err != nil {
+		return err
+	}
+
+	if err = mergeField("sync"); err != nil {
+		return err
+	}
+
+	// Convert normalized configuration tree to typed configuration.
+	err = convert.ToTyped(r, r.value)
+	if err != nil {
+		panic(err)
+	}
 
 	// 	err = r.Resources.Merge()
 	// 	if err != nil {
