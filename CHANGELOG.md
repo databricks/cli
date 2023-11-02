@@ -1,5 +1,45 @@
 # Version changelog
 
+## 0.209.0
+
+CLI:
+ * Fix URL for bundle template documentation ([#903](https://github.com/databricks/cli/pull/903)).
+ * Library to convert config.Value to Go struct ([#904](https://github.com/databricks/cli/pull/904)).
+ * Loading an empty file yields a nil ([#906](https://github.com/databricks/cli/pull/906)).
+ * Fix pattern validation for input properties ([#912](https://github.com/databricks/cli/pull/912)).
+ * Simplified code generation logic for handling path and request body parameters and JSON input ([#905](https://github.com/databricks/cli/pull/905)).
+ * Add support for multiline descriptions when using template enums ([#916](https://github.com/databricks/cli/pull/916)).
+ * Move bundle configuration filename code ([#917](https://github.com/databricks/cli/pull/917)).
+ * Add configuration normalization code ([#915](https://github.com/databricks/cli/pull/915)).
+ * Add welcome message to bundle templates ([#907](https://github.com/databricks/cli/pull/907)).
+ * Consolidate bundle configuration loader function ([#918](https://github.com/databricks/cli/pull/918)).
+ * Upload terraform state even if apply fails ([#923](https://github.com/databricks/cli/pull/923)).
+ * Use UserName instead of Id to check if identity used is a service principal ([#924](https://github.com/databricks/cli/pull/924)).
+ * `make snapshot` to build file in `.databricks/databricks` ([#927](https://github.com/databricks/cli/pull/927)).
+ * Persist deployment metadata in WSFS ([#845](https://github.com/databricks/cli/pull/845)).
+ * Run make fmt from fmt job ([#929](https://github.com/databricks/cli/pull/929)).
+ * Add override to support YAML inputs for apps ([#921](https://github.com/databricks/cli/pull/921)).
+ * Add GitHub issue templates ([#925](https://github.com/databricks/cli/pull/925)).
+ * Remove resolution of repo names against the Databricks Github account ([#940](https://github.com/databricks/cli/pull/940)).
+ * Fix metadata computation for empty bundle ([#939](https://github.com/databricks/cli/pull/939)).
+
+Bundles:
+ * **FILL THIS IN MANUALLY BY MOVING RELEVANT ITEMS FROM ABOVE LIST**
+
+Internal:
+ * **FILL THIS IN MANUALLY BY MOVING RELEVANT ITEMS FROM ABOVE LIST**
+
+API Changes:
+ * Added `databricks apps` command group.
+ * Added `databricks account network-policy` command group.
+
+OpenAPI commit 5903bb39137fd76ac384b2044e425f9c56840e00 (2023-10-23)
+Dependency updates:
+ * Bump google.golang.org/grpc from 1.58.2 to 1.58.3 ([#920](https://github.com/databricks/cli/pull/920)).
+ * Bump the Go SDK in the CLI ([#919](https://github.com/databricks/cli/pull/919)).
+ * Bump Terraform provider to v1.29.0 ([#926](https://github.com/databricks/cli/pull/926)).
+ * Bump github.com/google/uuid from 1.3.1 to 1.4.0 ([#932](https://github.com/databricks/cli/pull/932)).
+
 ## 0.208.2
 
 CLI:
