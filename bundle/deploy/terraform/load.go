@@ -38,8 +38,8 @@ func (l *load) Apply(ctx context.Context, b *bundle.Bundle) error {
 		return err
 	}
 
-	err = validateState(state)
-	if err != nil && slices.Contains(l.modes, ErrorOnEmptyState) {
+	err = l.validateState(state)
+	if err != nil {
 		return err
 	}
 
@@ -52,9 +52,12 @@ func (l *load) Apply(ctx context.Context, b *bundle.Bundle) error {
 	return nil
 }
 
-func validateState(state *tfjson.State) error {
+func (l *load) validateState(state *tfjson.State) error {
 	if state.Values == nil {
-		return fmt.Errorf("no deployment state. Did you forget to run 'databricks bundle deploy'?")
+		if slices.Contains(l.modes, ErrorOnEmptyState) {
+			return fmt.Errorf("no deployment state. Did you forget to run 'databricks bundle deploy'?")
+		}
+		return nil
 	}
 
 	if state.Values.RootModule == nil {
