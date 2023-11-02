@@ -4,7 +4,6 @@
 
 CLI:
  * Added GitHub issue templates for CLI and DABs issues ([#925](https://github.com/databricks/cli/pull/925)).
- * Added override to support YAML inputs for apps ([#921](https://github.com/databricks/cli/pull/921)).
  * Simplified code generation logic for handling path and request body parameters and JSON input ([#905](https://github.com/databricks/cli/pull/905)).
 
 
@@ -27,7 +26,6 @@ Internal:
  * Add configuration normalization code ([#915](https://github.com/databricks/cli/pull/915)).
 
 API Changes:
- * Added `databricks apps` command group.
  * Added `databricks account network-policy` command group.
 
 Dependency updates:
