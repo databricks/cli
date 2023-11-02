@@ -213,6 +213,11 @@ func BundleToTerraform(config *config.Root) *schema.Root {
 }
 
 func TerraformToBundle(state *tfjson.State, config *config.Root) error {
+	// This is a no-op if the state is empty.
+	if state.Values == nil || state.Values.RootModule == nil {
+		return nil
+	}
+
 	for _, resource := range state.Values.RootModule.Resources {
 		// Limit to resources.
 		if resource.Mode != tfjson.ManagedResourceMode {

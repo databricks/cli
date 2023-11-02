@@ -3,13 +3,20 @@ package terraform
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/hashicorp/terraform-exec/tfexec"
 	tfjson "github.com/hashicorp/terraform-json"
 )
 
-type load struct{}
+type loadMode int
+
+const ErrorOnEmptyState loadMode = 0
+
+type load struct {
+	modes []loadMode
+}
 
 func (l *load) Name() string {
 	return "terraform.Load"
@@ -31,7 +38,7 @@ func (l *load) Apply(ctx context.Context, b *bundle.Bundle) error {
 		return err
 	}
 
-	err = ValidateState(state)
+	err = l.validateState(state)
 	if err != nil {
 		return err
 	}
@@ -45,9 +52,12 @@ func (l *load) Apply(ctx context.Context, b *bundle.Bundle) error {
 	return nil
 }
 
-func ValidateState(state *tfjson.State) error {
+func (l *load) validateState(state *tfjson.State) error {
 	if state.Values == nil {
-		return fmt.Errorf("no deployment state. Did you forget to run 'databricks bundle deploy'?")
+		if slices.Contains(l.modes, ErrorOnEmptyState) {
+			return fmt.Errorf("no deployment state. Did you forget to run 'databricks bundle deploy'?")
+		}
+		return nil
 	}
 
 	if state.Values.RootModule == nil {
@@ -57,6 +67,6 @@ func ValidateState(state *tfjson.State) error {
 	return nil
 }
 
-func Load() bundle.Mutator {
-	return &load{}
+func Load(modes ...loadMode) bundle.Mutator {
+	return &load{modes: modes}
 }
