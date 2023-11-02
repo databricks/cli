@@ -12,7 +12,7 @@ import (
 
 type loadMode int
 
-const NoErrorOnEmptyState loadMode = 0
+const ErrorOnEmptyState loadMode = 0
 
 type load struct {
 	modes []loadMode
@@ -38,13 +38,8 @@ func (l *load) Apply(ctx context.Context, b *bundle.Bundle) error {
 		return err
 	}
 
-	// If state is empty, return early.
-	if state.Values == nil && slices.Contains(l.modes, NoErrorOnEmptyState) {
-		return nil
-	}
-
-	err = ValidateState(state)
-	if err != nil {
+	err = validateState(state)
+	if err != nil && slices.Contains(l.modes, ErrorOnEmptyState) {
 		return err
 	}
 
@@ -57,7 +52,7 @@ func (l *load) Apply(ctx context.Context, b *bundle.Bundle) error {
 	return nil
 }
 
-func ValidateState(state *tfjson.State) error {
+func validateState(state *tfjson.State) error {
 	if state.Values == nil {
 		return fmt.Errorf("no deployment state. Did you forget to run 'databricks bundle deploy'?")
 	}
