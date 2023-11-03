@@ -15,10 +15,7 @@ func TestFromTypedStructZeroFields(t *testing.T) {
 	}
 
 	src := Tmp{}
-	ref := config.V(map[string]config.Value{
-		"foo": config.V("bar"),
-		"bar": config.V("baz"),
-	})
+	ref := config.NilValue
 
 	nv, err := FromTyped(src, ref)
 	require.NoError(t, err)
@@ -184,10 +181,18 @@ func TestFromTypedSliceNonEmptyRetainLocationIfUnchanged(t *testing.T) {
 
 func TestFromTypedStringEmpty(t *testing.T) {
 	var src string
-	var ref = config.V("string")
+	var ref = config.NilValue
 	nv, err := FromTyped(src, ref)
 	require.NoError(t, err)
 	assert.Equal(t, config.NilValue, nv)
+}
+
+func TestFromTypedStringEmptyOverwrite(t *testing.T) {
+	var src string
+	var ref = config.V("old")
+	nv, err := FromTyped(src, ref)
+	require.NoError(t, err)
+	assert.Equal(t, config.V(""), nv)
 }
 
 func TestFromTypedStringNonEmpty(t *testing.T) {
@@ -223,10 +228,18 @@ func TestFromTypedStringTypeError(t *testing.T) {
 
 func TestFromTypedBoolEmpty(t *testing.T) {
 	var src bool
-	var ref = config.V(true)
+	var ref = config.NilValue
 	nv, err := FromTyped(src, ref)
 	require.NoError(t, err)
 	assert.Equal(t, config.NilValue, nv)
+}
+
+func TestFromTypedBoolEmptyOverwrite(t *testing.T) {
+	var src bool
+	var ref = config.V(true)
+	nv, err := FromTyped(src, ref)
+	require.NoError(t, err)
+	assert.Equal(t, config.V(false), nv)
 }
 
 func TestFromTypedBoolNonEmpty(t *testing.T) {
@@ -262,10 +275,18 @@ func TestFromTypedBoolTypeError(t *testing.T) {
 
 func TestFromTypedIntEmpty(t *testing.T) {
 	var src int
-	var ref = config.V(true)
+	var ref = config.NilValue
 	nv, err := FromTyped(src, ref)
 	require.NoError(t, err)
 	assert.Equal(t, config.NilValue, nv)
+}
+
+func TestFromTypedIntEmptyOverwrite(t *testing.T) {
+	var src int
+	var ref = config.V(1234)
+	nv, err := FromTyped(src, ref)
+	require.NoError(t, err)
+	assert.Equal(t, config.V(int64(0)), nv)
 }
 
 func TestFromTypedIntNonEmpty(t *testing.T) {
@@ -301,10 +322,18 @@ func TestFromTypedIntTypeError(t *testing.T) {
 
 func TestFromTypedFloatEmpty(t *testing.T) {
 	var src float64
-	var ref = config.V(1.23)
+	var ref = config.NilValue
 	nv, err := FromTyped(src, ref)
 	require.NoError(t, err)
 	assert.Equal(t, config.NilValue, nv)
+}
+
+func TestFromTypedFloatEmptyOverwrite(t *testing.T) {
+	var src float64
+	var ref = config.V(1.23)
+	nv, err := FromTyped(src, ref)
+	require.NoError(t, err)
+	assert.Equal(t, config.V(0.0), nv)
 }
 
 func TestFromTypedFloatNonEmpty(t *testing.T) {

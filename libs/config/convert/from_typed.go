@@ -133,10 +133,6 @@ func fromTypedSlice(src reflect.Value, ref config.Value) (config.Value, error) {
 }
 
 func fromTypedString(src reflect.Value, ref config.Value) (config.Value, error) {
-	if src.IsZero() {
-		return config.NilValue, nil
-	}
-
 	switch ref.Kind() {
 	case config.KindString:
 		value := src.String()
@@ -146,6 +142,11 @@ func fromTypedString(src reflect.Value, ref config.Value) (config.Value, error) 
 
 		return config.V(value), nil
 	case config.KindNil:
+		// This field is not set in the reference, so we only include it if it has a non-zero value.
+		// Otherwise, we would always include all zero valued fields.
+		if src.IsZero() {
+			return config.NilValue, nil
+		}
 		return config.V(src.String()), nil
 	}
 
@@ -153,14 +154,6 @@ func fromTypedString(src reflect.Value, ref config.Value) (config.Value, error) 
 }
 
 func fromTypedBool(src reflect.Value, ref config.Value) (config.Value, error) {
-	// Note: this means it's not possible to flip a boolean to false on a typed
-	// structure and see it reflected in the dynamic configuration.
-	// This case is not handled as is, so we punt on it until the mutaotrs
-	// modify the dynamic configuration directly.
-	if src.IsZero() {
-		return config.NilValue, nil
-	}
-
 	switch ref.Kind() {
 	case config.KindBool:
 		value := src.Bool()
@@ -169,6 +162,11 @@ func fromTypedBool(src reflect.Value, ref config.Value) (config.Value, error) {
 		}
 		return config.V(value), nil
 	case config.KindNil:
+		// This field is not set in the reference, so we only include it if it has a non-zero value.
+		// Otherwise, we would always include all zero valued fields.
+		if src.IsZero() {
+			return config.NilValue, nil
+		}
 		return config.V(src.Bool()), nil
 	}
 
@@ -176,10 +174,6 @@ func fromTypedBool(src reflect.Value, ref config.Value) (config.Value, error) {
 }
 
 func fromTypedInt(src reflect.Value, ref config.Value) (config.Value, error) {
-	if src.IsZero() {
-		return config.NilValue, nil
-	}
-
 	switch ref.Kind() {
 	case config.KindInt:
 		value := src.Int()
@@ -188,6 +182,11 @@ func fromTypedInt(src reflect.Value, ref config.Value) (config.Value, error) {
 		}
 		return config.V(value), nil
 	case config.KindNil:
+		// This field is not set in the reference, so we only include it if it has a non-zero value.
+		// Otherwise, we would always include all zero valued fields.
+		if src.IsZero() {
+			return config.NilValue, nil
+		}
 		return config.V(src.Int()), nil
 	}
 
@@ -195,10 +194,6 @@ func fromTypedInt(src reflect.Value, ref config.Value) (config.Value, error) {
 }
 
 func fromTypedFloat(src reflect.Value, ref config.Value) (config.Value, error) {
-	if src.IsZero() {
-		return config.NilValue, nil
-	}
-
 	switch ref.Kind() {
 	case config.KindFloat:
 		value := src.Float()
@@ -207,6 +202,11 @@ func fromTypedFloat(src reflect.Value, ref config.Value) (config.Value, error) {
 		}
 		return config.V(value), nil
 	case config.KindNil:
+		// This field is not set in the reference, so we only include it if it has a non-zero value.
+		// Otherwise, we would always include all zero valued fields.
+		if src.IsZero() {
+			return config.NilValue, nil
+		}
 		return config.V(src.Float()), nil
 	}
 
