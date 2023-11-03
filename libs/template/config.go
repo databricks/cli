@@ -92,63 +92,102 @@ func (c *config) assignDefaultValues(r *renderer) error {
 	return nil
 }
 
+func (c *config) promptSelect(property jsonschema.Property, r *renderer) error {
+	name := property.Name
+	schema := property.Schema
+
+	// Compute description
+	description, err := r.executeTemplate(schema.Description)
+	if err != nil {
+		return err
+	}
+
+	// List of options to display to user
+	options, err := schema.EnumStringSlice()
+	if err != nil {
+		return err
+	}
+
+	// Get user input
+	userInput, err := cmdio.AskSelect(c.ctx, description, options)
+	if err != nil {
+		return err
+	}
+
+	// Convert user input string back to a value
+	c.values[name], err = schema.ParseString(userInput)
+	if err != nil {
+		return err
+	}
+
+	// Validate the partial config based on this update
+	return c.schema.ValidateInstance(c.values)
+}
+
+func (c *config) promptText(property jsonschema.Property, r *renderer, numRetries int) error {
+	name := property.Name
+	schema := property.Schema
+
+	// Compute description
+	description, err := r.executeTemplate(schema.Description)
+	if err != nil {
+		return err
+	}
+
+	// Compute default value
+	defaultRaw, err := schema.DefaultString()
+	if err != nil {
+		return err
+	}
+	defaultVal, err := r.executeTemplate(defaultRaw)
+	if err != nil {
+		return err
+	}
+
+	for i := 0; i < numRetries; i++ {
+		// Get user input. Parse the string back to a value
+		userInput, err := cmdio.Ask(c.ctx, description, defaultVal)
+		if err != nil {
+			return err
+		}
+
+		// Convert user input string back to a Go value
+		c.values[name], err = schema.ParseString(userInput)
+
+		// Error parsing user input. Retry if not last attempt
+		if err != nil && i != numRetries-1 {
+			cmdio.LogString(c.ctx, fmt.Sprintf("Validation failed: %s", err.Error()))
+			continue
+		}
+		if err != nil {
+			return err
+		}
+
+		// Validate the partial config based on this new value by the user
+		err = c.schema.ValidateInstance(c.values)
+
+		// Error validating user input. Retry if not last attempt
+		if err != nil && i != numRetries-1 {
+			cmdio.LogString(c.ctx, fmt.Sprintf("Validation failed: %s", err.Error()))
+			continue
+		}
+		return err
+	}
+	return nil
+}
+
+func (c *config) prompt(property jsonschema.Property, r *renderer) error {
+	if property.Schema.Enum != nil {
+		return c.promptSelect(property, r)
+	}
+	return c.promptText(property, r, 5)
+}
+
 // Prompts user for values for properties that do not have a value set yet
 func (c *config) promptForValues(r *renderer) error {
 	for _, p := range c.schema.OrderedProperties() {
-		name := p.Name
-		property := p.Schema
-
-		// Config already has a value assigned
-		if _, ok := c.values[name]; ok {
-			continue
-		}
-
-		// Compute default value to display by converting it to a string
-		var defaultVal string
-		var err error
-		if property.Default != nil {
-			defaultValRaw, err := property.DefaultString()
-			if err != nil {
-				return err
-			}
-			defaultVal, err = r.executeTemplate(defaultValRaw)
-			if err != nil {
-				return err
-			}
-		}
-
-		description, err := r.executeTemplate(property.Description)
+		err := c.prompt(p, r)
 		if err != nil {
-			return err
-		}
-
-		// Get user input by running the prompt
-		var userInput string
-		if property.Enum != nil {
-			// convert list of enums to string slice
-			enums, err := property.EnumStringSlice()
-			if err != nil {
-				return err
-			}
-			userInput, err = cmdio.AskSelect(c.ctx, description, enums)
-			if err != nil {
-				return err
-			}
-		} else {
-			userInput, err = cmdio.Ask(c.ctx, description, defaultVal)
-			if err != nil {
-				return err
-			}
-		}
-
-		// Convert user input string back to a value
-		c.values[name], err = property.ParseString(userInput)
-		if err != nil {
-			return err
-		}
-
-		// Validate the partial config based on this update
-		if err := c.schema.ValidateInstance(c.values); err != nil {
 			return err
 		}
 	}
