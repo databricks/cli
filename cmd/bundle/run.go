@@ -38,7 +38,7 @@ func newRunCommand() *cobra.Command {
 			terraform.Interpolate(),
 			terraform.Write(),
 			terraform.StatePull(),
-			terraform.Load(),
+			terraform.Load(terraform.ErrorOnEmptyState),
 		))
 		if err != nil {
 			return err
