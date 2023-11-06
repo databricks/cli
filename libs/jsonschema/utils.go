@@ -12,7 +12,7 @@ type ParseStringError struct {
 	// Expected JSON schema type for the value
 	ExpectedType Type
 
-	// A string representation of the value that could not be parsed
+	// The string value that failed to parse
 	Value string
 
 	// The error returned by the underlying parser
@@ -142,7 +142,7 @@ type PatternMatchFailedError struct {
 	// The value of the property that failed to match the pattern
 	PropertyValue any
 
-	// The pattern that the property failed to match
+	// The regex pattern that the property value failed to match
 	Pattern string
 
 	// Failure message to display to the user, if specified in the template
