@@ -3,6 +3,7 @@ package log
 import (
 	"context"
 	"fmt"
+	"os"
 	"runtime"
 	"time"
 
@@ -38,6 +39,7 @@ func (s slogAdapter) log(logger *slog.Logger, ctx context.Context, level slog.Le
 	runtime.Callers(4, pcs[:])
 	r := slog.NewRecord(time.Now(), level, msg, pcs[0])
 	r.AddAttrs(slog.Bool("sdk", true))
+	r.AddAttrs(slog.Int("pid", os.Getpid()))
 	if ctx == nil {
 		ctx = context.Background()
 	}
