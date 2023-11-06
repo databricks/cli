@@ -57,7 +57,7 @@ func newCreate() *cobra.Command {
 
 	cmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `User-provided free-form text description.`)
 
-	cmd.Use = "create NAME"
+	cmd.Use = "create"
 	cmd.Short = `Create a share.`
 	cmd.Long = `Create a share.
   
@@ -131,7 +131,7 @@ func newDelete() *cobra.Command {
 
 	// TODO: short flags
 
-	cmd.Use = "delete NAME"
+	cmd.Use = "delete"
 	cmd.Short = `Delete a share.`
 	cmd.Long = `Delete a share.
   
@@ -195,7 +195,7 @@ func newGet() *cobra.Command {
 
 	cmd.Flags().BoolVar(&getReq.IncludeSharedData, "include-shared-data", getReq.IncludeSharedData, `Query for data to include in the share.`)
 
-	cmd.Use = "get NAME"
+	cmd.Use = "get"
 	cmd.Short = `Get a share.`
 	cmd.Long = `Get a share.
   
@@ -307,7 +307,7 @@ func newSharePermissions() *cobra.Command {
 
 	// TODO: short flags
 
-	cmd.Use = "share-permissions NAME"
+	cmd.Use = "share-permissions"
 	cmd.Short = `Get permissions.`
 	cmd.Long = `Get permissions.
   
@@ -376,7 +376,7 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of current owner of share.`)
 	// TODO: array: updates
 
-	cmd.Use = "update NAME"
+	cmd.Use = "update"
 	cmd.Short = `Update a share.`
 	cmd.Long = `Update a share.
   
@@ -460,7 +460,7 @@ func newUpdatePermissions() *cobra.Command {
 
 	// TODO: array: changes
 
-	cmd.Use = "update-permissions NAME"
+	cmd.Use = "update-permissions"
 	cmd.Short = `Update permissions.`
 	cmd.Long = `Update permissions.
   
