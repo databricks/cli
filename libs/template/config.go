@@ -75,7 +75,7 @@ func (c *config) assignDefaultValues(r *renderer) error {
 		if property.Default == nil {
 			continue
 		}
-		defaultVal, err := jsonschema.ToString(property.Default, property.Type)
+		defaultVal, err := property.DefaultString()
 		if err != nil {
 			return err
 		}
@@ -83,7 +83,7 @@ func (c *config) assignDefaultValues(r *renderer) error {
 		if err != nil {
 			return err
 		}
-		defaultValTyped, err := jsonschema.FromString(defaultVal, property.Type)
+		defaultValTyped, err := property.ParseString(defaultVal)
 		if err != nil {
 			return err
 		}
@@ -107,7 +107,7 @@ func (c *config) promptForValues(r *renderer) error {
 		var defaultVal string
 		var err error
 		if property.Default != nil {
-			defaultValRaw, err := jsonschema.ToString(property.Default, property.Type)
+			defaultValRaw, err := property.DefaultString()
 			if err != nil {
 				return err
 			}
@@ -126,7 +126,7 @@ func (c *config) promptForValues(r *renderer) error {
 		var userInput string
 		if property.Enum != nil {
 			// convert list of enums to string slice
-			enums, err := jsonschema.ToStringSlice(property.Enum, property.Type)
+			enums, err := property.EnumStringSlice()
 			if err != nil {
 				return err
 			}
@@ -142,7 +142,7 @@ func (c *config) promptForValues(r *renderer) error {
 		}
 
 		// Convert user input string back to a value
-		c.values[name], err = jsonschema.FromString(userInput, property.Type)
+		c.values[name], err = property.ParseString(userInput)
 		if err != nil {
 			return err
 		}
