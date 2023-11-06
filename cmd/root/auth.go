@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/fs"
 	"net/http"
 	"os"
 
@@ -55,7 +56,7 @@ func accountClientOrPrompt(ctx context.Context, cfg *config.Config, allowPrompt 
 	}
 
 	// Try picking a profile dynamically if the current configuration is not valid.
-	profile, err := askForAccountProfile(ctx)
+	profile, err := AskForAccountProfile(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -83,7 +84,7 @@ func MustAccountClient(cmd *cobra.Command, args []string) error {
 		// 1. only admins will have account configured
 		// 2. 99% of admins will have access to just one account
 		// hence, we don't need to create a special "DEFAULT_ACCOUNT" profile yet
-		_, profiles, err := databrickscfg.LoadProfiles(databrickscfg.MatchAccountProfiles)
+		_, profiles, err := databrickscfg.LoadProfiles(cmd.Context(), databrickscfg.MatchAccountProfiles)
 		if err != nil {
 			return err
 		}
@@ -123,7 +124,7 @@ func workspaceClientOrPrompt(ctx context.Context, cfg *config.Config, allowPromp
 	}
 
 	// Try picking a profile dynamically if the current configuration is not valid.
-	profile, err := askForWorkspaceProfile(ctx)
+	profile, err := AskForWorkspaceProfile(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -173,19 +174,23 @@ func SetWorkspaceClient(ctx context.Context, w *databricks.WorkspaceClient) cont
 	return context.WithValue(ctx, &workspaceClient, w)
 }
 
+var ErrNoConfiguration = errors.New("no configuration file found")
+
 func transformLoadError(path string, err error) error {
-	if os.IsNotExist(err) {
-		return fmt.Errorf("no configuration file found at %s; please create one first", path)
+	if os.IsNotExist(err) || errors.Is(err, fs.ErrNotExist) {
+		// downstreams need to handle these errors properly, but we erase the fs.ErrNotExist
+		// TODO: expose this as error through SDK
+		return fmt.Errorf("%w at %s; please create one first", ErrNoConfiguration, path)
 	}
 	return err
 }
 
-func askForWorkspaceProfile(ctx context.Context) (string, error) {
-	path, err := databrickscfg.GetPath()
+func AskForWorkspaceProfile(ctx context.Context) (string, error) {
+	path, err := databrickscfg.GetPath(ctx)
 	if err != nil {
 		return "", fmt.Errorf("cannot determine Databricks config file path: %w", err)
 	}
-	file, profiles, err := databrickscfg.LoadProfiles(databrickscfg.MatchWorkspaceProfiles)
+	file, profiles, err := databrickscfg.LoadProfiles(ctx, databrickscfg.MatchWorkspaceProfiles)
 	if err != nil {
 		return "", transformLoadError(path, err)
 	}
@@ -213,12 +218,12 @@ func askForWorkspaceProfile(ctx context.Context) (string, error) {
 	return profiles[i].Name, nil
 }
 
-func askForAccountProfile(ctx context.Context) (string, error) {
-	path, err := databrickscfg.GetPath()
+func AskForAccountProfile(ctx context.Context) (string, error) {
+	path, err := databrickscfg.GetPath(ctx)
 	if err != nil {
 		return "", fmt.Errorf("cannot determine Databricks config file path: %w", err)
 	}
-	file, profiles, err := databrickscfg.LoadProfiles(databrickscfg.MatchAccountProfiles)
+	file, profiles, err := databrickscfg.LoadProfiles(ctx, databrickscfg.MatchAccountProfiles)
 	if err != nil {
 		return "", transformLoadError(path, err)
 	}

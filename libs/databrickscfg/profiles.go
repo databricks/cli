@@ -1,11 +1,12 @@
 package databrickscfg
 
 import (
+	"context"
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
 )
@@ -67,43 +68,36 @@ func MatchAllProfiles(p Profile) bool {
 }
 
 // Get the path to the .databrickscfg file, falling back to the default in the current user's home directory.
-func GetPath() (string, error) {
-	configFile := os.Getenv("DATABRICKS_CONFIG_FILE")
+func GetPath(ctx context.Context) (string, error) {
+	configFile := env.Get(ctx, "DATABRICKS_CONFIG_FILE")
 	if configFile == "" {
 		configFile = "~/.databrickscfg"
 	}
 	if strings.HasPrefix(configFile, "~") {
-		homedir, err := os.UserHomeDir()
-		if err != nil {
-			return "", fmt.Errorf("cannot find homedir: %w", err)
-		}
+		homedir := env.UserHomeDir(ctx)
 		configFile = filepath.Join(homedir, configFile[1:])
 	}
 	return configFile, nil
 }
 
-func Get() (*config.File, error) {
-	configFile, err := GetPath()
+func Get(ctx context.Context) (*config.File, error) {
+	configFile, err := GetPath(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("cannot determine Databricks config file path: %w", err)
 	}
 	return config.LoadFile(configFile)
 }
 
-func LoadProfiles(fn ProfileMatchFunction) (file string, profiles Profiles, err error) {
-	f, err := Get()
+func LoadProfiles(ctx context.Context, fn ProfileMatchFunction) (file string, profiles Profiles, err error) {
+	f, err := Get(ctx)
 	if err != nil {
 		return "", nil, fmt.Errorf("cannot load Databricks config file: %w", err)
-	}
-
-	homedir, err := os.UserHomeDir()
-	if err != nil {
-		return
 	}
 
 	// Replace homedir with ~ if applicable.
 	// This is to make the output more readable.
 	file = f.Path()
+	homedir := env.UserHomeDir(ctx)
 	if strings.HasPrefix(file, homedir) {
 		file = "~" + file[len(homedir):]
 	}
@@ -130,7 +124,7 @@ func LoadProfiles(fn ProfileMatchFunction) (file string, profiles Profiles, err 
 }
 
 func ProfileCompletion(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-	_, profiles, err := LoadProfiles(MatchAllProfiles)
+	_, profiles, err := LoadProfiles(cmd.Context(), MatchAllProfiles)
 	if err != nil {
 		return nil, cobra.ShellCompDirectiveError
 	}

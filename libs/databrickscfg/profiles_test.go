@@ -1,9 +1,12 @@
 package databrickscfg
 
 import (
-	"runtime"
+	"context"
+	"os"
+	"strings"
 	"testing"
 
+	"github.com/databricks/cli/libs/env"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -27,27 +30,26 @@ func TestProfilesSearchCaseInsensitive(t *testing.T) {
 }
 
 func TestLoadProfilesReturnsHomedirAsTilde(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Setenv("USERPROFILE", "./testdata")
-	} else {
-		t.Setenv("HOME", "./testdata")
-	}
-	t.Setenv("DATABRICKS_CONFIG_FILE", "./testdata/databrickscfg")
-	file, _, err := LoadProfiles(func(p Profile) bool { return true })
+	ctx := context.Background()
+	ctx = env.WithUserHomeDir(ctx, "testdata/sample-home")
+	file, err := Get(ctx)
 	require.NoError(t, err)
-	assert.Equal(t, "~/databrickscfg", file)
+	path := strings.ReplaceAll("testdata/sample-home/.databrickscfg", "/", string(os.PathSeparator))
+	assert.Equal(t, path, file.Path())
 }
 
 func TestLoadProfilesMatchWorkspace(t *testing.T) {
-	t.Setenv("DATABRICKS_CONFIG_FILE", "./testdata/databrickscfg")
-	_, profiles, err := LoadProfiles(MatchWorkspaceProfiles)
+	ctx := context.Background()
+	ctx = env.Set(ctx, "DATABRICKS_CONFIG_FILE", "./testdata/databrickscfg")
+	_, profiles, err := LoadProfiles(ctx, MatchWorkspaceProfiles)
 	require.NoError(t, err)
 	assert.Equal(t, []string{"DEFAULT", "query", "foo1", "foo2"}, profiles.Names())
 }
 
 func TestLoadProfilesMatchAccount(t *testing.T) {
-	t.Setenv("DATABRICKS_CONFIG_FILE", "./testdata/databrickscfg")
-	_, profiles, err := LoadProfiles(MatchAccountProfiles)
+	ctx := context.Background()
+	ctx = env.Set(ctx, "DATABRICKS_CONFIG_FILE", "./testdata/databrickscfg")
+	_, profiles, err := LoadProfiles(ctx, MatchAccountProfiles)
 	require.NoError(t, err)
 	assert.Equal(t, []string{"acc"}, profiles.Names())
 }

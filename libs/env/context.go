@@ -3,6 +3,7 @@ package env
 import (
 	"context"
 	"os"
+	"runtime"
 	"strings"
 )
 
@@ -61,6 +62,21 @@ func Set(ctx context.Context, key, value string) context.Context {
 	m := copyMap(getMap(ctx))
 	m[key] = value
 	return setMap(ctx, m)
+}
+
+func homeEnvVar() string {
+	if runtime.GOOS == "windows" {
+		return "USERPROFILE"
+	}
+	return "HOME"
+}
+
+func WithUserHomeDir(ctx context.Context, value string) context.Context {
+	return Set(ctx, homeEnvVar(), value)
+}
+
+func UserHomeDir(ctx context.Context) string {
+	return Get(ctx, homeEnvVar())
 }
 
 // All returns environment variables that are defined in both os.Environ
