@@ -125,7 +125,7 @@ func (c *config) promptSelect(property jsonschema.Property, r *renderer) error {
 	return c.schema.ValidateInstance(c.values)
 }
 
-func (c *config) promptText(property jsonschema.Property, r *renderer, numRetries int) error {
+func (c *config) promptText(property jsonschema.Property, r *renderer) error {
 	name := property.Name
 	schema := property.Schema
 
@@ -145,7 +145,7 @@ func (c *config) promptText(property jsonschema.Property, r *renderer, numRetrie
 		return err
 	}
 
-	for i := 0; i < numRetries; i++ {
+	for {
 		// Get user input. Parse the string back to a value
 		userInput, err := cmdio.Ask(c.ctx, description, defaultVal)
 		if err != nil {
@@ -154,9 +154,8 @@ func (c *config) promptText(property jsonschema.Property, r *renderer, numRetrie
 
 		// Convert user input string back to a Go value
 		c.values[name], err = schema.ParseString(userInput)
-
-		// Error parsing user input. Retry if not last attempt
-		if err != nil && i != numRetries-1 {
+		// Error parsing user input. Retry if parsing fails.
+		if err != nil {
 			target := &jsonschema.ParseStringError{}
 			if errors.As(err, target) {
 				cmdio.LogString(c.ctx, fmt.Sprintf("Validation failed: %q is not an %s", target.Value, target.ExpectedType))
@@ -165,15 +164,11 @@ func (c *config) promptText(property jsonschema.Property, r *renderer, numRetrie
 			}
 			continue
 		}
-		if err != nil {
-			return err
-		}
 
 		// Validate the partial config based on this new value by the user
 		err = c.schema.ValidateInstance(c.values)
-
-		// Error validating user input. Retry if not last attempt
-		if err != nil && i != numRetries-1 {
+		// Error validating user input. Retry if validation fails.
+		if err != nil {
 			target := &jsonschema.PatternMatchFailedError{}
 			if errors.As(err, target) {
 				cmdio.LogString(c.ctx, fmt.Sprintf("Validation failed: %q is expected to match regex pattern %s. %s", target.PropertyValue, target.Pattern, target.FailureMessage))
@@ -184,14 +179,13 @@ func (c *config) promptText(property jsonschema.Property, r *renderer, numRetrie
 		}
 		return err
 	}
-	return nil
 }
 
 func (c *config) prompt(property jsonschema.Property, r *renderer) error {
 	if property.Schema.Enum != nil {
 		return c.promptSelect(property, r)
 	}
-	return c.promptText(property, r, 5)
+	return c.promptText(property, r)
 }
 
 // Prompts user for values for properties that do not have a value set yet
