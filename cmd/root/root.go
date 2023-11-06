@@ -3,9 +3,10 @@ package root
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"os"
 	"strings"
+
+	"log/slog"
 
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/cmdio"
