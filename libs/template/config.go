@@ -158,7 +158,7 @@ func (c *config) promptText(property jsonschema.Property, r *renderer) error {
 		if err != nil {
 			target := &jsonschema.ParseStringError{}
 			if errors.As(err, target) {
-				cmdio.LogString(c.ctx, fmt.Sprintf("Validation failed: %q is not an %s", target.Value, target.ExpectedType))
+				cmdio.LogString(c.ctx, fmt.Sprintf("Validation failed: %q is not a %s", target.Value, target.ExpectedType))
 			} else {
 				cmdio.LogString(c.ctx, fmt.Sprintf("Validation failed: %s", err.Error()))
 			}
