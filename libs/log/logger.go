@@ -3,7 +3,6 @@ package log
 import (
 	"context"
 	"fmt"
-	"os"
 	"runtime"
 	"time"
 
@@ -26,7 +25,6 @@ func log(logger *slog.Logger, ctx context.Context, level slog.Level, msg string)
 	// skip [runtime.Callers, this function, this function's caller].
 	runtime.Callers(3, pcs[:])
 	r := slog.NewRecord(time.Now(), level, msg, pcs[0])
-	r.AddAttrs(slog.Int("pid", os.Getpid()))
 	if ctx == nil {
 		ctx = context.Background()
 	}

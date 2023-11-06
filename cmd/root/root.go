@@ -3,6 +3,7 @@ package root
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"os"
 	"strings"
 
@@ -49,7 +50,10 @@ func New(ctx context.Context) *cobra.Command {
 			return err
 		}
 
-		log.Infof(ctx, "Starting execution with version: %s, arguments: %s", build.GetInfo().Version, strings.Join(os.Args, ", "))
+		logger := log.GetLogger(ctx)
+		logger.Info("start",
+			slog.String("version", build.GetInfo().Version),
+			slog.String("args", strings.Join(os.Args, ", ")))
 
 		// Configure progress logger
 		ctx, err = progressLoggerFlag.initializeContext(ctx)
@@ -101,11 +105,14 @@ func Execute(cmd *cobra.Command) {
 	// Log exit status and error
 	// We only log if logger initialization succeeded and is stored in command
 	// context
-	if _, ok := log.FromContext(cmd.Context()); ok {
+	if logger, ok := log.FromContext(cmd.Context()); ok {
 		if err == nil {
-			log.Infof(ctx, "Completed execution with exit code 0")
+			logger.Info("completed execution",
+				slog.String("exit_code", "0"))
 		} else {
-			log.Errorf(ctx, "Failed execution with exit code 1, error: %s", err.Error())
+			logger.Error("failed execution",
+				slog.String("exit_code", "1"),
+				slog.String("error", err.Error()))
 		}
 	}
 
