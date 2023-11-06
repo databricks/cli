@@ -2,6 +2,7 @@ package template
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/libs/cmdio"
@@ -156,7 +157,12 @@ func (c *config) promptText(property jsonschema.Property, r *renderer, numRetrie
 
 		// Error parsing user input. Retry if not last attempt
 		if err != nil && i != numRetries-1 {
-			cmdio.LogString(c.ctx, fmt.Sprintf("Validation failed: %s", err.Error()))
+			target := &jsonschema.ParseStringError{}
+			if errors.As(err, target) {
+				cmdio.LogString(c.ctx, fmt.Sprintf("Validation failed: %q is not an %s", target.Value, target.ExpectedType))
+			} else {
+				cmdio.LogString(c.ctx, fmt.Sprintf("Validation failed: %s", err.Error()))
+			}
 			continue
 		}
 		if err != nil {
@@ -168,7 +174,12 @@ func (c *config) promptText(property jsonschema.Property, r *renderer, numRetrie
 
 		// Error validating user input. Retry if not last attempt
 		if err != nil && i != numRetries-1 {
-			cmdio.LogString(c.ctx, fmt.Sprintf("Validation failed: %s", err.Error()))
+			target := &jsonschema.PatternMatchFailedError{}
+			if errors.As(err, target) {
+				cmdio.LogString(c.ctx, fmt.Sprintf("Validation failed: %q is expected to match regex pattern %s. %s", target.PropertyValue, target.Pattern, target.FailureMessage))
+			} else {
+				cmdio.LogString(c.ctx, fmt.Sprintf("Validation failed: %s", target.Error()))
+			}
 			continue
 		}
 		return err
