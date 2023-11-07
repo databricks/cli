@@ -123,7 +123,6 @@ func newConfigureCommand() *cobra.Command {
 	If this command is invoked in non-interactive mode, it will read the token from stdin.
 	The host must be specified with the --host flag.
 		`,
-		Hidden: true,
 	}
 
 	cmd.Flags().String("host", "", "Databricks workspace host.")
