@@ -107,7 +107,7 @@ func newCreate() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := cobra.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide CATALOG_NAME, SCHEMA_NAME, NAME in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'catalog_name', 'schema_name', 'name' in your JSON input")
 			}
 			return nil
 		}
@@ -495,7 +495,7 @@ func newSetAlias() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := cobra.ExactArgs(2)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only FULL_NAME, ALIAS as positional arguments. Provide VERSION_NUM in your JSON input")
+				return fmt.Errorf("when --json flag is specified, provide only FULL_NAME, ALIAS as positional arguments. Provide 'version_num' in your JSON input")
 			}
 			return nil
 		}

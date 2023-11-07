@@ -83,7 +83,7 @@ func newCreate() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := cobra.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide PRIVATE_ACCESS_SETTINGS_NAME, REGION in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'private_access_settings_name', 'region' in your JSON input")
 			}
 			return nil
 		}
@@ -397,7 +397,7 @@ func newReplace() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := cobra.ExactArgs(1)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only PRIVATE_ACCESS_SETTINGS_ID as positional arguments. Provide PRIVATE_ACCESS_SETTINGS_NAME, REGION in your JSON input")
+				return fmt.Errorf("when --json flag is specified, provide only PRIVATE_ACCESS_SETTINGS_ID as positional arguments. Provide 'private_access_settings_name', 'region' in your JSON input")
 			}
 			return nil
 		}

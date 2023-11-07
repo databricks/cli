@@ -75,7 +75,7 @@ func newAdd() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := cobra.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide INSTANCE_PROFILE_ARN in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'instance_profile_arn' in your JSON input")
 			}
 			return nil
 		}
@@ -170,7 +170,7 @@ func newEdit() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := cobra.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide INSTANCE_PROFILE_ARN in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'instance_profile_arn' in your JSON input")
 			}
 			return nil
 		}
@@ -301,7 +301,7 @@ func newRemove() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := cobra.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide INSTANCE_PROFILE_ARN in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'instance_profile_arn' in your JSON input")
 			}
 			return nil
 		}

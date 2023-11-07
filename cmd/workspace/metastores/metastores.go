@@ -79,7 +79,7 @@ func newAssign() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := cobra.ExactArgs(1)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only WORKSPACE_ID as positional arguments. Provide METASTORE_ID, DEFAULT_CATALOG_NAME in your JSON input")
+				return fmt.Errorf("when --json flag is specified, provide only WORKSPACE_ID as positional arguments. Provide 'metastore_id', 'default_catalog_name' in your JSON input")
 			}
 			return nil
 		}
@@ -166,7 +166,7 @@ func newCreate() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := cobra.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide NAME, STORAGE_ROOT in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name', 'storage_root' in your JSON input")
 			}
 			return nil
 		}
@@ -373,7 +373,7 @@ func newEnableOptimization() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := cobra.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide METASTORE_ID, ENABLE in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'metastore_id', 'enable' in your JSON input")
 			}
 			return nil
 		}

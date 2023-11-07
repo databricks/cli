@@ -90,7 +90,7 @@ func newCreate() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := cobra.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide NAME, AUTHENTICATION_TYPE in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name', 'authentication_type' in your JSON input")
 			}
 			return nil
 		}
@@ -388,7 +388,7 @@ func newRotateToken() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := cobra.ExactArgs(1)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only NAME as positional arguments. Provide EXISTING_TOKEN_EXPIRE_IN_SECONDS in your JSON input")
+				return fmt.Errorf("when --json flag is specified, provide only NAME as positional arguments. Provide 'existing_token_expire_in_seconds' in your JSON input")
 			}
 			return nil
 		}

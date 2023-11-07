@@ -94,7 +94,7 @@ func newCreate() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := cobra.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide NAME in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name' in your JSON input")
 			}
 			return nil
 		}
@@ -262,7 +262,7 @@ func newEdit() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := cobra.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide POLICY_ID, NAME in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'policy_id', 'name' in your JSON input")
 			}
 			return nil
 		}

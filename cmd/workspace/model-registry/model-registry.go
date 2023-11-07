@@ -74,7 +74,7 @@ func newApproveTransitionRequest() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := cobra.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide NAME, VERSION, STAGE, ARCHIVE_EXISTING_VERSIONS in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name', 'version', 'stage', 'archive_existing_versions' in your JSON input")
 			}
 			return nil
 		}
@@ -169,7 +169,7 @@ func newCreateComment() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := cobra.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide NAME, VERSION, COMMENT in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name', 'version', 'comment' in your JSON input")
 			}
 			return nil
 		}
@@ -259,7 +259,7 @@ func newCreateModel() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := cobra.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide NAME in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name' in your JSON input")
 			}
 			return nil
 		}
@@ -342,7 +342,7 @@ func newCreateModelVersion() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := cobra.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide NAME, SOURCE in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name', 'source' in your JSON input")
 			}
 			return nil
 		}
@@ -425,7 +425,7 @@ func newCreateTransitionRequest() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := cobra.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide NAME, VERSION, STAGE in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name', 'version', 'stage' in your JSON input")
 			}
 			return nil
 		}
@@ -1028,7 +1028,7 @@ func newGetLatestVersions() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := cobra.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide NAME in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name' in your JSON input")
 			}
 			return nil
 		}
@@ -1610,7 +1610,7 @@ func newRejectTransitionRequest() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := cobra.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide NAME, VERSION, STAGE in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name', 'version', 'stage' in your JSON input")
 			}
 			return nil
 		}
@@ -1699,7 +1699,7 @@ func newRenameModel() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := cobra.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide NAME in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name' in your JSON input")
 			}
 			return nil
 		}
@@ -1905,7 +1905,7 @@ func newSetModelTag() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := cobra.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide NAME, KEY, VALUE in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name', 'key', 'value' in your JSON input")
 			}
 			return nil
 		}
@@ -1989,7 +1989,7 @@ func newSetModelVersionTag() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := cobra.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide NAME, VERSION, KEY, VALUE in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name', 'version', 'key', 'value' in your JSON input")
 			}
 			return nil
 		}
@@ -2152,7 +2152,7 @@ func newTestRegistryWebhook() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := cobra.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide ID in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'id' in your JSON input")
 			}
 			return nil
 		}
@@ -2236,7 +2236,7 @@ func newTransitionStage() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := cobra.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide NAME, VERSION, STAGE, ARCHIVE_EXISTING_VERSIONS in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name', 'version', 'stage', 'archive_existing_versions' in your JSON input")
 			}
 			return nil
 		}
@@ -2329,7 +2329,7 @@ func newUpdateComment() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := cobra.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide ID, COMMENT in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'id', 'comment' in your JSON input")
 			}
 			return nil
 		}
@@ -2412,7 +2412,7 @@ func newUpdateModel() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := cobra.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide NAME in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name' in your JSON input")
 			}
 			return nil
 		}
@@ -2492,7 +2492,7 @@ func newUpdateModelVersion() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := cobra.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide NAME, VERSION in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name', 'version' in your JSON input")
 			}
 			return nil
 		}
@@ -2653,7 +2653,7 @@ func newUpdateWebhook() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := cobra.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide ID in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'id' in your JSON input")
 			}
 			return nil
 		}

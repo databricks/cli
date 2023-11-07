@@ -93,7 +93,7 @@ func newChangeOwner() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := cobra.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide CLUSTER_ID, OWNER_USERNAME in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'cluster_id', 'owner_username' in your JSON input")
 			}
 			return nil
 		}
@@ -214,7 +214,7 @@ func newCreate() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := cobra.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide SPARK_VERSION in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'spark_version' in your JSON input")
 			}
 			return nil
 		}
@@ -450,7 +450,7 @@ func newEdit() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := cobra.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide CLUSTER_ID, SPARK_VERSION in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'cluster_id', 'spark_version' in your JSON input")
 			}
 			return nil
 		}

@@ -76,7 +76,7 @@ func newCreate() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := cobra.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide NAME, SCRIPT in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name', 'script' in your JSON input")
 			}
 			return nil
 		}
@@ -358,7 +358,7 @@ func newUpdate() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := cobra.ExactArgs(1)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only SCRIPT_ID as positional arguments. Provide NAME, SCRIPT in your JSON input")
+				return fmt.Errorf("when --json flag is specified, provide only SCRIPT_ID as positional arguments. Provide 'name', 'script' in your JSON input")
 			}
 			return nil
 		}

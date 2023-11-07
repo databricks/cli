@@ -146,9 +146,9 @@ func new{{.PascalName}}() *cobra.Command {
 			err := cobra.ExactArgs({{len .Request.RequiredPathFields}})(cmd, args)
 			if err != nil {
 			{{- if eq 0 (len .Request.RequiredPathFields) }}
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide{{- range $index, $field := .Request.RequiredFields}}{{if $index}},{{end}} {{$field.ConstantName}}{{end}} in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide{{- range $index, $field := .Request.RequiredFields}}{{if $index}},{{end}} '{{$field.Name}}'{{end}} in your JSON input")
 			{{- else }}
-				return fmt.Errorf("when --json flag is specified, provide only{{- range $index, $field := .Request.RequiredPathFields}}{{if $index}},{{end}} {{$field.ConstantName}}{{end}} as positional arguments. Provide{{- range $index, $field := .Request.RequiredRequestBodyFields}}{{if $index}},{{end}} {{$field.ConstantName}}{{end}} in your JSON input")
+				return fmt.Errorf("when --json flag is specified, provide only{{- range $index, $field := .Request.RequiredPathFields}}{{if $index}},{{end}} {{$field.ConstantName}}{{end}} as positional arguments. Provide{{- range $index, $field := .Request.RequiredRequestBodyFields}}{{if $index}},{{end}} '{{$field.Name}}'{{end}} in your JSON input")
 			{{- end }}
 			}
 			return nil

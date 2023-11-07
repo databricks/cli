@@ -359,7 +359,7 @@ func newPatchStatus() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := cobra.ExactArgs(1)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only LOG_DELIVERY_CONFIGURATION_ID as positional arguments. Provide STATUS in your JSON input")
+				return fmt.Errorf("when --json flag is specified, provide only LOG_DELIVERY_CONFIGURATION_ID as positional arguments. Provide 'status' in your JSON input")
 			}
 			return nil
 		}
