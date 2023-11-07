@@ -66,7 +66,7 @@ func transformDbtTask(resource any, dir string) *transformer {
 
 func transformSqlFileTask(resource any, dir string) *transformer {
 	task, ok := resource.(*jobs.Task)
-	if !ok || task.SqlTask == nil || task == nil || task.SqlTask.File == nil {
+	if !ok || task.SqlTask == nil || task.SqlTask.File == nil {
 		return nil
 	}
 
