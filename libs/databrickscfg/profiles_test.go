@@ -2,6 +2,8 @@ package databrickscfg
 
 import (
 	"context"
+	"os"
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/libs/env"
@@ -33,7 +35,7 @@ func TestLoadProfilesReturnsHomedirAsTilde(t *testing.T) {
 	ctx = env.Set(ctx, "DATABRICKS_CONFIG_FILE", "./testdata/databrickscfg")
 	file, _, err := LoadProfiles(ctx, func(p Profile) bool { return true })
 	require.NoError(t, err)
-	assert.Equal(t, "~/databrickscfg", file)
+	assertEqualPaths(t, "~/databrickscfg", file)
 }
 
 func TestLoadProfilesReturnsHomedirAsTildeExoticFIle(t *testing.T) {
@@ -42,7 +44,7 @@ func TestLoadProfilesReturnsHomedirAsTildeExoticFIle(t *testing.T) {
 	ctx = env.Set(ctx, "DATABRICKS_CONFIG_FILE", "~/databrickscfg")
 	file, _, err := LoadProfiles(ctx, func(p Profile) bool { return true })
 	require.NoError(t, err)
-	assert.Equal(t, "~/databrickscfg", file)
+	assertEqualPaths(t, "~/databrickscfg", file)
 }
 
 func TestLoadProfilesReturnsHomedirAsTildeDefaultFile(t *testing.T) {
@@ -50,7 +52,7 @@ func TestLoadProfilesReturnsHomedirAsTildeDefaultFile(t *testing.T) {
 	ctx = env.WithUserHomeDir(ctx, "testdata/sample-home")
 	file, _, err := LoadProfiles(ctx, func(p Profile) bool { return true })
 	require.NoError(t, err)
-	assert.Equal(t, "~/.databrickscfg", file)
+	assertEqualPaths(t, "~/.databrickscfg", file)
 }
 
 func TestLoadProfilesNoConfiguration(t *testing.T) {
@@ -74,4 +76,9 @@ func TestLoadProfilesMatchAccount(t *testing.T) {
 	_, profiles, err := LoadProfiles(ctx, MatchAccountProfiles)
 	require.NoError(t, err)
 	assert.Equal(t, []string{"acc"}, profiles.Names())
+}
+
+func assertEqualPaths(t *testing.T, expected, actual string) {
+	expected = strings.ReplaceAll(expected, "/", string(os.PathSeparator))
+	assert.Equal(t, expected, actual)
 }
