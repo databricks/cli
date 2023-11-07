@@ -135,6 +135,17 @@ func translateFilePath(literal, localFullPath, localRelPath, remotePath string) 
 	return remotePath, nil
 }
 
+func translateDirectoryPath(literal, localFullPath, localRelPath, remotePath string) (string, error) {
+	info, err := os.Stat(localFullPath)
+	if err != nil {
+		return "", err
+	}
+	if !info.IsDir() {
+		return "", fmt.Errorf("%s is not a directory", localFullPath)
+	}
+	return remotePath, nil
+}
+
 func translateNoOp(literal, localFullPath, localRelPath, remotePath string) (string, error) {
 	return localRelPath, nil
 }
