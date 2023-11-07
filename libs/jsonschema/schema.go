@@ -168,11 +168,6 @@ func (schema *Schema) validateSchemaPattern() error {
 			return fmt.Errorf("invalid regex pattern %q provided for property %q: %w", pattern, name, err)
 		}
 
-		// validate default value against the pattern
-		if property.Default != nil && !r.MatchString(property.Default.(string)) {
-			return fmt.Errorf("default value %q for property %q does not match specified regex pattern: %q", property.Default, name, pattern)
-		}
-
 		// validate enum values against the pattern
 		for i, enum := range property.Enum {
 			if !r.MatchString(enum.(string)) {
