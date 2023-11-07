@@ -18,7 +18,7 @@ require (
 	github.com/nwidger/jsoncolor v0.3.2 // MIT
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8 // BSD-2-Clause
 	github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06 // MIT
-	github.com/spf13/cobra v1.7.0 // Apache 2.0
+	github.com/spf13/cobra v1.8.0 // Apache 2.0
 	github.com/spf13/pflag v1.0.5 // BSD-3-Clause
 	github.com/stretchr/testify v1.8.4 // MIT
 	github.com/whilp/git-urls v1.0.0 // MIT
