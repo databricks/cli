@@ -2,7 +2,9 @@ package databrickscfg
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io/fs"
 	"path/filepath"
 	"strings"
 
@@ -80,12 +82,21 @@ func GetPath(ctx context.Context) (string, error) {
 	return configFile, nil
 }
 
+var ErrNoConfiguration = errors.New("no configuration file found")
+
 func Get(ctx context.Context) (*config.File, error) {
-	configFile, err := GetPath(ctx)
+	path, err := GetPath(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("cannot determine Databricks config file path: %w", err)
 	}
-	return config.LoadFile(configFile)
+	configFile, err := config.LoadFile(path)
+	if errors.Is(err, fs.ErrNotExist) {
+		// downstreams depend on ErrNoConfiguration. TODO: expose this error through SDK
+		return nil, fmt.Errorf("%w at %s; please create one first", ErrNoConfiguration, path)
+	} else if err != nil {
+		return nil, err
+	}
+	return configFile, nil
 }
 
 func LoadProfiles(ctx context.Context, fn ProfileMatchFunction) (file string, profiles Profiles, err error) {

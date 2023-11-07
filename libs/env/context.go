@@ -2,6 +2,7 @@ package env
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"runtime"
 	"strings"
@@ -76,7 +77,11 @@ func WithUserHomeDir(ctx context.Context, value string) context.Context {
 }
 
 func UserHomeDir(ctx context.Context) string {
-	return Get(ctx, homeEnvVar())
+	home := Get(ctx, homeEnvVar())
+	if home == "" {
+		panic(fmt.Errorf("$HOME is not set"))
+	}
+	return home
 }
 
 // All returns environment variables that are defined in both os.Environ

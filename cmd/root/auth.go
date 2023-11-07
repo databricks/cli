@@ -4,9 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/fs"
 	"net/http"
-	"os"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/cmdio"
@@ -174,17 +172,6 @@ func SetWorkspaceClient(ctx context.Context, w *databricks.WorkspaceClient) cont
 	return context.WithValue(ctx, &workspaceClient, w)
 }
 
-var ErrNoConfiguration = errors.New("no configuration file found")
-
-func transformLoadError(path string, err error) error {
-	if os.IsNotExist(err) || errors.Is(err, fs.ErrNotExist) {
-		// downstreams need to handle these errors properly, but we erase the fs.ErrNotExist
-		// TODO: expose this as error through SDK
-		return fmt.Errorf("%w at %s; please create one first", ErrNoConfiguration, path)
-	}
-	return err
-}
-
 func AskForWorkspaceProfile(ctx context.Context) (string, error) {
 	path, err := databrickscfg.GetPath(ctx)
 	if err != nil {
@@ -192,7 +179,7 @@ func AskForWorkspaceProfile(ctx context.Context) (string, error) {
 	}
 	file, profiles, err := databrickscfg.LoadProfiles(ctx, databrickscfg.MatchWorkspaceProfiles)
 	if err != nil {
-		return "", transformLoadError(path, err)
+		return "", err
 	}
 	switch len(profiles) {
 	case 0:
@@ -225,7 +212,7 @@ func AskForAccountProfile(ctx context.Context) (string, error) {
 	}
 	file, profiles, err := databrickscfg.LoadProfiles(ctx, databrickscfg.MatchAccountProfiles)
 	if err != nil {
-		return "", transformLoadError(path, err)
+		return "", err
 	}
 	switch len(profiles) {
 	case 0:
