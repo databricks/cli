@@ -34,10 +34,5 @@ func Forwarded(ctx context.Context, args []string, src io.Reader, outWriter, err
 		}
 	}
 
-	err := cmd.Start()
-	if err != nil {
-		return err
-	}
-
-	return cmd.Wait()
+	return runCmd(ctx, cmd)
 }
