@@ -107,7 +107,7 @@ func (c *config) promptForValues(r *renderer) error {
 		if p.Schema.SkipPromptIf != nil {
 			skip := true
 
-			// Check if conditionals for skipping are satisfied
+			// Check if conditions for skipping are satisfied
 			for name, property := range p.Schema.SkipPromptIf.Properties {
 				if v, ok := c.values[name]; ok && v == property.Const {
 					continue
