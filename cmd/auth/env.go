@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -68,8 +69,8 @@ func resolveSection(cfg *config.Config, iniFile *config.File) (*ini.Section, err
 	return candidates[0], nil
 }
 
-func loadFromDatabricksCfg(cfg *config.Config) error {
-	iniFile, err := databrickscfg.Get()
+func loadFromDatabricksCfg(ctx context.Context, cfg *config.Config) error {
+	iniFile, err := databrickscfg.Get(ctx)
 	if errors.Is(err, fs.ErrNotExist) {
 		// it's fine not to have ~/.databrickscfg
 		return nil
@@ -110,7 +111,7 @@ func newEnvCommand() *cobra.Command {
 			cfg.Profile = profile
 		} else if cfg.Host == "" {
 			cfg.Profile = "DEFAULT"
-		} else if err := loadFromDatabricksCfg(cfg); err != nil {
+		} else if err := loadFromDatabricksCfg(cmd.Context(), cfg); err != nil {
 			return err
 		}
 		// Go SDK is lazy loaded because of Terraform semantics,
