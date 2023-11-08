@@ -1,5 +1,33 @@
 # Version changelog
 
+## 0.209.1
+
+CLI:
+ * Hide `--progress-format` global flag ([#965](https://github.com/databricks/cli/pull/965)).
+ * Make configure command visible + fix bundle command description ([#961](https://github.com/databricks/cli/pull/961)).
+ * Log process ID in each log entry ([#949](https://github.com/databricks/cli/pull/949)).
+ * Improve error message when `--json` flag is specified ([#933](https://github.com/databricks/cli/pull/933)).
+
+Bundles:
+ * Remove validation for default value against pattern ([#959](https://github.com/databricks/cli/pull/959)).
+ * Bundle path rewrites for dbt and SQL file tasks ([#962](https://github.com/databricks/cli/pull/962)).
+ * Initialize variable definitions that are defined without properties ([#966](https://github.com/databricks/cli/pull/966)).
+
+Internal:
+ * Remove mention of Lakehouse apps from the changelog ([#945](https://github.com/databricks/cli/pull/945)).
+ * Function to merge two instances of `config.Value` ([#938](https://github.com/databricks/cli/pull/938)).
+ * Make to/from string methods private to the jsonschema package ([#942](https://github.com/databricks/cli/pull/942)).
+ * Make Cobra runner compatible with testing interactive flows ([#957](https://github.com/databricks/cli/pull/957)).
+ * Added `env.UserHomeDir(ctx)` for parallel-friendly tests ([#955](https://github.com/databricks/cli/pull/955)).
+
+
+Dependency updates:
+ * Bump golang.org/x/mod from 0.13.0 to 0.14.0 ([#954](https://github.com/databricks/cli/pull/954)).
+ * Bump golang.org/x/text from 0.13.0 to 0.14.0 ([#953](https://github.com/databricks/cli/pull/953)).
+ * Bump golang.org/x/sync from 0.4.0 to 0.5.0 ([#951](https://github.com/databricks/cli/pull/951)).
+ * Bump github.com/spf13/cobra from 1.7.0 to 1.8.0 ([#950](https://github.com/databricks/cli/pull/950)).
+ * Bump github.com/fatih/color from 1.15.0 to 1.16.0 ([#952](https://github.com/databricks/cli/pull/952)).
+
 ## 0.209.0
 
 CLI:
