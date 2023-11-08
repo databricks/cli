@@ -142,7 +142,7 @@ func initLogFlags(cmd *cobra.Command) *logFlags {
 	}
 
 	flags := cmd.PersistentFlags()
-	flags.BoolVar(&f.debug, "debug", false, "enable debug logging. Equivalent to `--log-level debug`")
+	flags.BoolVar(&f.debug, "debug", false, "enable debug logging")
 	flags.Var(&f.file, "log-file", "file to write logs to")
 	flags.Var(&f.level, "log-level", "log level")
 	flags.Var(&f.output, "log-format", "log output format (text or json)")
