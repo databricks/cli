@@ -14,7 +14,6 @@ Bundles:
  * Initialize variable definitions that are defined without properties ([#966](https://github.com/databricks/cli/pull/966)).
 
 Internal:
- * Remove mention of Lakehouse apps from the changelog ([#945](https://github.com/databricks/cli/pull/945)).
  * Function to merge two instances of `config.Value` ([#938](https://github.com/databricks/cli/pull/938)).
  * Make to/from string methods private to the jsonschema package ([#942](https://github.com/databricks/cli/pull/942)).
  * Make Cobra runner compatible with testing interactive flows ([#957](https://github.com/databricks/cli/pull/957)).
