@@ -48,6 +48,7 @@ func TestSchemaLoadIntegers(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, int64(1), schema.Properties["abc"].Default)
 	assert.Equal(t, []any{int64(1), int64(2), int64(3)}, schema.Properties["abc"].Enum)
+	assert.Equal(t, int64(5), schema.Properties["def"].Const)
 }
 
 func TestSchemaLoadIntegersWithInvalidDefault(t *testing.T) {
@@ -58,6 +59,11 @@ func TestSchemaLoadIntegersWithInvalidDefault(t *testing.T) {
 func TestSchemaLoadIntegersWithInvalidEnums(t *testing.T) {
 	_, err := Load("./testdata/schema-load-int/schema-invalid-enum.json")
 	assert.EqualError(t, err, "failed to parse enum value 2.4 at index 1 for property abc: expected integer value, got: 2.4")
+}
+
+func TestSchemaLoadIntergersWithInvalidConst(t *testing.T) {
+	_, err := Load("./testdata/schema-load-int/schema-invalid-const.json")
+	assert.EqualError(t, err, "failed to parse const value for property def: expected integer value, got: 5.1")
 }
 
 func TestSchemaValidateDefaultType(t *testing.T) {
