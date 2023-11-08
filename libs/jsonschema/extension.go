@@ -26,4 +26,8 @@ type Extension struct {
 	// If the CLI version is less than this value, then validation for this
 	// schema will fail.
 	MinDatabricksCliVersion string `json:"min_databricks_cli_version,omitempty"`
+
+	// Skip prompting if this schema is satisfied by the user entered values. In
+	// that case the default value of the property is used instead.
+	SkipPromptIf *Schema `json:"skip_prompt_if,omitempty"`
 }
