@@ -25,6 +25,13 @@ func newConfig(ctx context.Context, schemaPath string) (*config, error) {
 		return nil, err
 	}
 
+	// Validate that all properties have a description
+	for name, p := range schema.Properties {
+		if p.Description == "" {
+			return nil, fmt.Errorf("template property %s is missing a description", name)
+		}
+	}
+
 	// Do not allow template input variables that are not defined in the schema.
 	schema.AdditionalProperties = false
 

@@ -189,3 +189,8 @@ func TestAssignDefaultValuesWithTemplatedDefaults(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "my_file", c.values["string_val"])
 }
+
+func TestTemplateSchemaErrorsWithEmptyDescription(t *testing.T) {
+	_, err := newConfig(context.Background(), "./testdata/config-test-schema/invalid-test-schema.json")
+	assert.EqualError(t, err, "template property property-without-description is missing a description")
+}
