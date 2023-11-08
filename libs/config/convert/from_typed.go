@@ -78,6 +78,11 @@ func fromTypedMap(src reflect.Value, ref config.Value) (config.Value, error) {
 		return config.Value{}, fmt.Errorf("unhandled type: %s", ref.Kind())
 	}
 
+	// Return nil if the map is nil.
+	if src.IsNil() {
+		return config.NilValue, nil
+	}
+
 	out := make(map[string]config.Value)
 	iter := src.MapRange()
 	for iter.Next() {
@@ -95,11 +100,6 @@ func fromTypedMap(src reflect.Value, ref config.Value) (config.Value, error) {
 		out[k] = nv
 	}
 
-	// If the map has no entries, emit a nil.
-	if len(out) == 0 {
-		return config.NilValue, nil
-	}
-
 	return config.NewValue(out, ref.Location()), nil
 }
 
@@ -109,6 +109,11 @@ func fromTypedSlice(src reflect.Value, ref config.Value) (config.Value, error) {
 	case config.KindSequence, config.KindNil:
 	default:
 		return config.Value{}, fmt.Errorf("unhandled type: %s", ref.Kind())
+	}
+
+	// Return nil if the slice is nil.
+	if src.IsNil() {
+		return config.NilValue, nil
 	}
 
 	out := make([]config.Value, src.Len())
@@ -122,11 +127,6 @@ func fromTypedSlice(src reflect.Value, ref config.Value) (config.Value, error) {
 		}
 
 		out[i] = nv
-	}
-
-	// If the slice has no entries, emit a nil.
-	if len(out) == 0 {
-		return config.NilValue, nil
 	}
 
 	return config.NewValue(out, ref.Location()), nil

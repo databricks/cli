@@ -68,6 +68,19 @@ func TestFromTypedStructSetFieldsRetainLocationIfUnchanged(t *testing.T) {
 	assert.Equal(t, config.NewValue("qux", config.Location{}), nv.Get("bar"))
 }
 
+func TestFromTypedMapNil(t *testing.T) {
+	var src map[string]string = nil
+
+	ref := config.V(map[string]config.Value{
+		"foo": config.V("bar"),
+		"bar": config.V("baz"),
+	})
+
+	nv, err := FromTyped(src, ref)
+	require.NoError(t, err)
+	assert.Equal(t, config.NilValue, nv)
+}
+
 func TestFromTypedMapEmpty(t *testing.T) {
 	var src = map[string]string{}
 
@@ -78,7 +91,7 @@ func TestFromTypedMapEmpty(t *testing.T) {
 
 	nv, err := FromTyped(src, ref)
 	require.NoError(t, err)
-	assert.Equal(t, config.NilValue, nv)
+	assert.Equal(t, config.V(map[string]config.Value{}), nv)
 }
 
 func TestFromTypedMapNonEmpty(t *testing.T) {
@@ -130,6 +143,19 @@ func TestFromTypedMapFieldWithZeroValue(t *testing.T) {
 	}), nv)
 }
 
+func TestFromTypedSliceNil(t *testing.T) {
+	var src []string = nil
+
+	ref := config.V([]config.Value{
+		config.V("bar"),
+		config.V("baz"),
+	})
+
+	nv, err := FromTyped(src, ref)
+	require.NoError(t, err)
+	assert.Equal(t, config.NilValue, nv)
+}
+
 func TestFromTypedSliceEmpty(t *testing.T) {
 	var src = []string{}
 
@@ -140,7 +166,7 @@ func TestFromTypedSliceEmpty(t *testing.T) {
 
 	nv, err := FromTyped(src, ref)
 	require.NoError(t, err)
-	assert.Equal(t, config.NilValue, nv)
+	assert.Equal(t, config.V([]config.Value{}), nv)
 }
 
 func TestFromTypedSliceNonEmpty(t *testing.T) {
