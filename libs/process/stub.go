@@ -11,15 +11,6 @@ import (
 var stubKey int
 
 // WithStub creates process stub for fast and flexible testing of subprocesses
-//
-//	ctx := context.Background()
-//	ctx, stub := WithStub(ctx)
-//	stub.WithDefaultOutput("meeee")
-//	out, err := Background(ctx, []string{"/usr/local/bin/meeecho", "1", "--foo", "bar"})
-//	require.NoError(t, err)
-//	require.Equal(t, "meeee", out)
-//	require.Equal(t, 1, stub.Len())
-//	require.Equal(t, []string{"meeecho 1 --foo bar"}, stub.Commands())
 func WithStub(ctx context.Context) (context.Context, *processStub) {
 	stub := &processStub{responses: map[string]reponseStub{}}
 	ctx = context.WithValue(ctx, &stubKey, stub)
@@ -41,20 +32,19 @@ type reponseStub struct {
 }
 
 type processStub struct {
+	reponseStub
 	calls           []*exec.Cmd
-	defaultOutput   string
-	defaultFailure  error
 	defaultCallback func(*exec.Cmd) error
 	responses       map[string]reponseStub
 }
 
 func (s *processStub) WithDefaultOutput(output string) *processStub {
-	s.defaultOutput = output
+	s.reponseStub.stdout = output
 	return s
 }
 
 func (s *processStub) WithDefaultFailure(err error) *processStub {
-	s.defaultFailure = err
+	s.reponseStub.err = err
 	return s
 }
 
@@ -63,22 +53,29 @@ func (s *processStub) WithDefaultCallback(cb func(cmd *exec.Cmd) error) *process
 	return s
 }
 
-func (s *processStub) WithStdoutFor(norm, out string) *processStub {
-	s.responses[norm] = reponseStub{
+// WithStdoutFor predefines standard output response for a command. The first word
+// in the command string is the executable name, and NOT the executable path.
+// The following command would stub "2" output for "/usr/local/bin/echo 1" command:
+//
+//	stub.WithStdoutFor("echo 1", "2")
+func (s *processStub) WithStdoutFor(command, out string) *processStub {
+	s.responses[command] = reponseStub{
 		stdout: out,
 	}
 	return s
 }
 
-func (s *processStub) WithStderrFor(norm, out string) *processStub {
-	s.responses[norm] = reponseStub{
+// WithStdoutFor same as [WithStdoutFor], but for standard error
+func (s *processStub) WithStderrFor(command, out string) *processStub {
+	s.responses[command] = reponseStub{
 		stderr: out,
 	}
 	return s
 }
 
-func (s *processStub) WithFailureFor(norm string, err error) *processStub {
-	s.responses[norm] = reponseStub{
+// WithFailureFor same as [WithStdoutFor], but for process failures
+func (s *processStub) WithFailureFor(command string, err error) *processStub {
+	s.responses[command] = reponseStub{
 		err: err,
 	}
 	return s
@@ -100,15 +97,6 @@ func (s *processStub) Commands() (called []string) {
 }
 
 // CombinedEnvironment returns all enviroment variables used for all commands
-//
-//	ctx := context.Background()
-//	ctx = env.Set(ctx, "FOO", "bar")
-//	ctx, stub := WithStub(ctx)
-//	out, err := Background(ctx, []string{"/usr/local/bin/meeecho", "1", "--foo", "bar"})
-//	require.NoError(t, err)
-//	allEnv := stub.CombinedEnvironment()
-//	require.Equal(t, "bar", allEnv["FOO"])
-//	require.Equal(t, "bar", stub.LookupEnv("FOO"))
 func (s *processStub) CombinedEnvironment() map[string]string {
 	environment := map[string]string{}
 	for _, cmd := range s.calls {
@@ -123,14 +111,7 @@ func (s *processStub) CombinedEnvironment() map[string]string {
 	return environment
 }
 
-// CombinedEnvironment returns all enviroment variables used for all commands
-//
-//	ctx := context.Background()
-//	ctx = env.Set(ctx, "FOO", "bar")
-//	ctx, stub := WithStub(ctx)
-//	out, err := Background(ctx, []string{"/usr/local/bin/meeecho", "1", "--foo", "bar"})
-//	require.NoError(t, err)
-//	require.Equal(t, "bar", stub.LookupEnv("FOO"))
+// LookupEnv returns a value from any of the triggered process environments
 func (s *processStub) LookupEnv(key string) string {
 	environment := s.CombinedEnvironment()
 	return environment[key]
@@ -139,7 +120,8 @@ func (s *processStub) LookupEnv(key string) string {
 func (s *processStub) normCmd(v *exec.Cmd) string {
 	// to reduce testing noise, we collect here only the deterministic binary basenames, e.g.
 	// "/var/folders/bc/7qf8yghj6v14t40096pdcqy40000gp/T/tmp.03CAcYcbOI/python3" becomes "python3",
-	// while still giving the possibility to customize. See [processStub.WithDefaultCallback]
+	// while still giving the possibility to customize process stubbing even further.
+	// See [processStub.WithDefaultCallback]
 	binaryName := filepath.Base(v.Path)
 	args := strings.Join(v.Args[1:], " ")
 	return fmt.Sprintf("%s %s", binaryName, args)
@@ -160,8 +142,8 @@ func (s *processStub) run(cmd *exec.Cmd) error {
 	if s.defaultCallback != nil {
 		return s.defaultCallback(cmd)
 	}
-	if s.defaultOutput != "" {
-		cmd.Stdout.Write([]byte(s.defaultOutput))
+	if s.reponseStub.stdout != "" {
+		cmd.Stdout.Write([]byte(s.reponseStub.stdout))
 	}
-	return s.defaultFailure
+	return s.reponseStub.err
 }
