@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"os"
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
@@ -113,7 +114,7 @@ func (f *logFlags) initializeContext(ctx context.Context) (context.Context, erro
 		return nil, err
 	}
 
-	slog.SetDefault(slog.New(handler))
+	slog.SetDefault(slog.New(handler).With(slog.Int("pid", os.Getpid())))
 	return log.NewContext(ctx, slog.Default()), nil
 }
 
