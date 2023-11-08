@@ -250,3 +250,52 @@ func TestValidateSchemaMinimumCliVersion(t *testing.T) {
 	err = s.validateSchemaMinimumCliVersion("v0.0.0-dev")()
 	assert.NoError(t, err)
 }
+
+func TestValidateSchemaConstTypes(t *testing.T) {
+	s := &Schema{
+		Properties: map[string]*Schema{
+			"foo": {
+				Type:  "string",
+				Const: "abc",
+			},
+		},
+	}
+	err := s.validate()
+	assert.NoError(t, err)
+
+	s = &Schema{
+		Properties: map[string]*Schema{
+			"foo": {
+				Type:  "string",
+				Const: 123,
+			},
+		},
+	}
+	err = s.validate()
+	assert.EqualError(t, err, "type validation for const value of property foo failed: expected type string, but value is 123")
+}
+
+func TestValidateSchemaSkippedPropertiesHaveDefaults(t *testing.T) {
+	s := &Schema{
+		Properties: map[string]*Schema{
+			"foo": {
+				Type:      "string",
+				Extension: Extension{SkipPromptIf: &Schema{}},
+			},
+		},
+	}
+	err := s.validate()
+	assert.EqualError(t, err, "property \"foo\" has a skip_prompt_if clause but no default value")
+
+	s = &Schema{
+		Properties: map[string]*Schema{
+			"foo": {
+				Type:      "string",
+				Default:   "abc",
+				Extension: Extension{SkipPromptIf: &Schema{}},
+			},
+		},
+	}
+	err = s.validate()
+	assert.NoError(t, err)
+}
