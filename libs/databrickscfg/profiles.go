@@ -107,7 +107,7 @@ func LoadProfiles(ctx context.Context, fn ProfileMatchFunction) (file string, pr
 
 	// Replace homedir with ~ if applicable.
 	// This is to make the output more readable.
-	file = f.Path()
+	file = filepath.Clean(f.Path())
 	homedir := env.UserHomeDir(ctx)
 	if strings.HasPrefix(file, homedir) {
 		file = "~" + file[len(homedir):]
