@@ -1,4 +1,4 @@
-package warehouses
+package databrickscfg
 
 import (
 	"context"
@@ -13,7 +13,7 @@ import (
 
 var ErrNoCompatibleWarehouses = errors.New("no compatible warehouses")
 
-func AskForCompatibleWarehouses(ctx context.Context, w *databricks.WorkspaceClient, types []sql.EndpointInfoWarehouseType) (string, error) {
+func AskForWarehouse(ctx context.Context, w *databricks.WorkspaceClient, types []sql.EndpointInfoWarehouseType) (string, error) {
 	all, err := w.Warehouses.ListAll(ctx, sql.ListWarehousesRequest{})
 	if err != nil {
 		return "", fmt.Errorf("list warehouses: %w", err)

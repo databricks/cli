@@ -1,4 +1,4 @@
-package clusters
+package databrickscfg
 
 import (
 	"context"
@@ -31,7 +31,7 @@ func GetRuntimeVersion(cluster *compute.ClusterDetails) (string, bool) {
 	return match[1], true
 }
 
-func IsUnityCatalogCompatible(cluster *compute.ClusterDetails, minVersion string) bool {
+func IsCompatibleWithUC(cluster *compute.ClusterDetails, minVersion string) bool {
 	minVersion = canonicalVersion(minVersion)
 	if semver.Compare(minUcRuntime, minVersion) >= 0 {
 		return false
@@ -87,7 +87,7 @@ func (v compatibleCluster) State() string {
 	}
 }
 
-func AskForCompatibleCluster(ctx context.Context, w *databricks.WorkspaceClient, minVersion string) (string, error) {
+func AskForClusterCompatibleWithUC(ctx context.Context, w *databricks.WorkspaceClient, minVersion string) (string, error) {
 	all, err := w.Clusters.ListAll(ctx, compute.ListClustersRequest{
 		CanUseClient: "NOTEBOOKS",
 	})
@@ -108,7 +108,7 @@ func AskForCompatibleCluster(ctx context.Context, w *databricks.WorkspaceClient,
 	}
 	var compatible []compatibleCluster
 	for _, v := range all {
-		if !IsUnityCatalogCompatible(&v, minVersion) {
+		if !IsCompatibleWithUC(&v, minVersion) {
 			continue
 		}
 		if v.SingleUserName != "" && v.SingleUserName != me.UserName {
