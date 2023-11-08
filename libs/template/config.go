@@ -116,7 +116,7 @@ func (c *config) promptForValues(r *renderer) error {
 				break
 			}
 
-			// Skip prompting and assign default values if conditions are satisfied
+			// Skip prompting and assign default value if conditions are satisfied
 			if skip {
 				c.values[p.Name] = p.Schema.Default
 				continue
