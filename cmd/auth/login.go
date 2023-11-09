@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg"
+	"github.com/databricks/cli/libs/databrickscfg/cfgpickers"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
@@ -96,7 +97,8 @@ func newLoginCommand(persistentAuth *auth.PersistentAuth) *cobra.Command {
 				return err
 			}
 			ctx := cmd.Context()
-			clusterID, err := databrickscfg.AskForClusterCompatibleWithUC(ctx, w, minimalDbConnectVersion)
+			clusterID, err := cfgpickers.AskForInteractiveCluster(ctx, w,
+				cfgpickers.WithDatabricksConnect(minimalDbConnectVersion))
 			if err != nil {
 				return err
 			}

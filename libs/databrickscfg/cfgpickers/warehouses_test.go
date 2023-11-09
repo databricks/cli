@@ -1,4 +1,4 @@
-package databrickscfg
+package cfgpickers
 
 import (
 	"context"
@@ -36,9 +36,7 @@ func TestFirstCompatibleWarehouse(t *testing.T) {
 	w := databricks.Must(databricks.NewWorkspaceClient((*databricks.Config)(cfg)))
 
 	ctx := context.Background()
-	clusterID, err := AskForWarehouse(ctx, w, []sql.EndpointInfoWarehouseType{
-		sql.EndpointInfoWarehouseTypePro,
-	})
+	clusterID, err := AskForWarehouse(ctx, w, WithWarehouseTypes(sql.EndpointInfoWarehouseTypePro))
 	require.NoError(t, err)
 	assert.Equal(t, "efg-id", clusterID)
 }
@@ -63,8 +61,6 @@ func TestNoCompatibleWarehouses(t *testing.T) {
 	w := databricks.Must(databricks.NewWorkspaceClient((*databricks.Config)(cfg)))
 
 	ctx := context.Background()
-	_, err := AskForWarehouse(ctx, w, []sql.EndpointInfoWarehouseType{
-		sql.EndpointInfoWarehouseTypePro,
-	})
+	_, err := AskForWarehouse(ctx, w, WithWarehouseTypes(sql.EndpointInfoWarehouseTypePro))
 	assert.Equal(t, ErrNoCompatibleWarehouses, err)
 }

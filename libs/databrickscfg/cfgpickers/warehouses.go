@@ -1,4 +1,4 @@
-package databrickscfg
+package cfgpickers
 
 import (
 	"context"
@@ -13,19 +13,33 @@ import (
 
 var ErrNoCompatibleWarehouses = errors.New("no compatible warehouses")
 
-func AskForWarehouse(ctx context.Context, w *databricks.WorkspaceClient, types []sql.EndpointInfoWarehouseType) (string, error) {
-	all, err := w.Warehouses.ListAll(ctx, sql.ListWarehousesRequest{})
-	if err != nil {
-		return "", fmt.Errorf("list warehouses: %w", err)
-	}
+type warehouseFilter func(sql.EndpointInfo) bool
+
+func WithWarehouseTypes(types ...sql.EndpointInfoWarehouseType) func(sql.EndpointInfo) bool {
 	allowed := map[sql.EndpointInfoWarehouseType]bool{}
 	for _, v := range types {
 		allowed[v] = true
 	}
+	return func(ei sql.EndpointInfo) bool {
+		return allowed[ei.WarehouseType]
+	}
+}
+
+func AskForWarehouse(ctx context.Context, w *databricks.WorkspaceClient, filters ...warehouseFilter) (string, error) {
+	all, err := w.Warehouses.ListAll(ctx, sql.ListWarehousesRequest{})
+	if err != nil {
+		return "", fmt.Errorf("list warehouses: %w", err)
+	}
 	var lastWarehouseID string
 	names := map[string]string{}
 	for _, v := range all {
-		if !allowed[v.WarehouseType] {
+		var skip bool
+		for _, filter := range filters {
+			if !filter(v) {
+				skip = true
+			}
+		}
+		if skip {
 			continue
 		}
 		var state string

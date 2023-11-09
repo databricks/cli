@@ -1,4 +1,4 @@
-package databrickscfg
+package cfgpickers
 
 import (
 	"context"
@@ -24,7 +24,7 @@ func canonicalVersion(v string) string {
 	return semver.Canonical("v" + strings.TrimPrefix(v, "v"))
 }
 
-func GetRuntimeVersion(cluster *compute.ClusterDetails) (string, bool) {
+func GetRuntimeVersion(cluster compute.ClusterDetails) (string, bool) {
 	match := dbrVersionRegex.FindStringSubmatch(cluster.SparkVersion)
 	if len(match) < 1 {
 		match = dbrSnapshotVersionRegex.FindStringSubmatch(cluster.SparkVersion)
@@ -37,7 +37,7 @@ func GetRuntimeVersion(cluster *compute.ClusterDetails) (string, bool) {
 	return match[1], true
 }
 
-func IsCompatibleWithUC(cluster *compute.ClusterDetails, minVersion string) bool {
+func IsCompatibleWithUC(cluster compute.ClusterDetails, minVersion string) bool {
 	minVersion = canonicalVersion(minVersion)
 	if semver.Compare(minUcRuntime, minVersion) >= 0 {
 		return false
@@ -93,7 +93,15 @@ func (v compatibleCluster) State() string {
 	}
 }
 
-func loadClustersCompatibleWithUC(ctx context.Context, w *databricks.WorkspaceClient, minVersion string) ([]compatibleCluster, error) {
+type clusterFilter func(cluster compute.ClusterDetails) bool
+
+func WithDatabricksConnect(minVersion string) func(cluster compute.ClusterDetails) bool {
+	return func(cluster compute.ClusterDetails) bool {
+		return IsCompatibleWithUC(cluster, minVersion)
+	}
+}
+
+func loadInteractiveClusters(ctx context.Context, w *databricks.WorkspaceClient, filters []clusterFilter) ([]compatibleCluster, error) {
 	promptSpinner := cmdio.Spinner(ctx)
 	promptSpinner <- "Loading list of clusters to select from"
 	defer close(promptSpinner)
@@ -117,7 +125,13 @@ func loadClustersCompatibleWithUC(ctx context.Context, w *databricks.WorkspaceCl
 	}
 	var compatible []compatibleCluster
 	for _, v := range all {
-		if !IsCompatibleWithUC(&v, minVersion) {
+		var skip bool
+		for _, filter := range filters {
+			if !filter(v) {
+				skip = true
+			}
+		}
+		if skip {
 			continue
 		}
 		switch v.ClusterSource {
@@ -141,8 +155,8 @@ func loadClustersCompatibleWithUC(ctx context.Context, w *databricks.WorkspaceCl
 	return compatible, nil
 }
 
-func AskForClusterCompatibleWithUC(ctx context.Context, w *databricks.WorkspaceClient, minVersion string) (string, error) {
-	compatible, err := loadClustersCompatibleWithUC(ctx, w, minVersion)
+func AskForInteractiveCluster(ctx context.Context, w *databricks.WorkspaceClient, filters ...clusterFilter) (string, error) {
+	compatible, err := loadInteractiveClusters(ctx, w, filters)
 	if err != nil {
 		return "", fmt.Errorf("load: %w", err)
 	}

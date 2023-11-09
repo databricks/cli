@@ -1,4 +1,4 @@
-package databrickscfg
+package cfgpickers
 
 import (
 	"bytes"
@@ -11,35 +11,34 @@ import (
 	"github.com/databricks/databricks-sdk-go/qa"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/iam"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestIsCompatible(t *testing.T) {
-	assert.True(t, IsCompatibleWithUC(&compute.ClusterDetails{
+	require.True(t, IsCompatibleWithUC(compute.ClusterDetails{
 		SparkVersion:     "13.2.x-aarch64-scala2.12",
 		DataSecurityMode: compute.DataSecurityModeUserIsolation,
 	}, "13.0"))
-	assert.False(t, IsCompatibleWithUC(&compute.ClusterDetails{
+	require.False(t, IsCompatibleWithUC(compute.ClusterDetails{
 		SparkVersion:     "13.2.x-aarch64-scala2.12",
 		DataSecurityMode: compute.DataSecurityModeNone,
 	}, "13.0"))
-	assert.False(t, IsCompatibleWithUC(&compute.ClusterDetails{
+	require.False(t, IsCompatibleWithUC(compute.ClusterDetails{
 		SparkVersion:     "9.1.x-photon-scala2.12",
 		DataSecurityMode: compute.DataSecurityModeNone,
 	}, "13.0"))
-	assert.False(t, IsCompatibleWithUC(&compute.ClusterDetails{
+	require.False(t, IsCompatibleWithUC(compute.ClusterDetails{
 		SparkVersion:     "9.1.x-photon-scala2.12",
 		DataSecurityMode: compute.DataSecurityModeNone,
 	}, "10.0"))
-	assert.False(t, IsCompatibleWithUC(&compute.ClusterDetails{
+	require.False(t, IsCompatibleWithUC(compute.ClusterDetails{
 		SparkVersion:     "custom-9.1.x-photon-scala2.12",
 		DataSecurityMode: compute.DataSecurityModeNone,
 	}, "14.0"))
 }
 
 func TestIsCompatibleWithSnapshots(t *testing.T) {
-	assert.True(t, IsCompatibleWithUC(&compute.ClusterDetails{
+	require.True(t, IsCompatibleWithUC(compute.ClusterDetails{
 		SparkVersion:     "14.x-snapshot-cpu-ml-scala2.12",
 		DataSecurityMode: compute.DataSecurityModeUserIsolation,
 	}, "14.0"))
@@ -95,9 +94,9 @@ func TestFirstCompatibleCluster(t *testing.T) {
 
 	ctx := context.Background()
 	ctx = cmdio.InContext(ctx, cmdio.NewIO(flags.OutputText, &bytes.Buffer{}, &bytes.Buffer{}, &bytes.Buffer{}, "..."))
-	clusterID, err := AskForClusterCompatibleWithUC(ctx, w, "13.1")
+	clusterID, err := AskForInteractiveCluster(ctx, w, WithDatabricksConnect("13.1"))
 	require.NoError(t, err)
-	assert.Equal(t, "bcd-id", clusterID)
+	require.Equal(t, "bcd-id", clusterID)
 }
 
 func TestNoCompatibleClusters(t *testing.T) {
@@ -142,6 +141,6 @@ func TestNoCompatibleClusters(t *testing.T) {
 
 	ctx := context.Background()
 	ctx = cmdio.InContext(ctx, cmdio.NewIO(flags.OutputText, &bytes.Buffer{}, &bytes.Buffer{}, &bytes.Buffer{}, "..."))
-	_, err := AskForClusterCompatibleWithUC(ctx, w, "13.1")
-	assert.Equal(t, ErrNoCompatibleClusters, err)
+	_, err := AskForInteractiveCluster(ctx, w, WithDatabricksConnect("13.1"))
+	require.Equal(t, ErrNoCompatibleClusters, err)
 }
