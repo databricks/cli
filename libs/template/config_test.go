@@ -194,3 +194,77 @@ func TestTemplateSchemaErrorsWithEmptyDescription(t *testing.T) {
 	_, err := newConfig(context.Background(), "./testdata/config-test-schema/invalid-test-schema.json")
 	assert.EqualError(t, err, "template property property-without-description is missing a description")
 }
+
+func TestPromptIsSkipped(t *testing.T) {
+	c := config{
+		ctx:    context.Background(),
+		values: make(map[string]any),
+		schema: &jsonschema.Schema{
+			Properties: map[string]*jsonschema.Schema{
+				"abc": {
+					Type: "string",
+				},
+				"def": {
+					Type: "integer",
+				},
+				"xyz": {
+					Type:    "string",
+					Default: "hello-world",
+					Extension: jsonschema.Extension{
+						SkipPromptIf: &jsonschema.Schema{
+							Properties: map[string]*jsonschema.Schema{
+								"abc": {
+									Const: "foobar",
+								},
+								"def": {
+									Const: 123,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	// No skip condition defined. Prompt should not be skipped.
+	assert.False(t, c.isSkipped(jsonschema.Property{
+		Name:   "abc",
+		Schema: c.schema.Properties["abc"],
+	}))
+
+	// No values assigned to config. Prompt should not be skipped.
+	assert.False(t, c.isSkipped(jsonschema.Property{
+		Name:   "xyz",
+		Schema: c.schema.Properties["xyz"],
+	}))
+	assert.NotContains(t, c.values, "xyz")
+
+	// Values do not match skip condition. Prompt should not be skipped.
+	c.values["abc"] = "foo"
+	c.values["def"] = 123
+	assert.False(t, c.isSkipped(jsonschema.Property{
+		Name:   "xyz",
+		Schema: c.schema.Properties["xyz"],
+	}))
+	assert.NotContains(t, c.values, "xyz")
+
+	// Values do not match skip condition. Prompt should not be skipped.
+	c.values["abc"] = "foobar"
+	c.values["def"] = 1234
+	assert.False(t, c.isSkipped(jsonschema.Property{
+		Name:   "xyz",
+		Schema: c.schema.Properties["xyz"],
+	}))
+	assert.NotContains(t, c.values, "xyz")
+
+	// Values match skip condition. Prompt should be skipped. Default value should
+	// be assigned to "xyz".
+	c.values["abc"] = "foobar"
+	c.values["def"] = 123
+	assert.True(t, c.isSkipped(jsonschema.Property{
+		Name:   "xyz",
+		Schema: c.schema.Properties["xyz"],
+	}))
+	assert.Equal(t, "hello-world", c.values["xyz"])
+}
