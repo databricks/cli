@@ -9,6 +9,9 @@ import (
 	"golang.org/x/exp/maps"
 )
 
+// The latest template schema version supported by the CLI
+const latestSchemaVersion = 1
+
 type config struct {
 	ctx    context.Context
 	values map[string]any
@@ -48,6 +51,9 @@ func validateSchema(schema *jsonschema.Schema) error {
 		if v.Type == jsonschema.ArrayType || v.Type == jsonschema.ObjectType {
 			return fmt.Errorf("property type %s is not supported by bundle templates", v.Type)
 		}
+	}
+	if schema.Version != nil && *schema.Version > latestSchemaVersion {
+		return fmt.Errorf("template schema version %d is not supported by this version of the CLI. Please upgrade your CLI to the latest version", *schema.Version)
 	}
 	return nil
 }
