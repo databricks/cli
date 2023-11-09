@@ -14,7 +14,7 @@ import (
 func TestStubOutput(t *testing.T) {
 	ctx := context.Background()
 	ctx, stub := process.WithStub(ctx)
-	stub.WithDefaultOutput("meeee")
+	stub.WithStdout("meeee")
 
 	ctx = env.Set(ctx, "FOO", "bar")
 
@@ -32,7 +32,7 @@ func TestStubOutput(t *testing.T) {
 func TestStubFailure(t *testing.T) {
 	ctx := context.Background()
 	ctx, stub := process.WithStub(ctx)
-	stub.WithDefaultFailure(fmt.Errorf("nope"))
+	stub.WithFailure(fmt.Errorf("nope"))
 
 	_, err := process.Background(ctx, []string{"/bin/meeecho", "1"})
 	require.EqualError(t, err, "/bin/meeecho 1: nope")
@@ -42,7 +42,7 @@ func TestStubFailure(t *testing.T) {
 func TestStubCallback(t *testing.T) {
 	ctx := context.Background()
 	ctx, stub := process.WithStub(ctx)
-	stub.WithDefaultCallback(func(cmd *exec.Cmd) error {
+	stub.WithCallback(func(cmd *exec.Cmd) error {
 		cmd.Stderr.Write([]byte("something..."))
 		cmd.Stdout.Write([]byte("else..."))
 		return fmt.Errorf("yep")

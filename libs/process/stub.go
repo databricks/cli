@@ -33,23 +33,23 @@ type reponseStub struct {
 
 type processStub struct {
 	reponseStub
-	calls           []*exec.Cmd
-	defaultCallback func(*exec.Cmd) error
-	responses       map[string]reponseStub
+	calls     []*exec.Cmd
+	callback  func(*exec.Cmd) error
+	responses map[string]reponseStub
 }
 
-func (s *processStub) WithDefaultOutput(output string) *processStub {
+func (s *processStub) WithStdout(output string) *processStub {
 	s.reponseStub.stdout = output
 	return s
 }
 
-func (s *processStub) WithDefaultFailure(err error) *processStub {
+func (s *processStub) WithFailure(err error) *processStub {
 	s.reponseStub.err = err
 	return s
 }
 
-func (s *processStub) WithDefaultCallback(cb func(cmd *exec.Cmd) error) *processStub {
-	s.defaultCallback = cb
+func (s *processStub) WithCallback(cb func(cmd *exec.Cmd) error) *processStub {
+	s.callback = cb
 	return s
 }
 
@@ -61,14 +61,18 @@ func (s *processStub) WithDefaultCallback(cb func(cmd *exec.Cmd) error) *process
 func (s *processStub) WithStdoutFor(command, out string) *processStub {
 	s.responses[command] = reponseStub{
 		stdout: out,
+		stderr: s.responses[command].stderr,
+		err:    s.responses[command].err,
 	}
 	return s
 }
 
-// WithStdoutFor same as [WithStdoutFor], but for standard error
+// WithStderrFor same as [WithStdoutFor], but for standard error
 func (s *processStub) WithStderrFor(command, out string) *processStub {
 	s.responses[command] = reponseStub{
 		stderr: out,
+		stdout: s.responses[command].stdout,
+		err:    s.responses[command].err,
 	}
 	return s
 }
@@ -76,7 +80,9 @@ func (s *processStub) WithStderrFor(command, out string) *processStub {
 // WithFailureFor same as [WithStdoutFor], but for process failures
 func (s *processStub) WithFailureFor(command string, err error) *processStub {
 	s.responses[command] = reponseStub{
-		err: err,
+		err:    err,
+		stderr: s.responses[command].stderr,
+		stdout: s.responses[command].stdout,
 	}
 	return s
 }
@@ -119,9 +125,8 @@ func (s *processStub) LookupEnv(key string) string {
 
 func (s *processStub) normCmd(v *exec.Cmd) string {
 	// to reduce testing noise, we collect here only the deterministic binary basenames, e.g.
-	// "/var/folders/bc/7qf8yghj6v14t40096pdcqy40000gp/T/tmp.03CAcYcbOI/python3" becomes "python3",
-	// while still giving the possibility to customize process stubbing even further.
-	// See [processStub.WithDefaultCallback]
+	// "/var/folders/bc/7qf8yghj6v14t40096pdcqy40000gp/T/tmp.03CAcYcbOI/python3" becomes "python3".
+	// Use [processStub.WithCallback] if you need to match against the full executable path.
 	binaryName := filepath.Base(v.Path)
 	args := strings.Join(v.Args[1:], " ")
 	return fmt.Sprintf("%s %s", binaryName, args)
@@ -139,8 +144,8 @@ func (s *processStub) run(cmd *exec.Cmd) error {
 		}
 		return resp.err
 	}
-	if s.defaultCallback != nil {
-		return s.defaultCallback(cmd)
+	if s.callback != nil {
+		return s.callback(cmd)
 	}
 	if s.reponseStub.stdout != "" {
 		cmd.Stdout.Write([]byte(s.reponseStub.stdout))
