@@ -97,7 +97,7 @@ func newLoginCommand(persistentAuth *auth.PersistentAuth) *cobra.Command {
 				return err
 			}
 			ctx := cmd.Context()
-			clusterID, err := cfgpickers.AskForInteractiveCluster(ctx, w,
+			clusterID, err := cfgpickers.AskForCluster(ctx, w,
 				cfgpickers.WithDatabricksConnect(minimalDbConnectVersion))
 			if err != nil {
 				return err

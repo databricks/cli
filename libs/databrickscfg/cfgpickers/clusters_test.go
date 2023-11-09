@@ -94,7 +94,7 @@ func TestFirstCompatibleCluster(t *testing.T) {
 
 	ctx := context.Background()
 	ctx = cmdio.InContext(ctx, cmdio.NewIO(flags.OutputText, &bytes.Buffer{}, &bytes.Buffer{}, &bytes.Buffer{}, "..."))
-	clusterID, err := AskForInteractiveCluster(ctx, w, WithDatabricksConnect("13.1"))
+	clusterID, err := AskForCluster(ctx, w, WithDatabricksConnect("13.1"))
 	require.NoError(t, err)
 	require.Equal(t, "bcd-id", clusterID)
 }
@@ -141,6 +141,6 @@ func TestNoCompatibleClusters(t *testing.T) {
 
 	ctx := context.Background()
 	ctx = cmdio.InContext(ctx, cmdio.NewIO(flags.OutputText, &bytes.Buffer{}, &bytes.Buffer{}, &bytes.Buffer{}, "..."))
-	_, err := AskForInteractiveCluster(ctx, w, WithDatabricksConnect("13.1"))
+	_, err := AskForCluster(ctx, w, WithDatabricksConnect("13.1"))
 	require.Equal(t, ErrNoCompatibleClusters, err)
 }

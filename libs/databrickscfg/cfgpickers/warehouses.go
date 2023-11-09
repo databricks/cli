@@ -32,10 +32,10 @@ func AskForWarehouse(ctx context.Context, w *databricks.WorkspaceClient, filters
 	}
 	var lastWarehouseID string
 	names := map[string]string{}
-	for _, v := range all {
+	for _, warehouse := range all {
 		var skip bool
 		for _, filter := range filters {
-			if !filter(v) {
+			if !filter(warehouse) {
 				skip = true
 			}
 		}
@@ -43,17 +43,17 @@ func AskForWarehouse(ctx context.Context, w *databricks.WorkspaceClient, filters
 			continue
 		}
 		var state string
-		switch v.State {
+		switch warehouse.State {
 		case sql.StateRunning:
-			state = color.GreenString(v.State.String())
+			state = color.GreenString(warehouse.State.String())
 		case sql.StateStopped, sql.StateDeleted, sql.StateStopping, sql.StateDeleting:
-			state = color.RedString(v.State.String())
+			state = color.RedString(warehouse.State.String())
 		default:
-			state = color.BlueString(v.State.String())
+			state = color.BlueString(warehouse.State.String())
 		}
-		visibleTouser := fmt.Sprintf("%s (%s %s)", v.Name, state, v.WarehouseType)
-		names[visibleTouser] = v.Id
-		lastWarehouseID = v.Id
+		visibleTouser := fmt.Sprintf("%s (%s %s)", warehouse.Name, state, warehouse.WarehouseType)
+		names[visibleTouser] = warehouse.Id
+		lastWarehouseID = warehouse.Id
 	}
 	if len(names) == 0 {
 		return "", ErrNoCompatibleWarehouses

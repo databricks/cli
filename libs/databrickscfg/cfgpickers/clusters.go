@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/compute"
+	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/fatih/color"
 	"github.com/manifoldco/promptui"
 	"golang.org/x/mod/semver"
@@ -93,11 +94,27 @@ func (v compatibleCluster) State() string {
 	}
 }
 
-type clusterFilter func(cluster compute.ClusterDetails) bool
+type clusterFilter func(cluster *compute.ClusterDetails, me *iam.User) bool
 
-func WithDatabricksConnect(minVersion string) func(cluster compute.ClusterDetails) bool {
-	return func(cluster compute.ClusterDetails) bool {
-		return IsCompatibleWithUC(cluster, minVersion)
+func WithDatabricksConnect(minVersion string) func(*compute.ClusterDetails, *iam.User) bool {
+	return func(cluster *compute.ClusterDetails, me *iam.User) bool {
+		if !IsCompatibleWithUC(*cluster, minVersion) {
+			return false
+		}
+		switch cluster.ClusterSource {
+		case compute.ClusterSourceJob,
+			compute.ClusterSourceModels,
+			compute.ClusterSourcePipeline,
+			compute.ClusterSourcePipelineMaintenance,
+			compute.ClusterSourceSql:
+			// only UI and API clusters are usable for DBConnect.
+			// `CanUseClient: "NOTEBOOKS"`` didn't seem to have an effect.
+			return false
+		}
+		if cluster.SingleUserName != "" && cluster.SingleUserName != me.UserName {
+			return false
+		}
+		return true
 	}
 }
 
@@ -124,38 +141,25 @@ func loadInteractiveClusters(ctx context.Context, w *databricks.WorkspaceClient,
 		versions[v.Key] = v.Name
 	}
 	var compatible []compatibleCluster
-	for _, v := range all {
+	for _, cluster := range all {
 		var skip bool
 		for _, filter := range filters {
-			if !filter(v) {
+			if !filter(&cluster, me) {
 				skip = true
 			}
 		}
 		if skip {
 			continue
 		}
-		switch v.ClusterSource {
-		case compute.ClusterSourceJob,
-			compute.ClusterSourceModels,
-			compute.ClusterSourcePipeline,
-			compute.ClusterSourcePipelineMaintenance,
-			compute.ClusterSourceSql:
-			// only UI and API clusters are usable for DBConnect.
-			// `CanUseClient: "NOTEBOOKS"`` didn't seem to have an effect.
-			continue
-		}
-		if v.SingleUserName != "" && v.SingleUserName != me.UserName {
-			continue
-		}
 		compatible = append(compatible, compatibleCluster{
-			ClusterDetails: v,
-			versionName:    versions[v.SparkVersion],
+			ClusterDetails: cluster,
+			versionName:    versions[cluster.SparkVersion],
 		})
 	}
 	return compatible, nil
 }
 
-func AskForInteractiveCluster(ctx context.Context, w *databricks.WorkspaceClient, filters ...clusterFilter) (string, error) {
+func AskForCluster(ctx context.Context, w *databricks.WorkspaceClient, filters ...clusterFilter) (string, error) {
 	compatible, err := loadInteractiveClusters(ctx, w, filters)
 	if err != nil {
 		return "", fmt.Errorf("load: %w", err)
