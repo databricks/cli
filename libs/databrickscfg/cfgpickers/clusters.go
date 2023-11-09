@@ -30,8 +30,8 @@ func GetRuntimeVersion(cluster compute.ClusterDetails) (string, bool) {
 	if len(match) < 1 {
 		match = dbrSnapshotVersionRegex.FindStringSubmatch(cluster.SparkVersion)
 		if len(match) > 1 {
-			// we return 14.0 for 14.x-snapshot for semver.Compare() to work
-			return fmt.Sprintf("%s.0", match[1]), true
+			// we return 14.999 for 14.x-snapshot for semver.Compare() to work properly
+			return fmt.Sprintf("%s.999", match[1]), true
 		}
 		return "", false
 	}
