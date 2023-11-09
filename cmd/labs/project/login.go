@@ -7,9 +7,8 @@ import (
 	"os"
 
 	"github.com/databricks/cli/cmd/root"
-	"github.com/databricks/cli/cmd/workspace/clusters"
-	"github.com/databricks/cli/cmd/workspace/warehouses"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/databrickscfg/cfgpickers"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
@@ -70,7 +69,8 @@ func (lc *loginConfig) askCluster(ctx context.Context, w *databricks.WorkspaceCl
 	if !cmdio.IsInteractive(ctx) {
 		return ErrNotInTTY
 	}
-	clusterID, err := clusters.AskForCompatibleCluster(ctx, w, lc.Installer.MinRuntimeVersion)
+	clusterID, err := cfgpickers.AskForCluster(ctx, w,
+		cfgpickers.WithDatabricksConnect(lc.Installer.MinRuntimeVersion))
 	if err != nil {
 		return fmt.Errorf("select: %w", err)
 	}
@@ -90,7 +90,8 @@ func (lc *loginConfig) askWarehouse(ctx context.Context, w *databricks.Workspace
 	if !cmdio.IsInteractive(ctx) {
 		return ErrNotInTTY
 	}
-	lc.WarehouseID, err = warehouses.AskForCompatibleWarehouses(ctx, w, lc.Installer.WarehouseTypes)
+	lc.WarehouseID, err = cfgpickers.AskForWarehouse(ctx, w,
+		cfgpickers.WithWarehouseTypes(lc.Installer.WarehouseTypes...))
 	return
 }
 

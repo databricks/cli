@@ -10,9 +10,9 @@ import (
 
 	"github.com/databricks/cli/cmd/labs/github"
 	"github.com/databricks/cli/cmd/labs/unpack"
-	"github.com/databricks/cli/cmd/workspace/clusters"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg"
+	"github.com/databricks/cli/libs/databrickscfg/cfgpickers"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/process"
 	"github.com/databricks/cli/libs/python"
@@ -238,7 +238,7 @@ func (i *installer) setupPythonVirtualEnvironment(ctx context.Context, w *databr
 		if err != nil {
 			return fmt.Errorf("cluster: %w", err)
 		}
-		runtimeVersion, ok := clusters.GetRuntimeVersion(cluster)
+		runtimeVersion, ok := cfgpickers.GetRuntimeVersion(*cluster)
 		if !ok {
 			return fmt.Errorf("unsupported runtime: %s", cluster.SparkVersion)
 		}
