@@ -20,8 +20,8 @@ type Schema struct {
 	// IDE. This is manually injected here using schema.Docs
 	Description string `json:"description,omitempty"`
 
-	// Expected value for the object. Validation succeeds if the instance is equal
-	// to this keyword's value.
+	// Expected value for the JSON object. The object value must be equal to this
+	// field if it's specified in the schema.
 	Const any `json:"const,omitempty"`
 
 	// Schemas for the fields of an struct. The keys are the first json tag.
