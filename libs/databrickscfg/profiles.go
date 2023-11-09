@@ -14,9 +14,11 @@ import (
 // It should only be used for prompting and filtering.
 // Use its name to construct a config.Config.
 type Profile struct {
-	Name      string
-	Host      string
-	AccountID string
+	Name        string
+	Host        string
+	AccountID   string
+	ClusterID   string
+	WarehouseID string
 }
 
 func (p Profile) Cloud() string {
@@ -117,9 +119,11 @@ func LoadProfiles(fn ProfileMatchFunction) (file string, profiles Profiles, err 
 			continue
 		}
 		profile := Profile{
-			Name:      v.Name(),
-			Host:      host,
-			AccountID: all["account_id"],
+			Name:        v.Name(),
+			Host:        host,
+			AccountID:   all["account_id"],
+			ClusterID:   all["cluster_id"],
+			WarehouseID: all["warehouse_id"],
 		}
 		if fn(profile) {
 			profiles = append(profiles, profile)

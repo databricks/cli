@@ -111,6 +111,15 @@ func AskForClusterCompatibleWithUC(ctx context.Context, w *databricks.WorkspaceC
 		if !IsCompatibleWithUC(&v, minVersion) {
 			continue
 		}
+		switch v.ClusterSource {
+		case compute.ClusterSourceJob,
+			compute.ClusterSourceModels,
+			compute.ClusterSourcePipeline,
+			compute.ClusterSourcePipelineMaintenance,
+			compute.ClusterSourceSql:
+			// only UI and API clusters are usable for DBConnect
+			continue
+		}
 		if v.SingleUserName != "" && v.SingleUserName != me.UserName {
 			continue
 		}
