@@ -86,6 +86,13 @@ func assertBuiltinTemplateValid(t *testing.T, settings map[string]any, target st
 	}
 }
 
+func TestPrepareBuiltInTemplatesWithCWD(t *testing.T) {
+	// CWD should not be resolved as a built in template
+	dir, err := prepareBuiltinTemplates(".", t.TempDir())
+	assert.NoError(t, err)
+	assert.Equal(t, ".", dir)
+}
+
 func TestBuiltinTemplateValid(t *testing.T) {
 	// Test option combinations
 	options := []string{"yes", "no"}
