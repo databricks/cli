@@ -60,9 +60,11 @@ See https://docs.databricks.com/en/dev-tools/bundles/templates.html for more inf
 	var configFile string
 	var outputDir string
 	var templateDir string
+	var tag string
 	cmd.Flags().StringVar(&configFile, "config-file", "", "File containing input parameters for template initialization.")
 	cmd.Flags().StringVar(&templateDir, "template-dir", "", "Directory path within a Git repository containing the template.")
 	cmd.Flags().StringVar(&outputDir, "output-dir", "", "Directory to write the initialized template to.")
+	cmd.Flags().StringVar(&tag, "tag", "", "Branch or tag to use for template initialization.")
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
@@ -104,7 +106,7 @@ See https://docs.databricks.com/en/dev-tools/bundles/templates.html for more inf
 		}
 		// TODO: Add automated test that the downloaded git repo is cleaned up.
 		// Clone the repository in the temporary directory
-		err = git.Clone(ctx, templatePath, "", repoDir)
+		err = git.Clone(ctx, templatePath, tag, repoDir)
 		if err != nil {
 			return err
 		}
