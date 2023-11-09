@@ -104,6 +104,11 @@ func Materialize(ctx context.Context, configFilePath, templateRoot, outputDir st
 
 // If the given templateRoot matches
 func prepareBuiltinTemplates(templateRoot string, tempDir string) (string, error) {
+	// If a user specifies current directory, they do not want to use a built-in template
+	if templateRoot == "." {
+		return templateRoot, nil
+	}
+
 	_, err := fs.Stat(builtinTemplates, path.Join("templates", templateRoot))
 	if err != nil {
 		// The given path doesn't appear to be using out built-in templates
