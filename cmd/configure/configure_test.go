@@ -145,6 +145,33 @@ func TestEnvVarsConfigureNoInteractive(t *testing.T) {
 	assert.NotNil(t, err)
 }
 
+func TestEnvVarsConfigureNoArgsNoInteractive(t *testing.T) {
+	ctx := context.Background()
+	tempHomeDir := setup(t)
+	cfgPath := filepath.Join(tempHomeDir, ".databrickscfg")
+
+	t.Setenv("DATABRICKS_HOST", "https://host")
+	t.Setenv("DATABRICKS_TOKEN", "secret")
+
+	cmd := cmd.New(ctx)
+	cmd.SetArgs([]string{"configure"})
+
+	err := cmd.ExecuteContext(ctx)
+	assert.NoError(t, err)
+
+	_, err = os.Stat(cfgPath)
+	assert.NoError(t, err)
+
+	cfg, err := ini.Load(cfgPath)
+	assert.NoError(t, err)
+
+	defaultSection, err := cfg.GetSection("DEFAULT")
+	assert.NoError(t, err)
+
+	assertKeyValueInSection(t, defaultSection, "host", "https://host")
+	assertKeyValueInSection(t, defaultSection, "token", "secret")
+}
+
 func TestCustomProfileConfigureNoInteractive(t *testing.T) {
 	ctx := context.Background()
 	tempHomeDir := setup(t)
