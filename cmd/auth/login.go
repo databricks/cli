@@ -106,8 +106,13 @@ func newLoginCommand(persistentAuth *auth.PersistentAuth) *cobra.Command {
 		}
 
 		if profileName != "" {
-			cfg.Profile = profileName
-			err = databrickscfg.SaveToProfile(ctx, &cfg)
+			err = databrickscfg.SaveToProfile(ctx, &config.Config{
+				Profile:   profileName,
+				Host:      cfg.Host,
+				AuthType:  cfg.AuthType,
+				AccountID: cfg.AccountID,
+				ClusterID: cfg.ClusterID,
+			})
 			if err != nil {
 				return err
 			}
