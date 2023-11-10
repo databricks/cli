@@ -145,7 +145,7 @@ func TestEnvVarsConfigureNoInteractive(t *testing.T) {
 	assert.NotNil(t, err)
 }
 
-func TestCustomProfileFromEnvConfigureNoInteractive(t *testing.T) {
+func TestCustomProfileConfigureNoInteractive(t *testing.T) {
 	ctx := context.Background()
 	tempHomeDir := setup(t)
 	cfgPath := filepath.Join(tempHomeDir, ".databrickscfg")
