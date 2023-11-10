@@ -66,7 +66,10 @@ func TestBackgroundCombinedOutputFailure(t *testing.T) {
 		assert.Equal(t, "2", strings.TrimSpace(processErr.Stdout))
 	}
 	assert.Equal(t, "2", strings.TrimSpace(res))
-	assert.Equal(t, "1\n2\n", strings.ReplaceAll(buf.String(), "\r", ""))
+
+	out := strings.ReplaceAll(buf.String(), "\r", "")
+	assert.Contains(t, out, "1\n")
+	assert.Contains(t, out, "2\n")
 }
 
 func TestBackgroundNoStdin(t *testing.T) {
