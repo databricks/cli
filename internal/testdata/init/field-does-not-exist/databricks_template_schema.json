@@ -2,7 +2,8 @@
     "properties": {
         "foo": {
             "type": "string",
-            "default": "abc"
+            "default": "abc",
+            "description": "foo-bar"
         }
     }
 }
