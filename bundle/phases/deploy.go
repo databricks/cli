@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle/deploy/lock"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/libraries"
+	"github.com/databricks/cli/bundle/permissions"
 	"github.com/databricks/cli/bundle/python"
 	"github.com/databricks/cli/bundle/scripts"
 )
@@ -26,6 +27,7 @@ func Deploy() bundle.Mutator {
 				artifacts.UploadAll(),
 				python.TransformWheelTask(),
 				files.Upload(),
+				permissions.ApplyWorkspaceRootPermissions(),
 				terraform.Interpolate(),
 				terraform.Write(),
 				terraform.StatePull(),

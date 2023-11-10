@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
 const CAN_MANAGE = "CAN_MANAGE"
@@ -53,11 +52,6 @@ func (m *bundlePermissions) Apply(ctx context.Context, b *bundle.Bundle) error {
 		return err
 	}
 
-	err = giveWriteAccessForWorkspaceRoot(ctx, b)
-	if err != nil {
-		return err
-	}
-
 	applyForJobs(ctx, b)
 	applyForPipelines(ctx, b)
 	applyForMlModels(ctx, b)
@@ -75,40 +69,6 @@ func validate(b *bundle.Bundle) error {
 	}
 
 	return nil
-}
-
-func giveWriteAccessForWorkspaceRoot(ctx context.Context, b *bundle.Bundle) error {
-	permissions := make([]workspace.WorkspaceObjectAccessControlRequest, 0)
-
-	for _, p := range b.Config.Permissions {
-		if p.Level != CAN_MANAGE {
-			continue
-		}
-
-		permissions = append(permissions, workspace.WorkspaceObjectAccessControlRequest{
-			GroupName:            p.GroupName,
-			UserName:             p.UserName,
-			ServicePrincipalName: p.ServicePrincipalName,
-			PermissionLevel:      "CAN_MANAGE",
-		})
-	}
-
-	if len(permissions) == 0 {
-		return nil
-	}
-
-	w := b.WorkspaceClient().Workspace
-	obj, err := w.GetByPath(ctx, b.Config.Workspace.RootPath)
-	if err != nil {
-		return err
-	}
-
-	_, err = w.UpdatePermissions(ctx, workspace.WorkspaceObjectPermissionsRequest{
-		WorkspaceObjectId:   fmt.Sprint(obj.ObjectId),
-		WorkspaceObjectType: string(obj.ObjectType),
-		AccessControlList:   permissions,
-	})
-	return err
 }
 
 func applyForJobs(ctx context.Context, b *bundle.Bundle) {

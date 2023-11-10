@@ -11,74 +11,8 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/databricks/databricks-sdk-go/service/serving"
-	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/stretchr/testify/require"
 )
-
-type MockWorkspaceClient struct {
-	t *testing.T
-}
-
-// Delete implements workspace.WorkspaceService.
-func (MockWorkspaceClient) Delete(ctx context.Context, request workspace.Delete) error {
-	panic("unimplemented")
-}
-
-// Export implements workspace.WorkspaceService.
-func (MockWorkspaceClient) Export(ctx context.Context, request workspace.ExportRequest) (*workspace.ExportResponse, error) {
-	panic("unimplemented")
-}
-
-// GetPermissionLevels implements workspace.WorkspaceService.
-func (MockWorkspaceClient) GetPermissionLevels(ctx context.Context, request workspace.GetWorkspaceObjectPermissionLevelsRequest) (*workspace.GetWorkspaceObjectPermissionLevelsResponse, error) {
-	panic("unimplemented")
-}
-
-// GetPermissions implements workspace.WorkspaceService.
-func (MockWorkspaceClient) GetPermissions(ctx context.Context, request workspace.GetWorkspaceObjectPermissionsRequest) (*workspace.WorkspaceObjectPermissions, error) {
-	panic("unimplemented")
-}
-
-// GetStatus implements workspace.WorkspaceService.
-func (MockWorkspaceClient) GetStatus(ctx context.Context, request workspace.GetStatusRequest) (*workspace.ObjectInfo, error) {
-	panic("unimplemented")
-}
-
-// Import implements workspace.WorkspaceService.
-func (MockWorkspaceClient) Import(ctx context.Context, request workspace.Import) error {
-	panic("unimplemented")
-}
-
-// List implements workspace.WorkspaceService.
-func (MockWorkspaceClient) List(ctx context.Context, request workspace.ListWorkspaceRequest) (*workspace.ListResponse, error) {
-	return &workspace.ListResponse{
-		Objects: []workspace.ObjectInfo{
-			{ObjectId: 1234, ObjectType: "DIRECTORY", Path: "/Users/foo@bar.com"},
-		},
-	}, nil
-}
-
-// Mkdirs implements workspace.WorkspaceService.
-func (MockWorkspaceClient) Mkdirs(ctx context.Context, request workspace.Mkdirs) error {
-	panic("unimplemented")
-}
-
-// SetPermissions implements workspace.WorkspaceService.
-func (MockWorkspaceClient) SetPermissions(ctx context.Context, request workspace.WorkspaceObjectPermissionsRequest) (*workspace.WorkspaceObjectPermissions, error) {
-	panic("unimplemented")
-}
-
-// UpdatePermissions implements workspace.WorkspaceService.
-func (m MockWorkspaceClient) UpdatePermissions(ctx context.Context, request workspace.WorkspaceObjectPermissionsRequest) (*workspace.WorkspaceObjectPermissions, error) {
-	require.Equal(m.t, "1234", request.WorkspaceObjectId)
-	require.Equal(m.t, "DIRECTORY", request.WorkspaceObjectType)
-	require.Contains(m.t, request.AccessControlList, workspace.WorkspaceObjectAccessControlRequest{
-		UserName:        "TestUser",
-		PermissionLevel: "CAN_MANAGE",
-	})
-
-	return nil, nil
-}
 
 func TestApplyBundlePermissions(t *testing.T) {
 	b := &bundle.Bundle{
@@ -115,8 +49,6 @@ func TestApplyBundlePermissions(t *testing.T) {
 			},
 		},
 	}
-
-	b.WorkspaceClient().Workspace.WithImpl(MockWorkspaceClient{t})
 
 	err := bundle.Apply(context.Background(), b, ApplyBundlePermissions())
 	require.NoError(t, err)
@@ -196,8 +128,6 @@ func TestWarningOnOverlapPermission(t *testing.T) {
 			},
 		},
 	}
-
-	b.WorkspaceClient().Workspace.WithImpl(MockWorkspaceClient{t})
 
 	err := bundle.Apply(context.Background(), b, ApplyBundlePermissions())
 	require.NoError(t, err)
