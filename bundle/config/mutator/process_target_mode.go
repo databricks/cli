@@ -47,6 +47,10 @@ func transformDevelopmentMode(b *bundle.Bundle) error {
 		if r.Jobs[i].MaxConcurrentRuns == 0 {
 			r.Jobs[i].MaxConcurrentRuns = developmentConcurrentRuns
 		}
+
+		// Pause each job. As an exception, we don't pause jobs that are explicitly
+		// marked as "unpaused". This allows users to override the default behavior
+		// of the development mode.
 		if r.Jobs[i].Schedule != nil && r.Jobs[i].Schedule.PauseStatus != jobs.PauseStatusUnpaused {
 			r.Jobs[i].Schedule.PauseStatus = jobs.PauseStatusPaused
 		}
