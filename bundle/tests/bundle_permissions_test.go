@@ -1,10 +1,14 @@
 package config_tests
 
 import (
+	"context"
 	"testing"
 
+	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/bundle/permissions"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestBundlePermissions(t *testing.T) {
@@ -13,6 +17,20 @@ func TestBundlePermissions(t *testing.T) {
 	assert.NotContains(t, b.Config.Permissions, resources.Permission{Level: "CAN_MANAGE", GroupName: "devs"})
 	assert.NotContains(t, b.Config.Permissions, resources.Permission{Level: "CAN_VIEW", ServicePrincipalName: "1234-abcd"})
 	assert.NotContains(t, b.Config.Permissions, resources.Permission{Level: "CAN_RUN", UserName: "bot@company.com"})
+
+	err := bundle.Apply(context.Background(), b, permissions.ApplyBundlePermissions())
+	require.NoError(t, err)
+	pipelinePermissions := b.Config.Resources.Pipelines["nyc_taxi_pipeline"].Permissions
+	assert.Contains(t, pipelinePermissions, resources.Permission{Level: "CAN_RUN", UserName: "test@company.com"})
+	assert.NotContains(t, pipelinePermissions, resources.Permission{Level: "CAN_MANAGE", GroupName: "devs"})
+	assert.NotContains(t, pipelinePermissions, resources.Permission{Level: "CAN_VIEW", ServicePrincipalName: "1234-abcd"})
+	assert.NotContains(t, pipelinePermissions, resources.Permission{Level: "CAN_RUN", UserName: "bot@company.com"})
+
+	jobsPermissions := b.Config.Resources.Jobs["pipeline_schedule"].Permissions
+	assert.Contains(t, jobsPermissions, resources.Permission{Level: "CAN_MANAGE_RUN", UserName: "test@company.com"})
+	assert.NotContains(t, jobsPermissions, resources.Permission{Level: "CAN_MANAGE", GroupName: "devs"})
+	assert.NotContains(t, jobsPermissions, resources.Permission{Level: "CAN_VIEW", ServicePrincipalName: "1234-abcd"})
+	assert.NotContains(t, jobsPermissions, resources.Permission{Level: "CAN_RUN", UserName: "bot@company.com"})
 }
 
 func TestBundlePermissionsDevTarget(t *testing.T) {
@@ -21,4 +39,18 @@ func TestBundlePermissionsDevTarget(t *testing.T) {
 	assert.Contains(t, b.Config.Permissions, resources.Permission{Level: "CAN_MANAGE", GroupName: "devs"})
 	assert.Contains(t, b.Config.Permissions, resources.Permission{Level: "CAN_VIEW", ServicePrincipalName: "1234-abcd"})
 	assert.Contains(t, b.Config.Permissions, resources.Permission{Level: "CAN_RUN", UserName: "bot@company.com"})
+
+	err := bundle.Apply(context.Background(), b, permissions.ApplyBundlePermissions())
+	require.NoError(t, err)
+	pipelinePermissions := b.Config.Resources.Pipelines["nyc_taxi_pipeline"].Permissions
+	assert.Contains(t, pipelinePermissions, resources.Permission{Level: "CAN_RUN", UserName: "test@company.com"})
+	assert.Contains(t, pipelinePermissions, resources.Permission{Level: "CAN_MANAGE", GroupName: "devs"})
+	assert.Contains(t, pipelinePermissions, resources.Permission{Level: "CAN_VIEW", ServicePrincipalName: "1234-abcd"})
+	assert.Contains(t, pipelinePermissions, resources.Permission{Level: "CAN_RUN", UserName: "bot@company.com"})
+
+	jobsPermissions := b.Config.Resources.Jobs["pipeline_schedule"].Permissions
+	assert.Contains(t, jobsPermissions, resources.Permission{Level: "CAN_MANAGE_RUN", UserName: "test@company.com"})
+	assert.Contains(t, jobsPermissions, resources.Permission{Level: "CAN_MANAGE", GroupName: "devs"})
+	assert.Contains(t, jobsPermissions, resources.Permission{Level: "CAN_VIEW", ServicePrincipalName: "1234-abcd"})
+	assert.Contains(t, jobsPermissions, resources.Permission{Level: "CAN_MANAGE_RUN", UserName: "bot@company.com"})
 }

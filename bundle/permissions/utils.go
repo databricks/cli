@@ -43,7 +43,7 @@ func isPermissionOverlap(
 	resourcePermissions []resources.Permission,
 	resourceName string,
 ) (bool, diag.Diagnostics) {
-	diagnostics := make(diag.Diagnostics, 0)
+	var diagnostics diag.Diagnostics
 	for _, rp := range resourcePermissions {
 		if rp.GroupName != "" && rp.GroupName == permission.GroupName {
 			diagnostics = diagnostics.Extend(
