@@ -1,6 +1,9 @@
 package config
 
-import "github.com/databricks/databricks-sdk-go/service/jobs"
+import (
+	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/databricks-sdk-go/service/jobs"
+)
 
 type Mode string
 
@@ -37,6 +40,8 @@ type Target struct {
 	RunAs *jobs.JobRunAs `json:"run_as,omitempty"`
 
 	Sync *Sync `json:"sync,omitempty"`
+
+	Permissions []resources.Permission `json:"permissions,omitempty"`
 }
 
 const (
