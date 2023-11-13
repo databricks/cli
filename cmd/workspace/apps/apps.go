@@ -107,23 +107,23 @@ func init() {
 	})
 }
 
-// start delete command
+// start delete-app command
 
 // Slice with functions to override default command behavior.
 // Functions can be added from the `init()` function in manually curated files in this directory.
-var deleteOverrides []func(
+var deleteAppOverrides []func(
 	*cobra.Command,
 	*serving.DeleteAppRequest,
 )
 
-func newDelete() *cobra.Command {
+func newDeleteApp() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var deleteReq serving.DeleteAppRequest
+	var deleteAppReq serving.DeleteAppRequest
 
 	// TODO: short flags
 
-	cmd.Use = "delete NAME"
+	cmd.Use = "delete-app NAME"
 	cmd.Short = `Delete an application.`
 	cmd.Long = `Delete an application.
   
@@ -141,13 +141,13 @@ func newDelete() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		deleteReq.Name = args[0]
+		deleteAppReq.Name = args[0]
 
-		err = w.Apps.Delete(ctx, deleteReq)
+		response, err := w.Apps.DeleteApp(ctx, deleteAppReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -155,8 +155,8 @@ func newDelete() *cobra.Command {
 	cmd.ValidArgsFunction = cobra.NoFileCompletions
 
 	// Apply optional overrides to this command.
-	for _, fn := range deleteOverrides {
-		fn(cmd, &deleteReq)
+	for _, fn := range deleteAppOverrides {
+		fn(cmd, &deleteAppReq)
 	}
 
 	return cmd
@@ -164,27 +164,27 @@ func newDelete() *cobra.Command {
 
 func init() {
 	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newDelete())
+		cmd.AddCommand(newDeleteApp())
 	})
 }
 
-// start get command
+// start get-app command
 
 // Slice with functions to override default command behavior.
 // Functions can be added from the `init()` function in manually curated files in this directory.
-var getOverrides []func(
+var getAppOverrides []func(
 	*cobra.Command,
 	*serving.GetAppRequest,
 )
 
-func newGet() *cobra.Command {
+func newGetApp() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var getReq serving.GetAppRequest
+	var getAppReq serving.GetAppRequest
 
 	// TODO: short flags
 
-	cmd.Use = "get NAME"
+	cmd.Use = "get-app NAME"
 	cmd.Short = `Get definition for an application.`
 	cmd.Long = `Get definition for an application.
   
@@ -202,13 +202,13 @@ func newGet() *cobra.Command {
 		ctx := cmd.Context()
 		w := root.WorkspaceClient(ctx)
 
-		getReq.Name = args[0]
+		getAppReq.Name = args[0]
 
-		err = w.Apps.Get(ctx, getReq)
+		response, err := w.Apps.GetApp(ctx, getAppReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -216,8 +216,8 @@ func newGet() *cobra.Command {
 	cmd.ValidArgsFunction = cobra.NoFileCompletions
 
 	// Apply optional overrides to this command.
-	for _, fn := range getOverrides {
-		fn(cmd, &getReq)
+	for _, fn := range getAppOverrides {
+		fn(cmd, &getAppReq)
 	}
 
 	return cmd
@@ -225,7 +225,179 @@ func newGet() *cobra.Command {
 
 func init() {
 	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newGet())
+		cmd.AddCommand(newGetApp())
+	})
+}
+
+// start get-app-deployment-status command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getAppDeploymentStatusOverrides []func(
+	*cobra.Command,
+	*serving.GetAppDeploymentStatusRequest,
+)
+
+func newGetAppDeploymentStatus() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getAppDeploymentStatusReq serving.GetAppDeploymentStatusRequest
+
+	// TODO: short flags
+
+	cmd.Flags().StringVar(&getAppDeploymentStatusReq.IncludeAppLog, "include-app-log", getAppDeploymentStatusReq.IncludeAppLog, `Boolean flag to include application logs.`)
+
+	cmd.Use = "get-app-deployment-status DEPLOYMENT_ID"
+	cmd.Short = `Get deployment status for an application.`
+	cmd.Long = `Get deployment status for an application.
+  
+  Get deployment status for an application`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		getAppDeploymentStatusReq.DeploymentId = args[0]
+
+		response, err := w.Apps.GetAppDeploymentStatus(ctx, getAppDeploymentStatusReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getAppDeploymentStatusOverrides {
+		fn(cmd, &getAppDeploymentStatusReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newGetAppDeploymentStatus())
+	})
+}
+
+// start get-apps command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getAppsOverrides []func(
+	*cobra.Command,
+)
+
+func newGetApps() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	cmd.Use = "get-apps"
+	cmd.Short = `List all applications.`
+	cmd.Long = `List all applications.
+  
+  List all available applications`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+		response, err := w.Apps.GetApps(ctx)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getAppsOverrides {
+		fn(cmd)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newGetApps())
+	})
+}
+
+// start get-events command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getEventsOverrides []func(
+	*cobra.Command,
+	*serving.GetEventsRequest,
+)
+
+func newGetEvents() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getEventsReq serving.GetEventsRequest
+
+	// TODO: short flags
+
+	cmd.Use = "get-events NAME"
+	cmd.Short = `Get deployment events for an application.`
+	cmd.Long = `Get deployment events for an application.
+  
+  Get deployment events for an application`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := root.WorkspaceClient(ctx)
+
+		getEventsReq.Name = args[0]
+
+		response, err := w.Apps.GetEvents(ctx, getEventsReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getEventsOverrides {
+		fn(cmd, &getEventsReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newGetEvents())
 	})
 }
 

@@ -67,7 +67,7 @@ func newCreate() *cobra.Command {
 	cmd.Flags().StringVar(&createReq.DisplayName, "display-name", createReq.DisplayName, `String that represents a concatenation of given and family names.`)
 	// TODO: array: emails
 	// TODO: array: entitlements
-	cmd.Flags().StringVar(&createReq.ExternalId, "external-id", createReq.ExternalId, ``)
+	cmd.Flags().StringVar(&createReq.ExternalId, "external-id", createReq.ExternalId, `External ID is not currently supported.`)
 	// TODO: array: groups
 	cmd.Flags().StringVar(&createReq.Id, "id", createReq.Id, `Databricks user ID.`)
 	// TODO: complex arg: name
@@ -623,7 +623,7 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().StringVar(&updateReq.DisplayName, "display-name", updateReq.DisplayName, `String that represents a concatenation of given and family names.`)
 	// TODO: array: emails
 	// TODO: array: entitlements
-	cmd.Flags().StringVar(&updateReq.ExternalId, "external-id", updateReq.ExternalId, ``)
+	cmd.Flags().StringVar(&updateReq.ExternalId, "external-id", updateReq.ExternalId, `External ID is not currently supported.`)
 	// TODO: array: groups
 	cmd.Flags().StringVar(&updateReq.Id, "id", updateReq.Id, `Databricks user ID.`)
 	// TODO: complex arg: name
