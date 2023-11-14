@@ -31,7 +31,6 @@ var cachedUser *iam.User
 var cachedIsServicePrincipal *bool
 
 func loadHelpers(ctx context.Context) template.FuncMap {
-	w := root.WorkspaceClient(ctx)
 	return template.FuncMap{
 		"fail": func(format string, args ...any) (any, error) {
 			return nil, ErrFail{fmt.Sprintf(format, args...)}
@@ -65,6 +64,7 @@ func loadHelpers(ctx context.Context) template.FuncMap {
 		},
 		// Get smallest node type (follows Terraform's GetSmallestNodeType)
 		"smallest_node_type": func() (string, error) {
+			w := root.WorkspaceClient(ctx)
 			if w.Config.Host == "" {
 				return "", errors.New("cannot determine target workspace, please first setup a configuration profile using 'databricks configure'")
 			}
@@ -79,12 +79,14 @@ func loadHelpers(ctx context.Context) template.FuncMap {
 			return string(os.PathSeparator)
 		},
 		"workspace_host": func() (string, error) {
+			w := root.WorkspaceClient(ctx)
 			if w.Config.Host == "" {
 				return "", errors.New("cannot determine target workspace, please first setup a configuration profile using 'databricks configure'")
 			}
 			return w.Config.Host, nil
 		},
 		"user_name": func() (string, error) {
+			w := root.WorkspaceClient(ctx)
 			if cachedUser == nil {
 				var err error
 				cachedUser, err = w.CurrentUser.Me(ctx)
@@ -99,6 +101,7 @@ func loadHelpers(ctx context.Context) template.FuncMap {
 			return result, nil
 		},
 		"is_service_principal": func() (bool, error) {
+			w := root.WorkspaceClient(ctx)
 			if cachedIsServicePrincipal != nil {
 				return *cachedIsServicePrincipal, nil
 			}
