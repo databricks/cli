@@ -109,6 +109,12 @@ func Materialize(ctx context.Context, configFilePath, templateRoot, outputDir st
 
 // If the given templateRoot matches
 func prepareBuiltinTemplates(templateRoot string, tempDir string) (string, error) {
+	// Check that `templateRoot` is a clean basename, i.e. `some_path` and not `./some_path` or "."
+	// Return early if that's not the case.
+	if templateRoot == "." || path.Base(templateRoot) != templateRoot {
+		return templateRoot, nil
+	}
+
 	_, err := fs.Stat(builtinTemplates, path.Join("templates", templateRoot))
 	if err != nil {
 		// The given path doesn't appear to be using out built-in templates
