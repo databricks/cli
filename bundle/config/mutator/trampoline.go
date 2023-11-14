@@ -90,7 +90,7 @@ func (m *trampoline) generateNotebookWrapper(ctx context.Context, b *bundle.Bund
 	if err != nil {
 		return err
 	}
-	remotePath := path.Join(b.Config.Workspace.FilesPath, filepath.ToSlash(internalDirRel), notebookName)
+	remotePath := path.Join(b.Config.Workspace.FilePath, filepath.ToSlash(internalDirRel), notebookName)
 
 	task.Task.NotebookTask = &jobs.NotebookTask{
 		NotebookPath: remotePath,
