@@ -195,6 +195,32 @@ func TestTemplateSchemaErrorsWithEmptyDescription(t *testing.T) {
 	assert.EqualError(t, err, "template property property-without-description is missing a description")
 }
 
+func TestPromptIsSkippedWhenEmpty(t *testing.T) {
+	c := config{
+		ctx:    context.Background(),
+		values: make(map[string]any),
+		schema: &jsonschema.Schema{
+			Properties: map[string]*jsonschema.Schema{
+				"always-skip": {
+					Type:    "string",
+					Default: "some-default-value",
+					Extension: jsonschema.Extension{
+						SkipPromptIf: &jsonschema.Schema{},
+					},
+				},
+			},
+		},
+	}
+
+	// We should always skip the prompt here. An empty JSON schema by definition
+	// matches all possible configurations.
+	assert.True(t, c.isSkipped(jsonschema.Property{
+		Name:   "always-skip",
+		Schema: c.schema.Properties["always-skip"],
+	}))
+	assert.Equal(t, "some-default-value", c.values["always-skip"])
+}
+
 func TestPromptIsSkipped(t *testing.T) {
 	c := config{
 		ctx:    context.Background(),
