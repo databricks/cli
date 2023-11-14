@@ -89,7 +89,7 @@ See https://docs.databricks.com/en/dev-tools/bundles/templates.html for more inf
 			if !cmdio.IsOutTTY(ctx) || !cmdio.IsInTTY(ctx) {
 				return errors.New("please specify a template")
 			}
-			templatePath, err = cmdio.Ask(ctx, "Template to use", "default-python")
+			templatePath, err = cmdio.AskSelect(ctx, "Template to use", []string{"default-python", "mlops-stacks"})
 			if err != nil {
 				return err
 			}
