@@ -153,12 +153,17 @@ func newCreate() *cobra.Command {
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createReq.Region, "region", createReq.Region, `Cloud region which the metastore serves (e.g., us-west-2, westus).`)
+	cmd.Flags().StringVar(&createReq.StorageRoot, "storage-root", createReq.StorageRoot, `The storage root URL for metastore.`)
 
-	cmd.Use = "create NAME STORAGE_ROOT"
+	cmd.Use = "create NAME"
 	cmd.Short = `Create a metastore.`
 	cmd.Long = `Create a metastore.
   
-  Creates a new metastore based on a provided name and storage root path.`
+  Creates a new metastore based on a provided name and optional storage root
+  path. By default (if the __owner__ field is not set), the owner of the new
+  metastore is the user calling the __createMetastore__ API. If the __owner__
+  field is set to the empty string (**""**), the ownership is assigned to the
+  System User instead.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -166,11 +171,11 @@ func newCreate() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := cobra.ExactArgs(0)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name', 'storage_root' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name' in your JSON input")
 			}
 			return nil
 		}
-		check := cobra.ExactArgs(2)
+		check := cobra.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -187,9 +192,6 @@ func newCreate() *cobra.Command {
 		}
 		if !cmd.Flags().Changed("json") {
 			createReq.Name = args[0]
-		}
-		if !cmd.Flags().Changed("json") {
-			createReq.StorageRoot = args[1]
 		}
 
 		response, err := w.Metastores.Create(ctx, createReq)
@@ -696,7 +698,8 @@ func newUpdate() *cobra.Command {
 	cmd.Long = `Update a metastore.
   
   Updates information for a specific metastore. The caller must be a metastore
-  admin.`
+  admin. If the __owner__ field is set to the empty string (**""**), the
+  ownership is updated to the System User.`
 
 	cmd.Annotations = make(map[string]string)
 
