@@ -160,7 +160,11 @@ func newConfigureCommand() *cobra.Command {
 		cfg.DatabricksCliPath = ""
 
 		// Save profile to config file.
-		return databrickscfg.SaveToProfile(ctx, &cfg)
+		return databrickscfg.SaveToProfile(ctx, &config.Config{
+			Profile: cfg.Profile,
+			Host:    cfg.Host,
+			Token:   cfg.Token,
+		})
 	}
 
 	return cmd

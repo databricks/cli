@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/config/variable"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/ghodss/yaml"
@@ -56,6 +57,10 @@ type Root struct {
 	RunAs *jobs.JobRunAs `json:"run_as,omitempty"`
 
 	Experimental *Experimental `json:"experimental,omitempty"`
+
+	// Permissions section allows to define permissions which will be
+	// applied to all resources defined in bundle
+	Permissions []resources.Permission `json:"permissions,omitempty"`
 }
 
 // Load loads the bundle configuration file at the specified path.
@@ -232,6 +237,13 @@ func (r *Root) MergeTargetOverrides(target *Target) error {
 
 	if target.Sync != nil {
 		err = mergo.Merge(&r.Sync, target.Sync, mergo.WithAppendSlice)
+		if err != nil {
+			return err
+		}
+	}
+
+	if target.Permissions != nil {
+		err = mergo.Merge(&r.Permissions, target.Permissions, mergo.WithAppendSlice)
 		if err != nil {
 			return err
 		}
