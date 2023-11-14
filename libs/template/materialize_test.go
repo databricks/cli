@@ -12,5 +12,5 @@ import (
 func TestMaterializeForNonTemplateDirectory(t *testing.T) {
 	tmpDir := t.TempDir()
 	err := Materialize(context.Background(), "", tmpDir, "")
-	assert.EqualError(t, err, fmt.Sprintf("expected to find a template schema file at %s", filepath.Join(tmpDir, schemaFileName)))
+	assert.EqualError(t, err, fmt.Sprintf("not a bundle template: expected to find a template schema file at %s", filepath.Join(tmpDir, schemaFileName)))
 }

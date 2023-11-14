@@ -45,7 +45,7 @@ func Materialize(ctx context.Context, configFilePath, templateRoot, outputDir st
 	helpers := loadHelpers(ctx)
 
 	if _, err := os.Stat(schemaPath); os.IsNotExist(err) {
-		return fmt.Errorf("expected to find a template schema file at %s", schemaPath)
+		return fmt.Errorf("not a bundle template: expected to find a template schema file at %s", schemaPath)
 	}
 
 	config, err := newConfig(ctx, schemaPath)
