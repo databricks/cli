@@ -39,9 +39,9 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 						Id:       "1",
 					},
 				},
-				StatePath:     "/Users/lennart@company.com/.bundle/x/y/state",
-				ArtifactsPath: "/Users/lennart@company.com/.bundle/x/y/artifacts",
-				FilesPath:     "/Users/lennart@company.com/.bundle/x/y/files",
+				StatePath:    "/Users/lennart@company.com/.bundle/x/y/state",
+				ArtifactPath: "/Users/lennart@company.com/.bundle/x/y/artifacts",
+				FilePath:     "/Users/lennart@company.com/.bundle/x/y/files",
 			},
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
@@ -190,8 +190,8 @@ func TestProcessTargetModeProduction(t *testing.T) {
 	require.ErrorContains(t, err, "state_path")
 
 	bundle.Config.Workspace.StatePath = "/Shared/.bundle/x/y/state"
-	bundle.Config.Workspace.ArtifactsPath = "/Shared/.bundle/x/y/artifacts"
-	bundle.Config.Workspace.FilesPath = "/Shared/.bundle/x/y/files"
+	bundle.Config.Workspace.ArtifactPath = "/Shared/.bundle/x/y/artifacts"
+	bundle.Config.Workspace.FilePath = "/Shared/.bundle/x/y/files"
 
 	err = validateProductionMode(context.Background(), bundle, false)
 	require.ErrorContains(t, err, "production")
