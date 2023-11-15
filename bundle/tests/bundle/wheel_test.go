@@ -17,7 +17,7 @@ func TestBundlePythonWheelBuild(t *testing.T) {
 	require.NoError(t, err)
 
 	m := phases.Build()
-	err = m.Apply(ctx, b)
+	err = bundle.Apply(ctx, b, m)
 	require.NoError(t, err)
 
 	matches, err := filepath.Glob("python_wheel/my_test_code/dist/my_test_code-*.whl")
@@ -25,7 +25,7 @@ func TestBundlePythonWheelBuild(t *testing.T) {
 	require.Equal(t, 1, len(matches))
 
 	match := libraries.MatchWithArtifacts()
-	err = match.Apply(ctx, b)
+	err = bundle.Apply(ctx, b, match)
 	require.NoError(t, err)
 }
 
@@ -35,7 +35,7 @@ func TestBundlePythonWheelBuildAutoDetect(t *testing.T) {
 	require.NoError(t, err)
 
 	m := phases.Build()
-	err = m.Apply(ctx, b)
+	err = bundle.Apply(ctx, b, m)
 	require.NoError(t, err)
 
 	matches, err := filepath.Glob("python_wheel/my_test_code/dist/my_test_code-*.whl")
@@ -43,7 +43,7 @@ func TestBundlePythonWheelBuildAutoDetect(t *testing.T) {
 	require.Equal(t, 1, len(matches))
 
 	match := libraries.MatchWithArtifacts()
-	err = match.Apply(ctx, b)
+	err = bundle.Apply(ctx, b, match)
 	require.NoError(t, err)
 }
 
@@ -53,11 +53,11 @@ func TestBundlePythonWheelWithDBFSLib(t *testing.T) {
 	require.NoError(t, err)
 
 	m := phases.Build()
-	err = m.Apply(ctx, b)
+	err = bundle.Apply(ctx, b, m)
 	require.NoError(t, err)
 
 	match := libraries.MatchWithArtifacts()
-	err = match.Apply(ctx, b)
+	err = bundle.Apply(ctx, b, match)
 	require.NoError(t, err)
 }
 
@@ -67,11 +67,11 @@ func TestBundlePythonWheelBuildNoBuildJustUpload(t *testing.T) {
 	require.NoError(t, err)
 
 	m := phases.Build()
-	err = m.Apply(ctx, b)
+	err = bundle.Apply(ctx, b, m)
 	require.NoError(t, err)
 
 	match := libraries.MatchWithArtifacts()
-	err = match.Apply(ctx, b)
+	err = bundle.Apply(ctx, b, match)
 	require.ErrorContains(t, err, "./non-existing/*.whl")
 
 	require.NotZero(t, len(b.Config.Artifacts))

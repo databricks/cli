@@ -108,7 +108,7 @@ func TestSetVariablesMutator(t *testing.T) {
 
 	t.Setenv("BUNDLE_VAR_b", "env-var-b")
 
-	err := SetVariables().Apply(context.Background(), b)
+	err := bundle.Apply(context.Background(), b, SetVariables())
 	require.NoError(t, err)
 	assert.Equal(t, "default-a", *b.Config.Variables["a"].Value)
 	assert.Equal(t, "env-var-b", *b.Config.Variables["b"].Value)
