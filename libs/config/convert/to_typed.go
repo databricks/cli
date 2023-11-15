@@ -13,6 +13,12 @@ func ToTyped(dst any, src config.Value) error {
 
 	// Dereference pointer if necessary
 	for dstv.Kind() == reflect.Pointer {
+		// If the source value is nil and the destination is a settable pointer,
+		// set the destination to nil. Also see `end_to_end_test.go`.
+		if dstv.CanSet() && src == config.NilValue {
+			dstv.SetZero()
+			return nil
+		}
 		if dstv.IsNil() {
 			dstv.Set(reflect.New(dstv.Type().Elem()))
 		}
