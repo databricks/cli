@@ -26,7 +26,6 @@ func TestProcessRootIncludesEmpty(t *testing.T) {
 			Path: ".",
 		},
 	}
-
 	err := bundle.Apply(context.Background(), b, mutator.ProcessRootIncludes())
 	require.NoError(t, err)
 }
@@ -47,7 +46,6 @@ func TestProcessRootIncludesAbs(t *testing.T) {
 			},
 		},
 	}
-
 	err := bundle.Apply(context.Background(), b, mutator.ProcessRootIncludes())
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "must be relative paths")
@@ -69,6 +67,7 @@ func TestProcessRootIncludesSingleGlob(t *testing.T) {
 
 	err := bundle.Apply(context.Background(), b, mutator.ProcessRootIncludes())
 	require.NoError(t, err)
+
 	assert.Equal(t, []string{"a.yml", "b.yml"}, b.Config.Include)
 }
 
@@ -88,6 +87,7 @@ func TestProcessRootIncludesMultiGlob(t *testing.T) {
 
 	err := bundle.Apply(context.Background(), b, mutator.ProcessRootIncludes())
 	require.NoError(t, err)
+
 	assert.Equal(t, []string{"a1.yml", "b1.yml"}, b.Config.Include)
 }
 
@@ -129,15 +129,15 @@ func TestProcessRootIncludesExtrasFromEnvVar(t *testing.T) {
 	// touch(t, rootPath, testYamlName)
 	// t.Setenv(env.IncludesVariable, path.Join(rootPath, testYamlName))
 
-	// b := &bundle.Bundle{
-	// 	Config: config.Root{
-	// 		Path: rootPath,
-	// 	},
-	// }
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Path: rootPath,
+		},
+	}
 
-	// err := bundle.Apply(context.Background(), b, mutator.ProcessRootIncludes())
-	// require.NoError(t, err)
-	// assert.Contains(t, b.Config.Include, testYamlName)
+	err := bundle.Apply(context.Background(), b, mutator.ProcessRootIncludes())
+	require.NoError(t, err)
+	assert.Contains(t, b.Config.Include, testYamlName)
 }
 
 func TestProcessRootIncludesDedupExtrasFromEnvVar(t *testing.T) {
@@ -152,13 +152,13 @@ func TestProcessRootIncludesDedupExtrasFromEnvVar(t *testing.T) {
 	// 	string(os.PathListSeparator),
 	// ))
 
-	// b := &bundle.Bundle{
-	// 	Config: config.Root{
-	// 		Path: rootPath,
-	// 	},
-	// }
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Path: rootPath,
+		},
+	}
 
-	// err := bundle.Apply(context.Background(), b, mutator.ProcessRootIncludes())
-	// require.NoError(t, err)
-	// assert.Equal(t, []string{testYamlName}, b.Config.Include)
+	err := bundle.Apply(context.Background(), b, mutator.ProcessRootIncludes())
+	require.NoError(t, err)
+	assert.Equal(t, []string{testYamlName}, b.Config.Include)
 }

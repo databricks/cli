@@ -26,9 +26,9 @@ func GetOrNil(ctx context.Context) *Bundle {
 // Get returns the bundle as configured on the context.
 // It panics if it isn't configured.
 func Get(ctx context.Context) *Bundle {
-	bundle := GetOrNil(ctx)
-	if bundle == nil {
+	b := GetOrNil(ctx)
+	if b == nil {
 		panic("context not configured with bundle")
 	}
-	return bundle
+	return b
 }
