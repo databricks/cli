@@ -92,7 +92,7 @@ func TestProcessTargetModeDevelopment(t *testing.T) {
 	b := mockBundle(config.Development)
 
 	m := ProcessTargetMode()
-	err := m.Apply(context.Background(), b)
+	err := bundle.Apply(context.Background(), b, m)
 	require.NoError(t, err)
 
 	// Job 1
@@ -135,7 +135,7 @@ func TestProcessTargetModeDevelopmentTagNormalizationForAws(t *testing.T) {
 	})
 
 	b.Config.Workspace.CurrentUser.ShortName = "Héllö wörld?!"
-	err := ProcessTargetMode().Apply(context.Background(), b)
+	err := bundle.Apply(context.Background(), b, ProcessTargetMode())
 	require.NoError(t, err)
 
 	// Assert that tag normalization took place.
@@ -149,7 +149,7 @@ func TestProcessTargetModeDevelopmentTagNormalizationForAzure(t *testing.T) {
 	})
 
 	b.Config.Workspace.CurrentUser.ShortName = "Héllö wörld?!"
-	err := ProcessTargetMode().Apply(context.Background(), b)
+	err := bundle.Apply(context.Background(), b, ProcessTargetMode())
 	require.NoError(t, err)
 
 	// Assert that tag normalization took place (Azure allows more characters than AWS).
@@ -163,7 +163,7 @@ func TestProcessTargetModeDevelopmentTagNormalizationForGcp(t *testing.T) {
 	})
 
 	b.Config.Workspace.CurrentUser.ShortName = "Héllö wörld?!"
-	err := ProcessTargetMode().Apply(context.Background(), b)
+	err := bundle.Apply(context.Background(), b, ProcessTargetMode())
 	require.NoError(t, err)
 
 	// Assert that tag normalization took place.
@@ -174,7 +174,7 @@ func TestProcessTargetModeDefault(t *testing.T) {
 	b := mockBundle("")
 
 	m := ProcessTargetMode()
-	err := m.Apply(context.Background(), b)
+	err := bundle.Apply(context.Background(), b, m)
 	require.NoError(t, err)
 	assert.Equal(t, "job1", b.Config.Resources.Jobs["job1"].Name)
 	assert.Equal(t, "pipeline1", b.Config.Resources.Pipelines["pipeline1"].Name)
@@ -257,7 +257,7 @@ func TestAllResourcesRenamed(t *testing.T) {
 	resources := reflect.ValueOf(b.Config.Resources)
 
 	m := ProcessTargetMode()
-	err := m.Apply(context.Background(), b)
+	err := bundle.Apply(context.Background(), b, m)
 	require.NoError(t, err)
 
 	for i := 0; i < resources.NumField(); i++ {

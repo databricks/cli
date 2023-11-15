@@ -22,7 +22,7 @@ func TestValidateGitDetailsMatchingBranches(t *testing.T) {
 	}
 
 	m := ValidateGitDetails()
-	err := m.Apply(context.Background(), b)
+	err := bundle.Apply(context.Background(), b, m)
 
 	assert.NoError(t, err)
 }
@@ -40,7 +40,7 @@ func TestValidateGitDetailsNonMatchingBranches(t *testing.T) {
 	}
 
 	m := ValidateGitDetails()
-	err := m.Apply(context.Background(), b)
+	err := bundle.Apply(context.Background(), b, m)
 
 	expectedError := "not on the right Git branch:\n  expected according to configuration: main\n  actual: feature\nuse --force to override"
 	assert.EqualError(t, err, expectedError)
@@ -59,7 +59,7 @@ func TestValidateGitDetailsNotUsingGit(t *testing.T) {
 	}
 
 	m := ValidateGitDetails()
-	err := m.Apply(context.Background(), b)
+	err := bundle.Apply(context.Background(), b, m)
 
 	assert.NoError(t, err)
 }

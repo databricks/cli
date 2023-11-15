@@ -26,7 +26,7 @@ func TestSelectTarget(t *testing.T) {
 			},
 		},
 	}
-	err := mutator.SelectTarget("default").Apply(context.Background(), b)
+	err := bundle.Apply(context.Background(), b, mutator.SelectTarget("default"))
 	require.NoError(t, err)
 	assert.Equal(t, "bar", b.Config.Workspace.Host)
 }
@@ -39,6 +39,6 @@ func TestSelectTargetNotFound(t *testing.T) {
 			},
 		},
 	}
-	err := mutator.SelectTarget("doesnt-exist").Apply(context.Background(), b)
+	err := bundle.Apply(context.Background(), b, mutator.SelectTarget("doesnt-exist"))
 	require.Error(t, err, "no targets defined")
 }

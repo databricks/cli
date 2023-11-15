@@ -80,7 +80,7 @@ func TestTranslatePathsSkippedWithGitSource(t *testing.T) {
 		},
 	}
 
-	err := mutator.TranslatePaths().Apply(context.Background(), b)
+	err := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
 	require.NoError(t, err)
 
 	assert.Equal(
@@ -207,7 +207,7 @@ func TestTranslatePaths(t *testing.T) {
 		},
 	}
 
-	err := mutator.TranslatePaths().Apply(context.Background(), b)
+	err := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
 	require.NoError(t, err)
 
 	// Assert that the path in the tasks now refer to the artifact.
@@ -342,7 +342,7 @@ func TestTranslatePathsInSubdirectories(t *testing.T) {
 		},
 	}
 
-	err := mutator.TranslatePaths().Apply(context.Background(), b)
+	err := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
 	require.NoError(t, err)
 
 	assert.Equal(
@@ -403,7 +403,7 @@ func TestTranslatePathsOutsideBundleRoot(t *testing.T) {
 		},
 	}
 
-	err := mutator.TranslatePaths().Apply(context.Background(), b)
+	err := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
 	assert.ErrorContains(t, err, "is not contained in bundle root")
 }
 
@@ -434,7 +434,7 @@ func TestJobNotebookDoesNotExistError(t *testing.T) {
 		},
 	}
 
-	err := mutator.TranslatePaths().Apply(context.Background(), b)
+	err := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
 	assert.EqualError(t, err, "notebook ./doesnt_exist.py not found")
 }
 
@@ -465,7 +465,7 @@ func TestJobFileDoesNotExistError(t *testing.T) {
 		},
 	}
 
-	err := mutator.TranslatePaths().Apply(context.Background(), b)
+	err := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
 	assert.EqualError(t, err, "file ./doesnt_exist.py not found")
 }
 
@@ -496,7 +496,7 @@ func TestPipelineNotebookDoesNotExistError(t *testing.T) {
 		},
 	}
 
-	err := mutator.TranslatePaths().Apply(context.Background(), b)
+	err := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
 	assert.EqualError(t, err, "notebook ./doesnt_exist.py not found")
 }
 
@@ -527,7 +527,7 @@ func TestPipelineFileDoesNotExistError(t *testing.T) {
 		},
 	}
 
-	err := mutator.TranslatePaths().Apply(context.Background(), b)
+	err := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
 	assert.EqualError(t, err, "file ./doesnt_exist.py not found")
 }
 
@@ -562,7 +562,7 @@ func TestJobSparkPythonTaskWithNotebookSourceError(t *testing.T) {
 		},
 	}
 
-	err := mutator.TranslatePaths().Apply(context.Background(), b)
+	err := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
 	assert.ErrorContains(t, err, `expected a file for "tasks.spark_python_task.python_file" but got a notebook`)
 }
 
@@ -597,7 +597,7 @@ func TestJobNotebookTaskWithFileSourceError(t *testing.T) {
 		},
 	}
 
-	err := mutator.TranslatePaths().Apply(context.Background(), b)
+	err := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
 	assert.ErrorContains(t, err, `expected a notebook for "tasks.notebook_task.notebook_path" but got a file`)
 }
 
@@ -632,7 +632,7 @@ func TestPipelineNotebookLibraryWithFileSourceError(t *testing.T) {
 		},
 	}
 
-	err := mutator.TranslatePaths().Apply(context.Background(), b)
+	err := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
 	assert.ErrorContains(t, err, `expected a notebook for "libraries.notebook.path" but got a file`)
 }
 
@@ -667,6 +667,6 @@ func TestPipelineFileLibraryWithNotebookSourceError(t *testing.T) {
 		},
 	}
 
-	err := mutator.TranslatePaths().Apply(context.Background(), b)
+	err := bundle.Apply(context.Background(), b, mutator.TranslatePaths())
 	assert.ErrorContains(t, err, `expected a file for "libraries.file.path" but got a notebook`)
 }
