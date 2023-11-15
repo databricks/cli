@@ -73,7 +73,7 @@ func TestGenerateBoth(t *testing.T) {
 
 func TestTransformFiltersWheelTasksOnly(t *testing.T) {
 	trampoline := pythonTrampoline{}
-	bundle := &bundle.Bundle{
+	b := &bundle.Bundle{
 		Config: config.Root{
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
@@ -106,7 +106,7 @@ func TestTransformFiltersWheelTasksOnly(t *testing.T) {
 		},
 	}
 
-	tasks := trampoline.GetTasks(bundle)
+	tasks := trampoline.GetTasks(b)
 	require.Len(t, tasks, 1)
 	require.Equal(t, "job1", tasks[0].JobKey)
 	require.Equal(t, "key1", tasks[0].Task.TaskKey)

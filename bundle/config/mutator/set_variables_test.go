@@ -87,7 +87,7 @@ func TestSetVariablesMutator(t *testing.T) {
 	defaultValForA := "default-a"
 	defaultValForB := "default-b"
 	valForC := "assigned-val-c"
-	bundle := &bundle.Bundle{
+	b := &bundle.Bundle{
 		Config: config.Root{
 			Variables: map[string]*variable.Variable{
 				"a": {
@@ -108,9 +108,9 @@ func TestSetVariablesMutator(t *testing.T) {
 
 	t.Setenv("BUNDLE_VAR_b", "env-var-b")
 
-	err := SetVariables().Apply(context.Background(), bundle)
+	err := SetVariables().Apply(context.Background(), b)
 	require.NoError(t, err)
-	assert.Equal(t, "default-a", *bundle.Config.Variables["a"].Value)
-	assert.Equal(t, "env-var-b", *bundle.Config.Variables["b"].Value)
-	assert.Equal(t, "assigned-val-c", *bundle.Config.Variables["c"].Value)
+	assert.Equal(t, "default-a", *b.Config.Variables["a"].Value)
+	assert.Equal(t, "env-var-b", *b.Config.Variables["b"].Value)
+	assert.Equal(t, "assigned-val-c", *b.Config.Variables["c"].Value)
 }

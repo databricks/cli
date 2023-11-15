@@ -13,7 +13,7 @@ import (
 )
 
 func TestExpandWorkspaceRoot(t *testing.T) {
-	bundle := &bundle.Bundle{
+	b := &bundle.Bundle{
 		Config: config.Root{
 			Workspace: config.Workspace{
 				CurrentUser: &config.User{
@@ -25,13 +25,13 @@ func TestExpandWorkspaceRoot(t *testing.T) {
 			},
 		},
 	}
-	err := mutator.ExpandWorkspaceRoot().Apply(context.Background(), bundle)
+	err := mutator.ExpandWorkspaceRoot().Apply(context.Background(), b)
 	require.NoError(t, err)
-	assert.Equal(t, "/Users/jane@doe.com/foo", bundle.Config.Workspace.RootPath)
+	assert.Equal(t, "/Users/jane@doe.com/foo", b.Config.Workspace.RootPath)
 }
 
 func TestExpandWorkspaceRootDoesNothing(t *testing.T) {
-	bundle := &bundle.Bundle{
+	b := &bundle.Bundle{
 		Config: config.Root{
 			Workspace: config.Workspace{
 				CurrentUser: &config.User{
@@ -43,13 +43,13 @@ func TestExpandWorkspaceRootDoesNothing(t *testing.T) {
 			},
 		},
 	}
-	err := mutator.ExpandWorkspaceRoot().Apply(context.Background(), bundle)
+	err := mutator.ExpandWorkspaceRoot().Apply(context.Background(), b)
 	require.NoError(t, err)
-	assert.Equal(t, "/Users/charly@doe.com/foo", bundle.Config.Workspace.RootPath)
+	assert.Equal(t, "/Users/charly@doe.com/foo", b.Config.Workspace.RootPath)
 }
 
 func TestExpandWorkspaceRootWithoutRoot(t *testing.T) {
-	bundle := &bundle.Bundle{
+	b := &bundle.Bundle{
 		Config: config.Root{
 			Workspace: config.Workspace{
 				CurrentUser: &config.User{
@@ -60,18 +60,18 @@ func TestExpandWorkspaceRootWithoutRoot(t *testing.T) {
 			},
 		},
 	}
-	err := mutator.ExpandWorkspaceRoot().Apply(context.Background(), bundle)
+	err := mutator.ExpandWorkspaceRoot().Apply(context.Background(), b)
 	require.Error(t, err)
 }
 
 func TestExpandWorkspaceRootWithoutCurrentUser(t *testing.T) {
-	bundle := &bundle.Bundle{
+	b := &bundle.Bundle{
 		Config: config.Root{
 			Workspace: config.Workspace{
 				RootPath: "~/foo",
 			},
 		},
 	}
-	err := mutator.ExpandWorkspaceRoot().Apply(context.Background(), bundle)
+	err := mutator.ExpandWorkspaceRoot().Apply(context.Background(), b)
 	require.Error(t, err)
 }

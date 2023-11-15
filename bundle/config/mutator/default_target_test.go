@@ -12,24 +12,24 @@ import (
 )
 
 func TestDefaultTarget(t *testing.T) {
-	bundle := &bundle.Bundle{}
-	err := mutator.DefineDefaultTarget().Apply(context.Background(), bundle)
+	b := &bundle.Bundle{}
+	err := mutator.DefineDefaultTarget().Apply(context.Background(), b)
 	require.NoError(t, err)
-	env, ok := bundle.Config.Targets["default"]
+	env, ok := b.Config.Targets["default"]
 	assert.True(t, ok)
 	assert.Equal(t, &config.Target{}, env)
 }
 
 func TestDefaultTargetAlreadySpecified(t *testing.T) {
-	bundle := &bundle.Bundle{
+	b := &bundle.Bundle{
 		Config: config.Root{
 			Targets: map[string]*config.Target{
 				"development": {},
 			},
 		},
 	}
-	err := mutator.DefineDefaultTarget().Apply(context.Background(), bundle)
+	err := mutator.DefineDefaultTarget().Apply(context.Background(), b)
 	require.NoError(t, err)
-	_, ok := bundle.Config.Targets["default"]
+	_, ok := b.Config.Targets["default"]
 	assert.False(t, ok)
 }
