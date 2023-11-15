@@ -1,0 +1,8 @@
+{
+    "properties": {
+        "property-without-description": {
+            "type": "integer",
+            "default": 123
+        }
+    }
+}

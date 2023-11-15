@@ -6,6 +6,12 @@ import (
 	"github.com/databricks/cli/libs/config"
 )
 
+// Merge recursively merges the specified values.
+//
+// Semantics are as follows:
+// * Merging x with nil or nil with x always yields x.
+// * Merging maps a and b means entries from map b take precedence.
+// * Merging sequences a and b means concatenating them.
 func Merge(a, b config.Value) (config.Value, error) {
 	return merge(a, b)
 }

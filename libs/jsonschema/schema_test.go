@@ -175,24 +175,13 @@ func TestSchemaValidateIncorrectRegex(t *testing.T) {
 	assert.EqualError(t, s.validate(), "invalid regex pattern \"(abc\" provided for property \"foo\": error parsing regexp: missing closing ): `(abc`")
 }
 
-func TestSchemaValidatePatternDefault(t *testing.T) {
+func TestSchemaDefaultValueIsNotValidatedAgainstPattern(t *testing.T) {
 	s := &Schema{
 		Properties: map[string]*Schema{
 			"foo": {
 				Type:    "string",
 				Pattern: "abc",
 				Default: "def",
-			},
-		},
-	}
-	assert.EqualError(t, s.validate(), "default value \"def\" for property \"foo\" does not match specified regex pattern: \"abc\"")
-
-	s = &Schema{
-		Properties: map[string]*Schema{
-			"foo": {
-				Type:    "string",
-				Pattern: "a.*d",
-				Default: "axyzd",
 			},
 		},
 	}

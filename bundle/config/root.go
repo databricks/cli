@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/config/variable"
 	"github.com/databricks/cli/libs/config"
 	"github.com/databricks/cli/libs/config/convert"
@@ -65,6 +66,10 @@ type Root struct {
 	RunAs *jobs.JobRunAs `json:"run_as,omitempty"`
 
 	Experimental *Experimental `json:"experimental,omitempty"`
+
+	// Permissions section allows to define permissions which will be
+	// applied to all resources defined in bundle
+	Permissions []resources.Permission `json:"permissions,omitempty"`
 }
 
 // Load loads the bundle configuration file at the specified path.
@@ -296,54 +301,12 @@ func (r *Root) MergeTargetOverrides(name string) error {
 		panic(err)
 	}
 
-	// 	err = r.Resources.Merge()
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	// }
-
-	// if target.Variables != nil {
-	// 	for k, v := range target.Variables {
-	// 		variable, ok := r.Variables[k]
-	// 		if !ok {
-	// 			return fmt.Errorf("variable %s is not defined but is assigned a value", k)
-	// 		}
-	// 		// we only allow overrides of the default value for a variable
-	// 		defaultVal := v
-	// 		variable.Default = &defaultVal
-	// 	}
-	// }
-
-	// if target.RunAs != nil {
-	// 	r.RunAs = target.RunAs
-	// }
-
-	// if target.Mode != "" {
-	// 	r.Bundle.Mode = target.Mode
-	// }
-
-	// if target.ComputeID != "" {
-	// 	r.Bundle.ComputeID = target.ComputeID
-	// }
-
-	// git := &r.Bundle.Git
-	// if target.Git.Branch != "" {
-	// 	git.Branch = target.Git.Branch
-	// 	git.Inferred = false
-	// }
-	// if target.Git.Commit != "" {
-	// 	git.Commit = target.Git.Commit
-	// }
-	// if target.Git.OriginURL != "" {
-	// 	git.OriginURL = target.Git.OriginURL
-	// }
-
-	// if target.Sync != nil {
-	// 	err = mergo.Merge(&r.Sync, target.Sync, mergo.WithAppendSlice)
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	// }
+	if target.Permissions != nil {
+		err = mergo.Merge(&r.Permissions, target.Permissions, mergo.WithAppendSlice)
+		if err != nil {
+			return err
+		}
+	}
 
 	return nil
 }

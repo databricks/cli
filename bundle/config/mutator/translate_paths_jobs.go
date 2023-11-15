@@ -50,6 +50,34 @@ func transformWhlLibrary(resource any, dir string) *transformer {
 	}
 }
 
+func transformDbtTask(resource any, dir string) *transformer {
+	task, ok := resource.(*jobs.Task)
+	if !ok || task.DbtTask == nil {
+		return nil
+	}
+
+	return &transformer{
+		dir,
+		&task.DbtTask.ProjectDirectory,
+		"tasks.dbt_task.project_directory",
+		translateDirectoryPath,
+	}
+}
+
+func transformSqlFileTask(resource any, dir string) *transformer {
+	task, ok := resource.(*jobs.Task)
+	if !ok || task.SqlTask == nil || task.SqlTask.File == nil {
+		return nil
+	}
+
+	return &transformer{
+		dir,
+		&task.SqlTask.File.Path,
+		"tasks.sql_task.file.path",
+		translateFilePath,
+	}
+}
+
 func transformJarLibrary(resource any, dir string) *transformer {
 	library, ok := resource.(*compute.Library)
 	if !ok || library.Jar == "" {
@@ -70,6 +98,8 @@ func applyJobTransformers(m *translatePaths, b *bundle.Bundle) error {
 		transformSparkTask,
 		transformWhlLibrary,
 		transformJarLibrary,
+		transformDbtTask,
+		transformSqlFileTask,
 	}
 
 	for key, job := range b.Config.Resources.Jobs {

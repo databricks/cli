@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"math/rand"
@@ -17,6 +18,7 @@ import (
 
 	"github.com/databricks/cli/cmd"
 	_ "github.com/databricks/cli/cmd/version"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/compute"
@@ -63,6 +65,8 @@ type cobraTestRunner struct {
 	args   []string
 	stdout bytes.Buffer
 	stderr bytes.Buffer
+	stdinR *io.PipeReader
+	stdinW *io.PipeWriter
 
 	ctx context.Context
 
@@ -119,15 +123,46 @@ func (t *cobraTestRunner) registerFlagCleanup(c *cobra.Command) {
 	})
 }
 
+// Like [cobraTestRunner.Eventually], but more specific
+func (t *cobraTestRunner) WaitForTextPrinted(text string, timeout time.Duration) {
+	t.Eventually(func() bool {
+		currentStdout := t.stdout.String()
+		return strings.Contains(currentStdout, text)
+	}, timeout, 50*time.Millisecond)
+}
+
+func (t *cobraTestRunner) WithStdin() {
+	reader, writer := io.Pipe()
+	t.stdinR = reader
+	t.stdinW = writer
+}
+
+func (t *cobraTestRunner) CloseStdin() {
+	if t.stdinW == nil {
+		panic("no standard input configured")
+	}
+	t.stdinW.Close()
+}
+
+func (t *cobraTestRunner) SendText(text string) {
+	if t.stdinW == nil {
+		panic("no standard input configured")
+	}
+	t.stdinW.Write([]byte(text + "\n"))
+}
+
 func (t *cobraTestRunner) RunBackground() {
 	var stdoutR, stderrR io.Reader
 	var stdoutW, stderrW io.WriteCloser
 	stdoutR, stdoutW = io.Pipe()
 	stderrR, stderrW = io.Pipe()
-	root := cmd.New(context.Background())
+	root := cmd.New(t.ctx)
 	root.SetOut(stdoutW)
 	root.SetErr(stderrW)
 	root.SetArgs(t.args)
+	if t.stdinW != nil {
+		root.SetIn(t.stdinR)
+	}
 
 	// Register cleanup function to restore flags to their original values
 	// once test has been executed. This is needed because flag values reside
@@ -237,6 +272,19 @@ func (c *cobraTestRunner) Eventually(condition func() bool, waitFor time.Duratio
 			tick = ticker.C
 		}
 	}
+}
+
+func (t *cobraTestRunner) RunAndExpectOutput(heredoc string) {
+	stdout, _, err := t.Run()
+	require.NoError(t, err)
+	require.Equal(t, cmdio.Heredoc(heredoc), strings.TrimSpace(stdout.String()))
+}
+
+func (t *cobraTestRunner) RunAndParseJSON(v any) {
+	stdout, _, err := t.Run()
+	require.NoError(t, err)
+	err = json.Unmarshal(stdout.Bytes(), &v)
+	require.NoError(t, err)
 }
 
 func NewCobraTestRunner(t *testing.T, args ...string) *cobraTestRunner {

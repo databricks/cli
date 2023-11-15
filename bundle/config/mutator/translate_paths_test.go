@@ -275,6 +275,8 @@ func TestTranslatePathsInSubdirectories(t *testing.T) {
 	touchEmptyFile(t, filepath.Join(dir, "job", "my_python_file.py"))
 	touchEmptyFile(t, filepath.Join(dir, "job", "dist", "task.jar"))
 	touchEmptyFile(t, filepath.Join(dir, "pipeline", "my_python_file.py"))
+	touchEmptyFile(t, filepath.Join(dir, "job", "my_sql_file.sql"))
+	touchEmptyFile(t, filepath.Join(dir, "job", "my_dbt_project", "dbt_project.yml"))
 
 	bundle := &bundle.Bundle{
 		Config: config.Root{
@@ -301,6 +303,18 @@ func TestTranslatePathsInSubdirectories(t *testing.T) {
 									},
 									Libraries: []compute.Library{
 										{Jar: "./dist/task.jar"},
+									},
+								},
+								{
+									SqlTask: &jobs.SqlTask{
+										File: &jobs.SqlTaskFile{
+											Path: "./my_sql_file.sql",
+										},
+									},
+								},
+								{
+									DbtTask: &jobs.DbtTask{
+										ProjectDirectory: "./my_dbt_project",
 									},
 								},
 							},
@@ -340,6 +354,16 @@ func TestTranslatePathsInSubdirectories(t *testing.T) {
 		t,
 		"/bundle/job/dist/task.jar",
 		bundle.Config.Resources.Jobs["job"].Tasks[1].Libraries[0].Jar,
+	)
+	assert.Equal(
+		t,
+		"/bundle/job/my_sql_file.sql",
+		bundle.Config.Resources.Jobs["job"].Tasks[2].SqlTask.File.Path,
+	)
+	assert.Equal(
+		t,
+		"/bundle/job/my_dbt_project",
+		bundle.Config.Resources.Jobs["job"].Tasks[3].DbtTask.ProjectDirectory,
 	)
 
 	assert.Equal(

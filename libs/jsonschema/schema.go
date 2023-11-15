@@ -58,6 +58,22 @@ type Schema struct {
 	Extension
 }
 
+// Default value defined in a JSON Schema, represented as a string.
+func (s *Schema) DefaultString() (string, error) {
+	return toString(s.Default, s.Type)
+}
+
+// Allowed enum values defined in a JSON Schema, represented as a slice of strings.
+func (s *Schema) EnumStringSlice() ([]string, error) {
+	return toStringSlice(s.Enum, s.Type)
+}
+
+// Parses a string as a Go primitive value. The type of the value is determined
+// by the type defined in the JSON Schema.
+func (s *Schema) ParseString(v string) (any, error) {
+	return fromString(v, s.Type)
+}
+
 type Type string
 
 const (
@@ -150,11 +166,6 @@ func (schema *Schema) validateSchemaPattern() error {
 		r, err := regexp.Compile(pattern)
 		if err != nil {
 			return fmt.Errorf("invalid regex pattern %q provided for property %q: %w", pattern, name, err)
-		}
-
-		// validate default value against the pattern
-		if property.Default != nil && !r.MatchString(property.Default.(string)) {
-			return fmt.Errorf("default value %q for property %q does not match specified regex pattern: %q", property.Default, name, pattern)
 		}
 
 		// validate enum values against the pattern

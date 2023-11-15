@@ -47,7 +47,7 @@ func Background(ctx context.Context, args []string, opts ...execOption) (string,
 			return "", err
 		}
 	}
-	if err := cmd.Run(); err != nil {
+	if err := runCmd(ctx, cmd); err != nil {
 		return stdout.String(), &ProcessError{
 			Err:     err,
 			Command: commandStr,

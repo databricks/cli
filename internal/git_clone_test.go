@@ -32,14 +32,14 @@ func TestAccGitClone(t *testing.T) {
 	assert.Contains(t, string(b), "ide")
 }
 
-func TestAccGitCloneWithOnlyRepoNameOnAlternateBranch(t *testing.T) {
+func TestAccGitCloneOnNonDefaultBranch(t *testing.T) {
 	t.Log(GetEnvOrSkipTest(t, "CLOUD_ENV"))
 
 	tmpDir := t.TempDir()
 	ctx := context.Background()
 	var err error
 
-	err = git.Clone(ctx, "notebook-best-practices", "dais-2022", tmpDir)
+	err = git.Clone(ctx, "https://github.com/databricks/notebook-best-practices", "dais-2022", tmpDir)
 
 	// assert on repo content
 	assert.NoError(t, err)
@@ -47,7 +47,7 @@ func TestAccGitCloneWithOnlyRepoNameOnAlternateBranch(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Contains(t, string(b), "Software engineering best practices for Databricks notebooks")
 
-	// assert current branch is main, ie default for the repo
+	// assert current branch is dais-2022
 	b, err = os.ReadFile(filepath.Join(tmpDir, ".git/HEAD"))
 	assert.NoError(t, err)
 	assert.Contains(t, string(b), "dais-2022")
