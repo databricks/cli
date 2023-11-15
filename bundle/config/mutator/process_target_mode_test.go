@@ -89,111 +89,111 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 }
 
 func TestProcessTargetModeDevelopment(t *testing.T) {
-	bundle := mockBundle(config.Development)
+	b := mockBundle(config.Development)
 
 	m := ProcessTargetMode()
-	err := m.Apply(context.Background(), bundle)
+	err := m.Apply(context.Background(), b)
 	require.NoError(t, err)
 
 	// Job 1
-	assert.Equal(t, "[dev lennart] job1", bundle.Config.Resources.Jobs["job1"].Name)
-	assert.Equal(t, bundle.Config.Resources.Jobs["job1"].Tags["dev"], "lennart")
-	assert.Equal(t, bundle.Config.Resources.Jobs["job1"].Schedule.PauseStatus, jobs.PauseStatusPaused)
+	assert.Equal(t, "[dev lennart] job1", b.Config.Resources.Jobs["job1"].Name)
+	assert.Equal(t, b.Config.Resources.Jobs["job1"].Tags["dev"], "lennart")
+	assert.Equal(t, b.Config.Resources.Jobs["job1"].Schedule.PauseStatus, jobs.PauseStatusPaused)
 
 	// Job 2
-	assert.Equal(t, "[dev lennart] job2", bundle.Config.Resources.Jobs["job2"].Name)
-	assert.Equal(t, bundle.Config.Resources.Jobs["job2"].Tags["dev"], "lennart")
-	assert.Equal(t, bundle.Config.Resources.Jobs["job2"].Schedule.PauseStatus, jobs.PauseStatusUnpaused)
+	assert.Equal(t, "[dev lennart] job2", b.Config.Resources.Jobs["job2"].Name)
+	assert.Equal(t, b.Config.Resources.Jobs["job2"].Tags["dev"], "lennart")
+	assert.Equal(t, b.Config.Resources.Jobs["job2"].Schedule.PauseStatus, jobs.PauseStatusUnpaused)
 
 	// Pipeline 1
-	assert.Equal(t, "[dev lennart] pipeline1", bundle.Config.Resources.Pipelines["pipeline1"].Name)
-	assert.True(t, bundle.Config.Resources.Pipelines["pipeline1"].PipelineSpec.Development)
+	assert.Equal(t, "[dev lennart] pipeline1", b.Config.Resources.Pipelines["pipeline1"].Name)
+	assert.True(t, b.Config.Resources.Pipelines["pipeline1"].PipelineSpec.Development)
 
 	// Experiment 1
-	assert.Equal(t, "/Users/lennart.kats@databricks.com/[dev lennart] experiment1", bundle.Config.Resources.Experiments["experiment1"].Name)
-	assert.Contains(t, bundle.Config.Resources.Experiments["experiment1"].Experiment.Tags, ml.ExperimentTag{Key: "dev", Value: "lennart"})
-	assert.Equal(t, "dev", bundle.Config.Resources.Experiments["experiment1"].Experiment.Tags[0].Key)
+	assert.Equal(t, "/Users/lennart.kats@databricks.com/[dev lennart] experiment1", b.Config.Resources.Experiments["experiment1"].Name)
+	assert.Contains(t, b.Config.Resources.Experiments["experiment1"].Experiment.Tags, ml.ExperimentTag{Key: "dev", Value: "lennart"})
+	assert.Equal(t, "dev", b.Config.Resources.Experiments["experiment1"].Experiment.Tags[0].Key)
 
 	// Experiment 2
-	assert.Equal(t, "[dev lennart] experiment2", bundle.Config.Resources.Experiments["experiment2"].Name)
-	assert.Contains(t, bundle.Config.Resources.Experiments["experiment2"].Experiment.Tags, ml.ExperimentTag{Key: "dev", Value: "lennart"})
+	assert.Equal(t, "[dev lennart] experiment2", b.Config.Resources.Experiments["experiment2"].Name)
+	assert.Contains(t, b.Config.Resources.Experiments["experiment2"].Experiment.Tags, ml.ExperimentTag{Key: "dev", Value: "lennart"})
 
 	// Model 1
-	assert.Equal(t, "[dev lennart] model1", bundle.Config.Resources.Models["model1"].Name)
+	assert.Equal(t, "[dev lennart] model1", b.Config.Resources.Models["model1"].Name)
 
 	// Model serving endpoint 1
-	assert.Equal(t, "dev_lennart_servingendpoint1", bundle.Config.Resources.ModelServingEndpoints["servingendpoint1"].Name)
+	assert.Equal(t, "dev_lennart_servingendpoint1", b.Config.Resources.ModelServingEndpoints["servingendpoint1"].Name)
 
 	// Registered model 1
-	assert.Equal(t, "dev_lennart_registeredmodel1", bundle.Config.Resources.RegisteredModels["registeredmodel1"].Name)
+	assert.Equal(t, "dev_lennart_registeredmodel1", b.Config.Resources.RegisteredModels["registeredmodel1"].Name)
 }
 
 func TestProcessTargetModeDevelopmentTagNormalizationForAws(t *testing.T) {
-	bundle := mockBundle(config.Development)
-	bundle.Tagging = tags.ForCloud(&sdkconfig.Config{
+	b := mockBundle(config.Development)
+	b.Tagging = tags.ForCloud(&sdkconfig.Config{
 		Host: "https://dbc-XXXXXXXX-YYYY.cloud.databricks.com/",
 	})
 
-	bundle.Config.Workspace.CurrentUser.ShortName = "Héllö wörld?!"
-	err := ProcessTargetMode().Apply(context.Background(), bundle)
+	b.Config.Workspace.CurrentUser.ShortName = "Héllö wörld?!"
+	err := ProcessTargetMode().Apply(context.Background(), b)
 	require.NoError(t, err)
 
 	// Assert that tag normalization took place.
-	assert.Equal(t, "Hello world__", bundle.Config.Resources.Jobs["job1"].Tags["dev"])
+	assert.Equal(t, "Hello world__", b.Config.Resources.Jobs["job1"].Tags["dev"])
 }
 
 func TestProcessTargetModeDevelopmentTagNormalizationForAzure(t *testing.T) {
-	bundle := mockBundle(config.Development)
-	bundle.Tagging = tags.ForCloud(&sdkconfig.Config{
+	b := mockBundle(config.Development)
+	b.Tagging = tags.ForCloud(&sdkconfig.Config{
 		Host: "https://adb-xxx.y.azuredatabricks.net/",
 	})
 
-	bundle.Config.Workspace.CurrentUser.ShortName = "Héllö wörld?!"
-	err := ProcessTargetMode().Apply(context.Background(), bundle)
+	b.Config.Workspace.CurrentUser.ShortName = "Héllö wörld?!"
+	err := ProcessTargetMode().Apply(context.Background(), b)
 	require.NoError(t, err)
 
 	// Assert that tag normalization took place (Azure allows more characters than AWS).
-	assert.Equal(t, "Héllö wörld?!", bundle.Config.Resources.Jobs["job1"].Tags["dev"])
+	assert.Equal(t, "Héllö wörld?!", b.Config.Resources.Jobs["job1"].Tags["dev"])
 }
 
 func TestProcessTargetModeDevelopmentTagNormalizationForGcp(t *testing.T) {
-	bundle := mockBundle(config.Development)
-	bundle.Tagging = tags.ForCloud(&sdkconfig.Config{
+	b := mockBundle(config.Development)
+	b.Tagging = tags.ForCloud(&sdkconfig.Config{
 		Host: "https://123.4.gcp.databricks.com/",
 	})
 
-	bundle.Config.Workspace.CurrentUser.ShortName = "Héllö wörld?!"
-	err := ProcessTargetMode().Apply(context.Background(), bundle)
+	b.Config.Workspace.CurrentUser.ShortName = "Héllö wörld?!"
+	err := ProcessTargetMode().Apply(context.Background(), b)
 	require.NoError(t, err)
 
 	// Assert that tag normalization took place.
-	assert.Equal(t, "Hello_world", bundle.Config.Resources.Jobs["job1"].Tags["dev"])
+	assert.Equal(t, "Hello_world", b.Config.Resources.Jobs["job1"].Tags["dev"])
 }
 
 func TestProcessTargetModeDefault(t *testing.T) {
-	bundle := mockBundle("")
+	b := mockBundle("")
 
 	m := ProcessTargetMode()
-	err := m.Apply(context.Background(), bundle)
+	err := m.Apply(context.Background(), b)
 	require.NoError(t, err)
-	assert.Equal(t, "job1", bundle.Config.Resources.Jobs["job1"].Name)
-	assert.Equal(t, "pipeline1", bundle.Config.Resources.Pipelines["pipeline1"].Name)
-	assert.False(t, bundle.Config.Resources.Pipelines["pipeline1"].PipelineSpec.Development)
-	assert.Equal(t, "servingendpoint1", bundle.Config.Resources.ModelServingEndpoints["servingendpoint1"].Name)
-	assert.Equal(t, "registeredmodel1", bundle.Config.Resources.RegisteredModels["registeredmodel1"].Name)
+	assert.Equal(t, "job1", b.Config.Resources.Jobs["job1"].Name)
+	assert.Equal(t, "pipeline1", b.Config.Resources.Pipelines["pipeline1"].Name)
+	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].PipelineSpec.Development)
+	assert.Equal(t, "servingendpoint1", b.Config.Resources.ModelServingEndpoints["servingendpoint1"].Name)
+	assert.Equal(t, "registeredmodel1", b.Config.Resources.RegisteredModels["registeredmodel1"].Name)
 }
 
 func TestProcessTargetModeProduction(t *testing.T) {
-	bundle := mockBundle(config.Production)
+	b := mockBundle(config.Production)
 
-	err := validateProductionMode(context.Background(), bundle, false)
+	err := validateProductionMode(context.Background(), b, false)
 	require.ErrorContains(t, err, "state_path")
 
-	bundle.Config.Workspace.StatePath = "/Shared/.bundle/x/y/state"
-	bundle.Config.Workspace.ArtifactPath = "/Shared/.bundle/x/y/artifacts"
-	bundle.Config.Workspace.FilePath = "/Shared/.bundle/x/y/files"
+	b.Config.Workspace.StatePath = "/Shared/.bundle/x/y/state"
+	b.Config.Workspace.ArtifactPath = "/Shared/.bundle/x/y/artifacts"
+	b.Config.Workspace.FilePath = "/Shared/.bundle/x/y/files"
 
-	err = validateProductionMode(context.Background(), bundle, false)
+	err = validateProductionMode(context.Background(), b, false)
 	require.ErrorContains(t, err, "production")
 
 	permissions := []resources.Permission{
@@ -202,41 +202,41 @@ func TestProcessTargetModeProduction(t *testing.T) {
 			UserName: "user@company.com",
 		},
 	}
-	bundle.Config.Resources.Jobs["job1"].Permissions = permissions
-	bundle.Config.Resources.Jobs["job1"].RunAs = &jobs.JobRunAs{UserName: "user@company.com"}
-	bundle.Config.Resources.Jobs["job2"].RunAs = &jobs.JobRunAs{UserName: "user@company.com"}
-	bundle.Config.Resources.Pipelines["pipeline1"].Permissions = permissions
-	bundle.Config.Resources.Experiments["experiment1"].Permissions = permissions
-	bundle.Config.Resources.Experiments["experiment2"].Permissions = permissions
-	bundle.Config.Resources.Models["model1"].Permissions = permissions
-	bundle.Config.Resources.ModelServingEndpoints["servingendpoint1"].Permissions = permissions
+	b.Config.Resources.Jobs["job1"].Permissions = permissions
+	b.Config.Resources.Jobs["job1"].RunAs = &jobs.JobRunAs{UserName: "user@company.com"}
+	b.Config.Resources.Jobs["job2"].RunAs = &jobs.JobRunAs{UserName: "user@company.com"}
+	b.Config.Resources.Pipelines["pipeline1"].Permissions = permissions
+	b.Config.Resources.Experiments["experiment1"].Permissions = permissions
+	b.Config.Resources.Experiments["experiment2"].Permissions = permissions
+	b.Config.Resources.Models["model1"].Permissions = permissions
+	b.Config.Resources.ModelServingEndpoints["servingendpoint1"].Permissions = permissions
 
-	err = validateProductionMode(context.Background(), bundle, false)
+	err = validateProductionMode(context.Background(), b, false)
 	require.NoError(t, err)
 
-	assert.Equal(t, "job1", bundle.Config.Resources.Jobs["job1"].Name)
-	assert.Equal(t, "pipeline1", bundle.Config.Resources.Pipelines["pipeline1"].Name)
-	assert.False(t, bundle.Config.Resources.Pipelines["pipeline1"].PipelineSpec.Development)
-	assert.Equal(t, "servingendpoint1", bundle.Config.Resources.ModelServingEndpoints["servingendpoint1"].Name)
-	assert.Equal(t, "registeredmodel1", bundle.Config.Resources.RegisteredModels["registeredmodel1"].Name)
+	assert.Equal(t, "job1", b.Config.Resources.Jobs["job1"].Name)
+	assert.Equal(t, "pipeline1", b.Config.Resources.Pipelines["pipeline1"].Name)
+	assert.False(t, b.Config.Resources.Pipelines["pipeline1"].PipelineSpec.Development)
+	assert.Equal(t, "servingendpoint1", b.Config.Resources.ModelServingEndpoints["servingendpoint1"].Name)
+	assert.Equal(t, "registeredmodel1", b.Config.Resources.RegisteredModels["registeredmodel1"].Name)
 }
 
 func TestProcessTargetModeProductionOkForPrincipal(t *testing.T) {
-	bundle := mockBundle(config.Production)
+	b := mockBundle(config.Production)
 
 	// Our target has all kinds of problems when not using service principals ...
-	err := validateProductionMode(context.Background(), bundle, false)
+	err := validateProductionMode(context.Background(), b, false)
 	require.Error(t, err)
 
 	// ... but we're much less strict when a principal is used
-	err = validateProductionMode(context.Background(), bundle, true)
+	err = validateProductionMode(context.Background(), b, true)
 	require.NoError(t, err)
 }
 
 // Make sure that we have test coverage for all resource types
 func TestAllResourcesMocked(t *testing.T) {
-	bundle := mockBundle(config.Development)
-	resources := reflect.ValueOf(bundle.Config.Resources)
+	b := mockBundle(config.Development)
+	resources := reflect.ValueOf(b.Config.Resources)
 
 	for i := 0; i < resources.NumField(); i++ {
 		field := resources.Field(i)
@@ -253,11 +253,11 @@ func TestAllResourcesMocked(t *testing.T) {
 
 // Make sure that we at least rename all resources
 func TestAllResourcesRenamed(t *testing.T) {
-	bundle := mockBundle(config.Development)
-	resources := reflect.ValueOf(bundle.Config.Resources)
+	b := mockBundle(config.Development)
+	resources := reflect.ValueOf(b.Config.Resources)
 
 	m := ProcessTargetMode()
-	err := m.Apply(context.Background(), bundle)
+	err := m.Apply(context.Background(), b)
 	require.NoError(t, err)
 
 	for i := 0; i < resources.NumField(); i++ {

@@ -12,7 +12,7 @@ import (
 )
 
 func TestSelectTarget(t *testing.T) {
-	bundle := &bundle.Bundle{
+	b := &bundle.Bundle{
 		Config: config.Root{
 			Workspace: config.Workspace{
 				Host: "foo",
@@ -26,19 +26,19 @@ func TestSelectTarget(t *testing.T) {
 			},
 		},
 	}
-	err := mutator.SelectTarget("default").Apply(context.Background(), bundle)
+	err := mutator.SelectTarget("default").Apply(context.Background(), b)
 	require.NoError(t, err)
-	assert.Equal(t, "bar", bundle.Config.Workspace.Host)
+	assert.Equal(t, "bar", b.Config.Workspace.Host)
 }
 
 func TestSelectTargetNotFound(t *testing.T) {
-	bundle := &bundle.Bundle{
+	b := &bundle.Bundle{
 		Config: config.Root{
 			Targets: map[string]*config.Target{
 				"default": {},
 			},
 		},
 	}
-	err := mutator.SelectTarget("doesnt-exist").Apply(context.Background(), bundle)
+	err := mutator.SelectTarget("doesnt-exist").Apply(context.Background(), b)
 	require.Error(t, err, "no targets defined")
 }

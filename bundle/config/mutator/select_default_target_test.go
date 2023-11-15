@@ -11,30 +11,30 @@ import (
 )
 
 func TestSelectDefaultTargetNoTargets(t *testing.T) {
-	bundle := &bundle.Bundle{
+	b := &bundle.Bundle{
 		Config: config.Root{
 			Targets: map[string]*config.Target{},
 		},
 	}
-	err := mutator.SelectDefaultTarget().Apply(context.Background(), bundle)
+	err := mutator.SelectDefaultTarget().Apply(context.Background(), b)
 	assert.ErrorContains(t, err, "no targets defined")
 }
 
 func TestSelectDefaultTargetSingleTargets(t *testing.T) {
-	bundle := &bundle.Bundle{
+	b := &bundle.Bundle{
 		Config: config.Root{
 			Targets: map[string]*config.Target{
 				"foo": {},
 			},
 		},
 	}
-	err := mutator.SelectDefaultTarget().Apply(context.Background(), bundle)
+	err := mutator.SelectDefaultTarget().Apply(context.Background(), b)
 	assert.NoError(t, err)
-	assert.Equal(t, "foo", bundle.Config.Bundle.Target)
+	assert.Equal(t, "foo", b.Config.Bundle.Target)
 }
 
 func TestSelectDefaultTargetNoDefaults(t *testing.T) {
-	bundle := &bundle.Bundle{
+	b := &bundle.Bundle{
 		Config: config.Root{
 			Targets: map[string]*config.Target{
 				"foo": {},
@@ -43,12 +43,12 @@ func TestSelectDefaultTargetNoDefaults(t *testing.T) {
 			},
 		},
 	}
-	err := mutator.SelectDefaultTarget().Apply(context.Background(), bundle)
+	err := mutator.SelectDefaultTarget().Apply(context.Background(), b)
 	assert.ErrorContains(t, err, "please specify target")
 }
 
 func TestSelectDefaultTargetNoDefaultsWithNil(t *testing.T) {
-	bundle := &bundle.Bundle{
+	b := &bundle.Bundle{
 		Config: config.Root{
 			Targets: map[string]*config.Target{
 				"foo": nil,
@@ -56,12 +56,12 @@ func TestSelectDefaultTargetNoDefaultsWithNil(t *testing.T) {
 			},
 		},
 	}
-	err := mutator.SelectDefaultTarget().Apply(context.Background(), bundle)
+	err := mutator.SelectDefaultTarget().Apply(context.Background(), b)
 	assert.ErrorContains(t, err, "please specify target")
 }
 
 func TestSelectDefaultTargetMultipleDefaults(t *testing.T) {
-	bundle := &bundle.Bundle{
+	b := &bundle.Bundle{
 		Config: config.Root{
 			Targets: map[string]*config.Target{
 				"foo": {Default: true},
@@ -70,12 +70,12 @@ func TestSelectDefaultTargetMultipleDefaults(t *testing.T) {
 			},
 		},
 	}
-	err := mutator.SelectDefaultTarget().Apply(context.Background(), bundle)
+	err := mutator.SelectDefaultTarget().Apply(context.Background(), b)
 	assert.ErrorContains(t, err, "multiple targets are marked as default")
 }
 
 func TestSelectDefaultTargetSingleDefault(t *testing.T) {
-	bundle := &bundle.Bundle{
+	b := &bundle.Bundle{
 		Config: config.Root{
 			Targets: map[string]*config.Target{
 				"foo": {},
@@ -84,7 +84,7 @@ func TestSelectDefaultTargetSingleDefault(t *testing.T) {
 			},
 		},
 	}
-	err := mutator.SelectDefaultTarget().Apply(context.Background(), bundle)
+	err := mutator.SelectDefaultTarget().Apply(context.Background(), b)
 	assert.NoError(t, err)
-	assert.Equal(t, "bar", bundle.Config.Bundle.Target)
+	assert.Equal(t, "bar", b.Config.Bundle.Target)
 }
