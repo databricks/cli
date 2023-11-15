@@ -45,7 +45,7 @@ func TestInitEnvironmentVariables(t *testing.T) {
 	t.Setenv("DATABRICKS_TOKEN", "foobar")
 	b.WorkspaceClient()
 
-	err = Initialize().Apply(context.Background(), b)
+	err = bundle.Apply(context.Background(), b, Initialize())
 	require.NoError(t, err)
 }
 
