@@ -83,7 +83,7 @@ func TestAccJobsMetadataFile(t *testing.T) {
 				},
 			},
 			Workspace: metadata.Workspace{
-				FilesPath: path.Join(root, "files"),
+				FilePath: path.Join(root, "files"),
 			},
 			Resources: metadata.Resources{
 				Jobs: map[string]*metadata.Job{

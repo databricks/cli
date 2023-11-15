@@ -46,6 +46,6 @@ func (m *compute) Apply(_ context.Context, b *bundle.Bundle) error {
 	b.Metadata.Config.Resources.Jobs = jobsMetadata
 
 	// Set file upload destination of the bundle in metadata
-	b.Metadata.Config.Workspace.FilesPath = b.Config.Workspace.FilesPath
+	b.Metadata.Config.Workspace.FilePath = b.Config.Workspace.FilePath
 	return nil
 }

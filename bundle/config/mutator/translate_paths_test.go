@@ -39,7 +39,7 @@ func TestTranslatePathsSkippedWithGitSource(t *testing.T) {
 		Config: config.Root{
 			Path: dir,
 			Workspace: config.Workspace{
-				FilesPath: "/bundle",
+				FilePath: "/bundle",
 			},
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
@@ -111,7 +111,7 @@ func TestTranslatePaths(t *testing.T) {
 		Config: config.Root{
 			Path: dir,
 			Workspace: config.Workspace{
-				FilesPath: "/bundle",
+				FilePath: "/bundle",
 			},
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
@@ -282,7 +282,7 @@ func TestTranslatePathsInSubdirectories(t *testing.T) {
 		Config: config.Root{
 			Path: dir,
 			Workspace: config.Workspace{
-				FilesPath: "/bundle",
+				FilePath: "/bundle",
 			},
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
@@ -380,7 +380,7 @@ func TestTranslatePathsOutsideBundleRoot(t *testing.T) {
 		Config: config.Root{
 			Path: dir,
 			Workspace: config.Workspace{
-				FilesPath: "/bundle",
+				FilePath: "/bundle",
 			},
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
@@ -539,7 +539,7 @@ func TestJobSparkPythonTaskWithNotebookSourceError(t *testing.T) {
 		Config: config.Root{
 			Path: dir,
 			Workspace: config.Workspace{
-				FilesPath: "/bundle",
+				FilePath: "/bundle",
 			},
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
@@ -574,7 +574,7 @@ func TestJobNotebookTaskWithFileSourceError(t *testing.T) {
 		Config: config.Root{
 			Path: dir,
 			Workspace: config.Workspace{
-				FilesPath: "/bundle",
+				FilePath: "/bundle",
 			},
 			Resources: config.Resources{
 				Jobs: map[string]*resources.Job{
@@ -609,7 +609,7 @@ func TestPipelineNotebookLibraryWithFileSourceError(t *testing.T) {
 		Config: config.Root{
 			Path: dir,
 			Workspace: config.Workspace{
-				FilesPath: "/bundle",
+				FilePath: "/bundle",
 			},
 			Resources: config.Resources{
 				Pipelines: map[string]*resources.Pipeline{
@@ -644,7 +644,7 @@ func TestPipelineFileLibraryWithNotebookSourceError(t *testing.T) {
 		Config: config.Root{
 			Path: dir,
 			Workspace: config.Workspace{
-				FilesPath: "/bundle",
+				FilePath: "/bundle",
 			},
 			Resources: config.Resources{
 				Pipelines: map[string]*resources.Pipeline{
