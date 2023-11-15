@@ -27,7 +27,7 @@ func TestInitEnvironmentVariables(t *testing.T) {
 		t.Skipf("cannot find terraform binary: %s", err)
 	}
 
-	bundle := &bundle.Bundle{
+	b := &bundle.Bundle{
 		Config: config.Root{
 			Path: t.TempDir(),
 			Bundle: config.Bundle{
@@ -43,9 +43,9 @@ func TestInitEnvironmentVariables(t *testing.T) {
 	// TODO(pietern): create test fixture that initializes a mocked client.
 	t.Setenv("DATABRICKS_HOST", "https://x")
 	t.Setenv("DATABRICKS_TOKEN", "foobar")
-	bundle.WorkspaceClient()
+	b.WorkspaceClient()
 
-	err = Initialize().Apply(context.Background(), bundle)
+	err = bundle.Apply(context.Background(), b, Initialize())
 	require.NoError(t, err)
 }
 
