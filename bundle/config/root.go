@@ -295,17 +295,14 @@ func (r *Root) MergeTargetOverrides(name string) error {
 		return err
 	}
 
+	if err = mergeField("permissions"); err != nil {
+		return err
+	}
+
 	// Convert normalized configuration tree to typed configuration.
 	err = convert.ToTyped(r, r.value)
 	if err != nil {
 		panic(err)
-	}
-
-	if target.Permissions != nil {
-		err = mergo.Merge(&r.Permissions, target.Permissions, mergo.WithAppendSlice)
-		if err != nil {
-			return err
-		}
 	}
 
 	return nil
