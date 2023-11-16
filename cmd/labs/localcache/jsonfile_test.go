@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"runtime"
 	"testing"
 	"time"
 
@@ -25,6 +26,9 @@ func TestCreatesDirectoryIfNeeded(t *testing.T) {
 }
 
 func TestImpossibleToCreateDir(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("No /dev/null on windows")
+	}
 	ctx := context.Background()
 	c := NewLocalCache[int64]("/dev/null", "some/nested/file", 1*time.Minute)
 	thing := []int64{0}
@@ -91,6 +95,9 @@ func TestSupportOfflineSystem(t *testing.T) {
 }
 
 func TestFolderDisappears(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("No /dev/null on windows")
+	}
 	c := NewLocalCache[int64]("/dev/null", "time", 1*time.Minute)
 	tick := func() (int64, error) {
 		now := time.Now().UnixNano()
