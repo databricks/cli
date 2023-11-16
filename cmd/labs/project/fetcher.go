@@ -112,10 +112,6 @@ type fetcher struct {
 func (f *fetcher) checkReleasedVersions(cmd *cobra.Command, version string) (string, error) {
 	ctx := cmd.Context()
 	cacheDir := PathInLabs(ctx, f.name, "cache")
-	err := os.MkdirAll(cacheDir, ownerRWXworldRX)
-	if err != nil {
-		return "", fmt.Errorf("make cache dir: %w", err)
-	}
 	// `databricks labs isntall X` doesn't know which exact version to fetch, so first
 	// we fetch all versions and then pick the latest one dynamically.
 	versions, err := github.NewReleaseCache("databrickslabs", f.name, cacheDir).Load(ctx)

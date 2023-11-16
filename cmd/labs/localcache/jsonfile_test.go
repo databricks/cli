@@ -11,6 +11,31 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestCreatesDirectoryIfNeeded(t *testing.T) {
+	ctx := context.Background()
+	c := NewLocalCache[int64](t.TempDir(), "some/nested/file", 1*time.Minute)
+	thing := []int64{0}
+	tick := func() (int64, error) {
+		thing[0] += 1
+		return thing[0], nil
+	}
+	first, err := c.Load(ctx, tick)
+	assert.NoError(t, err)
+	assert.Equal(t, first, int64(1))
+}
+
+func TestImpossibleToCreateDir(t *testing.T) {
+	ctx := context.Background()
+	c := NewLocalCache[int64]("/dev/null", "some/nested/file", 1*time.Minute)
+	thing := []int64{0}
+	tick := func() (int64, error) {
+		thing[0] += 1
+		return thing[0], nil
+	}
+	_, err := c.Load(ctx, tick)
+	assert.Error(t, err)
+}
+
 func TestRefreshes(t *testing.T) {
 	ctx := context.Background()
 	c := NewLocalCache[int64](t.TempDir(), "time", 1*time.Minute)
