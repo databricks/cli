@@ -57,7 +57,7 @@ func getBytes(ctx context.Context, method, url string, body io.Reader) ([]byte, 
 	return io.ReadAll(res.Body)
 }
 
-func httpGetAndUnmarshall(ctx context.Context, url string, response any) error {
+func httpGetAndUnmarshal(ctx context.Context, url string, response any) error {
 	raw, err := getBytes(ctx, "GET", url, nil)
 	if err != nil {
 		return err

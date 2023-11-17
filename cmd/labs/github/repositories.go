@@ -35,7 +35,7 @@ func getRepositories(ctx context.Context, org string) (Repositories, error) {
 	var repos Repositories
 	log.Debugf(ctx, "Loading repositories for %s from GitHub API", org)
 	url := fmt.Sprintf("%s/users/%s/repos", gitHubAPI, org)
-	err := httpGetAndUnmarshall(ctx, url, &repos)
+	err := httpGetAndUnmarshal(ctx, url, &repos)
 	return repos, err
 }
 
