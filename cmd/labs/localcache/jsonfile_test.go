@@ -41,6 +41,9 @@ func TestImpossibleToCreateDir(t *testing.T) {
 }
 
 func TestRefreshes(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("No /dev/null on windows")
+	}
 	ctx := context.Background()
 	c := NewLocalCache[int64](t.TempDir(), "time", 1*time.Minute)
 	thing := []int64{0}
