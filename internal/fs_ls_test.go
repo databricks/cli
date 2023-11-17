@@ -30,9 +30,9 @@ func TestAccFsLsForDbfs(t *testing.T) {
 
 	err = f.Mkdir(ctx, "a")
 	require.NoError(t, err)
-	err = f.Write(ctx, "a/hello.txt", strings.NewReader("abc"), filer.CreateParentDirectories)
+	err = f.Write(ctx, "a/hello.txt", strings.NewReader("abc"), -1, filer.CreateParentDirectories)
 	require.NoError(t, err)
-	err = f.Write(ctx, "bye.txt", strings.NewReader("def"))
+	err = f.Write(ctx, "bye.txt", strings.NewReader("def"), -1)
 	require.NoError(t, err)
 
 	stdout, stderr := RequireSuccessfulRun(t, "fs", "ls", "dbfs:"+tmpDir, "--output=json")
@@ -65,9 +65,9 @@ func TestAccFsLsForDbfsWithAbsolutePaths(t *testing.T) {
 
 	err = f.Mkdir(ctx, "a")
 	require.NoError(t, err)
-	err = f.Write(ctx, "a/hello.txt", strings.NewReader("abc"), filer.CreateParentDirectories)
+	err = f.Write(ctx, "a/hello.txt", strings.NewReader("abc"), -1, filer.CreateParentDirectories)
 	require.NoError(t, err)
-	err = f.Write(ctx, "bye.txt", strings.NewReader("def"))
+	err = f.Write(ctx, "bye.txt", strings.NewReader("def"), -1)
 	require.NoError(t, err)
 
 	stdout, stderr := RequireSuccessfulRun(t, "fs", "ls", "dbfs:"+tmpDir, "--output=json", "--absolute")
@@ -101,7 +101,7 @@ func TestAccFsLsForDbfsOnFile(t *testing.T) {
 
 	err = f.Mkdir(ctx, "a")
 	require.NoError(t, err)
-	err = f.Write(ctx, "a/hello.txt", strings.NewReader("abc"), filer.CreateParentDirectories)
+	err = f.Write(ctx, "a/hello.txt", strings.NewReader("abc"), -1, filer.CreateParentDirectories)
 	require.NoError(t, err)
 
 	_, _, err = RequireErrorRun(t, "fs", "ls", "dbfs:"+path.Join(tmpDir, "a", "hello.txt"), "--output=json")

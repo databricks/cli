@@ -20,6 +20,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
+	"github.com/schollz/progressbar/v3"
 )
 
 // Type that implements fs.DirEntry for WSFS.
@@ -79,6 +80,8 @@ type WorkspaceFilesClient struct {
 
 	// File operations will be relative to this path.
 	root WorkspaceRootPath
+
+	bar *progressbar.ProgressBar
 }
 
 func NewWorkspaceFilesClient(w *databricks.WorkspaceClient, root string) (Filer, error) {
@@ -95,7 +98,23 @@ func NewWorkspaceFilesClient(w *databricks.WorkspaceClient, root string) (Filer,
 	}, nil
 }
 
-func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io.Reader, mode ...WriteMode) error {
+func NewWorkspaceFilesClientWithProgressLogging(w *databricks.WorkspaceClient, root string) (Filer, error) {
+	apiClient, err := client.New(w.Config)
+	if err != nil {
+		return nil, err
+	}
+
+	return &WorkspaceFilesClient{
+		workspaceClient: w,
+		apiClient:       apiClient,
+
+		root: NewWorkspaceRootPath(root),
+
+		bar: progressbar.DefaultBytes(100),
+	}, nil
+}
+
+func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io.Reader, size int64, mode ...WriteMode) error {
 	absPath, err := w.root.Join(name)
 	if err != nil {
 		return err
@@ -115,7 +134,14 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 		return err
 	}
 
-	err = w.apiClient.Do(ctx, http.MethodPost, urlPath, nil, body, nil)
+	var r io.Reader = bytes.NewBuffer(body)
+	if w.bar != nil {
+		w.bar.ChangeMax64(size)
+		reader := progressbar.NewReader(r, w.bar)
+		r = &reader
+	}
+
+	err = w.apiClient.Do(ctx, http.MethodPost, urlPath, nil, r, nil)
 
 	// Return early on success.
 	if err == nil {
@@ -141,7 +167,7 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 		}
 
 		// Retry without CreateParentDirectories mode flag.
-		return w.Write(ctx, name, bytes.NewReader(body), sliceWithout(mode, CreateParentDirectories)...)
+		return w.Write(ctx, name, bytes.NewReader(body), int64(len(body)), sliceWithout(mode, CreateParentDirectories)...)
 	}
 
 	// This API returns 409 if the file already exists, when the object type is file

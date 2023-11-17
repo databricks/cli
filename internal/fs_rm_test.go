@@ -26,7 +26,7 @@ func TestAccFsRmForFile(t *testing.T) {
 	require.NoError(t, err)
 
 	// create file to delete
-	err = f.Write(ctx, "hello.txt", strings.NewReader("abc"))
+	err = f.Write(ctx, "hello.txt", strings.NewReader("abc"), -1)
 	require.NoError(t, err)
 
 	// check file was created
@@ -90,7 +90,7 @@ func TestAccFsRmForNonEmptyDirectory(t *testing.T) {
 	require.NoError(t, err)
 
 	// create file in dir
-	err = f.Write(ctx, "avacado/guacamole", strings.NewReader("abc"), filer.CreateParentDirectories)
+	err = f.Write(ctx, "avacado/guacamole", strings.NewReader("abc"), -1, filer.CreateParentDirectories)
 	require.NoError(t, err)
 
 	// check file was created
@@ -126,7 +126,7 @@ func TestAccFsRmForNonEmptyDirectoryWithRecursiveFlag(t *testing.T) {
 	require.NoError(t, err)
 
 	// create file in dir
-	err = f.Write(ctx, "avacado/guacamole", strings.NewReader("abc"), filer.CreateParentDirectories)
+	err = f.Write(ctx, "avacado/guacamole", strings.NewReader("abc"), -1, filer.CreateParentDirectories)
 	require.NoError(t, err)
 
 	// check file was created

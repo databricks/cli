@@ -67,7 +67,7 @@ func (s *Sync) applyPut(ctx context.Context, localName string) error {
 	defer localFile.Close()
 
 	opts := []filer.WriteMode{filer.CreateParentDirectories, filer.OverwriteIfExists}
-	err = s.filer.Write(ctx, localName, localFile, opts...)
+	err = s.filer.Write(ctx, localName, localFile, -1, opts...)
 	if err != nil {
 		return err
 	}

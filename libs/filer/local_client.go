@@ -21,7 +21,7 @@ func NewLocalClient(root string) (Filer, error) {
 	}, nil
 }
 
-func (w *LocalClient) Write(ctx context.Context, name string, reader io.Reader, mode ...WriteMode) error {
+func (w *LocalClient) Write(ctx context.Context, name string, reader io.Reader, size int64, mode ...WriteMode) error {
 	absPath, err := w.root.Join(name)
 	if err != nil {
 		return err

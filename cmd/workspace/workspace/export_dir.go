@@ -116,7 +116,7 @@ func newExportDir() *cobra.Command {
 		opts.targetDir = args[1]
 
 		// Initialize a filer and a file system on the source directory
-		workspaceFiler, err := filer.NewWorkspaceFilesClient(w, opts.sourceDir)
+		workspaceFiler, err := filer.NewWorkspaceFilesClientWithProgressLogging(w, opts.sourceDir)
 		if err != nil {
 			return err
 		}

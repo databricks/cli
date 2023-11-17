@@ -15,6 +15,7 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/files"
+	progressbar "github.com/schollz/progressbar/v3"
 )
 
 // Type that implements fs.DirEntry for DBFS.
@@ -69,6 +70,8 @@ type DbfsClient struct {
 
 	// File operations will be relative to this path.
 	root WorkspaceRootPath
+
+	bar *progressbar.ProgressBar
 }
 
 func NewDbfsClient(w *databricks.WorkspaceClient, root string) (Filer, error) {
@@ -79,7 +82,16 @@ func NewDbfsClient(w *databricks.WorkspaceClient, root string) (Filer, error) {
 	}, nil
 }
 
-func (w *DbfsClient) Write(ctx context.Context, name string, reader io.Reader, mode ...WriteMode) error {
+func NewDbfsClientWithProgressLogging(w *databricks.WorkspaceClient, root string) (Filer, error) {
+	return &DbfsClient{
+		workspaceClient: w,
+
+		root: NewWorkspaceRootPath(root),
+		bar:  progressbar.DefaultBytes(100, "uploading"),
+	}, nil
+}
+
+func (w *DbfsClient) Write(ctx context.Context, name string, reader io.Reader, size int64, mode ...WriteMode) error {
 	absPath, err := w.root.Join(name)
 	if err != nil {
 		return err
@@ -131,7 +143,13 @@ func (w *DbfsClient) Write(ctx context.Context, name string, reader io.Reader, m
 		return err
 	}
 
-	_, err = io.Copy(handle, reader)
+	var writer io.Writer = handle
+	if w.bar != nil {
+		w.bar.ChangeMax64(size)
+		writer = io.MultiWriter(handle, w.bar)
+	}
+
+	_, err = io.Copy(writer, reader)
 	cerr := handle.Close()
 	if err == nil {
 		err = cerr

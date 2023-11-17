@@ -44,7 +44,7 @@ func runFilerReadWriteTest(t *testing.T, ctx context.Context, f filer.Filer) {
 	var err error
 
 	// Write should fail because the root path doesn't yet exist.
-	err = f.Write(ctx, "/foo/bar", strings.NewReader(`hello world`))
+	err = f.Write(ctx, "/foo/bar", strings.NewReader(`hello world`), -1)
 	assert.True(t, errors.As(err, &filer.NoSuchDirectoryError{}))
 	assert.True(t, errors.Is(err, fs.ErrNotExist))
 
@@ -60,22 +60,22 @@ func runFilerReadWriteTest(t *testing.T, ctx context.Context, f filer.Filer) {
 	assert.ErrorIs(t, err, fs.ErrInvalid)
 
 	// Write with CreateParentDirectories flag should succeed.
-	err = f.Write(ctx, "/foo/bar", strings.NewReader(`hello world`), filer.CreateParentDirectories)
+	err = f.Write(ctx, "/foo/bar", strings.NewReader(`hello world`), -1, filer.CreateParentDirectories)
 	assert.NoError(t, err)
 	filerTest{t, f}.assertContents(ctx, "/foo/bar", `hello world`)
 
 	// Write should fail because there is an existing file at the specified path.
-	err = f.Write(ctx, "/foo/bar", strings.NewReader(`hello universe`))
+	err = f.Write(ctx, "/foo/bar", strings.NewReader(`hello universe`), -1)
 	assert.True(t, errors.As(err, &filer.FileAlreadyExistsError{}))
 	assert.True(t, errors.Is(err, fs.ErrExist))
 
 	// Write with OverwriteIfExists should succeed.
-	err = f.Write(ctx, "/foo/bar", strings.NewReader(`hello universe`), filer.OverwriteIfExists)
+	err = f.Write(ctx, "/foo/bar", strings.NewReader(`hello universe`), -1, filer.OverwriteIfExists)
 	assert.NoError(t, err)
 	filerTest{t, f}.assertContents(ctx, "/foo/bar", `hello universe`)
 
 	// Write should succeed if there is no existing file at the specified path.
-	err = f.Write(ctx, "/foo/qux", strings.NewReader(`hello universe`))
+	err = f.Write(ctx, "/foo/qux", strings.NewReader(`hello universe`), -1)
 	assert.NoError(t, err)
 
 	// Stat on a directory should succeed.
@@ -134,7 +134,7 @@ func runFilerReadDirTest(t *testing.T, ctx context.Context, f filer.Filer) {
 	assert.Len(t, entries, 0)
 
 	// Write a file.
-	err = f.Write(ctx, "/hello.txt", strings.NewReader(`hello world`))
+	err = f.Write(ctx, "/hello.txt", strings.NewReader(`hello world`), -1)
 	require.NoError(t, err)
 
 	// Create a directory.
@@ -142,7 +142,7 @@ func runFilerReadDirTest(t *testing.T, ctx context.Context, f filer.Filer) {
 	require.NoError(t, err)
 
 	// Write a file.
-	err = f.Write(ctx, "/dir/world.txt", strings.NewReader(`hello world`))
+	err = f.Write(ctx, "/dir/world.txt", strings.NewReader(`hello world`), -1)
 	require.NoError(t, err)
 
 	// Create a nested directory (check that it creates intermediate directories).
@@ -197,7 +197,7 @@ func runFilerReadDirTest(t *testing.T, ctx context.Context, f filer.Filer) {
 	assert.Len(t, entries, 0)
 
 	// Expect one entry for a directory with a file in it
-	err = f.Write(ctx, "dir-with-one-file/my-file.txt", strings.NewReader("abc"), filer.CreateParentDirectories)
+	err = f.Write(ctx, "dir-with-one-file/my-file.txt", strings.NewReader("abc"), -1, filer.CreateParentDirectories)
 	require.NoError(t, err)
 	entries, err = f.ReadDir(ctx, "dir-with-one-file")
 	assert.NoError(t, err)
@@ -309,15 +309,15 @@ func TestAccFilerWorkspaceNotebookConflict(t *testing.T) {
 	var err error
 
 	// Upload the notebooks
-	err = f.Write(ctx, "pyNb.py", strings.NewReader("# Databricks notebook source\nprint('first upload'))"))
+	err = f.Write(ctx, "pyNb.py", strings.NewReader("# Databricks notebook source\nprint('first upload'))"), -1)
 	require.NoError(t, err)
-	err = f.Write(ctx, "rNb.r", strings.NewReader("# Databricks notebook source\nprint('first upload'))"))
+	err = f.Write(ctx, "rNb.r", strings.NewReader("# Databricks notebook source\nprint('first upload'))"), -1)
 	require.NoError(t, err)
-	err = f.Write(ctx, "sqlNb.sql", strings.NewReader("-- Databricks notebook source\n SELECT \"first upload\""))
+	err = f.Write(ctx, "sqlNb.sql", strings.NewReader("-- Databricks notebook source\n SELECT \"first upload\""), -1)
 	require.NoError(t, err)
-	err = f.Write(ctx, "scalaNb.scala", strings.NewReader("// Databricks notebook source\n println(\"first upload\"))"))
+	err = f.Write(ctx, "scalaNb.scala", strings.NewReader("// Databricks notebook source\n println(\"first upload\"))"), -1)
 	require.NoError(t, err)
-	err = f.Write(ctx, "jupyterNb.ipynb", strings.NewReader(jupyterNotebookContent1))
+	err = f.Write(ctx, "jupyterNb.ipynb", strings.NewReader(jupyterNotebookContent1), -1)
 	require.NoError(t, err)
 
 	// Assert contents after initial upload
@@ -328,23 +328,23 @@ func TestAccFilerWorkspaceNotebookConflict(t *testing.T) {
 	filerTest{t, f}.assertContents(ctx, "jupyterNb", "# Databricks notebook source\nprint(\"Jupyter Notebook Version 1\")")
 
 	// Assert uploading a second time fails due to overwrite mode missing
-	err = f.Write(ctx, "pyNb.py", strings.NewReader("# Databricks notebook source\nprint('second upload'))"))
+	err = f.Write(ctx, "pyNb.py", strings.NewReader("# Databricks notebook source\nprint('second upload'))"), -1)
 	assert.ErrorIs(t, err, fs.ErrExist)
 	assert.Regexp(t, regexp.MustCompile(`file already exists: .*/pyNb$`), err.Error())
 
-	err = f.Write(ctx, "rNb.r", strings.NewReader("# Databricks notebook source\nprint('second upload'))"))
+	err = f.Write(ctx, "rNb.r", strings.NewReader("# Databricks notebook source\nprint('second upload'))"), -1)
 	assert.ErrorIs(t, err, fs.ErrExist)
 	assert.Regexp(t, regexp.MustCompile(`file already exists: .*/rNb$`), err.Error())
 
-	err = f.Write(ctx, "sqlNb.sql", strings.NewReader("# Databricks notebook source\n SELECT \"second upload\")"))
+	err = f.Write(ctx, "sqlNb.sql", strings.NewReader("# Databricks notebook source\n SELECT \"second upload\")"), -1)
 	assert.ErrorIs(t, err, fs.ErrExist)
 	assert.Regexp(t, regexp.MustCompile(`file already exists: .*/sqlNb$`), err.Error())
 
-	err = f.Write(ctx, "scalaNb.scala", strings.NewReader("# Databricks notebook source\n println(\"second upload\"))"))
+	err = f.Write(ctx, "scalaNb.scala", strings.NewReader("# Databricks notebook source\n println(\"second upload\"))"), -1)
 	assert.ErrorIs(t, err, fs.ErrExist)
 	assert.Regexp(t, regexp.MustCompile(`file already exists: .*/scalaNb$`), err.Error())
 
-	err = f.Write(ctx, "jupyterNb.ipynb", strings.NewReader(jupyterNotebookContent2))
+	err = f.Write(ctx, "jupyterNb.ipynb", strings.NewReader(jupyterNotebookContent2), -1)
 	assert.ErrorIs(t, err, fs.ErrExist)
 	assert.Regexp(t, regexp.MustCompile(`file already exists: .*/jupyterNb$`), err.Error())
 }
@@ -354,15 +354,15 @@ func TestAccFilerWorkspaceNotebookWithOverwriteFlag(t *testing.T) {
 	var err error
 
 	// Upload notebooks
-	err = f.Write(ctx, "pyNb.py", strings.NewReader("# Databricks notebook source\nprint('first upload'))"))
+	err = f.Write(ctx, "pyNb.py", strings.NewReader("# Databricks notebook source\nprint('first upload'))"), -1)
 	require.NoError(t, err)
-	err = f.Write(ctx, "rNb.r", strings.NewReader("# Databricks notebook source\nprint('first upload'))"))
+	err = f.Write(ctx, "rNb.r", strings.NewReader("# Databricks notebook source\nprint('first upload'))"), -1)
 	require.NoError(t, err)
-	err = f.Write(ctx, "sqlNb.sql", strings.NewReader("-- Databricks notebook source\n SELECT \"first upload\""))
+	err = f.Write(ctx, "sqlNb.sql", strings.NewReader("-- Databricks notebook source\n SELECT \"first upload\""), -1)
 	require.NoError(t, err)
-	err = f.Write(ctx, "scalaNb.scala", strings.NewReader("// Databricks notebook source\n println(\"first upload\"))"))
+	err = f.Write(ctx, "scalaNb.scala", strings.NewReader("// Databricks notebook source\n println(\"first upload\"))"), -1)
 	require.NoError(t, err)
-	err = f.Write(ctx, "jupyterNb.ipynb", strings.NewReader(jupyterNotebookContent1))
+	err = f.Write(ctx, "jupyterNb.ipynb", strings.NewReader(jupyterNotebookContent1), -1)
 	require.NoError(t, err)
 
 	// Assert contents after initial upload
@@ -373,15 +373,15 @@ func TestAccFilerWorkspaceNotebookWithOverwriteFlag(t *testing.T) {
 	filerTest{t, f}.assertContents(ctx, "jupyterNb", "# Databricks notebook source\nprint(\"Jupyter Notebook Version 1\")")
 
 	// Upload notebooks a second time, overwriting the initial uplaods
-	err = f.Write(ctx, "pyNb.py", strings.NewReader("# Databricks notebook source\nprint('second upload'))"), filer.OverwriteIfExists)
+	err = f.Write(ctx, "pyNb.py", strings.NewReader("# Databricks notebook source\nprint('second upload'))"), -1, filer.OverwriteIfExists)
 	require.NoError(t, err)
-	err = f.Write(ctx, "rNb.r", strings.NewReader("# Databricks notebook source\nprint('second upload'))"), filer.OverwriteIfExists)
+	err = f.Write(ctx, "rNb.r", strings.NewReader("# Databricks notebook source\nprint('second upload'))"), -1, filer.OverwriteIfExists)
 	require.NoError(t, err)
-	err = f.Write(ctx, "sqlNb.sql", strings.NewReader("-- Databricks notebook source\n SELECT \"second upload\""), filer.OverwriteIfExists)
+	err = f.Write(ctx, "sqlNb.sql", strings.NewReader("-- Databricks notebook source\n SELECT \"second upload\""), -1, filer.OverwriteIfExists)
 	require.NoError(t, err)
-	err = f.Write(ctx, "scalaNb.scala", strings.NewReader("// Databricks notebook source\n println(\"second upload\"))"), filer.OverwriteIfExists)
+	err = f.Write(ctx, "scalaNb.scala", strings.NewReader("// Databricks notebook source\n println(\"second upload\"))"), -1, filer.OverwriteIfExists)
 	require.NoError(t, err)
-	err = f.Write(ctx, "jupyterNb.ipynb", strings.NewReader(jupyterNotebookContent2), filer.OverwriteIfExists)
+	err = f.Write(ctx, "jupyterNb.ipynb", strings.NewReader(jupyterNotebookContent2), -1, filer.OverwriteIfExists)
 	require.NoError(t, err)
 
 	// Assert contents have been overwritten
@@ -459,22 +459,22 @@ func TestAccFilerFilesApiReadWrite(t *testing.T) {
 	// assert.ErrorIs(t, err, fs.ErrInvalid)
 
 	// Write with CreateParentDirectories flag should succeed.
-	err = f.Write(ctx, "/foo/bar", strings.NewReader(`hello world`), filer.CreateParentDirectories)
+	err = f.Write(ctx, "/foo/bar", strings.NewReader(`hello world`), -1, filer.CreateParentDirectories)
 	assert.NoError(t, err)
 	filerTest{t, f}.assertContents(ctx, "/foo/bar", `hello world`)
 
 	// Write should fail because there is an existing file at the specified path.
-	err = f.Write(ctx, "/foo/bar", strings.NewReader(`hello universe`))
+	err = f.Write(ctx, "/foo/bar", strings.NewReader(`hello universe`), -1)
 	assert.True(t, errors.As(err, &filer.FileAlreadyExistsError{}))
 	assert.True(t, errors.Is(err, fs.ErrExist))
 
 	// Write with OverwriteIfExists should succeed.
-	err = f.Write(ctx, "/foo/bar", strings.NewReader(`hello universe`), filer.OverwriteIfExists)
+	err = f.Write(ctx, "/foo/bar", strings.NewReader(`hello universe`), -1, filer.OverwriteIfExists)
 	assert.NoError(t, err)
 	filerTest{t, f}.assertContents(ctx, "/foo/bar", `hello universe`)
 
 	// Write should succeed if there is no existing file at the specified path.
-	err = f.Write(ctx, "/foo/qux", strings.NewReader(`hello universe`))
+	err = f.Write(ctx, "/foo/qux", strings.NewReader(`hello universe`), -1)
 	assert.NoError(t, err)
 
 	// Stat on a directory should succeed.

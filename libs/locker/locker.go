@@ -118,7 +118,7 @@ func (locker *Locker) Write(ctx context.Context, pathToFile string, content []by
 	if !locker.Active {
 		return fmt.Errorf("failed to put file. deploy lock not held")
 	}
-	return locker.filer.Write(ctx, pathToFile, bytes.NewReader(content), filer.OverwriteIfExists, filer.CreateParentDirectories)
+	return locker.filer.Write(ctx, pathToFile, bytes.NewReader(content), int64(len(content)), filer.OverwriteIfExists, filer.CreateParentDirectories)
 }
 
 func (locker *Locker) Read(ctx context.Context, path string) (io.ReadCloser, error) {
@@ -150,7 +150,7 @@ func (locker *Locker) Lock(ctx context.Context, isForced bool) error {
 		modes = append(modes, filer.OverwriteIfExists)
 	}
 
-	err = locker.filer.Write(ctx, LockFileName, bytes.NewReader(buf), modes...)
+	err = locker.filer.Write(ctx, LockFileName, bytes.NewReader(buf), int64(len(buf)), modes...)
 	if err != nil {
 		// If the write failed because the lock file already exists, don't return
 		// the error and instead fall through to [assertLockHeld] below.

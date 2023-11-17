@@ -101,7 +101,7 @@ func (m *basicUpload) Apply(ctx context.Context, b *bundle.Bundle) error {
 		return err
 	}
 
-	client, err := filer.NewWorkspaceFilesClient(b.WorkspaceClient(), uploadPath)
+	client, err := filer.NewWorkspaceFilesClientWithProgressLogging(b.WorkspaceClient(), uploadPath)
 	if err != nil {
 		return err
 	}
@@ -151,7 +151,7 @@ func uploadArtifactFile(ctx context.Context, file string, uploadPath string, cli
 		return "", fmt.Errorf("unable to import %s: %w", remotePath, err)
 	}
 
-	err = client.Write(ctx, relPath, bytes.NewReader(raw), filer.OverwriteIfExists, filer.CreateParentDirectories)
+	err = client.Write(ctx, relPath, bytes.NewReader(raw), int64(len(raw)), filer.OverwriteIfExists, filer.CreateParentDirectories)
 	if err != nil {
 		return "", fmt.Errorf("unable to import %s: %w", remotePath, err)
 	}

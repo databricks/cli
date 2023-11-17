@@ -66,7 +66,7 @@ type fakeFiler struct {
 	entries map[string]fakeFileInfo
 }
 
-func (f *fakeFiler) Write(ctx context.Context, p string, reader io.Reader, mode ...WriteMode) error {
+func (f *fakeFiler) Write(ctx context.Context, p string, reader io.Reader, size int64, mode ...WriteMode) error {
 	return fmt.Errorf("not implemented")
 }
 
