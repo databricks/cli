@@ -113,6 +113,9 @@ func (e *Entrypoint) preparePython(ctx context.Context, environment map[string]s
 	//
 	// See https://docs.python.org/3/using/cmdline.html#envvar-PYTHONPATH
 	libDir := e.EffectiveLibDir(ctx)
+	// The intention for every install is to be sandboxed - not dependent on anything else than Python binary.
+	// Having ability to override PYTHONPATH in the mix will break this assumption. Need strong evidence that
+	// this is really needed.
 	environment["PYTHONPATH"] = e.joinPaths(libDir, filepath.Join(libDir, "src"))
 }
 
