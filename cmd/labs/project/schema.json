@@ -1,0 +1,126 @@
+{
+    "id": "https://raw.githubusercontent.com/databricks/cli/feat/labs/cmd/labs/project/schema.json#",
+    "$schema": "http://json-schema.org/draft-04/schema",
+    "definitions": {
+        "entrypoint": {
+            "type": "object",
+            "properties": {
+                "require_running_cluster": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "is_unauthenticated": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "is_account_level": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "is_bundle_aware": {
+                    "type": "boolean",
+                    "default": false
+                }
+            }
+        },
+        "hook": {
+            "type": "object",
+            "$ref": "#/definitions/entrypoint",
+            "unevaluatedProperties": true,
+            "properties": {
+                "script": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9_-/\\.]+$"
+                },
+                "min_runtime_version": {
+                    "type": "string",
+                    "pattern": "^[0-9]+.[0-9]+$"
+                },
+                "require_databricks_connect": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "warehouse_types": {
+                    "enum": [ "PRO", "CLASSIC", "TYPE_UNSPECIFIED" ]
+                }
+            }
+        },
+        "alphanum": {
+            "type": "string",
+            "pattern": "^[a-z0-9-]$"
+        },
+        "command": {
+            "type": "object",
+            "$ref": "#/definitions/entrypoint",
+            "unevaluatedProperties": true,
+            "required": ["name", "description"],
+            "properties": {
+                "name": {
+                    "$ref": "#/definitions/alphanum"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "table_template": {
+                    "type": "string"
+                },
+                "flags": {
+                    "$ref": "#/definitions/flag"
+                }
+            }
+        },
+        "flag": {
+            "type": "object",
+            "required": ["name", "description"],
+            "properties": {
+                "name": {
+                    "$ref": "#/definitions/alphanum"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "default": {}
+            }
+        }
+    },
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["name", "description", "entrypoint"],
+    "properties": {
+        "$version": {
+            "type": "integer",
+            "default": 1
+        },
+        "name": {
+            "$ref": "#/definitions/alphanum",
+            "description": "Name of the project"
+        },
+        "description": {
+            "type": "string",
+            "description": "Short description of the project"
+        },
+        "entrypoint": {
+            "type": "string",
+            "description": "Script that routes subcommands"
+        },
+        "min_python": {
+            "type": "string",
+            "pattern": "^3.[0-9]+$",
+            "description": "Minimal Python version required"
+        },
+        "install": {
+            "$ref": "#/definitions/hook",
+            "description": "Installation configuration"
+        },
+        "uninstall": {
+            "$ref": "#/definitions/hook"
+        },
+        "commands": {
+            "type": "array",
+            "description": "Exposed commands",
+            "items": {
+                "$ref": "#/definitions/command"
+            }
+        }
+    }
+}
