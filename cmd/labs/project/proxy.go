@@ -67,6 +67,8 @@ func (cp *proxy) runE(cmd *cobra.Command, _ []string) error {
 	return err
 }
 
+// [EXPERIMENTAL] this interface contract may change in the future.
+// See https://github.com/databricks/cli/issues/994
 func (cp *proxy) renderJsonAsTable(cmd *cobra.Command, args []string, envs map[string]string) error {
 	var buf bytes.Buffer
 	ctx := cmd.Context()

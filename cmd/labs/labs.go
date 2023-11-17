@@ -10,7 +10,7 @@ import (
 func New(ctx context.Context) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "labs",
-		Short: "Managge Databricks Labs installations",
+		Short: "Manage Databricks Labs installations",
 		Long:  `Manage experimental Databricks Labs apps`,
 	}
 

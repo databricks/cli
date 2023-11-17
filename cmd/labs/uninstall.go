@@ -13,7 +13,6 @@ func newUninstallCommand() *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		Short: "Uninstalls project",
 		ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-			// cobra.ShellCompDirectiveNoFileComp
 			var names []string
 			installed, _ := project.Installed(cmd.Context())
 			for _, v := range installed {
