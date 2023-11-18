@@ -3,9 +3,9 @@ package labs
 import (
 	"context"
 
-	"github.com/databricks/cli/cmd/labs/github"
 	"github.com/databricks/cli/cmd/labs/project"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/github"
 	"github.com/spf13/cobra"
 )
 

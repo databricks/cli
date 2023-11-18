@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/databricks/cli/cmd/labs/github"
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/github"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/python"
 	"github.com/databricks/databricks-sdk-go/logger"

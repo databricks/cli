@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/databricks/cli/cmd/labs/github"
+	"github.com/databricks/cli/libs/github"
 	"github.com/databricks/cli/libs/log"
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"

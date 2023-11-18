@@ -17,10 +17,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/databricks/cli/cmd/labs/github"
 	"github.com/databricks/cli/cmd/labs/project"
 	"github.com/databricks/cli/internal"
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/github"
 	"github.com/databricks/cli/libs/python"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/iam"

@@ -8,11 +8,11 @@ import (
 	"os"
 	"strings"
 
-	"github.com/databricks/cli/cmd/labs/github"
 	"github.com/databricks/cli/cmd/labs/unpack"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg"
 	"github.com/databricks/cli/libs/databrickscfg/cfgpickers"
+	"github.com/databricks/cli/libs/github"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/process"
 	"github.com/databricks/cli/libs/python"
