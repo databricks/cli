@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/databricks/cli/cmd/labs/localcache"
+	"github.com/databricks/cli/libs/localcache"
 	"github.com/databricks/cli/libs/log"
 )
 
