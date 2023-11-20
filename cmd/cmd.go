@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/cmd/configure"
 	"github.com/databricks/cli/cmd/fs"
 	"github.com/databricks/cli/cmd/labs"
+	"github.com/databricks/cli/cmd/openai"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/cmd/sync"
 	"github.com/databricks/cli/cmd/version"
@@ -74,6 +75,7 @@ func New(ctx context.Context) *cobra.Command {
 	cli.AddCommand(labs.New(ctx))
 	cli.AddCommand(sync.New())
 	cli.AddCommand(version.New())
+	cli.AddCommand(openai.New())
 
 	return cli
 }
