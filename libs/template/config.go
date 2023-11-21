@@ -105,32 +105,18 @@ func (c *config) isSkipped(p jsonschema.Property) bool {
 	}
 
 	// Check if conditions for skipping are satisfied
-	skip := true
 	for name, property := range p.Schema.SkipPromptIf.Properties {
 		if v, ok := c.values[name]; ok && v == property.Const {
 			continue
 		}
-		skip = false
-		break
+		return false
 	}
-
-	// Skip prompting and assign default value if conditions are satisfied
-	if skip {
-		c.values[p.Name] = p.Schema.Default
-	}
-
-	return skip
+	return true
 }
 
 // Prompts user for values for properties that do not have a value set yet
 func (c *config) promptForValues(r *renderer) error {
 	for _, p := range c.schema.OrderedProperties() {
-
-		// Skip prompting if we can.
-		if c.isSkipped(p) {
-			continue
-		}
-
 		name := p.Name
 		property := p.Schema
 
@@ -151,6 +137,15 @@ func (c *config) promptForValues(r *renderer) error {
 			if err != nil {
 				return err
 			}
+		}
+
+		// Skip prompting if we can.
+		if c.isSkipped(p) {
+			c.values[name], err = property.ParseString(defaultVal)
+			if err != nil {
+				return err
+			}
+			continue
 		}
 
 		description, err := r.executeTemplate(property.Description)
