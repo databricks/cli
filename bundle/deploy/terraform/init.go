@@ -120,8 +120,6 @@ func setTempDirEnvVars(ctx context.Context, environ map[string]string, b *bundle
 			environ["TMP"] = v
 		} else if v, ok := env.Lookup(ctx, "TEMP"); ok {
 			environ["TEMP"] = v
-		} else if v, ok := env.Lookup(ctx, "USERPROFILE"); ok {
-			environ["USERPROFILE"] = v
 		} else {
 			tmpDir, err := b.CacheDir(ctx, "tmp")
 			if err != nil {
