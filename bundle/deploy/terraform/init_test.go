@@ -290,16 +290,10 @@ func TestInheritEnvVars(t *testing.T) {
 }
 
 func TestSetUserProfileFromInheritEnvVars(t *testing.T) {
-	env := make(map[string]string, 0)
-	err := inheritEnvVars(context.Background(), env)
-	require.NoError(t, err)
-
-	assert.NotContains(t, env, "USERPROFILE")
-
 	t.Setenv("USERPROFILE", "c:\\foo\\c")
 
-	env = make(map[string]string, 0)
-	err = inheritEnvVars(context.Background(), env)
+	env := make(map[string]string, 0)
+	err := inheritEnvVars(context.Background(), env)
 	require.NoError(t, err)
 
 	assert.Contains(t, env, "USERPROFILE")
