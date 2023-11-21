@@ -81,6 +81,13 @@ func inheritEnvVars(ctx context.Context, environ map[string]string) error {
 		environ["HOME"] = home
 	}
 
+	// Include $USERPROFILE in set of environment variables to pass along.
+	// This variable is used by Azure CLI on Windows to find stored credentials and metadata
+	userProfile, ok := env.Lookup(ctx, "USERPROFILE")
+	if ok {
+		environ["USERPROFILE"] = userProfile
+	}
+
 	// Include $PATH in set of environment variables to pass along.
 	// This is necessary to ensure that our Terraform provider can use the
 	// same auxiliary programs (e.g. `az`, or `gcloud`) as the CLI.
