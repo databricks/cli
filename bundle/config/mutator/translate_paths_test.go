@@ -238,7 +238,7 @@ func TestTranslatePaths(t *testing.T) {
 	)
 	assert.Equal(
 		t,
-		"/bundle/dist/task.jar",
+		filepath.Join("dist", "task.jar"),
 		b.Config.Resources.Jobs["job"].Tasks[5].Libraries[0].Jar,
 	)
 	assert.Equal(
@@ -352,7 +352,7 @@ func TestTranslatePathsInSubdirectories(t *testing.T) {
 	)
 	assert.Equal(
 		t,
-		"/bundle/job/dist/task.jar",
+		filepath.Join("job", "dist", "task.jar"),
 		b.Config.Resources.Jobs["job"].Tasks[1].Libraries[0].Jar,
 	)
 	assert.Equal(

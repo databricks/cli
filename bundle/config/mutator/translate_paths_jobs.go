@@ -46,7 +46,7 @@ func transformWhlLibrary(resource any, dir string) *transformer {
 		dir,
 		&library.Whl,
 		"libraries.whl",
-		translateNoOp,
+		translateNoOp, // Does not convert to remote path but makes sure that nested paths resolved correctly
 	}
 }
 
@@ -88,7 +88,7 @@ func transformJarLibrary(resource any, dir string) *transformer {
 		dir,
 		&library.Jar,
 		"libraries.jar",
-		translateFilePath,
+		translateNoOp, // Does not convert to remote path but makes sure that nested paths resolved correctly
 	}
 }
 
