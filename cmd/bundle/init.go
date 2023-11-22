@@ -19,11 +19,6 @@ var gitUrlPrefixes = []string{
 	"git@",
 }
 
-var aliasedTemplates = map[string]string{
-	"mlops-stack":  "https://github.com/databricks/mlops-stacks",
-	"mlops-stacks": "https://github.com/databricks/mlops-stacks",
-}
-
 type nativeTemplate struct {
 	gitUrl      string
 	description string
@@ -32,11 +27,11 @@ type nativeTemplate struct {
 
 var nativeTemplates = map[string]nativeTemplate{
 	"default-python": {
-		description: "the default Python template",
+		description: "The default Python template",
 	},
 	"mlops-stacks": {
 		gitUrl:      "https://github.com/databricks/mlops-stacks",
-		description: "the MLOps Stacks template",
+		description: "The Databricks MLOps Stacks template. More information can be found at: https://github.com/databricks/mlops-stacks",
 		aliases:     []string{"mlops-stack"},
 	},
 }
