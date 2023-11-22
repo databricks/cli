@@ -152,11 +152,11 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 			return err
 		}
 		if b := bundle.GetOrNil(cmd.Context()); b != nil {
-			client, err := b.Config.Workspace.Client()
+			err = b.InitializeWorkspaceClient()
 			if err != nil {
-				return fmt.Errorf("cannot resolve bundle auth configuration: %w", err)
+				return err
 			}
-			cfg = client.Config
+			cfg = b.WorkspaceClient().Config
 		}
 	}
 

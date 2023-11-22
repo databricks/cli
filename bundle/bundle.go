@@ -125,7 +125,7 @@ func (b *Bundle) InitializeWorkspaceClient() error {
 	var err error
 	b.client, err = b.Config.Workspace.Client()
 	if err != nil {
-		return err
+		return fmt.Errorf("cannot resolve bundle auth configuration: %w", err)
 	}
 	return nil
 }
