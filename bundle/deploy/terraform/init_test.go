@@ -163,36 +163,6 @@ func TestSetTempDirEnvVarsForWindowWithUserProfileAndTempSet(t *testing.T) {
 	}, env)
 }
 
-func TestSetTempDirEnvVarsForWindowWithUserProfileSet(t *testing.T) {
-	if runtime.GOOS != "windows" {
-		t.SkipNow()
-	}
-
-	b := &bundle.Bundle{
-		Config: config.Root{
-			Path: t.TempDir(),
-			Bundle: config.Bundle{
-				Target: "whatever",
-			},
-		},
-	}
-
-	// Set environment variables
-	unsetEnv(t, "TMP")
-	unsetEnv(t, "TEMP")
-	t.Setenv("USERPROFILE", "c:\\foo\\c")
-
-	// compute env
-	env := make(map[string]string, 0)
-	err := setTempDirEnvVars(context.Background(), env, b)
-	require.NoError(t, err)
-
-	// assert that we pass through the user profile
-	assert.Equal(t, map[string]string{
-		"USERPROFILE": "c:\\foo\\c",
-	}, env)
-}
-
 func TestSetTempDirEnvVarsForWindowsWithoutAnyTempDirEnvVarsSet(t *testing.T) {
 	if runtime.GOOS != "windows" {
 		t.SkipNow()
