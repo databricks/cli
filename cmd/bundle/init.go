@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/databricks/cli/cmd/root"
@@ -45,11 +46,12 @@ func nativeTemplateDescriptions() string {
 }
 
 func nativeTemplateOptions() []string {
-	var options []string
-	for name := range nativeTemplates {
-		options = append(options, name)
+	keys := make([]string, 0, len(nativeTemplates))
+	for k := range nativeTemplates {
+		keys = append(keys, k)
 	}
-	return options
+	sort.Strings(keys)
+	return keys
 }
 
 func getURLForNativeTemplate(name string) string {
