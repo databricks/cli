@@ -120,11 +120,11 @@ func findIncorrectPath(b *bundle.Bundle, mode config.Mode) string {
 	if strings.Contains(b.Config.Workspace.StatePath, username) != containsExpected {
 		return "state_path"
 	}
-	if strings.Contains(b.Config.Workspace.FilesPath, username) != containsExpected {
-		return "files_path"
+	if strings.Contains(b.Config.Workspace.FilePath, username) != containsExpected {
+		return "file_path"
 	}
-	if strings.Contains(b.Config.Workspace.ArtifactsPath, username) != containsExpected {
-		return "artifacts_path"
+	if strings.Contains(b.Config.Workspace.ArtifactPath, username) != containsExpected {
+		return "artifact_path"
 	}
 	return ""
 }
