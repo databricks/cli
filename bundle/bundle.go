@@ -121,6 +121,15 @@ func TryLoad(ctx context.Context) (*Bundle, error) {
 	return Load(ctx, root)
 }
 
+func (b *Bundle) InitializeWorkspaceClient() error {
+	var err error
+	b.client, err = b.Config.Workspace.Client()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (b *Bundle) WorkspaceClient() *databricks.WorkspaceClient {
 	b.clientOnce.Do(func() {
 		var err error
