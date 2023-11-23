@@ -237,7 +237,7 @@
                       "description": "An optional continuous property for this job. The continuous property will ensure that there is always one run executing. Only one of `schedule` and `continuous` can be used.",
                       "properties": {
                         "pause_status": {
-                          "description": "Indicate whether the continuous execution of the job is paused or not. Defaults to UNPAUSED."
+                          "description": "Whether this trigger is paused or not."
                         }
                       }
                     },
@@ -363,7 +363,7 @@
                             "description": "A unique name for the job cluster. This field is required and must be unique within the job.\n`JobTaskSettings` may refer to this field to determine which cluster to launch for the task execution."
                           },
                           "new_cluster": {
-                            "description": "If new_cluster, a description of a cluster that is created for each task.",
+                            "description": "If new_cluster, a description of a cluster that is created for only for this task.",
                             "properties": {
                               "apply_policy_default_values": {
                                 "description": ""
@@ -413,7 +413,7 @@
                                     "description": "The bid price for AWS spot instances, as a percentage of the corresponding instance type's\non-demand price.\nFor example, if this field is set to 50, and the cluster needs a new `r3.xlarge` spot\ninstance, then the bid price is half of the price of\non-demand `r3.xlarge` instances. Similarly, if this field is set to 200, the bid price is twice\nthe price of on-demand `r3.xlarge` instances. If not specified, the default value is 100.\nWhen spot instances are requested for this cluster, only spot instances whose bid price\npercentage matches this field will be considered.\nNote that, for safety, we enforce this field to be no more than 10000.\n\nThe default value and documentation here should be kept consistent with\nCommonConf.defaultSpotBidPricePercent and CommonConf.maxSpotBidPricePercent."
                                   },
                                   "zone_id": {
-                                    "description": "Identifier for the availability zone/datacenter in which the cluster resides.\nThis string will be of a form like \"us-west-2a\". The provided availability\nzone must be in the same region as the Databricks deployment. For example, \"us-west-2a\"\nis not a valid zone id if the Databricks deployment resides in the \"us-east-1\" region.\nThis is an optional field at cluster creation, and if not specified, a default zone will be used.\nIf the zone specified is \"auto\", will try to place cluster in a zone with high availability,\nand will retry placement in a different AZ if there is not enough capacity.\nThe list of available zones as well as the default value can be found by using the\n`List Zones` method."
+                                    "description": "Identifier for the availability zone/datacenter in which the cluster resides.\nThis string will be of a form like \"us-west-2a\". The provided availability\nzone must be in the same region as the Databricks deployment. For example, \"us-west-2a\"\nis not a valid zone id if the Databricks deployment resides in the \"us-east-1\" region.\nThis is an optional field at cluster creation, and if not specified, a default zone will be used.\nIf the zone specified is \"auto\", will try to place cluster in a zone with high availability,\nand will retry placement in a different AZ if there is not enough capacity.\nSee [[AutoAZHelper.scala]] for more details.\nThe list of available zones as well as the default value can be found by using the\n`List Zones`_ method."
                                   }
                                 }
                               },
@@ -671,7 +671,7 @@
                       }
                     },
                     "max_concurrent_runs": {
-                      "description": "An optional maximum allowed number of concurrent runs of the job.\n\nSet this value if you want to be able to execute multiple runs of the same job concurrently. This is useful for example if you trigger your job on a frequent schedule and want to allow consecutive runs to overlap with each other, or if you want to trigger multiple runs which differ by their input parameters.\n\nThis setting affects only new runs. For example, suppose the job’s concurrency is 4 and there are 4 concurrent active runs. Then setting the concurrency to 3 won’t kill any of the active runs. However, from then on, new runs are skipped unless there are fewer than 3 active runs.\n\nThis value cannot exceed 1000. Setting this value to `0` causes all new runs to be skipped."
+                      "description": "An optional maximum allowed number of concurrent runs of the job.\n\nSet this value if you want to be able to execute multiple runs of the same job concurrently. This is useful for example if you trigger your job on a frequent schedule and want to allow consecutive runs to overlap with each other, or if you want to trigger multiple runs which differ by their input parameters.\n\nThis setting affects only new runs. For example, suppose the job’s concurrency is 4 and there are 4 concurrent active runs. Then setting the concurrency to 3 won’t kill any of the active runs. However, from then on, new runs are skipped unless there are fewer than 3 active runs.\n\nThis value cannot exceed 1000\\. Setting this value to `0` causes all new runs to be skipped."
                     },
                     "name": {
                       "description": "An optional name for the job. The maximum length is 4096 bytes in UTF-8 encoding."
@@ -744,7 +744,7 @@
                       "description": "An optional periodic schedule for this job. The default behavior is that the job only runs when triggered by clicking “Run Now” in the Jobs UI or sending an API request to `runNow`.",
                       "properties": {
                         "pause_status": {
-                          "description": "Indicate whether the continuous execution of the job is paused or not. Defaults to UNPAUSED."
+                          "description": "Whether this trigger is paused or not."
                         },
                         "quartz_cron_expression": {
                           "description": "A Cron expression using Quartz syntax that describes the schedule for a job.\nSee [Cron Trigger](http://www.quartz-scheduler.org/documentation/quartz-2.3.0/tutorials/crontrigger.html)\nfor details. This field is required.\"\n"
@@ -945,7 +945,7 @@
                             "description": "An optional minimal interval in milliseconds between the start of the failed run and the subsequent retry run. The default behavior is that unsuccessful runs are immediately retried."
                           },
                           "new_cluster": {
-                            "description": "If new_cluster, a description of a cluster that is created for each task.",
+                            "description": "If new_cluster, a description of a cluster that is created for only for this task.",
                             "properties": {
                               "apply_policy_default_values": {
                                 "description": ""
@@ -995,7 +995,7 @@
                                     "description": "The bid price for AWS spot instances, as a percentage of the corresponding instance type's\non-demand price.\nFor example, if this field is set to 50, and the cluster needs a new `r3.xlarge` spot\ninstance, then the bid price is half of the price of\non-demand `r3.xlarge` instances. Similarly, if this field is set to 200, the bid price is twice\nthe price of on-demand `r3.xlarge` instances. If not specified, the default value is 100.\nWhen spot instances are requested for this cluster, only spot instances whose bid price\npercentage matches this field will be considered.\nNote that, for safety, we enforce this field to be no more than 10000.\n\nThe default value and documentation here should be kept consistent with\nCommonConf.defaultSpotBidPricePercent and CommonConf.maxSpotBidPricePercent."
                                   },
                                   "zone_id": {
-                                    "description": "Identifier for the availability zone/datacenter in which the cluster resides.\nThis string will be of a form like \"us-west-2a\". The provided availability\nzone must be in the same region as the Databricks deployment. For example, \"us-west-2a\"\nis not a valid zone id if the Databricks deployment resides in the \"us-east-1\" region.\nThis is an optional field at cluster creation, and if not specified, a default zone will be used.\nIf the zone specified is \"auto\", will try to place cluster in a zone with high availability,\nand will retry placement in a different AZ if there is not enough capacity.\nThe list of available zones as well as the default value can be found by using the\n`List Zones` method."
+                                    "description": "Identifier for the availability zone/datacenter in which the cluster resides.\nThis string will be of a form like \"us-west-2a\". The provided availability\nzone must be in the same region as the Databricks deployment. For example, \"us-west-2a\"\nis not a valid zone id if the Databricks deployment resides in the \"us-east-1\" region.\nThis is an optional field at cluster creation, and if not specified, a default zone will be used.\nIf the zone specified is \"auto\", will try to place cluster in a zone with high availability,\nand will retry placement in a different AZ if there is not enough capacity.\nSee [[AutoAZHelper.scala]] for more details.\nThe list of available zones as well as the default value can be found by using the\n`List Zones`_ method."
                                   }
                                 }
                               },
@@ -1466,7 +1466,7 @@
                             "description": "An optional timeout applied to each run of this job task. A value of `0` means no timeout."
                           },
                           "webhook_notifications": {
-                            "description": "A collection of system notification IDs to notify when runs of this job begin or complete.",
+                            "description": "A collection of system notification IDs to notify when runs of this task begin or complete. The default behavior is to not send any system notifications.",
                             "properties": {
                               "on_duration_warning_threshold_exceeded": {
                                 "description": "An optional list of system notification IDs to call when the duration of a run exceeds the threshold specified for the `RUN_DURATION_SECONDS` metric in the `health` field. A maximum of 3 destinations can be specified for the `on_duration_warning_threshold_exceeded` property.",
@@ -1538,12 +1538,12 @@
                           }
                         },
                         "pause_status": {
-                          "description": "Indicate whether the continuous execution of the job is paused or not. Defaults to UNPAUSED."
+                          "description": "Whether this trigger is paused or not."
                         }
                       }
                     },
                     "webhook_notifications": {
-                      "description": "A collection of system notification IDs to notify when runs of this job begin or complete.",
+                      "description": "A collection of system notification IDs to notify when runs of this task begin or complete. The default behavior is to not send any system notifications.",
                       "properties": {
                         "on_duration_warning_threshold_exceeded": {
                           "description": "An optional list of system notification IDs to call when the duration of a run exceeds the threshold specified for the `RUN_DURATION_SECONDS` metric in the `health` field. A maximum of 3 destinations can be specified for the `on_duration_warning_threshold_exceeded` property.",
@@ -1874,7 +1874,7 @@
                                 "description": "The bid price for AWS spot instances, as a percentage of the corresponding instance type's\non-demand price.\nFor example, if this field is set to 50, and the cluster needs a new `r3.xlarge` spot\ninstance, then the bid price is half of the price of\non-demand `r3.xlarge` instances. Similarly, if this field is set to 200, the bid price is twice\nthe price of on-demand `r3.xlarge` instances. If not specified, the default value is 100.\nWhen spot instances are requested for this cluster, only spot instances whose bid price\npercentage matches this field will be considered.\nNote that, for safety, we enforce this field to be no more than 10000.\n\nThe default value and documentation here should be kept consistent with\nCommonConf.defaultSpotBidPricePercent and CommonConf.maxSpotBidPricePercent."
                               },
                               "zone_id": {
-                                "description": "Identifier for the availability zone/datacenter in which the cluster resides.\nThis string will be of a form like \"us-west-2a\". The provided availability\nzone must be in the same region as the Databricks deployment. For example, \"us-west-2a\"\nis not a valid zone id if the Databricks deployment resides in the \"us-east-1\" region.\nThis is an optional field at cluster creation, and if not specified, a default zone will be used.\nIf the zone specified is \"auto\", will try to place cluster in a zone with high availability,\nand will retry placement in a different AZ if there is not enough capacity.\nThe list of available zones as well as the default value can be found by using the\n`List Zones` method."
+                                "description": "Identifier for the availability zone/datacenter in which the cluster resides.\nThis string will be of a form like \"us-west-2a\". The provided availability\nzone must be in the same region as the Databricks deployment. For example, \"us-west-2a\"\nis not a valid zone id if the Databricks deployment resides in the \"us-east-1\" region.\nThis is an optional field at cluster creation, and if not specified, a default zone will be used.\nIf the zone specified is \"auto\", will try to place cluster in a zone with high availability,\nand will retry placement in a different AZ if there is not enough capacity.\nSee [[AutoAZHelper.scala]] for more details.\nThe list of available zones as well as the default value can be found by using the\n`List Zones`_ method."
                               }
                             }
                           },
@@ -2423,7 +2423,7 @@
                 "description": "An optional continuous property for this job. The continuous property will ensure that there is always one run executing. Only one of `schedule` and `continuous` can be used.",
                 "properties": {
                   "pause_status": {
-                    "description": "Indicate whether the continuous execution of the job is paused or not. Defaults to UNPAUSED."
+                    "description": "Whether this trigger is paused or not."
                   }
                 }
               },
@@ -2549,7 +2549,7 @@
                       "description": "A unique name for the job cluster. This field is required and must be unique within the job.\n`JobTaskSettings` may refer to this field to determine which cluster to launch for the task execution."
                     },
                     "new_cluster": {
-                      "description": "If new_cluster, a description of a cluster that is created for each task.",
+                      "description": "If new_cluster, a description of a cluster that is created for only for this task.",
                       "properties": {
                         "apply_policy_default_values": {
                           "description": ""
@@ -2599,7 +2599,7 @@
                               "description": "The bid price for AWS spot instances, as a percentage of the corresponding instance type's\non-demand price.\nFor example, if this field is set to 50, and the cluster needs a new `r3.xlarge` spot\ninstance, then the bid price is half of the price of\non-demand `r3.xlarge` instances. Similarly, if this field is set to 200, the bid price is twice\nthe price of on-demand `r3.xlarge` instances. If not specified, the default value is 100.\nWhen spot instances are requested for this cluster, only spot instances whose bid price\npercentage matches this field will be considered.\nNote that, for safety, we enforce this field to be no more than 10000.\n\nThe default value and documentation here should be kept consistent with\nCommonConf.defaultSpotBidPricePercent and CommonConf.maxSpotBidPricePercent."
                             },
                             "zone_id": {
-                              "description": "Identifier for the availability zone/datacenter in which the cluster resides.\nThis string will be of a form like \"us-west-2a\". The provided availability\nzone must be in the same region as the Databricks deployment. For example, \"us-west-2a\"\nis not a valid zone id if the Databricks deployment resides in the \"us-east-1\" region.\nThis is an optional field at cluster creation, and if not specified, a default zone will be used.\nIf the zone specified is \"auto\", will try to place cluster in a zone with high availability,\nand will retry placement in a different AZ if there is not enough capacity.\nThe list of available zones as well as the default value can be found by using the\n`List Zones` method."
+                              "description": "Identifier for the availability zone/datacenter in which the cluster resides.\nThis string will be of a form like \"us-west-2a\". The provided availability\nzone must be in the same region as the Databricks deployment. For example, \"us-west-2a\"\nis not a valid zone id if the Databricks deployment resides in the \"us-east-1\" region.\nThis is an optional field at cluster creation, and if not specified, a default zone will be used.\nIf the zone specified is \"auto\", will try to place cluster in a zone with high availability,\nand will retry placement in a different AZ if there is not enough capacity.\nSee [[AutoAZHelper.scala]] for more details.\nThe list of available zones as well as the default value can be found by using the\n`List Zones`_ method."
                             }
                           }
                         },
@@ -2857,7 +2857,7 @@
                 }
               },
               "max_concurrent_runs": {
-                "description": "An optional maximum allowed number of concurrent runs of the job.\n\nSet this value if you want to be able to execute multiple runs of the same job concurrently. This is useful for example if you trigger your job on a frequent schedule and want to allow consecutive runs to overlap with each other, or if you want to trigger multiple runs which differ by their input parameters.\n\nThis setting affects only new runs. For example, suppose the job’s concurrency is 4 and there are 4 concurrent active runs. Then setting the concurrency to 3 won’t kill any of the active runs. However, from then on, new runs are skipped unless there are fewer than 3 active runs.\n\nThis value cannot exceed 1000. Setting this value to `0` causes all new runs to be skipped."
+                "description": "An optional maximum allowed number of concurrent runs of the job.\n\nSet this value if you want to be able to execute multiple runs of the same job concurrently. This is useful for example if you trigger your job on a frequent schedule and want to allow consecutive runs to overlap with each other, or if you want to trigger multiple runs which differ by their input parameters.\n\nThis setting affects only new runs. For example, suppose the job’s concurrency is 4 and there are 4 concurrent active runs. Then setting the concurrency to 3 won’t kill any of the active runs. However, from then on, new runs are skipped unless there are fewer than 3 active runs.\n\nThis value cannot exceed 1000\\. Setting this value to `0` causes all new runs to be skipped."
               },
               "name": {
                 "description": "An optional name for the job. The maximum length is 4096 bytes in UTF-8 encoding."
@@ -2930,7 +2930,7 @@
                 "description": "An optional periodic schedule for this job. The default behavior is that the job only runs when triggered by clicking “Run Now” in the Jobs UI or sending an API request to `runNow`.",
                 "properties": {
                   "pause_status": {
-                    "description": "Indicate whether the continuous execution of the job is paused or not. Defaults to UNPAUSED."
+                    "description": "Whether this trigger is paused or not."
                   },
                   "quartz_cron_expression": {
                     "description": "A Cron expression using Quartz syntax that describes the schedule for a job.\nSee [Cron Trigger](http://www.quartz-scheduler.org/documentation/quartz-2.3.0/tutorials/crontrigger.html)\nfor details. This field is required.\"\n"
@@ -3131,7 +3131,7 @@
                       "description": "An optional minimal interval in milliseconds between the start of the failed run and the subsequent retry run. The default behavior is that unsuccessful runs are immediately retried."
                     },
                     "new_cluster": {
-                      "description": "If new_cluster, a description of a cluster that is created for each task.",
+                      "description": "If new_cluster, a description of a cluster that is created for only for this task.",
                       "properties": {
                         "apply_policy_default_values": {
                           "description": ""
@@ -3181,7 +3181,7 @@
                               "description": "The bid price for AWS spot instances, as a percentage of the corresponding instance type's\non-demand price.\nFor example, if this field is set to 50, and the cluster needs a new `r3.xlarge` spot\ninstance, then the bid price is half of the price of\non-demand `r3.xlarge` instances. Similarly, if this field is set to 200, the bid price is twice\nthe price of on-demand `r3.xlarge` instances. If not specified, the default value is 100.\nWhen spot instances are requested for this cluster, only spot instances whose bid price\npercentage matches this field will be considered.\nNote that, for safety, we enforce this field to be no more than 10000.\n\nThe default value and documentation here should be kept consistent with\nCommonConf.defaultSpotBidPricePercent and CommonConf.maxSpotBidPricePercent."
                             },
                             "zone_id": {
-                              "description": "Identifier for the availability zone/datacenter in which the cluster resides.\nThis string will be of a form like \"us-west-2a\". The provided availability\nzone must be in the same region as the Databricks deployment. For example, \"us-west-2a\"\nis not a valid zone id if the Databricks deployment resides in the \"us-east-1\" region.\nThis is an optional field at cluster creation, and if not specified, a default zone will be used.\nIf the zone specified is \"auto\", will try to place cluster in a zone with high availability,\nand will retry placement in a different AZ if there is not enough capacity.\nThe list of available zones as well as the default value can be found by using the\n`List Zones` method."
+                              "description": "Identifier for the availability zone/datacenter in which the cluster resides.\nThis string will be of a form like \"us-west-2a\". The provided availability\nzone must be in the same region as the Databricks deployment. For example, \"us-west-2a\"\nis not a valid zone id if the Databricks deployment resides in the \"us-east-1\" region.\nThis is an optional field at cluster creation, and if not specified, a default zone will be used.\nIf the zone specified is \"auto\", will try to place cluster in a zone with high availability,\nand will retry placement in a different AZ if there is not enough capacity.\nSee [[AutoAZHelper.scala]] for more details.\nThe list of available zones as well as the default value can be found by using the\n`List Zones`_ method."
                             }
                           }
                         },
@@ -3652,7 +3652,7 @@
                       "description": "An optional timeout applied to each run of this job task. A value of `0` means no timeout."
                     },
                     "webhook_notifications": {
-                      "description": "A collection of system notification IDs to notify when runs of this job begin or complete.",
+                      "description": "A collection of system notification IDs to notify when runs of this task begin or complete. The default behavior is to not send any system notifications.",
                       "properties": {
                         "on_duration_warning_threshold_exceeded": {
                           "description": "An optional list of system notification IDs to call when the duration of a run exceeds the threshold specified for the `RUN_DURATION_SECONDS` metric in the `health` field. A maximum of 3 destinations can be specified for the `on_duration_warning_threshold_exceeded` property.",
@@ -3724,12 +3724,12 @@
                     }
                   },
                   "pause_status": {
-                    "description": "Indicate whether the continuous execution of the job is paused or not. Defaults to UNPAUSED."
+                    "description": "Whether this trigger is paused or not."
                   }
                 }
               },
               "webhook_notifications": {
-                "description": "A collection of system notification IDs to notify when runs of this job begin or complete.",
+                "description": "A collection of system notification IDs to notify when runs of this task begin or complete. The default behavior is to not send any system notifications.",
                 "properties": {
                   "on_duration_warning_threshold_exceeded": {
                     "description": "An optional list of system notification IDs to call when the duration of a run exceeds the threshold specified for the `RUN_DURATION_SECONDS` metric in the `health` field. A maximum of 3 destinations can be specified for the `on_duration_warning_threshold_exceeded` property.",
@@ -4060,7 +4060,7 @@
                           "description": "The bid price for AWS spot instances, as a percentage of the corresponding instance type's\non-demand price.\nFor example, if this field is set to 50, and the cluster needs a new `r3.xlarge` spot\ninstance, then the bid price is half of the price of\non-demand `r3.xlarge` instances. Similarly, if this field is set to 200, the bid price is twice\nthe price of on-demand `r3.xlarge` instances. If not specified, the default value is 100.\nWhen spot instances are requested for this cluster, only spot instances whose bid price\npercentage matches this field will be considered.\nNote that, for safety, we enforce this field to be no more than 10000.\n\nThe default value and documentation here should be kept consistent with\nCommonConf.defaultSpotBidPricePercent and CommonConf.maxSpotBidPricePercent."
                         },
                         "zone_id": {
-                          "description": "Identifier for the availability zone/datacenter in which the cluster resides.\nThis string will be of a form like \"us-west-2a\". The provided availability\nzone must be in the same region as the Databricks deployment. For example, \"us-west-2a\"\nis not a valid zone id if the Databricks deployment resides in the \"us-east-1\" region.\nThis is an optional field at cluster creation, and if not specified, a default zone will be used.\nIf the zone specified is \"auto\", will try to place cluster in a zone with high availability,\nand will retry placement in a different AZ if there is not enough capacity.\nThe list of available zones as well as the default value can be found by using the\n`List Zones` method."
+                          "description": "Identifier for the availability zone/datacenter in which the cluster resides.\nThis string will be of a form like \"us-west-2a\". The provided availability\nzone must be in the same region as the Databricks deployment. For example, \"us-west-2a\"\nis not a valid zone id if the Databricks deployment resides in the \"us-east-1\" region.\nThis is an optional field at cluster creation, and if not specified, a default zone will be used.\nIf the zone specified is \"auto\", will try to place cluster in a zone with high availability,\nand will retry placement in a different AZ if there is not enough capacity.\nSee [[AutoAZHelper.scala]] for more details.\nThe list of available zones as well as the default value can be found by using the\n`List Zones`_ method."
                         }
                       }
                     },
@@ -4605,7 +4605,7 @@
                       "description": "An optional continuous property for this job. The continuous property will ensure that there is always one run executing. Only one of `schedule` and `continuous` can be used.",
                       "properties": {
                         "pause_status": {
-                          "description": "Indicate whether the continuous execution of the job is paused or not. Defaults to UNPAUSED."
+                          "description": "Whether this trigger is paused or not."
                         }
                       }
                     },
@@ -4731,7 +4731,7 @@
                             "description": "A unique name for the job cluster. This field is required and must be unique within the job.\n`JobTaskSettings` may refer to this field to determine which cluster to launch for the task execution."
                           },
                           "new_cluster": {
-                            "description": "If new_cluster, a description of a cluster that is created for each task.",
+                            "description": "If new_cluster, a description of a cluster that is created for only for this task.",
                             "properties": {
                               "apply_policy_default_values": {
                                 "description": ""
@@ -4781,7 +4781,7 @@
                                     "description": "The bid price for AWS spot instances, as a percentage of the corresponding instance type's\non-demand price.\nFor example, if this field is set to 50, and the cluster needs a new `r3.xlarge` spot\ninstance, then the bid price is half of the price of\non-demand `r3.xlarge` instances. Similarly, if this field is set to 200, the bid price is twice\nthe price of on-demand `r3.xlarge` instances. If not specified, the default value is 100.\nWhen spot instances are requested for this cluster, only spot instances whose bid price\npercentage matches this field will be considered.\nNote that, for safety, we enforce this field to be no more than 10000.\n\nThe default value and documentation here should be kept consistent with\nCommonConf.defaultSpotBidPricePercent and CommonConf.maxSpotBidPricePercent."
                                   },
                                   "zone_id": {
-                                    "description": "Identifier for the availability zone/datacenter in which the cluster resides.\nThis string will be of a form like \"us-west-2a\". The provided availability\nzone must be in the same region as the Databricks deployment. For example, \"us-west-2a\"\nis not a valid zone id if the Databricks deployment resides in the \"us-east-1\" region.\nThis is an optional field at cluster creation, and if not specified, a default zone will be used.\nIf the zone specified is \"auto\", will try to place cluster in a zone with high availability,\nand will retry placement in a different AZ if there is not enough capacity.\nThe list of available zones as well as the default value can be found by using the\n`List Zones` method."
+                                    "description": "Identifier for the availability zone/datacenter in which the cluster resides.\nThis string will be of a form like \"us-west-2a\". The provided availability\nzone must be in the same region as the Databricks deployment. For example, \"us-west-2a\"\nis not a valid zone id if the Databricks deployment resides in the \"us-east-1\" region.\nThis is an optional field at cluster creation, and if not specified, a default zone will be used.\nIf the zone specified is \"auto\", will try to place cluster in a zone with high availability,\nand will retry placement in a different AZ if there is not enough capacity.\nSee [[AutoAZHelper.scala]] for more details.\nThe list of available zones as well as the default value can be found by using the\n`List Zones`_ method."
                                   }
                                 }
                               },
@@ -5039,7 +5039,7 @@
                       }
                     },
                     "max_concurrent_runs": {
-                      "description": "An optional maximum allowed number of concurrent runs of the job.\n\nSet this value if you want to be able to execute multiple runs of the same job concurrently. This is useful for example if you trigger your job on a frequent schedule and want to allow consecutive runs to overlap with each other, or if you want to trigger multiple runs which differ by their input parameters.\n\nThis setting affects only new runs. For example, suppose the job’s concurrency is 4 and there are 4 concurrent active runs. Then setting the concurrency to 3 won’t kill any of the active runs. However, from then on, new runs are skipped unless there are fewer than 3 active runs.\n\nThis value cannot exceed 1000. Setting this value to `0` causes all new runs to be skipped."
+                      "description": "An optional maximum allowed number of concurrent runs of the job.\n\nSet this value if you want to be able to execute multiple runs of the same job concurrently. This is useful for example if you trigger your job on a frequent schedule and want to allow consecutive runs to overlap with each other, or if you want to trigger multiple runs which differ by their input parameters.\n\nThis setting affects only new runs. For example, suppose the job’s concurrency is 4 and there are 4 concurrent active runs. Then setting the concurrency to 3 won’t kill any of the active runs. However, from then on, new runs are skipped unless there are fewer than 3 active runs.\n\nThis value cannot exceed 1000\\. Setting this value to `0` causes all new runs to be skipped."
                     },
                     "name": {
                       "description": "An optional name for the job. The maximum length is 4096 bytes in UTF-8 encoding."
@@ -5112,7 +5112,7 @@
                       "description": "An optional periodic schedule for this job. The default behavior is that the job only runs when triggered by clicking “Run Now” in the Jobs UI or sending an API request to `runNow`.",
                       "properties": {
                         "pause_status": {
-                          "description": "Indicate whether the continuous execution of the job is paused or not. Defaults to UNPAUSED."
+                          "description": "Whether this trigger is paused or not."
                         },
                         "quartz_cron_expression": {
                           "description": "A Cron expression using Quartz syntax that describes the schedule for a job.\nSee [Cron Trigger](http://www.quartz-scheduler.org/documentation/quartz-2.3.0/tutorials/crontrigger.html)\nfor details. This field is required.\"\n"
@@ -5313,7 +5313,7 @@
                             "description": "An optional minimal interval in milliseconds between the start of the failed run and the subsequent retry run. The default behavior is that unsuccessful runs are immediately retried."
                           },
                           "new_cluster": {
-                            "description": "If new_cluster, a description of a cluster that is created for each task.",
+                            "description": "If new_cluster, a description of a cluster that is created for only for this task.",
                             "properties": {
                               "apply_policy_default_values": {
                                 "description": ""
@@ -5363,7 +5363,7 @@
                                     "description": "The bid price for AWS spot instances, as a percentage of the corresponding instance type's\non-demand price.\nFor example, if this field is set to 50, and the cluster needs a new `r3.xlarge` spot\ninstance, then the bid price is half of the price of\non-demand `r3.xlarge` instances. Similarly, if this field is set to 200, the bid price is twice\nthe price of on-demand `r3.xlarge` instances. If not specified, the default value is 100.\nWhen spot instances are requested for this cluster, only spot instances whose bid price\npercentage matches this field will be considered.\nNote that, for safety, we enforce this field to be no more than 10000.\n\nThe default value and documentation here should be kept consistent with\nCommonConf.defaultSpotBidPricePercent and CommonConf.maxSpotBidPricePercent."
                                   },
                                   "zone_id": {
-                                    "description": "Identifier for the availability zone/datacenter in which the cluster resides.\nThis string will be of a form like \"us-west-2a\". The provided availability\nzone must be in the same region as the Databricks deployment. For example, \"us-west-2a\"\nis not a valid zone id if the Databricks deployment resides in the \"us-east-1\" region.\nThis is an optional field at cluster creation, and if not specified, a default zone will be used.\nIf the zone specified is \"auto\", will try to place cluster in a zone with high availability,\nand will retry placement in a different AZ if there is not enough capacity.\nThe list of available zones as well as the default value can be found by using the\n`List Zones` method."
+                                    "description": "Identifier for the availability zone/datacenter in which the cluster resides.\nThis string will be of a form like \"us-west-2a\". The provided availability\nzone must be in the same region as the Databricks deployment. For example, \"us-west-2a\"\nis not a valid zone id if the Databricks deployment resides in the \"us-east-1\" region.\nThis is an optional field at cluster creation, and if not specified, a default zone will be used.\nIf the zone specified is \"auto\", will try to place cluster in a zone with high availability,\nand will retry placement in a different AZ if there is not enough capacity.\nSee [[AutoAZHelper.scala]] for more details.\nThe list of available zones as well as the default value can be found by using the\n`List Zones`_ method."
                                   }
                                 }
                               },
@@ -5834,7 +5834,7 @@
                             "description": "An optional timeout applied to each run of this job task. A value of `0` means no timeout."
                           },
                           "webhook_notifications": {
-                            "description": "A collection of system notification IDs to notify when runs of this job begin or complete.",
+                            "description": "A collection of system notification IDs to notify when runs of this task begin or complete. The default behavior is to not send any system notifications.",
                             "properties": {
                               "on_duration_warning_threshold_exceeded": {
                                 "description": "An optional list of system notification IDs to call when the duration of a run exceeds the threshold specified for the `RUN_DURATION_SECONDS` metric in the `health` field. A maximum of 3 destinations can be specified for the `on_duration_warning_threshold_exceeded` property.",
@@ -5906,12 +5906,12 @@
                           }
                         },
                         "pause_status": {
-                          "description": "Indicate whether the continuous execution of the job is paused or not. Defaults to UNPAUSED."
+                          "description": "Whether this trigger is paused or not."
                         }
                       }
                     },
                     "webhook_notifications": {
-                      "description": "A collection of system notification IDs to notify when runs of this job begin or complete.",
+                      "description": "A collection of system notification IDs to notify when runs of this task begin or complete. The default behavior is to not send any system notifications.",
                       "properties": {
                         "on_duration_warning_threshold_exceeded": {
                           "description": "An optional list of system notification IDs to call when the duration of a run exceeds the threshold specified for the `RUN_DURATION_SECONDS` metric in the `health` field. A maximum of 3 destinations can be specified for the `on_duration_warning_threshold_exceeded` property.",
@@ -6242,7 +6242,7 @@
                                 "description": "The bid price for AWS spot instances, as a percentage of the corresponding instance type's\non-demand price.\nFor example, if this field is set to 50, and the cluster needs a new `r3.xlarge` spot\ninstance, then the bid price is half of the price of\non-demand `r3.xlarge` instances. Similarly, if this field is set to 200, the bid price is twice\nthe price of on-demand `r3.xlarge` instances. If not specified, the default value is 100.\nWhen spot instances are requested for this cluster, only spot instances whose bid price\npercentage matches this field will be considered.\nNote that, for safety, we enforce this field to be no more than 10000.\n\nThe default value and documentation here should be kept consistent with\nCommonConf.defaultSpotBidPricePercent and CommonConf.maxSpotBidPricePercent."
                               },
                               "zone_id": {
-                                "description": "Identifier for the availability zone/datacenter in which the cluster resides.\nThis string will be of a form like \"us-west-2a\". The provided availability\nzone must be in the same region as the Databricks deployment. For example, \"us-west-2a\"\nis not a valid zone id if the Databricks deployment resides in the \"us-east-1\" region.\nThis is an optional field at cluster creation, and if not specified, a default zone will be used.\nIf the zone specified is \"auto\", will try to place cluster in a zone with high availability,\nand will retry placement in a different AZ if there is not enough capacity.\nThe list of available zones as well as the default value can be found by using the\n`List Zones` method."
+                                "description": "Identifier for the availability zone/datacenter in which the cluster resides.\nThis string will be of a form like \"us-west-2a\". The provided availability\nzone must be in the same region as the Databricks deployment. For example, \"us-west-2a\"\nis not a valid zone id if the Databricks deployment resides in the \"us-east-1\" region.\nThis is an optional field at cluster creation, and if not specified, a default zone will be used.\nIf the zone specified is \"auto\", will try to place cluster in a zone with high availability,\nand will retry placement in a different AZ if there is not enough capacity.\nSee [[AutoAZHelper.scala]] for more details.\nThe list of available zones as well as the default value can be found by using the\n`List Zones`_ method."
                               }
                             }
                           },
