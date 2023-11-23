@@ -1,6 +1,7 @@
 package terraform
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"io"
@@ -13,14 +14,38 @@ import (
 	"github.com/databricks/cli/libs/log"
 )
 
-type statePull struct{}
+type statePull struct {
+	filerFunc
+}
 
 func (l *statePull) Name() string {
 	return "terraform:state-pull"
 }
 
+func (l *statePull) remoteState(ctx context.Context, f filer.Filer) (*bytes.Buffer, error) {
+	// Download state file from filer to local cache directory.
+	remote, err := f.Read(ctx, TerraformStateFileName)
+	if err != nil {
+		// On first deploy this state file doesn't yet exist.
+		if errors.Is(err, fs.ErrNotExist) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	defer remote.Close()
+
+	var buf bytes.Buffer
+	_, err = io.Copy(&buf, remote)
+	if err != nil {
+		return nil, err
+	}
+
+	return &buf, nil
+}
+
 func (l *statePull) Apply(ctx context.Context, b *bundle.Bundle) error {
-	f, err := filer.NewWorkspaceFilesClient(b.WorkspaceClient(), b.Config.Workspace.StatePath)
+	f, err := l.filerFunc(b)
 	if err != nil {
 		return err
 	}
@@ -30,16 +55,14 @@ func (l *statePull) Apply(ctx context.Context, b *bundle.Bundle) error {
 		return err
 	}
 
-	// Download state file from filer to local cache directory.
-	log.Infof(ctx, "Opening remote state file")
-	remote, err := f.Read(ctx, TerraformStateFileName)
+	remote, err := l.remoteState(ctx, f)
 	if err != nil {
-		// On first deploy this state file doesn't yet exist.
-		if errors.Is(err, fs.ErrNotExist) {
-			log.Infof(ctx, "Remote state file does not exist")
-			return nil
-		}
+		log.Infof(ctx, "Unable to open remote state file: %s", err)
 		return err
+	}
+	if remote == nil {
+		log.Infof(ctx, "Remote state file does not exist")
+		return nil
 	}
 
 	// Expect the state file to live under dir.
@@ -49,7 +72,7 @@ func (l *statePull) Apply(ctx context.Context, b *bundle.Bundle) error {
 	}
 	defer local.Close()
 
-	if !IsLocalStateStale(local, remote) {
+	if !IsLocalStateStale(local, bytes.NewReader(remote.Bytes())) {
 		log.Infof(ctx, "Local state is the same or newer, ignoring remote state")
 		return nil
 	}
@@ -60,7 +83,7 @@ func (l *statePull) Apply(ctx context.Context, b *bundle.Bundle) error {
 
 	// Write file to disk.
 	log.Infof(ctx, "Writing remote state file to local cache directory")
-	_, err = io.Copy(local, remote)
+	_, err = io.Copy(local, bytes.NewReader(remote.Bytes()))
 	if err != nil {
 		return err
 	}
@@ -69,5 +92,5 @@ func (l *statePull) Apply(ctx context.Context, b *bundle.Bundle) error {
 }
 
 func StatePull() bundle.Mutator {
-	return &statePull{}
+	return &statePull{stateFiler}
 }

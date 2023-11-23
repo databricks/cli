@@ -47,10 +47,23 @@ func writeConfigFile(t *testing.T, config map[string]any) (string, error) {
 }
 
 func deployBundle(t *testing.T, path string) error {
+	return deployBundleWithVariables(t, path, nil)
+}
+
+func deployBundleWithVariables(t *testing.T, path string, vars map[string]string) error {
 	t.Setenv("BUNDLE_ROOT", path)
-	c := internal.NewCobraTestRunner(t, "bundle", "deploy", "--force-lock")
+	args := append([]string{"bundle", "deploy", "--force-lock"}, buildVariableArgs(vars)...)
+	c := internal.NewCobraTestRunner(t, args...)
 	_, _, err := c.Run()
 	return err
+}
+
+func buildVariableArgs(vars map[string]string) []string {
+	var args []string
+	for k, v := range vars {
+		args = append(args, "--var", k+"="+v)
+	}
+	return args
 }
 
 func runResource(t *testing.T, path string, key string) (string, error) {
