@@ -11,17 +11,25 @@ descriptions for the json schema. Specifically
 
 These descriptions are rendered in the inline documentation in an IDE
 
-### SOP: Add schema descriptions for new fields in bundle config
+### SOP: Manually add descriptions for DABs configs
 
-1. You can autogenerate empty descriptions for the new fields by running
-`databricks bundle schema --only-docs > ~/databricks/bundle/schema/docs/bundle_descriptions.json`
-2. Manually edit bundle_descriptions.json to add your descriptions
-3. Build again to embed the new `bundle_descriptions.json` into the binary (`go build`)
-4. Again run `databricks bundle schema --only-docs > ~/databricks/bundle/schema/docs/bundle_descriptions.json` to copy over any applicable descriptions to `targets`
-5. push to repo
+1. Generate a local copy of the CLI. Make sure you are on the latest main.
+   `go build`
+2. Generate empty descriptions for fields by running this command:
+   `./cli bundle schema --only-docs > ./bundle/schema/docs/bundle_descriptions.json`
+3. Edit descriptions in `bundle_descriptions.json` to add your descriptions
+4. Generate the CLI again. This will embed the new descriptions into the CLI binary
+   `go build`
+5. Copy handwritten bundle configs to the target block. Generating the docs again automatically
+   copies the docs
+   `./cli bundle schema --only-docs > ./bundle/schema/docs/bundle_descriptions.json`
 
 
-### SOP: Update descriptions in resources from a newer openapi spec
 
-1. Run `databricks bundle schema --only-docs --openapi PATH_TO_SPEC > ~/databricks/bundle/schema/docs/bundle_descriptions.json`
-2. push to repo
+### SOP: Update resource and target blocks with the latest OpenAPI spec
+
+1. Generate a local copy of the CLI. Make sure you are on the latest main.
+   `go build`
+
+2. Generate descriptions from the OpenAPI spec
+   `./cli bundle schema --only-docs --openapi PATH_TO_SPEC > ./bundle/schema/docs/bundle_descriptions.json`
