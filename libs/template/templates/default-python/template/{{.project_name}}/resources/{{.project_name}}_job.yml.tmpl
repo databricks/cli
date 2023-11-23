@@ -1,10 +1,14 @@
 # The main job for {{.project_name}}
+{{if eq .include_dlt "yes" -}}
+# this job runs {{.project_name}}_pipeline on a schedule
+{{end -}}
 resources:
   jobs:
     {{.project_name}}_job:
       name: {{.project_name}}_job
 
       schedule:
+        # Run every day at 8:37 AM
         quartz_cron_expression: '44 37 8 * * ?'
         timezone_id: Europe/Amsterdam
 

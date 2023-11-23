@@ -1,5 +1,5 @@
 {
-    "welcome_message": "\nWelcome to the sample Databricks Asset Bundle template! Please enter the following information to initialize your sample DAB.\n",
+    "welcome_message": "\nWelcome to the default Python template for Databricks Asset Bundles!\nPlease provide the following details to tailor the template to your preferences.\n",
     "properties": {
         "project_name": {
             "type": "string",
@@ -31,5 +31,5 @@
             "order": 4
         }
     },
-    "success_message": "\n✨ Your new project has been created in the '{{.project_name}}' directory!\n\nPlease refer to the README.md of your project for further instructions on getting started.\nOr read the documentation on Databricks Asset Bundles at https://docs.databricks.com/dev-tools/bundles/index.html."
+    "success_message": "Workspace to use (auto-detected, edit in '{{.project_name}}/databricks.yml'): {{workspace_host}}\n\n✨ Your new project has been created in the '{{.project_name}}' directory!\n\nPlease refer to the README.md file for \"getting started\" instructions.\nSee also the documentation at at https://docs.databricks.com/dev-tools/bundles/index.html."
 }
