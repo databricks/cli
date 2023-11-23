@@ -25,12 +25,12 @@ func (m *defineDefaultWorkspacePaths) Apply(ctx context.Context, b *bundle.Bundl
 		return fmt.Errorf("unable to define default workspace paths: workspace root not defined")
 	}
 
-	if b.Config.Workspace.FilesPath == "" {
-		b.Config.Workspace.FilesPath = path.Join(root, "files")
+	if b.Config.Workspace.FilePath == "" {
+		b.Config.Workspace.FilePath = path.Join(root, "files")
 	}
 
-	if b.Config.Workspace.ArtifactsPath == "" {
-		b.Config.Workspace.ArtifactsPath = path.Join(root, "artifacts")
+	if b.Config.Workspace.ArtifactPath == "" {
+		b.Config.Workspace.ArtifactPath = path.Join(root, "artifacts")
 	}
 
 	if b.Config.Workspace.StatePath == "" {

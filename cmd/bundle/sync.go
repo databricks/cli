@@ -30,7 +30,7 @@ func (f *syncFlags) syncOptionsFromBundle(cmd *cobra.Command, b *bundle.Bundle) 
 
 	opts := sync.SyncOptions{
 		LocalPath:    b.Config.Path,
-		RemotePath:   b.Config.Workspace.FilesPath,
+		RemotePath:   b.Config.Workspace.FilePath,
 		Include:      includes,
 		Exclude:      b.Config.Sync.Exclude,
 		Full:         f.full,

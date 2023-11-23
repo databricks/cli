@@ -3,6 +3,8 @@
 package external_locations
 
 import (
+	"fmt"
+
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
@@ -80,10 +82,14 @@ func newCreate() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := cobra.ExactArgs(3)
 		if cmd.Flags().Changed("json") {
-			check = cobra.ExactArgs(0)
+			err := cobra.ExactArgs(0)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name', 'url', 'credential_name' in your JSON input")
+			}
+			return nil
 		}
+		check := cobra.ExactArgs(3)
 		return check(cmd, args)
 	}
 
@@ -337,6 +343,7 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `Name of the external location.`)
 	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `The owner of the external location.`)
 	cmd.Flags().BoolVar(&updateReq.ReadOnly, "read-only", updateReq.ReadOnly, `Indicates whether the external location is read-only.`)
+	cmd.Flags().BoolVar(&updateReq.SkipValidation, "skip-validation", updateReq.SkipValidation, `Skips validation of the storage credential associated with the external location.`)
 	cmd.Flags().StringVar(&updateReq.Url, "url", updateReq.Url, `Path URL of the external location.`)
 
 	cmd.Use = "update NAME"

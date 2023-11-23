@@ -47,3 +47,10 @@ func TestContext(t *testing.T) {
 	assert.Equal(t, "x=y", all["BAR"])
 	assert.NotEmpty(t, all["PATH"])
 }
+
+func TestHome(t *testing.T) {
+	ctx := context.Background()
+	ctx = WithUserHomeDir(ctx, "...")
+	home := UserHomeDir(ctx)
+	assert.Equal(t, "...", home)
+}

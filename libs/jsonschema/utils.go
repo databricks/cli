@@ -39,7 +39,7 @@ func toInteger(v any) (int64, error) {
 	}
 }
 
-func ToString(v any, T Type) (string, error) {
+func toString(v any, T Type) (string, error) {
 	switch T {
 	case BooleanType:
 		boolVal, ok := v.(bool)
@@ -72,10 +72,10 @@ func ToString(v any, T Type) (string, error) {
 	}
 }
 
-func ToStringSlice(arr []any, T Type) ([]string, error) {
+func toStringSlice(arr []any, T Type) ([]string, error) {
 	res := []string{}
 	for _, v := range arr {
-		s, err := ToString(v, T)
+		s, err := toString(v, T)
 		if err != nil {
 			return nil, err
 		}
@@ -84,7 +84,7 @@ func ToStringSlice(arr []any, T Type) ([]string, error) {
 	return res, nil
 }
 
-func FromString(s string, T Type) (any, error) {
+func fromString(s string, T Type) (any, error) {
 	if T == StringType {
 		return s, nil
 	}
@@ -113,7 +113,7 @@ func FromString(s string, T Type) (any, error) {
 	return v, err
 }
 
-func ValidatePatternMatch(name string, value any, propertySchema *Schema) error {
+func validatePatternMatch(name string, value any, propertySchema *Schema) error {
 	if propertySchema.Pattern == "" {
 		// Return early if no pattern is specified
 		return nil

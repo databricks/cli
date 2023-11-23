@@ -92,7 +92,7 @@ func (m *translatePaths) rewritePath(
 	}
 
 	// Prefix remote path with its remote root path.
-	remotePath := path.Join(b.Config.Workspace.FilesPath, filepath.ToSlash(localRelPath))
+	remotePath := path.Join(b.Config.Workspace.FilePath, filepath.ToSlash(localRelPath))
 
 	// Convert local path into workspace path via specified function.
 	interp, err := fn(*p, localPath, localRelPath, filepath.ToSlash(remotePath))
@@ -131,6 +131,17 @@ func translateFilePath(literal, localFullPath, localRelPath, remotePath string) 
 	}
 	if nb {
 		return "", ErrIsNotebook{localFullPath}
+	}
+	return remotePath, nil
+}
+
+func translateDirectoryPath(literal, localFullPath, localRelPath, remotePath string) (string, error) {
+	info, err := os.Stat(localFullPath)
+	if err != nil {
+		return "", err
+	}
+	if !info.IsDir() {
+		return "", fmt.Errorf("%s is not a directory", localFullPath)
 	}
 	return remotePath, nil
 }

@@ -1,5 +1,68 @@
 # Version changelog
 
+## 0.209.1
+
+CLI:
+ * Hide `--progress-format` global flag ([#965](https://github.com/databricks/cli/pull/965)).
+ * Make configure command visible + fix bundle command description ([#961](https://github.com/databricks/cli/pull/961)).
+ * Log process ID in each log entry ([#949](https://github.com/databricks/cli/pull/949)).
+ * Improve error message when `--json` flag is specified ([#933](https://github.com/databricks/cli/pull/933)).
+
+Bundles:
+ * Remove validation for default value against pattern ([#959](https://github.com/databricks/cli/pull/959)).
+ * Bundle path rewrites for dbt and SQL file tasks ([#962](https://github.com/databricks/cli/pull/962)).
+ * Initialize variable definitions that are defined without properties ([#966](https://github.com/databricks/cli/pull/966)).
+
+Internal:
+ * Function to merge two instances of `config.Value` ([#938](https://github.com/databricks/cli/pull/938)).
+ * Make to/from string methods private to the jsonschema package ([#942](https://github.com/databricks/cli/pull/942)).
+ * Make Cobra runner compatible with testing interactive flows ([#957](https://github.com/databricks/cli/pull/957)).
+ * Added `env.UserHomeDir(ctx)` for parallel-friendly tests ([#955](https://github.com/databricks/cli/pull/955)).
+
+
+Dependency updates:
+ * Bump golang.org/x/mod from 0.13.0 to 0.14.0 ([#954](https://github.com/databricks/cli/pull/954)).
+ * Bump golang.org/x/text from 0.13.0 to 0.14.0 ([#953](https://github.com/databricks/cli/pull/953)).
+ * Bump golang.org/x/sync from 0.4.0 to 0.5.0 ([#951](https://github.com/databricks/cli/pull/951)).
+ * Bump github.com/spf13/cobra from 1.7.0 to 1.8.0 ([#950](https://github.com/databricks/cli/pull/950)).
+ * Bump github.com/fatih/color from 1.15.0 to 1.16.0 ([#952](https://github.com/databricks/cli/pull/952)).
+
+## 0.209.0
+
+CLI:
+ * Added GitHub issue templates for CLI and DABs issues ([#925](https://github.com/databricks/cli/pull/925)).
+ * Simplified code generation logic for handling path and request body parameters and JSON input ([#905](https://github.com/databricks/cli/pull/905)).
+
+
+Bundles:
+ * Fixed URL for bundle template documentation in init command help docs ([#903](https://github.com/databricks/cli/pull/903)).
+ * Fixed pattern validation for input parameters in a bundle template ([#912](https://github.com/databricks/cli/pull/912)).
+ * Fixed multiline description rendering for enum input parameters in bundle templates ([#916](https://github.com/databricks/cli/pull/916)).
+ * Changed production mode check for whether identity used is a service principal to use UserName  ([#924](https://github.com/databricks/cli/pull/924)).
+ * Changed bundle deploy to upload partial terraform state even if deployment fails ([#923](https://github.com/databricks/cli/pull/923)).
+ * Added support for welcome messages to bundle templates ([#907](https://github.com/databricks/cli/pull/907)).
+ * Added support for uploading bundle deployment metadata to WSFS ([#845](https://github.com/databricks/cli/pull/845)).
+
+
+Internal:
+ * Loading an empty yaml file yields a nil ([#906](https://github.com/databricks/cli/pull/906)).
+ * Library to convert config.Value to Go struct ([#904](https://github.com/databricks/cli/pull/904)).
+ * Remove default resolution of repo names against the Databricks Github account([#940](https://github.com/databricks/cli/pull/940)).
+ * Run make fmt from fmt job ([#929](https://github.com/databricks/cli/pull/929)).
+ * `make snapshot` to build file in `.databricks/databricks` ([#927](https://github.com/databricks/cli/pull/927)).
+ * Add configuration normalization code ([#915](https://github.com/databricks/cli/pull/915)).
+
+API Changes:
+ * Added `databricks account network-policy` command group.
+
+Dependency updates:
+ * Bump Terraform provider from v1.28.0 to v1.29.0 ([#926](https://github.com/databricks/cli/pull/926)).
+ * Bump the Go SDK in the CLI from v0.23 to v0.24 ([#919](https://github.com/databricks/cli/pull/919)).
+ * Bump google.golang.org/grpc from 1.58.2 to 1.58.3 ([#920](https://github.com/databricks/cli/pull/920)).
+ * Bump github.com/google/uuid from 1.3.1 to 1.4.0 ([#932](https://github.com/databricks/cli/pull/932)).
+
+OpenAPI commit 5903bb39137fd76ac384b2044e425f9c56840e00 (2023-10-23)
+
 ## 0.208.2
 
 CLI:

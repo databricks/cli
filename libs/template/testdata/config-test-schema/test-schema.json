@@ -2,16 +2,20 @@
     "properties": {
         "int_val": {
             "type": "integer",
+            "description": "This is an integer value",
             "default": 123
         },
         "float_val": {
-            "type": "number"
+            "type": "number",
+            "description": "This is a float value"
         },
         "bool_val": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "This is a boolean value"
         },
         "string_val": {
             "type": "string",
+            "description": "This is a string value",
             "default": "{{template \"file_name\"}}"
         }
     }

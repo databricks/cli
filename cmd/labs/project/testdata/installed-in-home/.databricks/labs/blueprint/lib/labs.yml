@@ -1,0 +1,33 @@
+---
+version: 1
+name: blueprint
+description: Blueprint Project
+install:
+  min_runtime_version: 13.1
+  require_running_cluster: true
+  warehouse_types:
+    - PRO
+  script: install.py
+entrypoint: main.py
+min_python: 3.9
+commands:
+  - name: echo
+    is_account_level: true
+    description: non-interactive echo
+    flags:
+      - name: first
+        default: something
+        description: first flag description
+  - name: foo
+    description: foo command
+    flags:
+      - name: first
+        description: first flag description
+      - name: second
+        description: second flag description
+  - name: table
+    description: something that renders a table
+    table_template: |
+      Key	Value
+      {{range .records}}{{.key}}	{{.value}}
+      {{end}}

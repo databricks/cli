@@ -92,3 +92,15 @@ func TestVariablesTargetsBlockOverrideWithUndefinedVariables(t *testing.T) {
 		)))
 	assert.ErrorContains(t, err, "variable c is not defined but is assigned a value")
 }
+
+func TestVariablesWithoutDefinition(t *testing.T) {
+	t.Setenv("BUNDLE_VAR_a", "foo")
+	t.Setenv("BUNDLE_VAR_b", "bar")
+	b := load(t, "./variables/without_definition")
+	err := bundle.Apply(context.Background(), b, mutator.SetVariables())
+	require.NoError(t, err)
+	require.True(t, b.Config.Variables["a"].HasValue())
+	require.True(t, b.Config.Variables["b"].HasValue())
+	assert.Equal(t, "foo", *b.Config.Variables["a"].Value)
+	assert.Equal(t, "bar", *b.Config.Variables["b"].Value)
+}

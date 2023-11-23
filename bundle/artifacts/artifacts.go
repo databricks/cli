@@ -160,7 +160,7 @@ func uploadArtifactFile(ctx context.Context, file string, uploadPath string, cli
 }
 
 func getUploadBasePath(b *bundle.Bundle) (string, error) {
-	artifactPath := b.Config.Workspace.ArtifactsPath
+	artifactPath := b.Config.Workspace.ArtifactPath
 	if artifactPath == "" {
 		return "", fmt.Errorf("remote artifact path not configured")
 	}

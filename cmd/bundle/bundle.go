@@ -7,7 +7,8 @@ import (
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "bundle",
-		Short: "Databricks Asset Bundles\n\nOnline documentation: https://docs.databricks.com/en/dev-tools/bundles",
+		Short: "Databricks Asset Bundles",
+		Long:  "Databricks Asset Bundles\n\nOnline documentation: https://docs.databricks.com/en/dev-tools/bundles",
 	}
 
 	initVariableFlag(cmd)

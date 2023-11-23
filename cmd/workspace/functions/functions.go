@@ -46,23 +46,17 @@ func New() *cobra.Command {
 // Functions can be added from the `init()` function in manually curated files in this directory.
 var createOverrides []func(
 	*cobra.Command,
-	*catalog.CreateFunction,
+	*catalog.CreateFunctionRequest,
 )
 
 func newCreate() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var createReq catalog.CreateFunction
+	var createReq catalog.CreateFunctionRequest
 	var createJson flags.JsonFlag
 
 	// TODO: short flags
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
-
-	cmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `User-provided free-form text description.`)
-	cmd.Flags().StringVar(&createReq.ExternalLanguage, "external-language", createReq.ExternalLanguage, `External function language.`)
-	cmd.Flags().StringVar(&createReq.ExternalName, "external-name", createReq.ExternalName, `External function name.`)
-	// TODO: map via StringToStringVar: properties
-	cmd.Flags().StringVar(&createReq.SqlPath, "sql-path", createReq.SqlPath, `List of schemes whose objects can be referenced without qualification.`)
 
 	cmd.Use = "create"
 	cmd.Short = `Create a function.`

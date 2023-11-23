@@ -123,7 +123,6 @@ func newConfigureCommand() *cobra.Command {
 	If this command is invoked in non-interactive mode, it will read the token from stdin.
 	The host must be specified with the --host flag.
 		`,
-		Hidden: true,
 	}
 
 	cmd.Flags().String("host", "", "Databricks workspace host.")
@@ -161,7 +160,11 @@ func newConfigureCommand() *cobra.Command {
 		cfg.DatabricksCliPath = ""
 
 		// Save profile to config file.
-		return databrickscfg.SaveToProfile(ctx, &cfg)
+		return databrickscfg.SaveToProfile(ctx, &config.Config{
+			Profile: cfg.Profile,
+			Host:    cfg.Host,
+			Token:   cfg.Token,
+		})
 	}
 
 	return cmd
