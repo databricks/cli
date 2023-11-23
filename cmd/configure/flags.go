@@ -1,7 +1,6 @@
 package configure
 
 import (
-	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
 )
 
@@ -23,16 +22,4 @@ func (f *configureFlags) Register(cmd *cobra.Command) {
 	// It doesn't actually do anything because we always use PATs.
 	cmd.Flags().Bool("token", true, "Configure using Databricks Personal Access Token")
 	cmd.Flags().MarkHidden("token")
-}
-
-func (f *configureFlags) PopulateConfig(cfg *config.Config) error {
-	if f.Host != "" {
-		cfg.Host = f.Host
-	}
-
-	if f.Profile != "" {
-		cfg.Profile = f.Profile
-	}
-
-	return nil
 }
