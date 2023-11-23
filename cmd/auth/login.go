@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -131,7 +132,8 @@ func setHost(ctx context.Context, profileName string, persistentAuth *auth.Persi
 	_, profiles, err := databrickscfg.LoadProfiles(ctx, func(p databrickscfg.Profile) bool {
 		return p.Name == profileName
 	})
-	if err != nil {
+	// Tolerate ErrNoConfiguration here, as we will write out a configuration as part of the login flow.
+	if !errors.Is(err, databrickscfg.ErrNoConfiguration) {
 		return err
 	}
 	if persistentAuth.Host == "" {
