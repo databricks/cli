@@ -31,7 +31,7 @@ func TestNativeTemplateOptions(t *testing.T) {
 }
 
 func TestNativeTemplateDescriptions(t *testing.T) {
-	assert.Equal(t, "- default-python: The default Python template\n- mlops-stacks: The Databricks MLOps Stacks template. More information can be found at: https://github.com/databricks/mlops-stacks", nativeTemplateDescriptions())
+	assert.Equal(t, "- default-python: The default Python template\n- mlops-stacks: The Databricks MLOps Stacks template (https://github.com/databricks/mlops-stacks)", nativeTemplateDescriptions())
 }
 
 func TestGetUrlForNativeTemplate(t *testing.T) {

@@ -32,7 +32,7 @@ var nativeTemplates = map[string]nativeTemplate{
 	},
 	"mlops-stacks": {
 		gitUrl:      "https://github.com/databricks/mlops-stacks",
-		description: "The Databricks MLOps Stacks template. More information can be found at: https://github.com/databricks/mlops-stacks",
+		description: "The Databricks MLOps Stacks template (https://github.com/databricks/mlops-stacks)",
 		aliases:     []string{"mlops-stack"},
 	},
 }
