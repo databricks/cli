@@ -30,7 +30,7 @@ func newSchemaCommand() *cobra.Command {
 			openapi = os.Getenv("DATABRICKS_OPENAPI_SPEC")
 		}
 
-		// If outputFilePath is provided, write to that file.
+		// If outputFile is provided, write to that file.
 		if outputFile != "" {
 			f, err := os.OpenFile(outputFile, os.O_WRONLY, 0644)
 			if err != nil {
