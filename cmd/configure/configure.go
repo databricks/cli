@@ -1,65 +1,18 @@
 package configure
 
 import (
-	"context"
 	"fmt"
-	"net/url"
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/databrickscfg"
+	"github.com/databricks/cli/libs/databrickscfg/cfgpickers"
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/spf13/cobra"
 )
 
-func validateHost(s string) error {
-	u, err := url.Parse(s)
-	if err != nil {
-		return err
-	}
-	if u.Host == "" || u.Scheme != "https" {
-		return fmt.Errorf("must start with https://")
-	}
-	if u.Path != "" && u.Path != "/" {
-		return fmt.Errorf("must use empty path")
-	}
-	return nil
-}
-
-func configureFromFlags(cmd *cobra.Command, ctx context.Context, cfg *config.Config) error {
-	// Configure profile name if set.
-	profile, err := cmd.Flags().GetString("profile")
-	if err != nil {
-		return fmt.Errorf("read --profile flag: %w", err)
-	}
-	if profile != "" {
-		cfg.Profile = profile
-	}
-
-	// Configure host if set.
-	host, err := cmd.Flags().GetString("host")
-	if err != nil {
-		return fmt.Errorf("read --host flag: %w", err)
-	}
-	if host != "" {
-		cfg.Host = host
-	}
-
-	// Validate host if set.
-	if cfg.Host != "" {
-		err = validateHost(cfg.Host)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func configureInteractive(cmd *cobra.Command, ctx context.Context, cfg *config.Config) error {
-	err := configureFromFlags(cmd, ctx, cfg)
-	if err != nil {
-		return err
-	}
+func configureInteractive(cmd *cobra.Command, flags *configureFlags, cfg *config.Config) error {
+	ctx := cmd.Context()
 
 	// Ask user to specify the host if not already set.
 	if cfg.Host == "" {
@@ -87,17 +40,30 @@ func configureInteractive(cmd *cobra.Command, ctx context.Context, cfg *config.C
 		cfg.Token = out
 	}
 
+	// Ask user to specify a cluster if not already set.
+	if flags.ConfigureCluster && cfg.ClusterID == "" {
+		w, err := databricks.NewWorkspaceClient((*databricks.Config)(cfg))
+		if err != nil {
+			return err
+		}
+		clusterID, err := cfgpickers.AskForCluster(cmd.Context(), w)
+		if err != nil {
+			return err
+		}
+		cfg.ClusterID = clusterID
+	}
+
 	return nil
 }
 
-func configureNonInteractive(cmd *cobra.Command, ctx context.Context, cfg *config.Config) error {
-	err := configureFromFlags(cmd, ctx, cfg)
-	if err != nil {
-		return err
-	}
-
+func configureNonInteractive(cmd *cobra.Command, flags *configureFlags, cfg *config.Config) error {
 	if cfg.Host == "" {
 		return fmt.Errorf("host must be set in non-interactive mode")
+	}
+
+	// Check precence of cluster ID before reading token to fail fast.
+	if flags.ConfigureCluster && cfg.ClusterID == "" {
+		return fmt.Errorf("cluster ID must be set in non-interactive mode")
 	}
 
 	// Read token from stdin if not already set.
@@ -117,21 +83,16 @@ func newConfigureCommand() *cobra.Command {
 		Short: "Configure authentication",
 		Long: `Configure authentication.
 
-	This command adds a profile to your ~/.databrickscfg file.
-	You can write to a different file by setting the DATABRICKS_CONFIG_FILE environment variable.
+This command adds a profile to your ~/.databrickscfg file.
+You can write to a different file by setting the DATABRICKS_CONFIG_FILE environment variable.
 
-	If this command is invoked in non-interactive mode, it will read the token from stdin.
-	The host must be specified with the --host flag.
+If this command is invoked in non-interactive mode, it will read the token from stdin.
+The host must be specified with the --host flag or the DATABRICKS_HOST environment variable.
 		`,
 	}
 
-	cmd.Flags().String("host", "", "Databricks workspace host.")
-	cmd.Flags().String("profile", "DEFAULT", "Name for the connection profile to configure.")
-
-	// Include token flag for compatibility with the legacy CLI.
-	// It doesn't actually do anything because we always use PATs.
-	cmd.Flags().Bool("token", true, "Configure using Databricks Personal Access Token")
-	cmd.Flags().MarkHidden("token")
+	var flags configureFlags
+	flags.Register(cmd)
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		var cfg config.Config
@@ -142,15 +103,31 @@ func newConfigureCommand() *cobra.Command {
 			return fmt.Errorf("unable to instantiate configuration from environment variables: %w", err)
 		}
 
+		// Populate configuration from flags (if set).
+		if flags.Host != "" {
+			cfg.Host = flags.Host
+		}
+		if flags.Profile != "" {
+			cfg.Profile = flags.Profile
+		}
+
+		// Verify that the host is valid (if set).
+		if cfg.Host != "" {
+			err = validateHost(cfg.Host)
+			if err != nil {
+				return err
+			}
+		}
+
 		ctx := cmd.Context()
 		interactive := cmdio.IsInTTY(ctx) && cmdio.IsOutTTY(ctx)
-		var fn func(*cobra.Command, context.Context, *config.Config) error
+		var fn func(*cobra.Command, *configureFlags, *config.Config) error
 		if interactive {
 			fn = configureInteractive
 		} else {
 			fn = configureNonInteractive
 		}
-		err = fn(cmd, ctx, &cfg)
+		err = fn(cmd, &flags, &cfg)
 		if err != nil {
 			return err
 		}
@@ -161,9 +138,10 @@ func newConfigureCommand() *cobra.Command {
 
 		// Save profile to config file.
 		return databrickscfg.SaveToProfile(ctx, &config.Config{
-			Profile: cfg.Profile,
-			Host:    cfg.Host,
-			Token:   cfg.Token,
+			Profile:   cfg.Profile,
+			Host:      cfg.Host,
+			Token:     cfg.Token,
+			ClusterID: cfg.ClusterID,
 		})
 	}
 
