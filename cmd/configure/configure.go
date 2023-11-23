@@ -17,7 +17,7 @@ func configureInteractive(cmd *cobra.Command, flags *configureFlags, cfg *config
 	// Ask user to specify the host if not already set.
 	if cfg.Host == "" {
 		prompt := cmdio.Prompt(ctx)
-		prompt.Label = "Databricks Host"
+		prompt.Label = "Databricks host"
 		prompt.Default = "https://"
 		prompt.AllowEdit = true
 		prompt.Validate = validateHost
@@ -31,7 +31,7 @@ func configureInteractive(cmd *cobra.Command, flags *configureFlags, cfg *config
 	// Ask user to specify the token is not already set.
 	if cfg.Token == "" {
 		prompt := cmdio.Prompt(ctx)
-		prompt.Label = "Personal Access Token"
+		prompt.Label = "Personal access token"
 		prompt.Mask = '*'
 		out, err := prompt.Run()
 		if err != nil {
