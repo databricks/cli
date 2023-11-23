@@ -120,14 +120,11 @@ The host must be specified with the --host flag or the DATABRICKS_HOST environme
 		}
 
 		ctx := cmd.Context()
-		interactive := cmdio.IsInTTY(ctx) && cmdio.IsOutTTY(ctx)
-		var fn func(*cobra.Command, *configureFlags, *config.Config) error
-		if interactive {
-			fn = configureInteractive
+		if cmdio.IsInTTY(ctx) && cmdio.IsOutTTY(ctx) {
+			err = configureInteractive(cmd, &flags, &cfg)
 		} else {
-			fn = configureNonInteractive
+			err = configureNonInteractive(cmd, &flags, &cfg)
 		}
-		err = fn(cmd, &flags, &cfg)
 		if err != nil {
 			return err
 		}
