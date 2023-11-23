@@ -61,7 +61,7 @@ func configureNonInteractive(cmd *cobra.Command, flags *configureFlags, cfg *con
 		return fmt.Errorf("host must be set in non-interactive mode")
 	}
 
-	// Check precence of cluster ID before reading token to fail fast.
+	// Check presence of cluster ID before reading token to fail fast.
 	if flags.ConfigureCluster && cfg.ClusterID == "" {
 		return fmt.Errorf("cluster ID must be set in non-interactive mode")
 	}
