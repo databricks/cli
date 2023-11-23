@@ -55,6 +55,8 @@ func (l *statePull) Apply(ctx context.Context, b *bundle.Bundle) error {
 		return err
 	}
 
+	// Download state file from filer to local cache directory.
+	log.Infof(ctx, "Opening remote state file")
 	remote, err := l.remoteState(ctx, f)
 	if err != nil {
 		log.Infof(ctx, "Unable to open remote state file: %s", err)
