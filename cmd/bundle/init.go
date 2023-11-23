@@ -54,7 +54,7 @@ func nativeTemplateOptions() []string {
 	return keys
 }
 
-func getURLForNativeTemplate(name string) string {
+func getUrlForNativeTemplate(name string) string {
 	for templateName, template := range nativeTemplates {
 		if templateName == name {
 			return template.gitUrl
@@ -142,7 +142,7 @@ See https://docs.databricks.com/en/dev-tools/bundles/templates.html for more inf
 
 		// Expand templatePath to a git URL if it's an alias for a known native template
 		// and we know it's git URL.
-		if gitUrl := getURLForNativeTemplate(templatePath); gitUrl != "" {
+		if gitUrl := getUrlForNativeTemplate(templatePath); gitUrl != "" {
 			templatePath = gitUrl
 		}
 
