@@ -23,13 +23,13 @@ func mockStateFilerForPull(t *testing.T, contents map[string]int, merr error) fi
 	require.NoError(t, err)
 
 	ctrl := gomock.NewController(t)
-	filer := mock.NewMockFiler(ctrl)
-	filer.
+	mock := mock.NewMockFiler(ctrl)
+	mock.
 		EXPECT().
 		Read(gomock.Any(), gomock.Eq(TerraformStateFileName)).
 		Return(io.NopCloser(bytes.NewReader(buf)), merr).
 		Times(1)
-	return filer
+	return mock
 }
 
 func statePullTestBundle(t *testing.T) *bundle.Bundle {
