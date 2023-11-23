@@ -57,15 +57,20 @@ func BundleDocs(openapiSpecPath string) (*Docs, error) {
 }
 
 func (docs *Docs) refreshTargetsDocs() error {
-	targetsDocs, ok := docs.Properties["targets"]
-	if !ok || targetsDocs.AdditionalProperties == nil ||
-		targetsDocs.AdditionalProperties.Properties == nil {
-		return fmt.Errorf("invalid targets descriptions")
-	}
-	targetProperties := targetsDocs.AdditionalProperties.Properties
 	propertiesToCopy := []string{"artifacts", "bundle", "resources", "workspace"}
-	for _, p := range propertiesToCopy {
-		targetProperties[p] = docs.Properties[p]
+
+	// Copy properties from bundle to targets and environments.
+	// TODO: remove environments from here once we depcrecate it.
+	for _, key := range []string{"targets", "environments"} {
+		targetsDocs, ok := docs.Properties[key]
+		if !ok || targetsDocs.AdditionalProperties == nil ||
+			targetsDocs.AdditionalProperties.Properties == nil {
+			return fmt.Errorf("invalid targets descriptions")
+		}
+		targetProperties := targetsDocs.AdditionalProperties.Properties
+		for _, p := range propertiesToCopy {
+			targetProperties[p] = docs.Properties[p]
+		}
 	}
 	return nil
 }
