@@ -81,6 +81,13 @@ func inheritEnvVars(ctx context.Context, environ map[string]string) error {
 		environ["HOME"] = home
 	}
 
+	// Include $USERPROFILE in set of environment variables to pass along.
+	// This variable is used by Azure CLI on Windows to find stored credentials and metadata
+	userProfile, ok := env.Lookup(ctx, "USERPROFILE")
+	if ok {
+		environ["USERPROFILE"] = userProfile
+	}
+
 	// Include $PATH in set of environment variables to pass along.
 	// This is necessary to ensure that our Terraform provider can use the
 	// same auxiliary programs (e.g. `az`, or `gcloud`) as the CLI.
@@ -113,8 +120,6 @@ func setTempDirEnvVars(ctx context.Context, environ map[string]string, b *bundle
 			environ["TMP"] = v
 		} else if v, ok := env.Lookup(ctx, "TEMP"); ok {
 			environ["TEMP"] = v
-		} else if v, ok := env.Lookup(ctx, "USERPROFILE"); ok {
-			environ["USERPROFILE"] = v
 		} else {
 			tmpDir, err := b.CacheDir(ctx, "tmp")
 			if err != nil {
