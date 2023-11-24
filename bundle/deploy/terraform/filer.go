@@ -12,10 +12,3 @@ type filerFunc func(b *bundle.Bundle) (filer.Filer, error)
 func stateFiler(b *bundle.Bundle) (filer.Filer, error) {
 	return filer.NewWorkspaceFilesClient(b.WorkspaceClient(), b.Config.Workspace.StatePath)
 }
-
-// identityFiler returns a filerFunc that returns the specified filer.
-func identityFiler(f filer.Filer) filerFunc {
-	return func(_ *bundle.Bundle) (filer.Filer, error) {
-		return f, nil
-	}
-}

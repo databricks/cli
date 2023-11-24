@@ -8,8 +8,16 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/libs/filer"
 	"github.com/stretchr/testify/require"
 )
+
+// identityFiler returns a filerFunc that returns the specified filer.
+func identityFiler(f filer.Filer) filerFunc {
+	return func(_ *bundle.Bundle) (filer.Filer, error) {
+		return f, nil
+	}
+}
 
 func localStateFile(t *testing.T, ctx context.Context, b *bundle.Bundle) string {
 	dir, err := Dir(ctx, b)
