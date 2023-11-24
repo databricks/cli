@@ -51,6 +51,10 @@ func (v Value) Location() Location {
 	return v.l
 }
 
+func (v Value) IsValid() bool {
+	return v.k != KindInvalid
+}
+
 func (v Value) AsAny() any {
 	switch v.k {
 	case KindInvalid:
