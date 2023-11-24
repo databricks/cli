@@ -163,36 +163,6 @@ func TestSetTempDirEnvVarsForWindowWithUserProfileAndTempSet(t *testing.T) {
 	}, env)
 }
 
-func TestSetTempDirEnvVarsForWindowWithUserProfileSet(t *testing.T) {
-	if runtime.GOOS != "windows" {
-		t.SkipNow()
-	}
-
-	b := &bundle.Bundle{
-		Config: config.Root{
-			Path: t.TempDir(),
-			Bundle: config.Bundle{
-				Target: "whatever",
-			},
-		},
-	}
-
-	// Set environment variables
-	unsetEnv(t, "TMP")
-	unsetEnv(t, "TEMP")
-	t.Setenv("USERPROFILE", "c:\\foo\\c")
-
-	// compute env
-	env := make(map[string]string, 0)
-	err := setTempDirEnvVars(context.Background(), env, b)
-	require.NoError(t, err)
-
-	// assert that we pass through the user profile
-	assert.Equal(t, map[string]string{
-		"USERPROFILE": "c:\\foo\\c",
-	}, env)
-}
-
 func TestSetTempDirEnvVarsForWindowsWithoutAnyTempDirEnvVarsSet(t *testing.T) {
 	if runtime.GOOS != "windows" {
 		t.SkipNow()
@@ -284,9 +254,18 @@ func TestInheritEnvVars(t *testing.T) {
 
 	require.NoError(t, err)
 
-	require.Equal(t, map[string]string{
-		"HOME":               "/home/testuser",
-		"PATH":               "/foo:/bar",
-		"TF_CLI_CONFIG_FILE": "/tmp/config.tfrc",
-	}, env)
+	require.Equal(t, env["HOME"], "/home/testuser")
+	require.Equal(t, env["PATH"], "/foo:/bar")
+	require.Equal(t, env["TF_CLI_CONFIG_FILE"], "/tmp/config.tfrc")
+}
+
+func TestSetUserProfileFromInheritEnvVars(t *testing.T) {
+	t.Setenv("USERPROFILE", "c:\\foo\\c")
+
+	env := make(map[string]string, 0)
+	err := inheritEnvVars(context.Background(), env)
+	require.NoError(t, err)
+
+	assert.Contains(t, env, "USERPROFILE")
+	assert.Equal(t, env["USERPROFILE"], "c:\\foo\\c")
 }

@@ -52,11 +52,11 @@ type Workspace struct {
 
 	// Remote workspace path to synchronize local files to.
 	// This defaults to "${workspace.root}/files".
-	FilesPath string `json:"file_path,omitempty"`
+	FilePath string `json:"file_path,omitempty"`
 
 	// Remote workspace path for build artifacts.
 	// This defaults to "${workspace.root}/artifacts".
-	ArtifactsPath string `json:"artifact_path,omitempty"`
+	ArtifactPath string `json:"artifact_path,omitempty"`
 
 	// Remote workspace path for deployment state.
 	// This defaults to "${workspace.root}/state".

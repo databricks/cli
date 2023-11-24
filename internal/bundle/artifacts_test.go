@@ -54,7 +54,7 @@ func TestAccUploadArtifactFileToCorrectRemotePath(t *testing.T) {
 				Target: "whatever",
 			},
 			Workspace: config.Workspace{
-				ArtifactsPath: wsDir,
+				ArtifactPath: wsDir,
 			},
 			Artifacts: config.Artifacts{
 				"test": artifact,

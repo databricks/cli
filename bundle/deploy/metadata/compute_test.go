@@ -18,9 +18,9 @@ func TestComputeMetadataMutator(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{
 			Workspace: config.Workspace{
-				RootPath:      "/Users/shreyas.goenka@databricks.com",
-				ArtifactsPath: "/Users/shreyas.goenka@databricks.com/artifacts",
-				FilesPath:     "/Users/shreyas.goenka@databricks.com/files",
+				RootPath:     "/Users/shreyas.goenka@databricks.com",
+				ArtifactPath: "/Users/shreyas.goenka@databricks.com/artifacts",
+				FilePath:     "/Users/shreyas.goenka@databricks.com/files",
 			},
 			Bundle: config.Bundle{
 				Name:   "my-bundle",
@@ -68,7 +68,7 @@ func TestComputeMetadataMutator(t *testing.T) {
 		Version: metadata.Version,
 		Config: metadata.Config{
 			Workspace: metadata.Workspace{
-				FilesPath: "/Users/shreyas.goenka@databricks.com/files",
+				FilePath: "/Users/shreyas.goenka@databricks.com/files",
 			},
 			Bundle: metadata.Bundle{
 				Git: config.Git{

@@ -11,7 +11,7 @@ type Bundle struct {
 }
 
 type Workspace struct {
-	FilesPath string `json:"file_path"`
+	FilePath string `json:"file_path"`
 }
 
 type Job struct {

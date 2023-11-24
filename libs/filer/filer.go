@@ -10,14 +10,14 @@ import (
 type WriteMode int
 
 const (
-	OverwriteIfExists       WriteMode = iota
-	CreateParentDirectories           = iota << 1
+	OverwriteIfExists WriteMode = 1 << iota
+	CreateParentDirectories
 )
 
 type DeleteMode int
 
 const (
-	DeleteRecursively DeleteMode = iota
+	DeleteRecursively DeleteMode = 1 << iota
 )
 
 type FileAlreadyExistsError struct {
