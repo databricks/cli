@@ -4,6 +4,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/databricks/cli/libs/config"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -192,5 +193,34 @@ func TestStructInfoFieldValuesAnonymousByPointer(t *testing.T) {
 		si := getStructInfo(reflect.TypeOf(Tmp{}))
 		fv := si.FieldValues(reflect.ValueOf(src))
 		assert.Empty(t, fv)
+	})
+}
+
+func TestStructInfoValueFieldAbsent(t *testing.T) {
+	type Tmp struct {
+		Foo string `json:"foo"`
+	}
+
+	si := getStructInfo(reflect.TypeOf(Tmp{}))
+	assert.Nil(t, si.ValueField)
+}
+
+func TestStructInfoValueFieldPresent(t *testing.T) {
+	type Tmp struct {
+		Foo config.Value
+	}
+
+	si := getStructInfo(reflect.TypeOf(Tmp{}))
+	assert.NotNil(t, si.ValueField)
+}
+
+func TestStructInfoValueFieldMultiple(t *testing.T) {
+	type Tmp struct {
+		Foo config.Value
+		Bar config.Value
+	}
+
+	assert.Panics(t, func() {
+		getStructInfo(reflect.TypeOf(Tmp{}))
 	})
 }
