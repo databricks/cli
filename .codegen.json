@@ -10,7 +10,7 @@
     "toolchain": {
         "required": ["go"],
         "post_generate": [
-            "go run bundle/internal/bundle/schema ./bundle/schema/docs/bundle_descriptions.json"
+            "go run ./bundle/internal/bundle/schema/main.go ./bundle/schema/docs/bundle_descriptions.json"
         ]
     }
 }
