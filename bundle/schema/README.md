@@ -14,5 +14,5 @@ These descriptions are rendered in the inline documentation in an IDE
 ### SOP: Add schema descriptions for new fields in bundle config
 
 Manually edit bundle_descriptions.json to add your descriptions. Note that the
-descriptions in `resources`` block is generated from the OpenAPI spec, and thus
+descriptions in `resources` block is generated from the OpenAPI spec, and thus
 any changes there will be overwritten.
