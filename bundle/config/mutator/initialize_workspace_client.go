@@ -19,5 +19,6 @@ func (m *initializeWorkspaceClient) Name() string {
 // Apply initializes the workspace client for the bundle. We do this here so
 // downstream calls to b.WorkspaceClient() do not panic.
 func (m *initializeWorkspaceClient) Apply(_ context.Context, b *bundle.Bundle) error {
-	return b.InitializeWorkspaceClient()
+	_, err := b.InitializeWorkspaceClient()
+	return err
 }
