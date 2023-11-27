@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 
@@ -59,10 +60,8 @@ func getUrlForNativeTemplate(name string) string {
 		if templateName == name {
 			return template.gitUrl
 		}
-		for _, alias := range template.aliases {
-			if alias == name {
-				return template.gitUrl
-			}
+		if slices.Contains(template.aliases, name) {
+			return template.gitUrl
 		}
 	}
 	return ""
