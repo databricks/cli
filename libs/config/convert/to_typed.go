@@ -83,6 +83,12 @@ func toTypedStruct(dst reflect.Value, src config.Value) error {
 			}
 		}
 
+		// Populate field(s) for [config.Value], if any.
+		if info.ValueField != nil {
+			vv := dst.FieldByIndex(info.ValueField)
+			vv.Set(reflect.ValueOf(src))
+		}
+
 		return nil
 	case config.KindNil:
 		dst.SetZero()
