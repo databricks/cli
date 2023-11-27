@@ -29,17 +29,6 @@ func newSchemaCommand() *cobra.Command {
 		if openapi == "" {
 			openapi = os.Getenv("DATABRICKS_OPENAPI_SPEC")
 		}
-
-		// If outputFile is provided, write to that file.
-		if outputFile != "" {
-			f, err := os.OpenFile(outputFile, os.O_WRONLY, 0644)
-			if err != nil {
-				return err
-			}
-			defer f.Close()
-			cmd.SetOut(f)
-		}
-
 		docs, err := schema.BundleDocs(openapi)
 		if err != nil {
 			return err
@@ -57,6 +46,16 @@ func newSchemaCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
+		}
+
+		// If outputFile is provided, write to that file.
+		if outputFile != "" {
+			f, err := os.OpenFile(outputFile, os.O_TRUNC|os.O_WRONLY, 0644)
+			if err != nil {
+				return err
+			}
+			defer f.Close()
+			cmd.SetOut(f)
 		}
 		cmd.OutOrStdout().Write(result)
 		return nil
