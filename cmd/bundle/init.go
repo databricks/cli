@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
-	"sort"
 	"strings"
 
 	"github.com/databricks/cli/cmd/root"
@@ -22,16 +21,19 @@ var gitUrlPrefixes = []string{
 }
 
 type nativeTemplate struct {
+	name        string
 	gitUrl      string
 	description string
 	aliases     []string
 }
 
-var nativeTemplates = map[string]nativeTemplate{
-	"default-python": {
+var nativeTemplates = []nativeTemplate{
+	{
+		name:        "default-python",
 		description: "The default Python template",
 	},
-	"mlops-stacks": {
+	{
+		name:        "mlops-stacks",
 		gitUrl:      "https://github.com/databricks/mlops-stacks",
 		description: "The Databricks MLOps Stacks template (https://github.com/databricks/mlops-stacks)",
 		aliases:     []string{"mlops-stack"},
@@ -40,24 +42,23 @@ var nativeTemplates = map[string]nativeTemplate{
 
 func nativeTemplateDescriptions() string {
 	var lines []string
-	for name, template := range nativeTemplates {
-		lines = append(lines, fmt.Sprintf("- %s: %s", name, template.description))
+	for _, template := range nativeTemplates {
+		lines = append(lines, fmt.Sprintf("- %s: %s", template.name, template.description))
 	}
 	return strings.Join(lines, "\n")
 }
 
 func nativeTemplateOptions() []string {
-	keys := make([]string, 0, len(nativeTemplates))
-	for k := range nativeTemplates {
-		keys = append(keys, k)
+	names := make([]string, 0, len(nativeTemplates))
+	for _, template := range nativeTemplates {
+		names = append(names, template.name)
 	}
-	sort.Strings(keys)
-	return keys
+	return names
 }
 
 func getUrlForNativeTemplate(name string) string {
-	for templateName, template := range nativeTemplates {
-		if templateName == name {
+	for _, template := range nativeTemplates {
+		if template.name == name {
 			return template.gitUrl
 		}
 		if slices.Contains(template.aliases, name) {
