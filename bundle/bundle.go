@@ -122,18 +122,17 @@ func TryLoad(ctx context.Context) (*Bundle, error) {
 }
 
 func (b *Bundle) InitializeWorkspaceClient() (*databricks.WorkspaceClient, error) {
-	var err error
-	b.client, err = b.Config.Workspace.Client()
+	client, err := b.Config.Workspace.Client()
 	if err != nil {
 		return nil, fmt.Errorf("cannot resolve bundle auth configuration: %w", err)
 	}
-	return b.client, nil
+	return client, nil
 }
 
 func (b *Bundle) WorkspaceClient() *databricks.WorkspaceClient {
 	b.clientOnce.Do(func() {
 		var err error
-		_, err = b.InitializeWorkspaceClient()
+		b.client, err = b.InitializeWorkspaceClient()
 		if err != nil {
 			panic(err)
 		}
