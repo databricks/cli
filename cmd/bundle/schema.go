@@ -50,7 +50,7 @@ func newSchemaCommand() *cobra.Command {
 
 		// If outputFile is provided, write to that file.
 		if outputFile != "" {
-			f, err := os.OpenFile(outputFile, os.O_TRUNC|os.O_WRONLY, 0644)
+			f, err := os.OpenFile(outputFile, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0644)
 			if err != nil {
 				return err
 			}
