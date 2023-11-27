@@ -4,6 +4,8 @@ import (
 	"reflect"
 	"strings"
 	"sync"
+
+	"github.com/databricks/cli/libs/config"
 )
 
 // structInfo holds the type information we need to efficiently
@@ -11,6 +13,10 @@ import (
 type structInfo struct {
 	// Fields maps the JSON-name of the field to the field's index for use with [FieldByIndex].
 	Fields map[string][]int
+
+	// ValueField maps to the field with a [config.Value].
+	// The underlying type is expected to only have one of these.
+	ValueField []int
 }
 
 // structInfoCache caches type information.
@@ -68,6 +74,15 @@ func buildStructInfo(typ reflect.Type) structInfo {
 				continue
 			}
 
+			// If this field has type [config.Value], we populate it with the source [config.Value] from [ToTyped].
+			if sf.IsExported() && sf.Type == configValueType {
+				if out.ValueField != nil {
+					panic("multiple config.Value fields")
+				}
+				out.ValueField = append(prefix, sf.Index...)
+				continue
+			}
+
 			name, _, _ := strings.Cut(sf.Tag.Get("json"), ",")
 			if name == "" || name == "-" {
 				continue
@@ -113,3 +128,6 @@ func (s *structInfo) FieldValues(v reflect.Value) map[string]reflect.Value {
 
 	return out
 }
+
+// Type of [config.Value].
+var configValueType = reflect.TypeOf((*config.Value)(nil)).Elem()
