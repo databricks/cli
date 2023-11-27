@@ -2549,7 +2549,7 @@
                       "description": "A unique name for the job cluster. This field is required and must be unique within the job.\n`JobTaskSettings` may refer to this field to determine which cluster to launch for the task execution."
                     },
                     "new_cluster": {
-                      "description": "If new_cluster, a description of a cluster that is created for each task.",
+                      "description": "If new_cluster, a description of a cluster that is created for only for this task.",
                       "properties": {
                         "apply_policy_default_values": {
                           "description": ""
@@ -3131,7 +3131,7 @@
                       "description": "An optional minimal interval in milliseconds between the start of the failed run and the subsequent retry run. The default behavior is that unsuccessful runs are immediately retried."
                     },
                     "new_cluster": {
-                      "description": "If new_cluster, a description of a cluster that is created for each task.",
+                      "description": "If new_cluster, a description of a cluster that is created for only for this task.",
                       "properties": {
                         "apply_policy_default_values": {
                           "description": ""
@@ -4731,7 +4731,7 @@
                             "description": "A unique name for the job cluster. This field is required and must be unique within the job.\n`JobTaskSettings` may refer to this field to determine which cluster to launch for the task execution."
                           },
                           "new_cluster": {
-                            "description": "If new_cluster, a description of a cluster that is created for each task.",
+                            "description": "If new_cluster, a description of a cluster that is created for only for this task.",
                             "properties": {
                               "apply_policy_default_values": {
                                 "description": ""
@@ -5313,7 +5313,7 @@
                             "description": "An optional minimal interval in milliseconds between the start of the failed run and the subsequent retry run. The default behavior is that unsuccessful runs are immediately retried."
                           },
                           "new_cluster": {
-                            "description": "If new_cluster, a description of a cluster that is created for each task.",
+                            "description": "If new_cluster, a description of a cluster that is created for only for this task.",
                             "properties": {
                               "apply_policy_default_values": {
                                 "description": ""

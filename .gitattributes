@@ -85,3 +85,4 @@ cmd/workspace/workspace-conf/workspace-conf.go linguist-generated=true
 cmd/workspace/workspace/workspace.go linguist-generated=true
 bundle/internal/tf/schema/*.go linguist-generated=true
 go.sum linguist-generated=true
+bundle/schema/docs/bundle_descriptions.json linguist-generated=true
