@@ -8,6 +8,9 @@
         ".codegen/cmds-account.go.tmpl": "cmd/account/cmd.go"
     },
     "toolchain": {
-        "required": ["go"]
+        "required": ["go"],
+        "post_generate": [
+            "go run main.go bundle schema --only-docs --output-file ./bundle/schema/docs/bundle_descriptions.json"
+        ]
     }
 }
