@@ -25,7 +25,7 @@ func main() {
 	}
 
 	// Generate the schema descriptions.
-	docs, err := schema.BundleDocs(inputFile)
+	docs, err := schema.UpdateBundleDescriptions(inputFile)
 	if err != nil {
 		log.Fatal(err)
 	}
