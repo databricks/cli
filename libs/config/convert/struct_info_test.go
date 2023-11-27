@@ -4,6 +4,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/databricks/cli/libs/config"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -86,4 +87,140 @@ func TestStructInfoAnonymousByPointer(t *testing.T) {
 	assert.Len(t, si.Fields, 2)
 	assert.Equal(t, []int{0, 0}, si.Fields["foo"])
 	assert.Equal(t, []int{0, 1, 0}, si.Fields["bar"])
+}
+
+func TestStructInfoFieldValues(t *testing.T) {
+	type Tmp struct {
+		Foo string `json:"foo"`
+		Bar string `json:"bar"`
+	}
+
+	var src = Tmp{
+		Foo: "foo",
+		Bar: "bar",
+	}
+
+	si := getStructInfo(reflect.TypeOf(Tmp{}))
+	fv := si.FieldValues(reflect.ValueOf(src))
+	assert.Len(t, fv, 2)
+	assert.Equal(t, "foo", fv["foo"].String())
+	assert.Equal(t, "bar", fv["bar"].String())
+}
+
+func TestStructInfoFieldValuesAnonymousByValue(t *testing.T) {
+	type Bar struct {
+		Bar string `json:"bar"`
+	}
+
+	type Foo struct {
+		Foo string `json:"foo"`
+		Bar
+	}
+
+	type Tmp struct {
+		Foo
+	}
+
+	var src = Tmp{
+		Foo: Foo{
+			Foo: "foo",
+			Bar: Bar{
+				Bar: "bar",
+			},
+		},
+	}
+
+	si := getStructInfo(reflect.TypeOf(Tmp{}))
+	fv := si.FieldValues(reflect.ValueOf(src))
+	assert.Len(t, fv, 2)
+	assert.Equal(t, "foo", fv["foo"].String())
+	assert.Equal(t, "bar", fv["bar"].String())
+}
+
+func TestStructInfoFieldValuesAnonymousByPointer(t *testing.T) {
+	type Bar struct {
+		Bar string `json:"bar"`
+	}
+
+	type Foo struct {
+		Foo string `json:"foo"`
+		*Bar
+	}
+
+	type Tmp struct {
+		*Foo
+	}
+
+	// Test that the embedded fields are dereferenced properly.
+	t.Run("all are set", func(t *testing.T) {
+		src := Tmp{
+			Foo: &Foo{
+				Foo: "foo",
+				Bar: &Bar{
+					Bar: "bar",
+				},
+			},
+		}
+
+		si := getStructInfo(reflect.TypeOf(Tmp{}))
+		fv := si.FieldValues(reflect.ValueOf(src))
+		assert.Len(t, fv, 2)
+		assert.Equal(t, "foo", fv["foo"].String())
+		assert.Equal(t, "bar", fv["bar"].String())
+	})
+
+	// Test that fields of embedded types are skipped if the embedded type is nil.
+	t.Run("top level is set", func(t *testing.T) {
+		src := Tmp{
+			Foo: &Foo{
+				Foo: "foo",
+				Bar: nil,
+			},
+		}
+
+		si := getStructInfo(reflect.TypeOf(Tmp{}))
+		fv := si.FieldValues(reflect.ValueOf(src))
+		assert.Len(t, fv, 1)
+		assert.Equal(t, "foo", fv["foo"].String())
+	})
+
+	// Test that fields of embedded types are skipped if the embedded type is nil.
+	t.Run("none are set", func(t *testing.T) {
+		src := Tmp{
+			Foo: nil,
+		}
+
+		si := getStructInfo(reflect.TypeOf(Tmp{}))
+		fv := si.FieldValues(reflect.ValueOf(src))
+		assert.Empty(t, fv)
+	})
+}
+
+func TestStructInfoValueFieldAbsent(t *testing.T) {
+	type Tmp struct {
+		Foo string `json:"foo"`
+	}
+
+	si := getStructInfo(reflect.TypeOf(Tmp{}))
+	assert.Nil(t, si.ValueField)
+}
+
+func TestStructInfoValueFieldPresent(t *testing.T) {
+	type Tmp struct {
+		Foo config.Value
+	}
+
+	si := getStructInfo(reflect.TypeOf(Tmp{}))
+	assert.NotNil(t, si.ValueField)
+}
+
+func TestStructInfoValueFieldMultiple(t *testing.T) {
+	type Tmp struct {
+		Foo config.Value
+		Bar config.Value
+	}
+
+	assert.Panics(t, func() {
+		getStructInfo(reflect.TypeOf(Tmp{}))
+	})
 }

@@ -1,0 +1,37 @@
+{
+  "refreshed_at": "2033-01-01T00:00:00.92857+02:00",
+  "data": [
+    {
+      "name": "blueprint",
+      "description": "Sample project",
+      "language": "Python",
+      "default_branch": "main",
+      "stargazers_count": 100500,
+      "fork": false,
+      "archived": false,
+      "topics": [],
+      "html_url": "https://github.com/databrickslabs/blueprint",
+      "clone_url": "https://github.com/databrickslabs/blueprint.git",
+      "ssh_url": "git@github.com:databrickslabs/blueprint.git",
+      "license": {
+        "name": "Other"
+      }
+    },
+    {
+      "name": "ucx",
+      "description": "Unity Catalog Migrations",
+      "language": "Python",
+      "default_branch": "main",
+      "stargazers_count": 100500,
+      "fork": false,
+      "archived": false,
+      "topics": [],
+      "html_url": "https://github.com/databrickslabs/ucx",
+      "clone_url": "https://github.com/databrickslabs/ucx.git",
+      "ssh_url": "git@github.com:databrickslabs/ucx.git",
+      "license": {
+        "name": "Other"
+      }
+    }
+  ]
+}

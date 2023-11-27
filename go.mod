@@ -31,7 +31,10 @@ require (
 	gopkg.in/ini.v1 v1.67.0 // Apache 2.0
 )
 
-require gopkg.in/yaml.v3 v3.0.1
+require (
+	go.uber.org/mock v0.3.0
+	gopkg.in/yaml.v3 v3.0.1
+)
 
 require (
 	cloud.google.com/go/compute v1.23.1 // indirect
