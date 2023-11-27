@@ -83,9 +83,5 @@ cmd/workspace/warehouses/warehouses.go linguist-generated=true
 cmd/workspace/workspace-bindings/workspace-bindings.go linguist-generated=true
 cmd/workspace/workspace-conf/workspace-conf.go linguist-generated=true
 cmd/workspace/workspace/workspace.go linguist-generated=true
-
-# Hide diff for Go structs generated from databricks terraform provider schema
 bundle/internal/tf/schema/*.go linguist-generated=true
-
-# Hide diff for go.sum files
 go.sum linguist-generated=true
