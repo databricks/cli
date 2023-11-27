@@ -2423,7 +2423,7 @@
                 "description": "An optional continuous property for this job. The continuous property will ensure that there is always one run executing. Only one of `schedule` and `continuous` can be used.",
                 "properties": {
                   "pause_status": {
-                    "description": "Whether this trigger is paused or not."
+                    "description": "Indicate whether the continuous execution of the job is paused or not. Defaults to UNPAUSED."
                   }
                 }
               },
@@ -2549,7 +2549,7 @@
                       "description": "A unique name for the job cluster. This field is required and must be unique within the job.\n`JobTaskSettings` may refer to this field to determine which cluster to launch for the task execution."
                     },
                     "new_cluster": {
-                      "description": "If new_cluster, a description of a cluster that is created for only for this task.",
+                      "description": "If new_cluster, a description of a cluster that is created for each task.",
                       "properties": {
                         "apply_policy_default_values": {
                           "description": ""
@@ -2930,7 +2930,7 @@
                 "description": "An optional periodic schedule for this job. The default behavior is that the job only runs when triggered by clicking “Run Now” in the Jobs UI or sending an API request to `runNow`.",
                 "properties": {
                   "pause_status": {
-                    "description": "Whether this trigger is paused or not."
+                    "description": "Indicate whether the continuous execution of the job is paused or not. Defaults to UNPAUSED."
                   },
                   "quartz_cron_expression": {
                     "description": "A Cron expression using Quartz syntax that describes the schedule for a job.\nSee [Cron Trigger](http://www.quartz-scheduler.org/documentation/quartz-2.3.0/tutorials/crontrigger.html)\nfor details. This field is required.\"\n"
@@ -3131,7 +3131,7 @@
                       "description": "An optional minimal interval in milliseconds between the start of the failed run and the subsequent retry run. The default behavior is that unsuccessful runs are immediately retried."
                     },
                     "new_cluster": {
-                      "description": "If new_cluster, a description of a cluster that is created for only for this task.",
+                      "description": "If new_cluster, a description of a cluster that is created for each task.",
                       "properties": {
                         "apply_policy_default_values": {
                           "description": ""
@@ -3448,7 +3448,7 @@
                           "description": "The path of the notebook to be run in the Databricks workspace or remote repository.\nFor notebooks stored in the Databricks workspace, the path must be absolute and begin with a slash.\nFor notebooks stored in a remote repository, the path must be relative. This field is required.\n"
                         },
                         "source": {
-                          "description": "Optional location type of the notebook. When set to `WORKSPACE`, the notebook will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the notebook will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: Notebook is located in \u003cDatabricks\u003e workspace.\n* `GIT`: Notebook is located in cloud Git provider.\n"
+                          "description": "Optional location type of the Python file. When set to `WORKSPACE` or not specified, the file will be retrieved\nfrom the local \u003cDatabricks\u003e workspace or cloud location (if the `python_file` has a URI format). When set to `GIT`,\nthe Python file will be retrieved from a Git repository defined in `git_source`.\n\n* `WORKSPACE`: The Python file is located in a \u003cDatabricks\u003e workspace or at a cloud filesystem URI.\n* `GIT`: The Python file is located in a remote Git repository.\n"
                         }
                       }
                     },
@@ -3547,7 +3547,7 @@
                           "description": "The Python file to be executed. Cloud file URIs (such as dbfs:/, s3:/, adls:/, gcs:/) and workspace paths are supported. For python files stored in the Databricks workspace, the path must be absolute and begin with `/`. For files stored in a remote repository, the path must be relative. This field is required."
                         },
                         "source": {
-                          "description": "Optional location type of the notebook. When set to `WORKSPACE`, the notebook will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the notebook will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: Notebook is located in \u003cDatabricks\u003e workspace.\n* `GIT`: Notebook is located in cloud Git provider.\n"
+                          "description": "Optional location type of the Python file. When set to `WORKSPACE` or not specified, the file will be retrieved\nfrom the local \u003cDatabricks\u003e workspace or cloud location (if the `python_file` has a URI format). When set to `GIT`,\nthe Python file will be retrieved from a Git repository defined in `git_source`.\n\n* `WORKSPACE`: The Python file is located in a \u003cDatabricks\u003e workspace or at a cloud filesystem URI.\n* `GIT`: The Python file is located in a remote Git repository.\n"
                         }
                       }
                     },
@@ -3652,7 +3652,7 @@
                       "description": "An optional timeout applied to each run of this job task. A value of `0` means no timeout."
                     },
                     "webhook_notifications": {
-                      "description": "A collection of system notification IDs to notify when runs of this task begin or complete. The default behavior is to not send any system notifications.",
+                      "description": "A collection of system notification IDs to notify when runs of this job begin or complete.",
                       "properties": {
                         "on_duration_warning_threshold_exceeded": {
                           "description": "An optional list of system notification IDs to call when the duration of a run exceeds the threshold specified for the `RUN_DURATION_SECONDS` metric in the `health` field. A maximum of 3 destinations can be specified for the `on_duration_warning_threshold_exceeded` property.",
@@ -3724,12 +3724,12 @@
                     }
                   },
                   "pause_status": {
-                    "description": "Whether this trigger is paused or not."
+                    "description": "Indicate whether the continuous execution of the job is paused or not. Defaults to UNPAUSED."
                   }
                 }
               },
               "webhook_notifications": {
-                "description": "A collection of system notification IDs to notify when runs of this task begin or complete. The default behavior is to not send any system notifications.",
+                "description": "A collection of system notification IDs to notify when runs of this job begin or complete.",
                 "properties": {
                   "on_duration_warning_threshold_exceeded": {
                     "description": "An optional list of system notification IDs to call when the duration of a run exceeds the threshold specified for the `RUN_DURATION_SECONDS` metric in the `health` field. A maximum of 3 destinations can be specified for the `on_duration_warning_threshold_exceeded` property.",
@@ -4605,7 +4605,7 @@
                       "description": "An optional continuous property for this job. The continuous property will ensure that there is always one run executing. Only one of `schedule` and `continuous` can be used.",
                       "properties": {
                         "pause_status": {
-                          "description": "Whether this trigger is paused or not."
+                          "description": "Indicate whether the continuous execution of the job is paused or not. Defaults to UNPAUSED."
                         }
                       }
                     },
@@ -4731,7 +4731,7 @@
                             "description": "A unique name for the job cluster. This field is required and must be unique within the job.\n`JobTaskSettings` may refer to this field to determine which cluster to launch for the task execution."
                           },
                           "new_cluster": {
-                            "description": "If new_cluster, a description of a cluster that is created for only for this task.",
+                            "description": "If new_cluster, a description of a cluster that is created for each task.",
                             "properties": {
                               "apply_policy_default_values": {
                                 "description": ""
@@ -5112,7 +5112,7 @@
                       "description": "An optional periodic schedule for this job. The default behavior is that the job only runs when triggered by clicking “Run Now” in the Jobs UI or sending an API request to `runNow`.",
                       "properties": {
                         "pause_status": {
-                          "description": "Whether this trigger is paused or not."
+                          "description": "Indicate whether the continuous execution of the job is paused or not. Defaults to UNPAUSED."
                         },
                         "quartz_cron_expression": {
                           "description": "A Cron expression using Quartz syntax that describes the schedule for a job.\nSee [Cron Trigger](http://www.quartz-scheduler.org/documentation/quartz-2.3.0/tutorials/crontrigger.html)\nfor details. This field is required.\"\n"
@@ -5313,7 +5313,7 @@
                             "description": "An optional minimal interval in milliseconds between the start of the failed run and the subsequent retry run. The default behavior is that unsuccessful runs are immediately retried."
                           },
                           "new_cluster": {
-                            "description": "If new_cluster, a description of a cluster that is created for only for this task.",
+                            "description": "If new_cluster, a description of a cluster that is created for each task.",
                             "properties": {
                               "apply_policy_default_values": {
                                 "description": ""
@@ -5630,7 +5630,7 @@
                                 "description": "The path of the notebook to be run in the Databricks workspace or remote repository.\nFor notebooks stored in the Databricks workspace, the path must be absolute and begin with a slash.\nFor notebooks stored in a remote repository, the path must be relative. This field is required.\n"
                               },
                               "source": {
-                                "description": "Optional location type of the notebook. When set to `WORKSPACE`, the notebook will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the notebook will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: Notebook is located in \u003cDatabricks\u003e workspace.\n* `GIT`: Notebook is located in cloud Git provider.\n"
+                                "description": "Optional location type of the Python file. When set to `WORKSPACE` or not specified, the file will be retrieved\nfrom the local \u003cDatabricks\u003e workspace or cloud location (if the `python_file` has a URI format). When set to `GIT`,\nthe Python file will be retrieved from a Git repository defined in `git_source`.\n\n* `WORKSPACE`: The Python file is located in a \u003cDatabricks\u003e workspace or at a cloud filesystem URI.\n* `GIT`: The Python file is located in a remote Git repository.\n"
                               }
                             }
                           },
@@ -5729,7 +5729,7 @@
                                 "description": "The Python file to be executed. Cloud file URIs (such as dbfs:/, s3:/, adls:/, gcs:/) and workspace paths are supported. For python files stored in the Databricks workspace, the path must be absolute and begin with `/`. For files stored in a remote repository, the path must be relative. This field is required."
                               },
                               "source": {
-                                "description": "Optional location type of the notebook. When set to `WORKSPACE`, the notebook will be retrieved\nfrom the local \u003cDatabricks\u003e workspace. When set to `GIT`, the notebook will be retrieved from a Git repository\ndefined in `git_source`. If the value is empty, the task will use `GIT` if `git_source` is defined and `WORKSPACE` otherwise.\n\n* `WORKSPACE`: Notebook is located in \u003cDatabricks\u003e workspace.\n* `GIT`: Notebook is located in cloud Git provider.\n"
+                                "description": "Optional location type of the Python file. When set to `WORKSPACE` or not specified, the file will be retrieved\nfrom the local \u003cDatabricks\u003e workspace or cloud location (if the `python_file` has a URI format). When set to `GIT`,\nthe Python file will be retrieved from a Git repository defined in `git_source`.\n\n* `WORKSPACE`: The Python file is located in a \u003cDatabricks\u003e workspace or at a cloud filesystem URI.\n* `GIT`: The Python file is located in a remote Git repository.\n"
                               }
                             }
                           },
@@ -5834,7 +5834,7 @@
                             "description": "An optional timeout applied to each run of this job task. A value of `0` means no timeout."
                           },
                           "webhook_notifications": {
-                            "description": "A collection of system notification IDs to notify when runs of this task begin or complete. The default behavior is to not send any system notifications.",
+                            "description": "A collection of system notification IDs to notify when runs of this job begin or complete.",
                             "properties": {
                               "on_duration_warning_threshold_exceeded": {
                                 "description": "An optional list of system notification IDs to call when the duration of a run exceeds the threshold specified for the `RUN_DURATION_SECONDS` metric in the `health` field. A maximum of 3 destinations can be specified for the `on_duration_warning_threshold_exceeded` property.",
@@ -5906,12 +5906,12 @@
                           }
                         },
                         "pause_status": {
-                          "description": "Whether this trigger is paused or not."
+                          "description": "Indicate whether the continuous execution of the job is paused or not. Defaults to UNPAUSED."
                         }
                       }
                     },
                     "webhook_notifications": {
-                      "description": "A collection of system notification IDs to notify when runs of this task begin or complete. The default behavior is to not send any system notifications.",
+                      "description": "A collection of system notification IDs to notify when runs of this job begin or complete.",
                       "properties": {
                         "on_duration_warning_threshold_exceeded": {
                           "description": "An optional list of system notification IDs to call when the duration of a run exceeds the threshold specified for the `RUN_DURATION_SECONDS` metric in the `health` field. A maximum of 3 destinations can be specified for the `on_duration_warning_threshold_exceeded` property.",
