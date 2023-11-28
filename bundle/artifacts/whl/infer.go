@@ -3,6 +3,7 @@ package whl
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/python"
@@ -18,7 +19,7 @@ func (m *infer) Apply(ctx context.Context, b *bundle.Bundle) error {
 	if err != nil {
 		return err
 	}
-	artifact.BuildCommand = fmt.Sprintf("%s setup.py bdist_wheel", py)
+	artifact.BuildCommand = fmt.Sprintf("%s setup.py bdist_wheel --build-number=%d", py, time.Now().Unix())
 
 	return nil
 }
