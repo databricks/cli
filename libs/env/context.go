@@ -76,7 +76,7 @@ func WithUserHomeDir(ctx context.Context, value string) context.Context {
 	return Set(ctx, homeEnvVar(), value)
 }
 
-// ErrNoHOME indicates the absence of $HOME env variable
+// ErrNoHomeEnv indicates the absence of $HOME env variable
 var ErrNoHomeEnv = errors.New("$HOME is not set")
 
 func UserHomeDir(ctx context.Context) (string, error) {
