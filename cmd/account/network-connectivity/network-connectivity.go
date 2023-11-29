@@ -480,4 +480,128 @@ func init() {
 	})
 }
 
+// start list-network-connectivity-configurations command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listNetworkConnectivityConfigurationsOverrides []func(
+	*cobra.Command,
+	*settings.ListNetworkConnectivityConfigurationsRequest,
+)
+
+func newListNetworkConnectivityConfigurations() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var listNetworkConnectivityConfigurationsReq settings.ListNetworkConnectivityConfigurationsRequest
+
+	// TODO: short flags
+
+	cmd.Flags().StringVar(&listNetworkConnectivityConfigurationsReq.PageToken, "page-token", listNetworkConnectivityConfigurationsReq.PageToken, `Pagination token to go to next page based on previous query.`)
+
+	cmd.Use = "list-network-connectivity-configurations"
+	cmd.Short = `List network connectivity configurations.`
+	cmd.Long = `List network connectivity configurations.
+  
+  Gets an array of network connectivity configurations.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(0)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustAccountClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		a := root.AccountClient(ctx)
+
+		response, err := a.NetworkConnectivity.ListNetworkConnectivityConfigurationsAll(ctx, listNetworkConnectivityConfigurationsReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listNetworkConnectivityConfigurationsOverrides {
+		fn(cmd, &listNetworkConnectivityConfigurationsReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newListNetworkConnectivityConfigurations())
+	})
+}
+
+// start list-private-endpoint-rules command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listPrivateEndpointRulesOverrides []func(
+	*cobra.Command,
+	*settings.ListPrivateEndpointRulesRequest,
+)
+
+func newListPrivateEndpointRules() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var listPrivateEndpointRulesReq settings.ListPrivateEndpointRulesRequest
+
+	// TODO: short flags
+
+	cmd.Flags().StringVar(&listPrivateEndpointRulesReq.PageToken, "page-token", listPrivateEndpointRulesReq.PageToken, `Pagination token to go to next page based on previous query.`)
+
+	cmd.Use = "list-private-endpoint-rules NETWORK_CONNECTIVITY_CONFIG_ID"
+	cmd.Short = `List private endpoint rules.`
+	cmd.Long = `List private endpoint rules.
+  
+  Gets an array of private endpoint rules.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := cobra.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustAccountClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		a := root.AccountClient(ctx)
+
+		listPrivateEndpointRulesReq.NetworkConnectivityConfigId = args[0]
+
+		response, err := a.NetworkConnectivity.ListPrivateEndpointRulesAll(ctx, listPrivateEndpointRulesReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listPrivateEndpointRulesOverrides {
+		fn(cmd, &listPrivateEndpointRulesReq)
+	}
+
+	return cmd
+}
+
+func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newListPrivateEndpointRules())
+	})
+}
+
 // end service NetworkConnectivity
