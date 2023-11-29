@@ -65,7 +65,7 @@ func accountClientOrPrompt(ctx context.Context, cfg *config.Config, allowPrompt 
 			return nil, err
 		}
 	}
-	return a, nil
+	return a, err
 }
 
 func MustAccountClient(cmd *cobra.Command, args []string) error {
@@ -133,7 +133,7 @@ func workspaceClientOrPrompt(ctx context.Context, cfg *config.Config, allowPromp
 			return nil, err
 		}
 	}
-	return w, nil
+	return w, err
 }
 
 func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
@@ -254,6 +254,9 @@ func WorkspaceClient(ctx context.Context) *databricks.WorkspaceClient {
 	if !ok {
 		panic("cannot get *databricks.WorkspaceClient. Please report it as a bug")
 	}
+	if w == nil {
+		panic("workspace client is nil. Please report it as a bug")
+	}
 	return w
 }
 
@@ -261,6 +264,9 @@ func AccountClient(ctx context.Context) *databricks.AccountClient {
 	a, ok := ctx.Value(&accountClient).(*databricks.AccountClient)
 	if !ok {
 		panic("cannot get *databricks.AccountClient. Please report it as a bug")
+	}
+	if a == nil {
+		panic("account client is nil. Please report it as a bug")
 	}
 	return a
 }
