@@ -15,9 +15,9 @@ jobs:
     steps:
       - name: Checkout repository and submodules
         uses: actions/checkout@v4
-
-      - name: Unshallow
-        run: git fetch --prune --unshallow
+        with:
+          fetch-depth: 0
+          fetch-tags: true
 
       - name: Setup Go
         uses: actions/setup-go@v4
