@@ -1,5 +1,59 @@
 # Version changelog
 
+## 0.210.0
+
+This release includes the new `databricks labs` command to install, manage, and run Databricks Labs projects.
+
+CLI:
+ * Add `--debug` as shortcut for `--log-level debug` ([#964](https://github.com/databricks/cli/pull/964)).
+ * Improved usability of `databricks auth login ... --configure-cluster` ([#956](https://github.com/databricks/cli/pull/956)).
+ * Make `databricks configure` save only explicit fields ([#973](https://github.com/databricks/cli/pull/973)).
+ * Add `databricks labs` command group ([#914](https://github.com/databricks/cli/pull/914)).
+ * Tolerate missing .databrickscfg file during `databricks auth login` ([#1003](https://github.com/databricks/cli/pull/1003)).
+ * Add `--configure-cluster` flag to configure command ([#1005](https://github.com/databricks/cli/pull/1005)).
+ * Fix bug where the account or workspace client could be `nil` ([#1020](https://github.com/databricks/cli/pull/1020)).
+
+Bundles:
+ * Do not allow empty descriptions for bundle template inputs ([#967](https://github.com/databricks/cli/pull/967)).
+ * Added support for top-level permissions ([#928](https://github.com/databricks/cli/pull/928)).
+ * Allow jobs to be manually unpaused in development mode ([#885](https://github.com/databricks/cli/pull/885)).
+ * Fix template initialization from current working directory ([#976](https://github.com/databricks/cli/pull/976)).
+ * Add `--tag` and `--branch` options to bundle init command ([#975](https://github.com/databricks/cli/pull/975)).
+ * Work around DLT issue with `` not being set correctly ([#999](https://github.com/databricks/cli/pull/999)).
+ * Enable `spark_jar_task` with local JAR libraries ([#993](https://github.com/databricks/cli/pull/993)).
+ * Pass `USERPROFILE` environment variable to Terraform ([#1001](https://github.com/databricks/cli/pull/1001)).
+ * Improve error message when path is not a bundle template ([#985](https://github.com/databricks/cli/pull/985)).
+ * Correctly overwrite local state if remote state is newer ([#1008](https://github.com/databricks/cli/pull/1008)).
+ * Add mlops-stacks to the default `databricks bundle init` prompt ([#988](https://github.com/databricks/cli/pull/988)).
+ * Do not add wheel content hash in uploaded Python wheel path ([#1015](https://github.com/databricks/cli/pull/1015)).
+ * Do not replace pipeline libraries if there are no matches for pattern ([#1021](https://github.com/databricks/cli/pull/1021)).
+
+Internal:
+ * Update CLI version in the VS Code extension during release ([#1014](https://github.com/databricks/cli/pull/1014)).
+
+API Changes:
+ * Changed `databricks functions create` command.
+ * Changed `databricks metastores create` command with new required argument order.
+ * Removed `databricks metastores enable-optimization` command.
+ * Removed `databricks account o-auth-enrollment` command group.
+ * Removed `databricks apps delete` command.
+ * Removed `databricks apps get` command.
+ * Added `databricks apps delete-app` command.
+ * Added `databricks apps get-app` command.
+ * Added `databricks apps get-app-deployment-status` command.
+ * Added `databricks apps get-apps` command.
+ * Added `databricks apps get-events` command.
+ * Added `databricks account network-connectivity` command group.
+
+OpenAPI commit 22f09783eb8a84d52026f856be3b2068f9498db3 (2023-11-23)
+
+Dependency updates:
+ * Bump golang.org/x/term from 0.13.0 to 0.14.0 ([#981](https://github.com/databricks/cli/pull/981)).
+ * Bump github.com/hashicorp/terraform-json from 0.17.1 to 0.18.0 ([#979](https://github.com/databricks/cli/pull/979)).
+ * Bump golang.org/x/oauth2 from 0.13.0 to 0.14.0 ([#982](https://github.com/databricks/cli/pull/982)).
+ * Bump github.com/databricks/databricks-sdk-go from 0.24.0 to 0.25.0 ([#980](https://github.com/databricks/cli/pull/980)).
+ * Bump github.com/databricks/databricks-sdk-go from 0.25.0 to 0.26.0 ([#1019](https://github.com/databricks/cli/pull/1019)).
+
 ## 0.209.1
 
 CLI:
