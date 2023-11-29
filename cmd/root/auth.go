@@ -254,9 +254,6 @@ func WorkspaceClient(ctx context.Context) *databricks.WorkspaceClient {
 	if !ok {
 		panic("cannot get *databricks.WorkspaceClient. Please report it as a bug")
 	}
-	if w == nil {
-		panic("workspace client is nil. Please report it as a bug")
-	}
 	return w
 }
 
@@ -264,9 +261,6 @@ func AccountClient(ctx context.Context) *databricks.AccountClient {
 	a, ok := ctx.Value(&accountClient).(*databricks.AccountClient)
 	if !ok {
 		panic("cannot get *databricks.AccountClient. Please report it as a bug")
-	}
-	if a == nil {
-		panic("account client is nil. Please report it as a bug")
 	}
 	return a
 }
