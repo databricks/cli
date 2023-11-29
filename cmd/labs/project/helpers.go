@@ -12,10 +12,13 @@ import (
 	"github.com/databricks/cli/libs/env"
 )
 
-func PathInLabs(ctx context.Context, dirs ...string) string {
-	homdeDir := env.UserHomeDir(ctx)
+func PathInLabs(ctx context.Context, dirs ...string) (string, error) {
+	homdeDir, err := env.UserHomeDir(ctx)
+	if err != nil {
+		return "", err
+	}
 	prefix := []string{homdeDir, ".databricks", "labs"}
-	return filepath.Join(append(prefix, dirs...)...)
+	return filepath.Join(append(prefix, dirs...)...), nil
 }
 
 func tryLoadAndParseJSON[T any](jsonFile string) (*T, error) {
