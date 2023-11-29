@@ -126,6 +126,7 @@ func (b *Bundle) InitializeWorkspaceClient() (*databricks.WorkspaceClient, error
 	if err != nil {
 		return nil, fmt.Errorf("cannot resolve bundle auth configuration: %w", err)
 	}
+	b.client = client
 	return client, nil
 }
 
