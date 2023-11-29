@@ -32,7 +32,7 @@ Internal:
  * Update CLI version in the VS Code extension during release ([#1014](https://github.com/databricks/cli/pull/1014)).
 
 API Changes:
- * Changed `databricks functions create` command . New request type is .
+ * Changed `databricks functions create` command.
  * Changed `databricks metastores create` command with new required argument order.
  * Removed `databricks metastores enable-optimization` command.
  * Removed `databricks account o-auth-enrollment` command group.
