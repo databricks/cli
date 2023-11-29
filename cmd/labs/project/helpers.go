@@ -13,11 +13,11 @@ import (
 )
 
 func PathInLabs(ctx context.Context, dirs ...string) (string, error) {
-	homdeDir, err := env.UserHomeDir(ctx)
+	homeDir, err := env.UserHomeDir(ctx)
 	if err != nil {
 		return "", err
 	}
-	prefix := []string{homdeDir, ".databricks", "labs"}
+	prefix := []string{homeDir, ".databricks", "labs"}
 	return filepath.Join(append(prefix, dirs...)...), nil
 }
 
