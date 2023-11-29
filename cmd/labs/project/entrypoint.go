@@ -54,15 +54,15 @@ func (e *Entrypoint) NeedsWarehouse() bool {
 
 func (e *Entrypoint) Prepare(cmd *cobra.Command) (map[string]string, error) {
 	ctx := cmd.Context()
-	libDir := e.EffectiveLibDir(ctx)
+	libDir := e.EffectiveLibDir()
 	environment := map[string]string{
 		"DATABRICKS_CLI_VERSION":     build.GetInfo().Version,
-		"DATABRICKS_LABS_CACHE_DIR":  e.CacheDir(ctx),
-		"DATABRICKS_LABS_CONFIG_DIR": e.ConfigDir(ctx),
-		"DATABRICKS_LABS_STATE_DIR":  e.StateDir(ctx),
+		"DATABRICKS_LABS_CACHE_DIR":  e.CacheDir(),
+		"DATABRICKS_LABS_CONFIG_DIR": e.ConfigDir(),
+		"DATABRICKS_LABS_STATE_DIR":  e.StateDir(),
 		"DATABRICKS_LABS_LIB_DIR":    libDir,
 	}
-	if e.IsPythonProject(ctx) {
+	if e.IsPythonProject() {
 		e.preparePython(ctx, environment)
 	}
 	cfg, err := e.validLogin(cmd)
@@ -112,7 +112,7 @@ func (e *Entrypoint) preparePython(ctx context.Context, environment map[string]s
 	// Here we are also supporting the "src" layout for python projects.
 	//
 	// See https://docs.python.org/3/using/cmdline.html#envvar-PYTHONPATH
-	libDir := e.EffectiveLibDir(ctx)
+	libDir := e.EffectiveLibDir()
 	// The intention for every install is to be sandboxed - not dependent on anything else than Python binary.
 	// Having ability to override PYTHONPATH in the mix will break this assumption. Need strong evidence that
 	// this is really needed.
@@ -139,21 +139,28 @@ func (e *Entrypoint) joinPaths(paths ...string) string {
 	return strings.Join(paths, string(os.PathListSeparator))
 }
 
-func (e *Entrypoint) envAwareConfig(ctx context.Context) *config.Config {
+func (e *Entrypoint) envAwareConfig(ctx context.Context) (*config.Config, error) {
+	home, err := env.UserHomeDir(ctx)
+	if err != nil {
+		return nil, err
+	}
 	return &config.Config{
-		ConfigFile: filepath.Join(env.UserHomeDir(ctx), ".databrickscfg"),
+		ConfigFile: filepath.Join(home, ".databrickscfg"),
 		Loaders: []config.Loader{
 			env.NewConfigLoader(ctx),
 			config.ConfigAttributes,
 			config.ConfigFile,
 		},
-	}
+	}, nil
 }
 
-func (e *Entrypoint) envAwareConfigWithProfile(ctx context.Context, profile string) *config.Config {
-	cfg := e.envAwareConfig(ctx)
+func (e *Entrypoint) envAwareConfigWithProfile(ctx context.Context, profile string) (*config.Config, error) {
+	cfg, err := e.envAwareConfig(ctx)
+	if err != nil {
+		return nil, err
+	}
 	cfg.Profile = profile
-	return cfg
+	return cfg, nil
 }
 
 func (e *Entrypoint) getLoginConfig(cmd *cobra.Command) (*loginConfig, *config.Config, error) {
@@ -164,11 +171,18 @@ func (e *Entrypoint) getLoginConfig(cmd *cobra.Command) (*loginConfig, *config.C
 	profileOverride := e.profileOverride(cmd)
 	if profileOverride != "" {
 		log.Infof(ctx, "Overriding login profile: %s", profileOverride)
-		return &loginConfig{}, e.envAwareConfigWithProfile(ctx, profileOverride), nil
+		cfg, err := e.envAwareConfigWithProfile(ctx, profileOverride)
+		if err != nil {
+			return nil, nil, err
+		}
+		return &loginConfig{}, cfg, nil
 	}
 	lc, err := e.loadLoginConfig(ctx)
 	isNoLoginConfig := errors.Is(err, fs.ErrNotExist)
-	defaultConfig := e.envAwareConfig(ctx)
+	defaultConfig, err := e.envAwareConfig(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
 	if isNoLoginConfig && !e.IsBundleAware && e.isAuthConfigured(defaultConfig) {
 		log.Debugf(ctx, "Login is configured via environment variables")
 		return &loginConfig{}, defaultConfig, nil
@@ -181,7 +195,11 @@ func (e *Entrypoint) getLoginConfig(cmd *cobra.Command) (*loginConfig, *config.C
 	}
 	if e.IsAccountLevel {
 		log.Debugf(ctx, "Using account-level login profile: %s", lc.AccountProfile)
-		return lc, e.envAwareConfigWithProfile(ctx, lc.AccountProfile), nil
+		cfg, err := e.envAwareConfigWithProfile(ctx, lc.AccountProfile)
+		if err != nil {
+			return nil, nil, err
+		}
+		return lc, cfg, nil
 	}
 	if e.IsBundleAware {
 		err = root.TryConfigureBundle(cmd, []string{})
@@ -194,7 +212,11 @@ func (e *Entrypoint) getLoginConfig(cmd *cobra.Command) (*loginConfig, *config.C
 		}
 	}
 	log.Debugf(ctx, "Using workspace-level login profile: %s", lc.WorkspaceProfile)
-	return lc, e.envAwareConfigWithProfile(ctx, lc.WorkspaceProfile), nil
+	cfg, err := e.envAwareConfigWithProfile(ctx, lc.WorkspaceProfile)
+	if err != nil {
+		return nil, nil, err
+	}
+	return lc, cfg, nil
 }
 
 func (e *Entrypoint) validLogin(cmd *cobra.Command) (*config.Config, error) {

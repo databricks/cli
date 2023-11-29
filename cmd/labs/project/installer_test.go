@@ -105,7 +105,7 @@ func installerContext(t *testing.T, server *httptest.Server) context.Context {
 	ctx = github.WithUserContentOverride(ctx, server.URL)
 	ctx = env.WithUserHomeDir(ctx, t.TempDir())
 	// trick release cache to thing it went to github already
-	cachePath := project.PathInLabs(ctx, "blueprint", "cache")
+	cachePath, _ := project.PathInLabs(ctx, "blueprint", "cache")
 	err := os.MkdirAll(cachePath, ownerRWXworldRX)
 	require.NoError(t, err)
 	bs := []byte(`{"refreshed_at": "2033-01-01T00:00:00.92857+02:00","data": [{"tag_name": "v0.3.15"}]}`)
@@ -317,8 +317,8 @@ func TestInstallerWorksForDevelopment(t *testing.T) {
 
 	// development installer assumes it's in the active virtualenv
 	ctx = env.Set(ctx, "PYTHON_BIN", py)
-
-	err = os.WriteFile(filepath.Join(env.UserHomeDir(ctx), ".databrickscfg"), []byte(fmt.Sprintf(`
+	home, _ := env.UserHomeDir(ctx)
+	err = os.WriteFile(filepath.Join(home, ".databrickscfg"), []byte(fmt.Sprintf(`
 [profile-one]
 host = %s
 token = ...
@@ -399,7 +399,7 @@ func TestUpgraderWorksForReleases(t *testing.T) {
 	py, _ = filepath.Abs(py)
 	ctx = env.Set(ctx, "PYTHON_BIN", py)
 
-	cachePath := project.PathInLabs(ctx, "blueprint", "cache")
+	cachePath, _ := project.PathInLabs(ctx, "blueprint", "cache")
 	bs := []byte(`{"refreshed_at": "2033-01-01T00:00:00.92857+02:00","data": [{"tag_name": "v0.4.0"}]}`)
 	err := os.WriteFile(filepath.Join(cachePath, "databrickslabs-blueprint-releases.json"), bs, ownerRW)
 	require.NoError(t, err)

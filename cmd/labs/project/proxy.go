@@ -60,7 +60,7 @@ func (cp *proxy) runE(cmd *cobra.Command, _ []string) error {
 		cmd.OutOrStdout(),
 		cmd.ErrOrStderr(),
 		process.WithEnvs(envs))
-	if errors.Is(err, fs.ErrNotExist) && cp.IsPythonProject(ctx) {
+	if errors.Is(err, fs.ErrNotExist) && cp.IsPythonProject() {
 		msg := "cannot find Python %s. Please re-run: databricks labs install %s"
 		return fmt.Errorf(msg, cp.MinPython, cp.Name)
 	}
@@ -113,9 +113,9 @@ func (cp *proxy) commandInput(cmd *cobra.Command) ([]string, error) {
 	}
 	args := []string{}
 	ctx := cmd.Context()
-	if cp.IsPythonProject(ctx) {
+	if cp.IsPythonProject() {
 		args = append(args, cp.virtualEnvPython(ctx))
-		libDir := cp.EffectiveLibDir(cmd.Context())
+		libDir := cp.EffectiveLibDir()
 		entrypoint := filepath.Join(libDir, cp.Main)
 		args = append(args, entrypoint)
 	}
