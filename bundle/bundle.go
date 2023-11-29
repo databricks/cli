@@ -130,13 +130,9 @@ func (b *Bundle) InitializeWorkspaceClient() (*databricks.WorkspaceClient, error
 }
 
 func (b *Bundle) WorkspaceClient() *databricks.WorkspaceClient {
-	b.clientOnce.Do(func() {
-		var err error
-		b.client, err = b.InitializeWorkspaceClient()
-		if err != nil {
-			panic(err)
-		}
-	})
+	if b.client == nil {
+		panic("workspace client not initialized yet")
+	}
 	return b.client
 }
 
