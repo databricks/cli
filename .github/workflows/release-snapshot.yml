@@ -15,6 +15,7 @@ jobs:
       - name: Checkout repository and submodules
         uses: actions/checkout@v4
         with:
+          fetch-depth: 0
           fetch-tags: true
 
       - name: Setup Go
