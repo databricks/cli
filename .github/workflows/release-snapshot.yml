@@ -14,9 +14,8 @@ jobs:
     steps:
       - name: Checkout repository and submodules
         uses: actions/checkout@v4
-
-      - name: Unshallow
-        run: git fetch --prune --unshallow
+        with:
+          fetch-tags: true
 
       - name: Setup Go
         uses: actions/setup-go@v4
@@ -56,7 +55,7 @@ jobs:
       - name: Update snapshot tag
 
         # Snapshot release may only be updated for commits to the main branch.
-        # if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main'
 
         run: |
           git tag snapshot
@@ -65,7 +64,7 @@ jobs:
       - name: Update snapshot release
 
         # Snapshot release may only be updated for commits to the main branch.
-        # if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main'
 
         uses: softprops/action-gh-release@v1
         with:
